@@ -176,6 +176,7 @@ module seq_flux_mct
   integer :: index_xao_So_ustar
   integer :: index_xao_So_re
   integer :: index_xao_So_ssq
+   integer :: index_xao_So_z0wav
   integer :: index_xao_So_duu10n
   integer :: index_xao_So_u10
   integer :: index_xao_So_u10withgusts
@@ -1402,6 +1403,7 @@ contains
        index_xao_So_ustar  = mct_aVect_indexRA(xao,'So_ustar')
        index_xao_So_re     = mct_aVect_indexRA(xao,'So_re')
        index_xao_So_ssq    = mct_aVect_indexRA(xao,'So_ssq')
+      index_xao_So_z0wav  = mct_aVect_indexRA(xao,'So_z0wav', perrWith='quiet')
        index_xao_So_u10    = mct_aVect_indexRA(xao,'So_u10')
        index_xao_So_u10withgusts = mct_aVect_indexRA(xao,'So_u10withgusts')
        index_xao_So_duu10n = mct_aVect_indexRA(xao,'So_duu10n')
@@ -1706,6 +1708,7 @@ contains
           xao%rAttr(index_xao_So_ustar ,n) = ustar(n)  ! friction velocity
           xao%rAttr(index_xao_So_re    ,n) = re(n)     ! reynolds number
           xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts
+          if (index_xao_So_z0wav > 0) xao%rAttr(index_xao_So_z0wav,n) = z0wav(n)
           xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
           xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
           xao%rAttr(index_xao_So_u10   ,n) = u10res(n)

@@ -150,7 +150,6 @@
     <OS>Linux</OS>
     <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -178,24 +177,13 @@
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="mpi"> --mpi=pmix</arg>
-        <arg name="label"> --label</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
-        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-      </arguments>
+    </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -229,14 +217,10 @@
         <command name="unload">darshan</command>
       </modules>
 
-      <modules compiler="gnu" mpilib="mpich">
+      <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/14</command>
         <command name="load">cray-libsci/25.09.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">PrgEnv-gnu/8.6.0</command>
-        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="intel">
@@ -261,22 +245,20 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules mpilib="mpich">
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules mpilib="openmpi">
-        <command name="load">craype/2.7.35</command>
-        <command name="load">openmpi/5.0.7</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="unload">cray-libsci</command>
-        <command name="load">cray-libsci/25.09.0</command>
       </modules>
     </module_system>
 
@@ -285,25 +267,21 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables mpilib="mpich">
+    <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
-      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
-    </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
-      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
-      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
-    </environment_variables>
-    <environment_variables>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
       <env name="STK_UNKNOWN_PATTERN_EXCHANGER">Prepost</env> <!-- issue with STK -->
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -328,8 +306,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2026.05.21/gcc/14.3; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2026.05.21/gcc/14.3; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -384,8 +362,6 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
-    <MPILIBS compiler="gnugpu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -397,9 +373,9 @@
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>6</GMAKE_J>
+    <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -420,25 +396,13 @@
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
         <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="mpi"> --mpi=pmix</arg>
-        <arg name="label"> --label</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
-        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
-      </arguments>
+    </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -515,27 +479,25 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules mpilib="mpich">
+      <modules>
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules mpilib="openmpi">
-        <command name="load">craype/2.7.35</command>
-        <command name="load">openmpi/5.0.7</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules compiler="gnu.*" mpilib="openmpi">
-        <command name="unload">cray-libsci</command>
-        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel.*">
         <command name="unload">cray-libsci</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -544,46 +506,41 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables mpilib="mpich">
+    <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
-      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
-    </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
-      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
-      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
-    </environment_variables>
-    <environment_variables>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu" mpilib="mpich">
+    <environment_variables compiler="gnugpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="nvidiagpu" mpilib="mpich">
+    <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu" mpilib="mpich">
+    <environment_variables compiler="intelgpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidiagpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
@@ -593,9 +550,6 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="nvidia">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -618,236 +572,12 @@
     </resource_limits>
   </machine>
 
-  <machine MACH="vista-gh">
-    <DESC>vista at TACC https://docs.tacc.utexas.edu/hpc/vista  gh (grace-hopper) GH200 Superchip -- Grace CPU (72 cores) and 1 NVIDIA H100 GPU</DESC>
-    <NODENAME_REGEX>.*vista.*</NODENAME_REGEX>
-    <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <PROJECT>CDA24017</PROJECT>
-    <SAVE_TIMING_DIR>$ENV{WORK}</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>e3sm</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>$ENV{WORK}/e3sm_scratch/vista-gh</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>$ENV{WORK}/www/$ENV{USER}</CIME_HTML_ROOT>
-    <DIN_LOC_ROOT>$ENV{WORK}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{WORK}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{WORK}/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{WORK}/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>72</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnu">144</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="nvidia">144</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnu">144</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="nvidia">144</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>ibrun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/apps/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="sh">module -q</cmd_path>
-      <cmd_path lang="csh">module -q</cmd_path>
-
-      <modules>
-	<command name="unload">netcdf</command>
-	<command name="unload">pnetcdf</command>
-	<command name="unload">hdf5</command>
-	<command name="unload">gcc</command>
-	<command name="unload">nvidia</command>
-	<command name="unload">cuda</command>
-	<command name="unload">perftools-base</command>
-	<command name="unload">perftools</command>
-	<command name="unload">darshan</command>
-      </modules>
-
-      <modules compiler="gnu.*">
-	<command name="load">gcc/13.2.0</command>
-	<command name="load">openmpi/5.0.5</command>
-      </modules>
-
-      <modules compiler="nvidia.*">
-	<command name="load">nvidia/24.7</command>
-	<command name="load">openmpi/5.0.8</command>
-      </modules>
-
-      <modules compiler="gnugpu">
-	<command name="load">gcc/13.2.0</command>
-	<command name="load">cuda/12.6</command>
-	<command name="load">openmpi/5.0.5</command>
-      </modules>
-
-      <modules compiler="nvidiagpu">
-	<command name="load">cuda/12.6</command>
-	<command name="load">openmpi/5.0.8</command>
-      </modules>
-
-      <modules>
-	<command name="load">ucx/1.19.1</command>
-	<command name="load">netcdf/4.9.2</command>
-	<command name="load">pnetcdf/1.13.0</command>
-	<command name="load">cmake</command>
-      </modules>
-    </module_system>
-
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
-
-    <environment_variables>
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="NETCDF_PATH">$ENV{TACC_NETCDF_DIR}</env>
-      <env name="PNETCDF_PATH">$ENV{TACC_PNETCDF_DIR}</env>
-      <env name="LD_LIBRARY_PATH">/opt/apps/gcc/14.2.0/lib64:$ENV{LD_LIBRARY_PATH}</env> <!-- for pnetcdf which has gcc version issues-->
-    </environment_variables>
-
-    <environment_variables compiler="gnu">
-      <env name="IBRUN_TASKS_PER_NODE">144</env>
-    </environment_variables>
-    <environment_variables compiler="nvidia">
-      <env name="IBRUN_TASKS_PER_NODE">144</env>
-    </environment_variables>
-    <environment_variables compiler="gnugpu">
-      <env name="IBRUN_TASKS_PER_NODE">1</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="MPICH_CXX">$SHELL{which nvcc}</env>
-    </environment_variables>
-    <environment_variables compiler="nvidiagpu">
-      <env name="IBRUN_TASKS_PER_NODE">1</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="MPICH_CXX">$SHELL{which nvcc}</env>
-    </environment_variables>
-    <resource_limits>
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
-  </machine>
-
-  <machine MACH="vista-gg">
-    <DESC>vista at TACC https://docs.tacc.utexas.edu/hpc/vista (gg -- grace-grace)  CPU-only: NVIDIA Grace CPU Superchip (72x2 or 144 cores) </DESC>
-    <NODENAME_REGEX>.*vista.*</NODENAME_REGEX>
-    <OS>Linux</OS>
-    <COMPILERS>gnu,nvidia</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
-    <PROJECT>CDA24017</PROJECT>
-    <SAVE_TIMING_DIR>$ENV{WORK}</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>e3sm</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>$ENV{WORK}/e3sm_scratch/vista-gg</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>$ENV{WORK}/www/$ENV{USER}</CIME_HTML_ROOT>
-    <DIN_LOC_ROOT>$ENV{WORK}/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>$ENV{WORK}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{WORK}/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>$ENV{WORK}/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>288</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>144</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>ibrun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/apps/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="sh">module -q</cmd_path>
-      <cmd_path lang="csh">module -q</cmd_path>
-
-      <modules>
-	<command name="unload">netcdf</command>
-	<command name="unload">pnetcdf</command>
-	<command name="unload">hdf5</command>
-	<command name="unload">gcc</command>
-	<command name="unload">nvidia</command>
-	<command name="unload">cuda</command>
-	<command name="unload">perftools-base</command>
-	<command name="unload">perftools</command>
-	<command name="unload">darshan</command>
-      </modules>
-
-      <modules compiler="gnu">
-	<command name="unload">gcc</command>
-	<command name="load">gcc/15.1.0</command>
-	<command name="load">openmpi/5.0.5</command>
-      </modules>
-
-      <modules compiler="nvidia">
-	<command name="load">nvidia/25.5</command>
-	<command name="load">openmpi/5.0.8</command>
-      </modules>
-
-      <modules>
-	<command name="load">ucx/1.19.1</command> <!-- note: encountered hangs with newer versions -->
-	<command name="load">netcdf/4.9.2</command>
-	<command name="load">pnetcdf/1.13.0</command>
-	<command name="load">cmake</command>
-      </modules>
-    </module_system>
-
-    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
-
-    <environment_variables>
-      <env name="OMP_STACKSIZE">128M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="NETCDF_PATH">$ENV{TACC_NETCDF_DIR}</env>
-      <env name="PNETCDF_PATH">$ENV{TACC_PNETCDF_DIR}</env>
-      <env name="SLURM_LABELIO">1</env>
-      <env name="OMPI_MCA_orte_tag_output">1</env>
-    </environment_variables>
-
-    <environment_variables compiler="gnu">
-      <env name="IBRUN_TASKS_PER_NODE">144</env>
-    </environment_variables>
-    <environment_variables compiler="nvidia">
-      <env name="IBRUN_TASKS_PER_NODE">144</env>
-    </environment_variables>
-    <resource_limits>
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
-  </machine>
-
   <machine MACH="muller-cpu">
     <DESC>Muller CPU-only nodes on internal NERSC machine, similar to pm-cpu (very small)</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:muller</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -877,22 +607,11 @@
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="mpi"> --mpi=pmix</arg>
-        <arg name="label"> --label</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
-        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-      </arguments>
-    </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -926,14 +645,10 @@
         <command name="unload">darshan</command>
       </modules>
 
-      <modules compiler="gnu" mpilib="mpich">
+      <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/14</command>
         <command name="load">cray-libsci/25.09.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">PrgEnv-gnu/8.6.0</command>
-        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="intel">
@@ -958,24 +673,21 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules mpilib="mpich">
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
-        <command name="load">cmake/3.30.2</command>
       </modules>
-      <modules mpilib="openmpi">
-        <command name="load">craype/2.7.35</command>
-        <command name="load">openmpi/5.0.7</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="unload">cray-libsci</command>
-        <command name="load">cray-libsci/25.09.0</command>
-      </modules>
-
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -983,24 +695,20 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables mpilib="mpich">
+    <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
-      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
-    </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
-      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
-      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
-    </environment_variables>
-    <environment_variables>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -1023,8 +731,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1079,8 +787,6 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
-    <MPILIBS compiler="gnugpu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -1117,23 +823,11 @@
         <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="mpi"> --mpi=pmix</arg>
-        <arg name="label"> --label</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
-        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
-      </arguments>
-    </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -1210,27 +904,25 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules mpilib="mpich">
+      <modules>
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules mpilib="openmpi">
-        <command name="load">craype/2.7.35</command>
-        <command name="load">openmpi/5.0.7</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules compiler="gnu.*" mpilib="openmpi">
-        <command name="unload">cray-libsci</command>
-        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel.*">
         <command name="unload">cray-libsci</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -1239,46 +931,38 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables mpilib="mpich">
+    <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
-      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
-    </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
-      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
-      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
-    </environment_variables>
-    <environment_variables>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
+      <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
+      <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+    </environment_variables>
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu" mpilib="mpich">
+    <environment_variables compiler="gnugpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="nvidiagpu" mpilib="mpich">
+    <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu" mpilib="mpich">
+    <environment_variables compiler="intelgpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu; else echo "$MOAB_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="nvidiagpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
@@ -1288,9 +972,6 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="nvidia">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1319,7 +1000,6 @@
     <OS>Linux</OS>
     <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -1349,22 +1029,11 @@
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="mpi"> --mpi=pmix</arg>
-        <arg name="label"> --label</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
-        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-      </arguments>
-    </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -1398,14 +1067,10 @@
         <command name="unload">darshan</command>
       </modules>
 
-      <modules compiler="gnu" mpilib="mpich">
+      <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/14</command>
         <command name="load">cray-libsci/25.09.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">PrgEnv-gnu/8.6.0</command>
-        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="intel">
@@ -1430,22 +1095,20 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules mpilib="mpich">
+      <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules mpilib="openmpi">
-        <command name="load">craype/2.7.35</command>
-        <command name="load">openmpi/5.0.7</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-        <command name="unload">cray-libsci</command>
-        <command name="load">cray-libsci/25.09.0</command>
       </modules>
     </module_system>
 
@@ -1454,24 +1117,20 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables mpilib="mpich">
+    <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
     </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
-      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
-      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
-    </environment_variables>
-    <environment_variables>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -1494,8 +1153,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1550,8 +1209,6 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
-    <MPILIBS compiler="gnugpu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -1588,23 +1245,11 @@
         <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
       </arguments>
     </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>srun</executable>
-      <arguments>
-        <arg name="mpi"> --mpi=pmix</arg>
-        <arg name="label"> --label</arg>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
-        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
-      </arguments>
-    </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -1681,27 +1326,25 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules mpilib="mpich">
+      <modules>
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules mpilib="openmpi">
-        <command name="load">craype/2.7.35</command>
-        <command name="load">openmpi/5.0.7</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules compiler="gnu.*" mpilib="openmpi">
-        <command name="unload">cray-libsci</command>
-        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel.*">
         <command name="unload">cray-libsci</command>
+      </modules>
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -1710,45 +1353,38 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables mpilib="mpich">
+    <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
-    <environment_variables mpilib="openmpi">
-      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
-      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
-      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
-    </environment_variables>
-    <environment_variables>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+    <environment_variables DEBUG="TRUE">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu" mpilib="mpich">
+    <environment_variables compiler="gnugpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="nvidiagpu" mpilib="mpich">
+    <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu" mpilib="mpich">
+    <environment_variables compiler="intelgpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu; else echo "$MOAB_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="nvidiagpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
@@ -1761,6 +1397,9 @@
     </environment_variables>
     <environment_variables compiler="nvidia">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="nvidiagpu">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -1901,7 +1540,7 @@
         <command name="load">cray-python/3.11.7</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
-        <command name="load">cmake/3.30.5</command>
+        <command name="load">cmake</command>
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
@@ -1920,7 +1559,7 @@
         <command name="load">cray-python</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
-        <command name="load">cmake/3.30.5</command>
+        <command name="load">cmake</command>
         <command name="load">cray-hdf5-parallel/1.14.3.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.21</command>
@@ -1953,7 +1592,7 @@
       <env name="MPICH_CXX">$SHELL{which hipcc}</env>
       <env name="GPUS_PER_NODE">--gpus-per-node=8</env>
       <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
-      <env name="GPU_BIND_ARGS">--gpu-bind=closest $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 56 -le $mpn ]; then echo --distribution=*:block; fi;} </env>
+      <env name="GPU_BIND_ARGS">--gpu-bind=closest --distribution=*:block</env>
     </environment_variables>
 
     <environment_variables BUILD_THREADED="TRUE">
@@ -2212,8 +1851,6 @@
     <BASELINE_ROOT>/sems-data-store/ACME/baselines/mappy/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/mappy/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>64</GMAKE_J>
-    <BATCHED_BUILD>FALSE</BATCHED_BUILD>
-    <CMAKE_BACKEND>ninja</CMAKE_BACKEND>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>slurm_single_node</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
@@ -2283,17 +1920,18 @@
     </resource_limits>
   </machine>
 
-  <machine MACH="ghci">
-    <DESC>RHEL9 image(s), used for GitHub CI</DESC>
+  <machine MACH="ghci-snl">
+    <DESC>RHEL9 image(s) hosted on SNL machines, used for Git Hub CI</DESC>
     <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>gnu,intel,gnugpu</COMPILERS>
-    <MPILIBS>openmpi,mpich</MPILIBS>
+    <PROXY>proxy.sandia.gov:80</PROXY>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/tmp</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/e3sm/data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/e3sm/data/baselines/ghci/$COMPILER</BASELINE_ROOT>
+    <BASELINE_ROOT>/projects/e3sm/data/baselines/ghci-snl/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/projects/e3sm/software/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -2301,7 +1939,6 @@
     <SUPPORTED_BY>lbertag at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnugpu">2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -2321,16 +1958,9 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+      <env name="BLA_VENDOR">Generic</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
-    </environment_variables>
-    <environment_variables compiler="gnu">
-      <env name="BLA_VENDOR">OpenBLAS</env>
-    </environment_variables>
-    <environment_variables compiler="gnugpu">
-      <env name="BLA_VENDOR">OpenBLAS</env>
-    </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="BLA_VENDOR">Intel10_64lp</env>
+      <env name="MOAB_ROOT">/projects/e3sm/software/moab</env>
     </environment_variables>
   </machine>
 
@@ -2756,17 +2386,20 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">aue/cmake/3.26.2</command>
+        <command name="use">/projects/sems/acme-boca-modulefiles/env-module</command>
+        <command name="load">acme-boca-env</command>
         <command name="load">aue/python/3.11.6</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
+        <command name="load">gnu/10.3.1</command>
+        <command name="load">sems-archive-intel/21.3.0</command>
       </modules>
-      <modules compiler="intel">
-        <command name="load">aue/gcc/12.3.0</command>
-        <command name="load">aue/intel-oneapi-compilers/2024.2.1</command>
-        <command name="load">aue/openmpi/4.1.6-oneapi-2024.1.0</command>
-        <command name="load">aue/hdf5/1.14.2-oneapi-2024.1.0-openmpi-4.1.6</command>
-        <command name="load">aue/netcdf-c/4.10.0-oneapi-2024.1.0-openmpi-4.1.6</command>
-        <command name="load">aue/parallel-netcdf/1.12.3-oneapi-2024.1.0-openmpi-4.1.6</command>
-        <command name="load">aue/intel-oneapi-mkl/2024.1.0</command>
+      <modules mpilib="!mpi-serial">
+        <command name="load">sems-archive-openmpi/4.1.4</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">sems-archive-netcdf/4.4.1/exo</command>
       </modules>
     </module_system>
     <RUNDIR>/tscratch/$USER/acme_scratch/flight/$CASE/run</RUNDIR>
@@ -2776,14 +2409,15 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
-      <env name="NETCDF_C_PATH">$ENV{NETCDF_ROOT}</env>
-      <env name="NETCDF_FORTRAN_PATH">/projects/sems/install/boca/acme/manual/netcdf-fortran/4.6.3</env>
-      <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}</env>
+      <env name="NETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
+      <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /projects/ccsm/moab-flight; else echo "$MOAB_ROOT"; fi}</env>
-      <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5dump))}</env>
-      <env name="LD_LIBRARY_PATH">/projects/sems/install/boca/acme/manual/netcdf-fortran/4.6.3/lib64:$ENV{LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
-   </environment_variables>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial">
+      <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
+    </environment_variables>
     <environment_variables compiler="intel">
       <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install-master/intel</env>
     </environment_variables>
@@ -2963,7 +2597,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
-    <TEST_MEMLEAK_TOLERANCE>0.10</TEST_MEMLEAK_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.05</TEST_MEMLEAK_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
@@ -3003,12 +2637,15 @@
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/gnu; else echo "$MOAB_ROOT"; fi}</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2026.05.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/17.0.0/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/gcc/9.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/15.1.1/gcc/9.2.0; else echo "$Trilinos_ROOT"; fi}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lcrc/soft/climate/adios2/2.10.2/openmpi-4.1.6/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lcrc/soft/climate/c-blosc2/2.15.2/gcc-11.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lcrc/soft/climate/sz/2.1.12.5/gcc-11.2.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lcrc/soft/climate/zfp/1.0.1/gcc-11.2.0; else echo "$ZFP_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel-oneapi-compilers-2025.2.0; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -3288,7 +2925,7 @@
   <machine MACH="dane">
     <DESC>LLNL Linux Cluster, 112 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>oneapi-ifx</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/dane</CIME_OUTPUT_ROOT>
@@ -3330,7 +2967,7 @@
         <command name="load">cmake/3.26.3</command>
         <command name="load">mkl/2022.1.0</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="oneapi-ifx">
         <command name="load">intel/2023.2.1-magic</command>
 	<command name="use">/usr/workspace/e3sm/spack/dane/intel/modules/Core</command>
 	<command name="load">intel-oneapi-runtime/2023.2.0</command>
@@ -3348,7 +2985,7 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="oneapi-ifx">
       <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_C_PATH}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_PATH}</env>
@@ -3455,7 +3092,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,intelgpu,gnu</COMPILERS>
+    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
@@ -3469,11 +3106,11 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intel">96</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intel">48</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intelgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -3547,14 +3184,14 @@
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="oneapi-ifxgpu">
       <env name="SYCL_DEVICE_FILTER">opencl</env>
       <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
       <env name="SYCL_CACHE_PERSISTENT">0</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="GATOR_DISABLE">0</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="oneapi-ifx">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
       <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
     </environment_variables>
@@ -3620,24 +3257,23 @@
         <command name="load">craype-accel-host</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu/8.7.0</command>
-        <command name="load">gcc-native/14</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/13.2</command>
         <command name="load">hdf5/1.14.6</command>
         <command name="load">netcdf/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler="nvidia.*">
-        <command name="load">PrgEnv-nvidia/8.7.0</command>
+        <command name="load">PrgEnv-nvidia/8.6.0</command>
         <command name="load">hdf5-nvidia/1.14.6</command>
         <command name="load">netcdf-nvidia/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler=".*gpu">
-        <command name="load">cuda/13.0</command>
+        <command name="load">cuda/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
-        <command name="load">cray-libsci/26.03.0</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.21</command>
-        <command name="rm">darshan</command>
+        <command name="load">cray-libsci/25.03.0</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3671,7 +3307,7 @@
     <DESC>ANL Sunspot Test and Development System (TDS), batch system is pbspro</DESC>
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,intelgpu,gnu</COMPILERS>
+    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
@@ -3688,9 +3324,9 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intelgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
@@ -3716,7 +3352,7 @@
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
-        <modules compiler="intelgpu">
+        <modules compiler="oneapi-ifxgpu">
           <command name="load">kokkos/4.4.01-omp-sycl</command>
         </modules>
         <modules compiler="gnu">
@@ -3736,7 +3372,7 @@
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
      </environment_variables>
-     <environment_variables compiler="intelgpu">
+     <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="romio_cb_read">disable</env>
@@ -3749,7 +3385,7 @@
         <env name="ZES_ENABLE_SYSMAN">1</env>
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
@@ -3772,7 +3408,7 @@
     <DESC>ALCF Aurora, 10624 nodes, 2x52c SPR, 6x2s PVC, 2x512GB DDR5, 2x64GB CPU-HBM, 6x128GB GPU-HBM, Slingshot 11, PBSPro</DESC>
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intelgpu,intel</COMPILERS>
+    <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SMinput/baselines</SAVE_TIMING_DIR>
@@ -3789,9 +3425,9 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>102</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>102</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intelgpu">12</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
@@ -3817,7 +3453,6 @@
         <command name="use">/lus/flare/projects/E3SMinput/soft/modulefiles</command>
         <command name="load">cmake/3.31.11</command>
         <command name="load">oneapi/release/2025.3.1</command>
-        <command name="load">mpich/prd/5.0.0.aurora_test.51a9474</command>
         <command name="load">netcdf-c/4.9.3</command>
         <command name="load">netcdf-fortran/4.6.2</command>
         <command name="load">moab/5.6.0</command>
@@ -3839,22 +3474,22 @@
         <env name="PALS_RPC_TIMEOUT">240</env>
         <env name="RLIMITS"> </env>
      </environment_variables>
-     <environment_variables compiler="intelgpu">
+     <environment_variables compiler="oneapi-ifxgpu">
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
-        <env name="CPU_BIND">$SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 96 -le $mpn ]; then echo list:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20:21:22:23:24:25:26:27:28:29:30:31:32:33:34:35:36:37:38:39:40:41:42:43:44:45:46:47:48:53:54:55:56:57:58:59:60:61:62:63:64:65:66:67:68:69:70:71:72:73:74:75:76:77:78:79:80:81:82:83:84:85:86:87:88:89:90:91:92:93:94:95:96:97:98:99:100; else echo list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100; fi;}</env>
-        <env name="GPU_BIND">$SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 96 -le $mpn ]; then echo list:0.0:0.0:0.0:0.0:0.0:0.0:0.0:0.0:0.1:0.1:0.1:0.1:0.1:0.1:0.1:0.1:1.0:1.0:1.0:1.0:1.0:1.0:1.0:1.0:1.1:1.1:1.1:1.1:1.1:1.1:1.1:1.1:2.0:2.0:2.0:2.0:2.0:2.0:2.0:2.0:2.1:2.1:2.1:2.1:2.1:2.1:2.1:2.1:3.0:3.0:3.0:3.0:3.0:3.0:3.0:3.0:3.1:3.1:3.1:3.1:3.1:3.1:3.1:3.1:4.0:4.0:4.0:4.0:4.0:4.0:4.0:4.0:4.1:4.1:4.1:4.1:4.1:4.1:4.1:4.1:5.0:5.0:5.0:5.0:5.0:5.0:5.0:5.0:5.1:5.1:5.1:5.1:5.1:5.1:5.1:5.1; else echo list:0.0:0.1:1.0:1.1:2.0:2.1:3.0:3.1:4.0:4.1:5.0:5.1; fi;}</env>
-        <env name="MEM_BIND">$SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 96 -le $mpn ]; then echo list:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1:1; else echo list:0:0:0:0:0:0:1:1:1:1:1:1; fi}</env>
+        <env name="CPU_BIND">list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100</env>
+        <env name="GPU_BIND">list:0.0:0.1:1.0:1.1:2.0:2.1:3.0:3.1:4.0:4.1:5.0:5.1</env>
+        <env name="MEM_BIND">list:0:0:0:0:0:0:1:1:1:1:1:1</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
         <!-- default is ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE: enable this to run 4 MPI/tile or 48 MPI/node
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4</env>-->
         <!-- <env name="ZE_FLAT_DEVICE_HIERARCHY">FLAT</env>
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>-->
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>

@@ -137,6 +137,7 @@ module seq_flux_mct
   real(r8), allocatable ::  ustar(:)  ! saved ustar
   real(r8), allocatable ::  re   (:)  ! saved re
   real(r8), allocatable ::  ssq  (:)  ! saved sq
+  real(r8), allocatable ::  z0wav(:)  ! roughness length from wave coupling
 
   ! Conversion from degrees to radians
 
@@ -349,6 +350,9 @@ contains
     allocate(ssq(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate ssq',ier)
     ssq = 0.0_r8
+    allocate(z0wav(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate z0wav',ier)
+    z0wav = 0.0_r8
     allocate( uocn(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate uocn',ier)
     uocn = 0.0_r8
@@ -1920,6 +1924,7 @@ contains
           ustar(n) = 0.0_r8
           re(n) = 0.0_r8
           ssq(n) = 0.0_r8
+          z0wav(n) = 0.0_r8
           lwup(n) = 0.0_r8
           duu10n(n) = 0.0_r8
           u10res(n) = 0.0_r8
@@ -1939,6 +1944,7 @@ contains
     call mbSetCellTagVals(mbfid, 'So_ustar', ustar, nloc)
     call mbSetCellTagVals(mbfid, 'So_re', re, nloc)
     call mbSetCellTagVals(mbfid, 'So_ssq', ssq, nloc)
+    call mbSetCellTagVals(mbfid, 'So_z0wav', z0wav, nloc)
     call mbSetCellTagVals(mbfid, 'Faox_lwup', lwup, nloc)
     call mbSetCellTagVals(mbfid, 'So_duu10n', duu10n, nloc)
     call mbSetCellTagVals(mbfid, 'So_u10', u10res, nloc)
