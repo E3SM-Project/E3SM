@@ -402,6 +402,14 @@
 					description="maximum grid scale to scale up buoyancy gradient"
 					possible_values="around 1 degree"
 					/>
+		<nml_option name="config_submesoscale_ice_aware" type="logical" default_value=".false."
+					description="flag to enable the ice-aware MLE for submesoscale eddies"
+					possible_values=".true. or .false."
+					/>
+		<nml_option name="config_submesoscale_ice_aware_crit_conc" type="real" default_value="0.5"
+					description="Critical sea-ice concentration (fraction) for the ice-aware MLE. Where the sea-ice concentration averaged to an edge is at or below this value, the MLE efficiency decreases smoothly as concentration increases. Above this value, the efficiency is held at its fully ice-covered value of about 0.26."
+					possible_values="between 0 and 1"
+					/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false."

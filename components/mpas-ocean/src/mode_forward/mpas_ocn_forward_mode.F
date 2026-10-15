@@ -161,7 +161,8 @@ module ocn_forward_mode
          block              ! structure with all data for a given block
 
       type (mpas_pool_type), pointer :: &
-         diagnosticsPool    ! structure containing diagnostics data
+         diagnosticsPool, &  ! structure containing diagnostics data
+         forcingPool         ! structure containing forcing data
 
       type (MPAS_Time_type) :: &
          xtime_timeType,               &! current time
@@ -337,6 +338,7 @@ module ocn_forward_mode
       daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
       call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+      call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
       ! add units of "days since <ref_date>" to Time
       write(units, '(a10,a20)') 'days since', &
@@ -475,7 +477,7 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_submesoscale_init(err_tmp)
+      call ocn_submesoscale_init(forcingPool,err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
@@ -669,7 +671,7 @@ module ocn_forward_mode
       call ocn_time_varying_forcing_init(domain)
 
       ! if not using RK4, calculate time varying forcing terms once per
-      ! time-step as opposed at each RK substage as implemented in RK4 
+      ! time-step as opposed at each RK substage as implemented in RK4
       if (timeIntegratorChoice /= timeIntRK4) then
         call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
       endif
@@ -716,7 +718,7 @@ module ocn_forward_mode
                call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
                call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
                   ecosysFrazilForcingPool, ierr)
-           end if  
+           end if
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                          forcingPool, scratchPool, statePool, err)
@@ -735,7 +737,7 @@ module ocn_forward_mode
 
            if (config_submesoscale_enable) then
                call mpas_timer_start("submesoscale eddy velocity compute", .false.)
-               call ocn_submesoscale_compute_velocity()
+               call ocn_submesoscale_compute_velocity(forcingPool)
                call mpas_timer_stop("submesoscale eddy velocity compute")
            end if
 
