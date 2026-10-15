@@ -281,6 +281,9 @@ add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
 add_default($nl, 'config_n_glc_z_levels');
 add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
+add_default($nl, 'config_glc_ice_shelf_coupling');
+add_default($nl, 'config_glc_ice_shelf_coupling_import_geometry');
+add_default($nl, 'config_glc_ice_shelf_coupling_min_floating_fraction');
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -346,6 +349,7 @@ add_default($nl, 'config_frazil_use_surface_pressure');
 # Namelist group: land_ice #
 ############################
 
+add_default($nl, 'config_use_land_ice_pressure');
 add_default($nl, 'config_land_ice_draft_mode');
 add_default($nl, 'config_land_ice_rho_ocean');
 

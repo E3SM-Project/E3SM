@@ -16,6 +16,7 @@ module cplcomp_exchange_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2l_fields !
   use seq_flds_mod, only: seq_flds_r2x_fields, seq_flds_x2r_fields, seq_flds_r2x_fluxes
+  use seq_flds_mod, only: seq_flds_g2x_fields, seq_flds_x2g_fields ! needed for MOAB init of glc fields on coupler side
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use cplcomp_moab_helpers_mod, only: moab_register_app, moab_send_mesh, moab_receive_mesh, &
@@ -30,6 +31,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
+  use seq_comm_mct, only : mbglid, mbgxid  ! iMOAB id of moab glc app on comp pes and on coupler too
   use shr_mpi_mod,  only: shr_mpi_max
   ! use dimensions_mod, only : np     ! for atmosphere
   use iso_c_binding
@@ -60,6 +62,7 @@ module cplcomp_exchange_mod
     private :: cplcomp_moab_init_lnd
       private :: cplcomp_moab_init_ice
    private :: cplcomp_moab_init_rof
+   private :: cplcomp_moab_init_glc
     private :: cplcomp_moab_resolve_comm_types
     private :: cplcomp_moab_compute_comm_graph
     private :: cplcomp_moab_atm_phys_cid
@@ -807,6 +810,86 @@ subroutine  copy_aream_from_area(mbappid)
 
   end subroutine cplcomp_moab_init_ice
 
+  subroutine cplcomp_moab_init_glc(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
+
+      ! Migrate the MALI (land ice) MOAB mesh from glc component pes to the
+      ! coupler pes, and define the coupling field tags on the coupler side.
+      ! There is no data-glc variant; the glc mesh is always a real MPAS mesh
+      ! created on the component pes by init_moab_mpas.
+
+      use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
+      use seq_infodata_mod, only: seq_infodata_type
+
+      type(seq_infodata_type), intent(in) :: infodata
+      type(component_type),    intent(inout) :: comp
+      integer, intent(in) :: id_old, id_join
+      integer, intent(in) :: mpicom_old, mpicom_new, mpicom_join
+      logical, intent(in) :: dead_comps
+      integer, intent(in) :: partMethod
+      character(len=*), intent(in) :: subname
+
+      integer :: mpigrp_cplid, mpigrp_old
+      integer :: ierr
+      character*200 :: appname, outfile, wopts
+      integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+
+      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes
+#ifdef MOABDEBUG
+         outfile = 'wholeGlc.h5m'//C_NULL_CHAR
+         wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(mbglid, outfile, wopts)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing glc mesh'
+            call shr_sys_abort(subname//' ERROR in writing glc mesh')
+         endif
+#endif
+         if (mbglid >= 0) then
+            ierr  = iMOAB_GetMeshInfo ( mbglid, nvert, nvise, nbl, nsurf, nvisBC )
+            comp%mbApCCid = mbglid ! glc imoab app id
+            comp%mbGridType = 1 ! 0 or 1, pc or cells
+            comp%mblsize = nvise(1) ! cells
+         endif
+         !  send glc mesh to coupler
+         call moab_send_mesh(mbglid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MPASLNDICE"
+         ! migrated mesh gets another app id, moab glc to coupler (mbgxid)
+         call moab_register_app(appname, mpicom_new, id_join, mbgxid, subname)
+         call moab_receive_mesh(mbgxid, mpicom_join, mpigrp_old, id_old, subname)
+
+         call moab_define_double_tag(mbgxid, trim(seq_flds_g2x_fields), subname)
+         call moab_define_double_tag(mbgxid, trim(seq_flds_x2g_fields), subname)
+         call moab_define_double_tag(mbgxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
+      endif
+
+      if (mbglid .ge. 0) then  ! we are on component glc pes
+          call moab_free_sender_buffers(mbglid, id_join, subname)
+      endif
+
+      ! transport the domain tags to the coupler side, and set aream = area there
+      ! as a fallback; when land is present, glc aream is overwritten later from the
+      ! lnd2glc map file area_b (prep_glc_init), matching the mct driver behavior
+      call moab_exchange_domain_tags(comp, mbglid, mbgxid, 'lat:lon:area:frac:mask', 'domg')
+
+#ifdef MOABDEBUG
+      if (mbgxid >= 0) then ! coupler pes only
+!      debug test
+         outfile = 'recLndIce.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+!      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mbgxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in writing glc mesh on coupler '
+             call shr_sys_abort(subname//' ERROR in writing glc mesh on coupler ')
+         endif
+      endif
+#endif
+
+  end subroutine cplcomp_moab_init_glc
+
   subroutine cplcomp_moab_pick_load_options(filename, ropts, ierr)
       ! Inspect filename's netCDF contents and choose MOAB load options that match
       ! the file's grid format. MOAB's parallel readers couple format to partition
@@ -1023,7 +1106,7 @@ subroutine  copy_aream_from_area(mbappid)
 
       character(len=*),parameter :: subname = "(cplcomp_moab_Init) "
 
-      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID
+      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID, maxMGID
       integer                  :: partMethod
       logical                  :: dead_comps
 
@@ -1044,6 +1127,7 @@ subroutine  copy_aream_from_area(mbappid)
       call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
       call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
       call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.)
+      call shr_mpi_max(mbglid, maxMGID, mpicom_join, all=.true.)
 
       if (seq_comm_iamroot(CPLID) ) then
          write(logunit, *) "MOAB coupling for ", comp%oneletterid,' ', comp%ntype
@@ -1077,6 +1161,11 @@ subroutine  copy_aream_from_area(mbappid)
       if (comp%oneletterid == 'r'  .and. maxMRID /= -1) then
          call cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
       endif ! end for rof coupler set up
+
+!!!!!!!!!!!!!!!! LAND ICE (GLC)
+      if (comp%oneletterid == 'g'  .and. maxMGID /= -1) then
+         call cplcomp_moab_init_glc(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
+      endif ! end for glc coupler set up
 
    end subroutine cplcomp_moab_Init
 

@@ -122,6 +122,8 @@
 <config_ocean_data_extrap_ncells_extra>3</config_ocean_data_extrap_ncells_extra>
 <config_invalid_value_TF>1.0e36</config_invalid_value_TF>
 <config_weight_value_cell>0.9</config_weight_value_cell>
+<config_invalid_value_ocn_intr_temp>1.0e36</config_invalid_value_ocn_intr_temp>
+<config_min_floating_frac>0.01</config_min_floating_frac>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>
