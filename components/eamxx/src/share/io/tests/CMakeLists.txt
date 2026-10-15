@@ -90,11 +90,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   set(AVG_TYPES INSTANT MAX MIN AVERAGE)
   foreach (AVG_TYPE IN LISTS AVG_TYPES)
     foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
-      set(prefix_N "io_transpose_N")
-      set(prefix_T "io_transpose_T")
+      set(stream_id_N "io_transpose_N")
+      set(stream_id_T "io_transpose_T")
       set(suffix "${AVG_TYPE}.nsteps_x3.np${MPI_RANKS}.2023-02-17-00000.nc")
-      set(file_N "${prefix_N}.${suffix}")
-      set(file_T "${prefix_T}.${suffix}")
+      # File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc (no case name for unit tests)
+      set(file_N "eamxx.h.${stream_id_N}.${suffix}")
+      set(file_T "eamxx.h.${stream_id_T}.${suffix}")
       
       # Add test to compare files using compare-nc-files script
       # The script should handle transposed dimensions automatically with -a flag
@@ -177,7 +178,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/check_latlon_output.py
       --mask-cols 1 # Do not compare the 1x1 cols groups in the latlon grid corners
       --map-file ${MAP_FILE_FULL}
-      --out-file ./io_latlon.INSTANT.nsteps_x1.np${SCREAM_TEST_MAX_RANKS}.2000.nc
+      --out-file ./eamxx.h.io_latlon.INSTANT.nsteps_x1.np${SCREAM_TEST_MAX_RANKS}.2000.nc
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties(io_latlon_check PROPERTIES FIXTURES_REQUIRED latlon_output)
 
