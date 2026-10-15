@@ -48,6 +48,7 @@ module seq_flux_mct
   real(r8), allocatable ::  wsresp(:) ! atm response to surface stress
   real(r8), allocatable ::  charnsea(:) ! Charnock coeff accounting for the wave stress
   real(r8), allocatable ::  ustarwav(:) ! Friction velocity from WW3
+  real(r8), allocatable :: z0wav(:) ! Surface roughness length from WW3
   real(r8), allocatable ::  tau_est(:)! estimation of tau in equilibrium with wind
   real(r8), allocatable ::  ugust_atm(:)  ! atm gustiness
   real(r8), allocatable ::  thbot(:)  ! atm potential T
@@ -306,7 +307,10 @@ contains
     charnsea = 0.0_r8
     allocate( ustarwav(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate ustarwav',ier)
-    ustarwav = 0.0_r8
+    ustarwav = 0.0_r8 
+    allocate( z0wav(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate z0wav',ier)
+    z0wav = 0.0_r8
 
     allocate( tocn(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate tocn',ier)
@@ -1580,6 +1584,7 @@ contains
              if (wav_atm_coup == 'twoway') then
                      charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
                      ustarwav(n) = w2x%rAttr(index_w2x_Sw_Ustar   ,n)
+                     z0wav(n) = w2x%rAttr(index_w2x_Sw_Z0 ,n)
              endif
              if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = o2x%rAttr(index_o2x_So_roce_16O, n)
              if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = o2x%rAttr(index_o2x_So_roce_HDO, n)
@@ -1669,7 +1674,7 @@ contains
             ocn_surface_flux_scheme, &
             duu10n, u10res, ustar, re  , ssq, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm, &
-            ustarwav=ustarwav, charnockSeaState=charnsea)
+            z0wav=z0wav, ustarwav=ustarwav, charnockSeaState=charnsea)
        else     
           call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
