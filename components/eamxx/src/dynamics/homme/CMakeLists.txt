@@ -114,6 +114,16 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     createExecLib (${hommeLibName} ${HOMME_TARGET} "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
                    ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
     target_compile_definitions(${hommeLibName} PUBLIC HOMMEXX_CONFIG_IS_CMAKE SCREAM)
+
+    # Homme's Fortran code triggers a large number of benign warnings that would
+    # bury the useful ones in the build log:
+    #  - conversion: implicit narrowing, e.g. quad precision GLL points to real(8)
+    #  - unused-dummy-argument: interfaces are shared among different dycores
+    # Silence them (for the Fortran sources of this lib only, and without
+    # propagating the flags to the targets that link against it).
+    target_compile_options(${hommeLibName} PRIVATE
+      $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-Wno-conversion>
+      $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-Wno-unused-dummy-argument>)
     # Link to cime's csm_share lib
     target_link_libraries (${hommeLibName} PUBLIC csm_share)
     if (HOMME_ENABLE_COMPOSE)
