@@ -4,6 +4,16 @@ add_subdirectory(coupler_api)
 
 add_subdirectory(inference)
 
+# NOTE: for now, we assume an atmosphere emulator. Let's find a better place for this.
+set(COMPONENT atm)
+set(EMULATOR_NAME ace2)
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/emu_comp_mct.F90.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${COMPONENT}_comp_mct.F90
+  @ONLY
+)
+
 set(EMULATOR_COMMON_CXX_SOURCES
   emulator.cpp
   emulator_config.cpp
