@@ -347,7 +347,9 @@ contains
     call t_startf('CNZero')
 
     if(.not.use_fates) then
+       call t_startf('CNZero-veg_cf')
        call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8)
+       call t_stopf('CNZero-veg_cf')
        if ( use_c13 ) then
           call veg_cf_setvalues(c13_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c13_col_cf,num_soilc, filter_soilc, 0._r8)
@@ -356,13 +358,23 @@ contains
           call veg_cf_setvalues(c14_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c14_col_cf,num_soilc, filter_soilc, 0._r8)
        end if
+       call t_startf('CNZero-veg_nf')
        call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8)
+       call t_stopf('CNZero-veg_nf')
+       call t_startf('CNZero-veg_pf')
        call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8)
+       call t_stopf('CNZero-veg_pf')
     end if
 
+    call t_startf('CNZero-col_cf')
     call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8)
+    call t_stopf('CNZero-col_cf')
+    call t_startf('CNZero-col_nf')
     call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8)
+    call t_stopf('CNZero-col_nf')
+    call t_startf('CNZero-col_pf')
     call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8)
+    call t_stopf('CNZero-col_pf')
 
     call t_stopf('CNZero')
 
