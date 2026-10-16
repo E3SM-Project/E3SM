@@ -62,7 +62,7 @@ module controlMod
                         glcmec_downscale_longwave, glc_snow_persistence_max_days, &
                         wrtdia, create_crop_landunit, nsegspc, co2_ppmv, &
                         subgridflag, irrigate, tw_irr, extra_gw_irr, &
-                        firrig_data, all_active, mpi_sync_nstep_freq, &
+                        firrig_data, run_zero_weight_urban, all_active, mpi_sync_nstep_freq, &
                         use_c13, use_c14, fates_paramfile, use_fates, &
                         use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
@@ -272,8 +272,8 @@ contains
     namelist /elm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active, &
-         mpi_sync_nstep_freq
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, &
+         run_zero_weight_urban, all_active, mpi_sync_nstep_freq
     ! Urban options
 
     namelist /elm_inparm/  &
@@ -778,6 +778,7 @@ contains
     call mpi_bcast(create_crop_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Other subgrid logic
+    call mpi_bcast(run_zero_weight_urban, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(all_active, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! max number of plant functional types in naturally vegetated landunit
