@@ -158,6 +158,12 @@ module elm_varctl
   ! Other subgrid logic
   !----------------------------------------------------------
 
+  ! true => allocate urban landunits everywhere where we have valid urban data (0-weight
+  !         urban landunits are allocated but inactive unless all_active is true)
+  ! false => only allocate urban landunits with non-zero weight (saves memory; requires a
+  !          finidat file generated with the same setting)
+  logical, public :: run_zero_weight_urban = .true.
+
   ! true => make ALL patches, cols & landunits active (even if weight is 0)
   logical, public :: all_active = .false.
   !$acc declare copyin(all_active)

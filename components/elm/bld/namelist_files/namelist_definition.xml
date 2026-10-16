@@ -176,6 +176,18 @@ of plant carbon and nutrient fluxes
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
 </entry>
 
+<entry id="run_zero_weight_urban" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+If TRUE, allocate memory for all urban landunits everywhere where we have valid urban data,
+even for 0-weight urban points (these 0-weight points are allocated but remain inactive,
+so no calculations are done on them unless all_active is also TRUE). This is the default because existing initial conditions
+(finidat) and restart files were written with this subgrid structure.
+If FALSE, only allocate memory for urban landunits with non-zero weight. This
+substantially reduces memory use, restart file size and run time, but requires initial
+conditions files that were generated with the same setting (or a cold start).
+Default: TRUE
+</entry>
+
 <entry id="all_active" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" >
 If TRUE, make ALL pfts, columns and landunits active, even those with 0 weight.
