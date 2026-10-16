@@ -90,6 +90,7 @@ contains
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use surfrdMod                 , only: surfrd_topounit_data
+    use surfrdMod                 , only: surfrd_get_decomp_weights
     use elm_varctl                , only: domain_decomp_type
     use decompInitMod             , only: decompInit_ghosts
     use decompInitMod             , only: decompInit_lnd_simple
@@ -114,6 +115,8 @@ contains
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump            ! clump bounds
     integer ,pointer  :: amask(:)                ! global land mask
+    real(r8), allocatable :: gweight(:)          ! gridcell weight for the domain decomposition
+    logical           :: pftcon_read             ! has pftconrd been called
     integer           :: nclumps                 ! number of clumps on this processor
     integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
@@ -195,6 +198,14 @@ contains
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
+    case ("round_robin_weighted")
+       ! Weight gridcells by their estimated number of active soil columns, which
+       ! needs the PFT parameters (crop types and how they are merged)
+       call pftconrd()
+       allocate(gweight(size(amask)))
+       call surfrd_get_decomp_weights(fsurdat, ni, nj, gweight)
+       call decompInit_lnd(ni, nj, amask, gweight)
+       deallocate(amask, gweight)
     case ("simple")
       call decompInit_lnd_simple(ni, nj, amask)
       deallocate(amask)
@@ -305,8 +316,10 @@ contains
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
+    ! (with domain_decomp_type = round_robin_weighted, it was read before the decomposition)
 
-    call pftconrd()
+    pftcon_read = (trim(domain_decomp_type) == "round_robin_weighted")
+    if (.not. pftcon_read) call pftconrd()
     ! if by user-defined PFT (numbers and names), 'numpft/mxpft_nc' may be changed including other derived indices
     !
     ! a few arrays allocation previously done above is moved here i.e. after this 'pftconrd' call

@@ -322,12 +322,17 @@ contains
 #endif
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_lnd(lni,lnj,amask)
+  subroutine decompInit_lnd(lni,lnj,amask,gweight)
     !
     ! !DESCRIPTION:
     ! This subroutine initializes the land surface decomposition into a clump
     ! data structure.  This assumes each pe has the same number of clumps
     ! set by clump_pproc
+    !
+    ! Land gridcells, in order, are split into nsegspc segments per clump, which
+    ! are given to the clumps in turn. Without gweight, the segments hold equal
+    ! numbers of gridcells. With gweight (a positive weight per gridcell, indexed
+    ! as amask), they hold equal total weight instead.
     !
     ! !USES:
     use elm_varctl, only : nsegspc
@@ -336,6 +341,7 @@ contains
     implicit none
     integer , intent(in) :: amask(:)
     integer , intent(in) :: lni,lnj   ! domain global size
+    real(r8), optional, intent(in) :: gweight(:) ! gridcell weight, indexed as amask
     !
     ! !LOCAL VARIABLES:
     integer :: lns                    ! global domain size
@@ -353,6 +359,9 @@ contains
     integer, pointer :: clumpcnt(:)   ! clump index counter
     integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
     integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
+    logical :: use_weight                 ! split segments by gridcell weight
+    real(r8):: wtot, wcum                 ! total and cumulative gridcell weight
+    real(r8), allocatable :: clump_weight(:) ! total weight of each clump
     !------------------------------------------------------------------------------
 
     lns = lni * lnj
@@ -476,6 +485,27 @@ contains
             sngl(seglen),sngl(dble(numg)/(seglen*dble(nclumps)))
     end if
 
+    ! Weighted segments need several gridcells per segment
+    use_weight = present(gweight) .and. (.not. seglen1)
+    wtot = 0._r8
+    if (use_weight) then
+       if (size(gweight) /= lns) then
+          write(iulog,*) 'decompInit_lnd(): gweight size ',size(gweight),' does not match domain size ',lns
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
+       do ln = 1,lns
+          if (amask(ln) == 1) then
+             if (gweight(ln) <= 0._r8) then
+                write(iulog,*) 'decompInit_lnd(): gridcell weight must be positive ',ln,gweight(ln)
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             end if
+             wtot = wtot + gweight(ln)
+          end if
+       end do
+    else if (present(gweight) .and. masterproc) then
+       write(iulog,*) ' decompInit_lnd(): fewer than nsegspc gridcells per clump, so gridcell weights are not used'
+    end if
+
     ! Assign gridcells to clumps (and thus pes) ---
 
     allocate(lcid(lns), stat=ier)
@@ -486,6 +516,7 @@ contains
 
     lcid(:) = 0
     ng = 0
+    wcum = 0._r8
     do ln = 1,lns
        if (amask(ln) == 1) then
           ng = ng  + 1
@@ -493,6 +524,10 @@ contains
           !--- give to clumps in order based on nsegspc
           if (seglen1) then
              cid = mod(ng-1,nclumps) + 1
+          else if (use_weight) then
+             rcid = (wcum/wtot)*dble(nsegspc)*dble(nclumps)
+             cid = mod(int(rcid),nclumps) + 1
+             wcum = wcum + gweight(ln)
           else
              rcid = (dble(ng-1)/dble(numg))*dble(nsegspc)*dble(nclumps)
              cid = mod(int(rcid),nclumps) + 1
@@ -511,6 +546,26 @@ contains
 
        end if
     enddo
+
+    if (use_weight) then
+       if (any(clumps(:)%ncells == 0)) then
+          write(iulog,*) 'decompInit_lnd(): a clump has no gridcells with weighted segments; ', &
+               'reduce nsegspc or use domain_decomp_type = round_robin'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
+       if (masterproc) then
+          allocate(clump_weight(nclumps))
+          clump_weight(:) = 0._r8
+          do ln = 1,lns
+             if (lcid(ln) > 0) clump_weight(lcid(ln)) = clump_weight(lcid(ln)) + gweight(ln)
+          end do
+          write(iulog,*) ' decompInit_lnd(): gridcell weight per clump min, mean, max = ', &
+               minval(clump_weight), wtot/dble(nclumps), maxval(clump_weight)
+          write(iulog,*) ' decompInit_lnd(): gridcells per clump min, max = ', &
+               minval(clumps(:)%ncells), maxval(clumps(:)%ncells)
+          deallocate(clump_weight)
+       end if
+    end if
 
     ! calculate number of cells per process
     allocate(proc_ncell(0:npes-1), stat=ier)
