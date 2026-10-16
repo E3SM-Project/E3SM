@@ -9,7 +9,6 @@
 #include <mpi.h>
 
 #include "coupler_types.hpp"
-#include "emulator_c_api.hpp"
 #include <coupler.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
