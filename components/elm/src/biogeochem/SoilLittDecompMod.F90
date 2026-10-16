@@ -129,8 +129,7 @@ contains
     integer :: c,j,k,l,m                                                                               !indices
     integer :: fc                                                                                      !lake filter column index
     real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
-    real(r8):: immob(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential N immobilization
-    real(r8):: immob_p(bounds%begc:bounds%endc,1:nlevdecomp)                                             !potential P immobilization
+    logical :: is_rd                                                                                   !nu_com is 'RD'
     real(r8):: ratio                                                                                   !temporary variable
     real(r8):: dnp                                                                        !denitrification proportion
     real(r8):: cn_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
@@ -203,18 +202,7 @@ contains
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
       call t_startf('SLDA-potential')
-      ! set initial values for potential C, N and P fluxes. Only columns in the
-      ! soil filter are read below, so inactive columns are not zeroed.
-      do k = 1, ndecomp_cascade_transitions
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               p_decomp_cpool_loss(c,j,k) = 0._r8
-               pmnf_decomp_cascade(c,j,k) = 0._r8
-               pmpf_decomp_cascade(c,j,k) = 0._r8
-            end do
-         end do
-      end do
+      is_rd = (nu_com .eq. 'RD')
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
@@ -271,11 +259,35 @@ contains
       ! these fluxes include the  "/ dt" term to put them on a
       ! per second basis, since the rate constants have been
       ! calculated on a per timestep basis.
+      !
+      ! In the same pass, sum up all the potential immobilization fluxes
+      ! (positive pmnf flux), the mineralization fluxes (negative pmnf flux)
+      ! and the potential HR for the methane calculations. Each sum is over
+      ! k in increasing order, as in separate loops. In RD mode, gross_nmin_vr
+      ! and gross_pmin_vr are recomputed after the N/P limitation is resolved
+      ! and are not read before then, so they are not summed here.
+
+      do j = 1,nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            potential_immob_vr(c,j) = 0._r8
+            potential_immob_p_vr(c,j) = 0._r8
+            gross_nmin_vr(c,j) = 0._r8
+            gross_pmin_vr(c,j) = 0._r8
+            phr_vr(c,j) = 0._r8
+         end do
+      end do
 
       do k = 1, ndecomp_cascade_transitions
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
+
+               ! set initial values for potential C, N and P fluxes. Only columns
+               ! in the soil filter are read, so inactive columns are not zeroed.
+               p_decomp_cpool_loss(c,j,k) = 0._r8
+               pmnf_decomp_cascade(c,j,k) = 0._r8
+               pmpf_decomp_cascade(c,j,k) = 0._r8
 
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. &
                     decomp_k(c,j,cascade_donor_pool(k)) > 0._r8 ) then
@@ -325,58 +337,18 @@ contains
                   end if
 
                end if
-            end do
-         end do
-      end do
 
-      ! Sum up all the potential immobilization fluxes (positive pmnf flux)
-      ! and all the mineralization fluxes (negative pmnf flux)
-      do j = 1,nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            immob(c,j) = 0._r8
-            immob_p(c,j) = 0._r8
-            gross_nmin_vr(c,j) = 0._r8
-            gross_pmin_vr(c,j) = 0._r8
-         end do
-      end do
-      do k = 1, ndecomp_cascade_transitions
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
                if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
-                  immob(c,j) = immob(c,j) + pmnf_decomp_cascade(c,j,k)
-               else
+                  potential_immob_vr(c,j) = potential_immob_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+               else if (.not. is_rd) then
                   gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - pmnf_decomp_cascade(c,j,k)
                end if
                if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
-                  immob_p(c,j) = immob_p(c,j) + pmpf_decomp_cascade(c,j,k)
-               else
+                  potential_immob_p_vr(c,j) = potential_immob_p_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+               else if (.not. is_rd) then
                   gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
                end if
-            end do
-         end do
-      end do
 
-      do j = 1,nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            potential_immob_vr(c,j) = immob(c,j)
-            potential_immob_p_vr(c,j) = immob_p(c,j)
-         end do
-      end do
-
-      ! Add up potential hr for methane calculations
-      do j = 1,nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            phr_vr(c,j) = 0._r8
-         end do
-      end do
-      do k = 1, ndecomp_cascade_transitions
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
                phr_vr(c,j) = phr_vr(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
             end do
          end do
@@ -422,6 +394,32 @@ contains
       ! of mineralization flux.
 
       call t_startf('SLDA-actual')
+      ! Zero the sums that are accumulated in the loop over transitions below.
+      do j = 1,nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            gross_nmin_vr(c,j) = 0.0_r8
+            gross_pmin_vr(c,j) = 0.0_r8
+            hrsum(c,j) = 0._r8
+         end do
+      end do
+      if (.not. is_rd) then
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            soil_n_immob_flux(c) = 0.0_r8
+            soil_p_immob_flux(c) = 0.0_r8
+            soil_n_grossmin_flux(c) = 0.0_r8
+            soil_p_grossmin_flux(c) = 0.0_r8
+            do j = 1,nlevdecomp
+               soil_n_immob_flux_vr(c,j) = 0.0_r8
+               soil_p_immob_flux_vr(c,j) = 0.0_r8
+            end do
+         end do
+      end if
+
+      ! Apply the N/P limitation and set the actual fluxes. In the same pass, sum
+      ! up the gross mineralization, the immobilization (non-RD) and the actual
+      ! HR for the methane code. Each sum is over k in increasing order.
       do k = 1, ndecomp_cascade_transitions
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -429,7 +427,7 @@ contains
                decomp_cascade_hr_vr(c,j,k) = 0._r8
                decomp_cascade_ctransfer_vr(c,j,k) = 0._r8
                decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
-               decomp_cascade_ntransfer_vr(c,j,k) = 0._r8 
+               decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                decomp_cascade_sminn_flux_vr(c,j,k) = 0._r8
                decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
@@ -437,11 +435,11 @@ contains
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
-                  elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation 
+                  elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
-                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation 
+                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation
                      p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_p_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
@@ -475,87 +473,39 @@ contains
                   decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                end if
 
-            end do
-         end do
-      end do
-
-      if (nu_com .eq. 'RD') then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            do j = 1,nlevdecomp
-                gross_nmin_vr(c,j) = 0.0_r8
-                gross_pmin_vr(c,j) = 0.0_r8
-            end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
+               if (is_rd) then
                   if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then
                       gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                   end if
                   if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then
                       gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
                   end if
-                end do
-             end do
-          end do
-      end if
+               else
+                  if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
+                     soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                     soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+                  else
+                     soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                     gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
+                  end if
+                  if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
+                     soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                     soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+                  else
+                     soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
+                     gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
+                  end if
+               end if
 
-      if (nu_com .ne. 'RD') then
-      do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          soil_n_immob_flux(c) =0.0_r8
-          soil_p_immob_flux(c) = 0.0_r8
-          soil_n_grossmin_flux(c) = 0.0_r8
-          soil_p_grossmin_flux(c) = 0.0_r8
-          do j = 1,nlevdecomp
-              soil_n_immob_flux_vr(c,j) = 0.0_r8
-              soil_p_immob_flux_vr(c,j) = 0.0_r8
-              gross_nmin_vr(c,j) = 0.0_r8
-              gross_pmin_vr(c,j) = 0.0_r8
-          end do
+               if (use_lch4) then
+                  hrsum(c,j) = hrsum(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
+               end if
+            end do
+         end do
       end do
-      do k = 1, ndecomp_cascade_transitions
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-                   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
-                   soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                   soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
-               else
-                   soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                   gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
-               end if
-               if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
-                   soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                   soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
-               else
-                   soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                   gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
-               end if
-             end do
-          end do
-       end do
-       end if
 
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               hrsum(c,j) = 0._r8
-            end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  hrsum(c,j) = hrsum(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
-               end do
-            end do
-         end do
-
          ! Nitrogen limitation / (low)-moisture limitation
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
