@@ -10,6 +10,7 @@ module CH4Mod
   !
   ! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
+  use perf_mod            , only : t_startf, t_stopf
   use shr_infnan_mod     , only : nan => shr_infnan_nan
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use elm_varpar         , only : nlevsoi, ngases, nlevsno, nlevdecomp
@@ -1340,6 +1341,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: sat                                    ! 0 = unsatured, 1 = saturated
+    character(len=6) :: tsfx                           ! timer name suffix for the soil pass
     logical  :: lake                                   ! lake or not lake
     integer  :: j,fc,c,g,fp,p,t,pf,s                   ! indices
     real(r8) :: dtime_ch4                              ! ch4 model time step (sec)
@@ -1561,9 +1563,11 @@ contains
       lake = .false.
 
       ! Do CH4 Annual Averages
+      call t_startf('ch4_annualupdate')
       call ch4_annualupdate(bounds, &
            num_soilc, filter_soilc, &
            num_soilp, filter_soilp, ch4_vars, dtime, 365.d0)
+      call t_stopf('ch4_annualupdate')
 
       ! Determine rootfr_col and also check for inactive columns
 
@@ -1675,38 +1679,54 @@ contains
             end do
          endif
 
+         if (sat == 0) then
+            tsfx = '-unsat'
+         else
+            tsfx = '-sat'
+         end if
+
          ! calculate CH4 production in each soil layer
+         call t_startf('ch4_prod'//trim(tsfx))
          call ch4_prod (bounds, &
               num_soilc, filter_soilc, &
               num_soilp, filter_soilp, &
               jwt(begc:endc), sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
+         call t_stopf('ch4_prod'//trim(tsfx))
 
          ! calculate CH4 oxidation in each soil layer
+         call t_startf('ch4_oxid'//trim(tsfx))
          call ch4_oxid (bounds, &
               num_soilc, filter_soilc, &
               jwt(begc:endc), sat, lake, &
               soilstate_vars, ch4_vars, dtime)
+         call t_stopf('ch4_oxid'//trim(tsfx))
 
          ! calculate CH4 aerenchyma losses in each soil layer
+         call t_startf('ch4_aere'//trim(tsfx))
          call ch4_aere (bounds, &
               num_soilc, filter_soilc, &
               num_soilp, filter_soilp, &
               jwt(begc:endc), sat, lake, &
               canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+         call t_stopf('ch4_aere'//trim(tsfx))
 
          ! calculate CH4 ebullition losses in each soil layer
+         call t_startf('ch4_ebul'//trim(tsfx))
          call ch4_ebul (bounds, &
               num_soilc, filter_soilc, &
               jwt(begc:endc), sat, lake, &
               atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+         call t_stopf('ch4_ebul'//trim(tsfx))
 
          ! Solve CH4 reaction/diffusion equation
          ! Competition for oxygen will occur here.
+         call t_startf('ch4_tran'//trim(tsfx))
          call ch4_tran (bounds, &
               num_soilc, filter_soilc, &
               jwt(begc:endc), dtime_ch4, sat, lake, &
               soilstate_vars, energyflux_vars, ch4_vars, dtime)
+         call t_stopf('ch4_tran'//trim(tsfx))
 
       enddo ! sat/unsat
 
@@ -1723,35 +1743,45 @@ contains
          end do
 
          ! calculate CH4 production in each lake layer
+         call t_startf('ch4_prod-lake')
          call ch4_prod (bounds, &
               num_lakec, filter_lakec, &
               0, dummyfilter, jwt(begc:endc), sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
+         call t_stopf('ch4_prod-lake')
 
          ! calculate CH4 oxidation in each lake layer
+         call t_startf('ch4_oxid-lake')
          call ch4_oxid (bounds, &
               num_lakec, filter_lakec, &
               jwt(begc:endc), sat, lake, soilstate_vars, ch4_vars, dtime)
+         call t_stopf('ch4_oxid-lake')
 
          ! calculate CH4 aerenchyma losses in each lake layer
          ! The p filter will not be used here; the relevant column vars will just be set to 0.
+         call t_startf('ch4_aere-lake')
          call ch4_aere (bounds, &
               num_lakec, filter_lakec, &
               0, dummyfilter, jwt(begc:endc), sat, lake, &
               canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+         call t_stopf('ch4_aere-lake')
 
          ! calculate CH4 ebullition losses in each lake layer
+         call t_startf('ch4_ebul-lake')
          call ch4_ebul (bounds, &
               num_lakec, filter_lakec, &
               jwt(begc:endc), sat, lake, &
               atm2lnd_vars, lakestate_vars, soilstate_vars,ch4_vars, dtime)
+         call t_stopf('ch4_ebul-lake')
 
          ! Solve CH4 reaction/diffusion equation
          ! Competition for oxygen will occur here.
+         call t_startf('ch4_tran-lake')
          call ch4_tran (bounds, &
               num_lakec, filter_lakec, &
               jwt(begc:endc), dtime_ch4, sat, lake, &
               soilstate_vars, energyflux_vars, ch4_vars, dtime)
+         call t_stopf('ch4_tran-lake')
 
       end if
 
