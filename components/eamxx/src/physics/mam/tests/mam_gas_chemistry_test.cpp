@@ -35,6 +35,8 @@ TEST_CASE("mam_gas_chemistry_strided_view", "[mam4][gas_chem][kokkos]")
   using View = Kokkos::View<Real ***, Kokkos::LayoutLeft, Device>;
   View state("gas_chemistry_state", ncol, nlev, gas_pcnst);
   View history("gas_chemistry_history", (steps + 1) * ncol, nlev, gas_pcnst);
+  using ResultView = Kokkos::View<ImpSolResult ***, Device>;
+  ResultView results("gas_chemistry_results", steps, ncol, nlev);
 
   Kokkos::parallel_for(
       "gas_chemistry_strided_view", Kokkos::RangePolicy<mam4::ExecutionSpace>(0, ncol * nlev),
@@ -57,8 +59,8 @@ TEST_CASE("mam_gas_chemistry_strided_view", "[mam4][gas_chem][kokkos]")
                                 Real(0),      Real(0),       Real(0),       Real(0)};
 
         for (int step = 1; step <= steps; ++step) {
-          mam4::microphysics::gas_phase_chemistry(Real(300), dt, photo_rates, forcing, invariants,
-                                                  heterogeneous_rates, qq);
+          results(step - 1, icol, lev) = mam4::microphysics::gas_phase_chemistry(
+              Real(300), dt, photo_rates, forcing, invariants, heterogeneous_rates, qq);
           for (int j = 0; j < gas_pcnst; ++j) {
             history(step * ncol + icol, lev, j) = qq[j];
           }
@@ -66,10 +68,22 @@ TEST_CASE("mam_gas_chemistry_strided_view", "[mam4][gas_chem][kokkos]")
       });
   Kokkos::fence();
 
-  const auto host      = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), history);
-  const Real tolerance = Real(64) * std::numeric_limits<Real>::epsilon();
+  const auto host         = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), history);
+  const auto host_results = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), results);
+  const Real tolerance    = Real(64) * std::numeric_limits<Real>::epsilon();
   for (int icol = 0; icol < ncol; ++icol) {
     for (int lev = 0; lev < nlev; ++lev) {
+      for (int step = 0; step < steps; ++step) {
+        CAPTURE(icol, lev, step, removal_rate);
+        const auto result = host_results(step, icol, lev);
+        REQUIRE(result.success());
+        REQUIRE(result.outcome == ImpSolOutcome::Converged);
+        REQUIRE(result.failed_attempts == 0);
+        REQUIRE(result.cut_count == 0);
+        REQUIRE(result.accepted_steps == 1);
+        REQUIRE(result.requested_interval == dt);
+        REQUIRE(result.accepted_interval == dt);
+      }
       for (int j = 0; j < gas_pcnst; ++j) {
         Real expected = host(icol, lev, j);
         for (int step = 1; step <= steps; ++step) {
