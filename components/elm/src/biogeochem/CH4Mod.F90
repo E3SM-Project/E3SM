@@ -3055,6 +3055,15 @@ contains
     real(r8), pointer :: conc_ch4         (:,:)
     real(r8), parameter :: smallparameter = tiny(1._r8)
     real(r8) :: gam(num_methc,0:nlevsoi)                                   ! tridiagonal solver: elimination factors
+    ! Parts of the diffusivities that do not depend on the species, computed once per call
+    real(r8) :: log_kh_theta(2)                                            ! log(kh_theta) for CH4 and O2
+    real(r8) :: soil_dfac(num_methc,1:nlevsoi)                             ! gas pore term above the WT, watsat**satpow below
+    real(r8) :: soil_liqnum(num_methc,1:nlevsoi)                           ! frozen soil below the WT: liquid water term
+    real(r8) :: soil_liqden(num_methc,1:nlevsoi)                           ! frozen soil below the WT: liquid + ice term
+    logical  :: snow_gas(num_methc,-nlevsno+1:0)                           ! snow layer uses gas (true) or solute diffusion
+    real(r8) :: snow_tc(num_methc,-nlevsno+1:0)                            ! snow layer temperature (C)
+    real(r8) :: snow_dfac(num_methc,-nlevsno+1:0)                          ! f_a**(10/3) (gas) or eps**satpow (solute)
+    real(r8) :: snow_awfrac2(num_methc,-nlevsno+1:0)                       ! (airfrac+waterfrac)**2 (gas)
     real(r8) :: bet(num_methc)                                             ! tridiagonal solver: pivot
     integer  :: nstep                       ! time step number
     character(len=32) :: subname='ch4_tran' ! subroutine name
@@ -3210,17 +3219,20 @@ contains
 
 
       ! Set the Henry's Law coefficients
+      do s = 1,2
+         log_kh_theta(s) = log (kh_theta(s))
+      end do
       do j = 0,nlevsoi
          do fc = 1, num_methc
             c = filter_methc (fc)
 
             do s=1,2
                if (j == 0) then
-                  k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_grnd(c) - 1._r8 / kh_tbase) + log (kh_theta(s)))
+                  k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_grnd(c) - 1._r8 / kh_tbase) + log_kh_theta(s))
                   ! (4.12) Wania (L atm/mol)
                   k_h_cc(fc,j,s) = t_grnd(c) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                else
-                  k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(s)))
+                  k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log_kh_theta(s))
                   ! (4.12) Wania (L atm/mol)
                   k_h_cc(fc,j,s) = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                end if
@@ -3335,6 +3347,55 @@ contains
       end do
 
 
+      ! Parts of the snow and soil diffusivities that do not depend on the species
+      do j = -nlevsno + 1,0
+         do fc = 1, num_methc
+            c = filter_methc (fc)
+            if (j >= snl(c) + 1) then
+               snow_tc(fc,j) = t_soisno(c,j) - tfrz
+               icefrac = h2osoi_ice(c,j)/denice/dz(c,j)
+               waterfrac = h2osoi_liq(c,j)/denh2o/dz(c,j)
+               airfrac = max(1._r8 - icefrac - waterfrac, 0._r8)
+               snow_gas(fc,j) = (airfrac > 0.05_r8)
+               if (snow_gas(fc,j)) then
+                  f_a = airfrac / (airfrac + waterfrac)
+                  snow_dfac(fc,j) = f_a**(10._r8/3._r8)
+                  snow_awfrac2(fc,j) = (airfrac+waterfrac)**2
+               else
+                  eps = waterfrac  ! Water-filled fraction of total soil volume
+                  snow_dfac(fc,j) = eps**satpow
+               end if
+            end if
+         end do
+      end do
+
+      do j = 1,nlevsoi
+         do fc = 1, num_methc
+            c = filter_methc (fc)
+            if (j <= jwt(c)) then  ! Above the WT
+               f_a = 1._r8 - h2osoi_vol_min(fc,j) / watsat(c,j)
+               ! Provisionally calculate diffusivity as linear combination of the Millington-Quirk
+               ! expression in Wania (for peat) & Moldrup (for mineral soil)
+               eps =  watsat(c,j)-h2osoi_vol_min(fc,j) ! Air-filled fraction of total soil volume
+               if (organic_max > 0._r8) then
+                  om_frac = min(cellorg(c,j)/organic_max, 1._r8)
+                  ! Use first power, not square as in iniTimeConst
+               else
+                  om_frac = 1._r8
+               end if
+               soil_dfac(fc,j) = (om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2._r8 + &
+                    (1._r8-om_frac) * eps**2._r8 * f_a**(3._r8 / bsw(c,j)) )
+            else ! Below the WT
+               eps = watsat(c,j)  ! Water-filled fraction of total soil volume
+               soil_dfac(fc,j) = eps**satpow
+               if (t_soisno(c,j)<=tfrz) then
+                  soil_liqnum(fc,j) = (h2osoi_liq(c,j)/denh2o+smallnumber)
+                  soil_liqden(fc,j) = (h2osoi_liq(c,j)/denh2o+h2osoi_ice(c,j)/denice+smallnumber)
+               end if
+            end if
+         end do
+      end do
+
       ! Loop over species
       do s = 1, 2 ! 1=CH4; 2=O2; 3=CO2
 
@@ -3352,21 +3413,15 @@ contains
 
                ! Add snow resistance
                if (j >= snl(c) + 1) then
-                  t_soisno_c = t_soisno(c,j) - tfrz
-                  icefrac = h2osoi_ice(c,j)/denice/dz(c,j)
-                  waterfrac = h2osoi_liq(c,j)/denh2o/dz(c,j)
-                  airfrac = max(1._r8 - icefrac - waterfrac, 0._r8)
+                  t_soisno_c = snow_tc(fc,j)
                   ! Calculate snow diffusivity
-                  if (airfrac > 0.05_r8) then
-                     f_a = airfrac / (airfrac + waterfrac)
-                     eps = airfrac ! Air-filled fraction of total snow volume
+                  if (snow_gas(fc,j)) then
                      ! Use Millington-Quirk Expression, as hydraulic properties (bsw) not available
                      snowdiff = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
-                          f_a**(10._r8/3._r8) / (airfrac+waterfrac)**2 &
+                          snow_dfac(fc,j) / snow_awfrac2(fc,j) &
                           * scale_factor_gasdiff
                   else !solute diffusion in water only
-                     eps = waterfrac  ! Water-filled fraction of total soil volume
-                     snowdiff = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                     snowdiff = snow_dfac(fc,j) * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
                           * scale_factor_liqdiff
                   end if
                   snowdiff = max(snowdiff, smallnumber)
@@ -3422,29 +3477,17 @@ contains
                t_soisno_c = t_soisno(c,j) - tfrz
 
                if (j <= jwt(c)) then  ! Above the WT
-                  f_a = 1._r8 - h2osoi_vol_min(fc,j) / watsat(c,j)
-                  ! Provisionally calculate diffusivity as linear combination of the Millington-Quirk
-                  ! expression in Wania (for peat) & Moldrup (for mineral soil)
-                  eps =  watsat(c,j)-h2osoi_vol_min(fc,j) ! Air-filled fraction of total soil volume
-                  if (organic_max > 0._r8) then
-                     om_frac = min(cellorg(c,j)/organic_max, 1._r8)
-                     ! Use first power, not square as in iniTimeConst
-                  else
-                     om_frac = 1._r8
-                  end if
                   diffus (fc,j) = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
-                       (om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2._r8 + &
-                       (1._r8-om_frac) * eps**2._r8 * f_a**(3._r8 / bsw(c,j)) ) &
+                       soil_dfac(fc,j) &
                        * scale_factor_gasdiff
                else ! Below the WT use saturated diffusivity and only water in epsilon_t
                   ! Note the following is not currently corrected for the effect on diffusivity of excess ice in soil under
                   ! lakes (which is currently experimental only).
-                  eps = watsat(c,j)  ! Water-filled fraction of total soil volume
-                  diffus (fc,j) = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                  diffus (fc,j) = soil_dfac(fc,j) * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
                        * scale_factor_liqdiff
                   if (t_soisno(c,j)<=tfrz) then
-                     diffus(fc,j) = diffus(fc,j)*(h2osoi_liq(c,j)/denh2o+smallnumber)/ &
-                          (h2osoi_liq(c,j)/denh2o+h2osoi_ice(c,j)/denice+smallnumber)
+                     diffus(fc,j) = diffus(fc,j)*soil_liqnum(fc,j)/ &
+                          soil_liqden(fc,j)
                   end if
                endif ! Above/below the WT
                diffus(fc,j) = max(diffus(fc,j), smallnumber) ! Prevent overflow
