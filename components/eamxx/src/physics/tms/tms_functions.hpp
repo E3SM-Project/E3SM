@@ -50,6 +50,7 @@ struct Functions
     const view_2d<const Scalar>& z_mid,
     const view_1d<const Scalar>& sgh,
     const view_1d<const Scalar>& landfrac,
+    const Scalar&                scaling_factor,
     const view_1d<Scalar>&       ksrf,
     const view_2d<Scalar>&       tau_tms);
 

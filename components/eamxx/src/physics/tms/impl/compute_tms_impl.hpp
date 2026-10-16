@@ -17,6 +17,7 @@ void Functions<S,D>::compute_tms(
   const view_2d<const Scalar>& z_mid,
   const view_1d<const Scalar>& sgh,
   const view_1d<const Scalar>& landfrac,
+  const Scalar&                scaling_factor,
   const view_1d<Scalar>&       ksrf,
   const view_2d<Scalar>&       tau_tms)
 {
@@ -80,7 +81,9 @@ void Functions<S,D>::compute_tms(
       const auto rho = p_mid_i(nlevs-1)/(rair*t_mid_i(nlevs-1));
       const auto vmag = std::sqrt(u_wind_i(nlevs-1)*u_wind_i(nlevs-1) +
                                   v_wind_i(nlevs-1)*v_wind_i(nlevs-1));
-      ksrf(i)       = rho*cd*vmag*landfrac(i);
+      // scaling_factor is a tunable knob to scale back the strength of TMS.
+      // tau_tms is derived from ksrf below, so it is scaled consistently.
+      ksrf(i)       = scaling_factor*rho*cd*vmag*landfrac(i);
       tau_tms(i, 0) = -ksrf(i)*u_wind_i(nlevs-1);
       tau_tms(i, 1) = -ksrf(i)*v_wind_i(nlevs-1);
     }
