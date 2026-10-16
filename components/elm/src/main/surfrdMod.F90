@@ -1089,6 +1089,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: nl, t                             ! index
+    integer  :: m                                 ! index
+    integer  :: rainfed_cft(18), irrig_cft(18)    ! rainfed and matching irrigated crop types
     integer  :: dimid,varid                    ! netCDF id's
     integer  :: ier                            ! error status	
     integer  :: cftsize                        ! size of CFT's
@@ -1220,47 +1222,22 @@ contains
                errMsg(__FILE__, __LINE__))
        end if
 
+       rainfed_cft = (/ nc3crop, ncorn, nscereal, nwcereal, nsoybean, &
+            ncassava, ncotton, nfoddergrass, noilpalm, nograins, nrapeseed, nrice, nrtubers, &
+            nsugarcane, nmiscanthus, nswitchgrass, npoplar, nwillow /)
+       irrig_cft   = (/ nc3irrig, ncornirrig, nscerealirrig, nwcerealirrig, nsoybeanirrig, &
+            ncassavairrig, ncottonirrig, nfoddergrassirrig, noilpalmirrig, nograinsirrig, &
+            nrapeseedirrig, nriceirrig, nrtubersirrig, &
+            nsugarcaneirrig, nmiscanthusirrig, nswitchgrassirrig, npoplarirrig, nwillowirrig /)
+
        do nl = begg,endg
           do t = 1, max_topounits
-            ! (TODO) the following assumes that rainfed/irrigated crop are ordered side by side
-            ! indexing is fixed
-            wt_cft(nl,t,nc3crop)       = wt_cft(nl,t,nc3crop)  + wt_cft(nl,t,nc3irrig)
-            wt_cft(nl,t,nc3irrig)      = 0._r8
-            wt_cft(nl,t,ncorn)         = wt_cft(nl,t,ncorn)    + wt_cft(nl,t,ncornirrig)
-            wt_cft(nl,t,ncornirrig)    = 0._r8
-            wt_cft(nl,t,nscereal)      = wt_cft(nl,t,nscereal) + wt_cft(nl,t,nscerealirrig)
-            wt_cft(nl,t,nscerealirrig) = 0._r8
-            wt_cft(nl,t,nwcereal)      = wt_cft(nl,t,nwcereal) + wt_cft(nl,t,nwcerealirrig)
-            wt_cft(nl,t,nwcerealirrig) = 0._r8
-            wt_cft(nl,t,nsoybean)      = wt_cft(nl,t,nsoybean) + wt_cft(nl,t,nsoybeanirrig)
-            wt_cft(nl,t,nsoybeanirrig) = 0._r8
-            wt_cft(nl,t,ncassava)      = wt_cft(nl,t,ncassava) + wt_cft(nl,t,ncassavairrig)
-            wt_cft(nl,t,ncassavairrig) = 0._r8
-            wt_cft(nl,t,ncotton)       = wt_cft(nl,t,ncotton)  + wt_cft(nl,t,ncottonirrig)
-            wt_cft(nl,t,ncottonirrig)  = 0._r8
-            wt_cft(nl,t,nfoddergrass)  = wt_cft(nl,t,nfoddergrass) + wt_cft(nl,t,nfoddergrassirrig)
-            wt_cft(nl,t,nfoddergrassirrig) = 0._r8
-            wt_cft(nl,t,noilpalm)      = wt_cft(nl,t,noilpalm) + wt_cft(nl,t,noilpalmirrig)
-            wt_cft(nl,t,noilpalmirrig) = 0._r8
-            wt_cft(nl,t,nograins)      = wt_cft(nl,t,nograins) + wt_cft(nl,t,nograinsirrig)
-            wt_cft(nl,t,nograinsirrig) = 0._r8
-            wt_cft(nl,t,nrapeseed)       = wt_cft(nl,t,nrapeseed)  + wt_cft(nl,t,nrapeseedirrig)
-            wt_cft(nl,t,nrapeseedirrig)  = 0._r8
-            wt_cft(nl,t,nrice)           = wt_cft(nl,t,nrice)  + wt_cft(nl,t,nriceirrig)
-            wt_cft(nl,t,nriceirrig)      = 0._r8
-            wt_cft(nl,t,nrtubers)        = wt_cft(nl,t,nrtubers) + wt_cft(nl,t,nrtubersirrig)
-            wt_cft(nl,t,nrtubersirrig)   = 0._r8
-            wt_cft(nl,t,nsugarcane)      = wt_cft(nl,t,nsugarcane) + wt_cft(nl,t,nsugarcaneirrig)
-            wt_cft(nl,t,nsugarcaneirrig) = 0._r8
-            wt_cft(nl,t,nmiscanthus)     = wt_cft(nl,t,nmiscanthus) + wt_cft(nl,t,nmiscanthusirrig)
-            wt_cft(nl,t,nmiscanthusirrig) = 0._r8
-            wt_cft(nl,t,nswitchgrass)     = wt_cft(nl,t,nswitchgrass)  + wt_cft(nl,t,nswitchgrassirrig)
-            wt_cft(nl,t,nswitchgrassirrig) = 0._r8
-            wt_cft(nl,t,npoplar)         = wt_cft(nl,t,npoplar) + wt_cft(nl,t,npoplar)
-            wt_cft(nl,t,npoplarirrig)    = 0._r8
-            wt_cft(nl,t,nwillow)         = wt_cft(nl,t,nwillow) + wt_cft(nl,t,nwillowirrig)
-            wt_cft(nl,t,nwillowirrig)    = 0._r8
-
+            ! Crops that are not on the paramfile have an index of -1 and are skipped
+            do m = 1, size(rainfed_cft)
+               if (rainfed_cft(m) < 0 .or. irrig_cft(m) < 0) cycle
+               wt_cft(nl,t,rainfed_cft(m)) = wt_cft(nl,t,rainfed_cft(m)) + wt_cft(nl,t,irrig_cft(m))
+               wt_cft(nl,t,irrig_cft(m))   = 0._r8
+            end do
           end do
        end do
 
