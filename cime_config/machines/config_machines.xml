@@ -3393,7 +3393,7 @@
     <DESC>LLNL Linux Cluster, AMD Instinct MI300A processors 84 cores/node (12 reserved), 4 accelerators/node, 512 GB memory, 1144 compute nodes</DESC>
     <NODENAME_REGEX>tuolumne.*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>crayamd-mphipcc,crayamd</COMPILERS>
+    <COMPILERS>crayamd,crayamd-mphipcc</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre5/$USER/e3sm_scratch/tuo</CIME_OUTPUT_ROOT>
@@ -3401,10 +3401,10 @@
     <DIN_LOC_ROOT_CLMFORC>/p/vast1/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre5/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre5/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
-    <GMAKE_J>14</GMAKE_J>
+    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc.tuo</CCSM_CPRNC>
+    <GMAKE_J>48</GMAKE_J>
+    <CMAKE_BACKEND>ninja</CMAKE_BACKEND>
     <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>flux</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
@@ -3437,6 +3437,7 @@
 	<command name="load">cray-mpich/9.0.1</command>
 	<command name="load">craype-x86-trento</command>
 	<command name="load">cmake/3.24.2</command>
+	<command name="load">ninja/1.10.2</command>
       </modules>
       <modules compiler="crayamd-mphipcc">
 	<command name="load">rocmcc/6.4.3-cce-20.0.0a-magic</command>
