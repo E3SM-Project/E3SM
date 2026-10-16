@@ -1650,7 +1650,7 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : edgeVpack, edgeVunpack, edgeVunpackVert
-    use parallel_mod, only : abortmp	
+    use parallel_mod, only : abortmp
 
     implicit none
     type (element_t),     intent(in), target    :: elem(:)

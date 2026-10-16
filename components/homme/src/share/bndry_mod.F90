@@ -386,7 +386,7 @@ contains
           singlethread_copy=.true.
        else
           call abortmp('edgebuffer threads does not match number of active threads')
-       endif			   
+       endif
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
@@ -443,7 +443,7 @@ contains
 #ifdef _MPI
     if(omp_in_parallel()) then
        print *,'bndry_exchangeV: Warning you are calling a non-thread safe'
-       print *,'		 routine inside a threaded region....     '
+       print *,'                 routine inside a threaded region....     '
        print *,'                Results are not predictable!!            '
     endif
 
