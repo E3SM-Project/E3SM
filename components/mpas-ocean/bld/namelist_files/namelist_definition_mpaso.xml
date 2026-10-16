@@ -399,6 +399,14 @@ Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_Leith_dx" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Characteristic length scale, usually the smallest dx in the mesh
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_Leith_visc2_max" type="real"
 	category="hmix_Leith" group="hmix_Leith">
 Upper bound on the allowable value of Leith-computed viscosity
@@ -1777,6 +1785,14 @@ Default: Defined in namelist_defaults.xml
 maximum fraction of layer thickness than can be used or created at an instant by frazil.
 
 Valid values: Any positive real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_include_sensible_heat_frazil" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

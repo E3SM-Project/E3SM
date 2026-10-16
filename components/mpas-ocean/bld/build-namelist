@@ -571,6 +571,7 @@ add_default($nl, 'config_Leith_del2_parameter');
 add_default($nl, 'config_Leith_del4_parameter');
 add_default($nl, 'config_Leith_del2_div_scaler');
 add_default($nl, 'config_Leith_del4_div_scaler');
+add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 add_default($nl, 'config_Leith_visc4_max');
 
@@ -849,6 +850,7 @@ add_default($nl, 'config_use_frazil_ice_porosity');
 add_default($nl, 'config_frazil_ice_density');
 add_default($nl, 'config_frazil_ice_porosity');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
+add_default($nl, 'config_include_sensible_heat_frazil');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
 add_default($nl, 'config_frazil_sea_ice_reference_salinity');
