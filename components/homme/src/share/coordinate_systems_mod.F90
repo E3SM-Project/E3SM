@@ -293,7 +293,6 @@ contains
 
 
   pure function cart_to_spherical_v(cart) result (sphere)
-    use physical_constants, only     : dd_pi
     implicit none
     type(cartesian3D_t), intent(in) :: cart(:)
     type(spherical_polar_t)         :: sphere(SIZE(cart))

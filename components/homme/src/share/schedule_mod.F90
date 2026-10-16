@@ -64,7 +64,6 @@ contains
     integer                       :: nSend,nRecv,nedges 
     integer                       :: icycle
     integer			  :: iSched
-    logical, parameter            :: VerbosePrint=.FALSE.
     logical, parameter            :: Debug=.FALSE.
     integer :: l1,l2,l1id,l2id
 

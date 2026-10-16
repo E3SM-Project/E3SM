@@ -64,7 +64,7 @@ subroutine jw_baroclinic(elem,hybrid,hvcoord,nets,nete)
 !=======================================================================================================!
     real (kind=real_kind)  :: tbar(nlev)     
     real (kind=real_kind) ::  eta(nlev), etv(nlev)
-    real (kind=real_kind) ::  latc, lonc, rr,rc,  aa, lat,lon, snlat, cslat , v1,v2 
+    real (kind=real_kind) :: latc, lonc,rc,  aa, lat,lon, snlat, cslat , v1
     real (kind=real_kind) ::  trm1,trm2,trm3,trm4, term
     integer :: tl,i,j,k,ie, idex
 !=======================================================================================================!
@@ -313,23 +313,21 @@ endif
     real (kind=real_kind), parameter :: sat0 = 288.15D0
 
     real (kind=real_kind), dimension(nlat)   :: mu, mufac, tp, ef
-    real (kind=real_kind), dimension(nlat-1) :: dmu
     real (kind=real_kind), dimension(nlat) :: ufull, dtdphi
     real (kind=real_kind)                  :: t1(np,np,nets:nete,nlev)
     real (kind=real_kind)                  :: temperature(np,np,nlev),ps(np,np)
     real (kind=real_kind), dimension(nfl) :: tfull, avg
-    real (kind=real_kind) :: dlat
     real (kind=real_kind) :: z, fac
-    real (kind=real_kind) :: tz, sz, fp, dudz, uf
+    real (kind=real_kind) :: tz, sz, fp, dudz
 
-    real (kind=real_kind), dimension(nlev+1) :: shalf, phalf
-    real (kind=real_kind), dimension(nlev)   :: sfull, pfull, zfull
+    real (kind=real_kind), dimension(nlev+1) :: shalf
+    real (kind=real_kind), dimension(nlev)   :: pfull, zfull
 
-    real (kind=real_kind) :: v1, v2, sume, sumo
+    real (kind=real_kind) :: v1, v2
     real (kind=real_kind) :: latp,lonp
     real (kind=real_kind) :: tmp
 
-    integer :: ie,i,j,k,l,ip,jp,tl
+    integer :: ie,i,j,k,l,tl
 
     if (hybrid%masterthread) write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
 

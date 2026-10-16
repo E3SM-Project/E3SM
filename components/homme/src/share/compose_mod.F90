@@ -452,7 +452,6 @@ contains
   end subroutine compose_set_bufs
 
   subroutine compose_set_null_bufs()
-    use kinds, only: real_kind
 
 #ifdef HOMME_ENABLE_COMPOSE
     call slmm_set_null_bufs()
