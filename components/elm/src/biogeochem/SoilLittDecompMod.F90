@@ -203,10 +203,18 @@ contains
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
       call t_startf('SLDA-potential')
-      ! set initial values for potential C and N fluxes
-      p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
-      pmnf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8
-      pmpf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8    !! initial values for potential P fluxes
+      ! set initial values for potential C, N and P fluxes. Only columns in the
+      ! soil filter are read below, so inactive columns are not zeroed.
+      do k = 1, ndecomp_cascade_transitions
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               p_decomp_cpool_loss(c,j,k) = 0._r8
+               pmnf_decomp_cascade(c,j,k) = 0._r8
+               pmpf_decomp_cascade(c,j,k) = 0._r8
+            end do
+         end do
+      end do
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
