@@ -24,8 +24,10 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid, mbofxid ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
   use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
+  use seq_comm_mct, only : mb_scm_atm
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mb_scm_land    !  logical used to identify land scm case; moab will migrate land then
+  use seq_comm_mct, only : mb_scm_ocn, mb_scm_ice ! SCM data component point clouds
   use seq_comm_mct, only : mb_dead_comps  !  logical to identify dead component configuration
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
@@ -62,6 +64,8 @@ module cplcomp_exchange_mod
    private :: cplcomp_moab_init_rof
     private :: cplcomp_moab_resolve_comm_types
     private :: cplcomp_moab_compute_comm_graph
+    private :: cplcomp_moab_clone_point_cloud
+    private :: cplcomp_moab_create_scm_point_cloud
     private :: cplcomp_moab_atm_phys_cid
   !--------------------------------------------------------------------------
   ! Public data
@@ -258,6 +262,97 @@ subroutine  copy_aream_from_area(mbappid)
 
   end subroutine cplcomp_moab_compute_comm_graph
 
+  subroutine cplcomp_moab_clone_point_cloud(src_appid, dst_appid, subname)
+      use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_GetIntTagStorage, &
+           iMOAB_CreateVertices, iMOAB_SetIntTagStorage, iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
+      use shr_moab_mod, only: mbGetnCells, mbGetEntityType
+
+      integer, intent(in) :: src_appid, dst_appid
+      character(len=*), intent(in) :: subname
+      integer :: ierr, nlocal, ent_type, nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), n
+      integer, allocatable :: gids(:)
+      real(r8), allocatable :: lat(:), lon(:), coords(:)
+      character(CXX) :: tagname
+
+      nlocal = mbGetnCells(src_appid)
+      ent_type = mbGetEntityType(src_appid)
+      allocate(gids(nlocal), lat(nlocal), lon(nlocal), coords(3*nlocal))
+
+      ierr = iMOAB_GetIntTagStorage(src_appid, 'GLOBAL_ID'//C_NULL_CHAR, nlocal, ent_type, gids)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR reading source GLOBAL_ID')
+      ierr = iMOAB_GetDoubleTagStorage(src_appid, 'lat'//C_NULL_CHAR, nlocal, ent_type, lat)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR reading source latitude')
+      ierr = iMOAB_GetDoubleTagStorage(src_appid, 'lon'//C_NULL_CHAR, nlocal, ent_type, lon)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR reading source longitude')
+
+      do n = 1, nlocal
+         coords(3*n-2) = cos(lat(n)*SHR_CONST_PI/180.0_r8)*cos(lon(n)*SHR_CONST_PI/180.0_r8)
+         coords(3*n-1) = cos(lat(n)*SHR_CONST_PI/180.0_r8)*sin(lon(n)*SHR_CONST_PI/180.0_r8)
+         coords(3*n  ) = sin(lat(n)*SHR_CONST_PI/180.0_r8)
+      enddo
+      if (nlocal > 0) then
+         ierr = iMOAB_CreateVertices(dst_appid, 3*nlocal, 3, coords)
+         if (ierr /= 0) call shr_sys_abort(subname//' ERROR creating SCM coupler point cloud')
+      endif
+      call moab_define_global_id_tag(dst_appid, subname)
+      if (nlocal > 0) then
+         tagname = 'GLOBAL_ID'//C_NULL_CHAR
+         ierr = iMOAB_SetIntTagStorage(dst_appid, tagname, nlocal, 0, gids)
+         if (ierr /= 0) call shr_sys_abort(subname//' ERROR setting SCM coupler GLOBAL_ID')
+      endif
+      ierr = iMOAB_ResolveSharedEntities(dst_appid, nlocal, gids)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR resolving SCM coupler point cloud')
+      ierr = iMOAB_UpdateMeshInfo(dst_appid)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR updating SCM coupler point cloud')
+
+      ierr = iMOAB_GetMeshInfo(dst_appid, nvert, nvise, nbl, nsurf, nvisBC)
+      if (ierr /= 0 .or. nvert(1) /= nlocal) &
+         call shr_sys_abort(subname//' ERROR validating SCM coupler point cloud')
+      deallocate(gids, lat, lon, coords)
+  end subroutine cplcomp_moab_clone_point_cloud
+
+  subroutine cplcomp_moab_create_scm_point_cloud(appid, mpicom, nx, ny, scmlat, scmlon, subname)
+      use iMOAB, only: iMOAB_CreateVertices, iMOAB_SetIntTagStorage, &
+           iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
+      integer, intent(in) :: appid, mpicom, nx, ny
+      real(r8), intent(in) :: scmlat, scmlon
+      character(len=*), intent(in) :: subname
+      integer :: ierr, rank, nranks, nglobal, nlocal, first_gid, n
+      integer, allocatable :: gids(:)
+      real(r8), allocatable :: coords(:)
+      real(r8) :: latrad, lonrad
+
+      call MPI_Comm_rank(mpicom, rank, ierr)
+      call MPI_Comm_size(mpicom, nranks, ierr)
+      nglobal = nx*ny
+      nlocal = nglobal/nranks
+      if (rank < mod(nglobal,nranks)) nlocal = nlocal+1
+      first_gid = rank*(nglobal/nranks)+min(rank,mod(nglobal,nranks))+1
+      allocate(gids(nlocal),coords(3*nlocal))
+      latrad=scmlat*SHR_CONST_PI/180.0_r8
+      lonrad=scmlon*SHR_CONST_PI/180.0_r8
+      do n=1,nlocal
+         gids(n)=first_gid+n-1
+         coords(3*n-2)=cos(latrad)*cos(lonrad)
+         coords(3*n-1)=cos(latrad)*sin(lonrad)
+         coords(3*n)=sin(latrad)
+      enddo
+      if (nlocal > 0) then
+         ierr=iMOAB_CreateVertices(appid,3*nlocal,3,coords)
+         if (ierr /= 0) call shr_sys_abort(subname//' ERROR creating atmospheric SCM point cloud')
+      endif
+      call moab_define_global_id_tag(appid,subname)
+      if (nlocal > 0) then
+         ierr=iMOAB_SetIntTagStorage(appid,'GLOBAL_ID'//C_NULL_CHAR,nlocal,0,gids)
+         if (ierr /= 0) call shr_sys_abort(subname//' ERROR setting atmospheric SCM GLOBAL_ID')
+      endif
+      ierr=iMOAB_ResolveSharedEntities(appid,nlocal,gids)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR resolving atmospheric SCM point cloud')
+      ierr=iMOAB_UpdateMeshInfo(appid)
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR updating atmospheric SCM point cloud')
+      deallocate(gids,coords)
+  end subroutine cplcomp_moab_create_scm_point_cloud
+
   subroutine cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
       use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
@@ -278,6 +373,9 @@ subroutine  copy_aream_from_area(mbappid)
       integer :: ATM_PHYS_CID
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
       integer :: local_pg, global_pg
+      logical :: single_column, scm_multcols
+      integer :: scm_nx, scm_ny
+      real(r8) :: scmlat, scmlon
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -293,7 +391,9 @@ subroutine  copy_aream_from_area(mbappid)
       atm_pg_active = (global_pg == 1)
 
       ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
-      call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
+      call seq_infodata_GetData(infodata, atm_mesh=atm_mesh, single_column=single_column, &
+           scm_multcols=scm_multcols, scm_nx=scm_nx, scm_ny=scm_ny, scmlat=scmlat, scmlon=scmlon)
+      mb_scm_atm = single_column .or. scm_multcols
 
 !!!!!!!! ON ATM COMPONENT
       if (mphaid >= 0) then  ! component atm procs
@@ -314,7 +414,7 @@ subroutine  copy_aream_from_area(mbappid)
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
       !  send mesh to coupler
       !!!!  FULL ATM
-         if ( trim(atm_mesh) == 'none' ) then ! full model
+         if (trim(atm_mesh) == 'none' .and. .not. mb_scm_atm) then ! full non-SCM model
             if (atm_pg_active) then !  change : send the point cloud phys grid mesh, not coarse mesh,
                                     !     when atm pg active
                call moab_send_mesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
@@ -330,7 +430,15 @@ subroutine  copy_aream_from_area(mbappid)
          ! migrated mesh gets another app id, moab atm to coupler (mbax)
          call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
          !!!!  FULL ATM
-         if ( trim(atm_mesh) == 'none' ) then ! full atm
+         if (mb_scm_atm) then
+if (single_column .and. .not. scm_multcols) then
+               call cplcomp_moab_create_scm_point_cloud(mbaxid, mpicom_new, 1, 1, scmlat, scmlon, subname)
+            else
+               call cplcomp_moab_create_scm_point_cloud(mbaxid, mpicom_new, scm_nx, scm_ny, scmlat, scmlon, subname)
+            endif
+            if (seq_comm_iamroot(CPLID)) &
+               write(logunit,*) subname,'SCM atmosphere coupler point cloud size = ',scm_nx*scm_ny
+         else if (trim(atm_mesh) == 'none') then ! full atm
             ! will receive either pg2 mesh, or point cloud mesh corresponding to GLL points
             ! (mphaid app) for spectral case
             ! this cannot be used for maps (either computed online or read)
@@ -356,7 +464,7 @@ subroutine  copy_aream_from_area(mbappid)
 !!!!!!!!  ATM COMPONENT
       if (mphaid .ge. 0) then  ! we are on component atm pes
 !!!!! FULL ATM
-         if ( trim(atm_mesh) == 'none' ) then  ! full atmosphere
+         if (trim(atm_mesh) == 'none' .and. .not. mb_scm_atm) then  ! full non-SCM atmosphere
             if (atm_pg_active) then! we send mesh from mhpgid app
                call moab_free_sender_buffers(mhpgid, id_join, subname)
             else
@@ -376,7 +484,8 @@ subroutine  copy_aream_from_area(mbappid)
       ! this is not needed for migrating point cloud to point cloud !
       ! it is needed only after migrating pg2 mesh to cpupler
       call cplcomp_moab_compute_comm_graph(mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-          dead_comps, (atm_pg_active .or. dead_comps), ATM_PHYS_CID, id_join, subname, 'atm model')
+          dead_comps, ((.not. mb_scm_atm) .and. (atm_pg_active .or. dead_comps)), &
+          ATM_PHYS_CID, id_join, subname, 'atm model')
 
       ! we can receive those tags only on coupler pes, when mbaxid exists
       ! we have to check that before we can define the tag
@@ -428,12 +537,21 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ocn_domain
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      logical :: single_column, scm_multcols, migrate_ocn_component_mesh, use_atm_coupler_mesh
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
-      ! find ocean domain file if it exists; it would be for data ocean model (ocn_prognostic false)
-      call seq_infodata_GetData(infodata,ocn_domain=ocn_domain)
+      ! Find the ocean domain file if it exists; it would normally be used for a
+      ! data ocean model (ocn_prognostic false). In SCM multicolumn mode, however,
+      ! the data component expands the selected surface point onto the requested
+      ! SCM grid. Preserve that expanded component mesh rather than reloading the
+      ! unexpanded domain file on the coupler PEs.
+      call seq_infodata_GetData(infodata, ocn_domain=ocn_domain, &
+           single_column=single_column, scm_multcols=scm_multcols)
+      migrate_ocn_component_mesh = trim(ocn_domain) == 'none'
+      use_atm_coupler_mesh = trim(ocn_domain) /= 'none' .and. (single_column .or. scm_multcols)
+      mb_scm_ocn = use_atm_coupler_mesh
 
 !!!!!!  OCEAN COMPONENT
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
@@ -457,11 +575,11 @@ subroutine  copy_aream_from_area(mbappid)
          endif
          comp%mbApCCid = mpoid ! ocn comp app in moab
 !!!!!  FULL OCN
-         if ( trim(ocn_domain) == 'none' ) then
+         if (migrate_ocn_component_mesh) then
             !  send mesh to coupler
             call moab_send_mesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
-            comp%mbGridType = 1 ! cells
-            comp%mblsize = nvise(1) ! cells
+            comp%mbGridType = 1 ! active ocean uses cells
+            comp%mblsize = nvise(1)
 !!!!!  DATA OCN
          else
             comp%mbGridType = 0 ! vertices
@@ -474,8 +592,17 @@ subroutine  copy_aream_from_area(mbappid)
          ! migrated mesh gets another app id, moab ocean to coupler (mbox)
          call moab_register_app(appname, mpicom_new, id_join, mboxid, subname)
  !!!!! FULL OCN
-         if ( trim(ocn_domain) == 'none' ) then
+         if (migrate_ocn_component_mesh) then
             call moab_receive_mesh(mboxid, mpicom_join, mpigrp_old, id_old, subname)
+ !!!!! SCM DATA OCN
+         else if (use_atm_coupler_mesh) then
+            ! Point clouds contain no elements for iMOAB_SendMesh to migrate.
+            ! Build an independent point cloud from the complete DP atmosphere
+            ! grid, preserving a distinct ocean communication context.
+            call cplcomp_moab_clone_point_cloud(mbaxid, mboxid, subname)
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit,*) subname, 'SCM DOCN uses atmospheric coupler mesh'
+            endif
  !!!!! DATA OCN
          else
            ! we need to read the ocean mesh on coupler, from domain file
@@ -507,20 +634,31 @@ subroutine  copy_aream_from_area(mbappid)
       endif
 !!!!!!  OCEAN COMPONENT
       if (mpoid .ge. 0) then  ! we are on component ocn pes
-         if ( trim(ocn_domain) == 'none' ) then
+         if (migrate_ocn_component_mesh) then
             call moab_free_sender_buffers(mpoid, id_join, subname)
          endif
       endif
       ! in case of domain read, we need to compute the comm graph
 !!!!!! on joint OCN and CPL procs
   !!!!! DATA OCN
-      if ( trim(ocn_domain) /= 'none' ) then
+      if (use_atm_coupler_mesh) then
+         ! SCM and multicolumn DP runs use a data ocean whose component-side
+         ! representation (mpoid) is a point cloud. The coupler-side ocean
+         ! point cloud (mboxid) was cloned from the complete atmospheric
+         ! coupler mesh above because an element-free point cloud cannot be
+         ! migrated with iMOAB_SendMesh. Build the communication graph here
+         ! by matching GLOBAL_IDs so DOCN fields and domain data can be sent
+         ! from mpoid to the independently registered mboxid application.
+         call cplcomp_moab_compute_comm_graph(mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            .false., .false., id_old, id_join, subname, 'SCM data ocn model')
+      else if (trim(ocn_domain) /= 'none') then
          ! we are now on joint pes, compute comm graph between data ocn and coupler model ocn
          call cplcomp_moab_compute_comm_graph(mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             dead_comps, .true., id_old, id_join, subname, 'data ocn model')
-         ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
-         call moab_exchange_domain_tags(comp, mpoid, mboxid, 'lat:lon:area:frac:mask', 'domo')
       endif
+      ! The communication graph does not populate the coupler-side domain
+      ! tags. Transfer them explicitly, just as the land SCM path does.
+      call moab_exchange_domain_tags(comp, mpoid, mboxid, 'lat:lon:area:frac:mask', 'domo')
 
 !!!!!!!!! OCEAN 2nd COPY (mbofxid) -- ALIAS of mboxid (robust fix)
       ! mbofxid shares mboxid's MOAB app / mesh / local ordering instead of being an
@@ -716,11 +854,18 @@ subroutine  copy_aream_from_area(mbappid)
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ice_domain
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      logical :: single_column, scm_multcols, migrate_ice_component_mesh, use_atm_coupler_mesh
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-      ! find ice domain file if it exists; it would be for data ice model (ice_prognostic false)
-      call seq_infodata_GetData(infodata,ice_domain=ice_domain)
+      ! As for the data ocean, SCM multicolumn mode expands the selected
+      ! surface point on the component PEs. Migrate that expanded mesh instead
+      ! of reloading the unexpanded domain file on the coupler PEs.
+      call seq_infodata_GetData(infodata, ice_domain=ice_domain, &
+           single_column=single_column, scm_multcols=scm_multcols)
+      migrate_ice_component_mesh = trim(ice_domain) == 'none'
+      use_atm_coupler_mesh = trim(ice_domain) /= 'none' .and. (single_column .or. scm_multcols)
+      mb_scm_ice = use_atm_coupler_mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
 #ifdef MOABDEBUG
          outfile = 'wholeSeaIce.h5m'//C_NULL_CHAR
@@ -736,13 +881,13 @@ subroutine  copy_aream_from_area(mbappid)
             ierr  = iMOAB_GetMeshInfo ( MPSIID, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = MPSIID ! ice imoab app id
          endif
-         if ( trim(ice_domain) == 'none' ) then ! regular ice model
+         if (migrate_ice_component_mesh) then ! regular element-based ice model
             if (dead_comps) then
                comp%mbGridType = 1 ! dead comps create full mesh
                comp%mblsize = nvise(1) ! cells
             else
-               comp%mbGridType = 1 ! 0 or 1, pc or cells
-               comp%mblsize = nvise(1) ! cells
+               comp%mbGridType = 1
+               comp%mblsize = nvise(1)
             endif
             !  send sea ice mesh to coupler
             call moab_send_mesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
@@ -756,8 +901,13 @@ subroutine  copy_aream_from_area(mbappid)
          appname = "COUPLE_MPASSI"
          ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
          call moab_register_app(appname, mpicom_new, id_join, mbixid, subname)
-         if ( trim(ice_domain) == 'none' ) then ! regular ice model
+         if (migrate_ice_component_mesh) then ! regular element-based ice model
             call moab_receive_mesh(mbixid, mpicom_join, mpigrp_old, id_old, subname)
+         else if (use_atm_coupler_mesh) then
+            call cplcomp_moab_clone_point_cloud(mbaxid, mbixid, subname)
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit,*) subname, 'SCM CICE uses atmospheric coupler mesh'
+            endif
          else
             ! we need to read the mesh ice (domain file)
             ! we could be using cice model or data sea ice; in both cases ice_domain should be non-empty
@@ -779,18 +929,21 @@ subroutine  copy_aream_from_area(mbappid)
 
       endif
 
-      if (MPSIID .ge. 0 .and. trim(ice_domain) == 'none') then  ! we are on component sea ice pes
+      if (MPSIID .ge. 0 .and. migrate_ice_component_mesh) then  ! we are on component sea ice pes
           call moab_free_sender_buffers(MPSIID, id_join, subname)
       endif
 
      ! in case of ice domain read, we need to compute the comm graph
-     if ( trim(ice_domain) /= 'none' ) then
+     if (use_atm_coupler_mesh) then
+         call cplcomp_moab_compute_comm_graph(MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+            .false., .false., id_old, id_join, subname, 'SCM ice model')
+     else if (trim(ice_domain) /= 'none') then
          ! we are now on joint pes, compute comm graph between data ice and coupler model ice
          call cplcomp_moab_compute_comm_graph(MPSIID, mbixid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             dead_comps, .true., id_old, id_join, subname, 'data ice model')
-         ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
-         call moab_exchange_domain_tags(comp, MPSIID, mbixid, 'lat:lon:area:frac:mask', 'domi')
       endif
+      ! Mesh migration does not copy the initialized domain-tag values.
+      call moab_exchange_domain_tags(comp, MPSIID, mbixid, 'lat:lon:area:frac:mask', 'domi')
 #ifdef MOABDEBUG
       if (mbixid >= 0) then ! coupler pes only
 !      debug test
