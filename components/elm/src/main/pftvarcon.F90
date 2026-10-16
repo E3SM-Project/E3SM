@@ -375,7 +375,9 @@ contains
     integer :: npft             ! number of pfts on pft-physiology file
     logical :: readv            ! read variable in or not
     logical :: PFT_DEFAULT      ! pft names are default, i.e. NOT user-defined
-    integer :: ncft0, ncft      ! crop pft index of first/last when 'create_crop_landunit' is true
+    integer :: iexp             ! index into expected_pftnames
+    integer, parameter :: nstd_fixed_max = 16 ! PFTs 0 (not_vegetated) to 16 (c3_irrigated) must be at standard indices
+    integer :: ncft0, ncft     ! crop pft index of first/last when 'create_crop_landunit' is true
     integer :: noncropmax       ! max non-crop pft index (to check when 'create_crop_landunit' is true)
     real(r8) :: local_iscft      ! a local transfer of iscft from logical to integer for use in error checks
     character(len=32) :: subname = 'pftconrd'              ! subroutine name
@@ -667,11 +669,26 @@ contains
     call ncd_io('pftname',pftname, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
-    ! checking if using standard pft-names and default properties
+    ! checking if using standard pft-names and default properties.
+    ! The paramfile may also hold a subset of the standard PFTs (e.g., without the
+    ! crops that mergetoclmpft merges away), provided that PFTs 0 to nstd_fixed_max
+    ! are all present at their standard indices and the remaining names keep the
+    ! standard order. Indices of crops missing from the paramfile are set to -1.
     PFT_DEFAULT = .TRUE.
-    do i = 0, min(npft,size(expected_pftnames))-1
-       if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
+    iexp = -1
+    do i = 0, npft-1
+       iexp = iexp + 1
+       do while (iexp < size(expected_pftnames))
+          if ( trim(adjustl(pftname(i))) == trim(expected_pftnames(iexp)) ) exit
+          iexp = iexp + 1
+       end do
+       if ( iexp >= size(expected_pftnames) ) then
           PFT_DEFAULT = .FALSE.
+          exit
+       end if
+       if ( i <= nstd_fixed_max .and. iexp /= i ) then
+          PFT_DEFAULT = .FALSE.
+          exit
        end if
     end do
 
@@ -1200,6 +1217,25 @@ contains
    ! if still reading in default PFT physiology file,
    ! pft indexing will be as old way
 
+    ! crops that are not on the paramfile keep an index of -1
+    ncorn             = -1; ncornirrig        = -1
+    nscereal          = -1; nscerealirrig     = -1
+    nwcereal          = -1; nwcerealirrig     = -1
+    nsoybean          = -1; nsoybeanirrig     = -1
+    ncassava          = -1; ncassavairrig     = -1
+    ncotton           = -1; ncottonirrig      = -1
+    nfoddergrass      = -1; nfoddergrassirrig = -1
+    noilpalm          = -1; noilpalmirrig     = -1
+    nograins          = -1; nograinsirrig     = -1
+    nrapeseed         = -1; nrapeseedirrig    = -1
+    nrice             = -1; nriceirrig        = -1
+    nrtubers          = -1; nrtubersirrig     = -1
+    nsugarcane        = -1; nsugarcaneirrig   = -1
+    nmiscanthus       = -1; nmiscanthusirrig  = -1
+    nswitchgrass      = -1; nswitchgrassirrig = -1
+    npoplar           = -1; npoplarirrig      = -1
+    nwillow           = -1; nwillowirrig      = -1
+
     do i = 0, mxpft
 
        if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
@@ -1208,14 +1244,7 @@ contains
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
 
-       ! This should be independent of FATES because it fails for non-crop config otherwise
-       if(.not. use_fates)then
-          if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
-             write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &
-                  trim(pftname(i)), ', expected name = ', trim(expected_pftnames(i))
-             call endrun(msg='pftconrd: bad name for pft on paramfile dataset'//errMsg(__FILE__, __LINE__))
-          end if
-       end if
+       ! PFT names were already checked against expected_pftnames when setting PFT_DEFAULT
 
        if ( trim(pftname(i)) == 'not_vegetated'                       ) noveg                = i
        if ( trim(pftname(i)) == 'needleleaf_evergreen_temperate_tree' ) ndllf_evr_tmp_tree   = i
@@ -1276,9 +1305,46 @@ contains
        npcropmax            = nsoybeanirrig        ! last prognostic crop in list
        nppercropmax         = 0                    ! set value for iscft test below
     else
-       npcropmax            = nrtubersirrig        ! last prognostic crop in list
-       nppercropmin         = nsugarcane           ! first prognostic perennial crop
-       nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
+       ! Crops missing from the paramfile have index -1, so take the bounds over
+       ! the crops that are present
+       npcropmax            = max(ncorn, ncornirrig, nscereal, nscerealirrig, &
+                                  nwcereal, nwcerealirrig, nsoybean, nsoybeanirrig, &
+                                  ncassava, ncassavairrig, ncotton, ncottonirrig, &
+                                  nfoddergrass, nfoddergrassirrig, noilpalm, noilpalmirrig, &
+                                  nograins, nograinsirrig, nrapeseed, nrapeseedirrig, &
+                                  nrice, nriceirrig, nrtubers, nrtubersirrig) ! last prognostic crop in list
+       nppercropmax         = max(nsugarcane, nsugarcaneirrig, nmiscanthus, nmiscanthusirrig, &
+                                  nswitchgrass, nswitchgrassirrig, npoplar, npoplarirrig, &
+                                  nwillow, nwillowirrig)                      ! last prognostic perennial crop in list
+       nppercropmin         = nppercropmax                                    ! first prognostic perennial crop
+       do i = npcropmax + 1, nppercropmax
+          if (percrop(i) == 1.0_r8) then
+             nppercropmin = i
+             exit
+          end if
+       end do
+
+       ! numpft and numcft were set in elm_varpar_init for the full standard PFT list;
+       ! reset them (and the PFT array bounds) for the PFTs on the paramfile
+       if (.not. use_fates) then
+          numpft = mxpft
+          numcft = mxpft - nc4_grass
+          if (create_crop_landunit) then
+             natpft_size = (numpft + 1) - numcft
+             cft_size    = numcft
+          else
+             natpft_size = numpft + 1
+             cft_size    = 0
+          end if
+          natpft_lb = 0
+          natpft_ub = natpft_lb + natpft_size - 1
+          cft_lb = natpft_ub + 1
+          cft_ub = cft_lb + cft_size - 1
+          surfpft_lb  = natpft_lb
+          surfpft_ub  = natpft_ub
+          surfpft_size = natpft_size
+          max_patch_per_col = max(numpft+1, numcft, maxpatch_urb)
+       end if
     end if
 
    !-------------------------------------------------------------------------------------------
@@ -1532,7 +1598,7 @@ contains
              else
                 call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
              end if
-             if (      percrop(i) == 1.0_r8 .and. (i >= nsugarcane .and. i <= nppercropmax))then
+             if (      percrop(i) == 1.0_r8 .and. (i >= nppercropmin .and. i <= nppercropmax))then
                 ! correct
              else if ( percrop(i) == 0.0_r8 )then
                 ! correct
