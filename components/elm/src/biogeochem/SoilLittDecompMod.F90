@@ -202,6 +202,7 @@ contains
       !-------------------------------------------------------------------------------------------------
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
+      call t_startf('SLDA-potential')
       ! set initial values for potential C and N fluxes
       p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
       pmnf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8
@@ -372,15 +373,18 @@ contains
             end do
          end do
       end do
+      call t_stopf('SLDA-potential')
 
 
 !-------------------------------------------------------------------------------------------------
 ! 'call decomp_vertprofiles()' (calc nfixation_prof) is moved to EcosystemDynNoLeaching1
 ! 'nfixation_prof' is used in 'calc_nuptake_prof' & 'calc_puptake_prof', which are called in Allocation1,2,3
 !-------------------------------------------------------------------------------------------------
+      call t_startf('nitrif_denitrif')
       call nitrif_denitrif(bounds, &
            num_soilc, filter_soilc, &
            soilstate_vars,  ch4_vars )
+      call t_stopf('nitrif_denitrif')
 
       ! now that potential N immobilization is known, call allocation
       ! to resolve the competition between plants and soil heterotrophs
@@ -409,6 +413,7 @@ contains
       ! Also calculate denitrification losses as a simple proportion
       ! of mineralization flux.
 
+      call t_startf('SLDA-actual')
       do k = 1, ndecomp_cascade_transitions
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
@@ -556,6 +561,7 @@ contains
             end do
          end do
       end if
+      call t_stopf('SLDA-actual')
 
     end associate
 
