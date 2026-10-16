@@ -1311,6 +1311,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
+    use perf_mod           , only : t_startf, t_stopf
     use subgridAveMod      , only : p2c, c2g
     use elm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
@@ -1366,6 +1367,9 @@ contains
     real(r8) :: highlatfact                            ! multiple of qflxlagd for high latitudes
     integer  :: dummyfilter(1)                         ! empty filter
     integer  :: nc                                     ! clump index
+    integer, allocatable :: filter_satc(:)             ! saturated column filter
+    integer, allocatable :: filter_satp(:)             ! saturated patch filter
+    integer  :: num_satc, num_satp
     !-----------------------------------------------------------------------
 
     associate(                                                                 &
@@ -1450,6 +1454,10 @@ contains
       redoxlags_vertical = redoxlag_vertical*secspday ! days --> s
       rgasm = rgas / 1000._r8
 
+      allocate(filter_satc(num_soilc))
+      allocate(filter_satp(num_soilp))
+
+      call t_startf('ch4_prep')
       jwt(begc:endc)            = huge(1)
       totcolch4_bef(begc:endc)  = spval
 
@@ -1554,6 +1562,7 @@ contains
             end if
          end do
       end do
+      call t_stopf('ch4_prep')
 
       !!!! Begin biochemistry
 
@@ -1561,12 +1570,15 @@ contains
       lake = .false.
 
       ! Do CH4 Annual Averages
+      call t_startf('ch4_annual')
       call ch4_annualupdate(bounds, &
            num_soilc, filter_soilc, &
            num_soilp, filter_soilp, ch4_vars, dtime, 365.d0)
+      call t_stopf('ch4_annual')
 
       ! Determine rootfr_col and also check for inactive columns
 
+      call t_startf('ch4_rootfr')
       if (nlevdecomp == 1) then
 
          nc = bounds%clump_index
@@ -1631,6 +1643,7 @@ contains
          c_atm(g,2) =  forc_po2(t)  / rgasm / forc_t(t) ! [mol/m3 air]
         !c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
       enddo
+      call t_stopf('ch4_rootfr')
 
       !-------------------------------------------------
       ! Loop over saturated and unsaturated, non-lakes
@@ -1669,44 +1682,114 @@ contains
             end do
 
          else ! saturated
+            num_satc = 0
             do fc = 1, num_soilc
                c = filter_soilc(fc)
                jwt(c) = 0
+               if (finundated(c) > 0._r8) then
+                  num_satc = num_satc + 1
+                  filter_satc(num_satc) = c
+               else
+                  ch4_surf_diff_sat(c) = 0._r8
+                  ch4_surf_aere_sat(c) = 0._r8
+                  ch4_surf_ebul_sat(c) = 0._r8
+                  ch4_oxid_depth_sat(c,:) = 0._r8
+                  ch4_prod_depth_sat(c,:) = 0._r8
+               end if
+            end do
+
+            num_satp = 0
+            do fp = 1, num_soilp
+               p = filter_soilp(fp)
+               c = veg_pp%column(p)
+               if (finundated(c) > 0._r8) then
+                  num_satp = num_satp + 1
+                  filter_satp(num_satp) = p
+               end if
             end do
          endif
 
-         ! calculate CH4 production in each soil layer
-         call ch4_prod (bounds, &
-              num_soilc, filter_soilc, &
-              num_soilp, filter_soilp, &
-              jwt(begc:endc), sat, lake, &
-              soilstate_vars, ch4_vars, dtime, elm_fates)
+         if (sat == 0 .or. num_satc > 0) then
+            ! calculate CH4 production in each soil layer
+            call t_startf('ch4_prod')
+            if (sat == 0) then
+               call ch4_prod (bounds, &
+                    num_soilc, filter_soilc, &
+                    num_soilp, filter_soilp, &
+                    jwt(begc:endc), sat, lake, &
+                    soilstate_vars, ch4_vars, dtime, elm_fates)
+            else
+               call ch4_prod (bounds, &
+                    num_satc, filter_satc, &
+                    num_satp, filter_satp, &
+                    jwt(begc:endc), sat, lake, &
+                    soilstate_vars, ch4_vars, dtime, elm_fates)
+            end if
+            call t_stopf('ch4_prod')
 
-         ! calculate CH4 oxidation in each soil layer
-         call ch4_oxid (bounds, &
-              num_soilc, filter_soilc, &
-              jwt(begc:endc), sat, lake, &
-              soilstate_vars, ch4_vars, dtime)
+            ! calculate CH4 oxidation in each soil layer
+            call t_startf('ch4_oxid')
+            if (sat == 0) then
+               call ch4_oxid (bounds, &
+                    num_soilc, filter_soilc, &
+                    jwt(begc:endc), sat, lake, &
+                    soilstate_vars, ch4_vars, dtime)
+            else
+               call ch4_oxid (bounds, &
+                    num_satc, filter_satc, &
+                    jwt(begc:endc), sat, lake, &
+                    soilstate_vars, ch4_vars, dtime)
+            end if
+            call t_stopf('ch4_oxid')
 
-         ! calculate CH4 aerenchyma losses in each soil layer
-         call ch4_aere (bounds, &
-              num_soilc, filter_soilc, &
-              num_soilp, filter_soilp, &
-              jwt(begc:endc), sat, lake, &
-              canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+            ! calculate CH4 aerenchyma losses in each soil layer
+            call t_startf('ch4_aere')
+            if (sat == 0) then
+               call ch4_aere (bounds, &
+                    num_soilc, filter_soilc, &
+                    num_soilp, filter_soilp, &
+                    jwt(begc:endc), sat, lake, &
+                    canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+            else
+               call ch4_aere (bounds, &
+                    num_satc, filter_satc, &
+                    num_satp, filter_satp, &
+                    jwt(begc:endc), sat, lake, &
+                    canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
+            end if
+            call t_stopf('ch4_aere')
 
-         ! calculate CH4 ebullition losses in each soil layer
-         call ch4_ebul (bounds, &
-              num_soilc, filter_soilc, &
-              jwt(begc:endc), sat, lake, &
-              atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+            ! calculate CH4 ebullition losses in each soil layer
+            call t_startf('ch4_ebul')
+            if (sat == 0) then
+               call ch4_ebul (bounds, &
+                    num_soilc, filter_soilc, &
+                    jwt(begc:endc), sat, lake, &
+                    atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+            else
+               call ch4_ebul (bounds, &
+                    num_satc, filter_satc, &
+                    jwt(begc:endc), sat, lake, &
+                    atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+            end if
+            call t_stopf('ch4_ebul')
 
-         ! Solve CH4 reaction/diffusion equation
-         ! Competition for oxygen will occur here.
-         call ch4_tran (bounds, &
-              num_soilc, filter_soilc, &
-              jwt(begc:endc), dtime_ch4, sat, lake, &
-              soilstate_vars, energyflux_vars, ch4_vars, dtime)
+            ! Solve CH4 reaction/diffusion equation
+            ! Competition for oxygen will occur here.
+            call t_startf('ch4_tran')
+            if (sat == 0) then
+               call ch4_tran (bounds, &
+                    num_soilc, filter_soilc, &
+                    jwt(begc:endc), dtime_ch4, sat, lake, &
+                    soilstate_vars, energyflux_vars, ch4_vars, dtime)
+            else
+               call ch4_tran (bounds, &
+                    num_satc, filter_satc, &
+                    jwt(begc:endc), dtime_ch4, sat, lake, &
+                    soilstate_vars, energyflux_vars, ch4_vars, dtime)
+            end if
+            call t_stopf('ch4_tran')
+         end if
 
       enddo ! sat/unsat
 
@@ -1900,6 +1983,7 @@ contains
       end do
 
       ! Now average up to gridcell for fluxes
+      call t_startf('ch4_c2g')
       call c2g( bounds, &
            ch4_oxid_tot(begc:endc), ch4co2f(begg:endg),        &
            c2l_scale_type= 0, l2g_scale_type=0 )
@@ -1911,6 +1995,10 @@ contains
       call c2g( bounds, &
            nem_col(begc:endc), nem_grc(begg:endg),               &
            c2l_scale_type= 0, l2g_scale_type=0 )
+      call t_stopf('ch4_c2g')
+
+      if (allocated(filter_satc)) deallocate(filter_satc)
+      if (allocated(filter_satp)) deallocate(filter_satp)
 
     end associate
 

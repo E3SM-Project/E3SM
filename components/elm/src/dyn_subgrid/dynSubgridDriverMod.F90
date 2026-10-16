@@ -38,6 +38,7 @@ module dynSubgridDriverMod
 
   use elm_varctl          , only : iac_present
   use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use perf_mod            , only : t_startf, t_stopf
   use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType          , only : col_pp
   use VegetationType      , only : veg_pp
@@ -195,7 +196,7 @@ contains
     use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
-    use elm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size, is_first_step, is_first_restart_step
     use elm_varctl, only :  iulog
 
     !
@@ -230,10 +231,22 @@ contains
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
     real(r8)          :: dt
+    logical           :: need_dyn_subgrid
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(bounds_proc%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    need_dyn_subgrid = is_first_step() .or. is_first_restart_step() .or. &
+                       get_do_transient_pfts() .or. &
+                       get_do_transient_crops() .or. &
+                       get_do_harvest() .or. &
+                       (fates_harvest_mode == fates_harvest_hlmlanduse) .or. &
+                       (use_fates_luh .and. .not. use_fates_potentialveg) .or. &
+                       use_fates .or. &
+                       create_glacier_mec_landunit
+
+    if (.not. need_dyn_subgrid) return
 
     nclumps = get_proc_clumps()
     dt = real(get_step_size(), r8)
@@ -241,6 +254,7 @@ contains
     ! Do initialization, prior to land cover change
     ! ==========================================================================
 
+    call t_startf('dyn_init_weights')
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -256,6 +270,7 @@ contains
        call set_old_column_weights (column_state_updater,bounds_clump)
     end do
     !$OMP END PARALLEL DO
+    call t_stopf('dyn_init_weights')
 
     ! ==========================================================================
     ! Do land cover change that requires I/O, and thus must be outside a threaded region
@@ -309,9 +324,13 @@ contains
        ! first time step of the run to update filters to reflect state of CISM
        ! (particularly mask that is past through coupler).
 
+       call t_startf('dyn_wrapup_weights')
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+       call t_stopf('dyn_wrapup_weights')
+       call t_startf('dyn_set_new_weights')
        call set_new_patch_weights (patch_state_updater ,bounds_clump)
        call set_new_column_weights(column_state_updater,bounds_clump, nc)
+       call t_stopf('dyn_set_new_weights')
 
 
        call set_subgrid_diagnostic_fields(bounds_clump)
@@ -400,7 +419,9 @@ contains
     !
     ! This call requires clump-level bounds, which is why we need to ensure that the
     ! argument to this routine is clump-level bounds
+    call t_startf('dyn_reweight_wrapup')
     call reweight_wrapup(bounds_clump, icemask_grc(bounds_clump%begg:bounds_clump%endg))
+    call t_stopf('dyn_reweight_wrapup')
 
     end associate
   end subroutine dynSubgrid_wrapup_weight_changes

@@ -8074,22 +8074,18 @@ contains
     ! set column-level conversion and product pool fluxes
     ! to 0 at the beginning of every timestep
 
-    do c = bounds%begc,bounds%endc
-       this%dwt_conv_cflux(c)           = 0._r8
-       this%dwt_prod10c_gain(c)         = 0._r8
-       this%dwt_prod100c_gain(c)        = 0._r8
-       this%dwt_crop_productc_gain(c)   = 0._r8
-       this%dwt_slash_cflux(c)          = 0._r8
-    end do
+    this%dwt_conv_cflux(bounds%begc:bounds%endc)         = 0._r8
+    this%dwt_prod10c_gain(bounds%begc:bounds%endc)       = 0._r8
+    this%dwt_prod100c_gain(bounds%begc:bounds%endc)      = 0._r8
+    this%dwt_crop_productc_gain(bounds%begc:bounds%endc) = 0._r8
+    this%dwt_slash_cflux(bounds%begc:bounds%endc)        = 0._r8
 
     do j = 1, nlevdecomp_full
-       do c = bounds%begc,bounds%endc
-          this%dwt_frootc_to_litr_met_c(c,j)    = 0._r8
-          this%dwt_frootc_to_litr_cel_c(c,j)    = 0._r8
-          this%dwt_frootc_to_litr_lig_c(c,j)    = 0._r8
-          this%dwt_livecrootc_to_cwdc(c,j)      = 0._r8
-          this%dwt_deadcrootc_to_cwdc(c,j)      = 0._r8
-       end do
+       this%dwt_frootc_to_litr_met_c(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_frootc_to_litr_cel_c(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_frootc_to_litr_lig_c(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_livecrootc_to_cwdc(bounds%begc:bounds%endc,j)   = 0._r8
+       this%dwt_deadcrootc_to_cwdc(bounds%begc:bounds%endc,j)   = 0._r8
     end do
 
   end subroutine col_cf_zerodwt
@@ -9691,22 +9687,18 @@ contains
     integer  :: c,j          ! indices
     !-----------------------------------------------------------------------
 
-    do c = bounds%begc,bounds%endc
-       this%dwt_conv_nflux(c)        = 0._r8
-       this%dwt_prod10n_gain(c)      = 0._r8
-       this%dwt_prod100n_gain(c)     = 0._r8
-       this%dwt_crop_productn_gain(c) = 0._r8
-       this%dwt_slash_nflux(c)       = 0._r8
-    end do
+    this%dwt_conv_nflux(bounds%begc:bounds%endc)        = 0._r8
+    this%dwt_prod10n_gain(bounds%begc:bounds%endc)      = 0._r8
+    this%dwt_prod100n_gain(bounds%begc:bounds%endc)     = 0._r8
+    this%dwt_crop_productn_gain(bounds%begc:bounds%endc) = 0._r8
+    this%dwt_slash_nflux(bounds%begc:bounds%endc)       = 0._r8
 
     do j = 1, nlevdecomp_full
-       do c = bounds%begc,bounds%endc
-          this%dwt_frootn_to_litr_met_n(c,j) = 0._r8
-          this%dwt_frootn_to_litr_cel_n(c,j) = 0._r8
-          this%dwt_frootn_to_litr_lig_n(c,j) = 0._r8
-          this%dwt_livecrootn_to_cwdn(c,j)   = 0._r8
-          this%dwt_deadcrootn_to_cwdn(c,j)   = 0._r8
-       end do
+       this%dwt_frootn_to_litr_met_n(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_frootn_to_litr_cel_n(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_frootn_to_litr_lig_n(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_livecrootn_to_cwdn(bounds%begc:bounds%endc,j)   = 0._r8
+       this%dwt_deadcrootn_to_cwdn(bounds%begc:bounds%endc,j)   = 0._r8
     end do
 
   end subroutine col_nf_zerodwt
@@ -11213,22 +11205,18 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c, j          ! indices
     !-----------------------------------------------------------------------
-    do c = bounds%begc,bounds%endc
-       this%dwt_conv_pflux(c)        = 0._r8
-       this%dwt_prod10p_gain(c)      = 0._r8
-       this%dwt_prod100p_gain(c)     = 0._r8
-       this%dwt_crop_productp_gain(c) = 0._r8
-       this%dwt_slash_pflux(c)       = 0._r8
-    end do
+    this%dwt_conv_pflux(bounds%begc:bounds%endc)        = 0._r8
+    this%dwt_prod10p_gain(bounds%begc:bounds%endc)      = 0._r8
+    this%dwt_prod100p_gain(bounds%begc:bounds%endc)     = 0._r8
+    this%dwt_crop_productp_gain(bounds%begc:bounds%endc) = 0._r8
+    this%dwt_slash_pflux(bounds%begc:bounds%endc)       = 0._r8
 
     do j = 1, nlevdecomp_full
-       do c = bounds%begc,bounds%endc
-          this%dwt_frootp_to_litr_met_p(c,j) = 0._r8
-          this%dwt_frootp_to_litr_cel_p(c,j) = 0._r8
-          this%dwt_frootp_to_litr_lig_p(c,j) = 0._r8
-          this%dwt_livecrootp_to_cwdp(c,j)   = 0._r8
-          this%dwt_deadcrootp_to_cwdp(c,j)   = 0._r8
-       end do
+       this%dwt_frootp_to_litr_met_p(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_frootp_to_litr_cel_p(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_frootp_to_litr_lig_p(bounds%begc:bounds%endc,j) = 0._r8
+       this%dwt_livecrootp_to_cwdp(bounds%begc:bounds%endc,j)   = 0._r8
+       this%dwt_deadcrootp_to_cwdp(bounds%begc:bounds%endc,j)   = 0._r8
     end do
 
   end subroutine col_pf_zerodwt

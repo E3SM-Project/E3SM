@@ -993,6 +993,8 @@ contains
     ! Accumulate (or take min, max, etc. as appropriate) input field
     ! into its history buffer for appropriate tapes.
     !
+    use perf_mod        , only : t_startf, t_stopf
+    !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds   
     !
@@ -1009,10 +1011,14 @@ contains
        do f = 1,tape(t)%nflds
           numdims = tape(t)%hlist(f)%field%numdims
           if ( numdims == 1) then   
+             call t_startf('hbuf_1d')
              call hist_update_hbuf_field_1d (t, f, bounds)
+             call t_stopf('hbuf_1d')
           else
+             call t_startf('hbuf_2d')
              num2d = tape(t)%hlist(f)%field%num2d
              call hist_update_hbuf_field_2d (t, f, bounds, num2d)
+             call t_stopf('hbuf_2d')
           end if
        end do
 !$OMP END PARALLEL DO
@@ -1031,6 +1037,7 @@ contains
     ! call to p2g, and the lack of explicit bounds on its arguments; see also bug 1786)
     !
     ! !USES:
+    use perf_mod        , only : t_startf, t_stopf
     use subgridAveMod   , only : p2g, c2g, l2g, t2g
     use landunit_varcon , only : istice_mec
     use decompMod       , only : BOUNDS_LEVEL_PROC
@@ -1084,6 +1091,7 @@ contains
 
     map2gcell = .false.
     if (type1d_out == nameg .or. type1d_out == grlnd) then
+       call t_startf('hbuf_1d_map')
        if (type1d == namep) then
           ! In this and the following calls, we do NOT explicitly subset field using
 	  ! bounds (e.g., we do NOT do field(bounds%begp:bounds%endp). This is because,
@@ -1114,6 +1122,7 @@ contains
                t2g_scale_type)
           map2gcell = .true.
        end if
+       call t_stopf('hbuf_1d_map')
     end if
 
     if (map2gcell) then  ! Map to gridcell
@@ -1281,6 +1290,7 @@ contains
     ! call to p2g, and the lack of explicit bounds on its arguments; see also bug 1786)
     !
     ! !USES:
+    use perf_mod        , only : t_startf, t_stopf
     use subgridAveMod   , only : p2g, c2g, l2g, t2g
     use landunit_varcon , only : istice_mec
     use decompMod       , only : BOUNDS_LEVEL_PROC
@@ -1360,6 +1370,7 @@ contains
 
     map2gcell = .false.
     if (type1d_out == nameg .or. type1d_out == grlnd) then
+       call t_startf('hbuf_2d_map')
        if (type1d == namep) then
           ! In this and the following calls, we do NOT explicitly subset field using
 	  ! (e.g., we do NOT do field(bounds%begp:bounds%endp). This is because,
@@ -1390,6 +1401,7 @@ contains
                t2g_scale_type)
           map2gcell = .true.
        end if
+       call t_stopf('hbuf_2d_map')
     end if
 
     if (map2gcell) then  ! Map to gridcell
