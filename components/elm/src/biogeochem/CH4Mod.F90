@@ -2973,7 +2973,6 @@ contains
 
     ! !USES:
       !$acc routine seq
-    use TridiagonalMod     , only : Tridiagonal
     use CH4varcon          , only : ch4frzout, use_aereoxid_prog
     !
     ! !ARGUMENTS:
@@ -2994,46 +2993,43 @@ contains
     integer :: c,j,g,p,s,i,ll                                              ! indices
     integer :: fc                                                          ! soil filter column index
     integer :: fp                                                          ! soil filter pft index
-    integer  :: jtop(bounds%begc:bounds%endc)                              ! top level at each column
     integer :: iter                                                        ! iteration counter when dtime_ch4 < dtime
-    real(r8) :: at (bounds%begc:bounds%endc,0:nlevsoi)                     ! "a" vector for tridiagonal matrix
-    real(r8) :: bt (bounds%begc:bounds%endc,0:nlevsoi)                     ! "b" vector for tridiagonal matrix
-    real(r8) :: ct (bounds%begc:bounds%endc,0:nlevsoi)                     ! "c" vector for tridiagonal matrix
-    real(r8) :: rt (bounds%begc:bounds%endc,0:nlevsoi)                     ! "r" vector for tridiagonal solution
+    real(r8) :: at (num_methc,0:nlevsoi)                     ! "a" vector for tridiagonal matrix
+    real(r8) :: bt (num_methc,0:nlevsoi)                     ! "b" vector for tridiagonal matrix
+    real(r8) :: ct (num_methc,0:nlevsoi)                     ! "c" vector for tridiagonal matrix
+    real(r8) :: rt (num_methc,0:nlevsoi)                     ! "r" vector for tridiagonal solution
     real(r8) :: f_a                                                        ! air-filled fraction of available pore space
-    real(r8) :: diffus (bounds%begc:bounds%endc,0:nlevsoi)                 ! diffusivity (m2/s)
+    real(r8) :: diffus (num_methc,0:nlevsoi)                 ! diffusivity (m2/s)
     real(r8) :: k_h_inv                                                    ! 1/Henry's Law Constant in Latm/mol
-    real(r8) :: k_h_cc(bounds%begc:bounds%endc,0:nlevsoi,ngases)           ! ratio of mol/m3 in liquid to mol/m3 in gas
+    real(r8) :: k_h_cc(num_methc,0:nlevsoi,ngases)           ! ratio of mol/m3 in liquid to mol/m3 in gas
     real(r8) :: dzj                                                        !
-    real(r8) :: dp1_zp1 (bounds%begc:bounds%endc,0:nlevsoi)                ! diffusivity/delta_z for next j
-    real(r8) :: dm1_zm1 (bounds%begc:bounds%endc,0:nlevsoi)                ! diffusivity/delta_z for previous j
+    real(r8) :: dp1_zp1 (num_methc,0:nlevsoi)                ! diffusivity/delta_z for next j
+    real(r8) :: dm1_zm1 (num_methc,0:nlevsoi)                ! diffusivity/delta_z for previous j
     real(r8) :: t_soisno_c                                                 ! soil temperature (C)  (-nlevsno+1:nlevsoi)
     real(r8) :: eps                                                        ! either epsilon_a or epsilon_w, depending on where in soil, wrt WT
     real(r8) :: deficit                                                    ! mol CH4 /m^2 that must be subtracted from diffusive flux to atm. to make up
     ! for keeping concentrations always above zero
-    real(r8) :: conc_ch4_bef(bounds%begc:bounds%endc,1:nlevsoi)            ! concentration at the beginning of the timestep
-    real(r8) :: errch4(bounds%begc:bounds%endc)                            ! Error (Mol CH4 /m^2) [+ = too much CH4]
-    real(r8) :: conc_ch4_rel(bounds%begc:bounds%endc,0:nlevsoi)            ! Concentration per volume of air or water
-    real(r8) :: conc_o2_rel(bounds%begc:bounds%endc,0:nlevsoi)             ! Concentration per volume of air or water
-    real(r8) :: conc_ch4_rel_old(bounds%begc:bounds%endc,0:nlevsoi)        ! Concentration during last Crank-Nich. loop
-    real(r8) :: h2osoi_vol_min(bounds%begc:bounds%endc,1:nlevsoi)          ! h2osoi_vol restricted to be <= watsat
+    real(r8) :: conc_ch4_bef(num_methc,1:nlevsoi)            ! concentration at the beginning of the timestep
+    real(r8) :: errch4(num_methc)                            ! Error (Mol CH4 /m^2) [+ = too much CH4]
+    real(r8) :: conc_ch4_rel(num_methc,0:nlevsoi)            ! Concentration per volume of air or water
+    real(r8) :: conc_o2_rel(num_methc,0:nlevsoi)             ! Concentration per volume of air or water
+    real(r8) :: conc_ch4_rel_old(num_methc,0:nlevsoi)        ! Concentration during last Crank-Nich. loop
+    real(r8) :: h2osoi_vol_min(num_methc,1:nlevsoi)          ! h2osoi_vol restricted to be <= watsat
     real(r8), parameter :: smallnumber = 1.e-12_r8
     real(r8) :: snowdiff                                                   ! snow diffusivity (m^2/s)
-    real(r8) :: snowres(bounds%begc:bounds%endc)                           ! Cumulative Snow resistance (s/m). Also includes
+    real(r8) :: snowres(num_methc)                           ! Cumulative Snow resistance (s/m). Also includes
     real(r8) :: pondres                                                    ! Additional resistance from ponding, up to pondmx water on top of top soil layer (s/m)
     real(r8) :: pondz                                                      ! Depth of ponding (m)
     real(r8) :: ponddiff                                                   ! Pondwater diffusivity (m^2/s)
-    real(r8) :: spec_grnd_cond(bounds%begc:bounds%endc,1:ngases)           ! species grnd conductance (s/m)
+    real(r8) :: spec_grnd_cond(num_methc,1:ngases)           ! species grnd conductance (s/m)
     real(r8) :: airfrac                                                    ! air fraction in snow
     real(r8) :: waterfrac                                                  ! water fraction in snow
     real(r8) :: icefrac                                                    ! ice fraction in snow
-    real(r8) :: epsilon_t (bounds%begc:bounds%endc,1:nlevsoi,1:ngases)     !
-    real(r8) :: epsilon_t_old (bounds%begc:bounds%endc,1:nlevsoi,1:ngases) ! epsilon_t from last time step !Currently deprecated
-    real(r8) :: source (bounds%begc:bounds%endc,1:nlevsoi,1:ngases)        ! source
-    real(r8) :: source_old (bounds%begc:bounds%endc,1:nlevsoi,1:ngases)    ! source from last time step !Currently deprecated
+    real(r8) :: epsilon_t (num_methc,1:nlevsoi,1:ngases)     !
+    real(r8) :: source (num_methc,1:nlevsoi,1:ngases)        ! source
     real(r8) :: om_frac                                                    ! organic matter fraction
     real(r8) :: o2demand, ch4demand                                        ! mol/m^3/s
-    real(r8) :: liqfrac(bounds%begc:bounds%endc, 1:nlevsoi)
+    real(r8) :: liqfrac(num_methc,1:nlevsoi)
     real(r8) :: capthick                                                   ! (mm) min thickness before assuming h2osfc is impermeable
     real(r8) :: satpow                                                     ! exponent on watsat for saturated soil solute diffusion
     real(r8) :: scale_factor_gasdiff                                       ! For sensitivity tests; convection would allow this to be > 1
@@ -3058,6 +3054,8 @@ contains
     real(r8), pointer :: conc_o2          (:,:)
     real(r8), pointer :: conc_ch4         (:,:)
     real(r8), parameter :: smallparameter = tiny(1._r8)
+    real(r8) :: gam(num_methc,0:nlevsoi)                                   ! tridiagonal solver: elimination factors
+    real(r8) :: bet(num_methc)                                             ! tridiagonal solver: pivot
     integer  :: nstep                       ! time step number
     character(len=32) :: subname='ch4_tran' ! subroutine name
     !-----------------------------------------------------------------------
@@ -3220,11 +3218,11 @@ contains
                if (j == 0) then
                   k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_grnd(c) - 1._r8 / kh_tbase) + log (kh_theta(s)))
                   ! (4.12) Wania (L atm/mol)
-                  k_h_cc(c,j,s) = t_grnd(c) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                  k_h_cc(fc,j,s) = t_grnd(c) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                else
                   k_h_inv = exp(-c_h_inv(s) * (1._r8 / t_soisno(c,j) - 1._r8 / kh_tbase) + log (kh_theta(s)))
                   ! (4.12) Wania (L atm/mol)
-                  k_h_cc(c,j,s) = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                  k_h_cc(fc,j,s) = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                end if
             end do
          end do
@@ -3246,43 +3244,43 @@ contains
                ch4_aere_depth(c,j) = ch4_aere_depth(c,j) - aereoxid * ch4_aere_depth(c,j)
             end if ! else oxygen is allowed to diffuse in via aerenchyma
 
-            source(c,j,1) = ch4_prod_depth(c,j) - ch4_oxid_depth(c,j) - &
+            source(fc,j,1) = ch4_prod_depth(c,j) - ch4_oxid_depth(c,j) - &
                  ch4_aere_depth(c,j) - ch4_ebul_depth(c,j) ! [mol/m3-total/s]
             ! aerenchyma added to surface flux below
             ! ebul added to soil depth just above WT
-            if (source(c,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
+            if (source(fc,j,1) + conc_ch4(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Methane demands exceed methane available. Error in methane competition (mol/m^3/s), c,j:',&
-                    source(c,j,1) + conc_ch4(c,j) / dtime, c, j
+                    source(fc,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Methane demands exceed methane available.'&
                     //errMsg(__FILE__, __LINE__))
-            else if (ch4stress(c,j) < 1._r8 .and. source(c,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
+            else if (ch4stress(c,j) < 1._r8 .and. source(fc,j,1) + conc_ch4(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*) 'Methane limited, yet some left over. Error in methane competition (mol/m^3/s), c,j:',&
-                    source(c,j,1) + conc_ch4(c,j) / dtime, c, j
+                    source(fc,j,1) + conc_ch4(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Methane limited, yet some left over.'//&
                     errMsg(__FILE__, __LINE__))
             end if
 
-            source(c,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
-            if (source(c,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
+            source(fc,j,2) = -o2_oxid_depth(c,j) - o2_decomp_depth(c,j) + o2_aere_depth(c,j) ! O2 [mol/m3/s]
+            if (source(fc,j,2) + conc_o2(c,j) / dtime < -1.e-12_r8) then
                write(iulog,*) 'Oxygen demands exceed oxygen available. Error in oxygen competition (mol/m^3/s), c,j:',&
-                    source(c,j,2) + conc_o2(c,j) / dtime, c, j
+                    source(fc,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*) 'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Oxygen demands exceed oxygen available.'//&
                     errMsg(__FILE__, __LINE__) )
-            else if (o2stress(c,j) < 1._r8 .and. source(c,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
+            else if (o2stress(c,j) < 1._r8 .and. source(fc,j,2) + conc_o2(c,j) / dtime > 1.e-12_r8) then
                write(iulog,*)  'Oxygen limited, yet some left over. Error in oxygen competition (mol/m^3/s), c,j:',&
-                    source(c,j,2) + conc_o2(c,j) / dtime, c, j
+                    source(fc,j,2) + conc_o2(c,j) / dtime, c, j
                g = col_pp%gridcell(c)
                write(iulog,*)  'Latdeg,Londeg=',grc_pp%latdeg(g),grc_pp%londeg(g)
                call endrun(msg=' ERROR: Oxygen limited, yet some left over.'//errMsg(__FILE__, __LINE__))
             end if
 
-            conc_ch4_bef(c,j) = conc_ch4(c,j) !For Balance Check
+            conc_ch4_bef(fc,j) = conc_ch4(c,j) !For Balance Check
          enddo ! fc
       enddo ! j
 
@@ -3299,7 +3297,7 @@ contains
       do fc = 1, num_methc
          c = filter_methc(fc)
          if (jwt(c) /= 0) then
-            source(c,jwt(c),1) = source(c,jwt(c),1) + ch4_ebul_total(c)/dz(c,jwt(c))
+            source(fc,jwt(c),1) = source(fc,jwt(c),1) + ch4_ebul_total(c)/dz(c,jwt(c))
          endif
       enddo ! fc
 
@@ -3310,28 +3308,28 @@ contains
             g = col_pp%gridcell(c)
 
             if (j == 0) then
-               conc_ch4_rel(c,j) = c_atm(g,1)
-               conc_o2_rel(c,j)  = c_atm(g,2)
+               conc_ch4_rel(fc,j) = c_atm(g,1)
+               conc_o2_rel(fc,j)  = c_atm(g,2)
             else
-               h2osoi_vol_min(c,j) = min(watsat(c,j), h2osoi_vol(c,j))
+               h2osoi_vol_min(fc,j) = min(watsat(c,j), h2osoi_vol(c,j))
                if (ch4frzout) then
-                  liqfrac(c,j) = max(0.05_r8, (h2osoi_liq(c,j)/denh2o+smallnumber)/ &
+                  liqfrac(fc,j) = max(0.05_r8, (h2osoi_liq(c,j)/denh2o+smallnumber)/ &
                        (h2osoi_liq(c,j)/denh2o+h2osoi_ice(c,j)/denice+smallnumber))
                else
-                  liqfrac(c,j) = 1._r8
+                  liqfrac(fc,j) = 1._r8
                end if
                if (j <= jwt(c)) then  ! Above the WT
                   do s=1,2
-                     epsilon_t(c,j,s) = watsat(c,j)- (1._r8-k_h_cc(c,j,s))*h2osoi_vol_min(c,j)*liqfrac(c,j)
+                     epsilon_t(fc,j,s) = watsat(c,j)- (1._r8-k_h_cc(fc,j,s))*h2osoi_vol_min(fc,j)*liqfrac(fc,j)
                   end do
                   ! Partition between the liquid and gas phases. The gas phase will drive the diffusion.
                else ! Below the WT
                   do s=1,2
-                     epsilon_t(c,j,s) = watsat(c,j)*liqfrac(c,j)
+                     epsilon_t(fc,j,s) = watsat(c,j)*liqfrac(fc,j)
                   end do
                end if
-               conc_ch4_rel(c,j) = conc_ch4(c,j)/epsilon_t(c,j,1)
-               conc_o2_rel(c,j)  = conc_o2(c,j) /epsilon_t(c,j,2)
+               conc_ch4_rel(fc,j) = conc_ch4(c,j)/epsilon_t(fc,j,1)
+               conc_o2_rel(fc,j)  = conc_o2(c,j) /epsilon_t(fc,j,2)
             end if
          end do
       end do
@@ -3349,7 +3347,7 @@ contains
                if (j == -nlevsno + 1) then
                   if (grnd_ch4_cond(c) < smallnumber .and. s==1) grnd_ch4_cond(c) = smallnumber
                   ! Needed to prevent overflow when ground is frozen, e.g. for lakes
-                  snowres(c) = 0._r8
+                  snowres(fc) = 0._r8
                end if
 
                ! Add snow resistance
@@ -3372,7 +3370,7 @@ contains
                           * scale_factor_liqdiff
                   end if
                   snowdiff = max(snowdiff, smallnumber)
-                  snowres(c) = snowres(c) + dz(c,j)/snowdiff
+                  snowres(fc) = snowres(fc) + dz(c,j)/snowdiff
                end if
 
                if (j == 0) then ! final loop
@@ -3409,7 +3407,7 @@ contains
                      end if
                   end if
 
-                  spec_grnd_cond(c,s) = 1._r8/(1._r8/grnd_ch4_cond(c) + snowres(c) + pondres)
+                  spec_grnd_cond(fc,s) = 1._r8/(1._r8/grnd_ch4_cond(c) + snowres(fc) + pondres)
                end if
 
             end do ! fc
@@ -3424,17 +3422,17 @@ contains
                t_soisno_c = t_soisno(c,j) - tfrz
 
                if (j <= jwt(c)) then  ! Above the WT
-                  f_a = 1._r8 - h2osoi_vol_min(c,j) / watsat(c,j)
+                  f_a = 1._r8 - h2osoi_vol_min(fc,j) / watsat(c,j)
                   ! Provisionally calculate diffusivity as linear combination of the Millington-Quirk
                   ! expression in Wania (for peat) & Moldrup (for mineral soil)
-                  eps =  watsat(c,j)-h2osoi_vol_min(c,j) ! Air-filled fraction of total soil volume
+                  eps =  watsat(c,j)-h2osoi_vol_min(fc,j) ! Air-filled fraction of total soil volume
                   if (organic_max > 0._r8) then
                      om_frac = min(cellorg(c,j)/organic_max, 1._r8)
                      ! Use first power, not square as in iniTimeConst
                   else
                      om_frac = 1._r8
                   end if
-                  diffus (c,j) = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
+                  diffus (fc,j) = (d_con_g(s,1) + d_con_g(s,2)*t_soisno_c) * 1.e-4_r8 * &
                        (om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2._r8 + &
                        (1._r8-om_frac) * eps**2._r8 * f_a**(3._r8 / bsw(c,j)) ) &
                        * scale_factor_gasdiff
@@ -3442,14 +3440,14 @@ contains
                   ! Note the following is not currently corrected for the effect on diffusivity of excess ice in soil under
                   ! lakes (which is currently experimental only).
                   eps = watsat(c,j)  ! Water-filled fraction of total soil volume
-                  diffus (c,j) = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
+                  diffus (fc,j) = eps**satpow * (d_con_w(s,1) + d_con_w(s,2)*t_soisno_c + d_con_w(s,3)*t_soisno_c**2) * 1.e-9_r8 &
                        * scale_factor_liqdiff
                   if (t_soisno(c,j)<=tfrz) then
-                     diffus(c,j) = diffus(c,j)*(h2osoi_liq(c,j)/denh2o+smallnumber)/ &
+                     diffus(fc,j) = diffus(fc,j)*(h2osoi_liq(c,j)/denh2o+smallnumber)/ &
                           (h2osoi_liq(c,j)/denh2o+h2osoi_ice(c,j)/denice+smallnumber)
                   end if
                endif ! Above/below the WT
-               diffus(c,j) = max(diffus(c,j), smallnumber) ! Prevent overflow
+               diffus(fc,j) = max(diffus(fc,j), smallnumber) ! Prevent overflow
 
             enddo ! fp
          enddo ! j
@@ -3460,32 +3458,32 @@ contains
 
                ! Set up coefficients for tridiagonal solver.
                if (j == 1 .and. j /= jwt(c) .and. j /= jwt(c)+1) then
-                  dm1_zm1(c,j) = 1._r8/(1._r8/spec_grnd_cond(c,s)+dz(c,j)/(diffus(c,j)*2._r8))
+                  dm1_zm1(fc,j) = 1._r8/(1._r8/spec_grnd_cond(fc,s)+dz(c,j)/(diffus(fc,j)*2._r8))
                   ! replace Diffusivity / Delta_z by conductance (grnd_ch4_cond) for top layer
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j == 1 .and. j == jwt(c)) then
-                  dm1_zm1(c,j) = 1._r8/(1._r8/spec_grnd_cond(c,s)+dz(c,j)/(diffus(c,j)*2._r8))
+                  dm1_zm1(fc,j) = 1._r8/(1._r8/spec_grnd_cond(fc,s)+dz(c,j)/(diffus(fc,j)*2._r8))
                   ! layer resistance mult. by k_h_cc for dp1_zp1 term
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)*k_h_cc(c,j,s)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)*k_h_cc(fc,j,s)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j == 1) then ! water table at surface: multiply ground resistance by k_h_cc
-                  dm1_zm1(c,j) = 1._r8/(k_h_cc(c,j-1,s)/spec_grnd_cond(c,s)+dz(c,j)/(diffus(c,j)*2._r8))
+                  dm1_zm1(fc,j) = 1._r8/(k_h_cc(fc,j-1,s)/spec_grnd_cond(fc,s)+dz(c,j)/(diffus(fc,j)*2._r8))
                   ! air concentration will be mult. by k_h_cc below
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j <= nlevsoi-1 .and. j /= jwt(c) .and. j /= jwt(c)+1) then
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)/diffus(c,j-1))
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)/diffus(fc,j-1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j <= nlevsoi-1 .and. j == jwt(c)) then ! layer resistance mult. by k_h_cc for dp1_zp1 term
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)/diffus(c,j-1))
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)*k_h_cc(c,j,s)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)/diffus(fc,j-1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)*k_h_cc(fc,j,s)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                   ! Concentration in layer will be mult. by k_h_cc below
                else if (j <= nlevsoi-1) then ! j==jwt+1: layer above resistance mult. by k_h_cc for dm1_zm1 term
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)*k_h_cc(c,j-1,s)/diffus(c,j-1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)*k_h_cc(fc,j-1,s)/diffus(fc,j-1))
                   ! Concentration in layer above will be mult. by k_h_cc below
-                  dp1_zp1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j+1)/diffus(c,j+1))
+                  dp1_zp1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j+1)/diffus(fc,j+1))
                else if (j /= jwt(c)+1) then ! j ==nlevsoi
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)/diffus(c,j-1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)/diffus(fc,j-1))
                else                    ! jwt == nlevsoi-1: layer above resistance mult. by k_h_cc for dm1_zm1 term
-                  dm1_zm1(c,j) = 2._r8/(dz(c,j)/diffus(c,j)+dz(c,j-1)*k_h_cc(c,j-1,s)/diffus(c,j-1))
+                  dm1_zm1(fc,j) = 2._r8/(dz(c,j)/diffus(fc,j)+dz(c,j-1)*k_h_cc(fc,j-1,s)/diffus(fc,j-1))
                end if
             enddo ! fp; pft
          end do ! j; nlevsoi
@@ -3495,44 +3493,39 @@ contains
             do fc = 1, num_methc
                c = filter_methc (fc)
                g = col_pp%gridcell(c)
-               conc_ch4_rel_old(c,j) = conc_ch4_rel(c,j)
+               conc_ch4_rel_old(fc,j) = conc_ch4_rel(fc,j)
 
                if (j > 0) dzj = dz(c,j)
                if (j == 0) then ! top layer (atmosphere) doesn't change regardless of where WT is
-                  at(c,j) = 0._r8
-                  bt(c,j) = 1._r8
-                  ct(c,j) = 0._r8
-                  rt(c,j) = c_atm(g,s) ! 0th level stays at constant atmospheric conc
+                  at(fc,j) = 0._r8
+                  bt(fc,j) = 1._r8
+                  ct(fc,j) = 0._r8
+                  rt(fc,j) = c_atm(g,s) ! 0th level stays at constant atmospheric conc
                elseif (j < nlevsoi .and. j == jwt(c)) then ! concentration inside needs to be mult. by k_h_cc for dp1_zp1 term
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(c,j)*k_h_cc(c,j,s) + dm1_zm1(c,j))
-                  ct(c,j) = -0.5_r8 / dzj * dp1_zp1(c,j)
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(fc,j)*k_h_cc(fc,j,s) + dm1_zm1(fc,j))
+                  ct(fc,j) = -0.5_r8 / dzj * dp1_zp1(fc,j)
                elseif (j < nlevsoi .and. j == jwt(c)+1) then
                   ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j) * k_h_cc(c,j-1,s)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(c,j) + dm1_zm1(c,j))
-                  ct(c,j) = -0.5_r8 / dzj * dp1_zp1(c,j)
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j) * k_h_cc(fc,j-1,s)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(fc,j) + dm1_zm1(fc,j))
+                  ct(fc,j) = -0.5_r8 / dzj * dp1_zp1(fc,j)
                elseif (j < nlevsoi) then
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(c,j) + dm1_zm1(c,j))
-                  ct(c,j) = -0.5_r8 / dzj * dp1_zp1(c,j)
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * (dp1_zp1(fc,j) + dm1_zm1(fc,j))
+                  ct(fc,j) = -0.5_r8 / dzj * dp1_zp1(fc,j)
                else if (j == nlevsoi .and. j== jwt(c)+1) then
                   ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j) * k_h_cc(c,j-1,s)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(c,j)
-                  ct(c,j) = 0._r8
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j) * k_h_cc(fc,j-1,s)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(fc,j)
+                  ct(fc,j) = 0._r8
                else ! j==nlevsoi and jwt<nlevsoi-1 or jwt==nlevsoi: 0 flux at bottom
-                  at(c,j) = -0.5_r8 / dzj * dm1_zm1(c,j)
-                  bt(c,j) = epsilon_t(c,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(c,j)
-                  ct(c,j) = 0._r8
+                  at(fc,j) = -0.5_r8 / dzj * dm1_zm1(fc,j)
+                  bt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 + 0.5_r8 / dzj * dm1_zm1(fc,j)
+                  ct(fc,j) = 0._r8
                endif
             enddo ! fp; pft
          enddo ! j; nlevsoi
-
-         do fc = 1, num_methc
-            c = filter_methc (fc)
-            jtop(c) = 0
-         end do
 
          if (s == 1) then  ! CH4
 
@@ -3541,67 +3534,70 @@ contains
                do fc = 1, num_methc
                   c = filter_methc (fc)
 
-                  ! For correct balance, deprecate source_old.
-                  ! The source terms are effectively constant over the timestep.
-                  source_old(c,j,s) = source(c,j,s)
-                  ! source_old could be removed later
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
-                  ! epsilon_t acts like source also
+                  ! The source terms (and epsilon_t) are constant over the timestep, so the
+                  ! deprecated source_old and epsilon_t_old equal source and epsilon_t.
                   dzj = dz(c,j)
                   if (j < nlevsoi .and. j == jwt(c)) then ! concentration inside needs to be mult. by k_h_cc for dp1_zp1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_ch4_rel(c,j+1)-conc_ch4_rel(c,j)*k_h_cc(c,j,s)) - &
-                          dm1_zm1(c,j) * (conc_ch4_rel(c,j)  -conc_ch4_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_ch4_rel(fc,j+1)-conc_ch4_rel(fc,j)*k_h_cc(fc,j,s)) - &
+                          dm1_zm1(fc,j) * (conc_ch4_rel(fc,j)  -conc_ch4_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   elseif (j < nlevsoi .and. j == jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_ch4_rel(c,j+1)-conc_ch4_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_ch4_rel(c,j) -conc_ch4_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_ch4_rel(fc,j+1)-conc_ch4_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_ch4_rel(fc,j) -conc_ch4_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   elseif (j < nlevsoi) then
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_ch4_rel(c,j+1)-conc_ch4_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_ch4_rel(c,j)  -conc_ch4_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_ch4_rel(fc,j+1)-conc_ch4_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_ch4_rel(fc,j)  -conc_ch4_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   else if (j == nlevsoi .and. j== jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_ch4_rel(c,j) -conc_ch4_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_ch4_rel(fc,j) -conc_ch4_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   else  !j==nlevsoi
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_ch4_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_ch4_rel(c,j)  -conc_ch4_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_ch4_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_ch4_rel(fc,j)  -conc_ch4_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   endif
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
-                  source_old(c,j,s) = source(c,j,s)
 
                enddo ! fc; column
             enddo ! j; nlevsoi
 
-            call Tridiagonal(bounds, 0, nlevsoi, &
-                 jtop(bounds%begc:bounds%endc), &
-                 num_methc, filter_methc, &
-                 at(bounds%begc:bounds%endc, :), &
-                 bt(bounds%begc:bounds%endc, :), &
-                 ct(bounds%begc:bounds%endc, :), &
-                 rt(bounds%begc:bounds%endc, :), &
-                 conc_ch4_rel(bounds%begc:bounds%endc, 0:nlevsoi))
+            ! Solve the tridiagonal system (as Tridiagonal with jtop = 0)
+            do fc = 1, num_methc
+               bet(fc) = bt(fc,0)
+               conc_ch4_rel(fc,0) = rt(fc,0) / bet(fc)
+            end do
+            do j = 1, nlevsoi
+               do fc = 1, num_methc
+                  gam(fc,j) = ct(fc,j-1) / bet(fc)
+                  bet(fc) = bt(fc,j) - at(fc,j) * gam(fc,j)
+                  conc_ch4_rel(fc,j) = (rt(fc,j) - at(fc,j)*conc_ch4_rel(fc,j-1)) / bet(fc)
+               end do
+            end do
+            do j = nlevsoi-1, 0, -1
+               do fc = 1, num_methc
+                  conc_ch4_rel(fc,j) = conc_ch4_rel(fc,j) - gam(fc,j+1) * conc_ch4_rel(fc,j+1)
+               end do
+            end do
 
             ! Calculate net ch4 flux to the atmosphere from the surface (+ to atm)
             do fc = 1, num_methc
                c = filter_methc (fc)
                g = col_pp%gridcell(c)
                if (jwt(c) /= 0) then ! WT not at the surface
-                  ch4_surf_diff(c) = dm1_zm1(c,1) * ( (conc_ch4_rel(c,1)+conc_ch4_rel_old(c,1))/2._r8 &
+                  ch4_surf_diff(c) = dm1_zm1(fc,1) * ( (conc_ch4_rel(fc,1)+conc_ch4_rel_old(fc,1))/2._r8 &
                        - c_atm(g,s)) ! [mol/m2/s]
                   ch4_surf_ebul(c) = 0._r8 ! all the ebullition has already come out in the soil column (added to source)
                   ! Try adding directly to atm. to prevent destabilization of diffusion
                   !ch4_surf_ebul(c) = ch4_ebul_total(c) ! [mol/m2/s]
                else ! WT at the surface; i.e., jwt(c)==0
-                  ch4_surf_diff(c) = dm1_zm1(c,1) * ( (conc_ch4_rel(c,1)+conc_ch4_rel_old(c,1))/2._r8 &
-                       - c_atm(g,s)*k_h_cc(c,0,s)) ! [mol/m2/s]
+                  ch4_surf_diff(c) = dm1_zm1(fc,1) * ( (conc_ch4_rel(fc,1)+conc_ch4_rel_old(fc,1))/2._r8 &
+                       - c_atm(g,s)*k_h_cc(fc,0,s)) ! [mol/m2/s]
                   ! atmospheric concentration gets mult. by k_h_cc as above
                   ch4_surf_ebul(c) = ch4_ebul_total(c) ! [mol/m2/s]
                endif
@@ -3613,8 +3609,8 @@ contains
                do fc = 1, num_methc
                   c = filter_methc (fc)
 
-                  if (conc_ch4_rel(c,j) < 0._r8) then
-                     deficit = - conc_ch4_rel(c,j)*epsilon_t(c,j,1)*dz(c,j)  ! Mol/m^2 added
+                  if (conc_ch4_rel(fc,j) < 0._r8) then
+                     deficit = - conc_ch4_rel(fc,j)*epsilon_t(fc,j,1)*dz(c,j)  ! Mol/m^2 added
                      if (deficit > 1.e-3_r8 * scale_factor_gasdiff) then
                         if (deficit > 1.e-2_r8) then
                            write(iulog,*)  'Note: sink > source in ch4_tran, sources are changing '// &
@@ -3625,7 +3621,7 @@ contains
                            write(iulog,*) 'If this occurs frequently, consider reducing land model (or  methane model) timestep, or reducing the max. sink per timestep in the methane model.'
                         end if
                      end if
-                     conc_ch4_rel(c,j) = 0._r8
+                     conc_ch4_rel(fc,j) = 0._r8
                      ! Subtract deficit
                      ch4_surf_diff(c) = ch4_surf_diff(c) - deficit/dtime_ch4
                   end if
@@ -3640,62 +3636,67 @@ contains
                do fc = 1, num_methc
                   c = filter_methc (fc)
 
-                  ! For correct balance, deprecate source_old.
-                  source_old(c,j,s) = source(c,j,s)
-                  ! source_old could be removed later
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
-                  ! epsilon_t acts like source also
+                  ! The source terms (and epsilon_t) are constant over the timestep, so the
+                  ! deprecated source_old and epsilon_t_old equal source and epsilon_t.
                   dzj     = dz(c,j)
                   if (j < nlevsoi .and. j == jwt(c)) then ! concentration inside needs to be mult. by k_h_cc for dp1_zp1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_o2_rel(c,j+1)-conc_o2_rel(c,j)*k_h_cc(c,j,s)) - &
-                          dm1_zm1(c,j) * (conc_o2_rel(c,j)  -conc_o2_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_o2_rel(fc,j+1)-conc_o2_rel(fc,j)*k_h_cc(fc,j,s)) - &
+                          dm1_zm1(fc,j) * (conc_o2_rel(fc,j)  -conc_o2_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   elseif (j < nlevsoi .and. j == jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_o2_rel(c,j+1)-conc_o2_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_o2_rel(c,j) -conc_o2_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_o2_rel(fc,j+1)-conc_o2_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_o2_rel(fc,j) -conc_o2_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   elseif (j < nlevsoi) then
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * (dp1_zp1(c,j) * (conc_o2_rel(c,j+1)-conc_o2_rel(c,j)) - &
-                          dm1_zm1(c,j) * (conc_o2_rel(c,j)  -conc_o2_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * (dp1_zp1(fc,j) * (conc_o2_rel(fc,j+1)-conc_o2_rel(fc,j)) - &
+                          dm1_zm1(fc,j) * (conc_o2_rel(fc,j)  -conc_o2_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   else if (j == nlevsoi .and. j== jwt(c)+1) then
                      ! concentration above needs to be mult. by k_h_cc for dm1_zm1 term
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_o2_rel(c,j) -conc_o2_rel(c,j-1)*k_h_cc(c,j-1,s))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_o2_rel(fc,j) -conc_o2_rel(fc,j-1)*k_h_cc(fc,j-1,s))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   else  !j==nlevsoi
-                     rt(c,j) = epsilon_t_old(c,j,s) / dtime_ch4 * conc_o2_rel(c,j) +           &
-                          0.5_r8 / dzj * ( - dm1_zm1(c,j) * (conc_o2_rel(c,j)  -conc_o2_rel(c,j-1))) + &
-                          0.5_r8 * (source(c,j,s) + source_old(c,j,s))
+                     rt(fc,j) = epsilon_t(fc,j,s) / dtime_ch4 * conc_o2_rel(fc,j) +           &
+                          0.5_r8 / dzj * ( - dm1_zm1(fc,j) * (conc_o2_rel(fc,j)  -conc_o2_rel(fc,j-1))) + &
+                          0.5_r8 * (source(fc,j,s) + source(fc,j,s))
                   endif
-                  epsilon_t_old(c,j,s) = epsilon_t(c,j,s)
-                  source_old(c,j,s) = source(c,j,s)
 
                enddo ! fc; column
             enddo ! j; nlevsoi
 
-            call Tridiagonal(bounds, 0, nlevsoi, jtop(bounds%begc:bounds%endc), &
-                 num_methc, filter_methc, &
-                 at(bounds%begc:bounds%endc, :), &
-                 bt(bounds%begc:bounds%endc, :), &
-                 ct(bounds%begc:bounds%endc, :), &
-                 rt(bounds%begc:bounds%endc, :), &
-                 conc_o2_rel(bounds%begc:bounds%endc,0:nlevsoi))
+            ! Solve the tridiagonal system (as Tridiagonal with jtop = 0)
+            do fc = 1, num_methc
+               bet(fc) = bt(fc,0)
+               conc_o2_rel(fc,0) = rt(fc,0) / bet(fc)
+            end do
+            do j = 1, nlevsoi
+               do fc = 1, num_methc
+                  gam(fc,j) = ct(fc,j-1) / bet(fc)
+                  bet(fc) = bt(fc,j) - at(fc,j) * gam(fc,j)
+                  conc_o2_rel(fc,j) = (rt(fc,j) - at(fc,j)*conc_o2_rel(fc,j-1)) / bet(fc)
+               end do
+            end do
+            do j = nlevsoi-1, 0, -1
+               do fc = 1, num_methc
+                  conc_o2_rel(fc,j) = conc_o2_rel(fc,j) - gam(fc,j+1) * conc_o2_rel(fc,j+1)
+               end do
+            end do
 
             ! Ensure that concentrations stay above 0
             do j = 1,nlevsoi
                do fc = 1, num_methc
                   c = filter_methc (fc)
                   g = col_pp%gridcell(c)
-                  conc_o2_rel(c,j) = max (conc_o2_rel(c,j), 1.e-12_r8)
+                  conc_o2_rel(fc,j) = max (conc_o2_rel(fc,j), 1.e-12_r8)
                   ! In case of pathologically large aerenchyma conductance. Should be OK in general but
                   ! this will maintain stability even if a PFT with very small weight somehow has an absurd NPP or LAI.
                   ! Also, oxygen above ambient will probably bubble.
-                  conc_o2_rel(c,j) = min (conc_o2_rel(c,j), c_atm(g,2)/epsilon_t(c,j,2))
+                  conc_o2_rel(fc,j) = min (conc_o2_rel(fc,j), c_atm(g,2)/epsilon_t(fc,j,2))
                enddo
             enddo
 
@@ -3707,8 +3708,8 @@ contains
       do j = 1,nlevsoi ! No need to update the atm. level concentrations
          do fc = 1, num_methc
             c = filter_methc (fc)
-            conc_ch4(c,j) = conc_ch4_rel(c,j)*epsilon_t(c,j,1)
-            conc_o2(c,j)  = conc_o2_rel(c,j) *epsilon_t(c,j,2)
+            conc_ch4(c,j) = conc_ch4_rel(fc,j)*epsilon_t(fc,j,1)
+            conc_o2(c,j)  = conc_o2_rel(fc,j) *epsilon_t(fc,j,2)
          end do
       end do
 
@@ -3718,10 +3719,10 @@ contains
          do fc = 1, num_methc
             c = filter_methc (fc)
 
-            if (j == 1) errch4(c) = 0._r8
-            errch4(c) = errch4(c) + (conc_ch4(c,j) - conc_ch4_bef(c,j))*dz(c,j)
-            errch4(c) = errch4(c) - ch4_prod_depth(c,j)*dz(c,j)*dtime
-            errch4(c) = errch4(c) + ch4_oxid_depth(c,j)*dz(c,j)*dtime
+            if (j == 1) errch4(fc) = 0._r8
+            errch4(fc) = errch4(fc) + (conc_ch4(c,j) - conc_ch4_bef(fc,j))*dz(c,j)
+            errch4(fc) = errch4(fc) - ch4_prod_depth(c,j)*dz(c,j)*dtime
+            errch4(fc) = errch4(fc) + ch4_oxid_depth(c,j)*dz(c,j)*dtime
          end do
       end do
 
@@ -3729,11 +3730,11 @@ contains
          c = filter_methc (fc)
 
          ! For history make sure that grnd_ch4_cond includes snow, for methane diffusivity
-         grnd_ch4_cond(c) = spec_grnd_cond(c,1)
-         errch4(c) = errch4(c) + (ch4_surf_aere(c) + ch4_surf_ebul(c) + ch4_surf_diff(c))*dtime
+         grnd_ch4_cond(c) = spec_grnd_cond(fc,1)
+         errch4(fc) = errch4(fc) + (ch4_surf_aere(c) + ch4_surf_ebul(c) + ch4_surf_diff(c))*dtime
 
-         if (abs(errch4(c)) < 1.e-8_r8) then
-            ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(c)/dtime
+         if (abs(errch4(fc)) < 1.e-8_r8) then
+            ch4_surf_diff(c) = ch4_surf_diff(c) - errch4(fc)/dtime
          else ! errch4 > 1e-8 mol / m^2 / timestep
             write(iulog,*) 'CH4 Conservation Error in CH4Mod during diffusion, nstep, c, errch4 (mol /m^2.timestep)'
             g = col_pp%gridcell(c)
