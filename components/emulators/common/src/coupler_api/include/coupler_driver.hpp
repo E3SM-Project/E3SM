@@ -2,7 +2,6 @@
 #define E3SM_COUPLER_DRIVER_HPP
 
 #include <coupler.hpp>
-#include <iostream>
 #include <process.hpp>
 
 namespace e3sm::coupler {
