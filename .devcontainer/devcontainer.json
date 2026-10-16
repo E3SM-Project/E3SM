@@ -1,0 +1,124 @@
+// Example .devcontainer/devcontainer.json for the E3SM monorepo. Copy into E3SM, do not
+// use from here. Comments call out the settings that matter for these images.
+{
+  "name": "E3SM (gnu13-openmpi4)",
+
+  // One tag, both arches: this resolves to the native image on Apple Silicon and x86_64.
+  "image": "ghcr.io/e3sm-project/e3sm-image:gnu13-openmpi4-dev",
+
+  // The image's non-root user. On Linux the Dev Containers extension rewrites its uid/gid
+  // to match yours so bind-mounted files are not owned by the wrong user. It only re-owns
+  // the home directory, though; e3sm-fix-ownership in postCreateCommand below does the venv
+  // and /projects/e3sm.
+  "remoteUser": "e3sm",
+  "updateRemoteUserUID": true,
+
+  // CRITICAL. The whole environment (lmod modules, SPACK_ARCH, the python venv) lives in
+  // /etc/profile.d, which only a LOGIN shell sources. This makes VS Code probe a login
+  // shell and hand that environment to terminals, tasks, and extensions. Without it,
+  // nothing finds a compiler.
+  "userEnvProbe": "loginInteractiveShell",
+
+  // Keep the checkout inside /projects/e3sm, next to the data mounts below.
+  "workspaceMount": "source=${localWorkspaceFolder},target=/projects/e3sm/work/E3SM,type=bind,consistency=cached",
+  "workspaceFolder": "/projects/e3sm/work/E3SM",
+
+  // READ THIS ON macOS (and Windows). A bind mount inherits the HOST filesystem's case
+  // rules, and APFS is case-insensitive. Inside the container that makes
+  // components/cmake/modules/FindNETCDF.cmake answer to the name FindNetCDF.cmake, so
+  // scorpio's find_package(NetCDF) loads E3SM's module instead of its own. That module
+  // never sets NetCDF_C_FOUND, and the build dies with
+  //   Could not find NetCDF C library, disabling support for NetCDF
+  //   SCORPIO requires PnetCDF and/or NetCDF Fortran libraries
+  // even though -DNetCDF_C_PATH was passed explicitly. No environment variable can fix
+  // this; the source has to live somewhere case-sensitive. Replace the two lines above
+  // with a named volume, which lives in the Linux VM:
+  //   "workspaceMount": "source=e3sm-src,target=/projects/e3sm/work/E3SM,type=volume",
+  //   "workspaceFolder": "/projects/e3sm/work/E3SM",
+  // The volume starts empty, so create it with "Dev Containers: Clone Repository in
+  // Container Volume" from the command palette rather than "Open Folder in Container".
+  // Bonus: it is far faster than a bind, which is slow for a tree this size.
+  // The alternative, if you want the checkout to stay visible in Finder, is a
+  // case-sensitive APFS volume (diskutil apfs addVolume diskN "Case-sensitive APFS" e3sm)
+  // and cloning there. Linux hosts are case-sensitive already and need none of this.
+
+  // Docker's bind mounts require the source to exist on the host; unlike `-v` it will not
+  // create it. initializeCommand runs on the HOST before the container is created.
+  // NOTE: "e3sm-data", not "e3sm" -- macOS filesystems are case-insensitive, so ~/e3sm
+  // and an ~/E3SM checkout are the SAME directory, and the data would land in your repo.
+  "initializeCommand": "mkdir -p ${localEnv:HOME}/e3sm-data/inputdata ${localEnv:HOME}/e3sm-data/baselines",
+
+  "mounts": [
+    // Input data and baselines. Adjust or drop the baselines line if you do not compare.
+    "source=${localEnv:HOME}/e3sm-data/inputdata,target=/projects/e3sm/data/inputdata,type=bind",
+    "source=${localEnv:HOME}/e3sm-data/baselines,target=/projects/e3sm/data/baselines,type=bind",
+
+    // Compiler cache, so a rebuild does not start cold.
+    "source=e3sm-ccache,target=/home/e3sm/.cache/ccache,type=volume",
+
+    // CREDENTIALS. Empty volumes: log into gh and the agents ONCE inside the container and
+    // it persists across rebuilds. Nothing from the host is exposed. Claude Code on macOS
+    // keeps its token in the Keychain, so it cannot be bind-mounted in regardless.
+    "source=e3sm-config,target=/home/e3sm/.config,type=volume",
+    "source=e3sm-claude,target=/home/e3sm/.claude,type=volume",
+    "source=e3sm-codex,target=/home/e3sm/.codex,type=volume",
+    "source=e3sm-copilot,target=/home/e3sm/.copilot,type=volume",
+    // Only opencode's own dir: a volume over all of ~/.local/share would hide the Claude
+    // Code install that lives there.
+    "source=e3sm-opencode,target=/home/e3sm/.local/share/opencode,type=volume"
+
+    // To instead bind your host credentials (gh/codex/copilot/opencode work on first
+    // launch, but every process in the container -- agents included -- can read them),
+    // replace the five volumes above with:
+    //   "source=${localEnv:HOME}/.config/gh,target=/home/e3sm/.config/gh,type=bind",
+    //   "source=${localEnv:HOME}/.codex,target=/home/e3sm/.codex,type=bind",
+    //   "source=${localEnv:HOME}/.copilot,target=/home/e3sm/.copilot,type=bind",
+    //   "source=${localEnv:HOME}/.local/share/opencode,target=/home/e3sm/.local/share/opencode,type=bind"
+    //
+    // Deliberately NOT here: ~/.ssh. VS Code forwards your ssh-agent automatically, so
+    // git push over SSH works without ever exposing the private key.
+  ],
+
+  "containerEnv": {
+    "CCACHE_DIR": "/home/e3sm/.cache/ccache",
+    "CCACHE_MAXSIZE": "20G"
+  },
+
+  // No --hostname or --machine needed for CIME: the -dev images enable their own machine,
+  // e3sm-container, at login (~/.cime and CIME_MACHINE; see the README).
+
+  // Lifecycle hooks run under `sh -c`, which is NOT a login shell, so wrap anything that
+  // needs the toolchain. `e3sm-env` in these images does exactly that.
+  // e3sm-fix-ownership comes first: if the uid was rewritten (Linux, host uid not 1000) it
+  // hands the python venv and /projects/e3sm to you, so `pip install` works -- a one-time
+  // copy of the venv that can take a minute. Otherwise it does nothing.
+  "postCreateCommand": "e3sm-fix-ownership && e3sm-env git submodule update --init --recursive",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "fortran-lang.linter-gfortran",
+        "ms-python.python",
+        "twxs.cmake"
+      ],
+      "settings": {
+        // Workspace Trust is left on: VS Code asks once whether to trust the folder before it
+        // lets tasks, launch configs and extensions run code from it, and a rebuilt
+        // container may ask again. To skip the prompt, add
+        //   "security.workspace.trust.enabled": false,
+        // here (it lands in the container's remote user settings, which is why this
+        // application-scoped setting takes effect at all) -- but that trusts every folder
+        // opened in this container, which also holds your forwarded ssh-agent and the
+        // agents' credentials, not just this checkout.
+
+        // Same login-shell reason as userEnvProbe above.
+        "terminal.integrated.profiles.linux": {
+          "bash-login": { "path": "/bin/bash", "args": ["-l"] }
+        },
+        "terminal.integrated.defaultProfile.linux": "bash-login",
+        "C_Cpp.intelliSenseEngine": "default"
+      }
+    }
+  }
+}
