@@ -1717,7 +1717,7 @@ contains
     type(shr_strdata_type)  ,intent(in) :: SDAT  ! strdata data data-type
     character(len=*),optional,intent(in) :: name  ! just a name for tracking
 
-    integer(IN)   :: n
+    integer(IN)   :: n, fn
     character(CL) :: lname
 
     !----- formats -----
@@ -1762,6 +1762,13 @@ contains
 
     do n=1, SDAT%nstreams
        write(logunit,F04) "  streams (",n,") = ",trim(SDAT%streams(n))
+       write(logunit,*) "  num files for stream (",n,") = ",SDAT%stream(n)%nfiles
+
+       do fn=1,SDAT%stream(n)%nfiles
+         write(logunit,*) "  file: (",fn,") = ",trim(SDAT%stream(n)%file(fn)%name)
+         write(logunit,*) "  time slices: (",fn,") = ",SDAT%stream(n)%file(fn)%nt
+         write(logunit,*) " readin time slices: (",fn,") = ",SDAT%stream(n)%file(fn)%haveData
+       end do
        write(logunit,F04) "  taxMode (",n,") = ",trim(SDAT%taxMode(n))
        write(logunit,F07) "  dtlimit (",n,") = ",SDAT%dtlimit(n)
        write(logunit,F05) "  strnxg  (",n,") = ",SDAT%strnxg(n)
