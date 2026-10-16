@@ -25,6 +25,10 @@ string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 # cray fortran outputs uppercase mod name, forces lowercase
 string(APPEND CMAKE_Fortran_FLAGS " -ef")
 
+string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g")
+
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
@@ -54,12 +58,6 @@ foreach (_prefix
 	list(APPEND CMAKE_BUILD_RPATH "${_prefix}/lib" "${_prefix}/lib64")
 	list(APPEND CMAKE_INSTALL_RPATH "${_prefix}/lib" "${_prefix}/lib64")
 endforeach()
-
-# The MOAB coupler pulls in a MOAB build that is UBSan-instrumented in this
-# environment, so the final executable must link the UBSan runtime.
-if (DEFINED COMP_INTERFACE AND COMP_INTERFACE STREQUAL "moab")
-	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -lubsan -Wl,--as-needed")
-endif()
 
 list(REMOVE_DUPLICATES CMAKE_BUILD_RPATH)
 list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)

@@ -31,14 +31,20 @@ string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=ON -DKokkos_ENABLE_SERIAL=ON 
 # resolve SPIO compile issue
 string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
-string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -O2 -x hip --offload-arch=gfx942")
+string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -x hip --offload-arch=gfx942")
 
-# cray fortran outputs uppercase mod name, forces lowercase
-string(APPEND CMAKE_Fortran_FLAGS " -ef")
+string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_HIP_FLAGS_DEBUG " -O0 -g")
 
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_HIP_FLAGS_RELEASE " -O2")
+
+# cray fortran outputs uppercase mod name, forces lowercase
+string(APPEND CMAKE_Fortran_FLAGS " -ef")
 
 if (COMP_NAME STREQUAL cpl)
 	# auto-detection not working, tries to use AMD variant, we need Cray variant
@@ -66,11 +72,7 @@ foreach (_prefix
 	list(APPEND CMAKE_INSTALL_RPATH "${_prefix}/lib" "${_prefix}/lib64")
 endforeach()
 
-# The MOAB coupler pulls in a MOAB build that is UBSan-instrumented in this
-# environment, so the final executable must link the UBSan runtime.
 if (DEFINED COMP_INTERFACE AND COMP_INTERFACE STREQUAL "moab")
-	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -lubsan -Wl,--as-needed")
-
 	# MPICH GPU-aware support requires the GTL library to be retained even under --as-needed.
 	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -Wl,-l:libmpi_gtl_hsa.so -Wl,--as-needed")
 	list(APPEND CMAKE_BUILD_RPATH "/opt/cray/pe/mpich/9.0.1/gtl/lib")
