@@ -91,8 +91,8 @@ module histComputeMod
      integer :: begg = 1, endg = 0
      integer :: beg(lev_topo:lev_patch) = 1, end(lev_topo:lev_patch) = 0
      integer , allocatable :: grid_t(:), grid_l(:), grid_c(:), grid_p(:) ! gridcell of each point
-     integer , allocatable :: lun_c(:), lun_p(:)                         ! landunit of each column / patch
-     integer , allocatable :: col_p(:)                                   ! column of each patch
+     integer , allocatable :: lun_c(:), lun_p(:)                         ! landunit of each column / patch [begc:endc] / [begp:endp]
+     integer , allocatable :: col_p(:)                                   ! column of each patch [begp:endp]
      real(r8), allocatable :: scale_c2l(:,:)  ! [column, c2l scale type]
      real(r8), allocatable :: scale_l2g(:,:)  ! [landunit, l2g scale type]
      logical :: extrasnowlayers = .false.     ! snow levels ordered top layer first

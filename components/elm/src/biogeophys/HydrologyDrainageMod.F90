@@ -129,6 +129,10 @@ contains
          qflx_to_downhill       => col_wf%qflx_to_downhill          & ! Output: [real(r8) (:)   ]  flux transferred to downhill topounit (mm H2O/s)
          )
 
+      ! Determine time step and step size
+
+      dtime = dtime_mod
+
       !$acc enter data create(sumtot,sumice,sumliq)
       if (use_vichydro) then
          call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &

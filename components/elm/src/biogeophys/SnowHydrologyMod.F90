@@ -704,7 +704,7 @@ contains
                      dexpf = exp(-c4*td)
 
                    ! Settling as a result of destructive metamorphism
-                      ddz1_fresh = (-grav * (burden(c) + wx/2._r8)) / &
+                      ddz1_fresh = (-grav * (burden(fc) + wx/2._r8)) / &
                                    (0.007_r8 * min(max(bi,dm),denice)**(4.75_r8 + min(td,0._r8)/40._r8))
                       snw_ssa = 3.e6_r8 / (denice * snw_rds(c,j))
                       if (snw_ssa < 50._r8) then

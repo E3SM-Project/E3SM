@@ -272,12 +272,12 @@ contains
     real(r8) :: delq_soil
     real(r8) :: delq_h2osfc
     real(r8) :: dt_veg(num_nolu_vegp)          ! change in t_veg, last iteration (Kelvin)
-    real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
-    real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
-    real(r8) :: tau(bounds%begp:bounds%endp)      ! Stress used in iteration
-    real(r8) :: tau_diff(bounds%begp:bounds%endp) ! Difference from previous iteration tau
-    real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
-    real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
+    real(r8) :: wind_speed0(num_nolu_vegp) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(num_nolu_vegp) ! Adjusted wind speed for iteration
+    real(r8) :: tau(num_nolu_vegp)      ! Stress used in iteration
+    real(r8) :: tau_diff(num_nolu_vegp) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(num_nolu_vegp) ! Previous iteration tau
+    real(r8) :: prev_tau_diff(num_nolu_vegp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
     ! iter_filterp(1:fn) holds the patch index "p" for patches still iterating (unconverged).
     ! iter_filter_map(1:fn) holds, for each entry, the ORIGINAL compressed filter_index
@@ -630,9 +630,19 @@ contains
          taf(filter_index) = (t_grnd(c) + thm(p))/2._r8
          qaf(filter_index) = (forc_q(t)+qg(c))/2._r8
 
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(filter_index) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(filter_index) = wind_speed0(filter_index)
+            ur(filter_index) = max(1.0_r8, sqrt(wind_speed_adj(filter_index)**2 + ugust(t)**2))
+
+            prev_tau(filter_index) = tau_est(t)
+         else
+            ur(filter_index) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
+         end if
+         tau_diff(filter_index) = 1.e100_r8
          ugust_total(filter_index) = ugust(t)
 
-         ur(filter_index)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          dth(filter_index)   = thm(p)-taf(filter_index)
          dqh(filter_index)   = forc_q(t)-qaf(filter_index)
          delq(filter_index)  = qg(c) - qaf(filter_index)
@@ -698,11 +708,11 @@ contains
             ! This is mainly to avoid convergence issues since this is such a
             ! basic form of iteration in this loop...
             if (implicit_stress) then
-               tau(p) = forc_rho(t)*wind_speed_adj(p)/ram1(p)
-               call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
-                    tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
-                    wind_speed_adj(p))
-               ur(filter_index) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
+               tau(filter_index) = forc_rho(t)*wind_speed_adj(filter_index)/ram1(p)
+               call shr_flux_update_stress(wind_speed0(filter_index), wsresp(t), tau_est(t), &
+                    tau(filter_index), prev_tau(filter_index), tau_diff(filter_index), prev_tau_diff(filter_index), &
+                    wind_speed_adj(filter_index))
+               ur(filter_index) = max(1.0_r8, sqrt(wind_speed_adj(filter_index)**2 + ugust(t)**2))
             end if
 
             ! Bulk boundary layer resistance of leaves
@@ -1074,7 +1084,7 @@ contains
                efeb(filter_index) = efe(filter_index)
                det(filter_index)  = max(del(filter_index),del2(filter_index))
                if (.not. (det(filter_index) < dtmin .and. dele(filter_index) < dlemin) .or. &
-                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
+                    (implicit_stress .and. abs(tau_diff(filter_index)) >= dtaumin)) then
                   ! still unconverged: keep it in the compacted filter for the next iteration
                   fn = fn + 1
                   iter_filterp(fn)     = p
@@ -1177,12 +1187,12 @@ contains
          h2ocan(p) = max(0._r8,h2ocan(p)+(qflx_tran_veg(p)-qflx_evap_veg(p))*dtime_mod)
 
          ! Check for convergence of stress.
-         if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
+         if (implicit_stress .and. abs(tau_diff(filter_index)) > dtaumin) then
             if (nstep_mod > 0) then ! Suppress common warnings on the first time step.
                write(iulog,*)'WARNING: Stress did not converge for canopy ',&
-                    ' nstep = ',nstep_mod,' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
-                    ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
-                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',itlef
+                    ' nstep = ',nstep_mod,' p= ',p,' prev_tau_diff= ',prev_tau_diff(filter_index),&
+                    ' tau_diff= ',tau_diff(filter_index),' tau= ',tau(filter_index),&
+                    ' wind_speed_adj= ',wind_speed_adj(filter_index),' iter_final= ',itlef
             end if
          end if
 

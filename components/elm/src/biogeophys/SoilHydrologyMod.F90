@@ -555,9 +555,9 @@ contains
              end if
              
              if (use_lnd_rof_two_way) then
-                qflx_infl_excess(c) = max(0._r8,qflx_in_soil(fc) -  (1.0_r8 - frac_h2osfc(c) - frac_h2orof(c))*qinmax)
+                qflx_infl_excess(fc) = max(0._r8,qflx_in_soil(fc) -  (1.0_r8 - frac_h2osfc(c) - frac_h2orof(c))*qinmax)
              elseif (use_ocn_lnd_one_way) then
-                qflx_infl_excess(c) = max(0._r8,qflx_in_soil(fc) -  (1.0_r8 - frac_h2osfc(c) - frac_h2oocn(c))*qinmax)
+                qflx_infl_excess(fc) = max(0._r8,qflx_in_soil(fc) -  (1.0_r8 - frac_h2osfc(c) - frac_h2oocn(c))*qinmax)
              else
                 qflx_infl_excess(fc) = max(0._r8,qflx_in_soil(fc) -  (1.0_r8 - frac_h2osfc(c))*qinmax)
              endif
@@ -720,10 +720,10 @@ contains
                endif
 
                qflx_infl(c) = qflx_infl(c) + qflx_h2oocn_drain(c) 
-               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c) + qflx_h2oocn_drain(c) 
+               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(fc) + qflx_h2oocn_drain(c) 
 
              else
-               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c)
+               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(fc)
              endif
 
 
@@ -1659,13 +1659,13 @@ contains
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
              nlevbed = nlev2bed(c)
-             jwt(c) = nlevbed
+             jwt(fc) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
                    if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                       exit
                    else
-                      jwt(c) = j-1
+                      jwt(fc) = j-1
                       exit
                    end if
                 end if

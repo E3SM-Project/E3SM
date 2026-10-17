@@ -872,7 +872,11 @@ contains
       begp = bounds%begp
       endp = bounds%endp 
       !$acc parallel loop independent gang vector default(present) 
-      do c = begc, endc 
+      do c = begc, endc
+         begwb_col(c) = 0._r8
+         h2ocan_col(c) = 0._r8
+         h2osoi_liq_depth_intg(c) = 0._r8
+         h2osoi_ice_depth_intg(c) = 0._r8
          h2osoi_liq_depth_intg_col(c) = 0._r8
          h2osoi_ice_depth_intg_col(c) = 0._r8
          wa_local_col(c) = wa(c)
