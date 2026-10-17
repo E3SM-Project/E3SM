@@ -843,6 +843,10 @@ program mksurfdat
        pctwet(n) = float(nint(pctwet(n)))
        pctgla(n) = float(nint(pctgla(n)))
        
+       ! ELM does not include physics for wetlands, so we add it to the lake fraction.
+       pctlak(n) = pctlak(n) + pctwet(n)
+       pctwet(n) = 0._r8
+
        ! Make sure sum of land cover types does not exceed 100. If it does,
        ! subtract excess from most dominant land cover.
        
