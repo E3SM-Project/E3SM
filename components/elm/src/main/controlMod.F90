@@ -41,7 +41,6 @@ module controlMod
   use elm_varcon              , only: h2osno_max
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
-  use elm_varctl              , only: nu_com, use_var_soil_thick
   use elm_varctl              , only: use_lake_wat_storage, lake_evap_cap_method
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
@@ -760,14 +759,9 @@ contains
     ! Lake evaporation cap method
     if (lake_evap_cap_method /= 'none' .and. &
         lake_evap_cap_method /= 'rain_snow' .and. &
-        lake_evap_cap_method /= 'rain_snow_h2osno' .and. &
-        lake_evap_cap_method /= 'wslake') then
+        lake_evap_cap_method /= 'rain_snow_h2osno' ) then
        write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
        call endrun(msg=' ERROR:: choices are none, rain_snow, or rain_snow_h2osno' // &
-            errMsg(__FILE__, __LINE__))
-    endif
-    if (lake_evap_cap_method == 'wslake') then
-       call endrun(msg=' ERROR:: lake_evap_cap_method = wslake is not implemented' // &
             errMsg(__FILE__, __LINE__))
     endif
 
