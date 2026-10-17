@@ -53,7 +53,7 @@ permissions:
   actions: write
 
 env:
-  generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
+  generate: ${{ (github.event_name == 'workflow_dispatch' && inputs.bless) || github.event_name == 'pull_request' }}
 
 jobs:
   tests:
@@ -76,7 +76,7 @@ jobs:
     steps:
       - name: Refuse to bless off master
         # Baselines saved from any other ref are visible to that ref only
-        if: env.generate == 'true' && github.ref != 'refs/heads/master'
+        if: env.generate == 'true' && github.ref != 'refs/heads/master' && github.event_name != 'pull_request'
         run: |
           echo "::error::bless only from master (this is ${{ github.ref }})"
           exit 1
