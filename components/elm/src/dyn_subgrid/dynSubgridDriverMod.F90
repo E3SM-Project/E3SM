@@ -14,6 +14,7 @@ module dynSubgridDriverMod
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
+  use dynSubgridControlMod, only : set_subgrid_weights_updated
   use dynPriorWeightsMod  , only : prior_weights_type
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
   use dynColumnStateUpdaterMod     , only : column_state_updater_type
@@ -284,6 +285,7 @@ contains
        call dyncrop_interp(bounds_proc,crop_vars, data_updated=crop_updated)
        weights_updated = weights_updated .or. crop_updated
     end if
+    call set_subgrid_weights_updated(weights_updated)
 
     if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
        call dynHarvest_interp_harvest_types(bounds_proc)

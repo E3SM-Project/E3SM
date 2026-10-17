@@ -7833,7 +7833,8 @@ contains
   end subroutine col_cf_summary_for_ch4
 
   !-----------------------------------------------------------------------
-  subroutine col_cf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_cf_setvalues ( this, num_column, filter_column, value_column, &
+       zero_harvest, zero_erosion, zero_transport)
     ! !DESCRIPTION:
     ! Set column-level carbon fluxes
     !
@@ -7842,13 +7843,25 @@ contains
     integer , intent(in) :: num_column
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
+    logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
+    logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
     ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
+    logical :: do_zero_harvest
+    logical :: do_zero_erosion
+    logical :: do_zero_transport
     !------------------------------------------------------------------------
+    do_zero_harvest = .true.
+    if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_erosion = .true.
+    if (present(zero_erosion)) do_zero_erosion = zero_erosion
+    do_zero_transport = .true.
+    if (present(zero_transport)) do_zero_transport = zero_transport
     do j = 1, nlevdecomp_full
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -7895,7 +7908,6 @@ contains
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_cpools_sourcesink(i,j,k) = value_column
-             this%decomp_cpools_transport_tendency(i,j,k) = value_column
           end do
        end do
     end do
@@ -7920,7 +7932,6 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cpools_yield(i,k) = value_column !if ero_ccycle
           this%m_decomp_cpools_to_fire(i,k) = value_column
        end do
     end do 
@@ -7928,8 +7939,6 @@ contains
     do fi = 1,num_column,flux_setvalues_block_size
        associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-       this%hrv_deadstemc_to_prod10c(idx)  = value_column
-       this%hrv_deadstemc_to_prod100c(idx) = value_column
        this%hrv_cropc_to_prod1c(idx)       = value_column
        this%prod1c_loss(idx)               = value_column
        this%prod10c_loss(idx)              = value_column
@@ -7956,7 +7965,6 @@ contains
        this%litfall(idx)               = value_column
        this%vegfire(idx)               = value_column
        this%wood_harvestc(idx)         = value_column
-       this%hrv_xsmrpool_to_atm(idx)   = value_column
 
        end associate
     end do
@@ -7985,10 +7993,44 @@ contains
       do fi = 1,num_column
         i = filter_column(fi)
         this%decomp_cpools_leached(i,k) = value_column
-        this%decomp_cpools_erode(i,k) = value_column
-        this%decomp_cpools_deposit(i,k) = value_column
       end do 
-    end do 
+    end do
+
+    ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
+    if (do_zero_harvest) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%hrv_deadstemc_to_prod10c(idx)  = value_column
+          this%hrv_deadstemc_to_prod100c(idx) = value_column
+          this%hrv_xsmrpool_to_atm(idx)       = value_column
+          end associate
+       end do
+    end if
+
+    ! Erosion fluxes, written only with ero_ccycle.
+    if (do_zero_erosion) then
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%decomp_cpools_yield(idx,k)   = value_column
+             this%decomp_cpools_erode(idx,k)   = value_column
+             this%decomp_cpools_deposit(idx,k) = value_column
+             end associate
+          end do
+       end do
+    end if
+
+    ! Vertical transport tendencies, rewritten every step by SoilLittVertTransp.
+    if (do_zero_transport) then
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_cpools_transport_tendency(i,j,k) = value_column
+             end do
+          end do
+       end do
+    end if
 
   end subroutine col_cf_setvalues
 
@@ -9458,7 +9500,8 @@ contains
   end subroutine col_nf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_nf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_nf_setvalues ( this, num_column, filter_column, value_column, &
+       zero_harvest, zero_fan, zero_erosion)
     !
     ! !DESCRIPTION:
     ! Set column-level nitrogen fluxes
@@ -9468,13 +9511,25 @@ contains
     integer , intent(in)         :: num_column
     integer , intent(in)         :: filter_column(:)
     real(r8), intent(in)         :: value_column
+    logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_fan       ! zero the FAN fluxes (default .true.)
+    logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
     ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
+    logical :: do_zero_harvest
+    logical :: do_zero_fan
+    logical :: do_zero_erosion
     !------------------------------------------------------------------------
+    do_zero_harvest = .true.
+    if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_fan = .true.
+    if (present(zero_fan)) do_zero_fan = zero_fan
+    do_zero_erosion = .true.
+    if (present(zero_erosion)) do_zero_erosion = zero_erosion
     do j = 1, nlevdecomp_full
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -9543,8 +9598,6 @@ contains
        this%fire_nloss(idx)                = value_column
        this%som_n_leached(idx)             = value_column
        
-       this%hrv_deadstemn_to_prod10n(idx)  = value_column
-       this%hrv_deadstemn_to_prod100n(idx) = value_column
        this%hrv_cropn_to_prod1n(idx)       = value_column
        this%prod10n_loss(idx)              = value_column
        this%prod100n_loss(idx)             = value_column
@@ -9584,32 +9637,7 @@ contains
        this%plant_ndemand(idx) = value_column
 
        ! FAN
-       this%manure_tan_appl(idx)    = value_column
-       this%manure_n_appl(idx)      = value_column
-       this%manure_n_grz(idx)       = value_column
-       this%manure_n_mix(idx)       = value_column
-       this%manure_n_barns(idx)     = value_column
-       this%fert_n_appl(idx)        = value_column
-       this%otherfert_n_appl(idx)   = value_column
-       this%manure_n_transf(idx)    = value_column
-       this%nh3_barns(idx)          = value_column
-       this%nh3_stores(idx)         = value_column
-       this%nh3_grz(idx)            = value_column
-       this%nh3_manure_app(idx)     = value_column
-       this%nh3_fert(idx)           = value_column
-       this%nh3_otherfert(idx)      = value_column
-       this%nh3_total(idx)          = value_column
-       this%manure_no3_to_soil(idx) = value_column
-       this%fert_no3_to_soil(idx)   = value_column
-       this%manure_nh4_to_soil(idx) = value_column
-       this%fert_nh4_to_soil(idx)   = value_column
-       this%manure_nh4_runoff(idx)  = value_column
        this%fert_nh4_runoff(idx)    = value_column
-       this%manure_n_to_sminn(idx)  = value_column
-       this%manure_n_total(idx)     = value_column
-       this%synthfert_n_to_sminn(idx) = value_column
-       this%fan_totnin(idx)         = value_column
-       this%fan_totnout(idx)        = value_column
 
 
        end associate
@@ -9617,7 +9645,6 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_npools_yield(i,k) = value_column !ero_ccyle
           this%m_decomp_npools_to_fire(i,k) = value_column
           !NOTE: when are these used?
           !this%bgc_npool_ext_inputs_vr(i,:,k) = value_column
@@ -9690,7 +9717,62 @@ contains
          this%f_denit_vr(i,j)    = value_column
        end do
       end do 
-    end if  
+    end if
+
+    ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
+    if (do_zero_harvest) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%hrv_deadstemn_to_prod10n(idx)  = value_column
+          this%hrv_deadstemn_to_prod100n(idx) = value_column
+          end associate
+       end do
+    end if
+
+    ! FAN fluxes, written only with use_fan or fan_to_bgc_veg/crop.
+    if (do_zero_fan) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%manure_tan_appl(idx)      = value_column
+          this%manure_n_appl(idx)        = value_column
+          this%manure_n_grz(idx)         = value_column
+          this%manure_n_mix(idx)         = value_column
+          this%manure_n_barns(idx)       = value_column
+          this%fert_n_appl(idx)          = value_column
+          this%otherfert_n_appl(idx)     = value_column
+          this%manure_n_transf(idx)      = value_column
+          this%nh3_barns(idx)            = value_column
+          this%nh3_stores(idx)           = value_column
+          this%nh3_grz(idx)              = value_column
+          this%nh3_manure_app(idx)       = value_column
+          this%nh3_fert(idx)             = value_column
+          this%nh3_otherfert(idx)        = value_column
+          this%nh3_total(idx)            = value_column
+          this%manure_no3_to_soil(idx)   = value_column
+          this%fert_no3_to_soil(idx)     = value_column
+          this%manure_nh4_to_soil(idx)   = value_column
+          this%fert_nh4_to_soil(idx)     = value_column
+          this%manure_nh4_runoff(idx)    = value_column
+          this%manure_n_to_sminn(idx)    = value_column
+          this%manure_n_total(idx)       = value_column
+          this%synthfert_n_to_sminn(idx) = value_column
+          this%fan_totnin(idx)           = value_column
+          this%fan_totnout(idx)          = value_column
+          end associate
+       end do
+    end if
+
+    ! Erosion fluxes, written only with ero_ccycle.
+    if (do_zero_erosion) then
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%decomp_npools_yield(idx,k) = value_column
+             end associate
+          end do
+       end do
+    end if
+
   end subroutine col_nf_setvalues
 
   !-----------------------------------------------------------------------
@@ -11021,7 +11103,8 @@ contains
   end subroutine col_pf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_pf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_pf_setvalues ( this, num_column, filter_column, value_column, &
+       zero_harvest, zero_erosion, zero_transport)
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
@@ -11030,13 +11113,25 @@ contains
     integer , intent(in) :: num_column
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
+    logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
+    logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
     ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
+    logical :: do_zero_harvest
+    logical :: do_zero_erosion
+    logical :: do_zero_transport
     !------------------------------------------------------------------------
+    do_zero_harvest = .true.
+    if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_erosion = .true.
+    if (present(zero_erosion)) do_zero_erosion = zero_erosion
+    do_zero_transport = .true.
+    if (present(zero_transport)) do_zero_transport = zero_transport
     do j = 1, nlevdecomp_full
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -11071,10 +11166,6 @@ contains
 
           this%sminp_leached_vr(idx,j)                 = value_column
 
-          this%labilep_yield_vr(idx,j)                 = value_column
-          this%secondp_yield_vr(idx,j)                 = value_column
-          this%occlp_yield_vr(idx,j)                   = value_column
-          this%primp_yield_vr(idx,j)                   = value_column
 
           this%potential_immob_p_vr(idx,j)             = value_column
           this%actual_immob_p_vr(idx,j)                = value_column
@@ -11100,8 +11191,6 @@ contains
 
        this%pdep_to_sminp(idx)             = value_column
        this%fert_p_to_sminp(idx)           = value_column
-       this%hrv_deadstemp_to_prod10p(idx)  = value_column
-       this%hrv_deadstemp_to_prod100p(idx) = value_column
        this%hrv_cropp_to_prod1p(idx)       = value_column
        this%prod10p_loss(idx)              = value_column
        this%prod100p_loss(idx)             = value_column
@@ -11127,17 +11216,9 @@ contains
        this%somp_erode(idx)                = value_column
        this%somp_deposit(idx)              = value_column
        this%somp_yield(idx)                = value_column
-       this%labilep_erode(idx)             = value_column
-       this%labilep_deposit(idx)           = value_column
        this%labilep_yield(idx)             = value_column
-       this%secondp_erode(idx)             = value_column
-       this%secondp_deposit(idx)           = value_column
        this%secondp_yield(idx)             = value_column
-       this%occlp_erode(idx)               = value_column
-       this%occlp_deposit(idx)             = value_column
        this%occlp_yield(idx)               = value_column
-       this%primp_erode(idx)               = value_column
-       this%primp_deposit(idx)             = value_column
        this%primp_yield(idx)               = value_column
 
        ! Zero p2c column fluxes
@@ -11158,9 +11239,6 @@ contains
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
           this%decomp_ppools_leached(idx,k) = value_column
-          this%decomp_ppools_erode(idx,k) = value_column
-          this%decomp_ppools_deposit(idx,k) = value_column
-          this%decomp_ppools_yield(idx,k) = value_column
           this%m_decomp_ppools_to_fire(idx,k) = value_column
 
           end associate
@@ -11190,8 +11268,6 @@ contains
          do fi = 1,num_column
             i = filter_column(fi)
             this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
-            this%decomp_ppools_transport_tendency(i,j,k) = value_column
-            this%decomp_ppools_yield_vr(i,j,k) = value_column
          end do
       end do
    end do
@@ -11219,7 +11295,72 @@ contains
        this%externalp_to_decomp_delta(i) = value_column
        this%sminp_net_transport_delta(i)   = value_column
      end do
-  end if 
+  end if
+
+    ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
+    if (do_zero_harvest) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%hrv_deadstemp_to_prod10p(idx)  = value_column
+          this%hrv_deadstemp_to_prod100p(idx) = value_column
+          end associate
+       end do
+    end if
+
+    ! Erosion fluxes, written only with ero_ccycle.
+    if (do_zero_erosion) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%labilep_erode(idx)   = value_column
+          this%labilep_deposit(idx) = value_column
+          this%secondp_erode(idx)   = value_column
+          this%secondp_deposit(idx) = value_column
+          this%occlp_erode(idx)     = value_column
+          this%occlp_deposit(idx)   = value_column
+          this%primp_erode(idx)     = value_column
+          this%primp_deposit(idx)   = value_column
+          end associate
+       end do
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%labilep_yield_vr(idx,j) = value_column
+             this%secondp_yield_vr(idx,j) = value_column
+             this%occlp_yield_vr(idx,j)   = value_column
+             this%primp_yield_vr(idx,j)   = value_column
+             end associate
+          end do
+       end do
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%decomp_ppools_erode(idx,k)   = value_column
+             this%decomp_ppools_deposit(idx,k) = value_column
+             this%decomp_ppools_yield(idx,k)   = value_column
+             end associate
+          end do
+       end do
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_ppools_yield_vr(i,j,k) = value_column
+             end do
+          end do
+       end do
+    end if
+
+    ! Vertical transport tendencies, rewritten every step by SoilLittVertTransp.
+    if (do_zero_transport) then
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_ppools_transport_tendency(i,j,k) = value_column
+             end do
+          end do
+       end do
+    end if
 
   end subroutine col_pf_setvalues
 

@@ -28,6 +28,8 @@ module dynSubgridControlMod
   public :: get_do_harvest          ! return the value of the do_harvest control flag
   public :: get_for_testing_allow_non_annual_changes ! return true if user has requested to allow area changes at times other than the year boundary, for testing purposes
   public :: get_for_testing_zero_dynbal_fluxes ! return true if user has requested to set the dynbal water and energy fluxes to zero, for testing purposes
+  public :: set_subgrid_weights_updated ! record whether subgrid weights may have changed in this time step
+  public :: get_subgrid_weights_updated ! return whether subgrid weights may have changed in this time step
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: read_namelist              ! read namelist variables
@@ -60,6 +62,10 @@ module dynSubgridControlMod
   end type dyn_subgrid_control_type
   
   type(dyn_subgrid_control_type) :: dyn_subgrid_control_inst
+
+  ! Whether subgrid weights (and so the active patches and columns) may have changed
+  ! in the current time step. Set by dynSubgrid_driver every step; .true. until then.
+  logical :: subgrid_weights_updated = .true.
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -345,5 +351,30 @@ contains
     get_for_testing_zero_dynbal_fluxes = dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes
 
   end function get_for_testing_zero_dynbal_fluxes
+
+  !-----------------------------------------------------------------------
+  subroutine set_subgrid_weights_updated(weights_updated)
+    !
+    ! !DESCRIPTION:
+    ! Record whether subgrid weights may have changed in the current time step
+    !-----------------------------------------------------------------------
+    logical, intent(in) :: weights_updated
+
+    subgrid_weights_updated = weights_updated
+
+  end subroutine set_subgrid_weights_updated
+
+  !-----------------------------------------------------------------------
+  logical function get_subgrid_weights_updated()
+    !
+    ! !DESCRIPTION:
+    ! Return whether subgrid weights may have changed in the current time step, so
+    ! patches or columns may have become active. Returns .true. before
+    ! dynSubgrid_driver first runs.
+    !-----------------------------------------------------------------------
+
+    get_subgrid_weights_updated = subgrid_weights_updated
+
+  end function get_subgrid_weights_updated
 
 end module dynSubgridControlMod
