@@ -1716,7 +1716,7 @@ contains
 
           ! add in ice check
           xs1(fc)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(fc,1)-h2osoi_liq(c,1))),0._r8)
-          h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
+          h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(fc,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
           if ( (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) .or. (.not. use_firn_percolation_and_compaction)) then
                 qflx_snwcp_ice(c) = qflx_snwcp_ice(c) + xs1(fc) / dtime
           else
