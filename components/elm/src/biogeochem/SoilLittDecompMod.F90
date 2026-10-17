@@ -128,17 +128,18 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,j,k,l,m                                                                               !indices
     integer :: fc                                                                                      !lake filter column index
-    real(r8):: p_decomp_cpool_loss(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
+    real(r8):: p_decomp_cpool_loss(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
     logical :: is_rd                                                                                   !nu_com is 'RD'
     real(r8):: ratio                                                                                   !temporary variable
     real(r8):: dnp                                                                        !denitrification proportion
-    real(r8):: cn_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
-    real(r8):: cp_decomp_pools(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)
-    real(r8):: cp_decomp_pools_new(bounds%begc:bounds%endc,1:nlevdecomp,1:ndecomp_pools)               !C:P ratio of new SOM
+    ! Work arrays are indexed by position in the soil column filter
+    real(r8):: cn_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools)
+    real(r8):: cp_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools)
+    real(r8):: cp_decomp_pools_new(num_soilc,1:nlevdecomp,1:ndecomp_pools)               !C:P ratio of new SOM
     integer, parameter :: i_atm = 0
     ! For methane code
-    real(r8):: phr_vr(bounds%begc:bounds%endc,1:nlevdecomp)                                            !potential HR (gC/m3/s)
-    real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
+    ! phr_vr is col_cf%phr_vr (associate below)
+    real(r8):: hrsum(num_soilc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
 
     !-----------------------------------------------------------------------
 
@@ -214,7 +215,7 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   if ( decomp_npools_vr(c,j,l) > 0._r8 ) then
-                     cn_decomp_pools(c,j,l) = decomp_cpools_vr(c,j,l) / decomp_npools_vr(c,j,l)
+                     cn_decomp_pools(fc,j,l) = decomp_cpools_vr(c,j,l) / decomp_npools_vr(c,j,l)
                   end if
                end do
             end do
@@ -222,7 +223,7 @@ contains
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  cn_decomp_pools(c,j,l) = initial_cn_ratio(l)
+                  cn_decomp_pools(fc,j,l) = initial_cn_ratio(l)
                end do
             end do
          end if
@@ -235,7 +236,7 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   if ( decomp_ppools_vr(c,j,l) > 0._r8 ) then
-                     cp_decomp_pools(c,j,l) = decomp_cpools_vr(c,j,l) / decomp_ppools_vr(c,j,l)
+                     cp_decomp_pools(fc,j,l) = decomp_cpools_vr(c,j,l) / decomp_ppools_vr(c,j,l)
                   end if
                end do
             end do
@@ -243,14 +244,14 @@ contains
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  cp_decomp_pools(c,j,l) = initial_cp_ratio(l)
+                  cp_decomp_pools(fc,j,l) = initial_cp_ratio(l)
                end do
             end do
          end if
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               cp_decomp_pools_new(c,j,l) = initial_cp_ratio(l)
+               cp_decomp_pools_new(fc,j,l) = initial_cp_ratio(l)
             end do
          end do
       end do
@@ -285,14 +286,14 @@ contains
 
                ! set initial values for potential C, N and P fluxes. Only columns
                ! in the soil filter are read, so inactive columns are not zeroed.
-               p_decomp_cpool_loss(c,j,k) = 0._r8
+               p_decomp_cpool_loss(fc,j,k) = 0._r8
                pmnf_decomp_cascade(c,j,k) = 0._r8
                pmpf_decomp_cascade(c,j,k) = 0._r8
 
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. &
                     decomp_k(c,j,cascade_donor_pool(k)) > 0._r8 ) then
 
-                 p_decomp_cpool_loss(c,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
+                 p_decomp_cpool_loss(fc,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
                        * decomp_k(c,j,cascade_donor_pool(k))  * pathfrac_decomp_cascade(c,j,k)
                   if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
 
@@ -300,13 +301,13 @@ contains
                         ratio = 0._r8
 
                         if (decomp_npools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
-                           ratio = cn_decomp_pools(c,j,cascade_receiver_pool(k))/cn_decomp_pools(c,j,cascade_donor_pool(k))
+                           ratio = cn_decomp_pools(fc,j,cascade_receiver_pool(k))/cn_decomp_pools(fc,j,cascade_donor_pool(k))
                         endif
-                        pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(c,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
-                             / cn_decomp_pools(c,j,cascade_receiver_pool(k)) )
+                        pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
+                             / cn_decomp_pools(fc,j,cascade_receiver_pool(k)) )
 
                      else   ! 100% respiration
-                        pmnf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(c,j,k) / cn_decomp_pools(c,j,cascade_donor_pool(k))
+                        pmnf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cn_decomp_pools(fc,j,cascade_donor_pool(k))
                      endif
 
                   else   ! CWD -> litter
@@ -319,16 +320,16 @@ contains
                         ratio = 0._r8
 
                         if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
-!                           ratio = cp_decomp_pools(c,j,cascade_receiver_pool(k))/cp_decomp_pools(c,j,cascade_donor_pool(k))
-                           ratio = cp_decomp_pools_new(c,j,cascade_receiver_pool(k))/cp_decomp_pools(c,j,cascade_donor_pool(k))
+!                           ratio = cp_decomp_pools(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
+                           ratio = cp_decomp_pools_new(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
                         endif
 
-                        pmpf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(c,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
-                             / cp_decomp_pools_new(c,j,cascade_receiver_pool(k)) )
+                        pmpf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
+                             / cp_decomp_pools_new(fc,j,cascade_receiver_pool(k)) )
 
                      else   ! 100% respiration
                         if(decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
-                          pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(c,j,k) / cp_decomp_pools(c,j,cascade_donor_pool(k))
+                          pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cp_decomp_pools(fc,j,cascade_donor_pool(k))
                        end if
                      endif
 
@@ -349,7 +350,7 @@ contains
                   gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
                end if
 
-               phr_vr(c,j) = phr_vr(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
+               phr_vr(c,j) = phr_vr(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
             end do
          end do
       end do
@@ -400,7 +401,7 @@ contains
             c = filter_soilc(fc)
             gross_nmin_vr(c,j) = 0.0_r8
             gross_pmin_vr(c,j) = 0.0_r8
-            hrsum(c,j) = 0._r8
+            hrsum(fc,j) = 0._r8
          end do
       end do
       if (.not. is_rd) then
@@ -432,28 +433,28 @@ contains
                decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
                   if ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) > 0._r8 ) then    ! N and P co-limitation
-                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
+                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
                   elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation
-                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_vr(c,j)
+                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
                   elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation
-                     p_decomp_cpool_loss(c,j,k) = p_decomp_cpool_loss(c,j,k) * fpi_p_vr(c,j)
+                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_p_vr(c,j)
                      pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
                      pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
                   end if
-                  decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
-                  decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(c,j,k)
+                  decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
+                  decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(fc,j,k)
                   if (decomp_npools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
-                     decomp_cascade_ntransfer_vr(c,j,k) = p_decomp_cpool_loss(c,j,k) / cn_decomp_pools(c,j,cascade_donor_pool(k))
+                     decomp_cascade_ntransfer_vr(c,j,k) = p_decomp_cpool_loss(fc,j,k) / cn_decomp_pools(fc,j,cascade_donor_pool(k))
                   else
                      decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   endif
                   !!! phosphorus fluxes
                   if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
-                     decomp_cascade_ptransfer_vr(c,j,k) = p_decomp_cpool_loss(c,j,k) / cp_decomp_pools(c,j,cascade_donor_pool(k))
+                     decomp_cascade_ptransfer_vr(c,j,k) = p_decomp_cpool_loss(fc,j,k) / cp_decomp_pools(fc,j,cascade_donor_pool(k))
                   else
                      decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
                   endif
@@ -498,7 +499,7 @@ contains
                end if
 
                if (use_lch4) then
-                  hrsum(c,j) = hrsum(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(c,j,k)
+                  hrsum(fc,j) = hrsum(fc,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
                end if
             end do
          end do
@@ -511,7 +512,7 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                if (phr_vr(c,j) > 0._r8) then
-                  fphr(c,j) = hrsum(c,j) / phr_vr(c,j) * w_scalar(c,j)
+                  fphr(c,j) = hrsum(fc,j) / phr_vr(c,j) * w_scalar(c,j)
                   fphr(c,j) = max(fphr(c,j), 0.01_r8) ! Prevent overflow errors for 0 respiration
                else
                   fphr(c,j) = 1._r8
