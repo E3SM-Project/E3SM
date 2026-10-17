@@ -33,7 +33,7 @@ module cam_control_mod
 !------------------------------------------------------------
 
 ! from perturb.h
-      real(r8) :: pertlim     = 1.0e-14_r8
+      real(r8) :: pertlim     = 0.0_r8
       logical  :: new_random  = .false.
       integer  :: seed_custom = 0
       logical  :: seed_clock  = .false.
