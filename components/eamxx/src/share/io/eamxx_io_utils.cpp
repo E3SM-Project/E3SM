@@ -110,9 +110,12 @@ create_diagnostic (const std::string& diag_field_name,
   //       of each group in the matches output var!
   // Note: use raw string syntax R"(<string>)" to avoid having to escape the \ character
   // Note: the number for field_at_p/h can match positive integer/floating-point numbers
-  // Start with a generic for a field name allowing for all letters, all numbers, dash, dot, plus, minus, product, and division
-  // Escaping all the special ones just in case
-  std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)";
+  // A generic field name: letters, digits, underscore, dot, and the sign of a number,
+  // either after '_' (as in X_where_Y_gt_-1) or in an exponent after a digit (1e-6).
+  // Note: no operators or parentheses, and all patterns below must match the WHOLE
+  //       name (regex_match). Otherwise a pattern can match the tail of an expression,
+  //       e.g. 'T_mid-T_mid_prev' was parsed as FieldPrev of 'T_mid-T_mid'.
+  std::string generic_field = R"(((?:[+-](?=[\d.]))?(?:[A-Za-z0-9_.]|[\d.][eE][+-](?=\d)|_[+-](?=[\d.]))+))";
 
   // ── Built-in aliases ──────────────────────────────────────────────────────
   // Recognized shorthand patterns expand to canonical composable expressions.
@@ -120,7 +123,7 @@ create_diagnostic (const std::string& diag_field_name,
   {
     std::smatch alias_matches;
     std::regex bt (generic_field + "_atm_backtend$");
-    if (std::regex_search(diag_field_name, alias_matches, bt)) {
+    if (std::regex_match(diag_field_name, alias_matches, bt)) {
       const auto f = alias_matches[1].str();
       auto diag = create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
       // The expansion names its field after the canonical form, but the
@@ -156,47 +159,47 @@ create_diagnostic (const std::string& diag_field_name,
   std::smatch matches;
   ekat::ParameterList params(diag_field_name);
 
-  if (std::regex_search(diag_field_name,matches,field_at_l)) {
+  if (std::regex_match(diag_field_name,matches,field_at_l)) {
     params.set("field_name",matches[1].str());
     params.set("grid_name",grid->name());
     params.set("vertical_location", matches[2].str());
     diag_name = "FieldAtLevel";
-  } else if (std::regex_search(diag_field_name,matches,field_at_p)) {
+  } else if (std::regex_match(diag_field_name,matches,field_at_p)) {
     params.set("field_name",matches[1].str());
     params.set("grid_name",grid->name());
     params.set("pressure_value",matches[2].str());
     params.set("pressure_units", matches[4].str());
     diag_name = "FieldAtPressureLevel";
-  } else if (std::regex_search(diag_field_name,matches,field_at_h)) {
+  } else if (std::regex_match(diag_field_name,matches,field_at_h)) {
     params.set("field_name",matches[1].str());
     params.set("grid_name",grid->name());
     params.set("height_value",matches[2].str());
     params.set("height_units",matches[4].str());
     params.set("surface_reference", matches[5].str());
     diag_name = "FieldAtHeight";
-  } else if (std::regex_search(diag_field_name,matches,lev_idx_p)) {
+  } else if (std::regex_match(diag_field_name,matches,lev_idx_p)) {
     params.set("grid_name",grid->name());
     params.set("pressure_value",matches[1].str());
     params.set("pressure_units", matches[3].str());
     params.set("vertical_layer", matches[4].str());
     diag_name = "PressureLevelIndex";
-  } else if (std::regex_search(diag_field_name,matches,lev_idx_h)) {
+  } else if (std::regex_match(diag_field_name,matches,lev_idx_h)) {
     params.set("grid_name",grid->name());
     params.set("height_value",matches[1].str());
     params.set("height_units",matches[3].str());
     params.set("surface_reference", matches[4].str());
     params.set("vertical_layer", matches[5].str());
     diag_name = "HeightLevelIndex";
-  } else if (std::regex_search(diag_field_name,matches,surf_mass_flux)) {
+  } else if (std::regex_match(diag_field_name,matches,surf_mass_flux)) {
     diag_name = "precip_surf_mass_flux";
     params.set<std::string>("precip_type",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,water_path)) {
+  } else if (std::regex_match(diag_field_name,matches,water_path)) {
     diag_name = "WaterPath";
     params.set<std::string>("water_kind",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,number_path)) {
+  } else if (std::regex_match(diag_field_name,matches,number_path)) {
     diag_name = "NumberPath";
     params.set<std::string>("number_kind",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,aerocom_cld)) {
+  } else if (std::regex_match(diag_field_name,matches,aerocom_cld)) {
     EKAT_ERROR_MSG("Error! AeroComCld diags are disabled for now. Contact developers.\n"
                     "      Some recent development made the code produce bad values,\n"
                     "      even runtime aborts due to NaNs.\n"
@@ -204,19 +207,19 @@ create_diagnostic (const std::string& diag_field_name,
                     "      which remain unaffected and scientifically valid.\n");
     diag_name = "AeroComCld";
     params.set<std::string>("aero_com_cld_kind",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,vap_flux)) {
+  } else if (std::regex_match(diag_field_name,matches,vap_flux)) {
     diag_name = "VaporFlux";
     params.set<std::string>("wind_component",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,field_over_dt)) {
+  } else if (std::regex_match(diag_field_name,matches,field_over_dt)) {
     // NOTE: _over_dt must be checked before binary_ops to prevent "X_over_dt" from being
     // misinterpreted as BinaryOp(X, over, dt).
     diag_name = "FieldOverDt";
     params.set("grid_name",grid->name());
     params.set<std::string>("field_name",matches[1].str());
-  } else if (std::regex_search(diag_field_name,matches,pot_temp)) {
+  } else if (std::regex_match(diag_field_name,matches,pot_temp)) {
     diag_name = "PotentialTemperature";
     params.set<std::string>("temperature_kind", matches[1].str()!="" ? matches[1].str() : std::string("Tot"));
-  } else if (std::regex_search(diag_field_name,matches,vert_layer)) {
+  } else if (std::regex_match(diag_field_name,matches,vert_layer)) {
     diag_name = "VerticalLayer";
     params.set<std::string>("diag_name",matches[1].str());
     params.set<std::string>("vert_location",matches[2].str());
@@ -225,12 +228,12 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("diag_name","dz");
     params.set<std::string>("vert_location","mid");
   }
-  else if (std::regex_search(diag_field_name,matches,horiz_avg)) {
+  else if (std::regex_match(diag_field_name,matches,horiz_avg)) {
     diag_name = "HorizAvg";
     params.set("grid_name",grid->name());
     params.set<std::string>("field_name",matches[1].str());
   }
-  else if (std::regex_search(diag_field_name,matches,vert_contract)) {
+  else if (std::regex_match(diag_field_name,matches,vert_contract)) {
     diag_name = "VertContract";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
@@ -241,19 +244,19 @@ create_diagnostic (const std::string& diag_field_name,
       params.set<std::string>("weighting_method", matches[5].str());
     }
   }
-  else if (std::regex_search(diag_field_name,matches,vert_derivative)) {
+  else if (std::regex_match(diag_field_name,matches,vert_derivative)) {
     diag_name = "VertDerivative";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("derivative_method", matches[2].str());
   }
-  else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
+  else if (std::regex_match(diag_field_name,matches,zonal_avg)) {
     diag_name = "ZonalAvg";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("number_of_zonal_bins", matches[2].str());
   }
-  else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
+  else if (std::regex_match(diag_field_name,matches,conditional_sampling)) {
     diag_name = "ConditionalSampling";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
@@ -261,7 +264,7 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("condition_cmp", matches[3].str());
     params.set<std::string>("condition_rhs", matches[4].str());
   }
-  else if (std::regex_search(diag_field_name,matches,binary_ops)) {
+  else if (std::regex_match(diag_field_name,matches,binary_ops)) {
     diag_name = "BinaryOp";
     params.set("grid_name", grid->name());
     params.set<std::string>("arg1", matches[1].str());
@@ -270,12 +273,12 @@ create_diagnostic (const std::string& diag_field_name,
   }
   // NOTE: field_prev must be checked AFTER binary_ops so that "X_minus_X_prev"
   // is parsed as BinaryOp(X, minus, X_prev) rather than FieldPrev(X_minus_X).
-  else if (std::regex_search(diag_field_name,matches,field_prev)) {
+  else if (std::regex_match(diag_field_name,matches,field_prev)) {
     diag_name = "FieldPrev";
     params.set("grid_name",grid->name());
     params.set<std::string>("field_name",matches[1].str());
   }
-  else if (std::regex_search(diag_field_name,matches,histogram)) {
+  else if (std::regex_match(diag_field_name,matches,histogram)) {
     diag_name = "Histogram";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());

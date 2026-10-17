@@ -58,11 +58,16 @@ control — how composite names are parsed.
 
 ### Rule 1: greedy left operand for binary ops
 
-The binary-ops regex is:
+The binary-ops regex is `F_(plus|minus|times|over)_F`, where `F` is a field name:
 
 ```none
-([A-Za-z0-9_.+\-\*\÷]+)_(plus|minus|times|over)_([A-Za-z0-9_.+\-\*\÷]+)$
+((?:[+-](?=[\d.]))?(?:[A-Za-z0-9_.]|[\d.][eE][+-](?=\d)|_[+-](?=[\d.]))+)
 ```
+
+That is, letters, digits, `_` and `.`, with a `+` or `-` only as the sign of a
+number (`_-1`, `1e-6`). Like every pattern, it must match the whole name, so a
+name with any other operator, or a parenthesis, is read as an
+[expression](expressions.md).
 
 The first group is greedy.  For a string with multiple operator tokens, the
 **rightmost** operator becomes the outermost (lowest-precedence) operation:
