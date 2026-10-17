@@ -10,6 +10,7 @@ module dynSubgridDriverMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
+  use perf_mod                , only : t_startf, t_stopf
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
@@ -245,15 +246,19 @@ contains
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
 
+       call t_startf('dyn_hwcontent_init')
        call dyn_hwcontent_init(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
             energyflux_vars)
+       call t_stopf('dyn_hwcontent_init')
 
+       call t_startf('dyn_prior_weights')
        call set_prior_weights(prior_weights, bounds_clump)
        call set_old_patch_weights  (patch_state_updater,bounds_clump)
        call set_old_column_weights (column_state_updater,bounds_clump)
+       call t_stopf('dyn_prior_weights')
     end do
     !$OMP END PARALLEL DO
 
@@ -309,24 +314,33 @@ contains
        ! first time step of the run to update filters to reflect state of CISM
        ! (particularly mask that is past through coupler).
 
+       call t_startf('dyn_wrapup_weights')
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+       call t_stopf('dyn_wrapup_weights')
        call set_new_patch_weights (patch_state_updater ,bounds_clump)
        call set_new_column_weights(column_state_updater,bounds_clump, nc)
 
 
+       call t_startf('dyn_diagnostic_fields')
        call set_subgrid_diagnostic_fields(bounds_clump)
+       call t_stopf('dyn_diagnostic_fields')
 
+       call t_startf('dyn_init_new_columns')
        call initialize_new_columns(bounds_clump, &
             prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars )
+       call t_stopf('dyn_init_new_columns')
 
 
+       call t_startf('dyn_hwcontent_final')
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
             energyflux_vars, dt)
+       call t_stopf('dyn_hwcontent_final')
 
        if (use_cn) then
+          call t_startf('dyn_cnbal_patch')
           call dyn_cnbal_patch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
@@ -335,8 +349,10 @@ contains
                canopystate_vars, photosyns_vars, cnstate_vars, &
                veg_cs, c13_veg_cs, c14_veg_cs, &
                veg_ns, veg_ps, dt)
+          call t_stopf('dyn_cnbal_patch')
 
           ! Transfer root/seed litter C/N/P to decomposer pools
+          call t_startf('dyn_CNPStateUpdateDynPatch')
           call CarbonStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
@@ -345,13 +361,16 @@ contains
 
           call PhosphorusStateUpdateDynPatch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
+          call t_stopf('dyn_CNPStateUpdateDynPatch')
 
        end if
 
        if(use_cn .or. use_fates)then
+          call t_startf('dyn_cnbal_column')
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
                col_ns, col_ps )
+          call t_stopf('dyn_cnbal_column')
        end if
 
     end do
