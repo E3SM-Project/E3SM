@@ -22,7 +22,7 @@ module dynConsBiogeophysMod
   use TotalWaterAndHeatMod, only : AdjustDeltaHeatForDeltaLiq
   use TotalWaterAndHeatMod, only : heat_base_temp
   use elm_varcon        , only : tfrz, cpliq
-  use subgridAveMod     , only : p2c, c2g
+  use subgridAveMod     , only : p2c, c2g, unity
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use elm_varcon        , only : spval
   use GridcellDataType  , only : grc_es, grc_ef, grc_ws, grc_wf
@@ -237,14 +237,14 @@ contains
     call c2g(bounds, &
          carr = liquid_mass_col(bounds%begc:bounds%endc), &
          garr = liquid_mass(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity)
 
     call c2g(bounds, &
          carr = ice_mass_col(bounds%begc:bounds%endc), &
          garr = ice_mass(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity)
 
   end subroutine dyn_water_content
 
@@ -313,20 +313,20 @@ contains
     call c2g(bounds, &
          carr = heat_col(bounds%begc:bounds%endc), &
          garr = heat_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity)
 
     call c2g(bounds, &
          carr = heat_liquid_col(bounds%begc:bounds%endc), &
          garr = heat_liquid_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity)
 
     call c2g(bounds, &
          carr = cv_liquid_col(bounds%begc:bounds%endc), &
          garr = cv_liquid_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         c2l_scale_type = unity, &
+         l2g_scale_type = unity)
 
     do g = bounds%begg, bounds%endg
        if (cv_liquid_grc(g) > 0._r8) then

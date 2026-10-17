@@ -820,7 +820,9 @@ contains
        !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
-         if (use_lch4) then
+         ! only levels that convect
+         if (use_lch4 .and. (.not. lakepuddling .or. .not. puddle(fc)) .and. (rhow(fc,j) > rhow(fc,j+1) .or. &
+             (lake_icefrac(c,j) < 1._r8 .and. lake_icefrac(c,j+1) > 0._r8))) then
             jconvect(fc) = j+1
          end if
          sum1 = 0._r8; sum2 = 0._r8; sum3 = 0._r8
@@ -925,7 +927,8 @@ contains
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          sum1 = 0._r8; sum2 = 0._r8; sum3 = 0._r8 
-         if (use_lch4) then
+         if (use_lch4 .and. bottomconvect(fc) .and. (.not. lakepuddling .or. .not. puddle(fc)) .and. (rhow(fc,j) > rhow(fc,j+1) .or. &
+             (lake_icefrac(c,j) < 1._r8 .and. lake_icefrac(c,j+1) > 0._r8))) then
             jconvectbot(fc) = j
          end if
          if(bottomconvect(fc)) then 

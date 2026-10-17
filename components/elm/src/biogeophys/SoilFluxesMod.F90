@@ -435,9 +435,9 @@ contains
          j = col_pp%snl(c)+1
 
          if (.not. lun_pp%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4._r8 &
-                 +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4._r8 &
-                 +frac_h2osfc(c)*t_h2osfc_bef(c)**4._r8)
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
+                 +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
+                 +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
 
             if (use_finetop_rad) then
                slope_rad = slope_deg(g) * deg2rad

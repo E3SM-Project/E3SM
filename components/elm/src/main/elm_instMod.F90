@@ -275,6 +275,7 @@ contains
     use SoilorderConType                  , only : soilorderconInit
     use LakeCon                           , only : LakeConInit
     use initVerticalMod                   , only : initVertical
+    use subgridAveMod                     , only : init_subgrid_ave
     ! !ARGUMENTS
     implicit none
     type(bounds_type), intent(in) :: bounds_proc
@@ -359,6 +360,9 @@ contains
    ! Initialize urban constants
 
     call urbanparams_vars%Init(bounds_proc)
+
+    ! Subgrid averaging scale lookups (need canyon_hwr) and child maps
+    call init_subgrid_ave(bounds_proc)
 
     ! Initialize ecophys constants
 

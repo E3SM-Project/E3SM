@@ -950,7 +950,7 @@ contains
     !
     ! !USES:
     use histComputeMod, only : hist_compute_set_subgrid, hist_compute_build, hist_compute_views
-    use subgridAveMod , only : create_scale_c2l, build_scale_l2g
+    use subgridAveMod , only : main_scale_c2l, main_scale_l2g_lookup
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: c2l_types(3) = [character(len=8) :: 'unity', 'urbanf', 'urbans']
@@ -984,11 +984,10 @@ contains
     sg%col_p(:) = veg_pp%column(bounds%begp:bounds%endp)
     allocate(sg%scale_c2l(bounds%begc:bounds%endc, size(c2l_types)))
     allocate(sg%scale_l2g(bounds%begl:bounds%endl, size(l2g_types)))
-    do i = 1, size(c2l_types)
-       call create_scale_c2l(bounds, trim(c2l_types(i)), sg%scale_c2l(:, i))
-    end do
+    ! c2l_types/l2g_types are in the order of subgridAveMod's scale type indices
+    sg%scale_c2l(:,:) = main_scale_c2l(bounds%begc:bounds%endc, 1:size(c2l_types))
     do i = 1, size(l2g_types)
-       call build_scale_l2g(bounds, trim(l2g_types(i)), sg%scale_l2g(:, i))
+       sg%scale_l2g(:, i) = main_scale_l2g_lookup(i, lun_pp%itype(bounds%begl:bounds%endl))
     end do
     sg%extrasnowlayers = use_extrasnowlayers
     call hist_compute_set_subgrid(sg, ierr, msg)

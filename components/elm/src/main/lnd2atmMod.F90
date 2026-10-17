@@ -16,7 +16,7 @@ module lnd2atmMod
   use elm_varctl           , only : use_lnd_rof_two_way, use_finetop_rad
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
-  use subgridAveMod        , only : p2g, c2g, p2t  
+  use subgridAveMod        , only : p2g, c2g, p2t, unity, urbanf, urbans
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
   use CH4Mod               , only : ch4_type
@@ -46,8 +46,6 @@ module lnd2atmMod
   public :: lnd2atm
   public :: lnd2atm_minimal
 
-  integer, parameter :: unity = 0, urbanf = 1, urbans = 2
-  integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
   !------------------------------------------------------------------------
 
 contains
