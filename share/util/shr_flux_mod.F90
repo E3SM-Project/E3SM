@@ -490,282 +490,32 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                call shr_sys_abort('ocean_atmosphere_flux_epsilon must be positive ' // errMsg(sourcefile, __LINE__))
             end if
 
-            ! we first do a pass of the entire iteration without the stability limiter. this is sufficient
-            ! for almost all cases to converge to a non-trivial flux.
+            ! first pass of the iteration WITHOUT stability limiter
+            ! This is sufficient for almost all cases to converge to a non-trivial flux.
             !------------------------------------------------------------
-            ! first estimate of Z/L and ustar, tstar and qstar
-            !------------------------------------------------------------
-            !--- neutral coefficients, z/L = 0.0 ---
-            stable = 0.5_R8 + sign(0.5_R8 , delt)
-            if (wav_atm_coup .eq. 'twoway') then
-               if (z0wav(n) .lt. tiny) then 
-                  ! z0wav == 0 for cold-start-WW3 situations   
-                  cdn_wav = cdn_wave(loc_karman,zref,tiny)
-               else
-                  cdn_wav = cdn_wave(loc_karman,zref,z0wav(n))
-               endif
-               rdn = sqrt(cdn_wav)
-               ! rdn calculated from Z0 will be constant
-            else
-               rdn    = sqrt(cdn(vmag))
-            endif
-            if (delt > ocn_atm_flux_eps) then
-               rhn = 0.018_R8
-            else if (delt > -ocn_atm_flux_eps) then
-               rhn = 0.018_R8 + (0.0327_R8 - 0.018_R8) / (-2.0_R8 * ocn_atm_flux_eps) * (delt - ocn_atm_flux_eps)
-               ! linear interpolation between stable and unstable values
-            else
-               rhn = 0.0327_R8
-            end if 
-            ren    = 0.0346_R8 !cexcd
-
-            !--- ustar, tstar, qstar ---
-            if (wav_atm_coup .eq. 'twoway') then
-               if (ustarwav(n) .lt. tiny) then 
-                  ustar = tiny ! set to tiny to avoid a divide by zero error  
-               else
-                  ustar = ustarwav(n)
-               endif
-            else
-               ustar = rdn * vmag
-            endif
-            tstar = rhn * delt
-            qstar = ren * delq
-            u10n = vmag 
-            ustar_next = ustar*2.0_R8
-            tstar_next = tstar*2.0_R8
-            qstar_next = qstar*2.0_R8
-            u10n_next = u10n*2.0_R8
-            ustar_prev = ustar
-            tstar_prev = tstar 
-            qstar_prev = qstar
-            u10n_prev = u10n
-
-            if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
-            tau_diff = 1.e100_R8
-            wind_adj = wind0
-            ! Since we already have an estimated u*, do one update before iteration loop.
-            if (present(wsresp) .and. present(tau_est)) then
-               ! Update stress and magnitude of mean wind.
-               tau = rbot(n) * ustar * rdn * wind_adj
-               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
-                     tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
-               vmag = wind_adj
-               if (present(ugust)) then
-                  vmag = sqrt(vmag**2 + ugust(n)**2)
-               end if
-               vmag = max(seq_flux_atmocn_minwind, vmag)
-            else
-               tau_diff = 0._R8
-            end if
-            iter = 0
-            do while( sqrt(((ustar_next - ustar_prev)/(ustar_prev + 1.e-3_R8))**2 + &
-                           ((tstar_next - tstar_prev)/(tstar_prev + 1.e-5_R8))**2 + &
-                           ((qstar_next - qstar_prev)/(qstar_prev + 1.e-8_R8))**2 + &
-                           ((u10n_next - u10n_prev)/(u10n_prev + 1.e-3_R8))**2) > flux_con_tol )
-               if (iter > flux_con_max_iter) then
-                  write(s_logunit,*) vmag,thbot(n),ts(n),zbot(n),qbot(n),ssq,ustar,ustar_prev,tstar,tstar_prev,qstar,qstar_prev,flux_con_tol,flux_con_max_iter
-                  call shr_sys_abort('MAX ITERS REACHED WITHOUT OCN-ATM ITERATION CONVERGING ' // errMsg(sourcefile, __LINE__))
-               end if
-               iter = iter + 1
-               ustar_prev = ustar
-               tstar_prev = tstar
-               qstar_prev = qstar
-               u10n_prev = u10n
-               !--- compute stability & evaluate all stability functions ---
-               hol  = loc_karman*loc_g*zbot(n)*  &
-                     (tstar/thbot(n)+qstar/(1.0_R8/loc_zvir+qbot(n)))/ustar**2
-               stable = 0.5_R8 + sign(0.5_R8 , hol)
-               xsq    = max(sqrt(abs(1.0_R8 - 16.0_R8*hol)) , 1.0_R8)
-               xqq    = sqrt(xsq)
-               psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
-               psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
-
-               if (wav_atm_coup .ne. 'twoway') then
-                  !--- shift wind speed using old coefficient ---
-                  rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
-                  u10n = ocn_atm_flux_damping * (vmag * rd / rdn) + (1.0_R8 - ocn_atm_flux_damping) * u10n_prev
-                  u10n_next = vmag * rd / rdn
-
-                  !--- update transfer coeffs at 10m and neutral stability ---
-                  rdn = sqrt(cdn(u10n))
-                  ren = 0.0346_R8 !cexcd
-                  if (hol > ocn_atm_flux_eps) then
-                     rhn = 0.018_R8
-                  else if (hol > -ocn_atm_flux_eps) then
-                     rhn = 0.018_R8 + (0.0327_R8 - 0.018_R8)/(-2.0_R8*ocn_atm_flux_eps) * (hol - ocn_atm_flux_eps)
-                     ! linear interpolation between stable and unstable values
-                  else 
-                     rhn = 0.0327_R8
-                  end if
-               else
-                  u10n_next = u10n
-                  ! artificially set u10_next = u10n so that corresponding residual is always 0, i.e. ignore u10n in
-                  ! convergence criteria for twoway coupling since u10n is not used in the flux calculation
-               endif
-
-               !--- shift all coeffs to measurement height and stability ---
-               rd = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
-               rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh))
-               re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh))
-
-               !--- update ustar, tstar, qstar using updated, shifted coeffs --
-               ustar = ocn_atm_flux_damping * (rd * vmag) + (1.0_R8 - ocn_atm_flux_damping) * ustar_prev
-               tstar = ocn_atm_flux_damping * (rh * delt) + (1.0_R8 - ocn_atm_flux_damping) * tstar_prev
-               qstar = ocn_atm_flux_damping * (re * delq) + (1.0_R8 - ocn_atm_flux_damping) * qstar_prev
-
-               ustar_next = rd * vmag 
-               tstar_next = rh * delt
-               qstar_next = re * delq
-
-               if (present(wsresp) .and. present(tau_est)) then
-                  ! Update stress and magnitude of mean wind.
-                  tau = rbot(n) * ustar * rd * wind_adj
-                  call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
-                        tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
-                  vmag = wind_adj
-                  if (present(ugust)) then
-                     vmag = sqrt(vmag**2 + ugust(n)**2)
-                  end if
-                  vmag = max(seq_flux_atmocn_minwind, vmag)
-               end if
-            enddo
+            call flux_iteration_with_stability_atmocn(.false., &
+                                                      n, vmag, delt, delq, &
+                                                      ustar, tstar, qstar, u10n, &
+                                                      rd, rh, re, rdn, rhn, ren, &
+                                                      hol, psixh, stable, iter, wind_adj)
 
             ! next, check if the computed scaling parameters are close to 0. If they are, the system of equations
             ! likely has no solution. We need the stability limiter to restore well-posedness. With the limiter, the
             ! system has a solution, but this solution likely does not have any physical meaning as it is induced by
-            ! the limiter. 
+            ! the limiter.
             !
             ! Note: if implicit stress modification is used, may need to preserve original value of vmag for use in this step.
-            if (abs(ustar) < 1.e-12_R8 .or. abs(tstar) < 1.e-12_R8 .or. abs(qstar) < 1.e-12_R8 .or. abs(u10n) < 1.e-12_R8) then
+            ! check if computed scaling parameters are close to 0
+            if (abs(ustar) < 1.e-12_R8 .or. abs(tstar) < 1.e-12_R8 .or. &
+                abs(qstar) < 1.e-12_R8 .or. abs(u10n) < 1.e-12_R8) then
+               ! second pass WITH stability limiter
                !------------------------------------------------------------
-               ! first estimate of Z/L and ustar, tstar and qstar
-               !------------------------------------------------------------
-               !--- neutral coefficients, z/L = 0.0 ---
-               stable = 0.5_R8 + sign(0.5_R8 , delt)
-               if (wav_atm_coup .eq. 'twoway') then
-                  if (z0wav(n) .lt. tiny) then 
-                     ! z0wav == 0 for cold-start-WW3 situations   
-                     cdn_wav = cdn_wave(loc_karman,zref,tiny)
-                  else
-                     cdn_wav = cdn_wave(loc_karman,zref,z0wav(n))
-                  endif
-                  rdn = sqrt(cdn_wav)
-                  ! rdn calculated from Z0 will be constant
-               else
-                  rdn    = sqrt(cdn(vmag))
-               endif
-               if (delt > ocn_atm_flux_eps) then
-                  rhn = 0.018_R8
-               else if (delt > -ocn_atm_flux_eps) then
-                  rhn = 0.018_R8 + (0.0327_R8 - 0.018_R8) / (-2.0_R8 * ocn_atm_flux_eps) * (delt - ocn_atm_flux_eps)
-                  ! linear interpolation between stable and unstable values
-               else
-                  rhn = 0.0327_R8
-               end if 
-               ren    = 0.0346_R8 !cexcd
-
-               !--- ustar, tstar, qstar ---
-               if (wav_atm_coup .eq. 'twoway') then
-                  if (ustarwav(n) .lt. tiny) then 
-                     ustar = tiny ! set to tiny to avoid a divide by zero error  
-                  else
-                     ustar = ustarwav(n)
-                  endif
-               else
-                  ustar = rdn * vmag
-               endif
-               tstar = rhn * delt
-               qstar = ren * delq
-               u10n = vmag 
-               ustar_next = ustar*2.0_R8
-               tstar_next = tstar*2.0_R8
-               qstar_next = qstar*2.0_R8
-               u10n_next = u10n*2.0_R8
-               ustar_prev = ustar
-               tstar_prev = tstar 
-               qstar_prev = qstar
-               u10n_prev = u10n
-
-               if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
-               tau_diff = 1.e100_R8
-               wind_adj = wind0
-               ! Since we already have an estimated u*, do one update before iteration loop.
-               if (present(wsresp) .and. present(tau_est)) then
-                  ! Update stress and magnitude of mean wind.
-                  tau = rbot(n) * ustar * rdn * wind_adj
-                  call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
-                        tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
-                  vmag = wind_adj
-                  if (present(ugust)) then
-                     vmag = sqrt(vmag**2 + ugust(n)**2)
-                  end if
-                  vmag = max(seq_flux_atmocn_minwind, vmag)
-               else
-                  tau_diff = 0._R8
-               end if
-               iter = 0
-               do while( sqrt(((ustar_next - ustar_prev)/(ustar_prev + 1.e-3_R8))**2 + &
-                              ((tstar_next - tstar_prev)/(tstar_prev + 1.e-5_R8))**2 + &
-                              ((qstar_next - qstar_prev)/(qstar_prev + 1.e-8_R8))**2 + &
-                              ((u10n_next - u10n_prev)/(u10n_prev + 1.e-3_R8))**2) > flux_con_tol )
-                  if (iter > flux_con_max_iter) then
-                     write(s_logunit,*) vmag,thbot(n),ts(n),zbot(n),qbot(n),ssq,ustar,ustar_prev,tstar,tstar_prev,qstar,qstar_prev,flux_con_tol,flux_con_max_iter
-                     call shr_sys_abort('MAX ITERS REACHED WITHOUT OCN-ATM ITERATION CONVERGING ' // errMsg(sourcefile, __LINE__))
-                  end if
-                  iter = iter + 1
-                  ustar_prev = ustar
-                  tstar_prev = tstar
-                  qstar_prev = qstar
-                  u10n_prev = u10n
-                  !--- compute stability & evaluate all stability functions ---
-                  hol  = loc_karman*loc_g*zbot(n)*  &
-                        (tstar/thbot(n)+qstar/(1.0_R8/loc_zvir+qbot(n)))/ustar**2
-                  hol  = sign( min(abs(hol),10.0_R8), hol )
-                  stable = 0.5_R8 + sign(0.5_R8 , hol)
-                  xsq    = max(sqrt(abs(1.0_R8 - 16.0_R8*hol)) , 1.0_R8)
-                  xqq    = sqrt(xsq)
-                  psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
-                  psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
-
-                  if (wav_atm_coup .ne. 'twoway') then
-                     !--- shift wind speed using old coefficient ---
-                     rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
-                     u10n = ocn_atm_flux_damping * (vmag * rd / rdn) + (1.0_R8 - ocn_atm_flux_damping) * u10n_prev
-                     u10n_next = vmag * rd / rdn
-
-                     !--- update transfer coeffs at 10m and neutral stability ---
-                     rdn = sqrt(cdn(u10n))
-                     ren = 0.0346_R8 !cexcd
-                     if (hol > ocn_atm_flux_eps) then
-                        rhn = 0.018_R8
-                     else if (hol > -ocn_atm_flux_eps) then
-                        rhn = 0.018_R8 + (0.0327_R8 - 0.018_R8)/(-2.0_R8*ocn_atm_flux_eps) * (hol - ocn_atm_flux_eps)
-                        ! linear interpolation between stable and unstable values
-                     else 
-                        rhn = 0.0327_R8
-                     end if
-                  else
-                     u10n_next = u10n
-                     ! artificially set u10_next = u10n so that corresponding residual is always 0, i.e. ignore u10n in
-                     ! convergence criteria for twoway coupling since u10n is not used in the flux calculation
-                  endif
-
-                  !--- shift all coeffs to measurement height and stability ---
-                  rd = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
-                  rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh))
-                  re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh))
-
-                  !--- update ustar, tstar, qstar using updated, shifted coeffs --
-                  ustar = ocn_atm_flux_damping * (rd * vmag) + (1.0_R8 - ocn_atm_flux_damping) * ustar_prev
-                  tstar = ocn_atm_flux_damping * (rh * delt) + (1.0_R8 - ocn_atm_flux_damping) * tstar_prev
-                  qstar = ocn_atm_flux_damping * (re * delq) + (1.0_R8 - ocn_atm_flux_damping) * qstar_prev
-
-                  ustar_next = rd * vmag 
-                  tstar_next = rh * delt
-                  qstar_next = re * delq
-               enddo
-            end if ! end re-calculation of scaling parameters with stability limiter
+               call flux_iteration_with_stability_atmocn(.true., &
+                                                         n, vmag, delt, delq, &
+                                                         ustar, tstar, qstar, u10n, &
+                                                         rd, rh, re, rdn, rhn, ren, &
+                                                         hol, psixh, stable, iter, wind_adj)
+            end if
          end if ! end of revised flux scheme
         
         if (wav_atm_coup .eq. 'twoway') then
@@ -971,6 +721,206 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
    endif  !! ocn_surface_flux_scheme
 
+!=======================================================================
+
+   contains
+
+!=======================================================================
+
+   subroutine flux_iteration_with_stability_atmocn(use_stability_limiter, &
+                                                    n, vmag_inout, delt, delq, &
+                                                    ustar, tstar, qstar, u10n, &
+                                                    rd, rh, re, rdn, rhn, ren, &
+                                                    hol_out, psixh_out, stable_out, iter_count, wind_adj_out)
+
+      ! Perform fixed point iteration to solve for atmospheric flux scaling parameters.
+      ! This subroutine implements the fixed point iteration with optional stability limiter
+      ! and automatic rhn regularization.
+
+      logical, intent(in) :: use_stability_limiter
+      integer(IN), intent(in) :: n
+      real(R8), intent(inout) :: vmag_inout
+      real(R8), intent(in) :: delt, delq
+      real(R8), intent(inout) :: ustar, tstar, qstar, u10n
+      real(R8), intent(inout) :: rd, rh, re
+      real(R8), intent(inout) :: rdn, rhn, ren
+      real(R8), intent(out) :: hol_out, psixh_out, stable_out
+      integer(IN), intent(out) :: iter_count
+      real(R8), intent(out) :: wind_adj_out
+
+      ! Local variables
+      integer(IN) :: iter
+      real(R8) :: &
+         ustar_prev, tstar_prev, qstar_prev, u10n_prev, &
+         ustar_next, tstar_next, qstar_next, u10n_next, &
+         hol, stable, xsq, xqq, psimh, psixh, &
+         cdn_wav, tau, prev_tau, tau_diff, prev_tau_diff, wind_adj, vmag
+
+      character(len=*),parameter :: subname='(flux_iteration_with_stability_atmocn)'
+
+      ! Initialize vmag from input
+      vmag = vmag_inout
+
+      !------------------------------------------------------------
+      ! first estimate of Z/L and ustar, tstar and qstar
+      !------------------------------------------------------------
+      !--- neutral coefficients, z/L = 0.0 ---
+      stable = 0.5_R8 + sign(0.5_R8 , delt)
+      if (wav_atm_coup .eq. 'twoway') then
+         if (z0wav(n) .lt. tiny) then
+            ! z0wav == 0 for cold-start-WW3 situations
+            cdn_wav = cdn_wave(loc_karman,zref,tiny)
+         else
+            cdn_wav = cdn_wave(loc_karman,zref,z0wav(n))
+         endif
+         rdn = sqrt(cdn_wav)
+         ! rdn calculated from Z0 will be constant
+      else
+         rdn    = sqrt(cdn(vmag))
+      endif
+      if (delt > ocn_atm_flux_eps) then
+         rhn = 0.018_R8
+      else if (delt > -ocn_atm_flux_eps) then
+         rhn = 0.018_R8 + (0.0327_R8 - 0.018_R8) / (-2.0_R8 * ocn_atm_flux_eps) * (delt - ocn_atm_flux_eps)
+         ! linear interpolation between stable and unstable values
+      else
+         rhn = 0.0327_R8
+      end if
+      ren    = 0.0346_R8 !cexcd
+
+      !--- ustar, tstar, qstar ---
+      if (wav_atm_coup .eq. 'twoway') then
+         if (ustarwav(n) .lt. tiny) then
+            ustar = tiny ! set to tiny to avoid a divide by zero error
+         else
+            ustar = ustarwav(n)
+         endif
+      else
+         ustar = rdn * vmag
+      endif
+      tstar = rhn * delt
+      qstar = ren * delq
+      u10n = vmag
+      ustar_next = ustar*2.0_R8
+      tstar_next = tstar*2.0_R8
+      qstar_next = qstar*2.0_R8
+      u10n_next = u10n*2.0_R8
+      ustar_prev = ustar
+      tstar_prev = tstar
+      qstar_prev = qstar
+      u10n_prev = u10n
+
+      if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
+      tau_diff = 1.e100_R8
+      wind_adj = wind0
+      ! Since we already have an estimated u*, do one update before iteration loop.
+      if (present(wsresp) .and. present(tau_est)) then
+         ! Update stress and magnitude of mean wind.
+         tau = rbot(n) * ustar * rdn * wind_adj
+         call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+               tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+         vmag = wind_adj
+         if (present(ugust)) then
+            vmag = sqrt(vmag**2 + ugust(n)**2)
+         end if
+         vmag = max(seq_flux_atmocn_minwind, vmag)
+      else
+         tau_diff = 0._R8
+      end if
+
+      !------------------------------------------------------------
+      ! iterate to converge on Z/L, ustar, tstar and qstar
+      !------------------------------------------------------------
+      iter = 0
+      do while( sqrt(((ustar_next - ustar_prev)/(ustar_prev + 1.e-3_R8))**2 + &
+                     ((tstar_next - tstar_prev)/(tstar_prev + 1.e-5_R8))**2 + &
+                     ((qstar_next - qstar_prev)/(qstar_prev + 1.e-8_R8))**2 + &
+                     ((u10n_next - u10n_prev)/(u10n_prev + 1.e-3_R8))**2) > flux_con_tol )
+         if (iter > flux_con_max_iter) then
+            write(s_logunit,*) vmag,thbot(n),ts(n),zbot(n),qbot(n),ssq,ustar,ustar_prev,tstar,tstar_prev,qstar,qstar_prev,flux_con_tol,flux_con_max_iter
+            call shr_sys_abort('MAX ITERS REACHED WITHOUT OCN-ATM ITERATION CONVERGING ' // errMsg(sourcefile, __LINE__))
+         end if
+         iter = iter + 1
+         ustar_prev = ustar
+         tstar_prev = tstar
+         qstar_prev = qstar
+         u10n_prev = u10n
+         !--- compute stability & evaluate all stability functions ---
+         hol  = loc_karman*loc_g*zbot(n)*  &
+               (tstar/thbot(n)+qstar/(1.0_R8/loc_zvir+qbot(n)))/ustar**2
+         ! Apply stability limiter conditionally
+         if (use_stability_limiter) then
+            hol  = sign( min(abs(hol),10.0_R8), hol )
+         end if
+         stable = 0.5_R8 + sign(0.5_R8 , hol)
+         xsq    = max(sqrt(abs(1.0_R8 - 16.0_R8*hol)) , 1.0_R8)
+         xqq    = sqrt(xsq)
+         psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
+         psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
+
+         if (wav_atm_coup .ne. 'twoway') then
+            !--- shift wind speed using old coefficient ---
+            rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
+            u10n = ocn_atm_flux_damping * (vmag * rd / rdn) + (1.0_R8 - ocn_atm_flux_damping) * u10n_prev
+            u10n_next = vmag * rd / rdn
+
+            !--- update transfer coeffs at 10m and neutral stability ---
+            rdn = sqrt(cdn(u10n))
+            ren = 0.0346_R8 !cexcd
+            if (hol > ocn_atm_flux_eps) then
+               rhn = 0.018_R8
+            else if (hol > -ocn_atm_flux_eps) then
+               rhn = 0.018_R8 + (0.0327_R8 - 0.018_R8)/(-2.0_R8*ocn_atm_flux_eps) * (hol - ocn_atm_flux_eps)
+               ! linear interpolation between stable and unstable values
+            else
+               rhn = 0.0327_R8
+            end if
+         else
+            u10n_next = u10n
+            ! artificially set u10_next = u10n so that corresponding residual is always 0, i.e. ignore u10n in
+            ! convergence criteria for twoway coupling since u10n is not used in the flux calculation
+         endif
+
+         !--- shift all coeffs to measurement height and stability ---
+         rd = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
+         rh = rhn / (1.0_R8 + rhn/loc_karman*(alz-psixh))
+         re = ren / (1.0_R8 + ren/loc_karman*(alz-psixh))
+
+         !--- update ustar, tstar, qstar using updated, shifted coeffs --
+         ustar = ocn_atm_flux_damping * (rd * vmag) + (1.0_R8 - ocn_atm_flux_damping) * ustar_prev
+         tstar = ocn_atm_flux_damping * (rh * delt) + (1.0_R8 - ocn_atm_flux_damping) * tstar_prev
+         qstar = ocn_atm_flux_damping * (re * delq) + (1.0_R8 - ocn_atm_flux_damping) * qstar_prev
+
+         ! x_next corresponds to f(x) for residual calculations
+         ustar_next = rd * vmag
+         tstar_next = rh * delt
+         qstar_next = re * delq
+
+         if (present(wsresp) .and. present(tau_est)) then
+            ! Update stress and magnitude of mean wind.
+            tau = rbot(n) * ustar * rd * wind_adj
+            call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                  tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+            vmag = wind_adj
+            if (present(ugust)) then
+               vmag = sqrt(vmag**2 + ugust(n)**2)
+            end if
+            vmag = max(seq_flux_atmocn_minwind, vmag)
+         end if
+      enddo
+
+      ! Return stability parameters needed for diagnostic calculations
+      hol_out = hol
+      psixh_out = psixh
+      stable_out = stable
+      ! Return updated vmag
+      vmag_inout = vmag
+      ! Return iteration count
+      iter_count = iter
+      ! Return wind_adj
+      wind_adj_out = wind_adj
+
+   end subroutine flux_iteration_with_stability_atmocn
 
 END subroutine shr_flux_atmOcn
 
