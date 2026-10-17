@@ -280,6 +280,7 @@ contains
       ! Added a patches loop here to get the average of hs and dhsdT over
       ! all Patches on the column. Precalculate the terms that do not depend on PFT.
 
+      call t_startf('SoilTempGrndFlux')
       call ComputeGroundHeatFluxAndDeriv(bounds, num_nolakec, filter_nolakec, &
            hs_h2osfc( begc:endc ),                                            &
            hs_top_snow( begc:endc ),                                          &
@@ -289,11 +290,13 @@ contains
            sabg_lyr_col( begc:endc, -nlevsno+1: ),                            &
            atm2lnd_vars, urbanparams_vars, canopystate_vars, &
            solarabs_vars, energyflux_vars)
+      call t_stopf('SoilTempGrndFlux')
 
       ! Determine heat diffusion through the layer interface and factor used in computing
       ! banded diagonal matrix and set up vector r and vectors a, b, c that define banded
       ! diagonal matrix and solve system
 
+      call t_startf('SoilTempHeatDiff')
       call ComputeHeatDiffFluxAndFactor(bounds, num_nolakec, filter_nolakec, &
            dtime,                                                            &
            tk( begc:endc, -nlevsno+1: ),                                     &
@@ -301,6 +304,7 @@ contains
            fn( begc:endc, -nlevsno+1: ),                                     &
            fact( begc:endc, -nlevsno+1: ),                                   &
            energyflux_vars)
+      call t_stopf('SoilTempHeatDiff')
 
       ! compute thermal properties of h2osfc
 
@@ -317,6 +321,7 @@ contains
 
       ! initialize initial temperature vector
 
+      call t_startf('SoilTempInit')
       tvector(begc:endc, :) = spval
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
@@ -329,6 +334,7 @@ contains
          ! soil layers; top layer will have one offset and one extra coefficient
          tvector(c,1:nlevgrnd) = t_soisno(c,1:nlevgrnd)
       enddo
+      call t_stopf('SoilTempInit')
 
 
       ! Solve temperature
@@ -369,6 +375,7 @@ contains
          endif
       enddo
 
+      call t_startf('SoilTempFn1')
       ! Melting or Freezing
 
       do j = -nlevsno+1,nlevgrnd
@@ -423,6 +430,7 @@ contains
             end if
          end if
       end do
+      call t_stopf('SoilTempFn1')
 
       ! compute phase change of h2osfc
 
@@ -431,8 +439,10 @@ contains
          xmf_h2osfc(c) = 0.
       end do
 
+      call t_startf('PhaseChangeH2osfc')
       call PhaseChangeH2osfc (bounds, num_nolakec, filter_nolakec, &
            dhsdT(bounds%begc:bounds%endc), energyflux_vars,dtime )
+      call t_stopf('PhaseChangeH2osfc')
 
       call Phasechange_beta (bounds, num_nolakec, filter_nolakec, &
            dhsdT(bounds%begc:bounds%endc), soilstate_vars, energyflux_vars, dtime)
@@ -560,6 +570,7 @@ contains
 
       ! Enforce expected array sizes
 
+    call t_startf('SoilTempRHS')
     call SetRHSVec(bounds, num_filter, filter,   &
          dtime,                                  &
          hs_h2osfc( begc:endc ),                 &
@@ -575,9 +586,11 @@ contains
          c_h2osfc( begc:endc ),                  &
          dz_h2osfc( begc:endc ),                 &
          rvector( begc:endc, -nlevsno: ))
+    call t_stopf('SoilTempRHS')
 
     ! Set up the banded diagonal matrix
 
+    call t_startf('SoilTempMatrix')
     call SetMatrix(bounds, num_filter, filter,   &
          dtime,                                  &
          nband,                                  &
@@ -588,6 +601,7 @@ contains
          c_h2osfc( begc:endc ),                  &
          dz_h2osfc( begc:endc ),                 &
          bmatrix( begc:endc, 1:, -nlevsno: ))
+    call t_stopf('SoilTempMatrix')
 
 
     ! Solve the system
