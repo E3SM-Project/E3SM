@@ -23,6 +23,124 @@ class MockCase(object):
             return None
 
 ###############################################################################
+# Special attributes used by buildnml and atmchange to perform checks, and to
+# describe how an XML node can be modified. In particular:
+#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer)
+#  - valid_values: allows to specify a set of valid values
+#  - locked: if set to true, the parameter cannot be modified (via atmchange)
+#  - constraints: allows to specify constraints on values. Valid constraints
+#    are lt, le, ne, gt, ge, and mod. Multiple constrained are separated by ';'.
+#    Examples:
+#      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+#      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
+#  - optional: if set to true, marks a "file" param where UNSET is a valid/intentional value
+#  - open: if set to true, marks a *node* (not a leaf) as one where atmchange can
+#    add (--add) and remove (--rm) leaves. Since the leaves of an open node are not
+#    all known a priori, the node must specify the metadata that ALL its leaves
+#    must have, via 'leaf_<attrib>' attributes (e.g., leaf_type="array(real)").
+#    The attribute 'leaf_type' is mandatory. The 'leaf_*' attributes are applied
+#    to all the leaves of the node (including those set in the defaults file) that
+#    do not specify the attribute themselves.
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "action", "optional", "open")
+LEAF_ATTRIB_PREFIX = "leaf_"
+
+###############################################################################
+def is_metadata_attrib(name):
+###############################################################################
+    """
+    Whether an XML attribute is metadata (as opposed to a selector)
+
+    >>> is_metadata_attrib("type")
+    True
+    >>> is_metadata_attrib("leaf_type")
+    True
+    >>> is_metadata_attrib("hgrid")
+    False
+    """
+    return name in METADATA_ATTRIBS or name.startswith(LEAF_ATTRIB_PREFIX)
+
+###############################################################################
+def is_open_node(elem):
+###############################################################################
+    """
+    Whether an XML node is 'open', i.e., atmchange can add/remove leaves to/from it
+
+    >>> import xml.etree.ElementTree as ET
+    >>> is_open_node(ET.fromstring('<a open="true"/>'))
+    True
+    >>> is_open_node(ET.fromstring('<a open="TRUE"/>'))
+    True
+    >>> is_open_node(ET.fromstring('<a open="false"/>'))
+    False
+    >>> is_open_node(ET.fromstring('<a/>'))
+    False
+    """
+    return str(elem.attrib.get("open","false")).lower()=="true"
+
+###############################################################################
+def is_leaf(elem):
+###############################################################################
+    """
+    Whether an XML node is a leaf (i.e., stores a value). Note that an open
+    node is never a leaf, even when it has no children (yet).
+    """
+    return len(elem)==0 and not is_open_node(elem)
+
+###############################################################################
+def get_leaf_attribs(elem):
+###############################################################################
+    """
+    Get the attributes that all leaves of an open node must have
+
+    >>> import xml.etree.ElementTree as ET
+    >>> get_leaf_attribs(ET.fromstring('<a open="true" leaf_type="real" leaf_doc="hi"/>'))
+    {'type': 'real', 'doc': 'hi'}
+    """
+    n = len(LEAF_ATTRIB_PREFIX)
+    return {k[n:]:v for k,v in elem.attrib.items() if k.startswith(LEAF_ATTRIB_PREFIX)}
+
+###############################################################################
+def apply_leaf_attribs(root):
+###############################################################################
+    """
+    For each open node in the tree, set the leaf_* attributes on its leaves,
+    unless the leaf already has the attribute. Also checks that the open nodes
+    are well formed (i.e., that they have children only if they are leaves,
+    and that they specify leaf_type).
+
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = ET.fromstring('''
+    ... <root>
+    ...   <sub open="true" leaf_type="array(real)" leaf_constraints="ge 0">
+    ...     <a>1</a>
+    ...     <b type="array(integer)">1,2</b>
+    ...   </sub>
+    ...   <other><c>1</c></other>
+    ... </root>''')
+    >>> apply_leaf_attribs(xml)
+    >>> [(c.tag,c.attrib) for c in xml.find('sub')]
+    [('a', {'type': 'array(real)', 'constraints': 'ge 0'}), ('b', {'type': 'array(integer)', 'constraints': 'ge 0'})]
+    >>> xml.find('other').find('c').attrib
+    {}
+    >>> apply_leaf_attribs(ET.fromstring('<root><sub open="true"/></root>'))
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Open node 'sub' must specify the 'leaf_type' attribute
+    >>> apply_leaf_attribs(ET.fromstring('<root><sub open="true" leaf_type="real"><a><b>1</b></a></sub></root>'))
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Open node 'sub' can only have leaves as children. Found non-leaf child 'a'
+    """
+    for elem in root.iter():
+        if is_open_node(elem):
+            expect ("leaf_type" in elem.attrib,
+                    f"Open node '{elem.tag}' must specify the 'leaf_type' attribute")
+            leaf_attribs = get_leaf_attribs(elem)
+            for child in elem:
+                expect (is_leaf(child),
+                        f"Open node '{elem.tag}' can only have leaves as children. Found non-leaf child '{child.tag}'")
+                for k,v in leaf_attribs.items():
+                    child.attrib.setdefault(k,v)
+
+###############################################################################
 def is_array_type(name):
 ###############################################################################
     """
@@ -436,8 +554,7 @@ def check_all_values(root):
     logical
     """
 
-    has_children = len(root)>0
-    if has_children:
+    if not is_leaf(root):
         for c in root:
             check_all_values(c)
     else:

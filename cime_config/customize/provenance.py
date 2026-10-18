@@ -40,6 +40,7 @@ def _record_git_provenance(srcroot, exeroot, lid):
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.{}".format(lid))
     desc = utils.get_current_commit(tag=True, repo=srcroot)
+    desc = "unknown" if desc is None else desc
     with open(describe_prov, "w") as fd:
         fd.write(desc)
 
@@ -56,6 +57,7 @@ def _record_git_provenance(srcroot, exeroot, lid):
     # Save git submodule status
     submodule_prov = os.path.join(exeroot, "GIT_SUBMODULE_STATUS.{}".format(lid))
     subm_status = utils.get_current_submodule_status(recursive=True, repo=srcroot)
+    subm_status = "unknown" if subm_status is None else subm_status
     with open(submodule_prov, "w") as fd:
         fd.write(subm_status)
 
@@ -408,6 +410,7 @@ def _record_timing(case, lid):
     )
 
     desc = utils.get_current_commit(tag=True, repo=from_repo)
+    desc = "unknown" if desc is None else desc
     with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
         fd.write(desc)
 

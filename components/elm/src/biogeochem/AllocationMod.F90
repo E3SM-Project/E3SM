@@ -13,6 +13,7 @@ module AllocationMod
   use elm_varctl          , only : nyears_ad_carbon_only
   use elm_varctl          , only : use_fates
   use abortutils          , only : endrun
+  use perf_mod            , only : t_startf, t_stopf
   use decompMod           , only : bounds_type
   use subgridAveMod       , only : p2c
   use CanopyStateType     , only : canopystate_type
@@ -1422,6 +1423,7 @@ contains
 
      if (nu_com .eq. 'RD') then
 
+       call t_startf('phase2-NRD')
        call NAllocationRD(begc, num_soilc, filter_soilc, &
            col_plant_ndemand_vr(begc:endc,1:nlevdecomp), & ! IN
            potential_immob_vr(begc:endc,1:nlevdecomp),   & ! IN
@@ -1444,6 +1446,7 @@ contains
            smin_no3_to_plant_vr(begc:endc,1:nlevdecomp),&! OUT
            f_nit_vr(begc:endc,1:nlevdecomp),           & ! OUT
            f_denit_vr(begc:endc,1:nlevdecomp))           ! OUT
+       call t_stopf('phase2-NRD')
 
      else
         do fc=1,num_soilc
@@ -1600,6 +1603,7 @@ contains
 
      if (nu_com .eq. 'RD') then
 
+        call t_startf('phase2-PRD')
         call PAllocationRD(begc, num_soilc,filter_soilc, &
                 col_plant_pdemand_vr(begc:endc,1:nlevdecomp), & ! IN
                 potential_immob_p_vr(begc:endc,1:nlevdecomp),               & ! IN
@@ -1609,6 +1613,7 @@ contains
                 actual_immob_p_vr(begc:endc,1:nlevdecomp),                  & ! OUT
                 sminp_to_plant_vr(begc:endc,1:nlevdecomp),                  & ! OUT
                 supplement_to_sminp_vr(begc:endc,1:nlevdecomp))               ! OUT
+        call t_stopf('phase2-PRD')
      else
         do fc=1, num_soilc
 
@@ -1701,6 +1706,7 @@ contains
       !  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
       !  We only resolve co-limitations when are supplementing neither element
 
+      call t_startf('phase2-colim')
       np_bothactive: if ( .not.carbon_only .and.  &
            .not.carbonphosphorus_only .and. &
            .not.carbonnitrogen_only ) then
@@ -1821,6 +1827,7 @@ contains
            end do
         end if
      endif np_bothactive
+     call t_stopf('phase2-colim')
 
      if(carbonnitrogen_only)then
         !$acc parallel loop independent collapse(2) gang vector private(c) default(present)

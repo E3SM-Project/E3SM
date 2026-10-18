@@ -30,6 +30,7 @@ module surfrdMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: surfrd_get_globmask  ! Reads global land mask (needed for setting domain decomp)
+  public :: surfrd_get_decomp_weights ! Estimates active soil columns per gridcell (for weighted domain decomp)
   public :: surfrd_get_grid      ! Read grid/landfrac data into domain (after domain decomp)
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
@@ -135,6 +136,196 @@ contains
     call ncd_pio_closefile(ncid)
 
   end subroutine surfrd_get_globmask
+
+  !-----------------------------------------------------------------------
+  subroutine surfrd_get_decomp_weights(filename, ni, nj, weight)
+    !
+    ! !DESCRIPTION:
+    ! Estimate the number of active soil columns in each gridcell from the surface
+    ! dataset, for use as the gridcell weight in the domain decomposition.
+    ! NO DOMAIN DECOMPOSITION HAS BEEN SET YET, so the fields are read globally.
+    !
+    ! The natural vegetation landunit has one soil column, which is always active.
+    ! With a crop landunit, each crop type has its own column, which is active if its
+    ! weight is positive after the crop types are merged as in surfrd_get_data
+    ! (irrigated into rainfed when irrigate is false, then mergetoelmpft). So the
+    ! weight of a gridcell is 1 plus, if PCT_CROP > 0, the number of merged crop
+    ! types with a positive PCT_CFT. Columns can change their active status during
+    ! a transient run; the weight describes the surface dataset only.
+    !
+    ! Requires pftconrd to have been called (for mergetoelmpft and the crop indices).
+    !
+    ! !USES:
+    use fileutils  , only : getfil
+    use ncdio_pio  , only : ncd_inqvid
+    use elm_varctl , only : irrigate, create_crop_landunit
+    use elm_varpar , only : crop_prog, cft_lb, cft_ub, cft_size
+    use pftvarcon  , only : npcropmax, mergetoelmpft
+    use pftvarcon  , only : nc3crop, ncorn, nscereal, nwcereal, nsoybean, ncassava, ncotton
+    use pftvarcon  , only : nfoddergrass, noilpalm, nograins, nrapeseed, nrice, nrtubers
+    use pftvarcon  , only : nsugarcane, nmiscanthus, nswitchgrass, npoplar, nwillow
+    use pftvarcon  , only : nc3irrig, ncornirrig, nscerealirrig, nwcerealirrig, nsoybeanirrig
+    use pftvarcon  , only : ncassavairrig, ncottonirrig, nfoddergrassirrig, noilpalmirrig
+    use pftvarcon  , only : nograinsirrig, nrapeseedirrig, nriceirrig, nrtubersirrig
+    use pftvarcon  , only : nsugarcaneirrig, nmiscanthusirrig, nswitchgrassirrig
+    use pftvarcon  , only : npoplarirrig, nwillowirrig
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in)  :: filename   ! surface dataset filename
+    integer         , intent(in)  :: ni, nj     ! global grid sizes (of the land domain)
+    real(r8)        , intent(out) :: weight(:)  ! gridcell weight, indexed as the land mask
+    !
+    ! !LOCAL VARIABLES:
+    logical  :: isgrid2d                 ! is the surface dataset on a 2d grid
+    integer  :: ndims                    ! number of dimensions of PCT_CFT on the file
+    integer  :: dimids(3)                ! dimension ids of PCT_CFT on the file
+    integer  :: dlen(3)                  ! dimension lengths of PCT_CFT on the file
+    logical  :: dimexist                 ! does the dimension exist on the file
+    logical  :: readvar                  ! was the variable read
+    integer  :: fni, fnj, fns            ! grid sizes on the surface dataset
+    integer  :: dimid, varid, ncft       ! netCDF ids and size of the cft dimension
+    integer  :: status                   ! PIO status
+    integer  :: m, n, k                  ! indices
+    integer  :: target_cft(cft_lb:cft_ub) ! crop type that each crop type on the file is merged into
+    integer  :: rainfed_cft(18), irrig_cft(18) ! rainfed and matching irrigated crop types
+    logical, allocatable  :: cft_present(:)    ! a crop type merged into the current target is present
+    real(r8), allocatable :: pct_crop(:)       ! PCT_CROP, indexed as the land mask
+    real(r8), allocatable :: pct_cft(:)        ! PCT_CFT for one crop type, indexed as the land mask
+    real(r8), allocatable :: rdata2d(:,:)      ! read buffer for 2d grids
+    type(file_desc_t)  :: ncid                 ! netcdf id
+    type(var_desc_t)   :: vardesc              ! variable descriptor
+    character(len=256) :: locfn                ! local file name
+    character(len=*), parameter :: subname = 'surfrd_get_decomp_weights'
+    !-----------------------------------------------------------------------
+
+    weight(:) = 1._r8
+
+    if (.not. (crop_prog .and. create_crop_landunit) .or. cft_size <= 0) then
+       if (masterproc) then
+          write(iulog,*) trim(subname)//': no prognostic crop landunit, so all gridcells have weight 1'
+       end if
+       return
+    end if
+    if (filename == ' ') then
+       call endrun(msg=trim(subname)//' ERROR: fsurdat must be specified '//errMsg(__FILE__, __LINE__))
+    end if
+
+    call getfil( filename, locfn, 0 )
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    call ncd_inqfdims(ncid, isgrid2d, fni, fnj, fns)
+    if (fns /= size(weight)) then
+       write(iulog,*) trim(subname)//' ERROR: surface dataset size ', fns, &
+            ' does not match the land domain size ', size(weight), ni, nj
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    call ncd_inqdid(ncid, 'topounit', dimid, dimexist=dimexist)
+    if (dimexist) then
+       if (masterproc) then
+          write(iulog,*) trim(subname)//': surface dataset has topounits, which the weights do not ', &
+               'support, so all gridcells have weight 1'
+       end if
+       call ncd_pio_closefile(ncid)
+       return
+    end if
+
+    call ncd_inqdid(ncid, 'cft', dimid, dimexist=dimexist)
+    if (.not. dimexist) then
+       call endrun(msg=trim(subname)//' ERROR: no cft dimension on the surface dataset'//errMsg(__FILE__, __LINE__))
+    end if
+    call ncd_inqdlen(ncid, dimid, ncft)
+    if (ncft /= cft_size) then
+       write(iulog,*) trim(subname)//' ERROR: cft dimension ', ncft, ' does not match cft_size ', cft_size
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    ! PCT_CFT is (lon, lat, cft) on a lat/lon grid (including a 1x1 grid) and
+    ! (gridcell, cft) on an unstructured grid; PCT_CROP has the same layout without cft
+    call ncd_inqvid(ncid, 'PCT_CFT', varid, vardesc, readvar=readvar)
+    if (.not. readvar) call endrun(msg=trim(subname)//' ERROR: PCT_CFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    status = pio_inq_varndims(ncid, varid, ndims)
+    if (ndims /= 2 .and. ndims /= 3) then
+       write(iulog,*) trim(subname)//' ERROR: PCT_CFT has ', ndims, ' dimensions; expected 2 or 3'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    status = pio_inq_vardimid(ncid, varid, dimids(1:ndims))
+    do n = 1, ndims
+       status = pio_inq_dimlen(ncid, dimids(n), dlen(n))
+    end do
+    if (product(dlen(1:ndims-1)) /= fns .or. dlen(ndims) /= cft_size) then
+       write(iulog,*) trim(subname)//' ERROR: PCT_CFT dimensions ', dlen(1:ndims), &
+            ' do not match the grid size ', fns, ' and cft_size ', cft_size
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    allocate(pct_crop(fns), pct_cft(fns))
+    if (ndims == 3) allocate(rdata2d(dlen(1),dlen(2)))
+
+    ! PCT_CROP
+    if (ndims == 3) then
+       call ncd_io(ncid=ncid, varname='PCT_CROP', data=rdata2d, flag='read', readvar=readvar)
+       pct_crop(:) = reshape(rdata2d, (/fns/))
+    else
+       call ncd_io(ncid=ncid, varname='PCT_CROP', data=pct_crop, flag='read', readvar=readvar)
+    end if
+    if (.not. readvar) call endrun(msg=trim(subname)//' ERROR: PCT_CROP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+
+    ! Crop type that each crop type on the file ends up in, following the merges in
+    ! surfrd_get_data and collapse_crop_types
+    do m = cft_lb, cft_ub
+       target_cft(m) = m
+    end do
+    if (.not. irrigate) then
+       rainfed_cft = (/ nc3crop, ncorn, nscereal, nwcereal, nsoybean, &
+            ncassava, ncotton, nfoddergrass, noilpalm, nograins, nrapeseed, nrice, nrtubers, &
+            nsugarcane, nmiscanthus, nswitchgrass, npoplar, nwillow /)
+       irrig_cft   = (/ nc3irrig, ncornirrig, nscerealirrig, nwcerealirrig, nsoybeanirrig, &
+            ncassavairrig, ncottonirrig, nfoddergrassirrig, noilpalmirrig, nograinsirrig, &
+            nrapeseedirrig, nriceirrig, nrtubersirrig, &
+            nsugarcaneirrig, nmiscanthusirrig, nswitchgrassirrig, npoplarirrig, nwillowirrig /)
+       do k = 1, size(rainfed_cft)
+          if (rainfed_cft(k) < 0 .or. irrig_cft(k) < 0) cycle
+          where (target_cft(:) == irrig_cft(k)) target_cft(:) = rainfed_cft(k)
+       end do
+       ! collapse_crop_types also merges every second crop type into the one before it
+       where (mod(target_cft(:) - cft_lb, 2) == 1) target_cft(:) = target_cft(:) - 1
+    end if
+    do k = 1, npcropmax
+       if (k /= mergetoelmpft(k)) then
+          where (target_cft(:) == k) target_cft(:) = mergetoelmpft(k)
+       end if
+    end do
+
+    ! Count, for each gridcell with crop, the merged crop types with positive weight
+    allocate(cft_present(fns))
+    do n = cft_lb, cft_ub
+       if (.not. any(target_cft(:) == n)) cycle
+       cft_present(:) = .false.
+       do m = cft_lb, cft_ub
+          if (target_cft(m) /= n) cycle
+          ! read crop type m (position m-cft_lb+1 on the cft dimension)
+          if (ndims == 3) then
+             status = pio_get_var(ncid, varid, (/1, 1, m-cft_lb+1/), (/dlen(1), dlen(2), 1/), rdata2d)
+             pct_cft(:) = reshape(rdata2d, (/fns/))
+          else
+             status = pio_get_var(ncid, varid, (/1, m-cft_lb+1/), (/fns, 1/), pct_cft)
+          end if
+          cft_present(:) = cft_present(:) .or. (pct_cft(:) > 0._r8)
+       end do
+       where (cft_present(:) .and. pct_crop(:) > 0._r8) weight(:) = weight(:) + 1._r8
+    end do
+
+    call ncd_pio_closefile(ncid)
+    deallocate(pct_crop, pct_cft, cft_present)
+    if (ndims == 3) deallocate(rdata2d)
+
+    if (masterproc) then
+       write(iulog,*) trim(subname)//': estimated active soil columns per gridcell: total ', sum(weight), &
+            ', max ', maxval(weight)
+    end if
+
+  end subroutine surfrd_get_decomp_weights
 
   !-----------------------------------------------------------------------
   subroutine surfrd_get_grid(begg, endg, ldomain, filename, glcfilename)
@@ -1089,6 +1280,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: nl, t                             ! index
+    integer  :: m                                 ! index
+    integer  :: rainfed_cft(18), irrig_cft(18)    ! rainfed and matching irrigated crop types
     integer  :: dimid,varid                    ! netCDF id's
     integer  :: ier                            ! error status	
     integer  :: cftsize                        ! size of CFT's
@@ -1220,47 +1413,22 @@ contains
                errMsg(__FILE__, __LINE__))
        end if
 
+       rainfed_cft = (/ nc3crop, ncorn, nscereal, nwcereal, nsoybean, &
+            ncassava, ncotton, nfoddergrass, noilpalm, nograins, nrapeseed, nrice, nrtubers, &
+            nsugarcane, nmiscanthus, nswitchgrass, npoplar, nwillow /)
+       irrig_cft   = (/ nc3irrig, ncornirrig, nscerealirrig, nwcerealirrig, nsoybeanirrig, &
+            ncassavairrig, ncottonirrig, nfoddergrassirrig, noilpalmirrig, nograinsirrig, &
+            nrapeseedirrig, nriceirrig, nrtubersirrig, &
+            nsugarcaneirrig, nmiscanthusirrig, nswitchgrassirrig, npoplarirrig, nwillowirrig /)
+
        do nl = begg,endg
           do t = 1, max_topounits
-            ! (TODO) the following assumes that rainfed/irrigated crop are ordered side by side
-            ! indexing is fixed
-            wt_cft(nl,t,nc3crop)       = wt_cft(nl,t,nc3crop)  + wt_cft(nl,t,nc3irrig)
-            wt_cft(nl,t,nc3irrig)      = 0._r8
-            wt_cft(nl,t,ncorn)         = wt_cft(nl,t,ncorn)    + wt_cft(nl,t,ncornirrig)
-            wt_cft(nl,t,ncornirrig)    = 0._r8
-            wt_cft(nl,t,nscereal)      = wt_cft(nl,t,nscereal) + wt_cft(nl,t,nscerealirrig)
-            wt_cft(nl,t,nscerealirrig) = 0._r8
-            wt_cft(nl,t,nwcereal)      = wt_cft(nl,t,nwcereal) + wt_cft(nl,t,nwcerealirrig)
-            wt_cft(nl,t,nwcerealirrig) = 0._r8
-            wt_cft(nl,t,nsoybean)      = wt_cft(nl,t,nsoybean) + wt_cft(nl,t,nsoybeanirrig)
-            wt_cft(nl,t,nsoybeanirrig) = 0._r8
-            wt_cft(nl,t,ncassava)      = wt_cft(nl,t,ncassava) + wt_cft(nl,t,ncassavairrig)
-            wt_cft(nl,t,ncassavairrig) = 0._r8
-            wt_cft(nl,t,ncotton)       = wt_cft(nl,t,ncotton)  + wt_cft(nl,t,ncottonirrig)
-            wt_cft(nl,t,ncottonirrig)  = 0._r8
-            wt_cft(nl,t,nfoddergrass)  = wt_cft(nl,t,nfoddergrass) + wt_cft(nl,t,nfoddergrassirrig)
-            wt_cft(nl,t,nfoddergrassirrig) = 0._r8
-            wt_cft(nl,t,noilpalm)      = wt_cft(nl,t,noilpalm) + wt_cft(nl,t,noilpalmirrig)
-            wt_cft(nl,t,noilpalmirrig) = 0._r8
-            wt_cft(nl,t,nograins)      = wt_cft(nl,t,nograins) + wt_cft(nl,t,nograinsirrig)
-            wt_cft(nl,t,nograinsirrig) = 0._r8
-            wt_cft(nl,t,nrapeseed)       = wt_cft(nl,t,nrapeseed)  + wt_cft(nl,t,nrapeseedirrig)
-            wt_cft(nl,t,nrapeseedirrig)  = 0._r8
-            wt_cft(nl,t,nrice)           = wt_cft(nl,t,nrice)  + wt_cft(nl,t,nriceirrig)
-            wt_cft(nl,t,nriceirrig)      = 0._r8
-            wt_cft(nl,t,nrtubers)        = wt_cft(nl,t,nrtubers) + wt_cft(nl,t,nrtubersirrig)
-            wt_cft(nl,t,nrtubersirrig)   = 0._r8
-            wt_cft(nl,t,nsugarcane)      = wt_cft(nl,t,nsugarcane) + wt_cft(nl,t,nsugarcaneirrig)
-            wt_cft(nl,t,nsugarcaneirrig) = 0._r8
-            wt_cft(nl,t,nmiscanthus)     = wt_cft(nl,t,nmiscanthus) + wt_cft(nl,t,nmiscanthusirrig)
-            wt_cft(nl,t,nmiscanthusirrig) = 0._r8
-            wt_cft(nl,t,nswitchgrass)     = wt_cft(nl,t,nswitchgrass)  + wt_cft(nl,t,nswitchgrassirrig)
-            wt_cft(nl,t,nswitchgrassirrig) = 0._r8
-            wt_cft(nl,t,npoplar)         = wt_cft(nl,t,npoplar) + wt_cft(nl,t,npoplar)
-            wt_cft(nl,t,npoplarirrig)    = 0._r8
-            wt_cft(nl,t,nwillow)         = wt_cft(nl,t,nwillow) + wt_cft(nl,t,nwillowirrig)
-            wt_cft(nl,t,nwillowirrig)    = 0._r8
-
+            ! Crops that are not on the paramfile have an index of -1 and are skipped
+            do m = 1, size(rainfed_cft)
+               if (rainfed_cft(m) < 0 .or. irrig_cft(m) < 0) cycle
+               wt_cft(nl,t,rainfed_cft(m)) = wt_cft(nl,t,rainfed_cft(m)) + wt_cft(nl,t,irrig_cft(m))
+               wt_cft(nl,t,irrig_cft(m))   = 0._r8
+            end do
           end do
        end do
 

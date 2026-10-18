@@ -1005,6 +1005,26 @@
       <mask>u03-oi240</mask>
     </model_grid>
 
+    <model_grid alias="t-lr12p5_t-lr12p5" compset="(DATM|SATM).+ELM">
+      <grid name="atm">t-lr12p5</grid>
+      <grid name="lnd">t-lr12p5</grid>
+      <grid name="ocnice">t-lr12p5</grid>
+      <grid name="rof">t-lr12p5</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>t-lr12p5</mask>
+    </model_grid>
+
+    <model_grid alias="t-lr25_t-lr25" compset="(DATM|SATM).+ELM">
+      <grid name="atm">t-lr25</grid>
+      <grid name="lnd">t-lr25</grid>
+      <grid name="ocnice">t-lr25</grid>
+      <grid name="rof">t-lr25</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>t-lr25</mask>
+    </model_grid>
+
     <!--  spectral element grids -->
 
     <model_grid alias="ne4_oQU480">
@@ -4073,6 +4093,20 @@
       <ny>1</ny>
       <file grid="atm|lnd" mask="u03-oi240">$DIN_LOC_ROOT/share/domains/domain.lnd.u03-lr240.20260826.nc</file>
       <desc>u03-lr240 is an ELM/MOSART grid generated with the JIGSAW/Polaris process for unified surface meshes.</desc>
+    </domain>
+
+    <domain name="t-lr12p5">
+      <nx>1217814</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="t-lr12p5">$DIN_LOC_ROOT/share/domains/domain.lnd.t-oi6to18-lr12p5.20261012.nc</file>
+      <desc>t-lr12p5 is a 12.5 km ELM/MOSART grid (t-oi6to18-lr12p5) generated with the JIGSAW/Polaris process for unified surface meshes -- only valid for DATM/ELM compset</desc>
+    </domain>
+
+    <domain name="t-lr25">
+      <nx>434834</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="t-lr25">$DIN_LOC_ROOT/share/domains/domain.lnd.t-oi6to18-lr25.20261012.nc</file>
+      <desc>t-lr25 is a 25 km ELM/MOSART grid (t-oi6to18-lr25) generated with the JIGSAW/Polaris process for unified surface meshes -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="mp120v1">

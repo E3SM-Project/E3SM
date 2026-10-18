@@ -51,6 +51,7 @@ module elm_initializeMod
   !-----------------------------------------------------------------------
 #ifdef MOAB_LATERAL
   private :: elm_moab_interface_init   ! create the full MOAB mesh representation of ELM domain
+  private :: write_subgrid_counts      ! write min/mean/max per-task counts of subgrid units
 
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
   real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
@@ -89,6 +90,7 @@ contains
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use surfrdMod                 , only: surfrd_topounit_data
+    use surfrdMod                 , only: surfrd_get_decomp_weights
     use elm_varctl                , only: domain_decomp_type
     use decompInitMod             , only: decompInit_ghosts
     use decompInitMod             , only: decompInit_lnd_simple
@@ -113,6 +115,8 @@ contains
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump            ! clump bounds
     integer ,pointer  :: amask(:)                ! global land mask
+    real(r8), allocatable :: gweight(:)          ! gridcell weight for the domain decomposition
+    logical           :: pftcon_read             ! has pftconrd been called
     integer           :: nclumps                 ! number of clumps on this processor
     integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
@@ -194,6 +198,14 @@ contains
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
+    case ("round_robin_weighted")
+       ! Weight gridcells by their estimated number of active soil columns, which
+       ! needs the PFT parameters (crop types and how they are merged)
+       call pftconrd()
+       allocate(gweight(size(amask)))
+       call surfrd_get_decomp_weights(fsurdat, ni, nj, gweight)
+       call decompInit_lnd(ni, nj, amask, gweight)
+       deallocate(amask, gweight)
     case ("simple")
       call decompInit_lnd_simple(ni, nj, amask)
       deallocate(amask)
@@ -304,8 +316,10 @@ contains
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
+    ! (with domain_decomp_type = round_robin_weighted, it was read before the decomposition)
 
-    call pftconrd()
+    pftcon_read = (trim(domain_decomp_type) == "round_robin_weighted")
+    if (.not. pftcon_read) call pftconrd()
     ! if by user-defined PFT (numbers and names), 'numpft/mxpft_nc' may be changed including other derived indices
     !
     ! a few arrays allocation previously done above is moved here i.e. after this 'pftconrd' call
@@ -1079,6 +1093,8 @@ contains
     ! Write log output for end of initialization
     !------------------------------------------------------------
 
+    call write_subgrid_counts(bounds_proc)
+
     call t_startf('init_wlog')
     if (masterproc) then
        write(iulog,*) 'Successfully initialized the land model'
@@ -1099,6 +1115,73 @@ contains
     call t_stopf('elm_init2')
 
   end subroutine initialize2
+
+  !-----------------------------------------------------------------------
+  subroutine write_subgrid_counts(bounds_proc)
+    !
+    ! !DESCRIPTION:
+    ! Write the min, mean and max over tasks of the number of allocated gridcells,
+    ! columns and patches, and of the active soil columns and patches in the
+    ! filters, so that the per-task work of column-level BGC routines can be
+    ! compared across configurations (e.g., with and without prognostic crop).
+    !
+    ! !USES:
+    use spmdMod         , only : mpicom, npes, MPI_INTEGER, MPI_MIN, MPI_MAX, MPI_SUM
+    use filterMod       , only : filter
+    use ColumnType      , only : col_pp
+    use LandunitType    , only : lun_pp
+    use landunit_varcon , only : istcrop
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds_proc
+    !
+    ! !LOCAL VARIABLES:
+    integer, parameter :: ncounts = 7
+    character(len=24)  :: names(ncounts)
+    integer            :: counts(ncounts), cmin(ncounts), cmax(ncounts), csum(ncounts)
+    integer            :: nc, fc, c, i, ier
+    !-----------------------------------------------------------------------
+
+    names(1) = 'gridcells'
+    names(2) = 'columns (allocated)'
+    names(3) = 'patches (allocated)'
+    names(4) = 'soil columns (active)'
+    names(5) = 'crop columns (active)'
+    names(6) = 'soil patches (active)'
+    names(7) = 'columns (active)'
+
+    counts(:) = 0
+    counts(1) = bounds_proc%endg - bounds_proc%begg + 1
+    counts(2) = bounds_proc%endc - bounds_proc%begc + 1
+    counts(3) = bounds_proc%endp - bounds_proc%begp + 1
+    do nc = 1, get_proc_clumps()
+       counts(4) = counts(4) + filter(nc)%num_soilc
+       counts(6) = counts(6) + filter(nc)%num_soilp
+       do fc = 1, filter(nc)%num_soilc
+          c = filter(nc)%soilc(fc)
+          if (lun_pp%itype(col_pp%landunit(c)) == istcrop) counts(5) = counts(5) + 1
+       end do
+    end do
+    do c = bounds_proc%begc, bounds_proc%endc
+       if (col_pp%active(c)) counts(7) = counts(7) + 1
+    end do
+
+    call mpi_reduce(counts, cmin, ncounts, MPI_INTEGER, MPI_MIN, 0, mpicom, ier)
+    call mpi_reduce(counts, cmax, ncounts, MPI_INTEGER, MPI_MAX, 0, mpicom, ier)
+    call mpi_reduce(counts, csum, ncounts, MPI_INTEGER, MPI_SUM, 0, mpicom, ier)
+
+    if (masterproc) then
+       write(iulog,*)
+       write(iulog,'(a,i8,a)') ' Subgrid counts per task over ', npes, ' tasks:'
+       write(iulog,'(a24,4a14)') 'count', 'min', 'mean', 'max', 'total'
+       do i = 1, ncounts
+          write(iulog,'(a24,i14,f14.2,i14,i14)') names(i), cmin(i), &
+               real(csum(i))/real(npes), cmax(i), csum(i)
+       end do
+       write(iulog,*)
+    end if
+
+  end subroutine write_subgrid_counts
 
   !-----------------------------------------------------------------------
   subroutine initialize3( )

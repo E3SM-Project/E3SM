@@ -237,16 +237,20 @@ contains
       ! Added a patches loop here to get the average of hs and dhsdT over
       ! all Patches on the column. Precalculate the terms that do not depend on PFT.
 
+      call t_startf('SoilTempGrndFlux')
       call ComputeGroundHeatFluxAndDeriv(num_nolakec, filter_nolakec, &
            hs_h2osfc, hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, &
            canopystate_vars, solarabs_vars)
+      call t_stopf('SoilTempGrndFlux')
 
       ! Determine heat diffusion through the layer interface and factor used in computing
       ! banded diagonal matrix and set up vector r and vectors a, b, c that define banded
       ! diagonal matrix and solve system
 
+      call t_startf('SoilTempHeatDiff')
       call ComputeHeatDiffFluxAndFactor(num_nolakec, filter_nolakec, dtime, &
            tk, cv, fn)
+      call t_stopf('SoilTempHeatDiff')
 
       ! compute thermal properties of h2osfc
 
@@ -264,6 +268,7 @@ contains
 
       ! initialize initial temperature vector
 
+      call t_startf('SoilTempInit')
       !$acc parallel loop gang vector default(present) private(c)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
@@ -284,6 +289,7 @@ contains
             tvector(fc,j) = t_soisno(c,j)
          end do
       enddo
+      call t_stopf('SoilTempInit')
 
       ! Solve temperature
 
@@ -312,6 +318,7 @@ contains
          endif
       enddo
 
+      call t_startf('SoilTempFn1')
       ! Melting or Freezing
 
       !$acc parallel loop gang vector collapse(2) default(present) private(c,l)
@@ -369,6 +376,8 @@ contains
          end if
       end do
 
+      call t_stopf('SoilTempFn1')
+
       ! compute phase change of h2osfc
 
       !$acc parallel loop gang vector default(present) private(c)
@@ -377,7 +386,9 @@ contains
          xmf_h2osfc(c) = 0.
       end do
 
+      call t_startf('PhaseChangeH2osfc')
       call PhaseChangeH2osfc (num_nolakec, filter_nolakec, dhsdT, dtime)
+      call t_stopf('PhaseChangeH2osfc')
 
       call Phasechange_beta (num_nolakec, filter_nolakec, dhsdT, soilstate_vars, dtime)
 
@@ -503,14 +514,18 @@ contains
 
     ! Set up the RHS vector
 
+    call t_startf('SoilTempRHS')
     call SetRHSVec(num_filter, filter, dtime, &
          hs_h2osfc, hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, &
          tk_h2osfc, fn, dz_h2osfc, rvector)
+    call t_stopf('SoilTempRHS')
 
     ! Set up the banded diagonal matrix
 
+    call t_startf('SoilTempMatrix')
     call SetMatrix(num_filter, filter, dtime, &
          dhsdT, tk, tk_h2osfc, dz_h2osfc, bmatrix)
+    call t_stopf('SoilTempMatrix')
 
     ! Solve the system
     call t_startf('SoilTempBandDiag')

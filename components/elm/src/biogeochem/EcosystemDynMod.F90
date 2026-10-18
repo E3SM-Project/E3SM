@@ -4,7 +4,7 @@ module EcosystemDynMod
   ! Ecosystem dynamics: phenology, vegetation
   !
   ! !USES:
-  use dynSubgridControlMod, only : get_do_harvest
+  use dynSubgridControlMod, only : get_do_harvest, get_subgrid_weights_updated
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
   use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, iac_present, use_fan
@@ -13,6 +13,8 @@ module EcosystemDynMod
   use spmdMod             , only : masterproc
   use elm_varctl          , only : use_century_decomp
   use elm_varctl          , only : ero_ccycle 
+  use elm_varctl          , only : fan_to_bgc_veg, fan_to_bgc_crop
+  use elm_time_manager    , only : is_first_step, is_first_restart_step
   use CNStateType         , only : cnstate_type
   use CanopyStateType     , only : canopystate_type
   use SoilStateType       , only : soilstate_type
@@ -332,6 +334,10 @@ contains
 
     real(r8) :: dt, dayspyr
     integer  :: year, mon, day, sec
+    logical  :: zero_unused    ! zero the fluxes of inactive options in CNZero
+    logical  :: zero_harvest   ! zero the harvest fluxes in CNZero
+    logical  :: zero_fan       ! zero the FAN fluxes in CNZero
+    logical  :: zero_erosion   ! zero the erosion fluxes in CNZero
     !-----------------------------------------------------------------------
     dt = dtime_mod;
     year = year_curr; mon = mon_curr; day = day_curr; sec= secs_curr
@@ -346,8 +352,22 @@ contains
 
     call t_startf('CNZero')
 
+    ! Some fluxes are written only when an option is on, and otherwise keep the
+    ! zero set here. Zero them every step only when their option is on; else
+    ! only when patches or columns may have become active (which includes the
+    ! first step of a run or restart). The vertical transport tendencies are
+    ! rewritten every step by SoilLittVertTransp for the levels and pools it
+    ! uses, and the rest stay zero. Isotope fluxes are always zeroed.
+    zero_unused  = get_subgrid_weights_updated() .or. is_first_step() .or. is_first_restart_step()
+    zero_harvest = zero_unused .or. get_do_harvest() .or. iac_present .or. use_fates
+    zero_fan     = zero_unused .or. use_fan .or. fan_to_bgc_veg .or. fan_to_bgc_crop
+    zero_erosion = zero_unused .or. ero_ccycle
+
     if(.not.use_fates) then
-       call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8)
+       call t_startf('CNZero-veg_cf')
+       call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8, &
+            zero_harvest=zero_harvest)
+       call t_stopf('CNZero-veg_cf')
        if ( use_c13 ) then
           call veg_cf_setvalues(c13_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c13_col_cf,num_soilc, filter_soilc, 0._r8)
@@ -356,13 +376,28 @@ contains
           call veg_cf_setvalues(c14_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c14_col_cf,num_soilc, filter_soilc, 0._r8)
        end if
-       call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8)
-       call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8)
+       call t_startf('CNZero-veg_nf')
+       call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8, &
+            zero_harvest=zero_harvest)
+       call t_stopf('CNZero-veg_nf')
+       call t_startf('CNZero-veg_pf')
+       call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8, &
+            zero_harvest=zero_harvest)
+       call t_stopf('CNZero-veg_pf')
     end if
 
-    call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8)
-    call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8)
-    call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8)
+    call t_startf('CNZero-col_cf')
+    call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8, &
+         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused)
+    call t_stopf('CNZero-col_cf')
+    call t_startf('CNZero-col_nf')
+    call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8, &
+         zero_harvest=zero_harvest, zero_fan=zero_fan, zero_erosion=zero_erosion)
+    call t_stopf('CNZero-col_nf')
+    call t_startf('CNZero-col_pf')
+    call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8, &
+         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused)
+    call t_stopf('CNZero-col_pf')
 
     call t_stopf('CNZero')
 

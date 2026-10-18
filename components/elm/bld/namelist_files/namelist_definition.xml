@@ -176,6 +176,18 @@ of plant carbon and nutrient fluxes
 If TRUE, separate the vegetated landunit into a crop landunit and a natural vegetation landunit
 </entry>
 
+<entry id="run_zero_weight_urban" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+If TRUE, allocate memory for all urban landunits everywhere where we have valid urban data,
+even for 0-weight urban points (these 0-weight points are allocated but remain inactive,
+so no calculations are done on them unless all_active is also TRUE). This is the default because existing initial conditions
+(finidat) and restart files were written with this subgrid structure.
+If FALSE, only allocate memory for urban landunits with non-zero weight. This
+substantially reduces memory use, restart file size and run time, but requires initial
+conditions files that were generated with the same setting (or a cold start).
+Default: TRUE
+</entry>
+
 <entry id="all_active" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" >
 If TRUE, make ALL pfts, columns and landunits active, even those with 0 weight.
@@ -1573,7 +1585,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_icycape,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne32np4.pg2,ne60np4,ne64np4.pg2,ne120np4,ne120np4.pg2,ne128np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne512np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_CAx32v1.pg2,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025,0.01x0.01,u01-lr6to10,u02-lr10,u03-lr240">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_icycape,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne32np4.pg2,ne60np4,ne64np4.pg2,ne120np4,ne120np4.pg2,ne128np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne512np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_CAx32v1.pg2,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025,0.01x0.01,u01-lr6to10,u02-lr10,u03-lr240,t-lr12p5,t-lr25">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry>
@@ -1587,7 +1599,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5,SOwISC12to30E3r3,SOwISC12to30E3r4,u01-oi6to18,u02-oi30,u03-oi240">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5,SOwISC12to30E3r3,SOwISC12to30E3r4,u01-oi6to18,u02-oi30,u03-oi240,t-lr12p5,t-lr25">
 Land mask description
 </entry>
 
@@ -2008,8 +2020,13 @@ and pct_nat_pft read from the surface dataset.
 <!-- Namelist options related to domain decomposition                                          -->
 <!-- ========================================================================================  -->
 <entry id="domain_decomp_type" type="char*256" category="elm_initialization"
-       group="elm_inparm" valid_values="round_robin,simple,moab" >
+       group="elm_inparm" valid_values="round_robin,round_robin_weighted,simple,moab" >
 Specifies the method for decomposing CLM grids across processors.
+round_robin: gridcells are split into nsegspc segments per clump with equal numbers of gridcells.
+round_robin_weighted: as round_robin, but the segments hold equal numbers of active soil columns,
+estimated from the surface dataset (one natural vegetation column plus one column per crop type
+with positive weight after crop types are merged). This balances the column-level biogeochemistry
+across tasks in runs with prognostic crop. Without a crop landunit, it is the same as round_robin.
 </entry>
 
 <!-- ========================================================================================  -->
