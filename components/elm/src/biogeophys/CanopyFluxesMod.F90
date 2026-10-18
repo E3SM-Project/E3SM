@@ -461,6 +461,14 @@ contains
             
       end if
 
+      ! -----------------------------------------------------------------
+      ! Time step initialization of photosynthesis variables
+      ! (before the early return, so patches of a clump without exposed
+      ! vegetation are reset too, as in the reference)
+      ! -----------------------------------------------------------------
+      !NOTE: This likely shouldn't init based on bounds but on a filter 
+      call photosyns_vars_TimeStepInit(photosyns_vars,bounds)
+
       deg2rad = SHR_CONST_PI/180._r8
       if(num_nolu_vegp == 0) return
       !$acc enter data create(del(:), efeb(:), wtlq0(:),wtalq(:), &
@@ -493,12 +501,6 @@ contains
          ! set a minimum of 0.01 (1%) for the dayl_factor
          dayl_factor(filter_index)=min(1._r8,max(0.01_r8,(dayl(g)*dayl(g))/(max_dayl(g)*max_dayl(g))))
       end do
-      ! -----------------------------------------------------------------
-      ! Time step initialization of photosynthesis variables
-      ! -----------------------------------------------------------------
-      !NOTE: This likely shouldn't init based on bounds but on a filter 
-      call photosyns_vars_TimeStepInit(photosyns_vars,bounds)
-
       if (use_fates) then
          call alm_fates%prep_canopyfluxes( bounds )
       end if

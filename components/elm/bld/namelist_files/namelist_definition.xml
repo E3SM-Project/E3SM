@@ -583,12 +583,14 @@ SNICAR (SNow, ICe, and Aerosol Radiative model) snow aging data file name
 </entry>
 
 <entry id="hist_avgflag_pertape" type="char*1(6)" category="history"
-       group="elm_inparm" valid_values="A,I,X,M" >
+       group="elm_inparm" valid_values="A,I,X,M,U,L" >
 Per file averaging flag.
     'A' (average over history period)
     'I' (instantaneous)
     'X' (maximum over history period)
     'M' (minimum over history period)
+    'U' (maximum of the valid samples over history period: missing samples are skipped)
+    'L' (minimum of the valid samples over history period: missing samples are skipped)
 </entry>
 
 <entry id="hist_type1d_pertape" type="char*4(6)" category="history"

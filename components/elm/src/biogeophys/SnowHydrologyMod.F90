@@ -835,8 +835,12 @@ contains
 
                       ! Compaction occurring during melt
 
+                      ! Port of CLM fractional-snow melt compaction fix: use the
+                      ! fractional ddz3 form for all non-lake, non-urban columns when
+                      ! subgridflag is on (includes glacier and wetland).
                       if (imelt(c,j) == 1) then
-                         if(subgridflag==1 .and. (ltype(col_pp%landunit(c)) == istsoil .or. ltype(col_pp%landunit(c)) == istcrop)) then
+                         l = col_pp%landunit(c)
+                         if (subgridflag == 1 .and. (.not. lakpoi(l) .and. .not. urbpoi(l))) then
                             ! first term is delta mass over mass
                             ddz3 = max(0._r8,min(1._r8,(swe_old(c,j) - wx)/wx))
 

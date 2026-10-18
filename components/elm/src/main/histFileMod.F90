@@ -40,9 +40,10 @@ module histFileMod
   use PRTGenericMod          , only : nelements_fates  => num_elements
   use TopounitType           , only : top_pp
   use topounit_varcon        , only: max_topounits, has_topounit
-  use histComputeMod         , only : hist_src1d, hist_src2d, hist_field_desc, &
-       hist_subgrid_desc, hist_subgrid_state, no_snow_unset, no_snow_normal, no_snow_zero, &
-       lev_grid, lev_topo, lev_lun, lev_col, lev_patch, avg_inst, avg_mean, avg_max, avg_min
+  use histComputeMod         , only : hist_src1d, hist_src2d, hist_active_field, &
+       no_snow_unset, no_snow_normal, no_snow_zero, &
+       lev_grid, lev_topo, lev_lun, lev_col, lev_patch, &
+       time_inst, time_mean, time_max, time_min, time_max_valid, time_min_valid
 
   !
   implicit none
@@ -198,7 +199,7 @@ module histFileMod
   type master_entry
      type (field_info)  :: field               ! field information
      logical            :: actflag(max_tapes)  ! active/inactive flag
-     character(len=1)   :: avgflag(max_tapes)  ! time averaging flag ("X","A","M" or "I",)
+     character(len=1)   :: avgflag(max_tapes)  ! time averaging flag ("X","A","M","I","U" or "L")
   end type master_entry
 
   type history_entry
@@ -224,7 +225,6 @@ module histFileMod
   integer, parameter :: max_mapflds = 2500     ! Maximum number of fields to track
   type (hist_src1d), public :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
   type (hist_src2d), public :: elmptr_ra(max_mapflds) ! Real array data (2D)
-  type (hist_subgrid_state) :: subgrid_state   ! weights, active flags, snow layers (histComputeMod)
   !
   ! Master list: an array of master_entry entities
   !
@@ -537,7 +537,8 @@ contains
     if (present(avgflag)) then
        if ( avgflag /= ' ' .and. &
             avgflag /= 'A' .and. avgflag /= 'I' .and. &
-            avgflag /= 'X' .and. avgflag /= 'M') then
+            avgflag /= 'X' .and. avgflag /= 'M' .and. &
+            avgflag /= 'U' .and. avgflag /= 'L') then
           write(iulog,*) trim(subname),' ERROR: unknown averaging flag=', avgflag
           call endrun(msg=errMsg(__FILE__, __LINE__))
        endif
@@ -581,7 +582,8 @@ contains
     !-----------------------------------------------------------------------
 
     avgflag = hist_avgflag_pertape(t)
-    if (avgflag /= 'A' .and. avgflag /= 'I' .and. avgflag /= 'X' .and. avgflag /= 'M') then
+    if (avgflag /= 'A' .and. avgflag /= 'I' .and. avgflag /= 'X' .and. avgflag /= 'M' .and. &
+        avgflag /= 'U' .and. avgflag /= 'L') then
        write(iulog,*) trim(subname),' ERROR: unknown avgflag=',avgflag
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
@@ -901,7 +903,7 @@ contains
     select case (avgflag)
     case (' ')
        tape(t)%hlist(n)%avgflag = masterlist(f)%avgflag(t)
-    case ('A','I','X','M')
+    case ('A','I','X','M','U','L')
        tape(t)%hlist(n)%avgflag = avgflag
     case default
        write(iulog,*) trim(subname),' ERROR: unknown avgflag=', avgflag
@@ -919,6 +921,7 @@ contains
     !
     ! !USES:
     use histComputeMod, only : hist_compute_update
+    use subgridAveMod , only : elm_subgrid_view
     use decompMod     , only : BOUNDS_LEVEL_PROC
     !
     ! !ARGUMENTS:
@@ -931,7 +934,7 @@ contains
 
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(__FILE__, __LINE__))
 
-    call hist_compute_update(elmptr_rs, elmptr_ra, subgrid_state, bad_gridcell)
+    call hist_compute_update(elm_subgrid_view, elmptr_rs, elmptr_ra, bad_gridcell)
     if (bad_gridcell /= 0) then
        write(iulog,*) trim(subname),' ERROR: subgrid weights sum to more than 1 at g= ', bad_gridcell
        call endrun(decomp_index=bad_gridcell, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
@@ -943,103 +946,74 @@ contains
   subroutine hist_compute_setup()
     !
     ! !DESCRIPTION:
-    ! Describe the subgrid and the active fields of all tapes to
-    ! histComputeMod, which allocates their buffers (zeroed), and point each
-    ! field's hbuf/nacs at its buffer. Called once the tape contents are final
-    ! (htapes_fieldlist, and again after a restart redefines them).
+    ! Describe the active fields of all tapes to histComputeMod, which
+    ! allocates their buffers (zeroed), and point each field's hbuf/nacs at its
+    ! buffer. Called once the tape contents are final (htapes_fieldlist, and
+    ! again after a restart redefines them).
     !
     ! !USES:
-    use histComputeMod, only : hist_compute_set_subgrid, hist_compute_build, hist_compute_views
-    use subgridAveMod , only : main_scale_c2l, main_scale_l2g_lookup
+    use histComputeMod, only : hist_compute_build, hist_compute_views
+    use subgridAveMod , only : elm_subgrid_view
     !
     ! !LOCAL VARIABLES:
+    ! scale type names, in the order of subgridAveMod's scale type numbers
     character(len=*), parameter :: c2l_types(3) = [character(len=8) :: 'unity', 'urbanf', 'urbans']
     character(len=*), parameter :: l2g_types(6) = [character(len=8) :: &
          'unity', 'natveg', 'veg', 'ice', 'nonurb', 'lake']
-    type(hist_subgrid_desc) :: sg
-    type(hist_field_desc), allocatable :: fields(:)
+    type(hist_active_field), allocatable :: fields(:)
     character(len=max_namlen), allocatable :: names(:)
     integer :: tape_first(ntapes+1)
-    type(bounds_type) :: bounds
-    integer :: t, f, n, i, ierr
+    integer :: t, f, n, ierr
     character(len=256) :: msg
     character(len=*),parameter :: subname = 'hist_compute_setup'
     !-----------------------------------------------------------------------
 
-    call get_proc_bounds(bounds)
-
-    ! subgrid structure and scale factors (static)
-    sg%begg = bounds%begg ; sg%endg = bounds%endg
-    sg%beg  = [bounds%begt, bounds%begl, bounds%begc, bounds%begp]
-    sg%end  = [bounds%endt, bounds%endl, bounds%endc, bounds%endp]
-    sg%grid_t = top_pp%gridcell(bounds%begt:bounds%endt)
-    sg%grid_l = lun_pp%gridcell(bounds%begl:bounds%endl)
-    sg%grid_c = col_pp%gridcell(bounds%begc:bounds%endc)
-    sg%grid_p = veg_pp%gridcell(bounds%begp:bounds%endp)
-    ! indexed by global column/patch index (keep the proc bounds)
-    allocate(sg%lun_c(bounds%begc:bounds%endc), sg%lun_p(bounds%begp:bounds%endp), &
-         sg%col_p(bounds%begp:bounds%endp))
-    sg%lun_c(:) = col_pp%landunit(bounds%begc:bounds%endc)
-    sg%lun_p(:) = veg_pp%landunit(bounds%begp:bounds%endp)
-    sg%col_p(:) = veg_pp%column(bounds%begp:bounds%endp)
-    allocate(sg%scale_c2l(bounds%begc:bounds%endc, size(c2l_types)))
-    allocate(sg%scale_l2g(bounds%begl:bounds%endl, size(l2g_types)))
-    ! c2l_types/l2g_types are in the order of subgridAveMod's scale type indices
-    sg%scale_c2l(:,:) = main_scale_c2l(bounds%begc:bounds%endc, 1:size(c2l_types))
-    do i = 1, size(l2g_types)
-       sg%scale_l2g(:, i) = main_scale_l2g_lookup(i, lun_pp%itype(bounds%begl:bounds%endl))
-    end do
-    sg%extrasnowlayers = use_extrasnowlayers
-    call hist_compute_set_subgrid(sg, ierr, msg)
-    if (ierr /= 0) then
-       write(iulog,*) trim(subname),' ERROR: ', trim(msg), ' at g= ', ierr
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-
-    subgrid_state%wt_t  => top_pp%wtgcell ; subgrid_state%act_t => top_pp%active
-    subgrid_state%wt_l  => lun_pp%wtgcell ; subgrid_state%act_l => lun_pp%active
-    subgrid_state%wt_c  => col_pp%wtgcell ; subgrid_state%act_c => col_pp%active
-    subgrid_state%wt_p  => veg_pp%wtgcell ; subgrid_state%act_p => veg_pp%active
-    subgrid_state%snl   => col_pp%snl
-
-    ! active fields, tape by tape
     allocate(fields(sum(tape(1:ntapes)%nflds)), names(sum(tape(1:ntapes)%nflds)))
     n = 0
     do t = 1, ntapes
        tape_first(t) = n + 1
        do f = 1, tape(t)%nflds
           n = n + 1
-          associate(field => tape(t)%hlist(f)%field, fd => fields(n))
-          names(n)   = field%name
-          fd%level   = level_code(field%type1d)
-          fd%rank    = min(field%numdims, 2)
-          fd%hpindex = field%hpindex
-          fd%num2d   = field%num2d
-          fd%no_snow = field%no_snow_behavior
+          associate(field => tape(t)%hlist(f)%field, fld => fields(n))
+          names(n)             = field%name
+          fld%source_index     = field%hpindex
+          fld%source_rank      = min(field%numdims, 2)
+          fld%source_level     = level_code(field%type1d)
+          fld%num_levels       = field%num2d
+          fld%no_snow_behavior = field%no_snow_behavior
           select case (tape(t)%hlist(f)%avgflag)
-          case ('I'); fd%avg = avg_inst
-          case ('A'); fd%avg = avg_mean
-          case ('X'); fd%avg = avg_max
-          case ('M'); fd%avg = avg_min
+          case ('I'); fld%time_op = time_inst
+          case ('A'); fld%time_op = time_mean
+          case ('X'); fld%time_op = time_max
+          case ('M'); fld%time_op = time_min
+          case ('U'); fld%time_op = time_max_valid
+          case ('L'); fld%time_op = time_min_valid
           case default
              call field_error('unknown averaging flag '//tape(t)%hlist(f)%avgflag)
           end select
-          fd%to_gridcell = (field%type1d_out == nameg .or. field%type1d_out == grlnd)
-          if (.not. fd%to_gridcell .and. level_code(field%type1d_out) /= fd%level) then
+          fld%average_to_gridcell = (field%type1d_out == nameg .or. field%type1d_out == grlnd) &
+               .and. fld%source_level /= lev_grid
+          if (.not. fld%average_to_gridcell .and. level_code(field%type1d_out) /= fld%source_level) then
              call field_error('output type '//trim(field%type1d_out)//' needs averaging from '// &
                   trim(field%type1d)//', which is only supported to gridcells')
           end if
-          if (trim(field%p2c_scale_type) /= 'unity' .and. fd%to_gridcell .and. fd%level == lev_patch) then
-             call field_error('p2c scale type '//trim(field%p2c_scale_type)//' not supported')
+          if (fld%average_to_gridcell) then
+             if (fld%source_level == lev_patch .and. trim(field%p2c_scale_type) /= 'unity') then
+                call field_error('p2c scale type '//trim(field%p2c_scale_type)//' not supported')
+             end if
+             if (fld%source_level == lev_topo .and. trim(field%t2g_scale_type) /= 'unity') then
+                call field_error('t2g scale type '//trim(field%t2g_scale_type)//' not supported')
+             end if
+             fld%c2l_scale = scale_index(field%c2l_scale_type, c2l_types)
+             fld%l2g_scale = scale_index(field%l2g_scale_type, l2g_types)
           end if
-          fd%c2l = scale_index(field%c2l_scale_type, c2l_types)
-          fd%l2g = scale_index(field%l2g_scale_type, l2g_types)
           end associate
        end do
     end do
     tape_first(ntapes+1) = n + 1
 
-    call hist_compute_build(fields, tape_first, elmptr_rs, elmptr_ra, spval, ierr, msg)
+    call hist_compute_build(elm_subgrid_view, fields, tape_first, elmptr_rs, elmptr_ra, &
+         use_extrasnowlayers, ierr, msg)
     if (ierr /= 0) then
        write(iulog,*) trim(subname),' ERROR: ', trim(msg), ' for history field ', trim(names(ierr))
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1071,10 +1045,7 @@ contains
       do scale_index = 1, size(types)
          if (trim(name) == trim(types(scale_index))) return
       end do
-      if (fields(n)%to_gridcell .and. fields(n)%level /= lev_grid) then
-         call field_error('scale type '//trim(name)//' not supported')
-      end if
-      scale_index = 1   ! not averaged: unused
+      call field_error('scale type '//trim(name)//' not supported')
     end function scale_index
 
     subroutine field_error(what)
@@ -2221,9 +2192,9 @@ contains
              avgstr = 'mean'
           case ('I')
              avgstr = 'point'
-          case ('X')
+          case ('X','U')
              avgstr = 'maximum'
-          case ('M')
+          case ('M','L')
              avgstr = 'minimum'
           case default
              write(iulog,*) trim(subname),' ERROR: unknown time averaging flag (avgflag)=',avgflag

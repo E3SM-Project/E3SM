@@ -14,6 +14,11 @@ module subgridAveMod
   ! are not (see elm_ptrs_compdown), so those use the child maps built in
   ! init_subgrid_ave.
   !
+  ! Averages to gridcells (p2g, c2g, l2g, t2g) call the averages of
+  ! subgridAveViewMod (one vector routine per chunk of gridcells) with
+  ! elm_subgrid_view, the subgrid structure set up in init_subgrid_ave; the
+  ! history uses the same averages.
+  !
   ! The scale factors come from lookup tables built once in init_subgrid_ave:
   ! main_scale_c2l(c, c2l_scale_type) and main_scale_l2g_lookup(l2g_scale_type,
   ! lun_pp%itype(l)) (also used for l2t). The averaging routines take the
@@ -34,6 +39,9 @@ module subgridAveMod
   use VegetationType, only : veg_pp
   use abortutils    , only : endrun
   use shr_log_mod   , only : errMsg => shr_log_errMsg
+  use subgridAveViewMod, only : subgrid_ave_view, view_spval => spval, sumwt_tol
+  use subgridAveViewMod, only : build_child_map, subgrid_ave_view_attach, subgrid_ave_view_detach
+  use subgridAveViewMod, only : p2g_range, c2g_range, l2g_range, t2g_range
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -59,6 +67,13 @@ module subgridAveMod
   public :: l2t   ! Perform an average landunits to topounits
   public :: t2g   ! Perform an average topounits to gridcells
   public :: p2c_1d, p2c_1d_filter, p2l_1d
+
+  ! Subgrid structure for averages to gridcells (see subgridAveViewMod)
+  type(subgrid_ave_view), public, protected :: elm_subgrid_view
+  logical, private :: view_on_device = .false.
+  ! gridcells per gang in the averages to gridcells (each gang runs one
+  ! vector routine over its chunk)
+  integer, parameter, private :: gridcell_chunk = 128
 
   interface p2c
      module procedure p2c_1d
@@ -121,23 +136,19 @@ module subgridAveMod
   end interface
 
   ! Scale factor lookups (histFileMod copies them into the history scale tables)
-  real(r8), allocatable, public, protected :: main_scale_l2g_lookup(:,:) ! (l2g_scale_type, lun_pp%itype)
+  real(r8), allocatable, public, protected, target :: main_scale_l2g_lookup(:,:) ! (l2g_scale_type, lun_pp%itype)
   !$acc declare create(main_scale_l2g_lookup(:,:))
-  real(r8), allocatable, public, protected :: main_scale_c2l(:,:)        ! (column, c2l_scale_type)
+  real(r8), allocatable, public, protected, target :: main_scale_c2l(:,:)        ! (column, c2l_scale_type)
   !$acc declare create(main_scale_c2l(:,:))
 
   ! Child maps: the children of parent k are idx(ptr(k):ptr(k+1)-1), in ascending order
-  integer, allocatable, private :: grc_pft_ptr(:), grc_pft_idx(:)
-  integer, allocatable, private :: grc_col_ptr(:), grc_col_idx(:)
-  integer, allocatable, private :: grc_lun_ptr(:), grc_lun_idx(:)
+  ! (landunits of a gridcell, for elm_subgrid_view; points of a topounit, for x2t)
+  integer, allocatable, private, target :: grc_lun_ptr(:), grc_lun_idx(:)
   integer, allocatable, private :: top_pft_ptr(:), top_pft_idx(:)
   integer, allocatable, private :: top_col_ptr(:), top_col_idx(:)
   integer, allocatable, private :: top_lun_ptr(:), top_lun_idx(:)
-  !$acc declare create(grc_pft_ptr(:), grc_pft_idx(:), grc_col_ptr(:), grc_col_idx(:), &
-  !$acc                grc_lun_ptr(:), grc_lun_idx(:), top_pft_ptr(:), top_pft_idx(:), &
+  !$acc declare create(grc_lun_ptr(:), grc_lun_idx(:), top_pft_ptr(:), top_pft_idx(:), &
   !$acc                top_col_ptr(:), top_col_idx(:), top_lun_ptr(:), top_lun_idx(:))
-
-  real(r8), parameter, private :: sumwt_tol = 1.0_r8 + 1.e-6_r8 ! sumwt above this is an error
 
   ! WJS (10-14-11): TODO:
   !
@@ -154,13 +165,20 @@ contains
   !-----------------------------------------------------------------------
   subroutine init_subgrid_ave(bounds)
     ! !DESCRIPTION:
-    ! Build the scale factor lookups and the topounit/gridcell child maps.
-    ! Call once with the processor bounds, after the subgrid structure and
-    ! lun_pp%canyon_hwr are set (call again if canyon_hwr changes).
+    ! Build the scale factor lookups, the topounit/gridcell child maps and
+    ! elm_subgrid_view. Call once with the processor bounds, after the subgrid
+    ! structure and lun_pp%canyon_hwr are set (call again if canyon_hwr changes).
+    ! With OpenACC, the subgrid types' arrays must be on the device first.
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds ! processor bounds
     !-----------------------------------------------------------------------
+
+    if (view_spval /= spval) then
+       write(iulog,*) 'init_subgrid_ave error: subgridAveViewMod spval differs from elm_varcon spval'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    if (view_on_device) call subgrid_ave_view_detach(elm_subgrid_view)
 
     call init_scale_l2g_lookup()
     call init_scale_c2l(bounds)
@@ -169,35 +187,35 @@ contains
               begl => bounds%begl, endl => bounds%endl, begc => bounds%begc, endc => bounds%endc, &
               begp => bounds%begp, endp => bounds%endp)
 
-    if (allocated(grc_pft_ptr)) then
-       deallocate(grc_pft_ptr, grc_pft_idx, grc_col_ptr, grc_col_idx, grc_lun_ptr, grc_lun_idx)
+    if (allocated(grc_lun_ptr)) then
+       deallocate(grc_lun_ptr, grc_lun_idx)
        deallocate(top_pft_ptr, top_pft_idx, top_col_ptr, top_col_idx, top_lun_ptr, top_lun_idx)
     end if
-    allocate(grc_pft_ptr(begg:endg+1), grc_pft_idx(begp:endp))
-    allocate(grc_col_ptr(begg:endg+1), grc_col_idx(begc:endc))
     allocate(grc_lun_ptr(begg:endg+1), grc_lun_idx(begl:endl))
     allocate(top_pft_ptr(begt:endt+1), top_pft_idx(begp:endp))
     allocate(top_col_ptr(begt:endt+1), top_col_idx(begc:endc))
     allocate(top_lun_ptr(begt:endt+1), top_lun_idx(begl:endl))
 
-    call build_child_map(begg, endg, begp, endp, veg_pp%gridcell(begp:endp), grc_pft_ptr, grc_pft_idx)
-    call build_child_map(begg, endg, begc, endc, col_pp%gridcell(begc:endc), grc_col_ptr, grc_col_idx)
-    call build_child_map(begg, endg, begl, endl, lun_pp%gridcell(begl:endl), grc_lun_ptr, grc_lun_idx)
-    call build_child_map(begt, endt, begp, endp, veg_pp%topounit(begp:endp), top_pft_ptr, top_pft_idx)
-    call build_child_map(begt, endt, begc, endc, col_pp%topounit(begc:endc), top_col_ptr, top_col_idx)
-    call build_child_map(begt, endt, begl, endl, lun_pp%topounit(begl:endl), top_lun_ptr, top_lun_idx)
+    call child_map(begg, endg, begl, endl, lun_pp%gridcell(begl:endl), grc_lun_ptr, grc_lun_idx)
+    call child_map(begt, endt, begp, endp, veg_pp%topounit(begp:endp), top_pft_ptr, top_pft_idx)
+    call child_map(begt, endt, begc, endc, col_pp%topounit(begc:endc), top_col_ptr, top_col_idx)
+    call child_map(begt, endt, begl, endl, lun_pp%topounit(begl:endl), top_lun_ptr, top_lun_idx)
 
     end associate
 
-    !$acc update device(grc_pft_ptr, grc_pft_idx, grc_col_ptr, grc_col_idx, grc_lun_ptr, grc_lun_idx, &
+    !$acc update device(grc_lun_ptr, grc_lun_idx, &
     !$acc               top_pft_ptr, top_pft_idx, top_col_ptr, top_col_idx, top_lun_ptr, top_lun_idx)
+
+    call set_elm_subgrid_view(bounds)
+    call subgrid_ave_view_attach(elm_subgrid_view)
+    view_on_device = .true.
 
   end subroutine init_subgrid_ave
 
   !-----------------------------------------------------------------------
-  subroutine build_child_map(begpar, endpar, begch, endch, parent, ptr, idx)
+  subroutine child_map(begpar, endpar, begch, endch, parent, ptr, idx)
     ! !DESCRIPTION:
-    ! Counting sort of the children by parent, keeping ascending child order.
+    ! build_child_map (subgridAveViewMod), aborting on a parent out of range.
     !
     ! !ARGUMENTS:
     integer, intent(in)  :: begpar, endpar, begch, endch
@@ -206,30 +224,51 @@ contains
     integer, intent(out) :: idx(begch:endch)
     !
     ! !LOCAL VARIABLES:
-    integer :: i, k
-    integer :: next(begpar:endpar)
+    integer :: bad_child
     !-----------------------------------------------------------------------
 
-    next(:) = 0
-    do i = begch, endch
-       if (parent(i) < begpar .or. parent(i) > endpar) then
-          write(iulog,*) 'build_child_map error: parent ', parent(i), ' of child ', i, &
-               ' outside ', begpar, endpar
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end if
-       next(parent(i)) = next(parent(i)) + 1
-    end do
-    ptr(begpar) = begch
-    do k = begpar, endpar
-       ptr(k+1) = ptr(k) + next(k)
-    end do
-    next(:) = ptr(begpar:endpar)
-    do i = begch, endch
-       idx(next(parent(i))) = i
-       next(parent(i)) = next(parent(i)) + 1
-    end do
+    call build_child_map(begpar, endpar, begch, endch, parent, ptr, idx, bad_child)
+    if (bad_child /= 0) then
+       write(iulog,*) 'child_map error: parent ', parent(bad_child), ' of child ', bad_child, &
+            ' outside ', begpar, endpar
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
 
-  end subroutine build_child_map
+  end subroutine child_map
+
+  !-----------------------------------------------------------------------
+  subroutine set_elm_subgrid_view(bounds)
+    ! !DESCRIPTION:
+    ! Point elm_subgrid_view at the landunit index, the scale tables and the
+    ! subgrid types' arrays (weights, active flags and snow layers are read
+    ! through it at every average, so changes to them need no refresh).
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds ! processor bounds
+    !-----------------------------------------------------------------------
+
+    associate(v => elm_subgrid_view)
+    v%begg = bounds%begg ; v%endg = bounds%endg
+    v%begt = bounds%begt ; v%endt = bounds%endt
+    v%begl = bounds%begl ; v%endl = bounds%endl
+    v%begc = bounds%begc ; v%endc = bounds%endc
+    v%begp = bounds%begp ; v%endp = bounds%endp
+    v%grc_lun_ptr => grc_lun_ptr ; v%grc_lun_idx => grc_lun_idx
+    v%topi => grc_pp%topi ; v%topf => grc_pp%topf
+    v%coli => lun_pp%coli ; v%colf => lun_pp%colf
+    v%pfti => lun_pp%pfti ; v%pftf => lun_pp%pftf
+    v%wtgcell_t => top_pp%wtgcell ; v%active_t => top_pp%active
+    v%wtgcell_l => lun_pp%wtgcell ; v%active_l => lun_pp%active
+    v%wtgcell_c => col_pp%wtgcell ; v%active_c => col_pp%active
+    v%wtgcell_p => veg_pp%wtgcell ; v%active_p => veg_pp%active
+    v%col_of_pft => veg_pp%column
+    v%lun_type   => lun_pp%itype
+    v%scale_c2l        => main_scale_c2l
+    v%scale_l2g_lookup => main_scale_l2g_lookup
+    v%snl        => col_pp%snl
+    end associate
+
+  end subroutine set_elm_subgrid_view
 
   !-----------------------------------------------------------------------
   subroutine init_scale_l2g_lookup()
@@ -646,16 +685,16 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in)  :: parr( bounds%begp: )  ! input pft array
-    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    real(r8), intent(in), contiguous :: parr( bounds%begp: )  ! input pft array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: )  ! output gridcell array
     integer , intent(in)  :: p2c_scale_type        ! scale factor type for averaging
     integer , intent(in)  :: c2l_scale_type        ! scale factor type for averaging
     integer , intent(in)  :: l2g_scale_type        ! scale factor type for averaging
     !
     !  !LOCAL VARIABLES:
-    integer  :: k,p,c,l,g    ! indices
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr, scale_c2l, scale_l2g
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
@@ -663,27 +702,15 @@ contains
     call check_scale_types('p2g_1d', p2c_scale_type, c2l_scale_type, l2g_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(parr) copyout(garr) &
-    !$acc private(sumwt,sum_arr,scale_c2l,scale_l2g,p,c,l) reduction(max:err_index)
-    do g = bounds%begg, bounds%endg
-       sumwt = 0._r8
-       sum_arr = 0._r8
-       !$acc loop seq
-       do k = grc_pft_ptr(g), grc_pft_ptr(g+1)-1
-          p = grc_pft_idx(k)
-          if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
-             c = veg_pp%column(p)
-             l = veg_pp%landunit(p)
-             scale_c2l = main_scale_c2l(c,c2l_scale_type)
-             scale_l2g = main_scale_l2g_lookup(l2g_scale_type,lun_pp%itype(l))
-             if (parr(p) /= spval .and. scale_c2l /= spval .and. scale_l2g /= spval) then
-                sum_arr = sum_arr + parr(p) * scale_c2l * scale_l2g * veg_pp%wtgcell(p)
-                sumwt = sumwt + veg_pp%wtgcell(p)
-             end if
-          end if
-       end do
-       if (sumwt > sumwt_tol) err_index = max(err_index, g)
-       garr(g) = wavg(sum_arr, sumwt)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang default(present) copyin(parr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    do chunk = 1, nchunk
+       g0 = bounds%begg + (chunk-1) * gridcell_chunk
+       g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+       chunk_err = 0
+       call p2g_range(elm_subgrid_view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr(g0:g1), chunk_err)
+       err_index = max(err_index, chunk_err)
     end do
     call check_sumwt('p2g_1d', err_index, nameg)
 
@@ -698,16 +725,17 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     integer , intent(in)  :: num2d                     ! size of second dimension
-    real(r8), intent(in)  :: parr( bounds%begp: , 1: ) ! input pft array
-    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    real(r8), intent(in), contiguous :: parr( bounds%begp: , 1: ) ! input pft array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: , 1: ) ! output gridcell array
     integer , intent(in)  :: p2c_scale_type            ! scale factor type for averaging
     integer , intent(in)  :: c2l_scale_type            ! scale factor type for averaging
     integer , intent(in)  :: l2g_scale_type            ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,k,p,c,l,g  ! indices
+    integer  :: j            ! level
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr, scale_c2l, scale_l2g
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp, num2d/)), errMsg(__FILE__, __LINE__))
@@ -715,28 +743,16 @@ contains
     call check_scale_types('p2g_2d', p2c_scale_type, c2l_scale_type, l2g_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(parr) copyout(garr) &
-    !$acc private(sumwt,sum_arr,scale_c2l,scale_l2g,p,c,l) reduction(max:err_index)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang collapse(2) default(present) copyin(parr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
     do j = 1, num2d
-       do g = bounds%begg, bounds%endg
-          sumwt = 0._r8
-          sum_arr = 0._r8
-          !$acc loop seq
-          do k = grc_pft_ptr(g), grc_pft_ptr(g+1)-1
-             p = grc_pft_idx(k)
-             if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
-                c = veg_pp%column(p)
-                l = veg_pp%landunit(p)
-                scale_c2l = main_scale_c2l(c,c2l_scale_type)
-                scale_l2g = main_scale_l2g_lookup(l2g_scale_type,lun_pp%itype(l))
-                if (parr(p,j) /= spval .and. scale_c2l /= spval .and. scale_l2g /= spval) then
-                   sum_arr = sum_arr + parr(p,j) * scale_c2l * scale_l2g * veg_pp%wtgcell(p)
-                   sumwt = sumwt + veg_pp%wtgcell(p)
-                end if
-             end if
-          end do
-          if (sumwt > sumwt_tol) err_index = max(err_index, g)
-          garr(g,j) = wavg(sum_arr, sumwt)
+       do chunk = 1, nchunk
+          g0 = bounds%begg + (chunk-1) * gridcell_chunk
+          g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+          chunk_err = 0
+          call p2g_range(elm_subgrid_view, g0, g1, parr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j), chunk_err)
+          err_index = max(err_index, chunk_err)
        end do
     end do
     call check_sumwt('p2g_2d', err_index, nameg)
@@ -846,15 +862,15 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array
-    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    real(r8), intent(in), contiguous :: carr( bounds%begc: )  ! input column array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: )  ! output gridcell array
     integer , intent(in)  :: c2l_scale_type        ! scale factor type for averaging
     integer , intent(in)  :: l2g_scale_type        ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: k,c,l,g      ! indices
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr, scale_c2l, scale_l2g
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
@@ -862,26 +878,15 @@ contains
     call check_scale_types('c2g_1d', c2l_scale_type=c2l_scale_type, l2g_scale_type=l2g_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(carr) copyout(garr) &
-    !$acc private(sumwt,sum_arr,scale_c2l,scale_l2g,c,l) reduction(max:err_index)
-    do g = bounds%begg, bounds%endg
-       sumwt = 0._r8
-       sum_arr = 0._r8
-       !$acc loop seq
-       do k = grc_col_ptr(g), grc_col_ptr(g+1)-1
-          c = grc_col_idx(k)
-          if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
-             l = col_pp%landunit(c)
-             scale_c2l = main_scale_c2l(c,c2l_scale_type)
-             scale_l2g = main_scale_l2g_lookup(l2g_scale_type,lun_pp%itype(l))
-             if (carr(c) /= spval .and. scale_c2l /= spval .and. scale_l2g /= spval) then
-                sum_arr = sum_arr + carr(c) * scale_c2l * scale_l2g * col_pp%wtgcell(c)
-                sumwt = sumwt + col_pp%wtgcell(c)
-             end if
-          end if
-       end do
-       if (sumwt > sumwt_tol) err_index = max(err_index, g)
-       garr(g) = wavg(sum_arr, sumwt)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang default(present) copyin(carr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    do chunk = 1, nchunk
+       g0 = bounds%begg + (chunk-1) * gridcell_chunk
+       g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+       chunk_err = 0
+       call c2g_range(elm_subgrid_view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr(g0:g1), chunk_err)
+       err_index = max(err_index, chunk_err)
     end do
     call check_sumwt('c2g_1d', err_index, nameg)
 
@@ -896,15 +901,16 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     integer , intent(in)  :: num2d                     ! size of second dimension
-    real(r8), intent(in)  :: carr( bounds%begc: , 1: ) ! input column array
-    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    real(r8), intent(in), contiguous :: carr( bounds%begc: , 1: ) ! input column array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: , 1: ) ! output gridcell array
     integer , intent(in)  :: c2l_scale_type            ! scale factor type for averaging
     integer , intent(in)  :: l2g_scale_type            ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,k,c,l,g    ! indices
+    integer  :: j            ! level
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr, scale_c2l, scale_l2g
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc, num2d/)), errMsg(__FILE__, __LINE__))
@@ -912,27 +918,16 @@ contains
     call check_scale_types('c2g_2d', c2l_scale_type=c2l_scale_type, l2g_scale_type=l2g_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(carr) copyout(garr) &
-    !$acc private(sumwt,sum_arr,scale_c2l,scale_l2g,c,l) reduction(max:err_index)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang collapse(2) default(present) copyin(carr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
     do j = 1, num2d
-       do g = bounds%begg, bounds%endg
-          sumwt = 0._r8
-          sum_arr = 0._r8
-          !$acc loop seq
-          do k = grc_col_ptr(g), grc_col_ptr(g+1)-1
-             c = grc_col_idx(k)
-             if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
-                l = col_pp%landunit(c)
-                scale_c2l = main_scale_c2l(c,c2l_scale_type)
-                scale_l2g = main_scale_l2g_lookup(l2g_scale_type,lun_pp%itype(l))
-                if (carr(c,j) /= spval .and. scale_c2l /= spval .and. scale_l2g /= spval) then
-                   sum_arr = sum_arr + carr(c,j) * scale_c2l * scale_l2g * col_pp%wtgcell(c)
-                   sumwt = sumwt + col_pp%wtgcell(c)
-                end if
-             end if
-          end do
-          if (sumwt > sumwt_tol) err_index = max(err_index, g)
-          garr(g,j) = wavg(sum_arr, sumwt)
+       do chunk = 1, nchunk
+          g0 = bounds%begg + (chunk-1) * gridcell_chunk
+          g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+          chunk_err = 0
+          call c2g_range(elm_subgrid_view, g0, g1, carr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j), chunk_err)
+          err_index = max(err_index, chunk_err)
        end do
     end do
     call check_sumwt('c2g_2d', err_index, nameg)
@@ -948,14 +943,14 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in)  :: larr( bounds%begl: )  ! input landunit array
-    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    real(r8), intent(in), contiguous :: larr( bounds%begl: )  ! input landunit array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: )  ! output gridcell array
     integer , intent(in)  :: l2g_scale_type        ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: k,l,g        ! indices
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr, scale_l2g
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(larr) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
@@ -963,24 +958,15 @@ contains
     call check_scale_types('l2g_1d', l2g_scale_type=l2g_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(larr) copyout(garr) &
-    !$acc private(sumwt,sum_arr,scale_l2g,l) reduction(max:err_index)
-    do g = bounds%begg, bounds%endg
-       sumwt = 0._r8
-       sum_arr = 0._r8
-       !$acc loop seq
-       do k = grc_lun_ptr(g), grc_lun_ptr(g+1)-1
-          l = grc_lun_idx(k)
-          if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
-             scale_l2g = main_scale_l2g_lookup(l2g_scale_type,lun_pp%itype(l))
-             if (larr(l) /= spval .and. scale_l2g /= spval) then
-                sum_arr = sum_arr + larr(l) * scale_l2g * lun_pp%wtgcell(l)
-                sumwt = sumwt + lun_pp%wtgcell(l)
-             end if
-          end if
-       end do
-       if (sumwt > sumwt_tol) err_index = max(err_index, g)
-       garr(g) = wavg(sum_arr, sumwt)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang default(present) copyin(larr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    do chunk = 1, nchunk
+       g0 = bounds%begg + (chunk-1) * gridcell_chunk
+       g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+       chunk_err = 0
+       call l2g_range(elm_subgrid_view, g0, g1, larr, l2g_scale_type, garr(g0:g1), chunk_err)
+       err_index = max(err_index, chunk_err)
     end do
     call check_sumwt('l2g_1d', err_index, nameg)
 
@@ -996,14 +982,15 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     integer , intent(in)  :: num2d                     ! size of second dimension
-    real(r8), intent(in)  :: larr( bounds%begl: , 1: ) ! input landunit array
-    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    real(r8), intent(in), contiguous :: larr( bounds%begl: , 1: ) ! input landunit array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: , 1: ) ! output gridcell array
     integer , intent(in)  :: l2g_scale_type            ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,k,l,g      ! indices
+    integer  :: j            ! level
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr, scale_l2g
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(larr) == (/bounds%endl, num2d/)), errMsg(__FILE__, __LINE__))
@@ -1011,25 +998,16 @@ contains
     call check_scale_types('l2g_2d', l2g_scale_type=l2g_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(larr) copyout(garr) &
-    !$acc private(sumwt,sum_arr,scale_l2g,l) reduction(max:err_index)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang collapse(2) default(present) copyin(larr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
     do j = 1, num2d
-       do g = bounds%begg, bounds%endg
-          sumwt = 0._r8
-          sum_arr = 0._r8
-          !$acc loop seq
-          do k = grc_lun_ptr(g), grc_lun_ptr(g+1)-1
-             l = grc_lun_idx(k)
-             if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
-                scale_l2g = main_scale_l2g_lookup(l2g_scale_type,lun_pp%itype(l))
-                if (larr(l,j) /= spval .and. scale_l2g /= spval) then
-                   sum_arr = sum_arr + larr(l,j) * scale_l2g * lun_pp%wtgcell(l)
-                   sumwt = sumwt + lun_pp%wtgcell(l)
-                end if
-             end if
-          end do
-          if (sumwt > sumwt_tol) err_index = max(err_index, g)
-          garr(g,j) = wavg(sum_arr, sumwt)
+       do chunk = 1, nchunk
+          g0 = bounds%begg + (chunk-1) * gridcell_chunk
+          g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+          chunk_err = 0
+          call l2g_range(elm_subgrid_view, g0, g1, larr(:,j), l2g_scale_type, garr(g0:g1,j), chunk_err)
+          err_index = max(err_index, chunk_err)
        end do
     end do
     call check_sumwt('l2g_2d', err_index, nameg)
@@ -1352,14 +1330,14 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in)  :: tarr( bounds%begt: )  ! input topounit array
-    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    real(r8), intent(in), contiguous :: tarr( bounds%begt: )  ! input topounit array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: )  ! output gridcell array
     character(len=*), intent(in) :: t2g_scale_type ! scale factor type for averaging (only 'unity')
     !
     ! !LOCAL VARIABLES:
-    integer  :: t,g          ! indices
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
@@ -1369,22 +1347,16 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! the topounits of a gridcell are contiguous
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(tarr) copyout(garr) &
-    !$acc private(sumwt,sum_arr) reduction(max:err_index)
-    do g = bounds%begg, bounds%endg
-       sumwt = 0._r8
-       sum_arr = 0._r8
-       !$acc loop seq
-       do t = grc_pp%topi(g), grc_pp%topf(g)
-          if (top_pp%wtgcell(t) /= 0._r8 .and. tarr(t) /= spval) then
-             sum_arr = sum_arr + tarr(t) * top_pp%wtgcell(t)
-             sumwt = sumwt + top_pp%wtgcell(t)
-          end if
-       end do
-       if (sumwt > sumwt_tol) err_index = max(err_index, g)
-       garr(g) = wavg(sum_arr, sumwt)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang default(present) copyin(tarr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    do chunk = 1, nchunk
+       g0 = bounds%begg + (chunk-1) * gridcell_chunk
+       g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+       chunk_err = 0
+       call t2g_range(elm_subgrid_view, g0, g1, tarr, garr(g0:g1), chunk_err)
+       err_index = max(err_index, chunk_err)
     end do
     call check_sumwt('t2g_1d', err_index, nameg)
 
@@ -1400,14 +1372,15 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     integer , intent(in)  :: num2d                     ! size of second dimension
-    real(r8), intent(in)  :: tarr( bounds%begt: , 1: ) ! input topounit array
-    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    real(r8), intent(in), contiguous :: tarr( bounds%begt: , 1: ) ! input topounit array
+    real(r8), intent(out), contiguous :: garr( bounds%begg: , 1: ) ! output gridcell array
     character(len=*), intent(in) :: t2g_scale_type     ! scale factor type for averaging (only 'unity')
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,g,t        ! indices
+    integer  :: j            ! level
+    integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
+    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
     integer  :: err_index    ! gridcell with sumwt > 1, or 0
-    real(r8) :: sumwt, sum_arr
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt, num2d/)), errMsg(__FILE__, __LINE__))
@@ -1418,21 +1391,16 @@ contains
     end if
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(tarr) copyout(garr) &
-    !$acc private(sumwt,sum_arr) reduction(max:err_index)
+    nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
+    !$acc parallel loop gang collapse(2) default(present) copyin(tarr) copyout(garr) &
+    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
     do j = 1, num2d
-       do g = bounds%begg, bounds%endg
-          sumwt = 0._r8
-          sum_arr = 0._r8
-          !$acc loop seq
-          do t = grc_pp%topi(g), grc_pp%topf(g)
-             if (top_pp%wtgcell(t) /= 0._r8 .and. tarr(t,j) /= spval) then
-                sum_arr = sum_arr + tarr(t,j) * top_pp%wtgcell(t)
-                sumwt = sumwt + top_pp%wtgcell(t)
-             end if
-          end do
-          if (sumwt > sumwt_tol) err_index = max(err_index, g)
-          garr(g,j) = wavg(sum_arr, sumwt)
+       do chunk = 1, nchunk
+          g0 = bounds%begg + (chunk-1) * gridcell_chunk
+          g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
+          chunk_err = 0
+          call t2g_range(elm_subgrid_view, g0, g1, tarr(:,j), garr(g0:g1,j), chunk_err)
+          err_index = max(err_index, chunk_err)
        end do
     end do
     call check_sumwt('t2g_2d', err_index, nameg)

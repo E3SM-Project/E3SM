@@ -363,7 +363,7 @@ contains
        else if (h2osno(c) /= 0._r8) then
           ! No explicit snow layers, but there may still be some ice in h2osno (there is
           ! no liquid water in this case)
-          ice_mass(c) =  h2osno(c)
+          sum2 = h2osno(c)
        end if
        liquid_mass(c) =  sum1
        ice_mass(c) = sum2 

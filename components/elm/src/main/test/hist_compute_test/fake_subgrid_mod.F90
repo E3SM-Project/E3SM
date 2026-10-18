@@ -5,31 +5,36 @@ module fake_subgrid_mod
   ! topounits and 1-5 landunits, 1-4 columns per landunit and 1-4 patches per
   ! column, with proc bounds that don't start at 1. As in ELM (initGridCells),
   ! landunits are ordered by type across gridcells, and columns and patches
-  ! follow their landunit, so a gridcell's points are not contiguous. Weights are products of random fractions (some zero),
-  ! active flags and snow layers are random, and the c2l/l2g scale tables
-  ! follow the shape of subgridAveMod's (factors for urban columns, spval for
-  ! landunit types a scale type excludes).
+  ! follow their landunit, so a gridcell's points are not contiguous. Weights
+  ! are products of random fractions (some zero), active flags and snow layers
+  ! are random, and the c2l/l2g scale tables follow the shape of
+  ! subgridAveMod's (factors for urban columns, spval for landunit types a
+  ! scale type excludes). subgrid_view builds the subgrid_ave_view of it.
   !-----------------------------------------------------------------------
 
-  use shr_kind_mod  , only : r8 => shr_kind_r8
-  use histComputeMod, only : lev_grid, lev_topo, lev_lun, lev_col, lev_patch, &
-       hist_subgrid_desc, hist_subgrid_state
+  use shr_kind_mod     , only : r8 => shr_kind_r8
+  use subgridAveViewMod, only : subgrid_ave_view, build_child_map, &
+       subgrid_ave_view_attach, spval
+  use histComputeMod   , only : lev_grid, lev_topo, lev_lun, lev_col, lev_patch
 
   implicit none
   public
 
-  real(r8), parameter :: spval = 1.e36_r8
   integer , parameter :: nlevsno = 5
   integer , parameter :: n_c2l = 3, n_l2g = 6   ! unity/urbanf/urbans; unity/natveg/veg/ice/nonurb/lake
   integer , parameter :: n_ltype = 9, urb_min = 7
 
   integer :: begg, endg, begt, endt, begl, endl, begc, endc, begp, endp
-  integer , allocatable :: grid_t(:), grid_l(:), grid_c(:), grid_p(:)
-  integer , allocatable :: lun_c(:), lun_p(:), col_p(:), itype_l(:)
+  integer , allocatable, target :: grid_t(:), grid_l(:), grid_c(:), grid_p(:)
+  integer , allocatable, target :: lun_c(:), lun_p(:), col_p(:), itype_l(:)
   real(r8), allocatable, target :: wt_t(:), wt_l(:), wt_c(:), wt_p(:)
   logical , allocatable, target :: act_t(:), act_l(:), act_c(:), act_p(:)
   integer , allocatable, target :: snl(:)
-  real(r8), allocatable :: scale_c2l(:,:), scale_l2g(:,:)
+  real(r8), allocatable, target :: scale_c2l(:,:)          ! (column, c2l type)
+  real(r8), allocatable, target :: scale_l2g_lookup(:,:)   ! (l2g type, landunit type)
+  integer , allocatable, target :: grc_lun_ptr(:), grc_lun_idx(:)   ! landunits of a gridcell
+  integer , allocatable, target :: topi(:), topf(:)                 ! topounits of a gridcell
+  integer , allocatable, target :: coli(:), colf(:), pfti(:), pftf(:) ! columns, patches of a landunit
   real(r8), allocatable :: frac_l(:), frac_c(:), frac_p(:)   ! fractions of the parent
   logical :: extrasnowlayers = .false.
 
@@ -72,7 +77,7 @@ contains
     integer, intent(in) :: ng      ! gridcells
     integer, intent(in) :: offset  ! proc bounds start at offset+1 (each level)
     integer, allocatable :: tg(:), lg(:), cg(:), cl(:), pg(:), pc(:), pl(:), lt(:)
-    integer :: nt, nl, nc, np, g, i, ic, ip, lut(n_ltype, n_l2g)
+    integer :: nt, nl, nc, np, g, i, ic, ip
     integer :: l, c, p, ltype, nl2, nc2, np2
     integer, allocatable :: lg2(:), lt2(:), cg2(:), cl2(:), pg2(:), pc2(:), pl2(:)
 
@@ -123,7 +128,7 @@ contains
     allocate(wt_t(begt:endt), wt_l(begl:endl), wt_c(begc:endc), wt_p(begp:endp))
     allocate(act_t(begt:endt), act_l(begl:endl), act_c(begc:endc), act_p(begp:endp))
     allocate(snl(begc:endc), frac_l(begl:endl), frac_c(begc:endc), frac_p(begp:endp))
-    allocate(scale_c2l(begc:endc, n_c2l), scale_l2g(begl:endl, n_l2g))
+    allocate(scale_c2l(begc:endc, n_c2l), scale_l2g_lookup(n_l2g, n_ltype))
     grid_t(:) = tg(1:nt) + offset
     grid_l(:) = lg(1:nl) + offset
     grid_c(:) = cg(1:nc) + offset
@@ -133,19 +138,14 @@ contains
     col_p(:)  = pc(1:np) + offset
     itype_l(:) = lt(1:nl)
 
-    ! l2g: which landunit types each scale type keeps (create_scale_l2g_lookup)
-    lut(:, 1) = 1
+    ! l2g: which landunit types each scale type keeps (init_scale_l2g_lookup)
+    scale_l2g_lookup(1, :) = 1.0_r8
     do i = 2, n_l2g
-       do l = 1, n_ltype
-          lut(l, i) = merge(1, 0, urand() < 0.5_r8)
+       do ltype = 1, n_ltype
+          scale_l2g_lookup(i, ltype) = merge(1.0_r8, spval, urand() < 0.5_r8)
        end do
     end do
-    do l = begl, endl
-       do i = 1, n_l2g
-          scale_l2g(l, i) = merge(1.0_r8, spval, lut(itype_l(l), i) == 1)
-       end do
-    end do
-    ! c2l: urban columns get canyon-geometry factors (create_scale_c2l)
+    ! c2l: urban columns get canyon-geometry factors (init_scale_c2l)
     do c = begc, endc
        scale_c2l(c, 1) = 1.0_r8
        if (itype_l(lun_c(c)) >= urb_min) then
@@ -207,29 +207,64 @@ contains
     do p = begp, endp
        wt_p(p) = wt_c(col_p(p)) * frac_p(p)
     end do
+    !$acc update device(wt_t, wt_l, wt_c, wt_p, act_t, act_l, act_c, act_p, snl) if_present
   end subroutine perturb_subgrid
 
   !-----------------------------------------------------------------------
-  subroutine subgrid_desc(sg)
-    type(hist_subgrid_desc), intent(out) :: sg
+  subroutine subgrid_view(view)
+    ! The subgrid_ave_view of the synthetic subgrid, with ELM's index arrays
+    ! (contiguous ranges and the landunits of each gridcell) built here, its
+    ! arrays on the device and the view attached to them.
+    type(subgrid_ave_view), intent(inout) :: view
+    integer :: bad
 
-    sg%begg = begg; sg%endg = endg
-    sg%beg = [begt, begl, begc, begp]
-    sg%end = [endt, endl, endc, endp]
-    sg%grid_t = grid_t; sg%grid_l = grid_l; sg%grid_c = grid_c; sg%grid_p = grid_p
-    sg%lun_c = lun_c; sg%lun_p = lun_p; sg%col_p = col_p
-    allocate(sg%scale_c2l(begc:endc, n_c2l), sg%scale_l2g(begl:endl, n_l2g))
-    sg%scale_c2l = scale_c2l
-    sg%scale_l2g = scale_l2g
-    sg%extrasnowlayers = extrasnowlayers
-  end subroutine subgrid_desc
+    allocate(grc_lun_ptr(begg:endg+1), grc_lun_idx(begl:endl))
+    call build_child_map(begg, endg, begl, endl, grid_l, grc_lun_ptr, grc_lun_idx, bad)
+    if (bad /= 0) error stop 'landunit child map'
+    allocate(topi(begg:endg), topf(begg:endg), coli(begl:endl), colf(begl:endl))
+    allocate(pfti(begl:endl), pftf(begl:endl))
+    call ranges(begt, begg, grid_t, topi, topf)
+    call ranges(begc, begl, lun_c, coli, colf)
+    call ranges(begp, begl, lun_p, pfti, pftf)
 
-  !-----------------------------------------------------------------------
-  subroutine subgrid_state(st)
-    type(hist_subgrid_state), intent(out) :: st
-    st%wt_t => wt_t; st%wt_l => wt_l; st%wt_c => wt_c; st%wt_p => wt_p
-    st%act_t => act_t; st%act_l => act_l; st%act_c => act_c; st%act_p => act_p
-    st%snl => snl
-  end subroutine subgrid_state
+    view%begg = begg ; view%endg = endg ; view%begt = begt ; view%endt = endt
+    view%begl = begl ; view%endl = endl ; view%begc = begc ; view%endc = endc
+    view%begp = begp ; view%endp = endp
+    view%grc_lun_ptr => grc_lun_ptr ; view%grc_lun_idx => grc_lun_idx
+    view%topi => topi ; view%topf => topf
+    view%coli => coli ; view%colf => colf ; view%pfti => pfti ; view%pftf => pftf
+    view%wtgcell_t => wt_t ; view%wtgcell_l => wt_l ; view%wtgcell_c => wt_c ; view%wtgcell_p => wt_p
+    view%active_t => act_t ; view%active_l => act_l ; view%active_c => act_c ; view%active_p => act_p
+    view%col_of_pft => col_p ; view%lun_type => itype_l
+    view%scale_c2l => scale_c2l ; view%scale_l2g_lookup => scale_l2g_lookup
+    view%snl => snl
+
+    !$acc enter data copyin(grc_lun_ptr, grc_lun_idx, topi, topf, coli, colf, pfti, pftf, &
+    !$acc    wt_t, wt_l, wt_c, wt_p, act_t, act_l, act_c, act_p, col_p, itype_l, scale_c2l, &
+    !$acc    scale_l2g_lookup, snl)
+    call subgrid_ave_view_attach(view)
+
+  contains
+
+    subroutine ranges(first_child, first_parent, parent, first, last)
+      ! first/last child of each parent; the children of a parent must be contiguous
+      integer, intent(in)  :: first_child   ! index of parent(1)'s child
+      integer, intent(in)  :: first_parent  ! lower bound of first/last
+      integer, intent(in)  :: parent(:)     ! parent of each child
+      integer, intent(out) :: first(first_parent:), last(first_parent:)
+      integer :: i, child
+      first(:) = huge(1)
+      last(:)  = -huge(1)
+      do i = 1, size(parent)
+         child = first_child + i - 1
+         first(parent(i)) = min(first(parent(i)), child)
+         last(parent(i))  = max(last(parent(i)), child)
+      end do
+      do i = lbound(first,1), ubound(first,1)
+         if (last(i) - first(i) + 1 /= count(parent == i)) error stop 'children not contiguous'
+      end do
+    end subroutine ranges
+
+  end subroutine subgrid_view
 
 end module fake_subgrid_mod

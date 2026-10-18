@@ -174,7 +174,10 @@ contains
       !$acc parallel loop independent gang worker default(present) private(sumtot,sumliq,sumice)
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
-         sumtot = 0._r8; sumliq = 0._r8; sumice = 0._r8;
+         ! start from the running totals to keep the reference's summation order
+         sumtot = endwb(c)
+         sumliq = h2osoi_liq_depth_intg(c)
+         sumice = h2osoi_ice_depth_intg(c)
          !$acc loop vector reduction(+:sumtot,sumliq,sumice)
          do j = 1, nlevgrnd
             if ((ctype(c) == icol_sunwall .or. ctype(c) == icol_shadewall &
@@ -185,9 +188,9 @@ contains
               sumice = sumice + h2osoi_ice(c,j)
             end if
           end do
-          endwb(c) = endwb(c) + sumtot
-          h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + sumliq
-          h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + sumice
+          endwb(c) = sumtot
+          h2osoi_liq_depth_intg(c) = sumliq
+          h2osoi_ice_depth_intg(c) = sumice
       end do
 
       ! ---------------------------------------------------------------------------------

@@ -317,6 +317,7 @@ contains
        ! Initialize quantities needed below
        lake_col_to_filter(c) = fc 
        ocvts(fc) = 0._r8
+       ncvts(fc) = 0._r8
        puddle(fc) = .false.
        frzn(fc)   = .false.
        bottomconvect(fc) = .false.
@@ -531,13 +532,14 @@ contains
     !$acc parallel loop independent gang worker default(present) private(c,temp) 
     do fc = 1, num_lakec
       c = filter_lakec(fc)
-      temp = 0._r8
+      ! start from the running totals to keep the reference's summation order
+      temp = ocvts(fc)
       !$acc loop  vector reduction(+:temp)
       do j = 1, nlevlak
         temp = temp + cv_lake(fc,j)*(t_lake(c,j)-tfrz) + cfus*dz_lake(c,j)*(1._r8-lake_icefrac(c,j))
          !t_lake_bef(c,j) = t_lake(c,j)
       end do
-      ocvts(fc) = ocvts(fc) + temp
+      ocvts(fc) = temp
     end do
       
        
@@ -545,7 +547,8 @@ contains
     !$acc parallel loop independent gang worker default(present) private(temp,c)
     do fc = 1, num_lakec
       c = filter_lakec(fc)
-      temp = 0._r8
+      ! start from the running totals to keep the reference's summation order
+      temp = ocvts(fc)
       !$acc loop vector reduction(+:temp)
       do j = -nlevsno + 1, nlevgrnd
           if (j >= jtop(fc)) then
@@ -557,7 +560,7 @@ contains
           end if
 
        end do
-       ocvts(fc) = ocvts(fc) + temp 
+       ocvts(fc) = temp
     end do
 
     !!!!!!!!!!!!!!!!!!!
@@ -1070,9 +1073,10 @@ contains
     !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
     do fc = 1, num_lakec
       c = filter_lakec(fc)
-      sum1 = 0._r8 
-      sum2 = 0._r8 
-      sum3 = 0._r8
+      ! start from the running totals to keep the reference's summation order
+      sum1 = ncvts(fc)
+      sum2 = fin(fc)
+      sum3 = hc_soisno(c)
       !$acc loop vector reduction(+:sum1,sum2,sum3) 
       do j = 1, nlevlak
           sum1 = sum1 + cv_lake(fc,j)*(t_lake(c,j)-tfrz) &
@@ -1082,7 +1086,7 @@ contains
           sum3 = sum3 + cv_lake(fc,j)*t_lake(c,j)/1.e6
        end do
        ncvts(fc) = sum1
-       fin(fc) = fin(fc) + sum2 
+       fin(fc) = sum2
        hc_soisno(c) = sum3
        hc_lake(c) = sum3
     end do
@@ -1090,11 +1094,12 @@ contains
     !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3,temp)
     do fc = 1, num_lakec
       c = filter_lakec(fc)
-      sum1 = 0._r8
-      sum2 = 0._r8 
-      sum3 = 0._r8
-      temp = 0._r8
-      !$acc loop vector reduction(+:sum1,sum2,sum3) 
+      ! start from the running totals to keep the reference's summation order
+      sum1 = ncvts(fc)
+      sum2 = fin(fc)
+      sum3 = hc_soisno(c)
+      temp = hc_soi(c)
+      !$acc loop vector reduction(+:sum1,sum2,sum3,temp) 
       do j = -nlevsno + 1, nlevgrnd
           if (j >= jtop(fc)) then
              sum1 = sum1 + cv(fc,j)*(t_soisno(c,j)-tfrz) &
@@ -1115,10 +1120,10 @@ contains
 
           if (j == 1) sum2 = sum2 + phi_soil(fc)
        end do
-       ncvts(fc) = ncvts(fc) + sum1 
-       fin(fc) = fin(fc) + sum2
-       hc_soisno(c) = hc_soisno(c) + sum3
-       hc_soi(c) = hc_soi(c) + temp
+       ncvts(fc) = sum1
+       fin(fc) = sum2
+       hc_soisno(c) = sum3
+       hc_soi(c) = temp
     end do
    
     !$acc parallel loop independent gang vector default(present) private(c)
@@ -1549,6 +1554,7 @@ contains
                    if (j <= 0) then !snow
                       imelt(c,j) = 1
                       qflx_snomelt(c) = qflx_snomelt(c) + melt/dtime
+                      qflx_snomelt_lyr(c,j) = melt/dtime
                    end if
                 else if (t_soisno(c,j) < tfrz .and. h2osoi_liq(c,j) > 0._r8) then !freezing
                    dophasechangeflag = .true.
