@@ -31,28 +31,26 @@ available if the stream writes every step (`frequency_units: nsteps` with
 `frequency: 1`); otherwise the request is rejected when the stream is set up. An averaged stream evaluates its diagnostics every
 step, and a model field `X` is always available, so neither is restricted.
 
+### The previous value of a previous value
+
+`X_prev_prev` is rejected when the stream is set up, and so is any other
+previous value of a previous value, e.g. `X.shift(time=1).shift(time=1)`, the
+same through an alias, or `X.shift(time=1).tend()`. It would not be two steps
+back: `init_timestep` runs for the inner `X_prev` first, so by the time the
+outer one saves its input, that input already holds the value of the current
+step's start, and the result is one step back, like `X_prev`. Any other
+diagnostic is evaluated after `init_timestep`, so to look two steps back, put
+an operation between the two: `(X.shift(time=1)*1.0).shift(time=1)`.
+
 ### First-step initialisation for derived diagnostics
 
 When `X` is itself a computed diagnostic (rather than a raw model field) it
-may not have been evaluated yet when `init_timestep` runs at the start of the
-first step.  In that case the `init_timestep` call does nothing (the source
-has no valid timestamp, so there is nothing to capture).
-
-By the time `compute_diagnostic` is called — during the output phase, after
-model physics and prerequisite diagnostics have been evaluated — `X` will have
-a valid timestamp.  The diagnostic then uses the current value of `X` as a
-stand-in for "X at t=0", producing:
-
-```none
-X_prev = X(t=0)   →   X − X_prev = 0 on the first step
-```
-
-This conservative initialisation prevents fill-value contamination from
-propagating into downstream arithmetic (e.g. products of fill-value-sized
-numbers overflow to Inf in single precision).
-
-From the second step onward `X_prev` reflects the normally captured
-start-of-step value.
+has not been evaluated yet when `init_timestep` runs at the start of the
+first step. In that case the `init_timestep` call has nothing to capture (the
+source has no valid timestamp), and `X_prev` is invalid on the first step: it
+is written as the fill value, and so is anything computed from it, such as
+`X - X_prev`. From the second step onward `X_prev` reflects the normally
+captured start-of-step value.
 
 ## Example
 
