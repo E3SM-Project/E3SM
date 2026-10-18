@@ -574,7 +574,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 #endif     
      iop_update_phase1 = .false. 
      if (doiopupdate) then
-       call iop_setinitial(elem)
+      !  call iop_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)
        call iop_broadcast()
        if (.not. dp_crm) call iop_setfield(elem,iop_update_phase1)
