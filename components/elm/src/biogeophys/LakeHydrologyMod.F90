@@ -805,6 +805,7 @@ contains
                 qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime_mod - &
                 (endwb(c) - begwb(c))
             endwb(c) = endwb(c) + wslake(c)
+            qflx_runoff(c) = qflx_drain(c) + qflx_qrgwl(c)
          end do 
       else 
          !$acc parallel loop independent gang  vector default(present) 

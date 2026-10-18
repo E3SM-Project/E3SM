@@ -14,7 +14,7 @@ module NitrifDenitrifMod
   use abortutils          , only : endrun
   use decompMod           , only : bounds_type
   use SoilStatetype       , only : soilstate_type
-  use ch4Mod              , only : ch4_type
+  use Ch4TypeMod              , only : ch4_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_cf, col_ns, col_nf
   !

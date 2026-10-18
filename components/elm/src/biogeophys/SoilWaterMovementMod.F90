@@ -1291,7 +1291,7 @@ contains
                !$acc loop vector independent 
                do p = col_pp%pfti(c), col_pp%pftf(c)
                   if (veg_pp%active(p)) then
-                     qflx_rootsoi_frac_patch(p,j) = qflx_rootsoi_frac_patch(p,j)*(1._r8/(temp(fc)*rootr_col(c,j)))
+                     qflx_rootsoi_frac_patch(p,j) = qflx_rootsoi_frac_patch(p,j)/(temp(fc)*rootr_col(c,j))
                   end if
                end do 
             end if 

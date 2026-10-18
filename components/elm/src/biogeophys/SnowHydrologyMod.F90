@@ -234,8 +234,11 @@ contains
       ! Renew the mass of ice lens (h2osoi_ice) and liquid (h2osoi_liq) in the
       ! surface snow layer resulting from sublimation (frost) / evaporation (condense)
 
-      !TODO: check where else this is needed 
-      !mflx_neg_snow_col_1d(:) = 0._r8
+      ! only read by the VSFM driver (Prepare_Data_for_EM_VSFM_Driver); reset every call as on master
+      !$acc parallel loop independent gang vector default(present)
+      do c = 1, size(mflx_neg_snow_col_1d)
+         mflx_neg_snow_col_1d(c) = 0._r8
+      end do
 
       !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_snowc

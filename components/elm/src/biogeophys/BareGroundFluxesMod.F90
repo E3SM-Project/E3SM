@@ -7,7 +7,7 @@ module BareGroundFluxesMod
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use CH4Mod               , only : ch4_type
+  use Ch4TypeMod               , only : ch4_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
   use FrictionVelocityType , only : frictionvel_type

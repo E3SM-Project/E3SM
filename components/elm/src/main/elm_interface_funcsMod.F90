@@ -52,7 +52,7 @@ module elm_interface_funcsMod
   use CNNitrogenFluxType    , only : nitrogenflux_type
   use CNNitrogenStateType   , only : nitrogenstate_type
 
-  use CH4Mod                , only : ch4_type
+  use Ch4TypeMod                , only : ch4_type
 
   use PhotosynthesisType    , only : photosyns_type
   use cropType              , only : crop_type

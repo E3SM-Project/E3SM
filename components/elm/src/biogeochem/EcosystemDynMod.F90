@@ -20,7 +20,7 @@ module EcosystemDynMod
   use SoilStateType       , only : soilstate_type
   use CanopyStateType     , only : canopystate_type
   use PhotosynthesisType  , only : photosyns_type
-  use CH4Mod              , only : ch4_type
+  use Ch4TypeMod              , only : ch4_type
   use EnergyFluxType      , only : energyflux_type
   use SoilHydrologyType   , only : soilhydrology_type
   use FrictionVelocityType, only : frictionvel_type

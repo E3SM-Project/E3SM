@@ -13,7 +13,7 @@ module elm_instMod
   !-----------------------------------------
   use AerosolType                , only : aerosol_type
   use CanopyStateType            , only : canopystate_type
-  use CH4Mod                     , only : ch4_type
+  use Ch4TypeMod                     , only : ch4_type
   use CNCarbonFluxType           , only : carbonflux_type
   use CNCarbonStateType          , only : carbonstate_type
   use CNStateType                , only : cnstate_type
