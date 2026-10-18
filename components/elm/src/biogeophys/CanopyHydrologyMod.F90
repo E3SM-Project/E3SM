@@ -123,9 +123,7 @@ contains
      use atm2lndType        , only : atm2lnd_type
      !use domainMod          , only : ldomain
      use TopounitType       , only : top_pp
-     use elm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
-     use elm_time_manager   , only : get_step_size, get_prev_date, get_nstep
      use SnowHydrologyMod   , only : NewSnowBulkDensity
      !
      ! !ARGUMENTS:
@@ -253,7 +251,7 @@ contains
 
        ! Compute time step
        
-       dtime = get_step_size()
+       dtime = dtime_mod
 
        do gg = bounds%begg,bounds%endg
           irrigated_ppg(gg) = 0
