@@ -147,7 +147,7 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       integer :: nVertLevels, indexT, indexS
       integer, pointer :: indexTptr, indexSptr
       integer :: timeLevel
@@ -173,6 +173,8 @@ contains
                                                  indexTptr)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
                                                  indexSptr)
+      call mpas_pool_get_array    (meshPool,    'minLevelCell', &
+                                                 minLevelCell)
       call mpas_pool_get_array    (meshPool,    'maxLevelCell', &
                                                  maxLevelCell)
 
@@ -206,14 +208,16 @@ contains
              present(salineContractionCoeff)) then
             call ocn_equation_of_state_jm_density(nVertLevels,        &
                      nCells, kDisplaced, displacement_type,           &
-                     indexT, indexS, activeTracers, density, err,     &
+                     indexT, indexS, activeTracers, zMid,             &
+                     minLevelCell, maxLevelCell, density, err,        &
                      thermalExpansionCoeff, salineContractionCoeff,   &
                      tracersSurfaceValue)
 
          else
             call ocn_equation_of_state_jm_density(nVertLevels,        &
                      nCells, kDisplaced, displacement_type,           &
-                     indexT, indexS, activeTracers, density, err,     &
+                     indexT, indexS, activeTracers, zMid,             &
+                     minLevelCell, maxLevelCell, density, err,        &
                      tracersSurfaceValue)
          endif
 
@@ -296,7 +300,7 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       integer :: nVertLevels, indexT, indexS
       integer, pointer :: indexTptr, indexSptr
       integer :: timeLevel
@@ -324,6 +328,8 @@ contains
                                                  indexTptr)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
                                                  indexSptr)
+      call mpas_pool_get_array    (meshPool,    'minLevelCell', &
+                                                 minLevelCell)
       call mpas_pool_get_array    (meshPool,    'maxLevelCell', &
                                                  maxLevelCell)
 
@@ -357,14 +363,16 @@ contains
              present(salineContractionCoeff)) then
             call ocn_equation_of_state_jm_density(nVertLevels,        &
                      nCells, kDisplaced, displacement_type,           &
-                     indexT, indexS, activeTracers, density, err,     &
+                     indexT, indexS, activeTracers, zMid,             &
+                     minLevelCell, maxLevelCell, density, err,        &
                      thermalExpansionCoeff, salineContractionCoeff,   &
                      tracersSurfaceValue)
 
          else
             call ocn_equation_of_state_jm_density(nVertLevels,        &
                      nCells, kDisplaced, displacement_type,           &
-                     indexT, indexS, activeTracers, density, err,     &
+                     indexT, indexS, activeTracers, zMid,             &
+                     minLevelCell, maxLevelCell, density, err,        &
                      tracersSurfaceValue)
          endif
 

@@ -2435,6 +2435,17 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- eos_jm -->
+
+<entry id="config_eos_jm_pressure_from_zMid" type="logical"
+	category="eos_jm" group="eos_jm">
+If true, the Jackett-McDougall equation of state evaluates each layer at the pressure of its actual depth (-zMid), rather than at a reference pressure computed once from refBottomDepth. Use it where layers sit far from their reference depths, as under ice shelves with z-star.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- eos_wright -->
 
 <entry id="config_eos_wright_ref_pressure" type="real"

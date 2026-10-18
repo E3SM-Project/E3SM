@@ -464,6 +464,12 @@ add_default($nl, 'config_eos_linear_Tref');
 add_default($nl, 'config_eos_linear_Sref');
 add_default($nl, 'config_eos_linear_densityref');
 
+##########################
+# Namelist group: eos_jm #
+##########################
+
+add_default($nl, 'config_eos_jm_pressure_from_zMid');
+
 ##############################
 # Namelist group: eos_wright #
 ##############################
