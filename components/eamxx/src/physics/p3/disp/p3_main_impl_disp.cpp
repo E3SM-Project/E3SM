@@ -32,7 +32,8 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Pack>& rhofaci, const uview_2d<Pack>& acn, const uview_2d<Pack>& qv_sat_l, const uview_2d<Pack>& qv_sat_i, const uview_2d<Pack>& sup,
   const uview_2d<Pack>& qv_supersat_i, const uview_2d<Pack>& qtend_ignore, const uview_2d<Pack>& ntend_ignore, const uview_2d<Pack>& mu_c,
   const uview_2d<Pack>& lamc, const uview_2d<Pack>& rho_qi, const uview_2d<Pack>& qv2qi_depos_tend, const uview_2d<Pack>& precip_total_tend,
-  const uview_2d<Pack>& nevapr, const uview_2d<Pack>& precip_liq_flux, const uview_2d<Pack>& precip_ice_flux)
+  const uview_2d<Pack>& nevapr, const uview_2d<Pack>& precip_liq_flux, const uview_2d<Pack>& precip_ice_flux,
+  const uview_2d<Pack>& qv2qc_aeroact, const uview_2d<Pack>& qv2qc_condevap)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -96,6 +97,8 @@ void Functions<Real,DefaultDevice>
         nevapr(i,k)             = 0.;
         precip_liq_flux(i,k)    = 0.;
         precip_ice_flux(i,k)    = 0.;
+        qv2qc_aeroact(i,k)      = 0.;
+        qv2qc_condevap(i,k)     = 0.;
    });
  });
 }
@@ -265,7 +268,7 @@ Int Functions<Real,DefaultDevice>
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
       inv_rho, prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
       qtend_ignore, ntend_ignore, mu_c, lamc, rho_qi, qv2qi_depos_tend, precip_total_tend,
-      nevapr, precip_liq_flux, precip_ice_flux);
+      nevapr, precip_liq_flux, precip_ice_flux,oqv2qc_aeroact, oqv2qc_condevap);
 
   p3_main_part1_disp(
       nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,

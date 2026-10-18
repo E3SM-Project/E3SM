@@ -551,7 +551,7 @@ void Functions<S,D>
     nevapr(k)          .set(not_skip_all, qi2qv_sublim_tend + qr2qv_evap_tend);
     qr_evap_tend(k)       .set(not_skip_all, qr2qv_evap_tend);
     vap_ice_exchange(k).set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
-    vap_liq_exchange(k).set(not_skip_all, -qr2qv_evap_tend);
+    vap_liq_exchange(k).set(not_skip_all, -qr2qv_evap_tend+qv2qc_condevap(k));
     liq_ice_exchange(k).set(not_skip_all, qc2qi_hetero_freeze_tend + qr2qi_immers_freeze_tend - qi2qr_melt_tend + qc2qi_berg_tend + qc2qi_collect_tend + qr2qi_collect_tend);
 
     // set tendencies if extra_p3_diags is true
