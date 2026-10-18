@@ -7,3 +7,5 @@ Shortwave radiation model
 - [TOP Parameterization](top_solar_parameterization.md):
 Parameterization of sub-grid topographical effects on solar radiation.
 - [Longwave Radiation](longwave_radiation.md): Longwave radiation model
+- [Hydrology](hydrology.md): Hydrology model
+- [Plant Hydraulics](phs.md): Plant Hydraulics model
