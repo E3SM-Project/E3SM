@@ -56,11 +56,18 @@ vertical pressure velocity field.
 
 ```yaml
 field_names:
-  - p_hPa      := p_mid/100
+  - p_scaled   := p_mid/100
   - T_scaled   := T_mid*0.5
   - dry_air    := p_mid - qv*p_mid
   - p_ratio    := p_mid / P0
 ```
+
+A numeric literal has no units. Multiplying or dividing by one keeps the
+units of the field, so `p_mid/100` holds the pressure in hPa, but is written
+with the units of `p_mid`, which are Pa; nothing converts units for you.
+Adding a number to, or subtracting it from, a field with units is rejected when
+the stream is set up, since `+` and `-` need operands with the same units:
+`T_mid - 273.15` is an error.
 
 Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. Note this
 differs from the underscore spelling `qc_plus_qv_times_p_mid`, which means
@@ -121,6 +128,15 @@ Notes:
   model cannot know, and is rejected -- do not read it as "one step back" by
   analogy with `isel(lev=-1)`. Only `time=1` is available, since only one step
   of history is kept.
+- **A shift of a shift is rejected.** `X.shift(time=1).shift(time=1)` would be
+  one step back, not two: a shift copies its operand at the start of each step,
+  and an operand that is itself a shift has already been updated by then. So it
+  is rejected at setup, and so are the same through an alias
+  (`l1 := X.shift(time=1)`, then `l1.shift(time=1)`), `X.shift(time=1).tend()`,
+  and the underscore `X_prev_prev`. For two steps back, put an operation between
+  the shifts: `(X.shift(time=1)*1.0).shift(time=1)`. The shift of any other
+  expression is one step back, e.g. `bt1.shift(time=1)` with
+  `bt1 := X - X.shift(time=1)`.
 - **`shift(time=1)` of a diagnostic needs a stream that evaluates every step.**
   An instant stream evaluates diagnostics on output steps only, so the value
   one *model step* back does not exist there unless the stream writes every

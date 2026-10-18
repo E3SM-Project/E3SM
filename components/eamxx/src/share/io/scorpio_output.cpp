@@ -1418,6 +1418,38 @@ process_requested_fields()
     done = remaining.size()==0;
   }
 
+  // FieldPrev copies its input in init_timestep, which the stream calls in evaluation
+  // order. If the input is another FieldPrev (directly or via an alias), that one has
+  // already copied ITS input for this step, so we would copy the same value: the shift
+  // of a shift lags one step, not two. Any other diag computes later, during run, so
+  // its shift is one step old, as expected. Hence, (X.shift(time=1)*1.0).shift(time=1)
+  // works, while X.shift(time=1).shift(time=1) and X.shift(time=1).tend() do not.
+  // NOTE: FieldPrev is the only diag that writes its output in init_timestep
+  //       (FieldOverDt's only records the time stamp)
+  for (const auto& diag : m_diagnostics) {
+    if (diag->name()!="FieldPrev") {
+      continue;
+    }
+    const auto& operand = diag->get_params().get<std::string>("field_name");
+    auto src = operand;
+    while (m_alias_to_orig.count(src)==1) {
+      src = m_alias_to_orig.at(src);
+    }
+    auto it = m_diag_repo.find(src);
+    EKAT_REQUIRE_MSG (it==m_diag_repo.end() or it->second->name()!="FieldPrev",
+        "Error! shift(time=1) of a shift(time=1) is not available.\n"
+        " - stream name: " + m_stream_name + "\n"
+        " - request: " + diag->get().name() + "\n"
+        " - shifted operand: " + operand +
+        (src!=operand ? " (an alias of " + src + ")" : "") + "\n"
+        "A shift copies its operand at the start of the step, and a shifted operand has\n"
+        "already been updated by then, so the result would lag one step, not two.\n"
+        "This includes X.shift(time=1).tend(), which contains a shift of X.shift(time=1),\n"
+        "and the underscore X_prev_prev.\n"
+        "For a two-step lag, put an operation between the shifts:\n"
+        "  (X.shift(time=1)*1.0).shift(time=1)\n");
+  }
+
   // BinaryOp resolves a name as a constant before looking for a field: error out
   // if an operand is both, since the constant would silently win.
   // NOTE: check now that all fields (and aliases) are in the FM
