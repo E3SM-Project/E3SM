@@ -35,6 +35,14 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## How far back a shift looks, through an output stream
+  CreateUnitTest(io_dexpr_lag
+    SOURCES io_dexpr_lag.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   ## Conditional sampling in AVERAGE/MAX/MIN streams, and its avg counts
   CreateUnitTest(io_dexpr_masks
     SOURCES io_dexpr_masks.cpp
