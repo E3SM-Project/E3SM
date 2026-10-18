@@ -225,18 +225,19 @@ contains
       !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
-         sum1 = 0._r8 
-         sum2 = 0._r8 
-         sum3 = 0._r8 
+         ! start from the running totals to keep the reference's summation order
+         sum1 = begwb(c)
+         sum2 = h2osoi_liq_depth_intg(c)
+         sum3 = h2osoi_ice_depth_intg(c)
          !$acc loop vector reduction(+:sum1,sum2,sum3)
          do j = 1, nlevgrnd
             sum1 = sum1 + h2osoi_ice(c,j) + h2osoi_liq(c,j)
             sum2 = sum2 + h2osoi_liq(c,j)
             sum3 = sum3 + h2osoi_ice(c,j)
          end do
-         begwb(c) = begwb(c) + sum1
-         h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + sum2
-         h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + sum3
+         begwb(c) = sum1
+         h2osoi_liq_depth_intg(c) = sum2
+         h2osoi_ice_depth_intg(c) = sum3
       end do
 
       ! Add lake water storage to water balance.
@@ -427,19 +428,10 @@ contains
                end if
             end if
 
-            ! Update snow pack for dew & sub.
-
-            h2osno_temp = h2osno(c)
+            ! The snow pack is updated for dew & sub. in the column loop below.
             if (do_capsnow(c) .and. .not. use_firn_percolation_and_compaction) then
-               h2osno(c) = h2osno(c) - qflx_sub_snow(p)*dtime_mod
                qflx_snwcp_ice(p) = qflx_snwcp_ice(p) + qflx_dew_snow(p)
                qflx_snwcp_liq(p) = qflx_snwcp_liq(p) + qflx_dew_grnd(p)
-            end if
-            h2osno(c) = max(h2osno(c), 0._r8)
-            if (h2osno_temp > 0._r8) then
-               snow_depth(c) = snow_depth(c) * h2osno(c) / h2osno_temp
-            else
-               snow_depth(c) = h2osno(c)/snow_bd !Assume a constant snow bulk density = 250.
             end if
          end if
 
@@ -461,20 +453,19 @@ contains
             !$acc loop vector reduction(+:sum1) 
             do p = col_pp%pfti(c), col_pp%pftf(c)
                if(veg_pp%active(p)) then
-                  if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
+                  if (do_capsnow(c) .and. .not. use_firn_percolation_and_compaction) then
                      sum1 = sum1 - qflx_sub_snow(p)*dtime_mod
                   else
                      sum1 = sum1 + (-qflx_sub_snow(p)+qflx_dew_snow(p))*dtime_mod
                   end if
                end if
             end do
-            h2osno(c) =  sum1
+            h2osno(c) = max(sum1, 0._r8)
             if (h2osno_temp > 0._r8) then
                snow_depth(c) = snow_depth(c) * h2osno(c) / h2osno_temp
             else
                snow_depth(c) = h2osno(c)/snow_bd !Assume a constant snow bulk density = 250.
             end if
-            h2osno(c) = max(h2osno(c), 0._r8)
          end if
       end do 
 
