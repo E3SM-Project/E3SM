@@ -174,7 +174,7 @@ contains
   subroutine run(nsteps, extrasnow, check)
     integer, intent(in) :: nsteps
     logical, intent(in) :: extrasnow, check
-    integer :: step, f, t, ierr, bad
+    integer :: step, f, t, ierr
     character(len=128) :: msg
     integer(8) :: c0, c1, rate
 
@@ -203,10 +203,9 @@ contains
        t_ref = t_ref + real(c1 - c0, r8) / rate
 
        call system_clock(c0)
-       call hist_compute_update(view, src1, src2, bad)
+       call hist_compute_update(view, src1, src2)
        call system_clock(c1)
        t_new = t_new + real(c1 - c0, r8) / rate
-       if (bad /= 0) error stop 'gridcell weights sum to more than 1'
        if (check) call compare('update', step)
 
        ! end of each tape's interval: normalize, compare, zero
@@ -277,7 +276,7 @@ contains
     integer, parameter :: chunk_len = 16
     real(r8) :: pv(begp:endp), cv(begc:endc), lv(begl:endl), tv(begt:endt)
     real(r8) :: ref_avg(begg:endg), avg(begg:endg)
-    integer  :: i, ic2l, il2g, nbad, ow, chunk, nchunk, g0, g1
+    integer  :: i, ic2l, il2g, nbad, chunk, nchunk, g0, g1
 
     do i = begp, endp ; pv(i) = value(i) ; end do
     do i = begc, endc ; cv(i) = value(i) ; end do
@@ -288,58 +287,50 @@ contains
     do ic2l = 1, n_c2l
        do il2g = 1, n_l2g
           call ref_p2g(pv, ref_avg, ic2l, il2g)
-          ow = 0
-          call p2g_range(view, begg, endg, pv, ic2l, il2g, avg, ow)
+          call p2g_range(view, begg, endg, pv, ic2l, il2g, avg)
           nbad = nbad + count(avg /= ref_avg)
           call ref_c2g(cv, ref_avg, ic2l, il2g)
-          ow = 0
-          call c2g_range(view, begg, endg, cv, ic2l, il2g, avg, ow)
+          call c2g_range(view, begg, endg, cv, ic2l, il2g, avg)
           nbad = nbad + count(avg /= ref_avg)
        end do
     end do
     do il2g = 1, n_l2g
        call ref_l2g(lv, ref_avg, il2g)
-       ow = 0
-       call l2g_range(view, begg, endg, lv, il2g, avg, ow)
+       call l2g_range(view, begg, endg, lv, il2g, avg)
        nbad = nbad + count(avg /= ref_avg)
     end do
     call ref_t2g(tv, ref_avg)
-    ow = 0
-    call t2g_range(view, begg, endg, tv, avg, ow)
+    call t2g_range(view, begg, endg, tv, avg)
     nbad = nbad + count(avg /= ref_avg)
 
     ! the same averages in chunks of gridcells, one gang each
     nchunk = (endg - begg) / chunk_len + 1
     call ref_p2g(pv, ref_avg, n_c2l, n_l2g)
-    !$acc parallel loop gang default(present) copyin(pv) copyout(avg) private(g0, g1, ow)
+    !$acc parallel loop gang default(present) copyin(pv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       ow = 0
-       call p2g_range(view, g0, g1, pv, n_c2l, n_l2g, avg(g0:g1), ow)
+       call p2g_range(view, g0, g1, pv, n_c2l, n_l2g, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
     call ref_c2g(cv, ref_avg, n_c2l, n_l2g)
-    !$acc parallel loop gang default(present) copyin(cv) copyout(avg) private(g0, g1, ow)
+    !$acc parallel loop gang default(present) copyin(cv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       ow = 0
-       call c2g_range(view, g0, g1, cv, n_c2l, n_l2g, avg(g0:g1), ow)
+       call c2g_range(view, g0, g1, cv, n_c2l, n_l2g, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
     call ref_l2g(lv, ref_avg, n_l2g)
-    !$acc parallel loop gang default(present) copyin(lv) copyout(avg) private(g0, g1, ow)
+    !$acc parallel loop gang default(present) copyin(lv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       ow = 0
-       call l2g_range(view, g0, g1, lv, n_l2g, avg(g0:g1), ow)
+       call l2g_range(view, g0, g1, lv, n_l2g, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
     call ref_t2g(tv, ref_avg)
-    !$acc parallel loop gang default(present) copyin(tv) copyout(avg) private(g0, g1, ow)
+    !$acc parallel loop gang default(present) copyin(tv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       ow = 0
-       call t2g_range(view, g0, g1, tv, avg(g0:g1), ow)
+       call t2g_range(view, g0, g1, tv, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
 

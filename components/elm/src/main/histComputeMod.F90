@@ -51,7 +51,7 @@ module histComputeMod
   !
   ! !USES:
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use subgridAveViewMod, only : subgrid_ave_view, spval, sumwt_tol
+  use subgridAveViewMod, only : subgrid_ave_view, spval
   use subgridAveViewMod, only : p2g_range, c2g_range, l2g_range, t2g_range
   !
   implicit none
@@ -258,7 +258,7 @@ contains
   end subroutine hist_compute_build
 
   !-----------------------------------------------------------------------
-  subroutine level_bounds(view, level, first, last)
+  pure subroutine level_bounds(view, level, first, last)
     ! First and last point of a subgrid level.
     type(subgrid_ave_view), intent(in) :: view
     integer, intent(in)  :: level
@@ -363,7 +363,7 @@ contains
   end subroutine hist_compute_views
 
   !-----------------------------------------------------------------------
-  subroutine hist_compute_update(view, src1, src2, overweight_gridcell)
+  subroutine hist_compute_update(view, src1, src2)
     !
     ! !DESCRIPTION:
     ! Accumulate the current values of all active fields into their buffers.
@@ -372,10 +372,9 @@ contains
     type(subgrid_ave_view), intent(in)  :: view
     type(hist_src1d)      , intent(in)  :: src1(:)
     type(hist_src2d)      , intent(in)  :: src2(:)
-    integer               , intent(out) :: overweight_gridcell ! a gridcell whose weights sum to more than 1, or 0
     !
     ! !LOCAL VARIABLES:
-    integer :: n, f, s, lev, i, level_overweight
+    integer :: n, f, s, lev, i
     !-----------------------------------------------------------------------
 
     ! snow fields: fill in the absent layers (the averages read plain value arrays)
@@ -393,25 +392,22 @@ contains
     end do
 
     ! every field: one gang per field, its levels in turn
-    overweight_gridcell = 0
-    !$acc parallel loop gang default(present) private(f, level_overweight) &
-    !$acc    reduction(max:overweight_gridcell)
+    !$acc parallel loop gang default(present) private(f)
     do n = 1, num_fields
        f = process_order(n)
-       level_overweight = 0
        !$acc loop seq
        do lev = 1, fields(f)%num_levels
           if (fields(f)%snow_offset >= 0) then
-             call field_level(view, fields(f), lev, &
-                  snow_values(snow_index(fields(f), fields(f)%source_first, lev)), level_overweight)
+             call field_level(view, fields(f), lev, snow_values(snow_index(fields(f), fields(f)%source_first, lev)), &
+                  all_active, gridcell_samples, hbuf_pool, nacs_pool)
           else if (fields(f)%source_rank == 1) then
-             call field_level(view, fields(f), lev, src1(fields(f)%source_index)%ptr, level_overweight)
+             call field_level(view, fields(f), lev, src1(fields(f)%source_index)%ptr, &
+                  all_active, gridcell_samples, hbuf_pool, nacs_pool)
           else
              call field_level(view, fields(f), lev, src2(fields(f)%source_index)%ptr(:, lev), &
-                  level_overweight)
+                  all_active, gridcell_samples, hbuf_pool, nacs_pool)
           end if
        end do
-       overweight_gridcell = max(overweight_gridcell, level_overweight)
     end do
 
   end subroutine hist_compute_update
@@ -427,7 +423,7 @@ contains
   end function snow_index
 
   !-----------------------------------------------------------------------
-  real(r8) function snow_layer_value(view, fld, model_array, i, lev)
+  pure real(r8) function snow_layer_value(view, fld, model_array, i, lev)
     !
     ! !DESCRIPTION:
     ! Value of a snow field at point i (column or patch), level lev, with the
@@ -474,19 +470,24 @@ contains
   end function snow_layer_value
 
   !-----------------------------------------------------------------------
-  subroutine field_level(view, fld, lev, values, overweight)
+  pure subroutine field_level(view, fld, lev, values, all_active, gridcell_samples, hbuf_pool, nacs_pool)
     !
     ! !DESCRIPTION:
     ! Accumulate level lev of field fld: average it to gridcells first if the
     ! field is averaged, then apply its time operation to all output points.
+    ! The scratch and buffer pools are passed in (pure: no module state is
+    ! changed); the field's part of them is found from its offsets.
     !
     !$acc routine vector
     ! !ARGUMENTS:
-    type(subgrid_ave_view) , intent(in)  :: view
-    type(hist_active_field), intent(in)  :: fld
-    integer                , intent(in)  :: lev
-    real(r8)               , intent(in)  :: values(*)  ! the level's values; values(1) is the first point of the source level
-    integer                , intent(inout) :: overweight ! max'ed with each overweight gridcell (set by the caller)
+    type(subgrid_ave_view) , intent(in)    :: view
+    type(hist_active_field), intent(in)    :: fld
+    integer                , intent(in)    :: lev
+    real(r8)               , intent(in)    :: values(*)           ! the level's values; values(1) is the first point of the source level
+    logical                , intent(in)    :: all_active(:)       ! .true. (points without an active check)
+    real(r8)               , intent(inout) :: gridcell_samples(*) ! averages of the averaged fields
+    real(r8)               , intent(inout) :: hbuf_pool(*)
+    integer                , intent(inout) :: nacs_pool(*)
     !
     ! !LOCAL VARIABLES:
     integer :: num_points, buffer_first, sample_first
@@ -500,15 +501,14 @@ contains
        select case (fld%source_level)
        case (lev_patch)
           call p2g_range(view, view%begg, view%endg, values, fld%c2l_scale, fld%l2g_scale, &
-               gridcell_samples(sample_first), overweight)
+               gridcell_samples(sample_first))
        case (lev_col)
           call c2g_range(view, view%begg, view%endg, values, fld%c2l_scale, fld%l2g_scale, &
-               gridcell_samples(sample_first), overweight)
+               gridcell_samples(sample_first))
        case (lev_lun)
-          call l2g_range(view, view%begg, view%endg, values, fld%l2g_scale, &
-               gridcell_samples(sample_first), overweight)
+          call l2g_range(view, view%begg, view%endg, values, fld%l2g_scale, gridcell_samples(sample_first))
        case (lev_topo)
-          call t2g_range(view, view%begg, view%endg, values, gridcell_samples(sample_first), overweight)
+          call t2g_range(view, view%begg, view%endg, values, gridcell_samples(sample_first))
        end select
        call accumulate_samples(fld%time_op, .true., num_points, gridcell_samples(sample_first), &
             all_active, hbuf_pool(buffer_first), nacs_pool(buffer_first))
@@ -535,7 +535,7 @@ contains
   end subroutine field_level
 
   !-----------------------------------------------------------------------
-  subroutine accumulate_samples(time_op, gridcell_rule, n, samples, active, hbuf, nacs)
+  pure subroutine accumulate_samples(time_op, gridcell_rule, n, samples, active, hbuf, nacs)
     !
     ! !DESCRIPTION:
     ! Accumulate n samples into their buffers (rules in the module
@@ -746,7 +746,7 @@ contains
   end subroutine hist_compute_update_device
 
   !-----------------------------------------------------------------------
-  subroutine tape_range(t, first, last)
+  pure subroutine tape_range(t, first, last)
     ! The positions of tape t's buffers in the pool (last < first if none).
     integer, intent(in)  :: t
     integer, intent(out) :: first, last

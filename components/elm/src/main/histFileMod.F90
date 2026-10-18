@@ -928,17 +928,12 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: bad_gridcell        ! gridcell whose weights sum to more than 1
-    character(len=*),parameter :: subname = 'hist_update_hbuf'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(__FILE__, __LINE__))
 
-    call hist_compute_update(elm_subgrid_view, elmptr_rs, elmptr_ra, bad_gridcell)
-    if (bad_gridcell /= 0) then
-       write(iulog,*) trim(subname),' ERROR: subgrid weights sum to more than 1 at g= ', bad_gridcell
-       call endrun(decomp_index=bad_gridcell, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
-    end if
+    ! (the sums of the weights are checked by reweight_wrapup when they change)
+    call hist_compute_update(elm_subgrid_view, elmptr_rs, elmptr_ra)
 
   end subroutine hist_update_hbuf
 

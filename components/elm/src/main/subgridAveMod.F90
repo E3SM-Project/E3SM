@@ -39,7 +39,7 @@ module subgridAveMod
   use VegetationType, only : veg_pp
   use abortutils    , only : endrun
   use shr_log_mod   , only : errMsg => shr_log_errMsg
-  use subgridAveViewMod, only : subgrid_ave_view, view_spval => spval, sumwt_tol
+  use subgridAveViewMod, only : subgrid_ave_view, view_spval => spval
   use subgridAveViewMod, only : build_child_map, subgrid_ave_view_attach, subgrid_ave_view_detach
   use subgridAveViewMod, only : p2g_range, c2g_range, l2g_range, t2g_range
   !
@@ -74,6 +74,8 @@ module subgridAveMod
   ! gridcells per gang in the averages to gridcells (each gang runs one
   ! vector routine over its chunk)
   integer, parameter, private :: gridcell_chunk = 128
+
+  real(r8), parameter, private :: sumwt_tol = 1.0_r8 + 1.e-6_r8 ! sumwt above this is an error
 
   interface p2c
      module procedure p2c_1d
@@ -478,7 +480,7 @@ contains
      call check_scale_types('p2c_1d', p2c_scale_type=p2c_scale_type)
 
      err_index = 0
-     !$acc parallel loop gang vector default(present) copyin(parr) copyout(carr) &
+     !$acc parallel loop gang vector default(present) &
      !$acc private(sumwt,sum_arr) reduction(max:err_index)
      do c = bounds%begc, bounds%endc
         sumwt = 0._r8
@@ -522,7 +524,7 @@ contains
     call check_scale_types('p2c_2d', p2c_scale_type=p2c_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(parr) copyout(carr) &
+    !$acc parallel loop gang vector collapse(2) default(present) &
     !$acc private(sumwt,sum_arr) reduction(max:err_index)
     do j = 1, num2d
        do c = bounds%begc, bounds%endc
@@ -564,7 +566,7 @@ contains
     real(r8) :: sum_patch
     !-----------------------------------------------------------------------
 
-    !$acc parallel loop gang vector default(present) copyin(filterc, pftarr) copy(colarr) &
+    !$acc parallel loop gang vector default(present) &
     !$acc private(c,sum_patch)
     do fc = 1,numfc
        c = filterc(fc)
@@ -603,7 +605,7 @@ contains
     call check_scale_types('p2l_1d', p2c_scale_type, c2l_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(parr) copyout(larr) &
+    !$acc parallel loop gang vector default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l,c) reduction(max:err_index)
     do l = bounds%begl, bounds%endl
        sumwt = 0._r8
@@ -652,7 +654,7 @@ contains
     call check_scale_types('p2l_2d', p2c_scale_type, c2l_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(parr) copyout(larr) &
+    !$acc parallel loop gang vector collapse(2) default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l,c) reduction(max:err_index)
     do j = 1, num2d
        do l = bounds%begl, bounds%endl
@@ -693,26 +695,19 @@ contains
     !
     !  !LOCAL VARIABLES:
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
     call check_scale_types('p2g_1d', p2c_scale_type, c2l_scale_type, l2g_scale_type)
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang default(present) copyin(parr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang default(present) private(g0, g1)
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       chunk_err = 0
-       call p2g_range(elm_subgrid_view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr(g0:g1), chunk_err)
-       err_index = max(err_index, chunk_err)
+       call p2g_range(elm_subgrid_view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr(g0:g1))
     end do
-    call check_sumwt('p2g_1d', err_index, nameg)
 
   end subroutine p2g_1d
 
@@ -734,28 +729,21 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j            ! level
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp, num2d/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
     call check_scale_types('p2g_2d', p2c_scale_type, c2l_scale_type, l2g_scale_type)
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang collapse(2) default(present) copyin(parr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang collapse(2) default(present) private(g0, g1)
     do j = 1, num2d
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          chunk_err = 0
-          call p2g_range(elm_subgrid_view, g0, g1, parr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j), chunk_err)
-          err_index = max(err_index, chunk_err)
+          call p2g_range(elm_subgrid_view, g0, g1, parr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j))
        end do
     end do
-    call check_sumwt('p2g_2d', err_index, nameg)
 
   end subroutine p2g_2d
 
@@ -783,7 +771,7 @@ contains
     call check_scale_types('c2l_1d', c2l_scale_type=c2l_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(carr) copyout(larr) &
+    !$acc parallel loop gang vector default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l) reduction(max:err_index)
     do l = bounds%begl, bounds%endl
        sumwt = 0._r8
@@ -830,7 +818,7 @@ contains
     call check_scale_types('c2l_2d', c2l_scale_type=c2l_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(carr) copyout(larr) &
+    !$acc parallel loop gang vector collapse(2) default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l) reduction(max:err_index)
     do j = 1, num2d
        do l = bounds%begl, bounds%endl
@@ -869,26 +857,19 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
     call check_scale_types('c2g_1d', c2l_scale_type=c2l_scale_type, l2g_scale_type=l2g_scale_type)
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang default(present) copyin(carr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang default(present) private(g0, g1)
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       chunk_err = 0
-       call c2g_range(elm_subgrid_view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr(g0:g1), chunk_err)
-       err_index = max(err_index, chunk_err)
+       call c2g_range(elm_subgrid_view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr(g0:g1))
     end do
-    call check_sumwt('c2g_1d', err_index, nameg)
 
   end subroutine c2g_1d
 
@@ -909,28 +890,21 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j            ! level
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc, num2d/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
     call check_scale_types('c2g_2d', c2l_scale_type=c2l_scale_type, l2g_scale_type=l2g_scale_type)
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang collapse(2) default(present) copyin(carr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang collapse(2) default(present) private(g0, g1)
     do j = 1, num2d
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          chunk_err = 0
-          call c2g_range(elm_subgrid_view, g0, g1, carr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j), chunk_err)
-          err_index = max(err_index, chunk_err)
+          call c2g_range(elm_subgrid_view, g0, g1, carr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j))
        end do
     end do
-    call check_sumwt('c2g_2d', err_index, nameg)
 
   end subroutine c2g_2d
 
@@ -949,26 +923,19 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(larr) == (/bounds%endl/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg/)), errMsg(__FILE__, __LINE__))
     call check_scale_types('l2g_1d', l2g_scale_type=l2g_scale_type)
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang default(present) copyin(larr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang default(present) private(g0, g1)
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       chunk_err = 0
-       call l2g_range(elm_subgrid_view, g0, g1, larr, l2g_scale_type, garr(g0:g1), chunk_err)
-       err_index = max(err_index, chunk_err)
+       call l2g_range(elm_subgrid_view, g0, g1, larr, l2g_scale_type, garr(g0:g1))
     end do
-    call check_sumwt('l2g_1d', err_index, nameg)
 
   end subroutine l2g_1d
 
@@ -989,28 +956,21 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j            ! level
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(larr) == (/bounds%endl, num2d/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
     call check_scale_types('l2g_2d', l2g_scale_type=l2g_scale_type)
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang collapse(2) default(present) copyin(larr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang collapse(2) default(present) private(g0, g1)
     do j = 1, num2d
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          chunk_err = 0
-          call l2g_range(elm_subgrid_view, g0, g1, larr(:,j), l2g_scale_type, garr(g0:g1,j), chunk_err)
-          err_index = max(err_index, chunk_err)
+          call l2g_range(elm_subgrid_view, g0, g1, larr(:,j), l2g_scale_type, garr(g0:g1,j))
        end do
     end do
-    call check_sumwt('l2g_2d', err_index, nameg)
 
   end subroutine l2g_2d
 
@@ -1040,7 +1000,7 @@ contains
     call check_scale_types('p2t_1d', p2c_scale_type, c2l_scale_type, l2t_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(parr) copyout(tarr) &
+    !$acc parallel loop gang vector default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l,scale_l2t,p,c,l) reduction(max:err_index)
     do t = bounds%begt, bounds%endt
        sumwt = 0._r8
@@ -1093,7 +1053,7 @@ contains
     call check_scale_types('p2t_2d', p2c_scale_type, c2l_scale_type, l2t_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(parr) copyout(tarr) &
+    !$acc parallel loop gang vector collapse(2) default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l,scale_l2t,p,c,l) reduction(max:err_index)
     do j = 1, num2d
        do t = bounds%begt, bounds%endt
@@ -1146,7 +1106,7 @@ contains
     call check_scale_types('c2t_1d', c2l_scale_type=c2l_scale_type, l2g_scale_type=l2t_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(carr) copyout(tarr) &
+    !$acc parallel loop gang vector default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l,scale_l2t,c,l) reduction(max:err_index)
     do t = bounds%begt, bounds%endt
        sumwt = 0._r8
@@ -1197,7 +1157,7 @@ contains
     call check_scale_types('c2t_2d', c2l_scale_type=c2l_scale_type, l2g_scale_type=l2t_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(carr) copyout(tarr) &
+    !$acc parallel loop gang vector collapse(2) default(present) &
     !$acc private(sumwt,sum_arr,scale_c2l,scale_l2t,c,l) reduction(max:err_index)
     do j = 1, num2d
        do t = bounds%begt, bounds%endt
@@ -1248,7 +1208,7 @@ contains
     call check_scale_types('l2t_1d', l2g_scale_type=l2t_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector default(present) copyin(larr) copyout(tarr) &
+    !$acc parallel loop gang vector default(present) &
     !$acc private(sumwt,sum_arr,scale_l2t,l) reduction(max:err_index)
     do t = bounds%begt, bounds%endt
        sumwt = 0._r8
@@ -1296,7 +1256,7 @@ contains
     call check_scale_types('l2t_2d', l2g_scale_type=l2t_scale_type)
 
     err_index = 0
-    !$acc parallel loop gang vector collapse(2) default(present) copyin(larr) copyout(tarr) &
+    !$acc parallel loop gang vector collapse(2) default(present) &
     !$acc private(sumwt,sum_arr,scale_l2t,l) reduction(max:err_index)
     do j = 1, num2d
        do t = bounds%begt, bounds%endt
@@ -1336,8 +1296,6 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
@@ -1347,18 +1305,13 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang default(present) copyin(tarr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang default(present) private(g0, g1)
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       chunk_err = 0
-       call t2g_range(elm_subgrid_view, g0, g1, tarr, garr(g0:g1), chunk_err)
-       err_index = max(err_index, chunk_err)
+       call t2g_range(elm_subgrid_view, g0, g1, tarr, garr(g0:g1))
     end do
-    call check_sumwt('t2g_1d', err_index, nameg)
 
   end subroutine t2g_1d
 
@@ -1379,8 +1332,6 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j            ! level
     integer  :: chunk, nchunk, g0, g1 ! chunks of gridcells
-    integer  :: chunk_err    ! gridcell of a chunk with sumwt > 1, or 0
-    integer  :: err_index    ! gridcell with sumwt > 1, or 0
     !------------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt, num2d/)), errMsg(__FILE__, __LINE__))
@@ -1390,20 +1341,15 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    err_index = 0
     nchunk = (bounds%endg - bounds%begg) / gridcell_chunk + 1
-    !$acc parallel loop gang collapse(2) default(present) copyin(tarr) copyout(garr) &
-    !$acc private(g0, g1, chunk_err) reduction(max:err_index)
+    !$acc parallel loop gang collapse(2) default(present) private(g0, g1)
     do j = 1, num2d
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          chunk_err = 0
-          call t2g_range(elm_subgrid_view, g0, g1, tarr(:,j), garr(g0:g1,j), chunk_err)
-          err_index = max(err_index, chunk_err)
+          call t2g_range(elm_subgrid_view, g0, g1, tarr(:,j), garr(g0:g1,j))
        end do
     end do
-    call check_sumwt('t2g_2d', err_index, nameg)
 
   end subroutine t2g_2d
 

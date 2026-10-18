@@ -19,17 +19,17 @@ module subgridAveViewMod
   !
   ! Each average handles a range of gridcells with the gridcell loop inside
   ! (OpenACC: a vector routine), so its caller makes one call per field level
-  ! instead of one per gridcell. A gridcell whose weights sum to more than 1 is
-  ! reported through overweight, which the caller sets (to 0) beforehand: the
-  ! averages only raise it (atomically), so no reduction is needed inside a
-  ! vector routine. Values are passed as assumed-size arrays whose
+  ! instead of one per gridcell. The averages don't check the sums of weights:
+  ! reweight_wrapup (check_weights) stops the run if the active weights of a
+  ! gridcell don't sum to 1, every time they change. They are pure. Values are passed as assumed-size arrays whose
   ! first element is the first point of their level (e.g. parr(1) is patch
   ! view%begp), so a model array, or a contiguous section of one, is passed
   ! without a copy.
   !
   ! In ELM, subgridAveMod builds the view (elm_subgrid_view): everything but
   ! the landunit index points at the subgrid types' arrays, so changes of the
-  ! weights and active flags are seen without a refresh.
+  ! weights and active flags are seen without a refresh. The view's pointers
+  ! are contiguous (their targets must be), so the loops need no strides.
   !
   ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
@@ -39,30 +39,29 @@ module subgridAveViewMod
   !
   ! !PUBLIC DATA:
   real(r8), parameter, public :: spval = 1.e36_r8              ! missing value (= elm_varcon's spval)
-  real(r8), parameter, public :: sumwt_tol = 1.0_r8 + 1.e-6_r8 ! sum of weights above this is an error
 
   type, public :: subgrid_ave_view
      integer :: begg = 1, endg = 0, begt = 1, endt = 0, begl = 1, endl = 0
      integer :: begc = 1, endc = 0, begp = 1, endp = 0
      ! landunits of each gridcell, in ascending order: grc_lun_idx(grc_lun_ptr(g):grc_lun_ptr(g+1)-1)
-     integer , pointer :: grc_lun_ptr(:) => null(), grc_lun_idx(:) => null()
+     integer , pointer, contiguous :: grc_lun_ptr(:) => null(), grc_lun_idx(:) => null()
      ! contiguous children: topounits of a gridcell, columns and patches of a landunit
-     integer , pointer :: topi(:) => null(), topf(:) => null()
-     integer , pointer :: coli(:) => null(), colf(:) => null()
-     integer , pointer :: pfti(:) => null(), pftf(:) => null()
+     integer , pointer, contiguous :: topi(:) => null(), topf(:) => null()
+     integer , pointer, contiguous :: coli(:) => null(), colf(:) => null()
+     integer , pointer, contiguous :: pfti(:) => null(), pftf(:) => null()
      ! column of each patch, type of each landunit (lun_pp%itype)
-     integer , pointer :: col_of_pft(:) => null(), lun_type(:) => null()
+     integer , pointer, contiguous :: col_of_pft(:) => null(), lun_type(:) => null()
      ! weight of each point on its gridcell
-     real(r8), pointer :: wtgcell_t(:) => null(), wtgcell_l(:) => null()
-     real(r8), pointer :: wtgcell_c(:) => null(), wtgcell_p(:) => null()
+     real(r8), pointer, contiguous :: wtgcell_t(:) => null(), wtgcell_l(:) => null()
+     real(r8), pointer, contiguous :: wtgcell_c(:) => null(), wtgcell_p(:) => null()
      ! point is active
-     logical , pointer :: active_t(:) => null(), active_l(:) => null()
-     logical , pointer :: active_c(:) => null(), active_p(:) => null()
+     logical , pointer, contiguous :: active_t(:) => null(), active_l(:) => null()
+     logical , pointer, contiguous :: active_c(:) => null(), active_p(:) => null()
      ! scale factors: scale_c2l(column, c2l scale type) and
      ! scale_l2g_lookup(l2g scale type, landunit type); spval excludes a point
-     real(r8), pointer :: scale_c2l(:,:) => null(), scale_l2g_lookup(:,:) => null()
+     real(r8), pointer, contiguous :: scale_c2l(:,:) => null(), scale_l2g_lookup(:,:) => null()
      ! minus the number of snow layers of each column
-     integer , pointer :: snl(:) => null()
+     integer , pointer, contiguous :: snl(:) => null()
   end type subgrid_ave_view
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -78,7 +77,7 @@ module subgridAveViewMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine build_child_map(begpar, endpar, begch, endch, parent, ptr, idx, bad_child)
+  pure subroutine build_child_map(begpar, endpar, begch, endch, parent, ptr, idx, bad_child)
     !
     ! !DESCRIPTION:
     ! Counting sort of the children by parent, keeping ascending child order.
@@ -157,7 +156,7 @@ contains
   end subroutine subgrid_ave_view_detach
 
   !-----------------------------------------------------------------------
-  subroutine p2g_range(view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr, overweight)
+  pure subroutine p2g_range(view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's active patches with
@@ -172,7 +171,6 @@ contains
     integer , intent(in)  :: c2l_scale_type
     integer , intent(in)  :: l2g_scale_type
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
-    integer , intent(inout) :: overweight     ! max'ed with each gridcell whose weights sum to more than 1
     !
     ! !LOCAL VARIABLES:
     integer  :: g, k, l, p
@@ -198,17 +196,13 @@ contains
              end if
           end do
        end do
-       if (sumwt > sumwt_tol) then
-          !$acc atomic update
-          overweight = max(overweight, g)
-       end if
        garr(g - g0 + 1) = weighted_average(sum_arr, sumwt)
     end do
 
   end subroutine p2g_range
 
   !-----------------------------------------------------------------------
-  subroutine c2g_range(view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr, overweight)
+  pure subroutine c2g_range(view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's active columns with
@@ -223,7 +217,6 @@ contains
     integer , intent(in)  :: c2l_scale_type
     integer , intent(in)  :: l2g_scale_type
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
-    integer , intent(inout) :: overweight     ! max'ed with each gridcell whose weights sum to more than 1
     !
     ! !LOCAL VARIABLES:
     integer  :: g, k, l, c
@@ -249,17 +242,13 @@ contains
              end if
           end do
        end do
-       if (sumwt > sumwt_tol) then
-          !$acc atomic update
-          overweight = max(overweight, g)
-       end if
        garr(g - g0 + 1) = weighted_average(sum_arr, sumwt)
     end do
 
   end subroutine c2g_range
 
   !-----------------------------------------------------------------------
-  subroutine l2g_range(view, g0, g1, larr, l2g_scale_type, garr, overweight)
+  pure subroutine l2g_range(view, g0, g1, larr, l2g_scale_type, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's active landunits with
@@ -273,7 +262,6 @@ contains
     real(r8), intent(in)  :: larr(*)          ! landunit values; larr(1) is landunit view%begl
     integer , intent(in)  :: l2g_scale_type
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
-    integer , intent(inout) :: overweight     ! max'ed with each gridcell whose weights sum to more than 1
     !
     ! !LOCAL VARIABLES:
     integer  :: g, k, l
@@ -295,17 +283,13 @@ contains
              end if
           end if
        end do
-       if (sumwt > sumwt_tol) then
-          !$acc atomic update
-          overweight = max(overweight, g)
-       end if
        garr(g - g0 + 1) = weighted_average(sum_arr, sumwt)
     end do
 
   end subroutine l2g_range
 
   !-----------------------------------------------------------------------
-  subroutine t2g_range(view, g0, g1, tarr, garr, overweight)
+  pure subroutine t2g_range(view, g0, g1, tarr, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's topounits with
@@ -318,7 +302,6 @@ contains
     integer , intent(in)  :: g0, g1
     real(r8), intent(in)  :: tarr(*)          ! topounit values; tarr(1) is topounit view%begt
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
-    integer , intent(inout) :: overweight     ! max'ed with each gridcell whose weights sum to more than 1
     !
     ! !LOCAL VARIABLES:
     integer  :: g, t
@@ -336,10 +319,6 @@ contains
              sumwt = sumwt + view%wtgcell_t(t)
           end if
        end do
-       if (sumwt > sumwt_tol) then
-          !$acc atomic update
-          overweight = max(overweight, g)
-       end if
        garr(g - g0 + 1) = weighted_average(sum_arr, sumwt)
     end do
 
