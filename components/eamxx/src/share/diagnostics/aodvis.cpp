@@ -33,8 +33,6 @@ void AODVis::initialize_impl() {
   // whose masks have the same name, and that is for diags masked the same way by design
   const auto& sunlit = m_fields_in.at("sunlit_mask");
   get().set_valid_mask(sunlit.alias(get().name()+"_valid_mask"));
-  // Night columns hold the fill value, so averaging must skip them
-  get().get_header().set_may_be_filled(true);
 }
 
 void AODVis::compute_impl()

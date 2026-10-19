@@ -41,7 +41,6 @@ void FieldPrev::initialize_impl() {
   // NOTE: even if the input field is masked, we must use a different one, since
   // at the first timestep, the field may have not been computed yet (but it's not masked per se)
   auto mask = get().create_valid_mask();
-  get().get_header().set_may_be_filled(true);
   mask.deep_copy(0);
 
   // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue

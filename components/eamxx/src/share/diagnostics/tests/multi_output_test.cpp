@@ -30,7 +30,6 @@ public:
     m_col    = Field(FieldIdentifier("MOT_col",   m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked = Field(FieldIdentifier("MOT_masked",m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked.create_valid_mask();
-    m_masked.get_header().set_may_be_filled(true);
 
     add_output(m_prof);
     add_output(m_col);
@@ -222,7 +221,6 @@ TEST_CASE ("multi_output") {
     msk.sync_to_host();
     msk.get_valid_mask().sync_to_host();
     REQUIRE (msk.get_valid_mask().name()=="MOT_masked_valid_mask");
-    REQUIRE (msk.get_header().may_be_filled());
     auto a_h    = a.get_view<const Real**,Host>();
     auto prof_h = prof.get_view<const Real**,Host>();
     auto col_h  = col.get_view<const Real*,Host>();

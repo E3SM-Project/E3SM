@@ -119,7 +119,6 @@ void VertContract::initialize_impl()
       m_ones.set_valid_mask(f.get_valid_mask());
       // Output gets a valid_mask: 1 where at least one level was valid
       get().create_valid_mask(Field::MaskInit::None);
-      get().get_header().set_may_be_filled(true);
     }
   }
 }

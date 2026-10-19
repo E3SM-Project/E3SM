@@ -64,7 +64,6 @@ void VertDerivative::initialize_impl()
 
   if (f.has_valid_mask()) {
     get().create_valid_mask();
-    get().get_header().set_may_be_filled(true);
   }
 }
 

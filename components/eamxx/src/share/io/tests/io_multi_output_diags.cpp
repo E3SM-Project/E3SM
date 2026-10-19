@@ -76,7 +76,6 @@ public:
     m_col    = Field(FieldIdentifier("MOT_col",   m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked = Field(FieldIdentifier("MOT_masked",m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked.create_valid_mask();
-    m_masked.get_header().set_may_be_filled(true);
 
     add_output(m_prof);
     add_output(m_col);
@@ -143,7 +142,6 @@ public:
     m_a.create_valid_mask("mo_region_mask");
     m_z.set_valid_mask(m_a.get_valid_mask());
     for (auto* f : {&m_a,&m_z}) {
-      f->get_header().set_may_be_filled(true);
       add_output(*f);
     }
   }

@@ -248,7 +248,6 @@ void ZonalAvg::initialize_impl()
     m_ones.set_valid_mask(field.get_valid_mask());
     m_zonal_area = get().clone("zonal_area");
     get().create_valid_mask();
-    get().get_header().set_may_be_filled(true);
   }
 }
 

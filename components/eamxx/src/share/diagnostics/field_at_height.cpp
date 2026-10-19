@@ -114,7 +114,6 @@ initialize_impl ()
     }
     get().set_valid_mask(index_mask.broadcast_to(d_layout));
   }
-  get().get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
