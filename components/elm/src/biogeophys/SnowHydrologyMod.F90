@@ -32,6 +32,7 @@ module SnowHydrologyMod
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf
+  use subgridAveMod   , only : create_scale_c2l
 
   use timeinfoMod
   !
@@ -2404,12 +2405,13 @@ contains
      !
      ! !LOCAL VARIABLES:
      real(r8)   :: dtime                            ! land model time step (sec)
-     integer    :: c, j, g, n_active                ! counters
+     integer    :: c, j, g, l, n_active             ! counters
      real(r8)   :: e_cooling                        ! column energy removed [J/m2]
      real(r8)   :: c_layer                          ! layer heat capacity [J/m2/K]
      real(r8)   :: ice_mass_sum                     ! total ice mass across active layers [kg/m2]
      real(r8)   :: lat_abs_deg                      ! absolute gridcell latitude [deg]
      real(r8)   :: area_col_m2                      ! column area [m2]
+     real(r8)   :: scale_c2l(bounds%begc:bounds%endc) ! column->landunit urbanf scale (diag area weighting)
      real(r8)   :: delta_t_layer                    ! layer temperature change [K]
      real(r8)   :: delta_t_col_mean                 ! column-mean snow temperature change [K]
      real(r8)   :: cooling_col_max                  ! max cooling in column [K]
@@ -2431,7 +2433,13 @@ contains
        qflx_snwcp_ice => col_wf%qflx_snwcp_ice  , & ! Input:  [real(r8) (:)   ] excess solid h2o due to snow capping (mm H2O /s) [+]
        t_soisno       => col_es%t_soisno         , & ! In/Out: [real(r8) (:,:) ] snow/soil temperature (K)
        h2osoi_ice     => col_ws%h2osoi_ice       , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)
-       h2osoi_liq     => col_ws%h2osoi_liq         & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)
+       h2osoi_liq     => col_ws%h2osoi_liq       , & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)
+       frac_sno_eff   => col_ws%frac_sno_eff     , & ! Input:  [real(r8) (:)   ] eff. fraction of ground covered by snow (0 to 1)
+       frac_h2osfc    => col_ws%frac_h2osfc      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by surface water (0 to 1)
+       t_h2osfc       => col_es%t_h2osfc         , & ! Input:  [real(r8) (:)   ] surface water temperature (K)
+       t_grnd         => col_es%t_grnd           , & ! In/Out: [real(r8) (:)   ] ground temperature (K)
+       t_grnd_r       => col_es%t_grnd_r         , & ! In/Out: [real(r8) (:)   ] rural ground temperature (K)
+       t_grnd_u       => col_es%t_grnd_u           & ! In/Out: [real(r8) (:)   ] urban ground temperature (K)
      )
 
      dtime = dtime_mod
@@ -2445,6 +2453,14 @@ contains
      step_required_energy_loc = 0._r8
      step_uncooled_energy_loc = 0._r8
      step_uncooled_cols_loc   = 0
+
+     ! Column->landunit (urbanf) scale factor, matching the weighting applied
+     ! when snowcapped runoff is exported in lnd2atm. Urban road columns scale
+     ! by 3, so including it here lets them contribute their full share to the
+     ! closure diagnostics. Diagnostics only (off by default).
+     if (snowcap_latband_diag_write) then
+        call create_scale_c2l(bounds, 'urbanf', scale_c2l)
+     end if
 
      do c = bounds%begc, bounds%endc
 
@@ -2474,7 +2490,7 @@ contains
         ! the full converted mass (closure denominator).
         if (snowcap_latband_diag_write) then
            g = col_pp%gridcell(c)
-           area_col_m2 = grc_pp%area(g) * 1.e6_r8 * col_pp%wtgcell(c)
+           area_col_m2 = grc_pp%area(g) * 1.e6_r8 * col_pp%wtgcell(c) * scale_c2l(c)
            if (area_col_m2 > 0._r8) then
               step_required_energy_loc = step_required_energy_loc + e_cooling * area_col_m2
            end if
@@ -2522,6 +2538,22 @@ contains
               cooling_col_max = max(cooling_col_max, delta_t_layer)
            end if
         end do
+
+        ! Refresh ground temperatures so the cooled top snow layer is reflected
+        ! in the fields lnd2atm exports (t_grnd, t_grnd_r, t_grnd_u). These were
+        ! set before cooling in HydrologyNoDrainageMod and would otherwise be
+        ! inconsistent with the cooled snow/soil temperatures. Reached only for
+        ! columns with snow layers (snl(c) < 0), so the snow-covered form applies.
+        l = col_pp%landunit(c)
+        t_grnd(c) = frac_sno_eff(c) * t_soisno(c,snl(c)+1) &
+                  + (1._r8 - frac_sno_eff(c) - frac_h2osfc(c)) * t_soisno(c,1) &
+                  + frac_h2osfc(c) * t_h2osfc(c)
+        if (lun_pp%urbpoi(l)) then
+           t_grnd_u(c) = t_soisno(c,snl(c)+1)
+        end if
+        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+           t_grnd_r(c) = t_soisno(c,snl(c)+1)
+        end if
 
         ! Accumulate cooling diagnostics (off by default)
         if (snowcap_latband_diag_write) then
