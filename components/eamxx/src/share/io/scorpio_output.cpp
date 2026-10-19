@@ -548,7 +548,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_valid_mask();
+      auto mask  = count.get_header().get_extra_data<Field>("threshold_mask");
 
       if (field.has_valid_mask()) {
         count.update(field.get_valid_mask(),1,1);
@@ -659,7 +659,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
 
           f_out.scale_inv(avg_count);
 
-          const auto& mask = avg_count.get_valid_mask();
+          const auto& mask = avg_count.get_header().get_extra_data<Field>("threshold_mask");
           f_out.deep_copy(constants::fill_value<Real>,mask);
         } else {
           // Divide by steps count only when the summation is complete
@@ -769,8 +769,9 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
   Field count(count_id);
   count.allocate_view();
 
-  // We will use a mask field for updating cnt (to check where cnt>threshold)
-  count.create_valid_mask();
+  // We will use a scratch mask field to find where cnt<=threshold.
+  // NOTE: this is NOT a valid mask for the count: count is valid everywhere.
+  count.get_header().set_extra_data("threshold_mask",count.clone(avg_cnt_name + "_threshold_mask"));
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;

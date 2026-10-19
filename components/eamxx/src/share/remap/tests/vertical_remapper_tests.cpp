@@ -554,13 +554,16 @@ TEST_CASE ("vertical_remapper") {
             Real tol = 10*std::numeric_limits<Real>::epsilon();
 
             auto check = [&](const Field& computed, Field& expected) {
+              // Only compare where the expected field is valid
+              auto mask = expected.get_valid_mask();
               auto rel_diff = computed.clone("rel_diff", CloneFlags::CopyData);
+              rel_diff.create_valid_mask();
+              rel_diff.get_valid_mask().deep_copy(mask);
               rel_diff.update(expected,1,-1);
               // By construction, expected fields are always > 0, so we can divide
               rel_diff.scale_inv(expected);
 
               // Now set rel_diff=0 where mask==0, so we don't pollute the norm with masked-out entries
-              auto mask = expected.get_valid_mask();
               rel_diff.deep_copy(0,mask,true);
               using Catch::Matchers::WithinAbs;
               REQUIRE_THAT (inf_norm(rel_diff).as<Real>(), WithinAbs(0,tol));

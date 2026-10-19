@@ -401,8 +401,12 @@ protected:
   template<bool negate_mask, typename ST>
   void deep_copy_masked (const ST value, const Field& mask) const;
 
+  // Updates this field, using this field's valid mask (if present) to select what entries to update
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
+  // Updates all the entries of this field, ignoring any valid mask
+  template<CombineMode CM>
+  void update_nomask (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
