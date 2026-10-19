@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_p3_${POSTFIX}_nudged
+stream_id: shoc_p3_${POSTFIX}_nudged
 averaging_type: instant
 field_names:
   - p_mid

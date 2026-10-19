@@ -143,7 +143,7 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
   }
 
   // Create reader pl
-  std::string casename = "io_packed_ps"+std::to_string(ps_write);
+  std::string casename = "eamxx.h.io_packed_ps"+std::to_string(ps_write);
   auto filename = casename
     + ".INSTANT.nsteps"
     + "_x" + std::to_string(freq)

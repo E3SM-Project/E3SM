@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_output
+stream_id: homme_shoc_cld_spa_p3_rrtmgp_output
 averaging_type: instant
 fields:
   physics_gll:
