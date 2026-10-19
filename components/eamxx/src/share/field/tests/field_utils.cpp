@@ -168,9 +168,7 @@ TEST_CASE("field_utils") {
 
       // Only one field masked: the comparison still pass if the two
       // field agree where the mask is valid
-      Field fu(fid_m);
-      fu.allocate_view();
-      fu.deep_copy(fm1); // same data as fm1
+      Field fu = fm1.clone(CloneFlags::CopyData); // same data as fm1, but no mask
       fu.deep_copy(-123,fm1.get_valid_mask(),true); // Random value where fm1 is invalid
       REQUIRE(views_are_equal(fm1,fu));
     }
