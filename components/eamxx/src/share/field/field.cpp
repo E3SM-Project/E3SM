@@ -619,16 +619,6 @@ void Field::deep_copy (const Field& x) const
   }
 }
 
-void Field::deep_copy (const Field& x, const Field& mask) const
-{
-  // If read only, we let update_cm throw the error...
-  if (is_aliasing(x))
-    return;
-
-  constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy (masked)",x,1,0,0,mask);
-}
-
 Field Field::broadcast_to (const FieldLayout& tgt) const
 {
   EKAT_REQUIRE_MSG (is_allocated(),
@@ -665,22 +655,10 @@ void Field::scale (const ScalarWrapper beta) const
   update_cm<CM>("Field::scale (scalar)",*this,0,beta,0);
 }
 
-void Field::scale (const ScalarWrapper beta, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::scale (scalar, masked)",*this,0,beta,0,mask);
-}
-
 void Field::scale (const Field& x) const
 {
   constexpr auto CM = CombineMode::Multiply;
   update_cm<CM>("Field::scale",x,1,1,0);
-}
-
-void Field::scale (const Field& x, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Multiply;
-  update_cm<CM>("Field::scale (masked)",x,1,1,0,mask);
 }
 
 void Field::scale_inv (const Field& x) const
@@ -689,22 +667,10 @@ void Field::scale_inv (const Field& x) const
   update_cm<CM>("Field::scale_inv",x,1,1,0);
 }
 
-void Field::scale_inv (const Field& x, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Divide;
-  update_cm<CM>("Field::scale_inv (masked)",x,1,1,0,mask);
-}
-
 void Field::max (const Field& x) const
 {
   constexpr auto CM = CombineMode::Max;
   update_cm<CM>("Field::max",x,1,1,0);
-}
-
-void Field::max (const Field& x, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Max;
-  update_cm<CM>("Field::max (masked)",x,1,1,0,mask);
 }
 
 void Field::min (const Field& x) const
@@ -713,20 +679,9 @@ void Field::min (const Field& x) const
   update_cm<CM>("Field::min",x,1,1,0);
 }
 
-void Field::min (const Field& x, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Min;
-  update_cm<CM>("Field::min (masked)",x,1,1,0,mask);
-}
-
 void Field::add_scalar (const ScalarWrapper gamma) const
 {
   update(*this,0,1,gamma);
-}
-
-void Field::add_scalar (const ScalarWrapper gamma, const Field& mask) const
-{
-  update(*this,0,1,gamma,mask);
 }
 
 void Field::
@@ -737,24 +692,10 @@ update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, con
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::update (masked)",x,alpha,beta,0,mask);
-}
-
-void Field::
 update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::update",x,alpha,beta,0);
-}
-
-void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const
-{
-  constexpr auto CM = CombineMode::Update;
-  update_cm<CM>("Field::update (masked)",x,alpha,beta,gamma,mask);
 }
 
 template<CombineMode CM>

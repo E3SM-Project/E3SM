@@ -90,7 +90,7 @@ void HorizAvg::compute_impl()
     auto& nonzero_denom = m_diagnostic_output.get_valid_mask();
     compute_mask(m_denom,0,Comparison::NE,nonzero_denom);
 
-    m_diagnostic_output.scale_inv(m_denom,nonzero_denom);
+    m_diagnostic_output.scale_inv(m_denom);
     // IO relies on fill_value for masked-out entries
     m_diagnostic_output.deep_copy(constants::fill_value<Real>,nonzero_denom,true);
   }

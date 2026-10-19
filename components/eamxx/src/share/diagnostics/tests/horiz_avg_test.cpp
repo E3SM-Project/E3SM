@@ -110,11 +110,15 @@ TEST_CASE("horiz_avg") {
     REQUIRE (views_are_equal(tgt_mask,d_mask));
 
     // Compute manual average: numerator / denominator (where valid)
-    manual.scale_inv(manual_den,tgt_mask);
+    manual.create_valid_mask();
+    manual.get_valid_mask().deep_copy(tgt_mask);
+    manual.scale_inv(manual_den);
 
     // Compare where valid; zero out fill_value entries before norm
     auto diff = diag_f.clone("diff", CloneFlags::CopyData);
-    diff.update(manual,-1,1,d_mask);
+    diff.create_valid_mask();
+    diff.get_valid_mask().deep_copy(d_mask);
+    diff.update(manual,-1,1);
     diff.deep_copy(0,d_mask,true);
     auto diff_norm = inf_norm(diff,&comm).as<Real>();
     REQUIRE_THAT (diff_norm, Catch::WithinAbs(0,tol));

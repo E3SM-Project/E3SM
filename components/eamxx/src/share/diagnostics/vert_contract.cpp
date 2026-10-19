@@ -170,7 +170,7 @@ void VertContract::compute_impl()
       // Mark where denominator is nonzero, then divide, then fill elsewhere
       auto& valid_out = d.get_valid_mask();
       compute_mask(m_weight_sum, 0, Comparison::NE, valid_out);
-      d.scale_inv(m_weight_sum, valid_out);
+      d.scale_inv(m_weight_sum);
       // IO relies on fill_value for masked-out entries
       d.deep_copy(constants::fill_value<Real>, valid_out, true);
     } else {

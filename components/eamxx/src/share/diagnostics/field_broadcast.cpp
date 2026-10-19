@@ -50,13 +50,8 @@ void FieldBroadcast::initialize_impl ()
 void FieldBroadcast::compute_impl ()
 {
   // See comment above: remove when m_diagnostic_output aliases m_broadcasted
-  if (m_broadcasted.has_valid_mask()) {
-    const auto& mask = m_broadcasted.get_valid_mask();
-    m_diagnostic_output.get_valid_mask().deep_copy(mask);
-    m_diagnostic_output.deep_copy(m_broadcasted,mask);
-  } else {
-    m_diagnostic_output.deep_copy(m_broadcasted);
-  }
+  // NOTE: this also copies the mask, if m_broadcasted has one
+  m_diagnostic_output.deep_copy(m_broadcasted);
 }
 
 }  // namespace scream

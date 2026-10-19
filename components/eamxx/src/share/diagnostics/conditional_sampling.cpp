@@ -162,20 +162,23 @@ void ConditionalSampling::initialize_impl()
   } else {
     m_diagnostic_output = m_fields_in.at(m_input_f).clone(m_diag_name);
     m_diagnostic_output.create_valid_mask();
+
+    // The mask where the condition holds. It cannot be the valid mask of the diag,
+    // since the diag inherits the valid mask of the input field (if any)
+    m_cond_mask = m_diagnostic_output.get_valid_mask().clone("cond_mask",CloneFlags::MatchPacking);
   }
 
-  // If lhs is "lev" but diag is not "mask", we can still precompute the diag mask by
+  // If lhs is "lev" but diag is not "mask", we can still precompute the condition mask by
   // broadcasting m_lev_mask
   if (m_lhs_is_lev and not m_diag_is_mask) {
-    auto mask = m_diagnostic_output.get_valid_mask();
-    mask.deep_copy(m_lev_mask.broadcast_like(mask));
+    m_cond_mask.deep_copy(m_lev_mask.broadcast_like(m_cond_mask));
   }
 }
 
 void ConditionalSampling::compute_impl()
 {
-  // Compute the mask (unless lhs is "lev", in which case we already did)
-  auto& mask = m_diag_is_mask ? m_diagnostic_output : m_diagnostic_output.get_valid_mask();
+  // Compute the mask where the condition holds (unless lhs is "lev", in which case we already did)
+  auto& mask = m_diag_is_mask ? m_diagnostic_output : m_cond_mask;
   if (not m_lhs_is_lev) {
     const auto& lhs = m_fields_in.at(m_condition_lhs);
     if (m_rhs_is_field) {
@@ -192,9 +195,15 @@ void ConditionalSampling::compute_impl()
 
   if (not m_diag_is_mask) {
     const auto& f = m_fields_in.at(m_input_f);
-    m_diagnostic_output.deep_copy(f,mask);
+
+    // Copy the data (together with the mask of f, if any), and invalidate where the condition does not hold
+    m_diagnostic_output.deep_copy(f);
+    auto& valid = m_diagnostic_output.get_valid_mask();
+    valid.scale(m_cond_mask);
+
+    // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
     constexpr auto fv = constants::fill_value<Real>;
-    m_diagnostic_output.deep_copy(fv,mask,true);
+    m_diagnostic_output.deep_copy(fv,valid,true);
   }
 }
 

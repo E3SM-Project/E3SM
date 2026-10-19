@@ -55,14 +55,9 @@ void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
   const auto& prev_ts = f_prev.get_header().get_tracking().get_time_stamp();
 
   if (prev_ts.is_valid()) {
-    // Field was inited/computed at least once, so it makes sense to copy it
-    if (f_prev.has_valid_mask()) {
-      m_diagnostic_output.deep_copy(f_prev,f_prev.get_valid_mask());
-      m_diagnostic_output.get_valid_mask().deep_copy(f_prev.get_valid_mask());
-    } else {
-      m_diagnostic_output.deep_copy(f_prev);
-      m_diagnostic_output.get_valid_mask().deep_copy(1);
-    }
+    // Field was inited/computed at least once, so it makes sense to copy it.
+    // NOTE: this also copies the mask (all valid, if f_prev is not masked)
+    m_diagnostic_output.deep_copy(f_prev);
   } else {
     m_diagnostic_output.get_valid_mask().deep_copy(0);
   }

@@ -53,6 +53,8 @@ protected:
 
   Field m_lev_mask; // Only used if m_lhs_is_lev=true, both for mask diagnostics
                     // and for broadcasting in non-mask diagnostics
+
+  Field m_cond_mask; // Only used if m_diag_is_mask=false. Where the condition holds
 };
 
 } // namespace scream

@@ -137,12 +137,10 @@ TEST_CASE ("update") {
         check (y,[&](int i,int j,int k){ return 2*xval(x,i,k)+3*y0(i,j,k); });
       }
       { // masked
-        Field mask (fid_i.clone("mask"),true);
-        mask.deep_copy(1);
-        mask.subfield(COL,0).deep_copy(0);
-
         Field y = f_real.clone(CloneFlags::CopyData);
-        y.scale(xb,mask);
+        y.create_valid_mask(Field::MaskInit::Valid);
+        y.get_valid_mask().subfield(COL,0).deep_copy(0);
+        y.scale(xb);
         check (y,[&](int i,int j,int k){ return i==0 ? y0(i,j,k) : y0(i,j,k)*xval(x,i,k); });
       }
       { // src_mask
@@ -154,7 +152,9 @@ TEST_CASE ("update") {
         const bool first_is_col = xl.tags()[0]==COL;
 
         Field y = f_real.clone(CloneFlags::CopyData);
-        y.scale(xbm,xbm.get_valid_mask());
+        y.create_valid_mask(Field::MaskInit::Valid);
+        y.intersect_mask(xbm);
+        y.scale(xbm);
         check (y,[&](int i,int j,int k){
           const bool masked_out = first_is_col ? i==0 : k==0;
           return masked_out ? y0(i,j,k) : y0(i,j,k)*xval(x,i,k);

@@ -79,36 +79,21 @@ ekat::units::Units apply_binary_op(const ekat::units::Units& a, const ekat::unit
   return ekat::units::Units::invalid();
 }
 // apply binary operation on two input fields
+// NOTE: if d is masked, the update methods only update where d is valid. The caller must
+//       ensure that the mask of d is already the one we want (valid where the inputs are valid)
 void apply_binary_op(const Field& d, const Field& a, const Real b, const int op_code){
-  bool masked = d.has_valid_mask();
   switch (op_code) {
     case OP_PLUS:
-      if (masked) {
-        d.update(a,1,0,b,d.get_valid_mask());
-      } else {
-        d.update(a,1,0,b);
-      }
+      d.update(a,1,0,b);
       break;
     case OP_MINUS:
-      if (masked) {
-        d.update(a,1,0,-b,d.get_valid_mask());
-      } else {
-        d.update(a,1,0,-b);
-      }
+      d.update(a,1,0,-b);
       break;
     case OP_TIMES:
-      if (masked) {
-        d.update(a,b,0,0,d.get_valid_mask());
-      } else {
-        d.update(a,b,0,0);
-      }
+      d.update(a,b,0,0);
       break;
     case OP_OVER:
-      if (masked) {
-        d.update(a,1/b,0,0,d.get_valid_mask());
-      } else {
-        d.update(a,1/b,0,0);
-      }
+      d.update(a,1/b,0,0);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
@@ -117,38 +102,19 @@ void apply_binary_op(const Field& d, const Field& a, const Real b, const int op_
 
 void apply_binary_op(const Field& d, const Real a, const Field& b, const int op_code)
 {
-  bool masked = d.has_valid_mask();
   switch (op_code) {
     case OP_PLUS:
-      if (masked) {
-        d.update(b,1,0,a,d.get_valid_mask());
-      } else {
-        d.update(b,1,0,a);
-      }
+      d.update(b,1,0,a);
       break;
     case OP_MINUS:
-      if (masked) {
-        d.update(b,-1,0,a,d.get_valid_mask());
-      } else {
-        d.update(b,-1,0,a);
-      }
+      d.update(b,-1,0,a);
       break;
     case OP_TIMES:
-      if (masked) {
-        d.update(b,a,0,0,d.get_valid_mask());
-      } else {
-        d.update(b,a,0,0);
-      }
+      d.update(b,a,0,0);
       break;
     case OP_OVER:
-      if (masked) {
-        auto mask = d.get_valid_mask();
-        d.deep_copy(a,mask);
-        d.scale_inv(b,mask);
-      } else {
-        d.deep_copy(a);
-        d.scale_inv(b);
-      }
+      d.deep_copy(a);
+      d.scale_inv(b);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
@@ -157,36 +123,23 @@ void apply_binary_op(const Field& d, const Real a, const Field& b, const int op_
 
 void apply_binary_op(const Field& d, const Field& a, const Field& b, const int op_code)
 {
-  bool masked = d.has_valid_mask();
-  if (masked)
-    d.deep_copy(a,d.get_valid_mask());
-  else
-    d.deep_copy(a);
+  // Copy a into d (this also sets d's mask to a's mask, if d is masked),
+  // and combine the mask of b, so that d is valid only where both a and b are
+  d.deep_copy(a);
+  d.intersect_mask(b);
 
   switch (op_code) {
     case OP_PLUS:
-      if (masked)
-        d.update(b, 1, 1, d.get_valid_mask());
-      else
-        d.update(b, 1, 1);
+      d.update(b, 1, 1);
       break;
     case OP_MINUS:
-      if (masked)
-        d.update(b, -1, 1, d.get_valid_mask());
-      else
-        d.update(b, -1, 1);
+      d.update(b, -1, 1);
       break;
     case OP_TIMES:
-      if (masked)
-        d.scale(b, d.get_valid_mask());
-      else
-        d.scale(b);
+      d.scale(b);
       break;
     case OP_OVER:
-      if (masked)
-        d.scale_inv(b, d.get_valid_mask());
-      else
-        d.scale_inv(b);
+      d.scale_inv(b);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
@@ -293,13 +246,11 @@ void BinaryOp::initialize_impl()
 
 void BinaryOp::compute_impl()
 {
-  // First, if one (or both) the args are masked, compute the diag mask
-  if (m_arg1_has_mask) {
-    m_diagnostic_output.get_valid_mask().deep_copy(m_fields_in.at(m_arg1_name).get_valid_mask());
-    if (m_arg2_has_mask)
-      m_diagnostic_output.get_valid_mask().scale(m_fields_in.at(m_arg2_name).get_valid_mask());
-  } else if (m_arg2_has_mask) {
-    m_diagnostic_output.get_valid_mask().deep_copy(m_fields_in.at(m_arg2_name).get_valid_mask());
+  // If only one arg is a field, and it is masked, the diag is valid where it is valid.
+  // If both are fields, the mask of the diag is set when applying the op
+  if (m_diagnostic_output.has_valid_mask() and not (m_arg1_is_field and m_arg2_is_field)) {
+    const auto& f = m_fields_in.at(m_arg1_is_field ? m_arg1_name : m_arg2_name);
+    m_diagnostic_output.get_valid_mask().deep_copy(f.get_valid_mask());
   }
 
   // Note the case where m_arg1_is_field=m_arg2_is_field=false was handled in the initialize method

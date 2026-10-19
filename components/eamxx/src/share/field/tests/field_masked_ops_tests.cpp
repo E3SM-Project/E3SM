@@ -48,6 +48,18 @@ TEST_CASE ("masked_ops") {
   auto col0_r = f_real.subfield(0, 0);
   auto col0_i = f_int.subfield(0, 0);
 
+  // Give f a valid mask equal to the given int field
+  auto set_mask = [](Field& f, const Field& mask) {
+    f.create_valid_mask();
+    f.get_valid_mask().deep_copy(mask);
+  };
+
+  // A copy of f without valid mask. This is needed because views_are_equal ignores
+  // the invalid entries of masked fields, but we want to check they were NOT modified
+  auto strip = [](const Field& f) {
+    return f.clone(CloneFlags::CopyData);
+  };
+
   SECTION ("masked_deep_copy_scalar") {
     // Set dst=1 on masked cols, dst=2 on un-masked cols using negate_mask
     auto dst = f_real.clone();
@@ -67,27 +79,23 @@ TEST_CASE ("masked_ops") {
     }
   }
 
-  SECTION ("masked_deep_copy_field") {
-    // Copy src field values into dst only at masked columns
+  SECTION ("deep_copy_field") {
+    // deep_copy copies ALL the data, and the mask along with it
     auto src = f_real.clone();
     auto dst = f_real.clone();
     randomize_uniform(src, seed++);
     dst.deep_copy(0);
 
     auto mask = make_col_mask(f_real, f_int, ncol);
+    set_mask(src, mask);
+    auto inv_mask = mask.clone();
+    inv_mask.deep_copy(1);
+    set_mask(dst, inv_mask);
 
-    dst.deep_copy(src, mask);
+    dst.deep_copy(src);
 
-    auto zero_col = col0_r.clone("zero"); zero_col.deep_copy(0);
-    for (int icol = 0; icol < ncol; ++icol) {
-      auto dsti = dst.subfield(0, icol);
-      auto srci = src.subfield(0, icol);
-      if (icol % 2 == 0) {
-        REQUIRE(views_are_equal(dsti, srci));
-      } else {
-        REQUIRE(views_are_equal(dsti, zero_col));
-      }
-    }
+    REQUIRE(views_are_equal(strip(dst), strip(src)));
+    REQUIRE(views_are_equal(dst.get_valid_mask(), mask));
   }
 
   SECTION ("masked_deep_copy_int_scalar") {
@@ -115,10 +123,12 @@ TEST_CASE ("masked_ops") {
 
     auto f2 = f_real.clone();
     f2.deep_copy(1);
-    f2.update(f_real, 2, 3, mask);
+    set_mask(f2, mask);
+    f2.update(f_real, 2, 3);
+    auto f2s = strip(f2);
 
     for (int icol = 0; icol < ncol; ++icol) {
-      auto f2i   = f2.subfield(0, icol);
+      auto f2i   = f2s.subfield(0, icol);
       auto f_ref = col0_r.clone("ref");
       if (icol % 2 == 0) {
         // ref = 2*f_real + 3
@@ -136,10 +146,12 @@ TEST_CASE ("masked_ops") {
 
     auto f2 = f_int.clone();
     f2.deep_copy(1);
-    f2.update(f_int, 2, 3, mask);
+    set_mask(f2, mask);
+    f2.update(f_int, 2, 3);
+    auto f2s = strip(f2);
 
     for (int icol = 0; icol < ncol; ++icol) {
-      auto f2i   = f2.subfield(0, icol);
+      auto f2i   = f2s.subfield(0, icol);
       auto f_ref = col0_i.clone("ref");
       if (icol % 2 == 0) {
         f_ref.deep_copy(1);
@@ -155,7 +167,9 @@ TEST_CASE ("masked_ops") {
     auto mask = make_col_mask(f_real, f_int, ncol);
 
     auto f2 = f_real.clone(CloneFlags::CopyData);   // starts as a copy of f_real
-    f2.scale(2, mask);        // only masked cols multiplied by 2
+    set_mask(f2, mask);
+    f2.scale(2);              // only masked cols multiplied by 2
+    f2 = strip(f2);
 
     auto f_ref = f_real.clone(CloneFlags::CopyData);
     f_ref.scale(2);           // reference: 2*f_real everywhere
@@ -174,7 +188,9 @@ TEST_CASE ("masked_ops") {
     auto f2     = f_real.clone(CloneFlags::CopyData);
     auto f_twos = f_real.clone();
     f_twos.deep_copy(2);
-    f2.scale(f_twos, mask);
+    set_mask(f2, mask);
+    f2.scale(f_twos);
+    f2 = strip(f2);
 
     auto f_ref = f_real.clone(CloneFlags::CopyData);
     f_ref.scale(2);
@@ -194,7 +210,9 @@ TEST_CASE ("masked_ops") {
     auto f2     = f_int.clone(CloneFlags::CopyData);
     auto f_twos = f_int.clone();
     f_twos.deep_copy(2);
-    f2.scale(f_twos, mask);
+    set_mask(f2, mask);
+    f2.scale(f_twos);
+    f2 = strip(f2);
 
     auto f_ref = f_int.clone(CloneFlags::CopyData);
     f_ref.scale(f_twos);
@@ -213,7 +231,9 @@ TEST_CASE ("masked_ops") {
     auto f2     = f_real.clone(CloneFlags::CopyData);
     auto f_twos = f_real.clone();
     f_twos.deep_copy(2);
-    f2.scale_inv(f_twos, mask);
+    set_mask(f2, mask);
+    f2.scale_inv(f_twos);
+    f2 = strip(f2);
 
     auto f_ref = f_real.clone(CloneFlags::CopyData);
     f_ref.scale(0.5);   // f_real/2
@@ -231,7 +251,9 @@ TEST_CASE ("masked_ops") {
 
     auto f2 = f_real.clone(); f2.deep_copy(1);
     auto f3 = f_real.clone(); f3.deep_copy(2);
-    f2.max(f3, mask);   // masked cols: max(1,2)=2; unmasked: stay 1
+    set_mask(f2, mask);
+    f2.max(f3);         // masked cols: max(1,2)=2; unmasked: stay 1
+    f2 = strip(f2);
 
     auto one = col0_r.clone("one"); one.deep_copy(1);
     auto two = col0_r.clone("two"); two.deep_copy(2);
@@ -247,7 +269,9 @@ TEST_CASE ("masked_ops") {
 
     auto f2 = f_int.clone(); f2.deep_copy(1);
     auto f3 = f_int.clone(); f3.deep_copy(2);
-    f2.max(f3, mask);
+    set_mask(f2, mask);
+    f2.max(f3);
+    f2 = strip(f2);
 
     auto one = col0_i.clone("one"); one.deep_copy(1);
     auto two = col0_i.clone("two"); two.deep_copy(2);
@@ -263,7 +287,9 @@ TEST_CASE ("masked_ops") {
 
     auto f2 = f_real.clone(); f2.deep_copy(3);
     auto f3 = f_real.clone(); f3.deep_copy(1);
-    f2.min(f3, mask);   // masked cols: min(3,1)=1; unmasked: stay 3
+    set_mask(f2, mask);
+    f2.min(f3);         // masked cols: min(3,1)=1; unmasked: stay 3
+    f2 = strip(f2);
 
     auto one   = col0_r.clone("one");   one.deep_copy(1);
     auto three = col0_r.clone("three"); three.deep_copy(3);
@@ -279,7 +305,9 @@ TEST_CASE ("masked_ops") {
 
     auto f2 = f_int.clone(); f2.deep_copy(3);
     auto f3 = f_int.clone(); f3.deep_copy(1);
-    f2.min(f3, mask);
+    set_mask(f2, mask);
+    f2.min(f3);
+    f2 = strip(f2);
 
     auto one   = col0_i.clone("one");   one.deep_copy(1);
     auto three = col0_i.clone("three"); three.deep_copy(3);
@@ -301,14 +329,17 @@ TEST_CASE ("masked_ops") {
     REQUIRE(views_are_equal(f2, f3));
 
     auto f4 = f_real.clone(); f4.deep_copy(1);
-    f4.scale(3, mask);
+    set_mask(f4, mask);
+    f4.scale(3);
+    f4 = strip(f4);
     auto f_ref = f_real.clone(); f_ref.deep_copy(3);
     REQUIRE(views_are_equal(f4, f_ref));
 
     auto f5 = f_real.clone(); f5.deep_copy(2);
     auto f6 = f_real.clone(); f6.deep_copy(4);
-    f5.max(f6, mask);
-    REQUIRE(views_are_equal(f5, f6));
+    set_mask(f5, mask);
+    f5.max(f6);
+    REQUIRE(views_are_equal(strip(f5), f6));
   }
 
   SECTION ("none_masked") {
@@ -324,15 +355,17 @@ TEST_CASE ("masked_ops") {
 
     // scale with zero mask: f should remain unchanged
     auto f2 = f_real.clone(CloneFlags::CopyData);
-    f2.scale(10, mask);
-    REQUIRE(views_are_equal(f2, f_real));
+    set_mask(f2, mask);
+    f2.scale(10);
+    REQUIRE(views_are_equal(strip(f2), f_real));
 
     // max with zero mask: f should remain unchanged
     auto f3 = f_real.clone(); f3.deep_copy(1);
     auto f4 = f_real.clone(); f4.deep_copy(100);
-    f3.max(f4, mask);
+    set_mask(f3, mask);
+    f3.max(f4);
     auto one = f_real.clone(); one.deep_copy(1);
-    REQUIRE(views_are_equal(f3, one));
+    REQUIRE(views_are_equal(strip(f3), one));
   }
 
   SECTION ("nonbinary_mask") {

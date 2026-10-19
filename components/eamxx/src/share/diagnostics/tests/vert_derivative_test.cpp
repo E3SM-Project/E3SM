@@ -183,7 +183,7 @@ TEST_CASE("vert_derivative") {
     // Set diag and manual diag to 0 where mask=0, then compute diff norm
     dp_vert_derivative_f.deep_copy(0,diag1_m_mask,true);
     diag1_m.deep_copy(0,diag1_m_mask,true);
-    diag1_m.update(dp_vert_derivative_f,1,-1,diag1_m_mask);
+    diag1_m.update(dp_vert_derivative_f,1,-1);
 
     constexpr auto tol = std::numeric_limits<Real>::epsilon()*1000;
     REQUIRE_THAT (inf_norm(diag1_m).as<Real>(),Catch::WithinAbs(0,tol));

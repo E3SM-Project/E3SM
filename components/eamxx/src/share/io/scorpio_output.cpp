@@ -616,28 +616,26 @@ run (const std::string& filename, const util::TimeStamp& ts,
         "This indicates the field got a valid mask after output initialization or tracking logic missed it." );
     }
 
-    // NOTE: if f_in is masked, we only accumulate where it is valid. The scorpio field
-    //       is just an accumulator, so we do not update its mask while accumulating.
+    // NOTE: if f_in is masked, we only accumulate where it is valid. Since update methods rely on the
+    //       mask of the lhs, we copy f_in's mask into f_out's mask. The scorpio field is just an accumulator,
+    //       so we do not want to combine the masks (f_out would stay invalid forever, once f_in is invalid).
     const bool masked = f_in.has_valid_mask();
     EKAT_REQUIRE_MSG (not masked or f_out.has_valid_mask(),
         "[AtmosphereOutput::run] Error! The field has a valid mask, but the scorpio field does not.\n"
         " - field name: " + field_name + "\n"
         "This indicates the field got a valid mask after output initialization.\n");
+    if (masked and m_avg_type!=OutputAvgType::Instant) {
+      f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
+    }
     switch (m_avg_type) {
       case OutputAvgType::Instant:
         f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
       case OutputAvgType::Max:
-        masked ? f_out.max(f_in,f_in.get_valid_mask())
-               : f_out.max(f_in);
-        break;
+        f_out.max(f_in);        break;
       case OutputAvgType::Min:
-        masked ? f_out.min(f_in,f_in.get_valid_mask())
-               : f_out.min(f_in);
-        break;
+        f_out.min(f_in);        break;
       case OutputAvgType::Average:
-        masked ? f_out.update(f_in,1,1,f_in.get_valid_mask())
-               : f_out.update(f_in,1,1);
-        break;
+        f_out.update(f_in,1,1); break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
@@ -657,10 +655,17 @@ run (const std::string& filename, const util::TimeStamp& ts,
         if (m_track_avg_cnt and avg_count_it!=m_field_to_avg_count.end()) {
           auto avg_count = avg_count_it->second;
 
+          // Divide all entries (where count<=threshold, count was set to 1), regardless of the last mask we copied
+          if (f_out.has_valid_mask()) {
+            f_out.get_valid_mask().deep_copy(1);
+          }
           f_out.scale_inv(avg_count);
 
           const auto& mask = avg_count.get_header().get_extra_data<Field>("threshold_mask");
           f_out.deep_copy(constants::fill_value<Real>,mask);
+          if (f_out.has_valid_mask()) {
+            f_out.get_valid_mask().deep_copy(0,mask);
+          }
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
