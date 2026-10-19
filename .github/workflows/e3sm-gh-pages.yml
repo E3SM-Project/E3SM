@@ -7,10 +7,11 @@ on:
     # But only if docs-related files are touched
     paths:
       - .github/workflows/e3sm-gh-pages.yml
-      - ./mkdocs.yml
-      - ./tools/*/mkdocs.yml
-      - ./tools/docs/**
-      - components/*/mkdocs.yaml
+      - mkdocs.y*ml
+      - docs/**
+      - tools/*/mkdocs.y*ml
+      - tools/*/docs/**
+      - components/*/mkdocs.y*ml
       - components/*/docs/**
       - components/eamxx/cime_config/namelist_defaults_eamxx.xml
   # Runs every time a PR is open against master
@@ -19,10 +20,11 @@ on:
     # But only if docs-related files are touched
     paths:
       - .github/workflows/e3sm-gh-pages.yml
-      - ./mkdocs.yml
-      - ./tools/*/mkdocs.yml
-      - ./tools/docs/**
-      - components/*/mkdocs.yaml
+      - mkdocs.y*ml
+      - docs/**
+      - tools/*/mkdocs.y*ml
+      - tools/*/docs/**
+      - components/*/mkdocs.y*ml
       - components/*/docs/**
       - components/eamxx/cime_config/namelist_defaults_eamxx.xml
   workflow_dispatch:
