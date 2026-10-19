@@ -79,6 +79,7 @@ contains
   subroutine MaintenanceResp(bounds, &
        num_soilc, filter_soilc, num_soilp, filter_soilp, &
        canopystate_vars, soilstate_vars, photosyns_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     !
@@ -103,6 +104,8 @@ contains
     real(r8):: q10   ! temperature dependence
     real(r8):: tc    ! temperature correction, 2m air temp (unitless)
     real(r8):: tcsoi(bounds%begc:bounds%endc,nlevgrnd) ! temperature correction by soil layer (unitless)
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                        &
@@ -174,28 +177,28 @@ contains
 
          tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
          if (frac_veg_nosno(p) == 1) then
-            leaf_mr(p) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
+            leaf_mr(k0p+fp) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
                          lmrsha(p) * laisha(p) * 12.011e-6_r8
 
          else !nosno
-             leaf_mr(p) = 0._r8
+             leaf_mr(k0p+fp) = 0._r8
 
          end if
 
          if (woody(ivt(p)) >= 1.0_r8) then
-            livestem_mr(p) = livestemn(p)*br_mr*tc
-            livecroot_mr(p) = livecrootn(p)*br_mr*tc
+            livestem_mr(k0p+fp) = livestemn(p)*br_mr*tc
+            livecroot_mr(k0p+fp) = livecrootn(p)*br_mr*tc
          else if (iscft(ivt(p)) .and. livestemn(p) .gt. 0._r8) then
-            livestem_mr(p) = livestemn(p)*br_mr*tc
-            grain_mr(p) = grainn(p)*br_mr*tc
+            livestem_mr(k0p+fp) = livestemn(p)*br_mr*tc
+            grain_mr(k0p+fp) = grainn(p)*br_mr*tc
          end if
          if (br_xr(ivt(p)) .gt. 1e-9_r8) then
-            xr(p) = cpool(p) * br_xr(ivt(p)) * tc
+            xr(k0p+fp) = cpool(p) * br_xr(ivt(p)) * tc
             !xr_above(p) = xr(p) * (leafn(p) + livestemn(p)) / &
             !          (leafn(p) + livestemn(p) + frootn(p))
             !xr_below(p) = xr(p) - xr_above(p)
          else
-            xr(p) = 0._r8
+            xr(k0p+fp) = 0._r8
             !xr_above(p) = 0._r8
             !xr_below(p) = 0._r8
          end if
@@ -214,7 +217,7 @@ contains
             ! layer.  This is used with the layer temperature correction
             ! to estimate the total fine root maintenance respiration as a
             ! function of temperature and N content.
-            froot_mr(p) = froot_mr(p) + frootn(p)*br_mr*tcsoi(c,j)*rootfr(p,j)
+            froot_mr(k0p+fp) = froot_mr(k0p+fp) + frootn(p)*br_mr*tcsoi(c,j)*rootfr(p,j)
          end do
       end do
 

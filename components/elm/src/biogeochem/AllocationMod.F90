@@ -477,6 +477,7 @@ contains
 
  subroutine TotalNPDemand(num_soilp,filter_soilp, photosyns_vars, &
             canopystate_vars, crop_vars, cnstate_vars, dt)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !! Assess the total plant N demand and P demand
     use pftvarcon   , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
      use pftvarcon  , only: iscft, percrop, nwcereal, nwcerealirrig, nsugarcane, nsugarcaneirrig
@@ -519,6 +520,8 @@ contains
     real(r8), parameter :: ecf4       = 0.017_r8 ! parameters for logarithmic carbon allocation to the stalk-sucrose
     real(r8), parameter :: ipf4       = 10.0_r8  ! parameters for logarithmic carbon allocation to the stalk-sucrose
     real(r8) :: rmat, af1, af2, af3, af4, sipf3, sipf4
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
 
   !-----------------------------------------------------------------------
 
@@ -659,20 +662,20 @@ contains
          ! since they are not always allocated AND nag compiler will complain if you try to
          ! to have an associate statement with unallocated memory
 
-         psnsun_to_cpool(p)   = psnsun(p) * laisun(p) * 12.011e-6_r8
-         psnshade_to_cpool(p) = psnsha(p) * laisha(p) * 12.011e-6_r8
+         psnsun_to_cpool(k0p+fp)   = psnsun(p) * laisun(p) * 12.011e-6_r8
+         psnshade_to_cpool(k0p+fp) = psnsha(p) * laisha(p) * 12.011e-6_r8
 
          if ( use_c13 ) then
-            c13_veg_cf%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c13_veg_cf%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c13_veg_cf%psnsun_to_cpool(k0p+fp)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
+            c13_veg_cf%psnshade_to_cpool(k0p+fp) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
          endif
 
          if ( use_c14 ) then
-            c14_veg_cf%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c14_veg_cf%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c14_veg_cf%psnsun_to_cpool(k0p+fp)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
+            c14_veg_cf%psnshade_to_cpool(k0p+fp) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
          endif
 
-         gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)
+         gpp(p) = psnsun_to_cpool(k0p+fp) + psnshade_to_cpool(k0p+fp)
 
          ! carbon return of leaf C investment
          benefit_pgpp_pleafc(p) = max(gpp(p)  / max(leafc(p),1e-20_r8), 0.0_r8)
@@ -680,11 +683,11 @@ contains
          ! get the time step total maintenance respiration
          ! These fluxes should already be in gC/m2/s
 
-         mr = leaf_mr(p) + froot_mr(p)
+         mr = leaf_mr(k0p+fp) + froot_mr(k0p+fp)
          if (woody(ivt) >= 1.0_r8) then
-            mr = mr + livestem_mr(p) + livecroot_mr(p)
+            mr = mr + livestem_mr(k0p+fp) + livecroot_mr(k0p+fp)
          else if (iscft(ivt)) then
-            if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
+            if (croplive(p)) mr = mr + livestem_mr(k0p+fp) + grain_mr(k0p+fp)
          end if
 
          ! carbon flux available for allocation
@@ -700,16 +703,16 @@ contains
            curmr_ratio = 1._r8
         end if
 
-         leaf_curmr(p) = leaf_mr(p) * curmr_ratio
-         leaf_xsmr(p) = leaf_mr(p) - leaf_curmr(p)
-         froot_curmr(p) = froot_mr(p) * curmr_ratio
-         froot_xsmr(p) = froot_mr(p) - froot_curmr(p)
-         livestem_curmr(p) = livestem_mr(p) * curmr_ratio
-         livestem_xsmr(p) = livestem_mr(p) - livestem_curmr(p)
-         livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
-         livecroot_xsmr(p) = livecroot_mr(p) - livecroot_curmr(p)
-         grain_curmr(p) = grain_mr(p) * curmr_ratio
-         grain_xsmr(p) = grain_mr(p) - grain_curmr(p)
+         leaf_curmr(k0p+fp) = leaf_mr(k0p+fp) * curmr_ratio
+         leaf_xsmr(k0p+fp) = leaf_mr(k0p+fp) - leaf_curmr(k0p+fp)
+         froot_curmr(k0p+fp) = froot_mr(k0p+fp) * curmr_ratio
+         froot_xsmr(k0p+fp) = froot_mr(k0p+fp) - froot_curmr(k0p+fp)
+         livestem_curmr(k0p+fp) = livestem_mr(k0p+fp) * curmr_ratio
+         livestem_xsmr(k0p+fp) = livestem_mr(k0p+fp) - livestem_curmr(k0p+fp)
+         livecroot_curmr(k0p+fp) = livecroot_mr(k0p+fp) * curmr_ratio
+         livecroot_xsmr(k0p+fp) = livecroot_mr(k0p+fp) - livecroot_curmr(k0p+fp)
+         grain_curmr(k0p+fp) = grain_mr(k0p+fp) * curmr_ratio
+         grain_xsmr(k0p+fp) = grain_mr(k0p+fp) - grain_curmr(k0p+fp)
 
          ! no allocation when available c is negative
          availc(p) = max(availc(p),0.0_r8)
@@ -729,7 +732,7 @@ contains
                xsmrpool_recover(p) = availc(p)
                availc(p) = 0.0_r8
             end if
-            cpool_to_xsmrpool(p) = xsmrpool_recover(p)
+            cpool_to_xsmrpool(k0p+fp) = xsmrpool_recover(p)
          end if
 
         f1 = froot_leaf(ivt)
@@ -866,13 +869,13 @@ contains
                   if (ivt /= nsoybean .or. astem(p) == astemf(ivt) .or. peaklai(p) == max_lai) then
                      if (grain_flag(p) == 0._r8) then
                         t1 = 1 / dt
-                        leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt)) - (leafc(p) / &
+                        leafn_to_retransn(k0p+fp) = t1 * ((leafc(p) / leafcn(ivt)) - (leafc(p) / &
                              fleafcn(ivt)))
-                        livestemn_to_retransn(p) = t1 * ((livestemc(p) / livewdcn(ivt)) - (livestemc(p) / &
+                        livestemn_to_retransn(k0p+fp) = t1 * ((livestemc(p) / livewdcn(ivt)) - (livestemc(p) / &
                              fstemcn(ivt)))
-                        frootn_to_retransn(p) = 0._r8
+                        frootn_to_retransn(k0p+fp) = 0._r8
                         if (ffrootcn(ivt) > 0._r8) then
-                           frootn_to_retransn(p) = t1 * ((frootc(p) / frootcn(ivt)) - (frootc(p) / &
+                           frootn_to_retransn(k0p+fp) = t1 * ((frootc(p) / frootcn(ivt)) - (frootc(p) / &
                                 ffrootcn(ivt)))
                         end if
                         grain_flag(p) = 1._r8
@@ -1030,19 +1033,19 @@ contains
          ! plant ndemand
 
          if (plant_ndemand(p) > avail_retransn(p)) then
-            retransn_to_npool(p) = avail_retransn(p)
+            retransn_to_npool(k0p+fp) = avail_retransn(p)
          else
-            retransn_to_npool(p) = plant_ndemand(p)
+            retransn_to_npool(k0p+fp) = plant_ndemand(p)
          end if
 
-         plant_ndemand(p) = plant_ndemand(p) - retransn_to_npool(p)
+         plant_ndemand(p) = plant_ndemand(p) - retransn_to_npool(k0p+fp)
 
          if (plant_pdemand(p) > avail_retransp(p)) then
-            retransp_to_ppool(p) = avail_retransp(p)
+            retransp_to_ppool(k0p+fp) = avail_retransp(p)
          else
-            retransp_to_ppool(p) = plant_pdemand(p)
+            retransp_to_ppool(k0p+fp) = plant_pdemand(p)
          end if
-         plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(p)
+         plant_pdemand(p) = plant_pdemand(p) - retransp_to_ppool(k0p+fp)
 
       end do 
 
@@ -3388,6 +3391,7 @@ contains
 
 
   subroutine DistributeN_RD(num_soilp,filter_soilp,cnstate_vars,crop_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
      ! Routine called in Allocation Phase 3
      use pftvarcon   , only : npcropmin, grperc, grpnow
      use elm_varctl  , only : carbon_only , carbonnitrogen_only ,carbonphosphorus_only!
@@ -3409,6 +3413,8 @@ contains
      real(r8):: rc, rc_p, r            !Factors for nitrogen pool
      real(r8):: cpl,cpfr,cplw,cpdw,cpg !C:N ratios for leaf, fine root, and wood
      integer :: ivt,fp ,p,c 
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
 
      associate(&
         woody                        => veg_vp%woody                         , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -3577,21 +3583,21 @@ contains
               else
                 r  = max(1._r8,rc/max(npool(p), 1e-15_r8))
               end if
-              plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
+              plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(k0p+fp)) / r
 
               if ( carbon_only  .or.  carbonnitrogen_only ) then
                 r = 1.0_r8
               else
                 r  = max(1._r8,rc_p/max(ppool(p), 1e-15_r8))
               end if
-              plant_palloc(p) = (plant_pdemand(p) + retransp_to_ppool(p)) / r
+              plant_palloc(p) = (plant_pdemand(p) + retransp_to_ppool(k0p+fp)) / r
 
             else
               sminn_to_npool(p) = plant_ndemand(p) * fpg(c)
               sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c)
 
-              plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
-              plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+              plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(k0p+fp)
+              plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(k0p+fp)
             end if
 
             ! calculate the associated carbon allocation, and the excess
@@ -3605,16 +3611,16 @@ contains
                     plant_palloc(p) = plant_nalloc(p) * (p_allometry(p)/n_allometry(p))
                     !in case of strong N limitation, and plant_palloc(p) < retransp_to_ppool(p)
                     if (veg_vp%nstor(ivt) < 1e-6_r8) then
-                        sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p),0.0_r8)
-                        retransp_to_ppool(p) = min(plant_palloc(p), retransp_to_ppool(p))
+                        sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(k0p+fp),0.0_r8)
+                        retransp_to_ppool(k0p+fp) = min(plant_palloc(p), retransp_to_ppool(k0p+fp))
                     end if
                 else
                     plant_calloc(p) = plant_palloc(p) * (c_allometry(p)/p_allometry(p))
                     plant_nalloc(p) = plant_palloc(p) * (n_allometry(p)/p_allometry(p))
                     ! in case of strong P limitation, and plant_nalloc(p) < retransn_to_npool(p)
                     if (veg_vp%nstor(ivt) < 1e-6_r8) then
-                        sminn_to_npool(p) = max(plant_nalloc(p) - retransn_to_npool(p), 0.0_r8)
-                        retransn_to_npool(p) = min(plant_nalloc(p) , retransn_to_npool(p))
+                        sminn_to_npool(p) = max(plant_nalloc(p) - retransn_to_npool(k0p+fp), 0.0_r8)
+                        retransn_to_npool(k0p+fp) = min(plant_nalloc(p) , retransn_to_npool(k0p+fp))
                     end if
                 endif
             endif
@@ -3627,7 +3633,7 @@ contains
                 plant_calloc(p) = plant_nalloc(p) * (c_allometry(p)/n_allometry(p))
                 plant_palloc(p) = plant_calloc(p) * (p_allometry(p)/c_allometry(p))
                 if (veg_vp%nstor(ivt) < 1e-6_r8) then
-                    sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(p), 0.0_r8)
+                    sminp_to_ppool(p) = max(plant_palloc(p) - retransp_to_ppool(k0p+fp), 0.0_r8)
                 end if
             endif
 
@@ -3640,29 +3646,29 @@ contains
                 if (veg_vp%br_xr(veg_pp%itype(p)) > 1e-9_r8) then
                     !Excess carbon goes to temporary NSC pool instead of
                     !instantaneous downregulation
-                    psnsun_to_cpool(p) = psnsun_to_cpool(p)
-                    psnshade_to_cpool(p) = psnshade_to_cpool(p)
+                    psnsun_to_cpool(k0p+fp) = psnsun_to_cpool(k0p+fp)
+                    psnshade_to_cpool(k0p+fp) = psnshade_to_cpool(k0p+fp)
                     if ( use_c13 ) then
-                        c13_veg_cf%psnsun_to_cpool(p) = c13_veg_cf%psnsun_to_cpool(p)
-                        c13_veg_cf%psnshade_to_cpool(p) = c13_veg_cf%psnshade_to_cpool(p)
+                        c13_veg_cf%psnsun_to_cpool(k0p+fp) = c13_veg_cf%psnsun_to_cpool(k0p+fp)
+                        c13_veg_cf%psnshade_to_cpool(k0p+fp) = c13_veg_cf%psnshade_to_cpool(k0p+fp)
                     endif
 
                     if ( use_c14 ) then
-                        c14_veg_cf%psnsun_to_cpool(p) = c14_veg_cf%psnsun_to_cpool(p)
-                        c14_veg_cf%psnshade_to_cpool(p) = c14_veg_cf%psnshade_to_cpool(p)
+                        c14_veg_cf%psnsun_to_cpool(k0p+fp) = c14_veg_cf%psnsun_to_cpool(k0p+fp)
+                        c14_veg_cf%psnshade_to_cpool(k0p+fp) = c14_veg_cf%psnshade_to_cpool(k0p+fp)
                     endif
 
                 else
-                    psnsun_to_cpool(p)   = psnsun_to_cpool(p)  *(1._r8 - downreg(p))
-                    psnshade_to_cpool(p) = psnshade_to_cpool(p)*(1._r8 - downreg(p))
+                    psnsun_to_cpool(k0p+fp)   = psnsun_to_cpool(k0p+fp)  *(1._r8 - downreg(p))
+                    psnshade_to_cpool(k0p+fp) = psnshade_to_cpool(k0p+fp)*(1._r8 - downreg(p))
                     if ( use_c13 ) then
-                        c13_veg_cf%psnsun_to_cpool(p)   = c13_veg_cf%psnsun_to_cpool(p)  *(1._r8 - downreg(p))
-                        c13_veg_cf%psnshade_to_cpool(p) = c13_veg_cf%psnshade_to_cpool(p)*(1._r8 - downreg(p))
+                        c13_veg_cf%psnsun_to_cpool(k0p+fp)   = c13_veg_cf%psnsun_to_cpool(k0p+fp)  *(1._r8 - downreg(p))
+                        c13_veg_cf%psnshade_to_cpool(k0p+fp) = c13_veg_cf%psnshade_to_cpool(k0p+fp)*(1._r8 - downreg(p))
                     endif
 
                     if ( use_c14 ) then
-                        c14_veg_cf%psnsun_to_cpool(p)   = c14_veg_cf%psnsun_to_cpool(p)  *(1._r8 - downreg(p))
-                        c14_veg_cf%psnshade_to_cpool(p) = c14_veg_cf%psnshade_to_cpool(p)*(1._r8 - downreg(p))
+                        c14_veg_cf%psnsun_to_cpool(k0p+fp)   = c14_veg_cf%psnsun_to_cpool(k0p+fp)  *(1._r8 - downreg(p))
+                        c14_veg_cf%psnshade_to_cpool(k0p+fp) = c14_veg_cf%psnshade_to_cpool(k0p+fp)*(1._r8 - downreg(p))
                     endif
                 endif
             end if
@@ -3681,28 +3687,28 @@ contains
        !fcur = fcur2(ivt)
 
        cpool_to_leafc(p)          = nlc * fcur
-       cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)
-       cpool_to_frootc(p)         = nlc * f1 * fcur
-       cpool_to_frootc_storage(p) = nlc * f1 * (1._r8 - fcur)
+       cpool_to_leafc_storage(k0p+fp)  = nlc * (1._r8 - fcur)
+       cpool_to_frootc(k0p+fp)         = nlc * f1 * fcur
+       cpool_to_frootc_storage(k0p+fp) = nlc * f1 * (1._r8 - fcur)
        if (woody(ivt) >= 1._r8) then
           cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
-          cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
-          cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
-          cpool_to_deadstemc_storage(p)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
-          cpool_to_livecrootc(p)         = nlc * f2 * f3 * f4 * fcur
-          cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
-          cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
-          cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
+          cpool_to_livestemc_storage(k0p+fp)  = nlc * f3 * f4 * (1._r8 - fcur)
+          cpool_to_deadstemc(k0p+fp)          = nlc * f3 * (1._r8 - f4) * fcur
+          cpool_to_deadstemc_storage(k0p+fp)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
+          cpool_to_livecrootc(k0p+fp)         = nlc * f2 * f3 * f4 * fcur
+          cpool_to_livecrootc_storage(k0p+fp) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
+          cpool_to_deadcrootc(k0p+fp)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
+          cpool_to_deadcrootc_storage(k0p+fp) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
           cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
-          cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
-          cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
-          cpool_to_deadstemc_storage(p)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
-          cpool_to_livecrootc(p)         = nlc * f2 * f3 * f4 * fcur
-          cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
-          cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
-          cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
+          cpool_to_livestemc_storage(k0p+fp)  = nlc * f3 * f4 * (1._r8 - fcur)
+          cpool_to_deadstemc(k0p+fp)          = nlc * f3 * (1._r8 - f4) * fcur
+          cpool_to_deadstemc_storage(k0p+fp)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
+          cpool_to_livecrootc(k0p+fp)         = nlc * f2 * f3 * f4 * fcur
+          cpool_to_livecrootc_storage(k0p+fp) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
+          cpool_to_deadcrootc(k0p+fp)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
+          cpool_to_deadcrootc_storage(k0p+fp) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
           cpool_to_grainc(p)             = nlc * f5 * fcur
           cpool_to_grainc_storage(p)     = nlc * f5 * (1._r8 -fcur)
        end if
@@ -3714,29 +3720,29 @@ contains
        !fcur = fcur2(ivt)
 
        npool_to_leafn(p)          = (nlc / cnl) * fcur
-       npool_to_leafn_storage(p)  = (nlc / cnl) * (1._r8 - fcur)
-       npool_to_frootn(p)         = (nlc * f1 / cnfr) * fcur
-       npool_to_frootn_storage(p) = (nlc * f1 / cnfr) * (1._r8 - fcur)
+       npool_to_leafn_storage(k0p+fp)  = (nlc / cnl) * (1._r8 - fcur)
+       npool_to_frootn(k0p+fp)         = (nlc * f1 / cnfr) * fcur
+       npool_to_frootn_storage(k0p+fp) = (nlc * f1 / cnfr) * (1._r8 - fcur)
        if (woody(ivt) >= 1._r8) then
           npool_to_livestemn(p)          = (nlc * f3 * f4 / cnlw) * fcur
-          npool_to_livestemn_storage(p)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
-          npool_to_deadstemn(p)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
-          npool_to_deadstemn_storage(p)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
-          npool_to_livecrootn(p)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
-          npool_to_livecrootn_storage(p) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
-          npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
-          npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+          npool_to_livestemn_storage(k0p+fp)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
+          npool_to_deadstemn(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
+          npool_to_deadstemn_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+          npool_to_livecrootn(k0p+fp)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
+          npool_to_livecrootn_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
+          npool_to_deadcrootn(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
+          npool_to_deadcrootn_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
           cng = graincn(ivt)
           npool_to_livestemn(p)          = (nlc * f3 * f4 / cnlw) * fcur
-          npool_to_livestemn_storage(p)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
-          npool_to_deadstemn(p)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
-          npool_to_deadstemn_storage(p)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
-          npool_to_livecrootn(p)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
-          npool_to_livecrootn_storage(p) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
-          npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
-          npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+          npool_to_livestemn_storage(k0p+fp)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
+          npool_to_deadstemn(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
+          npool_to_deadstemn_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+          npool_to_livecrootn(k0p+fp)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
+          npool_to_livecrootn_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
+          npool_to_deadcrootn(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
+          npool_to_deadcrootn_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
           npool_to_grainn(p)             = (nlc * f5 / cng) * fcur
           npool_to_grainn_storage(p)     = (nlc * f5 / cng) * (1._r8 -fcur)
        end if
@@ -3747,29 +3753,29 @@ contains
        ! recover allocation fraction,  which is possibly changed due to previous time step allocation adjustment
        !fcur = fcur2(ivt)
        ppool_to_leafp(p)          = (nlc / cpl) * fcur
-       ppool_to_leafp_storage(p)  = (nlc / cpl) * (1._r8 - fcur)
-       ppool_to_frootp(p)         = (nlc * f1 / cpfr) * fcur
-       ppool_to_frootp_storage(p) = (nlc * f1 / cpfr) * (1._r8 - fcur)
+       ppool_to_leafp_storage(k0p+fp)  = (nlc / cpl) * (1._r8 - fcur)
+       ppool_to_frootp(k0p+fp)         = (nlc * f1 / cpfr) * fcur
+       ppool_to_frootp_storage(k0p+fp) = (nlc * f1 / cpfr) * (1._r8 - fcur)
        if (woody(ivt) >= 1._r8) then
           ppool_to_livestemp(p)          = (nlc * f3 * f4 / cplw) * fcur
-          ppool_to_livestemp_storage(p)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
-          ppool_to_deadstemp(p)          = (nlc * f3 * (1._r8 - f4) / cpdw) *fcur
-          ppool_to_deadstemp_storage(p)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
-          ppool_to_livecrootp(p)         = (nlc * f2 * f3 * f4 / cplw) * fcur
-          ppool_to_livecrootp_storage(p) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
-          ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
-          ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
+          ppool_to_livestemp_storage(k0p+fp)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
+          ppool_to_deadstemp(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cpdw) *fcur
+          ppool_to_deadstemp_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
+          ppool_to_livecrootp(k0p+fp)         = (nlc * f2 * f3 * f4 / cplw) * fcur
+          ppool_to_livecrootp_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
+          ppool_to_deadcrootp(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
+          ppool_to_deadcrootp_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
           cpg = graincp(ivt)
           ppool_to_livestemp(p)          = (nlc * f3 * f4 / cplw) * fcur
-          ppool_to_livestemp_storage(p)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
-          ppool_to_deadstemp(p)          = (nlc * f3 * (1._r8 - f4) / cpdw) * fcur
-          ppool_to_deadstemp_storage(p)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
-          ppool_to_livecrootp(p)         = (nlc * f2 * f3 * f4 / cplw) * fcur
-          ppool_to_livecrootp_storage(p) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
-          ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
-          ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
+          ppool_to_livestemp_storage(k0p+fp)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
+          ppool_to_deadstemp(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cpdw) * fcur
+          ppool_to_deadstemp_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
+          ppool_to_livecrootp(k0p+fp)         = (nlc * f2 * f3 * f4 / cplw) * fcur
+          ppool_to_livecrootp_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
+          ppool_to_deadcrootp(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
+          ppool_to_deadcrootp_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
           ppool_to_grainp(p)             = (nlc * f5 / cpg) * fcur
           ppool_to_grainp_storage(p)     = (nlc * f5 / cpg) * (1._r8 -fcur)
        end if
@@ -3783,18 +3789,18 @@ contains
        ! but that the storage of C for growth resp during display of transferred
        ! growth is assigned here.
 
-       gresp_storage = cpool_to_leafc_storage(p) + cpool_to_frootc_storage(p)
+       gresp_storage = cpool_to_leafc_storage(k0p+fp) + cpool_to_frootc_storage(k0p+fp)
        if (woody(ivt) >= 1._r8) then
-          gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
-          gresp_storage = gresp_storage + cpool_to_deadstemc_storage(p)
-          gresp_storage = gresp_storage + cpool_to_livecrootc_storage(p)
-          gresp_storage = gresp_storage + cpool_to_deadcrootc_storage(p)
+          gresp_storage = gresp_storage + cpool_to_livestemc_storage(k0p+fp)
+          gresp_storage = gresp_storage + cpool_to_deadstemc_storage(k0p+fp)
+          gresp_storage = gresp_storage + cpool_to_livecrootc_storage(k0p+fp)
+          gresp_storage = gresp_storage + cpool_to_deadcrootc_storage(k0p+fp)
        end if
        if (iscft(ivt)) then ! skip 2 generic crops
-          gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
+          gresp_storage = gresp_storage + cpool_to_livestemc_storage(k0p+fp)
           gresp_storage = gresp_storage + cpool_to_grainc_storage(p)
        end if
-       cpool_to_gresp_storage(p) = gresp_storage * g1 * (1._r8 - g2)
+       cpool_to_gresp_storage(k0p+fp) = gresp_storage * g1 * (1._r8 - g2)
 
       end do 
 
@@ -3803,6 +3809,7 @@ contains
 
 
   subroutine DistributeN_ECAMIC(num_soilp,filter_soilp,canopystate_vars,cnstate_vars,crop_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
    
      use pftvarcon   , only : npcropmin, grperc, grpnow
      use elm_varctl  , only : carbon_only, carbonnitrogen_only, carbonphosphorus_only
@@ -3836,6 +3843,8 @@ contains
      integer :: ivt,fp,p,c,j
      real(r8), parameter :: cn_stoich_var=0.2    ! variability of CN ratio
      real(r8), parameter :: cp_stoich_var=0.4    ! variability of CP ratio
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
 
      associate(&
         woody                        => veg_vp%woody                         , & ! Input:  [real(r8) (:)   ]  binary flag for woody lifeform (1=woody, 0=not woody)
@@ -4081,22 +4090,22 @@ contains
          avail_retransn(p) =max( min(avail_retransn(p),retransn(p)/dtime_mod),0.0_r8)
          avail_retransp(p) =max( min(avail_retransp(p),retransp(p)/dtime_mod),0.0_r8)
 
-         retransn_to_npool(p) = avail_retransn(p)
-         retransp_to_ppool(p) = avail_retransp(p)
+         retransn_to_npool(k0p+fp) = avail_retransn(p)
+         retransp_to_ppool(k0p+fp) = avail_retransp(p)
 
          if (NFIX_PTASE_plant) then
-            plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p) + nfix_to_plantn(p)
-            plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p) + biochem_pmin_to_plant(p)
+            plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(k0p+fp) + nfix_to_plantn(p)
+            plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(k0p+fp) + biochem_pmin_to_plant(p)
          else
-            plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
-            plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
+            plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(k0p+fp)
+            plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(k0p+fp)
          endif
 
-         mr = leaf_mr(p) + froot_mr(p)
+         mr = leaf_mr(k0p+fp) + froot_mr(k0p+fp)
          if (woody(ivt) >= 1.0_r8) then
-            mr = mr + livestem_mr(p) + livecroot_mr(p)
+            mr = mr + livestem_mr(k0p+fp) + livecroot_mr(k0p+fp)
          else if (iscft(ivt)) then
-            if (croplive(p)) mr = mr + livestem_mr(p) + grain_mr(p)
+            if (croplive(p)) mr = mr + livestem_mr(k0p+fp) + grain_mr(k0p+fp)
          end if
 
          ! take mr from xsmrpool pool first
@@ -4138,21 +4147,21 @@ contains
          end if
 
          ! carbon flux available for allocation
-         leaf_curmr(p) = leaf_mr(p) * curmr_ratio
-         leaf_xsmr(p) = leaf_mr(p) * xsmr_ratio
-         leaf_mr(p) =  leaf_curmr(p) + leaf_xsmr(p)
-         froot_curmr(p) = froot_mr(p) * curmr_ratio
-         froot_xsmr(p) = froot_mr(p) * xsmr_ratio
-         froot_mr(p) =  froot_curmr(p) + froot_xsmr(p)
-         livestem_curmr(p) = livestem_mr(p) * curmr_ratio
-         livestem_xsmr(p) = livestem_mr(p) * xsmr_ratio
-         livestem_mr(p) =  livestem_curmr(p) + livestem_xsmr(p)
-         livecroot_curmr(p) = livecroot_mr(p) * curmr_ratio
-         livecroot_xsmr(p) = livecroot_mr(p) * xsmr_ratio
-         livecroot_mr(p) =  livecroot_curmr(p) + livecroot_xsmr(p)
-         grain_curmr(p) = grain_mr(p) * curmr_ratio
-         grain_xsmr(p) = grain_mr(p) * xsmr_ratio
-         grain_mr(p) =  grain_curmr(p) + grain_xsmr(p)
+         leaf_curmr(k0p+fp) = leaf_mr(k0p+fp) * curmr_ratio
+         leaf_xsmr(k0p+fp) = leaf_mr(k0p+fp) * xsmr_ratio
+         leaf_mr(k0p+fp) =  leaf_curmr(k0p+fp) + leaf_xsmr(k0p+fp)
+         froot_curmr(k0p+fp) = froot_mr(k0p+fp) * curmr_ratio
+         froot_xsmr(k0p+fp) = froot_mr(k0p+fp) * xsmr_ratio
+         froot_mr(k0p+fp) =  froot_curmr(k0p+fp) + froot_xsmr(k0p+fp)
+         livestem_curmr(k0p+fp) = livestem_mr(k0p+fp) * curmr_ratio
+         livestem_xsmr(k0p+fp) = livestem_mr(k0p+fp) * xsmr_ratio
+         livestem_mr(k0p+fp) =  livestem_curmr(k0p+fp) + livestem_xsmr(k0p+fp)
+         livecroot_curmr(k0p+fp) = livecroot_mr(k0p+fp) * curmr_ratio
+         livecroot_xsmr(k0p+fp) = livecroot_mr(k0p+fp) * xsmr_ratio
+         livecroot_mr(k0p+fp) =  livecroot_curmr(k0p+fp) + livecroot_xsmr(k0p+fp)
+         grain_curmr(k0p+fp) = grain_mr(k0p+fp) * curmr_ratio
+         grain_xsmr(k0p+fp) = grain_mr(k0p+fp) * xsmr_ratio
+         grain_mr(k0p+fp) =  grain_curmr(k0p+fp) + grain_xsmr(k0p+fp)
 
          ! no allocation when available c is negative
          availc(p) = max(availc(p),0.0_r8)
@@ -4172,16 +4181,16 @@ contains
                xsmrpool_recover(p) = availc(p)
                availc(p) = 0.0_r8
             end if
-            cpool_to_xsmrpool(p) = xsmrpool_recover(p)
+            cpool_to_xsmrpool(k0p+fp) = xsmrpool_recover(p)
 
             ! storage pool turnover
-            xsmrpool_turnover(p) = 0.0_r8
+            xsmrpool_turnover(k0p+fp) = 0.0_r8
          else
 
-            cpool_to_xsmrpool(p) = 0.0_r8
+            cpool_to_xsmrpool(k0p+fp) = 0.0_r8
 
             ! storage pool turnover
-            xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dtime_mod , 0.0_r8) / (nsc_rtime(ivt)*365.0_r8*secspday)
+            xsmrpool_turnover(k0p+fp) = max(xsmrpool(p) - mr*xsmr_ratio*dtime_mod , 0.0_r8) / (nsc_rtime(ivt)*365.0_r8*secspday)
          end if
 
          plant_calloc(p) = availc(p)
@@ -4263,31 +4272,31 @@ contains
          ! calculate excess carbon
          ! put excess carbon into respiration storage pool (if nlc > nlc_adjust_high)
          nlc = max(nlc  - nlc_adjust_high,0.0_r8)
-         cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * fcur * (1 + g1)
-         cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * (1._r8 - fcur) * (1 + g1)
-         cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f1 * fcur * (1 + g1)
-         cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f1 * (1._r8 - fcur) * (1 + g1)
+         cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * fcur * (1 + g1)
+         cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * (1._r8 - fcur) * (1 + g1)
+         cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f1 * fcur * (1 + g1)
+         cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f1 * (1._r8 - fcur) * (1 + g1)
          if (woody(ivt) >= 1.0_r8) then
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * (1._r8 - f4) * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * f4 * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * f4 * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * (1._r8 - f4) * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * f4 * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * f4 * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * (1._r8 - f4) * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * f4 * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * f4 * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * (1._r8 - f4) * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
          end if
          if (iscft(ivt)) then ! skip 2 generic crops
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * f4 * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * (1._r8 - f4) * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * f4 * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * f4 * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * (1._r8 - f4) * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f5 * fcur * (1 + g1)
-            cpool_to_xsmrpool(p)  = cpool_to_xsmrpool(p) + nlc * f5 * (1._r8 -fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * f4 * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * f4 * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * (1._r8 - f4) * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * f4 * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * f4 * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * (1._r8 - f4) * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur) * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f5 * fcur * (1 + g1)
+            cpool_to_xsmrpool(k0p+fp)  = cpool_to_xsmrpool(k0p+fp) + nlc * f5 * (1._r8 -fcur) * (1 + g1)
          end if
 
          ! updated allocation if necessary
@@ -4295,28 +4304,28 @@ contains
 
          ! THIS CODE BLOCK IS COMMON WITH 'RD'
          cpool_to_leafc(p)          = nlc * fcur
-         cpool_to_leafc_storage(p)  = nlc * (1._r8 - fcur)
-         cpool_to_frootc(p)         = nlc * f1 * fcur
-         cpool_to_frootc_storage(p) = nlc * f1 * (1._r8 - fcur)
+         cpool_to_leafc_storage(k0p+fp)  = nlc * (1._r8 - fcur)
+         cpool_to_frootc(k0p+fp)         = nlc * f1 * fcur
+         cpool_to_frootc_storage(k0p+fp) = nlc * f1 * (1._r8 - fcur)
          if (woody(ivt) >= 1.0_r8) then
             cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
-            cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadstemc_storage(p)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
-            cpool_to_livecrootc(p)         = nlc * f2 * f3 * f4 * fcur
-            cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
+            cpool_to_livestemc_storage(k0p+fp)  = nlc * f3 * f4 * (1._r8 - fcur)
+            cpool_to_deadstemc(k0p+fp)          = nlc * f3 * (1._r8 - f4) * fcur
+            cpool_to_deadstemc_storage(k0p+fp)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
+            cpool_to_livecrootc(k0p+fp)         = nlc * f2 * f3 * f4 * fcur
+            cpool_to_livecrootc_storage(k0p+fp) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
+            cpool_to_deadcrootc(k0p+fp)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
+            cpool_to_deadcrootc_storage(k0p+fp) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
          end if
          if (iscft(ivt)) then ! skip 2 generic crops
             cpool_to_livestemc(p)          = nlc * f3 * f4 * fcur
-            cpool_to_livestemc_storage(p)  = nlc * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadstemc(p)          = nlc * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadstemc_storage(p)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
-            cpool_to_livecrootc(p)         = nlc * f2 * f3 * f4 * fcur
-            cpool_to_livecrootc_storage(p) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
-            cpool_to_deadcrootc(p)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
-            cpool_to_deadcrootc_storage(p) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
+            cpool_to_livestemc_storage(k0p+fp)  = nlc * f3 * f4 * (1._r8 - fcur)
+            cpool_to_deadstemc(k0p+fp)          = nlc * f3 * (1._r8 - f4) * fcur
+            cpool_to_deadstemc_storage(k0p+fp)  = nlc * f3 * (1._r8 - f4) * (1._r8 - fcur)
+            cpool_to_livecrootc(k0p+fp)         = nlc * f2 * f3 * f4 * fcur
+            cpool_to_livecrootc_storage(k0p+fp) = nlc * f2 * f3 * f4 * (1._r8 - fcur)
+            cpool_to_deadcrootc(k0p+fp)         = nlc * f2 * f3 * (1._r8 - f4) * fcur
+            cpool_to_deadcrootc_storage(k0p+fp) = nlc * f2 * f3 * (1._r8 - f4) * (1._r8 - fcur)
             cpool_to_grainc(p)             = nlc * f5 * fcur
             cpool_to_grainc_storage(p)     = nlc * f5 * (1._r8 -fcur)
          end if
@@ -4325,29 +4334,29 @@ contains
 
         ! THIS CODE BLOCK IS COMMON WITH RD
         npool_to_leafn(p)          = (nlc / cnl) * fcur
-        npool_to_leafn_storage(p)  = (nlc / cnl) * (1._r8 - fcur)
-        npool_to_frootn(p)         = (nlc * f1 / cnfr) * fcur
-        npool_to_frootn_storage(p) = (nlc * f1 / cnfr) * (1._r8 - fcur)
+        npool_to_leafn_storage(k0p+fp)  = (nlc / cnl) * (1._r8 - fcur)
+        npool_to_frootn(k0p+fp)         = (nlc * f1 / cnfr) * fcur
+        npool_to_frootn_storage(k0p+fp) = (nlc * f1 / cnfr) * (1._r8 - fcur)
         if (woody(ivt) >= 1.0_r8) then
            npool_to_livestemn(p)          = (nlc * f3 * f4 / cnlw) * fcur
-           npool_to_livestemn_storage(p)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
-           npool_to_deadstemn(p)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
-           npool_to_deadstemn_storage(p)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
-           npool_to_livecrootn(p)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
-           npool_to_livecrootn_storage(p) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
-           npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
-           npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+           npool_to_livestemn_storage(k0p+fp)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
+           npool_to_deadstemn(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
+           npool_to_deadstemn_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+           npool_to_livecrootn(k0p+fp)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
+           npool_to_livecrootn_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
+           npool_to_deadcrootn(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
+           npool_to_deadcrootn_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
         end if
         if (iscft(ivt)) then ! skip 2 generic crops
            cng = graincn(ivt)
            npool_to_livestemn(p)          = (nlc * f3 * f4 / cnlw) * fcur
-           npool_to_livestemn_storage(p)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
-           npool_to_deadstemn(p)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
-           npool_to_deadstemn_storage(p)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
-           npool_to_livecrootn(p)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
-           npool_to_livecrootn_storage(p) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
-           npool_to_deadcrootn(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
-           npool_to_deadcrootn_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+           npool_to_livestemn_storage(k0p+fp)  = (nlc * f3 * f4 / cnlw) * (1._r8 - fcur)
+           npool_to_deadstemn(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cndw) * fcur
+           npool_to_deadstemn_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
+           npool_to_livecrootn(k0p+fp)         = (nlc * f2 * f3 * f4 / cnlw) * fcur
+           npool_to_livecrootn_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cnlw) * (1._r8 - fcur)
+           npool_to_deadcrootn(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * fcur
+           npool_to_deadcrootn_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cndw) * (1._r8 - fcur)
            npool_to_grainn(p)             = (nlc * f5 / cng) * fcur
            npool_to_grainn_storage(p)     = (nlc * f5 / cng) * (1._r8 -fcur)
         end if
@@ -4355,29 +4364,29 @@ contains
         if (.not. carbon_only) nlc = plant_palloc(p) / p_allometry(p) ! .ne. RD
 
         ppool_to_leafp(p)          = (nlc / cpl) * fcur
-        ppool_to_leafp_storage(p)  = (nlc / cpl) * (1._r8 - fcur)
-        ppool_to_frootp(p)         = (nlc * f1 / cpfr) * fcur
-        ppool_to_frootp_storage(p) = (nlc * f1 / cpfr) * (1._r8 - fcur)
+        ppool_to_leafp_storage(k0p+fp)  = (nlc / cpl) * (1._r8 - fcur)
+        ppool_to_frootp(k0p+fp)         = (nlc * f1 / cpfr) * fcur
+        ppool_to_frootp_storage(k0p+fp) = (nlc * f1 / cpfr) * (1._r8 - fcur)
         if (woody(ivt) >= 1.0_r8) then
            ppool_to_livestemp(p)          = (nlc * f3 * f4 / cplw) * fcur
-           ppool_to_livestemp_storage(p)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
-           ppool_to_deadstemp(p)          = (nlc * f3 * (1._r8 - f4) / cpdw) *fcur
-           ppool_to_deadstemp_storage(p)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
-           ppool_to_livecrootp(p)         = (nlc * f2 * f3 * f4 / cplw) * fcur
-           ppool_to_livecrootp_storage(p) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
-           ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
-           ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
+           ppool_to_livestemp_storage(k0p+fp)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
+           ppool_to_deadstemp(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cpdw) *fcur
+           ppool_to_deadstemp_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
+           ppool_to_livecrootp(k0p+fp)         = (nlc * f2 * f3 * f4 / cplw) * fcur
+           ppool_to_livecrootp_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
+           ppool_to_deadcrootp(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
+           ppool_to_deadcrootp_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
         end if
         if (iscft(ivt)) then ! skip 2 generic crops
            cpg = graincp(ivt)
            ppool_to_livestemp(p)          = (nlc * f3 * f4 / cplw) * fcur
-           ppool_to_livestemp_storage(p)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
-           ppool_to_deadstemp(p)          = (nlc * f3 * (1._r8 - f4) / cpdw) * fcur
-           ppool_to_deadstemp_storage(p)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
-           ppool_to_livecrootp(p)         = (nlc * f2 * f3 * f4 / cplw) * fcur
-           ppool_to_livecrootp_storage(p) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
-           ppool_to_deadcrootp(p)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
-           ppool_to_deadcrootp_storage(p) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
+           ppool_to_livestemp_storage(k0p+fp)  = (nlc * f3 * f4 / cplw) * (1._r8 -fcur)
+           ppool_to_deadstemp(k0p+fp)          = (nlc * f3 * (1._r8 - f4) / cpdw) * fcur
+           ppool_to_deadstemp_storage(k0p+fp)  = (nlc * f3 * (1._r8 - f4) / cpdw) *(1._r8 - fcur)
+           ppool_to_livecrootp(k0p+fp)         = (nlc * f2 * f3 * f4 / cplw) * fcur
+           ppool_to_livecrootp_storage(k0p+fp) = (nlc * f2 * f3 * f4 / cplw) * (1._r8 -fcur)
+           ppool_to_deadcrootp(k0p+fp)         = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* fcur
+           ppool_to_deadcrootp_storage(k0p+fp) = (nlc * f2 * f3 * (1._r8 - f4) / cpdw)* (1._r8 - fcur)
            ppool_to_grainp(p)             = (nlc * f5 / cpg) * fcur
            ppool_to_grainp_storage(p)     = (nlc * f5 / cpg) * (1._r8 -fcur)
         end if
@@ -4391,18 +4400,18 @@ contains
         ! but that the storage of C for growth resp during display of transferred
         ! growth is assigned here.
 
-        gresp_storage = cpool_to_leafc_storage(p) + cpool_to_frootc_storage(p)
+        gresp_storage = cpool_to_leafc_storage(k0p+fp) + cpool_to_frootc_storage(k0p+fp)
         if (woody(ivt) >= 1.0_r8) then
-           gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
-           gresp_storage = gresp_storage + cpool_to_deadstemc_storage(p)
-           gresp_storage = gresp_storage + cpool_to_livecrootc_storage(p)
-           gresp_storage = gresp_storage + cpool_to_deadcrootc_storage(p)
+           gresp_storage = gresp_storage + cpool_to_livestemc_storage(k0p+fp)
+           gresp_storage = gresp_storage + cpool_to_deadstemc_storage(k0p+fp)
+           gresp_storage = gresp_storage + cpool_to_livecrootc_storage(k0p+fp)
+           gresp_storage = gresp_storage + cpool_to_deadcrootc_storage(k0p+fp)
         end if
         if (iscft(ivt)) then ! skip 2 generic crops
-           gresp_storage = gresp_storage + cpool_to_livestemc_storage(p)
+           gresp_storage = gresp_storage + cpool_to_livestemc_storage(k0p+fp)
            gresp_storage = gresp_storage + cpool_to_grainc_storage(p)
         end if
-        cpool_to_gresp_storage(p) = gresp_storage * g1 * (1._r8 - g2)
+        cpool_to_gresp_storage(k0p+fp) = gresp_storage * g1 * (1._r8 - g2)
         ! END COMMON
 
         ! ECA root NP uptake is based on kinetics, plant CNP stoichiometry can vary even
@@ -4418,64 +4427,64 @@ contains
         if ( carbon_only  .or.  carbonphosphorus_only ) then
 
             supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_leafc(p) / cnl - npool_to_leafn(p)
-            supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_leafc_storage(p) / cnl -  npool_to_leafn_storage(p)
-            supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_frootc(p) / cnfr - npool_to_frootn(p)
-            supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_frootc_storage(p) / cnfr- npool_to_frootn_storage(p)
+            supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_leafc_storage(k0p+fp) / cnl -  npool_to_leafn_storage(k0p+fp)
+            supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_frootc(k0p+fp) / cnfr - npool_to_frootn(k0p+fp)
+            supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_frootc_storage(k0p+fp) / cnfr- npool_to_frootn_storage(k0p+fp)
 
             npool_to_leafn(p) = cpool_to_leafc(p) / cnl
-            npool_to_leafn_storage(p) =  cpool_to_leafc_storage(p) / cnl
-            npool_to_frootn(p) = cpool_to_frootc(p) / cnfr
-            npool_to_frootn_storage(p) = cpool_to_frootc_storage(p) / cnfr
+            npool_to_leafn_storage(k0p+fp) =  cpool_to_leafc_storage(k0p+fp) / cnl
+            npool_to_frootn(k0p+fp) = cpool_to_frootc(k0p+fp) / cnfr
+            npool_to_frootn_storage(k0p+fp) = cpool_to_frootc_storage(k0p+fp) / cnfr
 
             if (woody(ivt) >= 1.0_r8) then
                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(p) / cnlw &
-                     - npool_to_livestemn_storage(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc(p) / cndw - npool_to_deadstemn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc_storage(p) / cndw &
-                     - npool_to_deadstemn_storage(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc(p) / cnlw - npool_to_livecrootn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc_storage(p) / cnlw &
-                     - npool_to_livecrootn_storage(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc(p) / cndw - npool_to_deadcrootn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc_storage(p) / cndw &
-                     - npool_to_deadcrootn_storage(p)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(k0p+fp) / cnlw &
+                     - npool_to_livestemn_storage(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc(k0p+fp) / cndw - npool_to_deadstemn(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc_storage(k0p+fp) / cndw &
+                     - npool_to_deadstemn_storage(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc(k0p+fp) / cnlw - npool_to_livecrootn(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc_storage(k0p+fp) / cnlw &
+                     - npool_to_livecrootn_storage(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc(k0p+fp) / cndw - npool_to_deadcrootn(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc_storage(k0p+fp) / cndw &
+                     - npool_to_deadcrootn_storage(k0p+fp)
 
                 npool_to_livestemn(p)  =  cpool_to_livestemc(p) / cnlw
-                npool_to_livestemn_storage(p) =  cpool_to_livestemc_storage(p) / cnlw
-                npool_to_deadstemn(p) = cpool_to_deadstemc(p) / cndw
-                npool_to_deadstemn_storage(p) = cpool_to_deadstemc_storage(p) / cndw
-                npool_to_livecrootn(p) =  cpool_to_livecrootc(p) / cnlw
-                npool_to_livecrootn_storage(p) = cpool_to_livecrootc_storage(p) / cnlw
-                npool_to_deadcrootn(p) = cpool_to_deadcrootc(p) / cndw
-                npool_to_deadcrootn_storage(p) = cpool_to_deadcrootc_storage(p) / cndw
+                npool_to_livestemn_storage(k0p+fp) =  cpool_to_livestemc_storage(k0p+fp) / cnlw
+                npool_to_deadstemn(k0p+fp) = cpool_to_deadstemc(k0p+fp) / cndw
+                npool_to_deadstemn_storage(k0p+fp) = cpool_to_deadstemc_storage(k0p+fp) / cndw
+                npool_to_livecrootn(k0p+fp) =  cpool_to_livecrootc(k0p+fp) / cnlw
+                npool_to_livecrootn_storage(k0p+fp) = cpool_to_livecrootc_storage(k0p+fp) / cnlw
+                npool_to_deadcrootn(k0p+fp) = cpool_to_deadcrootc(k0p+fp) / cndw
+                npool_to_deadcrootn_storage(k0p+fp) = cpool_to_deadcrootc_storage(k0p+fp) / cndw
             end if
             if (iscft(ivt)) then ! skip 2 generic crops
                 cng = graincn(ivt)
                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc(p) / cnlw - npool_to_livestemn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(p) / cnlw &
-                     - npool_to_livestemn_storage(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc(p) / cndw - npool_to_deadstemn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc_storage(p) / cndw &
-                     - npool_to_deadstemn_storage(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc(p) / cnlw - npool_to_livecrootn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc_storage(p) / cnlw &
-                     - npool_to_livecrootn_storage(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc(p) / cndw - npool_to_deadcrootn(p)
-                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc_storage(p) / cndw &
-                     - npool_to_deadcrootn_storage(p)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livestemc_storage(k0p+fp) / cnlw &
+                     - npool_to_livestemn_storage(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc(k0p+fp) / cndw - npool_to_deadstemn(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadstemc_storage(k0p+fp) / cndw &
+                     - npool_to_deadstemn_storage(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc(k0p+fp) / cnlw - npool_to_livecrootn(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_livecrootc_storage(k0p+fp) / cnlw &
+                     - npool_to_livecrootn_storage(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc(k0p+fp) / cndw - npool_to_deadcrootn(k0p+fp)
+                supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_deadcrootc_storage(k0p+fp) / cndw &
+                     - npool_to_deadcrootn_storage(k0p+fp)
                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_grainc(p) / cng - npool_to_grainn(p)
                 supplement_to_plantn(p)  = supplement_to_plantn(p) + cpool_to_grainc_storage(p) / cng &
                      - npool_to_grainn_storage(p)
 
                 npool_to_livestemn(p) = cpool_to_livestemc(p) / cnlw
-                npool_to_livestemn_storage(p) = cpool_to_livestemc_storage(p) / cnlw
-                npool_to_deadstemn(p) = cpool_to_deadstemc(p) / cndw
-                npool_to_deadstemn_storage(p) = cpool_to_deadstemc_storage(p) / cndw
-                npool_to_livecrootn(p) = cpool_to_livecrootc(p) / cnlw
-                npool_to_livecrootn_storage(p) = cpool_to_livecrootc_storage(p) / cnlw
-                npool_to_deadcrootn(p) = cpool_to_deadcrootc(p) / cndw
-                npool_to_deadcrootn_storage(p) = cpool_to_deadcrootc_storage(p) / cndw
+                npool_to_livestemn_storage(k0p+fp) = cpool_to_livestemc_storage(k0p+fp) / cnlw
+                npool_to_deadstemn(k0p+fp) = cpool_to_deadstemc(k0p+fp) / cndw
+                npool_to_deadstemn_storage(k0p+fp) = cpool_to_deadstemc_storage(k0p+fp) / cndw
+                npool_to_livecrootn(k0p+fp) = cpool_to_livecrootc(k0p+fp) / cnlw
+                npool_to_livecrootn_storage(k0p+fp) = cpool_to_livecrootc_storage(k0p+fp) / cnlw
+                npool_to_deadcrootn(k0p+fp) = cpool_to_deadcrootc(k0p+fp) / cndw
+                npool_to_deadcrootn_storage(k0p+fp) = cpool_to_deadcrootc_storage(k0p+fp) / cndw
                 npool_to_grainn(p) = cpool_to_grainc(p) / cng
                 npool_to_grainn_storage(p) =  cpool_to_grainc_storage(p) / cng
             end if
@@ -4483,75 +4492,75 @@ contains
         else if ( carbon_only  .or. carbonnitrogen_only ) then
 
                 supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_leafc(p) / cpl - ppool_to_leafp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_leafc_storage(p) / cpl &
-                     - ppool_to_leafp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_frootc(p) / cpfr - ppool_to_frootp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_frootc_storage(p) / cpfr &
-                     - ppool_to_frootp_storage(p),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_leafc_storage(k0p+fp) / cpl &
+                     - ppool_to_leafp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_frootc(k0p+fp) / cpfr - ppool_to_frootp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_frootc_storage(k0p+fp) / cpfr &
+                     - ppool_to_frootp_storage(k0p+fp),0._r8)
 
                 ppool_to_leafp(p) = cpool_to_leafc(p) / cpl
-                ppool_to_leafp_storage(p) =  cpool_to_leafc_storage(p) / cpl
-                ppool_to_frootp(p) = cpool_to_frootc(p) / cpfr
-                ppool_to_frootp_storage(p) = cpool_to_frootc_storage(p) / cpfr
+                ppool_to_leafp_storage(k0p+fp) =  cpool_to_leafc_storage(k0p+fp) / cpl
+                ppool_to_frootp(k0p+fp) = cpool_to_frootc(k0p+fp) / cpfr
+                ppool_to_frootp_storage(k0p+fp) = cpool_to_frootc_storage(k0p+fp) / cpfr
 
             if (woody(ivt) >= 1.0_r8) then
 
                 supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc(p) / cplw &
                      - ppool_to_livestemp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc_storage(p) / cplw &
-                     - ppool_to_livestemp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc(p) /cpdw &
-                     - ppool_to_deadstemp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc_storage(p)  / cpdw&
-                     - ppool_to_deadstemp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc(p) / cplw &
-                     - ppool_to_livecrootp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc_storage(p) / cplw &
-                     - ppool_to_livecrootp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc(p) / cpdw &
-                     - ppool_to_deadcrootp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc_storage(p) / cpdw &
-                     - ppool_to_deadcrootp_storage(p),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc_storage(k0p+fp) / cplw &
+                     - ppool_to_livestemp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc(k0p+fp) /cpdw &
+                     - ppool_to_deadstemp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc_storage(k0p+fp)  / cpdw&
+                     - ppool_to_deadstemp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc(k0p+fp) / cplw &
+                     - ppool_to_livecrootp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc_storage(k0p+fp) / cplw &
+                     - ppool_to_livecrootp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc(k0p+fp) / cpdw &
+                     - ppool_to_deadcrootp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc_storage(k0p+fp) / cpdw &
+                     - ppool_to_deadcrootp_storage(k0p+fp),0._r8)
 
                 ppool_to_livestemp(p) = cpool_to_livestemc(p) / cplw
-                ppool_to_livestemp_storage(p) = cpool_to_livestemc_storage(p) / cplw
-                ppool_to_deadstemp(p) = cpool_to_deadstemc(p) / cpdw
-                ppool_to_deadstemp_storage(p) = cpool_to_deadstemc_storage(p) / cpdw
-                ppool_to_livecrootp(p) = cpool_to_livecrootc(p) / cplw
-                ppool_to_livecrootp_storage(p) = cpool_to_livecrootc_storage(p) / cplw
-                ppool_to_deadcrootp(p) = cpool_to_deadcrootc(p) / cpdw
-                ppool_to_deadcrootp_storage(p) = cpool_to_deadcrootc_storage(p) / cpdw
+                ppool_to_livestemp_storage(k0p+fp) = cpool_to_livestemc_storage(k0p+fp) / cplw
+                ppool_to_deadstemp(k0p+fp) = cpool_to_deadstemc(k0p+fp) / cpdw
+                ppool_to_deadstemp_storage(k0p+fp) = cpool_to_deadstemc_storage(k0p+fp) / cpdw
+                ppool_to_livecrootp(k0p+fp) = cpool_to_livecrootc(k0p+fp) / cplw
+                ppool_to_livecrootp_storage(k0p+fp) = cpool_to_livecrootc_storage(k0p+fp) / cplw
+                ppool_to_deadcrootp(k0p+fp) = cpool_to_deadcrootc(k0p+fp) / cpdw
+                ppool_to_deadcrootp_storage(k0p+fp) = cpool_to_deadcrootc_storage(k0p+fp) / cpdw
             end if
             if (iscft(ivt)) then ! skip 2 generic crops
                 cpg = graincp(ivt)
                 supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc(p) / cplw &
                      - ppool_to_livestemp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc_storage(p) / cplw &
-                     - ppool_to_livestemp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc(p) /cpdw &
-                     - ppool_to_deadstemp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc_storage(p)  / cpdw&
-                     - ppool_to_deadstemp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc(p) / cplw &
-                     - ppool_to_livecrootp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc_storage(p) / cplw &
-                     - ppool_to_livecrootp_storage(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc(p) / cpdw &
-                     - ppool_to_deadcrootp(p),0._r8)
-                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc_storage(p) / cpdw &
-                     - ppool_to_deadcrootp_storage(p),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livestemc_storage(k0p+fp) / cplw &
+                     - ppool_to_livestemp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc(k0p+fp) /cpdw &
+                     - ppool_to_deadstemp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadstemc_storage(k0p+fp)  / cpdw&
+                     - ppool_to_deadstemp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc(k0p+fp) / cplw &
+                     - ppool_to_livecrootp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_livecrootc_storage(k0p+fp) / cplw &
+                     - ppool_to_livecrootp_storage(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc(k0p+fp) / cpdw &
+                     - ppool_to_deadcrootp(k0p+fp),0._r8)
+                supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_deadcrootc_storage(k0p+fp) / cpdw &
+                     - ppool_to_deadcrootp_storage(k0p+fp),0._r8)
                 supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_grainc(p) / cpg - ppool_to_grainp(p),0._r8)
                 supplement_to_plantp(p) = supplement_to_plantp(p) + max(cpool_to_grainc_storage(p) / cpg &
                      - ppool_to_grainp_storage(p),0._r8)
 
                 ppool_to_livestemp(p) = cpool_to_livestemc(p) / cplw
-                ppool_to_livestemp_storage(p) = cpool_to_livestemc_storage(p) / cplw
-                ppool_to_deadstemp(p) = cpool_to_deadstemc(p) / cpdw
-                ppool_to_deadstemp_storage(p) = cpool_to_deadstemc_storage(p) / cpdw
-                ppool_to_livecrootp(p) = cpool_to_livecrootc(p) / cplw
-                ppool_to_livecrootp_storage(p) = cpool_to_livecrootc_storage(p) / cplw
-                ppool_to_deadcrootp(p) = cpool_to_deadcrootc(p) / cpdw
-                ppool_to_deadcrootp_storage(p) = cpool_to_deadcrootc_storage(p) / cpdw
+                ppool_to_livestemp_storage(k0p+fp) = cpool_to_livestemc_storage(k0p+fp) / cplw
+                ppool_to_deadstemp(k0p+fp) = cpool_to_deadstemc(k0p+fp) / cpdw
+                ppool_to_deadstemp_storage(k0p+fp) = cpool_to_deadstemc_storage(k0p+fp) / cpdw
+                ppool_to_livecrootp(k0p+fp) = cpool_to_livecrootc(k0p+fp) / cplw
+                ppool_to_livecrootp_storage(k0p+fp) = cpool_to_livecrootc_storage(k0p+fp) / cplw
+                ppool_to_deadcrootp(k0p+fp) = cpool_to_deadcrootc(k0p+fp) / cpdw
+                ppool_to_deadcrootp_storage(k0p+fp) = cpool_to_deadcrootc_storage(k0p+fp) / cpdw
                 ppool_to_grainp(p) = cpool_to_grainc(p) / cpg
                 ppool_to_grainp_storage(p) =  cpool_to_grainc_storage(p) / cpg
             end if

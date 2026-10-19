@@ -40,6 +40,7 @@ contains
   subroutine RootDynamics(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
        canopystate_vars,  &
        cnstate_vars, crop_vars,  energyflux_vars, soilstate_vars, dt)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! This routine determine the fine root distribution
@@ -82,6 +83,8 @@ contains
     real(r8), parameter :: minpsi = -1.5_r8                    ! minimum soil moisture potential - permanent wilting point (MPa)
     real(r8), parameter :: soil_water_factor_min = 0.9_r8
     real(r8), parameter :: exp_decay_factor = 3._r8
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
 
     !-----------------------------------------------------------------------
     ! Assign local pointers to derived type arrays (in)
@@ -211,14 +214,14 @@ contains
          new_growth = 0._r8
          new_croot_growth = 0._r8
          if (onset_flag(p) == 0._r8) then
-            new_growth = (cpool_to_frootc(p) + frootc_xfer_to_frootc(p))*dt
-            new_croot_growth = (cpool_to_livecrootc(p) + cpool_to_deadcrootc(p) + &
-                                deadcrootc_xfer_to_deadcrootc(p) + livecrootc_xfer_to_livecrootc(p))*dt
+            new_growth = (cpool_to_frootc(k0p+f) + frootc_xfer_to_frootc(k0p+f))*dt
+            new_croot_growth = (cpool_to_livecrootc(k0p+f) + cpool_to_deadcrootc(k0p+f) + &
+                                deadcrootc_xfer_to_deadcrootc(k0p+f) + livecrootc_xfer_to_livecrootc(k0p+f))*dt
          end if
          if (evergreen(ivt(p)) == 0._r8) then
-            new_growth = new_growth + cpool_to_frootc_storage(p)*dt
-            new_croot_growth = new_croot_growth + (cpool_to_livecrootc_storage(p) + &
-                                                   cpool_to_deadcrootc_storage(p))*dt
+            new_growth = new_growth + cpool_to_frootc_storage(k0p+f)*dt
+            new_croot_growth = new_croot_growth + (cpool_to_livecrootc_storage(k0p+f) + &
+                                                   cpool_to_deadcrootc_storage(k0p+f))*dt
          end if
          do lev=1,nlevsoi
             if (sumrswa(p) <= 0._r8 .or. sumrsmn(p) <= 0._r8) then

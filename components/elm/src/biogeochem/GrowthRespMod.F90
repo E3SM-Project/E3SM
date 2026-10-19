@@ -31,6 +31,7 @@ module GrowthRespMod
 contains
 
   subroutine GrowthResp(num_soilp, filter_soilp)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic carbon state
@@ -46,6 +47,8 @@ contains
     ! !LOCAL VARIABLES:
     integer :: p                ! indices
     integer :: fp               ! lake filter pft index
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                                      &
@@ -104,12 +107,12 @@ contains
         p = filter_soilp(fp)
          if (iscft(ivt(p))) then ! skip 2 generic crops
 
-            cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
+            cpool_livestem_gr(k0p+fp)          = cpool_to_livestemc(p) * grperc(ivt(p))
 
-            cpool_livestem_storage_gr(p)  = cpool_to_livestemc_storage(p) * &
+            cpool_livestem_storage_gr(k0p+fp)  = cpool_to_livestemc_storage(k0p+fp) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
 
-            transfer_livestem_gr(p)       = livestemc_xfer_to_livestemc(p) * &
+            transfer_livestem_gr(k0p+fp)       = livestemc_xfer_to_livestemc(k0p+fp) * &
                  grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
 
             cpool_grain_gr(p)             = cpool_to_grainc(p) * grperc(ivt(p))
@@ -123,36 +126,36 @@ contains
 
          ! leaf and fine root growth respiration
          cpool_leaf_gr(p)          = cpool_to_leafc(p) * grperc(ivt(p))
-         cpool_leaf_storage_gr(p)  = cpool_to_leafc_storage(p) * grperc(ivt(p)) * &
+         cpool_leaf_storage_gr(p)  = cpool_to_leafc_storage(k0p+fp) * grperc(ivt(p)) * &
               grpnow(ivt(p))
-         transfer_leaf_gr(p)       = leafc_xfer_to_leafc(p) * grperc(ivt(p)) * &
+         transfer_leaf_gr(p)       = leafc_xfer_to_leafc(k0p+fp) * grperc(ivt(p)) * &
               (1._r8 - grpnow(ivt(p)))
-         cpool_froot_gr(p)         = cpool_to_frootc(p) * grperc(ivt(p))
-         cpool_froot_storage_gr(p) = cpool_to_frootc_storage(p) * grperc(ivt(p)) * &
+         cpool_froot_gr(p)         = cpool_to_frootc(k0p+fp) * grperc(ivt(p))
+         cpool_froot_storage_gr(p) = cpool_to_frootc_storage(k0p+fp) * grperc(ivt(p)) * &
               grpnow(ivt(p))
-         transfer_froot_gr(p)      = frootc_xfer_to_frootc(p) * grperc(ivt(p)) * &
+         transfer_froot_gr(p)      = frootc_xfer_to_frootc(k0p+fp) * grperc(ivt(p)) * &
               (1._r8 - grpnow(ivt(p)))
 
          if (woody(ivt(p)) >= 1.0_r8) then
-            cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
-            cpool_livestem_storage_gr(p)  = cpool_to_livestemc_storage(p) * &
+            cpool_livestem_gr(k0p+fp)          = cpool_to_livestemc(p) * grperc(ivt(p))
+            cpool_livestem_storage_gr(k0p+fp)  = cpool_to_livestemc_storage(k0p+fp) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
-            transfer_livestem_gr(p)       = livestemc_xfer_to_livestemc(p) * &
+            transfer_livestem_gr(k0p+fp)       = livestemc_xfer_to_livestemc(k0p+fp) * &
                  grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
-            cpool_deadstem_gr(p)          = cpool_to_deadstemc(p) * grperc(ivt(p))
-            cpool_deadstem_storage_gr(p)  = cpool_to_deadstemc_storage(p) * &
+            cpool_deadstem_gr(k0p+fp)          = cpool_to_deadstemc(k0p+fp) * grperc(ivt(p))
+            cpool_deadstem_storage_gr(k0p+fp)  = cpool_to_deadstemc_storage(k0p+fp) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
-            transfer_deadstem_gr(p)       = deadstemc_xfer_to_deadstemc(p) * &
+            transfer_deadstem_gr(k0p+fp)       = deadstemc_xfer_to_deadstemc(k0p+fp) * &
                  grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
-            cpool_livecroot_gr(p)         = cpool_to_livecrootc(p) * grperc(ivt(p))
-            cpool_livecroot_storage_gr(p) = cpool_to_livecrootc_storage(p) * &
+            cpool_livecroot_gr(k0p+fp)         = cpool_to_livecrootc(k0p+fp) * grperc(ivt(p))
+            cpool_livecroot_storage_gr(k0p+fp) = cpool_to_livecrootc_storage(k0p+fp) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
-            transfer_livecroot_gr(p)      = livecrootc_xfer_to_livecrootc(p) * &
+            transfer_livecroot_gr(k0p+fp)      = livecrootc_xfer_to_livecrootc(k0p+fp) * &
                  grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
-            cpool_deadcroot_gr(p)         = cpool_to_deadcrootc(p) * grperc(ivt(p))
-            cpool_deadcroot_storage_gr(p) = cpool_to_deadcrootc_storage(p) * &
+            cpool_deadcroot_gr(k0p+fp)         = cpool_to_deadcrootc(k0p+fp) * grperc(ivt(p))
+            cpool_deadcroot_storage_gr(k0p+fp) = cpool_to_deadcrootc_storage(k0p+fp) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
-            transfer_deadcroot_gr(p)      = deadcrootc_xfer_to_deadcrootc(p) * &
+            transfer_deadcroot_gr(k0p+fp)      = deadcrootc_xfer_to_deadcrootc(k0p+fp) * &
                  grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
          end if
 

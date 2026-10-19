@@ -274,6 +274,7 @@ contains
 
   !------------------------------------------------------------------------------
    subroutine get_clump_bounds_new (n, bounds)
+     use CompactLayoutMod, only : compact_set_clump  ! spel compact
      !
      ! !DESCRIPTION:
      ! Determine clump bounds
@@ -344,11 +345,13 @@ contains
      bounds%level = BOUNDS_LEVEL_CLUMP
      bounds%clump_index = n
 
+     call compact_set_clump(bounds%begp)  ! spel compact
    end subroutine get_clump_bounds_new
 
    !------------------------------------------------------------------------------
    subroutine get_clump_bounds_old (n, begg, endg, begt,endt, begl, endl, begc, endc, begp, endp, &
         begCohort, endCohort)
+     use CompactLayoutMod, only : compact_set_clump  ! spel compact
      integer, intent(in)  :: n           ! proc clump index
      integer, intent(out) :: begp, endp  ! clump beg and end pft indices
      integer, intent(out) :: begc, endc  ! clump beg and end column indices
@@ -373,6 +376,7 @@ contains
 
      begCohort = clumps(cid)%begCohort
      endCohort = clumps(cid)%endCohort
+     call compact_set_clump(begp)  ! spel compact
    end subroutine get_clump_bounds_old
 
    !------------------------------------------------------------------------------

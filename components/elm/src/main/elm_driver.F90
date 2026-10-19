@@ -9,6 +9,7 @@ module elm_driver
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
+  use vegetationdatatype, only : c13_veg_cf, c14_veg_cf  ! spel compact
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_firn_percolation_and_compaction
@@ -1208,6 +1209,14 @@ contains
              filter(nc)%num_soilp, filter(nc)%soilp,             &
              filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,    &
              cnstate_vars,  frictionvel_vars, canopystate_vars )
+          ! copy the compact fields to their full layout for history  ! spel compact
+          call t_startf('compact_unpack')
+          call veg_cf%cbuf%unpack(filter(nc)%num_soilp, filter(nc)%soilp)
+          call c13_veg_cf%cbuf%unpack(filter(nc)%num_soilp, filter(nc)%soilp)
+          call c14_veg_cf%cbuf%unpack(filter(nc)%num_soilp, filter(nc)%soilp)
+          call veg_nf%cbuf%unpack(filter(nc)%num_soilp, filter(nc)%soilp)
+          call veg_pf%cbuf%unpack(filter(nc)%num_soilp, filter(nc)%soilp)
+          call t_stopf('compact_unpack')
        end if
 
        ! ============================================================================

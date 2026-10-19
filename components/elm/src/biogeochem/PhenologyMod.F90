@@ -563,6 +563,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNSeasonDecidPhenology (num_soilp, filter_soilp, cnstate_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -586,6 +587,8 @@ contains
     real(r8):: crit_onset_gdd !critical onset growing degree-day sum
     real(r8):: soilt
     real(r8):: dt
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                                                             &
@@ -758,25 +761,25 @@ contains
                   onset_flag(p) = 0.0_r8
                   onset_counter(p) = 0.0_r8
                   ! set all transfer growth rates to 0.0
-                  leafc_xfer_to_leafc(p)   = 0.0_r8
-                  frootc_xfer_to_frootc(p) = 0.0_r8
-                  leafn_xfer_to_leafn(p)   = 0.0_r8
-                  frootn_xfer_to_frootn(p) = 0.0_r8
-                  leafp_xfer_to_leafp(p)   = 0.0_r8
-                  frootp_xfer_to_frootp(p) = 0.0_r8
+                  leafc_xfer_to_leafc(k0p+fp)   = 0.0_r8
+                  frootc_xfer_to_frootc(k0p+fp) = 0.0_r8
+                  leafn_xfer_to_leafn(k0p+fp)   = 0.0_r8
+                  frootn_xfer_to_frootn(k0p+fp) = 0.0_r8
+                  leafp_xfer_to_leafp(k0p+fp)   = 0.0_r8
+                  frootp_xfer_to_frootp(k0p+fp) = 0.0_r8
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemc_xfer_to_livestemc(p)   = 0.0_r8
-                     deadstemc_xfer_to_deadstemc(p)   = 0.0_r8
-                     livecrootc_xfer_to_livecrootc(p) = 0.0_r8
-                     deadcrootc_xfer_to_deadcrootc(p) = 0.0_r8
-                     livestemn_xfer_to_livestemn(p)   = 0.0_r8
-                     deadstemn_xfer_to_deadstemn(p)   = 0.0_r8
-                     livecrootn_xfer_to_livecrootn(p) = 0.0_r8
-                     deadcrootn_xfer_to_deadcrootn(p) = 0.0_r8
-                     livestemp_xfer_to_livestemp(p)   = 0.0_r8
-                     deadstemp_xfer_to_deadstemp(p)   = 0.0_r8
-                     livecrootp_xfer_to_livecrootp(p) = 0.0_r8
-                     deadcrootp_xfer_to_deadcrootp(p) = 0.0_r8
+                     livestemc_xfer_to_livestemc(k0p+fp)   = 0.0_r8
+                     deadstemc_xfer_to_deadstemc(k0p+fp)   = 0.0_r8
+                     livecrootc_xfer_to_livecrootc(k0p+fp) = 0.0_r8
+                     deadcrootc_xfer_to_deadcrootc(k0p+fp) = 0.0_r8
+                     livestemn_xfer_to_livestemn(k0p+fp)   = 0.0_r8
+                     deadstemn_xfer_to_deadstemn(k0p+fp)   = 0.0_r8
+                     livecrootn_xfer_to_livecrootn(k0p+fp) = 0.0_r8
+                     deadcrootn_xfer_to_deadcrootn(k0p+fp) = 0.0_r8
+                     livestemp_xfer_to_livestemp(k0p+fp)   = 0.0_r8
+                     deadstemp_xfer_to_deadstemp(k0p+fp)   = 0.0_r8
+                     livecrootp_xfer_to_livecrootp(k0p+fp) = 0.0_r8
+                     deadcrootp_xfer_to_deadcrootp(k0p+fp) = 0.0_r8
                   end if
                   ! set transfer pools to 0.0
                   leafc_xfer(p) = 0.0_r8
@@ -846,34 +849,34 @@ contains
                   ! inlined during vectorization
 
                   ! set carbon fluxes for shifting storage pools to transfer pools
-                  leafc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
-                  frootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
+                  leafc_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
+                  frootc_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
-                     deadstemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
-                     livecrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
-                     deadcrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootc_storage(p)/dt
-                     gresp_storage_to_xfer(p)      = PhenolParamsInst%fstor2tran * gresp_storage(p)/dt
+                     livestemc_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
+                     deadstemc_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
+                     livecrootc_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
+                     deadcrootc_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * deadcrootc_storage(p)/dt
+                     gresp_storage_to_xfer(k0p+fp)      = PhenolParamsInst%fstor2tran * gresp_storage(p)/dt
                   end if
 
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
-                  leafn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
-                  frootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
+                  leafn_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
+                  frootn_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
-                     deadstemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
-                     livecrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
-                     deadcrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootn_storage(p)/dt
+                     livestemn_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
+                     deadstemn_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
+                     livecrootn_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
+                     deadcrootn_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * deadcrootn_storage(p)/dt
                   end if
 
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
-                  leafp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
-                  frootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
+                  leafp_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
+                  frootp_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
-                     deadstemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
-                     livecrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
-                     deadcrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootp_storage(p)/dt
+                     livestemp_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
+                     deadstemp_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
+                     livecrootp_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
+                     deadcrootp_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * deadcrootp_storage(p)/dt
                   end if
                end if
 
@@ -899,6 +902,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNStressDecidPhenology (num_soilp, filter_soilp , &
        soilstate_vars, atm2lnd_vars, cnstate_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! This routine handles phenology for vegetation types, such as grasses and
@@ -931,6 +935,8 @@ contains
     real(r8):: crit_onset_gdd  ! degree days for onset trigger
     real(r8):: soilt           ! temperature of top soil layer
     real(r8):: psi             ! water stress of top soil layer
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                                                             &
@@ -1103,25 +1109,25 @@ contains
                   onset_flag(p) = 0._r8
                   onset_counter(p) = 0._r8
                   ! set all transfer growth rates to 0.0
-                  leafc_xfer_to_leafc(p)   = 0._r8
-                  frootc_xfer_to_frootc(p) = 0._r8
-                  leafn_xfer_to_leafn(p)   = 0._r8
-                  frootn_xfer_to_frootn(p) = 0._r8
-                  leafp_xfer_to_leafp(p)   = 0._r8
-                  frootp_xfer_to_frootp(p) = 0._r8
+                  leafc_xfer_to_leafc(k0p+fp)   = 0._r8
+                  frootc_xfer_to_frootc(k0p+fp) = 0._r8
+                  leafn_xfer_to_leafn(k0p+fp)   = 0._r8
+                  frootn_xfer_to_frootn(k0p+fp) = 0._r8
+                  leafp_xfer_to_leafp(k0p+fp)   = 0._r8
+                  frootp_xfer_to_frootp(k0p+fp) = 0._r8
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemc_xfer_to_livestemc(p)   = 0._r8
-                     deadstemc_xfer_to_deadstemc(p)   = 0._r8
-                     livecrootc_xfer_to_livecrootc(p) = 0._r8
-                     deadcrootc_xfer_to_deadcrootc(p) = 0._r8
-                     livestemn_xfer_to_livestemn(p)   = 0._r8
-                     deadstemn_xfer_to_deadstemn(p)   = 0._r8
-                     livecrootn_xfer_to_livecrootn(p) = 0._r8
-                     deadcrootn_xfer_to_deadcrootn(p) = 0._r8
-                     livestemp_xfer_to_livestemp(p)   = 0._r8
-                     deadstemp_xfer_to_deadstemp(p)   = 0._r8
-                     livecrootp_xfer_to_livecrootp(p) = 0._r8
-                     deadcrootp_xfer_to_deadcrootp(p) = 0._r8
+                     livestemc_xfer_to_livestemc(k0p+fp)   = 0._r8
+                     deadstemc_xfer_to_deadstemc(k0p+fp)   = 0._r8
+                     livecrootc_xfer_to_livecrootc(k0p+fp) = 0._r8
+                     deadcrootc_xfer_to_deadcrootc(k0p+fp) = 0._r8
+                     livestemn_xfer_to_livestemn(k0p+fp)   = 0._r8
+                     deadstemn_xfer_to_deadstemn(k0p+fp)   = 0._r8
+                     livecrootn_xfer_to_livecrootn(k0p+fp) = 0._r8
+                     deadcrootn_xfer_to_deadcrootn(k0p+fp) = 0._r8
+                     livestemp_xfer_to_livestemp(k0p+fp)   = 0._r8
+                     deadstemp_xfer_to_deadstemp(k0p+fp)   = 0._r8
+                     livecrootp_xfer_to_livecrootp(k0p+fp) = 0._r8
+                     deadcrootp_xfer_to_deadcrootp(k0p+fp) = 0._r8
                   end if
                   ! set transfer pools to 0.0
                   leafc_xfer(p) = 0._r8
@@ -1220,34 +1226,34 @@ contains
                   ! inlined during vectorization
 
                   ! set carbon fluxes for shifting storage pools to transfer pools
-                  leafc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
-                  frootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
+                  leafc_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * leafc_storage(p)/dt
+                  frootc_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * frootc_storage(p)/dt
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
-                     deadstemc_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
-                     livecrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
-                     deadcrootc_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootc_storage(p)/dt
-                     gresp_storage_to_xfer(p)      = PhenolParamsInst%fstor2tran * gresp_storage(p)/dt
+                     livestemc_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * livestemc_storage(p)/dt
+                     deadstemc_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * deadstemc_storage(p)/dt
+                     livecrootc_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * livecrootc_storage(p)/dt
+                     deadcrootc_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * deadcrootc_storage(p)/dt
+                     gresp_storage_to_xfer(k0p+fp)      = PhenolParamsInst%fstor2tran * gresp_storage(p)/dt
                   end if
 
                   ! set nitrogen fluxes for shifting storage pools to transfer pools
-                  leafn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
-                  frootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
+                  leafn_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * leafn_storage(p)/dt
+                  frootn_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * frootn_storage(p)/dt
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
-                     deadstemn_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
-                     livecrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
-                     deadcrootn_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootn_storage(p)/dt
+                     livestemn_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * livestemn_storage(p)/dt
+                     deadstemn_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * deadstemn_storage(p)/dt
+                     livecrootn_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * livecrootn_storage(p)/dt
+                     deadcrootn_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * deadcrootn_storage(p)/dt
                   end if
 
                   ! set phosphorus fluxes for shifting storage pools to transfer pools
-                  leafp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
-                  frootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
+                  leafp_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * leafp_storage(p)/dt
+                  frootp_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * frootp_storage(p)/dt
                   if (woody(ivt(p)) >= 1.0_r8) then
-                     livestemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
-                     deadstemp_storage_to_xfer(p)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
-                     livecrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
-                     deadcrootp_storage_to_xfer(p) = PhenolParamsInst%fstor2tran * deadcrootp_storage(p)/dt
+                     livestemp_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * livestemp_storage(p)/dt
+                     deadstemp_storage_to_xfer(k0p+fp)  = PhenolParamsInst%fstor2tran * deadstemp_storage(p)/dt
+                     livecrootp_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * livecrootp_storage(p)/dt
+                     deadcrootp_storage_to_xfer(k0p+fp) = PhenolParamsInst%fstor2tran * deadcrootp_storage(p)/dt
                   end if
 
                end if
@@ -1343,35 +1349,35 @@ contains
 
                ! set carbon fluxes for shifting storage pools to transfer pools
 
-               leafc_storage_to_xfer(p)  = leafc_storage(p) * bgtr(p)
-               frootc_storage_to_xfer(p) = frootc_storage(p) * bgtr(p)
+               leafc_storage_to_xfer(k0p+fp)  = leafc_storage(p) * bgtr(p)
+               frootc_storage_to_xfer(k0p+fp) = frootc_storage(p) * bgtr(p)
                if (woody(ivt(p)) >= 1.0_r8) then
-                  livestemc_storage_to_xfer(p)  = livestemc_storage(p) * bgtr(p)
-                  deadstemc_storage_to_xfer(p)  = deadstemc_storage(p) * bgtr(p)
-                  livecrootc_storage_to_xfer(p) = livecrootc_storage(p) * bgtr(p)
-                  deadcrootc_storage_to_xfer(p) = deadcrootc_storage(p) * bgtr(p)
-                  gresp_storage_to_xfer(p)      = gresp_storage(p) * bgtr(p)
+                  livestemc_storage_to_xfer(k0p+fp)  = livestemc_storage(p) * bgtr(p)
+                  deadstemc_storage_to_xfer(k0p+fp)  = deadstemc_storage(p) * bgtr(p)
+                  livecrootc_storage_to_xfer(k0p+fp) = livecrootc_storage(p) * bgtr(p)
+                  deadcrootc_storage_to_xfer(k0p+fp) = deadcrootc_storage(p) * bgtr(p)
+                  gresp_storage_to_xfer(k0p+fp)      = gresp_storage(p) * bgtr(p)
                end if
 
                ! set nitrogen fluxes for shifting storage pools to transfer pools
-               leafn_storage_to_xfer(p)  = leafn_storage(p) * bgtr(p)
-               frootn_storage_to_xfer(p) = frootn_storage(p) * bgtr(p)
+               leafn_storage_to_xfer(k0p+fp)  = leafn_storage(p) * bgtr(p)
+               frootn_storage_to_xfer(k0p+fp) = frootn_storage(p) * bgtr(p)
                if (woody(ivt(p)) >= 1.0_r8) then
-                  livestemn_storage_to_xfer(p)  = livestemn_storage(p) * bgtr(p)
-                  deadstemn_storage_to_xfer(p)  = deadstemn_storage(p) * bgtr(p)
-                  livecrootn_storage_to_xfer(p) = livecrootn_storage(p) * bgtr(p)
-                  deadcrootn_storage_to_xfer(p) = deadcrootn_storage(p) * bgtr(p)
+                  livestemn_storage_to_xfer(k0p+fp)  = livestemn_storage(p) * bgtr(p)
+                  deadstemn_storage_to_xfer(k0p+fp)  = deadstemn_storage(p) * bgtr(p)
+                  livecrootn_storage_to_xfer(k0p+fp) = livecrootn_storage(p) * bgtr(p)
+                  deadcrootn_storage_to_xfer(k0p+fp) = deadcrootn_storage(p) * bgtr(p)
                end if
 
 
                ! set phosphorus fluxes for shifting storage pools to transfer pools
-               leafp_storage_to_xfer(p)  = leafp_storage(p) * bgtr(p)
-               frootp_storage_to_xfer(p) = frootp_storage(p) * bgtr(p)
+               leafp_storage_to_xfer(k0p+fp)  = leafp_storage(p) * bgtr(p)
+               frootp_storage_to_xfer(k0p+fp) = frootp_storage(p) * bgtr(p)
                if (woody(ivt(p)) >= 1.0_r8) then
-                  livestemp_storage_to_xfer(p)  = livestemp_storage(p) * bgtr(p)
-                  deadstemp_storage_to_xfer(p)  = deadstemp_storage(p) * bgtr(p)
-                  livecrootp_storage_to_xfer(p) = livecrootp_storage(p) * bgtr(p)
-                  deadcrootp_storage_to_xfer(p) = deadcrootp_storage(p) * bgtr(p)
+                  livestemp_storage_to_xfer(k0p+fp)  = livestemp_storage(p) * bgtr(p)
+                  deadstemp_storage_to_xfer(k0p+fp)  = deadstemp_storage(p) * bgtr(p)
+                  livecrootp_storage_to_xfer(k0p+fp) = livecrootp_storage(p) * bgtr(p)
+                  deadcrootp_storage_to_xfer(k0p+fp) = deadcrootp_storage(p) * bgtr(p)
                end if
             end if
 
@@ -2711,6 +2717,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNOnsetGrowth (num_soilp, filter_soilp, &
        cnstate_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! Determines the flux of stored C and N from transfer pools to display
@@ -2732,6 +2739,8 @@ contains
     integer :: fp           ! lake filter pft index
     real(r8):: t1           ! temporary variable
     real(r8) :: dt
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                                                             &
@@ -2804,26 +2813,26 @@ contains
             else
                t1 = 2.0_r8 / (onset_counter(p))
             end if
-            leafc_xfer_to_leafc(p)   = t1 * leafc_xfer(p)
-            frootc_xfer_to_frootc(p) = t1 * frootc_xfer(p)
-            leafn_xfer_to_leafn(p)   = t1 * leafn_xfer(p)
-            frootn_xfer_to_frootn(p) = t1 * frootn_xfer(p)
-            leafp_xfer_to_leafp(p)   = t1 * leafp_xfer(p)
-            frootp_xfer_to_frootp(p) = t1 * frootp_xfer(p)
+            leafc_xfer_to_leafc(k0p+fp)   = t1 * leafc_xfer(p)
+            frootc_xfer_to_frootc(k0p+fp) = t1 * frootc_xfer(p)
+            leafn_xfer_to_leafn(k0p+fp)   = t1 * leafn_xfer(p)
+            frootn_xfer_to_frootn(k0p+fp) = t1 * frootn_xfer(p)
+            leafp_xfer_to_leafp(k0p+fp)   = t1 * leafp_xfer(p)
+            frootp_xfer_to_frootp(k0p+fp) = t1 * frootp_xfer(p)
             if (woody(ivt(p)) >= 1.0_r8) then
-               livestemc_xfer_to_livestemc(p)   = t1 * livestemc_xfer(p)
-               deadstemc_xfer_to_deadstemc(p)   = t1 * deadstemc_xfer(p)
-               livecrootc_xfer_to_livecrootc(p) = t1 * livecrootc_xfer(p)
-               deadcrootc_xfer_to_deadcrootc(p) = t1 * deadcrootc_xfer(p)
-               livestemn_xfer_to_livestemn(p)   = t1 * livestemn_xfer(p)
-               deadstemn_xfer_to_deadstemn(p)   = t1 * deadstemn_xfer(p)
-               livecrootn_xfer_to_livecrootn(p) = t1 * livecrootn_xfer(p)
-               deadcrootn_xfer_to_deadcrootn(p) = t1 * deadcrootn_xfer(p)
+               livestemc_xfer_to_livestemc(k0p+fp)   = t1 * livestemc_xfer(p)
+               deadstemc_xfer_to_deadstemc(k0p+fp)   = t1 * deadstemc_xfer(p)
+               livecrootc_xfer_to_livecrootc(k0p+fp) = t1 * livecrootc_xfer(p)
+               deadcrootc_xfer_to_deadcrootc(k0p+fp) = t1 * deadcrootc_xfer(p)
+               livestemn_xfer_to_livestemn(k0p+fp)   = t1 * livestemn_xfer(p)
+               deadstemn_xfer_to_deadstemn(k0p+fp)   = t1 * deadstemn_xfer(p)
+               livecrootn_xfer_to_livecrootn(k0p+fp) = t1 * livecrootn_xfer(p)
+               deadcrootn_xfer_to_deadcrootn(k0p+fp) = t1 * deadcrootn_xfer(p)
 
-               livestemp_xfer_to_livestemp(p)   = t1 * livestemp_xfer(p)
-               deadstemp_xfer_to_deadstemp(p)   = t1 * deadstemp_xfer(p)
-               livecrootp_xfer_to_livecrootp(p) = t1 * livecrootp_xfer(p)
-               deadcrootp_xfer_to_deadcrootp(p) = t1 * deadcrootp_xfer(p)
+               livestemp_xfer_to_livestemp(k0p+fp)   = t1 * livestemp_xfer(p)
+               deadstemp_xfer_to_deadstemp(k0p+fp)   = t1 * deadstemp_xfer(p)
+               livecrootp_xfer_to_livecrootp(k0p+fp) = t1 * livecrootp_xfer(p)
+               deadcrootp_xfer_to_deadcrootp(k0p+fp) = t1 * deadcrootp_xfer(p)
             end if
 
          end if ! end if onset period
@@ -2833,25 +2842,25 @@ contains
          ! pools should be moved to displayed growth in each timestep.
 
          if (bgtr(p) > 0._r8) then
-            leafc_xfer_to_leafc(p)   = leafc_xfer(p) / dt
-            frootc_xfer_to_frootc(p) = frootc_xfer(p) / dt
-            leafn_xfer_to_leafn(p)   = leafn_xfer(p) / dt
-            frootn_xfer_to_frootn(p) = frootn_xfer(p) / dt
-            leafp_xfer_to_leafp(p)   = leafp_xfer(p) / dt
-            frootp_xfer_to_frootp(p) = frootp_xfer(p) / dt
+            leafc_xfer_to_leafc(k0p+fp)   = leafc_xfer(p) / dt
+            frootc_xfer_to_frootc(k0p+fp) = frootc_xfer(p) / dt
+            leafn_xfer_to_leafn(k0p+fp)   = leafn_xfer(p) / dt
+            frootn_xfer_to_frootn(k0p+fp) = frootn_xfer(p) / dt
+            leafp_xfer_to_leafp(k0p+fp)   = leafp_xfer(p) / dt
+            frootp_xfer_to_frootp(k0p+fp) = frootp_xfer(p) / dt
             if (woody(ivt(p)) >= 1.0_r8) then
-               livestemc_xfer_to_livestemc(p)   = livestemc_xfer(p) / dt
-               deadstemc_xfer_to_deadstemc(p)   = deadstemc_xfer(p) / dt
-               livecrootc_xfer_to_livecrootc(p) = livecrootc_xfer(p) / dt
-               deadcrootc_xfer_to_deadcrootc(p) = deadcrootc_xfer(p) / dt
-               livestemn_xfer_to_livestemn(p)   = livestemn_xfer(p) / dt
-               deadstemn_xfer_to_deadstemn(p)   = deadstemn_xfer(p) / dt
-               livecrootn_xfer_to_livecrootn(p) = livecrootn_xfer(p) / dt
-               deadcrootn_xfer_to_deadcrootn(p) = deadcrootn_xfer(p) / dt
-               livestemp_xfer_to_livestemp(p)   = livestemp_xfer(p) / dt
-               deadstemp_xfer_to_deadstemp(p)   = deadstemp_xfer(p) / dt
-               livecrootp_xfer_to_livecrootp(p) = livecrootp_xfer(p) / dt
-               deadcrootp_xfer_to_deadcrootp(p) = deadcrootp_xfer(p) / dt
+               livestemc_xfer_to_livestemc(k0p+fp)   = livestemc_xfer(p) / dt
+               deadstemc_xfer_to_deadstemc(k0p+fp)   = deadstemc_xfer(p) / dt
+               livecrootc_xfer_to_livecrootc(k0p+fp) = livecrootc_xfer(p) / dt
+               deadcrootc_xfer_to_deadcrootc(k0p+fp) = deadcrootc_xfer(p) / dt
+               livestemn_xfer_to_livestemn(k0p+fp)   = livestemn_xfer(p) / dt
+               deadstemn_xfer_to_deadstemn(k0p+fp)   = deadstemn_xfer(p) / dt
+               livecrootn_xfer_to_livecrootn(k0p+fp) = livecrootn_xfer(p) / dt
+               deadcrootn_xfer_to_deadcrootn(k0p+fp) = deadcrootn_xfer(p) / dt
+               livestemp_xfer_to_livestemp(k0p+fp)   = livestemp_xfer(p) / dt
+               deadstemp_xfer_to_deadstemp(k0p+fp)   = deadstemp_xfer(p) / dt
+               livecrootp_xfer_to_livecrootp(k0p+fp) = livecrootp_xfer(p) / dt
+               deadcrootp_xfer_to_deadcrootp(k0p+fp) = deadcrootp_xfer(p) / dt
             end if
          end if ! end if bgtr
 
@@ -3093,6 +3102,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNOffsetLitterfall (num_soilp, filter_soilp, &
        cnstate_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from displayed pools to litter
@@ -3113,6 +3123,8 @@ contains
     integer :: fp           ! lake filter pft index
     real(r8):: t1           ! temporary variable
     real(r8):: dt
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                                     &
@@ -3201,11 +3213,11 @@ contains
                ! this assumes that offset_counter == dt for crops
                ! if this were ever changed, we'd need to add code to the "else"
                   leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
-                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(k0p+fp)
                   livestemc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
                else
                   leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
-                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(k0p+fp)
                end if
             else
                t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
@@ -3224,8 +3236,8 @@ contains
                      leafn_to_litter(p) = (t1 * leafn(p) + npool_to_leafn(p)) - hrv_leafn_to_prod1n(p)
                      leafp_to_litter(p) = (t1 * leafp(p) + ppool_to_leafp(p)) - hrv_leafp_to_prod1p(p)
 
-                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
-                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(k0p+fp)
+                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(k0p+fp)
 
                      livestemn_to_litter(p) = (t1 * livestemn(p) + npool_to_livestemn(p)) - hrv_livestemn_to_prod1n(p)
                      livestemp_to_litter(p) = (t1 * livestemp(p) + ppool_to_livestemp(p)) - hrv_livestemp_to_prod1p(p)
@@ -3233,14 +3245,14 @@ contains
                else
                   ! calculate the leaf N litterfall and retranslocation
                   leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-                  leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+                  leafn_to_retransn(k0p+fp) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
 
                   ! calculate fine root N litterfall (no retranslocation of fine root N)
                   frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
 
                   ! calculate the leaf P litterfall and retranslocation
                   leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-                  leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+                  leafp_to_retransp(k0p+fp) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
 
                   ! calculate fine root P litterfall (no retranslocation of fine root N)
                   frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
@@ -3254,28 +3266,28 @@ contains
                      leafn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))
                      leafp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))
 
-                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(p)
-                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(p)
+                     frootn_to_litter(p) = t1 * frootn(p) + npool_to_frootn(k0p+fp)
+                     frootp_to_litter(p) = t1 * frootp(p) + ppool_to_frootp(k0p+fp)
 
                      livestemn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemn(p)) + npool_to_livestemn(p))
                      livestemp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
 
                   else
                      leafn_to_litter(p)   = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.38_r8
-                     leafn_to_retransn(p) = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.62_r8
-                     frootn_to_litter(p)  = max(t1 * frootn(p),0._r8) + npool_to_frootn(p)
+                     leafn_to_retransn(k0p+fp) = (max(t1 * leafn(p),0._r8) + npool_to_leafn(p))*0.62_r8
+                     frootn_to_litter(p)  = max(t1 * frootn(p),0._r8) + npool_to_frootn(k0p+fp)
 
                      leafp_to_litter(p)   = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.35_r8
-                     leafp_to_retransp(p) = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.65_r8
-                     frootp_to_litter(p)  = max(t1 * frootp(p),0._r8) + ppool_to_frootp(p)
+                     leafp_to_retransp(k0p+fp) = (max(t1 * leafp(p),0._r8) + ppool_to_leafp(p))*0.65_r8
+                     frootp_to_litter(p)  = max(t1 * frootp(p),0._r8) + ppool_to_frootp(k0p+fp)
                   end if
                else
                   leafn_to_litter(p)   = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8)* 0.38_r8
-                  leafn_to_retransn(p) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8) * 0.62_r8
+                  leafn_to_retransn(k0p+fp) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafn(p), t1 * leafn(p)),0._r8) * 0.62_r8
                   frootn_to_litter(p)  = max(min(frootc_to_litter(p)/max(frootc(p), 1.e-20_r8) * frootn(p),t1 * frootn(p)),0._r8)
 
                   leafp_to_litter(p)   = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.35_r8
-                  leafp_to_retransp(p) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.65_r8
+                  leafp_to_retransp(k0p+fp) = max(min(leafc_to_litter(p) / max(leafc(p), 1.e-20_r8) * leafp(p), t1 * leafp(p)),0._r8) * 0.65_r8
                   frootp_to_litter(p)  = max(min(frootc_to_litter(p)/max(frootc(p), 1.e-20_r8) * frootp(p), t1 * frootp(p)),0._r8)
                end if
             end if
@@ -3295,6 +3307,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine CNBackgroundLitterfall (num_soilp, filter_soilp, &
        cnstate_vars)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from displayed pools to litter
@@ -3309,6 +3322,8 @@ contains
     ! !LOCAL VARIABLES:
     integer :: p            ! indices
     integer :: fp           ! lake filter pft index
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                               &
@@ -3359,28 +3374,28 @@ contains
             if ( nu_com .eq. 'RD') then
                ! calculate the leaf N litterfall and retranslocation
                leafn_to_litter(p)   = leafc_to_litter(p)  / lflitcn(ivt(p))
-               leafn_to_retransn(p) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
+               leafn_to_retransn(k0p+fp) = (leafc_to_litter(p) / leafcn(ivt(p))) - leafn_to_litter(p)
 
                ! calculate fine root N litterfall (no retranslocation of fine root N)
                frootn_to_litter(p) = frootc_to_litter(p) / frootcn(ivt(p))
 
                ! calculate the leaf P litterfall and retranslocation
                leafp_to_litter(p)   = leafc_to_litter(p)  / lflitcp(ivt(p))
-               leafp_to_retransp(p) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
+               leafp_to_retransp(k0p+fp) = (leafc_to_litter(p) / leafcp(ivt(p))) - leafp_to_litter(p)
 
                ! calculate fine root P litterfall (no retranslocation of fine root P)
                frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
             else
                ! calculate the leaf N litterfall and retranslocation
                leafn_to_litter(p)   = bglfr_leaf(p) * leafn(p) * 0.38_r8 ! 62% N resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-               leafn_to_retransn(p) = bglfr_leaf(p) * leafn(p) - leafn_to_litter(p)
+               leafn_to_retransn(k0p+fp) = bglfr_leaf(p) * leafn(p) - leafn_to_litter(p)
 
                ! calculate fine root N litterfall (no retranslocation of fine root N)
                frootn_to_litter(p) = bglfr_froot(p) * frootn(p)
 
                ! calculate the leaf P litterfall and retranslocation
                leafp_to_litter(p)   = bglfr_leaf(p) * leafp(p) * 0.35_r8 ! 65% P resorption rate; LEONARDUS VERGUTZ 2012 Ecological Monographs 82(2) 205-220.
-               leafp_to_retransp(p) = bglfr_leaf(p) * leafp(p) - leafp_to_litter(p)
+               leafp_to_retransp(k0p+fp) = bglfr_leaf(p) * leafp(p) - leafp_to_litter(p)
 
                ! calculate fine root P litterfall (no retranslocation of fine root P)
                frootp_to_litter(p) = bglfr_froot(p) * frootp(p) ! fine root P retranslocation occur (but not N retranslocation), why not include it here
@@ -3394,6 +3409,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNLivewoodTurnover (num_soilp, filter_soilp)
+    use CompactLayoutMod, only : compact_soilp_off  ! spel compact
     !
     ! !DESCRIPTION:
     ! Determines the flux of C and N from live wood to
@@ -3411,6 +3427,8 @@ contains
     real(r8):: ctovr        ! temporary variable for carbon turnover
     real(r8):: ntovr        ! temporary variable for nitrogen turnover
     real(r8):: ptovr        ! temporary variable for phosphorus turnover
+    integer :: k0p  ! begp-1 of the clump: compact index of filter_soilp(fp) is k0p+fp  ! spel compact
+    k0p = compact_soilp_off  ! spel compact
     !-----------------------------------------------------------------------
 
     associate(                                                                             &
@@ -3458,24 +3476,24 @@ contains
                ntovr = ctovr / livewdcn(ivt(p))
                ptovr = ctovr / livewdcp(ivt(p))
 
-               livestemc_to_deadstemc(p) = ctovr
-               livestemn_to_deadstemn(p) = ctovr / deadwdcn(ivt(p))
-               livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               livestemc_to_deadstemc(k0p+fp) = ctovr
+               livestemn_to_deadstemn(k0p+fp) = ctovr / deadwdcn(ivt(p))
+               livestemn_to_retransn(k0p+fp)  = ntovr - livestemn_to_deadstemn(k0p+fp)
 
-               livestemp_to_deadstemp(p) = ctovr / deadwdcp(ivt(p))
-               livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
+               livestemp_to_deadstemp(k0p+fp) = ctovr / deadwdcp(ivt(p))
+               livestemp_to_retransp(k0p+fp)  = ptovr - livestemp_to_deadstemp(k0p+fp)
                ! live coarse root to dead coarse root turnover
 
                ctovr = livecrootc(p) * lwtop
                ntovr = ctovr / livewdcn(ivt(p))
                ptovr = ctovr / livewdcp(ivt(p))
 
-               livecrootc_to_deadcrootc(p) = ctovr
-               livecrootn_to_deadcrootn(p) = ctovr / deadwdcn(ivt(p))
-               livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
+               livecrootc_to_deadcrootc(k0p+fp) = ctovr
+               livecrootn_to_deadcrootn(k0p+fp) = ctovr / deadwdcn(ivt(p))
+               livecrootn_to_retransn(k0p+fp)  = ntovr - livecrootn_to_deadcrootn(k0p+fp)
 
-               livecrootp_to_deadcrootp(p) = ctovr / deadwdcp(ivt(p))
-               livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+               livecrootp_to_deadcrootp(k0p+fp) = ctovr / deadwdcp(ivt(p))
+               livecrootp_to_retransp(k0p+fp)  = ptovr - livecrootp_to_deadcrootp(k0p+fp)
             else
                ! live stem to dead stem turnover
 
@@ -3483,24 +3501,24 @@ contains
                ntovr = livestemn(p) * lwtop
                ptovr = livestemp(p) * lwtop
 
-               livestemc_to_deadstemc(p) = ctovr
-               livestemn_to_deadstemn(p) = ntovr * livewdcn(ivt(p))/deadwdcn(ivt(p)) ! N retranslocation
-               livestemn_to_retransn(p)  = ntovr - livestemn_to_deadstemn(p)
+               livestemc_to_deadstemc(k0p+fp) = ctovr
+               livestemn_to_deadstemn(k0p+fp) = ntovr * livewdcn(ivt(p))/deadwdcn(ivt(p)) ! N retranslocation
+               livestemn_to_retransn(k0p+fp)  = ntovr - livestemn_to_deadstemn(k0p+fp)
 
-               livestemp_to_deadstemp(p) = ptovr*  livewdcp(ivt(p))/deadwdcp(ivt(p)) ! P retranslocation
-               livestemp_to_retransp(p)  = ptovr - livestemp_to_deadstemp(p)
+               livestemp_to_deadstemp(k0p+fp) = ptovr*  livewdcp(ivt(p))/deadwdcp(ivt(p)) ! P retranslocation
+               livestemp_to_retransp(k0p+fp)  = ptovr - livestemp_to_deadstemp(k0p+fp)
                ! live coarse root to dead coarse root turnover
 
                ctovr = livecrootc(p) * lwtop
                ntovr = livecrootn(p) * lwtop
                ptovr = livecrootp(p) * lwtop
 
-               livecrootc_to_deadcrootc(p) = ctovr
-               livecrootn_to_deadcrootn(p) = ntovr * livewdcn(ivt(p))/deadwdcn(ivt(p)) ! N retranslocation
-               livecrootn_to_retransn(p)  = ntovr - livecrootn_to_deadcrootn(p)
+               livecrootc_to_deadcrootc(k0p+fp) = ctovr
+               livecrootn_to_deadcrootn(k0p+fp) = ntovr * livewdcn(ivt(p))/deadwdcn(ivt(p)) ! N retranslocation
+               livecrootn_to_retransn(k0p+fp)  = ntovr - livecrootn_to_deadcrootn(k0p+fp)
 
-               livecrootp_to_deadcrootp(p) = ptovr *  livewdcp(ivt(p))/deadwdcp(ivt(p)) ! P retranslocation
-               livecrootp_to_retransp(p)  = ptovr - livecrootp_to_deadcrootp(p)
+               livecrootp_to_deadcrootp(k0p+fp) = ptovr *  livewdcp(ivt(p))/deadwdcp(ivt(p)) ! P retranslocation
+               livecrootp_to_retransp(k0p+fp)  = ptovr - livecrootp_to_deadcrootp(k0p+fp)
             end if
 
          end if
