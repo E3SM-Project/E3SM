@@ -21,8 +21,10 @@ bool views_are_equal(const Field& f1, const Field& f2, const Real tol)
 
   // Take advantage of field utils update, min and max to assess the max
   // difference between the two fields simply.
+  // NOTE: clone(CopyData) returns an unmasked field. The update methods require the rhs to be unmasked if
+  //       the lhs is, so use an unmasked copy of f2 as well. Invalid entries are handled below.
   auto ft = f1.clone(CloneFlags::CopyData);
-  ft.update(f2,1,-1);
+  ft.update(f2.has_valid_mask() ? f2.clone(CloneFlags::CopyData) : f2,1,-1);
 
   // Zero-out invalid entries (where f1 or f2 are invalid),
   // so they cannot affect the min/max check below.
