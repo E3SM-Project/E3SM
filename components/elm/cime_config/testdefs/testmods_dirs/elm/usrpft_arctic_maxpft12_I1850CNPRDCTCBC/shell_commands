@@ -6,6 +6,7 @@
 ./xmlchange ELM_BLDNML_OPTS=" -maxpft 12 -bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane "
 ./xmlchange DATM_MODE=CLM1PT
 ./xmlchange DATM_CLMNCEP_YR_START=1970
+./xmlchange NTASKS=1
 ./xmlchange DATM_CLMNCEP_YR_END=1990
 echo "
  taxmode = 'cycle','extend','extend'
