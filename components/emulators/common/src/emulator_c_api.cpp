@@ -58,7 +58,7 @@ void emulator_destroy(void* handle) {
   // remove_by_name drops the shared_ptr and runs the destructor.
   // In the full E3SM path (atm_factory.cpp) objects are raw-new'd and
   // not registered, so fall back to a direct delete.
-  if (!emulator::EmulatorRegistry::instance().remove_by_name(emu->name())) {
+  if (!emulator::EmulatorRegistry::instance().remove_by_name(std::string(emu->name()))) {
     delete emu;
   }
 }
