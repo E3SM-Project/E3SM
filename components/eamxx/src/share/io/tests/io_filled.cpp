@@ -97,9 +97,9 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid("f_"+std::to_string(fl.size()),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
-    f.deep_copy(0.0); // For the "filled" field we start with a filled value.
+    f.deep_copy(0.0);
+    f.create_valid_mask(Field::MaskInit::Valid);
     f.get_header().get_tracking().update_time_stamp(t0);
-    f.get_header().set_may_be_filled(true);
     fm->add_field(f);
   }
 
@@ -150,13 +150,20 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Set fields to n+1 or the fill_value, depending on step:
-    //  - n+1 if n+1 is odd
-    //  - fill_value if n+1 is even
-    Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : fill_value;
-    for (const auto& n : fnames) {
-      auto f = fm->get_field(n);
-      set(f,setval);
+    // Set fields to n+1 (and mark them valid) or mark them invalid, depending on step:
+    //  - valid, with value n+1, if n+1 is even
+    //  - invalid otherwise. Invalid entries are filled with random garbage,
+    //    to check that IO never lets it reach the file (not even by accident,
+    //    e.g., via min/max/avg accumulation)
+    const bool valid = (n+1) % 2 == 0;
+    for (const auto& fn : fnames) {
+      auto f = fm->get_field(fn);
+      if (valid) {
+        set(f,1.0*(n+1));
+      } else {
+        randomize_uniform(f,seed+n,-1e6,1e6);
+      }
+      f.get_valid_mask().deep_copy(valid ? 1 : 0);
     }
 
     // Run output manager
@@ -204,7 +211,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   reader.set_dim_decomp(gids,comm);
   reader.set_fields(fields);
 
-  // We set the value n to each input field for each odd valued timestep and fill_value for each even valued timestep
+  // We set the value n to each input field for each odd valued timestep and mark it invalid (with garbage data) for each even valued timestep
   // Hence, at output step N = snap*freq, we should get
   //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
   //  avg=MAX:     output = N if (N%2=0), else N-1

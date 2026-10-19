@@ -15,7 +15,7 @@
 
 namespace
 {
-// Helper lambda, to copy extra data (io string attributes plus filled settings).
+// Helper function, to copy extra data (io string attributes).
 // This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
 void
 transfer_extra_data(const scream::Field &src, scream::Field &tgt)
@@ -28,12 +28,6 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   auto &dst_atts       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
   for (const auto &[name, val] : src_atts) {
     dst_atts[name] = val;
-  }
-
-  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
-  // proper implementation of Field update methods
-  if (src.get_header().may_be_filled()) {
-    tgt.get_header().set_may_be_filled(true);
   }
 };
 
@@ -358,16 +352,21 @@ void AtmosphereOutput::init()
     const auto& fid = fh.get_identifier();
 
     // Check if the field for scorpio can alias the field after hremap.
-    // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
-    // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
-    // when calling Field's update methods
+    // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded.
+    // Masked fields never alias, since we write fill_value where the field is invalid,
+    // and we must not alter the data of a field we don't own.
     if (m_avg_type!=OutputAvgType::Instant or
         fh.get_alloc_properties().get_padding()>0 or
         not fh.get_alloc_properties().contiguous()>0 or
-        fh.get_parent()!=nullptr) {
+        fh.get_parent()!=nullptr or
+        f.has_valid_mask()) {
       Field copy(fid);
       copy.allocate_view();
       transfer_extra_data (f,copy);
+      if (f.has_valid_mask()) {
+        // The scorpio field has its own mask, which tracks the validity of the data we write
+        copy.create_valid_mask(Field::MaskInit::Valid);
+      }
       fm_scorpio->add_field(copy);
     } else {
       fm_scorpio->add_field(f);
@@ -516,8 +515,8 @@ run (const std::string& filename, const util::TimeStamp& ts,
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
   // If tracking avg count, update the count at each field location separately.
-  // We do count++ only where the fields are NOT equal to the fill value.
-  // Note, we assume that all fields that share a layout are also masked/filled in the same way.
+  // We do count++ only where the field is valid (or everywhere, if the field has no valid mask).
+  // Note, we assume that all fields that share a count are also masked in the same way.
   if (m_track_avg_cnt) {
     // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
     for (auto& [fname, count] : m_field_to_avg_count) {
@@ -549,13 +548,12 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_valid_mask();
 
-      // Find where the field is NOT equal to fill_value
-      compute_mask(field,constants::fill_value<Real>,Comparison::NE,mask);
-
-      // mask=1 for "good" entries, and mask=0 otherwise.
-      count.update(mask,1,1);
+      if (field.has_valid_mask()) {
+        count.update(field.get_valid_mask(),1,1);
+      } else {
+        count.add_scalar(1);
+      }
 
       // Handle writing the average count variables to file
       if (is_write_step) {
@@ -579,20 +577,12 @@ run (const std::string& filename, const util::TimeStamp& ts,
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
 
-        // If it's an output step, for Avg we need to ensure count>threshold.
-        // If count<=threshold, we set count=fill_value, so that fill_val propagates
-        // to the output fields when we divide by count later
+        // If it's an output step, for Avg we need to ensure count>threshold. Where it is not,
+        // the average is invalid: this mask tells us where, so that later we only divide
+        // fields by count where it is valid (and fill the rest with fill_value)
         if (output_step and m_avg_type==OutputAvgType::Average) {
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
-
-          // Recycle mask to find where count<thresh
-          compute_mask(count,min_count,Comparison::LE,mask);
-
-          // Later, we divide fields by count. By setting count=1 where count<thresholt,
-          // we can later do
-          //   f.scale_inv(count); // Requires count!=0 anywhere
-          //   f.deep_copy(fill_val,mask)
-          count.deep_copy(1,mask);
+          compute_mask(count,min_count,Comparison::GT,count.get_header().get_extra_data<Field>("avg_valid_mask"));
         }
       }
       count.get_header().set_extra_data("updated",true);
@@ -607,47 +597,73 @@ run (const std::string& filename, const util::TimeStamp& ts,
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
 
-    // Safety check: if a field may contain fill values and we are computing an Average,
+    // Safety check: if a field is masked and we are computing an Average,
     // we must have created an avg-count tracking field; otherwise division by the raw
-    // number of steps would bias the result wherever fill values occurred.
-    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+    // number of steps would bias the result wherever the field was invalid.
+    if (m_avg_type==OutputAvgType::Average && f_in.has_valid_mask()) {
       EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
-        "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
+        "[AtmosphereOutput::run] Error! Averaging a masked field without avg-count tracking.\n"
         " - field name : " + field_name + "\n"
-        "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
+        "This indicates the field got a valid mask after output initialization or tracking logic missed it." );
     }
 
+    // NOTE: if f_in is masked, we only accumulate where it is valid. The scorpio field
+    //       is just an accumulator, so we do not update its mask while accumulating.
+    const bool masked = f_in.has_valid_mask();
+    EKAT_REQUIRE_MSG (not masked or f_out.has_valid_mask(),
+        "[AtmosphereOutput::run] Error! The field has a valid mask, but the scorpio field does not.\n"
+        " - field name: " + field_name + "\n"
+        "This indicates the field got a valid mask after output initialization.\n");
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
+        f_out.deep_copy(f_in);  // Note: if f_in aliases f_out, this is a no-op
+        if (masked) {
+          f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
+        }
+        break;
       case OutputAvgType::Max:
-        f_out.max(f_in);        break;
+        masked ? f_out.max(f_in,f_in.get_valid_mask())
+               : f_out.max(f_in);
+        break;
       case OutputAvgType::Min:
-        f_out.min(f_in);        break;
+        masked ? f_out.min(f_in,f_in.get_valid_mask())
+               : f_out.min(f_in);
+        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        masked ? f_out.update(f_in,1,1,f_in.get_valid_mask())
+               : f_out.update(f_in,1,1);
+        break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
 
     if (is_write_step) {
+      // Mask telling where f_out is valid at write time. For Instant, it is the mask of f_in (copied into f_out).
+      // For Average with an avg count, it is where the count is above the threshold. Otherwise, f_out is
+      // valid everywhere (it may have a mask, but it is all-valid, since we do not update it).
+      const Field* valid_mask = f_out.has_valid_mask() ? &f_out.get_valid_mask() : nullptr;
+
       // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it.
-        // Note: a missing entry is safe ONLY for fields that cannot contain
-        // fill values; the may_be_filled check above guarantees that.
+        // Note: a missing entry is safe ONLY for fields that cannot be invalid
+        // anywhere; the has_valid_mask check above guarantees that.
         auto avg_count_it = m_field_to_avg_count.find(field_name);
         if (m_track_avg_cnt and avg_count_it!=m_field_to_avg_count.end()) {
           auto avg_count = avg_count_it->second;
 
-          f_out.scale_inv(avg_count);
-
-          const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
+          // The average is valid where the count is above the threshold: divide only there
+          valid_mask = &avg_count.get_header().get_extra_data<Field>("avg_valid_mask");
+          f_out.scale_inv(avg_count,*valid_mask);
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
         }
+      }
+
+      // The data of an invalid entry is garbage, so we write fill_value there
+      if (valid_mask) {
+        f_out.deep_copy(constants::fill_value<Real>,*valid_mask,true);
       }
 
       // Write to file
@@ -752,8 +768,9 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
   Field count(count_id);
   count.allocate_view();
 
-  // We will use a mask field for updating cnt (to check where cnt>threshold)
-  count.create_valid_mask();
+  // Mask telling where the average is valid, i.e., where cnt>threshold. We only compute it at output steps.
+  // NOTE: this is NOT a valid mask of the count: the count is valid everywhere, and its updates must not be gated.
+  count.get_header().set_extra_data("avg_valid_mask",count.clone(avg_cnt_name + "_avg_valid"));
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
@@ -841,8 +858,8 @@ register_variables(const std::string& filename,
 
       // CF compliance: Only add _FillValue for fields that may actually contain fill values
       // (e.g., pressure-interpolated fields). Coordinate variables and regular fields
-      // without missing values should not have _FillValue (may_be_filled() should return false).
-      if (f.get_header().may_be_filled()) {
+      // without missing values should not have _FillValue (has_valid_mask() should return false).
+      if (f.has_valid_mask()) {
         if (fp_precision=="double" or
             (fp_precision=="real" and std::is_same<Real,double>::value)) {
           scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
@@ -1157,17 +1174,15 @@ process_requested_fields()
 
   // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
-    // We need avg-count tracking for any averaged (non-instant) field that:
-    //  - supplies explicit mask info ("mask_data" extra data, or mask field)
-    //  - is marked as potentially containing fill values (may_be_filled()).
-    // Without this, fill-aware updates skip fill_value during accumulation (good)
+    // We need avg-count tracking for any averaged (non-instant) field that
+    // supplies explicit mask info ("mask_data" extra data, or valid mask field).
+    // Without this, masked updates skip invalid entries during accumulation (good)
     // but we would still divide by the raw nsteps, biasing the result low.
     if (m_avg_type!=OutputAvgType::Instant) {
       const bool has_mask_data = f.get_header().has_extra_data("mask_data");
-      const bool may_be_filled = f.get_header().may_be_filled();
-      if (f.has_valid_mask() or has_mask_data or may_be_filled) {
+      if (f.has_valid_mask() or has_mask_data) {
         m_track_avg_cnt = true;
-        // Avoid duplicate insertion if already present (e.g., mask + filled both true)
+        // Avoid duplicate insertion if already present
         if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
           m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
         }
