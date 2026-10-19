@@ -182,7 +182,6 @@ TEST_CASE("vert_contract") {
 
     // The sum of a masked field is masked where no level is valid
     REQUIRE(diag_f.has_valid_mask());
-    REQUIRE(diag_f.get_header().may_be_filled());
 
     diag_f.sync_to_host();
     diag_f.get_valid_mask().sync_to_host();

@@ -78,12 +78,12 @@ initialize_impl ()
   m_index_name = tag==LEV ? m_index_name_mid : m_index_name_int;
 
   // Add a field representing the mask as extra data to the diagnostic field.
-  // Unless the input is masked (or may be filled), the mask only says where the
+  // Unless the input is masked, the mask only says where the
   // pressure level is in range, so all diags at this level and layer have the
   // same mask. Name it after the level, so that they share a valid count in IO.
   // NOTE: masks with the same name must hold the same values (IO and the horizontal
   //       remapper rely on it), so the name also carries any vector dimension.
-  if (f.has_valid_mask() or f.get_header().may_be_filled()) {
+  if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
   } else {
     auto mask_name = m_params.get<std::string>("pressure_value")
@@ -95,7 +95,6 @@ initialize_impl ()
     }
     m_diagnostic_output.create_valid_mask(mask_name + "_mask");
   }
-  m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 

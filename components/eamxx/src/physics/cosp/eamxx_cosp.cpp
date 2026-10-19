@@ -139,7 +139,6 @@ void Cosp::initialize_impl (const RunType /* run_type */)
     auto& f = get_field_out(field_name);
 
     f.set_valid_mask(masks.at(field_name));
-    f.get_header().set_may_be_filled(true);
   }
 
   using namespace ekat::units;

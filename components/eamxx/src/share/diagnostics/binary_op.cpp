@@ -286,7 +286,6 @@ void BinaryOp::initialize_impl()
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
     if (m_arg1_has_mask or m_arg2_has_mask) {
       m_diagnostic_output.create_valid_mask();
-      m_diagnostic_output.get_header().set_may_be_filled(true);
     }
   }
 }
