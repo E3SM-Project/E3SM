@@ -208,9 +208,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
 
         tgt.set_valid_mask(mask);
-
-        // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
-        tgt.get_header().set_may_be_filled(true);
       }
     } else {
       // If a field does not have any vertical tag (LEV, ILEV, or LEVP) it may still have
@@ -223,11 +220,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
         auto src_mask = src.get_valid_mask();
         tgt.set_valid_mask(src_mask.alias(src_mask.name(),m_tgt_grid->name()));
-      }
-
-      // TODO: remove when we get rid of fill-aware Field manipulation methods
-      if (src.get_header().may_be_filled()) {
-        tgt.get_header().set_may_be_filled(true);
       }
     }
   }

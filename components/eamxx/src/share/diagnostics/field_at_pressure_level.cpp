@@ -78,7 +78,6 @@ initialize_impl ()
 
   // Add a field representing the mask as extra data to the diagnostic field.
   m_diagnostic_output.create_valid_mask();
-  m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
