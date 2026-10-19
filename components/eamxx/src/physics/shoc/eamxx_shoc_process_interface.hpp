@@ -322,8 +322,7 @@ public:
           //  purpose of NOT including the effects of vertical diffusion.  However, apply a lower bound
           //  limiter to ensure no values went below zero.
           qc(i,k) = ekat::max(0, qc(i,k));
-        }
-        else{
+        } else {
           qc(i,k)  = qc_copy(i,k);
         }
 	qv(i,k) = qw(i,k) - qc(i,k);

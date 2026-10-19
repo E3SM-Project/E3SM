@@ -143,21 +143,21 @@ void Functions<S,D>
         // This functional form accounts for "activation" of CCN into Nc
         // and it can be made sublinear (e.g., 2000 and 0.55).
         // First, scale by cld_frac_l to account for subgrid frac (if any)
-      if(!shoc_enable_condensation && p3_super_sat) {
-        oldnc=nc(k);  // With prognostic supersaturation, do nothing here.
-      } else {
-        // the SPA equation is of the form:
-        // Nc = max ( Nc , alpha * (nccn_prescribed / inv_cld_frac_l) ^ beta )
-        // where alpha and beta are the factor and exponent, respectively.
-        // This functional form accounts for "activation" of CCN into Nc
-        // and it can be made sublinear (e.g., 2000 and 0.55).
-        // First, scale by cld_frac_l to account for subgrid frac (if any)
-        auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
-        // Second, apply the exponent
-        nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
-        // Third, apply the factor, and retain the max
-        nc(k).set(not_drymass,max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
-      }
+        if(!shoc_enable_condensation && p3_super_sat) {
+          oldnc=nc(k);  // With prognostic supersaturation, do nothing here.
+        } else {
+          // the SPA equation is of the form:
+          // Nc = max ( Nc , alpha * (nccn_prescribed / inv_cld_frac_l) ^ beta )
+          // where alpha and beta are the factor and exponent, respectively.
+          // This functional form accounts for "activation" of CCN into Nc
+          // and it can be made sublinear (e.g., 2000 and 0.55).
+          // First, scale by cld_frac_l to account for subgrid frac (if any)
+          auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
+          // Second, apply the exponent
+          nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
+          // Third, apply the factor, and retain the max
+          nc(k).set(not_drymass,max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
+        }
       } else if(predictNc) {
         nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {
@@ -168,17 +168,16 @@ void Functions<S,D>
 
     if(!shoc_enable_condensation && p3_super_sat) {
       auto nccn_scaled = ekat::pow(nccn_prescribed(k) / inv_cld_frac_l(k),spa_ccn_to_nc_exponent);
-//    auto actmask = shocql_out(k) > qc(k); // lane condition mask
       auto actmask = qv(k) > qv_sat_l(k); // use gridscale qv
       if (actmask.any()) {
-       auto oldnc = nc(k);
-       auto newnc = ekat::max(nc(k), spa_ccn_to_nc_factor * nccn_scaled);
-       nc(k).set(actmask, newnc);
-       deltaqc.set(actmask, ekat::max(nc(k) - oldnc, 0.0) * 4./3.*3.1415*1.e-15);
-       qc(k).set(actmask, qc(k) + deltaqc);
-       qv(k).set(actmask, qv(k) - deltaqc);
-       th_atm(k).set(actmask, th_atm(k) + exner(k) * latvap * inv_cp * deltaqc);
-       qv2qc_aeroact(k).set(actmask,deltaqc/dt);
+        auto oldnc = nc(k);
+        auto newnc = ekat::max(nc(k), spa_ccn_to_nc_factor * nccn_scaled);
+        nc(k).set(actmask, newnc);
+        deltaqc.set(actmask, ekat::max(nc(k) - oldnc, 0.0) * 4./3.*3.1415*1.e-15);
+        qc(k).set(actmask, qc(k) + deltaqc);
+        qv(k).set(actmask, qv(k) - deltaqc);
+        th_atm(k).set(actmask, th_atm(k) + exner(k) * latvap * inv_cp * deltaqc);
+        qv2qc_aeroact(k).set(actmask,deltaqc/dt);
       }
     }
     drymass = qr(k) < qsmall;
