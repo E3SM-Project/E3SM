@@ -265,6 +265,11 @@ public:
   void deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask = false) const;
 
   // Copy the data from one field to this field (on device ONLY)
+  // If this field has a valid mask, it is also set: it is copied from src
+  // if src has one, or it is set to all valid otherwise. If src has a valid mask
+  // but this field does not, we throw, since validity info would be silently lost.
+  // NOTE: if src and this field share the same valid mask, the mask is left as is.
+  // NOTE: clone(CloneFlags::CopyData) only copies the data, since the clone has no mask
   void deep_copy (const Field& src) const;
   void deep_copy (const Field& src, const Field& mask) const;
 
