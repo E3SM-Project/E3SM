@@ -9,8 +9,6 @@ module NitrogenStateUpdate2Mod
   use elm_varpar          , only : nlevsoi, nlevdecomp
   use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl          , only : iulog
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use CNNitrogenFLuxType  , only : nitrogenflux_type
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_nf

@@ -14,14 +14,8 @@ module elm_instMod
   use AerosolType                , only : aerosol_type
   use CanopyStateType            , only : canopystate_type
   use CH4Mod                     , only : ch4_type
-  use CNCarbonFluxType           , only : carbonflux_type
-  use CNCarbonStateType          , only : carbonstate_type
   use CNStateType                , only : cnstate_type
-  use CNNitrogenFluxType         , only : nitrogenflux_type
-  use CNNitrogenStateType        , only : nitrogenstate_type
 
-  use PhosphorusFluxType         , only : phosphorusflux_type
-  use PhosphorusStateType        , only : phosphorusstate_type
 
   use CropType                   , only : crop_type
   use DryDepVelocity             , only : drydepvel_type
@@ -94,14 +88,6 @@ module elm_instMod
   !-----------------------------------------
   !
   type(ch4_type)                                      :: ch4_vars
-  type(carbonstate_type)                              :: carbonstate_vars
-  type(carbonstate_type)                              :: c13_carbonstate_vars
-  type(carbonstate_type)                              :: c14_carbonstate_vars
-  type(carbonflux_type)                               :: carbonflux_vars
-  type(carbonflux_type)                               :: c13_carbonflux_vars
-  type(carbonflux_type)                               :: c14_carbonflux_vars
-  type(nitrogenstate_type)                            :: nitrogenstate_vars
-  type(nitrogenflux_type)                             :: nitrogenflux_vars
   type(crop_type)                                     :: crop_vars
   type(cnstate_type)                                  :: cnstate_vars
   type(dust_type)                                     :: dust_vars
@@ -128,8 +114,6 @@ module elm_instMod
   type(iac2lnd_type)                                  :: iac2lnd_vars
   type(glc_diagnostics_type)                          :: glc_diagnostics_vars
   class(soil_water_retention_curve_type), allocatable :: soil_water_retention_curve
-  type(phosphorusstate_type)                          :: phosphorusstate_vars
-  type(phosphorusflux_type)                           :: phosphorusflux_vars
   type(elm_interface_data_type)                       :: elm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates

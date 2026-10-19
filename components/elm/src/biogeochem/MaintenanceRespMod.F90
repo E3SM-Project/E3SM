@@ -19,9 +19,6 @@ module MaintenanceRespMod
   use CanopyStateType     , only : canopystate_type
   use TemperatureType     , only : temperature_type
   use PhotosynthesisType  , only : photosyns_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNNitrogenStateType , only : nitrogenstate_type
   use ColumnDataType      , only : col_es
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es, veg_cs, veg_cf, veg_ns

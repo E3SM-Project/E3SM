@@ -11,12 +11,8 @@ module CNPBudgetMod
   use spmdMod             , only : masterproc
   use GridcellDataType    , only : grc_ws
   use ColumnDataType      , only : col_ws
-  use PhosphorusFluxType  , only : phosphorusflux_type
-  use PhosphorusStateType , only : phosphorusstate_type
   use ColumnDataType      , only : column_carbon_state, col_cf 
   use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf 
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
 
   implicit none

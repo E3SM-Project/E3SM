@@ -14,8 +14,6 @@ module PhosphorusStateUpdate3Mod
   use elm_varctl          , only : use_erosion, ero_ccycle, use_fates
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode

@@ -32,12 +32,6 @@ module PhenologyMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es, veg_ef, veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
-  use CNCarbonStateType   , only : carbonstate_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use PhosphorusFluxType  , only : phosphorusflux_type
   use SolarAbsorbedType   , only : solarabs_type
   !!!Added for gpu timing info
   use timeinfoMod

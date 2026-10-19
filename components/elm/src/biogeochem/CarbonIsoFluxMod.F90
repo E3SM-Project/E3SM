@@ -11,8 +11,6 @@ module CarbonIsoFluxMod
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
-  use CNCarbonFluxType       , only : carbonflux_type
-  use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
