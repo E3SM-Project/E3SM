@@ -623,40 +623,32 @@ TEST_CASE ("vertical_remapper_filled_src") {
   auto pint_src = create_p("p_int",src_grid,ILEV, 50,100);
   auto p_tgt    = create_p("p_int",tgt_grid,LEVP,100, 50);
 
-  // The filled src entries: one level in col 0 (and, for vectors, not in the last cmp).
-  // Filling the second to last level checks that the last tgt level, which
-  // coincides with the last src level, is not filled. Masked fields use the
-  // mirrored level, so that a tgt mask shared with a filled field would show.
+  // The masked-out src entries: one level in col 0 (and, for vectors, not in the last cmp).
+  // Masking the second to last level (when kfill is nlevs_src-2) checks that the last tgt level,
+  // which coincides with the last src level, is not masked out. We use the mirrored level, so that
+  // a tgt mask shared by a masked field and an unmasked field would show.
   int kfill;
-  auto is_filled = [&](const std::string& name, const int icol, const int icmp, const int k) {
-    const bool masked = name=="masked" or name=="vec_m";
-    return icol==0 and icmp<vec_dim-1 and k==(masked ? nlevs_src-1-kfill : kfill);
+  auto is_filled = [&](const int icol, const int icmp, const int k) {
+    return icol==0 and icmp<vec_dim-1 and k==nlevs_src-1-kfill;
   };
 
-  // Set a src field, and its invalid entries: masked out if it has a mask
-  // (in which case the value is left alone), set to fill_value otherwise
+  // Set a (masked) src field, and mask out its invalid entries (the value is left alone)
   auto fill_src = [&](const Field& f, const Field& p) {
     compute_field(f,p);
     const bool vec = f.rank()==3;
     const int nlevs = f.get_header().get_identifier().get_layout().dims().back();
-    const bool masked = f.has_valid_mask();
-    if (masked) f.get_valid_mask().sync_to_host();
+    f.get_valid_mask().sync_to_host();
     for (int i=0; i<ncols; ++i) {
       for (int j=0; j<(vec ? vec_dim : 1); ++j) {
         for (int k=0; k<nlevs; ++k) {
-          if (not is_filled(f.name(),i,j,k)) continue;
-          if (masked) {
-            if (vec) f.get_valid_mask().get_view<int***,Host>()(i,j,k) = 0;
-            else     f.get_valid_mask().get_view<int**, Host>()(i,k)   = 0;
-          } else {
-            if (vec) f.get_view<Real***,Host>()(i,j,k) = fill_val;
-            else     f.get_view<Real**, Host>()(i,k)   = fill_val;
-          }
+          if (not is_filled(i,j,k)) continue;
+          if (vec) f.get_valid_mask().get_view<int***,Host>()(i,j,k) = 0;
+          else     f.get_valid_mask().get_view<int**, Host>()(i,k)   = 0;
         }
       }
     }
     f.sync_to_dev();
-    if (masked) f.get_valid_mask().sync_to_dev();
+    f.get_valid_mask().sync_to_dev();
   };
 
   // Check a tgt field, given the src pressure and whether the src had filled entries
@@ -682,7 +674,7 @@ TEST_CASE ("vertical_remapper_filled_src") {
           bool expect_fill = false;
           for (int ks=0; ks<nlevs; ++ks) {
             const bool weighted = (ks==0 or x>ps(ks-1)) and (ks==nlevs-1 or x<ps(ks+1));
-            expect_fill |= src_filled and weighted and is_filled(f.name(),i,j,ks);
+            expect_fill |= src_filled and weighted and is_filled(i,j,ks);
           }
           const Real val = vec ? f.get_view<const Real***,Host>()(i,j,k)
                                : f.get_view<const Real**,Host>()(i,k);
@@ -710,20 +702,14 @@ TEST_CASE ("vertical_remapper_filled_src") {
     kfill = k;
     CAPTURE (kfill);
     for (auto etype : {Mask, P0}) {
-      // A src that may be filled, a src with a valid mask, and a src with neither
-      auto src_filled = create_field("filled",src_grid,false,false,false,LEV, 1);
+      // A src with a valid mask, and a src without
       auto src_masked = create_field("masked",src_grid,true ,false,false,LEV, 1);
       auto src_plain  = create_field("plain", src_grid,false,false,false,LEV, 1);
-      // Vector fields on interfaces, with packs
-      auto src_vec    = create_field("vec",   src_grid,false,false,true ,ILEV,SCREAM_PACK_SIZE);
+      // A vector field on interfaces, with packs
       auto src_vec_m  = create_field("vec_m", src_grid,true ,false,true ,ILEV,SCREAM_PACK_SIZE);
-      src_filled.get_header().set_may_be_filled(true);
-      src_vec.get_header().set_may_be_filled(true);
 
-      auto tgt_filled = create_field("filled",tgt_grid,false,false,false,LEVP,1);
       auto tgt_masked = create_field("masked",tgt_grid,false,false,false,LEVP,1);
       auto tgt_plain  = create_field("plain", tgt_grid,false,false,false,LEVP,1);
-      auto tgt_vec    = create_field("vec",   tgt_grid,false,false,true ,LEVP,SCREAM_PACK_SIZE);
       auto tgt_vec_m  = create_field("vec_m", tgt_grid,false,false,true ,LEVP,SCREAM_PACK_SIZE);
 
       auto remap = std::make_shared<VerticalRemapper>(src_grid,tgt_grid);
@@ -732,35 +718,24 @@ TEST_CASE ("vertical_remapper_filled_src") {
       remap->set_target_pressure (p_tgt);
       remap->set_extrapolation_type(etype);
 
-      remap->register_field(src_filled,tgt_filled);
       remap->register_field(src_masked,tgt_masked);
       remap->register_field(src_plain, tgt_plain);
-      remap->register_field(src_vec,   tgt_vec);
       remap->register_field(src_vec_m, tgt_vec_m);
       remap->registration_ends();
 
-      fill_src(src_filled,pmid_src);
       fill_src(src_masked,pmid_src);
       compute_field(src_plain,pmid_src);
-      fill_src(src_vec,pint_src);
       fill_src(src_vec_m,pint_src);
 
       remap->remap_fwd();
 
-      // The tgt of a filled src may be filled, whatever the extrapolation type
-      REQUIRE (tgt_filled.get_header().may_be_filled());
-      REQUIRE (tgt_masked.get_header().may_be_filled());
-      REQUIRE (tgt_vec.get_header().may_be_filled());
-      REQUIRE (tgt_vec_m.get_header().may_be_filled());
-
-      // There are masks only if we mask when extrapolating
-      const bool has_masks = etype==Mask;
-      check(tgt_filled,pmid_src,true ,has_masks);
-      check(tgt_masked,pmid_src,true ,has_masks);
-      check(tgt_vec,   pint_src,true ,has_masks);
-      check(tgt_vec_m, pint_src,true ,has_masks);
-      // The plain field has the layout of the filled ones, but must not get their mask
-      check(tgt_plain, pmid_src,false,has_masks);
+      // The tgt of a masked src is masked, whatever the extrapolation type. The tgt of an unmasked
+      // src is masked only if we mask when extrapolating
+      const bool plain_has_mask = etype==Mask;
+      check(tgt_masked,pmid_src,true ,true);
+      check(tgt_vec_m, pint_src,true ,true);
+      // The plain field has the layout of the masked one, but must not get its mask
+      check(tgt_plain, pmid_src,false,plain_has_mask);
     }
   }
 }

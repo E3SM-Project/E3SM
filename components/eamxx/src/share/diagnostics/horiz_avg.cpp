@@ -46,7 +46,6 @@ void HorizAvg::initialize_impl()
   if (f.has_valid_mask()) {
     // Output valid_mask: 1 where den > 0 (i.e., at least one valid column)
     m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
-    m_diagnostic_output.get_header().set_may_be_filled(true);
 
     // To use at runtime to compute sum(1*w) via horiz_avg (with f_in=1)
     m_ones = f.clone();
