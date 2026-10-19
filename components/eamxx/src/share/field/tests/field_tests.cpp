@@ -387,6 +387,94 @@ TEST_CASE("field", "") {
     REQUIRE (views_are_equal(f3.get_valid_mask(),zeros));
     REQUIRE (f3.get_valid_mask().name()=="my_mask");
   }
+  SECTION ("intersect_mask") {
+    // Set the mask entries to a deterministic pattern (given by a function of the flat index)
+    auto set_mask = [](const Field& mask, auto pattern) {
+      auto v = mask.get_view<int**,Host>();
+      for (int i=0; i<v.extent_int(0); ++i)
+        for (int j=0; j<v.extent_int(1); ++j)
+          v(i,j) = pattern(i,j);
+      mask.sync_to_dev();
+    };
+    auto even_cols = [](int i, int) { return i%2==0 ? 1 : 0; };
+    auto low_levs  = [](int, int j) { return j<12 ? 1 : 0; };
+    auto both      = [&](int i, int j) { return even_cols(i,j) and low_levs(i,j) ? 1 : 0; };
+
+    auto make = [&](const std::string& name) {
+      Field f(fid.clone(name),true);
+      f.create_valid_mask(Field::MaskInit::Valid);
+      return f;
+    };
+
+    SECTION ("masked_masked") {
+      auto y = make("y");
+      auto x = make("x");
+      set_mask(y.get_valid_mask(),even_cols);
+      set_mask(x.get_valid_mask(),low_levs);
+
+      auto expected = y.get_valid_mask().clone();
+      set_mask(expected,both);
+
+      y.intersect_mask(x);
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+
+      // x's mask is untouched, and a second call is idempotent
+      auto x_expected = x.get_valid_mask().clone();
+      set_mask(x_expected,low_levs);
+      REQUIRE (views_are_equal(x.get_valid_mask(),x_expected));
+      y.intersect_mask(x);
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+    }
+
+    SECTION ("unmasked_rhs") {
+      // Nothing to combine, regardless of whether lhs has a mask
+      auto y = make("y");
+      set_mask(y.get_valid_mask(),even_cols);
+      auto expected = y.get_valid_mask().clone();
+      set_mask(expected,even_cols);
+
+      Field x(fid.clone("x"),true);
+      REQUIRE_NOTHROW (y.intersect_mask(x));
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+
+      Field y_unmasked(fid.clone("yu"),true);
+      REQUIRE_NOTHROW (y_unmasked.intersect_mask(x));
+      REQUIRE (not y_unmasked.has_valid_mask());
+    }
+
+    SECTION ("unmasked_lhs") {
+      // Masked rhs and unmasked lhs would silently drop validity info
+      Field y(fid.clone("y"),true);
+      auto x = make("x");
+      REQUIRE_THROWS (y.intersect_mask(x));
+    }
+
+    SECTION ("shared_mask") {
+      // Same mask for lhs and rhs: no-op
+      auto x = make("x");
+      set_mask(x.get_valid_mask(),even_cols);
+      auto expected = x.get_valid_mask().clone();
+      set_mask(expected,even_cols);
+
+      Field y(fid.clone("y"),true);
+      y.set_valid_mask(x.get_valid_mask());
+      REQUIRE_NOTHROW (y.intersect_mask(x));
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+
+      // Every field sharing the mask sees the update
+      auto z = make("z");
+      set_mask(z.get_valid_mask(),low_levs);
+      y.intersect_mask(z);
+      set_mask(expected,both);
+      REQUIRE (views_are_equal(x.get_valid_mask(),expected));
+    }
+
+    SECTION ("read_only") {
+      auto y = make("y");
+      auto x = make("x");
+      REQUIRE_THROWS (y.get_const().intersect_mask(x));
+    }
+  }
   SECTION ("broadcast") {
     const int ncol = 3, ncmp = 2, nlev = 5;
     FieldIdentifier sfid ("src", {{COL,LEV},{ncol,nlev}}, m/s, "some_grid");
