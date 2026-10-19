@@ -27,7 +27,11 @@ module @COMPONENT@_comp_mct
    use coupler_types,    only: emulator_grid_desc, emulator_create_cfg, &
                                coupling_desc, &
                                create_config, create_grid_desc
-   use emulator_f2c_api
+   use emulator_f2c_api, only: emulator_create, emulator_set_grid_data, &
+                               emulator_setup_coupling, emulator_init, &
+                               emulator_run, emulator_finalize, &
+                               emulator_get_nx, emulator_get_ny, &
+                               emulator_get_num_local_cols, emulator_get_num_global_cols, &
 
    implicit none
    private
@@ -41,7 +45,7 @@ module @COMPONENT@_comp_mct
    integer                :: inst_index
    character(len=16)      :: inst_name
    character(len=16)      :: inst_suffix = ""
-   integer(IN)            :: app_id
+   integer(IN)            :: emulator_id
    integer(IN), parameter :: master_task = 0
    integer                :: log_unit
 
@@ -59,35 +63,39 @@ CONTAINS
       type(seq_infodata_type), pointer :: infodata
       type(mct_gsMap),         pointer :: gs_map
       type(mct_gGrid),         pointer :: domain
-      integer(IN) :: phase, ierr, lsize
-      integer(IN) :: cur_ymd, cur_tod
+      integer(IN)   :: phase, ierr, lsize
+      integer(IN)   :: cur_ymd, cur_tod
       character(CL) :: run_type
       character(kind=c_char, len=256), target :: input_file_c
       character(kind=c_char, len=256), target :: log_file_c
       character(kind=c_char, len=256), target :: calendar_c
       character(kind=c_char, len=256), target :: import_fields_c
       character(kind=c_char, len=256), target :: export_fields_c
-      character(len=256) :: log_file_f
-      character(len=256) :: calendar_f
-      integer(c_int) :: run_type_c
-      integer :: shrlogunit
-      type(emulator_create_cfg)    :: cfg
-      type(coupling_desc) :: cpl
+      character(len=256)        :: log_file_f
+      character(len=256)        :: calendar_f
+      integer(c_int)            :: run_type_c
+      integer                   :: shrlogunit
+      type(emulator_create_cfg) :: cfg
+      type(coupling_desc)       :: cpl
 
       call seq_cdata_setptrs(cdata, &
-         id=app_id, comm=comm, &
-         gsMap=gs_map, dom=domain, &
-         infodata=infodata)
+                             id       = emulator_id, &
+                             comm     = comm, &
+                             gsmap    = gs_map,
+                             dom      = domain, &
+                             infodata = infodata)
 
-      call seq_infodata_getData(infodata, &
-         @COMPONENT@_phase=phase, start_type=run_type)
-      call seq_infodata_PutData(infodata, @COMPONENT@_prognostic=.true.)
+      call seq_infodata_getdata(infodata, &
+                                @COMPONENT@_phase = phase, &
+                                start_type        = run_type)
+      call seq_infodata_putdata(infodata, &
+                                @COMPONENT@_prognostic = .true.)
 
       if (phase > 1) return
 
-      inst_name   = seq_comm_name(app_id)
-      inst_index  = seq_comm_inst(app_id)
-      inst_suffix = seq_comm_suffix(app_id)
+      inst_name   = seq_comm_name(emulator_id)
+      inst_index  = seq_comm_inst(emulator_id)
+      inst_suffix = seq_comm_suffix(emulator_id)
 
       call MPI_Comm_rank(comm, my_task, ierr)
 
@@ -134,22 +142,24 @@ CONTAINS
 
       calendar_c = trim(calendar_f)//C_NULL_CHAR
 
-      cfg = create_config(f_comm=comm, comp_id=app_id, &
-            run_type=run_type_c, start_ymd=cur_ymd, start_tod=cur_tod, &
-            input_file=input_file_c, log_file=log_file_c, &
-            calendar=calendar_c)
+      cfg = create_config(f_comm     = comm, &
+                          comp_id    = emulator_id, &
+                          run_type   = run_type_c, &
+                          start_ymd  = cur_ymd, &
+                          start_tod  = cur_tod, &
+                          input_file = input_file_c, &
+                          log_file   = log_file_c, &
+                          calendar   = calendar_c)
+      emulators = emulator_create(kind = '@COMPONENT@'//C_NULL_CHAR, &
+                                  cfg  = cfg)
+      call emulator_set_grid(emulators, grid)
 
-      emulators = emulator_create(kind='@COMPONENT@'//C_NULL_CHAR, cfg=cfg)
-
-      ! Setup MCT gsMap
-      call set_gs_map_mct(emulators, comm, app_id, gs_map)
+      call set_gs_map_mct(emulators, comm, emulator_id, gs_map)
       lsize = mct_gsMap_lsize(gs_map, comm)
 
-      ! Setup MCT domain
       call set_domain_mct(emulators, lsize, gs_map, domain)
 
-      ! FIXME: do we need to register the component with MOAB?
-      ! FIXME: see for example moab_atm_phys_scream
+      ! FIXME: MOAB registration happens here in EAMxx. Can we move it to emulator_create?
 
       ! Initialize MCT attribute vectors
       call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
@@ -162,8 +172,8 @@ CONTAINS
       import_fields_c = trim(seq_flds_x2a_fields)//C_NULL_CHAR
 
       ! Initialize coupling indices in C++
-      call emulator_init_coupling_indices(emulators, &
-         c_loc(import_fields_c), c_loc(export_fields_c))
+      !call emulator_init_coupling_indices(emulators, &
+      !   c_loc(import_fields_c), c_loc(export_fields_c))
 
       ! Build coupling descriptor directly (x2a%rAttr is rank-2: nflds x lsize)
       cpl%import_data = c_loc(x2a%rAttr(1,1))
@@ -250,13 +260,13 @@ CONTAINS
    end subroutine @COMPONENT@_final_mct
 
    !==========================================================================
-   subroutine set_gs_map_mct(emu, comm, app_id, gs_map)
+   subroutine set_gs_map_mct(emu, comm, emulator_id, gs_map)
 
       use, intrinsic :: iso_c_binding, only : c_ptr, c_int
 
       type(c_ptr),     intent(in)  :: emu
       integer,         intent(in)  :: comm
-      integer,         intent(in)  :: app_id
+      integer,         intent(in)  :: emulator_id
       type(mct_gsMap), intent(out) :: gs_map
 
       integer(c_int) :: num_local_cols, num_global_cols
@@ -271,7 +281,7 @@ CONTAINS
       ! Get local global-IDs from emulator
       call emulator_get_local_col_gids(emu, col_gids)
       call mct_gsMap_init(gs_map, col_gids, comm, &
-         app_id, num_local_cols, num_global_cols)
+         emulator_id, num_local_cols, num_global_cols)
 
       deallocate(col_gids)
 
