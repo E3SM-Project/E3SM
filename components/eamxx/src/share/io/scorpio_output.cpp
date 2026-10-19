@@ -645,7 +645,6 @@ run (const std::string& filename, const util::TimeStamp& ts,
     if (is_write_step) {
       if (m_avg_type==OutputAvgType::Instant and masked) {
         // The data of f_in is garbage where f_in is invalid, so we write fill_value there
-        f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
         f_out.deep_copy(constants::fill_value<Real>,f_out.get_valid_mask(),true);
       }
 
