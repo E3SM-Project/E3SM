@@ -20,11 +20,11 @@
 
 /*
  * Fields interpolated to the same pressure level share a valid-sample count,
- * also when aliased, except for a field whose input is masked or may be filled.
+ * also when aliased, except for a field whose input is masked.
  * Midpoint and interface fields do not share, since their ranges differ.
- * An alias of a filled model field uses the count of that field.
- * Model fields have a count of their own, also if they share a mask, since
- * their fill pattern need not follow it.
+ * An alias of a masked model field uses the count of that field.
+ * Model fields have a count of their own. The data of an invalid entry is garbage:
+ * IO must never use it, and write fill_value there.
  * A vector field at a level shares the level's count name; the count adds the
  * vector dim to the name, as for any count.
  * In MAX/MIN streams, an entry that is never valid is fill_value, also when
@@ -40,6 +40,9 @@ constexpr int nlevs  = 4;
 constexpr int nsteps = 4;
 
 constexpr Real FILL = constants::fill_value<Real>;
+
+// The data under an invalid entry: it must never reach the output
+constexpr Real GARBAGE = 1234.5;
 
 // 200/400/600/800 hPa, so the requested 500 hPa is strictly interior and is
 // bracketed by levels 1 and 2 in every column. The interfaces reach 900 hPa,
@@ -64,14 +67,14 @@ void calc_fields (Field& X, Field& C, const int n)
   C.sync_to_dev();
 }
 
-// The step number, except in the first local column, which is filled
+// The step number, except in the first local column, which is invalid (it holds garbage)
 void calc_F (Field& F, const int n)
 {
   auto F_h = F.get_view<Real**,Host>();
   const int nl = F.get_header().get_identifier().get_layout().dim(0);
   for (int i=0; i<nl; ++i) {
     for (int k=0; k<nlevs; ++k) {
-      F_h(i,k) = i==0 ? FILL : Real(n);
+      F_h(i,k) = i==0 ? GARBAGE : Real(n);
     }
   }
   F.sync_to_dev();
@@ -125,37 +128,43 @@ create_test_fm (const std::shared_ptr<const GridsManager>& gm,
   W.deep_copy(0);
   fm->add_field(W);
 
-  // A model field that is filled in the first local column
+  // A model field that is invalid in the first local column
   Field M(FieldIdentifier("m2d",grid->get_2d_scalar_layout(),K,grid->name()));
   M.allocate_view();
-  M.get_header().set_may_be_filled(true);
+  M.create_valid_mask(Field::MaskInit::Valid);
   M.get_header().get_tracking().update_time_stamp(t0);
   M.deep_copy(7.0);
   M.sync_to_host();
-  M.get_view<Real*,Host>()(0) = FILL;
+  M.get_view<Real*,Host>()(0) = GARBAGE;
   M.sync_to_dev();
+  M.get_valid_mask().sync_to_host();
+  M.get_valid_mask().get_view<int*,Host>()(0) = 0;
+  M.get_valid_mask().sync_to_dev();
   fm->add_field(M);
 
-  // A model field that may be filled, with no mask: filled in the first local column
+  // A model field that is invalid in the first local column (all levels)
   Field F(FieldIdentifier("F",layout_mid,K,grid->name()));
   F.allocate_view();
-  F.get_header().set_may_be_filled(true);
+  F.create_valid_mask(Field::MaskInit::Valid);
   F.get_header().get_tracking().update_time_stamp(t0);
   calc_F(F,0);
+  {
+    F.get_valid_mask().sync_to_host();
+    auto Fm = F.get_valid_mask().get_view<int**,Host>();
+    for (int k=0; k<nlevs; ++k) {
+      Fm(0,k) = 0;
+    }
+    F.get_valid_mask().sync_to_dev();
+  }
   fm->add_field(F);
 
-  // Two model fields with the same mask, valid everywhere, but S2 is filled
-  // everywhere (like a COSP output, which is refreshed less often than its mask)
-  Field shared_mask(FieldIdentifier("shared_mask",grid->get_2d_scalar_layout(),none,grid->name(),DataType::IntType));
-  shared_mask.allocate_view();
-  shared_mask.deep_copy(1);
+  // Two model fields: S1 is valid everywhere, while S2 is never valid
   for (std::string n : {"S1","S2"}) {
     Field S(FieldIdentifier(n,grid->get_2d_scalar_layout(),K,grid->name()));
     S.allocate_view();
-    S.set_valid_mask(shared_mask);
-    S.get_header().set_may_be_filled(true);
+    S.create_valid_mask(n=="S1" ? Field::MaskInit::Valid : Field::MaskInit::Invalid);
     S.get_header().get_tracking().update_time_stamp(t0);
-    S.deep_copy(n=="S1" ? Real(3.0) : FILL);
+    S.deep_copy(n=="S1" ? Real(3.0) : GARBAGE);
     fm->add_field(S);
   }
 
@@ -262,17 +271,16 @@ void run_and_check (const std::string& avg_type,
   CHECK_FALSE (scorpio::has_var(filename,"avg_count_ncol"));
   // ... while the field with a masked input has its own
   CHECK (scorpio::has_var(filename,"avg_count_Xmasked_at_500hPa_ncol"));
-  // ... and so does the alias of the filled model field
+  // ... and so does the alias of the masked model field
   CHECK (scorpio::has_var(filename,"avg_count_AM_ncol"));
   // Midpoint and interface fields at the same level do not share
   CHECK (scorpio::has_var(filename,"avg_count_850hPa_ncol"));
   CHECK (scorpio::has_var(filename,"avg_count_850hPa_int_ncol"));
-  // A field whose input may be filled has its own count, also without a mask
+  // A field whose input is masked has its own count
   CHECK (scorpio::has_var(filename,"avg_count_F_at_500hPa_ncol"));
-  // Model fields with the same mask do not share
+  // Model fields have a count of their own
   CHECK (scorpio::has_var(filename,"avg_count_S1_ncol"));
   CHECK (scorpio::has_var(filename,"avg_count_S2_ncol"));
-  CHECK_FALSE (scorpio::has_var(filename,"avg_count_shared_mask_ncol"));
   // The vector field at 500 hPa: the count is named after the level and the layout
   CHECK (scorpio::has_var(filename,"avg_count_500hPa_ncol_dim2"));
   CHECK_FALSE (scorpio::has_var(filename,"avg_count_500hPa_dim2_ncol_dim2"));
@@ -321,7 +329,7 @@ void run_and_check (const std::string& avg_type,
       REQUIRE (xu_h(i)==Approx(expected));
       // (with a count shared with AM, column 0 would be FILL)
       REQUIRE (c5_h(i)==Approx(-1.0));
-      // The filled column has no valid samples
+      // The invalid column has no valid samples
       REQUIRE (am_h(i)==(i==0 ? FILL : Real(7.0)));
       if (i==0) {
         REQUIRE (f5_h(i)==FILL);
@@ -336,7 +344,7 @@ void run_and_check (const std::string& avg_type,
       // No valid samples: must be fill_value (it was 0 with a shared count)
       REQUIRE (xm_h(i)==FILL);
 
-      // S2 is never valid (with the count of S1, its average would be 0)
+      // S2 is never valid
       REQUIRE (s1_h(i)==Approx(3.0));
       REQUIRE (s2_h(i)==FILL);
     }
