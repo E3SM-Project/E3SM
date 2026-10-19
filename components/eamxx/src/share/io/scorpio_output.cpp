@@ -616,11 +616,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
     start_timer("EAMxx::IO::accumulate");
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  // Note: if f_in aliases f_out, this is a no-op
-        if (masked) {
-          f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
-        }
-        break;
+        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op. Otherwise, it also copies the mask
       case OutputAvgType::Max:
         masked ? f_out.max(f_in,f_in.get_valid_mask())
                : f_out.max(f_in);

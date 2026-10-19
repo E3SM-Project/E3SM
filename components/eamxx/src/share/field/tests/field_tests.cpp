@@ -387,6 +387,101 @@ TEST_CASE("field", "") {
     REQUIRE (views_are_equal(f3.get_valid_mask(),zeros));
     REQUIRE (f3.get_valid_mask().name()=="my_mask");
   }
+  SECTION ("deep_copy_mask") {
+    auto make = [&](const std::string& name, const Field::MaskInit init) {
+      Field f(fid.clone(name),true);
+      f.create_valid_mask(init);
+      return f;
+    };
+
+    // Set a mask to a deterministic pattern (1 on even cols)
+    auto set_mask = [](const Field& mask) {
+      auto v = mask.get_view<int**,Host>();
+      for (int i=0; i<v.extent_int(0); ++i)
+        for (int j=0; j<v.extent_int(1); ++j)
+          v(i,j) = i%2==0 ? 1 : 0;
+      mask.sync_to_dev();
+    };
+
+    // Compare ALL the entries (views_are_equal ignores invalid entries of masked fields)
+    auto same_data = [](const Field& f1, const Field& f2) {
+      f1.sync_to_host();
+      f2.sync_to_host();
+      auto v1 = f1.get_view<const Real**,Host>();
+      auto v2 = f2.get_view<const Real**,Host>();
+      for (int i=0; i<v1.extent_int(0); ++i)
+        for (int j=0; j<v1.extent_int(1); ++j)
+          if (v1(i,j)!=v2(i,j))
+            return false;
+      return true;
+    };
+
+    SECTION ("masked_masked") {
+      // Both data and mask are copied
+      auto x = make("x",Field::MaskInit::None);
+      randomize_uniform(x,seed++);
+      set_mask(x.get_valid_mask());
+
+      auto y = make("y",Field::MaskInit::Invalid);
+      y.deep_copy(x);
+      REQUIRE (same_data(y,x));
+      REQUIRE (views_are_equal(y.get_valid_mask(),x.get_valid_mask()));
+    }
+
+    SECTION ("unmasked_rhs") {
+      // A field without mask is valid everywhere
+      Field x(fid.clone("x"),true);
+      randomize_uniform(x,seed++);
+
+      auto y = make("y",Field::MaskInit::Invalid);
+      y.deep_copy(x);
+      REQUIRE (same_data(y,x));
+
+      Field ones = y.get_valid_mask().clone();
+      ones.deep_copy(1);
+      REQUIRE (views_are_equal(y.get_valid_mask(),ones));
+
+      // No mask is created if lhs doesn't have one
+      Field z(fid.clone("z"),true);
+      z.deep_copy(x);
+      REQUIRE (same_data(z,x));
+      REQUIRE (not z.has_valid_mask());
+    }
+
+    SECTION ("unmasked_lhs") {
+      // Would silently lose the validity info
+      auto x = make("x",Field::MaskInit::Valid);
+      Field y(fid.clone("y"),true);
+      REQUIRE_THROWS (y.deep_copy(x));
+    }
+
+    SECTION ("shared_mask") {
+      // If the mask is shared, we leave it alone
+      auto x = make("x",Field::MaskInit::None);
+      randomize_uniform(x,seed++);
+      set_mask(x.get_valid_mask());
+
+      Field expected = x.get_valid_mask().clone();
+      set_mask(expected);
+
+      Field y(fid.clone("y"),true);
+      y.set_valid_mask(x.get_valid_mask());
+      y.deep_copy(x);
+      REQUIRE (same_data(y,x));
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+    }
+
+    SECTION ("clone") {
+      // clone(CopyData) does not clone the mask, but copies all the data
+      auto x = make("x",Field::MaskInit::None);
+      randomize_uniform(x,seed++);
+      set_mask(x.get_valid_mask());
+
+      auto c = x.clone(CloneFlags::CopyData);
+      REQUIRE (not c.has_valid_mask());
+      REQUIRE (same_data(c,x));
+    }
+  }
   SECTION ("broadcast") {
     const int ncol = 3, ncmp = 2, nlev = 5;
     FieldIdentifier sfid ("src", {{COL,LEV},{ncol,nlev}}, m/s, "some_grid");
