@@ -3298,6 +3298,7 @@
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc.dane</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
+    <CMAKE_BACKEND>ninja</CMAKE_BACKEND>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
@@ -3328,6 +3329,7 @@
         <command name="load">git</command>
         <command name="load">subversion</command>
         <command name="load">cmake/3.26.3</command>
+        <command name="load">ninja/1.11.1</command>
         <command name="load">mkl/2022.1.0</command>
         <command name="load">intel/2025.2.0-magic</command>
       </modules>
