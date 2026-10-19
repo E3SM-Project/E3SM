@@ -247,7 +247,6 @@ contains
     ! Set subgrid weights after dyn subgrid updates
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     class(column_state_updater_type) , intent(inout) :: this
     type(bounds_type)                , intent(in) :: bounds
@@ -285,7 +284,6 @@ contains
     ! This method does no special handling of any columns.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
@@ -779,7 +777,6 @@ contains
     ! weights.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds

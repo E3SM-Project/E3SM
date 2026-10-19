@@ -362,6 +362,7 @@ contains
      integer  :: local_secp1                         ! seconds into current date in local time
      integer  :: year,month,day                      ! calendar info for current time step
      real(r8) :: sabg_snl_sum                        ! temporary, absorbed energy in all active snow layers [W/m2]
+    real(r8) :: ssa                ! sub_surf_abs_SW of one patch (private)
      real(r8) :: absrad_pur                          ! temp: absorbed solar radiation by pure snow [W/m2]
      real(r8) :: absrad_bc                           ! temp: absorbed solar radiation without BC [W/m2]
      real(r8) :: absrad_oc                           ! temp: absorbed solar radiation without OC [W/m2]
@@ -492,7 +493,7 @@ contains
        end if
 
        ! Initialize fluxes
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(p)
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
           sabg_lyr(p,:) = 0._r8
@@ -501,20 +502,20 @@ contains
        ! zero-out fsun for the urban patches
        ! the non-urban patches were set prior to this call
        ! and split into ed and non-ed specific functions
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(p)
        do fp = 1,num_urbanp
           p = filter_urbanp(fp)
           fsun(p) = 0._r8
        end do
 
        ! Loop over nband wavebands
-       !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
+       !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3,p,l,t)
        do fp = 1,num_nourbanp
          p = filter_nourbanp(fp)
          l = veg_pp%landunit(p)
          t = veg_pp%topounit(p)
          sum1 = 0._r8; sum2 = 0._r8; sum3 = 0._r8 
-         !$acc loop vector reduction(+:sum1,sum2,sum3)
+         !$acc loop vector reduction(+:sum1,sum2,sum3) private(cad,cai)
          do ib = 1, nband
              ! Absorbed by canopys
              cad = forc_solad(t,ib)*fabd(p,ib)
@@ -535,7 +536,7 @@ contains
          end if  
       end do  !
       
-      !$acc parallel loop independent gang vector collapse(2) default(present)
+      !$acc parallel loop independent gang vector collapse(2) default(present) private(p,t)
       do ib = 1, nband
          do fp = 1,num_nourbanp
             p = filter_nourbanp(fp)
@@ -546,7 +547,7 @@ contains
          end do 
       end do 
 
-      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3, sum4)
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3,sum4,p,t,c,l)
       do fp = 1,num_nourbanp
          p = filter_nourbanp(fp)
          t = veg_pp%topounit(p)
@@ -590,13 +591,13 @@ contains
       end do
 
       if (use_snicar_frc) then
-         !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3,sum4)
+         !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3,sum4,p,c)
          do fp = 1,num_nourbanp
             p = filter_nourbanp(fp)
             c = veg_pp%column(p)
 
             sum1 = 0._r8; sum2 = 0._r8; sum3 = 0._r8; sum4 = 0._r8;
-            !$acc loop vector reduction(+:sum1,sum2,sum3,sum4) private(absrad)
+            !$acc loop vector reduction(+:sum1,sum2,sum3,sum4) private(absrad_bc,absrad_oc,absrad_dst,absrad_pur)
             do ib = 1, nband
                 ! Solar radiation absorbed by ground surface without BC
                 absrad_bc = trd(fp,ib)*(1._r8-albgrd_bc(c,ib)) + tri(fp,ib)*(1._r8-albgri_bc(c,ib))
@@ -624,7 +625,7 @@ contains
 
        !   compute absorbed flux in each snow layer and top soil layer,
        !   based on flux factors computed in the radiative transfer portion of SNICAR.
-      !$acc parallel loop independent gang worker default(present) private(sabg_snl_sum,sum1)
+      !$acc parallel loop independent gang worker default(present) private(sabg_snl_sum,sum1,p,c,l,ssa)
       do fp = 1,num_nourbanp
          p = filter_nourbanp(fp)
          c = veg_pp%column(p)
@@ -641,7 +642,7 @@ contains
             sabg_snl_sum  = sabg_lyr(p,1)
             ! CASE 2: Snow layers present: absorbed radiation is scaled according to
             ! flux factors computed by SNICAR
-            sub_surf_abs_SW(c) = 0._r8
+            ssa = 0._r8
          else
             !$acc loop vector reduction(+:sabg_snl_sum,sum1)
             do i = -nlevsno+1,1,1
@@ -656,13 +657,13 @@ contains
                   sum1 = sum1 + sabg_lyr(p,i)
                endif
             enddo
-            sub_surf_abs_SW(c) = sum1 
+            ssa = sum1
 
             ! Divide absorbed by total, to get % absorbed in subsurface
             if (sabg_snl_sum /= 0._r8) then
-               sub_surf_abs_SW(c) = sub_surf_abs_SW(c)/sabg_snl_sum
+               ssa = ssa/sabg_snl_sum
             else
-               sub_surf_abs_SW(c) = 0._r8
+               ssa = 0._r8
             endif
 
             ! Error handling: The situation below can occur when solar radiation is
@@ -767,10 +768,18 @@ contains
                 sfc_frc_aer_sno(p) = spval
              endif
           end if
+
+          ! The column keeps the value of its last patch in the filter, as in the
+          ! serial loop (a column's patches are contiguous): only that patch writes it.
+          if (fp == num_nourbanp) then
+             sub_surf_abs_SW(c) = ssa
+          else if (veg_pp%column(filter_nourbanp(fp+1)) /= c) then
+             sub_surf_abs_SW(c) = ssa
+          end if
       enddo
 
        ! Radiation diagnostics
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(p,t,g,rvis,rnir,local_secp1)
        do fp = 1,num_nourbanp
           p = filter_nourbanp(fp)
           t = veg_pp%topounit(p)
@@ -838,7 +847,7 @@ contains
           endif
        end do
 
-       !$acc parallel loop independent gang vector default(present) 
+       !$acc parallel loop independent gang vector default(present) private(p,t,g,local_secp1)
        do fp = 1,num_urbanp
           p = filter_urbanp(fp)
           t = veg_pp%topounit(p)
@@ -977,7 +986,7 @@ contains
             laisha_z    => canopystate_vars%laisha_z_patch, & ! shaded leaf area for canopy layer
             fsun        => canopystate_vars%fsun_patch  )       ! sunlit fraction of canopy
 
-         !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
+         !$acc parallel loop independent gang worker default(present) private(sum1,sum2,p,t)
          do fp = 1,num_nourbanp
 
            p = filter_nourbanp(fp)

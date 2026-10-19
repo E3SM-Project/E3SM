@@ -635,7 +635,9 @@ contains
          benefit_pgpp_pleafc          => veg_ns%benefit_pgpp_pleafc     &
          )
 
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(p, ivt, mr, curmr, curmr_ratio, f1, f2, f3, &
+      !$acc   f4, g1, g2, cnl, cnfr, cnlw, cndw, cpl, cpfr, cplw, cpdw, f5, fleaf, t1, rmat, af1, af2, sipf3, sipf4, &
+      !$acc   af3, af4, cng, cpg)
       do fp = 1, num_soilp 
          p = filter_soilp(fp) 
          ivt = veg_pp%itype(p)
@@ -1327,7 +1329,7 @@ contains
         if (nu_com .eq. 'RD') then 
             !$acc parallel loop independent gang vector collapse(2) &
             !$acc& present(filter_soilc(:),col_plant_ndemand_vr(:,:),col_plant_pdemand_vr(:,:), &
-            !$acc& plant_pdemand_col(:),plant_ndemand_col(:), nuptake_prof(:,:),puptake_prof(:,:))
+            !$acc& plant_pdemand_col(:),plant_ndemand_col(:), nuptake_prof(:,:),puptake_prof(:,:)) private(c)
             do j = 1, nlevdecomp
                do fc=1,num_soilc
                  c = filter_soilc(fc)
@@ -1714,7 +1716,7 @@ contains
          !$acc enter data create(sum1,sum2,sum_immob_no3,sum_immob_nh4,sum_immob_p,sum_pot_immob_p)
            if (nu_com .eq. 'RD') then
 
-             !$acc parallel loop independent collapse(2) gang worker private(c,sum1,sum2) default(present)
+             !$acc parallel loop independent collapse(2) gang worker private(c, sum1, sum2, l) default(present)
               do j = 1, nlevdecomp
                  do fc=1, num_soilc
 
@@ -1830,7 +1832,7 @@ contains
      call t_stopf('phase2-colim')
 
      if(carbonnitrogen_only)then
-        !$acc parallel loop independent collapse(2) gang vector private(c) default(present)
+        !$acc parallel loop independent collapse(2) gang vector private(c, l) default(present)
         do j = 1, nlevdecomp
            do fc=1, num_soilc
               c = filter_soilc(fc)
@@ -1841,7 +1843,7 @@ contains
      end if
 
      if(carbonphosphorus_only)then
-        !$acc parallel loop independent collapse(2) gang vector private(c) default(present)
+        !$acc parallel loop independent collapse(2) gang vector private(c, l) default(present)
         do j = 1, nlevdecomp
            do fc=1, num_soilc
               c = filter_soilc(fc)
@@ -1933,7 +1935,8 @@ contains
      end if
 
      ! sum up N fluxes to immobilization
-     !$acc parallel loop independent gang worker private(c,sum1,sum2,sum_immob_no3,sum_immob_nh4,sum_immob_p,sum_pot_immob_p) default(present)
+     !$acc parallel loop independent gang worker private(c,sum1,sum2,sum_immob_no3,sum_immob_nh4,sum_immob_p, &
+     !$acc   sum_pot_immob_p) default(present)
      do fc=1,num_soilc
         c = filter_soilc(fc)
         sum1 = 0._r8; sum2 = 0._r8;
@@ -2330,7 +2333,7 @@ contains
         call p2c_1d_filter(bounds,num_soilc,filter_soilc, &
             sminp_to_ppool(begp:endp), sminp_to_plant(begc:endc) )
 
-         !$acc parallel loop gang vector collapse(2) independent default(present)
+         !$acc parallel loop gang vector collapse(2) independent default(present) private(c)
           do j = 1, nlevdecomp
              do fc=1,num_soilc
                 c = filter_soilc(fc)
@@ -2366,7 +2369,7 @@ contains
           call p2c_1d_filter(bounds,num_soilc,filter_soilc, &
             sminp_to_ppool(begp:endp), sminp_to_plant(begc:endc) )
 
-          !$acc parallel loop gang independent default(present)
+          !$acc parallel loop gang independent default(present) private(c)
           do j = 1, nlevdecomp
              !$acc loop worker vector private(c)
              do fc=1,num_soilc
@@ -2977,7 +2980,8 @@ contains
     real(r8) :: sum_no3_demand_scaled ! "" no3
     integer  :: j,fc,c                ! soil decomp layer loop
 
-    !$acc parallel loop independent gang vector default(present) collapse(2) 
+    !$acc parallel loop independent gang vector default(present) collapse(2) private(c, sum_nh4_demand, &
+    !$acc   sum_nh4_demand_scaled, sum_no3_demand, sum_no3_demand_scaled)
     do j = 1, nlevdecomp
        do fc=1,num_soilc !col_loop
          c = filter_soilc(fc)
@@ -3107,7 +3111,7 @@ contains
     real(r8) :: sum_pdemand          ! Total phos demand over all competitors
     integer :: j, fc ,c 
 
-    !$acc parallel loop independent collapse(2) gang vector default(present)
+    !$acc parallel loop independent collapse(2) gang vector default(present) private(c, sum_pdemand)
     do j = 1, nlevdecomp
       do fc = 1, num_soilc
          c = filter_soilc(fc)
@@ -3180,7 +3184,7 @@ contains
           !$acc enter data create(sminn_tot(1:num_soilc))
          if( .not. (use_pflotran .and. pf_cmode) ) then
 
-          !$acc parallel loop independent gang worker default(present) private(sum1,c)
+          !$acc parallel loop independent gang worker default(present) private(sum1, c, sminn_vr_loc)
           do fc=1,num_soilc
              sum1 = 0._r8
              c = filter_soilc(fc)
@@ -3192,7 +3196,7 @@ contains
              sminn_tot(fc) = sum1
           end do
 
-          !$acc parallel loop independent gang default(present)
+          !$acc parallel loop independent gang default(present) private(c, sminn_vr_loc)
           do j = 1, nlevdecomp
              !$acc loop worker vector independent private(c,sminn_vr_loc)
              do fc=1,num_soilc
@@ -3274,7 +3278,7 @@ contains
             solutionp_tot(fc) = sum1
          end do
   
-         !$acc parallel loop independent gang default(present)
+         !$acc parallel loop independent gang default(present) private(c)
          do j = 1, nlevdecomp
             !$acc loop vector independent private(c)
             do fc=1,num_soilc
@@ -3497,7 +3501,8 @@ contains
         p_allometry                  => cnstate_vars%p_allometry_patch      & ! Output: [real(r8) (:)   ]  P allocation index (DIM)
         )
       
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(p, c, ivt, f1, f2, f3, f4, g1, g2, cnl, &
+      !$acc   cnfr, cnlw, cndw, cpl, cpfr, cplw, cpdw, fcur, f5, rc, rc_p, r, nlc, cng, cpg, gresp_storage)
       do fp = 1, num_soilp 
          p= filter_soilp(fp) 
          c= veg_pp%column(p)

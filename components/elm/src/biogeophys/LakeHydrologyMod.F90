@@ -222,7 +222,7 @@ contains
     !$acc sum3 )
       
       ! Add soil water to water balance.
-      !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3)
+      !$acc parallel loop independent gang worker default(present) private(sum1, sum2, sum3, c)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          ! start from the running totals to keep the reference's summation order
@@ -242,7 +242,7 @@ contains
 
       ! Add lake water storage to water balance.
       if (use_lake_wat_storage) then
-         !$acc parallel loop independent gang vector default(present)
+         !$acc parallel loop independent gang vector default(present) private(c)
          do fc = 1, num_lakec
             c = filter_lakec(fc)
             begwb(c) = begwb(c) + wslake(c)
@@ -252,7 +252,7 @@ contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Do precipitation onto ground, etc., from CanopyHydrology
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(p, c, t)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -287,7 +287,7 @@ contains
       end do ! (end pft loop)
       
       ! Determine snow height and snow water
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(c, t, dz_snowf, bifall, newnode)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          t = col_pp%topounit(c)
@@ -366,7 +366,7 @@ contains
       end do
 
       ! Calculate sublimation and dew, adapted from HydrologyLake and Biogeophysics2.
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(p, c, jtop, j, qflx_evap_soi_lim)
       do fp = 1,num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -441,7 +441,7 @@ contains
          end if
 
       end do
-      !$acc parallel loop independent gang worker default(present) private(sum1,jtop,h2osno_temp)
+      !$acc parallel loop independent gang worker default(present) private(sum1, jtop, h2osno_temp, c)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          jtop = snl(c)+1
@@ -473,7 +473,7 @@ contains
       ! for output to history tape and other uses
       ! (note that pft2col is called before LakeHydrology, so we can't use that routine
       ! to do these column -> pft averages)
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(p, c)
       do fp = 1,num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -496,7 +496,7 @@ contains
            num_shlakesnowc, filter_shlakesnowc, num_shlakenosnowc, filter_shlakenosnowc)
 
       ! specify snow fraction
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          if (h2osno(c) > 0.0_r8) then
@@ -523,7 +523,7 @@ contains
       ! saturation value, then remove water.
 
       ! changed to nlevsoi on 8/11/10 to make consistent with non-lake bedrock
-      !$acc parallel loop independent gang vector collapse(2) default(present) 
+      !$acc parallel loop independent gang vector collapse(2) default(present) private(c)
       do j = 1,nlevsoi  !nlevgrnd
          do fc = 1, num_lakec
             c = filter_lakec(fc)
@@ -581,7 +581,7 @@ contains
       ! excessive because the fluxes were calculated with a fixed ground temperature of freezing, but the
       ! phase change was unable to restore the temperature to freezing.
 
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(p, c, j, heatrem)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = pcolumn(p)
@@ -613,7 +613,7 @@ contains
       ! sufficient heat to melt the snow without freezing, then that will be done.
       ! Otherwise, the top layer will undergo freezing, but only if the top layer will
       ! not freeze completely.  Otherwise, let the snow layers persist and melt by diffusion.
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
 
@@ -624,7 +624,7 @@ contains
          end if
       end do
 
-      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
+      !$acc parallel loop independent gang worker default(present) private(sum1, sum2, c)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
 
@@ -643,7 +643,7 @@ contains
             heatsum(fc) = sum2 
          end if
       end do
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c, g, heatrem)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          g = col_pp%gridcell(c) ! DEBUG
@@ -676,7 +676,7 @@ contains
       end do
 
       ! Set empty snow layers to zero
-      !$acc parallel loop independent gang vector collapse(2) default(present)
+      !$acc parallel loop independent gang vector collapse(2) default(present) private(c)
       do j = -nlevsno+1,0
          do fc = 1, num_shlakesnowc
             c = filter_shlakesnowc(fc)
@@ -704,7 +704,7 @@ contains
 
       ! Vertically average t_soisno and sum of h2osoi_liq and h2osoi_ice
       ! over all snow layers for history output
-      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
+      !$acc parallel loop independent gang worker default(present) private(sum1, sum2, c)
       do fc = 1, num_shlakesnowc
          c = filter_shlakesnowc(fc)
          sum1 = 0._r8;
@@ -721,7 +721,7 @@ contains
       end do
 
       ! Determine ending water balance and volumetric soil water
-      !$acc parallel loop independent gang worker default(present) private(sum1)
+      !$acc parallel loop independent gang worker default(present) private(sum1, c)
       do fc = 1, num_lakec
          c = filter_lakec(fc)
          sum1 = h2osno(c)
@@ -732,7 +732,7 @@ contains
          endwb(c) = sum1
       end do
 
-      !$acc parallel loop independent gang vector default(present) collapse(2) 
+      !$acc parallel loop independent gang vector default(present) collapse(2) private(c)
       do j = 1, nlevgrnd
          do fc = 1, num_lakec
             c = filter_lakec(fc)
@@ -744,11 +744,12 @@ contains
       !      Is it important to go through lake patches sequentially
       !      for water storage? 
       !      Currently num_lakec = num_lakep all timesteps?
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(c, g, t, p)
       do fc = 1,num_lakec 
          c = filter_lakec(fc)
          g = col_pp%gridcell(c) 
          t = col_pp%topounit(c) 
+         p = col_pp%pfti(c)   ! a lake column's single patch (upstream looped over lake patches)
           
          qflx_drain_perched(c) = 0._r8
          qflx_h2osfc_surf(c)   = 0._r8
@@ -771,7 +772,7 @@ contains
       end if 
 
       if(use_lake_wat_storage) then 
-         !$acc parallel loop independent gang vector default(present) 
+         !$acc parallel loop independent gang vector default(present) private(p, c, g, t, qflx_snwcp)
          do fp = 1, num_lakep 
             p = filter_lakep(fp)
             c = pcolumn(p) 
@@ -799,7 +800,7 @@ contains
             qflx_runoff(c) = qflx_drain(c) + qflx_qrgwl(c)
          end do 
       else 
-         !$acc parallel loop independent gang  vector default(present) 
+         !$acc parallel loop independent gang  vector default(present) private(p, c, t, g, qflx_snwcp)
          do fp = 1,num_lakep
             p = filter_lakep(fp)
             c = pcolumn(p)
@@ -822,14 +823,14 @@ contains
       end if 
 
       ! top-layer diagnostics
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_shlakesnowc
          c = filter_shlakesnowc(fc)
          h2osno_top(c)  = h2osoi_ice(c,snl(c)+1) + h2osoi_liq(c,snl(c)+1)
       end do
 
       ! Zero variables in columns without snow
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_shlakenosnowc
          c = filter_shlakenosnowc(fc)
 

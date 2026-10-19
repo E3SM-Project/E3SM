@@ -213,8 +213,9 @@ contains
       ! 2) If using glc_dyn_runoff_routing=T, zero qflx_snwcp_ice: qflx_snwcp_ice is the flux
       !    sent to ice runoff, but for glc_dyn_runoff_routing=T, we do NOT want this to be
       !    sent to ice runoff (instead it is sent to CISM).
-      !$acc parallel loop independent gang vector default(present) 
+      !$acc parallel loop independent gang vector default(present) private(l)
       do c = bounds%begc,bounds%endc
+         l = col_pp%landunit(c)
          qflx_glcice_frz(c) = 0._r8
          qflx_glcice_frz_diag(c) = 0._r8
 

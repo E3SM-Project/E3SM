@@ -85,12 +85,6 @@ module PhenologyMod
   real(r8) :: soilpsi_off                   ! water potential for offset trigger (MPa)
   real(r8) :: lwtop                         ! live wood turnover proportion (annual fraction)
   !$acc declare create(fracday         )
-  !$acc declare create(crit_dayl       )
-  !$acc declare create(crit_dayl_stress)
-  !$acc declare create(cumprec_onset   )
-  !$acc declare create(ndays_on        )
-  !$acc declare create(ndays_off       )
-  !$acc declare create(fstor2tran      )
   !$acc declare create(crit_onset_fdd  )
   !$acc declare create(crit_onset_swi  )
   !$acc declare create(soilpsi_on      )
@@ -408,12 +402,6 @@ contains
 
     !$acc update device(&
     !$acc   fracday         &
-    !$acc  , crit_dayl       &
-    !$acc  , crit_dayl_stress&
-    !$acc  , cumprec_onset   &
-    !$acc  , ndays_on        &
-    !$acc  , ndays_off       &
-    !$acc  , fstor2tran      &
     !$acc  , crit_onset_fdd  &
     !$acc  , crit_onset_swi  &
     !$acc  , soilpsi_on      &

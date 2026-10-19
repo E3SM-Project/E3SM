@@ -172,7 +172,13 @@ contains
       end do
 
       ! Set input forcing fields
-      !$acc parallel loop independent gang vector default(present)
+      ! (the scalars passed to net_longwave must be private: a scalar passed by
+      ! reference is not privatized by the compiler)
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc private(l, t, g, c, p, t_roof, t_sunwall, t_shadewall, t_improad, t_perroad, &
+      !$acc    em_roof_s, em_improad_s, em_perroad_s, lwdown, &
+      !$acc    lwnet_roof, lwnet_improad, lwnet_perroad, lwnet_sunwall, lwnet_shadewall, lwnet_canyon, &
+      !$acc    lwup_roof, lwup_improad, lwup_perroad, lwup_sunwall, lwup_shadewall, lwup_canyon)
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)

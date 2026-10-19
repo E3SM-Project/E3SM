@@ -240,7 +240,7 @@ contains
          mflx_neg_snow_col_1d(c) = 0._r8
       end do
 
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c, l, wgdif)
       do fc = 1,num_snowc
          c = filter_snowc(fc)
          l=col_pp%landunit(c)
@@ -280,7 +280,7 @@ contains
 
       ! Porosity and partial volume
 
-      !$acc parallel loop independent gang vector default(present) collapse(2) 
+      !$acc parallel loop independent gang vector default(present) collapse(2) private(c)
       do j = -nlevsno+1, 0
          do fc = 1, num_snowc
             c = filter_snowc(fc)
@@ -310,7 +310,7 @@ contains
       ! 4) update mass of aerosol in top layer, accordingly
       ! 5) update mass concentration of aerosol accordingly
 
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1,num_snowc
          c = filter_snowc(fc)
          qin(fc)         = 0._r8
@@ -326,7 +326,7 @@ contains
 
       !NOTE : look into qout race condition?
 
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_snowc
          c = filter_snowc(fc)
          !$acc loop seq 
@@ -460,7 +460,7 @@ contains
       ! Layer interfaces (zi) and node depths (z) do not need adjustment here because they
       ! are adjusted in CombineSnowLayers and are not used up to that point.
 
-      !$acc parallel loop independent gang vector default(present) collapse(2) 
+      !$acc parallel loop independent gang vector default(present) collapse(2) private(c)
       do j = -nlevsno+1, 0
          do fc = 1, num_snowc
             c = filter_snowc(fc)
@@ -470,7 +470,7 @@ contains
          end do
       end do
 
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_snowc
          c = filter_snowc(fc)
          ! Qout from snow bottom
@@ -482,7 +482,7 @@ contains
                        * (qflx_dew_snow(c) + qflx_dew_grnd(c) + qflx_rain_grnd(c)) * dtime_mod
       end do
 
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(c)
       do fc = 1, num_nosnowc
          c = filter_nosnowc(fc)
          qflx_snow_melt(c) = qflx_snomelt(c)
@@ -500,7 +500,7 @@ contains
     ! state based on snow sublimation and re-freezing of liquid water.
     ! Re-freezing effect is inactived by default because of
     ! uncertainty in how this process operates.
-    !$acc parallel loop independent gang vector default(present) collapse(2) 
+    !$acc parallel loop independent gang vector default(present) collapse(2) private(c, subsnow, frc_sub, frc_transfer, dm_int)
     do j = -nlevsno+1, 0
        do fc = 1, num_snowc
           c = filter_snowc(fc)
@@ -794,7 +794,8 @@ contains
       else 
 
          !NOTE: revisit these loops 
-         !$acc parallel loop independent gang vector default(present) private(burden_noextra)
+         !$acc parallel loop independent gang vector default(present) private(burden_noextra, c, wx, void, l, bi, fi, &
+         !$acc   td, dexpf, ddz1, ddz2, ddz3, wsum, fsno_melt, ddz4, pdzdtc)
          do fc = 1, num_snowc
             c = filter_snowc(fc)
             burden_noextra = 0._r8 
@@ -1000,7 +1001,7 @@ contains
           end if
        end if
 
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(c)
        do fc = 1, num_snowc
           c = filter_snowc(fc)
 
@@ -1011,7 +1012,7 @@ contains
        end do
 
        ! The following loop is NOT VECTORIZED
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(c, l)
        do fc = 1, num_snowc
           c = filter_snowc(fc)
           l = col_pp%landunit(c)
@@ -1096,7 +1097,7 @@ contains
           end do
        end do
 
-       !$acc parallel loop independent gang worker default(present) private(sum1,sum2,sum3,sum4)
+       !$acc parallel loop independent gang worker default(present) private(sum1, sum2, sum3, sum4, c)
        do fc = 1, num_snowc
          c = filter_snowc(fc)
          sum1 = 0._r8; sum2 = 0._r8; 
@@ -1119,7 +1120,7 @@ contains
        ! Check the snow depth - all snow gone
        ! The liquid water assumes ponding on soil surface.
 
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(c, l)
        do fc = 1, num_snowc
           c = filter_snowc(fc)
           l = col_pp%landunit(c)
@@ -1411,7 +1412,7 @@ contains
 
        if ( is_lake ) then
           ! Initialize for consistency check
-         !$acc parallel loop independent gang vector default(present) private(sum1,sum2,sum3)
+         !$acc parallel loop independent gang vector default(present) private(sum1, sum2, sum3, c)
          do fc = 1, num_snowc
             c = filter_snowc(fc)
             sum1 = 0._r8; sum2 = 0._r8; sum3 =0._r8  
@@ -1432,7 +1433,7 @@ contains
        ! Begin calculation - note that the following column loops are only invoked
        ! for snow-covered columns
 
-       !$acc parallel loop independent gang vector default(present) collapse(2) 
+       !$acc parallel loop independent gang vector default(present) collapse(2) private(c, snl_idx)
        !!!$acc present(mss_bcphi(:,:),mss_bcpho(:,:),mss_ocphi(:,:),mss_ocpho(:,:) &
        !!!$acc ,mss_dst1(:,:),mss_dst2(:,:),mss_dst3(:,:),mss_dst4(:,:) ,snw_rds(:,:), &
        !!!$acc  h2osoi_ice(:,:),h2osoi_liq(:,:), t_soisno(:,:),dz(:,:),snl(:))
@@ -1463,7 +1464,8 @@ contains
           end do
        end do
 
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(c, msno, offset, drr, propor, zwice, &
+       !$acc   zwliq, zmbc_phi, zmbc_pho, zmoc_phi, zmoc_pho, zmdst1, zmdst2, zmdst3, zmdst4, dtdz)
        do fc = 1, num_snowc
            c = filter_snowc(fc)
 
@@ -1938,7 +1940,7 @@ contains
 
        end do
 
-       !$acc parallel loop independent gang vector default(present) collapse(2) 
+       !$acc parallel loop independent gang vector default(present) collapse(2) private(c)
        do j = -nlevsno+1,0
           do fc = 1, num_snowc
              c = filter_snowc(fc)
@@ -1991,10 +1993,12 @@ contains
          end do
        end if
 
-       !$acc parallel loop independent gang vector default(present) collapse(2) 
-       do j = 0, -nlevsno+1, -1
-          do fc = 1, num_snowc
-             c = filter_snowc(fc)
+       ! layers in order: each interface depth comes from the one above it
+       !$acc parallel loop independent gang vector default(present) private(c)
+       do fc = 1, num_snowc
+          c = filter_snowc(fc)
+          !$acc loop seq
+          do j = 0, -nlevsno+1, -1
              if (j >= snl(c)+1) then
                 z(c,j)    = zi(c,j) - 0.5_r8*dz(c,j)
                 zi(c,j-1) = zi(c,j) - dz(c,j)
@@ -2151,7 +2155,7 @@ contains
        ! Begin calculation - note that the following column loops are only invoked
        ! for snow-covered columns
 
-       !$acc parallel loop independent gang vector default(present) collapse(2) 
+       !$acc parallel loop independent gang vector default(present) collapse(2) private(c)
        do j = 1,nlevsno
           do fc = 1, num_snowc
              c = filter_snowc(fc)
@@ -2178,7 +2182,8 @@ contains
           end do
        end do
 
-       !$acc parallel loop independent gang vector default(present)
+       !$acc parallel loop independent gang vector default(present) private(c, msno, k, offset, dtdz, drr, propor, &
+       !$acc   zwice, zwliq, zmbc_phi, zmbc_pho, zmoc_phi, zmoc_pho, zmdst1, zmdst2, zmdst3, zmdst4)
        loop_snowcolumns: do fc = 1, num_snowc
            c = filter_snowc(fc)
 
@@ -2312,7 +2317,7 @@ contains
 
        end do loop_snowcolumns
 
-       !$acc parallel loop independent gang vector default(present) collapse(2) 
+       !$acc parallel loop independent gang vector default(present) collapse(2) private(c)
        do j = -nlevsno+1,0
           do fc = 1, num_snowc
              c = filter_snowc(fc)
@@ -2364,10 +2369,12 @@ contains
           end do
        end if
 
-       !$acc parallel loop independent gang vector default(present) collapse(2) 
-       do j = 0, -nlevsno+1, -1
-          do fc = 1, num_snowc
-             c = filter_snowc(fc)
+       ! layers in order: each interface depth comes from the one above it
+       !$acc parallel loop independent gang vector default(present) private(c)
+       do fc = 1, num_snowc
+          c = filter_snowc(fc)
+          !$acc loop seq
+          do j = 0, -nlevsno+1, -1
              if (j >= snl(c)+1) then
                 z(c,j)    = zi(c,j) - 0.5_r8*dz(c,j)
                 zi(c,j-1) = zi(c,j) - dz(c,j)
@@ -2857,7 +2864,7 @@ contains
      snow_tot = 0
      nosnow_tot = 0
      !$acc parallel loop independent gang vector present(filter_snowc(:),filter_nosnowc(:),filter_nolakec(:)) &
-     !$acc private(fsnow,fnosnow) copy(snow_tot, nosnow_tot)
+     !$acc private(fsnow, fnosnow, c) copy(snow_tot, nosnow_tot)
      do fc = 1, num_nolakec
       
         c = filter_nolakec(fc)

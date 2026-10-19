@@ -109,6 +109,7 @@ contains
     real(r8) :: thv_g(1:num_urbanl)                       ! virtual potential temperature (K)
     real(r8) :: dth(1:num_urbanl)                         ! diff of virtual temp. between ref. height and surface
     real(r8) :: dqh(1:num_urbanl)                         ! diff of humidity between ref. height and surface
+    real(r8) :: dth_p, dqh_p                              ! dth, dqh of one patch (private in the patch loop)
     real(r8) :: zldis(1:num_urbanl)                       ! reference height "minus" zero displacement height (m)
     real(r8) :: um(1:num_urbanl)                          ! wind speed including the stablity effect (m/s)
     real(r8) :: obu(1:num_urbanl)                         ! Monin-Obukhov length (m)
@@ -375,7 +376,7 @@ contains
       erridx1 = -9999
       erridx2 = -9999
       !$acc parallel loop independent gang vector default(present) copy(erridx1,erridx2) &
-      !$acc present(lnd_to_urban_filter(:), ht_roof(:), z_d_town(:),z_0_town(:))
+      !$acc present(lnd_to_urban_filter(:), ht_roof(:), z_d_town(:),z_0_town(:)) private(l, g, t)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          lnd_to_urban_filter(l) = fl
@@ -436,7 +437,7 @@ contains
       ! Compute fluxes - Follows elm approach for bare soils (Oleson et al 2004)
 
       !$acc parallel loop independent gang vector default(present) &
-      !$acc present(z_0_town(:),z_d_town(:),taf(:),qaf(:) )
+      !$acc present(z_0_town(:),z_d_town(:),taf(:),qaf(:) ) private(l, t, g, dthv)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
@@ -508,7 +509,7 @@ contains
 
          !$acc parallel loop independent gang vector default(present) &
          !$acc  present(ht_roof(:),wind_hgt_canyon(:),z_0_town(:),&
-         !$acc  z_d_town(:),canyon_hwr(:))
+         !$acc  z_d_town(:),canyon_hwr(:)) private(l, fl, t, g)
          do fa = 1, fnl
             l  = iter_filterl(fa)
             fl = iter_mapl(fa)
@@ -570,7 +571,7 @@ contains
 
          ! This is the first term in the equation solutions for urban canopy air temperature
          ! and specific humidity (numerator) and is a landunit quantity
-         !$acc parallel loop independent gang vector default(present)
+         !$acc parallel loop independent gang vector default(present) private(l, fl, t, g)
          do fa = 1, fnl
             l  = iter_filterl(fa)
             fl = iter_mapl(fa)
@@ -593,7 +594,7 @@ contains
          ! equations for urban canopy air temperature and specific humidity
          !$acc parallel loop independent gang vector default(present) present(&
          !$acc wtroad_perv(:),qaf(:),lnd_to_urban_filter(:),&
-         !$acc canyon_hwr(:),wtlunit_roof(:))
+         !$acc canyon_hwr(:),wtlunit_roof(:)) private(c, fc, l, fl, fwet_roof, fwet_road_imperv)
           do fa = 1, fnc
             c  = iter_filterc(fa)
             fc = iter_mapc(fa)
@@ -745,7 +746,7 @@ contains
            ! qaf_denom(fl) = qaf_denom(fl) + wtuq(fc)
 
          end do
-      !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)
+      !$acc parallel loop independent gang worker default(present) private(sum_denom, sum_numer, l, fl, fc)
       do fa = 1, fnl
          l  = iter_filterl(fa)
          fl = iter_mapl(fa)
@@ -762,7 +763,7 @@ contains
          taf_denom(fl) =  sum_denom
          taf_numer(fl) =  sum_numer
       end do
-      !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)&
+      !$acc parallel loop independent gang worker default(present) private(sum_denom, sum_numer, l, fl, fc)&
       !$acc present(qg(:),col_pp%active(:),lun_pp%coli(:),lun_pp%colf(:),col_to_urban_filter(:))
       do fa = 1, fnl
          l  = iter_filterl(fa)
@@ -786,7 +787,7 @@ contains
          !$acc parallel loop independent gang vector default(present)&
          !$acc present(wtroad_perv(:),taf(:),eflx_heat_from_ac(:),&
          !$acc eflx_traffic_factor(:),eflx_wasteheat(:),eflx_traffic(:),qaf(:), &
-         !$acc wtlunit_roof(:),canyon_hwr(:) )
+         !$acc wtlunit_roof(:),canyon_hwr(:) ) private(l, fl, g)
          do fa = 1, fnl
             l  = iter_filterl(fa)
             fl = iter_mapl(fa)
@@ -826,7 +827,7 @@ contains
          ! TODO: Some of these constants replicate what is in FrictionVelocity 
          !       and BareGround fluxes should consildate. EBK
          !$acc parallel loop independent gang vector default(present) &
-         !$acc present(taf(:), qaf(:))
+         !$acc present(taf(:), qaf(:)) private(l, fl, t, g, tstar, qstar, thvstar, zeta, wc)
          do fa = 1, fnl
             l  = iter_filterl(fa)
             fl = iter_mapl(fa)
@@ -909,7 +910,7 @@ contains
          qflx_evap_soi_scale(p) = 0._r8
       enddo
       !$acc parallel loop independent gang vector default(present) &
-      !$acc present(qaf(:), taf(:), lnd_to_urban_filter(:))
+      !$acc present(qaf(:), taf(:), lnd_to_urban_filter(:)) private(p, c, g, t, l, fl, fc, dth_p, dqh_p)
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
@@ -973,30 +974,30 @@ contains
          end if
 
          ! Use new canopy air temperature
-         dth(fl) = taf(l) - t_grnd(c)
+         dth_p = taf(l) - t_grnd(c)
 
          if (ctype(c) == icol_roof) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(fl)*dth(fl)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(fl)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_perv) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(fl)*dth(fl)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(fl)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_imperv) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(fl)*dth(fl)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(fl)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_sunwall) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(fl)*dth(fl)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(fl)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_shadewall) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(fl)*dth(fl)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(fl)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
@@ -1005,24 +1006,24 @@ contains
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          eflx_sh_tot_u(p) = eflx_sh_tot(p)
 
-         dqh(fl) = qaf(l) - qg(c)
+         dqh_p = qaf(l) - qg(c)
 
          if (ctype(c) == icol_roof) then
-            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(fl)*dqh(fl)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(fl)*dqh_p
          else if (ctype(c) == icol_road_perv) then
             ! Evaporation assigned to soil term if dew or snow
             ! or if no liquid water available in soil column
-            if (dqh(fl) > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
-               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(fl)*dqh(fl)
+            if (dqh_p > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
+               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(fl)*dqh_p
                qflx_tran_veg(p) = 0._r8
                ! Otherwise, evaporation assigned to transpiration term
             else
                qflx_evap_soi(p) = 0._r8
-               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(fl)*dqh(fl)
+               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(fl)*dqh_p
             end if
             qflx_evap_veg(p) = qflx_tran_veg(p)
          else if (ctype(c) == icol_road_imperv) then
-            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(fl)*dqh(fl)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(fl)*dqh_p
          else if (ctype(c) == icol_sunwall) then
             qflx_evap_soi(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
@@ -1030,15 +1031,15 @@ contains
          end if
 
          ! SCALED sensible and latent heat flux for error check
-         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(fc)*dth(fl)
-         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(fc)*dqh(fl)
+         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(fc)*dth_p
+         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(fc)*dqh_p
 
       end do
 
       ! Check to see that total sensible and latent heat equal the sum of
       ! the scaled heat fluxes above
       !$acc parallel loop independent gang worker default(present) present(qaf(:), taf(:)) &
-      !$acc private(sum_denom,sum_numer)
+      !$acc private(sum_denom, sum_numer, l, t, g)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
@@ -1090,7 +1091,7 @@ contains
       end if
 
       erridx1 = -9999
-      !$acc parallel loop independent gang vector default(present) copy(erridx1)
+      !$acc parallel loop independent gang vector default(present) copy(erridx1) private(l)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          ! 4.e-9 kg/m**2/s = 0.01 W/m**2
@@ -1130,7 +1131,7 @@ contains
       ! Gather terms required to determine internal building temperature
 
       !$acc parallel loop independent gang vector default(present) present(&
-      !$acc t_soisno(:,:),lnd_to_urban_filter(:) )
+      !$acc t_soisno(:,:),lnd_to_urban_filter(:) ) private(c, l, fl)
       do fc = 1,num_urbanc
          c = filter_urbanc(fc)
          l = col_pp%landunit(c)
@@ -1147,7 +1148,7 @@ contains
 
       ! Calculate internal building temperature
       !$acc parallel loop independent gang vector default(present) present(&
-      !$acc ht_roof(:),t_building(:),canyon_hwr(:),wtlunit_roof(:))
+      !$acc ht_roof(:),t_building(:),canyon_hwr(:),wtlunit_roof(:)) private(l, lngth_roof)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
 
@@ -1158,7 +1159,7 @@ contains
 
       ! No roots for urban except for pervious road
 
-      !$acc parallel loop independent gang vector default(present) collapse(2)
+      !$acc parallel loop independent gang vector default(present) collapse(2) private(p, c)
       do j = 1, nlevgrnd
          do f = 1, num_urbanp
             p = filter_urbanp(f)
@@ -1171,7 +1172,8 @@ contains
          end do
       end do
 
-      !$acc parallel loop independent gang vector default(present) present(taf(:),qaf(:))
+      !$acc parallel loop independent gang vector default(present) present(taf(:),qaf(:)) &
+      !$acc private(p, c, g, t, l, e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
