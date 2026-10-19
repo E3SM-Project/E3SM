@@ -189,7 +189,6 @@ FieldHeader::broadcast (const FieldLayout& tgt)
   // The alloc props bcast will simply be marked as non-contiguous and NOT LayoutRight-compatible
   fh->m_alloc_prop = std::make_shared<FieldAllocProp>(m_alloc_prop->broadcast(tgt));
 
-  fh->set_may_be_filled(may_be_filled());
 
   return fh;
 }

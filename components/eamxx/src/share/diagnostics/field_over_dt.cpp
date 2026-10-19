@@ -36,7 +36,6 @@ void FieldOverDt::initialize_impl() {
   m_diagnostic_output = Field(d_fid,true);
   if (f.has_valid_mask()) {
     m_diagnostic_output.set_valid_mask(f.get_valid_mask());
-    m_diagnostic_output.get_header().set_may_be_filled(true);
   }
 }
 
