@@ -33,6 +33,7 @@ module SnowHydrologyMod
   use ColumnType      , only : col_pp
   use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf
   use subgridAveMod   , only : create_scale_c2l
+  use domainMod       , only : ldomain
 
   use timeinfoMod
   !
@@ -2490,7 +2491,11 @@ contains
         ! the full converted mass (closure denominator).
         if (snowcap_latband_diag_write) then
            g = col_pp%gridcell(c)
-           area_col_m2 = grc_pp%area(g) * 1.e6_r8 * col_pp%wtgcell(c) * scale_c2l(c)
+           ! Include land fraction (grc_pp%area is the full gridcell area and
+           ! wtgcell holds only subgrid weights) so the converted mass, latent
+           ! energy, and area-weighted cooling match the land area actually
+           ! coupled, consistent with the budget weighting in WaterBudgetMod.
+           area_col_m2 = grc_pp%area(g) * 1.e6_r8 * ldomain%frac(g) * col_pp%wtgcell(c) * scale_c2l(c)
            if (area_col_m2 > 0._r8) then
               step_required_energy_loc = step_required_energy_loc + e_cooling * area_col_m2
            end if
