@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: surface_coupling_output
+stream_id: surface_coupling_output
 averaging_type: instant
 field_names:
   # IMPORTER

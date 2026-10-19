@@ -216,7 +216,7 @@ void read (const int seed, const ekat::Comm& comm)
   auto f0 = f.clone(CloneFlags::CopyData);
 
   // Create reader pl
-  std::string casename = "io_diags";
+  std::string casename = "eamxx.h.io_diags";
   auto filename = casename
     + ".INSTANT.nsteps_x1"
     + ".np" + std::to_string(comm.size())
