@@ -1,4 +1,5 @@
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/eamxx_utils.hpp"
 
 #include <bitset>
@@ -109,6 +110,41 @@ void update_checks (const std::string& caller,
       " - mask layout: " + m_l.to_string() + "\n");
   }
 }
+
+// Check that the masks of lhs/rhs are compatible with performing the update y=f(x).
+// If x is masked, y must be masked too (so that validity info is not lost).
+// If both are masked, y can only be valid where x is valid, or y would use garbage from x.
+// In that case, the user should call y.intersect_mask(x) prior to the update.
+void update_mask_checks (const std::string& caller, const Field& y, const Field& x)
+{
+  if (not x.has_valid_mask()) {
+    return;
+  }
+
+  EKAT_REQUIRE_MSG (y.has_valid_mask(),
+      "[" + caller + "] Error! Rhs has a valid mask, but lhs does not.\n"
+      " - lhs name: " + y.name() + "\n"
+      " - rhs name: " + x.name() + "\n");
+
+#ifndef NDEBUG
+  // This is a (relatively) expensive check, so only do it in debug mode
+  const auto& y_mask = y.get_valid_mask();
+  const auto& x_mask = x.get_valid_mask();
+  // NOTE: in a distributed field, some ranks may own zero entries, and reductions on empty fields are not reliable
+  const bool empty = y.get_header().get_identifier().get_layout().size()==0;
+  if (not empty and not y_mask.is_aliasing(x_mask)) {
+    // Zero out the entries where x is valid. Anything left is valid for y but not for x.
+    auto bad = y_mask.clone(CloneFlags::CopyData);
+    bad.deep_copy(0,x_mask);
+    EKAT_REQUIRE_MSG (field_max(bad).as<int>()==0,
+        "[" + caller + "] Error! Lhs is valid in some places where rhs is not.\n"
+        " - lhs name: " + y.name() + "\n"
+        " - rhs name: " + x.name() + "\n"
+        "Did you forget to combine the masks via y.intersect_mask(x) before the update?\n");
+  }
+#endif
+}
+
 } // anonymous namespace
 
 
@@ -190,7 +226,7 @@ Field::clone(const std::string& name, const std::string& grid_name, const int fl
   if (flags & CloneFlags::CopyData) {
     // Deep copy the data. Notice that the clone has no valid mask, so we don't
     // use deep_copy, which would also try to copy the valid mask
-    f.update_cm<CombineMode::Replace>("Field::clone",*this,1,0,0);
+    f.update_nomask<CombineMode::Replace>("Field::clone",*this,1,0,0);
     f.sync_to_host();
   }
 
@@ -567,8 +603,9 @@ void Field::deep_copy (const Field& x) const
       " - lhs name: " + name() + "\n"
       " - rhs name: " + x.name() + "\n");
 
+  // NOTE: we copy ALL the data, regardless of the validity of this field. The mask is copied below.
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy",x,1,0,0);
+  update_nomask<CM>("Field::deep_copy",x,1,0,0);
 
   if (has_valid_mask()) {
     // A copy of a field is valid where the original is. If the original has no mask, it is valid everywhere.
@@ -724,32 +761,38 @@ template<CombineMode CM>
 void Field::
 update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
 {
+  // If this field is masked, we only update where it is valid. Notice that
+  // we never change the mask of this field. If the user wants this field to
+  // inherit the invalid entries of x, they must call intersect_mask(x) prior to updating.
+  update_mask_checks (caller,*this,x);
+  if (has_valid_mask()) {
+    return update_cm<CM>(caller,x,alpha,beta,gamma,get_valid_mask());
+  }
+
+  update_nomask<CM>(caller,x,alpha,beta,gamma);
+}
+
+template<CombineMode CM>
+void Field::
+update_nomask (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
+{
   // Check consistency of inputs
   update_checks(caller,*this,x,alpha,beta,gamma);
 
-  // Determine if the RHS can contain fill_value entries
-  bool fill_aware = x.get_header().may_be_filled();
-
   if (data_type()==DataType::IntType) {
-    return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
-                      : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
+    return update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
-                        : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+      return update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
     else
-      return fill_aware ? update_fill_aware<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
-                        : update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+      return update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
   } else if (data_type()==DataType::DoubleType) {
     if (x.data_type()==DataType::DoubleType)
-      return fill_aware ? update_fill_aware<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else
-      return fill_aware ? update_fill_aware<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
   }
 }
 

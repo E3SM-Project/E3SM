@@ -261,8 +261,13 @@ public:
   // NOTE: these methods are const (shallow-const, like Kokkos::View): the
   //       Field handle is const, but the underlying data is not. A runtime
   //       check via EKAT_REQUIRE_MSG enforces that the field is not read-only.
+  // NOTE: the update methods (update, scale, scale_inv, max, min, add_scalar) without a mask field use the
+  //       valid mask of this field (if any): entries where it is 0 are untouched. They never modify a valid mask.
+  //       If x is masked, this field must be masked too, and (in debug mode) it can only be valid where x is
+  //       valid; use intersect_mask(x) before the update to ensure that.
   // NOTE: the versions with a mask field only perform the manip where mask!=0, except
   //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
+  //       They use ONLY the given mask: the valid masks of this field and of x are not read, checked or modified.
   //       The mask field MUST have data type IntType
 
   // Set the field to a constant value (on device view ONLY)
@@ -401,8 +406,12 @@ protected:
   template<bool negate_mask, typename ST>
   void deep_copy_masked (const ST value, const Field& mask) const;
 
+  // Updates this field, using this field's valid mask (if present) to select what entries to update
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
+  // Updates all the entries of this field, ignoring any valid mask
+  template<CombineMode CM>
+  void update_nomask (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
