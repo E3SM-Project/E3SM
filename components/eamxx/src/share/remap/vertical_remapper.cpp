@@ -172,15 +172,13 @@ registration_ends_impl ()
                            tgt.get_header().get_alloc_properties().is_compatible<PackT>() and
                            m_packs_supported[ft.src_vtag] and m_packs_supported[ft.tgt_vtag];
 
-      // A tgt level interpolated from a filled (or masked-out) src level is filled too.
+      // A tgt level interpolated from a masked-out src level is masked out too.
       // NOTE: extrapolated levels are not checked: P0 copies the boundary value as is,
-      //       while Mask fills them anyway.
-      ft.fill_aware = src.has_valid_mask() or src.get_header().may_be_filled();
-      if (ft.fill_aware) {
-        tgt.get_header().set_may_be_filled(true);
-      }
+      //       while Mask masks them anyway.
+      ft.src_masked = src.has_valid_mask();
 
-      if (m_etype_top==Mask or m_etype_bot==Mask) {
+      // The tgt field needs a mask if we mask when extrapolating, or if the src field is masked
+      if (m_etype_top==Mask or m_etype_bot==Mask or ft.src_masked) {
         // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
         //       and that fields with multiple components will have the same masking for each component
         //       at a specific COL,LEV
@@ -201,9 +199,9 @@ registration_ends_impl ()
           }
         }
         // Unmasked fields with the same layout share one mask (the extrapolation mask
-        // only depends on the pressure profiles). A field that may be filled gets its own.
+        // only depends on the pressure profiles). A masked field gets its own.
         // NOTE: the grid is part of the identifier of the mask, so it is not needed in its name
-        const auto mask_name = ft.fill_aware
+        const auto mask_name = ft.src_masked
           ? "vremap_" + src.name() + "_mask"
           : "vremap_" + ekat::join(tagdim_names,"_") + "_mask";
         auto& mask = m_masks[mask_name];
@@ -222,9 +220,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
 
         tgt.set_valid_mask(mask);
-
-        // Since we do mask (at top and/or bot), the tgt field MAY be contain fill_value entries
-        tgt.get_header().set_may_be_filled(true);
       }
     } else {
       // If a field does not have any vertical tag (LEV, ILEV, or LEVP) it may still have
@@ -237,11 +232,6 @@ registration_ends_impl ()
             " - tgt field name: " + tgt.name() + "\n");
         auto src_mask = src.get_valid_mask();
         tgt.set_valid_mask(src_mask.alias(src_mask.name(),m_tgt_grid->name()));
-      }
-
-      // TODO: remove when we get rid of fill-aware Field manipulation methods
-      if (src.get_header().may_be_filled()) {
-        tgt.get_header().set_may_be_filled(true);
       }
     }
   }
@@ -427,8 +417,8 @@ void VerticalRemapper::remap_fwd_impl ()
       } else {
         apply_vertical_interpolation(m_lin_interp_scalar.at(type.li_vtag),f_src,f_tgt,x_src,x_tgt);
       }
-      // Mask the tgt levels that were interpolated from a filled src level
-      if (type.fill_aware) {
+      // Mask the tgt levels that were interpolated from a masked-out src level
+      if (type.src_masked) {
         mask_fill_contaminated(f_src,f_tgt,x_src,x_tgt);
       }
       extrapolate(f_src,f_tgt,x_src,x_tgt);
@@ -590,7 +580,7 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
 
 // ekat::LinInterp knows nothing about masks or fill values, so a tgt level bracketed
 // by an invalid src level gets a meaningless value. Set to fill_value (and mask out)
-// any tgt level that is interpolated from a src level that is masked out or filled.
+// any tgt level that is interpolated from a src level that is masked out.
 void VerticalRemapper::
 mask_fill_contaminated (const Field& f_src,
                         const Field& f_tgt,
@@ -632,7 +622,6 @@ mask_fill_contaminated (const Field& f_src,
   switch(f_src.rank()) {
     case 2:
     {
-      auto f_src_v = f_src.get_view<const Real**>();
       auto f_tgt_v = f_tgt.get_view<      Real**>();
       const bool src_masked = f_src.has_valid_mask();
       auto src_mask_v = src_masked ? f_src.get_valid_mask().get_view<const int**>()
@@ -667,7 +656,7 @@ mask_fill_contaminated (const Field& f_src,
             if (x_src[mid]<=x) lo = mid; else hi = mid;
           }
           auto invalid = [&](const int k) {
-            return f_src_v(icol,k)==fill_val or (src_masked and src_mask_v(icol,k)==0);
+            return src_masked and src_mask_v(icol,k)==0;
           };
           // NOTE: a level with zero weight (x is at the other end) does not matter
           if ((x<x_src[hi] and invalid(lo)) or (x>x_src[lo] and invalid(hi))) {
@@ -683,7 +672,6 @@ mask_fill_contaminated (const Field& f_src,
     }
     case 3:
     {
-      auto f_src_v = f_src.get_view<const Real***>();
       auto f_tgt_v = f_tgt.get_view<      Real***>();
       const int ncomps = f_tgt_l.get_vector_dim();
       const bool src_masked = f_src.has_valid_mask();
@@ -717,7 +705,7 @@ mask_fill_contaminated (const Field& f_src,
             if (x_src[mid]<=x) lo = mid; else hi = mid;
           }
           auto invalid = [&](const int k) {
-            return f_src_v(icol,icmp,k)==fill_val or (src_masked and src_mask_v(icol,icmp,k)==0);
+            return src_masked and src_mask_v(icol,icmp,k)==0;
           };
           if ((x<x_src[hi] and invalid(lo)) or (x>x_src[lo] and invalid(hi))) {
             f_tgt_v(icol,icmp,ilev) = fill_val;
