@@ -137,8 +137,14 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
   });
 
   // Compute TMS
-  // Tunable factor to scale back the strength of TMS (1.0 = default/full strength).
-  const Real scaling_factor = m_params.get<double>("scaling_factor", 1.0);
+  // Tunable parameters read from the namelist (defaults match TMSFunctions::Defaults).
+  using Defaults = TMSFunctions::Defaults;
+  const Real obstacle_height_factor  = m_params.get<double>("obstacle_height_factor",  Defaults::obstacle_height_factor);
+  const Real obstacle_height_min     = m_params.get<double>("obstacle_height_min",     Defaults::obstacle_height_min);
+  const Real roughness_length_factor = m_params.get<double>("roughness_length_factor", Defaults::roughness_length_factor);
+  const Real roughness_length_max    = m_params.get<double>("roughness_length_max",    Defaults::roughness_length_max);
+  const Real wspd_squared_min        = m_params.get<double>("wspd_squared_min",        Defaults::wspd_squared_min);
+  const Real drag_scaling_factor     = m_params.get<double>("drag_scaling_factor",     Defaults::drag_scaling_factor);
 
   TMSFunctions::compute_tms(ncols, nlevs,
                             ekat::scalarize(horiz_winds),
@@ -146,7 +152,13 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
                             ekat::scalarize(p_mid),
                             ekat::scalarize(exner),
                             ekat::scalarize(z_mid),
-                            sgh30, landfrac, scaling_factor,
+                            sgh30, landfrac,
+                            obstacle_height_factor,
+                            obstacle_height_min,
+                            roughness_length_factor,
+                            roughness_length_max,
+                            wspd_squared_min,
+                            drag_scaling_factor,
                             surf_drag_coeff_tms, wind_stress_tms);
 }
 

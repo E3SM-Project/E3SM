@@ -65,8 +65,8 @@ void compute_tms_f(int ncols, int nlevs,
     });
   });
 
-  // Scaling factor to scale back the strength of TMS. Use the default value of 1.0 (full strength) 
-  const Scalar scaling_factor = 1.0;
+  // Use the default TMS tuning parameters here so existing baselines are unaffected.
+  using Defaults = typename TMSFunc::Defaults;
 
   // C++ compute_tms function implementation
   TMSFunc::compute_tms(ncols, nlevs,
@@ -75,7 +75,14 @@ void compute_tms_f(int ncols, int nlevs,
                        ekat::scalarize(p_mid_d),
                        ekat::scalarize(exner_d),
                        ekat::scalarize(z_mid_d),
-                       sgh_d, landfrac_d, scaling_factor, ksrf_d, tau_d);
+                       sgh_d, landfrac_d,
+                       Defaults::obstacle_height_factor,
+                       Defaults::obstacle_height_min,
+                       Defaults::roughness_length_factor,
+                       Defaults::roughness_length_max,
+                       Defaults::wspd_squared_min,
+                       Defaults::drag_scaling_factor,
+                       ksrf_d, tau_d);
 
   // Transfer data back to individual arrays (only for output variables)
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
