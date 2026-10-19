@@ -40,6 +40,7 @@ module subgridAveMod
   use abortutils    , only : endrun
   use shr_log_mod   , only : errMsg => shr_log_errMsg
   use subgridAveViewMod, only : subgrid_ave_view, view_spval => spval
+  use subgridAveViewMod, only : p2g_range_unity, c2g_range_unity
   use subgridAveViewMod, only : build_child_map, subgrid_ave_view_attach, subgrid_ave_view_detach
   use subgridAveViewMod, only : p2g_range, c2g_range, l2g_range, t2g_range
   !
@@ -706,7 +707,11 @@ contains
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       call p2g_range(elm_subgrid_view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr(g0:g1))
+       if (c2l_scale_type == unity .and. l2g_scale_type == unity) then
+          call p2g_range_unity(elm_subgrid_view, g0, g1, parr, bounds%begp, garr(g0:g1))
+       else
+          call p2g_range(elm_subgrid_view, g0, g1, parr, bounds%begp, c2l_scale_type, l2g_scale_type, garr(g0:g1))
+       end if
     end do
 
   end subroutine p2g_1d
@@ -741,7 +746,11 @@ contains
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          call p2g_range(elm_subgrid_view, g0, g1, parr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j))
+          if (c2l_scale_type == unity .and. l2g_scale_type == unity) then
+             call p2g_range_unity(elm_subgrid_view, g0, g1, parr(:,j), bounds%begp, garr(g0:g1,j))
+          else
+             call p2g_range(elm_subgrid_view, g0, g1, parr(:,j), bounds%begp, c2l_scale_type, l2g_scale_type, garr(g0:g1,j))
+          end if
        end do
     end do
 
@@ -868,7 +877,11 @@ contains
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       call c2g_range(elm_subgrid_view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr(g0:g1))
+       if (c2l_scale_type == unity .and. l2g_scale_type == unity) then
+          call c2g_range_unity(elm_subgrid_view, g0, g1, carr, bounds%begc, garr(g0:g1))
+       else
+          call c2g_range(elm_subgrid_view, g0, g1, carr, bounds%begc, c2l_scale_type, l2g_scale_type, garr(g0:g1))
+       end if
     end do
 
   end subroutine c2g_1d
@@ -902,7 +915,11 @@ contains
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          call c2g_range(elm_subgrid_view, g0, g1, carr(:,j), c2l_scale_type, l2g_scale_type, garr(g0:g1,j))
+          if (c2l_scale_type == unity .and. l2g_scale_type == unity) then
+             call c2g_range_unity(elm_subgrid_view, g0, g1, carr(:,j), bounds%begc, garr(g0:g1,j))
+          else
+             call c2g_range(elm_subgrid_view, g0, g1, carr(:,j), bounds%begc, c2l_scale_type, l2g_scale_type, garr(g0:g1,j))
+          end if
        end do
     end do
 
@@ -934,7 +951,7 @@ contains
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       call l2g_range(elm_subgrid_view, g0, g1, larr, l2g_scale_type, garr(g0:g1))
+       call l2g_range(elm_subgrid_view, g0, g1, larr, bounds%begl, l2g_scale_type, garr(g0:g1))
     end do
 
   end subroutine l2g_1d
@@ -968,7 +985,7 @@ contains
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          call l2g_range(elm_subgrid_view, g0, g1, larr(:,j), l2g_scale_type, garr(g0:g1,j))
+          call l2g_range(elm_subgrid_view, g0, g1, larr(:,j), bounds%begl, l2g_scale_type, garr(g0:g1,j))
        end do
     end do
 
@@ -1310,7 +1327,7 @@ contains
     do chunk = 1, nchunk
        g0 = bounds%begg + (chunk-1) * gridcell_chunk
        g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-       call t2g_range(elm_subgrid_view, g0, g1, tarr, garr(g0:g1))
+       call t2g_range(elm_subgrid_view, g0, g1, tarr, bounds%begt, garr(g0:g1))
     end do
 
   end subroutine t2g_1d
@@ -1347,7 +1364,7 @@ contains
        do chunk = 1, nchunk
           g0 = bounds%begg + (chunk-1) * gridcell_chunk
           g1 = min(g0 + gridcell_chunk - 1, bounds%endg)
-          call t2g_range(elm_subgrid_view, g0, g1, tarr(:,j), garr(g0:g1,j))
+          call t2g_range(elm_subgrid_view, g0, g1, tarr(:,j), bounds%begt, garr(g0:g1,j))
        end do
     end do
 

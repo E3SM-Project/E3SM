@@ -122,8 +122,7 @@ contains
     integer :: c,j,k,l,m                                                                 !indices
     integer :: fc                                                                        !lake filter column index
     real(r8):: p_decomp_cpool_loss(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions) !potential C loss from one pool to another
-    real(r8):: immob(num_soilc,1:nlevdecomp)                                             !potential N immobilization
-    real(r8):: immob_p(num_soilc,1:nlevdecomp)                                           !potential P immobilization
+    logical :: is_rd                                                                     !nu_com is 'RD'
     real(r8):: ratio                                                                     !temporary variable
     real(r8):: dnp                                                                       !denitrification proportion
     real(r8):: cn_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools)
@@ -197,14 +196,14 @@ contains
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
       call t_startf('SLDA-potential')
+      is_rd = (nu_com .eq. 'RD')
 
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
       !$acc enter data create(cn_decomp_pools(:num_soilc,1:nlevdecomp,1:ndecomp_pools), &
-      !$acc                                     p_decomp_cpool_loss(:num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions))
-      !$acc enter data create(cp_decomp_pools(:num_soilc,1:nlevdecomp,1:ndecomp_pools),&
-      !$acc                   immob(:num_soilc,1:nlevdecomp) ,immob_p(:num_soilc,1:nlevdecomp)  ) 
-      !$acc enter data create(cp_decomp_pools_new(:num_soilc,1:nlevdecomp,1:ndecomp_pools)) 
+      !$acc                   p_decomp_cpool_loss(:num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions), &
+      !$acc                   cp_decomp_pools(:num_soilc,1:nlevdecomp,1:ndecomp_pools), &
+      !$acc                   cp_decomp_pools_new(:num_soilc,1:nlevdecomp,1:ndecomp_pools))
       !! calculate c:n ratios of applicable pools
 
       !$acc parallel loop gang independent collapse(2) default(present)
@@ -237,119 +236,95 @@ contains
       ! these fluxes include the  "/ dt" term to put them on a
       ! per second basis, since the rate constants have been
       ! calculated on a per timestep basis.
+      !
+      ! In the same pass, sum up all the potential immobilization fluxes
+      ! (positive pmnf flux), the mineralization fluxes (negative pmnf flux)
+      ! and the potential HR for the methane calculations. Each sum is over
+      ! k in increasing order, as in separate loops. In RD mode, gross_nmin_vr
+      ! and gross_pmin_vr are recomputed after the N/P limitation is resolved
+      ! and are not read before then, so they are not summed here.
+      ! The transition loop stays outside the compute region so that the
+      ! serial code streams the column dimension and sums in the same order
+      ! as the reference; each (column, layer) sum belongs to one thread.
 
-       ! set initial values for potential N and P fluxes (all columns, as before)
-       !$acc parallel loop gang vector collapse(3) default(present)
-       do k = 1, ndecomp_cascade_transitions
-          do j = 1,nlevdecomp
-             do c = bounds%begc, bounds%endc
-                pmnf_decomp_cascade(c,j,k) = 0._r8
-                pmpf_decomp_cascade(c,j,k) = 0._r8
-             end do
-          end do
-       end do
-
-       !$acc parallel loop  gang independent collapse(2) default(present)
-       do k = 1, ndecomp_cascade_transitions
-          do j = 1,nlevdecomp
-             !$acc loop vector private(c,k_donor_pool,ratio)
-             do fc = 1,num_soilc
-                k_donor_pool = cascade_donor_pool(k)
-                c = filter_soilc(fc)
-                ! set initial values for potential C fluxes
-                p_decomp_cpool_loss(fc,j,k) = 0._r8
-
-                if (decomp_cpools_vr(c,j,k_donor_pool) > 0._r8 .and. &
-                     decomp_k(c,j,k_donor_pool) > 0._r8 ) then
-
-                   p_decomp_cpool_loss(fc,j,k) = decomp_cpools_vr(c,j,k_donor_pool) &
-                            * decomp_k(c,j,k_donor_pool)  * pathfrac_decomp_cascade(c,j,k)
-                   if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
-
-                      if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
-                         ratio = 0._r8
-                         if (decomp_npools_vr(c,j,k_donor_pool) > 0._r8) then
-                            ratio = cn_decomp_pools(fc,j,cascade_receiver_pool(k))/cn_decomp_pools(fc,j,k_donor_pool)
-                         endif
-                         pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
-                              / cn_decomp_pools(fc,j,cascade_receiver_pool(k)) )
-                      else   ! 100% respiration
-                         pmnf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cn_decomp_pools(fc,j,k_donor_pool)
-                      endif
-
-                   else   ! CWD -> litter
-                      pmnf_decomp_cascade(c,j,k) = 0._r8
-                   end if
-                   !!! add phosphorus fluxes
-                   if ( .not. is_cwd( (cascade_receiver_pool(k)) ) ) then  !! not transition of cwd to litter
-                      if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
-                         ratio = 0._r8
-                         if (decomp_ppools_vr(c,j,k_donor_pool) > 0._r8) then
-                            ratio = cp_decomp_pools_new(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,k_donor_pool)
-                         endif
-                         pmpf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
-                              / cp_decomp_pools_new(fc,j,cascade_receiver_pool(k)) )
-                      else   ! 100% respiration
-                         if (decomp_ppools_vr(c,j,k_donor_pool) > 0._r8) then
-                            pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cp_decomp_pools(fc,j,k_donor_pool)
-                         endif
-                      endif
-                   else   ! CWD -> litter
-                      pmpf_decomp_cascade(c,j,k) = 0._r8
-                   end if
-                end if
-             end do
-          end do
-       end do
-
-      !$acc enter data create(sum_1,sum_2,sum_3,sum_4)
-      !$acc  parallel loop independent gang collapse(2) default(present) private(c,sum_1,sum_2,sum_3,sum_4)
+      !$acc parallel loop independent gang vector collapse(2) default(present) private(c)
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            sum_1 = 0._r8
-            sum_2 = 0._r8
-            sum_3 = 0._r8
-            sum_4 = 0._r8
-            !$acc loop vector reduction(+:sum_1,sum_2,sum_3,sum_4)
-            do k = 1, ndecomp_cascade_transitions
+            potential_immob_vr(c,j) = 0._r8
+            potential_immob_p_vr(c,j) = 0._r8
+            gross_nmin_vr(c,j) = 0._r8
+            gross_pmin_vr(c,j) = 0._r8
+            phr_vr(c,j) = 0._r8
+         end do
+      end do
+
+      do k = 1, ndecomp_cascade_transitions
+         k_donor_pool = cascade_donor_pool(k)
+         !$acc parallel loop independent gang vector collapse(2) default(present) private(c,ratio)
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
+               ! set initial values for potential C, N and P fluxes. Only columns
+               ! in the soil filter are read, so inactive columns are not zeroed.
+               p_decomp_cpool_loss(fc,j,k) = 0._r8
+               pmnf_decomp_cascade(c,j,k) = 0._r8
+               pmpf_decomp_cascade(c,j,k) = 0._r8
+
+               if (decomp_cpools_vr(c,j,k_donor_pool) > 0._r8 .and. &
+                    decomp_k(c,j,k_donor_pool) > 0._r8 ) then
+
+                  p_decomp_cpool_loss(fc,j,k) = decomp_cpools_vr(c,j,k_donor_pool) &
+                           * decomp_k(c,j,k_donor_pool)  * pathfrac_decomp_cascade(c,j,k)
+                  if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
+
+                     if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
+                        ratio = 0._r8
+                        if (decomp_npools_vr(c,j,k_donor_pool) > 0._r8) then
+                           ratio = cn_decomp_pools(fc,j,cascade_receiver_pool(k))/cn_decomp_pools(fc,j,k_donor_pool)
+                        endif
+                        pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
+                             / cn_decomp_pools(fc,j,cascade_receiver_pool(k)) )
+                     else   ! 100% respiration
+                        pmnf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cn_decomp_pools(fc,j,k_donor_pool)
+                     endif
+
+                  else   ! CWD -> litter
+                     pmnf_decomp_cascade(c,j,k) = 0._r8
+                  end if
+                  !!! add phosphorus fluxes
+                  if ( .not. is_cwd( (cascade_receiver_pool(k)) ) ) then  !! not transition of cwd to litter
+                     if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
+                        ratio = 0._r8
+                        if (decomp_ppools_vr(c,j,k_donor_pool) > 0._r8) then
+                           ratio = cp_decomp_pools_new(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,k_donor_pool)
+                        endif
+                        pmpf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
+                             / cp_decomp_pools_new(fc,j,cascade_receiver_pool(k)) )
+                     else   ! 100% respiration
+                        if (decomp_ppools_vr(c,j,k_donor_pool) > 0._r8) then
+                           pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cp_decomp_pools(fc,j,k_donor_pool)
+                        endif
+                     endif
+                  else   ! CWD -> litter
+                     pmpf_decomp_cascade(c,j,k) = 0._r8
+                  end if
+               end if
+
                if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
-                  sum_1 = sum_1 + pmnf_decomp_cascade(c,j,k)
-               else
-                  sum_2 = sum_2 - pmnf_decomp_cascade(c,j,k)
+                  potential_immob_vr(c,j) = potential_immob_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+               else if (.not. is_rd) then
+                  gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - pmnf_decomp_cascade(c,j,k)
                end if
                if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
-                  sum_3 = sum_3 + pmpf_decomp_cascade(c,j,k)
-               else
-                  sum_4 = sum_4 - pmpf_decomp_cascade(c,j,k)
+                  potential_immob_p_vr(c,j) = potential_immob_p_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+               else if (.not. is_rd) then
+                  gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
                end if
-            end do
-            immob(fc,j) = sum_1
-            gross_nmin_vr(c,j) = sum_2
-            immob_p(fc,j) = sum_3
-            gross_pmin_vr(c,j) = sum_4
-         end do
-      end do
 
-      !$acc parallel loop independent gang worker collapse(2) private(c,sum_1) default(present)
-      do j = 1,nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            sum_1 = 0._r8
-            !$acc loop vector reduction(+:sum_1)
-            do k = 1, ndecomp_cascade_transitions
-               sum_1 = sum_1 + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
+               phr_vr(c,j) = phr_vr(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
             end do
-            phr_vr(c,j) = sum_1
-         end do
-      end do
-      
-      !$acc parallel loop independent gang  vector collapse(2) default(present) 
-      do j = 1,nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            potential_immob_vr(c,j) = immob(fc,j)
-            potential_immob_p_vr(c,j) = immob_p(fc,j)
          end do
       end do
       call t_stopf('SLDA-potential')
@@ -552,10 +527,8 @@ contains
 
       call t_stopf('SLDA-actual')
 
-      !$acc exit data delete(sum_1,sum_2,sum_3,sum_4)
       !$acc exit data delete(cn_decomp_pools(:,:,:), p_decomp_cpool_loss(:,:,:), &
-      !$acc   cp_decomp_pools(:,:,:),immob(:,:) ,immob_p(:,:) , &
-      !$acc   cp_decomp_pools_new(:,:,:) )
+      !$acc   cp_decomp_pools(:,:,:), cp_decomp_pools_new(:,:,:) )
 
     end associate
 

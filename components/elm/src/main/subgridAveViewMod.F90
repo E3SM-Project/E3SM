@@ -39,6 +39,7 @@ module subgridAveViewMod
   !
   ! !PUBLIC DATA:
   real(r8), parameter, public :: spval = 1.e36_r8              ! missing value (= elm_varcon's spval)
+  integer , parameter, public :: scale_unity = 1               ! the 'unity' c2l/l2g scale type id (= subgridAveMod's unity)
 
   type, public :: subgrid_ave_view
      integer :: begg = 1, endg = 0, begt = 1, endt = 0, begl = 1, endl = 0
@@ -70,6 +71,8 @@ module subgridAveViewMod
   public :: subgrid_ave_view_detach  ! remove a view from the device (OpenACC)
   public :: p2g_range                ! patch averages of a range of gridcells
   public :: c2g_range                ! column averages of a range of gridcells
+  public :: p2g_range_unity          ! p2g_range for the unity scale types (no lookups)
+  public :: c2g_range_unity          ! c2g_range for the unity scale types (no lookups)
   public :: l2g_range                ! landunit averages of a range of gridcells
   public :: t2g_range                ! topounit averages of a range of gridcells
   !-----------------------------------------------------------------------
@@ -156,7 +159,7 @@ contains
   end subroutine subgrid_ave_view_detach
 
   !-----------------------------------------------------------------------
-  pure subroutine p2g_range(view, g0, g1, parr, c2l_scale_type, l2g_scale_type, garr)
+  pure subroutine p2g_range(view, g0, g1, parr, beg, c2l_scale_type, l2g_scale_type, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's active patches with
@@ -167,7 +170,8 @@ contains
     ! !ARGUMENTS:
     type(subgrid_ave_view), intent(in) :: view
     integer , intent(in)  :: g0, g1
-    real(r8), intent(in)  :: parr(*)          ! patch values; parr(1) is patch view%begp
+    real(r8), intent(in)  :: parr(*)          ! patch values; parr(1) is patch beg
+    integer , intent(in)  :: beg              ! index of parr(1)
     integer , intent(in)  :: c2l_scale_type
     integer , intent(in)  :: l2g_scale_type
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
@@ -188,7 +192,7 @@ contains
           do p = view%pfti(l), view%pftf(l)
              if (view%active_p(p) .and. view%wtgcell_p(p) /= 0._r8) then
                 scale_c2l = view%scale_c2l(view%col_of_pft(p), c2l_scale_type)
-                value = parr(p - view%begp + 1)
+                value = parr(p - beg + 1)
                 if (value /= spval .and. scale_c2l /= spval) then
                    sum_arr = sum_arr + value * scale_c2l * scale_l2g * view%wtgcell_p(p)
                    sumwt = sumwt + view%wtgcell_p(p)
@@ -202,7 +206,7 @@ contains
   end subroutine p2g_range
 
   !-----------------------------------------------------------------------
-  pure subroutine c2g_range(view, g0, g1, carr, c2l_scale_type, l2g_scale_type, garr)
+  pure subroutine c2g_range(view, g0, g1, carr, beg, c2l_scale_type, l2g_scale_type, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's active columns with
@@ -213,7 +217,8 @@ contains
     ! !ARGUMENTS:
     type(subgrid_ave_view), intent(in) :: view
     integer , intent(in)  :: g0, g1
-    real(r8), intent(in)  :: carr(*)          ! column values; carr(1) is column view%begc
+    real(r8), intent(in)  :: carr(*)          ! column values; carr(1) is column beg
+    integer , intent(in)  :: beg              ! index of carr(1)
     integer , intent(in)  :: c2l_scale_type
     integer , intent(in)  :: l2g_scale_type
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
@@ -234,7 +239,7 @@ contains
           do c = view%coli(l), view%colf(l)
              if (view%active_c(c) .and. view%wtgcell_c(c) /= 0._r8) then
                 scale_c2l = view%scale_c2l(c, c2l_scale_type)
-                value = carr(c - view%begc + 1)
+                value = carr(c - beg + 1)
                 if (value /= spval .and. scale_c2l /= spval) then
                    sum_arr = sum_arr + value * scale_c2l * scale_l2g * view%wtgcell_c(c)
                    sumwt = sumwt + view%wtgcell_c(c)
@@ -248,7 +253,90 @@ contains
   end subroutine c2g_range
 
   !-----------------------------------------------------------------------
-  pure subroutine l2g_range(view, g0, g1, larr, l2g_scale_type, garr)
+  pure subroutine p2g_range_unity(view, g0, g1, parr, beg, garr)
+    !
+    ! !DESCRIPTION:
+    ! p2g_range for the 'unity' c2l and l2g scale types (the default of every
+    ! history field): both scale factors are exactly 1, so the lookups, their
+    ! spval checks and the two multiplications are dropped. The result is bit
+    ! for bit that of p2g_range with scale_unity.
+    !
+    !$acc routine vector
+    ! !ARGUMENTS:
+    type(subgrid_ave_view), intent(in) :: view
+    integer , intent(in)  :: g0, g1
+    real(r8), intent(in)  :: parr(*)          ! patch values; parr(1) is patch beg
+    integer , intent(in)  :: beg              ! index of parr(1)
+    real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g, k, l, p
+    real(r8) :: value, sum_arr, sumwt
+    !-----------------------------------------------------------------------
+
+    !$acc loop vector private(sum_arr, sumwt)
+    do g = g0, g1
+       sum_arr = 0._r8
+       sumwt = 0._r8
+       do k = view%grc_lun_ptr(g), view%grc_lun_ptr(g+1)-1
+          l = view%grc_lun_idx(k)
+          do p = view%pfti(l), view%pftf(l)
+             if (view%active_p(p) .and. view%wtgcell_p(p) /= 0._r8) then
+                value = parr(p - beg + 1)
+                if (value /= spval) then
+                   sum_arr = sum_arr + value * view%wtgcell_p(p)
+                   sumwt = sumwt + view%wtgcell_p(p)
+                end if
+             end if
+          end do
+       end do
+       garr(g - g0 + 1) = weighted_average(sum_arr, sumwt)
+    end do
+
+  end subroutine p2g_range_unity
+
+  !-----------------------------------------------------------------------
+  pure subroutine c2g_range_unity(view, g0, g1, carr, beg, garr)
+    !
+    ! !DESCRIPTION:
+    ! c2g_range for the 'unity' c2l and l2g scale types; see p2g_range_unity.
+    !
+    !$acc routine vector
+    ! !ARGUMENTS:
+    type(subgrid_ave_view), intent(in) :: view
+    integer , intent(in)  :: g0, g1
+    real(r8), intent(in)  :: carr(*)          ! column values; carr(1) is column beg
+    integer , intent(in)  :: beg              ! index of carr(1)
+    real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g, k, l, c
+    real(r8) :: value, sum_arr, sumwt
+    !-----------------------------------------------------------------------
+
+    !$acc loop vector private(sum_arr, sumwt)
+    do g = g0, g1
+       sum_arr = 0._r8
+       sumwt = 0._r8
+       do k = view%grc_lun_ptr(g), view%grc_lun_ptr(g+1)-1
+          l = view%grc_lun_idx(k)
+          do c = view%coli(l), view%colf(l)
+             if (view%active_c(c) .and. view%wtgcell_c(c) /= 0._r8) then
+                value = carr(c - beg + 1)
+                if (value /= spval) then
+                   sum_arr = sum_arr + value * view%wtgcell_c(c)
+                   sumwt = sumwt + view%wtgcell_c(c)
+                end if
+             end if
+          end do
+       end do
+       garr(g - g0 + 1) = weighted_average(sum_arr, sumwt)
+    end do
+
+  end subroutine c2g_range_unity
+
+  !-----------------------------------------------------------------------
+  pure subroutine l2g_range(view, g0, g1, larr, beg, l2g_scale_type, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's active landunits with
@@ -259,7 +347,8 @@ contains
     ! !ARGUMENTS:
     type(subgrid_ave_view), intent(in) :: view
     integer , intent(in)  :: g0, g1
-    real(r8), intent(in)  :: larr(*)          ! landunit values; larr(1) is landunit view%begl
+    real(r8), intent(in)  :: larr(*)          ! landunit values; larr(1) is landunit beg
+    integer , intent(in)  :: beg              ! index of larr(1)
     integer , intent(in)  :: l2g_scale_type
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
     !
@@ -276,7 +365,7 @@ contains
           l = view%grc_lun_idx(k)
           if (view%active_l(l) .and. view%wtgcell_l(l) /= 0._r8) then
              scale_l2g = view%scale_l2g_lookup(l2g_scale_type, view%lun_type(l))
-             value = larr(l - view%begl + 1)
+             value = larr(l - beg + 1)
              if (value /= spval .and. scale_l2g /= spval) then
                 sum_arr = sum_arr + value * scale_l2g * view%wtgcell_l(l)
                 sumwt = sumwt + view%wtgcell_l(l)
@@ -289,7 +378,7 @@ contains
   end subroutine l2g_range
 
   !-----------------------------------------------------------------------
-  pure subroutine t2g_range(view, g0, g1, tarr, garr)
+  pure subroutine t2g_range(view, g0, g1, tarr, beg, garr)
     !
     ! !DESCRIPTION:
     ! For gridcells g0:g1, the average of each gridcell's topounits with
@@ -300,7 +389,8 @@ contains
     ! !ARGUMENTS:
     type(subgrid_ave_view), intent(in) :: view
     integer , intent(in)  :: g0, g1
-    real(r8), intent(in)  :: tarr(*)          ! topounit values; tarr(1) is topounit view%begt
+    real(r8), intent(in)  :: tarr(*)          ! topounit values; tarr(1) is topounit beg
+    integer , intent(in)  :: beg              ! index of tarr(1)
     real(r8), intent(out) :: garr(*)          ! garr(1) is gridcell g0
     !
     ! !LOCAL VARIABLES:
@@ -313,7 +403,7 @@ contains
        sum_arr = 0._r8
        sumwt = 0._r8
        do t = view%topi(g), view%topf(g)
-          value = tarr(t - view%begt + 1)
+          value = tarr(t - beg + 1)
           if (view%wtgcell_t(t) /= 0._r8 .and. value /= spval) then
              sum_arr = sum_arr + value * view%wtgcell_t(t)
              sumwt = sumwt + view%wtgcell_t(t)

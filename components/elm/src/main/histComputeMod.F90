@@ -53,6 +53,7 @@ module histComputeMod
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use subgridAveViewMod, only : subgrid_ave_view, spval
   use subgridAveViewMod, only : p2g_range, c2g_range, l2g_range, t2g_range
+  use subgridAveViewMod, only : p2g_range_unity, c2g_range_unity, scale_unity
   !
   implicit none
   private
@@ -500,15 +501,23 @@ contains
        sample_first = fld%sample_offset + (lev - 1) * num_points + 1
        select case (fld%source_level)
        case (lev_patch)
-          call p2g_range(view, view%begg, view%endg, values, fld%c2l_scale, fld%l2g_scale, &
-               gridcell_samples(sample_first))
+          if (fld%c2l_scale == scale_unity .and. fld%l2g_scale == scale_unity) then
+             call p2g_range_unity(view, view%begg, view%endg, values, view%begp, gridcell_samples(sample_first))
+          else
+             call p2g_range(view, view%begg, view%endg, values, view%begp, fld%c2l_scale, fld%l2g_scale, &
+                  gridcell_samples(sample_first))
+          end if
        case (lev_col)
-          call c2g_range(view, view%begg, view%endg, values, fld%c2l_scale, fld%l2g_scale, &
-               gridcell_samples(sample_first))
+          if (fld%c2l_scale == scale_unity .and. fld%l2g_scale == scale_unity) then
+             call c2g_range_unity(view, view%begg, view%endg, values, view%begc, gridcell_samples(sample_first))
+          else
+             call c2g_range(view, view%begg, view%endg, values, view%begc, fld%c2l_scale, fld%l2g_scale, &
+                  gridcell_samples(sample_first))
+          end if
        case (lev_lun)
-          call l2g_range(view, view%begg, view%endg, values, fld%l2g_scale, gridcell_samples(sample_first))
+          call l2g_range(view, view%begg, view%endg, values, view%begl, fld%l2g_scale, gridcell_samples(sample_first))
        case (lev_topo)
-          call t2g_range(view, view%begg, view%endg, values, gridcell_samples(sample_first))
+          call t2g_range(view, view%begg, view%endg, values, view%begt, gridcell_samples(sample_first))
        end select
        call accumulate_samples(fld%time_op, .true., num_points, gridcell_samples(sample_first), &
             all_active, hbuf_pool(buffer_first), nacs_pool(buffer_first))

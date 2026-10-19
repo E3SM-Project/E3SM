@@ -26,6 +26,7 @@ program test_hist_compute
 
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use subgridAveViewMod , only : subgrid_ave_view, p2g_range, c2g_range, l2g_range, t2g_range
+  use subgridAveViewMod , only : p2g_range_unity, c2g_range_unity, scale_unity
   use histComputeMod
   use fake_subgrid_mod
   use hist_reference_mod
@@ -287,20 +288,27 @@ contains
     do ic2l = 1, n_c2l
        do il2g = 1, n_l2g
           call ref_p2g(pv, ref_avg, ic2l, il2g)
-          call p2g_range(view, begg, endg, pv, ic2l, il2g, avg)
+          call p2g_range(view, begg, endg, pv, begp, ic2l, il2g, avg)
           nbad = nbad + count(avg /= ref_avg)
           call ref_c2g(cv, ref_avg, ic2l, il2g)
-          call c2g_range(view, begg, endg, cv, ic2l, il2g, avg)
+          call c2g_range(view, begg, endg, cv, begc, ic2l, il2g, avg)
           nbad = nbad + count(avg /= ref_avg)
        end do
     end do
+    ! the unity kernels: bit for bit the general ones with the unity ids
+    call ref_p2g(pv, ref_avg, scale_unity, scale_unity)
+    call p2g_range_unity(view, begg, endg, pv, begp, avg)
+    nbad = nbad + count(avg /= ref_avg)
+    call ref_c2g(cv, ref_avg, scale_unity, scale_unity)
+    call c2g_range_unity(view, begg, endg, cv, begc, avg)
+    nbad = nbad + count(avg /= ref_avg)
     do il2g = 1, n_l2g
        call ref_l2g(lv, ref_avg, il2g)
-       call l2g_range(view, begg, endg, lv, il2g, avg)
+       call l2g_range(view, begg, endg, lv, begl, il2g, avg)
        nbad = nbad + count(avg /= ref_avg)
     end do
     call ref_t2g(tv, ref_avg)
-    call t2g_range(view, begg, endg, tv, avg)
+    call t2g_range(view, begg, endg, tv, begt, avg)
     nbad = nbad + count(avg /= ref_avg)
 
     ! the same averages in chunks of gridcells, one gang each
@@ -309,28 +317,42 @@ contains
     !$acc parallel loop gang default(present) copyin(pv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       call p2g_range(view, g0, g1, pv, n_c2l, n_l2g, avg(g0:g1))
+       call p2g_range(view, g0, g1, pv, begp, n_c2l, n_l2g, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
     call ref_c2g(cv, ref_avg, n_c2l, n_l2g)
     !$acc parallel loop gang default(present) copyin(cv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       call c2g_range(view, g0, g1, cv, n_c2l, n_l2g, avg(g0:g1))
+       call c2g_range(view, g0, g1, cv, begc, n_c2l, n_l2g, avg(g0:g1))
+    end do
+    nbad = nbad + count(avg /= ref_avg)
+    call ref_p2g(pv, ref_avg, scale_unity, scale_unity)
+    !$acc parallel loop gang default(present) copyin(pv) copyout(avg) private(g0, g1)
+    do chunk = 1, nchunk
+       g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
+       call p2g_range_unity(view, g0, g1, pv, begp, avg(g0:g1))
+    end do
+    nbad = nbad + count(avg /= ref_avg)
+    call ref_c2g(cv, ref_avg, scale_unity, scale_unity)
+    !$acc parallel loop gang default(present) copyin(cv) copyout(avg) private(g0, g1)
+    do chunk = 1, nchunk
+       g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
+       call c2g_range_unity(view, g0, g1, cv, begc, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
     call ref_l2g(lv, ref_avg, n_l2g)
     !$acc parallel loop gang default(present) copyin(lv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       call l2g_range(view, g0, g1, lv, n_l2g, avg(g0:g1))
+       call l2g_range(view, g0, g1, lv, begl, n_l2g, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
     call ref_t2g(tv, ref_avg)
     !$acc parallel loop gang default(present) copyin(tv) copyout(avg) private(g0, g1)
     do chunk = 1, nchunk
        g0 = begg + (chunk-1) * chunk_len ; g1 = min(g0 + chunk_len - 1, endg)
-       call t2g_range(view, g0, g1, tv, avg(g0:g1))
+       call t2g_range(view, g0, g1, tv, begt, avg(g0:g1))
     end do
     nbad = nbad + count(avg /= ref_avg)
 
