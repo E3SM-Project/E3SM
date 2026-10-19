@@ -252,6 +252,15 @@ public:
   const Field& get_valid_mask () const;
         Field& get_valid_mask ();
 
+  // Combine the valid mask of x into the valid mask of this field: y_mask = y_mask & x_mask.
+  // This is the way to state that this field is valid only where x is also valid,
+  // e.g., when this field is computed from x.
+  // NOTE: if x has no valid mask, this is a no-op. If x has a valid mask but this field
+  //       does not, we throw, since validity info would be silently lost.
+  // NOTE: if x and y share the same valid mask, this is a no-op.
+  // NOTE: this modifies y's valid mask in place, so any other field sharing it is affected.
+  void intersect_mask (const Field& x) const;
+
   // --------- Field manipulation methods ------------- //
   // NOTE: these methods are const (shallow-const, like Kokkos::View): the
   //       Field handle is const, but the underlying data is not. A runtime
