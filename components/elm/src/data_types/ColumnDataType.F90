@@ -34,7 +34,7 @@ module ColumnDataType
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
   use elm_time_manager, only : is_restart, get_nstep
-  use elm_time_manager, only : is_first_step, get_step_size, is_first_restart_step
+  use elm_time_manager, only : is_first_step, get_step_size
   use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec, istlowcenpoly, isthighcenpoly
   use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall, icol_shadewall
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
@@ -48,7 +48,7 @@ module ColumnDataType
   use ColumnType      , only : col_pp
   use LandunitType    , only : lun_pp
   use GridcellType    , only : grc_pp
-  use timeInfoMod , only : nstep_mod
+  use timeInfoMod , only : nstep_mod, first_restart_step_mod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -7913,7 +7913,7 @@ contains
     end do
   
     ! pflotran
-    if(nstep_mod == 0 .or. is_first_restart_step()) then 
+    if(nstep_mod == 0 .or. first_restart_step_mod) then 
       do k = 1, ndecomp_pools
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
@@ -9673,7 +9673,7 @@ contains
 
     ! pflotran
     !------------------------------------------------------------------------
-    if(nstep_mod == 0 .or. is_first_restart_step()) then 
+    if(nstep_mod == 0 .or. first_restart_step_mod) then 
       do k = 1, ndecomp_pools
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
@@ -11273,7 +11273,7 @@ contains
    end do
 
     ! pflotran
-    if(nstep_mod == 0 .or. is_first_restart_step() ) then 
+    if(nstep_mod == 0 .or. first_restart_step_mod) then 
       do k = 1, ndecomp_pools
          do j = 1, nlevdecomp_full
             do fi = 1,num_column

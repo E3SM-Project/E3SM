@@ -11,6 +11,7 @@ module timeinfoMod
   integer  :: day_curr  = 1 , day_prev  = 1
   integer  :: secs_curr = 0 , secs_prev = 0
   integer  :: nstep_mod = 0
+  logical  :: first_restart_step_mod = .false. ! first step of a restart or branch run (is_first_restart_step)
   integer, dimension(12) :: days_per_mon = (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
   integer  :: jday_mod  = 1            ! day into year?
   real(r8) :: thiscalday_mod  = 1.0_r8  ! day number including hours
@@ -18,7 +19,7 @@ module timeinfoMod
   logical  :: end_cd_mod = .false.     ! end of current day
   logical  :: doalb = .false.
   !$acc declare copyin(dtime_mod,dayspyr_mod, year_curr, year_prev, &
-  !$acc mon_curr, mon_prev, day_curr, day_prev, secs_curr, secs_prev, nstep_mod, &
+  !$acc mon_curr, mon_prev, day_curr, day_prev, secs_curr, secs_prev, nstep_mod, first_restart_step_mod, &
   !$acc days_per_mon, jday_mod, thiscalday_mod, nextsw_cday_mod, end_cd_mod, doalb )
 contains
 

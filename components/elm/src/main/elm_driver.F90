@@ -20,6 +20,7 @@ module elm_driver
   use elm_varctl             , only : fates_radiation_model
   use elm_varctl             , only : finidat
   use elm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
+  use elm_time_manager       , only : is_first_restart_step
   use elm_time_manager       , only : get_curr_calday, get_days_per_year
   use elm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
@@ -257,6 +258,7 @@ contains
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
     nstep_mod = get_nstep()
+    first_restart_step_mod = is_first_restart_step()
     dtime_mod = real(get_step_size(),r8)
     call get_curr_date(year_curr,mon_curr, day_curr,secs_curr)
     dayspyr_mod = get_days_per_year()

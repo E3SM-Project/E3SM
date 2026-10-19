@@ -14,7 +14,6 @@ module EcosystemDynMod
   use elm_varctl          , only : use_century_decomp
   use elm_varctl          , only : ero_ccycle 
   use elm_varctl          , only : fan_to_bgc_veg, fan_to_bgc_crop
-  use elm_time_manager    , only : is_first_step, is_first_restart_step
   use CNStateType         , only : cnstate_type
   use CanopyStateType     , only : canopystate_type
   use SoilStateType       , only : soilstate_type
@@ -358,7 +357,7 @@ contains
     ! first step of a run or restart). The vertical transport tendencies are
     ! rewritten every step by SoilLittVertTransp for the levels and pools it
     ! uses, and the rest stay zero. Isotope fluxes are always zeroed.
-    zero_unused  = get_subgrid_weights_updated() .or. is_first_step() .or. is_first_restart_step()
+    zero_unused  = get_subgrid_weights_updated() .or. nstep_mod == 0 .or. first_restart_step_mod
     zero_harvest = zero_unused .or. get_do_harvest() .or. iac_present .or. use_fates
     zero_fan     = zero_unused .or. use_fan .or. fan_to_bgc_veg .or. fan_to_bgc_crop
     zero_erosion = zero_unused .or. ero_ccycle
