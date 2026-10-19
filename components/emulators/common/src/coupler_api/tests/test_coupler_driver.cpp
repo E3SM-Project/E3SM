@@ -5,8 +5,6 @@
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 
-#include <filesystem>
-
 using namespace e3sm::coupler;
 using namespace e3sm::coupler::test;
 

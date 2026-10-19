@@ -99,13 +99,7 @@ struct CreateConfig {
  */
 class Emulator {
 public:
-  /**
-   * @brief Construct a new Emulator.
-   *
-   * @param comm MPI communicator
-   * @param id Emulator ID (-1 if unassigned)
-   */
-  Emulator(const CreateConfig);
+  explicit Emulator(const CreateConfig);
   virtual ~Emulator() = default;
 
   // Lifecycle methods

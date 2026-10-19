@@ -1,12 +1,10 @@
 #ifndef E3SM_EMULATOR_CONFIG_HPP
 #define E3SM_EMULATOR_CONFIG_HPP
 
-#include <cstddef>
 #include <field_registry.hpp>
+
 #include <filesystem>
-#include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace emulator {

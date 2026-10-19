@@ -6,6 +6,9 @@
 
 namespace e3sm::coupler {
 void CouplerDriver::initialize(const std::string& filename) {
+  if (initialized_) {
+    throw std::runtime_error("CouplerDriver: already initialized!");
+  }
   for (auto& component : components_) {
     component.populate_registry(coupler_.registry());
   }
@@ -18,6 +21,7 @@ void CouplerDriver::initialize(const std::string& filename) {
   }
 
   // coupler_.print_coupling_plan(std::cout);
+  initialized_ = true;
 }
 
 AnyComponent& CouplerDriver::get_component(std::string_view name) {

@@ -111,7 +111,7 @@ protected:
   }
 };
 
-GridDesc make_test_grid() {
+inline GridDesc make_test_grid() {
   return GridDesc{
       .grid_type = 0,
       .nx = 4,
