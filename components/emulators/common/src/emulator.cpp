@@ -3,22 +3,21 @@
  * @brief Implementation of the Emulator base class.
  */
 
-#include "moab/Types.hpp"
-#include <coupler_types.hpp>
+#include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
+#include <process.hpp>
 
-// #include <memory_resource>
-#include <limits>
+#include <ekat_yaml.hpp>
 #include <moab/iMOAB.h>
+#include <moab/Types.hpp>
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <ekat_yaml.hpp>
 #include <iostream>
-#include <process.hpp>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>

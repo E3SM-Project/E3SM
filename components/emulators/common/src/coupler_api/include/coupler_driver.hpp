@@ -10,11 +10,23 @@ namespace e3sm::coupler {
  */
 class CouplerDriver {
 public:
+  CouplerDriver() = default;
+
+  // neither copyable nor movable
+  CouplerDriver(CouplerDriver&) = delete;
+  CouplerDriver(const CouplerDriver&) = delete;
+  CouplerDriver& operator=(const CouplerDriver&)  = delete;
+  CouplerDriver& operator=(const CouplerDriver&&) = delete;
+
   template <CoupledProcess C> void add_component(C& component) {
+    if (initialized_) {
+      throw std::runtime_error("CouplerDrive: Can't add component after initialization!");
+    }
     components_.emplace_back(component);
   }
 
   void initialize(const std::string& filename);
+  bool is_initialized(const std::string& filename) const { return initialized_; }
 
   void run(const ProcessRunOpts run_opts) {
     for (auto& component : components_) {
@@ -33,6 +45,7 @@ public:
 
 private:
   Coupler coupler_;
+  bool    initialized_;
   std::vector<AnyComponent> components_;
 };
 

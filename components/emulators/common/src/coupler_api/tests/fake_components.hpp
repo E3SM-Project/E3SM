@@ -2,7 +2,6 @@
 #define E3SM_COUPLER_TESTS_FAKE_COMPONENTS_HPP
 
 #include "coupler.hpp"
-#include <algorithm>
 #include <field_registry.hpp>
 #include <string_view>
 #include <vector>

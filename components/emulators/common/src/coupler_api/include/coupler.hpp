@@ -3,6 +3,7 @@
 
 #include <coupler_types.hpp>
 #include <field_registry.hpp>
+
 #include <filesystem>
 #include <ostream>
 #include <span>
@@ -85,6 +86,13 @@ struct ComponentBuffers {
 class Coupler {
 public:
   Coupler() = default;
+
+  // neither copyable nor movable
+  Coupler(Coupler&) = delete;
+  Coupler(const Coupler&) = delete;
+  Coupler& operator=(const Coupler&)  = delete;
+  Coupler& operator=(const Coupler&&) = delete;
+
   FieldRegistry& registry() noexcept { return registry_; }
   const FieldRegistry& registry() const noexcept { return registry_; }
   void build_routes(const std::filesystem::path& filename);
