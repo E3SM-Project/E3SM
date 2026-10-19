@@ -421,9 +421,6 @@ protected:
   void update_impl (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
   template<typename ST, typename STX>
-  void update_fill_aware (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
-
-  template<typename ST, typename STX>
   void update_masked (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
 
   template<HostOrDevice HD>
