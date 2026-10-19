@@ -191,7 +191,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Create reader pl
-  std::string casename = "io_filled";
+  std::string casename = "eamxx.h.io_filled";
   auto filename = casename
     + "." + avg_type
     + "." + freq_units

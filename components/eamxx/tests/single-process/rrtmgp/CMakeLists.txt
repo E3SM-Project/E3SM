@@ -50,7 +50,7 @@ include (CompareNCFiles)
 
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}_not_chunked
-  FILE_META_NAME ${TEST_BASE_NAME}_output_not_chunked.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME EAMxx.eamxx.h.${TEST_BASE_NAME}_output_not_chunked.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS rrtmgp physics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_not_chunked_npMPIRANKS_omp1
@@ -79,8 +79,8 @@ CreateUnitTestFromExec(
 
 CompareNCFiles(
   TEST_NAME ${TEST_BASE_NAME}_chunked_vs_not_chunked
-  SRC_FILE ${TEST_BASE_NAME}_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
-  TGT_FILE ${TEST_BASE_NAME}_output_not_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
+  SRC_FILE EAMxx.eamxx.h.${TEST_BASE_NAME}_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
+  TGT_FILE EAMxx.eamxx.h.${TEST_BASE_NAME}_output_not_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc
   LABELS rrtmgp physics
   FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_chunked_np${TEST_RANK_END}_omp1
                     ${FIXTURES_BASE_NAME}_not_chunked_np${TEST_RANK_END}_omp1
@@ -90,6 +90,6 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   # Compare one of the output files with the baselines.
   # Note: one is enough, since we already check that np1 is BFB with npX,
   #       and that chunked is bfb with not_chunked
-  set (OUT_FILE ${TEST_BASE_NAME}_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc)
+  set (OUT_FILE EAMxx.eamxx.h.${TEST_BASE_NAME}_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc)
   CreateBaselineTest(${TEST_BASE_NAME}_chunked ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME}_chunked)
 endif()

@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: rrtmgp_standalone_output${SUFFIX}
+stream_id: rrtmgp_standalone_output${SUFFIX}
 averaging_type: instant
 field_names:
   - T_mid

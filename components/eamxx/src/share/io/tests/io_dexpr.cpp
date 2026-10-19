@@ -178,7 +178,7 @@ TEST_CASE ("io_with_expressions")
 
   // NOTE: the file is named after the FIRST snapshot in it, which is t0+dt
   //       here, since we skip the t0 output
-  const auto filename = prefix + ".INSTANT.nsteps_x1.np" +
+  const auto filename = "eamxx.h." + prefix + ".INSTANT.nsteps_x1.np" +
                         std::to_string(comm.size()) + "." + (t0+dt).to_string() + ".nc";
   std::ifstream file_check(filename);
   REQUIRE (file_check.good());
