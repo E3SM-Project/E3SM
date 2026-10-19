@@ -114,6 +114,7 @@ TEST_CASE("binary_ops") {
   tgt_mask.scale(qv.get_valid_mask());
   REQUIRE (views_are_equal(tgt_mask,plus_diag_f.get_valid_mask()));
 
+  // The sum is valid only where both inputs are (update intersects the masks)
   qv.update(qc,1,1);
   auto tol = std::numeric_limits<Real>::epsilon()*1e2*0;
   REQUIRE (views_are_equal(plus_diag_f,qv,tol));
