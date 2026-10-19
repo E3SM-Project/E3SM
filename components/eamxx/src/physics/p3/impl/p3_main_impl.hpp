@@ -259,7 +259,7 @@ Int Functions<S,D>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, oqv2qc_aeroact, nucleationPossible, hydrometeorsPresent, runtime_options); //oqv2qc_aeroact
+      ni_incld, bm_incld, oqv2qc_aeroact, nucleationPossible, hydrometeorsPresent, runtime_options);
 
     // There might not be any work to do for this team
     if (!(nucleationPossible || hydrometeorsPresent)) {

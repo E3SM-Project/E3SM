@@ -163,8 +163,8 @@ Int Functions<Real,DefaultDevice>
   auto diag_eff_radius_qc      = diagnostic_outputs.diag_eff_radius_qc;
   auto diag_eff_radius_qi      = diagnostic_outputs.diag_eff_radius_qi;
   auto diag_eff_radius_qr      = diagnostic_outputs.diag_eff_radius_qr;
-  auto omega_mp              = diagnostic_inputs.omega_mp;
-  auto tke_mp                = diagnostic_inputs.tke_mp;
+  auto omega_mp                = diagnostic_inputs.omega_mp;
+  auto tke_mp                  = diagnostic_inputs.tke_mp;
   auto qv2qi_depos_tend        = diagnostic_outputs.qv2qi_depos_tend;
   auto rho_qi                  = diagnostic_outputs.rho_qi;
   auto precip_liq_flux         = diagnostic_outputs.precip_liq_flux;
