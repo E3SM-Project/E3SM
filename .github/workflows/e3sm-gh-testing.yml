@@ -66,10 +66,12 @@ jobs:
         test: [SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS]
         exclude:
           - {env: intel2024-openmpi4, arch: aarch64}
-        # Each image's compiler, for create_test
+        # Each image's compiler, for create_test, and whether it compares baselines. Intel's
+        # answers depend on which CPU a hosted runner happens to have (its math libraries
+        # pick code paths by CPU), so intel builds and runs, but does not compare.
         include:
-          - {env: gnu13-openmpi4, compiler: gnu}
-          - {env: intel2024-openmpi4, compiler: intel}
+          - {env: gnu13-openmpi4, compiler: gnu, baselines: true}
+          - {env: intel2024-openmpi4, compiler: intel, baselines: false}
     name: ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})
     env:
       IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.env }}
@@ -110,7 +112,7 @@ jobs:
           restore-keys: ${{ env.INPUTDATA_KEY }}-
       - name: Restore baselines
         id: baselines
-        if: env.generate != 'true'
+        if: env.generate != 'true' && matrix.baselines
         uses: actions/cache/restore@v6
         with:
           path: baselines
@@ -118,7 +120,9 @@ jobs:
           restore-keys: ${{ env.BASELINES_KEY }}-
       - name: Choose baseline flags
         run: |
-          if [ "$generate" = true ]; then
+          if [ "${{ matrix.baselines }}" != true ]; then
+            flags=""; baselines="not compared for this compiler"
+          elif [ "$generate" = true ]; then
             flags="-o -g -b master"; baselines="generated"
           elif [ -n "${{ steps.baselines.outputs.cache-matched-key }}" ]; then
             flags="-c -b master"; baselines="compared with \`${{ steps.baselines.outputs.cache-matched-key }}\`"
@@ -176,7 +180,7 @@ jobs:
           {
             echo "### ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})"
             echo
-            echo "Image \`$image\`, baselines: $BASELINES"
+            echo "Image \`$image\`, CPU $(lscpu | sed -n 's/^Model name: *//p'), baselines: $BASELINES"
             echo
             echo '```'
             cat scratch/*.gh/TestStatus 2>/dev/null || echo "no TestStatus"
@@ -185,7 +189,7 @@ jobs:
           du -sh inputdata baselines
           exit "$rc"
       - name: Save baselines
-        if: env.generate == 'true'
+        if: env.generate == 'true' && matrix.baselines
         uses: actions/cache/save@v6
         with:
           path: baselines

@@ -22,10 +22,17 @@ To start with, one test:
 `SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
 puts every active component through the coupler. It runs in these images:
 
-| Image | Arch |
-| --- | --- |
-| `gnu13-openmpi4` | x86_64, aarch64 |
-| `intel2024-openmpi4` | x86_64 |
+| Image | Arch | Baselines |
+| --- | --- | --- |
+| `gnu13-openmpi4` | x86_64, aarch64 | compared |
+| `intel2024-openmpi4` | x86_64 | not compared: builds and runs only |
+
+Intel's answers depend on which CPU the hosted runner has: its math libraries pick code paths
+by CPU, and GitHub's x86 runners come with different CPU models. The same commit and image
+have both matched and differed from intel baselines on different runs, so a comparison
+would fail at random. Each job summary shows the runner's CPU model. Building with
+`-fimf-arch-consistency=true` (or `-fp-model consistent`) on the `e3sm-container_intel`
+machine might make intel reproducible enough to compare, at some cost in speed.
 
 The CUDA images are left out: hosted runners have no GPU, so those tests could only be
 built, and there would be nothing to compare.
