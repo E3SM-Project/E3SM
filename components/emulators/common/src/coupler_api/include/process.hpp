@@ -38,7 +38,7 @@ concept CoupledProcess =
 class AnyComponent {
 public:
   template <CoupledProcess C>
-  explicit AnyComponent(C& component)
+  AnyComponent(C& component)
       : object_(&component),
         name_([](void* obj) { return static_cast<C*>(obj)->name(); }),
         populate_registry_([](void* obj, FieldRegistry& registry) {
