@@ -903,6 +903,28 @@ contains
   end subroutine grc_cf_init
   
   !-----------------------------------------------------------------------
+  subroutine gridcell_nutrient_flux_zerodwt(this, bounds)
+    !
+    ! !ARGUMENTS:
+    type(gridcell_nutrient_flux), intent(inout) :: this
+    type(bounds_type), intent(in)  :: bounds 
+    integer  :: g          ! indices
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+
+    ! set column-level conversion and product pool fluxes
+    ! to 0 at the beginning of every timestep
+
+    do g = bounds%begg, bounds%endg
+       this%dwt_seed_to_leaf(g)         = 0._r8
+       this%dwt_seed_to_deadstem(g)     = 0._r8
+       this%dwt_conv_flux(g)            = 0._r8
+       this%dwt_prod10_gain(g)          = 0._r8
+       this%dwt_prod100_gain(g)         = 0._r8
+    end do
+
+  end subroutine gridcell_nutrient_flux_zerodwt
+
   subroutine grc_cf_zerodwt( this, bounds )
     !
     ! !DESCRIPTION
@@ -919,12 +941,8 @@ contains
     ! set column-level conversion and product pool fluxes
     ! to 0 at the beginning of every timestep
 
+    call gridcell_nutrient_flux_zerodwt(this%core, bounds)
     do g = bounds%begg, bounds%endg
-       this%core%dwt_seed_to_leaf(g)         = 0._r8
-       this%core%dwt_seed_to_deadstem(g)     = 0._r8
-       this%core%dwt_conv_flux(g)            = 0._r8
-       this%core%dwt_prod10_gain(g)          = 0._r8
-       this%core%dwt_prod100_gain(g)         = 0._r8
        this%hrv_deadstemc_to_prod10c(g)  = 0._r8
        this%hrv_deadstemc_to_prod100c(g) = 0._r8
     end do
@@ -1075,13 +1093,9 @@ contains
     integer  :: g          ! indices
     !-----------------------------------------------------------------------
   
+    call gridcell_nutrient_flux_zerodwt(this%core, bounds)
     do g = bounds%begg, bounds%endg
-       this%core%dwt_seed_to_leaf(g)     = 0._r8
-       this%core%dwt_seed_to_deadstem(g) = 0._r8
-       this%core%dwt_conv_flux(g)        = 0._r8
        this%dwt_seedn_to_npool(g)    = 0._r8
-       this%core%dwt_prod10_gain(g)      = 0._r8
-       this%core%dwt_prod100_gain(g)     = 0._r8
     end do
 
   end subroutine grc_nf_zerodwt
@@ -1223,13 +1237,9 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: g          ! indices
     !-----------------------------------------------------------------------
+    call gridcell_nutrient_flux_zerodwt(this%core, bounds)
     do g = bounds%begg, bounds%endg
-       this%core%dwt_seed_to_leaf(g)     = 0._r8
-       this%core%dwt_seed_to_deadstem(g) = 0._r8
-       this%core%dwt_conv_flux(g)        = 0._r8
        this%dwt_seedp_to_ppool(g)    = 0._r8
-       this%core%dwt_prod10_gain(g)      = 0._r8
-       this%core%dwt_prod100_gain(g)     = 0._r8
     end do
   
   end subroutine grc_pf_zerodwt
