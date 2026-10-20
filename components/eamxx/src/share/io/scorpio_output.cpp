@@ -363,8 +363,10 @@ void AtmosphereOutput::init()
       Field copy(fid);
       copy.allocate_view();
       transfer_extra_data (f,copy);
-      if (f.has_valid_mask()) {
-        // The scorpio field has its own mask, which tracks the validity of the data we write
+      if (f.has_valid_mask() or (m_avg_type==OutputAvgType::Average and m_field_to_avg_cnt_suffix.count(fname)>0)) {
+        // The scorpio field has its own mask, which tracks the validity of the data we write.
+        // NOTE: we need it also for unmasked fields with an avg count, since the count has a
+        //       valid mask (where the average is valid), and we divide by it when writing.
         copy.create_valid_mask(Field::MaskInit::Valid);
       }
       fm_scorpio->add_field(copy);
@@ -548,7 +550,6 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_valid_mask();
 
       if (field.has_valid_mask()) {
         count.update(field.get_valid_mask(),1,1);
@@ -578,20 +579,12 @@ run (const std::string& filename, const util::TimeStamp& ts,
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
 
-        // If it's an output step, for Avg we need to ensure count>threshold.
-        // If count<=threshold, we set count=fill_value, so that fill_val propagates
-        // to the output fields when we divide by count later
+        // If it's an output step, for Avg we need to ensure count>threshold. Where it is not,
+        // the average is invalid: the count mask tells us where, so that later we only divide
+        // fields by count where it is valid (and fill the rest with fill_value)
         if (output_step and m_avg_type==OutputAvgType::Average) {
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
-
-          // Recycle mask to find where count<thresh
-          compute_mask(count,min_count,Comparison::LE,mask);
-
-          // Later, we divide fields by count. By setting count=1 where count<thresholt,
-          // we can later do
-          //   f.scale_inv(count); // Requires count!=0 anywhere
-          //   f.deep_copy(fill_val,mask)
-          count.deep_copy(1,mask);
+          compute_mask(count,min_count,Comparison::GT,count.get_valid_mask());
         }
       }
       count.get_header().set_extra_data("updated",true);
@@ -657,10 +650,11 @@ run (const std::string& filename, const util::TimeStamp& ts,
         if (m_track_avg_cnt and avg_count_it!=m_field_to_avg_count.end()) {
           auto avg_count = avg_count_it->second;
 
+          // The average is valid where the count is. Divide only there, and fill the rest.
+          // NOTE: the mask of f_out is all-valid here (we reset it after each write)
+          f_out.intersect_mask(avg_count);
           f_out.scale_inv(avg_count);
-
-          const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
+          f_out.deep_copy(constants::fill_value<Real>,f_out.get_valid_mask(),true);
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
@@ -769,8 +763,10 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
   Field count(count_id);
   count.allocate_view();
 
-  // We will use a mask field for updating cnt (to check where cnt>threshold)
-  count.create_valid_mask();
+  // The valid mask of the count tells where the average is valid, i.e., where cnt>threshold.
+  // We only set it at output steps (when averaging), and reset it to all-valid after we write.
+  // This way, the count is valid everywhere while we accumulate.
+  count.create_valid_mask(Field::MaskInit::Valid);
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
@@ -794,10 +790,15 @@ reset_scorpio_fields()
 
   auto fm = m_field_mgrs[Scorpio];
   for (const auto& name : m_fields_names) {
-    fm->get_field(name).deep_copy(value);
+    auto& f = fm->get_field(name);
+    f.deep_copy(value);
+    if (f.has_valid_mask()) {
+      f.get_valid_mask().deep_copy(1);
+    }
   }
   for (auto& count : m_avg_counts) {
     count.deep_copy(0);
+    count.get_valid_mask().deep_copy(1);
   }
 }
 /* ---------------------------------------------------------- */
