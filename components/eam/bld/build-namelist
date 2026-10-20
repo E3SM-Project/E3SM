@@ -4805,7 +4805,7 @@ if ($opts{'inputdata'}) {
     my $p3_dir = $nl->get_value('micro_p3_lookup_dir');
     my $p3_ver = $nl->get_value('micro_p3_tableversion');
     if (defined $p3_dir and defined $p3_ver) {
-        s/['"\s]//g for ($p3_dir, $p3_ver);
+        s/['"]//g, s/^\s+|\s+$//g for ($p3_dir, $p3_ver);
         open my $fh, '>>', $opts{'inputdata'} or die "error opening $opts{'inputdata'}: $!";
         print $fh "micro_p3_lookup_table = $p3_dir/p3_lookup_table_1.dat-v$p3_ver\n";
         close $fh;
