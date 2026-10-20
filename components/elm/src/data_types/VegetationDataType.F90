@@ -3100,6 +3100,37 @@ module VegetationDataType
   end subroutine veg_cs_restart
 
   !-----------------------------------------------------------------------
+  subroutine vegetation_nutrient_state_summary(this, num_soilp, filter_soilp)
+    !
+    ! !ARGUMENTS:
+    type(vegetation_nutrient_state), intent(inout) :: this
+    integer                   , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                   , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer :: p
+    integer  :: fp              ! filter indices
+    !-----------------------------------------------------------------------
+
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+       ! displayed vegetation carbon, excluding storage and cpool (DISPVEGC)
+       this%dispveg(p) =        &
+            this%leaf(p)      + &
+            this%froot(p)     + &
+            this%livestem(p)  + &
+            this%deadstem(p)  + &
+            this%livecroot(p) + &
+            this%deadcroot(p)
+
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
+
+          this%dispveg(p) =            &
+               this%dispveg(p)       + &
+               this%grain(p)
+       end if
+    end do ! filtered veg list
+
+  end subroutine vegetation_nutrient_state_summary
+
   subroutine veg_cs_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
     !
     ! !DESCRIPTION:
@@ -3120,6 +3151,7 @@ module VegetationDataType
     integer  :: fp              ! filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     !-----------------------------------------------------------------------
+    call vegetation_nutrient_state_summary(this%core, num_soilp, filter_soilp)
     associate(&
       totpftc_patch  => this%core%totpft         , &
       totpftc_col    => col_cs%core%totpft, &
@@ -3135,14 +3167,6 @@ module VegetationDataType
 
     do fp = 1,num_soilp
        p = filter_soilp(fp)
-       ! displayed vegetation carbon, excluding storage and cpool (DISPVEGC)
-       this%core%dispveg(p) =        &
-            this%core%leaf(p)      + &
-            this%core%froot(p)     + &
-            this%core%livestem(p)  + &
-            this%core%deadstem(p)  + &
-            this%core%livecroot(p) + &
-            this%core%deadcroot(p)
 
        ! stored vegetation carbon, excluding cpool (STORVEGC)
        this%core%storveg(p) =                &
@@ -3167,10 +3191,6 @@ module VegetationDataType
                this%core%storveg(p)       + &
                this%core%grain_storage(p) + &
                this%core%grain_xfer(p)
-
-          this%core%dispveg(p) =            &
-               this%core%dispveg(p)       + &
-               this%core%grain(p)
        end if
 
        ! total vegetation carbon, excluding cpool (TOTVEGC)
@@ -3566,6 +3586,7 @@ module VegetationDataType
     integer  :: c,p             ! indices
     integer  :: fp              ! filter indices
     !-----------------------------------------------------------------------
+    call vegetation_nutrient_state_summary(this%core, num_soilp, filter_soilp)
     associate( &
      plant_n_buffer_patch  => this%plant_n_buffer  , &
      plant_n_buffer_col    => col_ns%plant_n_buffer , &
@@ -3579,15 +3600,6 @@ module VegetationDataType
 
     do fp = 1,num_soilp
        p = filter_soilp(fp)
-
-       ! displayed vegetation nitrogen, excluding storage (DISPVEGN)
-       this%core%dispveg(p) = &
-            this%core%leaf(p)      + &
-            this%core%froot(p)     + &
-            this%core%livestem(p)  + &
-            this%core%deadstem(p)  + &
-            this%core%livecroot(p) + &
-            this%core%deadcroot(p)
 
       ! stored vegetation nitrogen, including retranslocated N pool (STORVEGN)
       this%core%storveg(p) = &
@@ -3607,9 +3619,6 @@ module VegetationDataType
            this%retrans%pool(p)
 
       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
-         this%core%dispveg(p) = &
-              this%core%dispveg(p) + &
-              this%core%grain(p)
 
          this%core%storveg(p) = &
               this%core%storveg(p) + &
@@ -4069,6 +4078,7 @@ module VegetationDataType
     integer  :: p        ! indices
     integer  :: fp       ! lake filter indices
     !-----------------------------------------------------------------------
+    call vegetation_nutrient_state_summary(this%core, num_soilp, filter_soilp)
     associate( &
      totvegp_patch  => this%core%totveg   , &
      totvegp_col    => col_ps%core%totveg, &
@@ -4079,15 +4089,6 @@ module VegetationDataType
       )
     do fp = 1,num_soilp
        p = filter_soilp(fp)
-
-       ! displayed vegetation phosphorus, excluding storage (DISPVEGN)
-       this%core%dispveg(p) = &
-            this%core%leaf(p)      + &
-            this%core%froot(p)     + &
-            this%core%livestem(p)  + &
-            this%core%deadstem(p)  + &
-            this%core%livecroot(p) + &
-            this%core%deadcroot(p)
 
       ! stored vegetation phosphorus, including retranslocated N pool (STORVEGN)
       this%core%storveg(p) = &
@@ -4107,9 +4108,6 @@ module VegetationDataType
            this%retrans%pool(p)
 
       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
-         this%core%dispveg(p) = &
-              this%core%dispveg(p) + &
-              this%core%grain(p)
 
          this%core%storveg(p) = &
               this%core%storveg(p) + &
@@ -6688,6 +6686,33 @@ module VegetationDataType
 
 
   !-----------------------------------------------------------------------
+  subroutine vegetation_nutrient_flux_summary(this, num_soilp, filter_soilp)
+    !
+    ! !ARGUMENTS:
+    type(vegetation_nutrient_flux), intent(inout) :: this
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer :: p
+    integer  :: fp            ! lake filter indices
+    !-----------------------------------------------------------------------
+
+    ! patch loop
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)
+
+       ! patch-level wood harvest
+       this%wood_harvest(p) = &
+            this%hrv_deadstem_to_prod10(p) + &
+            this%hrv_deadstem_to_prod100(p)
+       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
+          this%wood_harvest(p) = &
+               this%wood_harvest(p) + &
+               this%hrv_crop_to_prod1(p)
+       end if
+    end do  ! end of patches loop
+
+  end subroutine vegetation_nutrient_flux_summary
+
   subroutine veg_cf_summary(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, isotope, col_cf_input)
     !
     ! !DESCRIPTION:
@@ -6709,6 +6734,7 @@ module VegetationDataType
     integer  :: p,j,k,l       ! indices
     integer  :: fp            ! lake filter indices
     !-----------------------------------------------------------------------
+    call vegetation_nutrient_flux_summary(this%core, num_soilp, filter_soilp)
     associate( &
       gpp_patch => this%gpp , &
       gpp_col   => col_cf_input%gpp , &
@@ -6911,16 +6937,6 @@ module VegetationDataType
        
        ! patch-level fire losses (VEGFIRE)
        this%vegfire(p) = 0._r8
-
-       ! patch-level wood harvest
-       this%core%wood_harvest(p) = &
-            this%core%hrv_deadstem_to_prod10(p) + &
-            this%core%hrv_deadstem_to_prod100(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
-          this%core%wood_harvest(p) = &
-               this%core%wood_harvest(p) + &
-               this%core%hrv_crop_to_prod1(p)
-       end if
 
        ! patch-level carbon losses to fire changed by F. Li and S. Levis
        this%core%fire_loss(p) = &
@@ -7730,6 +7746,7 @@ module VegetationDataType
     integer  :: c,p             ! indices
     integer  :: fp              ! filter indices
     !-----------------------------------------------------------------------
+    call vegetation_nutrient_flux_summary(this%core, num_soilp, filter_soilp)
     associate(&
       fire_nloss_patch => this%core%fire_loss ,&
       fire_nloss_col   => col_nf%core%fire_loss_p2c ,&
@@ -7744,16 +7761,6 @@ module VegetationDataType
        this%uptake%pool_deploy(p) = &
             this%uptake%smin_to_pool(p) + &
             this%retrans%retrans_to_pool(p)
-
-       ! pft-level wood harvest
-       this%core%wood_harvest(p) = &
-            this%core%hrv_deadstem_to_prod10(p) + &
-            this%core%hrv_deadstem_to_prod100(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
-            this%core%wood_harvest(p) = &
-            this%core%wood_harvest(p) + &
-            this%core%hrv_crop_to_prod1(p)
-       end if
 
        ! total pft-level fire N losses
        this%core%fire_loss(p) = &
@@ -8199,6 +8206,7 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     integer  :: p, fp   ! indices
     !-----------------------------------------------------------------------
+    call vegetation_nutrient_flux_summary(this%core, num_soilp, filter_soilp)
     associate( &
       fire_ploss_patch => this%core%fire_loss      ,&
       fire_ploss_col   => col_pf%core%fire_loss_p2c ,&
@@ -8212,16 +8220,6 @@ module VegetationDataType
        this%uptake%pool_deploy(p) = &
             this%uptake%smin_to_pool(p) + &
             this%retrans%retrans_to_pool(p)
-
-       ! pft-level wood harvest
-       this%core%wood_harvest(p) = &
-            this%core%hrv_deadstem_to_prod10(p) + &
-            this%core%hrv_deadstem_to_prod100(p)
-       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
-            this%core%wood_harvest(p) = &
-            this%core%wood_harvest(p) + &
-            this%core%hrv_crop_to_prod1(p)
-       end if
 
        ! total pft-level fire P losses
        this%core%fire_loss(p) = &

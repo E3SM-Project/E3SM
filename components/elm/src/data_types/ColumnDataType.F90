@@ -2875,6 +2875,167 @@ contains
   end subroutine col_cs_restart
 
   !-----------------------------------------------------------------------
+  subroutine column_nutrient_state_summary(this, num_soilc, filter_soilc)
+    !
+    ! !ARGUMENTS:
+    type(column_nutrient_state), intent(inout) :: this
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer :: c, j, l
+    integer :: fc
+    real(r8) :: maxdepth        ! depth to integrate soil variables
+    integer  :: nlev
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+
+    nlev = nlevdecomp
+
+    ! vertically integrate each of the decomposing C pools
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_pools(c,l) = 0._r8
+       end do
+    end do
+
+    do l = 1, ndecomp_pools
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_pools(c,l) = &
+                  this%decomp_pools(c,l) + &
+                  this%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+
+    if ( nlevdecomp > 1) then
+       ! vertically integrate each of the decomposing C pools to 1 meter
+       maxdepth = 1._r8
+       do l = 1, ndecomp_pools
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_pools_1m(c,l) = 0._r8
+          end do
+       end do
+       do l = 1, ndecomp_pools
+          do j = 1, nlevdecomp
+             if ( zisoi(j) <= maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_pools_1m(c,l) = &
+                        this%decomp_pools_1m(c,l) + &
+                        this%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
+                end do
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%decomp_pools_1m(c,l) = &
+                        this%decomp_pools_1m(c,l) + &
+                        this%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+                end do
+             endif
+          end do
+       end do
+
+       ! total litter carbon in the top meter (TOTLITC_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totlit_1m(c)         = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totlit_1m(c) = &
+                     this%totlit_1m(c) + &
+                     this%decomp_pools_1m(c,l)
+             end do
+          endif
+       end do
+
+       ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totsom_1m(c) = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_soil(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totsom_1m(c) = &
+                     this%totsom_1m(c) + &
+                     this%decomp_pools_1m(c,l)
+             end do
+          end if
+       end do
+
+
+    end if ! nlevdecomp>1
+
+    ! total litter carbon (TOTLITC)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totlit(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_litter(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totlit(c) = &
+                  this%totlit(c) + &
+                  this%decomp_pools(c,l)
+          end do
+       endif
+    end do
+
+    ! total soil organic matter carbon (TOTSOMC)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totsom(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_soil(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totsom(c) = &
+                  this%totsom(c) + &
+                  this%decomp_pools(c,l)
+          end do
+       end if
+    end do
+
+    ! coarse woody debris carbon
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%cwd(c) = 0._r8
+    end do
+    do l = 1, ndecomp_pools
+       if ( decomp_cascade_con%is_cwd(l) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%cwd(c) = &
+                  this%cwd(c) + &
+                  this%decomp_pools(c,l)
+          end do
+       end if
+    end do
+
+    ! truncation carbon
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%trunc_sink(c) = 0._r8
+    end do
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%trunc_sink(c) = &
+               this%trunc_sink(c) + &
+               this%trunc_sink_vr(c,j) * dzsoi_decomp(j)
+       end do
+    end do
+  end subroutine column_nutrient_state_summary
+
   subroutine col_cs_summary(this, bounds, num_soilc, filter_soilc)
     !
     ! !DESCRIPTION:
@@ -2894,153 +3055,9 @@ contains
     integer  :: nlev
     !-----------------------------------------------------------------------
 
+    call column_nutrient_state_summary(this%core, num_soilc, filter_soilc)
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
-
-    ! vertically integrate each of the decomposing C pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%decomp_pools(c,l) = 0._r8
-       end do
-    end do
-
-    do l = 1, ndecomp_pools
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%decomp_pools(c,l) = &
-                  this%core%decomp_pools(c,l) + &
-                  this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
-    if ( nlevdecomp > 1) then
-       ! vertically integrate each of the decomposing C pools to 1 meter
-       maxdepth = 1._r8
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%decomp_pools_1m(c,l) = 0._r8
-          end do
-       end do
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%core%decomp_pools_1m(c,l) = &
-                        this%core%decomp_pools_1m(c,l) + &
-                        this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%core%decomp_pools_1m(c,l) = &
-                        this%core%decomp_pools_1m(c,l) + &
-                        this%core%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
-       end do
-
-       ! total litter carbon in the top meter (TOTLITC_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%totlit_1m(c)         = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%core%totlit_1m(c) = &
-                     this%core%totlit_1m(c) + &
-                     this%core%decomp_pools_1m(c,l)
-             end do
-          endif
-       end do
-
-       ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%totsom_1m(c) = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_soil(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%core%totsom_1m(c) = &
-                     this%core%totsom_1m(c) + &
-                     this%core%decomp_pools_1m(c,l)
-             end do
-          end if
-       end do
-
-
-    end if ! nlevdecomp>1
-
-    ! total litter carbon (TOTLITC)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%totlit(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_litter(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%totlit(c) = &
-                  this%core%totlit(c) + &
-                  this%core%decomp_pools(c,l)
-          end do
-       endif
-    end do
-
-    ! total soil organic matter carbon (TOTSOMC)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%totsom(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_soil(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%totsom(c) = &
-                  this%core%totsom(c) + &
-                  this%core%decomp_pools(c,l)
-          end do
-       end if
-    end do
-
-    ! coarse woody debris carbon
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%cwd(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_cwd(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%cwd(c) = &
-                  this%core%cwd(c) + &
-                  this%core%decomp_pools(c,l)
-          end do
-       end if
-    end do
-
-    ! truncation carbon
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%trunc_sink(c) = 0._r8
-    end do
-    do j = 1, nlev
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%trunc_sink(c) = &
-               this%core%trunc_sink(c) + &
-               this%core%trunc_sink_vr(c,j) * dzsoi_decomp(j)
-       end do
-    end do
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -4075,6 +4092,7 @@ contains
     !-----------------------------------------------------------------------
 
     ! vertically integrate NO3 NH4 N2O pools
+    call column_nutrient_state_summary(this%core, num_soilc, filter_soilc)
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
@@ -4104,136 +4122,6 @@ contains
        end do
     end do
 
-    ! vertically integrate each of the decomposing N pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%decomp_pools(c,l) = 0._r8
-       end do
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%decomp_pools(c,l) = &
-                  this%core%decomp_pools(c,l) + &
-                  this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
-    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
-    if ( nlevdecomp > 1) then
-
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%decomp_pools_1m(c,l) = 0._r8
-          end do
-       end do
-
-       ! vertically integrate each of the decomposing n pools to 1 meter
-       maxdepth = 1._r8
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%core%decomp_pools_1m(c,l) = &
-                        this%core%decomp_pools_1m(c,l) + &
-                        this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%core%decomp_pools_1m(c,l) = &
-                        this%core%decomp_pools_1m(c,l) + &
-                        this%core%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
-       end do
-
-       ! total litter nitrogen to 1 meter (TOTLITN_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%totlit_1m(c) = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%core%totlit_1m(c) = &
-                     this%core%totlit_1m(c) + &
-                     this%core%decomp_pools_1m(c,l)
-             end do
-          end if
-       end do
-
-       ! total soil organic matter nitrogen to 1 meter (TOTSOMN_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%totsom_1m(c) = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_soil(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%core%totsom_1m(c) = &
-                     this%core%totsom_1m(c) + &
-                     this%core%decomp_pools_1m(c,l)
-             end do
-          end if
-       end do
-
-    endif
-
-    ! total litter nitrogen (TOTLITN)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%totlit(c)    = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_litter(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%totlit(c) = &
-                  this%core%totlit(c) + &
-                  this%core%decomp_pools(c,l)
-          end do
-       end if
-    end do
-
-    ! total soil organic matter nitrogen (TOTSOMN)
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%totsom(c)    = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_soil(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%totsom(c) = &
-                  this%core%totsom(c) + &
-                  this%core%decomp_pools(c,l)
-          end do
-       end if
-    end do
-
-    ! total cwdn
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%cwd(c) = 0._r8
-    end do
-    do l = 1, ndecomp_pools
-       if ( decomp_cascade_con%is_cwd(l) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%cwd(c) = &
-                  this%core%cwd(c) + &
-                  this%core%decomp_pools(c,l)
-          end do
-       end if
-    end do
-
     ! total sminn
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -4245,20 +4133,6 @@ contains
           this%mineral%smin(c) = &
                this%mineral%smin(c) + &
                this%mineral%smin_vr(c,j) * dzsoi_decomp(j)
-       end do
-    end do
-
-    ! total col_ntrunc
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%core%trunc_sink(c) = 0._r8
-    end do
-    do j = 1, nlev
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%core%trunc_sink(c) = &
-               this%core%trunc_sink(c) + &
-               this%core%trunc_sink_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -5023,6 +4897,7 @@ contains
     integer  :: fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
     !-----------------------------------------------------------------------
+   call column_nutrient_state_summary(this%core, num_soilc, filter_soilc)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%solutionp(c) =0._r8
@@ -5053,135 +4928,6 @@ contains
       end do
    end do
 
-   ! vertically integrate each of the decomposing P pools
-   do l = 1, ndecomp_pools
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%core%decomp_pools(c,l) = 0._r8
-      end do
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%core%decomp_pools(c,l) = &
-                 this%core%decomp_pools(c,l) + &
-                 this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
-         end do
-      end do
-   end do
-
-   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
-   if ( nlevdecomp > 1) then
-      do l = 1, ndecomp_pools
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%core%decomp_pools_1m(c,l) = 0._r8
-         end do
-      end do
-
-      ! vertically integrate each of the decomposing n pools to 1 meter
-      maxdepth = 1._r8
-      do l = 1, ndecomp_pools
-         do j = 1, nlevdecomp
-            if ( zisoi(j) <= maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%core%decomp_pools_1m(c,l) = &
-                       this%core%decomp_pools_1m(c,l) + &
-                       this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
-               end do
-            elseif ( zisoi(j-1) < maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%core%decomp_pools_1m(c,l) = &
-                       this%core%decomp_pools_1m(c,l) + &
-                       this%core%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-               end do
-            endif
-         end do
-      end do
-
-      ! total litter phosphorus to 1 meter (TOTLITN_1m)
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%core%totlit_1m(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-         if ( decomp_cascade_con%is_litter(l) ) then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               this%core%totlit_1m(c) = &
-                    this%core%totlit_1m(c) + &
-                    this%core%decomp_pools_1m(c,l)
-            end do
-         end if
-      end do
-
-      ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%core%totsom_1m(c) = 0._r8
-      end do
-      do l = 1, ndecomp_pools
-         if ( decomp_cascade_con%is_soil(l) ) then
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               this%core%totsom_1m(c) = &
-                    this%core%totsom_1m(c) + &
-                    this%core%decomp_pools_1m(c,l)
-            end do
-         end if
-      end do
-
-   endif
-
-   ! total litter phosphorus (TOTLITP)
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%core%totlit(c)    = 0._r8
-   end do
-   do l = 1, ndecomp_pools
-      if ( decomp_cascade_con%is_litter(l) ) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%core%totlit(c) = &
-                 this%core%totlit(c) + &
-                 this%core%decomp_pools(c,l)
-         end do
-      end if
-   end do
-
-   ! total soil organic matter phosphorus (TOTSOMP)
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%core%totsom(c)    = 0._r8
-   end do
-   do l = 1, ndecomp_pools
-      if ( decomp_cascade_con%is_soil(l) ) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%core%totsom(c) = &
-                 this%core%totsom(c) + &
-                 this%core%decomp_pools(c,l)
-         end do
-      end if
-   end do
-
-   ! total cwdn
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%core%cwd(c) = 0._r8
-   end do
-   do l = 1, ndecomp_pools
-      if ( decomp_cascade_con%is_cwd(l) ) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%core%cwd(c) = &
-                 this%core%cwd(c) + &
-                 this%core%decomp_pools(c,l)
-         end do
-      end if
-   end do
-
    ! total sminp
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -5200,20 +4946,6 @@ contains
          c = filter_soilc(fc)
          this%mineral%smin(c) =  this%mineral%smin(c) + &
          this%mineral%smin_vr(c,j) * dzsoi_decomp(j)
-      end do
-   end do
-
-   ! total col_ntrunc
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%core%trunc_sink(c) = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%core%trunc_sink(c) = &
-              this%core%trunc_sink(c) + &
-              this%core%trunc_sink_vr(c,j) * dzsoi_decomp(j)
       end do
    end do
 
@@ -6957,6 +6689,46 @@ contains
   end subroutine col_cf_restart
 
   !-----------------------------------------------------------------------
+  subroutine column_nutrient_flux_summary(this, num_soilc, filter_soilc)
+    !
+    ! !ARGUMENTS:
+    type(column_nutrient_flux), intent(inout) :: this
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer :: fc, c, j, k
+    integer  :: nlev
+    !-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+
+    nlev = nlevdecomp
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%som_leached(c)       = 0._r8
+       this%som_erode(c)          = 0._r8
+       this%som_deposit(c)        = 0._r8
+       this%som_yield(c)          = 0._r8
+    end do
+
+    if (  (.not. (use_pflotran .and. pf_cmode)) ) then
+       ! PFLOTRAN's pf_cmode is false
+       ! vertically integrate decomposing N cascade fluxes and
+       !soil mineral N fluxes associated with decomposition cascade
+       do k = 1, ndecomp_cascade_transitions
+          do j = 1,nlev
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cascade_transfer(c,k) = &
+                     this%decomp_cascade_transfer(c,k) + &
+                     this%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
+             end do
+          end do
+       end do
+
+    end if
+
+  end subroutine column_nutrient_flux_summary
+
   subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope)
     !
     ! !DESCRIPTION:
@@ -6977,6 +6749,7 @@ contains
     real(r8) :: maxdepth        ! depth to integrate soil variables
     integer  :: nlev
     !-----------------------------------------------------------------------
+    call column_nutrient_flux_summary(this%core, num_soilc, filter_soilc)
     associate(&
          is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
          is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
@@ -7013,26 +6786,9 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%cwdc_loss(c)          = 0._r8
-       this%core%som_leached(c)      = 0._r8
-       this%core%som_erode(c)         = 0._r8
-       this%core%som_deposit(c)       = 0._r8
-       this%core%som_yield(c)         = 0._r8
     end do
 
     if ((.not. (use_pflotran .and. pf_cmode))) then
-
-       ! vertically integrate HR and decomposition cascade fluxes
-       do k = 1, ndecomp_cascade_transitions
-
-       do j = 1,nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%core%decomp_cascade_transfer(c,k) = &
-                     this%core%decomp_cascade_transfer(c,k) + &
-                     this%core%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
-             end do
-          end do
-       end do
 
        ! total heterotrophic respiration (HR)
        do fc = 1,num_soilc
@@ -9191,6 +8947,7 @@ contains
     integer  :: nlev
     !-----------------------------------------------------------------------
 
+    call column_nutrient_flux_summary(this%core, num_soilc, filter_soilc)
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
@@ -9198,10 +8955,6 @@ contains
        c = filter_soilc(fc)
        this%denit(c) = 0._r8
        this%mineral%supplement_to_smin(c) = 0._r8
-       this%core%som_leached(c)       = 0._r8
-       this%core%som_erode(c)          = 0._r8
-       this%core%som_deposit(c)        = 0._r8
-       this%core%som_yield(c)          = 0._r8
     end do
 
     if (  (.not. (use_pflotran .and. pf_cmode)) ) then
@@ -9212,9 +8965,6 @@ contains
           do j = 1,nlev
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%core%decomp_cascade_transfer(c,k) = &
-                     this%core%decomp_cascade_transfer(c,k) + &
-                     this%core%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
 
                 this%mineral%decomp_cascade_smin_flux(c,k) = &
                      this%mineral%decomp_cascade_smin_flux(c,k) + &
@@ -10494,13 +10244,10 @@ contains
     integer  :: fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
     !-----------------------------------------------------------------------
+    call column_nutrient_flux_summary(this%core, num_soilc, filter_soilc)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%mineral%supplement_to_smin(c) = 0._r8
-       this%core%som_leached(c)       = 0._r8
-       this%core%som_erode(c)          = 0._r8
-       this%core%som_deposit(c)        = 0._r8
-       this%core%som_yield(c)          = 0._r8
        this%labilep_yield(c)       = 0._r8
        this%secondp_yield(c)       = 0._r8
        this%occlp_yield(c)         = 0._r8
@@ -10514,10 +10261,6 @@ contains
        do j = 1,nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-
-             this%core%decomp_cascade_transfer(c,k) = &
-                  this%core%decomp_cascade_transfer(c,k) + &
-                  this%core%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
 
              this%mineral%decomp_cascade_smin_flux(c,k) = &
                   this%mineral%decomp_cascade_smin_flux(c,k) + &
