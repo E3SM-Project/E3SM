@@ -219,7 +219,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       </tables>
       <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
       <autoconversion_prefactor hgrid="ne256np4.pg2">2700.0</autoconversion_prefactor>
+      <autoconversion_prefactor hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">2960.0</autoconversion_prefactor>
       <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>
+      <autoconversion_qc_exponent hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">2.42</autoconversion_qc_exponent>
       <autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent">1.79</autoconversion_nc_exponent>
       <autoconversion_radius type="real" doc="Autoconversion droplet radius in meter">25.0e-6</autoconversion_radius>
       <accretion_prefactor type="real" doc="Accretion linear prefactor">67.0</accretion_prefactor>
@@ -231,6 +233,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
       <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">2000.0</spa_ccn_to_nc_factor>
       <spa_ccn_to_nc_factor hgrid="ne256np4.pg2">1000.0</spa_ccn_to_nc_factor>
+      <spa_ccn_to_nc_factor hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">750.0</spa_ccn_to_nc_factor>
       <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">0.55</spa_ccn_to_nc_exponent>
       <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
       <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
@@ -263,6 +266,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <qwthl2tune type="real" doc="Temperature moisture covariance">1.0</qwthl2tune>
       <w2tune type="real" doc="Vertical velocity variance">1.0</w2tune>
       <length_fac type="real" doc="Length scale factor">0.5</length_fac>
+      <length_fac hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">0.51</length_fac>
       <c_diag_3rd_mom type="real" doc="Third moment vertical velocity damping factor">7.0</c_diag_3rd_mom>
       <coeff_kh type="real" doc="Eddy diffusivity coefficient for heat">0.1</coeff_kh>
       <coeff_km type="real" doc="Eddy diffusivity coefficient for momentum">0.1</coeff_km>
@@ -566,6 +570,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne30pg2_c20260928.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne4_c20260930.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne4pg2_c20260930.nc</spa_data_file>
+      <spa_data_file hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_1850_clim_ne30pg2_c20261015.nc</spa_data_file>
 
       <time_interpolation_method type="string" doc="Method for interpolating SPA data in time">yearly_periodic</time_interpolation_method>
     </spa>
@@ -584,6 +589,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
       <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
       <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
+      <spc_data_file hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRhistorical_CMIP6_1850_clim_ne30pg2_c20261015.nc</spc_data_file>
 
       <gas_species type="array(string)" doc="List of gas species to read in and prescribe">o3</gas_species>
 
@@ -708,7 +714,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp,cosp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
