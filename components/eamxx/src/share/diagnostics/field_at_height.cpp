@@ -194,10 +194,6 @@ void FieldAtHeight::compute_impl()
         }
     });
   }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto& mask = m_diagnostic_output.get_valid_mask();
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
 }
 
 } //namespace scream

@@ -193,8 +193,6 @@ void ConditionalSampling::compute_impl()
   if (not m_diag_is_mask) {
     const auto& f = m_fields_in.at(m_input_f);
     m_diagnostic_output.deep_copy(f,mask);
-    constexpr auto fv = constants::fill_value<Real>;
-    m_diagnostic_output.deep_copy(fv,mask,true);
   }
 }
 
