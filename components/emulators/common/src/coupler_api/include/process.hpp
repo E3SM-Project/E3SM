@@ -21,14 +21,14 @@ template <typename T>
 concept CoupledProcess =
     requires(T& component, std::string_view name, FieldRegistry& registry,
              const ActiveCouplingFields& plan, const ProcessRunOpts run_opts,
-             std::span<ExportBuffer> export_buffer,
-             std::span<const ImportBuffer> import_buffer) {
+             std::span<ExportBuffer> export_buffers,
+             std::span<const ImportBuffer> import_buffers) {
       { component.name() } -> std::convertible_to<std::string_view>;
       { component.populate_registry(registry) } -> std::same_as<void>;
       { component.configure_coupling(plan) } -> std::same_as<void>;
       { component.run(run_opts) } -> std::same_as<void>;
-      { component.export_fields(export_buffer) } -> std::same_as<void>;
-      { component.import_fields(import_buffer) } -> std::same_as<void>;
+      { component.export_fields(export_buffers) } -> std::same_as<void>;
+      { component.import_fields(import_buffers) } -> std::same_as<void>;
     };
 
 /**

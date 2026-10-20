@@ -10,8 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief Any failure raised by the inference layer.
@@ -22,8 +21,7 @@ public:
       : std::runtime_error("[emulator::inference] " + what) {}
 };
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference
 
 /**
  * @brief Throw an InferenceError unless a condition holds.
@@ -35,7 +33,7 @@ public:
     if (!(cond)) {                                                             \
       std::ostringstream _emulator_infer_oss;                                  \
       _emulator_infer_oss << msg;                                              \
-      throw ::emulator::inference::InferenceError(_emulator_infer_oss.str());  \
+      throw ::e3sm::emulator::inference::InferenceError(_emulator_infer_oss.str());  \
     }                                                                          \
   } while (false)
 

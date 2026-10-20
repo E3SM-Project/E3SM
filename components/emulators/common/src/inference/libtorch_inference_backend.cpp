@@ -16,8 +16,7 @@
 #include <iostream>
 #include <vector>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 namespace {
 
@@ -195,5 +194,4 @@ bool LibTorchBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
 
 void LibTorchBackend::finalize() { m_impl.reset(); }
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

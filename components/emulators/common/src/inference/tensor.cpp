@@ -9,8 +9,7 @@
 
 #include <utility>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 namespace {
 
@@ -90,5 +89,4 @@ void TensorMap::wrap(const std::string &name, const double *data,
   add(Tensor::const_view(name, data, std::move(dims)));
 }
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

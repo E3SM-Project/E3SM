@@ -14,8 +14,7 @@
 #include <sstream>
 #include <vector>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 namespace {
 
@@ -279,5 +278,4 @@ void PythonBackend::finalize() {
   }
 }
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

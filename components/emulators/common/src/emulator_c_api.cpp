@@ -26,13 +26,13 @@ extern "C" {
 
 void emulator_set_grid_data(void* handle,
                             const EmulatorGridDesc* grid) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->set_grid_data(*grid);
 }
 
 
 void emulator_init(void* handle) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->initialize();
 }
 
@@ -42,18 +42,18 @@ void emulator_init(void* handle) {
 // }
 
 void emulator_finalize(void* handle) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->finalize();
 }
 
 void emulator_print_info(void *handle){
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->print_info(std::cout);
 }
 
 void emulator_destroy(void* handle) {
   if (!handle) return;
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   // In the standalone/driver path objects live in the EmulatorRegistry;
   // remove_by_name drops the shared_ptr and runs the destructor.
   // In the full E3SM path (atm_factory.cpp) objects are raw-new'd and
@@ -64,7 +64,7 @@ void emulator_destroy(void* handle) {
 }
 
 void emulator_init_coupling_indices(void* handle, const char* import_fields, const char* export_fields){
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   // The {import,export}_fields hold N state fields and M flux fields in a string thus:
   // "S_{state1}:S_{state2}:...:S_{stateN}:F_{flux1}:F_{flux2}:...:F_{fluxM}"
   // We break these fields into individual tokens and pass them to the emulator.
@@ -74,37 +74,37 @@ void emulator_init_coupling_indices(void* handle, const char* import_fields, con
 }
 
 int emulator_get_num_local_cols(void* handle) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   return emu->get_num_local_cols();
 }
 
 int emulator_get_num_global_cols(void* handle) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   return emu->get_num_global_cols();
 }
 
 int emulator_get_nx(void* handle) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   return emu->get_nx();
 }
 
 int emulator_get_ny(void* handle) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   return emu->get_ny();
 }
 
 void emulator_get_local_col_gids(void* handle, int* gids) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->get_local_col_gids(gids);
 }
 
 void emulator_get_cols_latlon(void* handle, double* lat, double* lon) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->get_cols_latlon(lat, lon);
 }
 
 void emulator_get_cols_area(void* handle, double* area) {
-  auto* emu = static_cast<emulator::Emulator*>(handle);
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   emu->get_cols_area(area);
 }
 

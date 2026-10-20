@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace emulator {
+namespace e3sm::emulator {
 
 // [n_samples, n_features] or [n_features, n_samples]
 enum class TensorLayout { SampleMajor, FeatureMajor };

@@ -5,9 +5,7 @@
 #include "create_inference_backend.hpp"
 #include "inference_error.hpp"
 
-namespace emulator {
-namespace inference {
-namespace test {
+namespace e3sm::emulator::inference::test {
 
 TEST_CASE("InferenceConfig defaults", "[inference_config]") {
   InferenceConfig config;
@@ -66,6 +64,4 @@ TEST_CASE("InferenceConfig rejects malformed options", "[inference_config]") {
   REQUIRE_THROWS_AS(config.get_int("num_threads", 0), InferenceError);
 }
 
-} // namespace test
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference::test

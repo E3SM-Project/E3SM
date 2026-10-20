@@ -8,8 +8,7 @@
 
 #include "inference_backend.hpp"
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief Stub backend for testing without actual inference.
@@ -37,7 +36,6 @@ public:
   std::string name() const override { return "Stub"; }
 };
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference
 
 #endif // E3SM_EMULATOR_STUB_INFERENCE_BACKEND_HPP

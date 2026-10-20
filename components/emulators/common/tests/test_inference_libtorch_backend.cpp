@@ -9,9 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace emulator {
-namespace inference {
-namespace test {
+namespace e3sm::emulator::inference::test {
 
 namespace {
 
@@ -260,6 +258,4 @@ TEST_CASE("LibTorchBackend refuses inference after finalize", "[libtorch]") {
                       Catch::Contains("finalized"));
 }
 
-} // namespace test
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference::test

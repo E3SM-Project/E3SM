@@ -15,8 +15,7 @@
 #include "python_inference_backend.hpp"
 #endif
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 std::shared_ptr<InferenceBackend>
 create_backend(BackendType type, const InferenceConfig &config) {
@@ -42,5 +41,4 @@ create_backend(BackendType type, const InferenceConfig &config) {
   throw InferenceError("Unknown inference backend type.");
 }
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

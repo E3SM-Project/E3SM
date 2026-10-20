@@ -10,8 +10,7 @@
 #include <cstddef>
 #include <stdexcept>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 std::string InferenceConfig::get(const std::string &key,
                                  const std::string &fallback) const {
@@ -53,5 +52,4 @@ bool InferenceConfig::get_bool(const std::string &key, bool fallback) const {
   return false;
 }
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

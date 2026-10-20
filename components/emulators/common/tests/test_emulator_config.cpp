@@ -11,7 +11,7 @@ TEST_CASE("Parse sample emulator config") {
   const std::filesystem::path config_file =
       TEST_DATA_DIR "/simple_emulator_config.yaml";
 
-  const auto config = emulator::read_emulator_config(config_file);
+  const auto config = e3sm::emulator::read_emulator_config(config_file);
   std::cout << config << std::endl;
 
   REQUIRE(config.name == "lnd-emulator");
@@ -19,8 +19,8 @@ TEST_CASE("Parse sample emulator config") {
 
   SECTION("model configuration") {
     REQUIRE(config.model.path == std::filesystem::path{"land_model.pt"});
-    REQUIRE(config.model.input_layout == emulator::TensorLayout::SampleMajor);
-    REQUIRE(config.model.output_layout == emulator::TensorLayout::FeatureMajor);
+    REQUIRE(config.model.input_layout == e3sm::emulator::TensorLayout::SampleMajor);
+    REQUIRE(config.model.output_layout == e3sm::emulator::TensorLayout::FeatureMajor);
   }
 
   SECTION("sample-space dimensions") {
@@ -36,7 +36,7 @@ TEST_CASE("Parse sample emulator config") {
     REQUIRE(config.inputs.size() == 2);
 
     const auto temperature = std::ranges::find(config.inputs, "temperature",
-                                               &emulator::FieldConfig::name);
+                                               &e3sm::emulator::FieldConfig::name);
 
     REQUIRE(temperature != config.inputs.end());
 
@@ -47,7 +47,7 @@ TEST_CASE("Parse sample emulator config") {
     REQUIRE(temperature->dimensions == expected_temperature_dimensions);
 
     const auto soil_moisture = std::ranges::find(config.inputs, "soil_moisture",
-                                                 &emulator::FieldConfig::name);
+                                                 &e3sm::emulator::FieldConfig::name);
 
     REQUIRE(soil_moisture != config.inputs.end());
 
@@ -63,7 +63,7 @@ TEST_CASE("Parse sample emulator config") {
     REQUIRE(config.outputs.size() == 1);
 
     const auto surface_flux = std::ranges::find(config.outputs, "surface_flux",
-                                                &emulator::FieldConfig::name);
+                                                &e3sm::emulator::FieldConfig::name);
 
     REQUIRE(surface_flux != config.outputs.end());
 

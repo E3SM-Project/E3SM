@@ -11,7 +11,7 @@
 
 using namespace e3sm::coupler;
 
-namespace emulator::tests {
+namespace e3sm::emulator::tests {
 
 static_assert(CoupledProcess<tests::ForcingEmulator>);
 static_assert(CoupledProcess<tests::TestEmulator>);
@@ -77,4 +77,4 @@ TEST_CASE("Test Emulator Couplings") {
                                    test_emulator.surface_flux()));
 }
 
-} // namespace emulator::tests
+} // namespace e3sm::emulator::tests
