@@ -202,9 +202,12 @@ contains
     ! Remap and write the land fraction. Unlike a prognostic field, the cells
     ! ELM does not own must count as genuine zeros here -- otherwise every
     ! target cell containing any land at all would report a fraction near 1.
+    ! A target cell the map file leaves uncovered still gets spval, matching
+    ! the variable's _FillValue.
     !
     ! !USES:
-    use ncdio_pio, only : ncd_inqvid
+    use elm_varcon, only : spval
+    use ncdio_pio , only : ncd_inqvid
     !
     ! !ARGUMENTS:
     integer          , intent(in)    :: t
@@ -222,7 +225,7 @@ contains
     allocate(fld_in(size(frac_local), 1))
     fld_in(:,1) = frac_local(:)
 
-    call remap(t)%remap_field(fld_in, 1, fld_out, missing_as_zero=.true.)
+    call remap(t)%remap_field(fld_in, 1, fld_out, fillval=spval, missing_as_zero=.true.)
     deallocate(fld_in)
 
     call ncd_inqvid(ncid, varname, varid, vardesc)

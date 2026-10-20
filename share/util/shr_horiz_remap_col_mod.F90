@@ -44,7 +44,10 @@ module shr_horiz_remap_col_mod
   ! optional `fillval` argument. Because a multi-level field can be fill in
   ! some levels and valid in others -- ELM's snow-layer fields are spval in
   ! exactly the layers that are absent -- such a field is remapped one level at
-  ! a time so each level gets its own mask.
+  ! a time so each level gets its own mask. The same `fillval` is also what
+  ! the output carries wherever a target cell has no valid source coverage,
+  ! so a caller whose fill is not SHR_FILL_VALUE (ELM's spval is 1e36) gets
+  ! output that matches the _FillValue/missing_value it declares on the tape.
   !
   !-------------------------------------------------------------------------------------------
 
@@ -235,8 +238,8 @@ CONTAINS
        fillval, missing_as_zero)
     !
     ! Remap fld_local(n_local, numlev) onto the target grid.  fld_out is
-    ! allocated here as (n_b_local, numlev) and carries SHR_FILL_VALUE wherever
-    ! the target cell has no valid source coverage.
+    ! allocated here as (n_b_local, numlev) and carries fillval (SHR_FILL_VALUE
+    ! if absent) wherever the target cell has no valid source coverage.
     !
     class(shr_horiz_remap_col_t), intent(inout) :: self
     real(r8),             intent(in)  :: fld_local(:,:)
@@ -250,14 +253,14 @@ CONTAINS
     logical  :: have_fill
     real(r8), allocatable :: lev_out(:,:)
 
-    allocate(fld_out(self%shared%n_b_local, numlev))
-    fld_out(:,:) = SHR_FILL_VALUE
-
-    if (.not. self%shared%initialized) return
-
     have_fill = present(fillval)
     lfill     = SHR_FILL_VALUE
     if (have_fill) lfill = fillval
+
+    allocate(fld_out(self%shared%n_b_local, numlev))
+    fld_out(:,:) = lfill
+
+    if (.not. self%shared%initialized) return
 
     missing_mask = 0.0_r8
     if (present(missing_as_zero)) then
@@ -280,13 +283,18 @@ CONTAINS
         fld_out(:,k) = lev_out(:,1)
       end do
       deallocate(lev_out)
-      return
+    else
+      call pack_levels(self, fld_local, 1, numlev, have_fill, lfill, missing_mask)
+
+      call self%shared%apply_masked(self%ws_send_buf, numlev, fld_out, &
+           self%mpicom, self%npes, ierr)
     end if
 
-    call pack_levels(self, fld_local, 1, numlev, have_fill, lfill, missing_mask)
-
-    call self%shared%apply_masked(self%ws_send_buf, numlev, fld_out, &
-         self%mpicom, self%npes, ierr)
+    ! apply_masked marks uncovered target cells with SHR_FILL_VALUE; hand them
+    ! back in the caller's fill so the data match the tape's _FillValue.
+    if (lfill /= SHR_FILL_VALUE) then
+      where (fld_out == SHR_FILL_VALUE) fld_out = lfill
+    end if
 
   end subroutine shr_horiz_remap_col_field
 

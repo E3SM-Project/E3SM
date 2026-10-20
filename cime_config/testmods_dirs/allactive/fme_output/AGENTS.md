@@ -137,6 +137,13 @@ These are hard-won lessons. Read before modifying FME code.
    handles the *spatial* dimension. Time-averaging accumulators need
    per-cell valid-sample counts to avoid summing fill into the mean —
    see gotcha #36.
+   Exception: ELM's history tapes declare `spval` (1e36) as
+   `_FillValue`/`missing_value`, not 1e20. `shr_horiz_remap_col_field`
+   therefore writes the caller's `fillval` into uncovered target cells, so
+   ELM's remapped tapes carry 1e36 in both data and attributes. Before this
+   was fixed, the remapped ELM h-files held 1e20 in empty cells under 1e36
+   attributes, so readers treated those cells as valid data. MOSART
+   (`spval` = 1e20) and the cpl.fme streams are unaffected.
 
 6. **MPAS remapped output bypasses the stream manager.** The stream manager only
    supports `nCells`/`nEdges`/`nVertices` decomposed dims (hardcoded in
