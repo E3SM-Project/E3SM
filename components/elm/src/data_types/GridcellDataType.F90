@@ -567,6 +567,20 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean gridcell carbon state data structure
   !------------------------------------------------------------------------
+  subroutine gridcell_nutrient_state_init(this, begg, endg)
+    !
+    ! !ARGUMENTS:
+    type(gridcell_nutrient_state), intent(inout) :: this
+    integer, intent(in) :: begg,endg
+    !-----------------------------------------------------------------------
+    allocate(this%seed   (begg:endg));     this%seed   (:) = spval
+    allocate(this%balance_beg   (begg:endg));     this%balance_beg   (:) = spval
+    allocate(this%balance_end   (begg:endg));     this%balance_end   (:) = spval
+    allocate(this%balance_err   (begg:endg));     this%balance_err   (:) = spval
+
+
+  end subroutine gridcell_nutrient_state_init
+
   subroutine grc_cs_init(this, begg, endg,carbon_type)
     !
     ! !ARGUMENTS:
@@ -583,12 +597,9 @@ contains
     ! allocate for each member of grc_cs
     !-----------------------------------------------------------------------
     this%core%species = species_from_string(carbon_type)
-    allocate(this%core%seed                 (begg:endg));     this%core%seed                 (:) = spval
+    call gridcell_nutrient_state_init(this%core, begg, endg)
     allocate(this%tcs_month_beg         (begg:endg));     this%tcs_month_beg         (:) = spval
     allocate(this%tcs_month_end         (begg:endg));     this%tcs_month_end         (:) = spval
-    allocate(this%core%balance_beg                 (begg:endg));     this%core%balance_beg                 (:) = spval
-    allocate(this%core%balance_end                 (begg:endg));     this%core%balance_end                 (:) = spval
-    allocate(this%core%balance_err                 (begg:endg));     this%core%balance_err                 (:) = spval
 
     allocate(this%beg_totc              (begg:endg));     this%beg_totc              (:) = spval
     allocate(this%beg_totpftc           (begg:endg));     this%beg_totpftc           (:) = spval
@@ -975,14 +986,11 @@ contains
     ! allocate for each member of grc_ns
     !-----------------------------------------------------------------------
     this%core%species = CN_SPECIES_N
-    allocate(this%core%seed   (begg:endg));     this%core%seed   (:) = spval
-    allocate(this%core%balance_beg   (begg:endg));     this%core%balance_beg   (:) = spval
-    allocate(this%core%balance_end   (begg:endg));     this%core%balance_end   (:) = spval
-    allocate(this%core%balance_err   (begg:endg));     this%core%balance_err   (:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_cf
     !-----------------------------------------------------------------------
+    call gridcell_nutrient_state_init(this%core, begg, endg)
     this%core%seed(begg:endg) = spval
     call hist_addfld1d (fname='SEEDN_GRC', units='gN/m^2', &
          avgflag='A', long_name='pool for seeding new PFTs ', &
@@ -1123,14 +1131,11 @@ contains
     ! allocate for each member of grc_ps
     !-----------------------------------------------------------------------
     this%core%species = CN_SPECIES_P
-    allocate(this%core%seed   (begg:endg)) ; this%core%seed   (:) = spval
-    allocate(this%core%balance_beg   (begg:endg)) ; this%core%balance_beg   (:) = spval
-    allocate(this%core%balance_end   (begg:endg)) ; this%core%balance_end   (:) = spval
-    allocate(this%core%balance_err   (begg:endg)) ; this%core%balance_err   (:) = spval
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_ps
     !-----------------------------------------------------------------------
+    call gridcell_nutrient_state_init(this%core, begg, endg)
     this%core%seed(begg:endg) = spval
     call hist_addfld1d (fname='SEEDP_GRC', units='gP/m^2', &
          avgflag='A', long_name='P pool for seeding new PFTs ', &

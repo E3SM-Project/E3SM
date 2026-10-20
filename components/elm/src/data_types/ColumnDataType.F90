@@ -1952,6 +1952,56 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column carbon state data structure
   !------------------------------------------------------------------------
+  subroutine column_nutrient_state_init(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    type(column_nutrient_state), intent(inout) :: this
+    integer, intent(in)                   :: begc,endc
+    integer           :: num_special_col           ! number of good values in special_col filter
+    !-----------------------------------------------------------------------
+    allocate(this%decomp_pools_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_pools_vr(:,:,:) = spval
+    allocate(this%trunc_sink_vr             (begc:endc,1:nlevdecomp_full))   ; this%trunc_sink_vr             (:,:) = spval
+    allocate(this%decomp_pools         (begc:endc,1:ndecomp_pools))     ; this%decomp_pools         (:,:) = spval
+    allocate(this%decomp_pools_1m      (begc:endc,1:ndecomp_pools))     ; this%decomp_pools_1m      (:,:) = spval
+    allocate(this%trunc_sink                (begc:endc))                     ; this%trunc_sink                (:)   = spval
+    allocate(this%cwd                  (begc:endc))                     ; this%cwd                  (:)   = spval
+    allocate(this%totlit               (begc:endc))                     ; this%totlit               (:)   = spval
+    allocate(this%totsom               (begc:endc))                     ; this%totsom               (:)   = spval
+    allocate(this%som1                 (begc:endc))                     ; this%som1                 (:)   = spval
+    allocate(this%som2                 (begc:endc))                     ; this%som2                 (:)   = spval
+    allocate(this%som3                 (begc:endc))                     ; this%som3                 (:)   = spval
+    allocate(this%totlit_1m            (begc:endc))                     ; this%totlit_1m            (:)   = spval
+    allocate(this%totsom_1m            (begc:endc))                     ; this%totsom_1m            (:)   = spval
+    allocate(this%totecosys            (begc:endc))                     ; this%totecosys            (:)   = spval
+    allocate(this%totcol               (begc:endc))                     ; this%totcol               (:)   = spval
+    allocate(this%totveg               (begc:endc))                     ; this%totveg               (:)   = spval
+    allocate(this%totpft               (begc:endc))                     ; this%totpft               (:)   = spval
+    allocate(this%seed                 (begc:endc))                     ; this%seed                 (:)   = spval
+    allocate(this%cropseed_deficit     (begc:endc))                     ; this%cropseed_deficit     (:)   = spval
+    allocate(this%prod1                (begc:endc))                     ; this%prod1                (:)   = spval
+    allocate(this%prod10               (begc:endc))                     ; this%prod10               (:)   = spval
+    allocate(this%prod100              (begc:endc))                     ; this%prod100              (:)   = spval
+    allocate(this%totprod              (begc:endc))                     ; this%totprod              (:)   = spval
+    allocate(this%dyn_bal_adjustments  (begc:endc))                     ; this%dyn_bal_adjustments  (:)   = spval
+    allocate(this%totpft_beg           (begc:endc))                     ; this%totpft_beg           (:)   = spval
+    allocate(this%totpft_end           (begc:endc))                     ; this%totpft_end           (:)   = spval
+    allocate(this%cwd_beg              (begc:endc))                     ; this%cwd_beg              (:)   = spval
+    allocate(this%cwd_end              (begc:endc))                     ; this%cwd_end              (:)   = spval
+    allocate(this%totlit_beg           (begc:endc))                     ; this%totlit_beg           (:)   = spval
+    allocate(this%totlit_end           (begc:endc))                     ; this%totlit_end           (:)   = spval
+    allocate(this%totsom_beg           (begc:endc))                     ; this%totsom_beg           (:)   = spval
+    allocate(this%totsom_end           (begc:endc))                     ; this%totsom_end           (:)   = spval
+    allocate(this%balance_beg                 (begc:endc))                     ; this%balance_beg                 (:)   = spval
+    allocate(this%balance_end                 (begc:endc))                     ; this%balance_end                 (:)   = spval
+    allocate(this%balance_err                 (begc:endc))                     ; this%balance_err                 (:)   = spval
+
+    ! now loop through special filters and explicitly set the variables that
+    ! have to be in place for biogeophysics
+
+    num_special_col = 0
+
+  end subroutine column_nutrient_state_init
+
   subroutine col_cs_init(this, begc, endc, carbon_type, ratio, c12_carbonstate_vars)
     !
     ! !ARGUMENTS:
@@ -1977,50 +2027,16 @@ contains
     !-----------------------------------------------------------------------
 
     this%core%species = species_from_string(carbon_type)
+    call column_nutrient_state_init(this%core, begc, endc)
     allocate(this%rootc                (begc:endc))     ; this%rootc                (:)     = spval
-    allocate(this%core%totveg              (begc:endc))     ; this%core%totveg              (:)     = spval
     allocate(this%leafc                (begc:endc))     ; this%leafc                (:)     = spval
     allocate(this%deadstemc            (begc:endc))     ; this%deadstemc            (:)     = spval
     allocate(this%fuelc                (begc:endc))     ; this%fuelc                (:)     = spval
     allocate(this%fuelc_crop           (begc:endc))     ; this%fuelc_crop           (:)     = spval
     allocate(this%frootc               (begc:endc))     ; this%frootc               (:)     = spval
-    allocate(this%core%seed                (begc:endc))     ; this%core%seed                (:)     = spval
-    allocate(this%core%prod1               (begc:endc))     ; this%core%prod1               (:)     = spval
-    allocate(this%core%prod10              (begc:endc))     ; this%core%prod10              (:)     = spval
-    allocate(this%core%prod100             (begc:endc))     ; this%core%prod100             (:)     = spval
-    allocate(this%core%totprod             (begc:endc))     ; this%core%totprod             (:)     = spval
-    allocate(this%core%dyn_bal_adjustments (begc:endc))     ; this%core%dyn_bal_adjustments (:)     = spval
-    allocate(this%core%totpft              (begc:endc))     ; this%core%totpft              (:)     = spval
-    allocate(this%core%cwd                 (begc:endc))     ; this%core%cwd                 (:)     = spval
-    allocate(this%core%trunc_sink               (begc:endc))     ; this%core%trunc_sink               (:)     = spval
     allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = spval
-    allocate(this%core%totecosys           (begc:endc))     ; this%core%totecosys           (:)     = spval
-    allocate(this%core%totcol              (begc:endc))     ; this%core%totcol              (:)     = spval
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = spval
-    allocate(this%core%balance_beg                (begc:endc))     ; this%core%balance_beg                (:)     = spval 
-    allocate(this%core%balance_end                (begc:endc))     ; this%core%balance_end                (:)     = spval 
-    allocate(this%core%balance_err                (begc:endc))     ; this%core%balance_err                (:)     = spval
-    allocate(this%core%totpft_beg          (begc:endc))     ; this%core%totpft_beg          (:)     = spval
-    allocate(this%core%cwd_beg             (begc:endc))     ; this%core%cwd_beg             (:)     = spval
-    allocate(this%core%totlit_beg          (begc:endc))     ; this%core%totlit_beg          (:)     = spval
-    allocate(this%core%totsom_beg          (begc:endc))     ; this%core%totsom_beg          (:)     = spval
-    allocate(this%core%som1                (begc:endc))     ; this%core%som1                (:)     = spval
-    allocate(this%core%som2                (begc:endc))     ; this%core%som2                (:)     = spval
-    allocate(this%core%som3                (begc:endc))     ; this%core%som3                (:)     = spval
-    allocate(this%core%totpft_end          (begc:endc))     ; this%core%totpft_end          (:)     = spval
-    allocate(this%core%cwd_end             (begc:endc))     ; this%core%cwd_end             (:)     = spval
-    allocate(this%core%totlit_end          (begc:endc))     ; this%core%totlit_end          (:)     = spval
-    allocate(this%core%totsom_end          (begc:endc))     ; this%core%totsom_end          (:)     = spval
-    allocate(this%core%cropseed_deficit    (begc:endc))     ; this%core%cropseed_deficit    (:)     = spval
-    allocate(this%core%decomp_pools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_vr (:,:,:) = spval
-    allocate(this%core%trunc_sink_vr        (begc:endc,1:nlevdecomp_full))                 ; this%core%trunc_sink_vr        (:,:)   = spval
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = spval
-    allocate(this%core%decomp_pools_1m (begc:endc,1:ndecomp_pools))                   ; this%core%decomp_pools_1m (:,:)   = spval
-    allocate(this%core%decomp_pools    (begc:endc,1:ndecomp_pools))                   ; this%core%decomp_pools    (:,:)   = spval
-    allocate(this%core%totlit_1m           (begc:endc))     ; this%core%totlit_1m           (:)     = spval
-    allocate(this%core%totsom_1m           (begc:endc))     ; this%core%totsom_1m           (:)     = spval
-    allocate(this%core%totlit              (begc:endc))     ; this%core%totlit              (:)     = spval
-    allocate(this%core%totsom              (begc:endc))     ; this%core%totsom              (:)     = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cs
@@ -3167,41 +3183,18 @@ contains
     !-----------------------------------------------------------------------
 
     this%core%species = CN_SPECIES_N
-    allocate(this%core%decomp_pools_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_vr(:,:,:) = spval
-    allocate(this%core%trunc_sink_vr             (begc:endc,1:nlevdecomp_full))   ; this%core%trunc_sink_vr             (:,:) = spval
+    call column_nutrient_state_init(this%core, begc, endc)
     allocate(this%mineral%smin_vr              (begc:endc,1:nlevdecomp_full))   ; this%mineral%smin_vr              (:,:) = spval
     allocate(this%smin_no3_vr           (begc:endc,1:nlevdecomp_full))   ; this%smin_no3_vr           (:,:) = spval
     allocate(this%smin_nh4_vr           (begc:endc,1:nlevdecomp_full))   ; this%smin_nh4_vr           (:,:) = spval
     allocate(this%smin_nh4sorb_vr       (begc:endc,1:nlevdecomp_full))   ; this%smin_nh4sorb_vr       (:,:) = spval
-    allocate(this%core%decomp_pools         (begc:endc,1:ndecomp_pools))     ; this%core%decomp_pools         (:,:) = spval
-    allocate(this%core%decomp_pools_1m      (begc:endc,1:ndecomp_pools))     ; this%core%decomp_pools_1m      (:,:) = spval
     allocate(this%smin_no3              (begc:endc))                     ; this%smin_no3              (:)   = spval
     allocate(this%smin_nh4              (begc:endc))                     ; this%smin_nh4              (:)   = spval
     allocate(this%smin_nh4sorb          (begc:endc))                     ; this%smin_nh4sorb          (:)   = spval
     allocate(this%mineral%smin                 (begc:endc))                     ; this%mineral%smin                 (:)   = spval
-    allocate(this%core%trunc_sink                (begc:endc))                     ; this%core%trunc_sink                (:)   = spval
-    allocate(this%core%cwd                  (begc:endc))                     ; this%core%cwd                  (:)   = spval
-    allocate(this%core%totlit               (begc:endc))                     ; this%core%totlit               (:)   = spval
-    allocate(this%core%totsom               (begc:endc))                     ; this%core%totsom               (:)   = spval
-    allocate(this%core%som1                 (begc:endc))                     ; this%core%som1                 (:)   = spval
-    allocate(this%core%som2                 (begc:endc))                     ; this%core%som2                 (:)   = spval
-    allocate(this%core%som3                 (begc:endc))                     ; this%core%som3                 (:)   = spval
-    allocate(this%core%totlit_1m            (begc:endc))                     ; this%core%totlit_1m            (:)   = spval
-    allocate(this%core%totsom_1m            (begc:endc))                     ; this%core%totsom_1m            (:)   = spval
-    allocate(this%core%totecosys            (begc:endc))                     ; this%core%totecosys            (:)   = spval
-    allocate(this%core%totcol               (begc:endc))                     ; this%core%totcol               (:)   = spval
     allocate(this%totabgn               (begc:endc))                     ; this%totabgn               (:)   = spval
     allocate(this%totblgn               (begc:endc))                     ; this%totblgn               (:)   = spval
-    allocate(this%core%totveg               (begc:endc))                     ; this%core%totveg               (:)   = spval
-    allocate(this%core%totpft               (begc:endc))                     ; this%core%totpft               (:)   = spval
     allocate(this%plant_n_buffer        (begc:endc))                     ; this%plant_n_buffer        (:)   = spval
-    allocate(this%core%seed                 (begc:endc))                     ; this%core%seed                 (:)   = spval
-    allocate(this%core%cropseed_deficit     (begc:endc))                     ; this%core%cropseed_deficit     (:)   = spval
-    allocate(this%core%prod1                (begc:endc))                     ; this%core%prod1                (:)   = spval
-    allocate(this%core%prod10               (begc:endc))                     ; this%core%prod10               (:)   = spval
-    allocate(this%core%prod100              (begc:endc))                     ; this%core%prod100              (:)   = spval
-    allocate(this%core%totprod              (begc:endc))                     ; this%core%totprod              (:)   = spval
-    allocate(this%core%dyn_bal_adjustments  (begc:endc))                     ; this%core%dyn_bal_adjustments  (:)   = spval
     allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
     allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
     allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = spval
@@ -3225,14 +3218,6 @@ contains
     allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = spval 
     allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = spval 
     allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = spval
-    allocate(this%core%totpft_beg           (begc:endc))                     ; this%core%totpft_beg           (:)   = spval
-    allocate(this%core%totpft_end           (begc:endc))                     ; this%core%totpft_end           (:)   = spval
-    allocate(this%core%cwd_beg              (begc:endc))                     ; this%core%cwd_beg              (:)   = spval
-    allocate(this%core%cwd_end              (begc:endc))                     ; this%core%cwd_end              (:)   = spval
-    allocate(this%core%totlit_beg           (begc:endc))                     ; this%core%totlit_beg           (:)   = spval
-    allocate(this%core%totlit_end           (begc:endc))                     ; this%core%totlit_end           (:)   = spval
-    allocate(this%core%totsom_beg           (begc:endc))                     ; this%core%totsom_beg           (:)   = spval
-    allocate(this%core%totsom_end           (begc:endc))                     ; this%core%totsom_end           (:)   = spval
     allocate(this%sminn_beg             (begc:endc))                     ; this%sminn_beg             (:)   = spval
     allocate(this%sminn_end             (begc:endc))                     ; this%sminn_end             (:)   = spval
     allocate(this%smin_no3_beg          (begc:endc))                     ; this%smin_no3_beg          (:)   = spval
@@ -3245,9 +3230,6 @@ contains
     allocate(this%seedn_end             (begc:endc))                     ; this%seedn_end             (:)   = spval
     allocate(this%ntrunc_beg            (begc:endc))                     ; this%ntrunc_beg            (:)   = spval
     allocate(this%ntrunc_end            (begc:endc))                     ; this%ntrunc_end            (:)   = spval
-    allocate(this%core%balance_beg                 (begc:endc))                     ; this%core%balance_beg                 (:)   = spval
-    allocate(this%core%balance_end                 (begc:endc))                     ; this%core%balance_end                 (:)   = spval
-    allocate(this%core%balance_err                 (begc:endc))                     ; this%core%balance_err                 (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ns
@@ -4463,7 +4445,7 @@ contains
     ! allocate for each member of col_ps
     !-----------------------------------------------------------------------
     this%core%species = CN_SPECIES_P
-    allocate(this%core%trunc_sink_vr            (begc:endc,1:nlevdecomp_full)) ; this%core%trunc_sink_vr            (:,:) = spval
+    call column_nutrient_state_init(this%core, begc, endc)
     allocate(this%solutionp_vr         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr         (:,:) = spval
     allocate(this%labilep_vr           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr           (:,:) = spval
     allocate(this%secondp_vr           (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr           (:,:) = spval
@@ -4475,29 +4457,7 @@ contains
     allocate(this%secondp              (begc:endc))                   ; this%secondp              (:)   = spval
     allocate(this%occlp                (begc:endc))                   ; this%occlp                (:)   = spval
     allocate(this%primp                (begc:endc))                   ; this%primp                (:)   = spval
-    allocate(this%core%cwd                 (begc:endc))                   ; this%core%cwd                 (:)   = spval
     allocate(this%mineral%smin                (begc:endc))                   ; this%mineral%smin                (:)   = spval
-    allocate(this%core%trunc_sink               (begc:endc))                   ; this%core%trunc_sink               (:)   = spval
-    allocate(this%core%seed                (begc:endc))                   ; this%core%seed                (:)   = spval
-    allocate(this%core%prod1               (begc:endc))                   ; this%core%prod1               (:)   = spval
-    allocate(this%core%prod10              (begc:endc))                   ; this%core%prod10              (:)   = spval
-    allocate(this%core%prod100             (begc:endc))                   ; this%core%prod100             (:)   = spval
-    allocate(this%core%totprod             (begc:endc))                   ; this%core%totprod             (:)   = spval
-    allocate(this%core%dyn_bal_adjustments (begc:endc))                   ; this%core%dyn_bal_adjustments (:)   = spval
-    allocate(this%core%totlit              (begc:endc))                   ; this%core%totlit              (:)   = spval
-    allocate(this%core%totsom              (begc:endc))                   ; this%core%totsom              (:)   = spval
-    allocate(this%core%totlit_1m           (begc:endc))                   ; this%core%totlit_1m           (:)   = spval
-    allocate(this%core%totsom_1m           (begc:endc))                   ; this%core%totsom_1m           (:)   = spval
-    allocate(this%core%totecosys           (begc:endc))                   ; this%core%totecosys           (:)   = spval
-    allocate(this%core%totcol              (begc:endc))                   ; this%core%totcol              (:)   = spval
-    allocate(this%core%decomp_pools        (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools        (:,:) = spval
-    allocate(this%core%decomp_pools_1m     (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_1m     (:,:) = spval
-    allocate(this%core%totpft              (begc:endc))                   ; this%core%totpft              (:)   = spval
-    allocate(this%core%totveg              (begc:endc))                   ; this%core%totveg              (:)   = spval
-    allocate(this%core%decomp_pools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%core%decomp_pools_vr(:,:,:)= spval
-    allocate(this%core%balance_beg                (begc:endc))                   ; this%core%balance_beg                (:)   = spval
-    allocate(this%core%balance_end                (begc:endc))                   ; this%core%balance_end                (:)   = spval
-    allocate(this%core%balance_err                (begc:endc))                   ; this%core%balance_err                (:)   = spval
     allocate(this%solutionp_vr_cur     (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_cur     (:,:) = spval
     allocate(this%solutionp_vr_prev    (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_prev    (:,:) = spval
     allocate(this%labilep_vr_cur       (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_cur       (:,:) = spval
@@ -4508,24 +4468,12 @@ contains
     allocate(this%occlp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_prev        (:,:) = spval
     allocate(this%primp_vr_cur         (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_cur         (:,:) = spval
     allocate(this%primp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_prev        (:,:) = spval
-    allocate(this%core%totpft_beg          (begc:endc))                   ; this%core%totpft_beg          (:)   = spval
     allocate(this%solutionp_beg        (begc:endc))                   ; this%solutionp_beg        (:)   = spval
     allocate(this%labilep_beg          (begc:endc))                   ; this%labilep_beg          (:)   = spval
     allocate(this%secondp_beg          (begc:endc))                   ; this%secondp_beg          (:)   = spval
-    allocate(this%core%totlit_beg          (begc:endc))                   ; this%core%totlit_beg          (:)   = spval
-    allocate(this%core%cwd_beg             (begc:endc))                   ; this%core%cwd_beg             (:)   = spval
-    allocate(this%core%som1                (begc:endc))                   ; this%core%som1                (:)   = spval
-    allocate(this%core%som2                (begc:endc))                   ; this%core%som2                (:)   = spval
-    allocate(this%core%som3                (begc:endc))                   ; this%core%som3                (:)   = spval
-    allocate(this%core%totsom_beg          (begc:endc))                   ; this%core%totsom_beg          (:)   = spval
-    allocate(this%core%totlit_end          (begc:endc))                   ; this%core%totlit_end          (:)   = spval
-    allocate(this%core%totpft_end          (begc:endc))                   ; this%core%totpft_end          (:)   = spval
     allocate(this%labilep_end          (begc:endc))                   ; this%labilep_end          (:)   = spval
     allocate(this%secondp_end          (begc:endc))                   ; this%secondp_end          (:)   = spval
     allocate(this%solutionp_end        (begc:endc))                   ; this%solutionp_end        (:)   = spval
-    allocate(this%core%cwd_end             (begc:endc))                   ; this%core%cwd_end             (:)   = spval
-    allocate(this%core%totsom_end          (begc:endc))                   ; this%core%totsom_end          (:)   = spval
-    allocate(this%core%cropseed_deficit    (begc:endc))                   ; this%core%cropseed_deficit    (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ps
@@ -5977,6 +5925,83 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column carbon flux data structure
   !------------------------------------------------------------------------
+  subroutine column_nutrient_flux_init(this, begc, endc)
+    !
+    ! !ARGUMENTS:
+    type(column_nutrient_flux), intent(inout) :: this
+    integer, intent(in) :: begc,endc
+    character(24)  :: fieldname
+    integer :: num_special_col             ! number of good values in special_col filter
+    !-----------------------------------------------------------------------
+    allocate(this%hrv_deadstem_to_prod10        (begc:endc))                   ; this%hrv_deadstem_to_prod10       (:)   = spval
+    allocate(this%hrv_deadstem_to_prod100       (begc:endc))                   ; this%hrv_deadstem_to_prod100      (:)   = spval
+    allocate(this%hrv_crop_to_prod1             (begc:endc))                   ; this%hrv_crop_to_prod1            (:)   = spval
+    allocate(this%prod1_loss                     (begc:endc))                   ; this%prod1_loss                    (:)   = spval
+    allocate(this%prod10_loss                    (begc:endc))                   ; this%prod10_loss                   (:)   = spval
+    allocate(this%prod100_loss                   (begc:endc))                   ; this%prod100_loss	                 (:)   = spval
+    allocate(this%product_loss                   (begc:endc))                   ; this%product_loss	                 (:)   = spval
+    allocate(this%inputs                         (begc:endc))                   ; this%inputs                        (:)   = spval
+    allocate(this%outputs                        (begc:endc))                   ; this%outputs                       (:)   = spval
+    allocate(this%fire_loss                      (begc:endc))                   ; this%fire_loss                     (:)   = spval
+    allocate(this%fire_decomp_loss               (begc:endc))                   ; this%fire_decomp_loss              (:)   = spval
+    allocate(this%fire_loss_p2c                  (begc:endc))                   ; this%fire_loss_p2c                 (:)   = spval
+    allocate(this%som_leached                   (begc:endc))                   ; this%som_leached	                 (:)   = spval
+    allocate(this%som_runoff                    (begc:endc))                   ; this%som_runoff                   (:)  = spval
+    allocate(this%som_erode                      (begc:endc))                   ; this%som_erode                     (:)   = spval
+    allocate(this%som_deposit                    (begc:endc))                   ; this%som_deposit                   (:)   = spval
+    allocate(this%som_yield                      (begc:endc))                   ; this%som_yield                     (:)   = spval
+    allocate(this%m_to_litr_met_fire            (begc:endc,1:nlevdecomp_full)) ; this%m_to_litr_met_fire           (:,:) = spval
+    allocate(this%m_to_litr_cel_fire            (begc:endc,1:nlevdecomp_full)) ; this%m_to_litr_cel_fire           (:,:) = spval
+    allocate(this%m_to_litr_lig_fire            (begc:endc,1:nlevdecomp_full)) ; this%m_to_litr_lig_fire           (:,:) = spval
+    allocate(this%dwt_slash_flux                 (begc:endc))                   ; this%dwt_slash_flux                (:)   = spval
+    allocate(this%dwt_conv_flux                  (begc:endc))                   ; this%dwt_conv_flux                 (:)   = spval
+    allocate(this%dwt_prod10_gain                (begc:endc))                   ; this%dwt_prod10_gain               (:)   = spval
+    allocate(this%dwt_prod100_gain               (begc:endc))                   ; this%dwt_prod100_gain              (:)   = spval
+    allocate(this%dwt_crop_product_gain          (begc:endc))                   ; this%dwt_crop_product_gain         (:)   = spval
+    allocate(this%dwt_loss                       (begc:endc))                   ; this%dwt_loss                      (:)   = spval
+    allocate(this%wood_harvest                   (begc:endc))                   ; this%wood_harvest                  (:)   = spval
+    allocate(this%dwt_froot_to_litr_met        (begc:endc,1:nlevdecomp_full)) ; this%dwt_froot_to_litr_met       (:,:) = spval
+    allocate(this%dwt_froot_to_litr_cel        (begc:endc,1:nlevdecomp_full)) ; this%dwt_froot_to_litr_cel       (:,:) = spval
+    allocate(this%dwt_froot_to_litr_lig        (begc:endc,1:nlevdecomp_full)) ; this%dwt_froot_to_litr_lig       (:,:) = spval
+    allocate(this%dwt_livecroot_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecroot_to_cwd         (:,:) = spval
+    allocate(this%dwt_deadcroot_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcroot_to_cwd         (:,:) = spval
+    allocate(this%phenology_to_litr_met       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_to_litr_met     (:,:) = spval
+    allocate(this%phenology_to_litr_cel       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_to_litr_cel     (:,:) = spval
+    allocate(this%phenology_to_litr_lig       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_to_litr_lig     (:,:) = spval
+    allocate(this%gap_mortality_to_litr_met   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_to_litr_met (:,:) = spval
+    allocate(this%gap_mortality_to_litr_cel   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_to_litr_cel (:,:) = spval
+    allocate(this%gap_mortality_to_litr_lig   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_to_litr_lig (:,:) = spval
+    allocate(this%gap_mortality_to_cwd         (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_to_cwd       (:,:) = spval
+    allocate(this%fire_mortality_to_cwd        (begc:endc, 1:nlevdecomp_full)) ; this%fire_mortality_to_cwd      (:,:) = spval
+    allocate(this%harvest_to_litr_met         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_to_litr_met       (:,:) = spval
+    allocate(this%harvest_to_litr_cel         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_to_litr_cel       (:,:) = spval
+    allocate(this%harvest_to_litr_lig         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_to_litr_lig       (:,:) = spval
+    allocate(this%harvest_to_cwd               (begc:endc, 1:nlevdecomp_full)) ; this%harvest_to_cwd             (:,:) = spval
+    allocate(this%external_to_decomp_delta       (begc:endc))                    ; this%external_to_decomp_delta     (:)   = spval
+    allocate(this%plant_to_litter_flux           (begc:endc))
+    allocate(this%plant_to_cwd_flux              (begc:endc))                    ; this%plant_to_cwd_flux            (:)   = spval
+    allocate(this%decomp_cascade_transfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_transfer_vr      (:,:,:) = spval
+    allocate(this%m_decomp_pools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%m_decomp_pools_to_fire_vr       (:,:,:) = spval
+    allocate(this%decomp_cascade_transfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_transfer         (:,:)   = spval
+    allocate(this%m_decomp_pools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%m_decomp_pools_to_fire          (:,:)   = spval
+    allocate(this%decomp_pools_erode             (begc:endc,1:ndecomp_pools                                )) ; this%decomp_pools_erode              (:,:)   = spval
+    allocate(this%decomp_pools_deposit           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_pools_deposit            (:,:)   = spval
+    allocate(this%decomp_pools_yield             (begc:endc,1:ndecomp_pools                                )) ; this%decomp_pools_yield              (:,:)   = spval
+    allocate(this%decomp_pools_yield_vr          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_pools_yield_vr           (:,:,:) = spval
+    allocate(this%decomp_pools_leached           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_pools_leached            (:,:)   = spval
+    allocate(this%decomp_pools_transport_tendency(begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_pools_transport_tendency (:,:,:) = spval
+    allocate(this%decomp_pools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_pools_sourcesink         (:,:,:) = spval
+    allocate(this%external_to_decomp_pools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%external_to_decomp_pools       (:,:,:) = spval
+    fieldname='SMINN_NO3_INPUT_vr'
+    fieldname='SMINN_NH4_INPUT_vr'
+
+    !-----------------------------------------------------------------------
+    ! set cold-start initial values for select members of col_nf
+    !-----------------------------------------------------------------------
+    num_special_col = 0
+
+  end subroutine column_nutrient_flux_init
+
   subroutine col_cf_init(this, begc, endc, carbon_type)
     !
     ! !ARGUMENTS:
@@ -6003,66 +6028,18 @@ contains
     ! allocate for each member of col_cf
     !-----------------------------------------------------------------------
     this%core%species = species_from_string(carbon_type)
-    allocate(this%core%decomp_pools_sourcesink          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               ; this%core%decomp_pools_sourcesink   (:,:,:) = spval
+    call column_nutrient_flux_init(this%core, begc, endc)
     allocate(this%decomp_cascade_hr_vr              (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_hr_vr       (:,:,:) = spval
-    allocate(this%core%decomp_cascade_transfer_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%core%decomp_cascade_transfer_vr(:,:,:) = spval
     allocate(this%decomp_k                          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_k                   (:,:,:) = spval
-    allocate(this%core%decomp_pools_transport_tendency  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_transport_tendency(:,:,:) = spval
-    allocate(this%core%decomp_pools_yield_vr            (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_yield_vr(:,:,:) = spval
     allocate(this%decomp_cascade_hr                 (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_hr               (:,:)   = spval
-    allocate(this%core%decomp_cascade_transfer          (begc:endc,1:ndecomp_cascade_transitions))     ; this%core%decomp_cascade_transfer        (:,:)   = spval
     allocate(this%o_scalar                          (begc:endc,1:nlevdecomp_full)); this%o_scalar                     (:,:) = spval
     allocate(this%w_scalar                          (begc:endc,1:nlevdecomp_full)); this%w_scalar                     (:,:) = spval
     allocate(this%t_scalar                          (begc:endc,1:nlevdecomp_full)); this%t_scalar                     (:,:) = spval
-    allocate(this%core%decomp_pools_leached             (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_leached        (:,:) = spval
     allocate(this%phr_vr                            (begc:endc,1:nlevdecomp_full)); this%phr_vr                       (:,:) = spval
     allocate(this%fphr                              (begc:endc,1:nlevgrnd))       ; this%fphr                         (:,:) = spval
-    allocate(this%core%som_leached                     (begc:endc))                  ; this%core%som_leached                (:)   = spval
-    allocate(this%core%som_runoff                      (begc:endc))                  ; this%core%som_runoff                 (:)   = spval
-    allocate(this%core%phenology_to_litr_met         (begc:endc,1:nlevdecomp_full)); this%core%phenology_to_litr_met    (:,:) = spval
-    allocate(this%core%phenology_to_litr_cel         (begc:endc,1:nlevdecomp_full)); this%core%phenology_to_litr_cel    (:,:) = spval
-    allocate(this%core%phenology_to_litr_lig         (begc:endc,1:nlevdecomp_full)); this%core%phenology_to_litr_lig    (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_met     (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_litr_met(:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_cel     (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_litr_cel(:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_lig     (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_litr_lig(:,:) = spval
-    allocate(this%core%gap_mortality_to_cwd           (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_cwd      (:,:) = spval
-    allocate(this%core%m_decomp_pools_to_fire_vr        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%m_decomp_pools_to_fire_vr(:,:,:)= spval
-    allocate(this%core%m_decomp_pools_to_fire           (begc:endc,1:ndecomp_pools))  ; this%core%m_decomp_pools_to_fire      (:,:) = spval
-    allocate(this%core%decomp_pools_erode               (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_erode          (:,:) = spval
-    allocate(this%core%decomp_pools_deposit             (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_deposit        (:,:) = spval
-    allocate(this%core%decomp_pools_yield               (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_yield          (:,:) = spval
-    allocate(this%core%m_to_litr_met_fire              (begc:endc,1:nlevdecomp_full)); this%core%m_to_litr_met_fire         (:,:) = spval
-    allocate(this%core%m_to_litr_cel_fire              (begc:endc,1:nlevdecomp_full)); this%core%m_to_litr_cel_fire         (:,:) = spval
-    allocate(this%core%m_to_litr_lig_fire              (begc:endc,1:nlevdecomp_full)); this%core%m_to_litr_lig_fire         (:,:) = spval
-    allocate(this%core%fire_mortality_to_cwd          (begc:endc,1:nlevdecomp_full)); this%core%fire_mortality_to_cwd     (:,:) = spval
     allocate(this%somc_fire                         (begc:endc))                  ; this%somc_fire                    (:)   = spval
-    allocate(this%core%som_erode                        (begc:endc))                  ; this%core%som_erode                   (:)   = spval
-    allocate(this%core%som_deposit                      (begc:endc))                  ; this%core%som_deposit                 (:)   = spval
-    allocate(this%core%som_yield                        (begc:endc))                  ; this%core%som_yield                   (:)   = spval
-    allocate(this%core%harvest_to_litr_met           (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_litr_met      (:,:) = spval
-    allocate(this%core%harvest_to_litr_cel           (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_litr_cel      (:,:) = spval
-    allocate(this%core%harvest_to_litr_lig           (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_litr_lig      (:,:) = spval
-    allocate(this%core%harvest_to_cwd                 (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_cwd            (:,:) = spval
-    allocate(this%core%hrv_deadstem_to_prod10          (begc:endc))                  ; this%core%hrv_deadstem_to_prod10     (:)   = spval
-    allocate(this%core%hrv_deadstem_to_prod100         (begc:endc))                  ; this%core%hrv_deadstem_to_prod100    (:)   = spval
-    allocate(this%core%hrv_crop_to_prod1               (begc:endc))                  ; this%core%hrv_crop_to_prod1          (:)   = spval
-    allocate(this%core%dwt_froot_to_litr_met          (begc:endc,1:nlevdecomp_full)); this%core%dwt_froot_to_litr_met     (:,:) = spval
-    allocate(this%core%dwt_froot_to_litr_cel          (begc:endc,1:nlevdecomp_full)); this%core%dwt_froot_to_litr_cel     (:,:) = spval
-    allocate(this%core%dwt_froot_to_litr_lig          (begc:endc,1:nlevdecomp_full)); this%core%dwt_froot_to_litr_lig     (:,:) = spval
-    allocate(this%core%dwt_livecroot_to_cwd            (begc:endc,1:nlevdecomp_full)); this%core%dwt_livecroot_to_cwd       (:,:) = spval
-    allocate(this%core%dwt_deadcroot_to_cwd            (begc:endc,1:nlevdecomp_full)); this%core%dwt_deadcroot_to_cwd       (:,:) = spval
-    allocate(this%core%dwt_slash_flux                   (begc:endc))                  ; this%core%dwt_slash_flux              (:)   = spval
-    allocate(this%core%dwt_conv_flux                    (begc:endc))                  ; this%core%dwt_conv_flux               (:)   = spval
-    allocate(this%core%dwt_prod10_gain                  (begc:endc))                  ; this%core%dwt_prod10_gain             (:)   = spval
-    allocate(this%core%dwt_prod100_gain                 (begc:endc))                  ; this%core%dwt_prod100_gain            (:)   = spval
-    allocate(this%core%dwt_crop_product_gain            (begc:endc))                  ; this%core%dwt_crop_product_gain       (:)   = spval
-    allocate(this%core%dwt_loss                         (begc:endc))                  ; this%core%dwt_loss                    (:)   = spval
     allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = spval
     allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = spval
-    allocate(this%core%prod1_loss                       (begc:endc))                  ; this%core%prod1_loss                  (:)   = spval
-    allocate(this%core%prod10_loss                      (begc:endc))                  ; this%core%prod10_loss                 (:)   = spval
-    allocate(this%core%prod100_loss                     (begc:endc))                  ; this%core%prod100_loss                (:)   = spval
-    allocate(this%core%product_loss                     (begc:endc))                  ; this%core%product_loss                (:)   = spval
     allocate(this%hr_vr                             (begc:endc,1:nlevdecomp_full)); this%hr_vr                        (:,:) = spval
     allocate(this%lithr                             (begc:endc))                  ; this%lithr                        (:)   = spval
     allocate(this%somhr                             (begc:endc))                  ; this%somhr                        (:)   = spval
@@ -6075,8 +6052,6 @@ contains
     allocate(this%nep                               (begc:endc))                  ; this%nep                          (:)   = spval
     allocate(this%nbp                               (begc:endc))                  ; this%nbp                          (:)   = spval
     allocate(this%nee                               (begc:endc))                  ; this%nee                          (:)   = spval
-    allocate(this%core%inputs                           (begc:endc))                  ; this%core%inputs                      (:)   = spval
-    allocate(this%core%outputs                          (begc:endc))                  ; this%core%outputs                     (:)   = spval
     allocate(this%bgc_cpool_ext_inputs_vr           (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_inputs_vr(:,:,:) = spval
     allocate(this%bgc_cpool_ext_loss_vr             (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_loss_vr  (:,:,:) = spval
     allocate(this%cwdc_hr                           (begc:endc))                  ; this%cwdc_hr                      (:)   = spval
@@ -6087,15 +6062,10 @@ contains
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = spval
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = spval
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = spval
-    allocate(this%core%fire_loss_p2c                    (begc:endc))                  ; this%core%fire_loss_p2c               (:)   = spval
-    allocate(this%core%fire_loss                        (begc:endc))                  ; this%core%fire_loss                   (:)   = spval
-    allocate(this%core%fire_decomp_loss                 (begc:endc))                  ; this%core%fire_decomp_loss            (:)   = spval
     allocate(this%litfall                           (begc:endc))                  ; this%litfall                      (:)   = spval
     allocate(this%vegfire                           (begc:endc))                  ; this%vegfire                      (:)   = spval
-    allocate(this%core%wood_harvest                     (begc:endc))                  ; this%core%wood_harvest                (:)   = spval
     allocate(this%hrv_xsmrpool_to_atm               (begc:endc))                  ; this%hrv_xsmrpool_to_atm          (:)   = spval
-    allocate(this%core%plant_to_litter_flux             (begc:endc))                  ; this%core%plant_to_litter_flux        (:)   = spval
-    allocate(this%core%plant_to_cwd_flux	             (begc:endc))                  ; this%core%plant_to_cwd_flux		       (:)    = spval
+    this%core%plant_to_litter_flux        (:)   = spval
     allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = spval
     ! C4MIP output variable
      allocate(this%plant_c_to_cwdc                  (begc:endc))                  ; this%plant_c_to_cwdc              (:)  = spval
@@ -6104,8 +6074,6 @@ contains
      allocate(this%plant_p_to_cwdp                  (begc:endc))                  ; this%plant_p_to_cwdp              (:)  = spval
 
     allocate(this%lag_npp                           (begc:endc))                  ; this%lag_npp                      (:)   = spval
-    allocate(this%core%external_to_decomp_pools        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%external_to_decomp_pools(:,:,:) = spval
-    allocate(this%core%external_to_decomp_delta         (begc:endc))                  ; this%core%external_to_decomp_delta    (:)   = spval
     allocate(this%f_co2_soil_vr                     (begc:endc,1:nlevdecomp_full)); this%f_co2_soil_vr                (:,:) = spval
     allocate(this%f_co2_soil                        (begc:endc))                  ; this%f_co2_soil                   (:)   = spval
 
@@ -8193,6 +8161,7 @@ contains
     ! allocate for each member of col_nf
     !-----------------------------------------------------------------------
     this%core%species = CN_SPECIES_N
+    call column_nutrient_flux_init(this%core, begc, endc)
     allocate(this%mineral%dep_to_smin                   (begc:endc))                   ; this%mineral%dep_to_smin	                 (:)   = spval
     allocate(this%ndep_to_sminn_nh3               (begc:endc))                   ; this%ndep_to_sminn_nh3                (:)   = spval
     allocate(this%ndep_to_sminn_no3               (begc:endc))                   ; this%ndep_to_sminn_no3                (:)   = spval
@@ -8201,9 +8170,6 @@ contains
 
     allocate(this%fert_to_sminn                   (begc:endc))                   ; this%fert_to_sminn	                 (:)   = spval
     allocate(this%soyfixn_to_sminn                (begc:endc))                   ; this%soyfixn_to_sminn               (:)   = spval
-    allocate(this%core%hrv_deadstem_to_prod10        (begc:endc))                   ; this%core%hrv_deadstem_to_prod10       (:)   = spval
-    allocate(this%core%hrv_deadstem_to_prod100       (begc:endc))                   ; this%core%hrv_deadstem_to_prod100      (:)   = spval
-    allocate(this%core%hrv_crop_to_prod1             (begc:endc))                   ; this%core%hrv_crop_to_prod1            (:)   = spval
     allocate(this%uptake%smin_to_plant                  (begc:endc))                   ; this%uptake%smin_to_plant	               (:)   = spval
     allocate(this%potential_immob                 (begc:endc))                   ; this%potential_immob                (:)   = spval
     allocate(this%actual_immob                    (begc:endc))                   ; this%actual_immob                   (:)   = spval
@@ -8211,23 +8177,6 @@ contains
     allocate(this%mineral%net_min                        (begc:endc))                   ; this%mineral%net_min                       (:)   = spval
     allocate(this%denit                           (begc:endc))                   ; this%denit		                       (:)   = spval
     allocate(this%mineral%supplement_to_smin             (begc:endc))                   ; this%mineral%supplement_to_smin            (:)   = spval
-    allocate(this%core%prod1_loss                     (begc:endc))                   ; this%core%prod1_loss                    (:)   = spval
-    allocate(this%core%prod10_loss                    (begc:endc))                   ; this%core%prod10_loss                   (:)   = spval
-    allocate(this%core%prod100_loss                   (begc:endc))                   ; this%core%prod100_loss	                 (:)   = spval
-    allocate(this%core%product_loss                   (begc:endc))                   ; this%core%product_loss	                 (:)   = spval
-    allocate(this%core%inputs                         (begc:endc))                   ; this%core%inputs                        (:)   = spval
-    allocate(this%core%outputs                        (begc:endc))                   ; this%core%outputs                       (:)   = spval
-    allocate(this%core%fire_loss                      (begc:endc))                   ; this%core%fire_loss                     (:)   = spval
-    allocate(this%core%fire_decomp_loss               (begc:endc))                   ; this%core%fire_decomp_loss              (:)   = spval
-    allocate(this%core%fire_loss_p2c                  (begc:endc))                   ; this%core%fire_loss_p2c                 (:)   = spval
-    allocate(this%core%som_leached                   (begc:endc))                   ; this%core%som_leached	                 (:)   = spval
-    allocate(this%core%som_runoff                    (begc:endc))                   ; this%core%som_runoff                   (:)  = spval
-    allocate(this%core%som_erode                      (begc:endc))                   ; this%core%som_erode                     (:)   = spval
-    allocate(this%core%som_deposit                    (begc:endc))                   ; this%core%som_deposit                   (:)   = spval
-    allocate(this%core%som_yield                      (begc:endc))                   ; this%core%som_yield                     (:)   = spval
-    allocate(this%core%m_to_litr_met_fire            (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_met_fire           (:,:) = spval
-    allocate(this%core%m_to_litr_cel_fire            (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_cel_fire           (:,:) = spval
-    allocate(this%core%m_to_litr_lig_fire            (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_lig_fire           (:,:) = spval
     allocate(this%r_psi                           (begc:endc,1:nlevdecomp_full)) ; this%r_psi                          (:,:) = spval
     allocate(this%anaerobic_frac                  (begc:endc,1:nlevdecomp_full)) ; this%anaerobic_frac                 (:,:) = spval
     allocate(this%potential_immob_vr              (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_vr             (:,:) = spval
@@ -8236,18 +8185,6 @@ contains
     allocate(this%mineral%supplement_to_smin_vr          (begc:endc,1:nlevdecomp_full)) ; this%mineral%supplement_to_smin_vr         (:,:) = spval
     allocate(this%mineral%gross_min_vr                   (begc:endc,1:nlevdecomp_full)) ; this%mineral%gross_min_vr                  (:,:) = spval
     allocate(this%mineral%net_min_vr                     (begc:endc,1:nlevdecomp_full)) ; this%mineral%net_min_vr                    (:,:) = spval
-    allocate(this%core%dwt_slash_flux                 (begc:endc))                   ; this%core%dwt_slash_flux                (:)   = spval
-    allocate(this%core%dwt_conv_flux                  (begc:endc))                   ; this%core%dwt_conv_flux                 (:)   = spval
-    allocate(this%core%dwt_prod10_gain                (begc:endc))                   ; this%core%dwt_prod10_gain               (:)   = spval
-    allocate(this%core%dwt_prod100_gain               (begc:endc))                   ; this%core%dwt_prod100_gain              (:)   = spval
-    allocate(this%core%dwt_crop_product_gain          (begc:endc))                   ; this%core%dwt_crop_product_gain         (:)   = spval
-    allocate(this%core%dwt_loss                       (begc:endc))                   ; this%core%dwt_loss                      (:)   = spval
-    allocate(this%core%wood_harvest                   (begc:endc))                   ; this%core%wood_harvest                  (:)   = spval
-    allocate(this%core%dwt_froot_to_litr_met        (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_met       (:,:) = spval
-    allocate(this%core%dwt_froot_to_litr_cel        (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_cel       (:,:) = spval
-    allocate(this%core%dwt_froot_to_litr_lig        (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_lig       (:,:) = spval
-    allocate(this%core%dwt_livecroot_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_livecroot_to_cwd         (:,:) = spval
-    allocate(this%core%dwt_deadcroot_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_deadcroot_to_cwd         (:,:) = spval
     allocate(this%f_nit_vr                        (begc:endc,1:nlevdecomp_full)) ; this%f_nit_vr                       (:,:) = spval
     allocate(this%f_denit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = spval
     allocate(this%smin_no3_leached_vr             (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = spval
@@ -8293,18 +8230,6 @@ contains
     allocate(this%fr_WFPS                         (begc:endc,1:nlevdecomp_full)) ; this%fr_WFPS                        (:,:) = spval
     allocate(this%fmax_denit_carbonsubstrate_vr   (begc:endc,1:nlevdecomp_full)) ; this%fmax_denit_carbonsubstrate_vr  (:,:) = spval
     allocate(this%fmax_denit_nitrate_vr           (begc:endc,1:nlevdecomp_full)) ; this%fmax_denit_nitrate_vr          (:,:) = spval
-    allocate(this%core%phenology_to_litr_met       (begc:endc, 1:nlevdecomp_full)) ; this%core%phenology_to_litr_met     (:,:) = spval
-    allocate(this%core%phenology_to_litr_cel       (begc:endc, 1:nlevdecomp_full)) ; this%core%phenology_to_litr_cel     (:,:) = spval
-    allocate(this%core%phenology_to_litr_lig       (begc:endc, 1:nlevdecomp_full)) ; this%core%phenology_to_litr_lig     (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_met   (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_met (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_cel   (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_cel (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_lig   (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_lig (:,:) = spval
-    allocate(this%core%gap_mortality_to_cwd         (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_cwd       (:,:) = spval
-    allocate(this%core%fire_mortality_to_cwd        (begc:endc, 1:nlevdecomp_full)) ; this%core%fire_mortality_to_cwd      (:,:) = spval
-    allocate(this%core%harvest_to_litr_met         (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_litr_met       (:,:) = spval
-    allocate(this%core%harvest_to_litr_cel         (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_litr_cel       (:,:) = spval
-    allocate(this%core%harvest_to_litr_lig         (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_litr_lig       (:,:) = spval
-    allocate(this%core%harvest_to_cwd               (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_cwd             (:,:) = spval
     allocate(this%uptake%plant_demand                   (begc:endc))                    ; this%uptake%plant_demand                 (:)   = spval
     allocate(this%uptake%plant_demand_vr                (begc:endc,1:nlevdecomp_full))  ; this%uptake%plant_demand_vr              (:,:) = spval
     allocate(this%f_ngas_decomp_vr                (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr              (:,:) = spval
@@ -8317,7 +8242,6 @@ contains
     allocate(this%f_ngas_denit                    (begc:endc))                    ; this%f_ngas_denit                  (:)   = spval
     allocate(this%f_n2o_soil                      (begc:endc))                    ; this%f_n2o_soil                    (:)   = spval
     allocate(this%f_n2_soil                       (begc:endc))                    ; this%f_n2_soil                     (:)   = spval
-    allocate(this%core%external_to_decomp_delta       (begc:endc))                    ; this%core%external_to_decomp_delta     (:)   = spval
     allocate(this%no3_net_transport_vr            (begc:endc,1:nlevdecomp_full))  ; this%no3_net_transport_vr          (:,:) = spval
     allocate(this%nh4_net_transport_vr            (begc:endc,1:nlevdecomp_full))  ; this%nh4_net_transport_vr          (:,:) = spval
     allocate(this%uptake%col_plant_demand_vr            (begc:endc,1:nlevdecomp))       ; this%uptake%col_plant_demand_vr          (:,:) = spval
@@ -8331,33 +8255,20 @@ contains
     allocate(this%actual_immob_nh4                (begc:endc))                    ; this%actual_immob_nh4              (:)   = spval
     allocate(this%smin_no3_to_plant               (begc:endc))                    ; this%smin_no3_to_plant             (:)   = spval
     allocate(this%smin_nh4_to_plant               (begc:endc))                    ; this%smin_nh4_to_plant             (:)   = spval 
-    allocate(this%core%plant_to_litter_flux           (begc:endc))                    ; this%core%plant_to_litter_flux         (:)   = 0._r8
-    allocate(this%core%plant_to_cwd_flux              (begc:endc))                    ; this%core%plant_to_cwd_flux            (:)   = spval
+    this%core%plant_to_litter_flux         (:)   = 0._r8
     ! C4MIP output variable
     allocate(this%plant_n_to_cwdn                  (begc:endc))                   ; this%plant_n_to_cwdn               (:)  =spval
 
     allocate(this%bgc_npool_ext_inputs_vr         (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_inputs_vr          (:,:,:) = spval
     allocate(this%bgc_npool_ext_loss_vr           (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_loss_vr            (:,:,:) = spval
-    allocate(this%core%decomp_cascade_transfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%core%decomp_cascade_transfer_vr      (:,:,:) = spval
     allocate(this%mineral%decomp_cascade_smin_flux_vr    (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%mineral%decomp_cascade_smin_flux_vr     (:,:,:) = spval
-    allocate(this%core%m_decomp_pools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%m_decomp_pools_to_fire_vr       (:,:,:) = spval
-    allocate(this%core%decomp_cascade_transfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%core%decomp_cascade_transfer         (:,:)   = spval
     allocate(this%mineral%decomp_cascade_smin_flux       (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%mineral%decomp_cascade_smin_flux        (:,:)   = spval
-    allocate(this%core%m_decomp_pools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%core%m_decomp_pools_to_fire          (:,:)   = spval
-    allocate(this%core%decomp_pools_erode             (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_erode              (:,:)   = spval
-    allocate(this%core%decomp_pools_deposit           (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_deposit            (:,:)   = spval
-    allocate(this%core%decomp_pools_yield             (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_yield              (:,:)   = spval
-    allocate(this%core%decomp_pools_yield_vr          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%decomp_pools_yield_vr           (:,:,:) = spval
     allocate(this%sminn_to_denit_decomp_cascade_vr(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%sminn_to_denit_decomp_cascade_vr (:,:,:) = spval
     allocate(this%sminn_to_denit_decomp_cascade   (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%sminn_to_denit_decomp_cascade    (:,:)   = spval
     allocate(this%sminn_to_denit_excess_vr        (begc:endc,1:nlevdecomp_full                              )) ; this%sminn_to_denit_excess_vr         (:,:)   = spval
     allocate(this%sminn_to_denit_excess           (begc:endc                                                )) ; this%sminn_to_denit_excess            (:)     = spval
     allocate(this%mineral%smin_leached_vr                (begc:endc,1:nlevdecomp_full                              )) ; this%mineral%smin_leached_vr                 (:,:)   = spval
     allocate(this%mineral%smin_leached                   (begc:endc                                                )) ; this%mineral%smin_leached                    (:)     = spval
-    allocate(this%core%decomp_pools_leached           (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_leached            (:,:)   = spval
-    allocate(this%core%decomp_pools_transport_tendency(begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%decomp_pools_transport_tendency (:,:,:) = spval
-    allocate(this%core%decomp_pools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%decomp_pools_sourcesink         (:,:,:) = spval
-    allocate(this%core%external_to_decomp_pools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%core%external_to_decomp_pools       (:,:,:) = spval
     allocate(this%mineral%pmf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%mineral%pmf_decomp_cascade              (:,:,:) = spval
     !FAN
     allocate(this%manure_tan_appl                 (begc:endc)) ; this%manure_tan_appl               (:)   = spval
@@ -10042,30 +9953,15 @@ contains
     ! allocate for each member of col_pf
     !-----------------------------------------------------------------------
     this%core%species = CN_SPECIES_P
+    call column_nutrient_flux_init(this%core, begc, endc)
     allocate(this%mineral%dep_to_smin                    (begc:endc))                   ; this%mineral%dep_to_smin                 (:)   = spval
     allocate(this%fert_p_to_sminp                  (begc:endc))                   ; this%fert_p_to_sminp               (:)   = spval
-    allocate(this%core%hrv_deadstem_to_prod10         (begc:endc))                   ; this%core%hrv_deadstem_to_prod10      (:)   = spval
-    allocate(this%core%hrv_deadstem_to_prod100        (begc:endc))                   ; this%core%hrv_deadstem_to_prod100     (:)   = spval
-    allocate(this%core%hrv_crop_to_prod1              (begc:endc))                   ; this%core%hrv_crop_to_prod1           (:)   = spval
     allocate(this%uptake%smin_to_plant                   (begc:endc))                   ; this%uptake%smin_to_plant                (:)   = spval
     allocate(this%potential_immob_p                (begc:endc))                   ; this%potential_immob_p             (:)   = spval
     allocate(this%actual_immob_p                   (begc:endc))                   ; this%actual_immob_p                (:)   = spval
     allocate(this%mineral%gross_min                       (begc:endc))                   ; this%mineral%gross_min                    (:)   = spval
     allocate(this%mineral%net_min                         (begc:endc))                   ; this%mineral%net_min                      (:)   = spval
     allocate(this%mineral%supplement_to_smin              (begc:endc))                   ; this%mineral%supplement_to_smin           (:)   = spval
-    allocate(this%core%prod1_loss                      (begc:endc))                   ; this%core%prod1_loss                   (:)   = spval
-    allocate(this%core%prod10_loss                     (begc:endc))                   ; this%core%prod10_loss                  (:)   = spval
-    allocate(this%core%prod100_loss                    (begc:endc))                   ; this%core%prod100_loss                 (:)   = spval
-    allocate(this%core%product_loss                    (begc:endc))                   ; this%core%product_loss                 (:)   = spval
-    allocate(this%core%inputs                          (begc:endc))                   ; this%core%inputs                       (:)   = spval
-    allocate(this%core%outputs                         (begc:endc))                   ; this%core%outputs                      (:)   = spval
-    allocate(this%core%fire_loss                       (begc:endc))                   ; this%core%fire_loss                    (:)   = spval
-    allocate(this%core%fire_decomp_loss                (begc:endc))                   ; this%core%fire_decomp_loss             (:)   = spval
-    allocate(this%core%fire_loss_p2c                   (begc:endc))                   ; this%core%fire_loss_p2c                (:)   = spval
-    allocate(this%core%som_leached                    (begc:endc))                   ; this%core%som_leached                 (:)   = spval
-    allocate(this%core%som_erode                       (begc:endc))                   ; this%core%som_erode                    (:)   = spval
-    allocate(this%core%som_deposit                     (begc:endc))                   ; this%core%som_deposit                  (:)   = spval
-    allocate(this%core%som_yield                       (begc:endc))                   ; this%core%som_yield                    (:)   = spval
     allocate(this%labilep_erode                    (begc:endc))                   ; this%labilep_erode                 (:)   = spval
     allocate(this%labilep_deposit                  (begc:endc))                   ; this%labilep_deposit               (:)   = spval
     allocate(this%labilep_yield                    (begc:endc))                   ; this%labilep_yield                 (:)   = spval
@@ -10078,9 +9974,6 @@ contains
     allocate(this%primp_erode                      (begc:endc))                   ; this%primp_erode                   (:)   = spval
     allocate(this%primp_deposit                    (begc:endc))                   ; this%primp_deposit                 (:)   = spval
     allocate(this%primp_yield                      (begc:endc))                   ; this%primp_yield                   (:)   = spval
-    allocate(this%core%m_to_litr_met_fire             (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_met_fire          (:,:) = spval
-    allocate(this%core%m_to_litr_cel_fire             (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_cel_fire          (:,:) = spval
-    allocate(this%core%m_to_litr_lig_fire             (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_lig_fire          (:,:) = spval
     allocate(this%potential_immob_p_vr             (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_p_vr          (:,:) = spval
     allocate(this%actual_immob_p_vr                (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_p_vr             (:,:) = spval
     allocate(this%uptake%smin_to_plant_vr                (begc:endc,1:nlevdecomp_full)) ; this%uptake%smin_to_plant_vr             (:,:) = spval
@@ -10093,36 +9986,8 @@ contains
     allocate(this%biochem_pmin_vr                  (begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_vr               (:,:) = spval
     allocate(this%biochem_pmin                     (begc:endc))                   ; this%biochem_pmin                  (:)   = spval
     allocate(this%biochem_pmin_to_plant            (begc:endc))                   ; this%biochem_pmin_to_plant         (:)   = spval
-    allocate(this%core%dwt_slash_flux                  (begc:endc))                   ; this%core%dwt_slash_flux               (:)   = spval
-    allocate(this%core%dwt_conv_flux                   (begc:endc))                   ; this%core%dwt_conv_flux                (:)   = spval
-    allocate(this%core%dwt_prod10_gain                 (begc:endc))                   ; this%core%dwt_prod10_gain              (:)   = spval
-    allocate(this%core%dwt_prod100_gain                (begc:endc))                   ; this%core%dwt_prod100_gain             (:)   = spval
-    allocate(this%core%dwt_crop_product_gain           (begc:endc))                   ; this%core%dwt_crop_product_gain        (:)   = spval
-    allocate(this%core%dwt_loss                        (begc:endc))                   ; this%core%dwt_loss                     (:)   = spval
-    allocate(this%core%wood_harvest                    (begc:endc))                   ; this%core%wood_harvest                 (:)   = spval
-    allocate(this%core%dwt_froot_to_litr_met         (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_met      (:,:) = spval
-    allocate(this%core%dwt_froot_to_litr_cel         (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_cel      (:,:) = spval
-    allocate(this%core%dwt_froot_to_litr_lig         (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_lig      (:,:) = spval
-    allocate(this%core%dwt_livecroot_to_cwd           (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_livecroot_to_cwd        (:,:) = spval
-    allocate(this%core%dwt_deadcroot_to_cwd           (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_deadcroot_to_cwd        (:,:) = spval
-    allocate(this%core%decomp_cascade_transfer_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%core%decomp_cascade_transfer_vr  (:,:,:) = spval
     allocate(this%mineral%decomp_cascade_smin_flux_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%mineral%decomp_cascade_smin_flux_vr (:,:,:) = spval
-    allocate(this%core%m_decomp_pools_to_fire_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               )) ; this%core%m_decomp_pools_to_fire_vr   (:,:,:) = spval
-    allocate(this%core%decomp_cascade_transfer         (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%core%decomp_cascade_transfer     (:,:)   = spval
     allocate(this%mineral%decomp_cascade_smin_flux        (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%mineral%decomp_cascade_smin_flux    (:,:)   = spval
-    allocate(this%core%m_decomp_pools_to_fire          (begc:endc,1:ndecomp_pools ))  ; this%core%m_decomp_pools_to_fire       (:,:) = spval
-    allocate(this%core%phenology_to_litr_met        (begc:endc,1:nlevdecomp_full)) ; this%core%phenology_to_litr_met     (:,:) = spval
-    allocate(this%core%phenology_to_litr_cel        (begc:endc,1:nlevdecomp_full)) ; this%core%phenology_to_litr_cel     (:,:) = spval
-    allocate(this%core%phenology_to_litr_lig        (begc:endc,1:nlevdecomp_full)) ; this%core%phenology_to_litr_lig     (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_met    (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_met (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_cel    (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_cel (:,:) = spval
-    allocate(this%core%gap_mortality_to_litr_lig    (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_lig (:,:) = spval
-    allocate(this%core%gap_mortality_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_cwd       (:,:) = spval
-    allocate(this%core%fire_mortality_to_cwd         (begc:endc,1:nlevdecomp_full)) ; this%core%fire_mortality_to_cwd      (:,:) = spval
-    allocate(this%core%harvest_to_litr_met          (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_litr_met       (:,:) = spval
-    allocate(this%core%harvest_to_litr_cel          (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_litr_cel       (:,:) = spval
-    allocate(this%core%harvest_to_litr_lig          (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_litr_lig       (:,:) = spval
-    allocate(this%core%harvest_to_cwd                (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_cwd             (:,:) = spval
     allocate(this%primp_to_labilep_vr              (begc:endc,1:nlevdecomp_full)) ; this%primp_to_labilep_vr           (:,:) = spval
     allocate(this%primp_to_labilep                 (begc:endc))                   ; this%primp_to_labilep              (:)   = spval
     allocate(this%labilep_to_secondp_vr            (begc:endc,1:nlevdecomp_full)) ; this%labilep_to_secondp_vr         (:,:) = spval
@@ -10134,18 +9999,10 @@ contains
     allocate(this%mineral%smin_leached_vr                 (begc:endc,1:nlevdecomp_full)) ; this%mineral%smin_leached_vr              (:,:) = spval
     allocate(this%mineral%smin_leached                    (begc:endc))                   ; this%mineral%smin_leached                 (:)   = spval
     allocate(this%sminp_runoff                     (begc:endc))                   ; this%sminp_runoff                  (:)   = spval
-    allocate(this%core%som_runoff                     (begc:endc))                   ; this%core%som_runoff                  (:)   = spval
-    allocate(this%core%decomp_pools_leached            (begc:endc,1:ndecomp_pools  )) ; this%core%decomp_pools_leached         (:,:) = spval
-    allocate(this%core%decomp_pools_transport_tendency (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%core%decomp_pools_transport_tendency (:,:,:) = spval
-    allocate(this%core%decomp_pools_sourcesink         (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%core%decomp_pools_sourcesink         (:,:,:) = spval
     allocate(this%labilep_yield_vr                 (begc:endc,1:nlevdecomp_full)) ; this%labilep_yield_vr              (:,:) = spval
     allocate(this%secondp_yield_vr                 (begc:endc,1:nlevdecomp_full)) ; this%secondp_yield_vr              (:,:) = spval
     allocate(this%occlp_yield_vr                   (begc:endc,1:nlevdecomp_full)) ; this%occlp_yield_vr                (:,:) = spval
     allocate(this%primp_yield_vr                   (begc:endc,1:nlevdecomp_full)) ; this%primp_yield_vr                (:,:) = spval
-    allocate(this%core%decomp_pools_erode              (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_erode           (:,:) = spval
-    allocate(this%core%decomp_pools_deposit            (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_deposit         (:,:) = spval
-    allocate(this%core%decomp_pools_yield              (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_yield           (:,:) = spval
-    allocate(this%core%decomp_pools_yield_vr           (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%core%decomp_pools_yield_vr           (:,:,:) = spval
     allocate(this%adsorb_to_labilep_vr             (begc:endc,1:nlevdecomp_full)) ; this%adsorb_to_labilep_vr          (:,:) = spval
     allocate(this%desorb_to_solutionp_vr           (begc:endc,1:nlevdecomp_full)) ; this%desorb_to_solutionp_vr        (:,:) = spval
     allocate(this%adsorb_to_labilep                (begc:endc))                   ; this%adsorb_to_labilep             (:)   = spval
@@ -10156,13 +10013,10 @@ contains
     allocate(this%mineral%soil_immob_flux_vr             (begc:endc,1:nlevdecomp_full)) ; this%mineral%soil_immob_flux_vr          (:,:) = spval
     allocate(this%mineral%soil_grossmin_flux             (begc:endc))                   ; this%mineral%soil_grossmin_flux          (:)   = spval
     allocate(this%smin_p_to_plant                  (begc:endc))                   ; this%smin_p_to_plant               (:)   = spval
-    allocate(this%core%plant_to_litter_flux            (begc:endc))                   ; this%core%plant_to_litter_flux         (:)   = 0._r8
-    allocate(this%core%plant_to_cwd_flux               (begc:endc))                   ; this%core%plant_to_cwd_flux            (:)   = spval
+    this%core%plant_to_litter_flux         (:)   = 0._r8
     allocate(this%uptake%plant_demand                    (begc:endc))                   ; this%uptake%plant_demand                 (:)   = spval
     allocate(this%uptake%plant_demand_vr                 (begc:endc,1:nlevdecomp_full)) ; this%uptake%plant_demand_vr              (:,:) = spval
     allocate(this%uptake%col_plant_demand_vr            (begc:endc,1:nlevdecomp))       ; this%uptake%col_plant_demand_vr          (:,:) = spval
-    allocate(this%core%external_to_decomp_pools       (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools          )) ;    this%core%external_to_decomp_pools    (:,:,:) = spval
-    allocate(this%core%external_to_decomp_delta        (begc:endc))                   ; this%core%external_to_decomp_delta     (:)   = spval
     allocate(this%sminp_net_transport_vr           (begc:endc,1:nlevdecomp_full)) ; this%sminp_net_transport_vr        (:,:) = spval
     allocate(this%sminp_net_transport_delta        (begc:endc))                   ; this%sminp_net_transport_delta     (:)   = spval
 
