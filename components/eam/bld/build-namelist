@@ -5244,6 +5244,27 @@ sub check_input_files {
 	}
     }
 
+    # P3 opens p3_lookup_table_1.dat-v<version> inside micro_p3_lookup_dir, but the
+    # namelist only contains the directory, so list the table file explicitly.
+    my $p3_dir = $nl->get_value('micro_p3_lookup_dir');
+    my $p3_ver = $nl->get_value('micro_p3_tableversion');
+    if (defined $p3_dir and defined $p3_ver) {
+	$p3_dir =~ s/['"\s]//g;
+	$p3_ver =~ s/['"\s]//g;
+	my $p3_file = "$p3_dir/p3_lookup_table_1.dat-v$p3_ver";
+	if ($inputdata_rootdir) {
+	    print $fh "p3_lookup_table_1 = $p3_file\n";
+	}
+	else {
+	    if (-f $p3_file) {
+		print "OK -- found p3_lookup_table_1 = $p3_file\n";
+	    }
+	    else {
+		print "NOT FOUND:  p3_lookup_table_1 = $p3_file\n";
+	    }
+	}
+    }
+
     close $fh if defined $inputdata_rootdir;
 
     return 0;
