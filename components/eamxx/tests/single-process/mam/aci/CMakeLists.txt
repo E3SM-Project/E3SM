@@ -19,6 +19,14 @@ set (RUN_T0 2021-10-12-45000)
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
+# These fields are registered only in evaluation-diagnostics builds.
+set(MAM4XX_NDROP_DIAGNOSTIC_FIELDS "")
+if (MAM4XX_EVAL_DIAGNOSTICS)
+  set(MAM4XX_NDROP_DIAGNOSTIC_FIELDS
+"      - ndrop_nsubmix
+      - ndrop_sum_nsubmix
+      - ndrop_max_nsubmix")
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
