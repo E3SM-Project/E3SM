@@ -17,7 +17,7 @@ TEST_CASE("CouplerDriver registers and couples fake components") {
   FakeAtmosphere atm{ncols};
   FakeLand lnd{ncols};
 
-  CouplerDriver driver;
+  CouplerDriver driver{};
 
   driver.add_component(atm);
   driver.add_component(lnd);

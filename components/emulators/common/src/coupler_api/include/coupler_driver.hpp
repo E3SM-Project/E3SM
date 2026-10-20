@@ -10,7 +10,7 @@ namespace e3sm::coupler {
  */
 class CouplerDriver {
 public:
-  CouplerDriver() = default;
+  CouplerDriver(): coupler_(), initialized_(false), components_() {}
 
   // neither copyable nor movable
   CouplerDriver(CouplerDriver&) = delete;
@@ -20,7 +20,7 @@ public:
 
   template <CoupledProcess C> void add_component(C& component) {
     if (initialized_) {
-      throw std::runtime_error("CouplerDrive: Can't add component after initialization!");
+      throw std::runtime_error("CouplerDriver: Can't add component after initialization!");
     }
     components_.emplace_back(component);
   }
