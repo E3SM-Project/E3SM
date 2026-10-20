@@ -757,9 +757,9 @@ contains
     endif
 
     ! Lake evaporation cap method
-    if (lake_evap_cap_method /= 'none' .and. &
-        lake_evap_cap_method /= 'rain_snow' .and. &
-        lake_evap_cap_method /= 'rain_snow_h2osno' ) then
+    if (trim(lake_evap_cap_method) /= 'none' .and. &
+        trim(lake_evap_cap_method) /= 'rain_snow' .and. &
+        trim(lake_evap_cap_method) /= 'rain_snow_h2osno' ) then
        write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
        call endrun(msg=' ERROR:: choices are none, rain_snow, or rain_snow_h2osno' // &
             errMsg(__FILE__, __LINE__))

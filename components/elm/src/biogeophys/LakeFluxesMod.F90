@@ -478,9 +478,9 @@ contains
             ! this iteration: dth/dqh/zeta/obu/roughness lengths below) stays self-consistent
             ! with the capped evaporation instead of the discarded unconstrained value.
             evap_water_limited = .false.
-            if (lake_evap_cap_method == 'rain_snow' .or. lake_evap_cap_method == 'rain_snow_h2osno') then
+            if (trim(lake_evap_cap_method) == 'rain_snow' .or. trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
                qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
-               if (lake_evap_cap_method == 'rain_snow_h2osno') then
+               if (trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
                   qflx_evap_cap = qflx_evap_cap + h2osno(c)/dtime
                end if
                if (forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p) > qflx_evap_cap) then
@@ -653,9 +653,9 @@ contains
          ! the lake/ground via eflx_gnet instead. Never clamps condensation (qflx_evap_soi < 0).
          ! In practice this only binds for the convective-mixing branch (t_grnd forced warmer);
          ! the freezing-point branch only forces t_grnd colder than an already-capped value.
-         if (lake_evap_cap_method == 'rain_snow' .or. lake_evap_cap_method == 'rain_snow_h2osno') then
+         if (trim(lake_evap_cap_method) == 'rain_snow' .or. trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
             qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
-            if (lake_evap_cap_method == 'rain_snow_h2osno') then
+            if (trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
                qflx_evap_cap = qflx_evap_cap + h2osno(c)/dtime
             end if
             qflx_evap_soi(p) = min(qflx_evap_soi(p), qflx_evap_cap)
