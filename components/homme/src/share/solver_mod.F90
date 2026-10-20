@@ -803,8 +803,7 @@ tol=1.e-12
     use edge_mod, only : edgevpack, edgevunpack
     use edgetype_mod, only : edgebuffer_t
     use derivative_mod, only : derivative_t, laplace_sphere_wk
-    use control_mod, only : maxits, tol, precon_method
-    use physical_constants, only : rrearth, dd_pi, rearth, omega
+    use control_mod, only : maxits, tol
     use bndry_mod, only : bndry_exchangeV
     use parallel_mod, only : haltmp
     use hybrid_mod, only : hybrid_t
@@ -831,10 +830,9 @@ tol=1.e-12
 
     integer :: ie
     integer :: i,j,k
-    integer :: kptr
     integer :: iptr
     integer :: ieptr
-    real (kind=real_kind) :: snlat,cslat,cslon,snlon,xc,yc,zc, res, res_sol
+    real (kind=real_kind) :: snlat,cslat,cslon,snlon,xc,yc,zc, res
 
     if (hybrid%masterthread) print *,'creating manufactured solution'
     do ie=nets,nete

@@ -1316,7 +1316,7 @@ contains
 
    subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use parallel_mod,           only : abortmp
-    use dimensions_mod,         only : np,  max_elements_attached_to_node
+    use dimensions_mod,         only : np
     use coordinate_systems_mod, only : cartesian2D_t, cartesian3D_t, cube_face_number_from_cart, &
                                        cube_face_number_from_sphere, cart2cubedsphere
     use gridgraph_mod,          only : GridVertex_t
@@ -1327,7 +1327,7 @@ contains
                                        z2_map_method, coord_transform_method
     use params_mod,             only : SFCURVE, SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
 
-    use kinds, only : iulog, real_kind
+    use kinds, only : real_kind
     use zoltan_mod, only : is_zoltan_partition, is_zoltan_task_mapping
 
     implicit none
@@ -1595,7 +1595,7 @@ contains
 !======================================================================
    subroutine MeshCubeTopology(GridEdge, GridVertex)
     use parallel_mod,           only : abortmp
-    use dimensions_mod,         only : np,  max_elements_attached_to_node
+    use dimensions_mod,         only : np
     use coordinate_systems_mod, only : cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere
     use gridgraph_mod,          only : GridVertex_t
     use gridgraph_mod,          only : GridEdge_t
@@ -1768,6 +1768,7 @@ contains
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nedge
+    nedge = 0
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeEdgeCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then
@@ -1784,6 +1785,7 @@ contains
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nelem
+    nelem = 0
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeElemCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then

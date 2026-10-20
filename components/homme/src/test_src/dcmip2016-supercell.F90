@@ -40,6 +40,7 @@ MODULE supercell
 
   use physical_constants, only: g,p0,kappa,Rgas,Cp,Rwater_vapor,rearth,omega0, dd_pi
 
+    USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_double, c_int
   IMPLICIT NONE
 
 !=======================================================================
@@ -159,10 +160,9 @@ CONTAINS
     REAL(8), DIMENSION(nz) :: exnereq, H
 
     ! Variables for calculation of equatorial profile
-    REAL(8) :: exnereqs, p, T, qvs, qv
+    REAL(8) :: exnereqs, p, T, qvs
 
     ! Error metric
-    REAL(8) :: err
 
     ! Loop indices
     INTEGER(4) :: i, k, iter
@@ -368,18 +368,18 @@ CONTAINS
     !------------------------------------------------
     !   Input / output parameters
     !------------------------------------------------
-    REAL(8), INTENT(IN)  :: &
+    REAL(c_double), INTENT(IN)  :: &
                 lon,        & ! Longitude (radians)
                 lat           ! Latitude (radians)
 
-    REAL(8), INTENT(INOUT) :: &
+    REAL(c_double), INTENT(INOUT) :: &
                 p,            & ! Pressure (Pa)
                 z               ! Altitude (m)
 
-    INTEGER, INTENT(IN) :: zcoords     ! 1 if z coordinates are specified
+    INTEGER(c_int), INTENT(IN) :: zcoords     ! 1 if z coordinates are specified
                                        ! 0 if p coordinates are specified
 
-    REAL(8), INTENT(OUT) :: &
+    REAL(c_double), INTENT(OUT) :: &
                 u,          & ! Zonal wind (m s^-1)
                 v,          & ! Meridional wind (m s^-1)
                 t,          & ! Temperature (K)
@@ -388,7 +388,7 @@ CONTAINS
                 rho,        & ! density (kg m^-3)
                 q             ! water vapor mixing ratio (kg/kg)
 
-    INTEGER, INTENT(IN) :: pert  ! 1 if perturbation should be included
+    INTEGER(c_int), INTENT(IN) :: pert  ! 1 if perturbation should be included
                                  ! 0 if no perturbation should be included
 
     !------------------------------------------------

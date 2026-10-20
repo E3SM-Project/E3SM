@@ -348,8 +348,8 @@ contains
           E(2,2)= E(1,1)
 
 !normalize columns
-	  E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1))); 
-	  E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2))); 
+          E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1))); 
+          E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2))); 
 
 
 ! OBTAINING TENSOR FOR HV:
@@ -388,8 +388,8 @@ contains
 
 ! (2) Later developments:
 ! Bringing [nu_tensor] to 1/[sec]:
-!	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
-!	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+!         lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+!         lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
 ! OPERATOR_HV = ( (np-1)*dx_unif_sphere / 2 )^{hv_scaling} * rearth^4
 ! Conversion formula:
 ! nu_tensor = nu_const * OPERATOR_HV^{-1}, so
@@ -407,8 +407,8 @@ contains
           DE(2,1)=sum(elem%D(i,j,2,:)*E(:,1))
           DE(2,2)=sum(elem%D(i,j,2,:)*E(:,2))
 
-	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
-	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+          lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+          lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
 
 !matrix (DE) * Lam^* * Lam , tensor HV when V is applied at each Laplace calculation
 !          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
@@ -425,13 +425,13 @@ contains
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
-	  elem%tensorVisc(i,j,:,:)=V(:,:)
+          elem%tensorVisc(i,j,:,:)=V(:,:)
 
 
 !
 !         Tensor with scalings=2 for regular laplace operator (spnge layer)
-	  lamStar1=1/(eig(1)**(laplace_scaling/2.0d0))*(rearth**2.0d0)
-	  lamStar2=1/(eig(2)**(laplace_scaling/2.0d0))*(rearth**2.0d0)
+          lamStar1=1/(eig(1)**(laplace_scaling/2.0d0))*(rearth**2.0d0)
+          lamStar2=1/(eig(2)**(laplace_scaling/2.0d0))*(rearth**2.0d0)
           DEL(1:2,1) = lamStar1 *eig(1)*DE(1:2,1)
           DEL(1:2,2) = lamStar2 *eig(2)*DE(1:2,2)
           V(1,1)=sum(DEL(1,:)*DE(1,:))
@@ -439,7 +439,7 @@ contains
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
-	  elem%tensorVisc_2(i,j,:,:)=V(:,:)
+          elem%tensorVisc_2(i,j,:,:)=V(:,:)
 
        end do
     end do
@@ -749,19 +749,19 @@ contains
 
     do i=1,3
       do j=1,2
-	D3(i,j)=sum(c(i,:)*dd(:,j))
+        D3(i,j)=sum(c(i,:)*dd(:,j))
       enddo
     enddo
 
     do i=1,3
       do j=1,2
-	D4(i,j)=sum(D2(i,:)*D3(:,j))
+        D4(i,j)=sum(D2(i,:)*D3(:,j))
       enddo
     enddo   
 
     do i=1,2
       do j=1,2
-	D(i,j)=sum(D1(i,:)*D4(:,j))
+        D(i,j)=sum(D1(i,:)*D4(:,j))
       enddo
     enddo
 
@@ -796,7 +796,7 @@ contains
              if ( rotate_grid /= 0) then
                 lat = elem%spherep(i,j)%lat
                 lon = elem%spherep(i,j)%lon
-             	elem%fcor(i,j)= 2*omega* &
+                elem%fcor(i,j)= 2*omega* &
                      (-cos(lon)*cos(lat)*sin(rangle) + sin(lat)*cos(rangle))
              else
                 elem%fcor(i,j) = 2.0D0*omega*SIN(elem%spherep(i,j)%lat)
@@ -1867,7 +1867,7 @@ contains
 
   subroutine CubeSetupEdgeIndex(Edge)
     use gridgraph_mod, only : gridedge_t
-    use control_mod, only : north, south, east, west, neast, seast, swest, nwest
+    use control_mod, only : north, south, east, west
     type (GridEdge_t),target           :: Edge
 
     integer                            :: sFace,dFace
