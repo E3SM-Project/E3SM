@@ -10,8 +10,7 @@
 
 #include "inference_backend.hpp"
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief Runs a TorchScript module (saved by torch.jit.save) in-process.
@@ -56,7 +55,6 @@ private:
   std::unique_ptr<Impl> m_impl;
 };
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference
 
 #endif // E3SM_EMULATOR_LIBTORCH_INFERENCE_BACKEND_HPP

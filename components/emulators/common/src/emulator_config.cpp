@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace emulator {
+namespace e3sm::emulator {
 namespace {
 
 constexpr std::string TABS = "  ";
@@ -138,4 +138,4 @@ std::string to_string(const EmulatorConfig& cfg) {
 
   return out_string.str();
 }
-} // namespace emulator
+} // namespace e3sm::emulator

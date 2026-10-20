@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace emulator {
+namespace e3sm::emulator {
 
 RegisteredField
 Emulator::make_registered_field(const EmulatorFieldDesc& field) {
@@ -186,7 +186,7 @@ void Emulator::run(const ProcessRunOpts opts) {
   if (!m_initialized) {
     throw std::runtime_error("Emulator::run() called before initialize()");
   }
-  run_impl(opts);
+  // TODO: run logic goes here!
   m_step_count++;
 }
 
@@ -194,6 +194,7 @@ void Emulator::finalize() {
   if (!m_initialized) {
     return; // Already finalized or never initialized
   }
+  // TODO: finalize logic goes here!
   m_initialized = false;
 }
 
@@ -219,7 +220,7 @@ void Emulator::print_info(std::ostream& os) const {
   os << "  initialized   : " << std::boolalpha << m_initialized << "\n";
   os << "  step_count    : " << m_step_count << "\n";
 
-  // Grid summary via virtual getters
+  // Grid summary
   int nx = get_nx();
   int ny = get_ny();
   int nloc = get_num_local_cols();
@@ -227,9 +228,6 @@ void Emulator::print_info(std::ostream& os) const {
 
   os << "  grid          : nx=" << nx << " ny=" << ny
      << " num_local_cols=" << nloc << " num_global_cols=" << nglob << "\n";
-
-  // Hook for derived classes to print config / component-specific info
-  print_extra_info(os);
 }
 
 namespace { // stuff for registering with MOAB

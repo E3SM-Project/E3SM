@@ -7,8 +7,7 @@
 
 #include <cfenv>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 FpeGuard::FpeGuard() {
 #ifdef __GLIBC__
@@ -29,5 +28,4 @@ FpeGuard::~FpeGuard() {
 #endif
 }
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

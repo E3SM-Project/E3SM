@@ -16,7 +16,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace emulator {
+namespace e3sm::emulator {
 
 /**
  * @brief Singleton registry for managing emulator instances.
@@ -165,6 +165,6 @@ inline void cleanup_emulator_registry() {
   EmulatorRegistry::instance().clean_up();
 }
 
-} // namespace emulator
+} // namespace e3sm::emulator
 
 #endif // E3SM_EMULATOR_REGISTRY_HPP

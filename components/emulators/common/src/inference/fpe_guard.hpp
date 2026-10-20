@@ -6,8 +6,7 @@
 #ifndef E3SM_EMULATOR_FPE_GUARD_HPP
 #define E3SM_EMULATOR_FPE_GUARD_HPP
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief Disable FPE traps for the lifetime of the object, then restore
@@ -29,7 +28,6 @@ private:
   int m_saved_excepts = 0;
 };
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference
 
 #endif // E3SM_EMULATOR_FPE_GUARD_HPP

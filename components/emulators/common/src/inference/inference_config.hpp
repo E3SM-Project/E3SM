@@ -9,8 +9,7 @@
 #include <map>
 #include <string>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief Configuration for inference backends.
@@ -41,7 +40,6 @@ struct InferenceConfig {
   bool get_bool(const std::string &key, bool fallback) const;
 };
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference
 
 #endif // E3SM_EMULATOR_INFERENCE_CONFIG_HPP

@@ -9,9 +9,9 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace emulator::tests {
+namespace e3sm::emulator::tests {
 
-class ForcingEmulator : public Emulator {
+class ForcingEmulator {
 public:
   ForcingEmulator(CreateConfig cfg) : Emulator(cfg) {}
 
@@ -136,5 +136,5 @@ inline GridDesc make_test_grid() {
   };
 }
 
-} // namespace emulator::tests
+} // namespace e3sm::emulator::tests
 #endif

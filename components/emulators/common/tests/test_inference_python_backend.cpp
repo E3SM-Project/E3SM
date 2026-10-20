@@ -8,9 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace emulator {
-namespace inference {
-namespace test {
+namespace e3sm::emulator::inference::test {
 
 namespace {
 
@@ -177,6 +175,4 @@ TEST_CASE("PythonBackend refuses inference after finalize", "[python]") {
   REQUIRE(create(fixture()) != nullptr);
 }
 
-} // namespace test
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference::test

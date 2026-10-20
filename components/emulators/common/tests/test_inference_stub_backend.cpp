@@ -7,9 +7,7 @@
 
 #include <vector>
 
-namespace emulator {
-namespace inference {
-namespace test {
+namespace e3sm::emulator::inference::test {
 
 TEST_CASE("StubBackend factory creation", "[stub_backend]") {
   InferenceConfig config;
@@ -93,6 +91,4 @@ TEST_CASE("create_backend refuses the Python backend if not built",
 }
 #endif
 
-} // namespace test
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference::test

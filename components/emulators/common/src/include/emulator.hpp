@@ -5,19 +5,21 @@
 #ifndef E3SM_EMULATOR_HPP
 #define E3SM_EMULATOR_HPP
 
-#include <cstddef>
-#include <mpi.h>
 
 #include "coupler_types.hpp"
 #include <coupler.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
+#include <inference_backend.hpp>
 #include <process.hpp>
+#include <mpi.h>
+
+#include <cstddef>
 #include <span>
 #include <string>
 #include <vector>
 
-namespace emulator {
+namespace e3sm::emulator {
 
 using namespace e3sm::coupler;
 
@@ -100,7 +102,7 @@ struct CreateConfig {
 class Emulator {
 public:
   explicit Emulator(const CreateConfig);
-  virtual ~Emulator() = default;
+  ~Emulator() = default;
 
   // Lifecycle methods
   void initialize();
@@ -151,13 +153,6 @@ public:
   std::span<double> output_fields() {
     return std::span<double>{output_fields_};
   };
-
-  // Emulator specific field initialization
-  virtual void init_data() = 0;
-  // Emulator specific run details
-  virtual void run_impl(const ProcessRunOpts opts) = 0;
-  // Emulator specific diagnostics
-  virtual void print_extra_info(std::ostream& os) const {}
 
 protected:
   template <typename Container>

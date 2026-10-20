@@ -9,9 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace emulator {
-namespace inference {
-namespace test {
+namespace e3sm::emulator::inference::test {
 
 TEST_CASE("Owning tensor allocates and zero-fills", "[tensor]") {
   Tensor t("dT", {4, 3});
@@ -94,6 +92,4 @@ TEST_CASE("TensorMap preserves order and rejects duplicates", "[tensor]") {
   REQUIRE(map.size() == 3);
 }
 
-} // namespace test
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference::test

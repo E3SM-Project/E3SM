@@ -6,9 +6,7 @@
 
 #include <cfenv>
 
-namespace emulator {
-namespace inference {
-namespace test {
+namespace e3sm::emulator::inference::test {
 
 #ifdef __GLIBC__
 
@@ -59,6 +57,4 @@ TEST_CASE("FpeGuard with no traps enabled changes nothing", "[fpe]") {
   SUCCEED();
 }
 
-} // namespace test
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference::test

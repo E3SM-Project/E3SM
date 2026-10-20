@@ -11,8 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief A named, shaped, row-major buffer of doubles.
@@ -113,7 +112,6 @@ private:
   std::vector<Tensor> m_tensors;
 };
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference
 
 #endif // E3SM_EMULATOR_INFERENCE_TENSOR_HPP

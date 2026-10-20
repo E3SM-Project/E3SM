@@ -8,8 +8,7 @@
 
 #include "stub_inference_backend.hpp"
 
-namespace emulator {
-namespace inference {
+namespace e3sm::emulator::inference {
 
 /**
  * @brief Run stub inference (no-op).
@@ -36,5 +35,4 @@ bool StubBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
  */
 void StubBackend::finalize() {}
 
-} // namespace inference
-} // namespace emulator
+} // namespace e3sm::emulator::inference

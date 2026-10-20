@@ -7,8 +7,7 @@
 #include <emulator_config.hpp>
 #include <mpi.h>
 
-namespace emulator {
-namespace tests {
+namespace e3sm::emulator::tests {
 
 TEST_CASE("Emulator initialization builds field layout") {
 
@@ -72,5 +71,4 @@ TEST_CASE("Emulator initialization builds field layout") {
   }
 }
 
-} // namespace tests
-} // namespace emulator
+} // namespace e3sm::emulator::tests
