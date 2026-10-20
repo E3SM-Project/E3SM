@@ -42,12 +42,12 @@ endif()
 set (EKAT_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat/cmake)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-     ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules
      ${EKAT_CMAKE_PATH}
      ${EKAT_CMAKE_PATH}/tpls
 )
 if (SCREAM_CIME_BUILD)
   list(APPEND CMAKE_MODULE_PATH
+    ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
