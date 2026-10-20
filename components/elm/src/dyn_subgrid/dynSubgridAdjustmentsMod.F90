@@ -105,37 +105,37 @@ contains
     real(r8) :: deadstemc_patch_temp
     !-----------------------------------------------------------------------
     associate(&
-      leafc          => veg_cs%leafc         (p), &
-      leafc_storage  => veg_cs%leafc_storage (p), &
-      leafc_xfer     => veg_cs%leafc_xfer    (p), &
-      frootc         => veg_cs%frootc        (p)   ,&
-      frootc_storage => veg_cs%frootc_storage(p)  ,&
-      frootc_xfer    => veg_cs%frootc_xfer   (p)  , &
-      livestemc      => veg_cs%livestemc     (p)        ,&
-      livestemc_storage => veg_cs%livestemc_storage(p)  ,&
-      livestemc_xfer    => veg_cs%livestemc_xfer   (p)  ,&
-      deadstemc         => veg_cs%deadstemc        (p)        ,&
-      deadstemc_storage => veg_cs%deadstemc_storage(p)  ,&
-      deadstemc_xfer    => veg_cs%deadstemc_xfer   (p) , &
-      livecrootc         => veg_cs%livecrootc      (p)    ,&
-      livecrootc_storage => veg_cs%livecrootc_storage (p) ,&
-      livecrootc_xfer    => veg_cs%livecrootc_xfer    (p) ,&
-      deadcrootc         => veg_cs%deadcrootc         (p) ,&
-      deadcrootc_storage => veg_cs%deadcrootc_storage (p) ,&
-      deadcrootc_xfer    => veg_cs%deadcrootc_xfer    (p), &
+      leafc          => veg_cs%core%leaf         (p), &
+      leafc_storage  => veg_cs%core%leaf_storage (p), &
+      leafc_xfer     => veg_cs%core%leaf_xfer    (p), &
+      frootc         => veg_cs%core%froot        (p)   ,&
+      frootc_storage => veg_cs%core%froot_storage(p)  ,&
+      frootc_xfer    => veg_cs%core%froot_xfer   (p)  , &
+      livestemc      => veg_cs%core%livestem     (p)        ,&
+      livestemc_storage => veg_cs%core%livestem_storage(p)  ,&
+      livestemc_xfer    => veg_cs%core%livestem_xfer   (p)  ,&
+      deadstemc         => veg_cs%core%deadstem        (p)        ,&
+      deadstemc_storage => veg_cs%core%deadstem_storage(p)  ,&
+      deadstemc_xfer    => veg_cs%core%deadstem_xfer   (p) , &
+      livecrootc         => veg_cs%core%livecroot      (p)    ,&
+      livecrootc_storage => veg_cs%core%livecroot_storage (p) ,&
+      livecrootc_xfer    => veg_cs%core%livecroot_xfer    (p) ,&
+      deadcrootc         => veg_cs%core%deadcroot         (p) ,&
+      deadcrootc_storage => veg_cs%core%deadcroot_storage (p) ,&
+      deadcrootc_xfer    => veg_cs%core%deadcroot_xfer    (p), &
       gresp_storage      => veg_cs%gresp_storage (p) ,&
       gresp_xfer         => veg_cs%gresp_xfer    (p), &
-      cpool              => veg_cs%cpool         (p), &
+      cpool              => veg_cs%core%pool         (p), &
       xsmrpool           => veg_cs%xsmrpool      (p), &
-      ctrunc             => veg_cs%ctrunc        (p), &
-      dispvegc           => veg_cs%dispvegc      (p), &
-      storvegc           => veg_cs%storvegc      (p), &
-      totvegc            => veg_cs%totvegc       (p), &
-      totpftc            => veg_cs%totpftc       (p), &
-      grainc             => veg_cs%grainc(p)        , &
-      grainc_storage     => veg_cs%grainc_storage(p), &
-      grainc_xfer        => veg_cs%grainc_xfer(p)   , &
-      cropseedc_deficit  => veg_cs%cropseedc_deficit(p) &
+      ctrunc             => veg_cs%core%trunc_sink        (p), &
+      dispvegc           => veg_cs%core%dispveg      (p), &
+      storvegc           => veg_cs%core%storveg      (p), &
+      totvegc            => veg_cs%core%totveg       (p), &
+      totpftc            => veg_cs%core%totpft       (p), &
+      grainc             => veg_cs%core%grain(p)        , &
+      grainc_storage     => veg_cs%core%grain_storage(p), &
+      grainc_xfer        => veg_cs%core%grain_xfer(p)   , &
+      cropseedc_deficit  => veg_cs%core%cropseed_deficit(p) &
       )
 
     patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
@@ -410,16 +410,16 @@ contains
     real(r8)        :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
     associate(&
-      decomp_cpools_vr    => col_cs%decomp_cpools_vr , &
-      ctrunc_vr           => col_cs%ctrunc_vr      , &
-      prod1c    => col_cs%prod1c , &
-      prod10c   => col_cs%prod10c, &
-      prod100c  => col_cs%prod100c &
+      decomp_cpools_vr    => col_cs%core%decomp_pools_vr , &
+      ctrunc_vr           => col_cs%core%trunc_sink_vr      , &
+      prod1c    => col_cs%core%prod1 , &
+      prod10c   => col_cs%core%prod10, &
+      prod100c  => col_cs%core%prod100 &
       )
     begc = bounds%begc
     endc = bounds%endc
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = 0._r8
+    col_cs%core%dyn_bal_adjustments(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
@@ -429,8 +429,8 @@ contains
                var         = decomp_cpools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
-          col_cs%dyn_cbal_adjustments(begc:endc) = &
-               col_cs%dyn_cbal_adjustments(begc:endc) + &
+          col_cs%core%dyn_bal_adjustments(begc:endc) = &
+               col_cs%core%dyn_bal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
@@ -443,8 +443,8 @@ contains
             var         = ctrunc_vr(begc:endc,j),     &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_cs%dyn_cbal_adjustments(begc:endc) = &
-            col_cs%dyn_cbal_adjustments(begc:endc) + &
+       col_cs%core%dyn_bal_adjustments(begc:endc) = &
+            col_cs%core%dyn_bal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
     end do
@@ -455,8 +455,8 @@ contains
          var         = prod1c(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = &
-         col_cs%dyn_cbal_adjustments(begc:endc) + &
+    col_cs%core%dyn_bal_adjustments(begc:endc) = &
+         col_cs%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling( column_state_updater, &
@@ -465,8 +465,8 @@ contains
          var         = prod10c(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = &
-         col_cs%dyn_cbal_adjustments(begc:endc) + &
+    col_cs%core%dyn_bal_adjustments(begc:endc) = &
+         col_cs%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling( column_state_updater, &
@@ -475,8 +475,8 @@ contains
          var         = prod100c(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_cs%dyn_cbal_adjustments(begc:endc) = &
-         col_cs%dyn_cbal_adjustments(begc:endc) + &
+    col_cs%core%dyn_bal_adjustments(begc:endc) = &
+         col_cs%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     end associate
@@ -540,35 +540,35 @@ contains
     real(r8)   :: deadstemn_patch_temp
     !-----------------------------------------------------------------------
     associate(&
-      leafn          => veg_ns%leafn         (p), &
-      leafn_storage  => veg_ns%leafn_storage (p), &
-      leafn_xfer     => veg_ns%leafn_xfer    (p), &
-      frootn         => veg_ns%frootn        (p), &
-      frootn_storage => veg_ns%frootn_storage(p), &
-      frootn_xfer    => veg_ns%frootn_xfer   (p), &
-      livestemn         => veg_ns%livestemn  (p), &
-      livestemn_storage => veg_ns%livestemn_storage (p) , &
-      livestemn_xfer    => veg_ns%livestemn_xfer    (p) , &
-      deadstemn         => veg_ns%deadstemn         (p) , &
-      deadstemn_storage => veg_ns%deadstemn_storage (p) , &
-      deadstemn_xfer    => veg_ns%deadstemn_xfer    (p) , &
-      livecrootn         => veg_ns%livecrootn       (p)   , &
-      livecrootn_storage => veg_ns%livecrootn_storage (p) , &
-      livecrootn_xfer    => veg_ns%livecrootn_xfer    (p) , &
-      deadcrootn         => veg_ns%deadcrootn         (p) , &
-      deadcrootn_storage => veg_ns%deadcrootn_storage (p) , &
-      deadcrootn_xfer    => veg_ns%deadcrootn_xfer    (p) , &
+      leafn          => veg_ns%core%leaf         (p), &
+      leafn_storage  => veg_ns%core%leaf_storage (p), &
+      leafn_xfer     => veg_ns%core%leaf_xfer    (p), &
+      frootn         => veg_ns%core%froot        (p), &
+      frootn_storage => veg_ns%core%froot_storage(p), &
+      frootn_xfer    => veg_ns%core%froot_xfer   (p), &
+      livestemn         => veg_ns%core%livestem  (p), &
+      livestemn_storage => veg_ns%core%livestem_storage (p) , &
+      livestemn_xfer    => veg_ns%core%livestem_xfer    (p) , &
+      deadstemn         => veg_ns%core%deadstem         (p) , &
+      deadstemn_storage => veg_ns%core%deadstem_storage (p) , &
+      deadstemn_xfer    => veg_ns%core%deadstem_xfer    (p) , &
+      livecrootn         => veg_ns%core%livecroot       (p)   , &
+      livecrootn_storage => veg_ns%core%livecroot_storage (p) , &
+      livecrootn_xfer    => veg_ns%core%livecroot_xfer    (p) , &
+      deadcrootn         => veg_ns%core%deadcroot         (p) , &
+      deadcrootn_storage => veg_ns%core%deadcroot_storage (p) , &
+      deadcrootn_xfer    => veg_ns%core%deadcroot_xfer    (p) , &
       retransn           => veg_ns%retransn (p) , &
-      npool              => veg_ns%npool    (p) , &
-      ntrunc             => veg_ns%ntrunc   (p)   , &
-      dispvegn           => veg_ns%dispvegn (p) , &
-      storvegn           => veg_ns%storvegn (p) , &
-      totvegn            => veg_ns%totvegn  (p) , &
-      totpftn            => veg_ns%totpftn  (p) , &
-      grainn             => veg_ns%grainn(p)        , &
-      grainn_storage     => veg_ns%grainn_storage(p), &
-      grainn_xfer        => veg_ns%grainn_xfer(p)   , &
-      cropseedn_deficit  => veg_ns%cropseedn_deficit(p) &
+      npool              => veg_ns%core%pool    (p) , &
+      ntrunc             => veg_ns%core%trunc_sink   (p)   , &
+      dispvegn           => veg_ns%core%dispveg (p) , &
+      storvegn           => veg_ns%core%storveg (p) , &
+      totvegn            => veg_ns%core%totveg  (p) , &
+      totpftn            => veg_ns%core%totpft  (p) , &
+      grainn             => veg_ns%core%grain(p)        , &
+      grainn_storage     => veg_ns%core%grain_storage(p), &
+      grainn_xfer        => veg_ns%core%grain_xfer(p)   , &
+      cropseedn_deficit  => veg_ns%core%cropseed_deficit(p) &
       )
 
     patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
@@ -831,14 +831,14 @@ contains
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
     associate(&
-      decomp_npools_vr    => col_ns%decomp_npools_vr , &
-      ntrunc_vr           => col_ns%ntrunc_vr      , &
+      decomp_npools_vr    => col_ns%core%decomp_pools_vr , &
+      ntrunc_vr           => col_ns%core%trunc_sink_vr      , &
       sminn_vr            => col_ns%sminn_vr ,  &
       smin_nh4_vr         => col_ns%smin_nh4_vr  , &
       smin_no3_vr         => col_ns%smin_no3_vr  , &
-      prod1n              => col_ns%prod1n       , &
-      prod10n             => col_ns%prod10n      , &
-      prod100n            => col_ns%prod100n     , &
+      prod1n              => col_ns%core%prod1       , &
+      prod10n             => col_ns%core%prod10      , &
+      prod100n            => col_ns%core%prod100     , &
       tan_g1              => col_ns%tan_g1       , &
       tan_g2              => col_ns%tan_g2       , &
       tan_g3              => col_ns%tan_g3       , &
@@ -866,7 +866,7 @@ contains
 
     begc = bounds%begc
     endc = bounds%endc
-    col_ns%dyn_nbal_adjustments(begc:endc) = 0._r8
+    col_ns%core%dyn_bal_adjustments(begc:endc) = 0._r8
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           call update_column_state_no_special_handling(column_state_updater, &
@@ -875,8 +875,8 @@ contains
                var         = decomp_npools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
 
-          col_ns%dyn_nbal_adjustments(begc:endc) = &
-               col_ns%dyn_nbal_adjustments(begc:endc) + &
+          col_ns%core%dyn_bal_adjustments(begc:endc) = &
+               col_ns%core%dyn_bal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
      
 
@@ -890,8 +890,8 @@ contains
             var         = ntrunc_vr(begc:endc,j),     &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-            col_ns%dyn_nbal_adjustments(begc:endc) + &
+       col_ns%core%dyn_bal_adjustments(begc:endc) = &
+            col_ns%core%dyn_bal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling(column_state_updater, &
@@ -900,8 +900,8 @@ contains
            var         = sminn_vr(begc:endc, j), &
            adjustment  = adjustment_one_level(begc:endc))
 
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-           col_ns%dyn_nbal_adjustments(begc:endc) + &
+       col_ns%core%dyn_bal_adjustments(begc:endc) = &
+           col_ns%core%dyn_bal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling(column_state_updater, &
@@ -923,8 +923,8 @@ contains
          adjustment  = adjustment_one_level(begc:endc))
 
     
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-          col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+          col_ns%core%dyn_bal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
     
 
@@ -934,8 +934,8 @@ contains
          var         = prod10n(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-          col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+          col_ns%core%dyn_bal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
     
 
@@ -946,8 +946,8 @@ contains
          adjustment  = adjustment_one_level(begc:endc))
 
     
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-          col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+          col_ns%core%dyn_bal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -956,8 +956,8 @@ contains
          var         = fan_totn(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -966,8 +966,8 @@ contains
          var         = tan_g1(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -976,8 +976,8 @@ contains
          var         = tan_g2(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -986,8 +986,8 @@ contains
          var         = tan_g3(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -996,8 +996,8 @@ contains
          var         = tan_s0(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1006,8 +1006,8 @@ contains
          var         = tan_s1(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1016,8 +1016,8 @@ contains
          var         = tan_s2(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1026,8 +1026,8 @@ contains
          var         = tan_s3(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1036,8 +1036,8 @@ contains
          var         = tan_f1(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1046,8 +1046,8 @@ contains
          var         = tan_f2(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1056,8 +1056,8 @@ contains
          var         = tan_f3(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1066,8 +1066,8 @@ contains
          var         = tan_f4(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1076,8 +1076,8 @@ contains
          var         = fert_u1(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1086,8 +1086,8 @@ contains
          var         = fert_u2(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1096,8 +1096,8 @@ contains
          var         = manure_u_grz(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1106,8 +1106,8 @@ contains
          var         = manure_a_grz(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1116,8 +1116,8 @@ contains
          var         = manure_r_grz(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1126,8 +1126,8 @@ contains
          var         = manure_u_app(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1136,8 +1136,8 @@ contains
          var         = manure_a_app(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1146,8 +1146,8 @@ contains
          var         = manure_r_app(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1156,8 +1156,8 @@ contains
          var         = manure_tan_stored(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1166,8 +1166,8 @@ contains
          var         = manure_n_stored(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling(column_state_updater, &
@@ -1176,8 +1176,8 @@ contains
          var         = fan_grz_fract(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
+    col_ns%core%dyn_bal_adjustments(begc:endc) = &
+         col_ns%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     !=======================================================!
@@ -1244,35 +1244,35 @@ contains
     real(r8)  :: deadstemp_patch_temp
     !-----------------------------------------------------------------------
     associate(&
-      leafp          => veg_ps%leafp         (p), &
-      leafp_storage  => veg_ps%leafp_storage (p), &
-      leafp_xfer     => veg_ps%leafp_xfer    (p), &
-      frootp         => veg_ps%frootp        (p)        ,&
-      frootp_storage => veg_ps%frootp_storage(p)  ,&
-      frootp_xfer    => veg_ps%frootp_xfer   (p) , &
-      livestemp         => veg_ps%livestemp  (p)              ,&
-      livestemp_storage => veg_ps%livestemp_storage  (p) ,&
-      livestemp_xfer    => veg_ps%livestemp_xfer     (p), &
-      deadstemp         => veg_ps%deadstemp          (p)       ,&
-      deadstemp_storage => veg_ps%deadstemp_storage  (p) ,&
-      deadstemp_xfer    => veg_ps%deadstemp_xfer     (p), &
-      livecrootp         => veg_ps%livecrootp        (p)   ,&
-      livecrootp_storage => veg_ps%livecrootp_storage(p) ,&
-      livecrootp_xfer    => veg_ps%livecrootp_xfer   (p), &
-      deadcrootp         => veg_ps%deadcrootp        (p)       ,&
-      deadcrootp_storage => veg_ps%deadcrootp_storage(p) ,&
-      deadcrootp_xfer    => veg_ps%deadcrootp_xfer   (p), &
+      leafp          => veg_ps%core%leaf         (p), &
+      leafp_storage  => veg_ps%core%leaf_storage (p), &
+      leafp_xfer     => veg_ps%core%leaf_xfer    (p), &
+      frootp         => veg_ps%core%froot        (p)        ,&
+      frootp_storage => veg_ps%core%froot_storage(p)  ,&
+      frootp_xfer    => veg_ps%core%froot_xfer   (p) , &
+      livestemp         => veg_ps%core%livestem  (p)              ,&
+      livestemp_storage => veg_ps%core%livestem_storage  (p) ,&
+      livestemp_xfer    => veg_ps%core%livestem_xfer     (p), &
+      deadstemp         => veg_ps%core%deadstem          (p)       ,&
+      deadstemp_storage => veg_ps%core%deadstem_storage  (p) ,&
+      deadstemp_xfer    => veg_ps%core%deadstem_xfer     (p), &
+      livecrootp         => veg_ps%core%livecroot        (p)   ,&
+      livecrootp_storage => veg_ps%core%livecroot_storage(p) ,&
+      livecrootp_xfer    => veg_ps%core%livecroot_xfer   (p), &
+      deadcrootp         => veg_ps%core%deadcroot        (p)       ,&
+      deadcrootp_storage => veg_ps%core%deadcroot_storage(p) ,&
+      deadcrootp_xfer    => veg_ps%core%deadcroot_xfer   (p), &
       retransp           => veg_ps%retransp (p) ,&
-      ppool              => veg_ps%ppool    (p), &
-      ptrunc             => veg_ps%ptrunc   (p)   , &
-      dispvegp           => veg_ps%dispvegp (p) , &
-      storvegp           => veg_ps%storvegp (p) , &
-      totvegp            => veg_ps%totvegp  (p) , &
-      totpftp            => veg_ps%totpftp  (p) , &
-      grainp             => veg_ps%grainp(p)        , &
-      grainp_storage     => veg_ps%grainp_storage(p), &
-      grainp_xfer        => veg_ps%grainp_xfer(p)   , &
-      cropseedp_deficit  => veg_ps%cropseedp_deficit(p) &
+      ppool              => veg_ps%core%pool    (p), &
+      ptrunc             => veg_ps%core%trunc_sink   (p)   , &
+      dispvegp           => veg_ps%core%dispveg (p) , &
+      storvegp           => veg_ps%core%storveg (p) , &
+      totvegp            => veg_ps%core%totveg  (p) , &
+      totpftp            => veg_ps%core%totpft  (p) , &
+      grainp             => veg_ps%core%grain(p)        , &
+      grainp_storage     => veg_ps%core%grain_storage(p), &
+      grainp_xfer        => veg_ps%core%grain_xfer(p)   , &
+      cropseedp_deficit  => veg_ps%core%cropseed_deficit(p) &
       )
       patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
       old_weight_was_zero = (patch_state_updater%pwtgcell_old(p) == 0._r8)
@@ -1533,22 +1533,22 @@ contains
     real(r8)          :: adjustment_one_level(bounds%begc:bounds%endc)
     !-----------------------------------------------------------------------
     associate(&
-      decomp_ppools_vr    => col_ps%decomp_ppools_vr , &
-      ptrunc_vr           => col_ps%ptrunc_vr      , &
+      decomp_ppools_vr    => col_ps%core%decomp_pools_vr , &
+      ptrunc_vr           => col_ps%core%trunc_sink_vr      , &
       solutionp_vr        => col_ps%solutionp_vr , &
       labilep_vr          => col_ps%labilep_vr , &
       secondp_vr          => col_ps%secondp_vr , &
       occlp_vr            => col_ps%occlp_vr , &
       primp_vr            => col_ps%primp_vr , &
-      prod1p              => col_ps%prod1p  , &
-      prod10p             => col_ps%prod10p , &
-      prod100p            => col_ps%prod100p &
+      prod1p              => col_ps%core%prod1  , &
+      prod10p             => col_ps%core%prod10 , &
+      prod100p            => col_ps%core%prod100 &
       )
 
     begc = bounds%begc
     endc = bounds%endc
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = 0._r8
+    col_ps%core%dyn_bal_adjustments(begc:endc) = 0._r8
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
 
@@ -1558,8 +1558,8 @@ contains
                var         = decomp_ppools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc) )
 
-          col_ps%dyn_pbal_adjustments(begc:endc) =      &
-               col_ps%dyn_pbal_adjustments(begc:endc) + &
+          col_ps%core%dyn_bal_adjustments(begc:endc) =      &
+               col_ps%core%dyn_bal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        end do
@@ -1572,8 +1572,8 @@ contains
             var         = ptrunc_vr(begc:endc,j),                &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-           col_ps%dyn_pbal_adjustments(begc:endc) + &
+       col_ps%core%dyn_bal_adjustments(begc:endc) =      &
+           col_ps%core%dyn_bal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling( column_state_updater, &
@@ -1582,8 +1582,8 @@ contains
             var         = solutionp_vr(begc:endc,j),             &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-           col_ps%dyn_pbal_adjustments(begc:endc) + &
+       col_ps%core%dyn_bal_adjustments(begc:endc) =      &
+           col_ps%core%dyn_bal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling( column_state_updater, &
@@ -1592,8 +1592,8 @@ contains
             var         = labilep_vr(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-           col_ps%dyn_pbal_adjustments(begc:endc) + &
+       col_ps%core%dyn_bal_adjustments(begc:endc) =      &
+           col_ps%core%dyn_bal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        !!
@@ -1603,8 +1603,8 @@ contains
             var         = secondp_vr(begc:endc,j),               &
             adjustment  = adjustment_one_level(begc:endc))
 
-       col_ps%dyn_pbal_adjustments(begc:endc) =      &
-            col_ps%dyn_pbal_adjustments(begc:endc) + &
+       col_ps%core%dyn_bal_adjustments(begc:endc) =      &
+            col_ps%core%dyn_bal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        call update_column_state_no_special_handling( column_state_updater, &
@@ -1626,8 +1626,8 @@ contains
          var         = prod1p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-   col_ps%dyn_pbal_adjustments(begc:endc) = &
-         col_ps%dyn_pbal_adjustments(begc:endc) + &
+   col_ps%core%dyn_bal_adjustments(begc:endc) = &
+         col_ps%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling( column_state_updater, &
@@ -1636,8 +1636,8 @@ contains
          var         = prod10p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
-         col_ps%dyn_pbal_adjustments(begc:endc) + &
+    col_ps%core%dyn_bal_adjustments(begc:endc) = &
+         col_ps%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     call update_column_state_no_special_handling( column_state_updater, &
@@ -1646,8 +1646,8 @@ contains
          var         = prod100p(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
-    col_ps%dyn_pbal_adjustments(begc:endc) = &
-         col_ps%dyn_pbal_adjustments(begc:endc) + &
+    col_ps%core%dyn_bal_adjustments(begc:endc) = &
+         col_ps%core%dyn_bal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
     end associate

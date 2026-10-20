@@ -623,7 +623,7 @@ contains
          end_totprodc              => grc_cs%end_totprodc          , & ! Input: [real(r8) (:)] (gC/m2) total column wood product carbon
          end_ctrunc                => grc_cs%end_ctrunc            , & ! Input: [real(r8) (:)] (gC/m2) total column truncation carbon sink
          end_cropseedc_deficit     => grc_cs%end_cropseedc_deficit , & ! Input: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
-         errcb                     => grc_cs%errcb                 , & ! Input: [real(r8) (:)] (gC/m^2) carbon mass balance error
+         errcb                     => grc_cs%core%balance_err                 , & ! Input: [real(r8) (:)] (gC/m^2) carbon mass balance error
          gpp                       => grc_cf%gpp                   , & ! Input: [real(r8) (:)] (gC/m2/s) gross primary production
          er                        => grc_cf%er                    , & ! Input: [real(r8) (:)] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          fire_closs                => grc_cf%fire_closs            , & ! Input: [real(r8) (:)] (gC/m2/s) total column-level fire C loss
@@ -633,9 +633,9 @@ contains
          hrv_xsmrpool_to_atm       => grc_cf%hrv_xsmrpool_to_atm   , & ! Input: [real(r8) (:)] (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             => grc_cf%som_c_leached         , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss from vertical transport
          som_c_yield               => grc_cf%somc_yield            , & ! Input: [real(r8) (:)] (gC/m^2/s)total SOM C loss by erosion
-         grc_dwt_conv_cflux        => grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:)] (gC/m^2/s) flux to atmosphere during transient run
-         grc_dwt_seedc_to_leaf     => grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:)] (gC/m^2/s) seed to leaf flux during transient run
-         grc_dwt_seedc_to_deadstem => grc_cf%dwt_seedc_to_deadstem   & !Input: [real(r8) (:)] (gC/m^2/s) seed to dead stem flux during transient run
+         grc_dwt_conv_cflux        => grc_cf%core%dwt_conv_flux        , & ! Input: [real(r8) (:)] (gC/m^2/s) flux to atmosphere during transient run
+         grc_dwt_seedc_to_leaf     => grc_cf%core%dwt_seed_to_leaf     , & ! Input: [real(r8) (:)] (gC/m^2/s) seed to leaf flux during transient run
+         grc_dwt_seedc_to_deadstem => grc_cf%core%dwt_seed_to_deadstem   & !Input: [real(r8) (:)] (gC/m^2/s) seed to dead stem flux during transient run
          )
 
       ip = p_inst
@@ -1135,7 +1135,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                          &
-         begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
+         begcb             =>    col_cs%core%balance_beg         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
          tcs_month_beg_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
          )
 
@@ -1182,7 +1182,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                          &
-         endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
+         endcb             =>    col_cs%core%balance_end         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
          tcs_month_end_grc =>    grc_cs%tcs_month_end   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the ending of a month
          )
 

@@ -618,88 +618,88 @@ contains
          bgtr                                =>    cnstate_vars%bgtr_patch                               , & ! Output: [real(r8)  (:)   ]  background transfer growth rate (1/s)
          lgsf                                =>    cnstate_vars%lgsf_patch                               , & ! Output: [real(r8)  (:)   ]  long growing season factor [0-1]
 
-         leafc_storage                       =>    veg_cs%leafc_storage                  , & ! Input:  [real(r8)  (:)   ]  (gC/m2) leaf C storage
-         frootc_storage                      =>    veg_cs%frootc_storage                 , & ! Input:  [real(r8)  (:)   ]  (gC/m2) fine root C storage
-         livestemc_storage                   =>    veg_cs%livestemc_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live stem C storage
-         deadstemc_storage                   =>    veg_cs%deadstemc_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead stem C storage
-         livecrootc_storage                  =>    veg_cs%livecrootc_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live coarse root C storage
-         deadcrootc_storage                  =>    veg_cs%deadcrootc_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead coarse root C storage
+         leafc_storage                       =>    veg_cs%core%leaf_storage                  , & ! Input:  [real(r8)  (:)   ]  (gC/m2) leaf C storage
+         frootc_storage                      =>    veg_cs%core%froot_storage                 , & ! Input:  [real(r8)  (:)   ]  (gC/m2) fine root C storage
+         livestemc_storage                   =>    veg_cs%core%livestem_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live stem C storage
+         deadstemc_storage                   =>    veg_cs%core%deadstem_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead stem C storage
+         livecrootc_storage                  =>    veg_cs%core%livecroot_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live coarse root C storage
+         deadcrootc_storage                  =>    veg_cs%core%deadcroot_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead coarse root C storage
          gresp_storage                       =>    veg_cs%gresp_storage                  , & ! Input:  [real(r8)  (:)   ]  (gC/m2) growth respiration storage
-         leafc_xfer                          =>    veg_cs%leafc_xfer                     , & ! Output:  [real(r8) (:)   ]  (gC/m2) leaf C transfer
-         frootc_xfer                         =>    veg_cs%frootc_xfer                    , & ! Output:  [real(r8) (:)   ]  (gC/m2) fine root C transfer
-         livestemc_xfer                      =>    veg_cs%livestemc_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) live stem C transfer
-         deadstemc_xfer                      =>    veg_cs%deadstemc_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead stem C transfer
-         livecrootc_xfer                     =>    veg_cs%livecrootc_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) live coarse root C transfer
-         deadcrootc_xfer                     =>    veg_cs%deadcrootc_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead coarse root C transfer
+         leafc_xfer                          =>    veg_cs%core%leaf_xfer                     , & ! Output:  [real(r8) (:)   ]  (gC/m2) leaf C transfer
+         frootc_xfer                         =>    veg_cs%core%froot_xfer                    , & ! Output:  [real(r8) (:)   ]  (gC/m2) fine root C transfer
+         livestemc_xfer                      =>    veg_cs%core%livestem_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) live stem C transfer
+         deadstemc_xfer                      =>    veg_cs%core%deadstem_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead stem C transfer
+         livecrootc_xfer                     =>    veg_cs%core%livecroot_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) live coarse root C transfer
+         deadcrootc_xfer                     =>    veg_cs%core%deadcroot_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead coarse root C transfer
 
-         leafn_storage                       =>    veg_ns%leafn_storage                , & ! Input:  [real(r8)  (:)   ]  (gN/m2) leaf N storage
-         frootn_storage                      =>    veg_ns%frootn_storage               , & ! Input:  [real(r8)  (:)   ]  (gN/m2) fine root N storage
-         livestemn_storage                   =>    veg_ns%livestemn_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live stem N storage
-         deadstemn_storage                   =>    veg_ns%deadstemn_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead stem N storage
-         livecrootn_storage                  =>    veg_ns%livecrootn_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live coarse root N storage
-         deadcrootn_storage                  =>    veg_ns%deadcrootn_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead coarse root N storage
+         leafn_storage                       =>    veg_ns%core%leaf_storage                , & ! Input:  [real(r8)  (:)   ]  (gN/m2) leaf N storage
+         frootn_storage                      =>    veg_ns%core%froot_storage               , & ! Input:  [real(r8)  (:)   ]  (gN/m2) fine root N storage
+         livestemn_storage                   =>    veg_ns%core%livestem_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live stem N storage
+         deadstemn_storage                   =>    veg_ns%core%deadstem_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead stem N storage
+         livecrootn_storage                  =>    veg_ns%core%livecroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live coarse root N storage
+         deadcrootn_storage                  =>    veg_ns%core%deadcroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead coarse root N storage
 
          !! phosphorus
-         leafp_storage                       =>    veg_ps%leafp_storage                , & ! Input:  [real(r8)  (:)   ]  (gP/m2) leaf P storage
-         frootp_storage                      =>    veg_ps%frootp_storage               , & ! Input:  [real(r8)  (:)   ]  (gP/m2) fine root P storage
-         livestemp_storage                   =>    veg_ps%livestemp_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live stem P storage
-         deadstemp_storage                   =>    veg_ps%deadstemp_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead stem P storage
-         livecrootp_storage                  =>    veg_ps%livecrootp_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live coarse root P storage
-         deadcrootp_storage                  =>    veg_ps%deadcrootp_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead coarse root P storage
+         leafp_storage                       =>    veg_ps%core%leaf_storage                , & ! Input:  [real(r8)  (:)   ]  (gP/m2) leaf P storage
+         frootp_storage                      =>    veg_ps%core%froot_storage               , & ! Input:  [real(r8)  (:)   ]  (gP/m2) fine root P storage
+         livestemp_storage                   =>    veg_ps%core%livestem_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live stem P storage
+         deadstemp_storage                   =>    veg_ps%core%deadstem_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead stem P storage
+         livecrootp_storage                  =>    veg_ps%core%livecroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live coarse root P storage
+         deadcrootp_storage                  =>    veg_ps%core%deadcroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead coarse root P storage
 
-         prev_leafc_to_litter                =>    veg_cf%prev_leafc_to_litter            , & ! Output: [real(r8)  (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
-         prev_frootc_to_litter               =>    veg_cf%prev_frootc_to_litter           , & ! Output: [real(r8)  (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
-         leafc_xfer_to_leafc                 =>    veg_cf%leafc_xfer_to_leafc             , & ! Output:  [real(r8) (:)   ]
-         frootc_xfer_to_frootc               =>    veg_cf%frootc_xfer_to_frootc           , & ! Output:  [real(r8) (:)   ]
-         livestemc_xfer_to_livestemc         =>    veg_cf%livestemc_xfer_to_livestemc     , & ! Output:  [real(r8) (:)   ]
-         deadstemc_xfer_to_deadstemc         =>    veg_cf%deadstemc_xfer_to_deadstemc     , & ! Output:  [real(r8) (:)   ]
-         livecrootc_xfer_to_livecrootc       =>    veg_cf%livecrootc_xfer_to_livecrootc   , & ! Output:  [real(r8) (:)   ]
-         deadcrootc_xfer_to_deadcrootc       =>    veg_cf%deadcrootc_xfer_to_deadcrootc   , & ! Output:  [real(r8) (:)   ]
-         leafc_storage_to_xfer               =>    veg_cf%leafc_storage_to_xfer           , & ! Output:  [real(r8) (:)   ]
-         frootc_storage_to_xfer              =>    veg_cf%frootc_storage_to_xfer          , & ! Output:  [real(r8) (:)   ]
-         livestemc_storage_to_xfer           =>    veg_cf%livestemc_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
-         deadstemc_storage_to_xfer           =>    veg_cf%deadstemc_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
-         livecrootc_storage_to_xfer          =>    veg_cf%livecrootc_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
-         deadcrootc_storage_to_xfer          =>    veg_cf%deadcrootc_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
+         prev_leafc_to_litter                =>    veg_cf%core%prev_leaf_to_litter            , & ! Output: [real(r8)  (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
+         prev_frootc_to_litter               =>    veg_cf%core%prev_froot_to_litter           , & ! Output: [real(r8)  (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
+         leafc_xfer_to_leafc                 =>    veg_cf%core%leaf_xfer_to_leaf             , & ! Output:  [real(r8) (:)   ]
+         frootc_xfer_to_frootc               =>    veg_cf%core%froot_xfer_to_froot           , & ! Output:  [real(r8) (:)   ]
+         livestemc_xfer_to_livestemc         =>    veg_cf%core%livestem_xfer_to_livestem     , & ! Output:  [real(r8) (:)   ]
+         deadstemc_xfer_to_deadstemc         =>    veg_cf%core%deadstem_xfer_to_deadstem     , & ! Output:  [real(r8) (:)   ]
+         livecrootc_xfer_to_livecrootc       =>    veg_cf%core%livecroot_xfer_to_livecroot   , & ! Output:  [real(r8) (:)   ]
+         deadcrootc_xfer_to_deadcrootc       =>    veg_cf%core%deadcroot_xfer_to_deadcroot   , & ! Output:  [real(r8) (:)   ]
+         leafc_storage_to_xfer               =>    veg_cf%core%leaf_storage_to_xfer           , & ! Output:  [real(r8) (:)   ]
+         frootc_storage_to_xfer              =>    veg_cf%core%froot_storage_to_xfer          , & ! Output:  [real(r8) (:)   ]
+         livestemc_storage_to_xfer           =>    veg_cf%core%livestem_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         deadstemc_storage_to_xfer           =>    veg_cf%core%deadstem_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         livecrootc_storage_to_xfer          =>    veg_cf%core%livecroot_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
+         deadcrootc_storage_to_xfer          =>    veg_cf%core%deadcroot_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
          gresp_storage_to_xfer               =>    veg_cf%gresp_storage_to_xfer           , & ! Output:  [real(r8) (:)   ]
 
-         leafn_xfer_to_leafn                 =>    veg_nf%leafn_xfer_to_leafn           , & ! Output:  [real(r8) (:)   ]
-         frootn_xfer_to_frootn               =>    veg_nf%frootn_xfer_to_frootn         , & ! Output:  [real(r8) (:)   ]
-         livestemn_xfer_to_livestemn         =>    veg_nf%livestemn_xfer_to_livestemn   , & ! Output:  [real(r8) (:)   ]
-         deadstemn_xfer_to_deadstemn         =>    veg_nf%deadstemn_xfer_to_deadstemn   , & ! Output:  [real(r8) (:)   ]
-         livecrootn_xfer_to_livecrootn       =>    veg_nf%livecrootn_xfer_to_livecrootn , & ! Output:  [real(r8) (:)   ]
-         deadcrootn_xfer_to_deadcrootn       =>    veg_nf%deadcrootn_xfer_to_deadcrootn , & ! Output:  [real(r8) (:)   ]
-         leafn_xfer                          =>    veg_ns%leafn_xfer                    , & ! Output:  [real(r8) (:)   ]  (gN/m2) leaf N transfer
-         frootn_xfer                         =>    veg_ns%frootn_xfer                   , & ! Output:  [real(r8) (:)   ]  (gN/m2) fine root N transfer
-         livestemn_xfer                      =>    veg_ns%livestemn_xfer                , & ! Output:  [real(r8) (:)   ]  (gN/m2) live stem N transfer
-         deadstemn_xfer                      =>    veg_ns%deadstemn_xfer                , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead stem N transfer
-         livecrootn_xfer                     =>    veg_ns%livecrootn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) live coarse root N transfer
-         deadcrootn_xfer                     =>    veg_ns%deadcrootn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead coarse root N transfer
-         leafn_storage_to_xfer               =>    veg_nf%leafn_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
-         frootn_storage_to_xfer              =>    veg_nf%frootn_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
-         livestemn_storage_to_xfer           =>    veg_nf%livestemn_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         deadstemn_storage_to_xfer           =>    veg_nf%deadstemn_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         livecrootn_storage_to_xfer          =>    veg_nf%livecrootn_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
-         deadcrootn_storage_to_xfer          =>    veg_nf%deadcrootn_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         leafn_xfer_to_leafn                 =>    veg_nf%core%leaf_xfer_to_leaf           , & ! Output:  [real(r8) (:)   ]
+         frootn_xfer_to_frootn               =>    veg_nf%core%froot_xfer_to_froot         , & ! Output:  [real(r8) (:)   ]
+         livestemn_xfer_to_livestemn         =>    veg_nf%core%livestem_xfer_to_livestem   , & ! Output:  [real(r8) (:)   ]
+         deadstemn_xfer_to_deadstemn         =>    veg_nf%core%deadstem_xfer_to_deadstem   , & ! Output:  [real(r8) (:)   ]
+         livecrootn_xfer_to_livecrootn       =>    veg_nf%core%livecroot_xfer_to_livecroot , & ! Output:  [real(r8) (:)   ]
+         deadcrootn_xfer_to_deadcrootn       =>    veg_nf%core%deadcroot_xfer_to_deadcroot , & ! Output:  [real(r8) (:)   ]
+         leafn_xfer                          =>    veg_ns%core%leaf_xfer                    , & ! Output:  [real(r8) (:)   ]  (gN/m2) leaf N transfer
+         frootn_xfer                         =>    veg_ns%core%froot_xfer                   , & ! Output:  [real(r8) (:)   ]  (gN/m2) fine root N transfer
+         livestemn_xfer                      =>    veg_ns%core%livestem_xfer                , & ! Output:  [real(r8) (:)   ]  (gN/m2) live stem N transfer
+         deadstemn_xfer                      =>    veg_ns%core%deadstem_xfer                , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead stem N transfer
+         livecrootn_xfer                     =>    veg_ns%core%livecroot_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) live coarse root N transfer
+         deadcrootn_xfer                     =>    veg_ns%core%deadcroot_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead coarse root N transfer
+         leafn_storage_to_xfer               =>    veg_nf%core%leaf_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
+         frootn_storage_to_xfer              =>    veg_nf%core%froot_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         livestemn_storage_to_xfer           =>    veg_nf%core%livestem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         deadstemn_storage_to_xfer           =>    veg_nf%core%deadstem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         livecrootn_storage_to_xfer          =>    veg_nf%core%livecroot_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadcrootn_storage_to_xfer          =>    veg_nf%core%deadcroot_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
 
-         leafp_xfer_to_leafp                 =>    veg_pf%leafp_xfer_to_leafp           , & ! Output:  [real(r8) (:)   ]
-         frootp_xfer_to_frootp               =>    veg_pf%frootp_xfer_to_frootp         , & ! Output:  [real(r8) (:)   ]
-         livestemp_xfer_to_livestemp         =>    veg_pf%livestemp_xfer_to_livestemp   , & ! Output:  [real(r8) (:)   ]
-         deadstemp_xfer_to_deadstemp         =>    veg_pf%deadstemp_xfer_to_deadstemp   , & ! Output:  [real(r8) (:)   ]
-         livecrootp_xfer_to_livecrootp       =>    veg_pf%livecrootp_xfer_to_livecrootp , & ! Output:  [real(r8) (:)   ]
-         deadcrootp_xfer_to_deadcrootp       =>    veg_pf%deadcrootp_xfer_to_deadcrootp , & ! Output:  [real(r8) (:)   ]
-         leafp_xfer                          =>    veg_ps%leafp_xfer                    , & ! Output:  [real(r8) (:)   ]  (gP/m2) leaf P transfer
-         frootp_xfer                         =>    veg_ps%frootp_xfer                   , & ! Output:  [real(r8) (:)   ]  (gP/m2) fine root P transfer
-         livestemp_xfer                      =>    veg_ps%livestemp_xfer                , & ! Output:  [real(r8) (:)   ]  (gP/m2) live stem P transfer
-         deadstemp_xfer                      =>    veg_ps%deadstemp_xfer                , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead stem P transfer
-         livecrootp_xfer                     =>    veg_ps%livecrootp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer
-         deadcrootp_xfer                     =>    veg_ps%deadcrootp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer
-         leafp_storage_to_xfer               =>    veg_pf%leafp_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
-         frootp_storage_to_xfer              =>    veg_pf%frootp_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
-         livestemp_storage_to_xfer           =>    veg_pf%livestemp_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         deadstemp_storage_to_xfer           =>    veg_pf%deadstemp_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         livecrootp_storage_to_xfer          =>    veg_pf%livecrootp_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
-         deadcrootp_storage_to_xfer          =>    veg_pf%deadcrootp_storage_to_xfer      & ! Output:  [real(r8) (:)   ]
+         leafp_xfer_to_leafp                 =>    veg_pf%core%leaf_xfer_to_leaf           , & ! Output:  [real(r8) (:)   ]
+         frootp_xfer_to_frootp               =>    veg_pf%core%froot_xfer_to_froot         , & ! Output:  [real(r8) (:)   ]
+         livestemp_xfer_to_livestemp         =>    veg_pf%core%livestem_xfer_to_livestem   , & ! Output:  [real(r8) (:)   ]
+         deadstemp_xfer_to_deadstemp         =>    veg_pf%core%deadstem_xfer_to_deadstem   , & ! Output:  [real(r8) (:)   ]
+         livecrootp_xfer_to_livecrootp       =>    veg_pf%core%livecroot_xfer_to_livecroot , & ! Output:  [real(r8) (:)   ]
+         deadcrootp_xfer_to_deadcrootp       =>    veg_pf%core%deadcroot_xfer_to_deadcroot , & ! Output:  [real(r8) (:)   ]
+         leafp_xfer                          =>    veg_ps%core%leaf_xfer                    , & ! Output:  [real(r8) (:)   ]  (gP/m2) leaf P transfer
+         frootp_xfer                         =>    veg_ps%core%froot_xfer                   , & ! Output:  [real(r8) (:)   ]  (gP/m2) fine root P transfer
+         livestemp_xfer                      =>    veg_ps%core%livestem_xfer                , & ! Output:  [real(r8) (:)   ]  (gP/m2) live stem P transfer
+         deadstemp_xfer                      =>    veg_ps%core%deadstem_xfer                , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead stem P transfer
+         livecrootp_xfer                     =>    veg_ps%core%livecroot_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer
+         deadcrootp_xfer                     =>    veg_ps%core%deadcroot_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer
+         leafp_storage_to_xfer               =>    veg_pf%core%leaf_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
+         frootp_storage_to_xfer              =>    veg_pf%core%froot_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         livestemp_storage_to_xfer           =>    veg_pf%core%livestem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         deadstemp_storage_to_xfer           =>    veg_pf%core%deadstem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         livecrootp_storage_to_xfer          =>    veg_pf%core%livecroot_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadcrootp_storage_to_xfer          =>    veg_pf%core%deadcroot_storage_to_xfer      & ! Output:  [real(r8) (:)   ]
 
          )
          dt = dtime_mod
@@ -971,88 +971,88 @@ contains
          bgtr                                =>    cnstate_vars%bgtr_patch                               , & ! Output:  [real(r8) (:)   ]  background transfer growth rate (1/s)
          annavg_t2m                          =>    cnstate_vars%annavg_t2m_patch                         , & ! Output:  [real(r8) (:)   ]  annual average 2m air temperature (K)
 
-         leafc_storage                       =>    veg_cs%leafc_storage                  , & ! Input:  [real(r8)  (:)   ]  (gC/m2) leaf C storage
-         frootc_storage                      =>    veg_cs%frootc_storage                 , & ! Input:  [real(r8)  (:)   ]  (gC/m2) fine root C storage
-         livestemc_storage                   =>    veg_cs%livestemc_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live stem C storage
-         deadstemc_storage                   =>    veg_cs%deadstemc_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead stem C storage
-         livecrootc_storage                  =>    veg_cs%livecrootc_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live coarse root C storage
-         deadcrootc_storage                  =>    veg_cs%deadcrootc_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead coarse root C storage
+         leafc_storage                       =>    veg_cs%core%leaf_storage                  , & ! Input:  [real(r8)  (:)   ]  (gC/m2) leaf C storage
+         frootc_storage                      =>    veg_cs%core%froot_storage                 , & ! Input:  [real(r8)  (:)   ]  (gC/m2) fine root C storage
+         livestemc_storage                   =>    veg_cs%core%livestem_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live stem C storage
+         deadstemc_storage                   =>    veg_cs%core%deadstem_storage              , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead stem C storage
+         livecrootc_storage                  =>    veg_cs%core%livecroot_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) live coarse root C storage
+         deadcrootc_storage                  =>    veg_cs%core%deadcroot_storage             , & ! Input:  [real(r8)  (:)   ]  (gC/m2) dead coarse root C storage
          gresp_storage                       =>    veg_cs%gresp_storage                  , & ! Input:  [real(r8)  (:)   ]  (gC/m2) growth respiration storage
-         leafc_xfer                          =>    veg_cs%leafc_xfer                     , & ! Output:  [real(r8) (:)   ]  (gC/m2) leaf C transfer
-         frootc_xfer                         =>    veg_cs%frootc_xfer                    , & ! Output:  [real(r8) (:)   ]  (gC/m2) fine root C transfer
-         livestemc_xfer                      =>    veg_cs%livestemc_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) live stem C transfer
-         deadstemc_xfer                      =>    veg_cs%deadstemc_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead stem C transfer
-         livecrootc_xfer                     =>    veg_cs%livecrootc_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) live coarse root C transfer
-         deadcrootc_xfer                     =>    veg_cs%deadcrootc_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead coarse root C transfer
+         leafc_xfer                          =>    veg_cs%core%leaf_xfer                     , & ! Output:  [real(r8) (:)   ]  (gC/m2) leaf C transfer
+         frootc_xfer                         =>    veg_cs%core%froot_xfer                    , & ! Output:  [real(r8) (:)   ]  (gC/m2) fine root C transfer
+         livestemc_xfer                      =>    veg_cs%core%livestem_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) live stem C transfer
+         deadstemc_xfer                      =>    veg_cs%core%deadstem_xfer                 , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead stem C transfer
+         livecrootc_xfer                     =>    veg_cs%core%livecroot_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) live coarse root C transfer
+         deadcrootc_xfer                     =>    veg_cs%core%deadcroot_xfer                , & ! Output:  [real(r8) (:)   ]  (gC/m2) dead coarse root C transfer
 
-         leafn_storage                       =>    veg_ns%leafn_storage                , & ! Input:  [real(r8)  (:)   ]  (gN/m2) leaf N storage
-         frootn_storage                      =>    veg_ns%frootn_storage               , & ! Input:  [real(r8)  (:)   ]  (gN/m2) fine root N storage
-         livestemn_storage                   =>    veg_ns%livestemn_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live stem N storage
-         deadstemn_storage                   =>    veg_ns%deadstemn_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead stem N storage
-         livecrootn_storage                  =>    veg_ns%livecrootn_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live coarse root N storage
-         deadcrootn_storage                  =>    veg_ns%deadcrootn_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead coarse root N storage
-         leafn_xfer                          =>    veg_ns%leafn_xfer                   , & ! Output:  [real(r8) (:)   ]  (gN/m2) leaf N transfer
-         frootn_xfer                         =>    veg_ns%frootn_xfer                  , & ! Output:  [real(r8) (:)   ]  (gN/m2) fine root N transfer
-         livestemn_xfer                      =>    veg_ns%livestemn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) live stem N transfer
-         deadstemn_xfer                      =>    veg_ns%deadstemn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead stem N transfer
-         livecrootn_xfer                     =>    veg_ns%livecrootn_xfer              , & ! Output:  [real(r8) (:)   ]  (gN/m2) live coarse root N transfer
-         deadcrootn_xfer                     =>    veg_ns%deadcrootn_xfer              , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead coarse root N transfer
+         leafn_storage                       =>    veg_ns%core%leaf_storage                , & ! Input:  [real(r8)  (:)   ]  (gN/m2) leaf N storage
+         frootn_storage                      =>    veg_ns%core%froot_storage               , & ! Input:  [real(r8)  (:)   ]  (gN/m2) fine root N storage
+         livestemn_storage                   =>    veg_ns%core%livestem_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live stem N storage
+         deadstemn_storage                   =>    veg_ns%core%deadstem_storage            , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead stem N storage
+         livecrootn_storage                  =>    veg_ns%core%livecroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) live coarse root N storage
+         deadcrootn_storage                  =>    veg_ns%core%deadcroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gN/m2) dead coarse root N storage
+         leafn_xfer                          =>    veg_ns%core%leaf_xfer                   , & ! Output:  [real(r8) (:)   ]  (gN/m2) leaf N transfer
+         frootn_xfer                         =>    veg_ns%core%froot_xfer                  , & ! Output:  [real(r8) (:)   ]  (gN/m2) fine root N transfer
+         livestemn_xfer                      =>    veg_ns%core%livestem_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) live stem N transfer
+         deadstemn_xfer                      =>    veg_ns%core%deadstem_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead stem N transfer
+         livecrootn_xfer                     =>    veg_ns%core%livecroot_xfer              , & ! Output:  [real(r8) (:)   ]  (gN/m2) live coarse root N transfer
+         deadcrootn_xfer                     =>    veg_ns%core%deadcroot_xfer              , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead coarse root N transfer
 
 
-         leafp_storage                       =>    veg_ps%leafp_storage                , & ! Input:  [real(r8)  (:)   ]  (gP/m2) leaf P storage
-         frootp_storage                      =>    veg_ps%frootp_storage               , & ! Input:  [real(r8)  (:)   ]  (gP/m2) fine root P storage
-         livestemp_storage                   =>    veg_ps%livestemp_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live stem P storage
-         deadstemp_storage                   =>    veg_ps%deadstemp_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead stem P storage
-         livecrootp_storage                  =>    veg_ps%livecrootp_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live coarse root P storage
-         deadcrootp_storage                  =>    veg_ps%deadcrootp_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead coarse root P storage
-         leafp_xfer                          =>    veg_ps%leafp_xfer                   , & ! Output:  [real(r8) (:)   ]  (gP/m2) leaf P transfer
-         frootp_xfer                         =>    veg_ps%frootp_xfer                  , & ! Output:  [real(r8) (:)   ]  (gP/m2) fine root P transfer
-         livestemp_xfer                      =>    veg_ps%livestemp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) live stem P transfer
-         deadstemp_xfer                      =>    veg_ps%deadstemp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead stem P transfer
-         livecrootp_xfer                     =>    veg_ps%livecrootp_xfer              , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer
-         deadcrootp_xfer                     =>    veg_ps%deadcrootp_xfer              , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer
+         leafp_storage                       =>    veg_ps%core%leaf_storage                , & ! Input:  [real(r8)  (:)   ]  (gP/m2) leaf P storage
+         frootp_storage                      =>    veg_ps%core%froot_storage               , & ! Input:  [real(r8)  (:)   ]  (gP/m2) fine root P storage
+         livestemp_storage                   =>    veg_ps%core%livestem_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live stem P storage
+         deadstemp_storage                   =>    veg_ps%core%deadstem_storage            , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead stem P storage
+         livecrootp_storage                  =>    veg_ps%core%livecroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) live coarse root P storage
+         deadcrootp_storage                  =>    veg_ps%core%deadcroot_storage           , & ! Input:  [real(r8)  (:)   ]  (gP/m2) dead coarse root P storage
+         leafp_xfer                          =>    veg_ps%core%leaf_xfer                   , & ! Output:  [real(r8) (:)   ]  (gP/m2) leaf P transfer
+         frootp_xfer                         =>    veg_ps%core%froot_xfer                  , & ! Output:  [real(r8) (:)   ]  (gP/m2) fine root P transfer
+         livestemp_xfer                      =>    veg_ps%core%livestem_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) live stem P transfer
+         deadstemp_xfer                      =>    veg_ps%core%deadstem_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead stem P transfer
+         livecrootp_xfer                     =>    veg_ps%core%livecroot_xfer              , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer
+         deadcrootp_xfer                     =>    veg_ps%core%deadcroot_xfer              , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer
 
-         prev_leafc_to_litter                =>    veg_cf%prev_leafc_to_litter            , & ! Output:  [real(r8) (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
-         prev_frootc_to_litter               =>    veg_cf%prev_frootc_to_litter           , & ! Output:  [real(r8) (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
-         leafc_xfer_to_leafc                 =>    veg_cf%leafc_xfer_to_leafc             , & ! Output:  [real(r8) (:)   ]
-         frootc_xfer_to_frootc               =>    veg_cf%frootc_xfer_to_frootc           , & ! Output:  [real(r8) (:)   ]
-         livestemc_xfer_to_livestemc         =>    veg_cf%livestemc_xfer_to_livestemc     , & ! Output:  [real(r8) (:)   ]
-         deadstemc_xfer_to_deadstemc         =>    veg_cf%deadstemc_xfer_to_deadstemc     , & ! Output:  [real(r8) (:)   ]
-         livecrootc_xfer_to_livecrootc       =>    veg_cf%livecrootc_xfer_to_livecrootc   , & ! Output:  [real(r8) (:)   ]
-         deadcrootc_xfer_to_deadcrootc       =>    veg_cf%deadcrootc_xfer_to_deadcrootc   , & ! Output:  [real(r8) (:)   ]
-         leafc_storage_to_xfer               =>    veg_cf%leafc_storage_to_xfer           , & ! Output:  [real(r8) (:)   ]
-         frootc_storage_to_xfer              =>    veg_cf%frootc_storage_to_xfer          , & ! Output:  [real(r8) (:)   ]
-         livestemc_storage_to_xfer           =>    veg_cf%livestemc_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
-         deadstemc_storage_to_xfer           =>    veg_cf%deadstemc_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
-         livecrootc_storage_to_xfer          =>    veg_cf%livecrootc_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
-         deadcrootc_storage_to_xfer          =>    veg_cf%deadcrootc_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
+         prev_leafc_to_litter                =>    veg_cf%core%prev_leaf_to_litter            , & ! Output:  [real(r8) (:)   ]  previous timestep leaf C litterfall flux (gC/m2/s)
+         prev_frootc_to_litter               =>    veg_cf%core%prev_froot_to_litter           , & ! Output:  [real(r8) (:)   ]  previous timestep froot C litterfall flux (gC/m2/s)
+         leafc_xfer_to_leafc                 =>    veg_cf%core%leaf_xfer_to_leaf             , & ! Output:  [real(r8) (:)   ]
+         frootc_xfer_to_frootc               =>    veg_cf%core%froot_xfer_to_froot           , & ! Output:  [real(r8) (:)   ]
+         livestemc_xfer_to_livestemc         =>    veg_cf%core%livestem_xfer_to_livestem     , & ! Output:  [real(r8) (:)   ]
+         deadstemc_xfer_to_deadstemc         =>    veg_cf%core%deadstem_xfer_to_deadstem     , & ! Output:  [real(r8) (:)   ]
+         livecrootc_xfer_to_livecrootc       =>    veg_cf%core%livecroot_xfer_to_livecroot   , & ! Output:  [real(r8) (:)   ]
+         deadcrootc_xfer_to_deadcrootc       =>    veg_cf%core%deadcroot_xfer_to_deadcroot   , & ! Output:  [real(r8) (:)   ]
+         leafc_storage_to_xfer               =>    veg_cf%core%leaf_storage_to_xfer           , & ! Output:  [real(r8) (:)   ]
+         frootc_storage_to_xfer              =>    veg_cf%core%froot_storage_to_xfer          , & ! Output:  [real(r8) (:)   ]
+         livestemc_storage_to_xfer           =>    veg_cf%core%livestem_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         deadstemc_storage_to_xfer           =>    veg_cf%core%deadstem_storage_to_xfer       , & ! Output:  [real(r8) (:)   ]
+         livecrootc_storage_to_xfer          =>    veg_cf%core%livecroot_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
+         deadcrootc_storage_to_xfer          =>    veg_cf%core%deadcroot_storage_to_xfer      , & ! Output:  [real(r8) (:)   ]
          gresp_storage_to_xfer               =>    veg_cf%gresp_storage_to_xfer           , & ! Output:  [real(r8) (:)   ]
 
-         leafn_xfer_to_leafn                 =>    veg_nf%leafn_xfer_to_leafn           , & ! Output:  [real(r8) (:)   ]
-         frootn_xfer_to_frootn               =>    veg_nf%frootn_xfer_to_frootn         , & ! Output:  [real(r8) (:)   ]
-         livestemn_xfer_to_livestemn         =>    veg_nf%livestemn_xfer_to_livestemn   , & ! Output:  [real(r8) (:)   ]
-         deadstemn_xfer_to_deadstemn         =>    veg_nf%deadstemn_xfer_to_deadstemn   , & ! Output:  [real(r8) (:)   ]
-         livecrootn_xfer_to_livecrootn       =>    veg_nf%livecrootn_xfer_to_livecrootn , & ! Output:  [real(r8) (:)   ]
-         deadcrootn_xfer_to_deadcrootn       =>    veg_nf%deadcrootn_xfer_to_deadcrootn , & ! Output:  [real(r8) (:)   ]
-         leafn_storage_to_xfer               =>    veg_nf%leafn_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
-         frootn_storage_to_xfer              =>    veg_nf%frootn_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
-         livestemn_storage_to_xfer           =>    veg_nf%livestemn_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         deadstemn_storage_to_xfer           =>    veg_nf%deadstemn_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         livecrootn_storage_to_xfer          =>    veg_nf%livecrootn_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
-         deadcrootn_storage_to_xfer          =>    veg_nf%deadcrootn_storage_to_xfer    ,  & ! Output:  [real(r8) (:)   ]
+         leafn_xfer_to_leafn                 =>    veg_nf%core%leaf_xfer_to_leaf           , & ! Output:  [real(r8) (:)   ]
+         frootn_xfer_to_frootn               =>    veg_nf%core%froot_xfer_to_froot         , & ! Output:  [real(r8) (:)   ]
+         livestemn_xfer_to_livestemn         =>    veg_nf%core%livestem_xfer_to_livestem   , & ! Output:  [real(r8) (:)   ]
+         deadstemn_xfer_to_deadstemn         =>    veg_nf%core%deadstem_xfer_to_deadstem   , & ! Output:  [real(r8) (:)   ]
+         livecrootn_xfer_to_livecrootn       =>    veg_nf%core%livecroot_xfer_to_livecroot , & ! Output:  [real(r8) (:)   ]
+         deadcrootn_xfer_to_deadcrootn       =>    veg_nf%core%deadcroot_xfer_to_deadcroot , & ! Output:  [real(r8) (:)   ]
+         leafn_storage_to_xfer               =>    veg_nf%core%leaf_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
+         frootn_storage_to_xfer              =>    veg_nf%core%froot_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         livestemn_storage_to_xfer           =>    veg_nf%core%livestem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         deadstemn_storage_to_xfer           =>    veg_nf%core%deadstem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         livecrootn_storage_to_xfer          =>    veg_nf%core%livecroot_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadcrootn_storage_to_xfer          =>    veg_nf%core%deadcroot_storage_to_xfer    ,  & ! Output:  [real(r8) (:)   ]
 
-         leafp_xfer_to_leafp                 =>    veg_pf%leafp_xfer_to_leafp           , & ! Output:  [real(r8) (:)   ]
-         frootp_xfer_to_frootp               =>    veg_pf%frootp_xfer_to_frootp         , & ! Output:  [real(r8) (:)   ]
-         livestemp_xfer_to_livestemp         =>    veg_pf%livestemp_xfer_to_livestemp   , & ! Output:  [real(r8) (:)   ]
-         deadstemp_xfer_to_deadstemp         =>    veg_pf%deadstemp_xfer_to_deadstemp   , & ! Output:  [real(r8) (:)   ]
-         livecrootp_xfer_to_livecrootp       =>    veg_pf%livecrootp_xfer_to_livecrootp , & ! Output:  [real(r8) (:)   ]
-         deadcrootp_xfer_to_deadcrootp       =>    veg_pf%deadcrootp_xfer_to_deadcrootp , & ! Output:  [real(r8) (:)   ]
-         leafp_storage_to_xfer               =>    veg_pf%leafp_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
-         frootp_storage_to_xfer              =>    veg_pf%frootp_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
-         livestemp_storage_to_xfer           =>    veg_pf%livestemp_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         deadstemp_storage_to_xfer           =>    veg_pf%deadstemp_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
-         livecrootp_storage_to_xfer          =>    veg_pf%livecrootp_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
-         deadcrootp_storage_to_xfer          =>    veg_pf%deadcrootp_storage_to_xfer      & ! Output:  [real(r8) (:)   ]
+         leafp_xfer_to_leafp                 =>    veg_pf%core%leaf_xfer_to_leaf           , & ! Output:  [real(r8) (:)   ]
+         frootp_xfer_to_frootp               =>    veg_pf%core%froot_xfer_to_froot         , & ! Output:  [real(r8) (:)   ]
+         livestemp_xfer_to_livestemp         =>    veg_pf%core%livestem_xfer_to_livestem   , & ! Output:  [real(r8) (:)   ]
+         deadstemp_xfer_to_deadstemp         =>    veg_pf%core%deadstem_xfer_to_deadstem   , & ! Output:  [real(r8) (:)   ]
+         livecrootp_xfer_to_livecrootp       =>    veg_pf%core%livecroot_xfer_to_livecroot , & ! Output:  [real(r8) (:)   ]
+         deadcrootp_xfer_to_deadcrootp       =>    veg_pf%core%deadcroot_xfer_to_deadcroot , & ! Output:  [real(r8) (:)   ]
+         leafp_storage_to_xfer               =>    veg_pf%core%leaf_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
+         frootp_storage_to_xfer              =>    veg_pf%core%froot_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
+         livestemp_storage_to_xfer           =>    veg_pf%core%livestem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         deadstemp_storage_to_xfer           =>    veg_pf%core%deadstem_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
+         livecrootp_storage_to_xfer          =>    veg_pf%core%livecroot_storage_to_xfer    , & ! Output:  [real(r8) (:)   ]
+         deadcrootp_storage_to_xfer          =>    veg_pf%core%deadcroot_storage_to_xfer      & ! Output:  [real(r8) (:)   ]
 
          )
 
@@ -1487,19 +1487,19 @@ contains
          onset_counter      =>    cnstate_vars%onset_counter_patch             , & ! Output: [real(r8) (:) ]  onset counter
          offset_counter     =>    cnstate_vars%offset_counter_patch            , & ! Output: [real(r8) (:) ]  offset counter
 
-         leafc_xfer         =>    veg_cs%leafc_xfer            , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
+         leafc_xfer         =>    veg_cs%core%leaf_xfer            , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
-         crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf     , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
+         crop_seedc_to_leaf =>    veg_cf%core%crop_seed_to_leaf     , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
 
          fert_counter       =>    veg_nf%fert_counter         , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
-         leafn_xfer         =>    veg_ns%leafn_xfer          , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
-         crop_seedn_to_leaf =>    veg_nf%crop_seedn_to_leaf   , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level
+         leafn_xfer         =>    veg_ns%core%leaf_xfer          , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
+         crop_seedn_to_leaf =>    veg_nf%core%crop_seed_to_leaf   , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level
          crpyld             =>    crop_vars%crpyld_patch                       , & ! Output: [real(r8) ):)]  harvested crop (bu/acre)
          dmyield            =>    crop_vars%dmyield_patch                      , & ! Output: [real(r8) ):)]  dry matter harvested crop (t/ha)
          !NEW TO MASTER
          leafcp             =>    veg_vp%leafcp                                , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
-         leafp_xfer         =>    veg_ps%leafp_xfer        , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
-         crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
+         leafp_xfer         =>    veg_ps%core%leaf_xfer        , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
+         crop_seedp_to_leaf =>    veg_pf%core%crop_seed_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
          synthfert          =>    veg_nf%synthfert          , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
          manure             =>    veg_nf%manure             , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
          fert_p             =>    veg_pf%fert_p             , & ! Output: [real(r8) (:) ]  (gP/m2/s) P fertilizer applied each timestep
@@ -2052,22 +2052,22 @@ contains
          gddmaturity        =>    cnstate_vars%gddmaturity_patch      , & ! Output: [real(r8) (:) ]  gdd needed to harvest
          huileaf            =>    cnstate_vars%huileaf_patch          , & ! Output: [real(r8) (:) ]  heat unit index needed from planting to leaf emergence
 
-         leafc_xfer         =>    veg_cs%leafc_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
+         leafc_xfer         =>    veg_cs%core%leaf_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
-         crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
+         crop_seedc_to_leaf =>    veg_cf%core%crop_seed_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
 
          synthfert          =>    veg_nf%synthfert                    , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
          manure             =>    veg_nf%manure                       , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
          fert_p             =>    veg_pf%fert_p                       , & ! Output:  [real(r8) (:) ] (gP/m2/s) phosphorus fertilizer applied each timestep
          fert_counter       =>    veg_nf%fert_counter                 , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
 
-         leafn_xfer         =>    veg_ns%leafn_xfer                   , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
+         leafn_xfer         =>    veg_ns%core%leaf_xfer                   , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
 
-         crop_seedn_to_leaf =>    veg_nf%crop_seedn_to_leaf           , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level
+         crop_seedn_to_leaf =>    veg_nf%core%crop_seed_to_leaf           , & ! Output: [real(r8) (:) ]  (gN/m2/s) seed source to PFT-level
 
-         leafp_xfer         =>    veg_ps%leafp_xfer                   , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
+         leafp_xfer         =>    veg_ps%core%leaf_xfer                   , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
 
-         crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf             & ! Output [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
+         crop_seedp_to_leaf =>    veg_pf%core%crop_seed_to_leaf             & ! Output [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
          )
 
       ! get time info
@@ -2440,10 +2440,10 @@ contains
          wdd             => crop_vars%wdd_patch             , & ! Output: [integer  (:) ]  winter wheat weighted cumulated degree days
          tcrown          => crop_vars%tcrown_patch          , & ! Output: [integer  (:) ]  crown temperature
          vf              => crop_vars%vf_patch              , & ! Output: [real(r8) (:) ]  vernalization factor
-         leafc_to_litter => veg_cf%leafc_to_litter          , & ! Input:  [real(r8) (:) ]  leaf C litterfall (gC/m2/s)
-         leafn_to_litter => veg_nf%leafn_to_litter          , & ! Output: [real(r8) (:) ]  leaf N litterfall (gN/m2/s)
-         leafc           => veg_cs%leafc                    , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
-         leafn           => veg_ns%leafn                    , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
+         leafc_to_litter => veg_cf%core%leaf_to_litter          , & ! Input:  [real(r8) (:) ]  leaf C litterfall (gC/m2/s)
+         leafn_to_litter => veg_nf%core%leaf_to_litter          , & ! Output: [real(r8) (:) ]  leaf N litterfall (gN/m2/s)
+         leafc           => veg_cs%core%leaf                    , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
+         leafn           => veg_ns%core%leaf                    , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
          lflitcn         => veg_vp%lflitcn                  , & ! Input:  [real(r8) (:) ]  leaf litter C:N (gC/gN)
          t_ref2m         => veg_es%t_ref2m                  , & ! Input:  [real(r8) (:) ]  2m air temperature (K)
          snow_depth      => col_ws%snow_depth                 & ! Input:  [real(r8) (:) ]  snow height (m)
@@ -2749,49 +2749,49 @@ contains
          onset_counter                       =>    cnstate_vars%onset_counter_patch                        , & ! Input:  [real(r8)  (:) ]  onset days counter
          bgtr                                =>    cnstate_vars%bgtr_patch                                 , & ! Input:  [real(r8)  (:) ]  background transfer growth rate (1/s)
 
-         leafc_xfer                          =>    veg_cs%leafc_xfer                     , & ! Input:  [real(r8)  (:) ]  (gC/m2) leaf C transfer
-         frootc_xfer                         =>    veg_cs%frootc_xfer                    , & ! Input:  [real(r8)  (:) ]  (gC/m2) fine root C transfer
-         livestemc_xfer                      =>    veg_cs%livestemc_xfer                 , & ! Input:  [real(r8)  (:) ]  (gC/m2) live stem C transfer
-         deadstemc_xfer                      =>    veg_cs%deadstemc_xfer                 , & ! Input:  [real(r8)  (:) ]  (gC/m2) dead stem C transfer
-         livecrootc_xfer                     =>    veg_cs%livecrootc_xfer                , & ! Input:  [real(r8)  (:) ]  (gC/m2) live coarse root C transfer
-         deadcrootc_xfer                     =>    veg_cs%deadcrootc_xfer                , & ! Input:  [real(r8)  (:) ]  (gC/m2) dead coarse root C transfer
+         leafc_xfer                          =>    veg_cs%core%leaf_xfer                     , & ! Input:  [real(r8)  (:) ]  (gC/m2) leaf C transfer
+         frootc_xfer                         =>    veg_cs%core%froot_xfer                    , & ! Input:  [real(r8)  (:) ]  (gC/m2) fine root C transfer
+         livestemc_xfer                      =>    veg_cs%core%livestem_xfer                 , & ! Input:  [real(r8)  (:) ]  (gC/m2) live stem C transfer
+         deadstemc_xfer                      =>    veg_cs%core%deadstem_xfer                 , & ! Input:  [real(r8)  (:) ]  (gC/m2) dead stem C transfer
+         livecrootc_xfer                     =>    veg_cs%core%livecroot_xfer                , & ! Input:  [real(r8)  (:) ]  (gC/m2) live coarse root C transfer
+         deadcrootc_xfer                     =>    veg_cs%core%deadcroot_xfer                , & ! Input:  [real(r8)  (:) ]  (gC/m2) dead coarse root C transfer
 
-         leafn_xfer                          =>    veg_ns%leafn_xfer                   , & ! Input:  [real(r8)  (:) ]  (gN/m2) leaf N transfer
-         frootn_xfer                         =>    veg_ns%frootn_xfer                  , & ! Input:  [real(r8)  (:) ]  (gN/m2) fine root N transfer
-         livestemn_xfer                      =>    veg_ns%livestemn_xfer               , & ! Input:  [real(r8)  (:) ]  (gN/m2) live stem N transfer
-         deadstemn_xfer                      =>    veg_ns%deadstemn_xfer               , & ! Input:  [real(r8)  (:) ]  (gN/m2) dead stem N transfer
-         livecrootn_xfer                     =>    veg_ns%livecrootn_xfer              , & ! Input:  [real(r8)  (:) ]  (gN/m2) live coarse root N transfer
-         deadcrootn_xfer                     =>    veg_ns%deadcrootn_xfer              , & ! Input:  [real(r8)  (:) ]  (gN/m2) dead coarse root N transfer
-
-
-         leafp_xfer                          =>    veg_ps%leafp_xfer                   , & ! Input:  [real(r8)(:)   ]  (gP/m2) leaf P transfer
-         frootp_xfer                         =>    veg_ps%frootp_xfer                  , & ! Input:  [real(r8)(:)   ]  (gP/m2) fine root P transfer
-         livestemp_xfer                      =>    veg_ps%livestemp_xfer               , & ! Input:  [real(r8)(:)   ]  (gP/m2) live stem P transfer
-         deadstemp_xfer                      =>    veg_ps%deadstemp_xfer               , & ! Input:  [real(r8)(:)   ]  (gP/m2) dead stem P transfer
-         livecrootp_xfer                     =>    veg_ps%livecrootp_xfer              , & ! Input:  [real(r8)(:)   ]  (gP/m2) live coarse root P transfer
-         deadcrootp_xfer                     =>    veg_ps%deadcrootp_xfer              , & ! Input:  [real(r8)(:)   ]  (gP/m2) dead coarse root P transfer
+         leafn_xfer                          =>    veg_ns%core%leaf_xfer                   , & ! Input:  [real(r8)  (:) ]  (gN/m2) leaf N transfer
+         frootn_xfer                         =>    veg_ns%core%froot_xfer                  , & ! Input:  [real(r8)  (:) ]  (gN/m2) fine root N transfer
+         livestemn_xfer                      =>    veg_ns%core%livestem_xfer               , & ! Input:  [real(r8)  (:) ]  (gN/m2) live stem N transfer
+         deadstemn_xfer                      =>    veg_ns%core%deadstem_xfer               , & ! Input:  [real(r8)  (:) ]  (gN/m2) dead stem N transfer
+         livecrootn_xfer                     =>    veg_ns%core%livecroot_xfer              , & ! Input:  [real(r8)  (:) ]  (gN/m2) live coarse root N transfer
+         deadcrootn_xfer                     =>    veg_ns%core%deadcroot_xfer              , & ! Input:  [real(r8)  (:) ]  (gN/m2) dead coarse root N transfer
 
 
-         leafc_xfer_to_leafc                 =>    veg_cf%leafc_xfer_to_leafc             , & ! Output:  [real(r8) (:) ]
-         frootc_xfer_to_frootc               =>    veg_cf%frootc_xfer_to_frootc           , & ! Output:  [real(r8) (:) ]
-         livestemc_xfer_to_livestemc         =>    veg_cf%livestemc_xfer_to_livestemc     , & ! Output:  [real(r8) (:) ]
-         deadstemc_xfer_to_deadstemc         =>    veg_cf%deadstemc_xfer_to_deadstemc     , & ! Output:  [real(r8) (:) ]
-         livecrootc_xfer_to_livecrootc       =>    veg_cf%livecrootc_xfer_to_livecrootc   , & ! Output:  [real(r8) (:) ]
-         deadcrootc_xfer_to_deadcrootc       =>    veg_cf%deadcrootc_xfer_to_deadcrootc   , & ! Output:  [real(r8) (:) ]
+         leafp_xfer                          =>    veg_ps%core%leaf_xfer                   , & ! Input:  [real(r8)(:)   ]  (gP/m2) leaf P transfer
+         frootp_xfer                         =>    veg_ps%core%froot_xfer                  , & ! Input:  [real(r8)(:)   ]  (gP/m2) fine root P transfer
+         livestemp_xfer                      =>    veg_ps%core%livestem_xfer               , & ! Input:  [real(r8)(:)   ]  (gP/m2) live stem P transfer
+         deadstemp_xfer                      =>    veg_ps%core%deadstem_xfer               , & ! Input:  [real(r8)(:)   ]  (gP/m2) dead stem P transfer
+         livecrootp_xfer                     =>    veg_ps%core%livecroot_xfer              , & ! Input:  [real(r8)(:)   ]  (gP/m2) live coarse root P transfer
+         deadcrootp_xfer                     =>    veg_ps%core%deadcroot_xfer              , & ! Input:  [real(r8)(:)   ]  (gP/m2) dead coarse root P transfer
 
-         leafn_xfer_to_leafn                 =>    veg_nf%leafn_xfer_to_leafn           , & ! Output:  [real(r8) (:) ]
-         frootn_xfer_to_frootn               =>    veg_nf%frootn_xfer_to_frootn         , & ! Output:  [real(r8) (:) ]
-         livestemn_xfer_to_livestemn         =>    veg_nf%livestemn_xfer_to_livestemn   , & ! Output:  [real(r8) (:) ]
-         deadstemn_xfer_to_deadstemn         =>    veg_nf%deadstemn_xfer_to_deadstemn   , & ! Output:  [real(r8) (:) ]
-         livecrootn_xfer_to_livecrootn       =>    veg_nf%livecrootn_xfer_to_livecrootn , & ! Output:  [real(r8) (:) ]
-         deadcrootn_xfer_to_deadcrootn       =>    veg_nf%deadcrootn_xfer_to_deadcrootn , & ! Output:  [real(r8) (:) ]
 
-         leafp_xfer_to_leafp                 =>    veg_pf%leafp_xfer_to_leafp           , & ! Output:  [real(r8) (:) ]
-         frootp_xfer_to_frootp               =>    veg_pf%frootp_xfer_to_frootp         , & ! Output:  [real(r8) (:) ]
-         livestemp_xfer_to_livestemp         =>    veg_pf%livestemp_xfer_to_livestemp   , & ! Output:  [real(r8) (:) ]
-         deadstemp_xfer_to_deadstemp         =>    veg_pf%deadstemp_xfer_to_deadstemp   , & ! Output:  [real(r8) (:) ]
-         livecrootp_xfer_to_livecrootp       =>    veg_pf%livecrootp_xfer_to_livecrootp , & ! Output:  [real(r8) (:) ]
-         deadcrootp_xfer_to_deadcrootp       =>    veg_pf%deadcrootp_xfer_to_deadcrootp   & ! Output:  [real(r8) (:) ]
+         leafc_xfer_to_leafc                 =>    veg_cf%core%leaf_xfer_to_leaf             , & ! Output:  [real(r8) (:) ]
+         frootc_xfer_to_frootc               =>    veg_cf%core%froot_xfer_to_froot           , & ! Output:  [real(r8) (:) ]
+         livestemc_xfer_to_livestemc         =>    veg_cf%core%livestem_xfer_to_livestem     , & ! Output:  [real(r8) (:) ]
+         deadstemc_xfer_to_deadstemc         =>    veg_cf%core%deadstem_xfer_to_deadstem     , & ! Output:  [real(r8) (:) ]
+         livecrootc_xfer_to_livecrootc       =>    veg_cf%core%livecroot_xfer_to_livecroot   , & ! Output:  [real(r8) (:) ]
+         deadcrootc_xfer_to_deadcrootc       =>    veg_cf%core%deadcroot_xfer_to_deadcroot   , & ! Output:  [real(r8) (:) ]
+
+         leafn_xfer_to_leafn                 =>    veg_nf%core%leaf_xfer_to_leaf           , & ! Output:  [real(r8) (:) ]
+         frootn_xfer_to_frootn               =>    veg_nf%core%froot_xfer_to_froot         , & ! Output:  [real(r8) (:) ]
+         livestemn_xfer_to_livestemn         =>    veg_nf%core%livestem_xfer_to_livestem   , & ! Output:  [real(r8) (:) ]
+         deadstemn_xfer_to_deadstemn         =>    veg_nf%core%deadstem_xfer_to_deadstem   , & ! Output:  [real(r8) (:) ]
+         livecrootn_xfer_to_livecrootn       =>    veg_nf%core%livecroot_xfer_to_livecroot , & ! Output:  [real(r8) (:) ]
+         deadcrootn_xfer_to_deadcrootn       =>    veg_nf%core%deadcroot_xfer_to_deadcroot , & ! Output:  [real(r8) (:) ]
+
+         leafp_xfer_to_leafp                 =>    veg_pf%core%leaf_xfer_to_leaf           , & ! Output:  [real(r8) (:) ]
+         frootp_xfer_to_frootp               =>    veg_pf%core%froot_xfer_to_froot         , & ! Output:  [real(r8) (:) ]
+         livestemp_xfer_to_livestemp         =>    veg_pf%core%livestem_xfer_to_livestem   , & ! Output:  [real(r8) (:) ]
+         deadstemp_xfer_to_deadstemp         =>    veg_pf%core%deadstem_xfer_to_deadstem   , & ! Output:  [real(r8) (:) ]
+         livecrootp_xfer_to_livecrootp       =>    veg_pf%core%livecroot_xfer_to_livecroot , & ! Output:  [real(r8) (:) ]
+         deadcrootp_xfer_to_deadcrootp       =>    veg_pf%core%deadcroot_xfer_to_deadcroot   & ! Output:  [real(r8) (:) ]
          )
 
       ! patch loop
@@ -2904,33 +2904,33 @@ contains
    fyield                =>    veg_vp%fyield                           , & ! Input:  [real(r8) (:) ]  fraction of grain actually harvested
    convfact              =>    veg_vp%convfact                         , & ! Input:  [real(r8) (:) ]  converstion factor for bu/acre
 
-   leafc                 =>    veg_cs%leafc                , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
-   grainc                =>    veg_cs%grainc               , & ! Input:  [real(r8) (:) ]  (gC/m2) grain C
-   livestemc             =>    veg_cs%livestemc            , & ! Input:  [real(r8) (:) ]  (gC/m2) livestem C
-   leafn                 =>    veg_ns%leafn              , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
-   grainn                =>    veg_ns%grainn             , & ! Input:  [real(r8) (:) ]  (gN/m2) grain N
-   livestemn             =>    veg_ns%livestemn          , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N
-   leafp                 =>    veg_ps%leafp            , & ! Input:  [real(r8) (:) ]  (gP/m2) leaf P
-   grainp                =>    veg_ps%grainp           , & ! Input:  [real(r8) (:) ]  (gP/m2) grain P
-   livestemp             =>    veg_ps%livestemp        , & ! Input:  [real(r8) (:) ]  (gP/m2) livestem P
-   cpool_to_grainc       =>    veg_cf%cpool_to_grainc       , & ! Input:  [real(r8) (:) ]  allocation to grain C (gC/m2/s)
-   cpool_to_livestemc    =>    veg_cf%cpool_to_livestemc    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)
-   cpool_to_leafc        =>    veg_cf%cpool_to_leafc        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)
-   npool_to_leafn        =>    veg_nf%npool_to_leafn      , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
-   npool_to_livestemn    =>    veg_nf%npool_to_livestemn  , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
-   npool_to_grainn       =>    veg_nf%npool_to_grainn     , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
-   ppool_to_leafp        =>    veg_pf%ppool_to_leafp    , & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
-   ppool_to_livestemp    =>    veg_pf%ppool_to_livestemp, & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
-   ppool_to_grainp       =>    veg_pf%ppool_to_grainp   , & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
-   hrv_leafc_to_prod1c   =>    veg_cf%hrv_leafc_to_prod1c   , & ! Input:  [real(r8) (:)] crop leafc harvested
-   hrv_livestemc_to_prod1c  => veg_cf%hrv_livestemc_to_prod1c, & ! Input:  [real(r8) (:)] crop stemc harvested
-   hrv_grainc_to_prod1c  =>    veg_cf%hrv_grainc_to_prod1c  , & ! Input:  [real(r8) (:)] crop grainc harvested
-   hrv_leafn_to_prod1n   =>    veg_nf%hrv_leafn_to_prod1n , & ! Input:  [real(r8) (:)] crop leafn harvested
-   hrv_livestemn_to_prod1n  => veg_nf%hrv_livestemn_to_prod1n, & ! Input:  [real(r8) (:)] crop stemn harvested
-   hrv_grainn_to_prod1n  =>    veg_nf%hrv_grainn_to_prod1n, & ! Input:  [real(r8) (:)] crop grainn harvested
-   hrv_leafp_to_prod1p   =>    veg_pf%hrv_leafp_to_prod1p , & ! Input:  [real(r8) (:)] crop leafp harvested
-   hrv_livestemp_to_prod1p  => veg_pf%hrv_livestemp_to_prod1p, & ! Input:  [real(r8) (:)] crop stemp harvested
-   hrv_grainp_to_prod1p  =>    veg_pf%hrv_grainp_to_prod1p, & ! Input:  [real(r8) (:)] crop grainp harvested
+   leafc                 =>    veg_cs%core%leaf                , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
+   grainc                =>    veg_cs%core%grain               , & ! Input:  [real(r8) (:) ]  (gC/m2) grain C
+   livestemc             =>    veg_cs%core%livestem            , & ! Input:  [real(r8) (:) ]  (gC/m2) livestem C
+   leafn                 =>    veg_ns%core%leaf              , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
+   grainn                =>    veg_ns%core%grain             , & ! Input:  [real(r8) (:) ]  (gN/m2) grain N
+   livestemn             =>    veg_ns%core%livestem          , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N
+   leafp                 =>    veg_ps%core%leaf            , & ! Input:  [real(r8) (:) ]  (gP/m2) leaf P
+   grainp                =>    veg_ps%core%grain           , & ! Input:  [real(r8) (:) ]  (gP/m2) grain P
+   livestemp             =>    veg_ps%core%livestem        , & ! Input:  [real(r8) (:) ]  (gP/m2) livestem P
+   cpool_to_grainc       =>    veg_cf%core%pool_to_grain       , & ! Input:  [real(r8) (:) ]  allocation to grain C (gC/m2/s)
+   cpool_to_livestemc    =>    veg_cf%core%pool_to_livestem    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)
+   cpool_to_leafc        =>    veg_cf%core%pool_to_leaf        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)
+   npool_to_leafn        =>    veg_nf%core%pool_to_leaf      , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
+   npool_to_livestemn    =>    veg_nf%core%pool_to_livestem  , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
+   npool_to_grainn       =>    veg_nf%core%pool_to_grain     , & ! Input:  [real(r8) (:)]  allocation to grain N (gN/m2/s)
+   ppool_to_leafp        =>    veg_pf%core%pool_to_leaf    , & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
+   ppool_to_livestemp    =>    veg_pf%core%pool_to_livestem, & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
+   ppool_to_grainp       =>    veg_pf%core%pool_to_grain   , & ! Input:  [real(r8) (:)]  allocation to grain P (gP/m2/s)
+   hrv_leafc_to_prod1c   =>    veg_cf%core%hrv_leaf_to_prod1   , & ! Input:  [real(r8) (:)] crop leafc harvested
+   hrv_livestemc_to_prod1c  => veg_cf%core%hrv_livestem_to_prod1, & ! Input:  [real(r8) (:)] crop stemc harvested
+   hrv_grainc_to_prod1c  =>    veg_cf%core%hrv_grain_to_prod1  , & ! Input:  [real(r8) (:)] crop grainc harvested
+   hrv_leafn_to_prod1n   =>    veg_nf%core%hrv_leaf_to_prod1 , & ! Input:  [real(r8) (:)] crop leafn harvested
+   hrv_livestemn_to_prod1n  => veg_nf%core%hrv_livestem_to_prod1, & ! Input:  [real(r8) (:)] crop stemn harvested
+   hrv_grainn_to_prod1n  =>    veg_nf%core%hrv_grain_to_prod1, & ! Input:  [real(r8) (:)] crop grainn harvested
+   hrv_leafp_to_prod1p   =>    veg_pf%core%hrv_leaf_to_prod1 , & ! Input:  [real(r8) (:)] crop leafp harvested
+   hrv_livestemp_to_prod1p  => veg_pf%core%hrv_livestem_to_prod1, & ! Input:  [real(r8) (:)] crop stemp harvested
+   hrv_grainp_to_prod1p  =>    veg_pf%core%hrv_grain_to_prod1, & ! Input:  [real(r8) (:)] crop grainp harvested
    crpyld                =>    crop_vars%crpyld_patch                      , & ! InOut:  [real(r8) ):)]  harvested crop (bu/acre)
    dmyield               =>    crop_vars%dmyield_patch                       & ! InOut:  [real(r8) ):)]  dry matter harvested crop (t/ha)
    )
@@ -3016,33 +3016,33 @@ contains
    fyield                   => veg_vp%fyield                    , & ! Input: [real(r8) (:)] fraction of grain actually harvested
    convfact                 => veg_vp%convfact                  , & ! Input: [real(r8) (:)] conversation factor from gC/m2 to bu/acre
 
-   leafc                    => veg_cs%leafc                     , & ! Input: [real(r8) (:)] leaf C (gC/m2)
-   livestemc                => veg_cs%livestemc                 , & ! Input: [real(r8) (:)] livestem C (gC/m2)
-   grainc                   => veg_cs%grainc                    , & ! Input: [real(r8) (:)] grain C (gC/m2)
-   leafn                    => veg_ns%leafn                     , & ! Input: [real(r8) (:)] leaf N (gN/m2)
-   livestemn                => veg_ns%livestemn                 , & ! Input: [real(r8) (:)] livestem N (gN/m2)
-   grainn                   => veg_ns%grainn                    , & ! Input: [real(r8) (:)] grain N (gN/m2)
-   leafp                    => veg_ps%leafp                     , & ! Input: [real(r8) (:)] leaf P (gP/m2)
-   livestemp                => veg_ps%livestemp                 , & ! Input: [real(r8) (:)] livestem P (gP/m2)
-   grainp                   => veg_ps%grainp                    , & ! Input: [real(r8) (:)] grain P (gP/m2)
-   cpool_to_grainc          => veg_cf%cpool_to_grainc           , & ! Input: [real(r8) (:)] allocation to grain C (gC/m2/s)
-   cpool_to_livestemc       => veg_cf%cpool_to_livestemc        , & ! Input: [real(r8) (:)] allocation to live stem C (gC/m2/s)
-   cpool_to_leafc           => veg_cf%cpool_to_leafc            , & ! Input: [real(r8) (:)] allocation to leaf C (gC/m2/s)
-   npool_to_grainn          => veg_nf%npool_to_grainn           , & ! Input: [real(r8) (:)] allocation to grain N (gN/m2/s)
-   npool_to_leafn           => veg_nf%npool_to_leafn            , & ! Input: [real(r8) (:)] allocation to leaf N (gN/m2/s)
-   npool_to_livestemn       => veg_nf%npool_to_livestemn        , & ! Input: [real(r8) (:)] allocation to live stem N (gN/m2/s)
-   ppool_to_grainp          => veg_pf%ppool_to_grainp           , & ! Input: [real(r8) (:)] allocation to grain P (gP/m2/s)
-   ppool_to_leafp           => veg_pf%ppool_to_leafp            , & ! Input: [real(r8) (:)] allocation to leaf P (gP/m2/s)
-   ppool_to_livestemp       => veg_pf%ppool_to_livestemp        , & ! Input: [real(r8) (:)] allocation to live stem P (gP/m2/s)
-   hrv_leafc_to_prod1c      => veg_cf%hrv_leafc_to_prod1c       , & ! Input: [real(r8) (:)] crop leaf C harvested
-   hrv_livestemc_to_prod1c  => veg_cf%hrv_livestemc_to_prod1c   , & ! Input: [real(r8) (:)] crop live stem C harvested
-   hrv_grainc_to_prod1c     => veg_cf%hrv_grainc_to_prod1c      , & ! Input: [real(r8) (:)] crop grainc harvested
-   hrv_leafn_to_prod1n      => veg_nf%hrv_leafn_to_prod1n       , & ! Input: [real(r8) (:)] crop leaf N harvested
-   hrv_livestemn_to_prod1n  => veg_nf%hrv_livestemn_to_prod1n   , & ! Input: [real(r8) (:)] crop live stem N harvested
-   hrv_grainn_to_prod1n     => veg_nf%hrv_grainn_to_prod1n      , & ! Input: [real(r8) (:)] crop grainn harvested
-   hrv_leafp_to_prod1p      => veg_pf%hrv_leafp_to_prod1p       , & ! Input: [real(r8) (:)] crop leaf P harvested
-   hrv_livestemp_to_prod1p  => veg_pf%hrv_livestemp_to_prod1p   , & ! Input: [real(r8) (:)] crop live stem P harvested
-   hrv_grainp_to_prod1p     => veg_pf%hrv_grainp_to_prod1p      , & ! Input: [real(r8) (:)] crop grainp harvested
+   leafc                    => veg_cs%core%leaf                     , & ! Input: [real(r8) (:)] leaf C (gC/m2)
+   livestemc                => veg_cs%core%livestem                 , & ! Input: [real(r8) (:)] livestem C (gC/m2)
+   grainc                   => veg_cs%core%grain                    , & ! Input: [real(r8) (:)] grain C (gC/m2)
+   leafn                    => veg_ns%core%leaf                     , & ! Input: [real(r8) (:)] leaf N (gN/m2)
+   livestemn                => veg_ns%core%livestem                 , & ! Input: [real(r8) (:)] livestem N (gN/m2)
+   grainn                   => veg_ns%core%grain                    , & ! Input: [real(r8) (:)] grain N (gN/m2)
+   leafp                    => veg_ps%core%leaf                     , & ! Input: [real(r8) (:)] leaf P (gP/m2)
+   livestemp                => veg_ps%core%livestem                 , & ! Input: [real(r8) (:)] livestem P (gP/m2)
+   grainp                   => veg_ps%core%grain                    , & ! Input: [real(r8) (:)] grain P (gP/m2)
+   cpool_to_grainc          => veg_cf%core%pool_to_grain           , & ! Input: [real(r8) (:)] allocation to grain C (gC/m2/s)
+   cpool_to_livestemc       => veg_cf%core%pool_to_livestem        , & ! Input: [real(r8) (:)] allocation to live stem C (gC/m2/s)
+   cpool_to_leafc           => veg_cf%core%pool_to_leaf            , & ! Input: [real(r8) (:)] allocation to leaf C (gC/m2/s)
+   npool_to_grainn          => veg_nf%core%pool_to_grain           , & ! Input: [real(r8) (:)] allocation to grain N (gN/m2/s)
+   npool_to_leafn           => veg_nf%core%pool_to_leaf            , & ! Input: [real(r8) (:)] allocation to leaf N (gN/m2/s)
+   npool_to_livestemn       => veg_nf%core%pool_to_livestem        , & ! Input: [real(r8) (:)] allocation to live stem N (gN/m2/s)
+   ppool_to_grainp          => veg_pf%core%pool_to_grain           , & ! Input: [real(r8) (:)] allocation to grain P (gP/m2/s)
+   ppool_to_leafp           => veg_pf%core%pool_to_leaf            , & ! Input: [real(r8) (:)] allocation to leaf P (gP/m2/s)
+   ppool_to_livestemp       => veg_pf%core%pool_to_livestem        , & ! Input: [real(r8) (:)] allocation to live stem P (gP/m2/s)
+   hrv_leafc_to_prod1c      => veg_cf%core%hrv_leaf_to_prod1       , & ! Input: [real(r8) (:)] crop leaf C harvested
+   hrv_livestemc_to_prod1c  => veg_cf%core%hrv_livestem_to_prod1   , & ! Input: [real(r8) (:)] crop live stem C harvested
+   hrv_grainc_to_prod1c     => veg_cf%core%hrv_grain_to_prod1      , & ! Input: [real(r8) (:)] crop grainc harvested
+   hrv_leafn_to_prod1n      => veg_nf%core%hrv_leaf_to_prod1       , & ! Input: [real(r8) (:)] crop leaf N harvested
+   hrv_livestemn_to_prod1n  => veg_nf%core%hrv_livestem_to_prod1   , & ! Input: [real(r8) (:)] crop live stem N harvested
+   hrv_grainn_to_prod1n     => veg_nf%core%hrv_grain_to_prod1      , & ! Input: [real(r8) (:)] crop grainn harvested
+   hrv_leafp_to_prod1p      => veg_pf%core%hrv_leaf_to_prod1       , & ! Input: [real(r8) (:)] crop leaf P harvested
+   hrv_livestemp_to_prod1p  => veg_pf%core%hrv_livestem_to_prod1   , & ! Input: [real(r8) (:)] crop live stem P harvested
+   hrv_grainp_to_prod1p     => veg_pf%core%hrv_grain_to_prod1      , & ! Input: [real(r8) (:)] crop grainp harvested
    crpyld                   => crop_vars%crpyld_patch           , & ! InOut: [real(r8) ):)] harvested crop (bu/acre)
    dmyield                  => crop_vars%dmyield_patch            & ! InOut: [real(r8) ):)] dry matter harvested crop (t/ha)
    )
@@ -3140,56 +3140,56 @@ contains
          offset_flag           =>    cnstate_vars%offset_flag_patch              , & ! Input:  [real(r8) (:) ]  offset flag
          offset_counter        =>    cnstate_vars%offset_counter_patch           , & ! Input:  [real(r8) (:) ]  offset days counter
 
-         leafc                 =>    veg_cs%leafc                , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
-         frootc                =>    veg_cs%frootc               , & ! Input:  [real(r8) (:) ]  (gC/m2) fine root C
-         grainc                =>    veg_cs%grainc               , & ! Input:  [real(r8) (:) ]  (gC/m2) grain C
-         livestemc             =>    veg_cs%livestemc            , & ! Input:  [real(r8) (:) ]  (gC/m2) livestem C
+         leafc                 =>    veg_cs%core%leaf                , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
+         frootc                =>    veg_cs%core%froot               , & ! Input:  [real(r8) (:) ]  (gC/m2) fine root C
+         grainc                =>    veg_cs%core%grain               , & ! Input:  [real(r8) (:) ]  (gC/m2) grain C
+         livestemc             =>    veg_cs%core%livestem            , & ! Input:  [real(r8) (:) ]  (gC/m2) livestem C
 
-         cpool_to_grainc       =>    veg_cf%cpool_to_grainc       , & ! Input:  [real(r8) (:) ]  allocation to grain C (gC/m2/s)
-         cpool_to_livestemc    =>    veg_cf%cpool_to_livestemc    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)
-         cpool_to_leafc        =>    veg_cf%cpool_to_leafc        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)
-         cpool_to_frootc       =>    veg_cf%cpool_to_frootc       , & ! Input:  [real(r8) (:) ]  allocation to fine root C (gC/m2/s)
-         prev_leafc_to_litter  =>    veg_cf%prev_leafc_to_litter  , & ! Output: [real(r8) (:) ]  previous timestep leaf C litterfall flux (gC/m2/s)
-         prev_frootc_to_litter =>    veg_cf%prev_frootc_to_litter , & ! Output: [real(r8) (:) ]  previous timestep froot C litterfall flux (gC/m2/s)
-         leafc_to_litter       =>    veg_cf%leafc_to_litter       , & ! Output: [real(r8) (:) ]  leaf C litterfall (gC/m2/s)
-         frootc_to_litter      =>    veg_cf%frootc_to_litter      , & ! Output: [real(r8) (:) ]  fine root C litterfall (gC/m2/s)
-         livestemc_to_litter   =>    veg_cf%livestemc_to_litter   , & ! Output: [real(r8) (:) ]  live stem C litterfall (gC/m2/s)
-         grainc_to_food        =>    veg_cf%grainc_to_food        , & ! Output: [real(r8) (:) ]  grain C to food (gC/m2/s)
+         cpool_to_grainc       =>    veg_cf%core%pool_to_grain       , & ! Input:  [real(r8) (:) ]  allocation to grain C (gC/m2/s)
+         cpool_to_livestemc    =>    veg_cf%core%pool_to_livestem    , & ! Input:  [real(r8) (:) ]  allocation to live stem C (gC/m2/s)
+         cpool_to_leafc        =>    veg_cf%core%pool_to_leaf        , & ! Input:  [real(r8) (:) ]  allocation to leaf C (gC/m2/s)
+         cpool_to_frootc       =>    veg_cf%core%pool_to_froot       , & ! Input:  [real(r8) (:) ]  allocation to fine root C (gC/m2/s)
+         prev_leafc_to_litter  =>    veg_cf%core%prev_leaf_to_litter  , & ! Output: [real(r8) (:) ]  previous timestep leaf C litterfall flux (gC/m2/s)
+         prev_frootc_to_litter =>    veg_cf%core%prev_froot_to_litter , & ! Output: [real(r8) (:) ]  previous timestep froot C litterfall flux (gC/m2/s)
+         leafc_to_litter       =>    veg_cf%core%leaf_to_litter       , & ! Output: [real(r8) (:) ]  leaf C litterfall (gC/m2/s)
+         frootc_to_litter      =>    veg_cf%core%froot_to_litter      , & ! Output: [real(r8) (:) ]  fine root C litterfall (gC/m2/s)
+         livestemc_to_litter   =>    veg_cf%core%livestem_to_litter   , & ! Output: [real(r8) (:) ]  live stem C litterfall (gC/m2/s)
+         grainc_to_food        =>    veg_cf%core%grain_to_food        , & ! Output: [real(r8) (:) ]  grain C to food (gC/m2/s)
 
-         livestemn_to_litter   =>    veg_nf%livestemn_to_litter , & ! Output: [real(r8) (:) ]  livestem N to litter (gN/m2/s)
-         grainn_to_food        =>    veg_nf%grainn_to_food      , & ! Output: [real(r8) (:) ]  grain N to food (gN/m2/s)
-         leafn_to_litter       =>    veg_nf%leafn_to_litter     , & ! Output: [real(r8) (:) ]  leaf N litterfall (gN/m2/s)
+         livestemn_to_litter   =>    veg_nf%core%livestem_to_litter , & ! Output: [real(r8) (:) ]  livestem N to litter (gN/m2/s)
+         grainn_to_food        =>    veg_nf%core%grain_to_food      , & ! Output: [real(r8) (:) ]  grain N to food (gN/m2/s)
+         leafn_to_litter       =>    veg_nf%core%leaf_to_litter     , & ! Output: [real(r8) (:) ]  leaf N litterfall (gN/m2/s)
          leafn_to_retransn     =>    veg_nf%leafn_to_retransn   , & ! Output: [real(r8) (:) ]  leaf N to retranslocated N pool (gN/m2/s)
-         frootn_to_litter      =>    veg_nf%frootn_to_litter    , & ! Output: [real(r8) (:) ]  fine root N litterfall (gN/m2/s)
+         frootn_to_litter      =>    veg_nf%core%froot_to_litter    , & ! Output: [real(r8) (:) ]  fine root N litterfall (gN/m2/s)
 
-         livestemp_to_litter   =>    veg_pf%livestemp_to_litter , & ! Output: [real(r8) (:) ]  livestem P to litter (gP/m2/s)
-         grainp_to_food        =>    veg_pf%grainp_to_food      , & ! Output: [real(r8) (:) ]  grain P to food (gP/m2/s)
-         leafp_to_litter       =>    veg_pf%leafp_to_litter     , & ! Output: [real(r8) (:) ]  leaf P litterfall (gP/m2/s)
+         livestemp_to_litter   =>    veg_pf%core%livestem_to_litter , & ! Output: [real(r8) (:) ]  livestem P to litter (gP/m2/s)
+         grainp_to_food        =>    veg_pf%core%grain_to_food      , & ! Output: [real(r8) (:) ]  grain P to food (gP/m2/s)
+         leafp_to_litter       =>    veg_pf%core%leaf_to_litter     , & ! Output: [real(r8) (:) ]  leaf P litterfall (gP/m2/s)
          leafp_to_retransp     =>    veg_pf%leafp_to_retransp   , & ! Output: [real(r8) (:) ]  leaf P to retranslocated P pool (gP/m2/s)
-         frootp_to_litter      =>    veg_pf%frootp_to_litter    , & ! Output: [real(r8) (:) ]  fine root P litterfall (gP/m2/s)
+         frootp_to_litter      =>    veg_pf%core%froot_to_litter    , & ! Output: [real(r8) (:) ]  fine root P litterfall (gP/m2/s)
 
-         prev_leafn_to_litter  =>    veg_nf%prev_leafn_to_litter    , & ! Output: [real(r8) (:) ]  previous timestep leaf N litterfall flux (gN/m2/s)
-         prev_frootn_to_litter =>    veg_nf%prev_frootn_to_litter   , & ! Output: [real(r8) (:) ]  previous timestep froot N litterfall flux (gN/m2/s)
-         prev_leafp_to_litter  =>    veg_pf%prev_leafp_to_litter  , & ! Output: [real(r8) (:) ]  previous timestep leaf P litterfall flux (gP/m2/s)
-         prev_frootp_to_litter =>    veg_pf%prev_frootp_to_litter , & ! Output: [real(r8) (:) ]  previous timestep froot P litterfall flux (gP/m2/s)
-         leafn                 =>    veg_ns%leafn                  , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
-         frootn                =>    veg_ns%frootn                 , & ! Input:  [real(r8) (:) ]  (gN/m2) fine root N
-         livestemn             =>    veg_ns%livestemn              , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N
-         leafp                 =>    veg_ps%leafp                , & ! Input:  [real(r8) (:) ]  (gP/m2) leaf P
-         frootp                =>    veg_ps%frootp               , & ! Input:  [real(r8) (:) ]  (gP/m2) fine root P
-         livestemp             =>    veg_ps%livestemp            , & ! Input:  [real(r8) (:) ]  (gP/m2) livestem P
-         npool_to_leafn        =>    veg_nf%npool_to_leafn          , &
-         npool_to_frootn       =>    veg_nf%npool_to_frootn         , &
-         npool_to_livestemn    =>    veg_nf%npool_to_livestemn      , &
-         ppool_to_leafp        =>    veg_pf%ppool_to_leafp        , &
-         ppool_to_frootp       =>    veg_pf%ppool_to_frootp       , &
-         ppool_to_livestemp    =>    veg_pf%ppool_to_livestemp    , &
-         hrv_leafc_to_prod1c   =>    veg_cf%hrv_leafc_to_prod1c       , & ! Input:  [real(r8) (:)] crop leafc harvested
-         hrv_livestemc_to_prod1c  => veg_cf%hrv_livestemc_to_prod1c   , & ! Input:  [real(r8) (:)] crop stemc harvested
-         hrv_leafn_to_prod1n   =>    veg_nf%hrv_leafn_to_prod1n     , & ! Input:  [real(r8) (:)] crop leafn harvested
-         hrv_livestemn_to_prod1n  => veg_nf%hrv_livestemn_to_prod1n , & ! Input:  [real(r8) (:)] crop stemn harvested
-         hrv_leafp_to_prod1p   =>    veg_pf%hrv_leafp_to_prod1p   , & ! Input:  [real(r8) (:)] crop leafp harvested
-         hrv_livestemp_to_prod1p  => veg_pf%hrv_livestemp_to_prod1p & ! Input:  [real(r8) (:)] crop stemp harvested
+         prev_leafn_to_litter  =>    veg_nf%core%prev_leaf_to_litter    , & ! Output: [real(r8) (:) ]  previous timestep leaf N litterfall flux (gN/m2/s)
+         prev_frootn_to_litter =>    veg_nf%core%prev_froot_to_litter   , & ! Output: [real(r8) (:) ]  previous timestep froot N litterfall flux (gN/m2/s)
+         prev_leafp_to_litter  =>    veg_pf%core%prev_leaf_to_litter  , & ! Output: [real(r8) (:) ]  previous timestep leaf P litterfall flux (gP/m2/s)
+         prev_frootp_to_litter =>    veg_pf%core%prev_froot_to_litter , & ! Output: [real(r8) (:) ]  previous timestep froot P litterfall flux (gP/m2/s)
+         leafn                 =>    veg_ns%core%leaf                  , & ! Input:  [real(r8) (:) ]  (gN/m2) leaf N
+         frootn                =>    veg_ns%core%froot                 , & ! Input:  [real(r8) (:) ]  (gN/m2) fine root N
+         livestemn             =>    veg_ns%core%livestem              , & ! Input:  [real(r8) (:) ]  (gN/m2) livestem N
+         leafp                 =>    veg_ps%core%leaf                , & ! Input:  [real(r8) (:) ]  (gP/m2) leaf P
+         frootp                =>    veg_ps%core%froot               , & ! Input:  [real(r8) (:) ]  (gP/m2) fine root P
+         livestemp             =>    veg_ps%core%livestem            , & ! Input:  [real(r8) (:) ]  (gP/m2) livestem P
+         npool_to_leafn        =>    veg_nf%core%pool_to_leaf          , &
+         npool_to_frootn       =>    veg_nf%core%pool_to_froot         , &
+         npool_to_livestemn    =>    veg_nf%core%pool_to_livestem      , &
+         ppool_to_leafp        =>    veg_pf%core%pool_to_leaf        , &
+         ppool_to_frootp       =>    veg_pf%core%pool_to_froot       , &
+         ppool_to_livestemp    =>    veg_pf%core%pool_to_livestem    , &
+         hrv_leafc_to_prod1c   =>    veg_cf%core%hrv_leaf_to_prod1       , & ! Input:  [real(r8) (:)] crop leafc harvested
+         hrv_livestemc_to_prod1c  => veg_cf%core%hrv_livestem_to_prod1   , & ! Input:  [real(r8) (:)] crop stemc harvested
+         hrv_leafn_to_prod1n   =>    veg_nf%core%hrv_leaf_to_prod1     , & ! Input:  [real(r8) (:)] crop leafn harvested
+         hrv_livestemn_to_prod1n  => veg_nf%core%hrv_livestem_to_prod1 , & ! Input:  [real(r8) (:)] crop stemn harvested
+         hrv_leafp_to_prod1p   =>    veg_pf%core%hrv_leaf_to_prod1   , & ! Input:  [real(r8) (:)] crop leafp harvested
+         hrv_livestemp_to_prod1p  => veg_pf%core%hrv_livestem_to_prod1 & ! Input:  [real(r8) (:)] crop stemp harvested
          )
 
       ! The litterfall transfer rate starts at 0.0 and increases linearly
@@ -3331,24 +3331,24 @@ contains
          bglfr_leaf        =>    cnstate_vars%bglfr_leaf_patch            , & ! Input:  [real(r8) (:) ]  background leaf litterfall rate (1/s)
          bglfr_froot       =>    cnstate_vars%bglfr_froot_patch           , & ! Input:  [real(r8) (:) ]  background fine root litterfall rate (1/s)
 
-         leafc             =>    veg_cs%leafc              , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
-         frootc            =>    veg_cs%frootc             , & ! Input:  [real(r8) (:) ]  (gC/m2) fine root C
+         leafc             =>    veg_cs%core%leaf              , & ! Input:  [real(r8) (:) ]  (gC/m2) leaf C
+         frootc            =>    veg_cs%core%froot             , & ! Input:  [real(r8) (:) ]  (gC/m2) fine root C
 
-         leafc_to_litter   =>    veg_cf%leafc_to_litter     , & ! Output: [real(r8) (:) ]
-         frootc_to_litter  =>    veg_cf%frootc_to_litter    , & ! Output: [real(r8) (:) ]
+         leafc_to_litter   =>    veg_cf%core%leaf_to_litter     , & ! Output: [real(r8) (:) ]
+         frootc_to_litter  =>    veg_cf%core%froot_to_litter    , & ! Output: [real(r8) (:) ]
 
-         leafn_to_litter   =>    veg_nf%leafn_to_litter   , & ! Output: [real(r8) (:) ]
+         leafn_to_litter   =>    veg_nf%core%leaf_to_litter   , & ! Output: [real(r8) (:) ]
          leafn_to_retransn =>    veg_nf%leafn_to_retransn , & ! Output: [real(r8) (:) ]
-         frootn_to_litter  =>    veg_nf%frootn_to_litter  , & ! Output: [real(r8) (:) ]
+         frootn_to_litter  =>    veg_nf%core%froot_to_litter  , & ! Output: [real(r8) (:) ]
 
-         leafp_to_litter   =>    veg_pf%leafp_to_litter   , & ! Output: [real(r8) (:) ]
+         leafp_to_litter   =>    veg_pf%core%leaf_to_litter   , & ! Output: [real(r8) (:) ]
          leafp_to_retransp =>    veg_pf%leafp_to_retransp , & ! Output: [real(r8) (:) ]
-         frootp_to_litter  =>    veg_pf%frootp_to_litter  , & ! Output: [real(r8) (:) ]
+         frootp_to_litter  =>    veg_pf%core%froot_to_litter  , & ! Output: [real(r8) (:) ]
 
-         leafn             =>    veg_ns%leafn              , &
-         frootn            =>    veg_ns%frootn             , &
-         leafp             =>    veg_ps%leafp            , &
-         frootp            =>    veg_ps%frootp             &
+         leafn             =>    veg_ns%core%leaf              , &
+         frootn            =>    veg_ns%core%froot             , &
+         leafp             =>    veg_ps%core%leaf            , &
+         frootp            =>    veg_ps%core%froot             &
          )
 
 
@@ -3426,28 +3426,28 @@ contains
          livewdcn                 =>    veg_vp%livewdcn                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:N (gC/gN)
          deadwdcn                 =>    veg_vp%deadwdcn                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:N (gC/gN)
 
-         livestemc                =>    veg_cs%livestemc                 , & ! Input:  [real(r8) (:) ]  (gC/m2) live stem C
-         livecrootc               =>    veg_cs%livecrootc                , & ! Input:  [real(r8) (:) ]  (gC/m2) live coarse root C
+         livestemc                =>    veg_cs%core%livestem                 , & ! Input:  [real(r8) (:) ]  (gC/m2) live stem C
+         livecrootc               =>    veg_cs%core%livecroot                , & ! Input:  [real(r8) (:) ]  (gC/m2) live coarse root C
 
-         livestemn                =>    veg_ns%livestemn               , & ! Input:  [real(r8) (:) ]  (gN/m2) live stem N
-         livecrootn               =>    veg_ns%livecrootn              , & ! Input:  [real(r8) (:) ]  (gN/m2) live coarse root N
+         livestemn                =>    veg_ns%core%livestem               , & ! Input:  [real(r8) (:) ]  (gN/m2) live stem N
+         livecrootn               =>    veg_ns%core%livecroot              , & ! Input:  [real(r8) (:) ]  (gN/m2) live coarse root N
 
-         livestemp                =>    veg_ps%livestemp               , & ! Input:  [real(r8) (:) ]  (gN/m2) live stem N
-         livecrootp               =>    veg_ps%livecrootp              , & ! Input:  [real(r8) (:) ]  (gN/m2) live coarse root N
+         livestemp                =>    veg_ps%core%livestem               , & ! Input:  [real(r8) (:) ]  (gN/m2) live stem N
+         livecrootp               =>    veg_ps%core%livecroot              , & ! Input:  [real(r8) (:) ]  (gN/m2) live coarse root N
 
-         livestemc_to_deadstemc   =>    veg_cf%livestemc_to_deadstemc     , & ! Output: [real(r8) (:) ]
-         livecrootc_to_deadcrootc =>    veg_cf%livecrootc_to_deadcrootc   , & ! Output: [real(r8) (:) ]
+         livestemc_to_deadstemc   =>    veg_cf%core%livestem_to_deadstem     , & ! Output: [real(r8) (:) ]
+         livecrootc_to_deadcrootc =>    veg_cf%core%livecroot_to_deadcroot   , & ! Output: [real(r8) (:) ]
 
-         livestemn_to_deadstemn   =>    veg_nf%livestemn_to_deadstemn   , & ! Output: [real(r8) (:) ]
+         livestemn_to_deadstemn   =>    veg_nf%core%livestem_to_deadstem   , & ! Output: [real(r8) (:) ]
          livestemn_to_retransn    =>    veg_nf%livestemn_to_retransn    , & ! Output: [real(r8) (:) ]
-         livecrootn_to_deadcrootn =>    veg_nf%livecrootn_to_deadcrootn , & ! Output: [real(r8) (:) ]
+         livecrootn_to_deadcrootn =>    veg_nf%core%livecroot_to_deadcroot , & ! Output: [real(r8) (:) ]
          livecrootn_to_retransn   =>    veg_nf%livecrootn_to_retransn   , & ! Output: [real(r8) (:) ]
 
          livewdcp                 =>    veg_vp%livewdcp                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
          deadwdcp                 =>    veg_vp%deadwdcp                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:P (gC/gP)
-         livestemp_to_deadstemp   =>    veg_pf%livestemp_to_deadstemp   , & ! Output: [real(r8) (:) ]
+         livestemp_to_deadstemp   =>    veg_pf%core%livestem_to_deadstem   , & ! Output: [real(r8) (:) ]
          livestemp_to_retransp    =>    veg_pf%livestemp_to_retransp    , & ! Output: [real(r8) (:) ]
-         livecrootp_to_deadcrootp =>    veg_pf%livecrootp_to_deadcrootp , & ! Output: [real(r8) (:) ]
+         livecrootp_to_deadcrootp =>    veg_pf%core%livecroot_to_deadcroot , & ! Output: [real(r8) (:) ]
          livecrootp_to_retransp   =>    veg_pf%livecrootp_to_retransp     & ! Output: [real(r8) (:) ]
          )
 
@@ -3554,29 +3554,29 @@ contains
          leaf_prof                           =>    cnstate_vars%leaf_prof_patch                    , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of leaves
          froot_prof                          =>    cnstate_vars%froot_prof_patch                   , & ! Input:  [real(r8) (:,:) ]  (1/m) profile of fine roots
 
-         leafc_to_litter                     =>    veg_cf%leafc_to_litter           , & ! Input:  [real(r8) (:)   ]  leaf C litterfall (gC/m2/s)
-         frootc_to_litter                    =>    veg_cf%frootc_to_litter          , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)
-         livestemc_to_litter                 =>    veg_cf%livestemc_to_litter       , & ! Input:  [real(r8) (:)   ]  live stem C litterfall (gC/m2/s)
+         leafc_to_litter                     =>    veg_cf%core%leaf_to_litter           , & ! Input:  [real(r8) (:)   ]  leaf C litterfall (gC/m2/s)
+         frootc_to_litter                    =>    veg_cf%core%froot_to_litter          , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)
+         livestemc_to_litter                 =>    veg_cf%core%livestem_to_litter       , & ! Input:  [real(r8) (:)   ]  live stem C litterfall (gC/m2/s)
 !         grainc_to_food                      =>    veg_cf%grainc_to_food            , & ! Input:  [real(r8) (:)   ]  grain C to food (gC/m2/s)
-         phenology_c_to_litr_met_c           =>    col_cf%phenology_c_to_litr_met_c   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
-         phenology_c_to_litr_cel_c           =>    col_cf%phenology_c_to_litr_cel_c   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
-         phenology_c_to_litr_lig_c           =>    col_cf%phenology_c_to_litr_lig_c   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
+         phenology_c_to_litr_met_c           =>    col_cf%core%phenology_to_litr_met   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
+         phenology_c_to_litr_cel_c           =>    col_cf%core%phenology_to_litr_cel   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
+         phenology_c_to_litr_lig_c           =>    col_cf%core%phenology_to_litr_lig   , & ! Output: [real(r8) (:,:) ]  C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
 
-         livestemn_to_litter                 =>    veg_nf%livestemn_to_litter     , & ! Input:  [real(r8) (:)   ]  livestem N to litter (gN/m2/s)
+         livestemn_to_litter                 =>    veg_nf%core%livestem_to_litter     , & ! Input:  [real(r8) (:)   ]  livestem N to litter (gN/m2/s)
 !         grainn_to_food                      =>    veg_nf%grainn_to_food          , & ! Input:  [real(r8) (:)   ]  grain N to food (gN/m2/s)
-         leafn_to_litter                     =>    veg_nf%leafn_to_litter         , & ! Input:  [real(r8) (:)   ]  leaf N litterfall (gN/m2/s)
-         frootn_to_litter                    =>    veg_nf%frootn_to_litter        , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)
-         phenology_n_to_litr_met_n           =>    col_nf%phenology_n_to_litr_met_n , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
-         phenology_n_to_litr_cel_n           =>    col_nf%phenology_n_to_litr_cel_n , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
-         phenology_n_to_litr_lig_n           =>    col_nf%phenology_n_to_litr_lig_n , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
+         leafn_to_litter                     =>    veg_nf%core%leaf_to_litter         , & ! Input:  [real(r8) (:)   ]  leaf N litterfall (gN/m2/s)
+         frootn_to_litter                    =>    veg_nf%core%froot_to_litter        , & ! Input:  [real(r8) (:)   ]  fine root N litterfall (gN/m2/s)
+         phenology_n_to_litr_met_n           =>    col_nf%core%phenology_to_litr_met , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
+         phenology_n_to_litr_cel_n           =>    col_nf%core%phenology_to_litr_cel , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
+         phenology_n_to_litr_lig_n           =>    col_nf%core%phenology_to_litr_lig , & ! Output: [real(r8) (:,:) ]  N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
 
-         livestemp_to_litter                 =>    veg_pf%livestemp_to_litter     , & ! Input:  [real(r8) (:)   ]  livestem P to litter (gP/m2/s)
+         livestemp_to_litter                 =>    veg_pf%core%livestem_to_litter     , & ! Input:  [real(r8) (:)   ]  livestem P to litter (gP/m2/s)
 !         grainp_to_food                      =>    veg_pf%grainp_to_food          , & ! Input:  [real(r8) (:)   ]  grain P to food (gP/m2/s)
-         leafp_to_litter                     =>    veg_pf%leafp_to_litter         , & ! Input:  [real(r8) (:)   ]  leaf P litterfall (gP/m2/s)
-         frootp_to_litter                    =>    veg_pf%frootp_to_litter        , & ! Input:  [real(r8) (:)   ]  fine root P litterfall (gP/m2/s)
-         phenology_p_to_litr_met_p           =>    col_pf%phenology_p_to_litr_met_p , & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
-         phenology_p_to_litr_cel_p           =>    col_pf%phenology_p_to_litr_cel_p , & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gP/m3/s)
-         phenology_p_to_litr_lig_p           =>    col_pf%phenology_p_to_litr_lig_p   & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter lignin pool (gP/m3/s)
+         leafp_to_litter                     =>    veg_pf%core%leaf_to_litter         , & ! Input:  [real(r8) (:)   ]  leaf P litterfall (gP/m2/s)
+         frootp_to_litter                    =>    veg_pf%core%froot_to_litter        , & ! Input:  [real(r8) (:)   ]  fine root P litterfall (gP/m2/s)
+         phenology_p_to_litr_met_p           =>    col_pf%core%phenology_to_litr_met , & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
+         phenology_p_to_litr_cel_p           =>    col_pf%core%phenology_to_litr_cel , & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gP/m3/s)
+         phenology_p_to_litr_lig_p           =>    col_pf%core%phenology_to_litr_lig   & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter lignin pool (gP/m3/s)
          )
 
       do j = 1, nlevdecomp
@@ -3695,21 +3695,21 @@ contains
    associate(&
    ivt                                 =>   veg_pp%itype                                    , & ! Input:  [integer (:)]  pft vegetation type
    wtcol                               =>   veg_pp%wtcol                                    , & ! Input:  [real(r8) (:)]  pft weight relative to column (0-1)
-   phrv_leafc_to_prod1c                =>   veg_cf%hrv_leafc_to_prod1c    , & ! Input:  [real(r8) (:)] crop leafc harvested
-   phrv_livestemc_to_prod1c            =>   veg_cf%hrv_livestemc_to_prod1c, & ! Input:  [real(r8) (:)] crop stemc harvested
-   phrv_grainc_to_prod1c               =>   veg_cf%hrv_grainc_to_prod1c   , & ! Input:  [real(r8) (:)] crop grainc harvested
-   phrv_cropc_to_prod1c                =>   veg_cf%hrv_cropc_to_prod1c    , & ! InOut:  [real(r8) (:)] crop carbon harvested
-   phrv_leafn_to_prod1n                =>   veg_nf%hrv_leafn_to_prod1n    , & ! Input:  [real(r8) (:)] crop leafn harvested
-   phrv_livestemn_to_prod1n            =>   veg_nf%hrv_livestemn_to_prod1n, & ! Input:  [real(r8) (:)] crop stemn harvested
-   phrv_grainn_to_prod1n               =>   veg_nf%hrv_grainn_to_prod1n   , & ! Input:  [real(r8) (:)] crop grainn harvested
-   phrv_cropn_to_prod1n                =>   veg_nf%hrv_cropn_to_prod1n    , & ! InOut:  [real(r8) (:)] crop grainn harvested
-   phrv_leafp_to_prod1p                =>   veg_pf%hrv_leafp_to_prod1p  , & ! InOut:  [real(r8) (:)] crop grainp harvested
-   phrv_livestemp_to_prod1p            =>   veg_pf%hrv_livestemp_to_prod1p, & ! InOut:  [real(r8) (:)] column level crop carbon harvested
-   phrv_grainp_to_prod1p               =>   veg_pf%hrv_grainp_to_prod1p , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
-   phrv_cropp_to_prod1p                =>   veg_pf%hrv_cropp_to_prod1p  , & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
-   chrv_cropc_to_prod1c                =>   col_cf%hrv_cropc_to_prod1c        , & ! InOut:  [real(r8) (:)] column level crop carbon harvested
-   chrv_cropn_to_prod1n                =>   col_nf%hrv_cropn_to_prod1n      , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
-   chrv_cropp_to_prod1p                =>   col_pf%hrv_cropp_to_prod1p      & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
+   phrv_leafc_to_prod1c                =>   veg_cf%core%hrv_leaf_to_prod1    , & ! Input:  [real(r8) (:)] crop leafc harvested
+   phrv_livestemc_to_prod1c            =>   veg_cf%core%hrv_livestem_to_prod1, & ! Input:  [real(r8) (:)] crop stemc harvested
+   phrv_grainc_to_prod1c               =>   veg_cf%core%hrv_grain_to_prod1   , & ! Input:  [real(r8) (:)] crop grainc harvested
+   phrv_cropc_to_prod1c                =>   veg_cf%core%hrv_crop_to_prod1    , & ! InOut:  [real(r8) (:)] crop carbon harvested
+   phrv_leafn_to_prod1n                =>   veg_nf%core%hrv_leaf_to_prod1    , & ! Input:  [real(r8) (:)] crop leafn harvested
+   phrv_livestemn_to_prod1n            =>   veg_nf%core%hrv_livestem_to_prod1, & ! Input:  [real(r8) (:)] crop stemn harvested
+   phrv_grainn_to_prod1n               =>   veg_nf%core%hrv_grain_to_prod1   , & ! Input:  [real(r8) (:)] crop grainn harvested
+   phrv_cropn_to_prod1n                =>   veg_nf%core%hrv_crop_to_prod1    , & ! InOut:  [real(r8) (:)] crop grainn harvested
+   phrv_leafp_to_prod1p                =>   veg_pf%core%hrv_leaf_to_prod1  , & ! InOut:  [real(r8) (:)] crop grainp harvested
+   phrv_livestemp_to_prod1p            =>   veg_pf%core%hrv_livestem_to_prod1, & ! InOut:  [real(r8) (:)] column level crop carbon harvested
+   phrv_grainp_to_prod1p               =>   veg_pf%core%hrv_grain_to_prod1 , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
+   phrv_cropp_to_prod1p                =>   veg_pf%core%hrv_crop_to_prod1  , & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
+   chrv_cropc_to_prod1c                =>   col_cf%core%hrv_crop_to_prod1        , & ! InOut:  [real(r8) (:)] column level crop carbon harvested
+   chrv_cropn_to_prod1n                =>   col_nf%core%hrv_crop_to_prod1      , & ! InOut:  [real(r8) (:)] column level crop nitrogen harvested
+   chrv_cropp_to_prod1p                =>   col_pf%core%hrv_crop_to_prod1      & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
    )
 
    do pi = 1,maxpatch_pft

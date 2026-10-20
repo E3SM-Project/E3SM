@@ -221,7 +221,7 @@ contains
                 c = filter_soilc(fc)
                 do l = 1, ndecomp_pools
 
-                   col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l)- col_pf%biochem_pmin_ppools_vr(c,j,l)*dt
+                   col_ps%core%decomp_pools_vr(c,j,l) = col_ps%core%decomp_pools_vr(c,j,l)- col_pf%biochem_pmin_ppools_vr(c,j,l)*dt
 
                 end do
              end do
@@ -273,12 +273,12 @@ contains
 
             ! column level phosphorus fluxes from fire
             ! pft-level wood to column-level CWD (uncombusted wood)
-            col_ps%decomp_ppools_vr(c,j,i_cwd) = col_ps%decomp_ppools_vr(c,j,i_cwd) + col_pf%fire_mortality_p_to_cwdp(c,j) * dt
+            col_ps%core%decomp_pools_vr(c,j,i_cwd) = col_ps%core%decomp_pools_vr(c,j,i_cwd) + col_pf%core%fire_mortality_to_cwd(c,j) * dt
 
             ! pft-level wood to column-level litter (uncombusted wood)
-            col_ps%decomp_ppools_vr(c,j,i_met_lit) = col_ps%decomp_ppools_vr(c,j,i_met_lit) + col_pf%m_p_to_litr_met_fire(c,j)* dt
-            col_ps%decomp_ppools_vr(c,j,i_cel_lit) = col_ps%decomp_ppools_vr(c,j,i_cel_lit) + col_pf%m_p_to_litr_cel_fire(c,j)* dt
-            col_ps%decomp_ppools_vr(c,j,i_lig_lit) = col_ps%decomp_ppools_vr(c,j,i_lig_lit) + col_pf%m_p_to_litr_lig_fire(c,j)* dt
+            col_ps%core%decomp_pools_vr(c,j,i_met_lit) = col_ps%core%decomp_pools_vr(c,j,i_met_lit) + col_pf%core%m_to_litr_met_fire(c,j)* dt
+            col_ps%core%decomp_pools_vr(c,j,i_cel_lit) = col_ps%core%decomp_pools_vr(c,j,i_cel_lit) + col_pf%core%m_to_litr_cel_fire(c,j)* dt
+            col_ps%core%decomp_pools_vr(c,j,i_lig_lit) = col_ps%core%decomp_pools_vr(c,j,i_lig_lit) + col_pf%core%m_to_litr_lig_fire(c,j)* dt
          end do ! end of column loop
       end do
 
@@ -288,7 +288,7 @@ contains
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%m_decomp_ppools_to_fire_vr(c,j,l) * dt
+               col_ps%core%decomp_pools_vr(c,j,l) = col_ps%core%decomp_pools_vr(c,j,l) - col_pf%core%m_decomp_pools_to_fire_vr(c,j,l) * dt
             end do
          end do
       end do
@@ -303,7 +303,7 @@ contains
             ! pool loop
             do l = 1, ndecomp_pools
                if ( decomp_cascade_con%is_soil(l) ) then
-                  col_ps%decomp_ppools_vr(c,j,l) = col_ps%decomp_ppools_vr(c,j,l) - col_pf%decomp_ppools_yield_vr(c,j,l) * dt
+                  col_ps%core%decomp_pools_vr(c,j,l) = col_ps%core%decomp_pools_vr(c,j,l) - col_pf%core%decomp_pools_yield_vr(c,j,l) * dt
                end if
             end do
             col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) - col_pf%labilep_yield_vr(c,j) * dt
@@ -321,56 +321,56 @@ contains
           p = filter_soilp(fp)
 
           !from fire displayed pools
-          veg_ps%leafp(p)              =  veg_ps%leafp(p)      - veg_pf%m_leafp_to_fire(p)      * dt
-          veg_ps%frootp(p)             =  veg_ps%frootp(p)     - veg_pf%m_frootp_to_fire(p)     * dt
-          veg_ps%livestemp(p)          =  veg_ps%livestemp(p)  - veg_pf%m_livestemp_to_fire(p)  * dt
-          veg_ps%deadstemp(p)          =  veg_ps%deadstemp(p)  - veg_pf%m_deadstemp_to_fire(p)  * dt
-          veg_ps%livecrootp(p)         =  veg_ps%livecrootp(p) - veg_pf%m_livecrootp_to_fire(p) * dt
-          veg_ps%deadcrootp(p)         =  veg_ps%deadcrootp(p) - veg_pf%m_deadcrootp_to_fire(p) * dt
+          veg_ps%core%leaf(p)              =  veg_ps%core%leaf(p)      - veg_pf%core%m_leaf_to_fire(p)      * dt
+          veg_ps%core%froot(p)             =  veg_ps%core%froot(p)     - veg_pf%core%m_froot_to_fire(p)     * dt
+          veg_ps%core%livestem(p)          =  veg_ps%core%livestem(p)  - veg_pf%core%m_livestem_to_fire(p)  * dt
+          veg_ps%core%deadstem(p)          =  veg_ps%core%deadstem(p)  - veg_pf%core%m_deadstem_to_fire(p)  * dt
+          veg_ps%core%livecroot(p)         =  veg_ps%core%livecroot(p) - veg_pf%core%m_livecroot_to_fire(p) * dt
+          veg_ps%core%deadcroot(p)         =  veg_ps%core%deadcroot(p) - veg_pf%core%m_deadcroot_to_fire(p) * dt
 
-          veg_ps%leafp(p)              =  veg_ps%leafp(p)      - veg_pf%m_leafp_to_litter_fire(p)           * dt
-          veg_ps%frootp(p)             =  veg_ps%frootp(p)     - veg_pf%m_frootp_to_litter_fire(p)          * dt
-          veg_ps%livestemp(p)          =  veg_ps%livestemp(p)  - veg_pf%m_livestemp_to_litter_fire(p)       * dt
-          veg_ps%deadstemp(p)          =  veg_ps%deadstemp(p)  - veg_pf%m_deadstemp_to_litter_fire(p)       * dt
-          veg_ps%livecrootp(p)         =  veg_ps%livecrootp(p) - veg_pf%m_livecrootp_to_litter_fire(p)      * dt
-          veg_ps%deadcrootp(p)         =  veg_ps%deadcrootp(p) - veg_pf%m_deadcrootp_to_litter_fire(p)      * dt
+          veg_ps%core%leaf(p)              =  veg_ps%core%leaf(p)      - veg_pf%core%m_leaf_to_litter_fire(p)           * dt
+          veg_ps%core%froot(p)             =  veg_ps%core%froot(p)     - veg_pf%core%m_froot_to_litter_fire(p)          * dt
+          veg_ps%core%livestem(p)          =  veg_ps%core%livestem(p)  - veg_pf%core%m_livestem_to_litter_fire(p)       * dt
+          veg_ps%core%deadstem(p)          =  veg_ps%core%deadstem(p)  - veg_pf%core%m_deadstem_to_litter_fire(p)       * dt
+          veg_ps%core%livecroot(p)         =  veg_ps%core%livecroot(p) - veg_pf%core%m_livecroot_to_litter_fire(p)      * dt
+          veg_ps%core%deadcroot(p)         =  veg_ps%core%deadcroot(p) - veg_pf%core%m_deadcroot_to_litter_fire(p)      * dt
 
           ! storage pools
-          veg_ps%leafp_storage(p)      =  veg_ps%leafp_storage(p)      - veg_pf%m_leafp_storage_to_fire(p)      * dt
-          veg_ps%frootp_storage(p)     =  veg_ps%frootp_storage(p)     - veg_pf%m_frootp_storage_to_fire(p)     * dt
-          veg_ps%livestemp_storage(p)  =  veg_ps%livestemp_storage(p)  - veg_pf%m_livestemp_storage_to_fire(p)  * dt
-          veg_ps%deadstemp_storage(p)  =  veg_ps%deadstemp_storage(p)  - veg_pf%m_deadstemp_storage_to_fire(p)  * dt
-          veg_ps%livecrootp_storage(p) =  veg_ps%livecrootp_storage(p) - veg_pf%m_livecrootp_storage_to_fire(p) * dt
-          veg_ps%deadcrootp_storage(p) =  veg_ps%deadcrootp_storage(p) - veg_pf%m_deadcrootp_storage_to_fire(p) * dt
+          veg_ps%core%leaf_storage(p)      =  veg_ps%core%leaf_storage(p)      - veg_pf%core%m_leaf_storage_to_fire(p)      * dt
+          veg_ps%core%froot_storage(p)     =  veg_ps%core%froot_storage(p)     - veg_pf%core%m_froot_storage_to_fire(p)     * dt
+          veg_ps%core%livestem_storage(p)  =  veg_ps%core%livestem_storage(p)  - veg_pf%core%m_livestem_storage_to_fire(p)  * dt
+          veg_ps%core%deadstem_storage(p)  =  veg_ps%core%deadstem_storage(p)  - veg_pf%core%m_deadstem_storage_to_fire(p)  * dt
+          veg_ps%core%livecroot_storage(p) =  veg_ps%core%livecroot_storage(p) - veg_pf%core%m_livecroot_storage_to_fire(p) * dt
+          veg_ps%core%deadcroot_storage(p) =  veg_ps%core%deadcroot_storage(p) - veg_pf%core%m_deadcroot_storage_to_fire(p) * dt
 
-          veg_ps%leafp_storage(p)      =  veg_ps%leafp_storage(p)      - veg_pf%m_leafp_storage_to_litter_fire(p)      * dt
-          veg_ps%frootp_storage(p)     =  veg_ps%frootp_storage(p)     - veg_pf%m_frootp_storage_to_litter_fire(p)     * dt
-          veg_ps%livestemp_storage(p)  =  veg_ps%livestemp_storage(p)  - veg_pf%m_livestemp_storage_to_litter_fire(p)  * dt
-          veg_ps%deadstemp_storage(p)  =  veg_ps%deadstemp_storage(p)  - veg_pf%m_deadstemp_storage_to_litter_fire(p)  * dt
-          veg_ps%livecrootp_storage(p) =  veg_ps%livecrootp_storage(p) - veg_pf%m_livecrootp_storage_to_litter_fire(p) * dt
-          veg_ps%deadcrootp_storage(p) =  veg_ps%deadcrootp_storage(p) - veg_pf%m_deadcrootp_storage_to_litter_fire(p) * dt
+          veg_ps%core%leaf_storage(p)      =  veg_ps%core%leaf_storage(p)      - veg_pf%core%m_leaf_storage_to_litter_fire(p)      * dt
+          veg_ps%core%froot_storage(p)     =  veg_ps%core%froot_storage(p)     - veg_pf%core%m_froot_storage_to_litter_fire(p)     * dt
+          veg_ps%core%livestem_storage(p)  =  veg_ps%core%livestem_storage(p)  - veg_pf%core%m_livestem_storage_to_litter_fire(p)  * dt
+          veg_ps%core%deadstem_storage(p)  =  veg_ps%core%deadstem_storage(p)  - veg_pf%core%m_deadstem_storage_to_litter_fire(p)  * dt
+          veg_ps%core%livecroot_storage(p) =  veg_ps%core%livecroot_storage(p) - veg_pf%core%m_livecroot_storage_to_litter_fire(p) * dt
+          veg_ps%core%deadcroot_storage(p) =  veg_ps%core%deadcroot_storage(p) - veg_pf%core%m_deadcroot_storage_to_litter_fire(p) * dt
 
 
           ! trapsfer pools
-          veg_ps%leafp_xfer(p)         =  veg_ps%leafp_xfer(p)      - veg_pf%m_leafp_xfer_to_fire(p)      * dt
-          veg_ps%frootp_xfer(p)        =  veg_ps%frootp_xfer(p)     - veg_pf%m_frootp_xfer_to_fire(p)     * dt
-          veg_ps%livestemp_xfer(p)     =  veg_ps%livestemp_xfer(p)  - veg_pf%m_livestemp_xfer_to_fire(p)  * dt
-          veg_ps%deadstemp_xfer(p)     =  veg_ps%deadstemp_xfer(p)  - veg_pf%m_deadstemp_xfer_to_fire(p)  * dt
-          veg_ps%livecrootp_xfer(p)    =  veg_ps%livecrootp_xfer(p) - veg_pf%m_livecrootp_xfer_to_fire(p) * dt
-          veg_ps%deadcrootp_xfer(p)    =  veg_ps%deadcrootp_xfer(p) - veg_pf%m_deadcrootp_xfer_to_fire(p) * dt
+          veg_ps%core%leaf_xfer(p)         =  veg_ps%core%leaf_xfer(p)      - veg_pf%core%m_leaf_xfer_to_fire(p)      * dt
+          veg_ps%core%froot_xfer(p)        =  veg_ps%core%froot_xfer(p)     - veg_pf%core%m_froot_xfer_to_fire(p)     * dt
+          veg_ps%core%livestem_xfer(p)     =  veg_ps%core%livestem_xfer(p)  - veg_pf%core%m_livestem_xfer_to_fire(p)  * dt
+          veg_ps%core%deadstem_xfer(p)     =  veg_ps%core%deadstem_xfer(p)  - veg_pf%core%m_deadstem_xfer_to_fire(p)  * dt
+          veg_ps%core%livecroot_xfer(p)    =  veg_ps%core%livecroot_xfer(p) - veg_pf%core%m_livecroot_xfer_to_fire(p) * dt
+          veg_ps%core%deadcroot_xfer(p)    =  veg_ps%core%deadcroot_xfer(p) - veg_pf%core%m_deadcroot_xfer_to_fire(p) * dt
 
-          veg_ps%leafp_xfer(p)         =  veg_ps%leafp_xfer(p)      - veg_pf%m_leafp_xfer_to_litter_fire(p)      * dt
-          veg_ps%frootp_xfer(p)        =  veg_ps%frootp_xfer(p)     - veg_pf%m_frootp_xfer_to_litter_fire(p)     * dt
-          veg_ps%livestemp_xfer(p)     =  veg_ps%livestemp_xfer(p)  - veg_pf%m_livestemp_xfer_to_litter_fire(p)  * dt
-          veg_ps%deadstemp_xfer(p)     =  veg_ps%deadstemp_xfer(p)  - veg_pf%m_deadstemp_xfer_to_litter_fire(p)  * dt
-          veg_ps%livecrootp_xfer(p)    =  veg_ps%livecrootp_xfer(p) - veg_pf%m_livecrootp_xfer_to_litter_fire(p) * dt
-          veg_ps%deadcrootp_xfer(p)    =  veg_ps%deadcrootp_xfer(p) - veg_pf%m_deadcrootp_xfer_to_litter_fire(p) * dt
+          veg_ps%core%leaf_xfer(p)         =  veg_ps%core%leaf_xfer(p)      - veg_pf%core%m_leaf_xfer_to_litter_fire(p)      * dt
+          veg_ps%core%froot_xfer(p)        =  veg_ps%core%froot_xfer(p)     - veg_pf%core%m_froot_xfer_to_litter_fire(p)     * dt
+          veg_ps%core%livestem_xfer(p)     =  veg_ps%core%livestem_xfer(p)  - veg_pf%core%m_livestem_xfer_to_litter_fire(p)  * dt
+          veg_ps%core%deadstem_xfer(p)     =  veg_ps%core%deadstem_xfer(p)  - veg_pf%core%m_deadstem_xfer_to_litter_fire(p)  * dt
+          veg_ps%core%livecroot_xfer(p)    =  veg_ps%core%livecroot_xfer(p) - veg_pf%core%m_livecroot_xfer_to_litter_fire(p) * dt
+          veg_ps%core%deadcroot_xfer(p)    =  veg_ps%core%deadcroot_xfer(p) - veg_pf%core%m_deadcroot_xfer_to_litter_fire(p) * dt
 
           ! retranslocated N pool
           veg_ps%retransp(p)           =  veg_ps%retransp(p) - veg_pf%m_retransp_to_fire(p)        * dt
           veg_ps%retransp(p)           =  veg_ps%retransp(p) - veg_pf%m_retransp_to_litter_fire(p) * dt
-          veg_ps%ppool(p)              =  veg_ps%ppool(p) - veg_pf%m_ppool_to_fire(p)              * dt
-          veg_ps%ppool(p)              =  veg_ps%ppool(p) - veg_pf%m_ppool_to_litter_fire(p)       * dt
+          veg_ps%core%pool(p)              =  veg_ps%core%pool(p) - veg_pf%core%m_pool_to_fire(p)              * dt
+          veg_ps%core%pool(p)              =  veg_ps%core%pool(p) - veg_pf%core%m_pool_to_litter_fire(p)       * dt
        end do
     end if
 

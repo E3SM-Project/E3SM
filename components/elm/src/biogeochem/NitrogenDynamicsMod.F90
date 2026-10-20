@@ -627,7 +627,7 @@ contains
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
          km_nfix               => veg_vp%km_nfix                   , &
-         frootc                => veg_cs%frootc        , &
+         frootc                => veg_cs%core%froot        , &
          nfix_to_sminn         => col_nf%nfix_to_sminn  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          nfix_to_plantn        => veg_nf%nfix_to_plantn , &
          nfix_to_ecosysn       => col_nf%nfix_to_ecosysn, &

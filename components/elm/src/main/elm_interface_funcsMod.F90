@@ -502,9 +502,9 @@ contains
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr=> col_cs%decomp_cpools_vr     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-       decomp_npools_vr=> col_ns%decomp_npools_vr   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-       decomp_ppools_vr=> col_ps%decomp_ppools_vr , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+       decomp_cpools_vr=> col_cs%core%decomp_pools_vr     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+       decomp_npools_vr=> col_ns%core%decomp_pools_vr   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+       decomp_ppools_vr=> col_ps%core%decomp_pools_vr , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
        smin_no3_vr     => col_ns%smin_no3_vr        , & ! (gN/m3) vertically-resolved soil mineral NO3
        smin_nh4_vr     => col_ns%smin_nh4_vr        , & ! (gN/m3) vertically-resolved soil mineral NH4
        smin_nh4sorb_vr => col_ns%smin_nh4sorb_vr    , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
@@ -616,9 +616,9 @@ contains
     !
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
-      externalc_to_decomp_cpools_vr    => col_cf%externalc_to_decomp_cpools        , &
-      externaln_to_decomp_npools_vr    => col_nf%externaln_to_decomp_npools      , &
-      externalp_to_decomp_ppools_vr    => col_pf%externalp_to_decomp_ppools    , &
+      externalc_to_decomp_cpools_vr    => col_cf%core%external_to_decomp_pools        , &
+      externaln_to_decomp_npools_vr    => col_nf%core%external_to_decomp_pools      , &
+      externalp_to_decomp_ppools_vr    => col_pf%core%external_to_decomp_pools    , &
       t_scalar                         => col_cf%t_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
       w_scalar                         => col_cf%w_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
       o_scalar                         => col_cf%o_scalar                          , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
@@ -868,9 +868,9 @@ contains
 !------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr             => col_cs%decomp_cpools_vr           , &
-       decomp_npools_vr             => col_ns%decomp_npools_vr         , &
-       decomp_ppools_vr             => col_ps%decomp_ppools_vr         &
+       decomp_cpools_vr             => col_cs%core%decomp_pools_vr           , &
+       decomp_npools_vr             => col_ns%core%decomp_pools_vr         , &
+       decomp_ppools_vr             => col_ps%core%decomp_pools_vr         &
     )
 ! ------------------------------------------------------------------------
 !
@@ -963,9 +963,9 @@ contains
     character(len=256) :: subname = "update_bgc_flux_decomp_sourcesink"
 
     associate ( &
-     decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
-     decomp_npools_sourcesink_vr  => col_nf%decomp_npools_sourcesink  , &
-     decomp_ppools_sourcesink_vr  => col_pf%decomp_ppools_sourcesink  &
+     decomp_cpools_sourcesink_vr  => col_cf%core%decomp_pools_sourcesink    , &
+     decomp_npools_sourcesink_vr  => col_nf%core%decomp_pools_sourcesink  , &
+     decomp_ppools_sourcesink_vr  => col_pf%core%decomp_pools_sourcesink  &
      )
 
     do fc = 1, num_soilc
@@ -1004,9 +1004,9 @@ contains
 
      decomp_cascade_hr_vr_col         => col_cf%decomp_cascade_hr_vr                   , &
 
-     decomp_cascade_ctransfer_vr_col  => col_cf%decomp_cascade_ctransfer_vr            , &
-     decomp_cascade_ntransfer_vr_col  => col_nf%decomp_cascade_ntransfer_vr          , &
-     decomp_cascade_ptransfer_vr_col  => col_pf%decomp_cascade_ptransfer_vr        , &
+     decomp_cascade_ctransfer_vr_col  => col_cf%core%decomp_cascade_transfer_vr            , &
+     decomp_cascade_ntransfer_vr_col  => col_nf%core%decomp_cascade_transfer_vr          , &
+     decomp_cascade_ptransfer_vr_col  => col_pf%core%decomp_cascade_transfer_vr        , &
 
      decomp_cascade_sminn_flux_vr_col => col_nf%decomp_cascade_sminn_flux_vr         , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
      decomp_cascade_sminp_flux_vr_col => col_pf%decomp_cascade_sminp_flux_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
@@ -1361,9 +1361,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-        decomp_cpools_vr        => col_cs%decomp_cpools_vr        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-        decomp_npools_vr        => col_ns%decomp_npools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-        decomp_ppools_vr        => col_ps%decomp_ppools_vr    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+        decomp_cpools_vr        => col_cs%core%decomp_pools_vr        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+        decomp_npools_vr        => col_ns%core%decomp_pools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+        decomp_ppools_vr        => col_ps%core%decomp_pools_vr    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
         smin_no3_vr             => col_ns%smin_no3_vr           , &      ! (gN/m3) vertically-resolved soil mineral NO3
         smin_nh4_vr             => col_ns%smin_nh4_vr           , &      ! (gN/m3) vertically-resolved soil mineral NH4
@@ -1518,7 +1518,7 @@ contains
          sminp_to_plant_vr            => col_pf%sminp_to_plant_vr                      , & ! Output: [real(r8) (:,:) ]
          actual_immob_p_vr            => col_pf%actual_immob_p_vr                      , & ! Output: [real(r8) (:,:) ]
 
-         decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
+         decomp_cascade_ntransfer_vr      =>    col_nf%core%decomp_cascade_transfer_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
          decomp_cascade_sminn_flux_vr     =>    col_nf%decomp_cascade_sminn_flux_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
          potential_immob_vr               =>    col_nf%potential_immob_vr                , & ! Output: [real(r8) (:,:)   ]
          sminn_to_denit_decomp_cascade_vr =>    col_nf%sminn_to_denit_decomp_cascade_vr  , & ! Output: [real(r8) (:,:,:) ]
@@ -1528,7 +1528,7 @@ contains
          net_nmin                         =>    col_nf%net_nmin                          , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
 
          ! add phosphorus
-         decomp_cascade_ptransfer_vr      =>    col_pf%decomp_cascade_ptransfer_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
+         decomp_cascade_ptransfer_vr      =>    col_pf%core%decomp_cascade_transfer_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
          decomp_cascade_sminp_flux_vr     =>    col_pf%decomp_cascade_sminp_flux_vr    , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
          potential_immob_p_vr             =>    col_pf%potential_immob_p_vr            , & ! Output: [real(r8) (:,:)   ]
          gross_pmin_vr                    =>    col_pf%gross_pmin_vr                   , & ! Output: [real(r8) (:,:)   ]
@@ -1537,7 +1537,7 @@ contains
          net_pmin                         =>    col_pf%net_pmin                        , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
 
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr                , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_ctransfer_vr      =>    col_cf%core%decomp_cascade_transfer_vr         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          phr_vr                           =>    col_cf%phr_vr                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
          fphr                             =>    col_cf%fphr                                  & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          )

@@ -91,8 +91,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                        &
-         totcolc   =>  col_cs%totcolc , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
-         col_begcb =>  col_cs%begcb     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         totcolc   =>  col_cs%core%totcol , & ! Input:  [real(r8) (:)]  (gC/m2) total column carbon, incl veg and cpool
+         col_begcb =>  col_cs%core%balance_beg     & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          )
 
       ! calculate beginning column-level carbon balance, for mass conservation check
@@ -125,8 +125,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                         &
-         totcoln   => col_ns%totcoln , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
-         col_begnb => col_ns%begnb     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         totcoln   => col_ns%core%totcol , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         col_begnb => col_ns%core%balance_beg     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          )
 
       ! calculate beginning column-level nitrogen balance, for mass conservation check
@@ -159,13 +159,13 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                           &
-         totcolp   => col_ps%totcolp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         totpftp   => col_ps%totpftp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         totsomp   => col_ps%totsomp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         cwdp      => col_ps%cwdp    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         totlitp   => col_ps%totlitp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totcolp   => col_ps%core%totcol , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totpftp   => col_ps%core%totpft , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         totsomp   => col_ps%core%totsom , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
+         cwdp      => col_ps%core%cwd    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totlitp   => col_ps%core%totlit , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          sminp     => col_ps%sminp   , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         col_begpb => col_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         col_begpb => col_ps%core%balance_beg     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
       ! calculate beginning column-level phosphorus balance, for mass conservation check
@@ -202,26 +202,26 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                           &
-         totcolc                   =>    col_cs%totcolc                  , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         totcolc                   =>    col_cs%core%totcol                  , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
          gpp                       =>    col_cf%gpp                       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) gross primary production
          er                        =>    col_cf%er                        , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-         col_fire_closs            =>    col_cf%fire_closs                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
-         col_prod1c_loss           =>    col_cf%prod1c_loss               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
-         col_prod10c_loss          =>    col_cf%prod10c_loss              , & ! Input:  [real(r8) (:) ]  (gC/m2/s) 10-year wood C harvested
-         col_prod100c_loss         =>    col_cf%prod100c_loss             , & ! Input:  [real(r8) (:) ]  (gC/m2/s) 100-year wood C harvested
+         col_fire_closs            =>    col_cf%core%fire_loss                , & ! Input:  [real(r8) (:) ]  (gC/m2/s) total column-level fire C loss
+         col_prod1c_loss           =>    col_cf%core%prod1_loss               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
+         col_prod10c_loss          =>    col_cf%core%prod10_loss              , & ! Input:  [real(r8) (:) ]  (gC/m2/s) 10-year wood C harvested
+         col_prod100c_loss         =>    col_cf%core%prod100_loss             , & ! Input:  [real(r8) (:) ]  (gC/m2/s) 100-year wood C harvested
          col_hrv_xsmrpool_to_atm   =>    col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
-         som_c_leached             =>    col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
-         som_c_yield               =>    col_cf%somc_yield                , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss by erosion
-         col_decompc_delta         =>    col_cf%externalc_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
-         col_cinputs               =>    col_cf%cinputs                   , & ! Output: [real(r8) (:)]  column-level C inputs (gC/m2/s)
-         col_coutputs              =>    col_cf%coutputs                  , & ! Output: [real(r8) (:)]  column-level C outputs (gC/m2/s)
-         col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         col_errcb                 =>    col_cs%errcb                    ,  & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         som_c_leached             =>    col_cf%core%som_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
+         som_c_yield               =>    col_cf%core%som_yield                , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss by erosion
+         col_decompc_delta         =>    col_cf%core%external_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
+         col_cinputs               =>    col_cf%core%inputs                   , & ! Output: [real(r8) (:)]  column-level C inputs (gC/m2/s)
+         col_coutputs              =>    col_cf%core%outputs                  , & ! Output: [real(r8) (:)]  column-level C outputs (gC/m2/s)
+         col_begcb                 =>    col_cs%core%balance_beg                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         col_endcb                 =>    col_cs%core%balance_end                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
+         col_errcb                 =>    col_cs%core%balance_err                    ,  & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
          hr                        =>    col_cf%hr                       , &  ! Input: heterotrophic respiration flux (gC/m2/s)
          litfall                   =>    col_cf%litfall                  , &  ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
-         hrv_deadstemc_to_prod10c  =>    col_cf%hrv_deadstemc_to_prod10c , &  ! Input: harvest of wood to 10-year product pool (gC/m2/s)
-         hrv_deadstemc_to_prod100c =>    col_cf%hrv_deadstemc_to_prod100c )   ! Input: harvest of wood to 100-year product pool (gC/m2/s)
+         hrv_deadstemc_to_prod10c  =>    col_cf%core%hrv_deadstem_to_prod10 , &  ! Input: harvest of wood to 10-year product pool (gC/m2/s)
+         hrv_deadstemc_to_prod100c =>    col_cf%core%hrv_deadstem_to_prod100 )   ! Input: harvest of wood to 100-year product pool (gC/m2/s)
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -301,8 +301,8 @@ contains
           write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
           write(iulog,*)'leach                 = ',som_c_leached(c)*dt
           write(iulog,*)'begcb                 = ',col_begcb(c)
-          write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
-          write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
+          write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%core%totsom(c)
+          write(iulog,*)'totsomc               = ',col_cs%core%totsom(c)
           write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
           if (ero_ccycle) then
@@ -359,7 +359,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                             &
-         totcoln                   =>    col_ns%totcoln                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         totcoln                   =>    col_ns%core%totcol                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
          ndep_to_sminn             =>    col_nf%ndep_to_sminn             , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
          nfix_to_sminn             =>    col_nf%nfix_to_sminn             , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          nfix_to_ecosysn           =>    col_nf%nfix_to_ecosysn           , &
@@ -373,22 +373,22 @@ contains
          smin_no3_leached          =>    col_nf%smin_no3_leached          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    col_nf%smin_no3_runoff           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    col_nf%f_n2o_nit                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
-         plant_to_litter_nflux     =>    col_nf%plant_to_litter_nflux     , & ! Input                   flux of N from FATES litter into ELM
+         plant_to_litter_nflux     =>    col_nf%core%plant_to_litter_flux     , & ! Input                   flux of N from FATES litter into ELM
                                                                               !                         litter (gP/m2/s)
-         col_prod1n_loss           =>    col_nf%prod1n_loss               , & ! Input:  [real(r8) (:)]  crop leafc harvested [gN/m2/s]
-         col_prod10n_loss          =>    col_nf%prod10n_loss              , & ! Input:  [real(r8) (:)]  10-year wood product harvested [gN/m2/s]
-         col_prod100n_loss         =>    col_nf%prod100n_loss             , & ! Input:  [real(r8) (:)]  100-year wood product harvestd [gN/m2/s]
-         col_fire_nloss            =>    col_nf%fire_nloss                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
-         som_n_leached             =>    col_nf%som_n_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
-         som_n_yield               =>    col_nf%somn_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
+         col_prod1n_loss           =>    col_nf%core%prod1_loss               , & ! Input:  [real(r8) (:)]  crop leafc harvested [gN/m2/s]
+         col_prod10n_loss          =>    col_nf%core%prod10_loss              , & ! Input:  [real(r8) (:)]  10-year wood product harvested [gN/m2/s]
+         col_prod100n_loss         =>    col_nf%core%prod100_loss             , & ! Input:  [real(r8) (:)]  100-year wood product harvestd [gN/m2/s]
+         col_fire_nloss            =>    col_nf%core%fire_loss                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
+         som_n_leached             =>    col_nf%core%som_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
+         som_n_yield               =>    col_nf%core%som_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
          supplement_to_plantn      =>    veg_nf%supplement_to_plantn      , &
          ! pflotran:
-         col_decompn_delta         =>    col_nf%externaln_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
-         col_ninputs               =>    col_nf%ninputs                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
-         col_noutputs              =>    col_nf%noutputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
-         col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
-         col_endnb                 =>    col_ns%endnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb                 =>    col_ns%errnb                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         col_decompn_delta         =>    col_nf%core%external_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
+         col_ninputs               =>    col_nf%core%inputs                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
+         col_noutputs              =>    col_nf%core%outputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
+         col_begnb                 =>    col_ns%core%balance_beg                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         col_endnb                 =>    col_ns%core%balance_end                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
+         col_errnb                 =>    col_ns%core%balance_err                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
          sminn_to_plant            =>    col_nf%sminn_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
 
 
@@ -578,39 +578,39 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                            &
-         totcolp                   => col_ps%totcolp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totcolp                   => col_ps%core%totcol                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          supplement_to_sminp       => col_pf%supplement_to_sminp       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
          sminp_leached             => col_pf%sminp_leached             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         col_fire_ploss            => col_pf%fire_ploss                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
+         col_fire_ploss            => col_pf%core%fire_loss                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
          biochem_pmin_to_plant     => col_pf%biochem_pmin_to_plant     , & ! Input:  total column level biochemical p flux to plant (gP/m2/s)
          primp_to_labilep          => col_pf%primp_to_labilep          , &
          secondp_to_occlp          => col_pf%secondp_to_occlp          , &
          fert_p_to_sminp           => col_pf%fert_p_to_sminp           , &
-         som_p_yield               => col_pf%somp_yield                , & ! Input:  [real(r8) (:)]  SOM P pool loss by erosion (gP/m^2/s)
+         som_p_yield               => col_pf%core%som_yield                , & ! Input:  [real(r8) (:)]  SOM P pool loss by erosion (gP/m^2/s)
          labilep_yield             => col_pf%labilep_yield             , & ! Input:  [real(r8) (:)]  soil labile mineral P loss by erosion (gP/m^s/s)
          secondp_yield             => col_pf%secondp_yield             , & ! Input:  [real(r8) (:)]  soil secondary mineral P loss by erosion (gP/m^s/s)
          occlp_yield               => col_pf%occlp_yield               , & ! Input:  [real(r8) (:)]  soil occluded mineral P loss by erosion (gP/m^s/s)
          primp_yield               => col_pf%primp_yield               , & ! Input:  [real(r8) (:)]  soil primary mineral P loss by erosion (gP/m^s/s)
          supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
-         plant_to_litter_pflux     => col_pf%plant_to_litter_pflux     , & ! Input                   flux of P from FATES litter into ELM
+         plant_to_litter_pflux     => col_pf%core%plant_to_litter_flux     , & ! Input                   flux of P from FATES litter into ELM
                                                                            !                         litter (gP/m2/s)
-         col_prod1p_loss           => col_pf%prod1p_loss               , & ! Input:  [real(r8) (:) ]  crop leafc harvested (gP/m2/s)
-         col_prod10p_loss          => col_pf%prod10p_loss              , & ! Input:  [real(r8) (:) ]  10-yr wood product harvested (gP/m2/s)
-         col_prod100p_loss         => col_pf%prod100p_loss             , & ! Input:  [real(r8) (:) ]  100-yr wood product harvested (gP/m2/s)
-         col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
-         col_poutputs              => col_pf%poutputs                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
+         col_prod1p_loss           => col_pf%core%prod1_loss               , & ! Input:  [real(r8) (:) ]  crop leafc harvested (gP/m2/s)
+         col_prod10p_loss          => col_pf%core%prod10_loss              , & ! Input:  [real(r8) (:) ]  10-yr wood product harvested (gP/m2/s)
+         col_prod100p_loss         => col_pf%core%prod100_loss             , & ! Input:  [real(r8) (:) ]  100-yr wood product harvested (gP/m2/s)
+         col_pinputs               => col_pf%core%inputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
+         col_poutputs              => col_pf%core%outputs                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
 
-         col_begpb                 => col_ps%begpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
-         col_endpb                 => col_ps%endpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
-         col_errpb                 => col_ps%errpb                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
+         col_begpb                 => col_ps%core%balance_beg                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         col_endpb                 => col_ps%core%balance_end                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
+         col_errpb                 => col_ps%core%balance_err                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
 
-         totpftp                   => col_ps%totpftp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         totsomp                   => col_ps%totsomp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         cwdp                      => col_ps%cwdp                     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         totlitp                   => col_ps%totlitp                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totpftp                   => col_ps%core%totpft                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totsomp                   => col_ps%core%totsom                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         cwdp                      => col_ps%core%cwd                     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         totlitp                   => col_ps%core%totlit                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          sminp                     => col_ps%sminp                    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         leafp_to_litter           => veg_pf%leafp_to_litter         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         frootp_to_litter          => veg_pf%frootp_to_litter        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         leafp_to_litter           => veg_pf%core%leaf_to_litter         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         frootp_to_litter          => veg_pf%core%froot_to_litter        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          sminp_to_plant            => col_pf%sminp_to_plant            , &
          cascade_receiver_pool     => decomp_cascade_con%cascade_receiver_pool   &
          )
@@ -785,15 +785,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                    &
-         totcolc               =>  col_cs%totcolc               , & ! Input:  [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
-         totpftc               =>  col_cs%totpftc               , & ! Input:  [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         cwdc                  =>  col_cs%cwdc                  , & ! Input:  [real(r8) (:)] (gC/m2) total column coarse woody debris carbon,
-         totsomc               =>  col_cs%totsomc               , & ! Input:  [real(r8) (:)] (gC/m2) total column soil organic matter carbon
-         totlitc               =>  col_cs%totlitc               , & ! Input:  [real(r8) (:)] (gC/m2) total column litter carbon
-         totprodc              =>  col_cs%totprodc              , & ! Input:  [real(r8) (:)] (gC/m2) total column wood product carbon
-         ctrunc                =>  col_cs%ctrunc                , & ! Input:  [real(r8) (:)] (gC/m2) total column truncation carbon sink
-         cropseedc_deficit     =>  col_cs%cropseedc_deficit     , & ! Input:  [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
-         begcb_grc             =>  grc_cs%begcb                 , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         totcolc               =>  col_cs%core%totcol               , & ! Input:  [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
+         totpftc               =>  col_cs%core%totpft               , & ! Input:  [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         cwdc                  =>  col_cs%core%cwd                  , & ! Input:  [real(r8) (:)] (gC/m2) total column coarse woody debris carbon,
+         totsomc               =>  col_cs%core%totsom               , & ! Input:  [real(r8) (:)] (gC/m2) total column soil organic matter carbon
+         totlitc               =>  col_cs%core%totlit               , & ! Input:  [real(r8) (:)] (gC/m2) total column litter carbon
+         totprodc              =>  col_cs%core%totprod              , & ! Input:  [real(r8) (:)] (gC/m2) total column wood product carbon
+         ctrunc                =>  col_cs%core%trunc_sink                , & ! Input:  [real(r8) (:)] (gC/m2) total column truncation carbon sink
+         cropseedc_deficit     =>  col_cs%core%cropseed_deficit     , & ! Input:  [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         begcb_grc             =>  grc_cs%core%balance_beg                 , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
          beg_totc              =>  grc_cs%beg_totc              , & ! Output: [real(r8) (:)] (gC/m2) total column carbon, incl veg and cpool
          beg_totpftc           =>  grc_cs%beg_totpftc           , & ! Output: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
          beg_cwdc              =>  grc_cs%beg_cwdc              , & ! Output: [real(r8) (:)] (gC/m2) total column coarse woody debris carbon
@@ -857,25 +857,25 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                       &
-         col_totc                  => col_cs%totcolc               , & ! Input:  [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
-         col_totpftc               => col_cs%totpftc               , & ! Input:  [real(r8) (:) ] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
-         col_cwdc                  => col_cs%cwdc                  , & ! Input:  [real(r8) (:) ] (gC/m2) total column coarse woody debris carbon,
-         col_totsomc               => col_cs%totsomc               , & ! Input:  [real(r8) (:) ] (gC/m2) total column soil organic matter carbon
-         col_totlitc               => col_cs%totlitc               , & ! Input:  [real(r8) (:) ] (gC/m2) total column litter carbon
-         col_totprodc              => col_cs%totprodc              , & ! Input:  [real(r8) (:) ] (gC/m2) total column wood product carbon
-         col_ctrunc                => col_cs%ctrunc                , & ! Input:  [real(r8) (:) ] (gC/m2) total column truncation carbon sink
-         col_cropseedc_deficit     => col_cs%cropseedc_deficit     , & ! Input:  [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
+         col_totc                  => col_cs%core%totcol               , & ! Input:  [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
+         col_totpftc               => col_cs%core%totpft               , & ! Input:  [real(r8) (:) ] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
+         col_cwdc                  => col_cs%core%cwd                  , & ! Input:  [real(r8) (:) ] (gC/m2) total column coarse woody debris carbon,
+         col_totsomc               => col_cs%core%totsom               , & ! Input:  [real(r8) (:) ] (gC/m2) total column soil organic matter carbon
+         col_totlitc               => col_cs%core%totlit               , & ! Input:  [real(r8) (:) ] (gC/m2) total column litter carbon
+         col_totprodc              => col_cs%core%totprod              , & ! Input:  [real(r8) (:) ] (gC/m2) total column wood product carbon
+         col_ctrunc                => col_cs%core%trunc_sink                , & ! Input:  [real(r8) (:) ] (gC/m2) total column truncation carbon sink
+         col_cropseedc_deficit     => col_cs%core%cropseed_deficit     , & ! Input:  [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
          col_gpp                   => col_cf%gpp                   , & ! Input:  [real(r8) (:) ] (gC/m2/s) gross primary production
          col_er                    => col_cf%er                    , & ! Input:  [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
-         col_fire_closs            => col_cf%fire_closs            , & ! Input:  [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
-         col_prod1c_loss           => col_cf%prod1c_loss           , & ! Input:  [real(r8) (:) ] (gC/m2/s) crop leafc harvested
-         col_prod10c_loss          => col_cf%prod10c_loss          , & ! Input:  [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
-         col_prod100c_loss         => col_cf%prod100c_loss         , & ! Input:  [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
+         col_fire_closs            => col_cf%core%fire_loss            , & ! Input:  [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
+         col_prod1c_loss           => col_cf%core%prod1_loss           , & ! Input:  [real(r8) (:) ] (gC/m2/s) crop leafc harvested
+         col_prod10c_loss          => col_cf%core%prod10_loss          , & ! Input:  [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
+         col_prod100c_loss         => col_cf%core%prod100_loss         , & ! Input:  [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested 
          col_hrv_xsmrpool_to_atm   => col_cf%hrv_xsmrpool_to_atm   , & ! Input:  [real(r8) (:) ] (gC/m2/s) excess MR pool harvest mortality
-         col_som_c_leached         => col_cf%som_c_leached         , & ! Input:  [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
-         col_som_c_yield           => col_cf%somc_yield            , & ! Input:  [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
-         col_cinputs               => col_cf%cinputs               , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C inputs
-         col_coutputs              => col_cf%coutputs              , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         col_som_c_leached         => col_cf%core%som_leached         , & ! Input:  [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
+         col_som_c_yield           => col_cf%core%som_yield            , & ! Input:  [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
+         col_cinputs               => col_cf%core%inputs               , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C inputs
+         col_coutputs              => col_cf%core%outputs              , & ! Input:  [real(r8) (:) ] (gC/m2/s) column-level C outputs
          beg_totc                  => grc_cs%beg_totc              , & ! Input:  [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
          end_totc                  => grc_cs%end_totc              , & ! Output: [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
          end_totpftc               => grc_cs%end_totpftc           , & ! Output: [real(r8) (:) ] (gC/m2) total column carbon, incl veg and cpool
@@ -885,10 +885,10 @@ contains
          end_totprodc              => grc_cs%end_totprodc          , & ! Output: [real(r8) (:) ] (gC/m2) total column wood product carbon
          end_ctrunc                => grc_cs%end_ctrunc            , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
          end_cropseedc_deficit     => grc_cs%end_cropseedc_deficit , & ! Output: [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
-         grc_errcb                 => grc_cs%errcb                 , & ! Output: [real(r8) (:) ] carbon balance error for the timestep (gC/m**2)
-         grc_dwt_conv_cflux        => grc_cf%dwt_conv_cflux        , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         grc_dwt_seedc_to_leaf     => grc_cf%dwt_seedc_to_leaf     , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         grc_dwt_seedc_to_deadstem => grc_cf%dwt_seedc_to_deadstem , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_errcb                 => grc_cs%core%balance_err                 , & ! Output: [real(r8) (:) ] carbon balance error for the timestep (gC/m**2)
+         grc_dwt_conv_cflux        => grc_cf%core%dwt_conv_flux        , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_dwt_seedc_to_leaf     => grc_cf%core%dwt_seed_to_leaf     , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_dwt_seedc_to_deadstem => grc_cf%core%dwt_seed_to_deadstem , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_gpp                   => grc_cf%gpp                   , & ! Output: [real(r8) (:) ] (gC/m2/s) gross primary production
          grc_er                    => grc_cf%er                    , & ! Output: [real(r8) (:) ] (gC/m2/s) total ecosystem respiration, autotrophic + heterotrophic
          grc_fire_closs            => grc_cf%fire_closs            , & ! Output: [real(r8) (:) ] (gC/m2/s) total column-level fire C loss
@@ -898,8 +898,8 @@ contains
          grc_hrv_xsmrpool_to_atm   => grc_cf%hrv_xsmrpool_to_atm   , & ! Output: [real(r8) (:) ] (gC/m2/s) excess MR pool harvest mortality
          grc_som_c_leached         => grc_cf%som_c_leached         , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss from vertical transport
          grc_som_c_yield           => grc_cf%somc_yield            , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
-         grc_cinputs               => grc_cf%cinputs               , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C inputs
-         grc_coutputs              => grc_cf%coutputs              , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
+         grc_cinputs               => grc_cf%core%inputs               , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C inputs
+         grc_coutputs              => grc_cf%core%outputs              , & ! Output: [real(r8) (:) ] (gC/m2/s) column-level C outputs
          grc_hrv_deadstemc_to_prod10c  => grc_cf%hrv_deadstemc_to_prod10c , & ! Output: [real(r8) (:) ] (gC/m2/s) 10-year wood C harvested
          grc_hrv_deadstemc_to_prod100c => grc_cf%hrv_deadstemc_to_prod100c, & ! Output: [real(r8) (:) ] (gC/m2/s) 100-year wood C harvested
          beg_totpftc               => grc_cs%beg_totpftc          , & ! Input: [real(r8) (:)] (gC/m2) patch-level carbon aggregated to column level, incl veg and cpool
@@ -953,10 +953,10 @@ contains
         call c2g(bounds, col_cf%litfall(bounds%begc:bounds%endc), grc_cinputs(bounds%begg:bounds%endg), &
              c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
-        call c2g(bounds, col_cf%hrv_deadstemc_to_prod10c(bounds%begc:bounds%endc), grc_hrv_deadstemc_to_prod10c(bounds%begg:bounds%endg), &
+        call c2g(bounds, col_cf%core%hrv_deadstem_to_prod10(bounds%begc:bounds%endc), grc_hrv_deadstemc_to_prod10c(bounds%begg:bounds%endg), &
              c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
-        call c2g(bounds, col_cf%hrv_deadstemc_to_prod100c(bounds%begc:bounds%endc), grc_hrv_deadstemc_to_prod100c(bounds%begg:bounds%endg), &
+        call c2g(bounds, col_cf%core%hrv_deadstem_to_prod100(bounds%begc:bounds%endc), grc_hrv_deadstemc_to_prod100c(bounds%begg:bounds%endg), &
              c2l_scale_type = 'unity', l2g_scale_type = 'unity')
       end if 
          
@@ -1034,8 +1034,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                         &
-         totcoln   => col_ns%totcoln , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
-         begnb_grc => grc_ns%begnb     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         totcoln   => col_ns%core%totcol , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
+         begnb_grc => grc_ns%core%balance_beg     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          )
 
       call c2g(bounds, totcoln(bounds%begc:bounds%endc), begnb_grc(bounds%begg:bounds%endg), &
@@ -1060,8 +1060,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                           &
-         totcolp   => col_ps%totcolp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         begpb_grc => grc_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         totcolp   => col_ps%core%totcol , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         begpb_grc => grc_ps%core%balance_beg     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
       call c2g(bounds, totcolp(bounds%begc:bounds%endc), begpb_grc(bounds%begg:bounds%endg), &
@@ -1095,15 +1095,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                       &
-         totcolc                   =>    col_cs%totcolc              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
-         dwt_conv_cflux_grc        =>    grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_seedc_to_leaf_grc     =>    grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         grc_cinputs               =>    grc_cf%cinputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
-         grc_coutputs              =>    grc_cf%coutputs              , & ! Output: [real(r8) (:)]  grid-level C outputs (gC/m2/s)
-         begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
+         totcolc                   =>    col_cs%core%totcol              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
+         dwt_conv_cflux_grc        =>    grc_cf%core%dwt_conv_flux        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_seedc_to_leaf_grc     =>    grc_cf%core%dwt_seed_to_leaf     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_seedc_to_deadstem_grc =>    grc_cf%core%dwt_seed_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         grc_cinputs               =>    grc_cf%core%inputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
+         grc_coutputs              =>    grc_cf%core%outputs              , & ! Output: [real(r8) (:)]  grid-level C outputs (gC/m2/s)
+         begcb_grc                 =>    grc_cs%core%balance_beg                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         endcb_grc                 =>    grc_cs%core%balance_end                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
+         errcb_grc                 =>    grc_cs%core%balance_err                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
          )
 
       ! set time steps
@@ -1180,15 +1180,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                          &
-         totcoln                   =>    col_ns%totcoln               , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
-         dwt_conv_nflux_grc        =>    grc_nf%dwt_conv_nflux        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         dwt_seedn_to_leaf_grc     =>    grc_nf%dwt_seedn_to_leaf     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         dwt_seedn_to_deadstem_grc =>    grc_nf%dwt_seedn_to_deadstem , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         grc_ninputs               =>    grc_nf%ninputs               , & ! Output: [real(r8) (:)]  grid-level N inputs (gN/m2/s)
-         grc_noutputs              =>    grc_nf%noutputs              , & ! Output: [real(r8) (:)]  grid-level N outputs (gN/m2/s)
-         begnb_grc                 =>    grc_ns%begnb                 , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
-         endnb_grc                 =>    grc_ns%endnb                 , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
-         errnb_grc                 =>    grc_ns%errnb                   & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
+         totcoln                   =>    col_ns%core%totcol               , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
+         dwt_conv_nflux_grc        =>    grc_nf%core%dwt_conv_flux        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_seedn_to_leaf_grc     =>    grc_nf%core%dwt_seed_to_leaf     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_seedn_to_deadstem_grc =>    grc_nf%core%dwt_seed_to_deadstem , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         grc_ninputs               =>    grc_nf%core%inputs               , & ! Output: [real(r8) (:)]  grid-level N inputs (gN/m2/s)
+         grc_noutputs              =>    grc_nf%core%outputs              , & ! Output: [real(r8) (:)]  grid-level N outputs (gN/m2/s)
+         begnb_grc                 =>    grc_ns%core%balance_beg                 , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         endnb_grc                 =>    grc_ns%core%balance_end                 , & ! Output: [real(r8) (:) ]  nitrogen mass, end of time step (gN/m2**2)
+         errnb_grc                 =>    grc_ns%core%balance_err                   & ! Output: [real(r8) (:) ]  nitrogen balance error for the time step (gN/m2**2)
          )
 
       ! set time steps
@@ -1271,15 +1271,15 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                          &
-         totcolp                   =>    col_ps%totcolp               , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
-         dwt_conv_pflux_grc        =>    grc_pf%dwt_conv_pflux        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_seedp_to_leaf_grc     =>    grc_pf%dwt_seedp_to_leaf     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         dwt_seedp_to_deadstem_grc =>    grc_pf%dwt_seedp_to_deadstem , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         grc_pinputs               =>    grc_pf%pinputs               , & ! Output: [real(r8) (:)]  grid-level P inputs (gP/m2/s)
-         grc_poutputs              =>    grc_pf%poutputs              , & ! Output: [real(r8) (:)]  grid-level P outputs (gP/m2/s)
-         begpb_grc                 =>    grc_ps%begpb                 , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
-         endpb_grc                 =>    grc_ps%endpb                 , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
-         errpb_grc                 =>    grc_ps%errpb                   & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
+         totcolp                   =>    col_ps%core%totcol               , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
+         dwt_conv_pflux_grc        =>    grc_pf%core%dwt_conv_flux        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_leaf_grc     =>    grc_pf%core%dwt_seed_to_leaf     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_deadstem_grc =>    grc_pf%core%dwt_seed_to_deadstem , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         grc_pinputs               =>    grc_pf%core%inputs               , & ! Output: [real(r8) (:)]  grid-level P inputs (gP/m2/s)
+         grc_poutputs              =>    grc_pf%core%outputs              , & ! Output: [real(r8) (:)]  grid-level P outputs (gP/m2/s)
+         begpb_grc                 =>    grc_ps%core%balance_beg                 , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         endpb_grc                 =>    grc_ps%core%balance_end                 , & ! Output: [real(r8) (:) ]  phosphorus mass, end of time step (gP/m2**2)
+         errpb_grc                 =>    grc_ps%core%balance_err                   & ! Output: [real(r8) (:) ]  phosphorus balance error for the time step (gP/m2**2)
          )
 
       ! set time steps

@@ -424,50 +424,50 @@ contains
        g = veg_pp%gridcell(p)
 
        ! C fluxes
-       veg_cf%dwt_seedc_to_leaf(p) = dwt_leafc_seed(fp)/dt
-       grc_cf%dwt_seedc_to_leaf(g)   = &
-            grc_cf%dwt_seedc_to_leaf(g) + &
-            veg_cf%dwt_seedc_to_leaf(p)
+       veg_cf%core%dwt_seed_to_leaf(p) = dwt_leafc_seed(fp)/dt
+       grc_cf%core%dwt_seed_to_leaf(g)   = &
+            grc_cf%core%dwt_seed_to_leaf(g) + &
+            veg_cf%core%dwt_seed_to_leaf(p)
 
-       veg_cf%dwt_seedc_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
-       grc_cf%dwt_seedc_to_deadstem(g)   = &
-            grc_cf%dwt_seedc_to_deadstem(g) + &
-            veg_cf%dwt_seedc_to_deadstem(p)
+       veg_cf%core%dwt_seed_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
+       grc_cf%core%dwt_seed_to_deadstem(g)   = &
+            grc_cf%core%dwt_seed_to_deadstem(g) + &
+            veg_cf%core%dwt_seed_to_deadstem(p)
 
        if ( use_c13 ) then
-          c13_veg_cf%dwt_seedc_to_leaf(p) = dwt_leafc_seed(fp)/dt
-          c13_grc_cf%dwt_seedc_to_leaf(g)   = &
-               c13_grc_cf%dwt_seedc_to_leaf(g) + &
-               c13_veg_cf%dwt_seedc_to_leaf(p)
+          c13_veg_cf%core%dwt_seed_to_leaf(p) = dwt_leafc_seed(fp)/dt
+          c13_grc_cf%core%dwt_seed_to_leaf(g)   = &
+               c13_grc_cf%core%dwt_seed_to_leaf(g) + &
+               c13_veg_cf%core%dwt_seed_to_leaf(p)
 
-          c13_veg_cf%dwt_seedc_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
-          c13_grc_cf%dwt_seedc_to_deadstem(g)   = &
-               c13_grc_cf%dwt_seedc_to_deadstem(g) + &
-               c13_veg_cf%dwt_seedc_to_deadstem(p)
+          c13_veg_cf%core%dwt_seed_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
+          c13_grc_cf%core%dwt_seed_to_deadstem(g)   = &
+               c13_grc_cf%core%dwt_seed_to_deadstem(g) + &
+               c13_veg_cf%core%dwt_seed_to_deadstem(p)
        endif
 
        if ( use_c14 ) then
-          c14_veg_cf%dwt_seedc_to_leaf(p) = dwt_leafc_seed(fp)/dt
-          c14_grc_cf%dwt_seedc_to_leaf(g)   = &
-               c14_grc_cf%dwt_seedc_to_leaf(g) + &
-               c14_veg_cf%dwt_seedc_to_leaf(p)
+          c14_veg_cf%core%dwt_seed_to_leaf(p) = dwt_leafc_seed(fp)/dt
+          c14_grc_cf%core%dwt_seed_to_leaf(g)   = &
+               c14_grc_cf%core%dwt_seed_to_leaf(g) + &
+               c14_veg_cf%core%dwt_seed_to_leaf(p)
 
-          c14_veg_cf%dwt_seedc_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
-          c14_grc_cf%dwt_seedc_to_deadstem(g)   = &
-               c14_grc_cf%dwt_seedc_to_deadstem(g) + &
-               c14_veg_cf%dwt_seedc_to_deadstem(p)
+          c14_veg_cf%core%dwt_seed_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
+          c14_grc_cf%core%dwt_seed_to_deadstem(g)   = &
+               c14_grc_cf%core%dwt_seed_to_deadstem(g) + &
+               c14_veg_cf%core%dwt_seed_to_deadstem(p)
        endif
 
        ! N fluxes
-       veg_nf%dwt_seedn_to_leaf(p)   = dwt_leafn_seed(fp)/dt
-       grc_nf%dwt_seedn_to_leaf(g)     = &
-            grc_nf%dwt_seedn_to_leaf(g) + &
-            veg_nf%dwt_seedn_to_leaf(p)
+       veg_nf%core%dwt_seed_to_leaf(p)   = dwt_leafn_seed(fp)/dt
+       grc_nf%core%dwt_seed_to_leaf(g)     = &
+            grc_nf%core%dwt_seed_to_leaf(g) + &
+            veg_nf%core%dwt_seed_to_leaf(p)
 
-       veg_nf%dwt_seedn_to_deadstem(p) = dwt_deadstemn_seed(fp)/dt
-       grc_nf%dwt_seedn_to_deadstem(g)   = &
-            grc_nf%dwt_seedn_to_deadstem(g) + &
-            veg_nf%dwt_seedn_to_deadstem(p)
+       veg_nf%core%dwt_seed_to_deadstem(p) = dwt_deadstemn_seed(fp)/dt
+       grc_nf%core%dwt_seed_to_deadstem(g)   = &
+            grc_nf%core%dwt_seed_to_deadstem(g) + &
+            veg_nf%core%dwt_seed_to_deadstem(p)
 
 
        veg_nf%dwt_seedn_to_npool(p) = dwt_npool_seed(fp)/dt
@@ -476,15 +476,15 @@ contains
             veg_nf%dwt_seedn_to_npool(p)
 
        ! P fluxes
-       veg_pf%dwt_seedp_to_leaf(p)   = dwt_leafp_seed(fp)/dt
-       grc_pf%dwt_seedp_to_leaf(g)     = &
-            grc_pf%dwt_seedp_to_leaf(g) + &
-            veg_pf%dwt_seedp_to_leaf(p)
+       veg_pf%core%dwt_seed_to_leaf(p)   = dwt_leafp_seed(fp)/dt
+       grc_pf%core%dwt_seed_to_leaf(g)     = &
+            grc_pf%core%dwt_seed_to_leaf(g) + &
+            veg_pf%core%dwt_seed_to_leaf(p)
 
-       veg_pf%dwt_seedp_to_deadstem(p) = dwt_deadstemp_seed(fp)/dt
-       grc_pf%dwt_seedp_to_deadstem(g)   = &
-            grc_pf%dwt_seedp_to_deadstem(g) + &
-            veg_pf%dwt_seedp_to_deadstem(p)
+       veg_pf%core%dwt_seed_to_deadstem(p) = dwt_deadstemp_seed(fp)/dt
+       grc_pf%core%dwt_seed_to_deadstem(g)   = &
+            grc_pf%core%dwt_seed_to_deadstem(g) + &
+            veg_pf%core%dwt_seed_to_deadstem(p)
 
 
        veg_pf%dwt_seedp_to_ppool(p) = dwt_npool_seed(fp)/dt
@@ -500,36 +500,36 @@ contains
        c = veg_pp%column(p)
 
        ! fine and coarse root to litter and CWD slash carbon fluxes
-       col_cf%dwt_slash_cflux(c) =            &
-            col_cf%dwt_slash_cflux(c)       + &
+       col_cf%core%dwt_slash_flux(c) =            &
+            col_cf%core%dwt_slash_flux(c)       + &
             dwt_frootc_to_litter(fp)     /dt + &
             dwt_livecrootc_to_litter(fp) /dt + &
             dwt_deadcrootc_to_litter(fp) /dt
 
        if ( use_c13 ) then
-          c13_col_cf%dwt_slash_cflux(c) =          &
-               c13_col_cf%dwt_slash_cflux(c)     + &
+          c13_col_cf%core%dwt_slash_flux(c) =          &
+               c13_col_cf%core%dwt_slash_flux(c)     + &
                dwt_frootc13_to_litter(fp)     /dt + &
                dwt_livecrootc13_to_litter(fp) /dt + &
                dwt_deadcrootc13_to_litter(fp) /dt
        endif
 
        if ( use_c14 ) then
-          c14_col_cf%dwt_slash_cflux(c) =          &
-               c14_col_cf%dwt_slash_cflux(c)     + &
+          c14_col_cf%core%dwt_slash_flux(c) =          &
+               c14_col_cf%core%dwt_slash_flux(c)     + &
                dwt_frootc14_to_litter(fp)     /dt + &
                dwt_livecrootc14_to_litter(fp) /dt + &
                dwt_deadcrootc14_to_litter(fp) /dt
        endif
 
-       col_nf%dwt_slash_nflux(c) =            &
-            col_nf%dwt_slash_nflux(c)       + &
+       col_nf%core%dwt_slash_flux(c) =            &
+            col_nf%core%dwt_slash_flux(c)       + &
             dwt_frootn_to_litter(fp)     /dt + &
             dwt_livecrootn_to_litter(fp) /dt + &
             dwt_deadcrootn_to_litter(fp) /dt
 
-       col_pf%dwt_slash_pflux(c) =            &
-            col_pf%dwt_slash_pflux(c)       + &
+       col_pf%core%dwt_slash_flux(c) =            &
+            col_pf%core%dwt_slash_flux(c)       + &
             dwt_frootp_to_litter(fp)     /dt + &
             dwt_livecrootp_to_litter(fp) /dt + &
             dwt_deadcrootp_to_litter(fp) /dt
@@ -549,119 +549,119 @@ contains
           fr_flig = veg_vp%fr_flig(veg_pp%itype(p))
 
           ! fine root litter carbon fluxes
-          col_cf%dwt_frootc_to_litr_met_c(c,j) = &
-               col_cf%dwt_frootc_to_litr_met_c(c,j) + &
+          col_cf%core%dwt_froot_to_litr_met(c,j) = &
+               col_cf%core%dwt_froot_to_litr_met(c,j) + &
                (dwt_frootc_to_litter(fp)* fr_flab)/dt * froot
 
-          col_cf%dwt_frootc_to_litr_cel_c(c,j) = &
-               col_cf%dwt_frootc_to_litr_cel_c(c,j) + &
+          col_cf%core%dwt_froot_to_litr_cel(c,j) = &
+               col_cf%core%dwt_froot_to_litr_cel(c,j) + &
                (dwt_frootc_to_litter(fp)* fr_fcel)/dt * froot
 
-          col_cf%dwt_frootc_to_litr_lig_c(c,j) = &
-               col_cf%dwt_frootc_to_litr_lig_c(c,j) + &
+          col_cf%core%dwt_froot_to_litr_lig(c,j) = &
+               col_cf%core%dwt_froot_to_litr_lig(c,j) + &
                (dwt_frootc_to_litter(fp)* fr_flig)/dt * froot
 
 
           ! fine root litter nitrogen fluxes
-          col_nf%dwt_frootn_to_litr_met_n(c,j) = &
-               col_nf%dwt_frootn_to_litr_met_n(c,j) + &
+          col_nf%core%dwt_froot_to_litr_met(c,j) = &
+               col_nf%core%dwt_froot_to_litr_met(c,j) + &
                (dwt_frootn_to_litter(fp)* fr_flab)/dt * froot
-          col_nf%dwt_frootn_to_litr_cel_n(c,j) = &
+          col_nf%core%dwt_froot_to_litr_cel(c,j) = &
 
-               col_nf%dwt_frootn_to_litr_cel_n(c,j) + &
+               col_nf%core%dwt_froot_to_litr_cel(c,j) + &
                (dwt_frootn_to_litter(fp)* fr_fcel)/dt * froot
 
-          col_nf%dwt_frootn_to_litr_lig_n(c,j) = &
-               col_nf%dwt_frootn_to_litr_lig_n(c,j) + &
+          col_nf%core%dwt_froot_to_litr_lig(c,j) = &
+               col_nf%core%dwt_froot_to_litr_lig(c,j) + &
                (dwt_frootn_to_litter(fp)* fr_flig)/dt * froot
 
           ! fine root litter phosphorus fluxes
-          col_pf%dwt_frootp_to_litr_met_p(c,j) = &
-               col_pf%dwt_frootp_to_litr_met_p(c,j) + &
+          col_pf%core%dwt_froot_to_litr_met(c,j) = &
+               col_pf%core%dwt_froot_to_litr_met(c,j) + &
                (dwt_frootp_to_litter(fp)* fr_flab)/dt * froot
-          col_pf%dwt_frootp_to_litr_cel_p(c,j) = &
+          col_pf%core%dwt_froot_to_litr_cel(c,j) = &
 
-               col_pf%dwt_frootp_to_litr_cel_p(c,j) + &
+               col_pf%core%dwt_froot_to_litr_cel(c,j) + &
                (dwt_frootp_to_litter(fp)* fr_fcel)/dt * froot
 
-          col_pf%dwt_frootp_to_litr_lig_p(c,j) = &
-               col_pf%dwt_frootp_to_litr_lig_p(c,j) + &
+          col_pf%core%dwt_froot_to_litr_lig(c,j) = &
+               col_pf%core%dwt_froot_to_litr_lig(c,j) + &
                (dwt_frootp_to_litter(fp)* fr_flig)/dt * froot
 
           ! livecroot fluxes to cwd
-          col_cf%dwt_livecrootc_to_cwdc(c,j) = &
-               col_cf%dwt_livecrootc_to_cwdc(c,j) + &
+          col_cf%core%dwt_livecroot_to_cwd(c,j) = &
+               col_cf%core%dwt_livecroot_to_cwd(c,j) + &
                (dwt_livecrootc_to_litter(fp))/dt * croot
 
-          col_nf%dwt_livecrootn_to_cwdn(c,j) = &
-               col_nf%dwt_livecrootn_to_cwdn(c,j) + &
+          col_nf%core%dwt_livecroot_to_cwd(c,j) = &
+               col_nf%core%dwt_livecroot_to_cwd(c,j) + &
                (dwt_livecrootn_to_litter(fp))/dt * croot
 
-          col_pf%dwt_livecrootp_to_cwdp(c,j) = &
-               col_pf%dwt_livecrootp_to_cwdp(c,j) + &
+          col_pf%core%dwt_livecroot_to_cwd(c,j) = &
+               col_pf%core%dwt_livecroot_to_cwd(c,j) + &
                (dwt_livecrootp_to_litter(fp))/dt * croot
 
           ! deadcroot fluxes to cwd
-          col_cf%dwt_deadcrootc_to_cwdc(c,j) = &
-               col_cf%dwt_deadcrootc_to_cwdc(c,j) + &
+          col_cf%core%dwt_deadcroot_to_cwd(c,j) = &
+               col_cf%core%dwt_deadcroot_to_cwd(c,j) + &
                (dwt_deadcrootc_to_litter(fp))/dt * croot
 
-          col_nf%dwt_deadcrootn_to_cwdn(c,j) = &
-               col_nf%dwt_deadcrootn_to_cwdn(c,j) + &
+          col_nf%core%dwt_deadcroot_to_cwd(c,j) = &
+               col_nf%core%dwt_deadcroot_to_cwd(c,j) + &
                (dwt_deadcrootn_to_litter(fp))/dt * croot
 
-          col_pf%dwt_deadcrootp_to_cwdp(c,j) = &
-               col_pf%dwt_deadcrootp_to_cwdp(c,j) + &
+          col_pf%core%dwt_deadcroot_to_cwd(c,j) = &
+               col_pf%core%dwt_deadcroot_to_cwd(c,j) + &
                (dwt_deadcrootp_to_litter(fp))/dt * croot
 
           if ( use_c13 ) then
              ! C13 fine root litter fluxes
-             c13_col_cf%dwt_frootc_to_litr_met_c(c,j) = &
-                  c13_col_cf%dwt_frootc_to_litr_met_c(c,j) + &
+             c13_col_cf%core%dwt_froot_to_litr_met(c,j) = &
+                  c13_col_cf%core%dwt_froot_to_litr_met(c,j) + &
                   (dwt_frootc13_to_litter(fp)* fr_flab)/dt * froot
 
-             c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) = &
-                  c13_col_cf%dwt_frootc_to_litr_cel_c(c,j) + &
+             c13_col_cf%core%dwt_froot_to_litr_cel(c,j) = &
+                  c13_col_cf%core%dwt_froot_to_litr_cel(c,j) + &
                   (dwt_frootc13_to_litter(fp)* fr_fcel)/dt * froot
 
-             c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) = &
-                  c13_col_cf%dwt_frootc_to_litr_lig_c(c,j) + &
+             c13_col_cf%core%dwt_froot_to_litr_lig(c,j) = &
+                  c13_col_cf%core%dwt_froot_to_litr_lig(c,j) + &
                   (dwt_frootc13_to_litter(fp)* fr_flig)/dt * froot
 
              ! livecroot fluxes to cwd
-             c13_col_cf%dwt_livecrootc_to_cwdc(c,j) = &
-                  c13_col_cf%dwt_livecrootc_to_cwdc(c,j) + &
+             c13_col_cf%core%dwt_livecroot_to_cwd(c,j) = &
+                  c13_col_cf%core%dwt_livecroot_to_cwd(c,j) + &
                   (dwt_livecrootc13_to_litter(fp))/dt * croot
 
              ! deadcroot fluxes to cwd
-             c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) = &
-                  c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) + &
+             c13_col_cf%core%dwt_deadcroot_to_cwd(c,j) = &
+                  c13_col_cf%core%dwt_deadcroot_to_cwd(c,j) + &
                   (dwt_deadcrootc13_to_litter(fp))/dt * croot
 
           endif
 
           if ( use_c14 ) then
              ! C14 fine root litter fluxes
-             c14_col_cf%dwt_frootc_to_litr_met_c(c,j) = &
-                  c14_col_cf%dwt_frootc_to_litr_met_c(c,j) + &
+             c14_col_cf%core%dwt_froot_to_litr_met(c,j) = &
+                  c14_col_cf%core%dwt_froot_to_litr_met(c,j) + &
                   (dwt_frootc14_to_litter(fp)* fr_flab)/dt * froot
 
-             c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) = &
-                  c14_col_cf%dwt_frootc_to_litr_cel_c(c,j) + &
+             c14_col_cf%core%dwt_froot_to_litr_cel(c,j) = &
+                  c14_col_cf%core%dwt_froot_to_litr_cel(c,j) + &
                   (dwt_frootc14_to_litter(fp)* fr_fcel)/dt * froot
 
-             c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) = &
-                  c14_col_cf%dwt_frootc_to_litr_lig_c(c,j) + &
+             c14_col_cf%core%dwt_froot_to_litr_lig(c,j) = &
+                  c14_col_cf%core%dwt_froot_to_litr_lig(c,j) + &
                   (dwt_frootc14_to_litter(fp)* fr_flig)/dt * froot
 
              ! livecroot fluxes to cwd
-             c14_col_cf%dwt_livecrootc_to_cwdc(c,j) = &
-                  c14_col_cf%dwt_livecrootc_to_cwdc(c,j) + &
+             c14_col_cf%core%dwt_livecroot_to_cwd(c,j) = &
+                  c14_col_cf%core%dwt_livecroot_to_cwd(c,j) + &
                   (dwt_livecrootc14_to_litter(fp))/dt * croot
 
              ! deadcroot fluxes to cwd
-             c14_col_cf%dwt_deadcrootc_to_cwdc(c,j) = &
-                  c14_col_cf%dwt_deadcrootc_to_cwdc(c,j) + &
+             c14_col_cf%core%dwt_deadcroot_to_cwd(c,j) = &
+                  c14_col_cf%core%dwt_deadcroot_to_cwd(c,j) + &
                   (dwt_deadcrootc14_to_litter(fp))/dt * croot
           endif
        end do
@@ -674,81 +674,81 @@ contains
 
        ! column-level fluxes are accumulated as positive fluxes.
        ! column-level C flux updates
-       col_cf%dwt_conv_cflux(c) = col_cf%dwt_conv_cflux(c) - conv_cflux(fp)/dt
-       col_cf%dwt_prod10c_gain(c) = col_cf%dwt_prod10c_gain(c) - prod10_cflux(fp)/dt
-       col_cf%dwt_prod100c_gain(c) = col_cf%dwt_prod100c_gain(c) - prod100_cflux(fp)/dt
-       col_cf%dwt_crop_productc_gain(c) = col_cf%dwt_crop_productc_gain(c) - crop_product_cflux(fp)/dt
+       col_cf%core%dwt_conv_flux(c) = col_cf%core%dwt_conv_flux(c) - conv_cflux(fp)/dt
+       col_cf%core%dwt_prod10_gain(c) = col_cf%core%dwt_prod10_gain(c) - prod10_cflux(fp)/dt
+       col_cf%core%dwt_prod100_gain(c) = col_cf%core%dwt_prod100_gain(c) - prod100_cflux(fp)/dt
+       col_cf%core%dwt_crop_product_gain(c) = col_cf%core%dwt_crop_product_gain(c) - crop_product_cflux(fp)/dt
 
-       veg_cf%dwt_prod10c_gain(p) = - prod10_cflux(fp)/dt
-       grc_cf%dwt_prod10c_gain(g)   = grc_cf%dwt_prod10c_gain(g) + veg_cf%dwt_prod10c_gain(p)
+       veg_cf%core%dwt_prod10_gain(p) = - prod10_cflux(fp)/dt
+       grc_cf%core%dwt_prod10_gain(g)   = grc_cf%core%dwt_prod10_gain(g) + veg_cf%core%dwt_prod10_gain(p)
 
-       veg_cf%dwt_prod100c_gain(p) = - prod100_cflux(fp)/dt
-       grc_cf%dwt_prod100c_gain(g)   = grc_cf%dwt_prod100c_gain(g) + veg_cf%dwt_prod100c_gain(p)
+       veg_cf%core%dwt_prod100_gain(p) = - prod100_cflux(fp)/dt
+       grc_cf%core%dwt_prod100_gain(g)   = grc_cf%core%dwt_prod100_gain(g) + veg_cf%core%dwt_prod100_gain(p)
 
-       veg_cf%dwt_crop_productc_gain(p) = - crop_product_cflux(fp)/dt
+       veg_cf%core%dwt_crop_product_gain(p) = - crop_product_cflux(fp)/dt
 
        if ( use_c13 ) then
           ! C13 column-level flux updates
-          c13_col_cf%dwt_conv_cflux(c) = c13_col_cf%dwt_conv_cflux(c) - conv_c13flux(fp)/dt
-          c13_col_cf%dwt_prod10c_gain(c) = c13_col_cf%dwt_prod10c_gain(c) - prod10_c13flux(fp)/dt
-          c13_col_cf%dwt_prod100c_gain(c) = c13_col_cf%dwt_prod100c_gain(c) - prod100_c13flux(fp)/dt
-          c13_col_cf%dwt_crop_productc_gain(c) = c13_col_cf%dwt_crop_productc_gain(c) - crop_product_c13flux(fp)/dt
+          c13_col_cf%core%dwt_conv_flux(c) = c13_col_cf%core%dwt_conv_flux(c) - conv_c13flux(fp)/dt
+          c13_col_cf%core%dwt_prod10_gain(c) = c13_col_cf%core%dwt_prod10_gain(c) - prod10_c13flux(fp)/dt
+          c13_col_cf%core%dwt_prod100_gain(c) = c13_col_cf%core%dwt_prod100_gain(c) - prod100_c13flux(fp)/dt
+          c13_col_cf%core%dwt_crop_product_gain(c) = c13_col_cf%core%dwt_crop_product_gain(c) - crop_product_c13flux(fp)/dt
 
-          c13_veg_cf%dwt_prod10c_gain(p) = - prod10_c13flux(fp)/dt
-          c13_grc_cf%dwt_prod10c_gain(g)   = c13_grc_cf%dwt_prod10c_gain(g) + c13_veg_cf%dwt_prod10c_gain(p)
+          c13_veg_cf%core%dwt_prod10_gain(p) = - prod10_c13flux(fp)/dt
+          c13_grc_cf%core%dwt_prod10_gain(g)   = c13_grc_cf%core%dwt_prod10_gain(g) + c13_veg_cf%core%dwt_prod10_gain(p)
 
-          c13_veg_cf%dwt_prod100c_gain(p) = - prod100_c13flux(fp)/dt
-          c13_grc_cf%dwt_prod100c_gain(g)   = c13_grc_cf%dwt_prod100c_gain(g) + c13_veg_cf%dwt_prod100c_gain(p)
+          c13_veg_cf%core%dwt_prod100_gain(p) = - prod100_c13flux(fp)/dt
+          c13_grc_cf%core%dwt_prod100_gain(g)   = c13_grc_cf%core%dwt_prod100_gain(g) + c13_veg_cf%core%dwt_prod100_gain(p)
 
-          c13_veg_cf%dwt_crop_productc_gain(p) = - crop_product_c13flux(fp)/dt
+          c13_veg_cf%core%dwt_crop_product_gain(p) = - crop_product_c13flux(fp)/dt
 
        endif
 
        if ( use_c14 ) then
           ! C14 column-level flux updates
-          c14_col_cf%dwt_conv_cflux(c) = c14_col_cf%dwt_conv_cflux(c) - conv_c14flux(fp)/dt
-          c14_col_cf%dwt_prod10c_gain(c) = c14_col_cf%dwt_prod10c_gain(c) - prod10_c14flux(fp)/dt
-          c14_col_cf%dwt_prod100c_gain(c) = c14_col_cf%dwt_prod100c_gain(c) - prod100_c14flux(fp)/dt
-          c14_col_cf%dwt_crop_productc_gain(c) = c14_col_cf%dwt_crop_productc_gain(c) - crop_product_c14flux(fp)/dt
+          c14_col_cf%core%dwt_conv_flux(c) = c14_col_cf%core%dwt_conv_flux(c) - conv_c14flux(fp)/dt
+          c14_col_cf%core%dwt_prod10_gain(c) = c14_col_cf%core%dwt_prod10_gain(c) - prod10_c14flux(fp)/dt
+          c14_col_cf%core%dwt_prod100_gain(c) = c14_col_cf%core%dwt_prod100_gain(c) - prod100_c14flux(fp)/dt
+          c14_col_cf%core%dwt_crop_product_gain(c) = c14_col_cf%core%dwt_crop_product_gain(c) - crop_product_c14flux(fp)/dt
 
-          c14_veg_cf%dwt_prod10c_gain(p) = - prod10_c14flux(fp)/dt
-          c14_grc_cf%dwt_prod10c_gain(g)   = c14_grc_cf%dwt_prod10c_gain(g) + c14_veg_cf%dwt_prod10c_gain(p)
+          c14_veg_cf%core%dwt_prod10_gain(p) = - prod10_c14flux(fp)/dt
+          c14_grc_cf%core%dwt_prod10_gain(g)   = c14_grc_cf%core%dwt_prod10_gain(g) + c14_veg_cf%core%dwt_prod10_gain(p)
 
-          c14_veg_cf%dwt_prod100c_gain(p) = - prod100_c14flux(fp)/dt
-          c14_grc_cf%dwt_prod100c_gain(g)   = c14_grc_cf%dwt_prod100c_gain(g) + c14_veg_cf%dwt_prod100c_gain(p)
+          c14_veg_cf%core%dwt_prod100_gain(p) = - prod100_c14flux(fp)/dt
+          c14_grc_cf%core%dwt_prod100_gain(g)   = c14_grc_cf%core%dwt_prod100_gain(g) + c14_veg_cf%core%dwt_prod100_gain(p)
 
-          c14_veg_cf%dwt_crop_productc_gain(p) = - crop_product_c14flux(fp)/dt
+          c14_veg_cf%core%dwt_crop_product_gain(p) = - crop_product_c14flux(fp)/dt
 
        endif
 
        ! column-level N flux updates
-       col_nf%dwt_conv_nflux(c) = col_nf%dwt_conv_nflux(c) - conv_nflux(fp)/dt
-       col_nf%dwt_prod10n_gain(c) = col_nf%dwt_prod10n_gain(c) - prod10_nflux(fp)/dt
-       col_nf%dwt_prod100n_gain(c) = col_nf%dwt_prod100n_gain(c) - prod100_nflux(fp)/dt
-       col_nf%dwt_crop_productn_gain(c) = col_nf%dwt_crop_productn_gain(c) - crop_product_nflux(fp)/dt
+       col_nf%core%dwt_conv_flux(c) = col_nf%core%dwt_conv_flux(c) - conv_nflux(fp)/dt
+       col_nf%core%dwt_prod10_gain(c) = col_nf%core%dwt_prod10_gain(c) - prod10_nflux(fp)/dt
+       col_nf%core%dwt_prod100_gain(c) = col_nf%core%dwt_prod100_gain(c) - prod100_nflux(fp)/dt
+       col_nf%core%dwt_crop_product_gain(c) = col_nf%core%dwt_crop_product_gain(c) - crop_product_nflux(fp)/dt
 
-       veg_nf%dwt_prod10n_gain(p) = -prod10_nflux(fp)/dt
-       grc_nf%dwt_prod10n_gain(g)   = grc_nf%dwt_prod10n_gain(g) + veg_nf%dwt_prod10n_gain(p)
+       veg_nf%core%dwt_prod10_gain(p) = -prod10_nflux(fp)/dt
+       grc_nf%core%dwt_prod10_gain(g)   = grc_nf%core%dwt_prod10_gain(g) + veg_nf%core%dwt_prod10_gain(p)
 
-       veg_nf%dwt_prod100n_gain(p)= -prod100_nflux(fp)/dt
-       grc_nf%dwt_prod100n_gain(g)  = grc_nf%dwt_prod100n_gain(g) + veg_nf%dwt_prod100n_gain(p)
+       veg_nf%core%dwt_prod100_gain(p)= -prod100_nflux(fp)/dt
+       grc_nf%core%dwt_prod100_gain(g)  = grc_nf%core%dwt_prod100_gain(g) + veg_nf%core%dwt_prod100_gain(p)
 
-       veg_nf%dwt_crop_productn_gain(p) = -crop_product_nflux(fp)/dt
+       veg_nf%core%dwt_crop_product_gain(p) = -crop_product_nflux(fp)/dt
 
        ! column-level P flux updates
 
-       col_pf%dwt_conv_pflux(c) = col_pf%dwt_conv_pflux(c) - conv_pflux(fp)/dt
-       col_pf%dwt_prod10p_gain(c) = col_pf%dwt_prod10p_gain(c) - prod10_pflux(fp)/dt
-       col_pf%dwt_prod100p_gain(c) = col_pf%dwt_prod100p_gain(c) - prod100_pflux(fp)/dt
-       col_pf%dwt_crop_productp_gain(c) = col_pf%dwt_crop_productp_gain(c) - crop_product_pflux(fp)/dt
+       col_pf%core%dwt_conv_flux(c) = col_pf%core%dwt_conv_flux(c) - conv_pflux(fp)/dt
+       col_pf%core%dwt_prod10_gain(c) = col_pf%core%dwt_prod10_gain(c) - prod10_pflux(fp)/dt
+       col_pf%core%dwt_prod100_gain(c) = col_pf%core%dwt_prod100_gain(c) - prod100_pflux(fp)/dt
+       col_pf%core%dwt_crop_product_gain(c) = col_pf%core%dwt_crop_product_gain(c) - crop_product_pflux(fp)/dt
 
-       veg_pf%dwt_prod10p_gain(p) = -prod10_pflux(fp)/dt
-       grc_pf%dwt_prod10p_gain(g)   = grc_pf%dwt_prod10p_gain(g) + veg_pf%dwt_prod10p_gain(p)
+       veg_pf%core%dwt_prod10_gain(p) = -prod10_pflux(fp)/dt
+       grc_pf%core%dwt_prod10_gain(g)   = grc_pf%core%dwt_prod10_gain(g) + veg_pf%core%dwt_prod10_gain(p)
 
-       veg_pf%dwt_prod100p_gain(p)= -prod100_pflux(fp)/dt
-       grc_pf%dwt_prod100p_gain(g)  = grc_pf%dwt_prod100p_gain(g) + veg_pf%dwt_prod100p_gain(p)
+       veg_pf%core%dwt_prod100_gain(p)= -prod100_pflux(fp)/dt
+       grc_pf%core%dwt_prod100_gain(g)  = grc_pf%core%dwt_prod100_gain(g) + veg_pf%core%dwt_prod100_gain(p)
 
-       veg_pf%dwt_crop_productp_gain(p) = -crop_product_pflux(fp)/dt
+       veg_pf%core%dwt_crop_product_gain(p) = -crop_product_pflux(fp)/dt
 
     end do
 
@@ -760,36 +760,36 @@ contains
        ! need to multiply by the patch's gridcell weight when translating patch-level
        ! fluxes into gridcell-level fluxes.
 
-       veg_cf%dwt_conv_cflux(p) = -conv_cflux(fp)/dt
-       grc_cf%dwt_conv_cflux(g) = &
-            grc_cf%dwt_conv_cflux(g) + &
-            veg_cf%dwt_conv_cflux(p)
+       veg_cf%core%dwt_conv_flux(p) = -conv_cflux(fp)/dt
+       grc_cf%core%dwt_conv_flux(g) = &
+            grc_cf%core%dwt_conv_flux(g) + &
+            veg_cf%core%dwt_conv_flux(p)
 
        if ( use_c13 ) then
           ! C13 column-level flux updates
-          c13_veg_cf%dwt_conv_cflux(p) = -conv_c13flux(fp)/dt
-          c13_grc_cf%dwt_conv_cflux(g) = &
-               c13_grc_cf%dwt_conv_cflux(g) + &
-               c13_veg_cf%dwt_conv_cflux(p)
+          c13_veg_cf%core%dwt_conv_flux(p) = -conv_c13flux(fp)/dt
+          c13_grc_cf%core%dwt_conv_flux(g) = &
+               c13_grc_cf%core%dwt_conv_flux(g) + &
+               c13_veg_cf%core%dwt_conv_flux(p)
        endif
 
        if ( use_c14 ) then
           ! C14 column-level flux updates
-          c14_veg_cf%dwt_conv_cflux(p) = -conv_c14flux(fp)/dt
-          c14_grc_cf%dwt_conv_cflux(g) = &
-               c14_grc_cf%dwt_conv_cflux(g) + &
-               c14_veg_cf%dwt_conv_cflux(p)
+          c14_veg_cf%core%dwt_conv_flux(p) = -conv_c14flux(fp)/dt
+          c14_grc_cf%core%dwt_conv_flux(g) = &
+               c14_grc_cf%core%dwt_conv_flux(g) + &
+               c14_veg_cf%core%dwt_conv_flux(p)
        endif
 
-       veg_nf%dwt_conv_nflux(p) = -conv_nflux(fp)/dt
-       grc_nf%dwt_conv_nflux(g) = &
-            grc_nf%dwt_conv_nflux(g) + &
-            veg_nf%dwt_conv_nflux(p)
+       veg_nf%core%dwt_conv_flux(p) = -conv_nflux(fp)/dt
+       grc_nf%core%dwt_conv_flux(g) = &
+            grc_nf%core%dwt_conv_flux(g) + &
+            veg_nf%core%dwt_conv_flux(p)
 
-       veg_pf%dwt_conv_pflux(p) = -conv_pflux(fp)/dt
-       grc_pf%dwt_conv_pflux(g) = &
-            grc_pf%dwt_conv_pflux(g) + &
-            veg_pf%dwt_conv_pflux(p)
+       veg_pf%core%dwt_conv_flux(p) = -conv_pflux(fp)/dt
+       grc_pf%core%dwt_conv_flux(g) = &
+            grc_pf%core%dwt_conv_flux(g) + &
+            veg_pf%core%dwt_conv_flux(p)
 
     end do
 
@@ -832,33 +832,33 @@ contains
    type(vegetation_carbon_state), intent(inout) :: cs
    integer                    , intent(in)    :: p
 
-   cs%leafc(p)              = 0._r8
-   cs%leafc_storage(p)      = 0._r8
-   cs%leafc_xfer(p)         = 0._r8
-   cs%frootc(p)             = 0._r8
-   cs%frootc_storage(p)     = 0._r8
-   cs%frootc_xfer(p)        = 0._r8
-   cs%livestemc(p)          = 0._r8
-   cs%livestemc_storage(p)  = 0._r8
-   cs%livestemc_xfer(p)     = 0._r8
-   cs%deadstemc(p)          = 0._r8
-   cs%deadstemc_storage(p)  = 0._r8
-   cs%deadstemc_xfer(p)     = 0._r8
-   cs%livecrootc(p)         = 0._r8
-   cs%livecrootc_storage(p) = 0._r8
-   cs%livecrootc_xfer(p)    = 0._r8
-   cs%deadcrootc(p)         = 0._r8
-   cs%deadcrootc_storage(p) = 0._r8
-   cs%deadcrootc_xfer(p)    = 0._r8
+   cs%core%leaf(p)              = 0._r8
+   cs%core%leaf_storage(p)      = 0._r8
+   cs%core%leaf_xfer(p)         = 0._r8
+   cs%core%froot(p)             = 0._r8
+   cs%core%froot_storage(p)     = 0._r8
+   cs%core%froot_xfer(p)        = 0._r8
+   cs%core%livestem(p)          = 0._r8
+   cs%core%livestem_storage(p)  = 0._r8
+   cs%core%livestem_xfer(p)     = 0._r8
+   cs%core%deadstem(p)          = 0._r8
+   cs%core%deadstem_storage(p)  = 0._r8
+   cs%core%deadstem_xfer(p)     = 0._r8
+   cs%core%livecroot(p)         = 0._r8
+   cs%core%livecroot_storage(p) = 0._r8
+   cs%core%livecroot_xfer(p)    = 0._r8
+   cs%core%deadcroot(p)         = 0._r8
+   cs%core%deadcroot_storage(p) = 0._r8
+   cs%core%deadcroot_xfer(p)    = 0._r8
    cs%gresp_storage(p)      = 0._r8
    cs%gresp_xfer(p)         = 0._r8
-   cs%cpool(p)              = 0._r8
+   cs%core%pool(p)              = 0._r8
    cs%xsmrpool(p)           = 0._r8
-   cs%ctrunc(p)             = 0._r8
-   cs%dispvegc(p)           = 0._r8
-   cs%storvegc(p)           = 0._r8
-   cs%totvegc(p)            = 0._r8
-   cs%totpftc(p)            = 0._r8
+   cs%core%trunc_sink(p)             = 0._r8
+   cs%core%dispveg(p)           = 0._r8
+   cs%core%storveg(p)           = 0._r8
+   cs%core%totveg(p)            = 0._r8
+   cs%core%totpft(p)            = 0._r8
 
  end subroutine CarbonStateVarsInit
 
@@ -874,31 +874,31 @@ contains
    type(vegetation_nitrogen_state), intent(inout) :: veg_ns
    integer                 , intent(in)    :: p
 
-   veg_ns%leafn(p)              = 0._r8
-   veg_ns%leafn_storage(p)      = 0._r8
-   veg_ns%leafn_xfer(p)         = 0._r8
-   veg_ns%frootn(p)             = 0._r8
-   veg_ns%frootn_storage(p)     = 0._r8
-   veg_ns%frootn_xfer(p)        = 0._r8
-   veg_ns%livestemn(p)          = 0._r8
-   veg_ns%livestemn_storage(p)  = 0._r8
-   veg_ns%livestemn_xfer(p)     = 0._r8
-   veg_ns%deadstemn(p)          = 0._r8
-   veg_ns%deadstemn_storage(p)  = 0._r8
-   veg_ns%deadstemn_xfer(p)     = 0._r8
-   veg_ns%livecrootn(p)         = 0._r8
-   veg_ns%livecrootn_storage(p) = 0._r8
-   veg_ns%livecrootn_xfer(p)    = 0._r8
-   veg_ns%deadcrootn(p)         = 0._r8
-   veg_ns%deadcrootn_storage(p) = 0._r8
-   veg_ns%deadcrootn_xfer(p)    = 0._r8
+   veg_ns%core%leaf(p)              = 0._r8
+   veg_ns%core%leaf_storage(p)      = 0._r8
+   veg_ns%core%leaf_xfer(p)         = 0._r8
+   veg_ns%core%froot(p)             = 0._r8
+   veg_ns%core%froot_storage(p)     = 0._r8
+   veg_ns%core%froot_xfer(p)        = 0._r8
+   veg_ns%core%livestem(p)          = 0._r8
+   veg_ns%core%livestem_storage(p)  = 0._r8
+   veg_ns%core%livestem_xfer(p)     = 0._r8
+   veg_ns%core%deadstem(p)          = 0._r8
+   veg_ns%core%deadstem_storage(p)  = 0._r8
+   veg_ns%core%deadstem_xfer(p)     = 0._r8
+   veg_ns%core%livecroot(p)         = 0._r8
+   veg_ns%core%livecroot_storage(p) = 0._r8
+   veg_ns%core%livecroot_xfer(p)    = 0._r8
+   veg_ns%core%deadcroot(p)         = 0._r8
+   veg_ns%core%deadcroot_storage(p) = 0._r8
+   veg_ns%core%deadcroot_xfer(p)    = 0._r8
    veg_ns%retransn(p)           = 0._r8
-   veg_ns%npool(p)              = 0._r8
-   veg_ns%ntrunc(p)             = 0._r8
-   veg_ns%dispvegn(p)           = 0._r8
-   veg_ns%storvegn(p)           = 0._r8
-   veg_ns%totvegn(p)            = 0._r8
-   veg_ns%totpftn(p)            = 0._r8
+   veg_ns%core%pool(p)              = 0._r8
+   veg_ns%core%trunc_sink(p)             = 0._r8
+   veg_ns%core%dispveg(p)           = 0._r8
+   veg_ns%core%storveg(p)           = 0._r8
+   veg_ns%core%totveg(p)            = 0._r8
+   veg_ns%core%totpft(p)            = 0._r8
 
  end subroutine NitrogenStateVarsInit
 
@@ -914,31 +914,31 @@ contains
    type(vegetation_phosphorus_state), intent(inout) :: veg_ps
    integer                   , intent(in)    :: p
 
-   veg_ps%leafp(p)              = 0._r8
-   veg_ps%leafp_storage(p)      = 0._r8
-   veg_ps%leafp_xfer(p)         = 0._r8
-   veg_ps%frootp(p)             = 0._r8
-   veg_ps%frootp_storage(p)     = 0._r8
-   veg_ps%frootp_xfer(p)        = 0._r8
-   veg_ps%livestemp(p)          = 0._r8
-   veg_ps%livestemp_storage(p)  = 0._r8
-   veg_ps%livestemp_xfer(p)     = 0._r8
-   veg_ps%deadstemp(p)          = 0._r8
-   veg_ps%deadstemp_storage(p)  = 0._r8
-   veg_ps%deadstemp_xfer(p)     = 0._r8
-   veg_ps%livecrootp(p)         = 0._r8
-   veg_ps%livecrootp_storage(p) = 0._r8
-   veg_ps%livecrootp_xfer(p)    = 0._r8
-   veg_ps%deadcrootp(p)         = 0._r8
-   veg_ps%deadcrootp_storage(p) = 0._r8
-   veg_ps%deadcrootp_xfer(p)    = 0._r8
+   veg_ps%core%leaf(p)              = 0._r8
+   veg_ps%core%leaf_storage(p)      = 0._r8
+   veg_ps%core%leaf_xfer(p)         = 0._r8
+   veg_ps%core%froot(p)             = 0._r8
+   veg_ps%core%froot_storage(p)     = 0._r8
+   veg_ps%core%froot_xfer(p)        = 0._r8
+   veg_ps%core%livestem(p)          = 0._r8
+   veg_ps%core%livestem_storage(p)  = 0._r8
+   veg_ps%core%livestem_xfer(p)     = 0._r8
+   veg_ps%core%deadstem(p)          = 0._r8
+   veg_ps%core%deadstem_storage(p)  = 0._r8
+   veg_ps%core%deadstem_xfer(p)     = 0._r8
+   veg_ps%core%livecroot(p)         = 0._r8
+   veg_ps%core%livecroot_storage(p) = 0._r8
+   veg_ps%core%livecroot_xfer(p)    = 0._r8
+   veg_ps%core%deadcroot(p)         = 0._r8
+   veg_ps%core%deadcroot_storage(p) = 0._r8
+   veg_ps%core%deadcroot_xfer(p)    = 0._r8
    veg_ps%retransp(p)           = 0._r8
-   veg_ps%ppool(p)              = 0._r8
-   veg_ps%ptrunc(p)             = 0._r8
-   veg_ps%dispvegp(p)           = 0._r8
-   veg_ps%storvegp(p)           = 0._r8
-   veg_ps%totvegp(p)            = 0._r8
-   veg_ps%totpftp (p)           = 0._r8
+   veg_ps%core%pool(p)              = 0._r8
+   veg_ps%core%trunc_sink(p)             = 0._r8
+   veg_ps%core%dispveg(p)           = 0._r8
+   veg_ps%core%storveg(p)           = 0._r8
+   veg_ps%core%totveg(p)            = 0._r8
+   veg_ps%core%totpft (p)           = 0._r8
 
  end subroutine PhosphorusStateVarsInit
 
@@ -1027,10 +1027,10 @@ contains
    integer              , intent(in)    :: p
 
    cf%xsmrpool_recover(p)      = 0._r8
-   cf%plant_calloc(p)          = 0._r8
+   cf%core%plant_alloc(p)          = 0._r8
    cf%excess_cflux(p)          = 0._r8
-   cf%prev_leafc_to_litter(p)  = 0._r8
-   cf%prev_frootc_to_litter(p) = 0._r8
+   cf%core%prev_leaf_to_litter(p)  = 0._r8
+   cf%core%prev_froot_to_litter(p) = 0._r8
    cf%availc(p)                = 0._r8
    cf%gpp_before_downreg(p)    = 0._r8
    cf%tempsum_npp(p)           = 0._r8
@@ -1055,7 +1055,7 @@ contains
 
    veg_nf%plant_ndemand(p)         = 0._r8
    veg_nf%avail_retransn(p)        = 0._r8
-   veg_nf%plant_nalloc(p)          = 0._r8
+   veg_nf%core%plant_alloc(p)          = 0._r8
 
  end subroutine NitrogenFluxVarsInit
 
@@ -1072,7 +1072,7 @@ contains
 
    veg_pf%plant_pdemand(p)         = 0._r8
    veg_pf%avail_retransp(p)        = 0._r8
-   veg_pf%plant_palloc(p)          = 0._r8
+   veg_pf%core%plant_alloc(p)          = 0._r8
 
  end subroutine PhosphorusFluxVarsInit
 

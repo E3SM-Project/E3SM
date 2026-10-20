@@ -56,14 +56,14 @@ contains
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               col_ns%decomp_npools_vr(c,j,i_met_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%gap_mortality_n_to_litr_met_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%gap_mortality_n_to_litr_cel_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%gap_mortality_n_to_litr_lig_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cwd)     = &
-                    col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%gap_mortality_n_to_cwdn(c,j)       * dt
+               col_ns%core%decomp_pools_vr(c,j,i_met_lit) = &
+                    col_ns%core%decomp_pools_vr(c,j,i_met_lit) + col_nf%core%gap_mortality_to_litr_met(c,j) * dt
+               col_ns%core%decomp_pools_vr(c,j,i_cel_lit) = &
+                    col_ns%core%decomp_pools_vr(c,j,i_cel_lit) + col_nf%core%gap_mortality_to_litr_cel(c,j) * dt
+               col_ns%core%decomp_pools_vr(c,j,i_lig_lit) = &
+                    col_ns%core%decomp_pools_vr(c,j,i_lig_lit) + col_nf%core%gap_mortality_to_litr_lig(c,j) * dt
+               col_ns%core%decomp_pools_vr(c,j,i_cwd)     = &
+                    col_ns%core%decomp_pools_vr(c,j,i_cwd)     + col_nf%core%gap_mortality_to_cwd(c,j)       * dt
             end do
          end do
 
@@ -75,30 +75,30 @@ contains
          p = filter_soilp(fp)
 
          ! displayed pools
-         veg_ns%leafn(p)              =  veg_ns%leafn(p)      - veg_nf%m_leafn_to_litter(p)      * dt
-         veg_ns%frootn(p)             =  veg_ns%frootn(p)     - veg_nf%m_frootn_to_litter(p)     * dt
-         veg_ns%livestemn(p)          =  veg_ns%livestemn(p)  - veg_nf%m_livestemn_to_litter(p)  * dt
-         veg_ns%deadstemn(p)          =  veg_ns%deadstemn(p)  - veg_nf%m_deadstemn_to_litter(p)  * dt
-         veg_ns%livecrootn(p)         =  veg_ns%livecrootn(p) - veg_nf%m_livecrootn_to_litter(p) * dt
-         veg_ns%deadcrootn(p)         =  veg_ns%deadcrootn(p) - veg_nf%m_deadcrootn_to_litter(p) * dt
+         veg_ns%core%leaf(p)              =  veg_ns%core%leaf(p)      - veg_nf%core%m_leaf_to_litter(p)      * dt
+         veg_ns%core%froot(p)             =  veg_ns%core%froot(p)     - veg_nf%core%m_froot_to_litter(p)     * dt
+         veg_ns%core%livestem(p)          =  veg_ns%core%livestem(p)  - veg_nf%core%m_livestem_to_litter(p)  * dt
+         veg_ns%core%deadstem(p)          =  veg_ns%core%deadstem(p)  - veg_nf%core%m_deadstem_to_litter(p)  * dt
+         veg_ns%core%livecroot(p)         =  veg_ns%core%livecroot(p) - veg_nf%core%m_livecroot_to_litter(p) * dt
+         veg_ns%core%deadcroot(p)         =  veg_ns%core%deadcroot(p) - veg_nf%core%m_deadcroot_to_litter(p) * dt
          veg_ns%retransn(p)           =  veg_ns%retransn(p)   - veg_nf%m_retransn_to_litter(p)   * dt
-         veg_ns%npool(p)              =  veg_ns%npool(p)      - veg_nf%m_npool_to_litter(p)      * dt
+         veg_ns%core%pool(p)              =  veg_ns%core%pool(p)      - veg_nf%core%m_pool_to_litter(p)      * dt
 
          ! storage pools
-         veg_ns%leafn_storage(p)      =  veg_ns%leafn_storage(p)      - veg_nf%m_leafn_storage_to_litter(p)      * dt
-         veg_ns%frootn_storage(p)     =  veg_ns%frootn_storage(p)     - veg_nf%m_frootn_storage_to_litter(p)     * dt
-         veg_ns%livestemn_storage(p)  =  veg_ns%livestemn_storage(p)  - veg_nf%m_livestemn_storage_to_litter(p)  * dt
-         veg_ns%deadstemn_storage(p)  =  veg_ns%deadstemn_storage(p)  - veg_nf%m_deadstemn_storage_to_litter(p)  * dt
-         veg_ns%livecrootn_storage(p) =  veg_ns%livecrootn_storage(p) - veg_nf%m_livecrootn_storage_to_litter(p) * dt
-         veg_ns%deadcrootn_storage(p) =  veg_ns%deadcrootn_storage(p) - veg_nf%m_deadcrootn_storage_to_litter(p) * dt
+         veg_ns%core%leaf_storage(p)      =  veg_ns%core%leaf_storage(p)      - veg_nf%core%m_leaf_storage_to_litter(p)      * dt
+         veg_ns%core%froot_storage(p)     =  veg_ns%core%froot_storage(p)     - veg_nf%core%m_froot_storage_to_litter(p)     * dt
+         veg_ns%core%livestem_storage(p)  =  veg_ns%core%livestem_storage(p)  - veg_nf%core%m_livestem_storage_to_litter(p)  * dt
+         veg_ns%core%deadstem_storage(p)  =  veg_ns%core%deadstem_storage(p)  - veg_nf%core%m_deadstem_storage_to_litter(p)  * dt
+         veg_ns%core%livecroot_storage(p) =  veg_ns%core%livecroot_storage(p) - veg_nf%core%m_livecroot_storage_to_litter(p) * dt
+         veg_ns%core%deadcroot_storage(p) =  veg_ns%core%deadcroot_storage(p) - veg_nf%core%m_deadcroot_storage_to_litter(p) * dt
 
          ! transfer pools
-         veg_ns%leafn_xfer(p)         =  veg_ns%leafn_xfer(p)      - veg_nf%m_leafn_xfer_to_litter(p)      * dt
-         veg_ns%frootn_xfer(p)        =  veg_ns%frootn_xfer(p)     - veg_nf%m_frootn_xfer_to_litter(p)     * dt
-         veg_ns%livestemn_xfer(p)     =  veg_ns%livestemn_xfer(p)  - veg_nf%m_livestemn_xfer_to_litter(p)  * dt
-         veg_ns%deadstemn_xfer(p)     =  veg_ns%deadstemn_xfer(p)  - veg_nf%m_deadstemn_xfer_to_litter(p)  * dt
-         veg_ns%livecrootn_xfer(p)    =  veg_ns%livecrootn_xfer(p) - veg_nf%m_livecrootn_xfer_to_litter(p) * dt
-         veg_ns%deadcrootn_xfer(p)    =  veg_ns%deadcrootn_xfer(p) - veg_nf%m_deadcrootn_xfer_to_litter(p) * dt
+         veg_ns%core%leaf_xfer(p)         =  veg_ns%core%leaf_xfer(p)      - veg_nf%core%m_leaf_xfer_to_litter(p)      * dt
+         veg_ns%core%froot_xfer(p)        =  veg_ns%core%froot_xfer(p)     - veg_nf%core%m_froot_xfer_to_litter(p)     * dt
+         veg_ns%core%livestem_xfer(p)     =  veg_ns%core%livestem_xfer(p)  - veg_nf%core%m_livestem_xfer_to_litter(p)  * dt
+         veg_ns%core%deadstem_xfer(p)     =  veg_ns%core%deadstem_xfer(p)  - veg_nf%core%m_deadstem_xfer_to_litter(p)  * dt
+         veg_ns%core%livecroot_xfer(p)    =  veg_ns%core%livecroot_xfer(p) - veg_nf%core%m_livecroot_xfer_to_litter(p) * dt
+         veg_ns%core%deadcroot_xfer(p)    =  veg_ns%core%deadcroot_xfer(p) - veg_nf%core%m_deadcroot_xfer_to_litter(p) * dt
 
       end do
 
@@ -137,14 +137,14 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               col_ns%decomp_npools_vr(c,j,i_met_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%harvest_n_to_litr_met_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%harvest_n_to_litr_cel_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%harvest_n_to_litr_lig_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cwd)     = &
-                    col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%harvest_n_to_cwdn(c,j)       * dt
+               col_ns%core%decomp_pools_vr(c,j,i_met_lit) = &
+                    col_ns%core%decomp_pools_vr(c,j,i_met_lit) + col_nf%core%harvest_to_litr_met(c,j) * dt
+               col_ns%core%decomp_pools_vr(c,j,i_cel_lit) = &
+                    col_ns%core%decomp_pools_vr(c,j,i_cel_lit) + col_nf%core%harvest_to_litr_cel(c,j) * dt
+               col_ns%core%decomp_pools_vr(c,j,i_lig_lit) = &
+                    col_ns%core%decomp_pools_vr(c,j,i_lig_lit) + col_nf%core%harvest_to_litr_lig(c,j) * dt
+               col_ns%core%decomp_pools_vr(c,j,i_cwd)     = &
+                    col_ns%core%decomp_pools_vr(c,j,i_cwd)     + col_nf%core%harvest_to_cwd(c,j)       * dt
             end do
          end do
 
@@ -156,37 +156,37 @@ contains
          p = filter_soilp(fp)
 
          ! displayed pools
-         veg_ns%leafn(p)      = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_litter(p)      * dt
-         veg_ns%frootn(p)     = veg_ns%frootn(p)     - veg_nf%hrv_frootn_to_litter(p)     * dt
-         veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_litter(p)  * dt
-         veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod10n(p) * dt
-         veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod100n(p)* dt
-         veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%hrv_livecrootn_to_litter(p) * dt
-         veg_ns%deadcrootn(p) = veg_ns%deadcrootn(p) - veg_nf%hrv_deadcrootn_to_litter(p) * dt
+         veg_ns%core%leaf(p)      = veg_ns%core%leaf(p)      - veg_nf%core%hrv_leaf_to_litter(p)      * dt
+         veg_ns%core%froot(p)     = veg_ns%core%froot(p)     - veg_nf%core%hrv_froot_to_litter(p)     * dt
+         veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%core%hrv_livestem_to_litter(p)  * dt
+         veg_ns%core%deadstem(p)  = veg_ns%core%deadstem(p)  - veg_nf%core%hrv_deadstem_to_prod10(p) * dt
+         veg_ns%core%deadstem(p)  = veg_ns%core%deadstem(p)  - veg_nf%core%hrv_deadstem_to_prod100(p)* dt
+         veg_ns%core%livecroot(p) = veg_ns%core%livecroot(p) - veg_nf%core%hrv_livecroot_to_litter(p) * dt
+         veg_ns%core%deadcroot(p) = veg_ns%core%deadcroot(p) - veg_nf%core%hrv_deadcroot_to_litter(p) * dt
          veg_ns%retransn(p)   = veg_ns%retransn(p)   - veg_nf%hrv_retransn_to_litter(p)   * dt
-         veg_ns%npool(p)      = veg_ns%npool(p)      - veg_nf%hrv_npool_to_litter(p)     * dt
+         veg_ns%core%pool(p)      = veg_ns%core%pool(p)      - veg_nf%core%hrv_pool_to_litter(p)     * dt
 
        if (iscft(ivt(p))) then ! skip 2 generic crops
-           veg_ns%livestemn(p)= veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_prod1n(p)  * dt
-           veg_ns%leafn(p)    = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_prod1n(p)      * dt
-           veg_ns%grainn(p)   = veg_ns%grainn(p)     - veg_nf%hrv_grainn_to_prod1n(p)     * dt
+           veg_ns%core%livestem(p)= veg_ns%core%livestem(p)  - veg_nf%core%hrv_livestem_to_prod1(p)  * dt
+           veg_ns%core%leaf(p)    = veg_ns%core%leaf(p)      - veg_nf%core%hrv_leaf_to_prod1(p)      * dt
+           veg_ns%core%grain(p)   = veg_ns%core%grain(p)     - veg_nf%core%hrv_grain_to_prod1(p)     * dt
        end if
 
          ! storage pools
-         veg_ns%leafn_storage(p)      = veg_ns%leafn_storage(p)      - veg_nf%hrv_leafn_storage_to_litter(p)      * dt
-         veg_ns%frootn_storage(p)     = veg_ns%frootn_storage(p)     - veg_nf%hrv_frootn_storage_to_litter(p)     * dt
-         veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%hrv_livestemn_storage_to_litter(p)  * dt
-         veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%hrv_deadstemn_storage_to_litter(p)  * dt
-         veg_ns%livecrootn_storage(p) = veg_ns%livecrootn_storage(p) - veg_nf%hrv_livecrootn_storage_to_litter(p) * dt
-         veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) - veg_nf%hrv_deadcrootn_storage_to_litter(p) * dt
+         veg_ns%core%leaf_storage(p)      = veg_ns%core%leaf_storage(p)      - veg_nf%core%hrv_leaf_storage_to_litter(p)      * dt
+         veg_ns%core%froot_storage(p)     = veg_ns%core%froot_storage(p)     - veg_nf%core%hrv_froot_storage_to_litter(p)     * dt
+         veg_ns%core%livestem_storage(p)  = veg_ns%core%livestem_storage(p)  - veg_nf%core%hrv_livestem_storage_to_litter(p)  * dt
+         veg_ns%core%deadstem_storage(p)  = veg_ns%core%deadstem_storage(p)  - veg_nf%core%hrv_deadstem_storage_to_litter(p)  * dt
+         veg_ns%core%livecroot_storage(p) = veg_ns%core%livecroot_storage(p) - veg_nf%core%hrv_livecroot_storage_to_litter(p) * dt
+         veg_ns%core%deadcroot_storage(p) = veg_ns%core%deadcroot_storage(p) - veg_nf%core%hrv_deadcroot_storage_to_litter(p) * dt
 
          ! transfer pools
-         veg_ns%leafn_xfer(p)      = veg_ns%leafn_xfer(p)      - veg_nf%hrv_leafn_xfer_to_litter(p)      *dt
-         veg_ns%frootn_xfer(p)     = veg_ns%frootn_xfer(p)     - veg_nf%hrv_frootn_xfer_to_litter(p)     *dt
-         veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%hrv_livestemn_xfer_to_litter(p)  *dt
-         veg_ns%deadstemn_xfer(p)  = veg_ns%deadstemn_xfer(p)  - veg_nf%hrv_deadstemn_xfer_to_litter(p)  *dt
-         veg_ns%livecrootn_xfer(p) = veg_ns%livecrootn_xfer(p) - veg_nf%hrv_livecrootn_xfer_to_litter(p) *dt
-         veg_ns%deadcrootn_xfer(p) = veg_ns%deadcrootn_xfer(p) - veg_nf%hrv_deadcrootn_xfer_to_litter(p) *dt
+         veg_ns%core%leaf_xfer(p)      = veg_ns%core%leaf_xfer(p)      - veg_nf%core%hrv_leaf_xfer_to_litter(p)      *dt
+         veg_ns%core%froot_xfer(p)     = veg_ns%core%froot_xfer(p)     - veg_nf%core%hrv_froot_xfer_to_litter(p)     *dt
+         veg_ns%core%livestem_xfer(p)  = veg_ns%core%livestem_xfer(p)  - veg_nf%core%hrv_livestem_xfer_to_litter(p)  *dt
+         veg_ns%core%deadstem_xfer(p)  = veg_ns%core%deadstem_xfer(p)  - veg_nf%core%hrv_deadstem_xfer_to_litter(p)  *dt
+         veg_ns%core%livecroot_xfer(p) = veg_ns%core%livecroot_xfer(p) - veg_nf%core%hrv_livecroot_xfer_to_litter(p) *dt
+         veg_ns%core%deadcroot_xfer(p) = veg_ns%core%deadcroot_xfer(p) - veg_nf%core%hrv_deadcroot_xfer_to_litter(p) *dt
 
       end do
 

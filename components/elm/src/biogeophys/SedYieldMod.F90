@@ -118,7 +118,7 @@ contains
          tillage          =>    soilstate_vars%tillage_col          , & ! Input: [real(r8) (:) ] conserved tillage fraction 
          litho            =>    soilstate_vars%litho_col            , & ! Input: [real(r8) (:) ] lithology erodiblity index
 
-         decomp_cpools_vr =>    col_cs%decomp_cpools_vr             , & ! Input: [real(r8) (:,:,:) ] soil carbon pools [gC/m3]
+         decomp_cpools_vr =>    col_cs%core%decomp_pools_vr             , & ! Input: [real(r8) (:,:,:) ] soil carbon pools [gC/m3]
 
          frac_sno         =>    col_ws%frac_sno                     , & ! Input: [real(r8) (:) ] fraction of ground covered by snow (0 to 1)
 
@@ -214,8 +214,8 @@ contains
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
                      Clai = 1._r8 - exp(-tlai(p))
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
-                     Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
-                        (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
+                     Broot = 1.e-3_r8 * ( veg_cs%core%froot(p)*froot_prof(p,1) + &
+                        (veg_cs%core%livecroot(p)+veg_cs%core%deadcroot(p))*croot_prof(p,1) )
                      fgndcov = exp( -gcbc_p(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_p(veg_pp%itype(p))*Broot ) 
                      if( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)))then
@@ -258,8 +258,8 @@ contains
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72
                      Clai = 1._r8 - exp(-tlai(p))
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
-                     Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
-                        (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
+                     Broot = 1.e-3_r8 * ( veg_cs%core%froot(p)*froot_prof(p,1) + &
+                        (veg_cs%core%livecroot(p)+veg_cs%core%deadcroot(p))*croot_prof(p,1) )
                      fgndcov = exp( -gcbc_q(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_q(veg_pp%itype(p))*Broot )
 

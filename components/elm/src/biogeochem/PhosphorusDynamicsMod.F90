@@ -416,7 +416,7 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                            ,&
-         decomp_ppools_vr_col => col_ps%decomp_ppools_vr    ,&
+         decomp_ppools_vr_col => col_ps%core%decomp_pools_vr    ,&
 
          biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr  ,&
          biochem_pmin_vr_col  => col_pf%biochem_pmin_vr      ,&
@@ -519,7 +519,7 @@ contains
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
-         decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
+         decomp_ppools_vr_col => col_ps%core%decomp_pools_vr, &
          lamda_ptase          => veg_vp%lamda_ptase, &
          ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &

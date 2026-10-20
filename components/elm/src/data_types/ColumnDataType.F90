@@ -187,52 +187,59 @@ module ColumnDataType
   !-----------------------------------------------------------------------
   ! Define the data structure that holds carbon state information at the column level.
   !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! core: fields of column_carbon_state, column_nitrogen_state, column_phosphorus_state
+  !-----------------------------------------------------------------------
+  type, public :: column_nutrient_state
+    real(r8), pointer :: totveg              (:)    => null() ! (g/m2) column-level totveg (fire)
+    real(r8), pointer :: decomp_pools_vr     (:,:,:)=> null() ! (g/m3) vertically-resolved decomposing (litter, cwd, soil) nutrient pools
+    real(r8), pointer :: trunc_sink_vr            (:,:)  => null() ! (g/m3) vertically-resolved column-level sink for nutrient truncation
+    real(r8), pointer :: seed                (:)    => null() ! (g/m2) column-level pool for seeding new Patches
+    real(r8), pointer :: prod1               (:)    => null() ! (g/m2) crop product nutrient pool, 1-year lifespan
+    real(r8), pointer :: prod10              (:)    => null() ! (g/m2) wood product nutrient pool, 10-year lifespan
+    real(r8), pointer :: prod100             (:)    => null() ! (g/m2) wood product nutrient pool, 100-year lifespan
+    real(r8), pointer :: totprod             (:)    => null() ! (g/m2) total wood product nutrient
+    real(r8), pointer :: dyn_bal_adjustments (:)    => null() ! (g/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: totpft              (:)    => null() ! (g/m2) total patch-level nutrient, including pool averaged to column (p2c)
+    real(r8), pointer :: decomp_pools_1m     (:,:)  => null() ! (g/m2)  Diagnostic: decomposing (litter, cwd, soil) nutrient pools to 1 meter
+    real(r8), pointer :: decomp_pools        (:,:)  => null() ! (g/m2)  decomposing (litter, cwd, soil) nutrient pools
+    real(r8), pointer :: cwd                 (:)    => null() ! (g/m2) Diagnostic: coarse woody debris nutrient
+    real(r8), pointer :: trunc_sink               (:)    => null() ! (g/m2) column-level sink for nutrient truncation
+    real(r8), pointer :: totlit              (:)    => null() ! (g/m2) total litter nutrient
+    real(r8), pointer :: totsom              (:)    => null() ! (g/m2) total soil organic matter nutrient
+    real(r8), pointer :: som1                (:)    => null()
+    real(r8), pointer :: som2                (:)    => null()
+    real(r8), pointer :: som3                (:)    => null()
+    real(r8), pointer :: totlit_1m           (:)    => null() ! (g/m2) total litter nutrient to 1 meter
+    real(r8), pointer :: totsom_1m           (:)    => null() ! (g/m2) total soil organic matter nutrient to 1 meter
+    real(r8), pointer :: totecosys           (:)    => null() ! (g/m2) total ecosystem nutrient, incl veg but excl pool
+    real(r8), pointer :: totcol              (:)    => null() ! (g/m2) total column nutrient, incl veg and pool
+    real(r8), pointer :: balance_beg                (:)    => null() ! (g/m2) nutrient mass, beginning of time step
+    real(r8), pointer :: balance_end                (:)    => null() ! (g/m2) nutrient mass, end of time step
+    real(r8), pointer :: balance_err                (:)    => null() ! (g/m2) nutrient balance error for the timestep
+    real(r8), pointer :: totpft_beg          (:)    => null()
+    real(r8), pointer :: cwd_beg             (:)    => null()
+    real(r8), pointer :: totlit_beg          (:)    => null()
+    real(r8), pointer :: totsom_beg          (:)    => null()
+    real(r8), pointer :: totpft_end          (:)    => null()
+    real(r8), pointer :: cwd_end             (:)    => null()
+    real(r8), pointer :: totlit_end          (:)    => null()
+    real(r8), pointer :: totsom_end          (:)    => null()
+    real(r8), pointer :: cropseed_deficit    (:)    => null()
+  end type column_nutrient_state
+
   type, public :: column_carbon_state
+    type(column_nutrient_state) :: core  ! fields common to the C/N/P types
     integer,  pointer  :: species  => null() ! c12, c13, c14
     real(r8), pointer :: rootc                (:)    => null() ! (gC/m2) root carbon at column level (fire)
-    real(r8), pointer :: totvegc              (:)    => null() ! (gC/m2) column-level totvegc (fire)
     real(r8), pointer :: leafc                (:)    => null() ! (gC/m2) column-level leafc (fire)
     real(r8), pointer :: deadstemc            (:)    => null() ! (gC/m2) column-level deadstemc (fire)
     real(r8), pointer :: fuelc                (:)    => null() ! fuel avalability factor for Reg.C (0-1)
     real(r8), pointer :: fuelc_crop           (:)    => null() ! fuel avalability factor for Reg.A (0-1)
-    real(r8), pointer :: decomp_cpools_vr     (:,:,:)=> null() ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-    real(r8), pointer :: ctrunc_vr            (:,:)  => null() ! (gC/m3) vertically-resolved column-level sink for C truncation
     real(r8), pointer :: frootc               (:)    => null() ! (gC/m2) column-level C pool for fine root
-    real(r8), pointer :: seedc                (:)    => null() ! (gC/m2) column-level pool for seeding new Patches
-    real(r8), pointer :: prod1c               (:)    => null() ! (gC/m2) crop product C pool, 1-year lifespan
-    real(r8), pointer :: prod10c              (:)    => null() ! (gC/m2) wood product C pool, 10-year lifespan
-    real(r8), pointer :: prod100c             (:)    => null() ! (gC/m2) wood product C pool, 100-year lifespan
-    real(r8), pointer :: totprodc             (:)    => null() ! (gC/m2) total wood product C
-    real(r8), pointer :: dyn_cbal_adjustments (:)    => null() ! (gC/m2) adjustments to each column made in this timestep via dynamic column area adjustments
-    real(r8), pointer :: totpftc              (:)    => null() ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
-    real(r8), pointer :: decomp_cpools_1m     (:,:)  => null() ! (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
-    real(r8), pointer :: decomp_cpools        (:,:)  => null() ! (gC/m2)  decomposing (litter, cwd, soil) c pools
-    real(r8), pointer :: cwdc                 (:)    => null() ! (gC/m2) Diagnostic: coarse woody debris C
-    real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
-    real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
-    real(r8), pointer :: totsomc              (:)    => null() ! (gC/m2) total soil organic matter carbon
-    real(r8), pointer :: som1c                (:)    => null()
-    real(r8), pointer :: som2c                (:)    => null()
-    real(r8), pointer :: som3c                (:)    => null()
-    real(r8), pointer :: totlitc_1m           (:)    => null() ! (gC/m2) total litter carbon to 1 meter
-    real(r8), pointer :: totsomc_1m           (:)    => null() ! (gC/m2) total soil organic matter carbon to 1 meter
-    real(r8), pointer :: totecosysc           (:)    => null() ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
-    real(r8), pointer :: totcolc              (:)    => null() ! (gC/m2) total column carbon, incl veg and cpool
     real(r8), pointer :: totabgc              (:)    => null() ! (gC/m2) total column above ground carbon, excluding som
     real(r8), pointer :: totvegc_abg          (:)    => null() ! (gC/m2) total above vegetation carbon, excluding cpool averaged to column (p2c)
-    real(r8), pointer :: begcb                (:)    => null() ! (gC/m2) carbon mass, beginning of time step
-    real(r8), pointer :: endcb                (:)    => null() ! (gc/m2) carbon mass, end of time step
-    real(r8), pointer :: errcb                (:)    => null() ! (gC/m2) carbon balance error for the timestep
-    real(r8), pointer :: totpftc_beg          (:)    => null()
-    real(r8), pointer :: cwdc_beg             (:)    => null()
-    real(r8), pointer :: totlitc_beg          (:)    => null()
-    real(r8), pointer :: totsomc_beg          (:)    => null()
-    real(r8), pointer :: totpftc_end          (:)    => null()
-    real(r8), pointer :: cwdc_end             (:)    => null()
-    real(r8), pointer :: totlitc_end          (:)    => null()
-    real(r8), pointer :: totsomc_end          (:)    => null()
     real(r8), pointer :: decomp_som2c_vr      (:,:)  => null()
-    real(r8), pointer :: cropseedc_deficit    (:)    => null()
 
   contains
     procedure, public :: Init    => col_cs_init
@@ -246,10 +253,7 @@ module ColumnDataType
   ! Define the data structure that holds nitrogen state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_nitrogen_state
-    real(r8), pointer :: decomp_npools_vr         (:,:,:) => null() ! (gN/m3) vertically-resolved decomposing (litter, cwd, soil) N pools
-    real(r8), pointer :: decomp_npools            (:,:)   => null() ! (gN/m2)  decomposing (litter, cwd, soil) N pools
-    real(r8), pointer :: decomp_npools_1m         (:,:)   => null() ! (gN/m2)  diagnostic: decomposing (litter, cwd, soil) N pools to 1 meter
-    real(r8), pointer :: ntrunc_vr                (:,:)   => null() ! (gN/m3) vertically-resolved column-level sink for N truncation
+    type(column_nutrient_state) :: core  ! fields common to the C/N/P types
     real(r8), pointer :: sminn_vr                 (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral N
     real(r8), pointer :: smin_no3_vr              (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral NO3
     real(r8), pointer :: smin_nh4_vr              (:,:)   => null() ! (gN/m3) vertically-resolved soil mineral NH4
@@ -258,29 +262,9 @@ module ColumnDataType
     real(r8), pointer :: smin_nh4                 (:)     => null() ! (gN/m2) soil mineral NH4 pool
     real(r8), pointer :: smin_nh4sorb             (:)     => null() ! (gN/m2) soil mineral NH4 pool absorbed
     real(r8), pointer :: sminn                    (:)     => null() ! (gN/m2) soil mineral N
-    real(r8), pointer :: ntrunc                   (:)     => null() ! (gN/m2) column-level sink for N truncation
-    real(r8), pointer :: cwdn                     (:)     => null() ! (gN/m2) Diagnostic: coarse woody debris N
-    real(r8), pointer :: totlitn                  (:)     => null() ! (gN/m2) total litter nitrogen
-    real(r8), pointer :: totsomn                  (:)     => null() ! (gN/m2) total soil organic matter nitrogen
-    real(r8), pointer :: som1n                    (:)     => null()
-    real(r8), pointer :: som2n                    (:)     => null()
-    real(r8), pointer :: som3n                    (:)     => null()
-    real(r8), pointer :: totlitn_1m               (:)     => null() ! (gN/m2) total litter nitrogen to 1 meter
-    real(r8), pointer :: totsomn_1m               (:)     => null() ! (gN/m2) total soil organic matter nitrogen to 1 meter
-    real(r8), pointer :: totecosysn               (:)     => null() ! (gN/m2) total ecosystem nitrogen, incl veg
-    real(r8), pointer :: totcoln                  (:)     => null() ! (gN/m2) total column nitrogen, incl veg
     real(r8), pointer :: totabgn                  (:)     => null() ! (gN/m2)
     real(r8), pointer :: totblgn                  (:)     => null() ! (gN/m2) total below ground nitrogen
-    real(r8), pointer :: totvegn                  (:)     => null() ! (gN/m2) total vegetation nitrogen (p2c)
-    real(r8), pointer :: totpftn                  (:)     => null() ! (gN/m2) total pft-level nitrogen (p2c)
     real(r8), pointer :: plant_n_buffer           (:)     => null() ! (gN/m2) col-level abstract N storage
-    real(r8), pointer :: seedn                    (:)     => null() ! (gN/m2) column-level pool for seeding new Patches
-    real(r8), pointer :: cropseedn_deficit        (:)     => null() ! (gN/m2) column-level pool for seed N deficit (negative pool)
-    real(r8), pointer :: prod1n                   (:)     => null() ! (gN/m2) crop product N pool, 1-year lifespan
-    real(r8), pointer :: prod10n                  (:)     => null() ! (gN/m2) wood product N pool, 10-year lifespan
-    real(r8), pointer :: prod100n                 (:)     => null() ! (gN/m2) wood product N pool, 100-year lifespan
-    real(r8), pointer :: totprodn                 (:)     => null() ! (gN/m2) total wood product N
-    real(r8), pointer :: dyn_nbal_adjustments     (:)     => null() ! (gN/m2) adjustments to each column made in this timestep via dynamic column area adjustments
     real(r8), pointer :: tan_g1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G1
     real(r8), pointer :: tan_g2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G2
     real(r8), pointer :: tan_g3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G2
@@ -304,14 +288,6 @@ module ColumnDataType
     real(r8), pointer :: manure_tan_stored        (:)     => null() ! (gN/m2) manure TAN in storage
     real(r8), pointer :: fan_grz_fract            (:)     => null() ! unitless fraction of animals grazing
     real(r8), pointer :: fan_totn                 (:)     => null() ! (gN/m2) total N in FAN pools
-    real(r8), pointer :: totpftn_beg              (:)     => null()
-    real(r8), pointer :: totpftn_end              (:)     => null()
-    real(r8), pointer :: cwdn_beg                 (:)     => null()
-    real(r8), pointer :: cwdn_end                 (:)     => null()
-    real(r8), pointer :: totlitn_beg              (:)     => null()
-    real(r8), pointer :: totlitn_end              (:)     => null()
-    real(r8), pointer :: totsomn_beg              (:)     => null()
-    real(r8), pointer :: totsomn_end              (:)     => null()
     real(r8), pointer :: sminn_beg                (:)     => null()
     real(r8), pointer :: sminn_end                (:)     => null()
     real(r8), pointer :: smin_no3_beg             (:)     => null()
@@ -324,9 +300,6 @@ module ColumnDataType
     real(r8), pointer :: seedn_end                (:)     => null()
     real(r8), pointer :: ntrunc_beg               (:)     => null()
     real(r8), pointer :: ntrunc_end               (:)     => null()
-    real(r8), pointer :: begnb                    (:)     => null() ! col nitrogen mass, beginning of time step (gN/m**2)
-    real(r8), pointer :: endnb                    (:)     => null() ! col nitrogen mass, end of time step (gN/m**2)
-    real(r8), pointer :: errnb                    (:)     => null() ! colnitrogen balance error for the timestep (gN/m**2)
   contains
     procedure, public :: Init       => col_ns_init
     procedure, public :: Restart    => col_ns_restart
@@ -340,41 +313,19 @@ module ColumnDataType
   ! Define the data structure that holds phosphorus state information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_phosphorus_state
-    real(r8), pointer :: decomp_ppools_vr         (:,:,:)  => null() ! (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+    type(column_nutrient_state) :: core  ! fields common to the C/N/P types
     real(r8), pointer :: solutionp_vr             (:,:)    => null() ! (gP/m3) vertically-resolved soil solution P
     real(r8), pointer :: labilep_vr               (:,:)    => null() ! (gP/m3) vertically-resolved soil labile mineral P
     real(r8), pointer :: secondp_vr               (:,:)    => null() ! (gP/m3) vertically-resolved soil secondary mineralP
     real(r8), pointer :: occlp_vr                 (:,:)    => null() ! (gP/m3) vertically-resolved soil occluded mineral P
     real(r8), pointer :: primp_vr                 (:,:)    => null() ! (gP/m3) vertically-resolved soil parimary mineral P
     real(r8), pointer :: sminp_vr                 (:,:)    => null() ! (gP/m3) vertically-resolved soil parimary mineral P
-    real(r8), pointer :: ptrunc_vr                (:,:)    => null() ! (gP/m3) vertically-resolved column-level sink for P truncation
-    real(r8), pointer :: seedp                    (:)      => null() ! (gP/m2) column-level pool for seeding new Patches
-    real(r8), pointer :: prod1p                   (:)      => null() ! (gN/m2) crop product N pool, 1-year lifespan
-    real(r8), pointer :: prod10p                  (:)      => null() ! (gP/m2) wood product P pool, 10-year lifespan
-    real(r8), pointer :: prod100p                 (:)      => null() ! (gP/m2) wood product P pool, 100-year lifespan
-    real(r8), pointer :: totprodp                 (:)      => null() ! (gP/m2) total wood product P
-    real(r8), pointer :: dyn_pbal_adjustments     (:)      => null() ! (gP/m2) adjustments to each column made in this timestep via dynamic column area adjustments
-    real(r8), pointer :: decomp_ppools            (:,:)    => null() ! (gP/m2)  decomposing (litter, cwd, soil) P pools
-    real(r8), pointer :: decomp_ppools_1m         (:,:)    => null() ! (gP/m2)  diagnostic: decomposing (litter, cwd, soil) P pools to 1 meter
     real(r8), pointer :: sminp                    (:)      => null() ! (gP/m2) soil mineral P
     real(r8), pointer :: solutionp                (:)      => null() ! (gP/m2) soil solution P
     real(r8), pointer :: labilep                  (:)      => null() ! (gP/m2) soil labile mineral P
     real(r8), pointer :: secondp                  (:)      => null() ! (gP/m2) soil secondary mineralP
     real(r8), pointer :: occlp                    (:)      => null() ! (gP/m2) soil occluded mineral P
     real(r8), pointer :: primp                    (:)      => null() ! (gP/m2) soil parimary mineral P
-    real(r8), pointer :: ptrunc                   (:)      => null() ! (gP/m2) column-level sink for P truncation
-    real(r8), pointer :: cwdp                     (:)      => null() ! (gP/m2) Diagnostic: coarse woody debris P
-    real(r8), pointer :: totlitp                  (:)      => null() ! (gP/m2) total litter phosphorus
-    real(r8), pointer :: totsomp                  (:)      => null() ! (gP/m2) total soil organic matter phosphorus
-    real(r8), pointer :: totlitp_1m               (:)      => null() ! (gP/m2) total litter phosphorus to 1 meter
-    real(r8), pointer :: totsomp_1m               (:)      => null() ! (gP/m2) total soil organic matter phosphorus to 1 meter
-    real(r8), pointer :: totecosysp               (:)      => null() ! (gP/m2) total ecosystem phosphorus, incl veg
-    real(r8), pointer :: totcolp                  (:)      => null() ! (gP/m2) total column phosphorus, incl veg
-    real(r8), pointer :: totvegp                  (:)      => null() ! (gP/m2) total vegetation phosphorus (p2c)
-    real(r8), pointer :: totpftp                  (:)      => null() ! (gP/m2) total pft-level phosphorus (p2c)
-    real(r8), pointer :: begpb                    (:)      => null() ! phosphorus mass, beginning of time step (gP/m**2)
-    real(r8), pointer :: endpb                    (:)      => null() ! phosphorus mass, end of time step (gP/m**2)
-    real(r8), pointer :: errpb                    (:)      => null() ! phosphorus balance error for the timestep (gP/m**2)
     real(r8), pointer :: solutionp_vr_cur         (:,:)    => null()
     real(r8), pointer :: solutionp_vr_prev        (:,:)    => null()
     real(r8), pointer :: labilep_vr_cur           (:,:)    => null()
@@ -385,24 +336,12 @@ module ColumnDataType
     real(r8), pointer :: occlp_vr_prev            (:,:)    => null()
     real(r8), pointer :: primp_vr_cur             (:,:)    => null()
     real(r8), pointer :: primp_vr_prev            (:,:)    => null()
-    real(r8), pointer :: totpftp_beg              (:)      => null()
     real(r8), pointer :: solutionp_beg            (:)      => null()
     real(r8), pointer :: labilep_beg              (:)      => null()
     real(r8), pointer :: secondp_beg              (:)      => null()
-    real(r8), pointer :: totlitp_beg              (:)      => null()
-    real(r8), pointer :: cwdp_beg                 (:)      => null()
-    real(r8), pointer :: totsomp_beg              (:)      => null()
-    real(r8), pointer :: totlitp_end              (:)      => null()
-    real(r8), pointer :: totpftp_end              (:)      => null()
     real(r8), pointer :: solutionp_end            (:)      => null()
     real(r8), pointer :: labilep_end              (:)      => null()
     real(r8), pointer :: secondp_end              (:)      => null()
-    real(r8), pointer :: cwdp_end                 (:)      => null()
-    real(r8), pointer :: totsomp_end              (:)      => null()
-    real(r8), pointer :: cropseedp_deficit        (:)      => null() ! (gP/m2) negative pool tracking seed P for DWT
-    real(r8), pointer :: som1p                    (:)      => null()
-    real(r8), pointer :: som2p                    (:)      => null()
-    real(r8), pointer :: som3p                    (:)      => null()
   contains
     procedure, public :: Init      => col_ps_init
     procedure, public :: Restart   => col_ps_restart
@@ -559,76 +498,93 @@ module ColumnDataType
   !-----------------------------------------------------------------------
   ! Define the data structure that holds carbon flux information at the column level.
   !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! core: fields of column_carbon_flux, column_nitrogen_flux, column_phosphorus_flux
+  !-----------------------------------------------------------------------
+  type, public :: column_nutrient_flux
+    real(r8), pointer :: decomp_pools_sourcesink              (:,:,:) => null() ! change in decomposing nutrient pools. Used to update concentrations concurrently with vertical transport (g/m3/timestep)
+    real(r8), pointer :: decomp_cascade_transfer_vr           (:,:,:) => null() ! vertically-resolved nutrient transferred along deomposition cascade (g/m3/s)
+    real(r8), pointer :: decomp_pools_transport_tendency      (:,:,:) => null() ! nutrient tendency due to vertical transport in decomposing nutrient pools (g/m^3/s)
+    real(r8), pointer :: decomp_cascade_transfer              (:,:)   => null() ! vertically-integrated (diagnostic) nutrient transferred along deomposition cascade (g/m2/s)
+    real(r8), pointer :: decomp_pools_leached                 (:,:)   => null() ! nutrient loss from vertical transport from each decomposing nutrient pool (g/m^2/s)
+    real(r8), pointer :: som_leached                         (:)     => null() ! total SOM nutrient loss from vertical transport (g/m^2/s)
+    real(r8), pointer :: som_runoff                          (:)     => null()
+    real(r8), pointer :: phenology_to_litr_met             (:,:)   => null() ! nutrient fluxes associated with phenology (litterfall and crop) to litter metabolic pool (g/m3/s)
+    real(r8), pointer :: phenology_to_litr_cel             (:,:)   => null() ! nutrient fluxes associated with phenology (litterfall and crop) to litter cellulose pool (g/m3/s)
+    real(r8), pointer :: phenology_to_litr_lig             (:,:)   => null() ! nutrient fluxes associated with phenology (litterfall and crop) to litter lignin pool (g/m3/s)
+    real(r8), pointer :: gap_mortality_to_litr_met         (:,:)   => null() ! nutrient fluxes associated with gap mortality to litter metabolic pool (g/m3/s)
+    real(r8), pointer :: gap_mortality_to_litr_cel         (:,:)   => null() ! nutrient fluxes associated with gap mortality to litter cellulose pool (g/m3/s)
+    real(r8), pointer :: gap_mortality_to_litr_lig         (:,:)   => null() ! nutrient fluxes associated with gap mortality to litter lignin pool (g/m3/s)
+    real(r8), pointer :: gap_mortality_to_cwd               (:,:)   => null() ! nutrient fluxes associated with gap mortality to CWD pool (g/m3/s)
+    real(r8), pointer :: m_decomp_pools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing nutrient fire loss (g/m3/s)
+    real(r8), pointer :: m_decomp_pools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing nutrient fire loss (g/m2/s)
+    real(r8), pointer :: m_to_litr_met_fire                  (:,:)   => null() ! nutrient from leaf, froot, xfer and storage nutrient to litter labile nutrient by fire (g/m3/s)
+    real(r8), pointer :: m_to_litr_cel_fire                  (:,:)   => null() ! nutrient from leaf, froot, xfer and storage nutrient to litter cellulose nutrient by fire (g/m3/s)
+    real(r8), pointer :: m_to_litr_lig_fire                  (:,:)   => null() ! nutrient from leaf, froot, xfer and storage nutrient to litter lignin nutrient by fire (g/m3/s)
+    real(r8), pointer :: fire_mortality_to_cwd              (:,:)   => null() ! nutrient fluxes associated with fire mortality to CWD pool (g/m3/s)
+    real(r8), pointer :: som_erode                            (:)     => null() ! total SOM nutrient detachment (g/m^2/s)
+    real(r8), pointer :: som_deposit                          (:)     => null() ! total SOM nutrient hillslope redeposition (g/m^2/s)
+    real(r8), pointer :: som_yield                            (:)     => null() ! total SOM nutrient loss (g/m^2/s)
+    real(r8), pointer :: decomp_pools_erode                   (:,:)   => null() ! vertically-integrated decomposing nutrient detachment (g/m^2/s)
+    real(r8), pointer :: decomp_pools_deposit                 (:,:)   => null() ! vertically-integrated decomposing nutrient hillslope redeposition (g/m^2/s)
+    real(r8), pointer :: decomp_pools_yield                   (:,:)   => null() ! vertically-integrated decomposing nutrient loss (g/m^2/s)
+    real(r8), pointer :: decomp_pools_yield_vr                (:,:,:) => null() ! vertically-resolved decomposing nutrient loss (g/m^3/s)
+    real(r8), pointer :: harvest_to_litr_met               (:,:)   => null() ! nutrient fluxes associated with harvest to litter metabolic pool (g/m3/s)
+    real(r8), pointer :: harvest_to_litr_cel               (:,:)   => null() ! nutrient fluxes associated with harvest to litter cellulose pool (g/m3/s)
+    real(r8), pointer :: harvest_to_litr_lig               (:,:)   => null() ! nutrient fluxes associated with harvest to litter lignin pool (g/m3/s)
+    real(r8), pointer :: harvest_to_cwd                     (:,:)   => null() ! nutrient fluxes associated with harvest to CWD pool (g/m3/s)
+    real(r8), pointer :: hrv_deadstem_to_prod10              (:)     => null() ! dead stem nutrient harvest mortality to 10-year product pool (g/m2/s)
+    real(r8), pointer :: hrv_deadstem_to_prod100             (:)     => null() ! dead stem nutrient harvest mortality to 100-year product pool (g/m2/s)
+    real(r8), pointer :: hrv_crop_to_prod1                   (:)     => null() ! crop nutrient harvest mortality to 1-year product pool (g/m2/s)
+    real(r8), pointer :: dwt_froot_to_litr_met              (:,:)   => null() ! (g/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_froot_to_litr_cel              (:,:)   => null() ! (g/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_froot_to_litr_lig              (:,:)   => null() ! (g/m3/s) fine root to litter due to landcover change
+    real(r8), pointer :: dwt_livecroot_to_cwd                (:,:)   => null() ! (g/m3/s) live coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_deadcroot_to_cwd                (:,:)   => null() ! (g/m3/s) dead coarse root to CWD due to landcover change
+    real(r8), pointer :: dwt_slash_flux                       (:)     => null() ! (g/m2/s) conversion slash flux due to landcover change
+    real(r8), pointer :: dwt_conv_flux                        (:)     => null() ! (g/m2/s) conversion nutrient flux (immediate loss to atm)
+    real(r8), pointer :: dwt_prod10_gain                      (:)     => null() ! (g/m2/s) addition to 10-yr wood product pool
+    real(r8), pointer :: dwt_prod100_gain                     (:)     => null() ! (g/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_product_gain                (:)     => null() ! (g/m2/s) addition to crop product pool
+    real(r8), pointer :: dwt_loss                             (:)     => null() ! (g/m2/s) total nutrient loss from product pools and conversion
+    real(r8), pointer :: prod1_loss                           (:)     => null() ! (g/m2/s) decomposition loss from 1-year product pool
+    real(r8), pointer :: prod10_loss                          (:)     => null() ! (g/m2/s) decomposition loss from 10-yr wood product pool
+    real(r8), pointer :: prod100_loss                         (:)     => null() ! (g/m2/s) decomposition loss from 100-yr wood product pool
+    real(r8), pointer :: product_loss                         (:)     => null() ! (g/m2/s) total wood product nutrient loss
+    real(r8), pointer :: inputs                               (:)     => null() ! column-level nutrient inputs (g/m2/s)
+    real(r8), pointer :: outputs                              (:)     => null() ! column-level nutrient outputs (g/m2/s)
+    real(r8), pointer :: fire_loss_p2c                        (:)     => null() ! column (g/m2/s) patch2col averaged column-level fire nutrient loss (p2c)
+    real(r8), pointer :: fire_loss                            (:)     => null() ! column (g/m2/s) total patch-level fire nutrient loss
+    real(r8), pointer :: fire_decomp_loss                     (:)     => null() ! column (g/m2/s) nutrient loss to fire for decomposable pools
+    real(r8), pointer :: wood_harvest                         (:)     => null() ! column (p2c)
+    real(r8), pointer :: plant_to_litter_flux		             (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: plant_to_cwd_flux		                 (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: external_to_decomp_pools            (:,:,:) => null() ! col (g/m3/s) net nutrient fluxes associated with litter/som-adding/removal to decomp pools
+    real(r8), pointer :: external_to_decomp_delta             (:)     => null() ! col (g/m2) summarized net change of whole column nutrient i/o to decomposing pool bwtn time-step
+  end type column_nutrient_flux
+
   type, public :: column_carbon_flux
+    type(column_nutrient_flux) :: core  ! fields common to the C/N/P types
     ! primary decomposition and vertical movement fluxes
-    real(r8), pointer :: decomp_cpools_sourcesink              (:,:,:) => null() ! change in decomposing c pools. Used to update concentrations concurrently with vertical transport (gC/m3/timestep)
     real(r8), pointer :: decomp_cascade_hr_vr                  (:,:,:) => null() ! vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-    real(r8), pointer :: decomp_cascade_ctransfer_vr           (:,:,:) => null() ! vertically-resolved C transferred along deomposition cascade (gC/m3/s)
     real(r8), pointer :: decomp_k                              (:,:,:) => null() ! rate constant for decomposition (1./sec)
-    real(r8), pointer :: decomp_cpools_transport_tendency      (:,:,:) => null() ! C tendency due to vertical transport in decomposing C pools (gC/m^3/s)
     real(r8), pointer :: decomp_cascade_hr                     (:,:)   => null() ! vertically-integrated (diagnostic) het. resp. from decomposing C pools (gC/m2/s)
-    real(r8), pointer :: decomp_cascade_ctransfer              (:,:)   => null() ! vertically-integrated (diagnostic) C transferred along deomposition cascade (gC/m2/s)
     real(r8), pointer :: hr_vr                                 (:,:)   => null() ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
     real(r8), pointer :: o_scalar                              (:,:)   => null() ! fraction by which decomposition is limited by anoxia
     real(r8), pointer :: w_scalar                              (:,:)   => null() ! fraction by which decomposition is limited by moisture availability
     real(r8), pointer :: t_scalar                              (:,:)   => null() ! fraction by which decomposition is limited by temperature
-    real(r8), pointer :: decomp_cpools_leached                 (:,:)   => null() ! C loss from vertical transport from each decomposing C pool (gC/m^2/s)
     real(r8), pointer :: phr_vr                                (:,:)   => null() ! potential hr (not N-limited) (gC/m3/s)
     real(r8), pointer :: fphr                                  (:,:)   => null() ! fraction of potential heterotrophic respiration
-    real(r8), pointer :: som_c_leached                         (:)     => null() ! total SOM C loss from vertical transport (gC/m^2/s)
-    real(r8), pointer :: som_c_runoff                          (:)     => null() 
     ! phenology: litterfall and crop fluxes
-    real(r8), pointer :: phenology_c_to_litr_met_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
-    real(r8), pointer :: phenology_c_to_litr_cel_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
-    real(r8), pointer :: phenology_c_to_litr_lig_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter lignin pool (gC/m3/s)
     ! gap mortality
-    real(r8), pointer :: gap_mortality_c_to_litr_met_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter metabolic pool (gC/m3/s)
-    real(r8), pointer :: gap_mortality_c_to_litr_cel_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter cellulose pool (gC/m3/s)
-    real(r8), pointer :: gap_mortality_c_to_litr_lig_c         (:,:)   => null() ! C fluxes associated with gap mortality to litter lignin pool (gC/m3/s)
-    real(r8), pointer :: gap_mortality_c_to_cwdc               (:,:)   => null() ! C fluxes associated with gap mortality to CWD pool (gC/m3/s)
     ! column-level fire fluxes
-    real(r8), pointer :: m_decomp_cpools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing C fire loss (gC/m3/s)
-    real(r8), pointer :: m_decomp_cpools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing C fire loss (gC/m2/s)
-    real(r8), pointer :: m_c_to_litr_met_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter labile C by fire (gC/m3/s)
-    real(r8), pointer :: m_c_to_litr_cel_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter cellulose C by fire (gC/m3/s)
-    real(r8), pointer :: m_c_to_litr_lig_fire                  (:,:)   => null() ! C from leaf, froot, xfer and storage C to litter lignin C by fire (gC/m3/s)
-    real(r8), pointer :: fire_mortality_c_to_cwdc              (:,:)   => null() ! C fluxes associated with fire mortality to CWD pool (gC/m3/s)
     real(r8), pointer :: somc_fire                             (:)     => null() ! (gC/m2/s) carbon emissions due to peat burning
     ! soil erosion fluxes
-    real(r8), pointer :: somc_erode                            (:)     => null() ! total SOM C detachment (gC/m^2/s)
-    real(r8), pointer :: somc_deposit                          (:)     => null() ! total SOM C hillslope redeposition (gC/m^2/s)
-    real(r8), pointer :: somc_yield                            (:)     => null() ! total SOM C loss (gC/m^2/s)
-    real(r8), pointer :: decomp_cpools_erode                   (:,:)   => null() ! vertically-integrated decomposing C detachment (gC/m^2/s)
-    real(r8), pointer :: decomp_cpools_deposit                 (:,:)   => null() ! vertically-integrated decomposing C hillslope redeposition (gC/m^2/s)
-    real(r8), pointer :: decomp_cpools_yield                   (:,:)   => null() ! vertically-integrated decomposing C loss (gC/m^2/s)
-    real(r8), pointer :: decomp_cpools_yield_vr                (:,:,:) => null() ! vertically-resolved decomposing C loss (gC/m^3/s)
     ! dynamic LULCC fluxes: harvest
-    real(r8), pointer :: harvest_c_to_litr_met_c               (:,:)   => null() ! C fluxes associated with harvest to litter metabolic pool (gC/m3/s)
-    real(r8), pointer :: harvest_c_to_litr_cel_c               (:,:)   => null() ! C fluxes associated with harvest to litter cellulose pool (gC/m3/s)
-    real(r8), pointer :: harvest_c_to_litr_lig_c               (:,:)   => null() ! C fluxes associated with harvest to litter lignin pool (gC/m3/s)
-    real(r8), pointer :: harvest_c_to_cwdc                     (:,:)   => null() ! C fluxes associated with harvest to CWD pool (gC/m3/s)
-    real(r8), pointer :: hrv_deadstemc_to_prod10c              (:)     => null() ! dead stem C harvest mortality to 10-year product pool (gC/m2/s)
-    real(r8), pointer :: hrv_deadstemc_to_prod100c             (:)     => null() ! dead stem C harvest mortality to 100-year product pool (gC/m2/s)
-    real(r8), pointer :: hrv_cropc_to_prod1c                   (:)     => null() ! crop C harvest mortality to 1-year product pool (gC/m2/s)
     ! dynamic LULCC fluxes: land cover change
-    real(r8), pointer :: dwt_frootc_to_litr_met_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_frootc_to_litr_cel_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_frootc_to_litr_lig_c              (:,:)   => null() ! (gC/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_livecrootc_to_cwdc                (:,:)   => null() ! (gC/m3/s) live coarse root to CWD due to landcover change
-    real(r8), pointer :: dwt_deadcrootc_to_cwdc                (:,:)   => null() ! (gC/m3/s) dead coarse root to CWD due to landcover change
-    real(r8), pointer :: dwt_slash_cflux                       (:)     => null() ! (gC/m2/s) conversion slash flux due to landcover change
-    real(r8), pointer :: dwt_conv_cflux                        (:)     => null() ! (gC/m2/s) conversion C flux (immediate loss to atm)
-    real(r8), pointer :: dwt_prod10c_gain                      (:)     => null() ! (gC/m2/s) addition to 10-yr wood product pool
-    real(r8), pointer :: dwt_prod100c_gain                     (:)     => null() ! (gC/m2/s) addition to 100-yr wood product pool
-    real(r8), pointer :: dwt_crop_productc_gain                (:)     => null() ! (gC/m2/s) addition to crop product pool
-    real(r8), pointer :: dwt_closs                             (:)     => null() ! (gC/m2/s) total carbon loss from product pools and conversion
     real(r8), pointer :: landuseflux                           (:)     => null() ! (gC/m2/s) dwt_closs+product_closs
     real(r8), pointer :: landuptake                            (:)     => null() ! (gC/m2/s) nee-landuseflux
     ! wood product pool loss fluxes
-    real(r8), pointer :: prod1c_loss                           (:)     => null() ! (gC/m2/s) decomposition loss from 1-year product pool
-    real(r8), pointer :: prod10c_loss                          (:)     => null() ! (gC/m2/s) decomposition loss from 10-yr wood product pool
-    real(r8), pointer :: prod100c_loss                         (:)     => null() ! (gC/m2/s) decomposition loss from 100-yr wood product pool
-    real(r8), pointer :: product_closs                         (:)     => null() ! (gC/m2/s) total wood product carbon loss
     ! summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: lithr                                 (:)     => null() ! (gC/m2/s) litter heterotrophic respiration
     real(r8), pointer :: somhr                                 (:)     => null() ! (gC/m2/s) soil organic matter heterotrophic respiration
@@ -641,8 +597,6 @@ module ColumnDataType
     real(r8), pointer :: nep                                   (:)     => null() ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nbp                                   (:)     => null() ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
-    real(r8), pointer :: cinputs                               (:)     => null() ! column-level C inputs (gC/m2/s)
-    real(r8), pointer :: coutputs                              (:)     => null() ! column-level C outputs (gC/m2/s)
     ! CLAMP summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: bgc_cpool_ext_inputs_vr               (:,:,:) => null() ! col-level extneral organic carbon input gC/m3 /time step
     real(r8), pointer :: bgc_cpool_ext_loss_vr                 (:,:,:) => null() ! col-level extneral organic carbon loss gC/m3 /time step
@@ -655,15 +609,9 @@ module ColumnDataType
     real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)
     real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)
     real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)
-    real(r8), pointer :: fire_closs_p2c                        (:)     => null() ! column (gC/m2/s) patch2col averaged column-level fire C loss (p2c)
-    real(r8), pointer :: fire_closs                            (:)     => null() ! column (gC/m2/s) total patch-level fire C loss
-    real(r8), pointer :: fire_decomp_closs                     (:)     => null() ! column (gC/m2/s) carbon loss to fire for decomposable pools
     real(r8), pointer :: litfall                               (:)     => null() ! column (gC/m2/s) total patch-level litterfall C loss (p2c)
     real(r8), pointer :: vegfire                               (:)     => null() ! column (gC/m2/s) patch-level fire loss (obsolete, mark for removal) (p2c)
-    real(r8), pointer :: wood_harvestc                         (:)     => null() ! column (p2c)
     real(r8), pointer :: hrv_xsmrpool_to_atm                   (:)     => null() ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
-    real(r8), pointer :: plant_to_litter_cflux		             (:)     => null() ! for the purpose of mass balance check
-    real(r8), pointer :: plant_to_cwd_cflux		                 (:)     => null() ! for the purpose of mass balance check
     ! Temporary and annual sums
     real(r8), pointer :: annsum_npp                            (:)     => null() ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
     ! C4MIP output variable
@@ -673,8 +621,6 @@ module ColumnDataType
 
     real(r8), pointer :: lag_npp                               (:)     => null() ! col lagged net primary production (gC/m2/s)
     ! Variables for elm_interface_funcsMod & pflotran
-    real(r8), pointer :: externalc_to_decomp_cpools            (:,:,:) => null() ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
-    real(r8), pointer :: externalc_to_decomp_delta             (:)     => null() ! col (gC/m2) summarized net change of whole column C i/o to decomposing pool bwtn time-step
     real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
     real(r8), pointer :: f_co2_soil                            (:)     => null() ! total soil-atm. CO2 exchange (gC/m2/s)
 
@@ -695,34 +641,11 @@ module ColumnDataType
   ! Define the data structure that holds nitrogen flux information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_nitrogen_flux
+    type(column_nutrient_flux) :: core  ! fields common to the C/N/P types
     ! harvest fluxes
-    real(r8), pointer :: hrv_deadstemn_to_prod10n              (:)     => null() ! dead stem N harvest mortality to 10-year product pool (gN/m2/s)
-    real(r8), pointer :: hrv_deadstemn_to_prod100n             (:)     => null() ! dead stem N harvest mortality to 100-year product pool (gN/m2/s)
-    real(r8), pointer :: m_n_to_litr_met_fire                  (:,:)   => null() ! N from leaf, froot, xfer and storage N to litter labile N by fire (gN/m3/s)
-    real(r8), pointer :: m_n_to_litr_cel_fire                  (:,:)   => null() ! N from leaf, froot, xfer and storage N to litter cellulose N by fire (gN/m3/s)
-    real(r8), pointer :: m_n_to_litr_lig_fire                  (:,:)   => null() ! N from leaf, froot, xfer and storage N to litter lignin N by fire (gN/m3/s)
-    real(r8), pointer :: harvest_n_to_litr_met_n               (:,:)   => null() ! N fluxes associated with harvest to litter metabolic pool (gN/m3/s)
-    real(r8), pointer :: harvest_n_to_litr_cel_n               (:,:)   => null() ! N fluxes associated with harvest to litter cellulose pool (gN/m3/s)
-    real(r8), pointer :: harvest_n_to_litr_lig_n               (:,:)   => null() ! N fluxes associated with harvest to litter lignin pool (gN/m3/s)
-    real(r8), pointer :: harvest_n_to_cwdn                     (:,:)   => null() ! N fluxes associated with harvest to CWD pool (gN/m3/s)
-    real(r8), pointer :: hrv_cropn_to_prod1n                   (:)     => null() ! crop N harvest mortality to 1-yr product pool (gN/m2/s)
     ! fire N fluxes
-    real(r8), pointer :: m_decomp_npools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing N fire loss (gN/m3/s)
-    real(r8), pointer :: m_decomp_npools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing N fire loss (gN/m2/s)
-    real(r8), pointer :: fire_nloss                            (:)     => null() ! total column-level fire N loss (gN/m2/s)
-    real(r8), pointer :: fire_decomp_nloss                     (:)     => null() ! fire N loss from decomposable pools (gN/m2/s)
-    real(r8), pointer :: fire_nloss_p2c                        (:)     => null() ! patch2col column-level fire N loss (gN/m2/s) (p2c)
-    real(r8), pointer :: fire_mortality_n_to_cwdn              (:,:)   => null() ! N fluxes associated with fire mortality to CWD pool (gN/m3/s)
     ! soil erosion fluxes
-    real(r8), pointer :: somn_erode                            (:)     => null() ! total SOM N detachment (gN/m^2/s)
-    real(r8), pointer :: somn_deposit                          (:)     => null() ! total SOM N hillslope redeposition (gN/m^2/s)
-    real(r8), pointer :: somn_yield                            (:)     => null() ! total SOM N loss to inland waters (gN/m^2/s)
-    real(r8), pointer :: decomp_npools_erode                   (:,:)   => null() ! vertically-integrated decomposing N detachment (gN/m^2/s)
-    real(r8), pointer :: decomp_npools_deposit                 (:,:)   => null() ! vertically-integrated decomposing N hillslope redeposition (gN/m^2/s)
-    real(r8), pointer :: decomp_npools_yield                   (:,:)   => null() ! vertically-integrated decomposing N loss to inland waters (gN/m^2/s)
-    real(r8), pointer :: decomp_npools_yield_vr                (:,:,:) => null() ! vertically-resolved decomposing N loss (gN/m^3/s)
     ! summary (diagnostic) flux variables, not involved in mass balance
-    real(r8), pointer :: wood_harvestn                         (:)     => null() ! total N losses to wood product pools (gN/m2/s) (p2c)
     ! deposition fluxes
     real(r8), pointer :: ndep_to_sminn                         (:)     => null() ! atmospheric N deposition to soil mineral N (gN/m2/s)
     real(r8), pointer :: ndep_to_sminn_nh3                     (:)     => null() ! atmospheric N depsotion to soil mineral NH3 (gN/m2/s)
@@ -732,17 +655,8 @@ module ColumnDataType
     real(r8), pointer :: fert_to_sminn                         (:)     => null() ! fertilizer N to soil mineral N (gN/m2/s)
     real(r8), pointer :: soyfixn_to_sminn                      (:)     => null() ! soybean fixation to soil mineral N (gN/m2/s)
     ! phenology: litterfall and crop fluxes
-    real(r8), pointer :: phenology_n_to_litr_met_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gN/m3/s)
-    real(r8), pointer :: phenology_n_to_litr_cel_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gN/m3/s)
-    real(r8), pointer :: phenology_n_to_litr_lig_n             (:,:)   => null() ! N fluxes associated with phenology (litterfall and crop) to litter lignin pool (gN/m3/s)
     ! gap mortality fluxes
-    real(r8), pointer :: gap_mortality_n_to_litr_met_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter metabolic pool (gN/m3/s)
-    real(r8), pointer :: gap_mortality_n_to_litr_cel_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter cellulose pool (gN/m3/s)
-    real(r8), pointer :: gap_mortality_n_to_litr_lig_n         (:,:)   => null() ! N fluxes associated with gap mortality to litter lignin pool (gN/m3/s)
-    real(r8), pointer :: gap_mortality_n_to_cwdn               (:,:)   => null() ! N fluxes associated with gap mortality to CWD pool (gN/m3/s)
     ! decomposition fluxes
-    real(r8), pointer :: decomp_cascade_ntransfer_vr           (:,:,:) => null() ! vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
-    real(r8), pointer :: decomp_cascade_ntransfer              (:,:)   => null() ! vert-int (diagnostic) transfer of N from donor to receiver pool along decomp. cascade (gN/m2/s)
     real(r8), pointer :: decomp_cascade_sminn_flux_vr          (:,:,:) => null() ! vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
     real(r8), pointer :: decomp_cascade_sminn_flux             (:,:)   => null() ! vert-int (diagnostic) mineral N flux for transition along decomposition cascade (gN/m2/s)
     ! vertically-resolved immobilization fluxes
@@ -824,32 +738,10 @@ module ColumnDataType
     real(r8), pointer :: sminn_leached_vr                      (:,:)   => null() ! vertically-resolved soil mineral N pool loss to leaching (gN/m3/s)
     real(r8), pointer :: sminn_leached                         (:)     => null() ! soil mineral N pool loss to leaching (gN/m2/s)
     ! dynamic landcover fluxes
-    real(r8), pointer :: dwt_slash_nflux                       (:)     => null() ! (gN/m2/s) conversion slash flux due to landcover change
-    real(r8), pointer :: dwt_conv_nflux                        (:)     => null() ! (gN/m2/s) conversion N flux (immediate loss to atm)
-    real(r8), pointer :: dwt_prod10n_gain                      (:)     => null() ! (gN/m2/s) addition to 10-yr wood product pool
-    real(r8), pointer :: dwt_prod100n_gain                     (:)     => null() ! (gN/m2/s) addition to 100-yr wood product pool
-    real(r8), pointer :: dwt_crop_productn_gain                (:)     => null() ! (gN/m2/s) addition to crop product pool
-    real(r8), pointer :: dwt_frootn_to_litr_met_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_frootn_to_litr_cel_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_frootn_to_litr_lig_n              (:,:)   => null() ! (gN/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_livecrootn_to_cwdn                (:,:)   => null() ! (gN/m3/s) live coarse root to CWD due to landcover change
-    real(r8), pointer :: dwt_deadcrootn_to_cwdn                (:,:)   => null() ! (gN/m3/s) dead coarse root to CWD due to landcover change
-    real(r8), pointer :: dwt_nloss                             (:)     => null() ! (gN/m2/s) total nitrogen loss from product pools and conversion
     ! wood product pool loss fluxes
-    real(r8), pointer :: prod1n_loss                           (:)     => null() ! (gN/m2/s) decomposition loss from 1-yr crop product pool
-    real(r8), pointer :: prod10n_loss                          (:)     => null() ! (gN/m2/s) decomposition loss from 10-yr wood product pool
-    real(r8), pointer :: prod100n_loss                         (:)     => null() ! (gN/m2/s) decomposition loss from 100-yr wood product pool
-    real(r8), pointer :: product_nloss                         (:)     => null() ! (gN/m2/s) total wood product nitrogen loss
     ! summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: denit                                 (:)     => null() ! total rate of denitrification (gN/m2/s)
-    real(r8), pointer :: ninputs                               (:)     => null() ! column-level N inputs (gN/m2/s)
-    real(r8), pointer :: noutputs                              (:)     => null() ! column-level N outputs (gN/m2/s)
-    real(r8), pointer :: som_n_leached                         (:)     => null() ! total SOM N loss from vertical transport (gN/m^2/s)
-    real(r8), pointer :: som_n_runoff                          (:)     => null() !
-    real(r8), pointer :: decomp_npools_leached                 (:,:)   => null() ! N loss from vertical transport from each decomposing N pool (gN/m^2/s)
-    real(r8), pointer :: decomp_npools_transport_tendency      (:,:,:) => null() ! N tendency due to vertical transport in decomposing N pools (gN/m^3/s)
     ! all n pools involved in decomposition
-    real(r8), pointer :: decomp_npools_sourcesink              (:,:,:) => null() ! (gN/m3) change in decomposing n pools
     ! bgc interface/pflotran
     real(r8), pointer :: plant_ndemand                         (:)     => null() ! N flux required to support initial GPP (gN/m2/s)
     real(r8), pointer :: plant_ndemand_vr                      (:,:)   => null() ! vertically-resolved N flux required to support initial GPP (gN/m3/s)
@@ -863,8 +755,6 @@ module ColumnDataType
     real(r8), pointer :: f_n2o_soil                            (:)     => null() ! flux of N2o from soil-N processes [gN/m^2/s]
     real(r8), pointer :: f_n2_soil_vr                          (:,:)   => null() ! flux of N2 from soil-N processes [gN/m^3/s]
     real(r8), pointer :: f_n2_soil                             (:)     => null() ! flux of N2 from soil-N processes [gN/m^2/s]
-    real(r8), pointer :: externaln_to_decomp_npools            (:,:,:) => null() ! net N fluxes associated with litter/som-adding/removal to decomp pools (gN/m3/s)
-    real(r8), pointer :: externaln_to_decomp_delta             (:)     => null() ! summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gN/m2)
     real(r8), pointer :: no3_net_transport_vr                  (:,:)   => null() ! net NO3 transport associated with runoff/leaching/diffusion (gN/m3/s)
     real(r8), pointer :: nh4_net_transport_vr                  (:,:)   => null() ! net NH4 transport associated with runoff/leaching/diffusion (gN/m3/s)
     real(r8), pointer :: col_plant_ndemand_vr                  (:,:)   => null() ! plant N demand
@@ -875,8 +765,6 @@ module ColumnDataType
     real(r8), pointer :: soil_n_immob_flux                     (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: soil_n_immob_flux_vr                  (:,:)   => null() ! for the purpose of mass balance check
     real(r8), pointer :: soil_n_grossmin_flux                  (:)     => null() ! for the purpose of mass balance check
-    real(r8), pointer :: plant_to_litter_nflux                 (:)     => null() ! for the purpose of mass balance check
-    real(r8), pointer :: plant_to_cwd_nflux                    (:)     => null() ! for the purpose of mass balance check
     ! C4MIP output variable
        real(r8), pointer :: plant_n_to_cwdn                      (:)     => null() ! sum of gap, fire, dynamic land use, and harvest mort
     ! FAN
@@ -922,34 +810,9 @@ module ColumnDataType
   ! Define the data structure that holds phosphorus flux information at the column level.
   !-----------------------------------------------------------------------
   type, public :: column_phosphorus_flux
-    real(r8), pointer :: hrv_deadstemp_to_prod10p              (:)     => null() ! dead stem P harvest mortality to 10-year product pool (gP/m2/s)
-    real(r8), pointer :: hrv_deadstemp_to_prod100p             (:)     => null() ! dead stem P harvest mortality to 100-year product pool (gP/m2/s)
-    real(r8), pointer :: m_p_to_litr_met_fire                  (:,:)   => null() ! P from leaf, froot, xfer and storage P to litter labile P by fire (gP/m3/s)
-    real(r8), pointer :: m_p_to_litr_cel_fire                  (:,:)   => null() ! P from leaf, froot, xfer and storage P to litter cellulose P by fire (gP/m3/s)
-    real(r8), pointer :: m_p_to_litr_lig_fire                  (:,:)   => null() ! P from leaf, froot, xfer and storage P to litter lignin P by fire (gP/m3/s)
-    real(r8), pointer :: harvest_p_to_litr_met_p               (:,:)   => null() ! P fluxes associated with harvest to litter metabolic pool (gP/m3/s)
-    real(r8), pointer :: harvest_p_to_litr_cel_p               (:,:)   => null() ! P fluxes associated with harvest to litter cellulose pool (gP/m3/s)
-    real(r8), pointer :: harvest_p_to_litr_lig_p               (:,:)   => null() ! P fluxes associated with harvest to litter lignin pool (gP/m3/s)
-    real(r8), pointer :: harvest_p_to_cwdp                     (:,:)   => null() ! P fluxes associated with harvest to CWD pool (gP/m3/s)
-    real(r8), pointer :: hrv_cropp_to_prod1p                   (:)     => null() ! crop P harvest mortality to 1-yr product pool (gP/m2/s)
-    real(r8), pointer :: m_decomp_ppools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing P fire loss (gP/m3/s)
-    real(r8), pointer :: m_decomp_ppools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing P fire loss (gP/m2/s)
-    real(r8), pointer :: fire_ploss                            (:)     => null() ! total column-level fire P loss (gP/m2/s)
-    real(r8), pointer :: fire_decomp_ploss                     (:)     => null() ! fire p loss from decomposable pools (gP/m2/s)
-    real(r8), pointer :: fire_ploss_p2c                        (:)     => null() ! patch2col column-level fire P loss (gP/m2/s) (p2c)
-    real(r8), pointer :: fire_mortality_p_to_cwdp              (:,:)   => null() ! P fluxes associated with fire mortality to CWD pool (gP/m3/s)
-    real(r8), pointer :: wood_harvestp                         (:)     => null() ! total P losses to wood product pools (gP/m2/s) (p2c)
+    type(column_nutrient_flux) :: core  ! fields common to the C/N/P types
     real(r8), pointer :: pdep_to_sminp                         (:)     => null() ! atmospheric P deposition to soil mineral P (gP/m2/s)
     real(r8), pointer :: fert_p_to_sminp                       (:)     => null() ! fertilizer P to soil mineral P (gP/m2/s)
-    real(r8), pointer :: phenology_p_to_litr_met_p             (:,:)   => null() ! P fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gP/m3/s)
-    real(r8), pointer :: phenology_p_to_litr_cel_p             (:,:)   => null() ! P fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gP/m3/s)
-    real(r8), pointer :: phenology_p_to_litr_lig_p             (:,:)   => null() ! P fluxes associated with phenology (litterfall and crop) to litter lignin pool (gP/m3/s)
-    real(r8), pointer :: gap_mortality_p_to_litr_met_p         (:,:)   => null() ! P fluxes associated with gap mortality to litter metabolic pool (gP/m3/s)
-    real(r8), pointer :: gap_mortality_p_to_litr_cel_p         (:,:)   => null() ! P fluxes associated with gap mortality to litter cellulose pool (gP/m3/s)
-    real(r8), pointer :: gap_mortality_p_to_litr_lig_p         (:,:)   => null() ! P fluxes associated with gap mortality to litter lignin pool (gP/m3/s)
-    real(r8), pointer :: gap_mortality_p_to_cwdp               (:,:)   => null() ! P fluxes associated with gap mortality to CWD pool (gP/m3/s)
-    real(r8), pointer :: decomp_cascade_ptransfer_vr           (:,:,:) => null() ! vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
-    real(r8), pointer :: decomp_cascade_ptransfer              (:,:)   => null() ! vert-int (diagnostic) transfer of P from donor to receiver pool along decomp. cascade (gP/m2/s)
     real(r8), pointer :: decomp_cascade_sminp_flux_vr          (:,:,:) => null() ! vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
     real(r8), pointer :: decomp_cascade_sminp_flux             (:,:)   => null() ! vert-int (diagnostic) mineral P flux for transition along decomposition cascade (gP/m2/s)
     real(r8), pointer :: potential_immob_p_vr                  (:,:)   => null() ! vertically-resolved potential P immobilization (gP/m3/s) at each level
@@ -981,10 +844,6 @@ module ColumnDataType
     real(r8), pointer :: sminp_leached_vr                      (:,:)   =>null() ! vertically-resolved soil mineral P pool loss to leaching (gP/m3/s)
     real(r8), pointer :: sminp_leached                         (:)     =>null() ! soil mineral P pool loss to leaching (gP/m2/s)
     real(r8), pointer :: sminp_runoff                          (:)     => null()
-    real(r8), pointer :: som_p_runoff                          (:)     => null()
-    real(r8), pointer :: somp_erode                            (:)     =>null() ! SOM P detachment (gP/m^2/s)
-    real(r8), pointer :: somp_deposit                          (:)     =>null() ! SOM P hillslope redeposition (gP/m^2/s)
-    real(r8), pointer :: somp_yield                            (:)     =>null() ! SOM P loss to inland waters (gP/m^2/s)
     real(r8), pointer :: labilep_erode                         (:)     =>null() ! soil labile mineral P detachment (gP/m^2/s)
     real(r8), pointer :: labilep_deposit                       (:)     =>null() ! soil labile mineral P hillslope redeposition (gP/m^2/s)
     real(r8), pointer :: labilep_yield                         (:)     =>null() ! soil labile mineral P loss to inland waters (gP/m^2/s)
@@ -997,39 +856,12 @@ module ColumnDataType
     real(r8), pointer :: primp_erode                           (:)     =>null() ! soil primary mineral P detachment (gP/m^2/s)
     real(r8), pointer :: primp_deposit                         (:)     =>null() ! soil primary mineral P hillslope redeposition (gP/m^2/s)
     real(r8), pointer :: primp_yield                           (:)     =>null() ! soil primary mineral P loss to inland waters (gP/m^2/s)
-    real(r8), pointer :: decomp_ppools_erode                   (:,:)   =>null() ! vertically-integrated decomposing P detachment (gP/m^2/s)
-    real(r8), pointer :: decomp_ppools_deposit                 (:,:)   =>null() ! vertically-integrated decomposing P hillslope redeposition (gP/m^2/s)
-    real(r8), pointer :: decomp_ppools_yield                   (:,:)   =>null() ! vertically-integrated decomposing P loss to inland waters (gP/m^2/s)
-    real(r8), pointer :: decomp_ppools_yield_vr                (:,:,:) =>null() ! vertically-resolved decomposing P loss (gP/m^3/s)
     real(r8), pointer :: labilep_yield_vr                      (:,:)   =>null() ! vertically-resolved labile mineral P loss to inland waters (gP/m^3/s)
     real(r8), pointer :: secondp_yield_vr                      (:,:)   =>null() ! vertically-resolved secondary mineral P loss to inland waters (gP/m^3/s)
     real(r8), pointer :: occlp_yield_vr                        (:,:)   =>null() ! vertically-resolved occluded mineral P loss to inland waters (gP/m^3/s)
     real(r8), pointer :: primp_yield_vr                        (:,:)   =>null() ! vertically-resolved primary mineral P loss to inland waters (gP/m^3/s)
-    real(r8), pointer :: dwt_slash_pflux                       (:)     => null() ! (gP/m2/s) conversion slash flux due to landcover change
-    real(r8), pointer :: dwt_conv_pflux                        (:)     => null() ! (gP/m2/s) conversion P flux (immediate loss to atm)
-    real(r8), pointer :: dwt_prod10p_gain                      (:)     => null() ! (gP/m2/s) addition to 10-yr wood product pool
-    real(r8), pointer :: dwt_prod100p_gain                     (:)     => null() ! (gP/m2/s) addition to 100-yr wood product pool
-    real(r8), pointer :: dwt_crop_productp_gain                (:)     => null() ! (gP/m2/s) addition to crop product pool
-    real(r8), pointer :: dwt_frootp_to_litr_met_p              (:,:)   => null() ! (gP/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_frootp_to_litr_cel_p              (:,:)   => null() ! (gP/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_frootp_to_litr_lig_p              (:,:)   => null() ! (gP/m3/s) fine root to litter due to landcover change
-    real(r8), pointer :: dwt_livecrootp_to_cwdp                (:,:)   => null() ! (gP/m3/s) live coarse root to CWD due to landcover change
-    real(r8), pointer :: dwt_deadcrootp_to_cwdp                (:,:)   => null() ! (gP/m3/s) dead coarse root to CWD due to landcover change
-    real(r8), pointer :: dwt_ploss                             (:)     => null() ! (gP/m2/s) total phosphorus loss from product pools and conversion
-    real(r8), pointer :: prod1p_loss                           (:)     => null() ! (gP/m2/s) decomposition loss from 1-yr crop product pool
-    real(r8), pointer :: prod10p_loss                          (:)     => null() ! (gP/m2/s) decomposition loss from 10-yr wood product pool
-    real(r8), pointer :: prod100p_loss                         (:)     => null() ! (gP/m2/s) decomposition loss from 100-yr wood product pool
-    real(r8), pointer :: product_ploss                         (:)     => null() ! (gP/m2/s) total wood product phosphorus loss
-    real(r8), pointer :: pinputs                               (:)     => null() ! column-level P inputs (gP/m2/s)
-    real(r8), pointer :: poutputs                              (:)     => null() ! column-level P outputs (gP/m2/s)
-    real(r8), pointer :: som_p_leached                         (:)     => null() ! total SOM P loss from vertical transport (gP/m^2/s)
-    real(r8), pointer :: decomp_ppools_leached                 (:,:)   => null() ! P loss from vertical transport from each decomposing P pool (gP/m^2/s)
-    real(r8), pointer :: decomp_ppools_transport_tendency      (:,:,:) => null() ! P tendency due to vertical transport in decomposing P pools (gP/m^3/s)
-    real(r8), pointer :: decomp_ppools_sourcesink              (:,:,:) => null() ! (gP/m3) change in decomposing P pools
     real(r8), pointer :: plant_pdemand                         (:)     => null() ! P flux required to support initial GPP (gN/m2/s)
     real(r8), pointer :: plant_pdemand_vr                      (:,:)   => null() ! vertically-resolved P flux required to support initial GPP (gP/m3/s)
-    real(r8), pointer :: externalp_to_decomp_ppools            (:,:,:) => null() ! net N fluxes associated with litter/som-adding/removal to decomp pools (gP/m3/s)
-    real(r8), pointer :: externalp_to_decomp_delta             (:)     => null() ! summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gP/m2)
     real(r8), pointer :: sminp_net_transport_vr                (:,:)   => null() ! net sminp transport associated with runoff/leaching (gP/m3/s)
     real(r8), pointer :: sminp_net_transport_delta             (:)     => null() ! summarized net change of column-level sminp leaching bwtn time-step (for balance checking) (gP/m2)
     real(r8), pointer :: adsorb_to_labilep_vr                  (:,:)   => null()
@@ -1043,8 +875,6 @@ module ColumnDataType
     real(r8), pointer :: soil_p_immob_flux_vr                  (:,:) => null()  ! for the purpose of mass balance check
     real(r8), pointer :: soil_p_grossmin_flux                  (:)   => null()  ! for the purpose of mass balance check
     real(r8), pointer :: smin_p_to_plant                       (:)   => null()  ! for the purpose of mass balance check
-    real(r8), pointer :: plant_to_litter_pflux                 (:)   => null()  ! for the purpose of mass balance check
-    real(r8), pointer :: plant_to_cwd_pflux                    (:)   => null()  ! for the purpose of mass balance check
   contains
     procedure, public :: Init       => col_pf_init
     procedure, public :: Restart    => col_pf_restart
@@ -2144,49 +1974,49 @@ contains
     !-----------------------------------------------------------------------
 
     allocate(this%rootc                (begc:endc))     ; this%rootc                (:)     = spval
-    allocate(this%totvegc              (begc:endc))     ; this%totvegc              (:)     = spval
+    allocate(this%core%totveg              (begc:endc))     ; this%core%totveg              (:)     = spval
     allocate(this%leafc                (begc:endc))     ; this%leafc                (:)     = spval
     allocate(this%deadstemc            (begc:endc))     ; this%deadstemc            (:)     = spval
     allocate(this%fuelc                (begc:endc))     ; this%fuelc                (:)     = spval
     allocate(this%fuelc_crop           (begc:endc))     ; this%fuelc_crop           (:)     = spval
     allocate(this%frootc               (begc:endc))     ; this%frootc               (:)     = spval
-    allocate(this%seedc                (begc:endc))     ; this%seedc                (:)     = spval
-    allocate(this%prod1c               (begc:endc))     ; this%prod1c               (:)     = spval
-    allocate(this%prod10c              (begc:endc))     ; this%prod10c              (:)     = spval
-    allocate(this%prod100c             (begc:endc))     ; this%prod100c             (:)     = spval
-    allocate(this%totprodc             (begc:endc))     ; this%totprodc             (:)     = spval
-    allocate(this%dyn_cbal_adjustments (begc:endc))     ; this%dyn_cbal_adjustments (:)     = spval
-    allocate(this%totpftc              (begc:endc))     ; this%totpftc              (:)     = spval
-    allocate(this%cwdc                 (begc:endc))     ; this%cwdc                 (:)     = spval
-    allocate(this%ctrunc               (begc:endc))     ; this%ctrunc               (:)     = spval
+    allocate(this%core%seed                (begc:endc))     ; this%core%seed                (:)     = spval
+    allocate(this%core%prod1               (begc:endc))     ; this%core%prod1               (:)     = spval
+    allocate(this%core%prod10              (begc:endc))     ; this%core%prod10              (:)     = spval
+    allocate(this%core%prod100             (begc:endc))     ; this%core%prod100             (:)     = spval
+    allocate(this%core%totprod             (begc:endc))     ; this%core%totprod             (:)     = spval
+    allocate(this%core%dyn_bal_adjustments (begc:endc))     ; this%core%dyn_bal_adjustments (:)     = spval
+    allocate(this%core%totpft              (begc:endc))     ; this%core%totpft              (:)     = spval
+    allocate(this%core%cwd                 (begc:endc))     ; this%core%cwd                 (:)     = spval
+    allocate(this%core%trunc_sink               (begc:endc))     ; this%core%trunc_sink               (:)     = spval
     allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = spval
-    allocate(this%totecosysc           (begc:endc))     ; this%totecosysc           (:)     = spval
-    allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = spval
+    allocate(this%core%totecosys           (begc:endc))     ; this%core%totecosys           (:)     = spval
+    allocate(this%core%totcol              (begc:endc))     ; this%core%totcol              (:)     = spval
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = spval
-    allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = spval 
-    allocate(this%endcb                (begc:endc))     ; this%endcb                (:)     = spval 
-    allocate(this%errcb                (begc:endc))     ; this%errcb                (:)     = spval
-    allocate(this%totpftc_beg          (begc:endc))     ; this%totpftc_beg          (:)     = spval
-    allocate(this%cwdc_beg             (begc:endc))     ; this%cwdc_beg             (:)     = spval
-    allocate(this%totlitc_beg          (begc:endc))     ; this%totlitc_beg          (:)     = spval
-    allocate(this%totsomc_beg          (begc:endc))     ; this%totsomc_beg          (:)     = spval
-    allocate(this%som1c                (begc:endc))     ; this%som1c                (:)     = spval
-    allocate(this%som2c                (begc:endc))     ; this%som2c                (:)     = spval
-    allocate(this%som3c                (begc:endc))     ; this%som3c                (:)     = spval
-    allocate(this%totpftc_end          (begc:endc))     ; this%totpftc_end          (:)     = spval
-    allocate(this%cwdc_end             (begc:endc))     ; this%cwdc_end             (:)     = spval
-    allocate(this%totlitc_end          (begc:endc))     ; this%totlitc_end          (:)     = spval
-    allocate(this%totsomc_end          (begc:endc))     ; this%totsomc_end          (:)     = spval
-    allocate(this%cropseedc_deficit    (begc:endc))     ; this%cropseedc_deficit    (:)     = spval
-    allocate(this%decomp_cpools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_vr (:,:,:) = spval
-    allocate(this%ctrunc_vr        (begc:endc,1:nlevdecomp_full))                 ; this%ctrunc_vr        (:,:)   = spval
+    allocate(this%core%balance_beg                (begc:endc))     ; this%core%balance_beg                (:)     = spval 
+    allocate(this%core%balance_end                (begc:endc))     ; this%core%balance_end                (:)     = spval 
+    allocate(this%core%balance_err                (begc:endc))     ; this%core%balance_err                (:)     = spval
+    allocate(this%core%totpft_beg          (begc:endc))     ; this%core%totpft_beg          (:)     = spval
+    allocate(this%core%cwd_beg             (begc:endc))     ; this%core%cwd_beg             (:)     = spval
+    allocate(this%core%totlit_beg          (begc:endc))     ; this%core%totlit_beg          (:)     = spval
+    allocate(this%core%totsom_beg          (begc:endc))     ; this%core%totsom_beg          (:)     = spval
+    allocate(this%core%som1                (begc:endc))     ; this%core%som1                (:)     = spval
+    allocate(this%core%som2                (begc:endc))     ; this%core%som2                (:)     = spval
+    allocate(this%core%som3                (begc:endc))     ; this%core%som3                (:)     = spval
+    allocate(this%core%totpft_end          (begc:endc))     ; this%core%totpft_end          (:)     = spval
+    allocate(this%core%cwd_end             (begc:endc))     ; this%core%cwd_end             (:)     = spval
+    allocate(this%core%totlit_end          (begc:endc))     ; this%core%totlit_end          (:)     = spval
+    allocate(this%core%totsom_end          (begc:endc))     ; this%core%totsom_end          (:)     = spval
+    allocate(this%core%cropseed_deficit    (begc:endc))     ; this%core%cropseed_deficit    (:)     = spval
+    allocate(this%core%decomp_pools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_vr (:,:,:) = spval
+    allocate(this%core%trunc_sink_vr        (begc:endc,1:nlevdecomp_full))                 ; this%core%trunc_sink_vr        (:,:)   = spval
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = spval
-    allocate(this%decomp_cpools_1m (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools_1m (:,:)   = spval
-    allocate(this%decomp_cpools    (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools    (:,:)   = spval
-    allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = spval
-    allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = spval
-    allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = spval
-    allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = spval
+    allocate(this%core%decomp_pools_1m (begc:endc,1:ndecomp_pools))                   ; this%core%decomp_pools_1m (:,:)   = spval
+    allocate(this%core%decomp_pools    (begc:endc,1:ndecomp_pools))                   ; this%core%decomp_pools    (:,:)   = spval
+    allocate(this%core%totlit_1m           (begc:endc))     ; this%core%totlit_1m           (:)     = spval
+    allocate(this%core%totsom_1m           (begc:endc))     ; this%core%totsom_1m           (:)     = spval
+    allocate(this%core%totlit              (begc:endc))     ; this%core%totlit              (:)     = spval
+    allocate(this%core%totsom              (begc:endc))     ; this%core%totsom              (:)     = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cs
@@ -2194,7 +2024,7 @@ contains
 
     if (carbon_type == 'c12') then
 
-       this%decomp_cpools(begc:endc,:) = spval
+       this%core%decomp_pools(begc:endc,:) = spval
        do l  = 1, ndecomp_pools
           if(trim(decomp_cascade_con%decomp_pool_name_history(l))=='')exit
 
@@ -2202,7 +2032,7 @@ contains
           if( decomp_cascade_con%is_cwd(l) .and. use_fates ) cycle
           
           if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr(:,:,l)
+             data2dptr => this%core%decomp_pools_vr(:,:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
              longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
 
@@ -2211,7 +2041,7 @@ contains
                   ptr_col=data2dptr)
           endif
 
-          data1dptr => this%decomp_cpools(:,l)
+          data1dptr => this%core%decomp_pools(:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
            call hist_addfld1d (fname=fieldname, units='gC/m^2', &
@@ -2219,7 +2049,7 @@ contains
                   ptr_col=data1dptr)
 
           if ( nlevdecomp_full > 1 ) then
-             data1dptr => this%decomp_cpools_1m(:,l)
+             data1dptr => this%core%decomp_pools_1m(:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
              longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
               call hist_addfld1d (fname=fieldname, units='gC/m^2', &
@@ -2229,75 +2059,75 @@ contains
        end do
        if ( nlevdecomp_full > 1 ) then
 
-          this%totlitc_1m(begc:endc) = spval
+          this%core%totlit_1m(begc:endc) = spval
            call hist_addfld1d (fname='TOTLITC_1m', units='gC/m^2', &
                  avgflag='A', long_name='total litter carbon to 1 meter depth', &
-                  ptr_col=this%totlitc_1m)
+                  ptr_col=this%core%totlit_1m)
 
-          this%totsomc_1m(begc:endc) = spval
+          this%core%totsom_1m(begc:endc) = spval
            call hist_addfld1d (fname='TOTSOMC_1m', units='gC/m^2', &
                  avgflag='A', long_name='total soil organic matter carbon to 1 meter depth', &
-                  ptr_col=this%totsomc_1m)
+                  ptr_col=this%core%totsom_1m)
        end if
 
-       this%totlitc(begc:endc) = spval
+       this%core%totlit(begc:endc) = spval
         call hist_addfld1d (fname='LITTERC', units='gC/m^2', &
               avgflag='A', long_name='litter C', &
-               ptr_col=this%totlitc)
+               ptr_col=this%core%totlit)
         call hist_addfld1d (fname='TOTLITC', units='gC/m^2', &
               avgflag='A', long_name='total litter carbon', &
-               ptr_col=this%totlitc)
+               ptr_col=this%core%totlit)
 
-       this%totsomc(begc:endc) = spval
+       this%core%totsom(begc:endc) = spval
         call hist_addfld1d (fname='TOTSOMC', units='gC/m^2', &
               avgflag='A', long_name='total soil organic matter carbon', &
-               ptr_col=this%totsomc)
+               ptr_col=this%core%totsom)
 
-       this%ctrunc(begc:endc) = spval
+       this%core%trunc_sink(begc:endc) = spval
         call hist_addfld1d (fname='COL_CTRUNC', units='gC/m^2',  &
               avgflag='A', long_name='column-level sink for C truncation', &
-               ptr_col=this%ctrunc, default='inactive')
+               ptr_col=this%core%trunc_sink, default='inactive')
 
        call hist_addfld1d (fname='SOILC', units='gC/m^2', &
              avgflag='A', long_name='soil C', &
-             ptr_col=this%totsomc)
+             ptr_col=this%core%totsom)
 
-       this%totecosysc(begc:endc) = spval
+       this%core%totecosys(begc:endc) = spval
        call hist_addfld1d (fname='TOTECOSYSC', units='gC/m^2', &
             avgflag='A', long_name='total ecosystem carbon, incl veg but excl cpool but excl product pools', &
-            ptr_col=this%totecosysc)
+            ptr_col=this%core%totecosys)
 
-       this%totcolc(begc:endc) = spval
+       this%core%totcol(begc:endc) = spval
        call hist_addfld1d (fname='TOTCOLC', units='gC/m^2', &
             avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
-            ptr_col=this%totcolc)
+            ptr_col=this%core%totcol)
 
-       this%prod10c(begc:endc) = spval
+       this%core%prod10(begc:endc) = spval
        call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
             avgflag='A', long_name='10-yr wood product C', &
-            ptr_col=this%prod10c, default='inactive')
+            ptr_col=this%core%prod10, default='inactive')
 
-       this%prod100c(begc:endc) = spval
+       this%core%prod100(begc:endc) = spval
        call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
             avgflag='A', long_name='100-yr wood product C', &
-            ptr_col=this%prod100c, default='inactive')
+            ptr_col=this%core%prod100, default='inactive')
 
        if(.not.use_fates)then
 
-          this%seedc(begc:endc) = spval
+          this%core%seed(begc:endc) = spval
           call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new Patches', &
-               ptr_col=this%seedc, default='inactive')
+               ptr_col=this%core%seed, default='inactive')
 
-          this%prod1c(begc:endc) = spval
+          this%core%prod1(begc:endc) = spval
           call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
                avgflag='A', long_name='1-yr crop product C', &
-               ptr_col=this%prod1c, default='inactive')
+               ptr_col=this%core%prod1, default='inactive')
 
-          this%totprodc(begc:endc) = spval
+          this%core%totprod(begc:endc) = spval
           call hist_addfld1d (fname='TOTPRODC', units='gC/m^2', &
                avgflag='A', long_name='total wood product C', &
-               ptr_col=this%totprodc, default='inactive')
+               ptr_col=this%core%totprod, default='inactive')
 
           this%fuelc(begc:endc) = spval
           call hist_addfld1d (fname='FUELC', units='gC/m^2', &
@@ -2308,10 +2138,10 @@ contains
        end if
 
     else if ( carbon_type == 'c13' ) then
-       this%decomp_cpools_vr(begc:endc,:,:) = spval
+       this%core%decomp_pools_vr(begc:endc,:,:) = spval
        do l = 1, ndecomp_pools
           if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr(:,:,l)
+             data2dptr => this%core%decomp_pools_vr(:,:,l)
              fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
              longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
               call hist_addfld2d (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
@@ -2319,163 +2149,163 @@ contains
                      ptr_col=data2dptr)
           endif
 
-          data1dptr => this%decomp_cpools(:,l)
+          data1dptr => this%core%decomp_pools(:,l)
           fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
           longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
            call hist_addfld1d (fname=fieldname, units='gC13/m^2', &
                  avgflag='A', long_name=longname, &
                   ptr_col=data1dptr)
        end do
-       this%totlitc(begc:endc) = spval
+       this%core%totlit(begc:endc) = spval
         call hist_addfld1d (fname='C13_TOTLITC', units='gC13/m^2', &
               avgflag='A', long_name='C13 total litter carbon', &
-               ptr_col=this%totlitc)
+               ptr_col=this%core%totlit)
 
-       this%totsomc(begc:endc) = spval
+       this%core%totsom(begc:endc) = spval
         call hist_addfld1d (fname='C13_TOTSOMC', units='gC13/m^2', &
               avgflag='A', long_name='C13 total soil organic matter carbon', &
-               ptr_col=this%totsomc)
+               ptr_col=this%core%totsom)
 
        if ( nlevdecomp_full > 1 ) then
-          this%totlitc_1m(begc:endc) = spval
+          this%core%totlit_1m(begc:endc) = spval
            call hist_addfld1d (fname='C13_TOTLITC_1m', units='gC13/m^2', &
                  avgflag='A', long_name='C13 total litter carbon to 1 meter', &
-                  ptr_col=this%totlitc_1m)
+                  ptr_col=this%core%totlit_1m)
 
-          this%totsomc_1m(begc:endc) = spval
+          this%core%totsom_1m(begc:endc) = spval
            call hist_addfld1d (fname='C13_TOTSOMC_1m', units='gC13/m^2', &
                  avgflag='A', long_name='C13 total soil organic matter carbon to 1 meter', &
-                  ptr_col=this%totsomc_1m)
+                  ptr_col=this%core%totsom_1m)
        endif
 
-       this%seedc(begc:endc) = spval
+       this%core%seed(begc:endc) = spval
         call hist_addfld1d (fname='C13_SEEDC', units='gC13/m^2', &
               avgflag='A', long_name='C13 pool for seeding new Patches', &
-               ptr_col=this%seedc)
+               ptr_col=this%core%seed)
 
-       this%ctrunc(begc:endc) = spval
+       this%core%trunc_sink(begc:endc) = spval
         call hist_addfld1d (fname='C13_COL_CTRUNC', units='gC13/m^2',  &
               avgflag='A', long_name='C13 column-level sink for C truncation', &
-               ptr_col=this%ctrunc)
+               ptr_col=this%core%trunc_sink)
 
 
-       this%totecosysc(begc:endc) = spval
+       this%core%totecosys(begc:endc) = spval
         call hist_addfld1d (fname='C13_TOTECOSYSC', units='gC13/m^2', &
               avgflag='A', long_name='C13 total ecosystem carbon, incl veg but excl cpool but excl product pools', &
-               ptr_col=this%totecosysc)
+               ptr_col=this%core%totecosys)
 
-       this%totcolc(begc:endc) = spval
+       this%core%totcol(begc:endc) = spval
         call hist_addfld1d (fname='C13_TOTCOLC', units='gC13/m^2', &
               avgflag='A', long_name='C13 total column carbon, incl veg and cpool but excl product pools', &
-               ptr_col=this%totcolc)
+               ptr_col=this%core%totcol)
 
-       this%prod10c(begc:endc) = spval
+       this%core%prod10(begc:endc) = spval
         call hist_addfld1d (fname='C13_PROD10C', units='gC13/m^2', &
               avgflag='A', long_name='C13 10-yr wood product C', &
-               ptr_col=this%prod10c)
+               ptr_col=this%core%prod10)
 
-       this%prod100c(begc:endc) = spval
+       this%core%prod100(begc:endc) = spval
         call hist_addfld1d (fname='C13_PROD100C', units='gC13/m^2', &
               avgflag='A', long_name='C13 100-yr wood product C', &
-               ptr_col=this%prod100c)
+               ptr_col=this%core%prod100)
 
-       this%prod1c(begc:endc) = spval
+       this%core%prod1(begc:endc) = spval
         call hist_addfld1d (fname='C13_PROD1C', units='gC13/m^2', &
               avgflag='A', long_name='C13 1-yr crop product C', &
-               ptr_col=this%prod1c)
+               ptr_col=this%core%prod1)
 
-       this%totprodc(begc:endc) = spval
+       this%core%totprod(begc:endc) = spval
         call hist_addfld1d (fname='C13_TOTPRODC', units='gC13/m^2', &
               avgflag='A', long_name='C13 total wood product C', &
-               ptr_col=this%totprodc)
+               ptr_col=this%core%totprod)
 
 
     else if ( carbon_type == 'c14' ) then
-       this%decomp_cpools_vr(begc:endc,:,:) = spval
+       this%core%decomp_pools_vr(begc:endc,:,:) = spval
        do l = 1, ndecomp_pools
           if ( nlevdecomp_full > 1 ) then
-             data2dptr => this%decomp_cpools_vr(:,:,l)
+             data2dptr => this%core%decomp_pools_vr(:,:,l)
              fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_vr'
              longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C (vertically resolved)'
               call hist_addfld2d (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
                      avgflag='A', long_name=longname, ptr_col=data2dptr)
           endif
 
-          data1dptr => this%decomp_cpools(:,l)
+          data1dptr => this%core%decomp_pools(:,l)
           fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C'
           longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C'
            call hist_addfld1d (fname=fieldname, units='gC14/m^2', &
                   avgflag='A', long_name=longname, ptr_col=data1dptr)
 
           if ( nlevdecomp_full > 1 ) then
-             data1dptr => this%decomp_cpools_1m(:,l)
+             data1dptr => this%core%decomp_pools_1m(:,l)
              fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//'C_1m'
              longname =  'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(l))//' C to 1 meter'
               call hist_addfld1d (fname=fieldname, units='gC/m^2', &
                      avgflag='A', long_name=longname, ptr_col=data1dptr, default='inactive')
           endif
        end do
-       this%totlitc(begc:endc) = spval
+       this%core%totlit(begc:endc) = spval
         call hist_addfld1d (fname='C14_TOTLITC', units='gC14/m^2', &
               avgflag='A', long_name='C14 total litter carbon', &
-               ptr_col=this%totlitc)
+               ptr_col=this%core%totlit)
 
-       this%totsomc(begc:endc) = spval
+       this%core%totsom(begc:endc) = spval
         call hist_addfld1d (fname='C14_TOTSOMC', units='gC14/m^2', &
               avgflag='A', long_name='C14 total soil organic matter carbon', &
-               ptr_col=this%totsomc)
+               ptr_col=this%core%totsom)
 
        if ( nlevdecomp_full > 1 ) then
-          this%totlitc_1m(begc:endc) = spval
+          this%core%totlit_1m(begc:endc) = spval
            call hist_addfld1d (fname='C14_TOTLITC_1m', units='gC14/m^2', &
                  avgflag='A', long_name='C14 total litter carbon to 1 meter', &
-                  ptr_col=this%totlitc_1m)
+                  ptr_col=this%core%totlit_1m)
 
-          this%totsomc_1m(begc:endc) = spval
+          this%core%totsom_1m(begc:endc) = spval
            call hist_addfld1d (fname='C14_TOTSOMC_1m', units='gC14/m^2', &
                  avgflag='A', long_name='C14 total soil organic matter carbon to 1 meter', &
-                  ptr_col=this%totsomc_1m)
+                  ptr_col=this%core%totsom_1m)
        endif
 
-       this%seedc(begc:endc) = spval
+       this%core%seed(begc:endc) = spval
         call hist_addfld1d (fname='C14_SEEDC', units='gC14/m^2', &
               avgflag='A', long_name='C14 pool for seeding new Patches', &
-               ptr_col=this%seedc)
+               ptr_col=this%core%seed)
 
-       this%ctrunc(begc:endc) = spval
+       this%core%trunc_sink(begc:endc) = spval
         call hist_addfld1d (fname='C14_COL_CTRUNC', units='gC14/m^2', &
               avgflag='A', long_name='C14 column-level sink for C truncation', &
-               ptr_col=this%ctrunc)
+               ptr_col=this%core%trunc_sink)
 
-       this%totecosysc(begc:endc) = spval
+       this%core%totecosys(begc:endc) = spval
         call hist_addfld1d (fname='C14_TOTECOSYSC', units='gC14/m^2', &
               avgflag='A', long_name='C14 total ecosystem carbon, incl veg but excl cpool but excl product pools', &
-               ptr_col=this%totecosysc)
+               ptr_col=this%core%totecosys)
 
-       this%totcolc(begc:endc) = spval
+       this%core%totcol(begc:endc) = spval
         call hist_addfld1d (fname='C14_TOTCOLC', units='gC14/m^2', &
               avgflag='A', long_name='C14 total column carbon, incl veg and cpool but excl product pools', &
-               ptr_col=this%totcolc)
+               ptr_col=this%core%totcol)
 
-       this%prod10c(begc:endc) = spval
+       this%core%prod10(begc:endc) = spval
         call hist_addfld1d (fname='C14_PROD10C', units='gC14/m^2', &
               avgflag='A', long_name='C14 10-yr wood product C', &
-               ptr_col=this%prod10c)
+               ptr_col=this%core%prod10)
 
-       this%prod100c(begc:endc) = spval
+       this%core%prod100(begc:endc) = spval
         call hist_addfld1d (fname='C14_PROD100C', units='gC14/m^2', &
               avgflag='A', long_name='C14 100-yr wood product C', &
-               ptr_col=this%prod100c)
+               ptr_col=this%core%prod100)
 
-       this%prod1c(begc:endc) = spval
+       this%core%prod1(begc:endc) = spval
         call hist_addfld1d (fname='C14_PROD1C', units='gC14/m^2', &
               avgflag='A', long_name='C14 1-yr crop product C', &
-               ptr_col=this%prod1c)
+               ptr_col=this%core%prod1)
 
-       this%totprodc(begc:endc) = spval
+       this%core%totprod(begc:endc) = spval
        call hist_addfld1d (fname='C14_TOTPRODC', units='gC14/m^2', &
              avgflag='A', long_name='C14 total wood product C', &
-             ptr_col=this%totprodc)
+             ptr_col=this%core%totprod)
 
     endif ! if c12/c13/c14
 
@@ -2490,63 +2320,63 @@ contains
              do j = 1, nlevdecomp
                 do k = 1, ndecomp_pools
                    if (zsoi(j) < 0.3 ) then  !! only initialize upper soil column
-                      this%decomp_cpools_vr(c,j,k) = decomp_cascade_con%initial_stock(k)
+                      this%core%decomp_pools_vr(c,j,k) = decomp_cascade_con%initial_stock(k)
                    else
-                      this%decomp_cpools_vr(c,j,k) = 0._r8
+                      this%core%decomp_pools_vr(c,j,k) = 0._r8
                    endif
                 end do
-                this%ctrunc_vr(c,j) = 0._r8
+                this%core%trunc_sink_vr(c,j) = 0._r8
              end do
              if ( nlevdecomp > 1 ) then
                 do j = nlevdecomp+1, nlevdecomp_full
                    do k = 1, ndecomp_pools
-                      this%decomp_cpools_vr(c,j,k) = 0._r8
+                      this%core%decomp_pools_vr(c,j,k) = 0._r8
                    end do
-                   this%ctrunc_vr(c,j) = 0._r8
+                   this%core%trunc_sink_vr(c,j) = 0._r8
                 end do
              end if
-             this%decomp_cpools(c,1:ndecomp_pools)    = decomp_cascade_con%initial_stock(1:ndecomp_pools)
-             this%decomp_cpools_1m(c,1:ndecomp_pools) = decomp_cascade_con%initial_stock(1:ndecomp_pools)
+             this%core%decomp_pools(c,1:ndecomp_pools)    = decomp_cascade_con%initial_stock(1:ndecomp_pools)
+             this%core%decomp_pools_1m(c,1:ndecomp_pools) = decomp_cascade_con%initial_stock(1:ndecomp_pools)
 
           else ! initializing a c13 or c14 type, using input c12 data and a ratio
              do j = 1, nlevdecomp
                 do k = 1, ndecomp_pools
-                   this%decomp_cpools_vr(c,j,k) = c12_carbonstate_vars%decomp_cpools_vr(c,j,k) * ratio
+                   this%core%decomp_pools_vr(c,j,k) = c12_carbonstate_vars%core%decomp_pools_vr(c,j,k) * ratio
                 end do
-                this%ctrunc_vr(c,j) = c12_carbonstate_vars%ctrunc_vr(c,j) * ratio
+                this%core%trunc_sink_vr(c,j) = c12_carbonstate_vars%core%trunc_sink_vr(c,j) * ratio
              end do
              if ( nlevdecomp > 1 ) then
                 do j = nlevdecomp+1, nlevdecomp_full
                    do k = 1, ndecomp_pools
-                      this%decomp_cpools_vr(c,j,k) = 0._r8
+                      this%core%decomp_pools_vr(c,j,k) = 0._r8
                    end do
-                   this%ctrunc_vr(c,j) = 0._r8
+                   this%core%trunc_sink_vr(c,j) = 0._r8
                 end do
              end if
-             this%cwdc(c) = c12_carbonstate_vars%cwdc(c) * ratio
+             this%core%cwd(c) = c12_carbonstate_vars%core%cwd(c) * ratio
              do k = 1, ndecomp_pools
-                this%decomp_cpools(c,k)    = c12_carbonstate_vars%decomp_cpools(c,k) * ratio
-                this%decomp_cpools_1m(c,k) = c12_carbonstate_vars%decomp_cpools_1m(c,k) * ratio
+                this%core%decomp_pools(c,k)    = c12_carbonstate_vars%core%decomp_pools(c,k) * ratio
+                this%core%decomp_pools_1m(c,k) = c12_carbonstate_vars%core%decomp_pools_1m(c,k) * ratio
              end do
 
           endif ! C12 or C13/14 initialization
 
-          this%cwdc(c)       = 0._r8
-          this%ctrunc(c)     = 0._r8
-          this%totlitc(c)    = 0._r8
-          this%totsomc(c)    = 0._r8
-          this%totlitc_1m(c) = 0._r8
-          this%totsomc_1m(c) = 0._r8
-          this%totecosysc(c) = 0._r8
-          this%totcolc(c)    = 0._r8
-          this%cropseedc_deficit(c) = 0._r8
+          this%core%cwd(c)       = 0._r8
+          this%core%trunc_sink(c)     = 0._r8
+          this%core%totlit(c)    = 0._r8
+          this%core%totsom(c)    = 0._r8
+          this%core%totlit_1m(c) = 0._r8
+          this%core%totsom_1m(c) = 0._r8
+          this%core%totecosys(c) = 0._r8
+          this%core%totcol(c)    = 0._r8
+          this%core%cropseed_deficit(c) = 0._r8
 
           ! dynamic landcover state variables
-          this%seedc(c)      = 0._r8
-          this%prod10c(c)    = 0._r8
-          this%prod100c(c)   = 0._r8
-          this%prod1c(c)     = 0._r8
-          this%totprodc(c)   = 0._r8
+          this%core%seed(c)      = 0._r8
+          this%core%prod10(c)    = 0._r8
+          this%core%prod100(c)   = 0._r8
+          this%core%prod1(c)     = 0._r8
+          this%core%totprod(c)   = 0._r8
 
        end if !  landunit istsoil or istcrop
 
@@ -2565,42 +2395,42 @@ contains
     do fc = 1,num_special_col
        c = special_col(fc)
 
-       this%seedc(c)      = 0._r8
-       this%prod1c(c)     = 0._r8
-       this%prod10c(c)    = 0._r8
-       this%prod100c(c)   = 0._r8
-       this%totprodc(c)   = 0._r8
-       this%totpftc(c)    = 0._r8
-       this%cwdc(c)       = 0._r8
-       this%ctrunc(c)     = 0._r8
-       this%totlitc(c)    = 0._r8
-       this%totsomc(c)    = 0._r8
-       this%totecosysc(c) = 0._r8
-       this%totcolc(c)    = 0._r8
+       this%core%seed(c)      = 0._r8
+       this%core%prod1(c)     = 0._r8
+       this%core%prod10(c)    = 0._r8
+       this%core%prod100(c)   = 0._r8
+       this%core%totprod(c)   = 0._r8
+       this%core%totpft(c)    = 0._r8
+       this%core%cwd(c)       = 0._r8
+       this%core%trunc_sink(c)     = 0._r8
+       this%core%totlit(c)    = 0._r8
+       this%core%totsom(c)    = 0._r8
+       this%core%totecosys(c) = 0._r8
+       this%core%totcol(c)    = 0._r8
        this%rootc(c)      = 0._r8
-       this%totvegc(c)    = 0._r8
+       this%core%totveg(c)    = 0._r8
        this%leafc(c)      = 0._r8
        this%deadstemc(c)  = 0._r8
        this%fuelc(c)      = 0._r8
        this%fuelc_crop(c) = 0._r8
-       this%totlitc_1m(c) = 0._r8
-       this%totsomc_1m(c) = 0._r8
-       this%errcb(c)      = 0._r8
-       this%cropseedc_deficit(c) = 0._r8
+       this%core%totlit_1m(c) = 0._r8
+       this%core%totsom_1m(c) = 0._r8
+       this%core%balance_err(c)      = 0._r8
+       this%core%cropseed_deficit(c) = 0._r8
     end do
 
     do j = 1,nlevdecomp_full
        do fc = 1,num_special_col
           c = special_col(fc)
-          this%ctrunc_vr(c,j) = 0._r8
+          this%core%trunc_sink_vr(c,j) = 0._r8
        end do
     end do
 
     do k = 1, ndecomp_pools
        do fc = 1,num_special_col
           c = special_col(fc)
-          this%decomp_cpools(c,k) = 0._r8
-          this%decomp_cpools_1m(c,k) = 0._r8
+          this%core%decomp_pools(c,k) = 0._r8
+          this%core%decomp_pools_1m(c,k) = 0._r8
        end do
     end do
 
@@ -2608,7 +2438,7 @@ contains
        do k = 1, ndecomp_pools
           do fc = 1,num_special_col
              c = special_col(fc)
-             this%decomp_cpools_vr(c,j,k) = 0._r8
+             this%core%decomp_pools_vr(c,j,k) = 0._r8
           end do
        end do
     end do
@@ -2658,7 +2488,7 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='ENDCB', xtype=ncd_double,  &
          dim1name='column', &
          long_name='carbon balance at end of timestep', units='gC/m2', &
-         interpinic_flag='interp', readvar=readvar, data=this%endcb)
+         interpinic_flag='interp', readvar=readvar, data=this%core%balance_end)
     endif
 
     if (carbon_type == 'c13' .or. carbon_type == 'c14') then
@@ -2672,13 +2502,13 @@ contains
        do k = 1, ndecomp_pools
           varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c'
           if (use_vertsoilc) then
-             ptr2d => this%decomp_cpools_vr(:,:,k)
+             ptr2d => this%core%decomp_pools_vr(:,:,k)
              call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
                   dim1name='column', dim2name='levgrnd', switchdim=.true., &
                   long_name='',  units='', fill_value=spval, &
                   interpinic_flag='interp', readvar=readvar, data=ptr2d)
           else
-             ptr1d => this%decomp_cpools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             ptr1d => this%core%decomp_pools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
              call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                   dim1name='column', long_name='',  units='', fill_value=spval, &
                   interpinic_flag='interp' , readvar=readvar, data=ptr1d)
@@ -2690,13 +2520,13 @@ contains
        end do
 
        if (use_vertsoilc) then
-          ptr2d => this%ctrunc_vr
+          ptr2d => this%core%trunc_sink_vr
           call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc_vr', xtype=ncd_double,  &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='',  units='', fill_value=spval, &
                interpinic_flag='interp', readvar=readvar, data=ptr2d)
        else
-          ptr1d => this%ctrunc_vr(:,1) ! nlevdecomp = 1; so treat as 1D variable
+          ptr1d => this%core%trunc_sink_vr(:,1) ! nlevdecomp = 1; so treat as 1D variable
           call restartvar(ncid=ncid, flag=flag, varname='col_ctrunc', xtype=ncd_double,  &
                dim1name='column', long_name='',  units='', fill_value=spval, &
                interpinic_flag='interp' , readvar=readvar, data=ptr1d)
@@ -2709,31 +2539,31 @@ contains
 
        call restartvar(ncid=ncid, flag=flag, varname='totlitc', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlitc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totlit)
 
        call restartvar(ncid=ncid, flag=flag, varname='totsomc', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totsomc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totsom)
 
        call restartvar(ncid=ncid, flag=flag, varname='seedc', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%seedc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%seed)
 
        call restartvar(ncid=ncid, flag=flag, varname='totcolc', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totcolc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totcol)
 
        call restartvar(ncid=ncid, flag=flag, varname='prod10c', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod10c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod10)
 
        call restartvar(ncid=ncid, flag=flag, varname='prod100c', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod100c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod100)
 
        call restartvar(ncid=ncid, flag=flag, varname='prod1c', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod1c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod1)
 
     end if ! C12
 
@@ -2748,13 +2578,13 @@ contains
        do k = 1, ndecomp_pools
           varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_13'
           if (use_vertsoilc) then
-             ptr2d => this%decomp_cpools_vr(:,:,k)
+             ptr2d => this%core%decomp_pools_vr(:,:,k)
              call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
                   dim1name='column', dim2name='levgrnd', switchdim=.true., &
                   long_name='',  units='', fill_value=spval, &
                   interpinic_flag='interp', readvar=readvar, data=ptr2d)
           else
-             ptr1d => this%decomp_cpools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             ptr1d => this%core%decomp_pools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
              call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                   dim1name='column', long_name='',  units='', fill_value=spval, &
                   interpinic_flag='interp' , readvar=readvar, data=ptr1d)
@@ -2763,9 +2593,9 @@ contains
              write(iulog,*) 'initializing this%decomp_cpools_vr with atmospheric c13 value for: '//varname
              do i = bounds%begc,bounds%endc
                 do j = 1, nlevdecomp
-                   if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
-                        .not. isnan(this%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
+                   if (c12_carbonstate_vars%core%decomp_pools_vr(i,j,k) /= spval .and. &
+                        .not. isnan(this%core%decomp_pools_vr(i,j,k)) ) then
+                         this%core%decomp_pools_vr(i,j,k) = c12_carbonstate_vars%core%decomp_pools_vr(i,j,k) * c14ratio
                    endif
                 end do
              end do
@@ -2773,13 +2603,13 @@ contains
        end do ! ndecomp_pools
 
        if (use_vertsoilc) then
-          ptr2d => this%ctrunc_vr
+          ptr2d => this%core%trunc_sink_vr
           call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c13_vr", xtype=ncd_double,  &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='',  units='', fill_value=spval, &
                interpinic_flag='interp', readvar=readvar, data=ptr2d)
        else
-          ptr1d => this%ctrunc_vr(:,1)
+          ptr1d => this%core%trunc_sink_vr(:,1)
           call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c13", xtype=ncd_double,  &
                dim1name='column', long_name='',  units='', fill_value=spval, &
                interpinic_flag='interp' , readvar=readvar, data=ptr1d)
@@ -2787,72 +2617,72 @@ contains
 
        call restartvar(ncid=ncid, flag=flag, varname='totlitc_13', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlitc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totlit)
        if (flag=='read' .and. .not. readvar) then
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%totlitc(i) /= spval .and. &
-                  .not. isnan( c12_carbonstate_vars%totlitc(i) ) ) then
-                this%totlitc(i) = c12_carbonstate_vars%totlitc(i) * c3_r2
+             if (c12_carbonstate_vars%core%totlit(i) /= spval .and. &
+                  .not. isnan( c12_carbonstate_vars%core%totlit(i) ) ) then
+                this%core%totlit(i) = c12_carbonstate_vars%core%totlit(i) * c3_r2
              end if
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='seedc_13', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%seedc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%seed)
        if (flag=='read' .and. .not. readvar) then
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%seedc(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%seedc(i)) ) then
-                this%seedc(i) = c12_carbonstate_vars%seedc(i) * c3_r2
+             if (c12_carbonstate_vars%core%seed(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%seed(i)) ) then
+                this%core%seed(i) = c12_carbonstate_vars%core%seed(i) * c3_r2
              end if
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='totcolc_13', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totcolc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totcol)
        if (flag=='read' .and. .not. readvar) then
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%totcolc(i) /= spval .and. &
-                  .not. isnan (c12_carbonstate_vars%totcolc(i) ) ) then
-                this%totcolc(i) = c12_carbonstate_vars%totcolc(i) * c3_r2
+             if (c12_carbonstate_vars%core%totcol(i) /= spval .and. &
+                  .not. isnan (c12_carbonstate_vars%core%totcol(i) ) ) then
+                this%core%totcol(i) = c12_carbonstate_vars%core%totcol(i) * c3_r2
              end if
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='prod10c_13', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod10c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod10)
        if (flag=='read' .and. .not. readvar) then
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%prod10c(i) /= spval .and. &
-                  .not. isnan( c12_carbonstate_vars%prod10c(i) ) ) then
-                this%prod10c(i) = c12_carbonstate_vars%prod10c(i) * c3_r2
+             if (c12_carbonstate_vars%core%prod10(i) /= spval .and. &
+                  .not. isnan( c12_carbonstate_vars%core%prod10(i) ) ) then
+                this%core%prod10(i) = c12_carbonstate_vars%core%prod10(i) * c3_r2
              endif
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='prod100c_13', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod100c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod100)
        if (flag=='read' .and. .not. readvar) then
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%prod100c(i) /= spval .and. &
-                  .not. isnan( c12_carbonstate_vars%prod100c(i) ) ) then
-                this%prod100c(i) = c12_carbonstate_vars%prod100c(i) * c3_r2
+             if (c12_carbonstate_vars%core%prod100(i) /= spval .and. &
+                  .not. isnan( c12_carbonstate_vars%core%prod100(i) ) ) then
+                this%core%prod100(i) = c12_carbonstate_vars%core%prod100(i) * c3_r2
              endif
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='prod1c_13', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod1c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod1)
        if (flag=='read' .and. .not. readvar) then
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%prod1c(i) /= spval .and. &
-                  .not. isnan( c12_carbonstate_vars%prod1c(i) ) ) then
-                this%prod1c(i) = c12_carbonstate_vars%prod1c(i) * c3_r2
+             if (c12_carbonstate_vars%core%prod1(i) /= spval .and. &
+                  .not. isnan( c12_carbonstate_vars%core%prod1(i) ) ) then
+                this%core%prod1(i) = c12_carbonstate_vars%core%prod1(i) * c3_r2
              endif
           end do
        end if
@@ -2864,13 +2694,13 @@ contains
        do k = 1, ndecomp_pools
           varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_14'
           if (use_vertsoilc) then
-             ptr2d => this%decomp_cpools_vr(:,:,k)
+             ptr2d => this%core%decomp_pools_vr(:,:,k)
              call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
                   dim1name='column', dim2name='levgrnd', switchdim=.true., &
                   long_name='',  units='', fill_value=spval, &
                   interpinic_flag='interp', readvar=readvar, data=ptr2d)
           else
-             ptr1d => this%decomp_cpools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             ptr1d => this%core%decomp_pools_vr(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
              call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                   dim1name='column', &
                   long_name='',  units='', fill_value=spval, &
@@ -2880,9 +2710,9 @@ contains
              write(iulog,*) 'initializing this%decomp_cpools_vr with atmospheric c14 value for: '//trim(varname)
              do i = bounds%begc,bounds%endc
                 do j = 1, nlevdecomp
-                   if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
-                        .not. isnan(c12_carbonstate_vars%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                   if (c12_carbonstate_vars%core%decomp_pools_vr(i,j,k) /= spval .and. &
+                        .not. isnan(c12_carbonstate_vars%core%decomp_pools_vr(i,j,k)) ) then
+                         this%core%decomp_pools_vr(i,j,k) = c12_carbonstate_vars%core%decomp_pools_vr(i,j,k) * c3_r2
                    endif
                 end do
              end do
@@ -2890,13 +2720,13 @@ contains
        end do
 
        if (use_vertsoilc) then
-          ptr2d => this%ctrunc_vr
+          ptr2d => this%core%trunc_sink_vr
           call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c14_vr", xtype=ncd_double,  &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='',  units='', fill_value=spval, &
                interpinic_flag='interp', readvar=readvar, data=ptr2d)
        else
-          ptr1d => this%ctrunc_vr(:,1)
+          ptr1d => this%core%trunc_sink_vr(:,1)
           call restartvar(ncid=ncid, flag=flag, varname="col_ctrunc_c14", xtype=ncd_double,  &
                dim1name='column', long_name='',  units='', fill_value=spval, &
                interpinic_flag='interp' , readvar=readvar, data=ptr1d)
@@ -2904,13 +2734,13 @@ contains
 
        call restartvar(ncid=ncid, flag=flag, varname='totlitc_14', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totlitc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totlit)
        if (flag=='read' .and. .not. readvar) then
           write(iulog,*) 'initializing this%totlitc with atmospheric c14 value'
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%totlitc(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%totlitc(i)) ) then
-                this%totlitc(i) = c12_carbonstate_vars%totlitc(i) * c14ratio
+             if (c12_carbonstate_vars%core%totlit(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%totlit(i)) ) then
+                this%core%totlit(i) = c12_carbonstate_vars%core%totlit(i) * c14ratio
              endif
           end do
        end if
@@ -2918,65 +2748,65 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='seedc_14', xtype=ncd_double,  &
             dim1name='column', &
             long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%seedc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%seed)
        if (flag=='read' .and. .not. readvar) then
           write(iulog,*) 'initializing this%seedc with atmospheric c14 value'
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%seedc(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%seedc(i)) ) then
-                this%seedc(i) = c12_carbonstate_vars%seedc(i) * c14ratio
+             if (c12_carbonstate_vars%core%seed(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%seed(i)) ) then
+                this%core%seed(i) = c12_carbonstate_vars%core%seed(i) * c14ratio
              endif
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='totcolc_14', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%totcolc)
+            interpinic_flag='interp', readvar=readvar, data=this%core%totcol)
        if (flag=='read' .and. .not. readvar) then
           write(iulog,*) 'initializing this%totcolc with atmospheric c14 value'
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%totcolc(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%totcolc(i)) ) then
-                this%totcolc(i) = c12_carbonstate_vars%totcolc(i) * c14ratio
+             if (c12_carbonstate_vars%core%totcol(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%totcol(i)) ) then
+                this%core%totcol(i) = c12_carbonstate_vars%core%totcol(i) * c14ratio
              endif
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='prod10c_14', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod10c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod10)
        if (flag=='read' .and. .not. readvar) then
           write(iulog,*) 'initializing this%prod10c with atmospheric c14 value'
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%prod10c(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%prod10c(i)) ) then
-                this%prod10c(i) = c12_carbonstate_vars%prod10c(i) * c14ratio
+             if (c12_carbonstate_vars%core%prod10(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%prod10(i)) ) then
+                this%core%prod10(i) = c12_carbonstate_vars%core%prod10(i) * c14ratio
              endif
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='prod100c_14', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod100c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod100)
        if (flag=='read' .and. .not. readvar) then
           write(iulog,*) 'initializing this%prod100c with atmospheric c14 value'
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%prod100c(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%prod100c(i)) ) then
-                this%prod100c(i) = c12_carbonstate_vars%prod100c(i) * c14ratio
+             if (c12_carbonstate_vars%core%prod100(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%prod100(i)) ) then
+                this%core%prod100(i) = c12_carbonstate_vars%core%prod100(i) * c14ratio
              endif
           end do
        end if
 
        call restartvar(ncid=ncid, flag=flag, varname='prod1c_14', xtype=ncd_double,  &
             dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%prod1c)
+            interpinic_flag='interp', readvar=readvar, data=this%core%prod1)
        if (flag=='read' .and. .not. readvar) then
           write(iulog,*) 'initializing this%prod1c with atmospheric c14 value'
           do i = bounds%begc,bounds%endc
-             if (c12_carbonstate_vars%prod1c(i) /= spval .and. &
-                  .not. isnan(c12_carbonstate_vars%prod1c(i)) ) then
-                this%prod1c(i) = c12_carbonstate_vars%prod1c(i) * c14ratio
+             if (c12_carbonstate_vars%core%prod1(i) /= spval .and. &
+                  .not. isnan(c12_carbonstate_vars%core%prod1(i)) ) then
+                this%core%prod1(i) = c12_carbonstate_vars%core%prod1(i) * c14ratio
              endif
           end do
        end if
@@ -3047,7 +2877,7 @@ contains
                        m = 1. / decomp_cascade_con%spinup_factor(k)
                        if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
                     end if
-                    this%decomp_cpools_vr(c,j,k) = this%decomp_cpools_vr(c,j,k) * m
+                    this%core%decomp_pools_vr(c,j,k) = this%core%decomp_pools_vr(c,j,k) * m
                  end do ! nlevdecomp
               end do ! columns
            end do ! ndecomp_pools
@@ -3083,7 +2913,7 @@ contains
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%decomp_cpools(c,l) = 0._r8
+          this%core%decomp_pools(c,l) = 0._r8
        end do
     end do
 
@@ -3091,9 +2921,9 @@ contains
        do j = 1, nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_cpools(c,l) = &
-                  this%decomp_cpools(c,l) + &
-                  this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+             this%core%decomp_pools(c,l) = &
+                  this%core%decomp_pools(c,l) + &
+                  this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
           end do
        end do
     end do
@@ -3104,7 +2934,7 @@ contains
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_cpools_1m(c,l) = 0._r8
+             this%core%decomp_pools_1m(c,l) = 0._r8
           end do
        end do
        do l = 1, ndecomp_pools
@@ -3112,16 +2942,16 @@ contains
              if ( zisoi(j) <= maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   this%decomp_cpools_1m(c,l) = &
-                        this%decomp_cpools_1m(c,l) + &
-                        this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+                   this%core%decomp_pools_1m(c,l) = &
+                        this%core%decomp_pools_1m(c,l) + &
+                        this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
                 end do
              elseif ( zisoi(j-1) < maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   this%decomp_cpools_1m(c,l) = &
-                        this%decomp_cpools_1m(c,l) + &
-                        this%decomp_cpools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+                   this%core%decomp_pools_1m(c,l) = &
+                        this%core%decomp_pools_1m(c,l) + &
+                        this%core%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
                 end do
              endif
           end do
@@ -3130,15 +2960,15 @@ contains
        ! total litter carbon in the top meter (TOTLITC_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%totlitc_1m(c)         = 0._r8
+          this%core%totlit_1m(c)         = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%totlitc_1m(c) = &
-                     this%totlitc_1m(c) + &
-                     this%decomp_cpools_1m(c,l)
+                this%core%totlit_1m(c) = &
+                     this%core%totlit_1m(c) + &
+                     this%core%decomp_pools_1m(c,l)
              end do
           endif
        end do
@@ -3146,15 +2976,15 @@ contains
        ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%totsomc_1m(c) = 0._r8
+          this%core%totsom_1m(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%totsomc_1m(c) = &
-                     this%totsomc_1m(c) + &
-                     this%decomp_cpools_1m(c,l)
+                this%core%totsom_1m(c) = &
+                     this%core%totsom_1m(c) + &
+                     this%core%decomp_pools_1m(c,l)
              end do
           end if
        end do
@@ -3165,15 +2995,15 @@ contains
     ! total litter carbon (TOTLITC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%totlitc(c) = 0._r8
+       this%core%totlit(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%totlitc(c) = &
-                  this%totlitc(c) + &
-                  this%decomp_cpools(c,l)
+             this%core%totlit(c) = &
+                  this%core%totlit(c) + &
+                  this%core%decomp_pools(c,l)
           end do
        endif
     end do
@@ -3181,15 +3011,15 @@ contains
     ! total soil organic matter carbon (TOTSOMC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%totsomc(c) = 0._r8
+       this%core%totsom(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%totsomc(c) = &
-                  this%totsomc(c) + &
-                  this%decomp_cpools(c,l)
+             this%core%totsom(c) = &
+                  this%core%totsom(c) + &
+                  this%core%decomp_pools(c,l)
           end do
        end if
     end do
@@ -3197,15 +3027,15 @@ contains
     ! coarse woody debris carbon
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%cwdc(c) = 0._r8
+       this%core%cwd(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_cwd(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%cwdc(c) = &
-                  this%cwdc(c) + &
-                  this%decomp_cpools(c,l)
+             this%core%cwd(c) = &
+                  this%core%cwd(c) + &
+                  this%core%decomp_pools(c,l)
           end do
        end if
     end do
@@ -3213,14 +3043,14 @@ contains
     ! truncation carbon
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%ctrunc(c) = 0._r8
+       this%core%trunc_sink(c) = 0._r8
     end do
     do j = 1, nlev
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%ctrunc(c) = &
-               this%ctrunc(c) + &
-               this%ctrunc_vr(c,j) * dzsoi_decomp(j)
+          this%core%trunc_sink(c) = &
+               this%core%trunc_sink(c) + &
+               this%core%trunc_sink_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -3228,40 +3058,40 @@ contains
        c = filter_soilc(fc)
 
        ! total product carbon
-       this%totprodc(c) =      &
-            this%prod10c(c)  + &
-            this%prod100c(c) + &
-            this%prod1c(c)
+       this%core%totprod(c) =      &
+            this%core%prod10(c)  + &
+            this%core%prod100(c) + &
+            this%core%prod1(c)
 
        ! total ecosystem carbon, including veg but excluding cpool (TOTECOSYSC)
-       this%totecosysc(c) =    &
-            this%cwdc(c)     + &
-            this%totlitc(c)  + &
-            this%totsomc(c)  + &
-            this%totprodc(c) + &
-            this%totvegc(c)
+       this%core%totecosys(c) =    &
+            this%core%cwd(c)     + &
+            this%core%totlit(c)  + &
+            this%core%totsom(c)  + &
+            this%core%totprod(c) + &
+            this%core%totveg(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)
        ! adding col_ctrunc, seedc
 
-       this%totcolc(c) =       &
-            this%totpftc(c)  + &
-            this%cwdc(c)     + &
-            this%totlitc(c)  + &
-            this%totsomc(c)  + &
-            this%totprodc(c) + &
-            this%ctrunc(c)
+       this%core%totcol(c) =       &
+            this%core%totpft(c)  + &
+            this%core%cwd(c)     + &
+            this%core%totlit(c)  + &
+            this%core%totsom(c)  + &
+            this%core%totprod(c) + &
+            this%core%trunc_sink(c)
 
       ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
-          this%totcolc(c) = this%totcolc(c) + this%cropseedc_deficit(c)
+          this%core%totcol(c) = this%core%totcol(c) + this%core%cropseed_deficit(c)
        endif
 
        this%totabgc(c) =       &
-            this%totprodc(c) + &
-            this%seedc(c)    + &
-            this%ctrunc(c)   + &
-            this%totpftc(c)
+            this%core%totprod(c) + &
+            this%core%seed(c)    + &
+            this%core%trunc_sink(c)   + &
+            this%core%totpft(c)
 
 
     end do
@@ -3289,10 +3119,10 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%totpftc(c) = 0._r8
-       this%totvegc(c) = 0._r8
+       this%core%totpft(c) = 0._r8
+       this%core%totveg(c) = 0._r8
        this%totvegc_abg(c) = 0._r8
-       this%cropseedc_deficit(c) = 0._r8
+       this%core%cropseed_deficit(c) = 0._r8
     end do
 
     return
@@ -3332,41 +3162,41 @@ contains
     ! allocate for each member of col_ns
     !-----------------------------------------------------------------------
 
-    allocate(this%decomp_npools_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_npools_vr(:,:,:) = spval
-    allocate(this%ntrunc_vr             (begc:endc,1:nlevdecomp_full))   ; this%ntrunc_vr             (:,:) = spval
+    allocate(this%core%decomp_pools_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_vr(:,:,:) = spval
+    allocate(this%core%trunc_sink_vr             (begc:endc,1:nlevdecomp_full))   ; this%core%trunc_sink_vr             (:,:) = spval
     allocate(this%sminn_vr              (begc:endc,1:nlevdecomp_full))   ; this%sminn_vr              (:,:) = spval
     allocate(this%smin_no3_vr           (begc:endc,1:nlevdecomp_full))   ; this%smin_no3_vr           (:,:) = spval
     allocate(this%smin_nh4_vr           (begc:endc,1:nlevdecomp_full))   ; this%smin_nh4_vr           (:,:) = spval
     allocate(this%smin_nh4sorb_vr       (begc:endc,1:nlevdecomp_full))   ; this%smin_nh4sorb_vr       (:,:) = spval
-    allocate(this%decomp_npools         (begc:endc,1:ndecomp_pools))     ; this%decomp_npools         (:,:) = spval
-    allocate(this%decomp_npools_1m      (begc:endc,1:ndecomp_pools))     ; this%decomp_npools_1m      (:,:) = spval
+    allocate(this%core%decomp_pools         (begc:endc,1:ndecomp_pools))     ; this%core%decomp_pools         (:,:) = spval
+    allocate(this%core%decomp_pools_1m      (begc:endc,1:ndecomp_pools))     ; this%core%decomp_pools_1m      (:,:) = spval
     allocate(this%smin_no3              (begc:endc))                     ; this%smin_no3              (:)   = spval
     allocate(this%smin_nh4              (begc:endc))                     ; this%smin_nh4              (:)   = spval
     allocate(this%smin_nh4sorb          (begc:endc))                     ; this%smin_nh4sorb          (:)   = spval
     allocate(this%sminn                 (begc:endc))                     ; this%sminn                 (:)   = spval
-    allocate(this%ntrunc                (begc:endc))                     ; this%ntrunc                (:)   = spval
-    allocate(this%cwdn                  (begc:endc))                     ; this%cwdn                  (:)   = spval
-    allocate(this%totlitn               (begc:endc))                     ; this%totlitn               (:)   = spval
-    allocate(this%totsomn               (begc:endc))                     ; this%totsomn               (:)   = spval
-    allocate(this%som1n                 (begc:endc))                     ; this%som1n                 (:)   = spval
-    allocate(this%som2n                 (begc:endc))                     ; this%som2n                 (:)   = spval
-    allocate(this%som3n                 (begc:endc))                     ; this%som3n                 (:)   = spval
-    allocate(this%totlitn_1m            (begc:endc))                     ; this%totlitn_1m            (:)   = spval
-    allocate(this%totsomn_1m            (begc:endc))                     ; this%totsomn_1m            (:)   = spval
-    allocate(this%totecosysn            (begc:endc))                     ; this%totecosysn            (:)   = spval
-    allocate(this%totcoln               (begc:endc))                     ; this%totcoln               (:)   = spval
+    allocate(this%core%trunc_sink                (begc:endc))                     ; this%core%trunc_sink                (:)   = spval
+    allocate(this%core%cwd                  (begc:endc))                     ; this%core%cwd                  (:)   = spval
+    allocate(this%core%totlit               (begc:endc))                     ; this%core%totlit               (:)   = spval
+    allocate(this%core%totsom               (begc:endc))                     ; this%core%totsom               (:)   = spval
+    allocate(this%core%som1                 (begc:endc))                     ; this%core%som1                 (:)   = spval
+    allocate(this%core%som2                 (begc:endc))                     ; this%core%som2                 (:)   = spval
+    allocate(this%core%som3                 (begc:endc))                     ; this%core%som3                 (:)   = spval
+    allocate(this%core%totlit_1m            (begc:endc))                     ; this%core%totlit_1m            (:)   = spval
+    allocate(this%core%totsom_1m            (begc:endc))                     ; this%core%totsom_1m            (:)   = spval
+    allocate(this%core%totecosys            (begc:endc))                     ; this%core%totecosys            (:)   = spval
+    allocate(this%core%totcol               (begc:endc))                     ; this%core%totcol               (:)   = spval
     allocate(this%totabgn               (begc:endc))                     ; this%totabgn               (:)   = spval
     allocate(this%totblgn               (begc:endc))                     ; this%totblgn               (:)   = spval
-    allocate(this%totvegn               (begc:endc))                     ; this%totvegn               (:)   = spval
-    allocate(this%totpftn               (begc:endc))                     ; this%totpftn               (:)   = spval
+    allocate(this%core%totveg               (begc:endc))                     ; this%core%totveg               (:)   = spval
+    allocate(this%core%totpft               (begc:endc))                     ; this%core%totpft               (:)   = spval
     allocate(this%plant_n_buffer        (begc:endc))                     ; this%plant_n_buffer        (:)   = spval
-    allocate(this%seedn                 (begc:endc))                     ; this%seedn                 (:)   = spval
-    allocate(this%cropseedn_deficit     (begc:endc))                     ; this%cropseedn_deficit     (:)   = spval
-    allocate(this%prod1n                (begc:endc))                     ; this%prod1n                (:)   = spval
-    allocate(this%prod10n               (begc:endc))                     ; this%prod10n               (:)   = spval
-    allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = spval
-    allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = spval
-    allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = spval
+    allocate(this%core%seed                 (begc:endc))                     ; this%core%seed                 (:)   = spval
+    allocate(this%core%cropseed_deficit     (begc:endc))                     ; this%core%cropseed_deficit     (:)   = spval
+    allocate(this%core%prod1                (begc:endc))                     ; this%core%prod1                (:)   = spval
+    allocate(this%core%prod10               (begc:endc))                     ; this%core%prod10               (:)   = spval
+    allocate(this%core%prod100              (begc:endc))                     ; this%core%prod100              (:)   = spval
+    allocate(this%core%totprod              (begc:endc))                     ; this%core%totprod              (:)   = spval
+    allocate(this%core%dyn_bal_adjustments  (begc:endc))                     ; this%core%dyn_bal_adjustments  (:)   = spval
     allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
     allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
     allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = spval
@@ -3390,14 +3220,14 @@ contains
     allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = spval 
     allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = spval 
     allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = spval
-    allocate(this%totpftn_beg           (begc:endc))                     ; this%totpftn_beg           (:)   = spval
-    allocate(this%totpftn_end           (begc:endc))                     ; this%totpftn_end           (:)   = spval
-    allocate(this%cwdn_beg              (begc:endc))                     ; this%cwdn_beg              (:)   = spval
-    allocate(this%cwdn_end              (begc:endc))                     ; this%cwdn_end              (:)   = spval
-    allocate(this%totlitn_beg           (begc:endc))                     ; this%totlitn_beg           (:)   = spval
-    allocate(this%totlitn_end           (begc:endc))                     ; this%totlitn_end           (:)   = spval
-    allocate(this%totsomn_beg           (begc:endc))                     ; this%totsomn_beg           (:)   = spval
-    allocate(this%totsomn_end           (begc:endc))                     ; this%totsomn_end           (:)   = spval
+    allocate(this%core%totpft_beg           (begc:endc))                     ; this%core%totpft_beg           (:)   = spval
+    allocate(this%core%totpft_end           (begc:endc))                     ; this%core%totpft_end           (:)   = spval
+    allocate(this%core%cwd_beg              (begc:endc))                     ; this%core%cwd_beg              (:)   = spval
+    allocate(this%core%cwd_end              (begc:endc))                     ; this%core%cwd_end              (:)   = spval
+    allocate(this%core%totlit_beg           (begc:endc))                     ; this%core%totlit_beg           (:)   = spval
+    allocate(this%core%totlit_end           (begc:endc))                     ; this%core%totlit_end           (:)   = spval
+    allocate(this%core%totsom_beg           (begc:endc))                     ; this%core%totsom_beg           (:)   = spval
+    allocate(this%core%totsom_end           (begc:endc))                     ; this%core%totsom_end           (:)   = spval
     allocate(this%sminn_beg             (begc:endc))                     ; this%sminn_beg             (:)   = spval
     allocate(this%sminn_end             (begc:endc))                     ; this%sminn_end             (:)   = spval
     allocate(this%smin_no3_beg          (begc:endc))                     ; this%smin_no3_beg          (:)   = spval
@@ -3410,24 +3240,24 @@ contains
     allocate(this%seedn_end             (begc:endc))                     ; this%seedn_end             (:)   = spval
     allocate(this%ntrunc_beg            (begc:endc))                     ; this%ntrunc_beg            (:)   = spval
     allocate(this%ntrunc_end            (begc:endc))                     ; this%ntrunc_end            (:)   = spval
-    allocate(this%begnb                 (begc:endc))                     ; this%begnb                 (:)   = spval
-    allocate(this%endnb                 (begc:endc))                     ; this%endnb                 (:)   = spval
-    allocate(this%errnb                 (begc:endc))                     ; this%errnb                 (:)   = spval
+    allocate(this%core%balance_beg                 (begc:endc))                     ; this%core%balance_beg                 (:)   = spval
+    allocate(this%core%balance_end                 (begc:endc))                     ; this%core%balance_end                 (:)   = spval
+    allocate(this%core%balance_err                 (begc:endc))                     ; this%core%balance_err                 (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ns
     !-----------------------------------------------------------------------
     if ( nlevdecomp_full > 1 ) then
-       this%decomp_npools_vr(begc:endc,:,:) = spval
-       this%decomp_npools_1m(begc:endc,:) = spval
+       this%core%decomp_pools_vr(begc:endc,:,:) = spval
+       this%core%decomp_pools_1m(begc:endc,:) = spval
     end if
-    this%decomp_npools(begc:endc,:) = spval
+    this%core%decomp_pools(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
 
        if( decomp_cascade_con%is_cwd(l) .and. use_fates ) cycle
        
        if ( nlevdecomp_full > 1 ) then
-          data2dptr => this%decomp_npools_vr(:,:,l)
+          data2dptr => this%core%decomp_pools_vr(:,:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N_vr'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' N (vertically resolved)'
            call hist_addfld2d (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
@@ -3435,7 +3265,7 @@ contains
                  ptr_col=data2dptr)
        endif
 
-       data1dptr => this%decomp_npools(:,l)
+       data1dptr => this%core%decomp_pools(:,l)
        fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N'
        longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' N'
         call hist_addfld1d (fname=fieldname, units='gN/m^2', &
@@ -3443,7 +3273,7 @@ contains
               ptr_col=data1dptr)
 
        if ( nlevdecomp_full > 1 ) then
-          data1dptr => this%decomp_npools_1m(:,l)
+          data1dptr => this%core%decomp_pools_1m(:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'N_1m'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' N to 1 meter'
            call hist_addfld1d (fname=fieldname, units='gN/m^2', &
@@ -3459,21 +3289,21 @@ contains
              avgflag='A', long_name='soil mineral N', &
               ptr_col=this%sminn)
 
-       this%totlitn_1m(begc:endc) = spval
+       this%core%totlit_1m(begc:endc) = spval
         call hist_addfld1d (fname='TOTLITN_1m', units='gN/m^2', &
              avgflag='A', long_name='total litter N to 1 meter', &
-              ptr_col=this%totlitn_1m, default='inactive')
+              ptr_col=this%core%totlit_1m, default='inactive')
 
-       this%totsomn_1m(begc:endc) = spval
+       this%core%totsom_1m(begc:endc) = spval
         call hist_addfld1d (fname='TOTSOMN_1m', units='gN/m^2', &
              avgflag='A', long_name='total soil organic matter N to 1 meter', &
-              ptr_col=this%totsomn_1m, default='inactive')
+              ptr_col=this%core%totsom_1m, default='inactive')
     endif
 
-    this%ntrunc(begc:endc) = spval
+    this%core%trunc_sink(begc:endc) = spval
      call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
           avgflag='A', long_name='column-level sink for N truncation', &
-           ptr_col=this%ntrunc, default='inactive')
+           ptr_col=this%core%trunc_sink, default='inactive')
 
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
@@ -3527,50 +3357,50 @@ contains
 
 
 
-    this%totlitn(begc:endc) = spval
+    this%core%totlit(begc:endc) = spval
      call hist_addfld1d (fname='TOTLITN', units='gN/m^2', &
           avgflag='A', long_name='total litter N', &
-           ptr_col=this%totlitn)
+           ptr_col=this%core%totlit)
 
-    this%totsomn(begc:endc) = spval
+    this%core%totsom(begc:endc) = spval
      call hist_addfld1d (fname='TOTSOMN', units='gN/m^2', &
           avgflag='A', long_name='total soil organic matter N', &
-           ptr_col=this%totsomn)
+           ptr_col=this%core%totsom)
 
-    this%totecosysn(begc:endc) = spval
+    this%core%totecosys(begc:endc) = spval
      call hist_addfld1d (fname='TOTECOSYSN', units='gN/m^2', &
           avgflag='A', long_name='total ecosystem N but excl product pools', &
-           ptr_col=this%totecosysn)
+           ptr_col=this%core%totecosys)
 
-    this%totcoln(begc:endc) = spval
+    this%core%totcol(begc:endc) = spval
      call hist_addfld1d (fname='TOTCOLN', units='gN/m^2', &
           avgflag='A', long_name='total column-level N but excl product pools', &
-           ptr_col=this%totcoln)
+           ptr_col=this%core%totcol)
 
-    this%seedn(begc:endc) = spval
+    this%core%seed(begc:endc) = spval
      call hist_addfld1d (fname='SEEDN', units='gN/m^2', &
           avgflag='A', long_name='pool for seeding new PFTs ', &
-           ptr_col=this%seedn, default='inactive')
+           ptr_col=this%core%seed, default='inactive')
 
-    this%prod10n(begc:endc) = spval
+    this%core%prod10(begc:endc) = spval
      call hist_addfld1d (fname='PROD10N', units='gN/m^2', &
           avgflag='A', long_name='10-yr wood product N', &
-           ptr_col=this%prod10n, default='inactive')
+           ptr_col=this%core%prod10, default='inactive')
 
-    this%prod100n(begc:endc) = spval
+    this%core%prod100(begc:endc) = spval
      call hist_addfld1d (fname='PROD100N', units='gN/m^2', &
           avgflag='A', long_name='100-yr wood product N', &
-           ptr_col=this%prod100n, default='inactive')
+           ptr_col=this%core%prod100, default='inactive')
 
-    this%prod1n(begc:endc) = spval
+    this%core%prod1(begc:endc) = spval
      call hist_addfld1d (fname='PROD1N', units='gN/m^2', &
           avgflag='A', long_name='1-yr crop product N', &
-           ptr_col=this%prod1n, default='inactive')
+           ptr_col=this%core%prod1, default='inactive')
 
-    this%totprodn(begc:endc) = spval
+    this%core%totprod(begc:endc) = spval
      call hist_addfld1d (fname='TOTPRODN', units='gN/m^2', &
           avgflag='A', long_name='total wood product N', &
-           ptr_col=this%totprodn, default='inactive')
+           ptr_col=this%core%totprod, default='inactive')
 
     if (use_fan) then
        this%tan_g1(begc:endc) = spval
@@ -3699,27 +3529,27 @@ contains
        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
 
           ! column nitrogen state variables
-          this%ntrunc(c) = 0._r8
+          this%core%trunc_sink(c) = 0._r8
           this%sminn(c) = 0._r8
           do j = 1, nlevdecomp
              do k = 1, ndecomp_pools
-                this%decomp_npools_vr(c,j,k) = col_cs%decomp_cpools_vr(c,j,k) / decomp_cascade_con%initial_cn_ratio(k)
+                this%core%decomp_pools_vr(c,j,k) = col_cs%core%decomp_pools_vr(c,j,k) / decomp_cascade_con%initial_cn_ratio(k)
              end do
              this%sminn_vr(c,j) = 0._r8
-             this%ntrunc_vr(c,j) = 0._r8
+             this%core%trunc_sink_vr(c,j) = 0._r8
           end do
           if ( nlevdecomp > 1 ) then
              do j = nlevdecomp+1, nlevdecomp_full
                 do k = 1, ndecomp_pools
-                   this%decomp_npools_vr(c,j,k) = 0._r8
+                   this%core%decomp_pools_vr(c,j,k) = 0._r8
                 end do
                 this%sminn_vr(c,j) = 0._r8
-                this%ntrunc_vr(c,j) = 0._r8
+                this%core%trunc_sink_vr(c,j) = 0._r8
              end do
           end if
           do k = 1, ndecomp_pools
-             this%decomp_npools(c,k)    = col_cs%decomp_cpools(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
-             this%decomp_npools_1m(c,k) = col_cs%decomp_cpools_1m(c,k) / decomp_cascade_con%initial_cn_ratio(k)
+             this%core%decomp_pools(c,k)    = col_cs%core%decomp_pools(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
+             this%core%decomp_pools_1m(c,k) = col_cs%core%decomp_pools_1m(c,k) / decomp_cascade_con%initial_cn_ratio(k)
           end do
 
           do j = 1, nlevdecomp_full
@@ -3735,21 +3565,21 @@ contains
              this%smin_nh4sorb(c) = 0._r8
           end if
 
-          this%totlitn(c)    = 0._r8
-          this%totsomn(c)    = 0._r8
-          this%totlitn_1m(c) = 0._r8
-          this%totsomn_1m(c) = 0._r8
-          this%totecosysn(c) = 0._r8
-          this%totcoln(c)    = 0._r8
-          this%cwdn(c)       = 0._r8
+          this%core%totlit(c)    = 0._r8
+          this%core%totsom(c)    = 0._r8
+          this%core%totlit_1m(c) = 0._r8
+          this%core%totsom_1m(c) = 0._r8
+          this%core%totecosys(c) = 0._r8
+          this%core%totcol(c)    = 0._r8
+          this%core%cwd(c)       = 0._r8
 
           ! dynamic landcover state variables
-          this%seedn(c)         = 0._r8
-          this%prod1n(c)        = 0._r8
-          this%prod10n(c)       = 0._r8
-          this%prod100n(c)      = 0._r8
-          this%totprodn(c)      = 0._r8
-          this%cropseedn_deficit(c) = 0._r8
+          this%core%seed(c)         = 0._r8
+          this%core%prod1(c)        = 0._r8
+          this%core%prod10(c)       = 0._r8
+          this%core%prod100(c)      = 0._r8
+          this%core%totprod(c)      = 0._r8
+          this%core%cropseed_deficit(c) = 0._r8
           this%fan_totn(c) = 0._r8
        end if
 
@@ -3798,12 +3628,12 @@ contains
     do fc = 1,num_special_col
        c = special_col(fc)
 
-       this%seedn(c)    = 0._r8
-       this%prod1n(c)   = 0._r8
-       this%prod10n(c)  = 0._r8
-       this%prod100n(c) = 0._r8
-       this%totprodn(c) = 0._r8
-       this%cropseedn_deficit(c) = 0._r8
+       this%core%seed(c)    = 0._r8
+       this%core%prod1(c)   = 0._r8
+       this%core%prod10(c)  = 0._r8
+       this%core%prod100(c) = 0._r8
+       this%core%totprod(c) = 0._r8
+       this%core%cropseed_deficit(c) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
@@ -3864,13 +3694,13 @@ contains
     do k = 1, ndecomp_pools
        varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'n'
        if (use_vertsoilc) then
-          ptr2d => this%decomp_npools_vr(:,:,k)
+          ptr2d => this%core%decomp_pools_vr(:,:,k)
           call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=ptr2d)
        else
-          ptr1d => this%decomp_npools_vr(:,1,k)
+          ptr1d => this%core%decomp_pools_vr(:,1,k)
           call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                dim1name='column', &
                long_name='',  units='', fill_value=spval, &
@@ -3883,13 +3713,13 @@ contains
     end do
 
     if (use_vertsoilc) then
-       ptr2d => this%ntrunc_vr
+       ptr2d => this%core%trunc_sink_vr
        call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc_vr", xtype=ncd_double,  &
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     else
-       ptr1d => this%ntrunc_vr(:,1)
+       ptr1d => this%core%trunc_sink_vr(:,1)
        call restartvar(ncid=ncid, flag=flag, varname="col_ntrunc", xtype=ncd_double,  &
             dim1name='column', &
             long_name='',  units='', fill_value=spval, &
@@ -3966,23 +3796,23 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='totcoln', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totcoln)
+         interpinic_flag='interp', readvar=readvar, data=this%core%totcol)
 
     call restartvar(ncid=ncid, flag=flag, varname='seedn', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%seedn)
+         interpinic_flag='interp', readvar=readvar, data=this%core%seed)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod10n', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod10n)
+         interpinic_flag='interp', readvar=readvar, data=this%core%prod10)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod100n', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod100n)
+         interpinic_flag='interp', readvar=readvar, data=this%core%prod100)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod1n', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod1n)
+         interpinic_flag='interp', readvar=readvar, data=this%core%prod1)
 
     if (use_fan) then
        call restartvar(ncid=ncid, flag=flag, varname='tan_g1', xtype=ncd_double, &
@@ -4175,7 +4005,7 @@ contains
                    m = 1. / decomp_cascade_con%spinup_factor(k)
 		             if (decomp_cascade_con%spinup_factor(k) > 1) m = m * cnstate_vars%scalaravg_col(c,j)
                 end if
-                this%decomp_npools_vr(c,j,k) = this%decomp_npools_vr(c,j,k) * m
+                this%core%decomp_pools_vr(c,j,k) = this%core%decomp_pools_vr(c,j,k) * m
              end do
           end do
        end do
@@ -4204,19 +4034,19 @@ contains
        i = filter_column(fi)
 
        this%sminn(i)       = value_column
-       this%ntrunc(i)      = value_column
-       this%cwdn(i)        = value_column
+       this%core%trunc_sink(i)      = value_column
+       this%core%cwd(i)        = value_column
        this%smin_no3(i) = value_column
        this%smin_nh4(i) = value_column
        if(use_pflotran .and. pf_cmode) then
           this%smin_nh4sorb(i) = value_column
        end if
-       this%totlitn(i)     = value_column
-       this%totsomn(i)     = value_column
-       this%totecosysn(i)  = value_column
-       this%totcoln(i)     = value_column
-       this%totsomn_1m(i)  = value_column
-       this%totlitn_1m(i)  = value_column
+       this%core%totlit(i)     = value_column
+       this%core%totsom(i)     = value_column
+       this%core%totecosys(i)  = value_column
+       this%core%totcol(i)     = value_column
+       this%core%totsom_1m(i)  = value_column
+       this%core%totlit_1m(i)  = value_column
        if (use_fan) then
           this%tan_g1(i)   = value_column
           this%tan_g2(i)   = value_column
@@ -4249,7 +4079,7 @@ contains
        do fi = 1,num_column
           i = filter_column(fi)
           this%sminn_vr(i,j)       = value_column
-          this%ntrunc_vr(i,j)      = value_column
+          this%core%trunc_sink_vr(i,j)      = value_column
           this%smin_no3_vr(i,j) = value_column
           this%smin_nh4_vr(i,j) = value_column
           if(use_pflotran .and. pf_cmode) then
@@ -4262,8 +4092,8 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_npools(i,k)    = value_column
-          this%decomp_npools_1m(i,k) = value_column
+          this%core%decomp_pools(i,k)    = value_column
+          this%core%decomp_pools_1m(i,k) = value_column
        end do
     end do
 
@@ -4272,7 +4102,7 @@ contains
        do k = 1, ndecomp_pools
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_npools_vr(i,j,k) = value_column
+             this%core%decomp_pools_vr(i,j,k) = value_column
           end do
        end do
     end do
@@ -4329,14 +4159,14 @@ contains
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%decomp_npools(c,l) = 0._r8
+          this%core%decomp_pools(c,l) = 0._r8
        end do
        do j = 1, nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_npools(c,l) = &
-                  this%decomp_npools(c,l) + &
-                  this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+             this%core%decomp_pools(c,l) = &
+                  this%core%decomp_pools(c,l) + &
+                  this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
           end do
        end do
     end do
@@ -4347,7 +4177,7 @@ contains
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_npools_1m(c,l) = 0._r8
+             this%core%decomp_pools_1m(c,l) = 0._r8
           end do
        end do
 
@@ -4358,16 +4188,16 @@ contains
              if ( zisoi(j) <= maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   this%decomp_npools_1m(c,l) = &
-                        this%decomp_npools_1m(c,l) + &
-                        this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+                   this%core%decomp_pools_1m(c,l) = &
+                        this%core%decomp_pools_1m(c,l) + &
+                        this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
                 end do
              elseif ( zisoi(j-1) < maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   this%decomp_npools_1m(c,l) = &
-                        this%decomp_npools_1m(c,l) + &
-                        this%decomp_npools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+                   this%core%decomp_pools_1m(c,l) = &
+                        this%core%decomp_pools_1m(c,l) + &
+                        this%core%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
                 end do
              endif
           end do
@@ -4376,15 +4206,15 @@ contains
        ! total litter nitrogen to 1 meter (TOTLITN_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%totlitn_1m(c) = 0._r8
+          this%core%totlit_1m(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%totlitn_1m(c) = &
-                     this%totlitn_1m(c) + &
-                     this%decomp_npools_1m(c,l)
+                this%core%totlit_1m(c) = &
+                     this%core%totlit_1m(c) + &
+                     this%core%decomp_pools_1m(c,l)
              end do
           end if
        end do
@@ -4392,15 +4222,15 @@ contains
        ! total soil organic matter nitrogen to 1 meter (TOTSOMN_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%totsomn_1m(c) = 0._r8
+          this%core%totsom_1m(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%totsomn_1m(c) = &
-                     this%totsomn_1m(c) + &
-                     this%decomp_npools_1m(c,l)
+                this%core%totsom_1m(c) = &
+                     this%core%totsom_1m(c) + &
+                     this%core%decomp_pools_1m(c,l)
              end do
           end if
        end do
@@ -4410,15 +4240,15 @@ contains
     ! total litter nitrogen (TOTLITN)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%totlitn(c)    = 0._r8
+       this%core%totlit(c)    = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%totlitn(c) = &
-                  this%totlitn(c) + &
-                  this%decomp_npools(c,l)
+             this%core%totlit(c) = &
+                  this%core%totlit(c) + &
+                  this%core%decomp_pools(c,l)
           end do
        end if
     end do
@@ -4426,15 +4256,15 @@ contains
     ! total soil organic matter nitrogen (TOTSOMN)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%totsomn(c)    = 0._r8
+       this%core%totsom(c)    = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%totsomn(c) = &
-                  this%totsomn(c) + &
-                  this%decomp_npools(c,l)
+             this%core%totsom(c) = &
+                  this%core%totsom(c) + &
+                  this%core%decomp_pools(c,l)
           end do
        end if
     end do
@@ -4442,15 +4272,15 @@ contains
     ! total cwdn
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%cwdn(c) = 0._r8
+       this%core%cwd(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_cwd(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%cwdn(c) = &
-                  this%cwdn(c) + &
-                  this%decomp_npools(c,l)
+             this%core%cwd(c) = &
+                  this%core%cwd(c) + &
+                  this%core%decomp_pools(c,l)
           end do
        end if
     end do
@@ -4472,14 +4302,14 @@ contains
     ! total col_ntrunc
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%ntrunc(c) = 0._r8
+       this%core%trunc_sink(c) = 0._r8
     end do
     do j = 1, nlev
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%ntrunc(c) = &
-               this%ntrunc(c) + &
-               this%ntrunc_vr(c,j) * dzsoi_decomp(j)
+          this%core%trunc_sink(c) = &
+               this%core%trunc_sink(c) + &
+               this%core%trunc_sink_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -4487,50 +4317,50 @@ contains
        c = filter_soilc(fc)
 
        ! total wood product nitrogen
-       this%totprodn(c) = &
-            this%prod1n(c) + &
-            this%prod10n(c) + &
-            this%prod100n(c)
+       this%core%totprod(c) = &
+            this%core%prod1(c) + &
+            this%core%prod10(c) + &
+            this%core%prod100(c)
 
        ! total ecosystem nitrogen, including veg (TOTECOSYSN)
-       this%totecosysn(c) = &
-            this%cwdn(c) + &
-            this%totlitn(c) + &
-            this%totsomn(c) + &
+       this%core%totecosys(c) = &
+            this%core%cwd(c) + &
+            this%core%totlit(c) + &
+            this%core%totsom(c) + &
             this%sminn(c) + &
-            this%totprodn(c) + &
-            this%totvegn(c)
+            this%core%totprod(c) + &
+            this%core%totveg(c)
 
 
 
        ! total column nitrogen, including pft (TOTCOLN)
-       this%totcoln(c) = &
-            this%totpftn(c) + &
-            this%cwdn(c) + &
-            this%totlitn(c) + &
-            this%totsomn(c) + &
+       this%core%totcol(c) = &
+            this%core%totpft(c) + &
+            this%core%cwd(c) + &
+            this%core%totlit(c) + &
+            this%core%totsom(c) + &
             this%sminn(c) + &
-            this%totprodn(c) + &
-            this%ntrunc(c)+ &
+            this%core%totprod(c) + &
+            this%core%trunc_sink(c)+ &
             this%plant_n_buffer(c) + &
             this%fan_totn(c)
 
        ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
-          this%totcoln(c) = this%totcoln(c) + this%cropseedn_deficit(c)
+          this%core%totcol(c) = this%core%totcol(c) + this%core%cropseed_deficit(c)
        endif
 
        this%totabgn (c) =  &
-            this%totpftn(c) + &
-            this%totprodn(c) + &
-            this%seedn(c) + &
-            this%ntrunc(c)+ &
+            this%core%totpft(c) + &
+            this%core%totprod(c) + &
+            this%core%seed(c) + &
+            this%core%trunc_sink(c)+ &
             this%plant_n_buffer(c)
 
        this%totblgn(c) = &
-            this%cwdn(c) + &
-            this%totlitn(c) + &
-            this%totsomn(c) + &
+            this%core%cwd(c) + &
+            this%core%totlit(c) + &
+            this%core%totsom(c) + &
             this%sminn(c)
     end do
 
@@ -4559,9 +4389,9 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%plant_n_buffer(c) = 0._r8
-       this%totvegn(c) = 0._r8
-       this%totpftn(c) = 0._r8
-       this%cropseedn_deficit(c) = 0._r8
+       this%core%totveg(c) = 0._r8
+       this%core%totpft(c) = 0._r8
+       this%core%cropseed_deficit(c) = 0._r8
     end do
 
     return
@@ -4600,7 +4430,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_ps
     !-----------------------------------------------------------------------
-    allocate(this%ptrunc_vr            (begc:endc,1:nlevdecomp_full)) ; this%ptrunc_vr            (:,:) = spval
+    allocate(this%core%trunc_sink_vr            (begc:endc,1:nlevdecomp_full)) ; this%core%trunc_sink_vr            (:,:) = spval
     allocate(this%solutionp_vr         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr         (:,:) = spval
     allocate(this%labilep_vr           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr           (:,:) = spval
     allocate(this%secondp_vr           (begc:endc,1:nlevdecomp_full)) ; this%secondp_vr           (:,:) = spval
@@ -4612,29 +4442,29 @@ contains
     allocate(this%secondp              (begc:endc))                   ; this%secondp              (:)   = spval
     allocate(this%occlp                (begc:endc))                   ; this%occlp                (:)   = spval
     allocate(this%primp                (begc:endc))                   ; this%primp                (:)   = spval
-    allocate(this%cwdp                 (begc:endc))                   ; this%cwdp                 (:)   = spval
+    allocate(this%core%cwd                 (begc:endc))                   ; this%core%cwd                 (:)   = spval
     allocate(this%sminp                (begc:endc))                   ; this%sminp                (:)   = spval
-    allocate(this%ptrunc               (begc:endc))                   ; this%ptrunc               (:)   = spval
-    allocate(this%seedp                (begc:endc))                   ; this%seedp                (:)   = spval
-    allocate(this%prod1p               (begc:endc))                   ; this%prod1p               (:)   = spval
-    allocate(this%prod10p              (begc:endc))                   ; this%prod10p              (:)   = spval
-    allocate(this%prod100p             (begc:endc))                   ; this%prod100p             (:)   = spval
-    allocate(this%totprodp             (begc:endc))                   ; this%totprodp             (:)   = spval
-    allocate(this%dyn_pbal_adjustments (begc:endc))                   ; this%dyn_pbal_adjustments (:)   = spval
-    allocate(this%totlitp              (begc:endc))                   ; this%totlitp              (:)   = spval
-    allocate(this%totsomp              (begc:endc))                   ; this%totsomp              (:)   = spval
-    allocate(this%totlitp_1m           (begc:endc))                   ; this%totlitp_1m           (:)   = spval
-    allocate(this%totsomp_1m           (begc:endc))                   ; this%totsomp_1m           (:)   = spval
-    allocate(this%totecosysp           (begc:endc))                   ; this%totecosysp           (:)   = spval
-    allocate(this%totcolp              (begc:endc))                   ; this%totcolp              (:)   = spval
-    allocate(this%decomp_ppools        (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools        (:,:) = spval
-    allocate(this%decomp_ppools_1m     (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_1m     (:,:) = spval
-    allocate(this%totpftp              (begc:endc))                   ; this%totpftp              (:)   = spval
-    allocate(this%totvegp              (begc:endc))                   ; this%totvegp              (:)   = spval
-    allocate(this%decomp_ppools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%decomp_ppools_vr(:,:,:)= spval
-    allocate(this%begpb                (begc:endc))                   ; this%begpb                (:)   = spval
-    allocate(this%endpb                (begc:endc))                   ; this%endpb                (:)   = spval
-    allocate(this%errpb                (begc:endc))                   ; this%errpb                (:)   = spval
+    allocate(this%core%trunc_sink               (begc:endc))                   ; this%core%trunc_sink               (:)   = spval
+    allocate(this%core%seed                (begc:endc))                   ; this%core%seed                (:)   = spval
+    allocate(this%core%prod1               (begc:endc))                   ; this%core%prod1               (:)   = spval
+    allocate(this%core%prod10              (begc:endc))                   ; this%core%prod10              (:)   = spval
+    allocate(this%core%prod100             (begc:endc))                   ; this%core%prod100             (:)   = spval
+    allocate(this%core%totprod             (begc:endc))                   ; this%core%totprod             (:)   = spval
+    allocate(this%core%dyn_bal_adjustments (begc:endc))                   ; this%core%dyn_bal_adjustments (:)   = spval
+    allocate(this%core%totlit              (begc:endc))                   ; this%core%totlit              (:)   = spval
+    allocate(this%core%totsom              (begc:endc))                   ; this%core%totsom              (:)   = spval
+    allocate(this%core%totlit_1m           (begc:endc))                   ; this%core%totlit_1m           (:)   = spval
+    allocate(this%core%totsom_1m           (begc:endc))                   ; this%core%totsom_1m           (:)   = spval
+    allocate(this%core%totecosys           (begc:endc))                   ; this%core%totecosys           (:)   = spval
+    allocate(this%core%totcol              (begc:endc))                   ; this%core%totcol              (:)   = spval
+    allocate(this%core%decomp_pools        (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools        (:,:) = spval
+    allocate(this%core%decomp_pools_1m     (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_1m     (:,:) = spval
+    allocate(this%core%totpft              (begc:endc))                   ; this%core%totpft              (:)   = spval
+    allocate(this%core%totveg              (begc:endc))                   ; this%core%totveg              (:)   = spval
+    allocate(this%core%decomp_pools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%core%decomp_pools_vr(:,:,:)= spval
+    allocate(this%core%balance_beg                (begc:endc))                   ; this%core%balance_beg                (:)   = spval
+    allocate(this%core%balance_end                (begc:endc))                   ; this%core%balance_end                (:)   = spval
+    allocate(this%core%balance_err                (begc:endc))                   ; this%core%balance_err                (:)   = spval
     allocate(this%solutionp_vr_cur     (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_cur     (:,:) = spval
     allocate(this%solutionp_vr_prev    (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr_prev    (:,:) = spval
     allocate(this%labilep_vr_cur       (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr_cur       (:,:) = spval
@@ -4645,40 +4475,40 @@ contains
     allocate(this%occlp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_prev        (:,:) = spval
     allocate(this%primp_vr_cur         (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_cur         (:,:) = spval
     allocate(this%primp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_prev        (:,:) = spval
-    allocate(this%totpftp_beg          (begc:endc))                   ; this%totpftp_beg          (:)   = spval
+    allocate(this%core%totpft_beg          (begc:endc))                   ; this%core%totpft_beg          (:)   = spval
     allocate(this%solutionp_beg        (begc:endc))                   ; this%solutionp_beg        (:)   = spval
     allocate(this%labilep_beg          (begc:endc))                   ; this%labilep_beg          (:)   = spval
     allocate(this%secondp_beg          (begc:endc))                   ; this%secondp_beg          (:)   = spval
-    allocate(this%totlitp_beg          (begc:endc))                   ; this%totlitp_beg          (:)   = spval
-    allocate(this%cwdp_beg             (begc:endc))                   ; this%cwdp_beg             (:)   = spval
-    allocate(this%som1p                (begc:endc))                   ; this%som1p                (:)   = spval
-    allocate(this%som2p                (begc:endc))                   ; this%som2p                (:)   = spval
-    allocate(this%som3p                (begc:endc))                   ; this%som3p                (:)   = spval
-    allocate(this%totsomp_beg          (begc:endc))                   ; this%totsomp_beg          (:)   = spval
-    allocate(this%totlitp_end          (begc:endc))                   ; this%totlitp_end          (:)   = spval
-    allocate(this%totpftp_end          (begc:endc))                   ; this%totpftp_end          (:)   = spval
+    allocate(this%core%totlit_beg          (begc:endc))                   ; this%core%totlit_beg          (:)   = spval
+    allocate(this%core%cwd_beg             (begc:endc))                   ; this%core%cwd_beg             (:)   = spval
+    allocate(this%core%som1                (begc:endc))                   ; this%core%som1                (:)   = spval
+    allocate(this%core%som2                (begc:endc))                   ; this%core%som2                (:)   = spval
+    allocate(this%core%som3                (begc:endc))                   ; this%core%som3                (:)   = spval
+    allocate(this%core%totsom_beg          (begc:endc))                   ; this%core%totsom_beg          (:)   = spval
+    allocate(this%core%totlit_end          (begc:endc))                   ; this%core%totlit_end          (:)   = spval
+    allocate(this%core%totpft_end          (begc:endc))                   ; this%core%totpft_end          (:)   = spval
     allocate(this%labilep_end          (begc:endc))                   ; this%labilep_end          (:)   = spval
     allocate(this%secondp_end          (begc:endc))                   ; this%secondp_end          (:)   = spval
     allocate(this%solutionp_end        (begc:endc))                   ; this%solutionp_end        (:)   = spval
-    allocate(this%cwdp_end             (begc:endc))                   ; this%cwdp_end             (:)   = spval
-    allocate(this%totsomp_end          (begc:endc))                   ; this%totsomp_end          (:)   = spval
-    allocate(this%cropseedp_deficit    (begc:endc))                   ; this%cropseedp_deficit    (:)   = spval
+    allocate(this%core%cwd_end             (begc:endc))                   ; this%core%cwd_end             (:)   = spval
+    allocate(this%core%totsom_end          (begc:endc))                   ; this%core%totsom_end          (:)   = spval
+    allocate(this%core%cropseed_deficit    (begc:endc))                   ; this%core%cropseed_deficit    (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ps
     !-----------------------------------------------------------------------
     if ( nlevdecomp_full > 1 ) then
-       this%decomp_ppools_vr(begc:endc,:,:) = spval
-       this%decomp_ppools_1m(begc:endc,:) = spval
+       this%core%decomp_pools_vr(begc:endc,:,:) = spval
+       this%core%decomp_pools_1m(begc:endc,:) = spval
     end if
-    this%decomp_ppools(begc:endc,:) = spval
+    this%core%decomp_pools(begc:endc,:) = spval
     do l  = 1, ndecomp_pools
 
        ! Do not define history variables for CWD when fates is active
        if( decomp_cascade_con%is_cwd(l) .and. use_fates ) cycle
 
        if ( nlevdecomp_full > 1 ) then
-          data2dptr => this%decomp_ppools_vr(:,:,l)
+          data2dptr => this%core%decomp_pools_vr(:,:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_vr'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P (vertically resolved)'
            call hist_addfld2d (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
@@ -4686,7 +4516,7 @@ contains
                  ptr_col=data2dptr)
        endif
 
-       data1dptr => this%decomp_ppools(:,l)
+       data1dptr => this%core%decomp_pools(:,l)
        fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P'
        longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P'
         call hist_addfld1d (fname=fieldname, units='gP/m^2', &
@@ -4694,7 +4524,7 @@ contains
               ptr_col=data1dptr)
 
        if ( nlevdecomp_full > 1 ) then
-          data1dptr => this%decomp_ppools_1m(:,l)
+          data1dptr => this%core%decomp_pools_1m(:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(l))//'P_1m'
           longname =  trim(decomp_cascade_con%decomp_pool_name_history(l))//' P to 1 meter'
            call hist_addfld1d (fname=fieldname, units='gP/m^2', &
@@ -4711,21 +4541,21 @@ contains
              avgflag='A', long_name='soil mineral P', &
               ptr_col=this%sminp)
 
-       this%totlitp_1m(begc:endc) = spval
+       this%core%totlit_1m(begc:endc) = spval
         call hist_addfld1d (fname='TOTLITP_1m', units='gP/m^2', &
              avgflag='A', long_name='total litter P to 1 meter', &
-              ptr_col=this%totlitp_1m)
+              ptr_col=this%core%totlit_1m)
 
-       this%totsomp_1m(begc:endc) = spval
+       this%core%totsom_1m(begc:endc) = spval
         call hist_addfld1d (fname='TOTSOMP_1m', units='gP/m^2', &
              avgflag='A', long_name='total soil organic matter P to 1 meter', &
-              ptr_col=this%totsomp_1m)
+              ptr_col=this%core%totsom_1m)
     endif
 
-    this%ptrunc(begc:endc) = spval
+    this%core%trunc_sink(begc:endc) = spval
      call hist_addfld1d (fname='COL_PTRUNC', units='gP/m^2',  &
           avgflag='A', long_name='column-level sink for P truncation', &
-           ptr_col=this%ptrunc)
+           ptr_col=this%core%trunc_sink)
 
     ! add suffix if number of soil decomposition depths is greater than 1
     if (nlevdecomp > 1) then
@@ -4792,50 +4622,50 @@ contains
               ptr_col=this%primp)
     endif
 
-    this%totlitp(begc:endc) = spval
+    this%core%totlit(begc:endc) = spval
      call hist_addfld1d (fname='TOTLITP', units='gP/m^2', &
           avgflag='A', long_name='total litter P', &
-           ptr_col=this%totlitp)
+           ptr_col=this%core%totlit)
 
-    this%totsomp(begc:endc) = spval
+    this%core%totsom(begc:endc) = spval
      call hist_addfld1d (fname='TOTSOMP', units='gP/m^2', &
           avgflag='A', long_name='total soil organic matter P', &
-           ptr_col=this%totsomp)
+           ptr_col=this%core%totsom)
 
-    this%totecosysp(begc:endc) = spval
+    this%core%totecosys(begc:endc) = spval
      call hist_addfld1d (fname='TOTECOSYSP', units='gP/m^2', &
           avgflag='A', long_name='total ecosystem P but excl product pools', &
-           ptr_col=this%totecosysp)
+           ptr_col=this%core%totecosys)
 
-    this%totcolp(begc:endc) = spval
+    this%core%totcol(begc:endc) = spval
      call hist_addfld1d (fname='TOTCOLP', units='gP/m^2', &
           avgflag='A', long_name='total column-level P but excl product pools', &
-           ptr_col=this%totcolp)
+           ptr_col=this%core%totcol)
 
-    this%seedp(begc:endc) = spval
+    this%core%seed(begc:endc) = spval
      call hist_addfld1d (fname='SEEDP', units='gP/m^2', &
           avgflag='A', long_name='P pool for seeding new PFTs ', &
-           ptr_col=this%seedp, default='inactive')
+           ptr_col=this%core%seed, default='inactive')
 
-    this%prod10p(begc:endc) = spval
+    this%core%prod10(begc:endc) = spval
      call hist_addfld1d (fname='PROD10P', units='gP/m^2', &
           avgflag='A', long_name='10-yr wood product P', &
-           ptr_col=this%prod10p, default='inactive')
+           ptr_col=this%core%prod10, default='inactive')
 
-    this%prod100p(begc:endc) = spval
+    this%core%prod100(begc:endc) = spval
      call hist_addfld1d (fname='PROD100P', units='gP/m^2', &
           avgflag='A', long_name='100-yr wood product P', &
-           ptr_col=this%prod100p, default='inactive')
+           ptr_col=this%core%prod100, default='inactive')
 
-    this%prod1p(begc:endc) = spval
+    this%core%prod1(begc:endc) = spval
      call hist_addfld1d (fname='PROD1P', units='gP/m^2', &
           avgflag='A', long_name='1-yr crop product P', &
-           ptr_col=this%prod1p, default='inactive')
+           ptr_col=this%core%prod1, default='inactive')
 
-    this%totprodp(begc:endc) = spval
+    this%core%totprod(begc:endc) = spval
      call hist_addfld1d (fname='TOTPRODP', units='gP/m^2', &
           avgflag='A', long_name='total wood product P', &
-           ptr_col=this%totprodp, default='inactive')
+           ptr_col=this%core%totprod, default='inactive')
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ps
@@ -4854,27 +4684,27 @@ contains
        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
 
           ! column phosphorus state variables
-          this%ptrunc(c) = 0._r8
+          this%core%trunc_sink(c) = 0._r8
           this%sminp(c) = 0._r8
           do j = 1, nlevdecomp
              do k = 1, ndecomp_pools
-                this%decomp_ppools_vr(c,j,k) = col_cs%decomp_cpools_vr(c,j,k) / decomp_cascade_con%initial_cp_ratio(k)
+                this%core%decomp_pools_vr(c,j,k) = col_cs%core%decomp_pools_vr(c,j,k) / decomp_cascade_con%initial_cp_ratio(k)
              end do
              this%sminp_vr(c,j) = 0._r8
-             this%ptrunc_vr(c,j) = 0._r8
+             this%core%trunc_sink_vr(c,j) = 0._r8
           end do
           if ( nlevdecomp > 1 ) then
              do j = nlevdecomp+1, nlevdecomp_full
                 do k = 1, ndecomp_pools
-                   this%decomp_ppools_vr(c,j,k) = 0._r8
+                   this%core%decomp_pools_vr(c,j,k) = 0._r8
                 end do
                 this%sminp_vr(c,j) = 0._r8
-                this%ptrunc_vr(c,j) = 0._r8
+                this%core%trunc_sink_vr(c,j) = 0._r8
              end do
           end if
           do k = 1, ndecomp_pools
-             this%decomp_ppools(c,k)    = col_cs%decomp_cpools(c,k)    / decomp_cascade_con%initial_cp_ratio(k)
-             this%decomp_ppools_1m(c,k) = col_cs%decomp_cpools_1m(c,k) / decomp_cascade_con%initial_cp_ratio(k)
+             this%core%decomp_pools(c,k)    = col_cs%core%decomp_pools(c,k)    / decomp_cascade_con%initial_cp_ratio(k)
+             this%core%decomp_pools_1m(c,k) = col_cs%core%decomp_pools_1m(c,k) / decomp_cascade_con%initial_cp_ratio(k)
           end do
 
           do j = 1, nlevdecomp_full
@@ -4891,20 +4721,20 @@ contains
           this%occlp(c)     = 0._r8
           this%primp(c)     = 0._r8
 
-          this%totlitp(c)    = 0._r8
-          this%totsomp(c)    = 0._r8
-          this%totlitp_1m(c) = 0._r8
-          this%totsomp_1m(c) = 0._r8
-          this%totecosysp(c) = 0._r8
-          this%totcolp(c)    = 0._r8
-          this%cwdp(c)       = 0._r8
+          this%core%totlit(c)    = 0._r8
+          this%core%totsom(c)    = 0._r8
+          this%core%totlit_1m(c) = 0._r8
+          this%core%totsom_1m(c) = 0._r8
+          this%core%totecosys(c) = 0._r8
+          this%core%totcol(c)    = 0._r8
+          this%core%cwd(c)       = 0._r8
 
           ! dynamic landcover state variables
-          this%seedp(c)         = 0._r8
-          this%prod1p(c)        = 0._r8
-          this%prod10p(c)       = 0._r8
-          this%prod100p(c)      = 0._r8
-          this%totprodp(c)      = 0._r8
+          this%core%seed(c)         = 0._r8
+          this%core%prod1(c)        = 0._r8
+          this%core%prod10(c)       = 0._r8
+          this%core%prod100(c)      = 0._r8
+          this%core%totprod(c)      = 0._r8
        end if
     end do
 
@@ -4914,11 +4744,11 @@ contains
     do fc = 1,num_special_col
        c = special_col(fc)
 
-       this%seedp(c)    = 0._r8
-       this%prod1p(c)   = 0._r8
-       this%prod10p(c)  = 0._r8
-       this%prod100p(c) = 0._r8
-       this%totprodp(c) = 0._r8
+       this%core%seed(c)    = 0._r8
+       this%core%prod1(c)   = 0._r8
+       this%core%prod10(c)  = 0._r8
+       this%core%prod100(c) = 0._r8
+       this%core%totprod(c) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
@@ -5030,13 +4860,13 @@ contains
     do k = 1, ndecomp_pools
        varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'p'
        if (use_vertsoilc) then
-          ptr2d => this%decomp_ppools_vr(:,:,k)
+          ptr2d => this%core%decomp_pools_vr(:,:,k)
           call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double, &
                dim1name='column', dim2name='levgrnd', switchdim=.true., &
                long_name='', units='', &
                interpinic_flag='interp', readvar=readvar, data=ptr2d)
        else
-          ptr1d => this%decomp_ppools_vr(:,1,k)
+          ptr1d => this%core%decomp_pools_vr(:,1,k)
           call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                dim1name='column', &
                long_name='',  units='', fill_value=spval, &
@@ -5049,13 +4879,13 @@ contains
     end do
 
     if (use_vertsoilc) then
-       ptr2d => this%ptrunc_vr
+       ptr2d => this%core%trunc_sink_vr
        call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc_vr", xtype=ncd_double,  &
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='',  units='', fill_value=spval, &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     else
-       ptr1d => this%ptrunc_vr(:,1)
+       ptr1d => this%core%trunc_sink_vr(:,1)
        call restartvar(ncid=ncid, flag=flag, varname="col_ptrunc", xtype=ncd_double,  &
             dim1name='column', &
             long_name='',  units='', fill_value=spval, &
@@ -5065,33 +4895,33 @@ contains
     !!! Debug balance
     call restartvar(ncid=ncid, flag=flag, varname='totsomp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totsomp)
+         interpinic_flag='interp', readvar=readvar, data=this%core%totsom)
     call restartvar(ncid=ncid, flag=flag, varname='cwdp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%cwdp)
+         interpinic_flag='interp', readvar=readvar, data=this%core%cwd)
     call restartvar(ncid=ncid, flag=flag, varname='totlitp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totlitp)
+         interpinic_flag='interp', readvar=readvar, data=this%core%totlit)
 
     call restartvar(ncid=ncid, flag=flag, varname='totcolp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%totcolp)
+         interpinic_flag='interp', readvar=readvar, data=this%core%totcol)
 
     call restartvar(ncid=ncid, flag=flag, varname='seedp', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%seedp)
+         interpinic_flag='interp', readvar=readvar, data=this%core%seed)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod10p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod10p)
+         interpinic_flag='interp', readvar=readvar, data=this%core%prod10)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod100p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod100p)
+         interpinic_flag='interp', readvar=readvar, data=this%core%prod100)
 
     call restartvar(ncid=ncid, flag=flag, varname='prod1p', xtype=ncd_double,  &
          dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%prod1p)
+         interpinic_flag='interp', readvar=readvar, data=this%core%prod1)
 
     !--------------------------------
     ! Spinup state
@@ -5144,7 +4974,7 @@ contains
                    m = 1. / decomp_cascade_con%spinup_factor(k)
 		             if (decomp_cascade_con%spinup_factor(k) > 1) m = m  * cnstate_vars%scalaravg_col(c,j)
                 end if
-                this%decomp_ppools_vr(c,j,k) = this%decomp_ppools_vr(c,j,k) * m
+                this%core%decomp_pools_vr(c,j,k) = this%core%decomp_pools_vr(c,j,k) * m
              end do
           end do
        end do
@@ -5279,14 +5109,14 @@ contains
        this%secondp(i)     = value_column
        this%occlp(i)       = value_column
        this%primp(i)       = value_column
-       this%ptrunc(i)      = value_column
-       this%cwdp(i)        = value_column
-       this%totlitp(i)     = value_column
-       this%totsomp(i)     = value_column
-       this%totecosysp(i)  = value_column
-       this%totcolp(i)     = value_column
-       this%totsomp_1m(i)  = value_column
-       this%totlitp_1m(i)  = value_column
+       this%core%trunc_sink(i)      = value_column
+       this%core%cwd(i)        = value_column
+       this%core%totlit(i)     = value_column
+       this%core%totsom(i)     = value_column
+       this%core%totecosys(i)  = value_column
+       this%core%totcol(i)     = value_column
+       this%core%totsom_1m(i)  = value_column
+       this%core%totlit_1m(i)  = value_column
     end do
 
     do j = 1,nlevdecomp_full
@@ -5298,7 +5128,7 @@ contains
           this%secondp_vr(i,j)     = value_column
           this%occlp_vr(i,j)       = value_column
           this%primp_vr(i,j)       = value_column
-          this%ptrunc_vr(i,j)      = value_column
+          this%core%trunc_sink_vr(i,j)      = value_column
        end do
     end do
 
@@ -5306,8 +5136,8 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_ppools(i,k)    = value_column
-          this%decomp_ppools_1m(i,k) = value_column
+          this%core%decomp_pools(i,k)    = value_column
+          this%core%decomp_pools_1m(i,k) = value_column
        end do
     end do
 
@@ -5316,7 +5146,7 @@ contains
        do k = 1, ndecomp_pools
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_ppools_vr(i,j,k) = value_column
+             this%core%decomp_pools_vr(i,j,k) = value_column
           end do
        end do
     end do
@@ -5371,14 +5201,14 @@ contains
    do l = 1, ndecomp_pools
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%decomp_ppools(c,l) = 0._r8
+         this%core%decomp_pools(c,l) = 0._r8
       end do
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%decomp_ppools(c,l) = &
-                 this%decomp_ppools(c,l) + &
-                 this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+            this%core%decomp_pools(c,l) = &
+                 this%core%decomp_pools(c,l) + &
+                 this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
          end do
       end do
    end do
@@ -5388,7 +5218,7 @@ contains
       do l = 1, ndecomp_pools
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%decomp_ppools_1m(c,l) = 0._r8
+            this%core%decomp_pools_1m(c,l) = 0._r8
          end do
       end do
 
@@ -5399,16 +5229,16 @@ contains
             if ( zisoi(j) <= maxdepth ) then
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  this%decomp_ppools_1m(c,l) = &
-                       this%decomp_ppools_1m(c,l) + &
-                       this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+                  this%core%decomp_pools_1m(c,l) = &
+                       this%core%decomp_pools_1m(c,l) + &
+                       this%core%decomp_pools_vr(c,j,l) * dzsoi_decomp(j)
                end do
             elseif ( zisoi(j-1) < maxdepth ) then
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  this%decomp_ppools_1m(c,l) = &
-                       this%decomp_ppools_1m(c,l) + &
-                       this%decomp_ppools_vr(c,j,l) * (maxdepth - zisoi(j-1))
+                  this%core%decomp_pools_1m(c,l) = &
+                       this%core%decomp_pools_1m(c,l) + &
+                       this%core%decomp_pools_vr(c,j,l) * (maxdepth - zisoi(j-1))
                end do
             endif
          end do
@@ -5417,15 +5247,15 @@ contains
       ! total litter phosphorus to 1 meter (TOTLITN_1m)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%totlitp_1m(c) = 0._r8
+         this%core%totlit_1m(c) = 0._r8
       end do
       do l = 1, ndecomp_pools
          if ( decomp_cascade_con%is_litter(l) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               this%totlitp_1m(c) = &
-                    this%totlitp_1m(c) + &
-                    this%decomp_ppools_1m(c,l)
+               this%core%totlit_1m(c) = &
+                    this%core%totlit_1m(c) + &
+                    this%core%decomp_pools_1m(c,l)
             end do
          end if
       end do
@@ -5433,15 +5263,15 @@ contains
       ! total soil organic matter phosphorus to 1 meter (TOTSOMN_1m)
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%totsomp_1m(c) = 0._r8
+         this%core%totsom_1m(c) = 0._r8
       end do
       do l = 1, ndecomp_pools
          if ( decomp_cascade_con%is_soil(l) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               this%totsomp_1m(c) = &
-                    this%totsomp_1m(c) + &
-                    this%decomp_ppools_1m(c,l)
+               this%core%totsom_1m(c) = &
+                    this%core%totsom_1m(c) + &
+                    this%core%decomp_pools_1m(c,l)
             end do
          end if
       end do
@@ -5451,15 +5281,15 @@ contains
    ! total litter phosphorus (TOTLITP)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%totlitp(c)    = 0._r8
+      this%core%totlit(c)    = 0._r8
    end do
    do l = 1, ndecomp_pools
       if ( decomp_cascade_con%is_litter(l) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%totlitp(c) = &
-                 this%totlitp(c) + &
-                 this%decomp_ppools(c,l)
+            this%core%totlit(c) = &
+                 this%core%totlit(c) + &
+                 this%core%decomp_pools(c,l)
          end do
       end if
    end do
@@ -5467,15 +5297,15 @@ contains
    ! total soil organic matter phosphorus (TOTSOMP)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%totsomp(c)    = 0._r8
+      this%core%totsom(c)    = 0._r8
    end do
    do l = 1, ndecomp_pools
       if ( decomp_cascade_con%is_soil(l) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%totsomp(c) = &
-                 this%totsomp(c) + &
-                 this%decomp_ppools(c,l)
+            this%core%totsom(c) = &
+                 this%core%totsom(c) + &
+                 this%core%decomp_pools(c,l)
          end do
       end if
    end do
@@ -5483,15 +5313,15 @@ contains
    ! total cwdn
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%cwdp(c) = 0._r8
+      this%core%cwd(c) = 0._r8
    end do
    do l = 1, ndecomp_pools
       if ( decomp_cascade_con%is_cwd(l) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            this%cwdp(c) = &
-                 this%cwdp(c) + &
-                 this%decomp_ppools(c,l)
+            this%core%cwd(c) = &
+                 this%core%cwd(c) + &
+                 this%core%decomp_pools(c,l)
          end do
       end if
    end do
@@ -5520,14 +5350,14 @@ contains
    ! total col_ntrunc
    do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%ptrunc(c) = 0._r8
+      this%core%trunc_sink(c) = 0._r8
    end do
    do j = 1, nlevdecomp
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%ptrunc(c) = &
-              this%ptrunc(c) + &
-              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
+         this%core%trunc_sink(c) = &
+              this%core%trunc_sink(c) + &
+              this%core%trunc_sink_vr(c,j) * dzsoi_decomp(j)
       end do
    end do
 
@@ -5535,39 +5365,39 @@ contains
       c = filter_soilc(fc)
 
       ! total wood product phosphorus
-      this%totprodp(c) = &
-           this%prod1p(c) + &
-           this%prod10p(c) + &
-           this%prod100p(c)
+      this%core%totprod(c) = &
+           this%core%prod1(c) + &
+           this%core%prod10(c) + &
+           this%core%prod100(c)
 
       ! total ecosystem phosphorus, including veg (TOTECOSYSP)
-      this%totecosysp(c) = &
-           this%cwdp(c) + &
-           this%totlitp(c) + &
-           this%totsomp(c) + &
+      this%core%totecosys(c) = &
+           this%core%cwd(c) + &
+           this%core%totlit(c) + &
+           this%core%totsom(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
            this%primp(c) + &
            this%occlp(c) + &
-           this%totprodp(c) + &
-           this%totvegp(c)
+           this%core%totprod(c) + &
+           this%core%totveg(c)
 
       ! total column phosphorus, including pft (TOTCOLP)
-      this%totcolp(c) = &
-           this%totpftp(c) + &
-           this%cwdp(c) + &
-           this%totlitp(c) + &
-           this%totsomp(c) + &
-           this%totprodp(c) + &
+      this%core%totcol(c) = &
+           this%core%totpft(c) + &
+           this%core%cwd(c) + &
+           this%core%totlit(c) + &
+           this%core%totsom(c) + &
+           this%core%totprod(c) + &
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
-           this%ptrunc(c)
+           this%core%trunc_sink(c)
 
        ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
-          this%totcolp(c) = this%totcolp(c) + this%cropseedp_deficit(c)
+          this%core%totcol(c) = this%core%totcol(c) + this%core%cropseed_deficit(c)
        endif 
    end do
 
@@ -5593,9 +5423,9 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%totpftp(c) = 0._r8
-       this%totvegp(c) = 0._r8
-       this%cropseedp_deficit(c) = 0._r8
+       this%core%totpft(c) = 0._r8
+       this%core%totveg(c) = 0._r8
+       this%core%cropseed_deficit(c) = 0._r8
     end do
 
     return
@@ -6166,66 +5996,66 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_cf
     !-----------------------------------------------------------------------
-    allocate(this%decomp_cpools_sourcesink          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               ; this%decomp_cpools_sourcesink   (:,:,:) = spval
+    allocate(this%core%decomp_pools_sourcesink          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               ; this%core%decomp_pools_sourcesink   (:,:,:) = spval
     allocate(this%decomp_cascade_hr_vr              (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_hr_vr       (:,:,:) = spval
-    allocate(this%decomp_cascade_ctransfer_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ctransfer_vr(:,:,:) = spval
+    allocate(this%core%decomp_cascade_transfer_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%core%decomp_cascade_transfer_vr(:,:,:) = spval
     allocate(this%decomp_k                          (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_k                   (:,:,:) = spval
-    allocate(this%decomp_cpools_transport_tendency  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_transport_tendency(:,:,:) = spval
-    allocate(this%decomp_cpools_yield_vr            (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_yield_vr(:,:,:) = spval
+    allocate(this%core%decomp_pools_transport_tendency  (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_transport_tendency(:,:,:) = spval
+    allocate(this%core%decomp_pools_yield_vr            (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_yield_vr(:,:,:) = spval
     allocate(this%decomp_cascade_hr                 (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_hr               (:,:)   = spval
-    allocate(this%decomp_cascade_ctransfer          (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_ctransfer        (:,:)   = spval
+    allocate(this%core%decomp_cascade_transfer          (begc:endc,1:ndecomp_cascade_transitions))     ; this%core%decomp_cascade_transfer        (:,:)   = spval
     allocate(this%o_scalar                          (begc:endc,1:nlevdecomp_full)); this%o_scalar                     (:,:) = spval
     allocate(this%w_scalar                          (begc:endc,1:nlevdecomp_full)); this%w_scalar                     (:,:) = spval
     allocate(this%t_scalar                          (begc:endc,1:nlevdecomp_full)); this%t_scalar                     (:,:) = spval
-    allocate(this%decomp_cpools_leached             (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_leached        (:,:) = spval
+    allocate(this%core%decomp_pools_leached             (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_leached        (:,:) = spval
     allocate(this%phr_vr                            (begc:endc,1:nlevdecomp_full)); this%phr_vr                       (:,:) = spval
     allocate(this%fphr                              (begc:endc,1:nlevgrnd))       ; this%fphr                         (:,:) = spval
-    allocate(this%som_c_leached                     (begc:endc))                  ; this%som_c_leached                (:)   = spval
-    allocate(this%som_c_runoff                      (begc:endc))                  ; this%som_c_runoff                 (:)   = spval
-    allocate(this%phenology_c_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_met_c    (:,:) = spval
-    allocate(this%phenology_c_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_cel_c    (:,:) = spval
-    allocate(this%phenology_c_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_lig_c    (:,:) = spval
-    allocate(this%gap_mortality_c_to_litr_met_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_met_c(:,:) = spval
-    allocate(this%gap_mortality_c_to_litr_cel_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_cel_c(:,:) = spval
-    allocate(this%gap_mortality_c_to_litr_lig_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_lig_c(:,:) = spval
-    allocate(this%gap_mortality_c_to_cwdc           (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_cwdc      (:,:) = spval
-    allocate(this%m_decomp_cpools_to_fire_vr        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%m_decomp_cpools_to_fire_vr(:,:,:)= spval
-    allocate(this%m_decomp_cpools_to_fire           (begc:endc,1:ndecomp_pools))  ; this%m_decomp_cpools_to_fire      (:,:) = spval
-    allocate(this%decomp_cpools_erode               (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_erode          (:,:) = spval
-    allocate(this%decomp_cpools_deposit             (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_deposit        (:,:) = spval
-    allocate(this%decomp_cpools_yield               (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_yield          (:,:) = spval
-    allocate(this%m_c_to_litr_met_fire              (begc:endc,1:nlevdecomp_full)); this%m_c_to_litr_met_fire         (:,:) = spval
-    allocate(this%m_c_to_litr_cel_fire              (begc:endc,1:nlevdecomp_full)); this%m_c_to_litr_cel_fire         (:,:) = spval
-    allocate(this%m_c_to_litr_lig_fire              (begc:endc,1:nlevdecomp_full)); this%m_c_to_litr_lig_fire         (:,:) = spval
-    allocate(this%fire_mortality_c_to_cwdc          (begc:endc,1:nlevdecomp_full)); this%fire_mortality_c_to_cwdc     (:,:) = spval
+    allocate(this%core%som_leached                     (begc:endc))                  ; this%core%som_leached                (:)   = spval
+    allocate(this%core%som_runoff                      (begc:endc))                  ; this%core%som_runoff                 (:)   = spval
+    allocate(this%core%phenology_to_litr_met         (begc:endc,1:nlevdecomp_full)); this%core%phenology_to_litr_met    (:,:) = spval
+    allocate(this%core%phenology_to_litr_cel         (begc:endc,1:nlevdecomp_full)); this%core%phenology_to_litr_cel    (:,:) = spval
+    allocate(this%core%phenology_to_litr_lig         (begc:endc,1:nlevdecomp_full)); this%core%phenology_to_litr_lig    (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_met     (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_litr_met(:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_cel     (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_litr_cel(:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_lig     (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_litr_lig(:,:) = spval
+    allocate(this%core%gap_mortality_to_cwd           (begc:endc,1:nlevdecomp_full)); this%core%gap_mortality_to_cwd      (:,:) = spval
+    allocate(this%core%m_decomp_pools_to_fire_vr        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%m_decomp_pools_to_fire_vr(:,:,:)= spval
+    allocate(this%core%m_decomp_pools_to_fire           (begc:endc,1:ndecomp_pools))  ; this%core%m_decomp_pools_to_fire      (:,:) = spval
+    allocate(this%core%decomp_pools_erode               (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_erode          (:,:) = spval
+    allocate(this%core%decomp_pools_deposit             (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_deposit        (:,:) = spval
+    allocate(this%core%decomp_pools_yield               (begc:endc,1:ndecomp_pools))  ; this%core%decomp_pools_yield          (:,:) = spval
+    allocate(this%core%m_to_litr_met_fire              (begc:endc,1:nlevdecomp_full)); this%core%m_to_litr_met_fire         (:,:) = spval
+    allocate(this%core%m_to_litr_cel_fire              (begc:endc,1:nlevdecomp_full)); this%core%m_to_litr_cel_fire         (:,:) = spval
+    allocate(this%core%m_to_litr_lig_fire              (begc:endc,1:nlevdecomp_full)); this%core%m_to_litr_lig_fire         (:,:) = spval
+    allocate(this%core%fire_mortality_to_cwd          (begc:endc,1:nlevdecomp_full)); this%core%fire_mortality_to_cwd     (:,:) = spval
     allocate(this%somc_fire                         (begc:endc))                  ; this%somc_fire                    (:)   = spval
-    allocate(this%somc_erode                        (begc:endc))                  ; this%somc_erode                   (:)   = spval
-    allocate(this%somc_deposit                      (begc:endc))                  ; this%somc_deposit                 (:)   = spval
-    allocate(this%somc_yield                        (begc:endc))                  ; this%somc_yield                   (:)   = spval
-    allocate(this%harvest_c_to_litr_met_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_met_c      (:,:) = spval
-    allocate(this%harvest_c_to_litr_cel_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_cel_c      (:,:) = spval
-    allocate(this%harvest_c_to_litr_lig_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_lig_c      (:,:) = spval
-    allocate(this%harvest_c_to_cwdc                 (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_cwdc            (:,:) = spval
-    allocate(this%hrv_deadstemc_to_prod10c          (begc:endc))                  ; this%hrv_deadstemc_to_prod10c     (:)   = spval
-    allocate(this%hrv_deadstemc_to_prod100c         (begc:endc))                  ; this%hrv_deadstemc_to_prod100c    (:)   = spval
-    allocate(this%hrv_cropc_to_prod1c               (begc:endc))                  ; this%hrv_cropc_to_prod1c          (:)   = spval
-    allocate(this%dwt_frootc_to_litr_met_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_met_c     (:,:) = spval
-    allocate(this%dwt_frootc_to_litr_cel_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_cel_c     (:,:) = spval
-    allocate(this%dwt_frootc_to_litr_lig_c          (begc:endc,1:nlevdecomp_full)); this%dwt_frootc_to_litr_lig_c     (:,:) = spval
-    allocate(this%dwt_livecrootc_to_cwdc            (begc:endc,1:nlevdecomp_full)); this%dwt_livecrootc_to_cwdc       (:,:) = spval
-    allocate(this%dwt_deadcrootc_to_cwdc            (begc:endc,1:nlevdecomp_full)); this%dwt_deadcrootc_to_cwdc       (:,:) = spval
-    allocate(this%dwt_slash_cflux                   (begc:endc))                  ; this%dwt_slash_cflux              (:)   = spval
-    allocate(this%dwt_conv_cflux                    (begc:endc))                  ; this%dwt_conv_cflux               (:)   = spval
-    allocate(this%dwt_prod10c_gain                  (begc:endc))                  ; this%dwt_prod10c_gain             (:)   = spval
-    allocate(this%dwt_prod100c_gain                 (begc:endc))                  ; this%dwt_prod100c_gain            (:)   = spval
-    allocate(this%dwt_crop_productc_gain            (begc:endc))                  ; this%dwt_crop_productc_gain       (:)   = spval
-    allocate(this%dwt_closs                         (begc:endc))                  ; this%dwt_closs                    (:)   = spval
+    allocate(this%core%som_erode                        (begc:endc))                  ; this%core%som_erode                   (:)   = spval
+    allocate(this%core%som_deposit                      (begc:endc))                  ; this%core%som_deposit                 (:)   = spval
+    allocate(this%core%som_yield                        (begc:endc))                  ; this%core%som_yield                   (:)   = spval
+    allocate(this%core%harvest_to_litr_met           (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_litr_met      (:,:) = spval
+    allocate(this%core%harvest_to_litr_cel           (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_litr_cel      (:,:) = spval
+    allocate(this%core%harvest_to_litr_lig           (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_litr_lig      (:,:) = spval
+    allocate(this%core%harvest_to_cwd                 (begc:endc,1:nlevdecomp_full)); this%core%harvest_to_cwd            (:,:) = spval
+    allocate(this%core%hrv_deadstem_to_prod10          (begc:endc))                  ; this%core%hrv_deadstem_to_prod10     (:)   = spval
+    allocate(this%core%hrv_deadstem_to_prod100         (begc:endc))                  ; this%core%hrv_deadstem_to_prod100    (:)   = spval
+    allocate(this%core%hrv_crop_to_prod1               (begc:endc))                  ; this%core%hrv_crop_to_prod1          (:)   = spval
+    allocate(this%core%dwt_froot_to_litr_met          (begc:endc,1:nlevdecomp_full)); this%core%dwt_froot_to_litr_met     (:,:) = spval
+    allocate(this%core%dwt_froot_to_litr_cel          (begc:endc,1:nlevdecomp_full)); this%core%dwt_froot_to_litr_cel     (:,:) = spval
+    allocate(this%core%dwt_froot_to_litr_lig          (begc:endc,1:nlevdecomp_full)); this%core%dwt_froot_to_litr_lig     (:,:) = spval
+    allocate(this%core%dwt_livecroot_to_cwd            (begc:endc,1:nlevdecomp_full)); this%core%dwt_livecroot_to_cwd       (:,:) = spval
+    allocate(this%core%dwt_deadcroot_to_cwd            (begc:endc,1:nlevdecomp_full)); this%core%dwt_deadcroot_to_cwd       (:,:) = spval
+    allocate(this%core%dwt_slash_flux                   (begc:endc))                  ; this%core%dwt_slash_flux              (:)   = spval
+    allocate(this%core%dwt_conv_flux                    (begc:endc))                  ; this%core%dwt_conv_flux               (:)   = spval
+    allocate(this%core%dwt_prod10_gain                  (begc:endc))                  ; this%core%dwt_prod10_gain             (:)   = spval
+    allocate(this%core%dwt_prod100_gain                 (begc:endc))                  ; this%core%dwt_prod100_gain            (:)   = spval
+    allocate(this%core%dwt_crop_product_gain            (begc:endc))                  ; this%core%dwt_crop_product_gain       (:)   = spval
+    allocate(this%core%dwt_loss                         (begc:endc))                  ; this%core%dwt_loss                    (:)   = spval
     allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = spval
     allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = spval
-    allocate(this%prod1c_loss                       (begc:endc))                  ; this%prod1c_loss                  (:)   = spval
-    allocate(this%prod10c_loss                      (begc:endc))                  ; this%prod10c_loss                 (:)   = spval
-    allocate(this%prod100c_loss                     (begc:endc))                  ; this%prod100c_loss                (:)   = spval
-    allocate(this%product_closs                     (begc:endc))                  ; this%product_closs                (:)   = spval
+    allocate(this%core%prod1_loss                       (begc:endc))                  ; this%core%prod1_loss                  (:)   = spval
+    allocate(this%core%prod10_loss                      (begc:endc))                  ; this%core%prod10_loss                 (:)   = spval
+    allocate(this%core%prod100_loss                     (begc:endc))                  ; this%core%prod100_loss                (:)   = spval
+    allocate(this%core%product_loss                     (begc:endc))                  ; this%core%product_loss                (:)   = spval
     allocate(this%hr_vr                             (begc:endc,1:nlevdecomp_full)); this%hr_vr                        (:,:) = spval
     allocate(this%lithr                             (begc:endc))                  ; this%lithr                        (:)   = spval
     allocate(this%somhr                             (begc:endc))                  ; this%somhr                        (:)   = spval
@@ -6238,8 +6068,8 @@ contains
     allocate(this%nep                               (begc:endc))                  ; this%nep                          (:)   = spval
     allocate(this%nbp                               (begc:endc))                  ; this%nbp                          (:)   = spval
     allocate(this%nee                               (begc:endc))                  ; this%nee                          (:)   = spval
-    allocate(this%cinputs                           (begc:endc))                  ; this%cinputs                      (:)   = spval
-    allocate(this%coutputs                          (begc:endc))                  ; this%coutputs                     (:)   = spval
+    allocate(this%core%inputs                           (begc:endc))                  ; this%core%inputs                      (:)   = spval
+    allocate(this%core%outputs                          (begc:endc))                  ; this%core%outputs                     (:)   = spval
     allocate(this%bgc_cpool_ext_inputs_vr           (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_inputs_vr(:,:,:) = spval
     allocate(this%bgc_cpool_ext_loss_vr             (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_loss_vr  (:,:,:) = spval
     allocate(this%cwdc_hr                           (begc:endc))                  ; this%cwdc_hr                      (:)   = spval
@@ -6250,15 +6080,15 @@ contains
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = spval
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = spval
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = spval
-    allocate(this%fire_closs_p2c                    (begc:endc))                  ; this%fire_closs_p2c               (:)   = spval
-    allocate(this%fire_closs                        (begc:endc))                  ; this%fire_closs                   (:)   = spval
-    allocate(this%fire_decomp_closs                 (begc:endc))                  ; this%fire_decomp_closs            (:)   = spval
+    allocate(this%core%fire_loss_p2c                    (begc:endc))                  ; this%core%fire_loss_p2c               (:)   = spval
+    allocate(this%core%fire_loss                        (begc:endc))                  ; this%core%fire_loss                   (:)   = spval
+    allocate(this%core%fire_decomp_loss                 (begc:endc))                  ; this%core%fire_decomp_loss            (:)   = spval
     allocate(this%litfall                           (begc:endc))                  ; this%litfall                      (:)   = spval
     allocate(this%vegfire                           (begc:endc))                  ; this%vegfire                      (:)   = spval
-    allocate(this%wood_harvestc                     (begc:endc))                  ; this%wood_harvestc                (:)   = spval
+    allocate(this%core%wood_harvest                     (begc:endc))                  ; this%core%wood_harvest                (:)   = spval
     allocate(this%hrv_xsmrpool_to_atm               (begc:endc))                  ; this%hrv_xsmrpool_to_atm          (:)   = spval
-    allocate(this%plant_to_litter_cflux             (begc:endc))                  ; this%plant_to_litter_cflux        (:)   = spval
-    allocate(this%plant_to_cwd_cflux	             (begc:endc))                  ; this%plant_to_cwd_cflux		       (:)    = spval
+    allocate(this%core%plant_to_litter_flux             (begc:endc))                  ; this%core%plant_to_litter_flux        (:)   = spval
+    allocate(this%core%plant_to_cwd_flux	             (begc:endc))                  ; this%core%plant_to_cwd_flux		       (:)    = spval
     allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = spval
     ! C4MIP output variable
      allocate(this%plant_c_to_cwdc                  (begc:endc))                  ; this%plant_c_to_cwdc              (:)  = spval
@@ -6267,8 +6097,8 @@ contains
      allocate(this%plant_p_to_cwdp                  (begc:endc))                  ; this%plant_p_to_cwdp              (:)  = spval
 
     allocate(this%lag_npp                           (begc:endc))                  ; this%lag_npp                      (:)   = spval
-    allocate(this%externalc_to_decomp_cpools        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%externalc_to_decomp_cpools(:,:,:) = spval
-    allocate(this%externalc_to_decomp_delta         (begc:endc))                  ; this%externalc_to_decomp_delta    (:)   = spval
+    allocate(this%core%external_to_decomp_pools        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%external_to_decomp_pools(:,:,:) = spval
+    allocate(this%core%external_to_decomp_delta         (begc:endc))                  ; this%core%external_to_decomp_delta    (:)   = spval
     allocate(this%f_co2_soil_vr                     (begc:endc,1:nlevdecomp_full)); this%f_co2_soil_vr                (:,:) = spval
     allocate(this%f_co2_soil                        (begc:endc))                  ; this%f_co2_soil                   (:)   = spval
 
@@ -6287,10 +6117,10 @@ contains
     ! ------------------------------------------------------------------------------------
     if (use_fates) then
        if (carbon_type == 'c12') then
-          this%som_c_leached(begc:endc) = spval
+          this%core%som_leached(begc:endc) = spval
            call hist_addfld1d (fname='SOM_C_LEACHED', units='gC/m^2/s', &
                 avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
-                 ptr_col=this%som_c_leached)!, default='inactive')
+                 ptr_col=this%core%som_leached)!, default='inactive')
 
           if ( nlevdecomp_full > 1 ) then
              this%hr_vr(begc:endc,:) = spval
@@ -6314,15 +6144,15 @@ contains
                 avgflag='A', long_name='total heterotrophic respiration', &
                  ptr_col=this%hr)
 
-          this%hrv_deadstemc_to_prod10c(begc:endc) = spval
+          this%core%hrv_deadstem_to_prod10(begc:endc) = spval
           call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD10C', units='gC/m^2/s', &
                avgflag='A', long_name='flux into 10-yr wood product C', &
-               ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+               ptr_col=this%core%hrv_deadstem_to_prod10, default='inactive')
 
-          this%hrv_deadstemc_to_prod100c(begc:endc) = spval
+          this%core%hrv_deadstem_to_prod100(begc:endc) = spval
           call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD100C', units='gC/m^2/s', &
                avgflag='A', long_name='flux into 100-yr wood product C', &
-               ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+               ptr_col=this%core%hrv_deadstem_to_prod100, default='inactive')
 
           this%nep(begc:endc) = spval
           call hist_addfld1d (fname='NEP', units='gC/m^2/s', &
@@ -6340,10 +6170,10 @@ contains
                //' harvest, and hrv_xsmrpool flux, positive for source', &
                 ptr_col=this%nee)
 
-          this%product_closs(begc:endc) = spval
+          this%core%product_loss(begc:endc) = spval
           call hist_addfld1d (fname='PRODUCT_CLOSS', units='gC/m^2/s', &
                avgflag='A', long_name='total carbon loss from wood product pools', &
-               ptr_col=this%product_closs, default='inactive')
+               ptr_col=this%core%product_loss, default='inactive')
 
        end if
        ! end of use_fates (C12) block
@@ -6393,41 +6223,41 @@ contains
             avgflag='A', long_name='C loss due to peat burning', &
             ptr_col=this%somc_fire, default='inactive')
 
-       this%somc_erode(begc:endc) = spval
+       this%core%som_erode(begc:endc) = spval
        call hist_addfld1d (fname='SOMC_ERO', units='gC/m^2/s', &
             avgflag='A', long_name='SOC detachment', &
-            ptr_col=this%somc_erode, default='inactive')
+            ptr_col=this%core%som_erode, default='inactive')
 
-       this%somc_deposit(begc:endc) = spval
+       this%core%som_deposit(begc:endc) = spval
        call hist_addfld1d (fname='SOMC_DEP', units='gC/m^2/s', &
             avgflag='A', long_name='SOC hillslope redeposition', &
-            ptr_col=this%somc_deposit, default='inactive')
+            ptr_col=this%core%som_deposit, default='inactive')
 
-       this%somc_yield(begc:endc) = spval
+       this%core%som_yield(begc:endc) = spval
        call hist_addfld1d (fname='SOMC_YLD', units='gC/m^2/s', &
             avgflag='A', long_name='SOC erosional loss to inland waters', &
-            ptr_col=this%somc_yield, default='inactive')
+            ptr_col=this%core%som_yield, default='inactive')
 
-       this%decomp_cpools_erode(begc:endc,:)   = spval
-       this%decomp_cpools_deposit(begc:endc,:) = spval
-       this%decomp_cpools_yield(begc:endc,:)   = spval
+       this%core%decomp_pools_erode(begc:endc,:)   = spval
+       this%core%decomp_pools_deposit(begc:endc,:) = spval
+       this%core%decomp_pools_yield(begc:endc,:)   = spval
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(k) ) then
-             data1dptr => this%decomp_cpools_erode(:,k)
+             data1dptr => this%core%decomp_pools_erode(:,k)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_ERO'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C detachment'
              call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
                   avgflag='A', long_name=longname, &
                   ptr_col=data1dptr, default='inactive')
 
-             data1dptr => this%decomp_cpools_deposit(:,k)
+             data1dptr => this%core%decomp_pools_deposit(:,k)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_DEP'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C hillslope redeposition'
              call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
                   avgflag='A', long_name=longname, &
                   ptr_col=data1dptr, default='inactive')
 
-             data1dptr => this%decomp_cpools_yield(:,k)
+             data1dptr => this%core%decomp_pools_yield(:,k)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_YLD'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C erosional loss to inland waters'
              call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
@@ -6436,11 +6266,11 @@ contains
           endif
        end do
 
-       this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
-       this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
+       this%core%m_decomp_pools_to_fire(begc:endc,:)      = spval
+       this%core%m_decomp_pools_to_fire_vr(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k).and.(.not.use_fates))) then
-             data1dptr => this%m_decomp_cpools_to_fire(:,k)
+             data1dptr => this%core%m_decomp_pools_to_fire(:,k)
              fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
               call hist_addfld1d (fname=fieldname, units='gC/m^2/s',  &
@@ -6448,7 +6278,7 @@ contains
                     ptr_col=data1dptr, default='inactive')
 
              if ( nlevdecomp_full > 1 ) then
-                data2dptr => this%m_decomp_cpools_to_fire_vr(:,:,k)
+                data2dptr => this%core%m_decomp_pools_to_fire_vr(:,:,k)
                 fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'//trim(vr_suffix)
                 longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
                  call hist_addfld_decomp (fname=fieldname, units='gC/m^3/s', type2d='levdcmp', &
@@ -6467,8 +6297,8 @@ contains
        end do
        this%decomp_cascade_hr(begc:endc,:)             = spval
        this%decomp_cascade_hr_vr(begc:endc,:,:)        = spval
-       this%decomp_cascade_ctransfer(begc:endc,:)      = spval
-       this%decomp_cascade_ctransfer_vr(begc:endc,:,:) = spval
+       this%core%decomp_cascade_transfer(begc:endc,:)      = spval
+       this%core%decomp_cascade_transfer_vr(begc:endc,:,:) = spval
        do l = 1, ndecomp_cascade_transitions
 
           ! output the vertically integrated fluxes only as  default
@@ -6496,7 +6326,7 @@ contains
 
           !-- transfer fluxes (none from terminal pool, if present)
           if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-             data1dptr => this%decomp_cascade_ctransfer(:,l)
+             data1dptr => this%core%decomp_cascade_transfer(:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'C_TO_'//&
                   trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'C'
              longname =  &
@@ -6536,7 +6366,7 @@ contains
 
              !-- transfer fluxes (none from terminal pool, if present)
              if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-                data2dptr => this%decomp_cascade_ctransfer_vr(:,:,l)
+                data2dptr => this%core%decomp_cascade_transfer_vr(:,:,l)
                 fieldname = trim( &
                      decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'C_TO_'//&
                      trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
@@ -6551,18 +6381,18 @@ contains
           end if  ! nlevdecomp_full > 1
        end do ! ndecomp_cascade_transitions
 
-       this%decomp_cpools_leached(begc:endc,:) = spval
-       this%decomp_cpools_transport_tendency(begc:endc,:,:) = spval
+       this%core%decomp_pools_leached(begc:endc,:) = spval
+       this%core%decomp_pools_transport_tendency(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
           if ( .not. decomp_cascade_con%is_cwd(k) ) then
-             data1dptr => this%decomp_cpools_leached(:,k)
+             data1dptr => this%core%decomp_pools_leached(:,k)
              fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_LEACHING'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C leaching loss'
               call hist_addfld1d (fname=fieldname, units='gC/m^2/s', &
                    avgflag='A', long_name=longname, &
                     ptr_col=data1dptr)!, default='inactive')
 
-             data2dptr => this%decomp_cpools_transport_tendency(:,:,k)
+             data2dptr => this%core%decomp_pools_transport_tendency(:,:,k)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TNDNCY_VERT_TRANSPORT'
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' C tendency due to vertical transport'
               call hist_addfld_decomp (fname=fieldname, units='gC/m^3/s',  type2d='levdcmp', &
@@ -6587,10 +6417,10 @@ contains
             avgflag='A', long_name='fraction by which decomposition is reduced due to anoxia', &
             ptr_col=this%o_scalar)
 
-       this%som_c_leached(begc:endc) = spval
+       this%core%som_leached(begc:endc) = spval
         call hist_addfld1d (fname='SOM_C_LEACHED', units='gC/m^2/s', &
              avgflag='A', long_name='total flux of C from SOM pools due to leaching', &
-              ptr_col=this%som_c_leached)!, default='inactive')
+              ptr_col=this%core%som_leached)!, default='inactive')
 
        this%lithr(begc:endc) = spval
         call hist_addfld1d (fname='LITHR', units='gC/m^2/s', &
@@ -6667,90 +6497,90 @@ contains
              //' harvest, and hrv_xsmrpool flux, positive for source', &
               ptr_col=this%nee)
 
-       this%fire_closs(begc:endc) = spval
+       this%core%fire_loss(begc:endc) = spval
         call hist_addfld1d (fname='COL_FIRE_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total column-level fire C loss for non-peat fires outside land-type converted region', &
-              ptr_col=this%fire_closs, default='inactive')
+              ptr_col=this%core%fire_loss, default='inactive')
 
-       this%fire_decomp_closs(begc:endc) = spval
+       this%core%fire_decomp_loss(begc:endc) = spval
         call hist_addfld1d (fname='DECOMP_FIRE_CLOSS', units='gC/m^2/s', &
            avgflag='A', long_name='decomposable fire C loss for non-peat fires outside land-type converted region', &
-            ptr_col=this%fire_decomp_closs, default='inactive')
+            ptr_col=this%core%fire_decomp_loss, default='inactive')
 
-       this%dwt_slash_cflux(begc:endc) = spval
+       this%core%dwt_slash_flux(begc:endc) = spval
         call hist_addfld1d (fname='DWT_SLASH_CFLUX', units='gC/m^2/s', &
              avgflag='A', long_name='slash C flux to litter and CWD due to land use', &
-               ptr_col=this%dwt_slash_cflux)
+               ptr_col=this%core%dwt_slash_flux)
 
-       this%dwt_conv_cflux(begc:endc) = spval
+       this%core%dwt_conv_flux(begc:endc) = spval
         call hist_addfld1d (fname='DWT_CONV_CFLUX', units='gC/m^2/s', &
              avgflag='A', long_name='conversion C flux (immediate loss to atm)', &
-              ptr_col=this%dwt_conv_cflux, default='inactive')
+              ptr_col=this%core%dwt_conv_flux, default='inactive')
 
-       this%dwt_prod10c_gain(begc:endc) = spval
+       this%core%dwt_prod10_gain(begc:endc) = spval
         call hist_addfld1d (fname='DWT_PROD10C_GAIN', units='gC/m^2/s', &
              avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
-              ptr_col=this%dwt_prod10c_gain, default='inactive')
+              ptr_col=this%core%dwt_prod10_gain, default='inactive')
 
-       this%prod10c_loss(begc:endc) = spval
+       this%core%prod10_loss(begc:endc) = spval
         call hist_addfld1d (fname='PROD10C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 10-yr wood product pool', &
-              ptr_col=this%prod10c_loss, default='inactive')
+              ptr_col=this%core%prod10_loss, default='inactive')
 
-       this%dwt_prod100c_gain(begc:endc) = spval
+       this%core%dwt_prod100_gain(begc:endc) = spval
         call hist_addfld1d (fname='DWT_PROD100C_GAIN', units='gC/m^2/s', &
              avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
-              ptr_col=this%dwt_prod100c_gain, default='inactive')
+              ptr_col=this%core%dwt_prod100_gain, default='inactive')
 
-        this%dwt_crop_productc_gain(begc:endc) = spval
+        this%core%dwt_crop_product_gain(begc:endc) = spval
         call hist_addfld1d (fname='DWT_CROP_PRODUCTC_GAIN', units='gC/m^2/s', &
              avgflag='A', long_name='landcover change-driven addition to crop product pool', &
-             ptr_col=this%dwt_crop_productc_gain, default='inactive')
+             ptr_col=this%core%dwt_crop_product_gain, default='inactive')
 
-       this%prod100c_loss(begc:endc) = spval
+       this%core%prod100_loss(begc:endc) = spval
         call hist_addfld1d (fname='PROD100C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 100-yr wood product pool', &
-              ptr_col=this%prod100c_loss, default='inactive')
+              ptr_col=this%core%prod100_loss, default='inactive')
 
-       this%prod1c_loss(begc:endc) = spval
+       this%core%prod1_loss(begc:endc) = spval
         call hist_addfld1d (fname='PROD1C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 1-yr crop product pool', &
-              ptr_col=this%prod1c_loss, default='inactive')
+              ptr_col=this%core%prod1_loss, default='inactive')
 
-       this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_met(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_MET_C', units='gC/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_met_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_met, default='inactive')
 
-       this%dwt_frootc_to_litr_cel_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_cel(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_CEL_C', units='gC/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_cel_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_cel, default='inactive')
 
-       this%dwt_frootc_to_litr_lig_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_lig(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_LIG_C', units='gC/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_lig_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_lig, default='inactive')
 
-       this%dwt_livecrootc_to_cwdc(begc:endc,:) = spval
+       this%core%dwt_livecroot_to_cwd(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_LIVECROOTC_TO_CWDC', units='gC/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='live coarse root to CWD due to landcover change', &
-              ptr_col=this%dwt_livecrootc_to_cwdc, default='inactive')
+              ptr_col=this%core%dwt_livecroot_to_cwd, default='inactive')
 
-       this%dwt_deadcrootc_to_cwdc(begc:endc,:) = spval
+       this%core%dwt_deadcroot_to_cwd(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_DEADCROOTC_TO_CWDC', units='gC/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
-              ptr_col=this%dwt_deadcrootc_to_cwdc, default='inactive')
+              ptr_col=this%core%dwt_deadcroot_to_cwd, default='inactive')
 
-       this%dwt_closs(begc:endc) = spval
+       this%core%dwt_loss(begc:endc) = spval
         call hist_addfld1d (fname='DWT_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total carbon loss from land cover conversion', &
-              ptr_col=this%dwt_closs, default='inactive')
+              ptr_col=this%core%dwt_loss, default='inactive')
 
-       this%product_closs(begc:endc) = spval
+       this%core%product_loss(begc:endc) = spval
         call hist_addfld1d (fname='PRODUCT_CLOSS', units='gC/m^2/s', &
              avgflag='A', long_name='total carbon loss from wood product pools', &
-              ptr_col=this%product_closs, default='inactive')
+              ptr_col=this%core%product_loss, default='inactive')
 
        this%landuseflux(begc:endc) = spval
         call hist_addfld1d (fname='LAND_USE_FLUX', units='gC/m^2/s', &
@@ -6784,11 +6614,11 @@ contains
        ! end of C12 block
 
     else if ( carbon_type == 'c13' ) then
-       this%m_decomp_cpools_to_fire(begc:endc,:) = spval
-       this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
+       this%core%m_decomp_pools_to_fire(begc:endc,:) = spval
+       this%core%m_decomp_pools_to_fire_vr(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k).and.(.not.use_fates)) ) then
-             data1dptr => this%m_decomp_cpools_to_fire(:,k)
+             data1dptr => this%core%m_decomp_pools_to_fire(:,k)
              fieldname = 'C13_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
              longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
               call hist_addfld1d (fname=fieldname, units='gC13/m^2',  &
@@ -6796,7 +6626,7 @@ contains
                     ptr_col=data1dptr, default='inactive')
 
              if ( nlevdecomp_full > 1 ) then
-                data2dptr => this%m_decomp_cpools_to_fire_vr(:,:,k)
+                data2dptr => this%core%m_decomp_pools_to_fire_vr(:,:,k)
                 fieldname = 'C13_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'//trim(vr_suffix)
                 longname =  'C13 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
                  call hist_addfld_decomp (fname=fieldname, units='gC13/m^3',  type2d='levdcmp', &
@@ -6807,8 +6637,8 @@ contains
        end do
        this%decomp_cascade_hr(begc:endc,:)             = spval
        this%decomp_cascade_hr_vr(begc:endc,:,:)        = spval
-       this%decomp_cascade_ctransfer(begc:endc,:)      = spval
-       this%decomp_cascade_ctransfer_vr(begc:endc,:,:) = spval
+       this%core%decomp_cascade_transfer(begc:endc,:)      = spval
+       this%core%decomp_cascade_transfer_vr(begc:endc,:,:) = spval
        do l = 1, ndecomp_cascade_transitions
           !-- HR fluxes (none from CWD)
           if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
@@ -6835,7 +6665,7 @@ contains
           endif
           !-- transfer fluxes (none from terminal pool, if present)
           if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-             data2dptr => this%decomp_cascade_ctransfer_vr(:,:,l)
+             data2dptr => this%core%decomp_cascade_transfer_vr(:,:,l)
              fieldname = 'C13_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
                   //'C_TO_'//&
                   trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
@@ -6901,94 +6731,94 @@ contains
              avgflag='A', long_name='C13 net ecosystem exchange of carbon, includes fire flux, positive for source', &
               ptr_col=this%nee)
 
-       this%fire_closs(begc:endc) = spval
+       this%core%fire_loss(begc:endc) = spval
         call hist_addfld1d (fname='C13_COL_FIRE_CLOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 total column-level fire C loss', &
-              ptr_col=this%fire_closs)
+              ptr_col=this%core%fire_loss)
 
-       this%dwt_slash_cflux(begc:endc) = spval
+       this%core%dwt_slash_flux(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_SLASH_CFLUX', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 slash C flux to litter and CWD due to land use', &
-              ptr_col=this%dwt_slash_cflux)
+              ptr_col=this%core%dwt_slash_flux)
 
-       this%dwt_conv_cflux(begc:endc) = spval
+       this%core%dwt_conv_flux(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_CONV_CFLUX', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 conversion C flux (immediate loss to atm)', &
-              ptr_col=this%dwt_conv_cflux)
+              ptr_col=this%core%dwt_conv_flux)
 
-        this%dwt_crop_productc_gain(begc:endc) = spval
+        this%core%dwt_crop_product_gain(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_CROP_PRODUCTC_GAIN', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 addition to crop product pool', &
-             ptr_col=this%dwt_crop_productc_gain)
+             ptr_col=this%core%dwt_crop_product_gain)
 
-       this%dwt_prod10c_gain(begc:endc) = spval
+       this%core%dwt_prod10_gain(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 addition to 10-yr wood product pool', &
-              ptr_col=this%dwt_prod10c_gain)
+              ptr_col=this%core%dwt_prod10_gain)
 
-       this%prod10c_loss(begc:endc) = spval
+       this%core%prod10_loss(begc:endc) = spval
         call hist_addfld1d (fname='C13_PROD10C_LOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 loss from 10-yr wood product pool', &
-              ptr_col=this%prod10c_loss)
+              ptr_col=this%core%prod10_loss)
 
-       this%dwt_prod100c_gain(begc:endc) = spval
+       this%core%dwt_prod100_gain(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_PROD100C_GAIN', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 addition to 100-yr wood product pool', &
-              ptr_col=this%dwt_prod100c_gain)
+              ptr_col=this%core%dwt_prod100_gain)
 
-       this%prod100c_loss(begc:endc) = spval
+       this%core%prod100_loss(begc:endc) = spval
         call hist_addfld1d (fname='C13_PROD100C_LOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 loss from 100-yr wood product pool', &
-              ptr_col=this%prod100c_loss)
+              ptr_col=this%core%prod100_loss)
 
-       this%prod1c_loss(begc:endc) = spval
+       this%core%prod1_loss(begc:endc) = spval
         call hist_addfld1d (fname='C13_PROD1C_LOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 loss from 1-yr crop product pool', &
-              ptr_col=this%prod1c_loss)
+              ptr_col=this%core%prod1_loss)
 
-       this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_met(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C13_DWT_FROOTC_TO_LITR_MET_C', units='gC13/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C13 fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_met_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_met, default='inactive')
 
-       this%dwt_frootc_to_litr_cel_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_cel(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C13_DWT_FROOTC_TO_LITR_CEL_C', units='gC13/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C13 fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_cel_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_cel, default='inactive')
 
-       this%dwt_frootc_to_litr_lig_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_lig(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C13_DWT_FROOTC_TO_LITR_LIG_C', units='gC13/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C13 fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_lig_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_lig, default='inactive')
 
-       this%dwt_livecrootc_to_cwdc(begc:endc,:) = spval
+       this%core%dwt_livecroot_to_cwd(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C13_DWT_LIVECROOTC_TO_CWDC', units='gC13/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C13 live coarse root to CWD due to landcover change', &
-              ptr_col=this%dwt_livecrootc_to_cwdc, default='inactive')
+              ptr_col=this%core%dwt_livecroot_to_cwd, default='inactive')
 
-       this%dwt_deadcrootc_to_cwdc(begc:endc,:) = spval
+       this%core%dwt_deadcroot_to_cwd(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C13_DWT_DEADCROOTC_TO_CWDC', units='gC13/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C13 dead coarse root to CWD due to landcover change', &
-              ptr_col=this%dwt_deadcrootc_to_cwdc, default='inactive')
+              ptr_col=this%core%dwt_deadcroot_to_cwd, default='inactive')
 
-       this%dwt_closs(begc:endc) = spval
+       this%core%dwt_loss(begc:endc) = spval
         call hist_addfld1d (fname='C13_DWT_CLOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 total carbon loss from land cover conversion', &
-              ptr_col=this%dwt_closs)
+              ptr_col=this%core%dwt_loss)
 
-       this%product_closs(begc:endc) = spval
+       this%core%product_loss(begc:endc) = spval
         call hist_addfld1d (fname='C13_PRODUCT_CLOSS', units='gC13/m^2/s', &
              avgflag='A', long_name='C13 total carbon loss from wood product pools', &
-              ptr_col=this%product_closs)
+              ptr_col=this%core%product_loss)
 
        ! end of C13 block
 
     else if (carbon_type == 'c14') then
-       this%m_decomp_cpools_to_fire(begc:endc,:)      = spval
-       this%m_decomp_cpools_to_fire_vr(begc:endc,:,:) = spval
+       this%core%m_decomp_pools_to_fire(begc:endc,:)      = spval
+       this%core%m_decomp_pools_to_fire_vr(begc:endc,:,:) = spval
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k).and.(.not.use_fates)) ) then
-             data1dptr => this%m_decomp_cpools_to_fire(:,k)
+             data1dptr => this%core%m_decomp_pools_to_fire(:,k)
              fieldname = 'C14_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'
              longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
               call hist_addfld1d (fname=fieldname, units='gC14/m^2',  &
@@ -6996,7 +6826,7 @@ contains
                     ptr_col=data1dptr, default='inactive')
 
              if ( nlevdecomp_full > 1 ) then
-                data2dptr => this%m_decomp_cpools_to_fire_vr(:,:,k)
+                data2dptr => this%core%m_decomp_pools_to_fire_vr(:,:,k)
                 fieldname = 'C14_M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'C_TO_FIRE'//trim(vr_suffix)
                 longname =  'C14 '//trim(decomp_cascade_con%decomp_pool_name_long(k))//' C fire loss'
                  call hist_addfld_decomp (fname=fieldname, units='gC14/m^3',  type2d='levdcmp', &
@@ -7007,8 +6837,8 @@ contains
        end do
        this%decomp_cascade_hr(begc:endc,:)             = spval
        this%decomp_cascade_hr_vr(begc:endc,:,:)        = spval
-       this%decomp_cascade_ctransfer(begc:endc,:)      = spval
-       this%decomp_cascade_ctransfer_vr(begc:endc,:,:) = spval
+       this%core%decomp_cascade_transfer(begc:endc,:)      = spval
+       this%core%decomp_cascade_transfer_vr(begc:endc,:,:) = spval
        do l = 1, ndecomp_cascade_transitions
           !-- HR fluxes (none from CWD)
           if ( .not. decomp_cascade_con%is_cwd(decomp_cascade_con%cascade_donor_pool(l)) ) then
@@ -7036,7 +6866,7 @@ contains
           endif
           !-- transfer fluxes (none from terminal pool, if present)
           if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-             data2dptr => this%decomp_cascade_ctransfer_vr(:,:,l)
+             data2dptr => this%core%decomp_cascade_transfer_vr(:,:,l)
              fieldname = 'C14_'//trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))&
                   //'C_TO_'//&
                   trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
@@ -7100,80 +6930,80 @@ contains
              avgflag='A', long_name='C14 net ecosystem exchange of carbon, includes fire flux, positive for source', &
               ptr_col=this%nee)
 
-       this%fire_closs(begc:endc) = spval
+       this%core%fire_loss(begc:endc) = spval
         call hist_addfld1d (fname='C14_COL_FIRE_CLOSS', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 total column-level fire C loss', &
-              ptr_col=this%fire_closs)
+              ptr_col=this%core%fire_loss)
 
-       this%dwt_slash_cflux(begc:endc) = spval
+       this%core%dwt_slash_flux(begc:endc) = spval
         call hist_addfld1d (fname='C14_DWT_SLASH_CFLUX', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 slash C flux to litter and CWD due to land use', &
-              ptr_col=this%dwt_slash_cflux)
+              ptr_col=this%core%dwt_slash_flux)
 
-       this%dwt_conv_cflux(begc:endc) = spval
+       this%core%dwt_conv_flux(begc:endc) = spval
         call hist_addfld1d (fname='C14_DWT_CONV_CFLUX', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 conversion C flux (immediate loss to atm)', &
-              ptr_col=this%dwt_conv_cflux)
+              ptr_col=this%core%dwt_conv_flux)
 
-       this%dwt_prod10c_gain(begc:endc) = spval
+       this%core%dwt_prod10_gain(begc:endc) = spval
         call hist_addfld1d (fname='C14_DWT_PROD10C_GAIN', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 addition to 10-yr wood product pool', &
-              ptr_col=this%dwt_prod10c_gain)
+              ptr_col=this%core%dwt_prod10_gain)
 
-       this%prod10c_loss(begc:endc) = spval
+       this%core%prod10_loss(begc:endc) = spval
         call hist_addfld1d (fname='C14_PROD10C_LOSS', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 loss from 10-yr wood product pool', &
-              ptr_col=this%prod10c_loss)
+              ptr_col=this%core%prod10_loss)
 
-       this%dwt_prod100c_gain(begc:endc) = spval
+       this%core%dwt_prod100_gain(begc:endc) = spval
         call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 addition to 100-yr wood product pool', &
-              ptr_col=this%dwt_prod100c_gain)
+              ptr_col=this%core%dwt_prod100_gain)
 
-       this%prod100c_loss(begc:endc) = spval
+       this%core%prod100_loss(begc:endc) = spval
         call hist_addfld1d (fname='C14_PROD100C_LOSS', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 loss from 100-yr wood product pool', &
-              ptr_col=this%prod100c_loss)
+              ptr_col=this%core%prod100_loss)
 
-       this%prod1c_loss(begc:endc) = spval
+       this%core%prod1_loss(begc:endc) = spval
         call hist_addfld1d (fname='C14_PROD1C_LOSS', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 loss from 1-yr crop product pool', &
-              ptr_col=this%prod1c_loss)
+              ptr_col=this%core%prod1_loss)
 
-       this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_met(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C14_DWT_FROOTC_TO_LITR_MET_C', units='gC14/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C14 fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_met_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_met, default='inactive')
 
-       this%dwt_frootc_to_litr_cel_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_cel(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C14_DWT_FROOTC_TO_LITR_CEL_C', units='gC14/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C14 fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_cel_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_cel, default='inactive')
 
-       this%dwt_frootc_to_litr_lig_c(begc:endc,:) = spval
+       this%core%dwt_froot_to_litr_lig(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C14_DWT_FROOTC_TO_LITR_LIG_C', units='gC14/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C14 fine root to litter due to landcover change', &
-              ptr_col=this%dwt_frootc_to_litr_lig_c, default='inactive')
+              ptr_col=this%core%dwt_froot_to_litr_lig, default='inactive')
 
-       this%dwt_livecrootc_to_cwdc(begc:endc,:) = spval
+       this%core%dwt_livecroot_to_cwd(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C14_DWT_LIVECROOTC_TO_CWDC', units='gC14/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C14 live coarse root to CWD due to landcover change', &
-              ptr_col=this%dwt_livecrootc_to_cwdc, default='inactive')
+              ptr_col=this%core%dwt_livecroot_to_cwd, default='inactive')
 
-       this%dwt_deadcrootc_to_cwdc(begc:endc,:) = spval
+       this%core%dwt_deadcroot_to_cwd(begc:endc,:) = spval
         call hist_addfld_decomp (fname='C14_DWT_DEADCROOTC_TO_CWDC', units='gC14/m^2/s',  type2d='levdcmp', &
              avgflag='A', long_name='C14 dead coarse root to CWD due to landcover change', &
-              ptr_col=this%dwt_deadcrootc_to_cwdc, default='inactive')
+              ptr_col=this%core%dwt_deadcroot_to_cwd, default='inactive')
 
-       this%dwt_closs(begc:endc) = spval
+       this%core%dwt_loss(begc:endc) = spval
         call hist_addfld1d (fname='C14_DWT_CLOSS', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 total carbon loss from land cover conversion', &
-              ptr_col=this%dwt_closs)
+              ptr_col=this%core%dwt_loss)
 
-       this%product_closs(begc:endc) = spval
+       this%core%product_loss(begc:endc) = spval
         call hist_addfld1d (fname='C14_PRODUCT_CLOSS', units='gC14/m^2/s', &
              avgflag='A', long_name='C14 total carbon loss from wood product pools', &
-              ptr_col=this%product_closs)
+              ptr_col=this%core%product_loss)
 
        ! end of C14 block
     end if  ! use_fates (C12) or C12 or C13 or C14
@@ -7221,22 +7051,22 @@ contains
        ! also initialize dynamic landcover fluxes so that they have
        ! real values on first timestep, prior to calling pftdyn_cnbal
        if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
-          this%dwt_conv_cflux(c)        = 0._r8
-          this%dwt_prod10c_gain(c)      = 0._r8
-          this%dwt_prod100c_gain(c)     = 0._r8
-          this%dwt_crop_productc_gain(c) = 0._r8
-          this%prod1c_loss(c)           = 0._r8
-          this%prod10c_loss(c)          = 0._r8
-          this%prod100c_loss(c)         = 0._r8
-          this%dwt_slash_cflux(c)       = 0._r8
+          this%core%dwt_conv_flux(c)        = 0._r8
+          this%core%dwt_prod10_gain(c)      = 0._r8
+          this%core%dwt_prod100_gain(c)     = 0._r8
+          this%core%dwt_crop_product_gain(c) = 0._r8
+          this%core%prod1_loss(c)           = 0._r8
+          this%core%prod10_loss(c)          = 0._r8
+          this%core%prod100_loss(c)         = 0._r8
+          this%core%dwt_slash_flux(c)       = 0._r8
           do j = 1, nlevdecomp_full
-             this%dwt_frootc_to_litr_met_c(c,j) = 0._r8
-             this%dwt_frootc_to_litr_cel_c(c,j) = 0._r8
-             this%dwt_frootc_to_litr_lig_c(c,j) = 0._r8
-             this%dwt_livecrootc_to_cwdc(c,j)   = 0._r8
-             this%dwt_deadcrootc_to_cwdc(c,j)   = 0._r8
+             this%core%dwt_froot_to_litr_met(c,j) = 0._r8
+             this%core%dwt_froot_to_litr_cel(c,j) = 0._r8
+             this%core%dwt_froot_to_litr_lig(c,j) = 0._r8
+             this%core%dwt_livecroot_to_cwd(c,j)   = 0._r8
+             this%core%dwt_deadcroot_to_cwd(c,j)   = 0._r8
           end do
-          this%dwt_closs(c)  = 0._r8
+          this%core%dwt_loss(c)  = 0._r8
           this%annsum_npp(c) = 0._r8
        end if
     end do
@@ -7254,7 +7084,7 @@ contains
     do fc = 1,num_special_col
        c = special_col(fc)
 
-       this%dwt_closs(c)   = 0._r8
+       this%core%dwt_loss(c)   = 0._r8
        this%landuseflux(c) = 0._r8
        this%landuptake(c)  = 0._r8
     end do
@@ -7317,14 +7147,14 @@ contains
        do k = 1, ndecomp_pools
           varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_c'
           if (use_vertsoilc) then
-             ptr2d => this%externalc_to_decomp_cpools(:,:,k)
+             ptr2d => this%core%external_to_decomp_pools(:,:,k)
              call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr",  &
                   xtype=ncd_double, dim1name='column', dim2name='levgrnd', switchdim=.true., &
                   long_name='net soil organic C adding/removal/transport', &
                   units='gC/m3/s', fill_value=spval, &
                   interpinic_flag='interp', readvar=readvar, data=ptr2d)
           else
-             ptr1d => this%externalc_to_decomp_cpools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             ptr1d => this%core%external_to_decomp_pools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
              call restartvar(ncid=ncid, flag=flag, varname=varname, &
                   xtype=ncd_double, dim1name='column', &
                   long_name='net soil organic C adding/removal/transport', &
@@ -7332,7 +7162,7 @@ contains
                   interpinic_flag='interp' , readvar=readvar, data=ptr1d)
           end if
           if (flag=='read' .and. .not. readvar) then
-             this%externalc_to_decomp_cpools(:,:,k) = 0._r8
+             this%core%external_to_decomp_pools(:,:,k) = 0._r8
           end if
        end do
     end if
@@ -7396,10 +7226,10 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%cwdc_loss(c)          = 0._r8
-       this%som_c_leached(c)      = 0._r8
-       this%somc_erode(c)         = 0._r8
-       this%somc_deposit(c)       = 0._r8
-       this%somc_yield(c)         = 0._r8
+       this%core%som_leached(c)      = 0._r8
+       this%core%som_erode(c)         = 0._r8
+       this%core%som_deposit(c)       = 0._r8
+       this%core%som_yield(c)         = 0._r8
     end do
 
     if ((.not. (use_pflotran .and. pf_cmode))) then
@@ -7410,9 +7240,9 @@ contains
        do j = 1,nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_cascade_ctransfer(c,k) = &
-                     this%decomp_cascade_ctransfer(c,k) + &
-                     this%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j)
+             this%core%decomp_cascade_transfer(c,k) = &
+                     this%core%decomp_cascade_transfer(c,k) + &
+                     this%core%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
              end do
           end do
        end do
@@ -7516,10 +7346,10 @@ contains
        this%litfire(c) = 0._r8
 
        ! total product loss
-       this%product_closs(c) = &
-            this%prod10c_loss(c)  + &
-            this%prod100c_loss(c) + &
-            this%prod1c_loss(c)
+       this%core%product_loss(c) = &
+            this%core%prod10_loss(c)  + &
+            this%core%prod100_loss(c) + &
+            this%core%prod1_loss(c)
 
        ! soil organic matter fire losses (SOMFIRE)
        this%somfire(c) = 0._r8
@@ -7536,9 +7366,9 @@ contains
        do j = 1,nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%m_decomp_cpools_to_fire(c,l) = &
-                  this%m_decomp_cpools_to_fire(c,l) + &
-                  this%m_decomp_cpools_to_fire_vr(c,j,l)*dzsoi_decomp(j)
+             this%core%m_decomp_pools_to_fire(c,l) = &
+                  this%core%m_decomp_pools_to_fire(c,l) + &
+                  this%core%m_decomp_pools_to_fire_vr(c,j,l)*dzsoi_decomp(j)
           end do
        end do
     end do
@@ -7549,9 +7379,9 @@ contains
           do j = 1, nlev
              do fc = 1, num_soilc
                 c = filter_soilc(fc)
-                this%decomp_cpools_yield(c,l) = &
-                     this%decomp_cpools_yield(c,l) + &
-                     this%decomp_cpools_yield_vr(c,j,l)*dzsoi_decomp(j)
+                this%core%decomp_pools_yield(c,l) = &
+                     this%core%decomp_pools_yield(c,l) + &
+                     this%core%decomp_pools_yield_vr(c,j,l)*dzsoi_decomp(j)
              end do
           end do
        end do
@@ -7561,16 +7391,16 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
-       this%fire_closs(c) = this%fire_closs_p2c(c)
+       this%core%fire_loss(c) = this%core%fire_loss_p2c(c)
        do l = 1, ndecomp_pools
-          this%fire_closs(c) = &
-               this%fire_closs(c) + &
-               this%m_decomp_cpools_to_fire(c,l)
+          this%core%fire_loss(c) = &
+               this%core%fire_loss(c) + &
+               this%core%m_decomp_pools_to_fire(c,l)
        end do
 
        ! column-level carbon losses due to landcover change
-       this%dwt_closs(c) = &
-            this%dwt_conv_cflux(c)
+       this%core%dwt_loss(c) = &
+            this%core%dwt_conv_flux(c)
 
        ! net ecosystem production, excludes fire flux, landcover change, and loss from wood products, positive for sink (NEP)
        this%nep(c) = &
@@ -7581,23 +7411,23 @@ contains
        ! from wood products pools, positive for sink (NBP)
        this%nbp(c) =             &
             this%nep(c)        - &
-            this%fire_closs(c) - &
-            this%dwt_closs(c)  - &
-            this%product_closs(c)
+            this%core%fire_loss(c) - &
+            this%core%dwt_loss(c)  - &
+            this%core%product_loss(c)
 
        ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
        ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
        this%nee(c) =                &
             -this%nep(c)           + &
-            this%fire_closs(c)    + &
-            this%dwt_closs(c)     + &
-            this%product_closs(c) + &
+            this%core%fire_loss(c)    + &
+            this%core%dwt_loss(c)     + &
+            this%core%product_loss(c) + &
             this%hrv_xsmrpool_to_atm(c)
 
        ! land use flux and land uptake
        this%landuseflux(c) = &
-            this%dwt_closs(c) + &
-            this%product_closs(c)
+            this%core%dwt_loss(c) + &
+            this%core%product_loss(c)
 
        this%landuptake(c) = &
             this%nee(c) - &
@@ -7610,12 +7440,12 @@ contains
           if ( is_soil(l) ) then
              do fc = 1, num_soilc
                 c = filter_soilc(fc)
-                this%somc_erode(c) = this%somc_erode(c) + &
-                     this%decomp_cpools_erode(c,l)
-                this%somc_deposit(c) = this%somc_deposit(c) + &
-                     this%decomp_cpools_deposit(c,l)
-                this%somc_yield(c) = this%somc_yield(c) + &
-                     this%decomp_cpools_yield(c,l)
+                this%core%som_erode(c) = this%core%som_erode(c) + &
+                     this%core%decomp_pools_erode(c,l)
+                this%core%som_deposit(c) = this%core%som_deposit(c) + &
+                     this%core%decomp_pools_deposit(c,l)
+                this%core%som_yield(c) = this%core%som_yield(c) + &
+                     this%core%decomp_pools_yield(c,l)
              end do
           end if
        end do
@@ -7635,7 +7465,7 @@ contains
              c = filter_soilc(fc)
              this%cwdc_loss(c) = &
                   this%cwdc_loss(c) + &
-                  this%m_decomp_cpools_to_fire(c,l)
+                  this%core%m_decomp_pools_to_fire(c,l)
           end do
        end if
     end do
@@ -7646,7 +7476,7 @@ contains
              c = filter_soilc(fc)
              this%cwdc_loss(c) = &
                   this%cwdc_loss(c) + &
-                  this%decomp_cascade_ctransfer(c,k)
+                  this%core%decomp_cascade_transfer(c,k)
           end do
        end if
     end do
@@ -7665,7 +7495,7 @@ contains
               c = filter_soilc(fc)
               this%litterc_loss(c) = &
                  this%litterc_loss(c) + &
-                 this%m_decomp_cpools_to_fire(c,l)
+                 this%core%m_decomp_pools_to_fire(c,l)
           end do
        end if
     end do
@@ -7677,7 +7507,7 @@ contains
           c = filter_soilc(fc)
           this%litterc_loss(c) = &
                this%litterc_loss(c) + &
-               this%decomp_cascade_ctransfer(c,k)
+               this%core%decomp_cascade_transfer(c,k)
         end do
       end if
     end do
@@ -7688,23 +7518,23 @@ contains
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_cpools_leached(c,l) = 0._r8
+             this%core%decomp_pools_leached(c,l) = 0._r8
           end do
           if(l /= i_cwd)then
             do j = 1, nlev
               do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%decomp_cpools_leached(c,l) = &
-                  this%decomp_cpools_leached(c,l) + &
-                  this%decomp_cpools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+                this%core%decomp_pools_leached(c,l) = &
+                  this%core%decomp_pools_leached(c,l) + &
+                  this%core%decomp_pools_transport_tendency(c,j,l) * dzsoi_decomp(j)
               end do
             end do
           endif
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%som_c_leached(c) = &
-                this%som_c_leached(c) + &
-                this%decomp_cpools_leached(c,l)
+             this%core%som_leached(c) = &
+                this%core%som_leached(c) + &
+                this%core%decomp_pools_leached(c,l)
           end do
        end do
     end if
@@ -7712,24 +7542,24 @@ contains
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
-        this%plant_to_litter_cflux(c) = 0._r8
-        this%plant_to_cwd_cflux(c) = 0._r8
+        this%core%plant_to_litter_flux(c) = 0._r8
+        this%core%plant_to_cwd_flux(c) = 0._r8
         do j = 1, nlev
-            this%plant_to_litter_cflux(c) = &
-                this%plant_to_litter_cflux(c)  + &
-                this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_cflux(c) = &
-                this%plant_to_cwd_cflux(c) + &
-                this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
+            this%core%plant_to_litter_flux(c) = &
+                this%core%plant_to_litter_flux(c)  + &
+                this%core%phenology_to_litr_met(c,j)* dzsoi_decomp(j) + &
+                this%core%phenology_to_litr_cel(c,j)* dzsoi_decomp(j) + &
+                this%core%phenology_to_litr_lig(c,j)* dzsoi_decomp(j) + &
+                this%core%gap_mortality_to_litr_met(c,j)* dzsoi_decomp(j) + &
+                this%core%gap_mortality_to_litr_cel(c,j)* dzsoi_decomp(j) + &
+                this%core%gap_mortality_to_litr_lig(c,j)* dzsoi_decomp(j) + &
+                this%core%m_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                this%core%m_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                this%core%m_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+            this%core%plant_to_cwd_flux(c) = &
+                this%core%plant_to_cwd_flux(c) + &
+                this%core%gap_mortality_to_cwd(c,j)* dzsoi_decomp(j) + &
+                this%core%fire_mortality_to_cwd(c,j)* dzsoi_decomp(j)
         end do
     end do
 
@@ -7848,24 +7678,24 @@ contains
        do fi = 1,num_column
           i = filter_column(fi)
 
-          this%phenology_c_to_litr_met_c(i,j)     = value_column
-          this%phenology_c_to_litr_cel_c(i,j)     = value_column
-          this%phenology_c_to_litr_lig_c(i,j)     = value_column
+          this%core%phenology_to_litr_met(i,j)     = value_column
+          this%core%phenology_to_litr_cel(i,j)     = value_column
+          this%core%phenology_to_litr_lig(i,j)     = value_column
 
-          this%gap_mortality_c_to_litr_met_c(i,j) = value_column
-          this%gap_mortality_c_to_litr_cel_c(i,j) = value_column
-          this%gap_mortality_c_to_litr_lig_c(i,j) = value_column
-          this%gap_mortality_c_to_cwdc(i,j)       = value_column
+          this%core%gap_mortality_to_litr_met(i,j) = value_column
+          this%core%gap_mortality_to_litr_cel(i,j) = value_column
+          this%core%gap_mortality_to_litr_lig(i,j) = value_column
+          this%core%gap_mortality_to_cwd(i,j)       = value_column
 
-          this%fire_mortality_c_to_cwdc(i,j)      = value_column
-          this%m_c_to_litr_met_fire(i,j)          = value_column
-          this%m_c_to_litr_cel_fire(i,j)          = value_column
-          this%m_c_to_litr_lig_fire(i,j)          = value_column
+          this%core%fire_mortality_to_cwd(i,j)      = value_column
+          this%core%m_to_litr_met_fire(i,j)          = value_column
+          this%core%m_to_litr_cel_fire(i,j)          = value_column
+          this%core%m_to_litr_lig_fire(i,j)          = value_column
 
-          this%harvest_c_to_litr_met_c(i,j)       = value_column
-          this%harvest_c_to_litr_cel_c(i,j)       = value_column
-          this%harvest_c_to_litr_lig_c(i,j)       = value_column
-          this%harvest_c_to_cwdc(i,j)             = value_column
+          this%core%harvest_to_litr_met(i,j)       = value_column
+          this%core%harvest_to_litr_cel(i,j)       = value_column
+          this%core%harvest_to_litr_lig(i,j)       = value_column
+          this%core%harvest_to_cwd(i,j)             = value_column
 
           this%hr_vr(i,j)                         = value_column
        end do
@@ -7873,7 +7703,7 @@ contains
     do l = 1, ndecomp_cascade_transitions
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cascade_ctransfer(i,l) = value_column
+          this%core%decomp_cascade_transfer(i,l) = value_column
        end do
     end do
     do j = 1, nlevdecomp_full
@@ -7887,8 +7717,8 @@ contains
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_cpools_sourcesink(i,j,k) = value_column
-             this%decomp_cpools_transport_tendency(i,j,k) = value_column
+             this%core%decomp_pools_sourcesink(i,j,k) = value_column
+             this%core%decomp_pools_transport_tendency(i,j,k) = value_column
           end do
        end do
     end do
@@ -7899,58 +7729,58 @@ contains
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
                i = filter_column(fi)
-               this%externalc_to_decomp_cpools(i,j,k) = value_column
+               this%core%external_to_decomp_pools(i,j,k) = value_column
             end do
          end do
       end do
       do fi = 1,num_column
          i = filter_column(fi)
          this%f_co2_soil(i) = value_column
-         this%externalc_to_decomp_delta(i) = value_column
+         this%core%external_to_decomp_delta(i) = value_column
       end do
     end if 
 
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cpools_yield(i,k) = value_column !if ero_ccycle
-          this%m_decomp_cpools_to_fire(i,k) = value_column
+          this%core%decomp_pools_yield(i,k) = value_column !if ero_ccycle
+          this%core%m_decomp_pools_to_fire(i,k) = value_column
        end do
     end do 
 
     do fi = 1,num_column
        i = filter_column(fi)
 
-       this%hrv_deadstemc_to_prod10c(i)  = value_column
-       this%hrv_deadstemc_to_prod100c(i) = value_column
-       this%hrv_cropc_to_prod1c(i)       = value_column
-       this%prod1c_loss(i)               = value_column
-       this%prod10c_loss(i)              = value_column
-       this%prod100c_loss(i)             = value_column
+       this%core%hrv_deadstem_to_prod10(i)  = value_column
+       this%core%hrv_deadstem_to_prod100(i) = value_column
+       this%core%hrv_crop_to_prod1(i)       = value_column
+       this%core%prod1_loss(i)               = value_column
+       this%core%prod10_loss(i)              = value_column
+       this%core%prod100_loss(i)             = value_column
        this%er(i)                        = value_column
-       this%som_c_leached(i)             = value_column
-       this%somc_yield(i)                = value_column
+       this%core%som_leached(i)             = value_column
+       this%core%som_yield(i)                = value_column
        this%somhr(i)                     = value_column 
        this%lithr(i)                     = value_column 
        this%hr(i)                        = value_column
-       this%cinputs(i)                   = value_column
-       this%coutputs(i)                  = value_column
+       this%core%inputs(i)                   = value_column
+       this%core%outputs(i)                  = value_column
        this%cwdc_hr(i)                   = value_column
        this%litterc_loss(i)              = value_column
        
        this%nee(i)                       = value_column
        this%er(i)                        = value_column  
-       this%som_c_leached(i)             = value_column  
+       this%core%som_leached(i)             = value_column  
 
        ! Zero p2c column fluxes
        this%rr(i)                    = value_column
        this%ar(i)                    = value_column
        this%gpp(i)                   = value_column
        this%npp(i)                   = value_column
-       this%fire_closs(i)            = value_column
+       this%core%fire_loss(i)            = value_column
        this%litfall(i)               = value_column
        this%vegfire(i)               = value_column
-       this%wood_harvestc(i)         = value_column
+       this%core%wood_harvest(i)         = value_column
        this%hrv_xsmrpool_to_atm(i)   = value_column
     end do
   
@@ -7958,7 +7788,7 @@ contains
       do fi = 1,num_column
          i = filter_column(fi)
          this%somc_fire(i)                 = value_column
-         this%product_closs(i)             = value_column
+         this%core%product_loss(i)             = value_column
          this%sr(i)                        = value_column
          this%litfire(i)                   = value_column
          this%somfire(i)                   = value_column
@@ -7966,18 +7796,18 @@ contains
          this%nep(i)                       = value_column
          this%nbp(i)                       = value_column
          this%cwdc_loss(i)                 = value_column
-         this%somc_erode(i)                = value_column
-         this%somc_deposit(i)              = value_column
-         this%somc_yield(i)                = value_column
+         this%core%som_erode(i)                = value_column
+         this%core%som_deposit(i)              = value_column
+         this%core%som_yield(i)                = value_column
       enddo 
     end if 
     
     do k = 1, ndecomp_pools
       do fi = 1,num_column
         i = filter_column(fi)
-        this%decomp_cpools_leached(i,k) = value_column
-        this%decomp_cpools_erode(i,k) = value_column
-        this%decomp_cpools_deposit(i,k) = value_column
+        this%core%decomp_pools_leached(i,k) = value_column
+        this%core%decomp_pools_erode(i,k) = value_column
+        this%core%decomp_pools_deposit(i,k) = value_column
       end do 
     end do 
 
@@ -8008,8 +7838,8 @@ contains
        this%ar(c) = 0._r8
        this%npp(c) = 0._r8
        this%vegfire(c) = 0._r8
-       this%wood_harvestc(c) = 0._r8
-       this%fire_closs_p2c(c) = 0._r8
+       this%core%wood_harvest(c) = 0._r8
+       this%core%fire_loss_p2c(c) = 0._r8
        !this%litfall(c) = 0._r8 (overwritten)
        this%hrv_xsmrpool_to_atm(c) = 0._r8
 
@@ -8019,7 +7849,7 @@ contains
       do j = 1, nlevdecomp_full
         do fc = 1,num_soilc
            c = filter_soilc(fc)
-           this%m_decomp_cpools_to_fire_vr(c,j,k) = 0._r8
+           this%core%m_decomp_pools_to_fire_vr(c,j,k) = 0._r8
         end do
        end do
      end do
@@ -8075,20 +7905,20 @@ contains
     ! to 0 at the beginning of every timestep
 
     do c = bounds%begc,bounds%endc
-       this%dwt_conv_cflux(c)           = 0._r8
-       this%dwt_prod10c_gain(c)         = 0._r8
-       this%dwt_prod100c_gain(c)        = 0._r8
-       this%dwt_crop_productc_gain(c)   = 0._r8
-       this%dwt_slash_cflux(c)          = 0._r8
+       this%core%dwt_conv_flux(c)           = 0._r8
+       this%core%dwt_prod10_gain(c)         = 0._r8
+       this%core%dwt_prod100_gain(c)        = 0._r8
+       this%core%dwt_crop_product_gain(c)   = 0._r8
+       this%core%dwt_slash_flux(c)          = 0._r8
     end do
 
     do j = 1, nlevdecomp_full
        do c = bounds%begc,bounds%endc
-          this%dwt_frootc_to_litr_met_c(c,j)    = 0._r8
-          this%dwt_frootc_to_litr_cel_c(c,j)    = 0._r8
-          this%dwt_frootc_to_litr_lig_c(c,j)    = 0._r8
-          this%dwt_livecrootc_to_cwdc(c,j)      = 0._r8
-          this%dwt_deadcrootc_to_cwdc(c,j)      = 0._r8
+          this%core%dwt_froot_to_litr_met(c,j)    = 0._r8
+          this%core%dwt_froot_to_litr_cel(c,j)    = 0._r8
+          this%core%dwt_froot_to_litr_lig(c,j)    = 0._r8
+          this%core%dwt_livecroot_to_cwd(c,j)      = 0._r8
+          this%core%dwt_deadcroot_to_cwd(c,j)      = 0._r8
        end do
     end do
 
@@ -8161,7 +7991,7 @@ contains
              do j = 1, nlevdecomp_full
                 this%cwdc_loss(c) = &
                    this%cwdc_loss(c) + &
-                   this%decomp_cpools_sourcesink(c,j,l) / dtime
+                   this%core%decomp_pools_sourcesink(c,j,l) / dtime
              end do
           end do
        end if
@@ -8172,7 +8002,7 @@ contains
              do j = 1, nlevdecomp_full
                 this%litterc_loss(c) = &
                    this%litterc_loss(c) + &
-                   this%decomp_cpools_sourcesink(c,j,l) / dtime
+                   this%core%decomp_pools_sourcesink(c,j,l) / dtime
              end do
           end do
        end if
@@ -8186,11 +8016,11 @@ contains
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
-        this%externalc_to_decomp_delta(c) = 0._r8
+        this%core%external_to_decomp_delta(c) = 0._r8
         do l = 1, ndecomp_pools
           do j = 1, nlevdecomp_full
-            this%externalc_to_decomp_delta(c) = this%externalc_to_decomp_delta(c) + &
-                                this%externalc_to_decomp_cpools(c,j,l)*dzsoi_decomp(j)
+            this%core%external_to_decomp_delta(c) = this%core%external_to_decomp_delta(c) + &
+                                this%core%external_to_decomp_pools(c,j,l)*dzsoi_decomp(j)
           end do
         end do
     end do
@@ -8200,7 +8030,7 @@ contains
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
-        this%externalc_to_decomp_cpools(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+        this%core%external_to_decomp_pools(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
     end do
 
     do fc = 1,num_soilc
@@ -8209,41 +8039,41 @@ contains
           do j = 1, nlevdecomp_full
              ! for litter C pools
              if (l==i_met_lit) then
-                this%externalc_to_decomp_cpools(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools(c,j,l)               &
-                        + this%phenology_c_to_litr_met_c(c,j)            &
-                        + this%dwt_frootc_to_litr_met_c(c,j)             &
-                        + this%gap_mortality_c_to_litr_met_c(c,j)        &
-                        + this%harvest_c_to_litr_met_c(c,j)              &
-                        + this%m_c_to_litr_met_fire(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =                 &
+                    this%core%external_to_decomp_pools(c,j,l)               &
+                        + this%core%phenology_to_litr_met(c,j)            &
+                        + this%core%dwt_froot_to_litr_met(c,j)             &
+                        + this%core%gap_mortality_to_litr_met(c,j)        &
+                        + this%core%harvest_to_litr_met(c,j)              &
+                        + this%core%m_to_litr_met_fire(c,j)
 
              elseif (l==i_cel_lit) then
-                this%externalc_to_decomp_cpools(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools(c,j,l)               &
-                        + this%phenology_c_to_litr_cel_c(c,j)            &
-                        + this%dwt_frootc_to_litr_cel_c(c,j)             &
-                        + this%gap_mortality_c_to_litr_cel_c(c,j)        &
-                        + this%harvest_c_to_litr_cel_c(c,j)              &
-                        + this%m_c_to_litr_cel_fire(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =                 &
+                    this%core%external_to_decomp_pools(c,j,l)               &
+                        + this%core%phenology_to_litr_cel(c,j)            &
+                        + this%core%dwt_froot_to_litr_cel(c,j)             &
+                        + this%core%gap_mortality_to_litr_cel(c,j)        &
+                        + this%core%harvest_to_litr_cel(c,j)              &
+                        + this%core%m_to_litr_cel_fire(c,j)
 
              elseif (l==i_lig_lit) then
-                this%externalc_to_decomp_cpools(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools(c,j,l)               &
-                        + this%phenology_c_to_litr_lig_c(c,j)            &
-                        + this%dwt_frootc_to_litr_lig_c(c,j)             &
-                        + this%gap_mortality_c_to_litr_lig_c(c,j)        &
-                        + this%harvest_c_to_litr_lig_c(c,j)              &
-                        + this%m_c_to_litr_lig_fire(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =                 &
+                    this%core%external_to_decomp_pools(c,j,l)               &
+                        + this%core%phenology_to_litr_lig(c,j)            &
+                        + this%core%dwt_froot_to_litr_lig(c,j)             &
+                        + this%core%gap_mortality_to_litr_lig(c,j)        &
+                        + this%core%harvest_to_litr_lig(c,j)              &
+                        + this%core%m_to_litr_lig_fire(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
-                this%externalc_to_decomp_cpools(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools(c,j,l)               &
-                        + this%dwt_livecrootc_to_cwdc(c,j)               &
-                        + this%dwt_deadcrootc_to_cwdc(c,j)               &
-                        + this%gap_mortality_c_to_cwdc(c,j)              &
-                        + this%harvest_c_to_cwdc(c,j)                    &
-                        + this%fire_mortality_c_to_cwdc(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =                 &
+                    this%core%external_to_decomp_pools(c,j,l)               &
+                        + this%core%dwt_livecroot_to_cwd(c,j)               &
+                        + this%core%dwt_deadcroot_to_cwd(c,j)               &
+                        + this%core%gap_mortality_to_cwd(c,j)              &
+                        + this%core%harvest_to_cwd(c,j)                    &
+                        + this%core%fire_mortality_to_cwd(c,j)
 
              end if
 
@@ -8251,11 +8081,11 @@ contains
              ! in pflotran, decomposible C pools increments ARE from previous time-step (saved above);
              ! while, in CLM-CN all plant C pools are updated with current C fluxes among plant and ground/soil.
              ! therefore, when do balance check it is needed to adjust the time-lag of changes.
-             this%externalc_to_decomp_delta(c) = this%externalc_to_decomp_delta(c) - &
-                                this%externalc_to_decomp_cpools(c,j,l)*dzsoi_decomp(j)
+             this%core%external_to_decomp_delta(c) = this%core%external_to_decomp_delta(c) - &
+                                this%core%external_to_decomp_pools(c,j,l)*dzsoi_decomp(j)
 
-             if (abs(this%externalc_to_decomp_cpools(c,j,l))<=1.e-20_r8) then
-                 this%externalc_to_decomp_cpools(c,j,l) = 0._r8
+             if (abs(this%core%external_to_decomp_pools(c,j,l))<=1.e-20_r8) then
+                 this%core%external_to_decomp_pools(c,j,l) = 0._r8
              end if
 
           end do
@@ -8265,7 +8095,7 @@ contains
     ! change the sign so that it is the increments from the previous time-step (unit: from g/m2/s)
     do fc = 1, num_soilc
        c = filter_soilc(fc)
-       this%externalc_to_decomp_delta(c) = -this%externalc_to_decomp_delta(c)
+       this%core%external_to_decomp_delta(c) = -this%core%external_to_decomp_delta(c)
     end do
 
     end associate
@@ -8314,9 +8144,9 @@ contains
 
     allocate(this%fert_to_sminn                   (begc:endc))                   ; this%fert_to_sminn	                 (:)   = spval
     allocate(this%soyfixn_to_sminn                (begc:endc))                   ; this%soyfixn_to_sminn               (:)   = spval
-    allocate(this%hrv_deadstemn_to_prod10n        (begc:endc))                   ; this%hrv_deadstemn_to_prod10n       (:)   = spval
-    allocate(this%hrv_deadstemn_to_prod100n       (begc:endc))                   ; this%hrv_deadstemn_to_prod100n      (:)   = spval
-    allocate(this%hrv_cropn_to_prod1n             (begc:endc))                   ; this%hrv_cropn_to_prod1n            (:)   = spval
+    allocate(this%core%hrv_deadstem_to_prod10        (begc:endc))                   ; this%core%hrv_deadstem_to_prod10       (:)   = spval
+    allocate(this%core%hrv_deadstem_to_prod100       (begc:endc))                   ; this%core%hrv_deadstem_to_prod100      (:)   = spval
+    allocate(this%core%hrv_crop_to_prod1             (begc:endc))                   ; this%core%hrv_crop_to_prod1            (:)   = spval
     allocate(this%sminn_to_plant                  (begc:endc))                   ; this%sminn_to_plant	               (:)   = spval
     allocate(this%potential_immob                 (begc:endc))                   ; this%potential_immob                (:)   = spval
     allocate(this%actual_immob                    (begc:endc))                   ; this%actual_immob                   (:)   = spval
@@ -8324,23 +8154,23 @@ contains
     allocate(this%net_nmin                        (begc:endc))                   ; this%net_nmin                       (:)   = spval
     allocate(this%denit                           (begc:endc))                   ; this%denit		                       (:)   = spval
     allocate(this%supplement_to_sminn             (begc:endc))                   ; this%supplement_to_sminn            (:)   = spval
-    allocate(this%prod1n_loss                     (begc:endc))                   ; this%prod1n_loss                    (:)   = spval
-    allocate(this%prod10n_loss                    (begc:endc))                   ; this%prod10n_loss                   (:)   = spval
-    allocate(this%prod100n_loss                   (begc:endc))                   ; this%prod100n_loss	                 (:)   = spval
-    allocate(this%product_nloss                   (begc:endc))                   ; this%product_nloss	                 (:)   = spval
-    allocate(this%ninputs                         (begc:endc))                   ; this%ninputs                        (:)   = spval
-    allocate(this%noutputs                        (begc:endc))                   ; this%noutputs                       (:)   = spval
-    allocate(this%fire_nloss                      (begc:endc))                   ; this%fire_nloss                     (:)   = spval
-    allocate(this%fire_decomp_nloss               (begc:endc))                   ; this%fire_decomp_nloss              (:)   = spval
-    allocate(this%fire_nloss_p2c                  (begc:endc))                   ; this%fire_nloss_p2c                 (:)   = spval
-    allocate(this%som_n_leached                   (begc:endc))                   ; this%som_n_leached	                 (:)   = spval
-    allocate(this%som_n_runoff                    (begc:endc))                   ; this%som_n_runoff                   (:)  = spval
-    allocate(this%somn_erode                      (begc:endc))                   ; this%somn_erode                     (:)   = spval
-    allocate(this%somn_deposit                    (begc:endc))                   ; this%somn_deposit                   (:)   = spval
-    allocate(this%somn_yield                      (begc:endc))                   ; this%somn_yield                     (:)   = spval
-    allocate(this%m_n_to_litr_met_fire            (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_met_fire           (:,:) = spval
-    allocate(this%m_n_to_litr_cel_fire            (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_cel_fire           (:,:) = spval
-    allocate(this%m_n_to_litr_lig_fire            (begc:endc,1:nlevdecomp_full)) ; this%m_n_to_litr_lig_fire           (:,:) = spval
+    allocate(this%core%prod1_loss                     (begc:endc))                   ; this%core%prod1_loss                    (:)   = spval
+    allocate(this%core%prod10_loss                    (begc:endc))                   ; this%core%prod10_loss                   (:)   = spval
+    allocate(this%core%prod100_loss                   (begc:endc))                   ; this%core%prod100_loss	                 (:)   = spval
+    allocate(this%core%product_loss                   (begc:endc))                   ; this%core%product_loss	                 (:)   = spval
+    allocate(this%core%inputs                         (begc:endc))                   ; this%core%inputs                        (:)   = spval
+    allocate(this%core%outputs                        (begc:endc))                   ; this%core%outputs                       (:)   = spval
+    allocate(this%core%fire_loss                      (begc:endc))                   ; this%core%fire_loss                     (:)   = spval
+    allocate(this%core%fire_decomp_loss               (begc:endc))                   ; this%core%fire_decomp_loss              (:)   = spval
+    allocate(this%core%fire_loss_p2c                  (begc:endc))                   ; this%core%fire_loss_p2c                 (:)   = spval
+    allocate(this%core%som_leached                   (begc:endc))                   ; this%core%som_leached	                 (:)   = spval
+    allocate(this%core%som_runoff                    (begc:endc))                   ; this%core%som_runoff                   (:)  = spval
+    allocate(this%core%som_erode                      (begc:endc))                   ; this%core%som_erode                     (:)   = spval
+    allocate(this%core%som_deposit                    (begc:endc))                   ; this%core%som_deposit                   (:)   = spval
+    allocate(this%core%som_yield                      (begc:endc))                   ; this%core%som_yield                     (:)   = spval
+    allocate(this%core%m_to_litr_met_fire            (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_met_fire           (:,:) = spval
+    allocate(this%core%m_to_litr_cel_fire            (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_cel_fire           (:,:) = spval
+    allocate(this%core%m_to_litr_lig_fire            (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_lig_fire           (:,:) = spval
     allocate(this%r_psi                           (begc:endc,1:nlevdecomp_full)) ; this%r_psi                          (:,:) = spval
     allocate(this%anaerobic_frac                  (begc:endc,1:nlevdecomp_full)) ; this%anaerobic_frac                 (:,:) = spval
     allocate(this%potential_immob_vr              (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_vr             (:,:) = spval
@@ -8349,18 +8179,18 @@ contains
     allocate(this%supplement_to_sminn_vr          (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminn_vr         (:,:) = spval
     allocate(this%gross_nmin_vr                   (begc:endc,1:nlevdecomp_full)) ; this%gross_nmin_vr                  (:,:) = spval
     allocate(this%net_nmin_vr                     (begc:endc,1:nlevdecomp_full)) ; this%net_nmin_vr                    (:,:) = spval
-    allocate(this%dwt_slash_nflux                 (begc:endc))                   ; this%dwt_slash_nflux                (:)   = spval
-    allocate(this%dwt_conv_nflux                  (begc:endc))                   ; this%dwt_conv_nflux                 (:)   = spval
-    allocate(this%dwt_prod10n_gain                (begc:endc))                   ; this%dwt_prod10n_gain               (:)   = spval
-    allocate(this%dwt_prod100n_gain               (begc:endc))                   ; this%dwt_prod100n_gain              (:)   = spval
-    allocate(this%dwt_crop_productn_gain          (begc:endc))                   ; this%dwt_crop_productn_gain         (:)   = spval
-    allocate(this%dwt_nloss                       (begc:endc))                   ; this%dwt_nloss                      (:)   = spval
-    allocate(this%wood_harvestn                   (begc:endc))                   ; this%wood_harvestn                  (:)   = spval
-    allocate(this%dwt_frootn_to_litr_met_n        (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_met_n       (:,:) = spval
-    allocate(this%dwt_frootn_to_litr_cel_n        (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_cel_n       (:,:) = spval
-    allocate(this%dwt_frootn_to_litr_lig_n        (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootn_to_litr_lig_n       (:,:) = spval
-    allocate(this%dwt_livecrootn_to_cwdn          (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecrootn_to_cwdn         (:,:) = spval
-    allocate(this%dwt_deadcrootn_to_cwdn          (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootn_to_cwdn         (:,:) = spval
+    allocate(this%core%dwt_slash_flux                 (begc:endc))                   ; this%core%dwt_slash_flux                (:)   = spval
+    allocate(this%core%dwt_conv_flux                  (begc:endc))                   ; this%core%dwt_conv_flux                 (:)   = spval
+    allocate(this%core%dwt_prod10_gain                (begc:endc))                   ; this%core%dwt_prod10_gain               (:)   = spval
+    allocate(this%core%dwt_prod100_gain               (begc:endc))                   ; this%core%dwt_prod100_gain              (:)   = spval
+    allocate(this%core%dwt_crop_product_gain          (begc:endc))                   ; this%core%dwt_crop_product_gain         (:)   = spval
+    allocate(this%core%dwt_loss                       (begc:endc))                   ; this%core%dwt_loss                      (:)   = spval
+    allocate(this%core%wood_harvest                   (begc:endc))                   ; this%core%wood_harvest                  (:)   = spval
+    allocate(this%core%dwt_froot_to_litr_met        (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_met       (:,:) = spval
+    allocate(this%core%dwt_froot_to_litr_cel        (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_cel       (:,:) = spval
+    allocate(this%core%dwt_froot_to_litr_lig        (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_lig       (:,:) = spval
+    allocate(this%core%dwt_livecroot_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_livecroot_to_cwd         (:,:) = spval
+    allocate(this%core%dwt_deadcroot_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_deadcroot_to_cwd         (:,:) = spval
     allocate(this%f_nit_vr                        (begc:endc,1:nlevdecomp_full)) ; this%f_nit_vr                       (:,:) = spval
     allocate(this%f_denit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = spval
     allocate(this%smin_no3_leached_vr             (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = spval
@@ -8406,18 +8236,18 @@ contains
     allocate(this%fr_WFPS                         (begc:endc,1:nlevdecomp_full)) ; this%fr_WFPS                        (:,:) = spval
     allocate(this%fmax_denit_carbonsubstrate_vr   (begc:endc,1:nlevdecomp_full)) ; this%fmax_denit_carbonsubstrate_vr  (:,:) = spval
     allocate(this%fmax_denit_nitrate_vr           (begc:endc,1:nlevdecomp_full)) ; this%fmax_denit_nitrate_vr          (:,:) = spval
-    allocate(this%phenology_n_to_litr_met_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_met_n     (:,:) = spval
-    allocate(this%phenology_n_to_litr_cel_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_cel_n     (:,:) = spval
-    allocate(this%phenology_n_to_litr_lig_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_lig_n     (:,:) = spval
-    allocate(this%gap_mortality_n_to_litr_met_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_met_n (:,:) = spval
-    allocate(this%gap_mortality_n_to_litr_cel_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_cel_n (:,:) = spval
-    allocate(this%gap_mortality_n_to_litr_lig_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_lig_n (:,:) = spval
-    allocate(this%gap_mortality_n_to_cwdn         (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_cwdn       (:,:) = spval
-    allocate(this%fire_mortality_n_to_cwdn        (begc:endc, 1:nlevdecomp_full)) ; this%fire_mortality_n_to_cwdn      (:,:) = spval
-    allocate(this%harvest_n_to_litr_met_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_met_n       (:,:) = spval
-    allocate(this%harvest_n_to_litr_cel_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_cel_n       (:,:) = spval
-    allocate(this%harvest_n_to_litr_lig_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_lig_n       (:,:) = spval
-    allocate(this%harvest_n_to_cwdn               (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_cwdn             (:,:) = spval
+    allocate(this%core%phenology_to_litr_met       (begc:endc, 1:nlevdecomp_full)) ; this%core%phenology_to_litr_met     (:,:) = spval
+    allocate(this%core%phenology_to_litr_cel       (begc:endc, 1:nlevdecomp_full)) ; this%core%phenology_to_litr_cel     (:,:) = spval
+    allocate(this%core%phenology_to_litr_lig       (begc:endc, 1:nlevdecomp_full)) ; this%core%phenology_to_litr_lig     (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_met   (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_met (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_cel   (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_cel (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_lig   (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_lig (:,:) = spval
+    allocate(this%core%gap_mortality_to_cwd         (begc:endc, 1:nlevdecomp_full)) ; this%core%gap_mortality_to_cwd       (:,:) = spval
+    allocate(this%core%fire_mortality_to_cwd        (begc:endc, 1:nlevdecomp_full)) ; this%core%fire_mortality_to_cwd      (:,:) = spval
+    allocate(this%core%harvest_to_litr_met         (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_litr_met       (:,:) = spval
+    allocate(this%core%harvest_to_litr_cel         (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_litr_cel       (:,:) = spval
+    allocate(this%core%harvest_to_litr_lig         (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_litr_lig       (:,:) = spval
+    allocate(this%core%harvest_to_cwd               (begc:endc, 1:nlevdecomp_full)) ; this%core%harvest_to_cwd             (:,:) = spval
     allocate(this%plant_ndemand                   (begc:endc))                    ; this%plant_ndemand                 (:)   = spval
     allocate(this%plant_ndemand_vr                (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr              (:,:) = spval
     allocate(this%f_ngas_decomp_vr                (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr              (:,:) = spval
@@ -8430,7 +8260,7 @@ contains
     allocate(this%f_ngas_denit                    (begc:endc))                    ; this%f_ngas_denit                  (:)   = spval
     allocate(this%f_n2o_soil                      (begc:endc))                    ; this%f_n2o_soil                    (:)   = spval
     allocate(this%f_n2_soil                       (begc:endc))                    ; this%f_n2_soil                     (:)   = spval
-    allocate(this%externaln_to_decomp_delta       (begc:endc))                    ; this%externaln_to_decomp_delta     (:)   = spval
+    allocate(this%core%external_to_decomp_delta       (begc:endc))                    ; this%core%external_to_decomp_delta     (:)   = spval
     allocate(this%no3_net_transport_vr            (begc:endc,1:nlevdecomp_full))  ; this%no3_net_transport_vr          (:,:) = spval
     allocate(this%nh4_net_transport_vr            (begc:endc,1:nlevdecomp_full))  ; this%nh4_net_transport_vr          (:,:) = spval
     allocate(this%col_plant_ndemand_vr            (begc:endc,1:nlevdecomp))       ; this%col_plant_ndemand_vr          (:,:) = spval
@@ -8444,33 +8274,33 @@ contains
     allocate(this%actual_immob_nh4                (begc:endc))                    ; this%actual_immob_nh4              (:)   = spval
     allocate(this%smin_no3_to_plant               (begc:endc))                    ; this%smin_no3_to_plant             (:)   = spval
     allocate(this%smin_nh4_to_plant               (begc:endc))                    ; this%smin_nh4_to_plant             (:)   = spval 
-    allocate(this%plant_to_litter_nflux           (begc:endc))                    ; this%plant_to_litter_nflux         (:)   = 0._r8
-    allocate(this%plant_to_cwd_nflux              (begc:endc))                    ; this%plant_to_cwd_nflux            (:)   = spval
+    allocate(this%core%plant_to_litter_flux           (begc:endc))                    ; this%core%plant_to_litter_flux         (:)   = 0._r8
+    allocate(this%core%plant_to_cwd_flux              (begc:endc))                    ; this%core%plant_to_cwd_flux            (:)   = spval
     ! C4MIP output variable
     allocate(this%plant_n_to_cwdn                  (begc:endc))                   ; this%plant_n_to_cwdn               (:)  =spval
 
     allocate(this%bgc_npool_ext_inputs_vr         (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_inputs_vr          (:,:,:) = spval
     allocate(this%bgc_npool_ext_loss_vr           (begc:endc,1:nlevdecomp_full,ndecomp_pools                )) ; this%bgc_npool_ext_loss_vr            (:,:,:) = spval
-    allocate(this%decomp_cascade_ntransfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ntransfer_vr      (:,:,:) = spval
+    allocate(this%core%decomp_cascade_transfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%core%decomp_cascade_transfer_vr      (:,:,:) = spval
     allocate(this%decomp_cascade_sminn_flux_vr    (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_sminn_flux_vr     (:,:,:) = spval
-    allocate(this%m_decomp_npools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%m_decomp_npools_to_fire_vr       (:,:,:) = spval
-    allocate(this%decomp_cascade_ntransfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_ntransfer         (:,:)   = spval
+    allocate(this%core%m_decomp_pools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%m_decomp_pools_to_fire_vr       (:,:,:) = spval
+    allocate(this%core%decomp_cascade_transfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%core%decomp_cascade_transfer         (:,:)   = spval
     allocate(this%decomp_cascade_sminn_flux       (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_sminn_flux        (:,:)   = spval
-    allocate(this%m_decomp_npools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%m_decomp_npools_to_fire          (:,:)   = spval
-    allocate(this%decomp_npools_erode             (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_erode              (:,:)   = spval
-    allocate(this%decomp_npools_deposit           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_deposit            (:,:)   = spval
-    allocate(this%decomp_npools_yield             (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_yield              (:,:)   = spval
-    allocate(this%decomp_npools_yield_vr          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_yield_vr           (:,:,:) = spval
+    allocate(this%core%m_decomp_pools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%core%m_decomp_pools_to_fire          (:,:)   = spval
+    allocate(this%core%decomp_pools_erode             (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_erode              (:,:)   = spval
+    allocate(this%core%decomp_pools_deposit           (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_deposit            (:,:)   = spval
+    allocate(this%core%decomp_pools_yield             (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_yield              (:,:)   = spval
+    allocate(this%core%decomp_pools_yield_vr          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%decomp_pools_yield_vr           (:,:,:) = spval
     allocate(this%sminn_to_denit_decomp_cascade_vr(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%sminn_to_denit_decomp_cascade_vr (:,:,:) = spval
     allocate(this%sminn_to_denit_decomp_cascade   (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%sminn_to_denit_decomp_cascade    (:,:)   = spval
     allocate(this%sminn_to_denit_excess_vr        (begc:endc,1:nlevdecomp_full                              )) ; this%sminn_to_denit_excess_vr         (:,:)   = spval
     allocate(this%sminn_to_denit_excess           (begc:endc                                                )) ; this%sminn_to_denit_excess            (:)     = spval
     allocate(this%sminn_leached_vr                (begc:endc,1:nlevdecomp_full                              )) ; this%sminn_leached_vr                 (:,:)   = spval
     allocate(this%sminn_leached                   (begc:endc                                                )) ; this%sminn_leached                    (:)     = spval
-    allocate(this%decomp_npools_leached           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_leached            (:,:)   = spval
-    allocate(this%decomp_npools_transport_tendency(begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_transport_tendency (:,:,:) = spval
-    allocate(this%decomp_npools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_sourcesink         (:,:,:) = spval
-    allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
+    allocate(this%core%decomp_pools_leached           (begc:endc,1:ndecomp_pools                                )) ; this%core%decomp_pools_leached            (:,:)   = spval
+    allocate(this%core%decomp_pools_transport_tendency(begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%decomp_pools_transport_tendency (:,:,:) = spval
+    allocate(this%core%decomp_pools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%core%decomp_pools_sourcesink         (:,:,:) = spval
+    allocate(this%core%external_to_decomp_pools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%core%external_to_decomp_pools       (:,:,:) = spval
     allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = spval
     !FAN
     allocate(this%manure_tan_appl                 (begc:endc)) ; this%manure_tan_appl               (:)   = spval
@@ -8536,8 +8366,8 @@ contains
        
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. decomp_cascade_con%is_cwd(k) ) then
-          this%m_decomp_npools_to_fire(begc:endc,k) = spval
-          data1dptr => this%m_decomp_npools_to_fire(:,k)
+          this%core%m_decomp_pools_to_fire(begc:endc,k) = spval
+          data1dptr => this%core%m_decomp_pools_to_fire(:,k)
           fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TO_FIRE'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N fire loss'
            call hist_addfld1d (fname=fieldname, units='gN/m^2',  &
@@ -8545,8 +8375,8 @@ contains
                  ptr_col=data1dptr, default='inactive')
 
           if ( nlevdecomp_full > 1 ) then
-             this%m_decomp_npools_to_fire_vr(begc:endc,:,k) = spval
-             data2dptr => this%m_decomp_npools_to_fire_vr(:,:,k)
+             this%core%m_decomp_pools_to_fire_vr(begc:endc,:,k) = spval
+             data2dptr => this%core%m_decomp_pools_to_fire_vr(:,:,k)
              fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TO_FIRE'//trim(vr_suffix)
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N fire loss'
               call hist_addfld_decomp (fname=fieldname, units='gN/m^3',  type2d='levdcmp', &
@@ -8583,8 +8413,8 @@ contains
 
           !-- transfer fluxes (none from terminal pool, if present)
           if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-             this%decomp_cascade_ntransfer(begc:endc,l) = spval
-             data1dptr => this%decomp_cascade_ntransfer(:,l)
+             this%core%decomp_cascade_transfer(begc:endc,l) = spval
+             data1dptr => this%core%decomp_cascade_transfer(:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'N_TO_'//&
                   trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'N'
              longname =  'decomp. of '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
@@ -8620,8 +8450,8 @@ contains
 
              !-- transfer fluxes (none from terminal pool, if present)
              if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-                this%decomp_cascade_ntransfer_vr(begc:endc,:,l) = spval
-                data2dptr => this%decomp_cascade_ntransfer_vr(:,:,l)
+                this%core%decomp_cascade_transfer_vr(begc:endc,:,l) = spval
+                data2dptr => this%core%decomp_cascade_transfer_vr(:,:,l)
                 fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'N_TO_'//&
                      trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
                      //'N'//trim(vr_suffix)
@@ -8674,24 +8504,24 @@ contains
           avgflag='A', long_name='total rate of denitrification', &
            ptr_col=this%denit)
 
-    this%som_n_leached(begc:endc) = spval
+    this%core%som_leached(begc:endc) = spval
      call hist_addfld1d (fname='SOM_N_LEACHED', units='gN/m^2/s', &
           avgflag='A', long_name='total flux of N from SOM pools due to leaching', &
-           ptr_col=this%som_n_leached, default='inactive')
+           ptr_col=this%core%som_leached, default='inactive')
 
     do k = 1, ndecomp_pools
        if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
        if ( .not. decomp_cascade_con%is_cwd(k) ) then
-          this%decomp_npools_leached(begc:endc,k) = spval
-          data1dptr => this%decomp_npools_leached(:,k)
+          this%core%decomp_pools_leached(begc:endc,k) = spval
+          data1dptr => this%core%decomp_pools_leached(:,k)
           fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TO_LEACHING'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N leaching loss'
            call hist_addfld1d (fname=fieldname, units='gN/m^2/s', &
                 avgflag='A', long_name=longname, &
                  ptr_col=data1dptr, default='inactive')
 
-          this%decomp_npools_transport_tendency(begc:endc,:,k) = spval
-          data2dptr => this%decomp_npools_transport_tendency(:,:,k)
+          this%core%decomp_pools_transport_tendency(begc:endc,:,k) = spval
+          data2dptr => this%core%decomp_pools_transport_tendency(:,:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_TNDNCY_VERT_TRANSPORT'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N tendency due to vertical transport'
            call hist_addfld_decomp (fname=fieldname, units='gN/m^3/s',  type2d='levdcmp', &
@@ -8700,41 +8530,41 @@ contains
        end if
     end do
 
-    this%somn_erode(begc:endc) = spval
+    this%core%som_erode(begc:endc) = spval
     call hist_addfld1d (fname='SOMN_ERO', units='gN/m^2/s', &
          avgflag='A', long_name='SON detachment', &
-         ptr_col=this%somn_erode, default='inactive')
+         ptr_col=this%core%som_erode, default='inactive')
 
-    this%somn_deposit(begc:endc) = spval
+    this%core%som_deposit(begc:endc) = spval
     call hist_addfld1d (fname='SOMN_DEP', units='gN/m^2/s', &
          avgflag='A', long_name='SON hillslope redeposition', &
-         ptr_col=this%somn_deposit, default='inactive')
+         ptr_col=this%core%som_deposit, default='inactive')
 
-    this%somn_yield(begc:endc) = spval
+    this%core%som_yield(begc:endc) = spval
     call hist_addfld1d (fname='SOMN_YLD', units='gN/m^2/s', &
          avgflag='A', long_name='SON erosional loss to inland waters', &
-         ptr_col=this%somn_yield, default='inactive')
+         ptr_col=this%core%som_yield, default='inactive')
 
-    this%decomp_npools_erode(begc:endc,:) = spval
-    this%decomp_npools_deposit(begc:endc,:) = spval
-    this%decomp_npools_yield(begc:endc,:) = spval
+    this%core%decomp_pools_erode(begc:endc,:) = spval
+    this%core%decomp_pools_deposit(begc:endc,:) = spval
+    this%core%decomp_pools_yield(begc:endc,:) = spval
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(k) ) then
-          data1dptr => this%decomp_npools_erode(:,k)
+          data1dptr => this%core%decomp_pools_erode(:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_ERO'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N detachment'
           call hist_addfld1d (fname=fieldname, units='gN/m^2/s',  &
                avgflag='A', long_name=longname, &
                ptr_col=data1dptr, default='inactive')
 
-          data1dptr => this%decomp_npools_deposit(:,k)
+          data1dptr => this%core%decomp_pools_deposit(:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_DEP'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N hillslope redeposition'
           call hist_addfld1d (fname=fieldname, units='gN/m^2/s',  &
                avgflag='A', long_name=longname, &
                ptr_col=data1dptr, default='inactive')
 
-          data1dptr => this%decomp_npools_yield(:,k)
+          data1dptr => this%core%decomp_pools_yield(:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'N_YLD'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' N erosional loss to inland waters'
           call hist_addfld1d (fname=fieldname, units='gN/m^2/s',  &
@@ -9018,90 +8848,90 @@ contains
          avgflag='A', long_name='denitrification N2O flux', &
          ptr_col=this%f_n2o_denit)
 
-    this%fire_nloss(begc:endc) = spval
+    this%core%fire_loss(begc:endc) = spval
      call hist_addfld1d (fname='COL_FIRE_NLOSS', units='gN/m^2/s', &
           avgflag='A', long_name='total column-level fire N loss', &
-           ptr_col=this%fire_nloss, default='inactive')
+           ptr_col=this%core%fire_loss, default='inactive')
 
-    this%fire_decomp_nloss(begc:endc) = spval
+    this%core%fire_decomp_loss(begc:endc) = spval
      call hist_addfld1d (fname='DECOMP_FIRE_NLOSS', units='gN/m^2/s', &
         avgflag='A', long_name='fire N loss from decomposable pools', &
-         ptr_col=this%fire_decomp_nloss, default='inactive')
+         ptr_col=this%core%fire_decomp_loss, default='inactive')
 
-    this%dwt_slash_nflux(begc:endc) = spval
+    this%core%dwt_slash_flux(begc:endc) = spval
      call hist_addfld1d (fname='DWT_SLASH_NFLUX', units='gN/m^2/s', &
           avgflag='A', long_name='slash N flux to litter and CWD due to land use', &
-           ptr_col=this%dwt_slash_nflux)
+           ptr_col=this%core%dwt_slash_flux)
 
-    this%dwt_conv_nflux(begc:endc) = spval
+    this%core%dwt_conv_flux(begc:endc) = spval
      call hist_addfld1d (fname='DWT_CONV_NFLUX', units='gN/m^2/s', &
           avgflag='A', long_name='conversion N flux (immediate loss to atm)', &
-           ptr_col=this%dwt_conv_nflux, default='inactive')
+           ptr_col=this%core%dwt_conv_flux, default='inactive')
 
-    this%dwt_crop_productn_gain(begc:endc) = spval
+    this%core%dwt_crop_product_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CROP_PRODUCTN_GAIN', units='gN/m^2/s', &
         avgflag='A', long_name='addition to crop product pool', &
-        ptr_col=this%dwt_crop_productn_gain, default='inactive')
+        ptr_col=this%core%dwt_crop_product_gain, default='inactive')
 
-    this%dwt_prod10n_gain(begc:endc) = spval
+    this%core%dwt_prod10_gain(begc:endc) = spval
      call hist_addfld1d (fname='DWT_PROD10N_GAIN', units='gN/m^2/s', &
           avgflag='A', long_name='addition to 10-yr wood product pool', &
-           ptr_col=this%dwt_prod10n_gain, default='inactive')
+           ptr_col=this%core%dwt_prod10_gain, default='inactive')
 
-    this%prod10n_loss(begc:endc) = spval
+    this%core%prod10_loss(begc:endc) = spval
      call hist_addfld1d (fname='PROD10N_LOSS', units='gN/m^2/s', &
           avgflag='A', long_name='loss from 10-yr wood product pool', &
-           ptr_col=this%prod10n_loss, default='inactive')
+           ptr_col=this%core%prod10_loss, default='inactive')
 
-    this%dwt_prod100n_gain(begc:endc) = spval
+    this%core%dwt_prod100_gain(begc:endc) = spval
      call hist_addfld1d (fname='DWT_PROD100N_GAIN', units='gN/m^2/s', &
           avgflag='A', long_name='addition to 100-yr wood product pool', &
-           ptr_col=this%dwt_prod100n_gain, default='inactive')
+           ptr_col=this%core%dwt_prod100_gain, default='inactive')
 
-    this%prod100n_loss(begc:endc) = spval
+    this%core%prod100_loss(begc:endc) = spval
      call hist_addfld1d (fname='PROD100N_LOSS', units='gN/m^2/s', &
           avgflag='A', long_name='loss from 100-yr wood product pool', &
-           ptr_col=this%prod100n_loss, default='inactive')
+           ptr_col=this%core%prod100_loss, default='inactive')
 
-    this%prod1n_loss(begc:endc) = spval
+    this%core%prod1_loss(begc:endc) = spval
      call hist_addfld1d (fname='PROD1N_LOSS', units='gN/m^2/s', &
           avgflag='A', long_name='loss from 1-yr crop product pool', &
-           ptr_col=this%prod1n_loss, default='inactive')
+           ptr_col=this%core%prod1_loss, default='inactive')
 
-    this%product_nloss(begc:endc) = spval
+    this%core%product_loss(begc:endc) = spval
      call hist_addfld1d (fname='PRODUCT_NLOSS', units='gN/m^2/s', &
           avgflag='A', long_name='total N loss from wood product pools', &
-           ptr_col=this%product_nloss, default='inactive')
+           ptr_col=this%core%product_loss, default='inactive')
 
-    this%dwt_frootn_to_litr_met_n(begc:endc,:) = spval
+    this%core%dwt_froot_to_litr_met(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_MET_N', units='gN/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='fine root to litter due to landcover change', &
-           ptr_col=this%dwt_frootn_to_litr_met_n, default='inactive')
+           ptr_col=this%core%dwt_froot_to_litr_met, default='inactive')
 
-    this%dwt_frootn_to_litr_cel_n(begc:endc,:) = spval
+    this%core%dwt_froot_to_litr_cel(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_CEL_N', units='gN/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='fine root to litter due to landcover change', &
-           ptr_col=this%dwt_frootn_to_litr_cel_n, default='inactive')
+           ptr_col=this%core%dwt_froot_to_litr_cel, default='inactive')
 
-    this%dwt_frootn_to_litr_lig_n(begc:endc,:) = spval
+    this%core%dwt_froot_to_litr_lig(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_FROOTN_TO_LITR_LIG_N', units='gN/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='fine root to litter due to landcover change', &
-           ptr_col=this%dwt_frootn_to_litr_lig_n, default='inactive')
+           ptr_col=this%core%dwt_froot_to_litr_lig, default='inactive')
 
-    this%dwt_livecrootn_to_cwdn(begc:endc,:) = spval
+    this%core%dwt_livecroot_to_cwd(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_LIVECROOTN_TO_CWDN', units='gN/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='live coarse root to CWD due to landcover change', &
-           ptr_col=this%dwt_livecrootn_to_cwdn, default='inactive')
+           ptr_col=this%core%dwt_livecroot_to_cwd, default='inactive')
 
-    this%dwt_deadcrootn_to_cwdn(begc:endc,:) = spval
+    this%core%dwt_deadcroot_to_cwd(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_DEADCROOTN_TO_CWDN', units='gN/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
-           ptr_col=this%dwt_deadcrootn_to_cwdn, default='inactive')
+           ptr_col=this%core%dwt_deadcroot_to_cwd, default='inactive')
 
-    this%dwt_nloss(begc:endc) = spval
+    this%core%dwt_loss(begc:endc) = spval
      call hist_addfld1d (fname='DWT_NLOSS', units='gN/m^2/s', &
           avgflag='A', long_name='total nitrogen loss from landcover conversion', &
-           ptr_col=this%dwt_nloss, default='inactive')
+           ptr_col=this%core%dwt_loss, default='inactive')
 
     if (crop_prog) then
        this%fert_to_sminn(begc:endc) = spval
@@ -9335,7 +9165,7 @@ contains
 
     do fc = 1,num_special_col
        c = special_col(fc)
-       this%dwt_nloss(c) = 0._r8
+       this%core%dwt_loss(c) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
@@ -9404,13 +9234,13 @@ contains
        do k = 1, ndecomp_pools
           varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_n'
           if (use_vertsoilc) then
-             ptr2d => this%externaln_to_decomp_npools(:,:,k)
+             ptr2d => this%core%external_to_decomp_pools(:,:,k)
              call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
                   dim1name='column', dim2name='levgrnd', switchdim=.true., &
                   long_name='net organic N adding/removal/transport to soil', units='gN/m3/s', fill_value=spval, &
                   interpinic_flag='interp', readvar=readvar, data=ptr2d)
           else
-             ptr1d => this%externaln_to_decomp_npools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             ptr1d => this%core%external_to_decomp_pools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
              call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                   dim1name='column', &
                   long_name='net organic N adding/removal/transport to soil', units='gN/m3/s', fill_value=spval, &
@@ -9419,7 +9249,7 @@ contains
           if (flag=='read' .and. .not. readvar) then
           !   call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
           !        errMsg(__FILE__, __LINE__))
-             this%externaln_to_decomp_npools(:,:,k) = 0._r8
+             this%core%external_to_decomp_pools(:,:,k) = 0._r8
           end if
        end do
        !no3_net_transport_vr
@@ -9468,27 +9298,27 @@ contains
           i = filter_column(fi)
 
           ! phenology: litterfall and crop fluxes associated wit
-          this%phenology_n_to_litr_met_n(i,j)        = value_column
-          this%phenology_n_to_litr_cel_n(i,j)        = value_column
-          this%phenology_n_to_litr_lig_n(i,j)        = value_column
+          this%core%phenology_to_litr_met(i,j)        = value_column
+          this%core%phenology_to_litr_cel(i,j)        = value_column
+          this%core%phenology_to_litr_lig(i,j)        = value_column
 
           ! gap mortality
-          this%gap_mortality_n_to_litr_met_n(i,j)    = value_column
-          this%gap_mortality_n_to_litr_cel_n(i,j)    = value_column
-          this%gap_mortality_n_to_litr_lig_n(i,j)    = value_column
-          this%gap_mortality_n_to_cwdn(i,j)          = value_column
+          this%core%gap_mortality_to_litr_met(i,j)    = value_column
+          this%core%gap_mortality_to_litr_cel(i,j)    = value_column
+          this%core%gap_mortality_to_litr_lig(i,j)    = value_column
+          this%core%gap_mortality_to_cwd(i,j)          = value_column
 
           ! fire
-          this%fire_mortality_n_to_cwdn(i,j)         = value_column
-          this%m_n_to_litr_met_fire(i,j)             = value_column
-          this%m_n_to_litr_cel_fire(i,j)             = value_column
-          this%m_n_to_litr_lig_fire(i,j)             = value_column
+          this%core%fire_mortality_to_cwd(i,j)         = value_column
+          this%core%m_to_litr_met_fire(i,j)             = value_column
+          this%core%m_to_litr_cel_fire(i,j)             = value_column
+          this%core%m_to_litr_lig_fire(i,j)             = value_column
 
           ! harvest
-          this%harvest_n_to_litr_met_n(i,j)          = value_column
-          this%harvest_n_to_litr_cel_n(i,j)          = value_column
-          this%harvest_n_to_litr_lig_n(i,j)          = value_column
-          this%harvest_n_to_cwdn(i,j)                = value_column
+          this%core%harvest_to_litr_met(i,j)          = value_column
+          this%core%harvest_to_litr_cel(i,j)          = value_column
+          this%core%harvest_to_litr_lig(i,j)          = value_column
+          this%core%harvest_to_cwd(i,j)                = value_column
 
           this%net_nmin_vr(i,j)                      = value_column
           this%sminn_nh4_input_vr(i,j)               = value_column !not used anywhere?
@@ -9524,16 +9354,16 @@ contains
        this%denit(i)                     = value_column
        this%smin_nh4_to_plant(i)      = value_column
        this%smin_no3_to_plant(i)      = value_column
-       this%fire_nloss(i)                = value_column
-       this%som_n_leached(i)             = value_column
+       this%core%fire_loss(i)                = value_column
+       this%core%som_leached(i)             = value_column
        
-       this%hrv_deadstemn_to_prod10n(i)  = value_column
-       this%hrv_deadstemn_to_prod100n(i) = value_column
-       this%hrv_cropn_to_prod1n(i)       = value_column
-       this%prod10n_loss(i)              = value_column
-       this%prod100n_loss(i)             = value_column
-       this%prod1n_loss(i)               = value_column
-       this%product_nloss(i)             = value_column
+       this%core%hrv_deadstem_to_prod10(i)  = value_column
+       this%core%hrv_deadstem_to_prod100(i) = value_column
+       this%core%hrv_crop_to_prod1(i)       = value_column
+       this%core%prod10_loss(i)              = value_column
+       this%core%prod100_loss(i)             = value_column
+       this%core%prod1_loss(i)               = value_column
+       this%core%product_loss(i)             = value_column
        this%potential_immob(i)           = value_column
        this%actual_immob(i)              = value_column
        this%sminn_to_plant(i)            = value_column
@@ -9556,14 +9386,14 @@ contains
        this%f_n2_soil(i)             = value_column
 
 
-       this%ninputs(i)                   = value_column
-       this%noutputs(i)                  = value_column
+       this%core%inputs(i)                   = value_column
+       this%core%outputs(i)                  = value_column
        this%sminn_input(i)               = value_column
        this%sminn_nh4_input(i)           = value_column
        this%sminn_no3_input(i)           = value_column
        ! Zero p2c column fluxes
-       this%fire_nloss(i) = value_column
-       this%wood_harvestn(i) = value_column
+       this%core%fire_loss(i) = value_column
+       this%core%wood_harvest(i) = value_column
 
        ! bgc-interface
        this%plant_ndemand(i) = value_column
@@ -9601,8 +9431,8 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_npools_yield(i,k) = value_column !ero_ccyle
-          this%m_decomp_npools_to_fire(i,k) = value_column
+          this%core%decomp_pools_yield(i,k) = value_column !ero_ccyle
+          this%core%m_decomp_pools_to_fire(i,k) = value_column
           !NOTE: when are these used?
           !this%bgc_npool_ext_inputs_vr(i,:,k) = value_column
           !this%bgc_npool_ext_loss_vr(i,:,k) = value_column
@@ -9614,7 +9444,7 @@ contains
        do l = 1, ndecomp_cascade_transitions
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_cascade_ntransfer(i,l) = value_column
+             this%core%decomp_cascade_transfer(i,l) = value_column
              this%decomp_cascade_sminn_flux(i,l) = value_column
           end do
        end do
@@ -9623,7 +9453,7 @@ contains
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_npools_sourcesink(i,j,k) = value_column
+             this%core%decomp_pools_sourcesink(i,j,k) = value_column
           end do
        end do
     end do
@@ -9635,9 +9465,9 @@ contains
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
                i = filter_column(fi)
-               this%m_decomp_npools_to_fire_vr(i,j,k) = value_column
+               this%core%m_decomp_pools_to_fire_vr(i,j,k) = value_column
                ! only initializing in the first time-step
-               this%externaln_to_decomp_npools(i,j,k) = value_column
+               this%core%external_to_decomp_pools(i,j,k) = value_column
             end do
          end do
       end do
@@ -9646,7 +9476,7 @@ contains
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_npools_transport_tendency(i,j,k) = value_column
+             this%core%decomp_pools_transport_tendency(i,j,k) = value_column
           end do
        end do
     end do
@@ -9662,7 +9492,7 @@ contains
       do fi = 1,num_column
          i = filter_column(fi)
          ! only initializing in the first time-step
-         this%externaln_to_decomp_delta(i) = value_column
+         this%core%external_to_decomp_delta(i) = value_column
       end do
    end if
 
@@ -9692,20 +9522,20 @@ contains
     !-----------------------------------------------------------------------
 
     do c = bounds%begc,bounds%endc
-       this%dwt_conv_nflux(c)        = 0._r8
-       this%dwt_prod10n_gain(c)      = 0._r8
-       this%dwt_prod100n_gain(c)     = 0._r8
-       this%dwt_crop_productn_gain(c) = 0._r8
-       this%dwt_slash_nflux(c)       = 0._r8
+       this%core%dwt_conv_flux(c)        = 0._r8
+       this%core%dwt_prod10_gain(c)      = 0._r8
+       this%core%dwt_prod100_gain(c)     = 0._r8
+       this%core%dwt_crop_product_gain(c) = 0._r8
+       this%core%dwt_slash_flux(c)       = 0._r8
     end do
 
     do j = 1, nlevdecomp_full
        do c = bounds%begc,bounds%endc
-          this%dwt_frootn_to_litr_met_n(c,j) = 0._r8
-          this%dwt_frootn_to_litr_cel_n(c,j) = 0._r8
-          this%dwt_frootn_to_litr_lig_n(c,j) = 0._r8
-          this%dwt_livecrootn_to_cwdn(c,j)   = 0._r8
-          this%dwt_deadcrootn_to_cwdn(c,j)   = 0._r8
+          this%core%dwt_froot_to_litr_met(c,j) = 0._r8
+          this%core%dwt_froot_to_litr_cel(c,j) = 0._r8
+          this%core%dwt_froot_to_litr_lig(c,j) = 0._r8
+          this%core%dwt_livecroot_to_cwd(c,j)   = 0._r8
+          this%core%dwt_deadcroot_to_cwd(c,j)   = 0._r8
        end do
     end do
 
@@ -9733,8 +9563,8 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%fire_nloss_p2c(c) = 0._r8
-       this%wood_harvestn(c)  = 0._r8
+       this%core%fire_loss_p2c(c) = 0._r8
+       this%core%wood_harvest(c)  = 0._r8
     end do
 
 
@@ -9765,10 +9595,10 @@ contains
        c = filter_soilc(fc)
        this%denit(c) = 0._r8
        this%supplement_to_sminn(c) = 0._r8
-       this%som_n_leached(c)       = 0._r8
-       this%somn_erode(c)          = 0._r8
-       this%somn_deposit(c)        = 0._r8
-       this%somn_yield(c)          = 0._r8
+       this%core%som_leached(c)       = 0._r8
+       this%core%som_erode(c)          = 0._r8
+       this%core%som_deposit(c)        = 0._r8
+       this%core%som_yield(c)          = 0._r8
     end do
 
     if (  (.not. (use_pflotran .and. pf_cmode)) ) then
@@ -9779,9 +9609,9 @@ contains
           do j = 1,nlev
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                this%decomp_cascade_ntransfer(c,k) = &
-                     this%decomp_cascade_ntransfer(c,k) + &
-                     this%decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j)
+                this%core%decomp_cascade_transfer(c,k) = &
+                     this%core%decomp_cascade_transfer(c,k) + &
+                     this%core%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
 
                 this%decomp_cascade_sminn_flux(c,k) = &
                      this%decomp_cascade_sminn_flux(c,k) + &
@@ -9841,9 +9671,9 @@ contains
        do j = 1, nlev
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%m_decomp_npools_to_fire(c,k) = &
-                  this%m_decomp_npools_to_fire(c,k) + &
-                  this%m_decomp_npools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
+             this%core%m_decomp_pools_to_fire(c,k) = &
+                  this%core%m_decomp_pools_to_fire(c,k) + &
+                  this%core%m_decomp_pools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
           end do
        end do
     end do
@@ -9854,9 +9684,9 @@ contains
           do j = 1, nlev
              do fc = 1, num_soilc
                 c = filter_soilc(fc)
-                this%decomp_npools_yield(c,l) = &
-                     this%decomp_npools_yield(c,l) + &
-                     this%decomp_npools_yield_vr(c,j,l) * dzsoi_decomp(j)
+                this%core%decomp_pools_yield(c,l) = &
+                     this%core%decomp_pools_yield(c,l) + &
+                     this%core%decomp_pools_yield_vr(c,j,l) * dzsoi_decomp(j)
              end do
           end do
        end do
@@ -9865,14 +9695,14 @@ contains
     ! total column-level fire N losses
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%fire_nloss(c) = this%fire_nloss_p2c(c)
+       this%core%fire_loss(c) = this%core%fire_loss_p2c(c)
     end do
     do k = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%fire_nloss(c) = &
-               this%fire_nloss(c) + &
-               this%m_decomp_npools_to_fire(c,k)
+          this%core%fire_loss(c) = &
+               this%core%fire_loss(c) + &
+               this%core%m_decomp_pools_to_fire(c,k)
        end do
     end do
 
@@ -9882,12 +9712,12 @@ contains
           if ( decomp_cascade_con%is_soil(k) ) then
              do fc = 1, num_soilc
                 c = filter_soilc(fc)
-                this%somn_erode(c) = this%somn_erode(c) + &
-                     this%decomp_npools_erode(c,k)
-                this%somn_deposit(c) = this%somn_deposit(c) + &
-                     this%decomp_npools_deposit(c,k)
-                this%somn_yield(c) = this%somn_yield(c) + &
-                     this%decomp_npools_yield(c,k)
+                this%core%som_erode(c) = this%core%som_erode(c) + &
+                     this%core%decomp_pools_erode(c,k)
+                this%core%som_deposit(c) = this%core%som_deposit(c) + &
+                     this%core%decomp_pools_deposit(c,k)
+                this%core%som_yield(c) = this%core%som_yield(c) + &
+                     this%core%decomp_pools_yield(c,k)
              end do
           end if
        end do
@@ -9918,28 +9748,28 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        ! column-level N losses due to landcover change
-       this%dwt_nloss(c) = &
-            this%dwt_conv_nflux(c)
+       this%core%dwt_loss(c) = &
+            this%core%dwt_conv_flux(c)
        ! total wood product N loss
-       this%product_nloss(c) = &
-            this%prod10n_loss(c) + &
-            this%prod100n_loss(c)+ &
-            this%prod1n_loss(c)
+       this%core%product_loss(c) = &
+            this%core%prod10_loss(c) + &
+            this%core%prod100_loss(c)+ &
+            this%core%prod1_loss(c)
     end do
 
     ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%decomp_npools_leached(c,l) = 0._r8
+          this%core%decomp_pools_leached(c,l) = 0._r8
        end do
        if(l /= i_cwd)then
          do j = 1, nlev
            do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_npools_leached(c,l) = &
-                  this%decomp_npools_leached(c,l) + &
-                  this%decomp_npools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+             this%core%decomp_pools_leached(c,l) = &
+                  this%core%decomp_pools_leached(c,l) + &
+                  this%core%decomp_pools_transport_tendency(c,j,l) * dzsoi_decomp(j)
 
              this%bgc_npool_inputs(c,l) = this%bgc_npool_inputs(c,l) + &
                 (this%bgc_npool_ext_inputs_vr(c,j,l)-this%bgc_npool_ext_loss_vr(c,j,l))*dzsoi_decomp(j)
@@ -9948,9 +9778,9 @@ contains
        endif
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%som_n_leached(c) = &
-               this%som_n_leached(c) + &
-               this%decomp_npools_leached(c,l)
+          this%core%som_leached(c) = &
+               this%core%som_leached(c) + &
+               this%core%decomp_pools_leached(c,l)
        end do
     end do
 
@@ -9959,24 +9789,24 @@ contains
        do fc = 1,num_soilc
           c = filter_soilc(fc)
 
-          this%plant_to_litter_nflux(c) = 0._r8
-          this%plant_to_cwd_nflux(c) = 0._r8
+          this%core%plant_to_litter_flux(c) = 0._r8
+          this%core%plant_to_cwd_flux(c) = 0._r8
           do j = 1, nlev
-             this%plant_to_litter_nflux(c) = &
-                  this%plant_to_litter_nflux(c)  + &
-                  this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
-                  this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
-                  this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
-                  this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
-                  this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
-                  this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
-                  this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                  this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                  this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-             this%plant_to_cwd_nflux(c) = &
-                  this%plant_to_cwd_nflux(c) + &
-                  this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
-                  this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+             this%core%plant_to_litter_flux(c) = &
+                  this%core%plant_to_litter_flux(c)  + &
+                  this%core%phenology_to_litr_met(c,j)* dzsoi_decomp(j) + &
+                  this%core%phenology_to_litr_cel(c,j)* dzsoi_decomp(j) + &
+                  this%core%phenology_to_litr_lig(c,j)* dzsoi_decomp(j) + &
+                  this%core%gap_mortality_to_litr_met(c,j)* dzsoi_decomp(j) + &
+                  this%core%gap_mortality_to_litr_cel(c,j)* dzsoi_decomp(j) + &
+                  this%core%gap_mortality_to_litr_lig(c,j)* dzsoi_decomp(j) + &
+                  this%core%m_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                  this%core%m_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                  this%core%m_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+             this%core%plant_to_cwd_flux(c) = &
+                  this%core%plant_to_cwd_flux(c) + &
+                  this%core%gap_mortality_to_cwd(c,j)* dzsoi_decomp(j) + &
+                  this%core%fire_mortality_to_cwd(c,j)* dzsoi_decomp(j)
           end do
        end do
     end if
@@ -10096,12 +9926,12 @@ contains
 
     do fc = 1,num_soilc
       c = filter_soilc(fc)
-      this%externaln_to_decomp_delta(c) = 0._r8
+      this%core%external_to_decomp_delta(c) = 0._r8
       do j = 1, nlevdecomp_full
          do l = 1, ndecomp_pools
-            this%externaln_to_decomp_delta(c) =    &
-               this%externaln_to_decomp_delta(c) + &
-                 this%externaln_to_decomp_npools(c,j,l)*dzsoi_decomp(j)
+            this%core%external_to_decomp_delta(c) =    &
+               this%core%external_to_decomp_delta(c) + &
+                 this%core%external_to_decomp_pools(c,j,l)*dzsoi_decomp(j)
          end do
 
       end do
@@ -10111,7 +9941,7 @@ contains
     ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
     do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%externaln_to_decomp_npools(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
+         this%core%external_to_decomp_pools(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
     end do
 
     ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools
@@ -10121,41 +9951,41 @@ contains
           do l = 1, ndecomp_pools
              ! for litter C pools
              if (l==i_met_lit) then
-                this%externaln_to_decomp_npools(c,j,l) =              &
-                    this%externaln_to_decomp_npools(c,j,l)            &
-                     + this%phenology_n_to_litr_met_n(c,j)            &
-                     + this%dwt_frootn_to_litr_met_n(c,j)             &
-                     + this%gap_mortality_n_to_litr_met_n(c,j)        &
-                     + this%harvest_n_to_litr_met_n(c,j)              &
-                     + this%m_n_to_litr_met_fire(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%phenology_to_litr_met(c,j)            &
+                     + this%core%dwt_froot_to_litr_met(c,j)             &
+                     + this%core%gap_mortality_to_litr_met(c,j)        &
+                     + this%core%harvest_to_litr_met(c,j)              &
+                     + this%core%m_to_litr_met_fire(c,j)
 
              elseif (l==i_cel_lit) then
-                this%externaln_to_decomp_npools(c,j,l) =              &
-                    this%externaln_to_decomp_npools(c,j,l)            &
-                     + this%phenology_n_to_litr_cel_n(c,j)            &
-                     + this%dwt_frootn_to_litr_cel_n(c,j)             &
-                     + this%gap_mortality_n_to_litr_cel_n(c,j)        &
-                     + this%harvest_n_to_litr_cel_n(c,j)              &
-                     + this%m_n_to_litr_cel_fire(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%phenology_to_litr_cel(c,j)            &
+                     + this%core%dwt_froot_to_litr_cel(c,j)             &
+                     + this%core%gap_mortality_to_litr_cel(c,j)        &
+                     + this%core%harvest_to_litr_cel(c,j)              &
+                     + this%core%m_to_litr_cel_fire(c,j)
 
              elseif (l==i_lig_lit) then
-                this%externaln_to_decomp_npools(c,j,l) =              &
-                    this%externaln_to_decomp_npools(c,j,l)            &
-                     + this%phenology_n_to_litr_lig_n(c,j)            &
-                     + this%dwt_frootn_to_litr_lig_n(c,j)             &
-                     + this%gap_mortality_n_to_litr_lig_n(c,j)        &
-                     + this%harvest_n_to_litr_lig_n(c,j)              &
-                     + this%m_n_to_litr_lig_fire(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%phenology_to_litr_lig(c,j)            &
+                     + this%core%dwt_froot_to_litr_lig(c,j)             &
+                     + this%core%gap_mortality_to_litr_lig(c,j)        &
+                     + this%core%harvest_to_litr_lig(c,j)              &
+                     + this%core%m_to_litr_lig_fire(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
-                this%externaln_to_decomp_npools(c,j,l) =              &
-                    this%externaln_to_decomp_npools(c,j,l)            &
-                     + this%dwt_livecrootn_to_cwdn(c,j)               &
-                     + this%dwt_deadcrootn_to_cwdn(c,j)               &
-                     + this%gap_mortality_n_to_cwdn(c,j)              &
-                     + this%harvest_n_to_cwdn(c,j)                    &
-                     + this%fire_mortality_n_to_cwdn(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%dwt_livecroot_to_cwd(c,j)               &
+                     + this%core%dwt_deadcroot_to_cwd(c,j)               &
+                     + this%core%gap_mortality_to_cwd(c,j)              &
+                     + this%core%harvest_to_cwd(c,j)                    &
+                     + this%core%fire_mortality_to_cwd(c,j)
 
              end if
 
@@ -10163,12 +9993,12 @@ contains
              ! in pflotran, decomposible N pools increments ARE from previous time-step (saved above);
              ! while, in CLM-CN all plant N pools are updated with current N fluxes among plant and ground/soil.
              ! therefore, when do balance check it is needed to adjust the time-lag of changes.
-             this%externaln_to_decomp_delta(c) =   &
-                         this%externaln_to_decomp_delta(c) - &
-                         this%externaln_to_decomp_npools(c,j,l)*dzsoi_decomp(j)
+             this%core%external_to_decomp_delta(c) =   &
+                         this%core%external_to_decomp_delta(c) - &
+                         this%core%external_to_decomp_pools(c,j,l)*dzsoi_decomp(j)
 
-             if (abs(this%externaln_to_decomp_npools(c,j,l))<=1.e-21_r8) then
-                 this%externaln_to_decomp_npools(c,j,l) = 0._r8
+             if (abs(this%core%external_to_decomp_pools(c,j,l))<=1.e-21_r8) then
+                 this%core%external_to_decomp_pools(c,j,l) = 0._r8
              end if
           end do !l = 1, ndecomp_pools
        end do !j = 1, nlevdecomp_full
@@ -10198,7 +10028,7 @@ contains
     ! change the sign so that it is the increments from the previous time-step (unit: g/m2/s)
     do fc = 1, num_soilc
        c = filter_soilc(fc)
-       this%externaln_to_decomp_delta(c) = -this%externaln_to_decomp_delta(c)
+       this%core%external_to_decomp_delta(c) = -this%core%external_to_decomp_delta(c)
     end do
 
   end subroutine col_nf_summaryint
@@ -10239,28 +10069,28 @@ contains
     !-----------------------------------------------------------------------
     allocate(this%pdep_to_sminp                    (begc:endc))                   ; this%pdep_to_sminp                 (:)   = spval
     allocate(this%fert_p_to_sminp                  (begc:endc))                   ; this%fert_p_to_sminp               (:)   = spval
-    allocate(this%hrv_deadstemp_to_prod10p         (begc:endc))                   ; this%hrv_deadstemp_to_prod10p      (:)   = spval
-    allocate(this%hrv_deadstemp_to_prod100p        (begc:endc))                   ; this%hrv_deadstemp_to_prod100p     (:)   = spval
-    allocate(this%hrv_cropp_to_prod1p              (begc:endc))                   ; this%hrv_cropp_to_prod1p           (:)   = spval
+    allocate(this%core%hrv_deadstem_to_prod10         (begc:endc))                   ; this%core%hrv_deadstem_to_prod10      (:)   = spval
+    allocate(this%core%hrv_deadstem_to_prod100        (begc:endc))                   ; this%core%hrv_deadstem_to_prod100     (:)   = spval
+    allocate(this%core%hrv_crop_to_prod1              (begc:endc))                   ; this%core%hrv_crop_to_prod1           (:)   = spval
     allocate(this%sminp_to_plant                   (begc:endc))                   ; this%sminp_to_plant                (:)   = spval
     allocate(this%potential_immob_p                (begc:endc))                   ; this%potential_immob_p             (:)   = spval
     allocate(this%actual_immob_p                   (begc:endc))                   ; this%actual_immob_p                (:)   = spval
     allocate(this%gross_pmin                       (begc:endc))                   ; this%gross_pmin                    (:)   = spval
     allocate(this%net_pmin                         (begc:endc))                   ; this%net_pmin                      (:)   = spval
     allocate(this%supplement_to_sminp              (begc:endc))                   ; this%supplement_to_sminp           (:)   = spval
-    allocate(this%prod1p_loss                      (begc:endc))                   ; this%prod1p_loss                   (:)   = spval
-    allocate(this%prod10p_loss                     (begc:endc))                   ; this%prod10p_loss                  (:)   = spval
-    allocate(this%prod100p_loss                    (begc:endc))                   ; this%prod100p_loss                 (:)   = spval
-    allocate(this%product_ploss                    (begc:endc))                   ; this%product_ploss                 (:)   = spval
-    allocate(this%pinputs                          (begc:endc))                   ; this%pinputs                       (:)   = spval
-    allocate(this%poutputs                         (begc:endc))                   ; this%poutputs                      (:)   = spval
-    allocate(this%fire_ploss                       (begc:endc))                   ; this%fire_ploss                    (:)   = spval
-    allocate(this%fire_decomp_ploss                (begc:endc))                   ; this%fire_decomp_ploss             (:)   = spval
-    allocate(this%fire_ploss_p2c                   (begc:endc))                   ; this%fire_ploss_p2c                (:)   = spval
-    allocate(this%som_p_leached                    (begc:endc))                   ; this%som_p_leached                 (:)   = spval
-    allocate(this%somp_erode                       (begc:endc))                   ; this%somp_erode                    (:)   = spval
-    allocate(this%somp_deposit                     (begc:endc))                   ; this%somp_deposit                  (:)   = spval
-    allocate(this%somp_yield                       (begc:endc))                   ; this%somp_yield                    (:)   = spval
+    allocate(this%core%prod1_loss                      (begc:endc))                   ; this%core%prod1_loss                   (:)   = spval
+    allocate(this%core%prod10_loss                     (begc:endc))                   ; this%core%prod10_loss                  (:)   = spval
+    allocate(this%core%prod100_loss                    (begc:endc))                   ; this%core%prod100_loss                 (:)   = spval
+    allocate(this%core%product_loss                    (begc:endc))                   ; this%core%product_loss                 (:)   = spval
+    allocate(this%core%inputs                          (begc:endc))                   ; this%core%inputs                       (:)   = spval
+    allocate(this%core%outputs                         (begc:endc))                   ; this%core%outputs                      (:)   = spval
+    allocate(this%core%fire_loss                       (begc:endc))                   ; this%core%fire_loss                    (:)   = spval
+    allocate(this%core%fire_decomp_loss                (begc:endc))                   ; this%core%fire_decomp_loss             (:)   = spval
+    allocate(this%core%fire_loss_p2c                   (begc:endc))                   ; this%core%fire_loss_p2c                (:)   = spval
+    allocate(this%core%som_leached                    (begc:endc))                   ; this%core%som_leached                 (:)   = spval
+    allocate(this%core%som_erode                       (begc:endc))                   ; this%core%som_erode                    (:)   = spval
+    allocate(this%core%som_deposit                     (begc:endc))                   ; this%core%som_deposit                  (:)   = spval
+    allocate(this%core%som_yield                       (begc:endc))                   ; this%core%som_yield                    (:)   = spval
     allocate(this%labilep_erode                    (begc:endc))                   ; this%labilep_erode                 (:)   = spval
     allocate(this%labilep_deposit                  (begc:endc))                   ; this%labilep_deposit               (:)   = spval
     allocate(this%labilep_yield                    (begc:endc))                   ; this%labilep_yield                 (:)   = spval
@@ -10273,9 +10103,9 @@ contains
     allocate(this%primp_erode                      (begc:endc))                   ; this%primp_erode                   (:)   = spval
     allocate(this%primp_deposit                    (begc:endc))                   ; this%primp_deposit                 (:)   = spval
     allocate(this%primp_yield                      (begc:endc))                   ; this%primp_yield                   (:)   = spval
-    allocate(this%m_p_to_litr_met_fire             (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_met_fire          (:,:) = spval
-    allocate(this%m_p_to_litr_cel_fire             (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_cel_fire          (:,:) = spval
-    allocate(this%m_p_to_litr_lig_fire             (begc:endc,1:nlevdecomp_full)) ; this%m_p_to_litr_lig_fire          (:,:) = spval
+    allocate(this%core%m_to_litr_met_fire             (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_met_fire          (:,:) = spval
+    allocate(this%core%m_to_litr_cel_fire             (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_cel_fire          (:,:) = spval
+    allocate(this%core%m_to_litr_lig_fire             (begc:endc,1:nlevdecomp_full)) ; this%core%m_to_litr_lig_fire          (:,:) = spval
     allocate(this%potential_immob_p_vr             (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_p_vr          (:,:) = spval
     allocate(this%actual_immob_p_vr                (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_p_vr             (:,:) = spval
     allocate(this%sminp_to_plant_vr                (begc:endc,1:nlevdecomp_full)) ; this%sminp_to_plant_vr             (:,:) = spval
@@ -10288,36 +10118,36 @@ contains
     allocate(this%biochem_pmin_vr                  (begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_vr               (:,:) = spval
     allocate(this%biochem_pmin                     (begc:endc))                   ; this%biochem_pmin                  (:)   = spval
     allocate(this%biochem_pmin_to_plant            (begc:endc))                   ; this%biochem_pmin_to_plant         (:)   = spval
-    allocate(this%dwt_slash_pflux                  (begc:endc))                   ; this%dwt_slash_pflux               (:)   = spval
-    allocate(this%dwt_conv_pflux                   (begc:endc))                   ; this%dwt_conv_pflux                (:)   = spval
-    allocate(this%dwt_prod10p_gain                 (begc:endc))                   ; this%dwt_prod10p_gain              (:)   = spval
-    allocate(this%dwt_prod100p_gain                (begc:endc))                   ; this%dwt_prod100p_gain             (:)   = spval
-    allocate(this%dwt_crop_productp_gain           (begc:endc))                   ; this%dwt_crop_productp_gain        (:)   = spval
-    allocate(this%dwt_ploss                        (begc:endc))                   ; this%dwt_ploss                     (:)   = spval
-    allocate(this%wood_harvestp                    (begc:endc))                   ; this%wood_harvestp                 (:)   = spval
-    allocate(this%dwt_frootp_to_litr_met_p         (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_met_p      (:,:) = spval
-    allocate(this%dwt_frootp_to_litr_cel_p         (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_cel_p      (:,:) = spval
-    allocate(this%dwt_frootp_to_litr_lig_p         (begc:endc,1:nlevdecomp_full)) ; this%dwt_frootp_to_litr_lig_p      (:,:) = spval
-    allocate(this%dwt_livecrootp_to_cwdp           (begc:endc,1:nlevdecomp_full)) ; this%dwt_livecrootp_to_cwdp        (:,:) = spval
-    allocate(this%dwt_deadcrootp_to_cwdp           (begc:endc,1:nlevdecomp_full)) ; this%dwt_deadcrootp_to_cwdp        (:,:) = spval
-    allocate(this%decomp_cascade_ptransfer_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_ptransfer_vr  (:,:,:) = spval
+    allocate(this%core%dwt_slash_flux                  (begc:endc))                   ; this%core%dwt_slash_flux               (:)   = spval
+    allocate(this%core%dwt_conv_flux                   (begc:endc))                   ; this%core%dwt_conv_flux                (:)   = spval
+    allocate(this%core%dwt_prod10_gain                 (begc:endc))                   ; this%core%dwt_prod10_gain              (:)   = spval
+    allocate(this%core%dwt_prod100_gain                (begc:endc))                   ; this%core%dwt_prod100_gain             (:)   = spval
+    allocate(this%core%dwt_crop_product_gain           (begc:endc))                   ; this%core%dwt_crop_product_gain        (:)   = spval
+    allocate(this%core%dwt_loss                        (begc:endc))                   ; this%core%dwt_loss                     (:)   = spval
+    allocate(this%core%wood_harvest                    (begc:endc))                   ; this%core%wood_harvest                 (:)   = spval
+    allocate(this%core%dwt_froot_to_litr_met         (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_met      (:,:) = spval
+    allocate(this%core%dwt_froot_to_litr_cel         (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_cel      (:,:) = spval
+    allocate(this%core%dwt_froot_to_litr_lig         (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_froot_to_litr_lig      (:,:) = spval
+    allocate(this%core%dwt_livecroot_to_cwd           (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_livecroot_to_cwd        (:,:) = spval
+    allocate(this%core%dwt_deadcroot_to_cwd           (begc:endc,1:nlevdecomp_full)) ; this%core%dwt_deadcroot_to_cwd        (:,:) = spval
+    allocate(this%core%decomp_cascade_transfer_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%core%decomp_cascade_transfer_vr  (:,:,:) = spval
     allocate(this%decomp_cascade_sminp_flux_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_sminp_flux_vr (:,:,:) = spval
-    allocate(this%m_decomp_ppools_to_fire_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               )) ; this%m_decomp_ppools_to_fire_vr   (:,:,:) = spval
-    allocate(this%decomp_cascade_ptransfer         (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%decomp_cascade_ptransfer     (:,:)   = spval
+    allocate(this%core%m_decomp_pools_to_fire_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               )) ; this%core%m_decomp_pools_to_fire_vr   (:,:,:) = spval
+    allocate(this%core%decomp_cascade_transfer         (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%core%decomp_cascade_transfer     (:,:)   = spval
     allocate(this%decomp_cascade_sminp_flux        (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%decomp_cascade_sminp_flux    (:,:)   = spval
-    allocate(this%m_decomp_ppools_to_fire          (begc:endc,1:ndecomp_pools ))  ; this%m_decomp_ppools_to_fire       (:,:) = spval
-    allocate(this%phenology_p_to_litr_met_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_met_p     (:,:) = spval
-    allocate(this%phenology_p_to_litr_cel_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_cel_p     (:,:) = spval
-    allocate(this%phenology_p_to_litr_lig_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_lig_p     (:,:) = spval
-    allocate(this%gap_mortality_p_to_litr_met_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_met_p (:,:) = spval
-    allocate(this%gap_mortality_p_to_litr_cel_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_cel_p (:,:) = spval
-    allocate(this%gap_mortality_p_to_litr_lig_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_lig_p (:,:) = spval
-    allocate(this%gap_mortality_p_to_cwdp          (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_cwdp       (:,:) = spval
-    allocate(this%fire_mortality_p_to_cwdp         (begc:endc,1:nlevdecomp_full)) ; this%fire_mortality_p_to_cwdp      (:,:) = spval
-    allocate(this%harvest_p_to_litr_met_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_met_p       (:,:) = spval
-    allocate(this%harvest_p_to_litr_cel_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_cel_p       (:,:) = spval
-    allocate(this%harvest_p_to_litr_lig_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_lig_p       (:,:) = spval
-    allocate(this%harvest_p_to_cwdp                (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_cwdp             (:,:) = spval
+    allocate(this%core%m_decomp_pools_to_fire          (begc:endc,1:ndecomp_pools ))  ; this%core%m_decomp_pools_to_fire       (:,:) = spval
+    allocate(this%core%phenology_to_litr_met        (begc:endc,1:nlevdecomp_full)) ; this%core%phenology_to_litr_met     (:,:) = spval
+    allocate(this%core%phenology_to_litr_cel        (begc:endc,1:nlevdecomp_full)) ; this%core%phenology_to_litr_cel     (:,:) = spval
+    allocate(this%core%phenology_to_litr_lig        (begc:endc,1:nlevdecomp_full)) ; this%core%phenology_to_litr_lig     (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_met    (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_met (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_cel    (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_cel (:,:) = spval
+    allocate(this%core%gap_mortality_to_litr_lig    (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_litr_lig (:,:) = spval
+    allocate(this%core%gap_mortality_to_cwd          (begc:endc,1:nlevdecomp_full)) ; this%core%gap_mortality_to_cwd       (:,:) = spval
+    allocate(this%core%fire_mortality_to_cwd         (begc:endc,1:nlevdecomp_full)) ; this%core%fire_mortality_to_cwd      (:,:) = spval
+    allocate(this%core%harvest_to_litr_met          (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_litr_met       (:,:) = spval
+    allocate(this%core%harvest_to_litr_cel          (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_litr_cel       (:,:) = spval
+    allocate(this%core%harvest_to_litr_lig          (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_litr_lig       (:,:) = spval
+    allocate(this%core%harvest_to_cwd                (begc:endc,1:nlevdecomp_full)) ; this%core%harvest_to_cwd             (:,:) = spval
     allocate(this%primp_to_labilep_vr              (begc:endc,1:nlevdecomp_full)) ; this%primp_to_labilep_vr           (:,:) = spval
     allocate(this%primp_to_labilep                 (begc:endc))                   ; this%primp_to_labilep              (:)   = spval
     allocate(this%labilep_to_secondp_vr            (begc:endc,1:nlevdecomp_full)) ; this%labilep_to_secondp_vr         (:,:) = spval
@@ -10329,18 +10159,18 @@ contains
     allocate(this%sminp_leached_vr                 (begc:endc,1:nlevdecomp_full)) ; this%sminp_leached_vr              (:,:) = spval
     allocate(this%sminp_leached                    (begc:endc))                   ; this%sminp_leached                 (:)   = spval
     allocate(this%sminp_runoff                     (begc:endc))                   ; this%sminp_runoff                  (:)   = spval
-    allocate(this%som_p_runoff                     (begc:endc))                   ; this%som_p_runoff                  (:)   = spval
-    allocate(this%decomp_ppools_leached            (begc:endc,1:ndecomp_pools  )) ; this%decomp_ppools_leached         (:,:) = spval
-    allocate(this%decomp_ppools_transport_tendency (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_transport_tendency (:,:,:) = spval
-    allocate(this%decomp_ppools_sourcesink         (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_sourcesink         (:,:,:) = spval
+    allocate(this%core%som_runoff                     (begc:endc))                   ; this%core%som_runoff                  (:)   = spval
+    allocate(this%core%decomp_pools_leached            (begc:endc,1:ndecomp_pools  )) ; this%core%decomp_pools_leached         (:,:) = spval
+    allocate(this%core%decomp_pools_transport_tendency (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%core%decomp_pools_transport_tendency (:,:,:) = spval
+    allocate(this%core%decomp_pools_sourcesink         (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%core%decomp_pools_sourcesink         (:,:,:) = spval
     allocate(this%labilep_yield_vr                 (begc:endc,1:nlevdecomp_full)) ; this%labilep_yield_vr              (:,:) = spval
     allocate(this%secondp_yield_vr                 (begc:endc,1:nlevdecomp_full)) ; this%secondp_yield_vr              (:,:) = spval
     allocate(this%occlp_yield_vr                   (begc:endc,1:nlevdecomp_full)) ; this%occlp_yield_vr                (:,:) = spval
     allocate(this%primp_yield_vr                   (begc:endc,1:nlevdecomp_full)) ; this%primp_yield_vr                (:,:) = spval
-    allocate(this%decomp_ppools_erode              (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_erode           (:,:) = spval
-    allocate(this%decomp_ppools_deposit            (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_deposit         (:,:) = spval
-    allocate(this%decomp_ppools_yield              (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_yield           (:,:) = spval
-    allocate(this%decomp_ppools_yield_vr           (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_yield_vr           (:,:,:) = spval
+    allocate(this%core%decomp_pools_erode              (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_erode           (:,:) = spval
+    allocate(this%core%decomp_pools_deposit            (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_deposit         (:,:) = spval
+    allocate(this%core%decomp_pools_yield              (begc:endc,1:ndecomp_pools))   ; this%core%decomp_pools_yield           (:,:) = spval
+    allocate(this%core%decomp_pools_yield_vr           (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%core%decomp_pools_yield_vr           (:,:,:) = spval
     allocate(this%adsorb_to_labilep_vr             (begc:endc,1:nlevdecomp_full)) ; this%adsorb_to_labilep_vr          (:,:) = spval
     allocate(this%desorb_to_solutionp_vr           (begc:endc,1:nlevdecomp_full)) ; this%desorb_to_solutionp_vr        (:,:) = spval
     allocate(this%adsorb_to_labilep                (begc:endc))                   ; this%adsorb_to_labilep             (:)   = spval
@@ -10351,13 +10181,13 @@ contains
     allocate(this%soil_p_immob_flux_vr             (begc:endc,1:nlevdecomp_full)) ; this%soil_p_immob_flux_vr          (:,:) = spval
     allocate(this%soil_p_grossmin_flux             (begc:endc))                   ; this%soil_p_grossmin_flux          (:)   = spval
     allocate(this%smin_p_to_plant                  (begc:endc))                   ; this%smin_p_to_plant               (:)   = spval
-    allocate(this%plant_to_litter_pflux            (begc:endc))                   ; this%plant_to_litter_pflux         (:)   = 0._r8
-    allocate(this%plant_to_cwd_pflux               (begc:endc))                   ; this%plant_to_cwd_pflux            (:)   = spval
+    allocate(this%core%plant_to_litter_flux            (begc:endc))                   ; this%core%plant_to_litter_flux         (:)   = 0._r8
+    allocate(this%core%plant_to_cwd_flux               (begc:endc))                   ; this%core%plant_to_cwd_flux            (:)   = spval
     allocate(this%plant_pdemand                    (begc:endc))                   ; this%plant_pdemand                 (:)   = spval
     allocate(this%plant_pdemand_vr                 (begc:endc,1:nlevdecomp_full)) ; this%plant_pdemand_vr              (:,:) = spval
     allocate(this%col_plant_pdemand_vr            (begc:endc,1:nlevdecomp))       ; this%col_plant_pdemand_vr          (:,:) = spval
-    allocate(this%externalp_to_decomp_ppools       (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools          )) ;    this%externalp_to_decomp_ppools    (:,:,:) = spval
-    allocate(this%externalp_to_decomp_delta        (begc:endc))                   ; this%externalp_to_decomp_delta     (:)   = spval
+    allocate(this%core%external_to_decomp_pools       (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools          )) ;    this%core%external_to_decomp_pools    (:,:,:) = spval
+    allocate(this%core%external_to_decomp_delta        (begc:endc))                   ; this%core%external_to_decomp_delta     (:)   = spval
     allocate(this%sminp_net_transport_vr           (begc:endc,1:nlevdecomp_full)) ; this%sminp_net_transport_vr        (:,:) = spval
     allocate(this%sminp_net_transport_delta        (begc:endc))                   ; this%sminp_net_transport_delta     (:)   = spval
 
@@ -10379,8 +10209,8 @@ contains
 
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(k) .or. (decomp_cascade_con%is_cwd(k) .and. (.not.use_fates))) then
-          this%m_decomp_ppools_to_fire(begc:endc,k) = spval
-          data1dptr => this%m_decomp_ppools_to_fire(:,k)
+          this%core%m_decomp_pools_to_fire(begc:endc,k) = spval
+          data1dptr => this%core%m_decomp_pools_to_fire(:,k)
           fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_FIRE'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P fire loss'
            call hist_addfld1d (fname=fieldname, units='gP/m^2',  &
@@ -10388,8 +10218,8 @@ contains
                  ptr_col=data1dptr, default='inactive')
 
           if ( nlevdecomp_full > 1 ) then
-             this%m_decomp_ppools_to_fire_vr(begc:endc,:,k) = spval
-             data2dptr => this%m_decomp_ppools_to_fire_vr(:,:,k)
+             this%core%m_decomp_pools_to_fire_vr(begc:endc,:,k) = spval
+             data2dptr => this%core%m_decomp_pools_to_fire_vr(:,:,k)
              fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_FIRE'//trim(vr_suffix)
              longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P fire loss'
               call hist_addfld_decomp (fname=fieldname, units='gP/m^3',  type2d='levdcmp', &
@@ -10442,8 +10272,8 @@ contains
 
        !-- transfer fluxes (none from terminal pool, if present)
        if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-          this%decomp_cascade_ptransfer(begc:endc,l) = spval
-          data1dptr => this%decomp_cascade_ptransfer(:,l)
+          this%core%decomp_cascade_transfer(begc:endc,l) = spval
+          data1dptr => this%core%decomp_cascade_transfer(:,l)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'P_TO_'//&
                trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))//'P'
           longname =  'decomp. of '//trim(decomp_cascade_con%decomp_pool_name_long(decomp_cascade_con%cascade_donor_pool(l)))//&
@@ -10479,8 +10309,8 @@ contains
 
           !-- transfer fluxes (none from terminal pool, if present)
           if ( decomp_cascade_con%cascade_receiver_pool(l) /= 0 ) then
-             this%decomp_cascade_ptransfer_vr(begc:endc,:,l) = spval
-             data2dptr => this%decomp_cascade_ptransfer_vr(:,:,l)
+             this%core%decomp_cascade_transfer_vr(begc:endc,:,l) = spval
+             data2dptr => this%core%decomp_cascade_transfer_vr(:,:,l)
              fieldname = trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_donor_pool(l)))//'P_TO_'//&
                   trim(decomp_cascade_con%decomp_pool_name_history(decomp_cascade_con%cascade_receiver_pool(l)))&
                   //'P'//trim(vr_suffix)
@@ -10495,24 +10325,24 @@ contains
        endif
     end do
 
-    this%som_p_leached(begc:endc) = spval
+    this%core%som_leached(begc:endc) = spval
      call hist_addfld1d (fname='SOM_P_LEACHED', units='gP/m^2/s', &
           avgflag='A', long_name='total flux of P from SOM pools due to leaching', &
-           ptr_col=this%som_p_leached, default='inactive')
+           ptr_col=this%core%som_leached, default='inactive')
 
     do k = 1, ndecomp_pools
        if(trim(decomp_cascade_con%decomp_pool_name_history(k))=='')exit
        if ( .not. decomp_cascade_con%is_cwd(k) ) then
-          this%decomp_ppools_leached(begc:endc,k) = spval
-          data1dptr => this%decomp_ppools_leached(:,k)
+          this%core%decomp_pools_leached(begc:endc,k) = spval
+          data1dptr => this%core%decomp_pools_leached(:,k)
           fieldname = 'M_'//trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TO_LEACHING'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P leaching loss'
            call hist_addfld1d (fname=fieldname, units='gP/m^2/s', &
                 avgflag='A', long_name=longname, &
                  ptr_col=data1dptr, default='inactive')
 
-          this%decomp_ppools_transport_tendency(begc:endc,:,k) = spval
-          data2dptr => this%decomp_ppools_transport_tendency(:,:,k)
+          this%core%decomp_pools_transport_tendency(begc:endc,:,k) = spval
+          data2dptr => this%core%decomp_pools_transport_tendency(:,:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_TNDNCY_VERT_TRANSPORT'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P tendency due to vertical transport'
            call hist_addfld_decomp (fname=fieldname, units='gP/m^3/s',  type2d='levdcmp', &
@@ -10521,41 +10351,41 @@ contains
        end if
     end do
 
-    this%somp_erode(begc:endc) = spval
+    this%core%som_erode(begc:endc) = spval
     call hist_addfld1d (fname='SOMP_ERO', units='gP/m^2/s', &
          avgflag='A', long_name='SOP detachment', &
-         ptr_col=this%somp_erode, default='inactive')
+         ptr_col=this%core%som_erode, default='inactive')
 
-    this%somp_deposit(begc:endc) = spval
+    this%core%som_deposit(begc:endc) = spval
     call hist_addfld1d (fname='SOMP_DEP', units='gP/m^2/s', &
          avgflag='A', long_name='SOP hillslope redeposition', &
-         ptr_col=this%somp_deposit, default='inactive')
+         ptr_col=this%core%som_deposit, default='inactive')
 
-    this%somp_yield(begc:endc) = spval
+    this%core%som_yield(begc:endc) = spval
     call hist_addfld1d (fname='SOMP_YLD', units='gP/m^2/s', &
          avgflag='A', long_name='SOP erosional loss to inland waters', &
-         ptr_col=this%somp_yield, default='inactive')
+         ptr_col=this%core%som_yield, default='inactive')
 
-    this%decomp_ppools_erode(begc:endc,:) = spval
-    this%decomp_ppools_deposit(begc:endc,:) = spval
-    this%decomp_ppools_yield(begc:endc,:) = spval
+    this%core%decomp_pools_erode(begc:endc,:) = spval
+    this%core%decomp_pools_deposit(begc:endc,:) = spval
+    this%core%decomp_pools_yield(begc:endc,:) = spval
     do k = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(k) ) then
-          data1dptr => this%decomp_ppools_erode(:,k)
+          data1dptr => this%core%decomp_pools_erode(:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_ERO'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P detachment'
           call hist_addfld1d (fname=fieldname, units='gP/m^2/s',  &
                avgflag='A', long_name=longname, &
                ptr_col=data1dptr, default='inactive')
 
-          data1dptr => this%decomp_ppools_deposit(:,k)
+          data1dptr => this%core%decomp_pools_deposit(:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_DEP'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P hillslope redeposition'
           call hist_addfld1d (fname=fieldname, units='gP/m^2/s',  &
                avgflag='A', long_name=longname, &
                ptr_col=data1dptr, default='inactive')
 
-          data1dptr => this%decomp_ppools_yield(:,k)
+          data1dptr => this%core%decomp_pools_yield(:,k)
           fieldname = trim(decomp_cascade_con%decomp_pool_name_history(k))//'P_YLD'
           longname =  trim(decomp_cascade_con%decomp_pool_name_long(k))//' P erosional loss to inland waters'
           call hist_addfld1d (fname=fieldname, units='gP/m^2/s',  &
@@ -10804,90 +10634,90 @@ contains
          ptr_col=this%biochem_pmin_to_plant)
 
 
-    this%fire_ploss(begc:endc) = spval
+    this%core%fire_loss(begc:endc) = spval
      call hist_addfld1d (fname='COL_FIRE_PLOSS', units='gP/m^2/s', &
           avgflag='A', long_name='total column-level fire P loss', &
-           ptr_col=this%fire_ploss, default='inactive')
+           ptr_col=this%core%fire_loss, default='inactive')
 
-    this%fire_decomp_ploss(begc:endc) = spval
+    this%core%fire_decomp_loss(begc:endc) = spval
      call hist_addfld1d (fname='DECOMP_FIRE_PLOSS', units='gP/m^2/s', &
           avgflag='A', long_name='fire P loss of decomposable pools', &
-           ptr_col=this%fire_decomp_ploss, default='inactive')
+           ptr_col=this%core%fire_decomp_loss, default='inactive')
 
-    this%dwt_slash_pflux(begc:endc) = spval
+    this%core%dwt_slash_flux(begc:endc) = spval
      call hist_addfld1d (fname='DWT_SLASH_PFLUX', units='gP/m^2/s', &
           avgflag='A', long_name='slash P flux to litter and CWD due to land use', &
-           ptr_col=this%dwt_slash_pflux)
+           ptr_col=this%core%dwt_slash_flux)
 
-    this%dwt_conv_pflux(begc:endc) = spval
+    this%core%dwt_conv_flux(begc:endc) = spval
      call hist_addfld1d (fname='DWT_CONV_PFLUX', units='gP/m^2/s', &
           avgflag='A', long_name='conversion P flux (immediate loss to atm)', &
-           ptr_col=this%dwt_conv_pflux, default='inactive')
+           ptr_col=this%core%dwt_conv_flux, default='inactive')
 
-    this%dwt_crop_productp_gain(begc:endc) = spval
+    this%core%dwt_crop_product_gain(begc:endc) = spval
     call hist_addfld1d (fname='DWT_CROP_PRODUCTP_GAIN', units='gP/m^2/s', &
         avgflag='A', long_name='addition to crop product pool', &
-        ptr_col=this%dwt_crop_productp_gain, default='inactive')
+        ptr_col=this%core%dwt_crop_product_gain, default='inactive')
 
-    this%dwt_prod10p_gain(begc:endc) = spval
+    this%core%dwt_prod10_gain(begc:endc) = spval
      call hist_addfld1d (fname='DWT_PROD10P_GAIN', units='gP/m^2/s', &
           avgflag='A', long_name='addition to 10-yr wood product pool', &
-           ptr_col=this%dwt_prod10p_gain, default='inactive')
+           ptr_col=this%core%dwt_prod10_gain, default='inactive')
 
-    this%prod10p_loss(begc:endc) = spval
+    this%core%prod10_loss(begc:endc) = spval
      call hist_addfld1d (fname='PROD10P_LOSS', units='gP/m^2/s', &
           avgflag='A', long_name='loss from 10-yr wood product pool', &
-           ptr_col=this%prod10p_loss, default='inactive')
+           ptr_col=this%core%prod10_loss, default='inactive')
 
-    this%dwt_prod100p_gain(begc:endc) = spval
+    this%core%dwt_prod100_gain(begc:endc) = spval
      call hist_addfld1d (fname='DWT_PROD100P_GAIN', units='gP/m^2/s', &
           avgflag='A', long_name='addition to 100-yr wood product pool', &
-           ptr_col=this%dwt_prod100p_gain, default='inactive')
+           ptr_col=this%core%dwt_prod100_gain, default='inactive')
 
-    this%prod100p_loss(begc:endc) = spval
+    this%core%prod100_loss(begc:endc) = spval
      call hist_addfld1d (fname='PROD100P_LOSS', units='gP/m^2/s', &
           avgflag='A', long_name='loss from 100-yr wood product pool', &
-           ptr_col=this%prod100p_loss, default='inactive')
+           ptr_col=this%core%prod100_loss, default='inactive')
 
-    this%prod1p_loss(begc:endc) = spval
+    this%core%prod1_loss(begc:endc) = spval
      call hist_addfld1d (fname='PROD1P_LOSS', units='gP/m^2/s', &
           avgflag='A', long_name='loss from 1-yr crop product pool', &
-           ptr_col=this%prod1p_loss)
+           ptr_col=this%core%prod1_loss)
 
-    this%product_ploss(begc:endc) = spval
+    this%core%product_loss(begc:endc) = spval
      call hist_addfld1d (fname='PRODUCT_PLOSS', units='gP/m^2/s', &
           avgflag='A', long_name='total P loss from wood product pools', &
-           ptr_col=this%product_ploss, default='inactive')
+           ptr_col=this%core%product_loss, default='inactive')
 
-    this%dwt_frootp_to_litr_met_p(begc:endc,:) = spval
+    this%core%dwt_froot_to_litr_met(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_MET_P', units='gP/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='fine root to litter due to landcover change', &
-           ptr_col=this%dwt_frootp_to_litr_met_p, default='inactive')
+           ptr_col=this%core%dwt_froot_to_litr_met, default='inactive')
 
-    this%dwt_frootp_to_litr_cel_p(begc:endc,:) = spval
+    this%core%dwt_froot_to_litr_cel(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_CEL_P', units='gP/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='fine root to litter due to landcover change', &
-           ptr_col=this%dwt_frootp_to_litr_cel_p, default='inactive')
+           ptr_col=this%core%dwt_froot_to_litr_cel, default='inactive')
 
-    this%dwt_frootp_to_litr_lig_p(begc:endc,:) = spval
+    this%core%dwt_froot_to_litr_lig(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_FROOTP_TO_LITR_LIG_P', units='gP/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='fine root to litter due to landcover change', &
-           ptr_col=this%dwt_frootp_to_litr_lig_p, default='inactive')
+           ptr_col=this%core%dwt_froot_to_litr_lig, default='inactive')
 
-    this%dwt_livecrootp_to_cwdp(begc:endc,:) = spval
+    this%core%dwt_livecroot_to_cwd(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_LIVECROOTP_TO_CWDP', units='gP/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='live coarse root to CWD due to landcover change', &
-           ptr_col=this%dwt_livecrootp_to_cwdp, default='inactive')
+           ptr_col=this%core%dwt_livecroot_to_cwd, default='inactive')
 
-    this%dwt_deadcrootp_to_cwdp(begc:endc,:) = spval
+    this%core%dwt_deadcroot_to_cwd(begc:endc,:) = spval
      call hist_addfld_decomp (fname='DWT_DEADCROOTP_TO_CWDP', units='gP/m^2/s',  type2d='levdcmp', &
           avgflag='A', long_name='dead coarse root to CWD due to landcover change', &
-           ptr_col=this%dwt_deadcrootp_to_cwdp, default='inactive')
+           ptr_col=this%core%dwt_deadcroot_to_cwd, default='inactive')
 
-    this%dwt_ploss(begc:endc) = spval
+    this%core%dwt_loss(begc:endc) = spval
      call hist_addfld1d (fname='DWT_PLOSS', units='gP/m^2/s', &
           avgflag='A', long_name='total phosphorus loss from landcover conversion', &
-           ptr_col=this%dwt_ploss, default='inactive')
+           ptr_col=this%core%dwt_loss, default='inactive')
 
     if (crop_prog) then
        this%fert_p_to_sminp(begc:endc) = spval
@@ -10927,7 +10757,7 @@ contains
 
     do fc = 1,num_special_col
        c = special_col(fc)
-       this%dwt_ploss(c) = 0._r8
+       this%core%dwt_loss(c) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
@@ -10959,13 +10789,13 @@ contains
        do k = 1, ndecomp_pools
           varname=trim(decomp_cascade_con%decomp_pool_name_restart(k))//'external_p'
           if (use_vertsoilc) then
-             ptr2d => this%externalp_to_decomp_ppools(:,:,k)
+             ptr2d => this%core%external_to_decomp_pools(:,:,k)
              call restartvar(ncid=ncid, flag=flag, varname=trim(varname)//"_vr", xtype=ncd_double,  &
                   dim1name='column', dim2name='levgrnd', switchdim=.true., &
                   long_name='net organic P adding/removal/transport to soil', units='gP/m3/s', fill_value=spval, &
                   interpinic_flag='interp', readvar=readvar, data=ptr2d)
           else
-             ptr1d => this%externalp_to_decomp_ppools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
+             ptr1d => this%core%external_to_decomp_pools(:,1,k) ! nlevdecomp = 1; so treat as 1D variable
              call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
                   dim1name='column', &
                   long_name='net organic P adding/removal/transport to soil', units='gP/m3/s', fill_value=spval, &
@@ -10974,7 +10804,7 @@ contains
           if (flag=='read' .and. .not. readvar) then
           !   call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
           !        errMsg(__FILE__, __LINE__))
-             this%externalp_to_decomp_ppools(:,:,k) = 0._r8
+             this%core%external_to_decomp_pools(:,:,k) = 0._r8
           end if
        end do
 
@@ -11023,27 +10853,27 @@ contains
           i = filter_column(fi)
 
           ! phenology: litterfall and crop fluxes associated wit
-          this%phenology_p_to_litr_met_p(i,j)        = value_column
-          this%phenology_p_to_litr_cel_p(i,j)        = value_column
-          this%phenology_p_to_litr_lig_p(i,j)        = value_column
+          this%core%phenology_to_litr_met(i,j)        = value_column
+          this%core%phenology_to_litr_cel(i,j)        = value_column
+          this%core%phenology_to_litr_lig(i,j)        = value_column
 
           ! gap mortality
-          this%gap_mortality_p_to_litr_met_p(i,j)    = value_column
-          this%gap_mortality_p_to_litr_cel_p(i,j)    = value_column
-          this%gap_mortality_p_to_litr_lig_p(i,j)    = value_column
-          this%gap_mortality_p_to_cwdp(i,j)          = value_column
+          this%core%gap_mortality_to_litr_met(i,j)    = value_column
+          this%core%gap_mortality_to_litr_cel(i,j)    = value_column
+          this%core%gap_mortality_to_litr_lig(i,j)    = value_column
+          this%core%gap_mortality_to_cwd(i,j)          = value_column
 
           ! fire
-          this%fire_mortality_p_to_cwdp(i,j)         = value_column
-          this%m_p_to_litr_met_fire(i,j)             = value_column
-          this%m_p_to_litr_cel_fire(i,j)             = value_column
-          this%m_p_to_litr_lig_fire(i,j)             = value_column
+          this%core%fire_mortality_to_cwd(i,j)         = value_column
+          this%core%m_to_litr_met_fire(i,j)             = value_column
+          this%core%m_to_litr_cel_fire(i,j)             = value_column
+          this%core%m_to_litr_lig_fire(i,j)             = value_column
 
           ! harvest
-          this%harvest_p_to_litr_met_p(i,j)          = value_column
-          this%harvest_p_to_litr_cel_p(i,j)          = value_column
-          this%harvest_p_to_litr_lig_p(i,j)          = value_column
-          this%harvest_p_to_cwdp(i,j)                = value_column
+          this%core%harvest_to_litr_met(i,j)          = value_column
+          this%core%harvest_to_litr_cel(i,j)          = value_column
+          this%core%harvest_to_litr_lig(i,j)          = value_column
+          this%core%harvest_to_cwd(i,j)                = value_column
 
           this%primp_to_labilep_vr(i,j)              = value_column
           this%labilep_to_secondp_vr(i,j)            = value_column
@@ -11079,13 +10909,13 @@ contains
 
        this%pdep_to_sminp(i)             = value_column
        this%fert_p_to_sminp(i)           = value_column
-       this%hrv_deadstemp_to_prod10p(i)  = value_column
-       this%hrv_deadstemp_to_prod100p(i) = value_column
-       this%hrv_cropp_to_prod1p(i)       = value_column
-       this%prod10p_loss(i)              = value_column
-       this%prod100p_loss(i)             = value_column
-       this%product_ploss(i)             = value_column
-       this%prod1p_loss(i)               = value_column
+       this%core%hrv_deadstem_to_prod10(i)  = value_column
+       this%core%hrv_deadstem_to_prod100(i) = value_column
+       this%core%hrv_crop_to_prod1(i)       = value_column
+       this%core%prod10_loss(i)              = value_column
+       this%core%prod100_loss(i)             = value_column
+       this%core%product_loss(i)             = value_column
+       this%core%prod1_loss(i)               = value_column
        this%potential_immob_p(i)         = value_column
        this%actual_immob_p(i)            = value_column
        this%sminp_to_plant(i)            = value_column
@@ -11099,13 +10929,13 @@ contains
        this%secondp_to_labilep(i)        = value_column
        this%secondp_to_occlp(i)          = value_column
        this%sminp_leached(i)             = value_column
-       this%fire_ploss(i)                = value_column
-       this%pinputs(i)                   = value_column
-       this%poutputs(i)                  = value_column
-       this%som_p_leached(i)             = value_column
-       this%somp_erode(i)                = value_column
-       this%somp_deposit(i)              = value_column
-       this%somp_yield(i)                = value_column
+       this%core%fire_loss(i)                = value_column
+       this%core%inputs(i)                   = value_column
+       this%core%outputs(i)                  = value_column
+       this%core%som_leached(i)             = value_column
+       this%core%som_erode(i)                = value_column
+       this%core%som_deposit(i)              = value_column
+       this%core%som_yield(i)                = value_column
        this%labilep_erode(i)             = value_column
        this%labilep_deposit(i)           = value_column
        this%labilep_yield(i)             = value_column
@@ -11120,13 +10950,13 @@ contains
        this%primp_yield(i)               = value_column
 
        ! Zero p2c column fluxes
-       this%fire_ploss(i)                = value_column
-       this%wood_harvestp(i)             = value_column
+       this%core%fire_loss(i)                = value_column
+       this%core%wood_harvest(i)             = value_column
 
        ! bgc-interface
        this%plant_pdemand(i)             = value_column
 
-       this%wood_harvestp(i)             = value_column
+       this%core%wood_harvest(i)             = value_column
 
        this%adsorb_to_labilep(i)         = value_column
        this%desorb_to_solutionp(i)       = value_column
@@ -11136,18 +10966,18 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_ppools_leached(i,k) = value_column
-          this%decomp_ppools_erode(i,k) = value_column
-          this%decomp_ppools_deposit(i,k) = value_column
-          this%decomp_ppools_yield(i,k) = value_column
-          this%m_decomp_ppools_to_fire(i,k) = value_column
+          this%core%decomp_pools_leached(i,k) = value_column
+          this%core%decomp_pools_erode(i,k) = value_column
+          this%core%decomp_pools_deposit(i,k) = value_column
+          this%core%decomp_pools_yield(i,k) = value_column
+          this%core%m_decomp_pools_to_fire(i,k) = value_column
        end do
     end do
 
     do l = 1, ndecomp_cascade_transitions
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cascade_ptransfer(i,l) = value_column
+          this%core%decomp_cascade_transfer(i,l) = value_column
           this%decomp_cascade_sminp_flux(i,l) = value_column
        end do
     end do
@@ -11156,7 +10986,7 @@ contains
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_ppools_sourcesink(i,j,k) = value_column
+             this%core%decomp_pools_sourcesink(i,j,k) = value_column
              this%biochem_pmin_ppools_vr(i,j,k) = value_column
           end do
        end do
@@ -11166,9 +10996,9 @@ contains
       do j = 1, nlevdecomp_full
          do fi = 1,num_column
             i = filter_column(fi)
-            this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
-            this%decomp_ppools_transport_tendency(i,j,k) = value_column
-            this%decomp_ppools_yield_vr(i,j,k) = value_column
+            this%core%m_decomp_pools_to_fire_vr(i,j,k) = value_column
+            this%core%decomp_pools_transport_tendency(i,j,k) = value_column
+            this%core%decomp_pools_yield_vr(i,j,k) = value_column
          end do
       end do
    end do
@@ -11179,7 +11009,7 @@ contains
          do j = 1, nlevdecomp_full
             do fi = 1,num_column
                i = filter_column(fi)
-               this%externalp_to_decomp_ppools(i,j,k) = value_column
+               this%core%external_to_decomp_pools(i,j,k) = value_column
             end do
          end do
       end do
@@ -11193,7 +11023,7 @@ contains
 
     do fi = 1,num_column
        i = filter_column(fi)
-       this%externalp_to_decomp_delta(i) = value_column
+       this%core%external_to_decomp_delta(i) = value_column
        this%sminp_net_transport_delta(i)   = value_column
      end do
   end if 
@@ -11214,20 +11044,20 @@ contains
     integer  :: c, j          ! indices
     !-----------------------------------------------------------------------
     do c = bounds%begc,bounds%endc
-       this%dwt_conv_pflux(c)        = 0._r8
-       this%dwt_prod10p_gain(c)      = 0._r8
-       this%dwt_prod100p_gain(c)     = 0._r8
-       this%dwt_crop_productp_gain(c) = 0._r8
-       this%dwt_slash_pflux(c)       = 0._r8
+       this%core%dwt_conv_flux(c)        = 0._r8
+       this%core%dwt_prod10_gain(c)      = 0._r8
+       this%core%dwt_prod100_gain(c)     = 0._r8
+       this%core%dwt_crop_product_gain(c) = 0._r8
+       this%core%dwt_slash_flux(c)       = 0._r8
     end do
 
     do j = 1, nlevdecomp_full
        do c = bounds%begc,bounds%endc
-          this%dwt_frootp_to_litr_met_p(c,j) = 0._r8
-          this%dwt_frootp_to_litr_cel_p(c,j) = 0._r8
-          this%dwt_frootp_to_litr_lig_p(c,j) = 0._r8
-          this%dwt_livecrootp_to_cwdp(c,j)   = 0._r8
-          this%dwt_deadcrootp_to_cwdp(c,j)   = 0._r8
+          this%core%dwt_froot_to_litr_met(c,j) = 0._r8
+          this%core%dwt_froot_to_litr_cel(c,j) = 0._r8
+          this%core%dwt_froot_to_litr_lig(c,j) = 0._r8
+          this%core%dwt_livecroot_to_cwd(c,j)   = 0._r8
+          this%core%dwt_deadcroot_to_cwd(c,j)   = 0._r8
        end do
     end do
 
@@ -11254,8 +11084,8 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%fire_ploss_p2c(c) = 0._r8
-       this%wood_harvestp(c)  = 0._r8
+       this%core%fire_loss_p2c(c) = 0._r8
+       this%core%wood_harvest(c)  = 0._r8
     end do
 
 
@@ -11278,10 +11108,10 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%supplement_to_sminp(c) = 0._r8
-       this%som_p_leached(c)       = 0._r8
-       this%somp_erode(c)          = 0._r8
-       this%somp_deposit(c)        = 0._r8
-       this%somp_yield(c)          = 0._r8
+       this%core%som_leached(c)       = 0._r8
+       this%core%som_erode(c)          = 0._r8
+       this%core%som_deposit(c)        = 0._r8
+       this%core%som_yield(c)          = 0._r8
        this%labilep_yield(c)       = 0._r8
        this%secondp_yield(c)       = 0._r8
        this%occlp_yield(c)         = 0._r8
@@ -11296,9 +11126,9 @@ contains
           do fc = 1,num_soilc
              c = filter_soilc(fc)
 
-             this%decomp_cascade_ptransfer(c,k) = &
-                  this%decomp_cascade_ptransfer(c,k) + &
-                  this%decomp_cascade_ptransfer_vr(c,j,k) * dzsoi_decomp(j)
+             this%core%decomp_cascade_transfer(c,k) = &
+                  this%core%decomp_cascade_transfer(c,k) + &
+                  this%core%decomp_cascade_transfer_vr(c,j,k) * dzsoi_decomp(j)
 
              this%decomp_cascade_sminp_flux(c,k) = &
                   this%decomp_cascade_sminp_flux(c,k) + &
@@ -11382,9 +11212,9 @@ contains
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%m_decomp_ppools_to_fire(c,k) = &
-                  this%m_decomp_ppools_to_fire(c,k) + &
-                  this%m_decomp_ppools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
+             this%core%m_decomp_pools_to_fire(c,k) = &
+                  this%core%m_decomp_pools_to_fire(c,k) + &
+                  this%core%m_decomp_pools_to_fire_vr(c,j,k) * dzsoi_decomp(j)
           end do
        end do
     end do
@@ -11396,9 +11226,9 @@ contains
           do j = 1, nlevdecomp
              do fc = 1, num_soilc
                 c = filter_soilc(fc)
-                this%decomp_ppools_yield(c,l) = &
-                     this%decomp_ppools_yield(c,l) + &
-                     this%decomp_ppools_yield_vr(c,j,l) * dzsoi_decomp(j)
+                this%core%decomp_pools_yield(c,l) = &
+                     this%core%decomp_pools_yield(c,l) + &
+                     this%core%decomp_pools_yield_vr(c,j,l) * dzsoi_decomp(j)
              end do
           end do
        end do
@@ -11407,14 +11237,14 @@ contains
     ! total column-level fire P losses
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%fire_ploss(c) = this%fire_ploss_p2c(c)
+       this%core%fire_loss(c) = this%core%fire_loss_p2c(c)
     end do
     do k = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%fire_ploss(c) = &
-               this%fire_ploss(c) + &
-               this%m_decomp_ppools_to_fire(c,k)
+          this%core%fire_loss(c) = &
+               this%core%fire_loss(c) + &
+               this%core%m_decomp_pools_to_fire(c,k)
        end do
     end do
 
@@ -11424,12 +11254,12 @@ contains
           if ( decomp_cascade_con%is_soil(k) ) then
              do fc = 1, num_soilc
                 c = filter_soilc(fc)
-                this%somp_erode(c) = this%somp_erode(c) + &
-                     this%decomp_ppools_erode(c,k)
-                this%somp_deposit(c) = this%somp_deposit(c) + &
-                     this%decomp_ppools_deposit(c,k)
-                this%somp_yield(c) = this%somp_yield(c) + &
-                     this%decomp_ppools_yield(c,k)
+                this%core%som_erode(c) = this%core%som_erode(c) + &
+                     this%core%decomp_pools_erode(c,k)
+                this%core%som_deposit(c) = this%core%som_deposit(c) + &
+                     this%core%decomp_pools_deposit(c,k)
+                this%core%som_yield(c) = this%core%som_yield(c) + &
+                     this%core%decomp_pools_yield(c,k)
              end do
           end if
        end do
@@ -11449,37 +11279,37 @@ contains
        c = filter_soilc(fc)
 
        ! column-level P losses due to landcover change
-       this%dwt_ploss(c) = &
-            this%dwt_conv_pflux(c)
+       this%core%dwt_loss(c) = &
+            this%core%dwt_conv_flux(c)
 
        ! total wood product P loss
-       this%product_ploss(c) = &
-            this%prod10p_loss(c) + &
-            this%prod100p_loss(c) + &
-            this%prod1p_loss(c)
+       this%core%product_loss(c) = &
+            this%core%prod10_loss(c) + &
+            this%core%prod100_loss(c) + &
+            this%core%prod1_loss(c)
     end do
 
     ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%decomp_ppools_leached(c,l) = 0._r8
+          this%core%decomp_pools_leached(c,l) = 0._r8
        end do
        if(l /= i_cwd)then
          do j = 1, nlevdecomp
            do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%decomp_ppools_leached(c,l) = &
-                  this%decomp_ppools_leached(c,l) + &
-                  this%decomp_ppools_transport_tendency(c,j,l) * dzsoi_decomp(j)
+             this%core%decomp_pools_leached(c,l) = &
+                  this%core%decomp_pools_leached(c,l) + &
+                  this%core%decomp_pools_transport_tendency(c,j,l) * dzsoi_decomp(j)
            end do
          end do
        endif
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%som_p_leached(c) = &
-               this%som_p_leached(c) + &
-               this%decomp_ppools_leached(c,l)
+          this%core%som_leached(c) = &
+               this%core%som_leached(c) + &
+               this%core%decomp_pools_leached(c,l)
        end do
     end do
 
@@ -11529,24 +11359,24 @@ contains
 
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          this%plant_to_litter_pflux(c) = 0._r8
-          this%plant_to_cwd_pflux(c) = 0._r8
+          this%core%plant_to_litter_flux(c) = 0._r8
+          this%core%plant_to_cwd_flux(c) = 0._r8
           do j = 1, nlevdecomp
-             this%plant_to_litter_pflux(c) = &
-                  this%plant_to_litter_pflux(c)  + &
-                  this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
-                  this%phenology_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
-                  this%phenology_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
-                  this%gap_mortality_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
-                  this%gap_mortality_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
-                  this%gap_mortality_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
-                  this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                  this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                  this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-             this%plant_to_cwd_pflux(c) = &
-                  this%plant_to_cwd_pflux(c) + &
-                  this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
-                  this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
+             this%core%plant_to_litter_flux(c) = &
+                  this%core%plant_to_litter_flux(c)  + &
+                  this%core%phenology_to_litr_met(c,j)* dzsoi_decomp(j) + &
+                  this%core%phenology_to_litr_cel(c,j)* dzsoi_decomp(j) + &
+                  this%core%phenology_to_litr_lig(c,j)* dzsoi_decomp(j) + &
+                  this%core%gap_mortality_to_litr_met(c,j)* dzsoi_decomp(j) + &
+                  this%core%gap_mortality_to_litr_cel(c,j)* dzsoi_decomp(j) + &
+                  this%core%gap_mortality_to_litr_lig(c,j)* dzsoi_decomp(j) + &
+                  this%core%m_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                  this%core%m_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                  this%core%m_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+             this%core%plant_to_cwd_flux(c) = &
+                  this%core%plant_to_cwd_flux(c) + &
+                  this%core%gap_mortality_to_cwd(c,j)* dzsoi_decomp(j) + &
+                  this%core%fire_mortality_to_cwd(c,j)* dzsoi_decomp(j)
           end do
        end do
     end if
@@ -11588,13 +11418,13 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%externalp_to_decomp_delta(c) = 0._r8
+       this%core%external_to_decomp_delta(c) = 0._r8
        this%sminp_net_transport_delta(c)   = 0._r8
        do j = 1, nlevdecomp
           do l = 1, ndecomp_pools
-             this%externalp_to_decomp_delta(c) =    &
-                this%externalp_to_decomp_delta(c) + &
-                this%externalp_to_decomp_ppools(c,j,l)*dzsoi_decomp(j)
+             this%core%external_to_decomp_delta(c) =    &
+                this%core%external_to_decomp_delta(c) + &
+                this%core%external_to_decomp_pools(c,j,l)*dzsoi_decomp(j)
           end do
 
           ! sminp leaching/runoff at previous time-step, which may be as source by PFLOTRAN
@@ -11605,7 +11435,7 @@ contains
        end do
     end do
 
-    this%externalp_to_decomp_ppools(:,:,:) = 0._r8
+    this%core%external_to_decomp_pools(:,:,:) = 0._r8
     this%sminp_net_transport_vr(:,:) = 0._r8
 
     ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools
@@ -11616,37 +11446,37 @@ contains
 
              ! for litter C pools
              if (l==i_met_lit) then
-                this%externalp_to_decomp_ppools(c,j,l) =              &
-                    this%externalp_to_decomp_ppools(c,j,l)            &
-                     + this%phenology_p_to_litr_met_p(c,j)            &
-                     + this%dwt_frootp_to_litr_met_p(c,j)             &
-                     + this%gap_mortality_p_to_litr_met_p(c,j)        &
-                     + this%harvest_p_to_litr_met_p(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%phenology_to_litr_met(c,j)            &
+                     + this%core%dwt_froot_to_litr_met(c,j)             &
+                     + this%core%gap_mortality_to_litr_met(c,j)        &
+                     + this%core%harvest_to_litr_met(c,j)
 
              elseif (l==i_cel_lit) then
-                this%externalp_to_decomp_ppools(c,j,l) =              &
-                    this%externalp_to_decomp_ppools(c,j,l)            &
-                     + this%phenology_p_to_litr_cel_p(c,j)            &
-                     + this%dwt_frootp_to_litr_cel_p(c,j)             &
-                     + this%gap_mortality_p_to_litr_cel_p(c,j)        &
-                     + this%harvest_p_to_litr_cel_p(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%phenology_to_litr_cel(c,j)            &
+                     + this%core%dwt_froot_to_litr_cel(c,j)             &
+                     + this%core%gap_mortality_to_litr_cel(c,j)        &
+                     + this%core%harvest_to_litr_cel(c,j)
 
              elseif (l==i_lig_lit) then
-                this%externalp_to_decomp_ppools(c,j,l) =              &
-                    this%externalp_to_decomp_ppools(c,j,l)            &
-                     + this%phenology_p_to_litr_lig_p(c,j)            &
-                     + this%dwt_frootp_to_litr_lig_p(c,j)             &
-                     + this%gap_mortality_p_to_litr_lig_p(c,j)        &
-                     + this%harvest_p_to_litr_lig_p(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%phenology_to_litr_lig(c,j)            &
+                     + this%core%dwt_froot_to_litr_lig(c,j)             &
+                     + this%core%gap_mortality_to_litr_lig(c,j)        &
+                     + this%core%harvest_to_litr_lig(c,j)
 
              ! for cwd
              elseif (l==i_cwd) then
-                this%externalp_to_decomp_ppools(c,j,l) =              &
-                    this%externalp_to_decomp_ppools(c,j,l)            &
-                     + this%dwt_livecrootp_to_cwdp(c,j)               &
-                     + this%dwt_deadcrootp_to_cwdp(c,j)               &
-                     + this%gap_mortality_p_to_cwdp(c,j)              &
-                     + this%harvest_p_to_cwdp(c,j)
+                this%core%external_to_decomp_pools(c,j,l) =              &
+                    this%core%external_to_decomp_pools(c,j,l)            &
+                     + this%core%dwt_livecroot_to_cwd(c,j)               &
+                     + this%core%dwt_deadcroot_to_cwd(c,j)               &
+                     + this%core%gap_mortality_to_cwd(c,j)              &
+                     + this%core%harvest_to_cwd(c,j)
 
              end if
 
@@ -11654,12 +11484,12 @@ contains
              ! in pflotran, decomposible N pools increments ARE from previous time-step (saved above);
              ! while, in CLM-CN all plant N pools are updated with current N fluxes among plant and ground/soil.
              ! therefore, when do balance check it is needed to adjust the time-lag of changes.
-             this%externalp_to_decomp_delta(c) =     &
-                 this%externalp_to_decomp_delta(c) - &
-                 this%externalp_to_decomp_ppools(c,j,l)*dzsoi_decomp(j)
+             this%core%external_to_decomp_delta(c) =     &
+                 this%core%external_to_decomp_delta(c) - &
+                 this%core%external_to_decomp_pools(c,j,l)*dzsoi_decomp(j)
 
-             if (abs(this%externalp_to_decomp_ppools(c,j,l))<=1.e-21_r8) then
-                 this%externalp_to_decomp_ppools(c,j,l) = 0._r8
+             if (abs(this%core%external_to_decomp_pools(c,j,l))<=1.e-21_r8) then
+                 this%core%external_to_decomp_pools(c,j,l) = 0._r8
              end if
           end do ! num_soilc
        end do ! nlevdecomp
@@ -11682,7 +11512,7 @@ contains
     ! change the sign so that it is the increments from the previous time-step (unit: g/m2/s)
     do fc = 1, num_soilc
        c = filter_soilc(fc)
-       this%externalp_to_decomp_delta(c)     = -this%externalp_to_decomp_delta(c)
+       this%core%external_to_decomp_delta(c)     = -this%core%external_to_decomp_delta(c)
        this%sminp_net_transport_delta(c)     = -this%sminp_net_transport_delta(c)
     end do
 

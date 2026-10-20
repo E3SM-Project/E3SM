@@ -118,7 +118,7 @@ contains
          lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
          lmrsha         =>    photosyns_vars%lmrsha_patch           , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
 
-         cpool          =>    veg_cs%cpool          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
+         cpool          =>    veg_cs%core%pool          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
 
          leaf_mr        =>    veg_cf%leaf_mr         , & ! Output: [real(r8) (:)   ]
          froot_mr       =>    veg_cf%froot_mr        , & ! Output: [real(r8) (:)   ]
@@ -127,10 +127,10 @@ contains
          grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]
          xr             =>    veg_cf%xr              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
 
-         frootn         =>    veg_ns%frootn       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N
-         livestemn      =>    veg_ns%livestemn    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N
-         livecrootn     =>    veg_ns%livecrootn   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N
-         grainn         =>    veg_ns%grainn         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
+         frootn         =>    veg_ns%core%froot       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N
+         livestemn      =>    veg_ns%core%livestem    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N
+         livecrootn     =>    veg_ns%core%livecroot   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N
+         grainn         =>    veg_ns%core%grain         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
          )
 
       ! base rate for maintenance respiration is from:
