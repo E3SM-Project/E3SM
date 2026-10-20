@@ -4,6 +4,7 @@ add_library(coupler_api
   field_registry_c_api.cpp
   coupler.cpp
   coupler_driver.cpp
+  process.cpp
 )
 
 set(_coupler_api_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/modules")

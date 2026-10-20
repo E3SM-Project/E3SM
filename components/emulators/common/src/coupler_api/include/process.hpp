@@ -1,7 +1,6 @@
 #ifndef E3SM_COUPLER_API_PROCESS_HPP
 #define E3SM_COUPLER_API_PROCESS_HPP
 #include "coupler.hpp"
-#include <algorithm>
 #include <field_registry.hpp>
 #include <span>
 #include <string_view>
@@ -88,87 +87,19 @@ private:
   ImportFn import_fields_;
 };
 
+// helper class for implementing processes / components
 class CouplingAdapter {
 public:
   void register_coupled_field(FieldRegistry& registry, RegisteredField metadata,
-                              std::span<double> data) {
-    const auto id = registry.register_field(std::move(metadata));
+                              std::span<double> data);
 
-    fields_.push_back({
-        .id = id,
-        .data = data,
-    });
-  }
+  void configure(const ActiveCouplingFields& plan);
 
-  void configure(const ActiveCouplingFields& plan) {
-    active_exports_ = resolve(plan.export_ids);
-    active_imports_ = resolve(plan.import_ids);
-  }
+  void export_fields(std::span<ExportBuffer> buffers) const;
 
-  void export_fields(std::span<ExportBuffer> buffers) const {
-    if (buffers.size() != active_exports_.size()) {
-      throw std::runtime_error("Incorrect number of export buffers");
-    }
+  void import_fields(std::span<const ImportBuffer> buffers);
 
-    for (std::size_t i = 0; i < buffers.size(); ++i) {
-      const auto& local = active_exports_[i];
-      auto& remote = buffers[i];
-
-      if (local.id != remote.id) {
-        throw std::runtime_error("Export field ID mismatch");
-      }
-
-      if (local.data.size() != remote.data.size()) {
-        throw std::runtime_error("Export field size mismatch");
-      }
-
-      std::ranges::copy(local.data, remote.data.begin());
-    }
-  }
-
-  void import_fields(std::span<const ImportBuffer> buffers) {
-    if (buffers.size() != active_imports_.size()) {
-      throw std::runtime_error("Incorrect number of import buffers");
-    }
-
-    for (std::size_t i = 0; i < buffers.size(); ++i) {
-      auto& local = active_imports_[i];
-      const auto& remote = buffers[i];
-
-      if (local.id != remote.id) {
-        throw std::runtime_error("Import field ID mismatch");
-      }
-
-      if (local.data.size() != remote.data.size()) {
-        throw std::runtime_error("Import field size mismatch");
-      }
-
-      std::ranges::copy(remote.data, local.data.begin());
-    }
-  }
-
-private:
-  /**
-   * @brief Helper to resolve the FieldBinding corresponding to a FieldID
-   * */
-  std::vector<FieldBinding> resolve(std::span<const FieldID> ids) const {
-    std::vector<FieldBinding> result;
-    result.reserve(ids.size());
-
-    for (FieldID id : ids) {
-      auto it = std::ranges::find_if(
-          fields_, [id](const FieldBinding& field) { return field.id == id; });
-
-      if (it == fields_.end()) {
-        throw std::runtime_error(
-            "Coupling configuration references unknown field");
-      }
-
-      result.push_back(*it);
-    }
-
-    return result;
-  }
+  std::vector<FieldBinding> resolve(std::span<const FieldID> ids) const;
 
   std::vector<FieldBinding> fields_;
   std::vector<FieldBinding> active_exports_;
