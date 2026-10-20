@@ -14,11 +14,9 @@ on:
       - components/*/mkdocs.y*ml
       - components/*/docs/**
       - components/eamxx/cime_config/namelist_defaults_eamxx.xml
-  # Runs every time a PR is open against master, and when it is closed or merged, to remove
-  # its preview (see e3sm-gh-pages-cleanup.yml for previews this misses)
+  # Runs every time a PR is open against master
   pull_request:
     branches: ["master"]
-    types: [opened, reopened, synchronize, closed]
     # But only if docs-related files are touched
     paths:
       - .github/workflows/e3sm-gh-pages.yml
@@ -52,12 +50,10 @@ jobs:
           # TODO: another option to investigate is a sparse checkout.
           # In the scream repo, all other components do not need to be checked out.
           # And even in the upstream, we mainly need only components/xyz/docs (and a few more places).
-          submodules: ${{ github.event.action != 'closed' }}
+          submodules: true
       - name: Show action trigger
         run: echo "= The job was automatically triggered by a ${{github.event_name}} event on repo ${{github.event.repository.name}}."
-      # A closed PR needs no build: the preview step below only removes its preview
       - name: Install Python deps
-        if: ${{ github.event.action != 'closed' }}
         uses: mamba-org/setup-micromamba@v3
         with:
           init-shell: bash
@@ -72,17 +68,14 @@ jobs:
             marp-cli
       # build every time (PR or push to master)
       - name: Generate EAMxx params docs
-        if: ${{ github.event.action != 'closed' }}
         working-directory: components/eamxx/scripts
         run: |
           ./eamxx-params-docs-autogen
       - name: Generate presentations
-        if: ${{ github.event.action != 'closed' }}
         run: |
           marp -I components/eamxx/docs/_presentations_srcs -o components/eamxx/docs/_presentations_html
           cp components/eamxx/docs/_presentations_srcs/*.png components/eamxx/docs/_presentations_html/
       - name: Build
-        if: ${{ github.event.action != 'closed' }}
         run: mkdocs build --strict --verbose
       # Only deploy to the main github page when there is a push to master
       - if: ${{ github.event_name == 'push' }}
@@ -94,7 +87,6 @@ jobs:
           folder: ./site/
       # If it's a PR from within the same repo, deploy to a preview page
       # For security reasons, PRs from forks cannot write into gh-pages for now
-      # On a closed PR, the action removes the preview instead
       - if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
         name: Preview docs
         uses: rossjrw/pr-preview-action@v1
