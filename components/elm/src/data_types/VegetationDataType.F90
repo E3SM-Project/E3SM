@@ -27,7 +27,7 @@ module VegetationDataType
   use subgridAveMod   , only : p2c, p2c_1d_filter
   use restUtilMod
   use CNStateType     , only: cnstate_type
-  use SpeciesMod              , only : species_from_string
+  use SpeciesMod              , only : species_from_string, CN_SPECIES_N, CN_SPECIES_P, is_carbon
   use VegetationType            , only : veg_pp
   use ColumnType                , only : col_pp
   use VegetationPropertiesType  , only : veg_vp
@@ -118,6 +118,7 @@ module VegetationDataType
   ! core: fields of vegetation_carbon_state, vegetation_nitrogen_state, vegetation_phosphorus_state
   !-----------------------------------------------------------------------
   type, public :: vegetation_nutrient_state
+    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
     real(r8), pointer :: leaf              (:) => null() ! (g/m2) leaf nutrient
     real(r8), pointer :: leaf_storage      (:) => null() ! (g/m2) leaf nutrient storage
     real(r8), pointer :: leaf_xfer         (:) => null() ! (g/m2) leaf nutrient transfer
@@ -154,7 +155,6 @@ module VegetationDataType
   type, public :: vegetation_carbon_state
     type(vegetation_nutrient_state) :: core  ! fields common to the C/N/P types
 
-    integer,  pointer :: species  => null()                        ! c12, c13, c14
     real(r8), pointer :: gresp_storage      (:) => null() ! (gC/m2) growth respiration storage
     real(r8), pointer :: gresp_xfer         (:) => null() ! (gC/m2) growth respiration transfer
     real(r8), pointer :: xsmrpool           (:) => null() ! (gC/m2) abstract C pool to meet excess MR demand
@@ -346,6 +346,7 @@ module VegetationDataType
   ! core: fields of vegetation_carbon_flux, vegetation_nitrogen_flux, vegetation_phosphorus_flux
   !-----------------------------------------------------------------------
   type, public :: vegetation_nutrient_flux
+    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
     real(r8), pointer :: m_leaf_to_litter                   (:) => null() ! leaf nutrient mortality (g/m2/s)
     real(r8), pointer :: m_leaf_storage_to_litter           (:) => null() ! leaf nutrient storage mortality (g/m2/s)
     real(r8), pointer :: m_leaf_xfer_to_litter              (:) => null() ! leaf nutrient transfer mortality (g/m2/s)
@@ -1637,6 +1638,7 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_cs
     !-----------------------------------------------------------------------
+    this%core%species = species_from_string(carbon_type)
     if ( .not. use_fates ) then
        allocate(this%core%leaf              (begp :endp))   ;  this%core%leaf              (:)   = spval
        allocate(this%core%leaf_storage      (begp :endp))   ;  this%core%leaf_storage      (:)   = spval
@@ -1677,7 +1679,6 @@ module VegetationDataType
     allocate(this%core%balance_end              (begp :endp))   ;  this%core%balance_end              (:) = spval
     allocate(this%core%balance_err              (begp :endp))   ;  this%core%balance_err              (:) = spval
     allocate(this%core%cropseed_deficit  (begp :endp))   ;  this%core%cropseed_deficit  (:) = spval
-    allocate(this%species)
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_cs
     !-----------------------------------------------------------------------
@@ -2151,7 +2152,6 @@ module VegetationDataType
     ! set cold-start initial values for select members of veg_cs
     !-----------------------------------------------------------------------
 
-    this%species = species_from_string(carbon_type)
 
     if ( .not. use_fates ) then
        do p = begp,endp
@@ -3405,6 +3405,7 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_ns
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_N
     allocate(this%core%leaf                  (begp:endp))           ; this%core%leaf               (:)   = spval
     allocate(this%core%leaf_storage          (begp:endp))           ; this%core%leaf_storage       (:)   = spval
     allocate(this%core%leaf_xfer             (begp:endp))           ; this%core%leaf_xfer          (:)   = spval
@@ -4124,6 +4125,7 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_ps
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_P
     allocate(this%core%grain             (begp:endp)) ; this%core%grain             (:) = spval
     allocate(this%core%grain_storage     (begp:endp)) ; this%core%grain_storage     (:) = spval
     allocate(this%core%grain_xfer        (begp:endp)) ; this%core%grain_xfer        (:) = spval
@@ -5391,6 +5393,7 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_cf
     !-----------------------------------------------------------------------
+    this%core%species = species_from_string(carbon_type)
     if (.not. use_fates) then
        allocate(this%core%m_leaf_to_litter                   (begp:endp)) ;    this%core%m_leaf_to_litter                    (:) = spval
        allocate(this%core%m_leaf_storage_to_litter           (begp:endp)) ;    this%core%m_leaf_storage_to_litter            (:) = spval
@@ -8506,6 +8509,7 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_nf
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_N
     allocate(this%core%m_leaf_to_litter                   (begp:endp)) ; this%core%m_leaf_to_litter                   (:) = spval
     allocate(this%core%m_froot_to_litter                  (begp:endp)) ; this%core%m_froot_to_litter                  (:) = spval
     allocate(this%core%m_leaf_storage_to_litter           (begp:endp)) ; this%core%m_leaf_storage_to_litter           (:) = spval
@@ -9605,6 +9609,7 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! allocate for each member of veg_pf
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_P
     allocate(this%core%m_leaf_to_litter                   (begp:endp)) ; this%core%m_leaf_to_litter                   (:) = spval
     allocate(this%core%m_froot_to_litter                  (begp:endp)) ; this%core%m_froot_to_litter                  (:) = spval
     allocate(this%core%m_leaf_storage_to_litter           (begp:endp)) ; this%core%m_leaf_storage_to_litter           (:) = spval

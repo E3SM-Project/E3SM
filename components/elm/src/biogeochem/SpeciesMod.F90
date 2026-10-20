@@ -32,6 +32,7 @@ module SpeciesMod
   integer, parameter, public :: CN_SPECIES_P   = 5
 
   public :: species_from_string  ! convert a string representation to one of the constants defined here
+  public :: is_carbon            ! whether a species is a carbon isotope
 
 contains
 
@@ -67,5 +68,12 @@ contains
 
   end function species_from_string
 
+
+  pure logical function is_carbon(species)
+    !$acc routine seq
+    ! Whether species is one of the carbon isotopes
+    integer, intent(in) :: species
+    is_carbon = species == CN_SPECIES_C12 .or. species == CN_SPECIES_C13 .or. species == CN_SPECIES_C14
+  end function is_carbon
 
 end module SpeciesMod

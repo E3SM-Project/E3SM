@@ -5,6 +5,7 @@ module ColumnDataType
   ! Column data type allocation and initialization
   ! --------------------------------------------------------
   !
+  use SpeciesMod, only : species_from_string, CN_SPECIES_N, CN_SPECIES_P, is_carbon
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_infnan_mod  , only : isnan => shr_infnan_isnan,nan => shr_infnan_nan, assignment(=)
   use shr_const_mod   , only : SHR_CONST_TKFRZ
@@ -191,6 +192,7 @@ module ColumnDataType
   ! core: fields of column_carbon_state, column_nitrogen_state, column_phosphorus_state
   !-----------------------------------------------------------------------
   type, public :: column_nutrient_state
+    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
     real(r8), pointer :: totveg              (:)    => null() ! (g/m2) column-level totveg (fire)
     real(r8), pointer :: decomp_pools_vr     (:,:,:)=> null() ! (g/m3) vertically-resolved decomposing (litter, cwd, soil) nutrient pools
     real(r8), pointer :: trunc_sink_vr            (:,:)  => null() ! (g/m3) vertically-resolved column-level sink for nutrient truncation
@@ -230,7 +232,6 @@ module ColumnDataType
 
   type, public :: column_carbon_state
     type(column_nutrient_state) :: core  ! fields common to the C/N/P types
-    integer,  pointer  :: species  => null() ! c12, c13, c14
     real(r8), pointer :: rootc                (:)    => null() ! (gC/m2) root carbon at column level (fire)
     real(r8), pointer :: leafc                (:)    => null() ! (gC/m2) column-level leafc (fire)
     real(r8), pointer :: deadstemc            (:)    => null() ! (gC/m2) column-level deadstemc (fire)
@@ -502,6 +503,7 @@ module ColumnDataType
   ! core: fields of column_carbon_flux, column_nitrogen_flux, column_phosphorus_flux
   !-----------------------------------------------------------------------
   type, public :: column_nutrient_flux
+    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
     real(r8), pointer :: decomp_pools_sourcesink              (:,:,:) => null() ! change in decomposing nutrient pools. Used to update concentrations concurrently with vertical transport (g/m3/timestep)
     real(r8), pointer :: decomp_cascade_transfer_vr           (:,:,:) => null() ! vertically-resolved nutrient transferred along deomposition cascade (g/m3/s)
     real(r8), pointer :: decomp_pools_transport_tendency      (:,:,:) => null() ! nutrient tendency due to vertical transport in decomposing nutrient pools (g/m^3/s)
@@ -1973,6 +1975,7 @@ contains
     ! allocate for each member of col_cs
     !-----------------------------------------------------------------------
 
+    this%core%species = species_from_string(carbon_type)
     allocate(this%rootc                (begc:endc))     ; this%rootc                (:)     = spval
     allocate(this%core%totveg              (begc:endc))     ; this%core%totveg              (:)     = spval
     allocate(this%leafc                (begc:endc))     ; this%leafc                (:)     = spval
@@ -3162,6 +3165,7 @@ contains
     ! allocate for each member of col_ns
     !-----------------------------------------------------------------------
 
+    this%core%species = CN_SPECIES_N
     allocate(this%core%decomp_pools_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%core%decomp_pools_vr(:,:,:) = spval
     allocate(this%core%trunc_sink_vr             (begc:endc,1:nlevdecomp_full))   ; this%core%trunc_sink_vr             (:,:) = spval
     allocate(this%sminn_vr              (begc:endc,1:nlevdecomp_full))   ; this%sminn_vr              (:,:) = spval
@@ -4430,6 +4434,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_ps
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_P
     allocate(this%core%trunc_sink_vr            (begc:endc,1:nlevdecomp_full)) ; this%core%trunc_sink_vr            (:,:) = spval
     allocate(this%solutionp_vr         (begc:endc,1:nlevdecomp_full)) ; this%solutionp_vr         (:,:) = spval
     allocate(this%labilep_vr           (begc:endc,1:nlevdecomp_full)) ; this%labilep_vr           (:,:) = spval
@@ -5996,6 +6001,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_cf
     !-----------------------------------------------------------------------
+    this%core%species = species_from_string(carbon_type)
     allocate(this%core%decomp_pools_sourcesink          (begc:endc,1:nlevdecomp_full,1:ndecomp_pools))               ; this%core%decomp_pools_sourcesink   (:,:,:) = spval
     allocate(this%decomp_cascade_hr_vr              (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_hr_vr       (:,:,:) = spval
     allocate(this%core%decomp_cascade_transfer_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%core%decomp_cascade_transfer_vr(:,:,:) = spval
@@ -8136,6 +8142,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_nf
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_N
     allocate(this%ndep_to_sminn                   (begc:endc))                   ; this%ndep_to_sminn	                 (:)   = spval
     allocate(this%ndep_to_sminn_nh3               (begc:endc))                   ; this%ndep_to_sminn_nh3                (:)   = spval
     allocate(this%ndep_to_sminn_no3               (begc:endc))                   ; this%ndep_to_sminn_no3                (:)   = spval
@@ -10067,6 +10074,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_pf
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_P
     allocate(this%pdep_to_sminp                    (begc:endc))                   ; this%pdep_to_sminp                 (:)   = spval
     allocate(this%fert_p_to_sminp                  (begc:endc))                   ; this%fert_p_to_sminp               (:)   = spval
     allocate(this%core%hrv_deadstem_to_prod10         (begc:endc))                   ; this%core%hrv_deadstem_to_prod10      (:)   = spval

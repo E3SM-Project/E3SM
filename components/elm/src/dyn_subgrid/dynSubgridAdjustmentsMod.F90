@@ -142,7 +142,7 @@ contains
     old_weight_was_zero = (patch_state_updater%pwtgcell_old(p) == 0._r8)
 
     call ComputeSeedAmounts(p                  , &
-         species                    = veg_cs%species     , &
+         species                    = veg_cs%core%species     , &
          leaf_patch                 = leafc           , &
          leaf_storage_patch         = leafc_storage   , &
          leaf_xfer_patch            = leafc_xfer      , &

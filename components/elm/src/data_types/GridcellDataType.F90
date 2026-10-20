@@ -5,6 +5,7 @@ module GridcellDataType
   ! Gridcell data type allocation and initialization
   ! -------------------------------------------------------- 
   !
+  use SpeciesMod, only : species_from_string, CN_SPECIES_N, CN_SPECIES_P, is_carbon
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use elm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
   use elm_varcon        , only : spval, ispval
@@ -118,6 +119,7 @@ module GridcellDataType
   ! core: fields of gridcell_carbon_state, gridcell_nitrogen_state, gridcell_phosphorus_state
   !-----------------------------------------------------------------------
   type, public :: gridcell_nutrient_state
+    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
     real(r8), pointer :: seed                 (:) => null() ! (g/m2) pool for seeding new PFTs via dynamic landcover
     real(r8), pointer :: balance_beg                 (:) => null() ! nutrient mass, beginning of time step (g/m**2)
     real(r8), pointer :: balance_end                 (:) => null() ! nutrient mass, end of time step (g/m**2)
@@ -157,6 +159,7 @@ module GridcellDataType
   ! core: fields of gridcell_carbon_flux, gridcell_nitrogen_flux, gridcell_phosphorus_flux
   !-----------------------------------------------------------------------
   type, public :: gridcell_nutrient_flux
+    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
     real(r8), pointer :: dwt_seed_to_leaf         (:) => null() ! (g/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_seed_to_deadstem     (:) => null() ! (g/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_conv_flux            (:) => null() ! (g/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
@@ -579,6 +582,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_cs
     !-----------------------------------------------------------------------
+    this%core%species = species_from_string(carbon_type)
     allocate(this%core%seed                 (begg:endg));     this%core%seed                 (:) = spval
     allocate(this%tcs_month_beg         (begg:endg));     this%tcs_month_beg         (:) = spval
     allocate(this%tcs_month_end         (begg:endg));     this%tcs_month_end         (:) = spval
@@ -709,6 +713,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_cf
     !-----------------------------------------------------------------------
+    this%core%species = species_from_string(carbon_type)
     allocate(this%core%dwt_seed_to_leaf            (begg:endg)) ; this%core%dwt_seed_to_leaf         (:) = spval
     allocate(this%core%dwt_seed_to_deadstem        (begg:endg)) ; this%core%dwt_seed_to_deadstem     (:) = spval
     allocate(this%core%dwt_conv_flux               (begg:endg)) ; this%core%dwt_conv_flux            (:) = spval
@@ -951,6 +956,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_ns
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_N
     allocate(this%core%seed   (begg:endg));     this%core%seed   (:) = spval
     allocate(this%core%balance_beg   (begg:endg));     this%core%balance_beg   (:) = spval
     allocate(this%core%balance_end   (begg:endg));     this%core%balance_end   (:) = spval
@@ -999,6 +1005,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_nf
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_N
     allocate(this%core%dwt_seed_to_leaf     (begg:endg)) ; this%core%dwt_seed_to_leaf     (:) = spval
     allocate(this%core%dwt_seed_to_deadstem (begg:endg)) ; this%core%dwt_seed_to_deadstem (:) = spval
     allocate(this%core%dwt_conv_flux        (begg:endg)) ; this%core%dwt_conv_flux        (:) = spval
@@ -1101,6 +1108,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_ps
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_P
     allocate(this%core%seed   (begg:endg)) ; this%core%seed   (:) = spval
     allocate(this%core%balance_beg   (begg:endg)) ; this%core%balance_beg   (:) = spval
     allocate(this%core%balance_end   (begg:endg)) ; this%core%balance_end   (:) = spval
@@ -1146,6 +1154,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of grc_pf
     !-----------------------------------------------------------------------
+    this%core%species = CN_SPECIES_P
     allocate(this%core%dwt_seed_to_leaf      (begg:endg))   ; this%core%dwt_seed_to_leaf      (:) = spval
     allocate(this%core%dwt_seed_to_deadstem  (begg:endg))   ; this%core%dwt_seed_to_deadstem  (:) = spval
     allocate(this%core%dwt_conv_flux         (begg:endg))   ; this%core%dwt_conv_flux         (:) = spval
