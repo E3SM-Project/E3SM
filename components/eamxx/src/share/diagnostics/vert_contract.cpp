@@ -166,12 +166,10 @@ void VertContract::compute_impl()
     // Denominator: sum_lev(weight * 1 * mask); layout matches d
     vert_contraction(m_weight_sum, m_ones, m_weight);
     if (d.has_valid_mask()) {
-      // Mark where denominator is nonzero, then divide, then fill elsewhere
+      // Mark where denominator is nonzero, then divide (only where valid)
       auto& valid_out = d.get_valid_mask();
       compute_mask(m_weight_sum, 0, Comparison::NE, valid_out);
       d.scale_inv(m_weight_sum, valid_out);
-      // IO relies on fill_value for masked-out entries
-      d.deep_copy(constants::fill_value<Real>, valid_out, true);
     } else {
       d.scale_inv(m_weight_sum);
     }
