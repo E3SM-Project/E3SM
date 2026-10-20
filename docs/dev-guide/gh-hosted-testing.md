@@ -30,9 +30,21 @@ puts every active component through the coupler. It runs in these images:
 The CUDA images are left out: hosted runners have no GPU, so those tests could only be
 built, and there would be nothing to compare.
 
-Tests are listed without machine or compiler: `.github/scripts/e3sm-container-test.sh`
-adds `e3sm-container_<compiler>` using the image's default compiler. The same script runs
-the tests on any machine with Docker; see its header for the command.
+Tests are listed without machine or compiler. Each job runs `create_test` in the image with
+`--machine e3sm-container --compiler <compiler>`, the compiler being set next to each image
+in the workflow's matrix. The same test runs on any machine with Docker:
+
+```bash
+docker run --rm -v "$PWD:/projects/e3sm/work/E3SM" \
+  -v /path/to/inputdata:/projects/e3sm/data/inputdata \
+  ghcr.io/e3sm-project/e3sm-image:gnu13-openmpi4 bash -lc '
+    . /projects/e3sm/cime/enable.sh && cd /projects/e3sm/work/E3SM/cime/scripts &&
+    ./create_test SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS \
+      --machine e3sm-container --compiler gnu --wait'
+```
+
+`enable.sh` opts into the image's CIME machine. Until #8926 is merged, the workflow also
+downloads the P3 lookup table itself, since nothing else does (#5953).
 
 The workflow runs on PRs (all paths except docs), nightly, and by hand.
 
@@ -103,15 +115,17 @@ quickly, so they are kept apart:
   with a different compiler or library version can change answers. That shows up as a
   baseline failure on every PR until someone blesses again. The job summary records the
   image digest of each run to make that easy to tell apart from a real regression.
-- Baseline entries do not record which E3SM commit or image they came from beyond the
-  commit in their key.
+- A bless records the E3SM commit and date in `bless_log` next to the baselines (CIME does
+  this for E3SM), and a comparison reports it as "Most recent bless" in `TestStatus.log`.
+  The workflow also records the image digest in the baseline entry, and warns when a run
+  compares against baselines made with a different image.
 
 ## Moving baselines to a registry
 
 The plan is to move baselines to a GHCR package (the registry the images already come from)
 once the workflow has proven itself. Packages do not expire, can be tagged and rolled back,
 and do not count against the cache limit. Only the two baseline steps in the workflow change.
-The test script, the inputdata cache, and the triggers stay as they are.
+The test step, the inputdata cache, and the triggers stay as they are.
 
 1. **Create the package.** A bless run on master, with `packages: write` added to its
    permissions, pushes the baseline directory with
@@ -129,9 +143,18 @@ The test script, the inputdata cache, and the triggers stay as they are.
 4. **Rolling back** a bad bless becomes moving the `<image>-<arch>-<test>` tag back to an
    earlier dated tag. With the cache, it needs another bless from an earlier commit.
 
+The same approach fits inputdata, which is what limits how many tests the cache can hold
+(about 4 GB for the first test, against the 10 GB limit). Inputdata could be published as a
+registry image, one layer per set of input files, and mounted read-only into the test
+container, so tests would no longer download it or share the cache for it.
+
 ## Adding tests
 
 Add the test name to `matrix.test` in the workflow. Inputdata and baseline keys include the
 test name, so a new test starts with no entries: its first runs download all its inputdata
 and skip comparison until master is blessed. Keep the cache limit in mind: the first test's
 inputdata already takes about 4 GB of it.
+
+A test with testmods must name its machine and compiler (for example
+`TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD`), so it goes in the matrix's `include`
+list once per compiler rather than in `matrix.test`.

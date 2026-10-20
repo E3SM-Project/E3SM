@@ -28,7 +28,6 @@ on:
       - '!components/*/mkdocs.yml'
       - '!.github/**'
       - '.github/workflows/e3sm-gh-testing.yml'
-      - '.github/scripts/e3sm-container-test.sh'
 
   # Manual run on master is used to bless
   workflow_dispatch:
@@ -67,10 +66,15 @@ jobs:
         test: [SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS]
         exclude:
           - {env: intel2024-openmpi4, arch: aarch64}
+        # Each image's compiler, for create_test
+        include:
+          - {env: gnu13-openmpi4, compiler: gnu}
+          - {env: intel2024-openmpi4, compiler: intel}
     name: ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})
     env:
       IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.env }}
       TESTS: ${{ matrix.test }}
+      COMPILER: ${{ matrix.compiler }}
       BASELINES_KEY: e3sm-gh-baselines-${{ matrix.env }}-${{ matrix.arch }}-${{ matrix.test }}
       INPUTDATA_KEY: e3sm-gh-inputdata-${{ matrix.test }}
     steps:
@@ -124,10 +128,22 @@ jobs:
           fi
           echo "CT_FLAGS=$flags" >> "$GITHUB_ENV"
           echo "BASELINES=$baselines" >> "$GITHUB_ENV"
+      # TODO: remove once #8926 is merged. Until then CIME does not know EAM's P3 opens this
+      # file, so nothing downloads it and the run dies without it (#5953).
+      - name: Fetch the P3 lookup table
+        run: |
+          f=atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
+          if [ ! -f "inputdata/$f" ]; then
+            mkdir -p "inputdata/$(dirname "$f")"
+            curl -fsSL --retry 3 -o "inputdata/$f" "https://web.lcrc.anl.gov/public/e3sm/inputdata/$f"
+          fi
       - name: Pull the image
         run: docker pull "$IMAGE"
-      # As the image's default user (uid 1000). The runner's own uid is 1001, so hand it what
-      # the test writes to, and take it back after for the caches and the log upload.
+      # As the image's default user (uid 1000), with the image's own CIME machine, which
+      # enable.sh opts into. The runner's own uid is 1001, so hand it what the test writes to,
+      # and take it back after for the caches and the log upload. --proc-pool: create_test
+      # will not start a run with more ranks than its pool (cores plus 25% by default), and the
+      # machine oversubscribes, so let 8-rank runs start on a 4-core runner too.
       - name: Run the tests
         id: run-tests
         run: |
@@ -135,20 +151,32 @@ jobs:
           find inputdata -type f | wc -l > inputdata.count
           sudo chown -R 1000:1000 E3SM inputdata baselines scratch
           rc=0
-          docker run --rm -e TESTS -e CT_FLAGS \
+          docker run --rm -e TESTS -e CT_FLAGS -e COMPILER \
             -v "$PWD/E3SM:/projects/e3sm/work/E3SM" \
             -v "$PWD/inputdata:/projects/e3sm/data/inputdata" \
             -v "$PWD/baselines:/projects/e3sm/data/baselines" \
             -v "$PWD/scratch:/home/e3sm/e3sm_scratch" \
-            "$IMAGE" bash -l /projects/e3sm/work/E3SM/.github/scripts/e3sm-container-test.sh || rc=$?
+            "$IMAGE" bash -lc '. /projects/e3sm/cime/enable.sh &&
+              cd /projects/e3sm/work/E3SM/cime/scripts &&
+              ./create_test $TESTS $CT_FLAGS --machine e3sm-container --compiler "$COMPILER" \
+                --wait --test-id gh --parallel-jobs "$(nproc)" --proc-pool "$(( $(nproc) > 8 ? $(nproc) : 8 ))"' || rc=$?
           sudo chown -R "$(id -u):$(id -g)" E3SM inputdata baselines scratch
           if [ "$(find inputdata -type f | wc -l)" -gt "$(cat inputdata.count)" ]; then
             echo "new_inputdata=true" >> "$GITHUB_OUTPUT"
           fi
+          # bless_log, next to the baselines, records the E3SM commit that made them; record
+          # the image too, since a different image can change answers on its own.
+          image=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE")
+          if [ "$generate" = true ]; then
+            echo "$image" > baselines/image
+          elif [ -f baselines/image ] && [ "$(cat baselines/image)" != "$image" ]; then
+            echo "::warning::baselines were made with $(cat baselines/image), not this image; a baseline DIFF may come from the image"
+            BASELINES="$BASELINES (made with \`$(cat baselines/image)\`)"
+          fi
           {
             echo "### ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})"
             echo
-            echo "Image \`$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE")\`, baselines: $BASELINES"
+            echo "Image \`$image\`, baselines: $BASELINES"
             echo
             echo '```'
             cat scratch/*.gh/TestStatus 2>/dev/null || echo "no TestStatus"
