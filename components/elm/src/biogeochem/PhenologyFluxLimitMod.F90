@@ -527,12 +527,12 @@ contains
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
     use CNStateType               , only : cnstate_type
-    use VegetationDataType, only : vegetation_carbon_flux
-    use VegetationDataType, only : vegetation_carbon_state
-    use VegetationDataType, only : vegetation_nitrogen_flux
-    use VegetationDataType, only : vegetation_nitrogen_state
-    use VegetationDataType, only : vegetation_phosphorus_flux
-    use VegetationDataType, only : vegetation_phosphorus_state
+    use VegetationFluxTypes, only : vegetation_carbon_flux
+    use VegetationStateTypes, only : vegetation_carbon_state
+    use VegetationFluxTypes, only : vegetation_nitrogen_flux
+    use VegetationStateTypes, only : vegetation_nitrogen_state
+    use VegetationFluxTypes, only : vegetation_phosphorus_flux
+    use VegetationStateTypes, only : vegetation_phosphorus_state
     use elm_varctl          , only : use_c13, use_c14
     implicit none
     ! !ARGUMENTS:
@@ -593,8 +593,8 @@ contains
     ! the flux limiter for phenology carbon fluxes
     use decompMod           , only : bounds_type
     use CropType                  , only : crop_type
-    use VegetationDataType, only : vegetation_carbon_flux
-    use VegetationDataType, only : vegetation_carbon_state
+    use VegetationFluxTypes, only : vegetation_carbon_flux
+    use VegetationStateTypes, only : vegetation_carbon_state
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -828,8 +828,8 @@ contains
     ! the flux limiter for phenology nitrogen fluxes
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
-    use VegetationDataType, only : vegetation_nitrogen_flux
-    use VegetationDataType, only : vegetation_nitrogen_state
+    use VegetationFluxTypes, only : vegetation_nitrogen_flux
+    use VegetationStateTypes, only : vegetation_nitrogen_state
     implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -1010,8 +1010,8 @@ contains
     ! the flux limiter for phenology phosphorus  fluxes
     use decompMod           , only : bounds_type
     use CNStateType               , only : cnstate_type
-    use VegetationDataType, only : vegetation_phosphorus_flux
-    use VegetationDataType, only : vegetation_phosphorus_state
+    use VegetationFluxTypes, only : vegetation_phosphorus_flux
+    use VegetationStateTypes, only : vegetation_phosphorus_state
     implicit none
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds

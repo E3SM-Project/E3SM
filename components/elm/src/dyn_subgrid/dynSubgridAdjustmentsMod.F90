@@ -21,10 +21,10 @@ module dynSubgridAdjustmentsMod
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynPatchStateUpdaterMod, only : update_patch_state, update_patch_state_partition_flux_by_type
   use dynColumnStateUpdaterMod,only : column_state_updater_type, update_column_state_no_special_handling
-  use ColumnDataType         , only : column_carbon_state, column_nitrogen_state
-  use ColumnDataType         , only : column_phosphorus_state
-  use VegetationDataType     , only : vegetation_carbon_state, vegetation_nitrogen_state
-  use VegetationDataType     , only : vegetation_phosphorus_state
+  use ColumnStateTypes         , only : column_carbon_state, column_nitrogen_state
+  use ColumnStateTypes         , only : column_phosphorus_state
+  use VegetationStateTypes     , only : vegetation_carbon_state, vegetation_nitrogen_state
+  use VegetationStateTypes     , only : vegetation_phosphorus_state
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
   use abortutils             , only : endrun
   use shr_log_mod            , only : errMsg => shr_log_errMsg

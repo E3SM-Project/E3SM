@@ -11,8 +11,10 @@ module CarbonStateUpdate3Mod
   use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use elm_varctl       , only : use_erosion, ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
-  use ColumnDataType         , only : column_carbon_state, column_carbon_flux
-  use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnFluxTypes, only : column_carbon_flux
+  use VegetationStateTypes, only : vegetation_carbon_state
+  use VegetationFluxTypes, only : vegetation_carbon_flux
   ! bgc interface & pflotran:
   use elm_varctl       , only : use_pflotran, pf_cmode
   !

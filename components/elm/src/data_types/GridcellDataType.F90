@@ -5,19 +5,18 @@ module GridcellDataType
   ! Gridcell data type allocation and initialization
   ! -------------------------------------------------------- 
   !
-  use SpeciesMod, only : species_from_string, CN_SPECIES_N, CN_SPECIES_P, is_carbon, nutrient_name, nutrient_units, nutrient_text, nutrient_restart_name, by_species, hist_default, CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
+  use SpeciesMod, only : species_from_string, CN_SPECIES_N, CN_SPECIES_P
   use shr_kind_mod      , only : r8 => shr_kind_r8
-  use elm_varpar        , only : nlevsno, nlevgrnd, nlevlak, nlevurb
-  use elm_varcon        , only : spval, ispval
+  use elm_varcon, only : spval
   use elm_varctl        , only : use_fates
-  use histFileMod       , only : hist_addfld1d, hist_addfld2d, no_snow_normal
+  use histFileMod, only : hist_addfld1d
   use ncdio_pio         , only : file_desc_t, ncd_double
   use decompMod         , only : bounds_type
   use restUtilMod
   use AnnualFluxDribbler, only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
-  use ColumnType        , only : col_pp
-  use LandunitType      , only : lun_pp
-  use GridcellType      , only : grc_pp
+  use NutrientStateType, only : gridcell_nutrient_state, gridcell_nutrient_state_init, &
+      gridcell_nutrient_state_init_history
+  use NutrientFluxType, only : gridcell_nutrient_flux, gridcell_nutrient_flux_zerodwt
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -112,20 +111,6 @@ module GridcellDataType
     procedure, public :: Clean   => grc_wf_clean
   end type gridcell_water_flux
   
-  !-----------------------------------------------------------------------
-  ! Define the data structure that holds carbon state information at the gridcell level.
-  !-----------------------------------------------------------------------
-  !-----------------------------------------------------------------------
-  ! core: fields of gridcell_carbon_state, gridcell_nitrogen_state, gridcell_phosphorus_state
-  !-----------------------------------------------------------------------
-  type, public :: gridcell_nutrient_state
-    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
-    real(r8), pointer :: seed                 (:) => null() ! (g/m2) pool for seeding new PFTs via dynamic landcover
-    real(r8), pointer :: balance_beg                 (:) => null() ! nutrient mass, beginning of time step (g/m**2)
-    real(r8), pointer :: balance_end                 (:) => null() ! nutrient mass, end of time step (g/m**2)
-    real(r8), pointer :: balance_err                 (:) => null() ! nutrient balance error for the timestep (g/m**2)
-  end type gridcell_nutrient_state
-
   type, public :: gridcell_carbon_state
     type(gridcell_nutrient_state) :: core  ! fields common to the C/N/P types
     real(r8), pointer :: tcs_month_beg         (:) => null()  ! grc total carbon storage at the beginning of a month
@@ -152,23 +137,6 @@ module GridcellDataType
     procedure, public :: Clean   => grc_cs_clean
   end type gridcell_carbon_state
   
-  !-----------------------------------------------------------------------
-  ! Define the data structure that holds carbon flux information at the gridcell level.
-  !-----------------------------------------------------------------------
-  !-----------------------------------------------------------------------
-  ! core: fields of gridcell_carbon_flux, gridcell_nitrogen_flux, gridcell_phosphorus_flux
-  !-----------------------------------------------------------------------
-  type, public :: gridcell_nutrient_flux
-    integer :: species  ! CN_SPECIES_* (SpeciesMod) of the type holding this core
-    real(r8), pointer :: dwt_seed_to_leaf         (:) => null() ! (g/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
-    real(r8), pointer :: dwt_seed_to_deadstem     (:) => null() ! (g/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
-    real(r8), pointer :: dwt_conv_flux            (:) => null() ! (g/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
-    real(r8), pointer :: dwt_prod10_gain          (:) => null() ! (g/m2/s) dynamic landcover addition to 10-year wood product pool
-    real(r8), pointer :: dwt_prod100_gain         (:) => null() ! (g/m2/s) dynamic landcover addition to 100-year wood product pool
-    real(r8), pointer :: inputs                   (:) => null() ! (g/m2/s) grid-level nutrient inputs
-    real(r8), pointer :: outputs                  (:) => null() ! (g/m2/s) grid-level nutrient outputs
-  end type gridcell_nutrient_flux
-
   type, public :: gridcell_carbon_flux
     type(gridcell_nutrient_flux) :: core  ! fields common to the C/N/P types
     real(r8), pointer :: dwt_conv_cflux_dribbled   (:) => null()  ! (gC/m2/s) dwt_conv_cflux dribbled evenly throughout the year
@@ -564,51 +532,6 @@ contains
 
   end subroutine grc_wf_clean
 
-  !------------------------------------------------------------------------
-  ! Subroutines to initialize and clean gridcell carbon state data structure
-  !------------------------------------------------------------------------
-  subroutine gridcell_nutrient_state_init(this, begg, endg)
-    !
-    ! !ARGUMENTS:
-    type(gridcell_nutrient_state), intent(inout) :: this
-    integer, intent(in) :: begg,endg
-    !-----------------------------------------------------------------------
-    allocate(this%seed   (begg:endg));     this%seed   (:) = spval
-    allocate(this%balance_beg   (begg:endg));     this%balance_beg   (:) = spval
-    allocate(this%balance_end   (begg:endg));     this%balance_end   (:) = spval
-    allocate(this%balance_err   (begg:endg));     this%balance_err   (:) = spval
-
-
-  end subroutine gridcell_nutrient_state_init
-
-  subroutine gridcell_nutrient_state_init_history(this, begg, endg)
-    !
-    ! !DESCRIPTION:
-    ! History fields of the core of gridcell_carbon_state, gridcell_nitrogen_state, gridcell_phosphorus_state:
-    ! one hist_addfld1d per field for every species (generated by `spel nutrient history`)
-    !
-    ! !ARGUMENTS:
-    type(gridcell_nutrient_state), intent(inout) :: this
-    integer, intent(in) :: begg,endg
-    !-----------------------------------------------------------------------
-
-    if (.not. (is_carbon(this%species) .and. use_fates)) then
-       this%seed(begg:endg) = spval
-       call hist_addfld1d (fname=nutrient_name(this%species, 'SEED#_GRC'), &
-            units=by_species(this%species, 'gC/m^2', 'gC/m^2', 'gC/m^2', 'gN/m^2', 'gP/m^2'), &
-            avgflag='A', &
-            long_name=by_species(this%species, 'pool for seeding new PFTs via dynamic landcover', 'pool for seeding new PFTs via dynamic landcover', 'pool for seeding new PFTs via dynamic landcover', 'pool for seeding new PFTs ', 'P pool for seeding new PFTs '), &
-            ptr_gcell=this%seed, default='inactive')
-
-    end if
-    if (is_carbon(this%species)) then
-       call hist_addfld1d (fname='CMASS_BALANCE_ERROR', units='gC/m^2', avgflag='A', &
-            long_name='Gridcell carbon mass balance error', ptr_lnd=this%balance_err)
-
-    end if
-
-  end subroutine gridcell_nutrient_state_init_history
-
   subroutine grc_cs_init(this, begg, endg,carbon_type)
     !
     ! !ARGUMENTS:
@@ -914,29 +837,6 @@ contains
     
   end subroutine grc_cf_init
   
-  !-----------------------------------------------------------------------
-  subroutine gridcell_nutrient_flux_zerodwt(this, bounds)
-    !
-    ! !ARGUMENTS:
-    type(gridcell_nutrient_flux), intent(inout) :: this
-    type(bounds_type), intent(in)  :: bounds 
-    integer  :: g          ! indices
-    !-----------------------------------------------------------------------
-    !-----------------------------------------------------------------------
-
-    ! set column-level conversion and product pool fluxes
-    ! to 0 at the beginning of every timestep
-
-    do g = bounds%begg, bounds%endg
-       this%dwt_seed_to_leaf(g)         = 0._r8
-       this%dwt_seed_to_deadstem(g)     = 0._r8
-       this%dwt_conv_flux(g)            = 0._r8
-       this%dwt_prod10_gain(g)          = 0._r8
-       this%dwt_prod100_gain(g)         = 0._r8
-    end do
-
-  end subroutine gridcell_nutrient_flux_zerodwt
-
   subroutine grc_cf_zerodwt( this, bounds )
     !
     ! !DESCRIPTION
@@ -1000,7 +900,6 @@ contains
     do g = begg, endg
        this%core%seed(g) = 0._r8
     end do
-
 
   end subroutine grc_ns_init
   
@@ -1143,7 +1042,6 @@ contains
        this%core%seed(g) = 0._r8
     end do
 
-  
   end subroutine grc_ps_init
 
   !------------------------------------------------------------------------
@@ -1254,6 +1152,3 @@ contains
   end subroutine grc_pf_clean
   
 end module GridcellDataType
-
-  
-    

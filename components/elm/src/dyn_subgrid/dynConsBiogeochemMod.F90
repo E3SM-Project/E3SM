@@ -21,14 +21,15 @@ module dynConsBiogeochemMod
   use GridcellDataType         , only : grc_nf, grc_pf
   use LandunitType             , only : lun_pp
   use ColumnType               , only : col_pp
-  use ColumnDataType           , only : column_carbon_state, column_nitrogen_state
-  use ColumnDataType           , only : column_phosphorus_state
+  use ColumnStateTypes           , only : column_carbon_state, column_nitrogen_state
+  use ColumnStateTypes           , only : column_phosphorus_state
   use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType           , only : col_nf, col_pf
   use VegetationType           , only : veg_pp
-  use VegetationDataType       , only : vegetation_carbon_state, vegetation_carbon_flux
-  use VegetationDataType       , only : vegetation_nitrogen_state
-  use VegetationDataType       , only : vegetation_phosphorus_state
+  use VegetationStateTypes, only : vegetation_carbon_state
+  use VegetationFluxTypes, only : vegetation_carbon_flux
+  use VegetationStateTypes       , only : vegetation_nitrogen_state
+  use VegetationStateTypes       , only : vegetation_phosphorus_state
   use VegetationDataType       , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType       , only : veg_nf, veg_pf
   use elm_varcon               , only : c14ratio

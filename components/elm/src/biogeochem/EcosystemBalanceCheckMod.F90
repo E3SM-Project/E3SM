@@ -36,9 +36,12 @@ module EcosystemBalanceCheckMod
   use GridcellDataType    , only : gridcell_nitrogen_state, gridcell_nitrogen_flux
   use GridcellDataType    , only : gridcell_phosphorus_state, gridcell_phosphorus_flux
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : column_carbon_state, column_carbon_flux
-  use ColumnDataType      , only : column_nitrogen_state, column_nitrogen_flux
-  use ColumnDataType      , only : column_phosphorus_state, column_phosphorus_flux
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnFluxTypes, only : column_carbon_flux
+  use ColumnStateTypes, only : column_nitrogen_state
+  use ColumnFluxTypes, only : column_nitrogen_flux
+  use ColumnStateTypes, only : column_phosphorus_state
+  use ColumnFluxTypes, only : column_phosphorus_flux
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
 
@@ -843,7 +846,7 @@ contains
     ! at grid cell level
     !
     use GridcellDataType, only : gridcell_carbon_flux
-    use ColumnDataType  , only : column_carbon_flux
+    use ColumnFluxTypes  , only : column_carbon_flux
     !
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds

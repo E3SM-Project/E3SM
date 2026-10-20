@@ -18,7 +18,7 @@ module NitrogenDynamicsMod
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf
-  use ColumnDataType      , only : nfix_timeconst
+  use ColumnFluxTypes      , only : nfix_timeconst
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf
   use VegetationPropertiesType  , only : veg_vp

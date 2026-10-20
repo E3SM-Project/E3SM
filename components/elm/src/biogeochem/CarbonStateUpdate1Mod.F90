@@ -19,11 +19,13 @@ module CarbonStateUpdate1Mod
 
   use GridcellDataType        , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType        , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use ColumnDataType          , only : column_carbon_state, column_carbon_flux
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnFluxTypes, only : column_carbon_flux
   use ColumnDataType          , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType          , only : col_cf, c13_col_cf, c14_col_cf
   use VegetationType          , only : veg_pp
-  use VegetationDataType      , only : vegetation_carbon_state, vegetation_carbon_flux
+  use VegetationStateTypes, only : vegetation_carbon_state
+  use VegetationFluxTypes, only : vegetation_carbon_flux
   use VegetationPropertiesType, only : veg_vp
 
   !

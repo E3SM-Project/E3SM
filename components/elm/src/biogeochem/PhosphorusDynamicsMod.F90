@@ -20,7 +20,8 @@ module PhosphorusDynamicsMod
   use CNStateType         , only : cnstate_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst, col_ps, col_pf
+  use ColumnDataType, only : col_ws, col_wf, col_ps, col_pf
+  use ColumnFluxTypes, only : nfix_timeconst
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp

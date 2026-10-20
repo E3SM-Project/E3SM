@@ -13,8 +13,10 @@ module CarbonStateUpdate2Mod
   use elm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp
   use VegetationType        , only : veg_pp
-  use ColumnDataType         , only : column_carbon_state, column_carbon_flux
-  use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnFluxTypes, only : column_carbon_flux
+  use VegetationStateTypes, only : vegetation_carbon_state
+  use VegetationFluxTypes, only : vegetation_carbon_flux
   !
   implicit none
   save

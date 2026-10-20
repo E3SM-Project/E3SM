@@ -11,7 +11,8 @@ module CNPBudgetMod
   use spmdMod             , only : masterproc
   use GridcellDataType    , only : grc_ws
   use ColumnDataType      , only : col_ws
-  use ColumnDataType      , only : column_carbon_state, col_cf 
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnDataType, only : col_cf
   use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf 
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
 
@@ -1076,7 +1077,7 @@ contains
   subroutine CNPBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs)
     !
     use GridcellDataType, only : gridcell_carbon_state
-    use ColumnDataType  , only : column_carbon_state
+    use ColumnStateTypes  , only : column_carbon_state
     !
     implicit none
     !
@@ -1095,7 +1096,7 @@ contains
   subroutine CNPBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
     !
     use GridcellDataType, only : gridcell_carbon_state
-    use ColumnDataType  , only : column_carbon_state
+    use ColumnStateTypes  , only : column_carbon_state
     !
     implicit none
     !
@@ -1122,7 +1123,7 @@ contains
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
-    use ColumnDataType   , only : column_carbon_state
+    use ColumnStateTypes   , only : column_carbon_state
     !
     !
     ! !ARGUMENTS:
@@ -1169,7 +1170,7 @@ contains
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
-    use ColumnDataType   , only : column_carbon_state
+    use ColumnStateTypes   , only : column_carbon_state
     !
     !
     ! !ARGUMENTS:

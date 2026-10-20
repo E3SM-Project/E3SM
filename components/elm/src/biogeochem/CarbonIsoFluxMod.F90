@@ -13,10 +13,12 @@ module CarbonIsoFluxMod
   use VegetationPropertiesType         , only : veg_vp
   use CNStateType            , only : cnstate_type
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : column_carbon_state, column_carbon_flux
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnFluxTypes, only : column_carbon_flux
   use ColumnDataType         , only : col_cs, col_cf
   use VegetationType         , only : veg_pp
-  use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
+  use VegetationStateTypes, only : vegetation_carbon_state
+  use VegetationFluxTypes, only : vegetation_carbon_flux
   use VegetationDataType     , only : veg_cs, veg_cf
   !
   implicit none
