@@ -258,7 +258,7 @@ contains
    deadstemn                           =>    veg_ns%core%deadstem                               , & ! Input:  [real(r8) (:)]  (gN/m2) dead stem N                               
    livecrootn                          =>    veg_ns%core%livecroot                              , & ! Input:  [real(r8) (:)]  (gN/m2) live coarse root N                        
    deadcrootn                          =>    veg_ns%core%deadcroot                              , & ! Input:  [real(r8) (:)]  (gN/m2) dead coarse root N                        
-   retransn                            =>    veg_ns%retransn                                , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of retranslocated N            
+   retransn                            =>    veg_ns%retrans%pool                                , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of retranslocated N            
    npool                               =>    veg_ns%core%pool                                   , & ! Input:  [real(r8) (:)]  (gN/m2) plant pool of stored N 
    leafn_storage                       =>    veg_ns%core%leaf_storage                           , & ! Input:  [real(r8) (:)]  (gN/m2) leaf N storage                            
    frootn_storage                      =>    veg_ns%core%froot_storage                          , & ! Input:  [real(r8) (:)]  (gN/m2) fine root N storage                       
@@ -280,7 +280,7 @@ contains
    deadstemp                           =>    veg_ps%core%deadstem                               , & ! Input:  [real(r8) (:)]  (gP/m2) dead stem P                               
    livecrootp                          =>    veg_ps%core%livecroot                              , & ! Input:  [real(r8) (:)]  (gP/m2) live coarse root P                        
    deadcrootp                          =>    veg_ps%core%deadcroot                              , & ! Input:  [real(r8) (:)]  (gP/m2) dead coarse root P                        
-   retransp                            =>    veg_ps%retransp                                , & ! Input:  [real(r8) (:)]  (gP/m2) plant pool of retranslocated P            
+   retransp                            =>    veg_ps%retrans%pool                                , & ! Input:  [real(r8) (:)]  (gP/m2) plant pool of retranslocated P            
    ppool                               =>    veg_ps%core%pool                                   , & ! Input:  [real(r8) (:)]  (gP/m2) plant pool of storage P  
    leafp_storage                       =>    veg_ps%core%leaf_storage                           , & ! Input:  [real(r8) (:)]  (gP/m2) leaf P storage                            
    frootp_storage                      =>    veg_ps%core%froot_storage                          , & ! Input:  [real(r8) (:)]  (gP/m2) fine root P storage                       
@@ -326,7 +326,7 @@ contains
    hrv_deadstemn_to_prod100n           =>    veg_nf%core%hrv_deadstem_to_prod100               , & ! Output: [real(r8) (:)]                                                    
    hrv_livecrootn_to_litter            =>    veg_nf%core%hrv_livecroot_to_litter                , & ! Output: [real(r8) (:)]                                                    
    hrv_deadcrootn_to_litter            =>    veg_nf%core%hrv_deadcroot_to_litter                , & ! Output: [real(r8) (:)]                                                    
-   hrv_retransn_to_litter              =>    veg_nf%hrv_retransn_to_litter                  , & ! Output: [real(r8) (:)]                                                    
+   hrv_retransn_to_litter              =>    veg_nf%retrans%hrv_retrans_to_litter                  , & ! Output: [real(r8) (:)]                                                    
    hrv_npool_to_litter                 =>    veg_nf%core%hrv_pool_to_litter                     , & ! Output: [real(r8) (:)]   
    hrv_leafn_storage_to_litter         =>    veg_nf%core%hrv_leaf_storage_to_litter             , & ! Output: [real(r8) (:)]                                                    
    hrv_frootn_storage_to_litter        =>    veg_nf%core%hrv_froot_storage_to_litter            , & ! Output: [real(r8) (:)]                                                    
@@ -348,7 +348,7 @@ contains
    hrv_deadstemp_to_prod100p           =>    veg_pf%core%hrv_deadstem_to_prod100               , & ! Output: [real(r8) (:)]                                                    
    hrv_livecrootp_to_litter            =>    veg_pf%core%hrv_livecroot_to_litter                , & ! Output: [real(r8) (:)]                                                    
    hrv_deadcrootp_to_litter            =>    veg_pf%core%hrv_deadcroot_to_litter                , & ! Output: [real(r8) (:)]                                                    
-   hrv_retransp_to_litter              =>    veg_pf%hrv_retransp_to_litter                  , & ! Output: [real(r8) (:)]                                                    
+   hrv_retransp_to_litter              =>    veg_pf%retrans%hrv_retrans_to_litter                  , & ! Output: [real(r8) (:)]                                                    
    hrv_ppool_to_litter                 =>    veg_pf%core%hrv_pool_to_litter                     , & ! Output: [real(r8) (:)] 
    hrv_leafp_storage_to_litter         =>    veg_pf%core%hrv_leaf_storage_to_litter             , & ! Output: [real(r8) (:)]                                                    
    hrv_frootp_storage_to_litter        =>    veg_pf%core%hrv_froot_storage_to_litter            , & ! Output: [real(r8) (:)]                                                    
@@ -567,7 +567,7 @@ contains
         phrv_deadstemn_to_prod100n       =>    veg_nf%core%hrv_deadstem_to_prod100        , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_livecrootn_to_litter         =>    veg_nf%core%hrv_livecroot_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_deadcrootn_to_litter         =>    veg_nf%core%hrv_deadcroot_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_retransn_to_litter           =>    veg_nf%hrv_retransn_to_litter           , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_retransn_to_litter           =>    veg_nf%retrans%hrv_retrans_to_litter           , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_npool_to_litter              =>    veg_nf%core%hrv_pool_to_litter              , & ! Input:  [real(r8) (:)   ]
         hrv_leafn_storage_to_litter      =>    veg_nf%core%hrv_leaf_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_frootn_storage_to_litter     =>    veg_nf%core%hrv_froot_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    
@@ -596,7 +596,7 @@ contains
         phrv_deadstemp_to_prod100p       =>    veg_pf%core%hrv_deadstem_to_prod100        , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_livecrootp_to_litter         =>    veg_pf%core%hrv_livecroot_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_deadcrootp_to_litter         =>    veg_pf%core%hrv_deadcroot_to_litter         , & ! Input:  [real(r8) (:)   ]                                                    
-        hrv_retransp_to_litter           =>    veg_pf%hrv_retransp_to_litter           , & ! Input:  [real(r8) (:)   ]                                                    
+        hrv_retransp_to_litter           =>    veg_pf%retrans%hrv_retrans_to_litter           , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_ppool_to_litter              =>    veg_pf%core%hrv_pool_to_litter              , & ! Input:  [real(r8) (:)   ]   
         hrv_leafp_storage_to_litter      =>    veg_pf%core%hrv_leaf_storage_to_litter      , & ! Input:  [real(r8) (:)   ]                                                    
         hrv_frootp_storage_to_litter     =>    veg_pf%core%hrv_froot_storage_to_litter     , & ! Input:  [real(r8) (:)   ]                                                    

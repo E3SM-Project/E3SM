@@ -892,7 +892,7 @@ contains
    veg_ns%core%deadcroot(p)         = 0._r8
    veg_ns%core%deadcroot_storage(p) = 0._r8
    veg_ns%core%deadcroot_xfer(p)    = 0._r8
-   veg_ns%retransn(p)           = 0._r8
+   veg_ns%retrans%pool(p)           = 0._r8
    veg_ns%core%pool(p)              = 0._r8
    veg_ns%core%trunc_sink(p)             = 0._r8
    veg_ns%core%dispveg(p)           = 0._r8
@@ -932,7 +932,7 @@ contains
    veg_ps%core%deadcroot(p)         = 0._r8
    veg_ps%core%deadcroot_storage(p) = 0._r8
    veg_ps%core%deadcroot_xfer(p)    = 0._r8
-   veg_ps%retransp(p)           = 0._r8
+   veg_ps%retrans%pool(p)           = 0._r8
    veg_ps%core%pool(p)              = 0._r8
    veg_ps%core%trunc_sink(p)             = 0._r8
    veg_ps%core%dispveg(p)           = 0._r8
@@ -1053,8 +1053,8 @@ contains
    ! !ARGUMENT
    integer                , intent(in)    :: p
 
-   veg_nf%plant_ndemand(p)         = 0._r8
-   veg_nf%avail_retransn(p)        = 0._r8
+   veg_nf%uptake%plant_demand(p)         = 0._r8
+   veg_nf%retrans%avail_retrans(p)        = 0._r8
    veg_nf%core%plant_alloc(p)          = 0._r8
 
  end subroutine NitrogenFluxVarsInit
@@ -1070,8 +1070,8 @@ contains
    ! !ARGUMENT
    integer                  , intent(in)    :: p
 
-   veg_pf%plant_pdemand(p)         = 0._r8
-   veg_pf%avail_retransp(p)        = 0._r8
+   veg_pf%uptake%plant_demand(p)         = 0._r8
+   veg_pf%retrans%avail_retrans(p)        = 0._r8
    veg_pf%core%plant_alloc(p)          = 0._r8
 
  end subroutine PhosphorusFluxVarsInit

@@ -3159,13 +3159,13 @@ contains
          livestemn_to_litter   =>    veg_nf%core%livestem_to_litter , & ! Output: [real(r8) (:) ]  livestem N to litter (gN/m2/s)
          grainn_to_food        =>    veg_nf%core%grain_to_food      , & ! Output: [real(r8) (:) ]  grain N to food (gN/m2/s)
          leafn_to_litter       =>    veg_nf%core%leaf_to_litter     , & ! Output: [real(r8) (:) ]  leaf N litterfall (gN/m2/s)
-         leafn_to_retransn     =>    veg_nf%leafn_to_retransn   , & ! Output: [real(r8) (:) ]  leaf N to retranslocated N pool (gN/m2/s)
+         leafn_to_retransn     =>    veg_nf%retrans%leaf_to_retrans   , & ! Output: [real(r8) (:) ]  leaf N to retranslocated N pool (gN/m2/s)
          frootn_to_litter      =>    veg_nf%core%froot_to_litter    , & ! Output: [real(r8) (:) ]  fine root N litterfall (gN/m2/s)
 
          livestemp_to_litter   =>    veg_pf%core%livestem_to_litter , & ! Output: [real(r8) (:) ]  livestem P to litter (gP/m2/s)
          grainp_to_food        =>    veg_pf%core%grain_to_food      , & ! Output: [real(r8) (:) ]  grain P to food (gP/m2/s)
          leafp_to_litter       =>    veg_pf%core%leaf_to_litter     , & ! Output: [real(r8) (:) ]  leaf P litterfall (gP/m2/s)
-         leafp_to_retransp     =>    veg_pf%leafp_to_retransp   , & ! Output: [real(r8) (:) ]  leaf P to retranslocated P pool (gP/m2/s)
+         leafp_to_retransp     =>    veg_pf%retrans%leaf_to_retrans   , & ! Output: [real(r8) (:) ]  leaf P to retranslocated P pool (gP/m2/s)
          frootp_to_litter      =>    veg_pf%core%froot_to_litter    , & ! Output: [real(r8) (:) ]  fine root P litterfall (gP/m2/s)
 
          prev_leafn_to_litter  =>    veg_nf%core%prev_leaf_to_litter    , & ! Output: [real(r8) (:) ]  previous timestep leaf N litterfall flux (gN/m2/s)
@@ -3338,11 +3338,11 @@ contains
          frootc_to_litter  =>    veg_cf%core%froot_to_litter    , & ! Output: [real(r8) (:) ]
 
          leafn_to_litter   =>    veg_nf%core%leaf_to_litter   , & ! Output: [real(r8) (:) ]
-         leafn_to_retransn =>    veg_nf%leafn_to_retransn , & ! Output: [real(r8) (:) ]
+         leafn_to_retransn =>    veg_nf%retrans%leaf_to_retrans , & ! Output: [real(r8) (:) ]
          frootn_to_litter  =>    veg_nf%core%froot_to_litter  , & ! Output: [real(r8) (:) ]
 
          leafp_to_litter   =>    veg_pf%core%leaf_to_litter   , & ! Output: [real(r8) (:) ]
-         leafp_to_retransp =>    veg_pf%leafp_to_retransp , & ! Output: [real(r8) (:) ]
+         leafp_to_retransp =>    veg_pf%retrans%leaf_to_retrans , & ! Output: [real(r8) (:) ]
          frootp_to_litter  =>    veg_pf%core%froot_to_litter  , & ! Output: [real(r8) (:) ]
 
          leafn             =>    veg_ns%core%leaf              , &
@@ -3439,16 +3439,16 @@ contains
          livecrootc_to_deadcrootc =>    veg_cf%core%livecroot_to_deadcroot   , & ! Output: [real(r8) (:) ]
 
          livestemn_to_deadstemn   =>    veg_nf%core%livestem_to_deadstem   , & ! Output: [real(r8) (:) ]
-         livestemn_to_retransn    =>    veg_nf%livestemn_to_retransn    , & ! Output: [real(r8) (:) ]
+         livestemn_to_retransn    =>    veg_nf%retrans%livestem_to_retrans    , & ! Output: [real(r8) (:) ]
          livecrootn_to_deadcrootn =>    veg_nf%core%livecroot_to_deadcroot , & ! Output: [real(r8) (:) ]
-         livecrootn_to_retransn   =>    veg_nf%livecrootn_to_retransn   , & ! Output: [real(r8) (:) ]
+         livecrootn_to_retransn   =>    veg_nf%retrans%livecroot_to_retrans   , & ! Output: [real(r8) (:) ]
 
          livewdcp                 =>    veg_vp%livewdcp                              , & ! Input:  [real(r8) (:) ]  live wood (phloem and ray parenchyma) C:P (gC/gP)
          deadwdcp                 =>    veg_vp%deadwdcp                              , & ! Input:  [real(r8) (:) ]  dead wood (xylem and heartwood) C:P (gC/gP)
          livestemp_to_deadstemp   =>    veg_pf%core%livestem_to_deadstem   , & ! Output: [real(r8) (:) ]
-         livestemp_to_retransp    =>    veg_pf%livestemp_to_retransp    , & ! Output: [real(r8) (:) ]
+         livestemp_to_retransp    =>    veg_pf%retrans%livestem_to_retrans    , & ! Output: [real(r8) (:) ]
          livecrootp_to_deadcrootp =>    veg_pf%core%livecroot_to_deadcroot , & ! Output: [real(r8) (:) ]
-         livecrootp_to_retransp   =>    veg_pf%livecrootp_to_retransp     & ! Output: [real(r8) (:) ]
+         livecrootp_to_retransp   =>    veg_pf%retrans%livecroot_to_retrans     & ! Output: [real(r8) (:) ]
          )
 
       ! patch loop

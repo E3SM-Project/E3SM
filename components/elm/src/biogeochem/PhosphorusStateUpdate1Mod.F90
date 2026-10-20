@@ -196,7 +196,7 @@ contains
 
                   col_pf%core%decomp_pools_sourcesink(c,j,cascade_receiver_pool(k)) = &
                        col_pf%core%decomp_pools_sourcesink(c,j,cascade_receiver_pool(k)) + &
-                       (col_pf%core%decomp_cascade_transfer_vr(c,j,k) + col_pf%decomp_cascade_sminp_flux_vr(c,j,k)) * dt
+                       (col_pf%core%decomp_cascade_transfer_vr(c,j,k) + col_pf%mineral%decomp_cascade_smin_flux_vr(c,j,k)) * dt
                end do
             end do
          else  ! terminal transitions
@@ -206,7 +206,7 @@ contains
                   c = filter_soilc(fc)
                   col_pf%core%decomp_pools_sourcesink(c,j,cascade_donor_pool(k)) = &
                        col_pf%core%decomp_pools_sourcesink(c,j,cascade_donor_pool(k)) - &
-                       col_pf%decomp_cascade_sminp_flux_vr(c,j,k) * dt
+                       col_pf%mineral%decomp_cascade_smin_flux_vr(c,j,k) * dt
                end do
             end do
          end if
@@ -263,26 +263,26 @@ contains
               ! phenology: litterfall and retranslocation fluxes
               veg_ps%core%leaf(p)    = veg_ps%core%leaf(p)    - veg_pf%core%leaf_to_litter(p)*dt
               veg_ps%core%froot(p)   = veg_ps%core%froot(p)   - veg_pf%core%froot_to_litter(p)*dt
-              veg_ps%core%leaf(p)    = veg_ps%core%leaf(p)    - veg_pf%leafp_to_retransp(p)*dt
-              veg_ps%retransp(p) = veg_ps%retransp(p) + veg_pf%leafp_to_retransp(p)*dt
+              veg_ps%core%leaf(p)    = veg_ps%core%leaf(p)    - veg_pf%retrans%leaf_to_retrans(p)*dt
+              veg_ps%retrans%pool(p) = veg_ps%retrans%pool(p) + veg_pf%retrans%leaf_to_retrans(p)*dt
 
               ! live wood turnover and retranslocation fluxes
               if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ps%core%livestem(p)  = veg_ps%core%livestem(p)  - veg_pf%core%livestem_to_deadstem(p)*dt
                   veg_ps%core%deadstem(p)  = veg_ps%core%deadstem(p)  + veg_pf%core%livestem_to_deadstem(p)*dt
-                  veg_ps%core%livestem(p)  = veg_ps%core%livestem(p)  - veg_pf%livestemp_to_retransp(p)*dt
-                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livestemp_to_retransp(p)*dt
+                  veg_ps%core%livestem(p)  = veg_ps%core%livestem(p)  - veg_pf%retrans%livestem_to_retrans(p)*dt
+                  veg_ps%retrans%pool(p)   = veg_ps%retrans%pool(p)   + veg_pf%retrans%livestem_to_retrans(p)*dt
                   veg_ps%core%livecroot(p) = veg_ps%core%livecroot(p) - veg_pf%core%livecroot_to_deadcroot(p)*dt
                   veg_ps%core%deadcroot(p) = veg_ps%core%deadcroot(p) + veg_pf%core%livecroot_to_deadcroot(p)*dt
-                  veg_ps%core%livecroot(p) = veg_ps%core%livecroot(p) - veg_pf%livecrootp_to_retransp(p)*dt
-                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livecrootp_to_retransp(p)*dt
+                  veg_ps%core%livecroot(p) = veg_ps%core%livecroot(p) - veg_pf%retrans%livecroot_to_retrans(p)*dt
+                  veg_ps%retrans%pool(p)   = veg_ps%retrans%pool(p)   + veg_pf%retrans%livecroot_to_retrans(p)*dt
               end if
               if (iscft(ivt(p))) then ! Beth adds retrans from froot
-                  veg_ps%core%froot(p)     = veg_ps%core%froot(p)     - veg_pf%frootp_to_retransp(p)*dt
-                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%frootp_to_retransp(p)*dt
+                  veg_ps%core%froot(p)     = veg_ps%core%froot(p)     - veg_pf%retrans%froot_to_retrans(p)*dt
+                  veg_ps%retrans%pool(p)   = veg_ps%retrans%pool(p)   + veg_pf%retrans%froot_to_retrans(p)*dt
                   veg_ps%core%livestem(p)  = veg_ps%core%livestem(p)  - veg_pf%core%livestem_to_litter(p)*dt
-                  veg_ps%core%livestem(p)  = veg_ps%core%livestem(p)  - veg_pf%livestemp_to_retransp(p)*dt
-                  veg_ps%retransp(p)   = veg_ps%retransp(p)   + veg_pf%livestemp_to_retransp(p)*dt
+                  veg_ps%core%livestem(p)  = veg_ps%core%livestem(p)  - veg_pf%retrans%livestem_to_retrans(p)*dt
+                  veg_ps%retrans%pool(p)   = veg_ps%retrans%pool(p)   + veg_pf%retrans%livestem_to_retrans(p)*dt
                   veg_ps%core%grain(p)     = veg_ps%core%grain(p)     - veg_pf%core%grain_to_food(p)*dt
 
                   veg_ps%core%cropseed_deficit(p) = veg_ps%core%cropseed_deficit(p) &
@@ -291,13 +291,13 @@ contains
 
               ! uptake from soil mineral N pool
               veg_ps%core%pool(p) = &
-                    veg_ps%core%pool(p) + veg_pf%sminp_to_ppool(p)*dt
-              if (nu_com .ne. 'RD') veg_ps%core%pool(p) = veg_ps%core%pool(p) + veg_pf%supplement_to_plantp(p)*dt
+                    veg_ps%core%pool(p) + veg_pf%uptake%smin_to_pool(p)*dt
+              if (nu_com .ne. 'RD') veg_ps%core%pool(p) = veg_ps%core%pool(p) + veg_pf%uptake%supplement_to_plant(p)*dt
               if (NFIX_PTASE_plant) veg_ps%core%pool(p) = veg_ps%core%pool(p) + veg_pf%biochem_pmin_to_plant(p)*dt
 
               ! deployment from retranslocation pool
-              veg_ps%core%pool(p)    = veg_ps%core%pool(p)    + veg_pf%retransp_to_ppool(p)*dt
-              veg_ps%retransp(p) = veg_ps%retransp(p) - veg_pf%retransp_to_ppool(p)*dt
+              veg_ps%core%pool(p)    = veg_ps%core%pool(p)    + veg_pf%retrans%retrans_to_pool(p)*dt
+              veg_ps%retrans%pool(p) = veg_ps%retrans%pool(p) - veg_pf%retrans%retrans_to_pool(p)*dt
 
               ! allocation fluxes
               veg_ps%core%pool(p)           = veg_ps%core%pool(p)          - veg_pf%core%pool_to_leaf(p)*dt

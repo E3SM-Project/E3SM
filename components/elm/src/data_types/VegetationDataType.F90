@@ -172,10 +172,17 @@ module VegetationDataType
   !-----------------------------------------------------------------------
   ! Define the data structure that holds nitrogen state information at the vegetation level.
   !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! retrans: fields of vegetation_nitrogen_state, vegetation_phosphorus_state
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_retrans_state
+    real(r8), pointer :: pool               (:)   => null() ! (g/m2) plant pool of retranslocated nutrient
+  end type vegetation_retrans_state
+
   type, public :: vegetation_nitrogen_state
+    type(vegetation_retrans_state) :: retrans  ! retrans fields of the N/P types
     type(vegetation_nutrient_state) :: core  ! fields common to the C/N/P types
 
-    real(r8), pointer :: retransn               (:)   => null()  ! (gN/m2) plant pool of retranslocated N
     real(r8), pointer :: plant_n_buffer         (:)   => null()  ! (gN/m2) pft-level abstract N storage
     ! variables supporting dynamic C/N/P allocation cost/benefit analysis
     real(r8), pointer :: npimbalance            (:)   => null()
@@ -229,8 +236,8 @@ module VegetationDataType
   ! Define the data structure that holds phosphorus state information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_phosphorus_state
+    type(vegetation_retrans_state) :: retrans  ! retrans fields of the N/P types
     type(vegetation_nutrient_state) :: core  ! fields common to the C/N/P types
-    real(r8), pointer :: retransp               (:)     ! (gP/m2) plant pool of retranslocated P
     real(r8), pointer :: plant_p_buffer         (:)     ! (gP/m2) pft-level abstract p storage
   contains
     procedure, public :: Init      => veg_ps_init
@@ -623,23 +630,45 @@ module VegetationDataType
   !-----------------------------------------------------------------------
   ! Define the data structure that holds nitrogen flux information at the vegetation level.
   !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  ! uptake: fields of vegetation_nitrogen_flux, vegetation_phosphorus_flux
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_uptake_flux
+    real(r8), pointer :: plant_demand                       (:)   => null() ! nutrient flux required to support initial gpp (g/m2/s)
+    real(r8), pointer :: plant_demand_vr                    (:,:) => null() ! pft-level plant nutrient demand CN mode
+    real(r8), pointer :: smin_to_plant                      (:)   => null() ! pft level plant uptake of soil nutrient (g/m2/s) CN mode
+    real(r8), pointer :: smin_to_pool                      (:)   => null() ! deployment of soil mineral nutrient uptake (g/m2/s)
+    real(r8), pointer :: supplement_to_plant                (:)   => null() ! supplementary nutrient flux for plant
+    real(r8), pointer :: pool_deploy                             (:)   => null() ! total nutrient deployed to growth and storage (g/m2/s)
+  end type vegetation_uptake_flux
+
+  !-----------------------------------------------------------------------
+  ! retrans: fields of vegetation_nitrogen_flux, vegetation_phosphorus_flux
+  !-----------------------------------------------------------------------
+  type, public :: vegetation_retrans_flux
+    real(r8), pointer :: m_retrans_to_litter                (:)   => null() ! retranslocated nutrient pool mortality (g/m2/s)
+    real(r8), pointer :: hrv_retrans_to_litter              (:)   => null() ! retranslocated nutrient pool harvest mortality (g/m2/s)
+    real(r8), pointer :: m_retrans_to_fire                  (:)   => null() ! (g/m2/s) fire nutrient emissions from retrans
+    real(r8), pointer :: m_retrans_to_litter_fire           (:)   => null() ! (g/m2/s) from retrans to deadcroot due to fire
+    real(r8), pointer :: leaf_to_retrans                   (:)   => null() ! leaf nutrient to retranslocated nutrient pool (g/m2/s)
+    real(r8), pointer :: froot_to_retrans                  (:)   => null() ! fine root nutrient to retranslocated nutrient pool (g/m2/s)
+    real(r8), pointer :: retrans_to_pool                   (:)   => null() ! deployment of retranslocated nutrient (g/m2/s)
+    real(r8), pointer :: livestem_to_retrans               (:)   => null() ! live stem nutrient to retranslocated nutrient pool (g/m2/s)
+    real(r8), pointer :: livecroot_to_retrans              (:)   => null() ! live coarse root nutrient to retranslocated nutrient pool (g/m2/s)
+    real(r8), pointer :: avail_retrans                      (:)   => null() ! nutrient flux available from retranslocation pool (g/m2/s)
+  end type vegetation_retrans_flux
+
   type, public :: vegetation_nitrogen_flux
+    type(vegetation_uptake_flux) :: uptake  ! uptake fields of the N/P types
+    type(vegetation_retrans_flux) :: retrans  ! retrans fields of the N/P types
     type(vegetation_nutrient_flux) :: core  ! fields common to the C/N/P types
     ! gap mortality fluxes
-    real(r8), pointer :: m_retransn_to_litter                (:)   => null()  ! retranslocated N pool mortality (gN/m2/s)
     ! harvest fluxes
-    real(r8), pointer :: hrv_retransn_to_litter              (:)   => null()  ! retranslocated N pool harvest mortality (gN/m2/s)
     ! crop harvest
     ! fire N fluxes
-    real(r8), pointer :: m_retransn_to_fire                  (:)   => null()  ! (gN/m2/s) fire N emissions from retransn
-    real(r8), pointer :: m_retransn_to_litter_fire           (:)   => null()  ! (gN/m2/s) from retransn to deadcrootn due to fire
     ! phenology fluxes from transfer pool
     ! litterfall fluxes
-    real(r8), pointer :: leafn_to_retransn                   (:)   => null()  ! leaf N to retranslocated N pool (gN/m2/s)
-    real(r8), pointer :: frootn_to_retransn                  (:)   => null()  ! fine root N to retranslocated N pool (gN/m2/s)
     ! allocation fluxes
-    real(r8), pointer :: retransn_to_npool                   (:)   => null()  ! deployment of retranslocated N (gN/m2/s)
-    real(r8), pointer :: sminn_to_npool                      (:)   => null()  ! deployment of soil mineral N uptake (gN/m2/s)
     real(r8), pointer :: smin_no3_to_plant_vr                (:,:) => null()
     real(r8), pointer :: smin_nh4_to_plant_vr               (:,:) => null()
     ! annual turnover of storage to transfer pools
@@ -649,24 +678,16 @@ module VegetationDataType
     real(r8), pointer :: fert_counter                        (:)   => null()  ! >0 fertilize; <=0 not
     real(r8), pointer :: soyfixn                             (:)   => null()  ! soybean fixed N (gN/m2/s)
     ! turnover of livewood to deadwood, with retranslocation
-    real(r8), pointer :: livestemn_to_retransn               (:)   => null()  ! live stem N to retranslocated N pool (gN/m2/s)
-    real(r8), pointer :: livecrootn_to_retransn              (:)   => null()  ! live coarse root N to retranslocated N pool (gN/m2/s)
     ! summary (diagnostic) flux variables, not involved in mass balance
-    real(r8), pointer :: ndeploy                             (:)   => null()  ! total N deployed to growth and storage (gN/m2/s)
     ! deposition fluxes
     real(r8), pointer :: nfix_to_plantn                      (:)   => null()  ! nitrogen fixation goes to plant
     ! dynamic landcover fluxes
     real(r8), pointer :: dwt_seedn_to_npool                  (:)   => null()  ! (gN/m2/s) seed source to PFT level
     ! Misc
-    real(r8), pointer :: plant_ndemand                       (:)   => null()  ! N flux required to support initial GPP (gN/m2/s)
-    real(r8), pointer :: avail_retransn                      (:)   => null()  ! N flux available from retranslocation pool (gN/m2/s)
     real(r8), pointer :: smin_no3_to_plant                   (:)   => null()  ! pft level plant uptake of soil NO3 (gN/m2/s) BGC mode
     real(r8), pointer :: smin_nh4_to_plant                   (:)   => null()  ! pft level plant uptake of soil Nh4 (gN/m2/s) BGC mode
-    real(r8), pointer :: sminn_to_plant                      (:)   => null()  ! pft level plant uptake of soil N (gN/m2/s) CN mode
     real(r8), pointer :: plant_nh4demand_vr                  (:,:) => null()  ! pft-level plant NH4 demand BGC mode
     real(r8), pointer :: plant_no3demand_vr                  (:,:) => null()  ! pft-level plant NO3 demand BGC mode
-    real(r8), pointer :: plant_ndemand_vr                    (:,:) => null()  ! pft-level plant N demand CN mode
-    real(r8), pointer :: supplement_to_plantn                (:)   => null()  ! supplementary N flux for plant
     real(r8), pointer :: gap_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to gap mortality
     real(r8), pointer :: fire_nloss_litter                   (:)   => null()  ! total nloss from veg to litter pool due to fire
     real(r8), pointer :: hrv_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to harvest mortality
@@ -683,28 +704,14 @@ module VegetationDataType
   ! Define the data structure that holds phosphorus flux information at the vegetation level.
   !-----------------------------------------------------------------------
   type, public :: vegetation_phosphorus_flux
+    type(vegetation_uptake_flux) :: uptake  ! uptake fields of the N/P types
+    type(vegetation_retrans_flux) :: retrans  ! retrans fields of the N/P types
     type(vegetation_nutrient_flux) :: core  ! fields common to the C/N/P types
-    real(r8), pointer :: m_retransp_to_litter                (:)     ! retranslocated P pool mortality (gP/m2/s)
-    real(r8), pointer :: hrv_retransp_to_litter              (:)     ! retranslocated P pool harvest mortality (gP/m2/s)
-    real(r8), pointer :: m_retransp_to_fire                  (:)     ! (gP/m2/s) fire P emissions from retransp
-    real(r8), pointer :: m_retransp_to_litter_fire           (:)     ! (gP/m2/s) from retransp to deadcrootp due to fire
-    real(r8), pointer :: leafp_to_retransp                   (:)     ! leaf P to retranslocated P pool (gP/m2/s)
-    real(r8), pointer :: frootp_to_retransp                  (:)     ! fine root P to retranslocated P pool (gP/m2/s)
-    real(r8), pointer :: retransp_to_ppool                   (:)     ! deployment of retranslocated P (gP/m2/s)
-    real(r8), pointer :: sminp_to_ppool                      (:)     ! deployment of soil mineral P uptake (gP/m2/s)
     real(r8), pointer :: fert_p                              (:)     ! applied fertilizer (gP/m2/s)
     real(r8), pointer :: fert_p_counter                      (:)     ! >0 fertilize; <=0 not
-    real(r8), pointer :: livestemp_to_retransp               (:)     ! live stem P to retranslocated P pool (gP/m2/s)
-    real(r8), pointer :: livecrootp_to_retransp              (:)     ! live coarse root P to retranslocated P pool (gP/m2/s)
-    real(r8), pointer :: pdeploy                             (:)     ! total P deployed to growth and storage (gP/m2/s)
     real(r8), pointer :: biochem_pmin_to_plant               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
     real(r8), pointer :: dwt_seedp_to_ppool                  (:)     ! (gP/m2/s) seed source to PFT-level
-    real(r8), pointer :: plant_pdemand                       (:)     ! P flux required to support initial GPP (gP/m2/s)
-    real(r8), pointer :: avail_retransp                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
-    real(r8), pointer :: sminp_to_plant                      (:)     ! plant p uptake (gP/m2/s)
     real(r8), pointer :: sminp_to_plant_trans                (:)     ! plant p uptake through transpiration flow
-    real(r8), pointer :: plant_pdemand_vr                    (:,:)   ! plant P demand
-    real(r8), pointer :: supplement_to_plantp                (:)     ! supplementary P flux for plant
     real(r8), pointer :: gap_ploss_litter                    (:)     ! total ploss from veg to litter pool due to gap mortality
     real(r8), pointer :: fire_ploss_litter                   (:)     ! total ploss from veg to litter pool due to fire
     real(r8), pointer :: hrv_ploss_litter                    (:)     ! total ploss from veg to litter pool due to harvest mortality
@@ -3435,7 +3442,7 @@ module VegetationDataType
     allocate(this%core%deadcroot             (begp:endp))           ; this%core%deadcroot          (:)   = spval
     allocate(this%core%deadcroot_storage     (begp:endp))           ; this%core%deadcroot_storage  (:)   = spval
     allocate(this%core%deadcroot_xfer        (begp:endp))           ; this%core%deadcroot_xfer     (:)   = spval
-    allocate(this%retransn               (begp:endp))           ; this%retransn            (:)   = spval
+    allocate(this%retrans%pool               (begp:endp))           ; this%retrans%pool            (:)   = spval
     allocate(this%core%pool                  (begp:endp))           ; this%core%pool               (:)   = spval
     allocate(this%core%trunc_sink                 (begp:endp))           ; this%core%trunc_sink              (:)   = spval
     allocate(this%plant_n_buffer         (begp:endp))           ; this%plant_n_buffer      (:)   = spval
@@ -3592,10 +3599,10 @@ module VegetationDataType
          avgflag='A', long_name='dead coarse root N transfer', &
          ptr_patch=this%core%deadcroot_xfer, default='inactive')
 
-    this%retransn(begp:endp) = spval
+    this%retrans%pool(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSN', units='gN/m^2', &
          avgflag='A', long_name='plant pool of retranslocated N', &
-         ptr_patch=this%retransn)
+         ptr_patch=this%retrans%pool)
 
     this%core%pool(begp:endp) = spval
     call hist_addfld1d (fname='NPOOL', units='gN/m^2', &
@@ -3695,7 +3702,7 @@ module VegetationDataType
           this%core%deadcroot(p)         = 0._r8
           this%core%deadcroot_storage(p) = 0._r8
           this%core%deadcroot_xfer(p)    = 0._r8
-          this%retransn(p)           = 0._r8
+          this%retrans%pool(p)           = 0._r8
           this%core%pool(p)              = 0._r8
           if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then
               this%core%pool(p)          = 10.0_r8
@@ -3824,7 +3831,7 @@ module VegetationDataType
 
     call restartvar(ncid=ncid, flag=flag, varname='retransn', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%retransn)
+         interpinic_flag='interp', readvar=readvar, data=this%retrans%pool)
 
     call restartvar(ncid=ncid, flag=flag, varname='npool', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -3982,7 +3989,7 @@ module VegetationDataType
            this%core%livecroot_xfer(p)    + &
            this%core%deadcroot_xfer(p)    + &
            this%core%pool(p)              + &
-           this%retransn(p)
+           this%retrans%pool(p)
 
       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%core%dispveg(p) = &
@@ -4064,7 +4071,7 @@ module VegetationDataType
        this%core%deadcroot(i)         = value_veg
        this%core%deadcroot_storage(i) = value_veg
        this%core%deadcroot_xfer(i)    = value_veg
-       this%retransn(i)           = value_veg
+       this%retrans%pool(i)           = value_veg
        this%core%pool(i)              = value_veg
        this%core%trunc_sink(i)             = value_veg
        this%core%dispveg(i)           = value_veg
@@ -4156,7 +4163,7 @@ module VegetationDataType
     allocate(this%core%deadcroot         (begp:endp)) ; this%core%deadcroot         (:) = spval
     allocate(this%core%deadcroot_storage (begp:endp)) ; this%core%deadcroot_storage (:) = spval
     allocate(this%core%deadcroot_xfer    (begp:endp)) ; this%core%deadcroot_xfer    (:) = spval
-    allocate(this%retransp           (begp:endp)) ; this%retransp           (:) = spval
+    allocate(this%retrans%pool           (begp:endp)) ; this%retrans%pool           (:) = spval
     allocate(this%core%pool              (begp:endp)) ; this%core%pool              (:) = spval
     allocate(this%core%trunc_sink             (begp:endp)) ; this%core%trunc_sink             (:) = spval
     allocate(this%core%dispveg           (begp:endp)) ; this%core%dispveg           (:) = spval
@@ -4274,10 +4281,10 @@ module VegetationDataType
          avgflag='A', long_name='dead coarse root P transfer', &
          ptr_patch=this%core%deadcroot_xfer, default='inactive')
 
-    this%retransp(begp:endp) = spval
+    this%retrans%pool(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSP', units='gP/m^2', &
          avgflag='A', long_name='plant pool of retranslocated P', &
-         ptr_patch=this%retransp)
+         ptr_patch=this%retrans%pool)
 
     this%core%pool(begp:endp) = spval
     call hist_addfld1d (fname='PPOOL', units='gP/m^2', &
@@ -4379,7 +4386,7 @@ module VegetationDataType
           this%core%deadcroot(p)         = 0._r8
           this%core%deadcroot_storage(p) = 0._r8
           this%core%deadcroot_xfer(p)    = 0._r8
-          this%retransp(p)           = 0._r8
+          this%retrans%pool(p)           = 0._r8
           this%core%pool(p)              = 0._r8
           if (nstor(veg_pp%itype(p)) .gt. 1e-6_r8) then
               this%core%pool(p)          = 1.0_r8
@@ -4504,7 +4511,7 @@ module VegetationDataType
 
     call restartvar(ncid=ncid, flag=flag, varname='retransp', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%retransp)
+         interpinic_flag='interp', readvar=readvar, data=this%retrans%pool)
 
     call restartvar(ncid=ncid, flag=flag, varname='ppool', xtype=ncd_double,  &
          dim1name='pft', long_name='', units='', &
@@ -4635,7 +4642,7 @@ module VegetationDataType
        this%core%deadcroot(i)         = value_patch
        this%core%deadcroot_storage(i) = value_patch
        this%core%deadcroot_xfer(i)    = value_patch
-       this%retransp(i)           = value_patch
+       this%retrans%pool(i)           = value_patch
        this%core%pool(i)              = value_patch
        this%core%trunc_sink(i)             = value_patch
        this%core%dispveg(i)           = value_patch
@@ -4728,7 +4735,7 @@ module VegetationDataType
            this%core%livecroot_xfer(p)    + &
            this%core%deadcroot_xfer(p)    + &
            this%core%pool(p)              + &
-           this%retransp(p)
+           this%retrans%pool(p)
 
       if ( crop_prog .and. iscft(veg_pp%itype(p)))then
          this%core%dispveg(p) = &
@@ -8564,7 +8571,7 @@ module VegetationDataType
     allocate(this%core%m_deadstem_to_litter               (begp:endp)) ; this%core%m_deadstem_to_litter               (:) = spval
     allocate(this%core%m_livecroot_to_litter              (begp:endp)) ; this%core%m_livecroot_to_litter              (:) = spval
     allocate(this%core%m_deadcroot_to_litter              (begp:endp)) ; this%core%m_deadcroot_to_litter              (:) = spval
-    allocate(this%m_retransn_to_litter                (begp:endp)) ; this%m_retransn_to_litter                (:) = spval
+    allocate(this%retrans%m_retrans_to_litter                (begp:endp)) ; this%retrans%m_retrans_to_litter                (:) = spval
     allocate(this%core%m_pool_to_litter                   (begp:endp)) ; this%core%m_pool_to_litter                   (:) = spval
     allocate(this%core%hrv_leaf_to_litter                 (begp:endp)) ; this%core%hrv_leaf_to_litter                 (:) = spval
     allocate(this%core%hrv_froot_to_litter                (begp:endp)) ; this%core%hrv_froot_to_litter                (:) = spval
@@ -8589,7 +8596,7 @@ module VegetationDataType
     allocate(this%core%hrv_crop_to_prod1                 (begp:endp)) ; this%core%hrv_crop_to_prod1                 (:) = spval
     allocate(this%core%hrv_livecroot_to_litter            (begp:endp)) ; this%core%hrv_livecroot_to_litter            (:) = spval
     allocate(this%core%hrv_deadcroot_to_litter            (begp:endp)) ; this%core%hrv_deadcroot_to_litter            (:) = spval
-    allocate(this%hrv_retransn_to_litter              (begp:endp)) ; this%hrv_retransn_to_litter              (:) = spval
+    allocate(this%retrans%hrv_retrans_to_litter              (begp:endp)) ; this%retrans%hrv_retrans_to_litter              (:) = spval
     allocate(this%core%hrv_pool_to_litter                 (begp:endp)) ; this%core%hrv_pool_to_litter                 (:) = spval
     allocate(this%core%m_leaf_to_fire                     (begp:endp)) ; this%core%m_leaf_to_fire                     (:) = spval
     allocate(this%core%m_leaf_storage_to_fire             (begp:endp)) ; this%core%m_leaf_storage_to_fire             (:) = spval
@@ -8609,7 +8616,7 @@ module VegetationDataType
     allocate(this%core%m_deadcroot_to_fire                (begp:endp)) ; this%core%m_deadcroot_to_fire                (:) = spval
     allocate(this%core%m_deadcroot_storage_to_fire        (begp:endp)) ; this%core%m_deadcroot_storage_to_fire        (:) = spval
     allocate(this%core%m_deadcroot_xfer_to_fire           (begp:endp)) ; this%core%m_deadcroot_xfer_to_fire           (:) = spval
-    allocate(this%m_retransn_to_fire                  (begp:endp)) ; this%m_retransn_to_fire                  (:) = spval
+    allocate(this%retrans%m_retrans_to_fire                  (begp:endp)) ; this%retrans%m_retrans_to_fire                  (:) = spval
     allocate(this%core%m_pool_to_fire                     (begp:endp)) ; this%core%m_pool_to_fire                     (:) = spval
     allocate(this%core%m_leaf_to_litter_fire              (begp:endp)) ; this%core%m_leaf_to_litter_fire              (:) = spval
     allocate(this%core%m_leaf_storage_to_litter_fire      (begp:endp)) ; this%core%m_leaf_storage_to_litter_fire      (:) = spval
@@ -8631,7 +8638,7 @@ module VegetationDataType
     allocate(this%core%m_deadcroot_to_litter_fire         (begp:endp)) ; this%core%m_deadcroot_to_litter_fire         (:) = spval
     allocate(this%core%m_deadcroot_storage_to_litter_fire (begp:endp)) ; this%core%m_deadcroot_storage_to_litter_fire (:) = spval
     allocate(this%core%m_deadcroot_xfer_to_litter_fire    (begp:endp)) ; this%core%m_deadcroot_xfer_to_litter_fire    (:) = spval
-    allocate(this%m_retransn_to_litter_fire           (begp:endp)) ; this%m_retransn_to_litter_fire           (:) = spval
+    allocate(this%retrans%m_retrans_to_litter_fire           (begp:endp)) ; this%retrans%m_retrans_to_litter_fire           (:) = spval
     allocate(this%core%m_pool_to_litter_fire              (begp:endp)) ; this%core%m_pool_to_litter_fire              (:) = spval
     allocate(this%core%leaf_xfer_to_leaf                 (begp:endp)) ; this%core%leaf_xfer_to_leaf                 (:) = spval
     allocate(this%core%froot_xfer_to_froot               (begp:endp)) ; this%core%froot_xfer_to_froot               (:) = spval
@@ -8640,11 +8647,11 @@ module VegetationDataType
     allocate(this%core%livecroot_xfer_to_livecroot       (begp:endp)) ; this%core%livecroot_xfer_to_livecroot       (:) = spval
     allocate(this%core%deadcroot_xfer_to_deadcroot       (begp:endp)) ; this%core%deadcroot_xfer_to_deadcroot       (:) = spval
     allocate(this%core%leaf_to_litter                     (begp:endp)) ; this%core%leaf_to_litter                     (:) = spval
-    allocate(this%leafn_to_retransn                   (begp:endp)) ; this%leafn_to_retransn                   (:) = spval
-    allocate(this%frootn_to_retransn                  (begp:endp)) ; this%frootn_to_retransn                  (:) = spval
+    allocate(this%retrans%leaf_to_retrans                   (begp:endp)) ; this%retrans%leaf_to_retrans                   (:) = spval
+    allocate(this%retrans%froot_to_retrans                  (begp:endp)) ; this%retrans%froot_to_retrans                  (:) = spval
     allocate(this%core%froot_to_litter                    (begp:endp)) ; this%core%froot_to_litter                    (:) = spval
-    allocate(this%retransn_to_npool                   (begp:endp)) ; this%retransn_to_npool                   (:) = spval
-    allocate(this%sminn_to_npool                      (begp:endp)) ; this%sminn_to_npool                      (:) = spval
+    allocate(this%retrans%retrans_to_pool                   (begp:endp)) ; this%retrans%retrans_to_pool                   (:) = spval
+    allocate(this%uptake%smin_to_pool                      (begp:endp)) ; this%uptake%smin_to_pool                      (:) = spval
     allocate(this%core%pool_to_leaf                      (begp:endp)) ; this%core%pool_to_leaf                      (:) = spval
     allocate(this%core%pool_to_leaf_storage              (begp:endp)) ; this%core%pool_to_leaf_storage              (:) = spval
     allocate(this%core%pool_to_froot                     (begp:endp)) ; this%core%pool_to_froot                     (:) = spval
@@ -8664,10 +8671,10 @@ module VegetationDataType
     allocate(this%core%livecroot_storage_to_xfer          (begp:endp)) ; this%core%livecroot_storage_to_xfer          (:) = spval
     allocate(this%core%deadcroot_storage_to_xfer          (begp:endp)) ; this%core%deadcroot_storage_to_xfer          (:) = spval
     allocate(this%core%livestem_to_deadstem              (begp:endp)) ; this%core%livestem_to_deadstem              (:) = spval
-    allocate(this%livestemn_to_retransn               (begp:endp)) ; this%livestemn_to_retransn               (:) = spval
+    allocate(this%retrans%livestem_to_retrans               (begp:endp)) ; this%retrans%livestem_to_retrans               (:) = spval
     allocate(this%core%livecroot_to_deadcroot            (begp:endp)) ; this%core%livecroot_to_deadcroot            (:) = spval
-    allocate(this%livecrootn_to_retransn              (begp:endp)) ; this%livecrootn_to_retransn              (:) = spval
-    allocate(this%ndeploy                             (begp:endp)) ; this%ndeploy                             (:) = spval
+    allocate(this%retrans%livecroot_to_retrans              (begp:endp)) ; this%retrans%livecroot_to_retrans              (:) = spval
+    allocate(this%uptake%pool_deploy                             (begp:endp)) ; this%uptake%pool_deploy                             (:) = spval
     allocate(this%core%wood_harvest                       (begp:endp)) ; this%core%wood_harvest                       (:) = spval
     allocate(this%core%fire_loss                          (begp:endp)) ; this%core%fire_loss                          (:) = spval
     allocate(this%core%pool_to_grain                     (begp:endp)) ; this%core%pool_to_grain                     (:) = spval
@@ -8690,20 +8697,20 @@ module VegetationDataType
     allocate(this%core%dwt_prod100_gain                   (begp:endp)) ; this%core%dwt_prod100_gain                   (:) = spval
     allocate(this%core%dwt_crop_product_gain              (begp:endp)) ; this%core%dwt_crop_product_gain              (:) = spval
     allocate(this%dwt_seedn_to_npool                  (begp:endp)) ; this%dwt_seedn_to_npool                  (:) = spval
-    allocate(this%plant_ndemand                       (begp:endp)) ; this%plant_ndemand                       (:) = spval
+    allocate(this%uptake%plant_demand                       (begp:endp)) ; this%uptake%plant_demand                       (:) = spval
     allocate(this%smin_no3_to_plant_vr                (begp:endp,1:nlevdecomp_full)) ; this%smin_no3_to_plant_vr(:,:) = spval
     allocate(this%smin_nh4_to_plant_vr                (begp:endp,1:nlevdecomp_full)); this%smin_nh4_to_plant_vr(:,:) = spval
-    allocate(this%avail_retransn                      (begp:endp)) ; this%avail_retransn                      (:) = spval
+    allocate(this%retrans%avail_retrans                      (begp:endp)) ; this%retrans%avail_retrans                      (:) = spval
     allocate(this%core%plant_alloc                        (begp:endp)) ; this%core%plant_alloc                        (:) = spval
     allocate(this%smin_no3_to_plant                   (begp:endp)) ; this%smin_no3_to_plant                   (:) = spval
     allocate(this%smin_nh4_to_plant                   (begp:endp)) ; this%smin_nh4_to_plant                   (:) = spval
-    allocate(this%sminn_to_plant                      (begp:endp)) ; this%sminn_to_plant                      (:) = spval
+    allocate(this%uptake%smin_to_plant                      (begp:endp)) ; this%uptake%smin_to_plant                      (:) = spval
     allocate(this%plant_nh4demand_vr                  (begp:endp,1:nlevdecomp)); this%plant_nh4demand_vr    (:,:) = spval
     allocate(this%plant_no3demand_vr                  (begp:endp,1:nlevdecomp)); this%plant_no3demand_vr    (:,:) = spval
-    allocate(this%plant_ndemand_vr                    (begp:endp,1:nlevdecomp)); this%plant_ndemand_vr      (:,:) = spval
+    allocate(this%uptake%plant_demand_vr                    (begp:endp,1:nlevdecomp)); this%uptake%plant_demand_vr      (:,:) = spval
     allocate(this%core%prev_leaf_to_litter                (begp:endp)) ; this%core%prev_leaf_to_litter                (:) = spval
     allocate(this%core%prev_froot_to_litter               (begp:endp)) ; this%core%prev_froot_to_litter               (:) = spval
-    allocate(this%supplement_to_plantn                (begp:endp)) ; this%supplement_to_plantn                (:) = 0.d0
+    allocate(this%uptake%supplement_to_plant                (begp:endp)) ; this%uptake%supplement_to_plant                (:) = 0.d0
     allocate(this%gap_nloss_litter                    (begp:endp)) ; this%gap_nloss_litter                    (:) = spval
     allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = spval
     allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = spval
@@ -8804,10 +8811,10 @@ module VegetationDataType
          avgflag='A', long_name='dead coarse root N mortality', &
          ptr_patch=this%core%m_deadcroot_to_litter, default='inactive')
 
-    this%m_retransn_to_litter(begp:endp) = spval
+    this%retrans%m_retrans_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_RETRANSN_TO_LITTER', units='gN/m^2/s', &
          avgflag='A', long_name='retranslocated N pool mortality', &
-         ptr_patch=this%m_retransn_to_litter, default='inactive')
+         ptr_patch=this%retrans%m_retrans_to_litter, default='inactive')
 
     this%core%m_pool_to_litter_fire(begp:endp) = spval
     call hist_addfld1d (fname='M_NPOOL_TO_LITTER_FIRE', units='gN/m^2/s', &
@@ -8919,10 +8926,10 @@ module VegetationDataType
          avgflag='A', long_name='dead coarse root N fire mortality to litter', &
          ptr_patch=this%core%m_deadcroot_to_litter_fire, default='inactive')
 
-    this%m_retransn_to_fire(begp:endp) = spval
+    this%retrans%m_retrans_to_fire(begp:endp) = spval
     call hist_addfld1d (fname='M_RETRANSN_TO_FIRE', units='gN/m^2/s', &
          avgflag='A', long_name='retranslocated N pool fire loss', &
-         ptr_patch=this%m_retransn_to_fire, default='inactive')
+         ptr_patch=this%retrans%m_retrans_to_fire, default='inactive')
 
     this%core%m_pool_to_fire(begp:endp) = spval
     call hist_addfld1d (fname='M_NPOOL_TO_FIRE', units='gN/m^2/s', &
@@ -8964,25 +8971,25 @@ module VegetationDataType
          avgflag='A', long_name='leaf N litterfall', &
          ptr_patch=this%core%leaf_to_litter, default='inactive')
 
-    this%leafn_to_retransn(begp:endp) = spval
+    this%retrans%leaf_to_retrans(begp:endp) = spval
     call hist_addfld1d (fname='LEAFN_TO_RETRANSN', units='gN/m^2/s', &
          avgflag='A', long_name='leaf N to retranslocated N pool', &
-         ptr_patch=this%leafn_to_retransn, default='inactive')
+         ptr_patch=this%retrans%leaf_to_retrans, default='inactive')
 
     this%core%froot_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='FROOTN_TO_LITTER', units='gN/m^2/s', &
          avgflag='A', long_name='fine root N litterfall', &
          ptr_patch=this%core%froot_to_litter, default='inactive')
 
-    this%retransn_to_npool(begp:endp) = spval
+    this%retrans%retrans_to_pool(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSN_TO_NPOOL', units='gN/m^2/s', &
          avgflag='A', long_name='deployment of retranslocated N', &
-         ptr_patch=this%retransn_to_npool)
+         ptr_patch=this%retrans%retrans_to_pool)
 
-    this%sminn_to_npool(begp:endp) = spval
+    this%uptake%smin_to_pool(begp:endp) = spval
     call hist_addfld1d (fname='SMINN_TO_NPOOL', units='gN/m^2/s', &
          avgflag='A', long_name='deployment of soil mineral N uptake', &
-         ptr_patch=this%sminn_to_npool)
+         ptr_patch=this%uptake%smin_to_pool)
 
     this%core%pool_to_leaf(begp:endp) = spval
     call hist_addfld1d (fname='NPOOL_TO_LEAFN', units='gN/m^2/s', &
@@ -9079,25 +9086,25 @@ module VegetationDataType
          avgflag='A', long_name='live stem N turnover', &
          ptr_patch=this%core%livestem_to_deadstem, default='inactive')
 
-    this%livestemn_to_retransn(begp:endp) = spval
+    this%retrans%livestem_to_retrans(begp:endp) = spval
     call hist_addfld1d (fname='LIVESTEMN_TO_RETRANSN', units='gN/m^2/s', &
          avgflag='A', long_name='live stem N to retranslocated N pool', &
-         ptr_patch=this%livestemn_to_retransn, default='inactive')
+         ptr_patch=this%retrans%livestem_to_retrans, default='inactive')
 
     this%core%livecroot_to_deadcroot(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTN_TO_DEADCROOTN', units='gN/m^2/s', &
          avgflag='A', long_name='live coarse root N turnover', &
          ptr_patch=this%core%livecroot_to_deadcroot, default='inactive')
 
-    this%livecrootn_to_retransn(begp:endp) = spval
+    this%retrans%livecroot_to_retrans(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTN_TO_RETRANSN', units='gN/m^2/s', &
          avgflag='A', long_name='live coarse root N to retranslocated N pool', &
-         ptr_patch=this%livecrootn_to_retransn, default='inactive')
+         ptr_patch=this%retrans%livecroot_to_retrans, default='inactive')
 
-    this%ndeploy(begp:endp) = spval
+    this%uptake%pool_deploy(begp:endp) = spval
     call hist_addfld1d (fname='NDEPLOY', units='gN/m^2/s', &
          avgflag='A', long_name='total N deployed in new growth', &
-         ptr_patch=this%ndeploy)
+         ptr_patch=this%uptake%pool_deploy)
 
     this%core%wood_harvest(begp:endp) = spval
     call hist_addfld1d (fname='WOOD_HARVESTN', units='gN/m^2/s', &
@@ -9168,15 +9175,15 @@ module VegetationDataType
          avgflag='A', long_name='seed source to PFT-level npool', &
          ptr_patch=this%dwt_seedn_to_npool, default='inactive')
 
-    this%plant_ndemand(begp:endp) = spval
+    this%uptake%plant_demand(begp:endp) = spval
     call hist_addfld1d (fname='PLANT_NDEMAND', units='gN/m^2/s', &
          avgflag='A', long_name='N flux required to support initial GPP', &
-         ptr_patch=this%plant_ndemand)
+         ptr_patch=this%uptake%plant_demand)
 
-    this%avail_retransn(begp:endp) = spval
+    this%retrans%avail_retrans(begp:endp) = spval
     call hist_addfld1d (fname='AVAIL_RETRANSN', units='gN/m^2/s', &
          avgflag='A', long_name='N flux available from retranslocation pool', &
-         ptr_patch=this%avail_retransn, default='inactive')
+         ptr_patch=this%retrans%avail_retrans, default='inactive')
 
     this%core%plant_alloc(begp:endp) = spval
     call hist_addfld1d (fname='PLANT_NALLOC', units='gN/m^2/s', &
@@ -9246,8 +9253,8 @@ module VegetationDataType
        end if
 
        if (lun_pp%ifspecial(l)) then
-          this%plant_ndemand(p)  = spval
-          this%avail_retransn(p) = spval
+          this%uptake%plant_demand(p)  = spval
+          this%retrans%avail_retrans(p) = spval
           this%core%plant_alloc(p)   = spval
        end if
     end do
@@ -9326,12 +9333,12 @@ module VegetationDataType
     call restartvar(ncid=ncid, flag=flag, varname='plant_ndemand', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%plant_ndemand)
+         interpinic_flag='interp', readvar=readvar, data=this%uptake%plant_demand)
 
     call restartvar(ncid=ncid, flag=flag, varname='avail_retransn', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%avail_retransn)
+         interpinic_flag='interp', readvar=readvar, data=this%retrans%avail_retrans)
 
     call restartvar(ncid=ncid, flag=flag, varname='plant_nalloc', xtype=ncd_double,  &
          dim1name='pft', &
@@ -9359,13 +9366,13 @@ module VegetationDataType
     call vegetation_nutrient_flux_setvalues(this%core, num_patch, filter_patch, value_patch)
     do fi = 1,num_patch
        i=filter_patch(fi)
-       this%hrv_retransn_to_litter(i)              = value_patch
-       this%leafn_to_retransn(i)                   = value_patch
-       this%retransn_to_npool(i)                   = value_patch
-       this%sminn_to_npool(i)                      = value_patch
-       this%livestemn_to_retransn(i)               = value_patch
-       this%livecrootn_to_retransn(i)              = value_patch
-       this%ndeploy(i)                             = value_patch
+       this%retrans%hrv_retrans_to_litter(i)              = value_patch
+       this%retrans%leaf_to_retrans(i)                   = value_patch
+       this%retrans%retrans_to_pool(i)                   = value_patch
+       this%uptake%smin_to_pool(i)                      = value_patch
+       this%retrans%livestem_to_retrans(i)               = value_patch
+       this%retrans%livecroot_to_retrans(i)              = value_patch
+       this%uptake%pool_deploy(i)                             = value_patch
        this%nfix_to_plantn(i)                      = value_patch
        this%gap_nloss_litter(i)                    = value_patch
        this%fire_nloss_litter(i)                   = value_patch
@@ -9379,7 +9386,7 @@ module VegetationDataType
        do fi = 1,num_patch
           i = filter_patch(fi)
           this%soyfixn(i)                          = value_patch
-          this%frootn_to_retransn(i)               = value_patch
+          this%retrans%froot_to_retrans(i)               = value_patch
        end do
     end if
 
@@ -9416,9 +9423,9 @@ module VegetationDataType
        p = filter_soilp(fp)
 
        ! total N deployment (from sminn and retranslocated N pool) (NDEPLOY)
-       this%ndeploy(p) = &
-            this%sminn_to_npool(p) + &
-            this%retransn_to_npool(p)
+       this%uptake%pool_deploy(p) = &
+            this%uptake%smin_to_pool(p) + &
+            this%retrans%retrans_to_pool(p)
 
        ! pft-level wood harvest
        this%core%wood_harvest(p) = &
@@ -9450,7 +9457,7 @@ module VegetationDataType
             this%core%m_deadcroot_to_fire(p)          + &
             this%core%m_deadcroot_storage_to_fire(p)  + &
             this%core%m_deadcroot_xfer_to_fire(p)     + &
-            this%m_retransn_to_fire(p)            + &
+            this%retrans%m_retrans_to_fire(p)            + &
             this%core%m_pool_to_fire(p)
 
       this%gap_nloss_litter(p) = &
@@ -9472,13 +9479,13 @@ module VegetationDataType
            this%core%m_deadcroot_to_litter(p)         + &
            this%core%m_deadcroot_storage_to_litter(p) + &
            this%core%m_deadcroot_xfer_to_litter(p)    + &
-           this%m_retransn_to_litter(p)           + &
+           this%retrans%m_retrans_to_litter(p)           + &
            this%core%m_pool_to_litter(p)
 
       this%fire_nloss_litter(p) = &
            this%core%m_deadstem_to_litter_fire(p)     + &
            this%core%m_deadcroot_to_litter_fire(p)    + &
-           this%m_retransn_to_litter_fire(p)      + &
+           this%retrans%m_retrans_to_litter_fire(p)      + &
            this%core%m_pool_to_litter_fire(p)         + &
            this%core%m_leaf_to_litter_fire(p)         + &
            this%core%m_froot_to_litter_fire(p)        + &
@@ -9498,7 +9505,7 @@ module VegetationDataType
            this%core%m_deadcroot_xfer_to_litter_fire(p)
 
       this%hrv_nloss_litter(p) = &
-           this%hrv_retransn_to_litter(p)          + &
+           this%retrans%hrv_retrans_to_litter(p)          + &
            this%core%hrv_pool_to_litter(p)             + &
            this%core%hrv_leaf_to_litter(p)             + &
            this%core%hrv_leaf_storage_to_litter(p)     + &
@@ -9602,7 +9609,7 @@ module VegetationDataType
     allocate(this%core%m_deadstem_to_litter               (begp:endp)) ; this%core%m_deadstem_to_litter               (:) = spval
     allocate(this%core%m_livecroot_to_litter              (begp:endp)) ; this%core%m_livecroot_to_litter              (:) = spval
     allocate(this%core%m_deadcroot_to_litter              (begp:endp)) ; this%core%m_deadcroot_to_litter              (:) = spval
-    allocate(this%m_retransp_to_litter                (begp:endp)) ; this%m_retransp_to_litter                (:) = spval
+    allocate(this%retrans%m_retrans_to_litter                (begp:endp)) ; this%retrans%m_retrans_to_litter                (:) = spval
     allocate(this%core%m_pool_to_litter                   (begp:endp)) ; this%core%m_pool_to_litter                   (:) = spval
     allocate(this%core%hrv_leaf_to_litter                 (begp:endp)) ; this%core%hrv_leaf_to_litter                 (:) = spval
     allocate(this%core%hrv_froot_to_litter                (begp:endp)) ; this%core%hrv_froot_to_litter                (:) = spval
@@ -9627,7 +9634,7 @@ module VegetationDataType
     allocate(this%core%hrv_crop_to_prod1                 (begp:endp)) ; this%core%hrv_crop_to_prod1                 (:) = spval
     allocate(this%core%hrv_livecroot_to_litter            (begp:endp)) ; this%core%hrv_livecroot_to_litter            (:) = spval
     allocate(this%core%hrv_deadcroot_to_litter            (begp:endp)) ; this%core%hrv_deadcroot_to_litter            (:) = spval
-    allocate(this%hrv_retransp_to_litter              (begp:endp)) ; this%hrv_retransp_to_litter              (:) = spval
+    allocate(this%retrans%hrv_retrans_to_litter              (begp:endp)) ; this%retrans%hrv_retrans_to_litter              (:) = spval
     allocate(this%core%hrv_pool_to_litter                 (begp:endp)) ; this%core%hrv_pool_to_litter                 (:) = spval
     allocate(this%core%m_leaf_to_fire                     (begp:endp)) ; this%core%m_leaf_to_fire                     (:) = spval
     allocate(this%core%m_leaf_storage_to_fire             (begp:endp)) ; this%core%m_leaf_storage_to_fire             (:) = spval
@@ -9647,7 +9654,7 @@ module VegetationDataType
     allocate(this%core%m_deadcroot_to_fire                (begp:endp)) ; this%core%m_deadcroot_to_fire                (:) = spval
     allocate(this%core%m_deadcroot_storage_to_fire        (begp:endp)) ; this%core%m_deadcroot_storage_to_fire        (:) = spval
     allocate(this%core%m_deadcroot_xfer_to_fire           (begp:endp)) ; this%core%m_deadcroot_xfer_to_fire           (:) = spval
-    allocate(this%m_retransp_to_fire                  (begp:endp)) ; this%m_retransp_to_fire                  (:) = spval
+    allocate(this%retrans%m_retrans_to_fire                  (begp:endp)) ; this%retrans%m_retrans_to_fire                  (:) = spval
     allocate(this%core%m_pool_to_fire                     (begp:endp)) ; this%core%m_pool_to_fire                     (:) = spval
     allocate(this%core%m_leaf_to_litter_fire              (begp:endp)) ; this%core%m_leaf_to_litter_fire              (:) = spval
     allocate(this%core%m_leaf_storage_to_litter_fire      (begp:endp)) ; this%core%m_leaf_storage_to_litter_fire      (:) = spval
@@ -9669,7 +9676,7 @@ module VegetationDataType
     allocate(this%core%m_deadcroot_to_litter_fire         (begp:endp)) ; this%core%m_deadcroot_to_litter_fire         (:) = spval
     allocate(this%core%m_deadcroot_storage_to_litter_fire (begp:endp)) ; this%core%m_deadcroot_storage_to_litter_fire (:) = spval
     allocate(this%core%m_deadcroot_xfer_to_litter_fire    (begp:endp)) ; this%core%m_deadcroot_xfer_to_litter_fire    (:) = spval
-    allocate(this%m_retransp_to_litter_fire           (begp:endp)) ; this%m_retransp_to_litter_fire           (:) = spval
+    allocate(this%retrans%m_retrans_to_litter_fire           (begp:endp)) ; this%retrans%m_retrans_to_litter_fire           (:) = spval
     allocate(this%core%m_pool_to_litter_fire              (begp:endp)) ; this%core%m_pool_to_litter_fire              (:) = spval
     allocate(this%core%leaf_xfer_to_leaf                 (begp:endp)) ; this%core%leaf_xfer_to_leaf                 (:) = spval
     allocate(this%core%froot_xfer_to_froot               (begp:endp)) ; this%core%froot_xfer_to_froot               (:) = spval
@@ -9678,11 +9685,11 @@ module VegetationDataType
     allocate(this%core%livecroot_xfer_to_livecroot       (begp:endp)) ; this%core%livecroot_xfer_to_livecroot       (:) = spval
     allocate(this%core%deadcroot_xfer_to_deadcroot       (begp:endp)) ; this%core%deadcroot_xfer_to_deadcroot       (:) = spval
     allocate(this%core%leaf_to_litter                     (begp:endp)) ; this%core%leaf_to_litter                     (:) = spval
-    allocate(this%leafp_to_retransp                   (begp:endp)) ; this%leafp_to_retransp                   (:) = spval
-    allocate(this%frootp_to_retransp                  (begp:endp)) ; this%frootp_to_retransp                  (:) = spval
+    allocate(this%retrans%leaf_to_retrans                   (begp:endp)) ; this%retrans%leaf_to_retrans                   (:) = spval
+    allocate(this%retrans%froot_to_retrans                  (begp:endp)) ; this%retrans%froot_to_retrans                  (:) = spval
     allocate(this%core%froot_to_litter                    (begp:endp)) ; this%core%froot_to_litter                    (:) = spval
-    allocate(this%retransp_to_ppool                   (begp:endp)) ; this%retransp_to_ppool                   (:) = spval
-    allocate(this%sminp_to_ppool                      (begp:endp)) ; this%sminp_to_ppool                      (:) = spval
+    allocate(this%retrans%retrans_to_pool                   (begp:endp)) ; this%retrans%retrans_to_pool                   (:) = spval
+    allocate(this%uptake%smin_to_pool                      (begp:endp)) ; this%uptake%smin_to_pool                      (:) = spval
     allocate(this%biochem_pmin_to_plant               (begp:endp)) ; this%biochem_pmin_to_plant               (:) = spval
     allocate(this%core%pool_to_leaf                      (begp:endp)) ; this%core%pool_to_leaf                      (:) = spval
     allocate(this%core%pool_to_leaf_storage              (begp:endp)) ; this%core%pool_to_leaf_storage              (:) = spval
@@ -9703,10 +9710,10 @@ module VegetationDataType
     allocate(this%core%livecroot_storage_to_xfer          (begp:endp)) ; this%core%livecroot_storage_to_xfer          (:) = spval
     allocate(this%core%deadcroot_storage_to_xfer          (begp:endp)) ; this%core%deadcroot_storage_to_xfer          (:) = spval
     allocate(this%core%livestem_to_deadstem              (begp:endp)) ; this%core%livestem_to_deadstem              (:) = spval
-    allocate(this%livestemp_to_retransp               (begp:endp)) ; this%livestemp_to_retransp               (:) = spval
+    allocate(this%retrans%livestem_to_retrans               (begp:endp)) ; this%retrans%livestem_to_retrans               (:) = spval
     allocate(this%core%livecroot_to_deadcroot            (begp:endp)) ; this%core%livecroot_to_deadcroot            (:) = spval
-    allocate(this%livecrootp_to_retransp              (begp:endp)) ; this%livecrootp_to_retransp              (:) = spval
-    allocate(this%pdeploy                             (begp:endp)) ; this%pdeploy                             (:) = spval
+    allocate(this%retrans%livecroot_to_retrans              (begp:endp)) ; this%retrans%livecroot_to_retrans              (:) = spval
+    allocate(this%uptake%pool_deploy                             (begp:endp)) ; this%uptake%pool_deploy                             (:) = spval
     allocate(this%core%wood_harvest                       (begp:endp)) ; this%core%wood_harvest                       (:) = spval
     allocate(this%core%fire_loss                          (begp:endp)) ; this%core%fire_loss                          (:) = spval
     allocate(this%core%pool_to_grain                     (begp:endp)) ; this%core%pool_to_grain                     (:) = spval
@@ -9725,15 +9732,15 @@ module VegetationDataType
     allocate(this%core%dwt_prod100_gain                   (begp:endp)) ; this%core%dwt_prod100_gain                   (:) = spval
     allocate(this%core%dwt_crop_product_gain              (begp:endp)) ; this%core%dwt_crop_product_gain              (:) = spval
     allocate(this%dwt_seedp_to_ppool                  (begp:endp)) ; this%dwt_seedp_to_ppool                  (:) = spval
-    allocate(this%plant_pdemand                       (begp:endp)) ; this%plant_pdemand                       (:) = spval
-    allocate(this%avail_retransp                      (begp:endp)) ; this%avail_retransp                      (:) = spval
+    allocate(this%uptake%plant_demand                       (begp:endp)) ; this%uptake%plant_demand                       (:) = spval
+    allocate(this%retrans%avail_retrans                      (begp:endp)) ; this%retrans%avail_retrans                      (:) = spval
     allocate(this%core%plant_alloc                        (begp:endp)) ; this%core%plant_alloc                        (:) = spval
-    allocate(this%sminp_to_plant                      (begp:endp)) ; this%sminp_to_plant                      (:) = spval
+    allocate(this%uptake%smin_to_plant                      (begp:endp)) ; this%uptake%smin_to_plant                      (:) = spval
     allocate(this%sminp_to_plant_trans                (begp:endp)) ; this%sminp_to_plant_trans                (:) = spval
-    allocate(this%plant_pdemand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr (:,:) = spval
+    allocate(this%uptake%plant_demand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%uptake%plant_demand_vr (:,:) = spval
     allocate(this%core%prev_leaf_to_litter                (begp:endp)) ; this%core%prev_leaf_to_litter                (:) = spval
     allocate(this%core%prev_froot_to_litter               (begp:endp)) ; this%core%prev_froot_to_litter               (:) = spval
-    allocate(this%supplement_to_plantp                (begp:endp)) ; this%supplement_to_plantp                (:) = 0.d0
+    allocate(this%uptake%supplement_to_plant                (begp:endp)) ; this%uptake%supplement_to_plant                (:) = 0.d0
     allocate(this%gap_ploss_litter                    (begp:endp)) ; this%gap_ploss_litter                    (:) = spval
     allocate(this%fire_ploss_litter                   (begp:endp)) ; this%fire_ploss_litter                   (:) = spval
     allocate(this%hrv_ploss_litter                    (begp:endp)) ; this%hrv_ploss_litter                    (:) = spval
@@ -9833,10 +9840,10 @@ module VegetationDataType
          avgflag='A', long_name='dead coarse root P mortality', &
          ptr_patch=this%core%m_deadcroot_to_litter, default='inactive')
 
-    this%m_retransp_to_litter(begp:endp) = spval
+    this%retrans%m_retrans_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_RETRANSP_TO_LITTER', units='gP/m^2/s', &
          avgflag='A', long_name='retranslocated P pool mortality', &
-         ptr_patch=this%m_retransp_to_litter, default='inactive')
+         ptr_patch=this%retrans%m_retrans_to_litter, default='inactive')
 
     this%core%m_pool_to_litter_fire(begp:endp) = spval
     call hist_addfld1d (fname='M_PPOOL_TO_LITTER_FIRE', units='gP/m^2/s', &
@@ -9948,10 +9955,10 @@ module VegetationDataType
          avgflag='A', long_name='dead coarse root P fire mortality to litter', &
          ptr_patch=this%core%m_deadcroot_to_litter_fire, default='inactive')
 
-    this%m_retransp_to_fire(begp:endp) = spval
+    this%retrans%m_retrans_to_fire(begp:endp) = spval
     call hist_addfld1d (fname='M_RETRANSP_TO_FIRE', units='gP/m^2/s', &
          avgflag='A', long_name='retranslocated P pool fire loss', &
-         ptr_patch=this%m_retransp_to_fire, default='inactive')
+         ptr_patch=this%retrans%m_retrans_to_fire, default='inactive')
 
     this%core%m_pool_to_fire(begp:endp) = spval
     call hist_addfld1d (fname='M_PPOOL_TO_FIRE', units='gP/m^2/s', &
@@ -9993,25 +10000,25 @@ module VegetationDataType
          avgflag='A', long_name='leaf P litterfall', &
          ptr_patch=this%core%leaf_to_litter, default='inactive')
 
-    this%leafp_to_retransp(begp:endp) = spval
+    this%retrans%leaf_to_retrans(begp:endp) = spval
     call hist_addfld1d (fname='LEAFP_TO_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='leaf P to retranslocated P pool', &
-         ptr_patch=this%leafp_to_retransp, default='inactive')
+         ptr_patch=this%retrans%leaf_to_retrans, default='inactive')
 
     this%core%froot_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='FROOTP_TO_LITTER', units='gP/m^2/s', &
          avgflag='A', long_name='fine root P litterfall', &
          ptr_patch=this%core%froot_to_litter, default='inactive')
 
-    this%retransp_to_ppool(begp:endp) = spval
+    this%retrans%retrans_to_pool(begp:endp) = spval
     call hist_addfld1d (fname='RETRANSP_TO_PPOOL', units='gP/m^2/s', &
          avgflag='A', long_name='deployment of retranslocated P', &
-         ptr_patch=this%retransp_to_ppool)
+         ptr_patch=this%retrans%retrans_to_pool)
 
-    this%sminp_to_ppool(begp:endp) = spval
+    this%uptake%smin_to_pool(begp:endp) = spval
     call hist_addfld1d (fname='SMINP_TO_PPOOL', units='gP/m^2/s', &
          avgflag='A', long_name='deployment of soil mineral P uptake', &
-         ptr_patch=this%sminp_to_ppool)
+         ptr_patch=this%uptake%smin_to_pool)
 
     this%core%pool_to_leaf(begp:endp) = spval
     call hist_addfld1d (fname='PPOOL_TO_LEAFP', units='gP/m^2/s', &
@@ -10108,25 +10115,25 @@ module VegetationDataType
          avgflag='A', long_name='live stem P turnover', &
          ptr_patch=this%core%livestem_to_deadstem, default='inactive')
 
-    this%livestemp_to_retransp(begp:endp) = spval
+    this%retrans%livestem_to_retrans(begp:endp) = spval
     call hist_addfld1d (fname='LIVESTEMP_TO_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='live stem P to retranslocated P pool', &
-         ptr_patch=this%livestemp_to_retransp, default='inactive')
+         ptr_patch=this%retrans%livestem_to_retrans, default='inactive')
 
     this%core%livecroot_to_deadcroot(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTP_TO_DEADCROOTP', units='gP/m^2/s', &
          avgflag='A', long_name='live coarse root P turnover', &
          ptr_patch=this%core%livecroot_to_deadcroot, default='inactive')
 
-    this%livecrootp_to_retransp(begp:endp) = spval
+    this%retrans%livecroot_to_retrans(begp:endp) = spval
     call hist_addfld1d (fname='LIVECROOTP_TO_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='live coarse root P to retranslocated N pool', &
-         ptr_patch=this%livecrootp_to_retransp, default='inactive')
+         ptr_patch=this%retrans%livecroot_to_retrans, default='inactive')
 
-    this%pdeploy(begp:endp) = spval
+    this%uptake%pool_deploy(begp:endp) = spval
     call hist_addfld1d (fname='PDEPLOY', units='gP/m^2/s', &
          avgflag='A', long_name='total P deployed in new growth', &
-         ptr_patch=this%pdeploy)
+         ptr_patch=this%uptake%pool_deploy)
 
     this%core%wood_harvest(begp:endp) = spval
     call hist_addfld1d (fname='WOOD_HARVESTP', units='gP/m^2/s', &
@@ -10215,15 +10222,15 @@ module VegetationDataType
          avgflag='A', long_name='seed source to PFT-level', &
          ptr_patch=this%dwt_seedp_to_ppool, default='inactive')
 
-    this%plant_pdemand(begp:endp) = spval
+    this%uptake%plant_demand(begp:endp) = spval
     call hist_addfld1d (fname='PLANT_PDEMAND', units='gP/m^2/s', &
          avgflag='A', long_name='P flux required to support initial GPP', &
-         ptr_patch=this%plant_pdemand)
+         ptr_patch=this%uptake%plant_demand)
 
-    this%avail_retransp(begp:endp) = spval
+    this%retrans%avail_retrans(begp:endp) = spval
     call hist_addfld1d (fname='AVAIL_RETRANSP', units='gP/m^2/s', &
          avgflag='A', long_name='P flux available from retranslocation pool', &
-         ptr_patch=this%avail_retransp, default='active')
+         ptr_patch=this%retrans%avail_retrans, default='active')
 
     this%core%plant_alloc(begp:endp) = spval
     call hist_addfld1d (fname='PLANT_PALLOC', units='gP/m^2/s', &
@@ -10259,8 +10266,8 @@ module VegetationDataType
        end if
 
        if (lun_pp%ifspecial(l)) then
-          this%plant_pdemand(p)  = spval
-          this%avail_retransp(p) = spval
+          this%uptake%plant_demand(p)  = spval
+          this%retrans%avail_retrans(p) = spval
           this%core%plant_alloc(p)   = spval
        end if
     end do
@@ -10343,12 +10350,12 @@ module VegetationDataType
     call restartvar(ncid=ncid, flag=flag, varname='plant_pdemand', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%plant_pdemand)
+         interpinic_flag='interp', readvar=readvar, data=this%uptake%plant_demand)
 
     call restartvar(ncid=ncid, flag=flag, varname='avail_retransp', xtype=ncd_double,  &
          dim1name='pft', &
          long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%avail_retransp)
+         interpinic_flag='interp', readvar=readvar, data=this%retrans%avail_retrans)
 
     call restartvar(ncid=ncid, flag=flag, varname='plant_palloc', xtype=ncd_double,  &
          dim1name='pft', &
@@ -10376,13 +10383,13 @@ module VegetationDataType
     call vegetation_nutrient_flux_setvalues(this%core, num_patch, filter_patch, value_patch)
     do fi = 1,num_patch
        i=filter_patch(fi)
-       this%hrv_retransp_to_litter(i)              = value_patch
-       this%leafp_to_retransp(i)                   = value_patch
-       this%retransp_to_ppool(i)                   = value_patch
-       this%sminp_to_ppool(i)                      = value_patch
-       this%livestemp_to_retransp(i)               = value_patch
-       this%livecrootp_to_retransp(i)              = value_patch
-       this%pdeploy(i)                             = value_patch
+       this%retrans%hrv_retrans_to_litter(i)              = value_patch
+       this%retrans%leaf_to_retrans(i)                   = value_patch
+       this%retrans%retrans_to_pool(i)                   = value_patch
+       this%uptake%smin_to_pool(i)                      = value_patch
+       this%retrans%livestem_to_retrans(i)               = value_patch
+       this%retrans%livecroot_to_retrans(i)              = value_patch
+       this%uptake%pool_deploy(i)                             = value_patch
        this%biochem_pmin_to_plant(i)               = value_patch
        this%gap_ploss_litter(i)                    = value_patch
        this%fire_ploss_litter(i)                   = value_patch
@@ -10394,7 +10401,7 @@ module VegetationDataType
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%frootp_to_retransp(i)               = value_patch
+          this%retrans%froot_to_retrans(i)               = value_patch
           this%core%crop_seed_to_leaf(i)               = value_patch
        end do
     end if
@@ -10426,9 +10433,9 @@ module VegetationDataType
        p = filter_soilp(fp)
 
        ! total P deployment (from sminn and retranslocated P pool) (PDEPLOY)
-       this%pdeploy(p) = &
-            this%sminp_to_ppool(p) + &
-            this%retransp_to_ppool(p)
+       this%uptake%pool_deploy(p) = &
+            this%uptake%smin_to_pool(p) + &
+            this%retrans%retrans_to_pool(p)
 
        ! pft-level wood harvest
        this%core%wood_harvest(p) = &
@@ -10460,7 +10467,7 @@ module VegetationDataType
             this%core%m_deadcroot_to_fire(p)          + &
             this%core%m_deadcroot_storage_to_fire(p)  + &
             this%core%m_deadcroot_xfer_to_fire(p)     + &
-            this%m_retransp_to_fire(p)            + &
+            this%retrans%m_retrans_to_fire(p)            + &
             this%core%m_pool_to_fire(p)
 
       this%gap_ploss_litter(p) = &
@@ -10482,13 +10489,13 @@ module VegetationDataType
            this%core%m_deadcroot_to_litter(p)         + &
            this%core%m_deadcroot_storage_to_litter(p) + &
            this%core%m_deadcroot_xfer_to_litter(p)    + &
-           this%m_retransp_to_litter(p)           + &
+           this%retrans%m_retrans_to_litter(p)           + &
            this%core%m_pool_to_litter(p)
 
       this%fire_ploss_litter(p) = &
            this%core%m_deadstem_to_litter_fire(p)     + &
            this%core%m_deadcroot_to_litter_fire(p)    + &
-           this%m_retransp_to_litter_fire(p)      + &
+           this%retrans%m_retrans_to_litter_fire(p)      + &
            this%core%m_pool_to_litter_fire(p)         + &
            this%core%m_leaf_to_litter_fire(p)         + &
            this%core%m_froot_to_litter_fire(p)        + &
@@ -10508,7 +10515,7 @@ module VegetationDataType
            this%core%m_deadcroot_xfer_to_litter_fire(p)
 
       this%hrv_ploss_litter(p) = &
-           this%hrv_retransp_to_litter(p)         + &
+           this%retrans%hrv_retrans_to_litter(p)         + &
            this%core%hrv_pool_to_litter(p)            + &
            this%core%hrv_leaf_to_litter(p)            + &
            this%core%hrv_leaf_storage_to_litter(p)    + &

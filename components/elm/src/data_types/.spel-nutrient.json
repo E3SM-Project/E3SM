@@ -877,5 +877,152 @@
  "e3sm": {
   "commit": "a7c33a429ad1cb75ae60de26cf115bfad53467e9",
   "branch": "peterdschwartz/lnd/nutrient-type-transform"
+ },
+ "groups": {
+  "column_mineral_state": {
+   "component": "mineral",
+   "types": {
+    "column_nitrogen_state": {
+     "sminn": "mineral%smin",
+     "sminn_vr": "mineral%smin_vr"
+    },
+    "column_phosphorus_state": {
+     "sminp": "mineral%smin",
+     "sminp_vr": "mineral%smin_vr"
+    }
+   },
+   "kept": {}
+  },
+  "column_mineral_flux": {
+   "component": "mineral",
+   "types": {
+    "column_nitrogen_flux": {
+     "ndep_to_sminn": "mineral%dep_to_smin",
+     "decomp_cascade_sminn_flux_vr": "mineral%decomp_cascade_smin_flux_vr",
+     "decomp_cascade_sminn_flux": "mineral%decomp_cascade_smin_flux",
+     "supplement_to_sminn_vr": "mineral%supplement_to_smin_vr",
+     "supplement_to_sminn": "mineral%supplement_to_smin",
+     "gross_nmin_vr": "mineral%gross_min_vr",
+     "gross_nmin": "mineral%gross_min",
+     "net_nmin_vr": "mineral%net_min_vr",
+     "net_nmin": "mineral%net_min",
+     "sminn_leached_vr": "mineral%smin_leached_vr",
+     "sminn_leached": "mineral%smin_leached",
+     "pmnf_decomp_cascade": "mineral%pmf_decomp_cascade",
+     "soil_n_immob_flux": "mineral%soil_immob_flux",
+     "soil_n_immob_flux_vr": "mineral%soil_immob_flux_vr",
+     "soil_n_grossmin_flux": "mineral%soil_grossmin_flux"
+    },
+    "column_phosphorus_flux": {
+     "pdep_to_sminp": "mineral%dep_to_smin",
+     "decomp_cascade_sminp_flux_vr": "mineral%decomp_cascade_smin_flux_vr",
+     "decomp_cascade_sminp_flux": "mineral%decomp_cascade_smin_flux",
+     "supplement_to_sminp_vr": "mineral%supplement_to_smin_vr",
+     "supplement_to_sminp": "mineral%supplement_to_smin",
+     "gross_pmin_vr": "mineral%gross_min_vr",
+     "gross_pmin": "mineral%gross_min",
+     "net_pmin_vr": "mineral%net_min_vr",
+     "net_pmin": "mineral%net_min",
+     "sminp_leached_vr": "mineral%smin_leached_vr",
+     "sminp_leached": "mineral%smin_leached",
+     "pmpf_decomp_cascade": "mineral%pmf_decomp_cascade",
+     "soil_p_immob_flux": "mineral%soil_immob_flux",
+     "soil_p_immob_flux_vr": "mineral%soil_immob_flux_vr",
+     "soil_p_grossmin_flux": "mineral%soil_grossmin_flux"
+    }
+   },
+   "kept": {}
+  },
+  "column_uptake_flux": {
+   "component": "uptake",
+   "types": {
+    "column_nitrogen_flux": {
+     "plant_ndemand": "uptake%plant_demand",
+     "plant_ndemand_vr": "uptake%plant_demand_vr",
+     "col_plant_ndemand_vr": "uptake%col_plant_demand_vr",
+     "sminn_to_plant_vr": "uptake%smin_to_plant_vr",
+     "sminn_to_plant": "uptake%smin_to_plant",
+     "plant_n_uptake_flux": "uptake%plant_uptake_flux"
+    },
+    "column_phosphorus_flux": {
+     "plant_pdemand": "uptake%plant_demand",
+     "plant_pdemand_vr": "uptake%plant_demand_vr",
+     "col_plant_pdemand_vr": "uptake%col_plant_demand_vr",
+     "sminp_to_plant_vr": "uptake%smin_to_plant_vr",
+     "sminp_to_plant": "uptake%smin_to_plant",
+     "plant_p_uptake_flux": "uptake%plant_uptake_flux"
+    }
+   },
+   "kept": {}
+  },
+  "vegetation_uptake_flux": {
+   "component": "uptake",
+   "types": {
+    "vegetation_nitrogen_flux": {
+     "plant_ndemand": "uptake%plant_demand",
+     "plant_ndemand_vr": "uptake%plant_demand_vr",
+     "sminn_to_plant": "uptake%smin_to_plant",
+     "sminn_to_npool": "uptake%smin_to_pool",
+     "supplement_to_plantn": "uptake%supplement_to_plant",
+     "ndeploy": "uptake%pool_deploy"
+    },
+    "vegetation_phosphorus_flux": {
+     "plant_pdemand": "uptake%plant_demand",
+     "plant_pdemand_vr": "uptake%plant_demand_vr",
+     "sminp_to_plant": "uptake%smin_to_plant",
+     "sminp_to_ppool": "uptake%smin_to_pool",
+     "supplement_to_plantp": "uptake%supplement_to_plant",
+     "pdeploy": "uptake%pool_deploy"
+    }
+   },
+   "kept": {}
+  },
+  "vegetation_retrans_state": {
+   "component": "retrans",
+   "types": {
+    "vegetation_nitrogen_state": {
+     "retransn": "retrans%pool"
+    },
+    "vegetation_phosphorus_state": {
+     "retransp": "retrans%pool"
+    }
+   },
+   "kept": {}
+  },
+  "vegetation_retrans_flux": {
+   "component": "retrans",
+   "types": {
+    "vegetation_nitrogen_flux": {
+     "m_retransn_to_litter": "retrans%m_retrans_to_litter",
+     "hrv_retransn_to_litter": "retrans%hrv_retrans_to_litter",
+     "m_retransn_to_fire": "retrans%m_retrans_to_fire",
+     "m_retransn_to_litter_fire": "retrans%m_retrans_to_litter_fire",
+     "leafn_to_retransn": "retrans%leaf_to_retrans",
+     "frootn_to_retransn": "retrans%froot_to_retrans",
+     "retransn_to_npool": "retrans%retrans_to_pool",
+     "livestemn_to_retransn": "retrans%livestem_to_retrans",
+     "livecrootn_to_retransn": "retrans%livecroot_to_retrans",
+     "avail_retransn": "retrans%avail_retrans"
+    },
+    "vegetation_phosphorus_flux": {
+     "m_retransp_to_litter": "retrans%m_retrans_to_litter",
+     "hrv_retransp_to_litter": "retrans%hrv_retrans_to_litter",
+     "m_retransp_to_fire": "retrans%m_retrans_to_fire",
+     "m_retransp_to_litter_fire": "retrans%m_retrans_to_litter_fire",
+     "leafp_to_retransp": "retrans%leaf_to_retrans",
+     "frootp_to_retransp": "retrans%froot_to_retrans",
+     "retransp_to_ppool": "retrans%retrans_to_pool",
+     "livestemp_to_retransp": "retrans%livestem_to_retrans",
+     "livecrootp_to_retransp": "retrans%livecroot_to_retrans",
+     "avail_retransp": "retrans%avail_retrans"
+    }
+   },
+   "kept": {}
+  }
+ },
+ "groups_spel_commit": "f26b1073185f50c38671be9022f2d2ce400a4b27",
+ "groups_e3sm": {
+  "commit": "5a7be0a4681def930445e06dd0e210b182b260a0",
+  "branch": "peterdschwartz/lnd/nutrient-type-transform"
  }
 }

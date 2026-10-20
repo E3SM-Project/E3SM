@@ -99,7 +99,7 @@ contains
          sucsat                 => soilstate_vars%sucsat_col                   , & ! Input  :  minimum soil suction (mm)
          soilpsi                => soilstate_vars%soilpsi_col                  , & ! Input  :  soil water potential in each soil layer (MPa)
          rresis                 => energyflux_vars%rresis_patch                , & ! Input  :  [real(r8) (:,:) ]  root soil water stress (resistance) by layer (0-1)
-         sminn_vr               => col_ns%sminn_vr             , & ! Iniput :  [real(r8) (:,:)]  (gN/m3) soil mineral N
+         sminn_vr               => col_ns%mineral%smin_vr             , & ! Iniput :  [real(r8) (:,:)]  (gN/m3) soil mineral N
          frootc                 => veg_cs%core%froot               , & ! Input  :  [real(r8) (:)]  (gC/m2) fine root C
          hui                    => crop_vars%gddplant_patch                    , & ! Input  :  [real(r8) (:)]  =gdd since planting (gddplant)
          huigrain               => cnstate_vars%huigrain_patch                 , & ! Input  :  [real(r8) (:)]  same to reach vegetative maturity

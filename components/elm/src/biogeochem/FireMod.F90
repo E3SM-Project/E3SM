@@ -790,7 +790,7 @@ contains
         deadcrootn                          =>    veg_ns%core%deadcroot          , & ! Input:  [real(r8) (:)     ]  (gN/m2) dead coarse root N
         deadcrootn_storage                  =>    veg_ns%core%deadcroot_storage  , & ! Input:  [real(r8) (:)     ]  (gN/m2) dead coarse root N storage
         deadcrootn_xfer                     =>    veg_ns%core%deadcroot_xfer     , & ! Input:  [real(r8) (:)     ]  (gN/m2) dead coarse root N transfer
-        retransn                            =>    veg_ns%retransn            , & ! Input:  [real(r8) (:)     ]  (gN/m2) plant pool of retranslocated N
+        retransn                            =>    veg_ns%retrans%pool            , & ! Input:  [real(r8) (:)     ]  (gN/m2) plant pool of retranslocated N
         npool                               =>    veg_ns%core%pool               , & ! Input:  [real(r8) (:)     ]  (gN/m2) plant pool of stored N
         ! add phosphorus state variables - X.YANG
         decomp_ppools_vr                    =>    col_ps%core%decomp_pools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gP/m3)  VR decomp. (litter, cwd, soil)
@@ -812,7 +812,7 @@ contains
         deadcrootp                          =>    veg_ps%core%deadcroot          , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P
         deadcrootp_storage                  =>    veg_ps%core%deadcroot_storage  , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P storage
         deadcrootp_xfer                     =>    veg_ps%core%deadcroot_xfer     , & ! Input:  [real(r8) (:)     ]  (gP/m2) dead coarse root P transfer
-        retransp                            =>    veg_ps%retransp            , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of retranslocated P
+        retransp                            =>    veg_ps%retrans%pool            , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of retranslocated P
         ppool                               =>    veg_ps%core%pool               , & ! Input:  [real(r8) (:)     ]  (gP/m2) plant pool of storage P
 
         fire_mortality_c_to_cwdc            =>    col_cf%core%fire_mortality_to_cwd      , & ! Input:  [real(r8) (:,:)   ]  C flux fire mortality to CWD (gC/m3/s)
@@ -858,7 +858,7 @@ contains
         m_deadcrootn_to_fire                =>    veg_nf%core%m_deadcroot_to_fire         , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn
         m_deadcrootn_storage_to_fire        =>    veg_nf%core%m_deadcroot_storage_to_fire , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn_storage
         m_deadcrootn_xfer_to_fire           =>    veg_nf%core%m_deadcroot_xfer_to_fire    , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. deadcrootn_xfer
-        m_retransn_to_fire                  =>    veg_nf%m_retransn_to_fire           , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. retransn
+        m_retransn_to_fire                  =>    veg_nf%retrans%m_retrans_to_fire           , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. retransn
         m_npool_to_fire                     =>    veg_nf%core%m_pool_to_fire              , & ! Input:  [real(r8) (:)     ]  (gN/m2/s) N emis. npooln
 
 
@@ -883,7 +883,7 @@ contains
         m_deadcrootp_to_fire                =>    veg_pf%core%m_deadcroot_to_fire                , & ! Input:  [real(r8) (:)     ]  (gP/m2/s) P emis. deadcrootp
         m_deadcrootp_storage_to_fire        =>    veg_pf%core%m_deadcroot_storage_to_fire        , & ! Input:  [real(r8) (:)     ]  (gP/m2/s) P emis. deadcrootp_storage
         m_deadcrootp_xfer_to_fire           =>    veg_pf%core%m_deadcroot_xfer_to_fire           , & ! Input:  [real(r8) (:)     ]  (gP/m2/s) P emis. deadcrootp_xfer
-        m_retransp_to_fire                  =>    veg_pf%m_retransp_to_fire                  , & ! Input:  [real(r8) (:)     ]  (gP/m2/s) P emis. retransp
+        m_retransp_to_fire                  =>    veg_pf%retrans%m_retrans_to_fire                  , & ! Input:  [real(r8) (:)     ]  (gP/m2/s) P emis. retransp
         m_ppool_to_fire                     =>    veg_pf%core%m_pool_to_fire                     , & ! Input:  [real(r8) (:)     ]  (gP/m2/s) P emis. ppool
 
         m_leafc_to_litter_fire              =>    veg_cf%core%m_leaf_to_litter_fire                , & ! Output: [real(r8) (:)     ]
@@ -933,7 +933,7 @@ contains
         m_deadcrootn_to_litter_fire         =>    veg_nf%core%m_deadcroot_to_litter_fire         ,&
         m_deadcrootn_storage_to_litter_fire =>    veg_nf%core%m_deadcroot_storage_to_litter_fire,&
         m_deadcrootn_xfer_to_litter_fire    =>    veg_nf%core%m_deadcroot_xfer_to_litter_fire    ,&
-        m_retransn_to_litter_fire           =>    veg_nf%m_retransn_to_litter_fire           ,&
+        m_retransn_to_litter_fire           =>    veg_nf%retrans%m_retrans_to_litter_fire           ,&
         m_npool_to_litter_fire              =>    veg_nf%core%m_pool_to_litter_fire              ,&
         m_decomp_npools_to_fire_vr          =>    col_nf%core%m_decomp_pools_to_fire_vr       ,&
         m_n_to_litr_met_fire                =>    col_nf%core%m_to_litr_met_fire                ,&
@@ -959,7 +959,7 @@ contains
         m_deadcrootp_to_litter_fire         =>    veg_pf%core%m_deadcroot_to_litter_fire ,&
         m_deadcrootp_storage_to_litter_fire =>    veg_pf%core%m_deadcroot_storage_to_litter_fire ,&
         m_deadcrootp_xfer_to_litter_fire    =>    veg_pf%core%m_deadcroot_xfer_to_litter_fire ,&
-        m_retransp_to_litter_fire           =>    veg_pf%m_retransp_to_litter_fire ,&
+        m_retransp_to_litter_fire           =>    veg_pf%retrans%m_retrans_to_litter_fire ,&
         m_ppool_to_litter_fire              =>    veg_pf%core%m_pool_to_litter_fire ,&
         m_decomp_ppools_to_fire_vr          =>    col_pf%core%m_decomp_pools_to_fire_vr ,&
         m_p_to_litr_met_fire                =>    col_pf%core%m_to_litr_met_fire ,&

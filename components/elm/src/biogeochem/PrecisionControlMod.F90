@@ -521,15 +521,15 @@ contains
             end if
 
             ! retransn (N only)
-            if (abs(veg_ns%retransn(p)) < ncrit) then
-               pn = pn + veg_ns%retransn(p)
-               veg_ns%retransn(p) = 0._r8
+            if (abs(veg_ns%retrans%pool(p)) < ncrit) then
+               pn = pn + veg_ns%retrans%pool(p)
+               veg_ns%retrans%pool(p) = 0._r8
             end if
 
             ! retransp (P only)
-            if (abs(veg_ps%retransp(p)) < pcrit) then
-               pp = pp + veg_ps%retransp(p)
-               veg_ps%retransp(p) = 0._r8
+            if (abs(veg_ps%retrans%pool(p)) < pcrit) then
+               pp = pp + veg_ps%retrans%pool(p)
+               veg_ps%retrans%pool(p) = 0._r8
             end if
 
             ! npool (N only)
@@ -718,10 +718,10 @@ contains
             do fp = 1,num_soilp
                p = filter_soilp(fp)
 #ifndef _OPENACC
-               if (veg_ns%retransn(p) < 0._r8) then
+               if (veg_ns%retrans%pool(p) < 0._r8) then
 
                   write(iulog, *) 'error retransn_patch is negative: ',p
-                  write(iulog, *) 'retransn_patch: ', veg_ns%retransn(p)
+                  write(iulog, *) 'retransn_patch: ', veg_ns%retrans%pool(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
                if (veg_ns%core%pool(p) < 0._r8) then
@@ -729,9 +729,9 @@ contains
                   write(iulog, *) 'npool_patch: ', veg_ns%core%pool(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
-               if (veg_ps%retransp(p) < 0._r8) then
+               if (veg_ps%retrans%pool(p) < 0._r8) then
                   write(iulog, *) 'error retransp_patch is negative: ',p
-                  write(iulog, *) 'retransp_patch: ', veg_ps%retransp(p)
+                  write(iulog, *) 'retransp_patch: ', veg_ps%retrans%pool(p)
                   call endrun(msg=errMsg(__FILE__, __LINE__))
                end if
                if (veg_ps%core%pool(p) < 0._r8) then

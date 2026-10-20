@@ -189,9 +189,9 @@ contains
          veg_nf%core%m_deadstem_to_litter(p)           = veg_ns%core%deadstem(p)           * m
          veg_nf%core%m_livecroot_to_litter(p)          = veg_ns%core%livecroot(p)          * m
          veg_nf%core%m_deadcroot_to_litter(p)          = veg_ns%core%deadcroot(p)          * m
-         veg_nf%m_retransn_to_litter(p) = 0._r8
+         veg_nf%retrans%m_retrans_to_litter(p) = 0._r8
          if (.not. iscft(ivt(p))) then
-            veg_nf%m_retransn_to_litter(p) = veg_ns%retransn(p) * m
+            veg_nf%retrans%m_retrans_to_litter(p) = veg_ns%retrans%pool(p) * m
          end if
          veg_nf%core%m_pool_to_litter(p)               = veg_ns%core%pool(p)               * m
 
@@ -234,9 +234,9 @@ contains
          veg_pf%core%m_livecroot_to_litter(p)          = veg_ps%core%livecroot(p)          * m
          veg_pf%core%m_deadcroot_to_litter(p)          = veg_ps%core%deadcroot(p)          * m
          
-         veg_pf%m_retransp_to_litter(p)            = 0._r8 
+         veg_pf%retrans%m_retrans_to_litter(p)            = 0._r8 
          if (.not. iscft(ivt(p))) then
-            veg_pf%m_retransp_to_litter(p) = veg_ps%retransp(p) * m
+            veg_pf%retrans%m_retrans_to_litter(p) = veg_ps%retrans%pool(p) * m
          end if
          veg_pf%core%m_pool_to_litter(p)               = veg_ps%core%pool(p)               * m
 
@@ -339,7 +339,7 @@ contains
          m_deadstemn_to_litter               =>    veg_nf%core%m_deadstem_to_litter          , & ! Input:  [real(r8) (:)   ]
          m_livecrootn_to_litter              =>    veg_nf%core%m_livecroot_to_litter         , & ! Input:  [real(r8) (:)   ]
          m_deadcrootn_to_litter              =>    veg_nf%core%m_deadcroot_to_litter         , & ! Input:  [real(r8) (:)   ]
-         m_retransn_to_litter                =>    veg_nf%m_retransn_to_litter           , & ! Input:  [real(r8) (:)   ]
+         m_retransn_to_litter                =>    veg_nf%retrans%m_retrans_to_litter           , & ! Input:  [real(r8) (:)   ]
          m_npool_to_litter                   =>    veg_nf%core%m_pool_to_litter              , & ! Input:  [real(r8) (:)   ]
          m_leafn_storage_to_litter           =>    veg_nf%core%m_leaf_storage_to_litter      , & ! Input:  [real(r8) (:)   ]
          m_frootn_storage_to_litter          =>    veg_nf%core%m_froot_storage_to_litter     , & ! Input:  [real(r8) (:)   ]
@@ -361,7 +361,7 @@ contains
          m_deadstemp_to_litter               =>    veg_pf%core%m_deadstem_to_litter          , & ! Input:  [real(r8) (:)   ]
          m_livecrootp_to_litter              =>    veg_pf%core%m_livecroot_to_litter         , & ! Input:  [real(r8) (:)   ]
          m_deadcrootp_to_litter              =>    veg_pf%core%m_deadcroot_to_litter         , & ! Input:  [real(r8) (:)   ]
-         m_retransp_to_litter                =>    veg_pf%m_retransp_to_litter           , & ! Input:  [real(r8) (:)   ]
+         m_retransp_to_litter                =>    veg_pf%retrans%m_retrans_to_litter           , & ! Input:  [real(r8) (:)   ]
          m_ppool_to_litter                   =>    veg_pf%core%m_pool_to_litter              , & ! Input:  [real(r8) (:)   ]
          m_leafp_storage_to_litter           =>    veg_pf%core%m_leaf_storage_to_litter      , & ! Input:  [real(r8) (:)   ]
          m_frootp_storage_to_litter          =>    veg_pf%core%m_froot_storage_to_litter     , & ! Input:  [real(r8) (:)   ]

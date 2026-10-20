@@ -147,7 +147,7 @@ contains
                c = filter_soilc(fc)
 
                ! N deposition and fixation (put all into NH4 pool)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%mineral%dep_to_smin(c)*dt * ndep_prof(c,j)
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
 
                ! plant to litter fluxes
@@ -202,7 +202,7 @@ contains
 
                      col_nf%core%decomp_pools_sourcesink(c,j,cascade_receiver_pool(k)) = &
                           col_nf%core%decomp_pools_sourcesink(c,j,cascade_receiver_pool(k)) + &
-                          (col_nf%core%decomp_cascade_transfer_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
+                          (col_nf%core%decomp_cascade_transfer_vr(c,j,k) + col_nf%mineral%decomp_cascade_smin_flux_vr(c,j,k)) * dt
                   end do
                end do
             else  ! terminal transitions
@@ -212,7 +212,7 @@ contains
                      c = filter_soilc(fc)
                      col_nf%core%decomp_pools_sourcesink(c,j,cascade_donor_pool(k)) = &
                           col_nf%core%decomp_pools_sourcesink(c,j,cascade_donor_pool(k)) - &
-                          col_nf%decomp_cascade_sminn_flux_vr(c,j,k) * dt
+                          col_nf%mineral%decomp_cascade_smin_flux_vr(c,j,k) * dt
                   end do
                end do
             end if
@@ -224,7 +224,7 @@ contains
                c = filter_soilc(fc)
 
                ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%mineral%gross_min_vr(c,j)*dt
 
                ! immobilization fluxes
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
@@ -245,10 +245,10 @@ contains
                col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
 
                ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%mineral%supplement_to_smin_vr(c,j)*dt
 
                ! update diagnostic total
-               col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
+               col_ns%mineral%smin_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
 
             end do ! end of column loop
          end do
@@ -266,7 +266,7 @@ contains
                do j = 1, nlevdecomp
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
                   col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                  col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
+                  col_ns%mineral%smin_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
                end do
             end if
          end do
@@ -306,26 +306,26 @@ contains
               ! phenology: litterfall and retranslocation fluxes
               veg_ns%core%leaf(p)    = veg_ns%core%leaf(p)    - veg_nf%core%leaf_to_litter(p)*dt
               veg_ns%core%froot(p)   = veg_ns%core%froot(p)   - veg_nf%core%froot_to_litter(p)*dt
-              veg_ns%core%leaf(p)    = veg_ns%core%leaf(p)    - veg_nf%leafn_to_retransn(p)*dt
-              veg_ns%retransn(p) = veg_ns%retransn(p) + veg_nf%leafn_to_retransn(p)*dt
+              veg_ns%core%leaf(p)    = veg_ns%core%leaf(p)    - veg_nf%retrans%leaf_to_retrans(p)*dt
+              veg_ns%retrans%pool(p) = veg_ns%retrans%pool(p) + veg_nf%retrans%leaf_to_retrans(p)*dt
 
               ! live wood turnover and retranslocation fluxes
               if (woody(ivt(p)) >= 1.0_r8) then
                   veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%core%livestem_to_deadstem(p)*dt
                   veg_ns%core%deadstem(p)  = veg_ns%core%deadstem(p)  + veg_nf%core%livestem_to_deadstem(p)*dt
-                  veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%livestemn_to_retransn(p)*dt
-                  veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livestemn_to_retransn(p)*dt
+                  veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%retrans%livestem_to_retrans(p)*dt
+                  veg_ns%retrans%pool(p)   = veg_ns%retrans%pool(p)   + veg_nf%retrans%livestem_to_retrans(p)*dt
                   veg_ns%core%livecroot(p) = veg_ns%core%livecroot(p) - veg_nf%core%livecroot_to_deadcroot(p)*dt
                   veg_ns%core%deadcroot(p) = veg_ns%core%deadcroot(p) + veg_nf%core%livecroot_to_deadcroot(p)*dt
-                  veg_ns%core%livecroot(p) = veg_ns%core%livecroot(p) - veg_nf%livecrootn_to_retransn(p)*dt
-                  veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livecrootn_to_retransn(p)*dt
+                  veg_ns%core%livecroot(p) = veg_ns%core%livecroot(p) - veg_nf%retrans%livecroot_to_retrans(p)*dt
+                  veg_ns%retrans%pool(p)   = veg_ns%retrans%pool(p)   + veg_nf%retrans%livecroot_to_retrans(p)*dt
               end if
               if (iscft(ivt(p))) then ! Beth adds retrans from froot
-                  veg_ns%core%froot(p)     = veg_ns%core%froot(p)     - veg_nf%frootn_to_retransn(p)*dt
-                  veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%frootn_to_retransn(p)*dt
+                  veg_ns%core%froot(p)     = veg_ns%core%froot(p)     - veg_nf%retrans%froot_to_retrans(p)*dt
+                  veg_ns%retrans%pool(p)   = veg_ns%retrans%pool(p)   + veg_nf%retrans%froot_to_retrans(p)*dt
                   veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%core%livestem_to_litter(p)*dt
-                  veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%livestemn_to_retransn(p)*dt
-                  veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livestemn_to_retransn(p)*dt
+                  veg_ns%core%livestem(p)  = veg_ns%core%livestem(p)  - veg_nf%retrans%livestem_to_retrans(p)*dt
+                  veg_ns%retrans%pool(p)   = veg_ns%retrans%pool(p)   + veg_nf%retrans%livestem_to_retrans(p)*dt
                   veg_ns%core%grain(p)     = veg_ns%core%grain(p)     - veg_nf%core%grain_to_food(p)*dt
 
                   veg_ns%core%cropseed_deficit(p) = veg_ns%core%cropseed_deficit(p) &
@@ -334,13 +334,13 @@ contains
 
               ! uptake from soil mineral N pool
               veg_ns%core%pool(p) = &
-                    veg_ns%core%pool(p) + veg_nf%sminn_to_npool(p)*dt
-              if (nu_com .ne. 'RD') veg_ns%core%pool(p) = veg_ns%core%pool(p) + veg_nf%supplement_to_plantn(p)*dt
+                    veg_ns%core%pool(p) + veg_nf%uptake%smin_to_pool(p)*dt
+              if (nu_com .ne. 'RD') veg_ns%core%pool(p) = veg_ns%core%pool(p) + veg_nf%uptake%supplement_to_plant(p)*dt
               if (NFIX_PTASE_plant) veg_ns%core%pool(p) = veg_ns%core%pool(p) + veg_nf%nfix_to_plantn(p)*dt
 
               ! deployment from retranslocation pool
-              veg_ns%core%pool(p)    = veg_ns%core%pool(p)    + veg_nf%retransn_to_npool(p)*dt
-              veg_ns%retransn(p) = veg_ns%retransn(p) - veg_nf%retransn_to_npool(p)*dt
+              veg_ns%core%pool(p)    = veg_ns%core%pool(p)    + veg_nf%retrans%retrans_to_pool(p)*dt
+              veg_ns%retrans%pool(p) = veg_ns%retrans%pool(p) - veg_nf%retrans%retrans_to_pool(p)*dt
 
               ! allocation fluxes
               veg_ns%core%pool(p)           = veg_ns%core%pool(p)          - veg_nf%core%pool_to_leaf(p)*dt

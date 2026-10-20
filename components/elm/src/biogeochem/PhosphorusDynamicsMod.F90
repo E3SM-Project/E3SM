@@ -68,7 +68,7 @@ contains
 
     associate(&
          forc_pdep     =>  atm2lnd_vars%forc_pdep_grc     , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)
-         pdep_to_sminp =>  col_pf%pdep_to_sminp   & ! Output: [real(r8) (:)]
+         pdep_to_sminp =>  col_pf%mineral%dep_to_smin   & ! Output: [real(r8) (:)]
          )
 
       begc = bounds%begc
@@ -326,7 +326,7 @@ contains
          qflx_surf           => col_wf%qflx_surf          , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
 
          solutionp_vr        => col_ps%solutionp_vr       , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N
-         sminp_leached_vr    => col_pf%sminp_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)
+         sminp_leached_vr    => col_pf%mineral%smin_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)
          )
    
       !$acc data create(tot_water(:), sum1)  

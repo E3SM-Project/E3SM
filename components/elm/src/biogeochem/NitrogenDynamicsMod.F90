@@ -134,7 +134,7 @@ contains
 
     associate(&
          forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
-         ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]
+         ndep_to_sminn =>  col_nf%mineral%dep_to_smin   & ! Output: [real(r8) (:)]
          )
       begc = bounds%begc
       endc = bounds%endc
@@ -501,8 +501,8 @@ contains
          gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest
          croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested
 
-         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
-         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
+         sminn            =>  col_ns%mineral%smin           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
+         plant_ndemand    =>  veg_nf%uptake%plant_demand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
 
          soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop
          soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]

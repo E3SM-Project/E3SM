@@ -164,7 +164,7 @@ contains
          totsomp   => col_ps%core%totsom , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
          cwdp      => col_ps%core%cwd    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          totlitp   => col_ps%core%totlit , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg 
-         sminp     => col_ps%sminp   , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         sminp     => col_ps%mineral%smin   , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          col_begpb => col_ps%core%balance_beg     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          )
 
@@ -360,16 +360,16 @@ contains
 
     associate(                                                                             &
          totcoln                   =>    col_ns%core%totcol                  , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
-         ndep_to_sminn             =>    col_nf%ndep_to_sminn             , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
+         ndep_to_sminn             =>    col_nf%mineral%dep_to_smin             , & ! Input:  [real(r8) (:)]  atmospheric N deposition to soil mineral N (gN/m2/s)
          nfix_to_sminn             =>    col_nf%nfix_to_sminn             , & ! Input:  [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          nfix_to_ecosysn           =>    col_nf%nfix_to_ecosysn           , &
          fert_to_sminn             =>    col_nf%fert_to_sminn             , & ! Input:  [real(r8) (:)]
          soyfixn_to_sminn          =>    col_nf%soyfixn_to_sminn          , & ! Input:  [real(r8) (:)]
          fan_totnin                =>    col_nf%fan_totnin                , & ! Input:  [real(r8) (:)]  (gN/m2/s) total N input into the FAN pools
          fan_totnout               =>    col_nf%fan_totnout               , & ! Input:  [real(r8) (:)]  (gN/m2/s) total N output from the FAN pools
-         supplement_to_sminn       =>    col_nf%supplement_to_sminn       , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)
+         supplement_to_sminn       =>    col_nf%mineral%supplement_to_smin       , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)
          denit                     =>    col_nf%denit                     , & ! Input:  [real(r8) (:)]  total rate of denitrification (gN/m2/s)
-         sminn_leached             =>    col_nf%sminn_leached             , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
+         sminn_leached             =>    col_nf%mineral%smin_leached             , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
          smin_no3_leached          =>    col_nf%smin_no3_leached          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    col_nf%smin_no3_runoff           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    col_nf%f_n2o_nit                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
@@ -381,7 +381,7 @@ contains
          col_fire_nloss            =>    col_nf%core%fire_loss                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
          som_n_leached             =>    col_nf%core%som_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
          som_n_yield               =>    col_nf%core%som_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
-         supplement_to_plantn      =>    veg_nf%supplement_to_plantn      , &
+         supplement_to_plantn      =>    veg_nf%uptake%supplement_to_plant      , &
          ! pflotran:
          col_decompn_delta         =>    col_nf%core%external_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
          col_ninputs               =>    col_nf%core%inputs                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
@@ -389,7 +389,7 @@ contains
          col_begnb                 =>    col_ns%core%balance_beg                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb                 =>    col_ns%core%balance_end                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
          col_errnb                 =>    col_ns%core%balance_err                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
-         sminn_to_plant            =>    col_nf%sminn_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
+         sminn_to_plant            =>    col_nf%uptake%smin_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
 
 
       ! set time steps
@@ -579,8 +579,8 @@ contains
 
     associate(                                                                            &
          totcolp                   => col_ps%core%totcol                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         supplement_to_sminp       => col_pf%supplement_to_sminp       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
-         sminp_leached             => col_pf%sminp_leached             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
+         supplement_to_sminp       => col_pf%mineral%supplement_to_smin       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
+         sminp_leached             => col_pf%mineral%smin_leached             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          col_fire_ploss            => col_pf%core%fire_loss                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
          biochem_pmin_to_plant     => col_pf%biochem_pmin_to_plant     , & ! Input:  total column level biochemical p flux to plant (gP/m2/s)
          primp_to_labilep          => col_pf%primp_to_labilep          , &
@@ -591,7 +591,7 @@ contains
          secondp_yield             => col_pf%secondp_yield             , & ! Input:  [real(r8) (:)]  soil secondary mineral P loss by erosion (gP/m^s/s)
          occlp_yield               => col_pf%occlp_yield               , & ! Input:  [real(r8) (:)]  soil occluded mineral P loss by erosion (gP/m^s/s)
          primp_yield               => col_pf%primp_yield               , & ! Input:  [real(r8) (:)]  soil primary mineral P loss by erosion (gP/m^s/s)
-         supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
+         supplement_to_plantp      => veg_pf%uptake%supplement_to_plant          , &
          plant_to_litter_pflux     => col_pf%core%plant_to_litter_flux     , & ! Input                   flux of P from FATES litter into ELM
                                                                            !                         litter (gP/m2/s)
          col_prod1p_loss           => col_pf%core%prod1_loss               , & ! Input:  [real(r8) (:) ]  crop leafc harvested (gP/m2/s)
@@ -608,10 +608,10 @@ contains
          totsomp                   => col_ps%core%totsom                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          cwdp                      => col_ps%core%cwd                     , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          totlitp                   => col_ps%core%totlit                  , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         sminp                     => col_ps%sminp                    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
+         sminp                     => col_ps%mineral%smin                    , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
          leafp_to_litter           => veg_pf%core%leaf_to_litter         , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          frootp_to_litter          => veg_pf%core%froot_to_litter        , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
-         sminp_to_plant            => col_pf%sminp_to_plant            , &
+         sminp_to_plant            => col_pf%uptake%smin_to_plant            , &
          cascade_receiver_pool     => decomp_cascade_con%cascade_receiver_pool   &
          )
 
@@ -642,14 +642,14 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   flux_mineralization_col(c) = flux_mineralization_col(c) - &
-                                               col_pf%decomp_cascade_sminp_flux(c,k)
+                                               col_pf%mineral%decomp_cascade_smin_flux(c,k)
                end do
          else
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                     flux_mineralization_col(c) = flux_mineralization_col(c) + &
-                                               col_pf%decomp_cascade_sminp_flux(c,k)
+                                               col_pf%mineral%decomp_cascade_smin_flux(c,k)
 
                end do
          endif

@@ -87,7 +87,7 @@ contains
          veg_ps%core%deadstem(p)          =  veg_ps%core%deadstem(p)  - veg_pf%core%m_deadstem_to_litter(p)  * dt
          veg_ps%core%livecroot(p)         =  veg_ps%core%livecroot(p) - veg_pf%core%m_livecroot_to_litter(p) * dt
          veg_ps%core%deadcroot(p)         =  veg_ps%core%deadcroot(p) - veg_pf%core%m_deadcroot_to_litter(p) * dt
-         veg_ps%retransp(p)           =  veg_ps%retransp(p)   - veg_pf%m_retransp_to_litter(p)   * dt
+         veg_ps%retrans%pool(p)           =  veg_ps%retrans%pool(p)   - veg_pf%retrans%m_retrans_to_litter(p)   * dt
          veg_ps%core%pool(p)              =  veg_ps%core%pool(p)      - veg_pf%core%m_pool_to_litter(p)   * dt
 
          ! storage pools
@@ -176,7 +176,7 @@ contains
          veg_ps%core%deadstem(p)  = veg_ps%core%deadstem(p)  - veg_pf%core%hrv_deadstem_to_prod100(p)* dt
          veg_ps%core%livecroot(p) = veg_ps%core%livecroot(p) - veg_pf%core%hrv_livecroot_to_litter(p) * dt
          veg_ps%core%deadcroot(p) = veg_ps%core%deadcroot(p) - veg_pf%core%hrv_deadcroot_to_litter(p) * dt
-         veg_ps%retransp(p)   = veg_ps%retransp(p)   - veg_pf%hrv_retransp_to_litter(p)   * dt
+         veg_ps%retrans%pool(p)   = veg_ps%retrans%pool(p)   - veg_pf%retrans%hrv_retrans_to_litter(p)   * dt
          veg_ps%core%pool(p)      = veg_ps%core%pool(p)      - veg_pf%core%hrv_pool_to_litter(p)      * dt
 
        if (iscft(ivt(p))) then ! skip 2 generic crops

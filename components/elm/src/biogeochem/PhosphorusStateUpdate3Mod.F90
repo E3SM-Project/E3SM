@@ -92,7 +92,7 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                     flux_mineralization(c,j) = flux_mineralization(c,j) - &
-                                               col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
+                                               col_pf%mineral%decomp_cascade_smin_flux_vr(c,j,k)*dt
                end do
              end do
            else
@@ -101,7 +101,7 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                     flux_mineralization(c,j) = flux_mineralization(c,j) + &
-                                               col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
+                                               col_pf%mineral%decomp_cascade_smin_flux_vr(c,j,k)*dt
                end do
              end do
            endif
@@ -129,28 +129,28 @@ contains
                col_ps%solutionp_vr(c,j)      = col_ps%solutionp_vr(c,j)  + ( flux_mineralization(c,j) &
                     + col_pf%primp_to_labilep_vr(c,j)*dt &
                     + col_pf%secondp_to_labilep_vr(c,j)*dt &
-                    + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt&
-                    - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%sminp_leached_vr(c,j)*dt ) / &
+                    + col_pf%mineral%supplement_to_smin_vr(c,j)*dt - col_pf%uptake%smin_to_plant_vr(c,j)*dt&
+                    - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%mineral%smin_leached_vr(c,j)*dt ) / &
                     (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
 
 
                  col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) + ((smax_c*ks_sorption_c)&
                     /(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                     ( flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + col_pf%secondp_to_labilep_vr(c,j)*dt &
-                    + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt &
-                    - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%sminp_leached_vr(c,j)*dt ) / &
+                    + col_pf%mineral%supplement_to_smin_vr(c,j)*dt - col_pf%uptake%smin_to_plant_vr(c,j)*dt &
+                    - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%mineral%smin_leached_vr(c,j)*dt ) / &
                     ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
 
                col_pf%desorb_to_solutionp_vr(c,j) = ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) &
                                 + col_pf%secondp_to_labilep_vr(c,j) &
-                                + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
-                                - col_pf%labilep_to_secondp_vr(c,j) - col_pf%sminp_leached_vr(c,j) ) / &
+                                + col_pf%mineral%supplement_to_smin_vr(c,j) - col_pf%uptake%smin_to_plant_vr(c,j) &
+                                - col_pf%labilep_to_secondp_vr(c,j) - col_pf%mineral%smin_leached_vr(c,j) ) / &
                                 (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
 
                col_pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                              ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) + col_pf%secondp_to_labilep_vr(c,j) &
-                             + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
-                             - col_pf%labilep_to_secondp_vr(c,j) - col_pf%sminp_leached_vr(c,j) ) / &
+                             + col_pf%mineral%supplement_to_smin_vr(c,j) - col_pf%uptake%smin_to_plant_vr(c,j) &
+                             - col_pf%labilep_to_secondp_vr(c,j) - col_pf%mineral%smin_leached_vr(c,j) ) / &
                              ( 1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 )
              end do
            end do
@@ -165,32 +165,32 @@ contains
                 ks_sorption_c = km_minsurf_p_vr(isoilorder(c),j)
                 temp_solutionp(c,j) = ( col_ps%solutionp_vr(c,j) + col_ps%labilep_vr(c,j) + &
                             (flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + &
-                            col_pf%secondp_to_labilep_vr(c,j)*dt + col_pf%supplement_to_sminp_vr(c,j)*dt - &
-                            col_pf%sminp_to_plant_vr(c,j)*dt - col_pf%labilep_to_secondp_vr(c,j)*dt - &
-                            col_pf%sminp_leached_vr(c,j)*dt ))
+                            col_pf%secondp_to_labilep_vr(c,j)*dt + col_pf%mineral%supplement_to_smin_vr(c,j)*dt - &
+                            col_pf%uptake%smin_to_plant_vr(c,j)*dt - col_pf%labilep_to_secondp_vr(c,j)*dt - &
+                            col_pf%mineral%smin_leached_vr(c,j)*dt ))
 
                  if (temp_solutionp(c,j) < 0.0_r8) then
 
-                    if( abs(col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j)) >1.e-20_r8 )then
+                    if( abs(col_pf%labilep_to_secondp_vr(c,j)+col_pf%mineral%smin_leached_vr(c,j)) >1.e-20_r8 )then
                        
                        col_pf%labilep_to_secondp_vr(c,j) = col_pf%labilep_to_secondp_vr(c,j)/ &
-                            (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
+                            (col_pf%labilep_to_secondp_vr(c,j)+col_pf%mineral%smin_leached_vr(c,j))* &
                             (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
+                            col_pf%mineral%smin_leached_vr(c,j)*dt) /dt
                        
-                       col_pf%sminp_leached_vr(c,j) = col_pf%sminp_leached_vr(c,j)/ &
-                            (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
+                       col_pf%mineral%smin_leached_vr(c,j) = col_pf%mineral%smin_leached_vr(c,j)/ &
+                            (col_pf%labilep_to_secondp_vr(c,j)+col_pf%mineral%smin_leached_vr(c,j))* &
                             (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
+                            col_pf%mineral%smin_leached_vr(c,j)*dt) /dt
                     else
                        ! If there is nothing there to drive proportions, just split it
                        col_pf%labilep_to_secondp_vr(c,j) = 0.5_r8 * &
                             (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
+                            col_pf%mineral%smin_leached_vr(c,j)*dt) /dt
                        
-                       col_pf%sminp_leached_vr(c,j) = 0.5_r8 * &
+                       col_pf%mineral%smin_leached_vr(c,j) = 0.5_r8 * &
                             (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
+                            col_pf%mineral%smin_leached_vr(c,j)*dt) /dt
                        
                     end if
                        
@@ -240,7 +240,7 @@ contains
                     - col_pf%secondp_to_labilep_vr(c,j) &
                                      - col_pf%secondp_to_occlp_vr(c,j) )*dt
                col_ps%occlp_vr(c,j)   = col_ps%occlp_vr(c,j) + ( col_pf%secondp_to_occlp_vr(c,j) ) * dt
-               col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j) - ( col_pf%primp_to_labilep_vr(c,j) )*dt + col_pf%pdep_to_sminp(c)*dt &
+               col_ps%primp_vr(c,j)   = col_ps%primp_vr(c,j) - ( col_pf%primp_to_labilep_vr(c,j) )*dt + col_pf%mineral%dep_to_smin(c)*dt &
                     * pdep_prof(c,j)
 
                col_ps%secondp_vr_cur(c,j) = col_ps%secondp_vr(c,j)
@@ -367,8 +367,8 @@ contains
           veg_ps%core%deadcroot_xfer(p)    =  veg_ps%core%deadcroot_xfer(p) - veg_pf%core%m_deadcroot_xfer_to_litter_fire(p) * dt
 
           ! retranslocated N pool
-          veg_ps%retransp(p)           =  veg_ps%retransp(p) - veg_pf%m_retransp_to_fire(p)        * dt
-          veg_ps%retransp(p)           =  veg_ps%retransp(p) - veg_pf%m_retransp_to_litter_fire(p) * dt
+          veg_ps%retrans%pool(p)           =  veg_ps%retrans%pool(p) - veg_pf%retrans%m_retrans_to_fire(p)        * dt
+          veg_ps%retrans%pool(p)           =  veg_ps%retrans%pool(p) - veg_pf%retrans%m_retrans_to_litter_fire(p) * dt
           veg_ps%core%pool(p)              =  veg_ps%core%pool(p) - veg_pf%core%m_pool_to_fire(p)              * dt
           veg_ps%core%pool(p)              =  veg_ps%core%pool(p) - veg_pf%core%m_pool_to_litter_fire(p)       * dt
        end do

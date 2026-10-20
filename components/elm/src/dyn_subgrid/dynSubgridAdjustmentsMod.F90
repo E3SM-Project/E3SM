@@ -558,7 +558,7 @@ contains
       deadcrootn         => veg_ns%core%deadcroot         (p) , &
       deadcrootn_storage => veg_ns%core%deadcroot_storage (p) , &
       deadcrootn_xfer    => veg_ns%core%deadcroot_xfer    (p) , &
-      retransn           => veg_ns%retransn (p) , &
+      retransn           => veg_ns%retrans%pool (p) , &
       npool              => veg_ns%core%pool    (p) , &
       ntrunc             => veg_ns%core%trunc_sink   (p)   , &
       dispvegn           => veg_ns%core%dispveg (p) , &
@@ -833,7 +833,7 @@ contains
     associate(&
       decomp_npools_vr    => col_ns%core%decomp_pools_vr , &
       ntrunc_vr           => col_ns%core%trunc_sink_vr      , &
-      sminn_vr            => col_ns%sminn_vr ,  &
+      sminn_vr            => col_ns%mineral%smin_vr ,  &
       smin_nh4_vr         => col_ns%smin_nh4_vr  , &
       smin_no3_vr         => col_ns%smin_no3_vr  , &
       prod1n              => col_ns%core%prod1       , &
@@ -1262,7 +1262,7 @@ contains
       deadcrootp         => veg_ps%core%deadcroot        (p)       ,&
       deadcrootp_storage => veg_ps%core%deadcroot_storage(p) ,&
       deadcrootp_xfer    => veg_ps%core%deadcroot_xfer   (p), &
-      retransp           => veg_ps%retransp (p) ,&
+      retransp           => veg_ps%retrans%pool (p) ,&
       ppool              => veg_ps%core%pool    (p), &
       ptrunc             => veg_ps%core%trunc_sink   (p)   , &
       dispvegp           => veg_ps%core%dispveg (p) , &

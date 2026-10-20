@@ -59,9 +59,9 @@ contains
             col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
                  ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
                
-            col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
+            col_ns%mineral%smin_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
             if (use_pflotran .and. pf_cmode) then 
-               col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
+               col_ns%mineral%smin_vr(c,j) = col_ns%mineral%smin_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
             end if
 
             if (.not.(use_pflotran .and. pf_cmode)) then
@@ -160,8 +160,8 @@ contains
             veg_ns%core%deadcroot_xfer(p)    =  veg_ns%core%deadcroot_xfer(p) - veg_nf%core%m_deadcroot_xfer_to_litter_fire(p) * dt
 
             ! retranslocated N pool
-            veg_ns%retransn(p)           =  veg_ns%retransn(p) - veg_nf%m_retransn_to_fire(p)        * dt
-            veg_ns%retransn(p)           =  veg_ns%retransn(p) - veg_nf%m_retransn_to_litter_fire(p) * dt
+            veg_ns%retrans%pool(p)           =  veg_ns%retrans%pool(p) - veg_nf%retrans%m_retrans_to_fire(p)        * dt
+            veg_ns%retrans%pool(p)           =  veg_ns%retrans%pool(p) - veg_nf%retrans%m_retrans_to_litter_fire(p) * dt
             veg_ns%core%pool(p)              =  veg_ns%core%pool(p)    - veg_nf%core%m_pool_to_fire(p)           * dt
             veg_ns%core%pool(p)              =  veg_ns%core%pool(p)    - veg_nf%core%m_pool_to_litter_fire(p)    * dt
          end do
