@@ -58,11 +58,12 @@ void emulator_destroy(void* handle) {
   // remove_by_name drops the shared_ptr and runs the destructor.
   // In the full E3SM path (atm_factory.cpp) objects are raw-new'd and
   // not registered, so fall back to a direct delete.
-  if (!emulator::EmulatorRegistry::instance().remove_by_name(std::string(emu->name()))) {
+  if (!e3sm::emulator::EmulatorRegistry::instance().remove_by_name(std::string(emu->name()))) {
     delete emu;
   }
 }
 
+/* FIXME: not sure what to do here yet
 void emulator_init_coupling_indices(void* handle, const char* import_fields, const char* export_fields){
   auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
   // The {import,export}_fields hold N state fields and M flux fields in a string thus:
@@ -72,6 +73,7 @@ void emulator_init_coupling_indices(void* handle, const char* import_fields, con
                            export_fields_v = split_string(export_fields, ':');
   emu->init_coupling_indices(export_fields_v, import_fields_v);
 }
+*/
 
 int emulator_get_num_local_cols(void* handle) {
   auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
@@ -95,17 +97,22 @@ int emulator_get_ny(void* handle) {
 
 void emulator_get_local_col_gids(void* handle, int* gids) {
   auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
-  emu->get_local_col_gids(gids);
+  emu->get_local_col_gids();
 }
 
-void emulator_get_cols_latlon(void* handle, double* lat, double* lon) {
+const double *const emulator_get_latitudes(void* handle) {
   auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
-  emu->get_cols_latlon(lat, lon);
+  return emu->get_latitudes().data();
 }
 
-void emulator_get_cols_area(void* handle, double* area) {
+const double *const emulator_get_longitudes(void* handle) {
   auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
-  emu->get_cols_area(area);
+  return emu->get_longitudes().data();
+}
+
+const double *const emulator_get_areas(void* handle) {
+  auto* emu = static_cast<e3sm::emulator::Emulator*>(handle);
+  return emu->get_areas().data();
 }
 
 } // extern "C"

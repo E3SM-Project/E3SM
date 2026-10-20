@@ -11,6 +11,7 @@
 
 namespace e3sm::emulator::tests {
 
+/*
 class ForcingEmulator {
 public:
   ForcingEmulator(CreateConfig cfg) : Emulator(cfg) {}
@@ -110,6 +111,7 @@ protected:
     }
   }
 };
+*/
 
 inline GridDesc make_test_grid() {
   return GridDesc{

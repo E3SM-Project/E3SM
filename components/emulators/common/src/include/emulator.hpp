@@ -11,6 +11,7 @@
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
 #include <inference_backend.hpp>
+#include <memory>
 #include <process.hpp>
 #include <mpi.h>
 
@@ -101,7 +102,7 @@ struct CreateConfig {
  */
 class Emulator {
 public:
-  explicit Emulator(const CreateConfig);
+  Emulator(const CreateConfig config, std::unique_ptr<inference::InferenceBackend> backend);
   ~Emulator() = default;
 
   // Lifecycle methods
@@ -205,6 +206,8 @@ private:
   // Flat Buffers for inputs and outputs
   std::vector<double> input_fields_;
   std::vector<double> output_fields_;
+
+  std::unique_ptr<inference::InferenceBackend> backend_;
 };
 
 } // namespace emulator
