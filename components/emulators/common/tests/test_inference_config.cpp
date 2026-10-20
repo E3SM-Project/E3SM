@@ -2,8 +2,8 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "create_inference_backend.hpp"
-#include "inference_error.hpp"
+#include <inference_config.hpp>
+#include <inference_error.hpp>
 
 namespace e3sm::emulator::inference::test {
 

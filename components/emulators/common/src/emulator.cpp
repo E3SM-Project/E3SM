@@ -7,6 +7,7 @@
 #include <emulator.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
+#include <memory>
 #include <process.hpp>
 
 #include <ekat_yaml.hpp>
@@ -139,9 +140,9 @@ std::span<double> Emulator::field_view(std::string_view name) {
   return field_view(desc);
 }
 
-Emulator::Emulator(const CreateConfig cfg)
+Emulator::Emulator(const CreateConfig cfg, std::unique_ptr<inference::InferenceBackend> backend)
     : m_config_path(cfg.path), m_grid(cfg.grid), m_component_id(-1),
-      m_moab_app_id(-1), m_initialized(false), m_step_count(0) {
+      m_moab_app_id(-1), m_initialized(false), m_step_count(0), backend_(std::move(backend)) {
   initialize();
 }
 
@@ -186,7 +187,11 @@ void Emulator::run(const ProcessRunOpts opts) {
   if (!m_initialized) {
     throw std::runtime_error("Emulator::run() called before initialize()");
   }
-  // TODO: run logic goes here!
+
+  // TODO: wrap input/output fields in tensor maps
+  inference::TensorMap inputs = {}, outputs = {};
+  backend_->infer(inputs, outputs);
+
   m_step_count++;
 }
 
@@ -194,7 +199,7 @@ void Emulator::finalize() {
   if (!m_initialized) {
     return; // Already finalized or never initialized
   }
-  // TODO: finalize logic goes here!
+  backend_->finalize();
   m_initialized = false;
 }
 

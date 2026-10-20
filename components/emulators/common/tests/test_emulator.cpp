@@ -1,10 +1,12 @@
 #include "test_emulator.hpp"
+#include <emulator_c_api.hpp>
+#include <emulator_config.hpp>
+#include <inference_backend.hpp>
+#include <stub_inference_backend.hpp>
+
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include <emulator.hpp>
-#include <emulator_c_api.hpp>
-#include <emulator_config.hpp>
 #include <mpi.h>
 
 namespace e3sm::emulator::tests {
@@ -14,8 +16,10 @@ TEST_CASE("Emulator initialization builds field layout") {
   const std::filesystem::path config_file =
       TEST_DATA_DIR "/simple_emulator_config.yaml";
 
-  TestEmulator emu{
-      CreateConfig{.path = std::move(config_file), .grid = make_test_grid()}};
+  Emulator emu{
+      CreateConfig{.path = std::move(config_file), .grid = make_test_grid()},
+      std::unique_ptr<inference::InferenceBackend>(new inference::StubBackend(inference::InferenceConfig{})),
+  };
 
   REQUIRE(emu.is_initialized());
   REQUIRE(emu.name() == "lnd-emulator");
