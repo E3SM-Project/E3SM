@@ -40,9 +40,9 @@
     <default_value>SCREAM_NP 4</default_value>
     <values match='last' modifier='additive'>
       <value compset="_SCREAM"        > SCREAM_NUM_TRACERS 10</value>
-      <value compset="_SCREAM%ZM"     > SCREAM_NUM_TRACERS 10</value>
       <value compset="_SCREAM%MAM4xx" > SCREAM_NUM_TRACERS 41</value>
       <value compset="_EAMXX"         > SCREAM_NUM_TRACERS 10</value>
+      <value compset="_SCREAM%BETA"   > SCREAM_SHOC_SMALL_KERNELS TRUE SCREAM_P3_SMALL_KERNELS TRUE</value>
     </values>
     <group>build_component_scream</group>
     <file>env_build.xml</file>
