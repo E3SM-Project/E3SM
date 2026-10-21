@@ -17,7 +17,7 @@
     ATM  = [EAM, EAMXX, SATM, SCREAM]
     LND  = [ELM,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
-    OCN  = [MPASO, DOCN, SOCN]
+    OCN  = [OMEGA, MPASO, DOCN, SOCN]
     ROF  = [MOSART, SROF]
     GLC  = [MALI, SGLC]
     WAV  = [WW3, DWAV, XWAV, SWAV]
@@ -83,6 +83,11 @@
 <compset>
   <alias>WCYCL1850NS</alias>
   <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL1850NS-OMEGA</alias>
+  <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI_OMEGA_MOSART_SGLC_SWAV</lname>
 </compset>
 
 <!-- Same as WCYCL1850NS but for 2010 (to avoid needing transient files). Mainly for testing. -->
@@ -523,6 +528,11 @@
 <compset>
   <alias>WCYCLXX2010</alias>
   <lname>2010_SCREAM_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCLXX1850NS-OMEGA</alias>
+  <lname>1850_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI_OMEGA_MOSART_SGLC_SWAV</lname>
 </compset>
 
 
