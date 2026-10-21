@@ -34,8 +34,13 @@ enum class BackendType {
  */
 class InferenceBackend {
 public:
-  explicit InferenceBackend(const InferenceConfig &config) : config(config) {}
+  explicit InferenceBackend(const InferenceConfig &config) : config_(config) {}
   virtual ~InferenceBackend() = default;
+
+  /**
+   * @brief Access the configuration for this backend.
+   */
+  const InferenceConfig &config() const { return config_; }
 
   /**
    * @brief Run inference.
@@ -69,7 +74,8 @@ public:
    */
   virtual std::string name() const = 0;
 
-  const InferenceConfig& config; ///< Backend configuration
+private:
+  InferenceConfig config_; ///< Backend configuration
 };
 
 } // namespace emulator::inference
