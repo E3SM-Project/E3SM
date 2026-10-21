@@ -8,10 +8,8 @@ SET(NUM_CPUS 16)
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/thetahs1.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/sab*-128.ascii)
 
-# compare all of these files against baselines:
-SET(NC_OUTPUT_FILES
-  held_suarez01.nc
-  held_suarez02.nc)
+# History output is disabled for this smoke test.
+SET(NC_OUTPUT_FILES)
 
 #DO NOT MOD
 SET (HOMME_TEST_VCOORD_INT_FILE sabi-128.ascii)

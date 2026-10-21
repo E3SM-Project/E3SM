@@ -186,7 +186,9 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // Now this structure can be used safely
   params.params_set = true;
 
-  params.print();
+  if (Context::singleton().get<Comm>().root()) {
+    params.print();
+  }
 
 }
 
