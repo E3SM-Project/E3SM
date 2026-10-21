@@ -741,11 +741,11 @@ contains
     use model_init_mod,       only: model_init2
     use time_mod,             only: timelevel_t, timelevel_init, nendstep, TimeLevel_Qdp
 #ifdef CAM
-    use time_mod,             only: nsplit
+    use time_mod,             only: nsplit, tstep
 #endif
 
 #ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
+    use prim_derived_type_mod ,only : derived_type, initialize, tstep
     use, intrinsic :: iso_c_binding
 #endif
 
