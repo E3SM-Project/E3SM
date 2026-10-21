@@ -211,9 +211,9 @@ struct PythonBackend::Impl {
 
 PythonBackend::PythonBackend(const InferenceConfig &config)
     : InferenceBackend(config), m_impl(new Impl()) {
-  const std::string module_name = m_config.get("python_module");
+  const std::string module_name = config.get("python_module");
   const std::string factory_name =
-      m_config.get("python_factory", "create_emulator");
+      config.get("python_factory", "create_emulator");
   EMULATOR_INFER_REQUIRE(!module_name.empty(),
                          "The Python backend needs the python_module option.");
 
@@ -224,7 +224,7 @@ PythonBackend::PythonBackend(const InferenceConfig &config)
   GilGuard gil;
   FpeGuard no_fpe;
 
-  prepend_sys_path(m_config.get("python_path"));
+  prepend_sys_path(config.get("python_path"));
   m_impl->numpy = checked(PyImport_ImportModule("numpy"), "importing numpy");
 
   PyRef module = checked(PyImport_ImportModule(module_name.c_str()),
@@ -233,7 +233,7 @@ PythonBackend::PythonBackend(const InferenceConfig &config)
   PyRef factory =
       checked(PyObject_GetAttrString(module.get(), factory_name.c_str()),
               "looking up " + module_name + "." + factory_name);
-  PyRef settings = config_dict(m_config);
+  PyRef settings = config_dict(config);
   m_impl->model = checked(
       PyObject_CallFunctionObjArgs(factory.get(), settings.get(), nullptr),
       "calling " + module_name + "." + factory_name + "(config)");
