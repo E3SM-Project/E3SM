@@ -118,10 +118,10 @@ struct LibTorchBackend::Impl {
 
 LibTorchBackend::LibTorchBackend(const InferenceConfig &config)
     : InferenceBackend(config), m_impl(new Impl()) {
-  m_impl->device = parse_device(m_config.get("device", "cpu"));
-  m_impl->dtype = parse_dtype(m_config.get("dtype", "float32"));
+  m_impl->device = parse_device(config.get("device", "cpu"));
+  m_impl->dtype = parse_dtype(config.get("dtype", "float32"));
 
-  const int num_threads = m_config.get_int("num_threads", 0);
+  const int num_threads = config.get_int("num_threads", 0);
   EMULATOR_INFER_REQUIRE(num_threads >= 0,
                          "num_threads must be non-negative, got "
                              << num_threads << ".");
@@ -130,23 +130,23 @@ LibTorchBackend::LibTorchBackend(const InferenceConfig &config)
   }
 
   torch::jit::setGraphExecutorOptimize(
-      m_config.get_bool("jit_optimize", false));
+      config.get_bool("jit_optimize", false));
 
-  EMULATOR_INFER_REQUIRE(!m_config.model_path.empty(),
+  EMULATOR_INFER_REQUIRE(!config.model_path.empty(),
                          "The LibTorch backend needs model_path.");
   try {
     FpeGuard no_fpe;
-    m_impl->module = torch::jit::load(m_config.model_path, m_impl->device);
+    m_impl->module = torch::jit::load(config.model_path, m_impl->device);
   } catch (const std::exception &e) {
     throw InferenceError("Could not load the TorchScript module '" +
-                         m_config.model_path + "':\n" + e.what());
+                         config.model_path + "':\n" + e.what());
   }
   m_impl->module.eval();
 
-  if (m_config.verbose) {
+  if (config.verbose) {
     std::cout << "[emulator::inference] LibTorch loaded "
-              << m_config.model_path << " on " << m_impl->device << " as "
-              << m_config.get("dtype", "float32") << "\n";
+              << config.model_path << " on " << m_impl->device << " as "
+              << config.get("dtype", "float32") << "\n";
   }
 }
 
@@ -174,7 +174,7 @@ bool LibTorchBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
     for (const auto &tensor : inputs) {
       shapes += " " + tensor.to_string();
     }
-    throw InferenceError("The TorchScript module '" + m_config.model_path +
+    throw InferenceError("The TorchScript module '" + config.model_path +
                          "' failed in forward() with inputs" + shapes + ":\n" +
                          e.what());
   }
