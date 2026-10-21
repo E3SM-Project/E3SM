@@ -2,6 +2,7 @@
 #define EAMXX_WATER_TRACERS_HPP
 
 #include "eamxx_water_tracers_registry.hpp"
+#include "../water_isotopes/eamxx_water_isotopes.hpp"
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include <ekat_parameter_list.hpp>
@@ -22,9 +23,10 @@ namespace scream
  * ocn_ustar) and the bottom-level atmosphere, and is NOT applied to anything:
  * this process never changes qv or a tracer after initialization.
  *
- * Tracer kinds: generic (bulk_proportional or bulk_formula), and property
- * tracers carried by a mass tracer. Isotopes are handled by the WaterIsotopes
- * subclass, which fills in compute_isotope_fluxes().
+ * Tracer kinds: generic (bulk_proportional or bulk_formula), property
+ * tracers carried by a mass tracer, and isotopes. Isotope entries are only
+ * accepted when EAMXX_HAS_WATER_ISOTOPES is defined; isotope-specific state
+ * and math live in the composed wiso::WaterIsotopes member, m_isotopes.
  */
 
 class WaterTracers : public AtmosphereProcess
@@ -32,7 +34,6 @@ class WaterTracers : public AtmosphereProcess
 public:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
-  // Rejects isotope entries in the tracers file
   WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   AtmosphereProcessType type () const override { return AtmosphereProcessType::Physics; }
@@ -42,10 +43,6 @@ public:
   void create_requests () override;
 
 protected:
-  // For subclasses that accept more tracer kinds (e.g. isotopes). Parses
-  // tracers_file with the given options into m_specs.
-  WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& params,
-                const water_tracers::RegistryOptions& opts);
 
 #ifdef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -56,14 +53,10 @@ public:
   void run_impl        (const double dt) override;
   void finalize_impl   () override {}
 
-  // Writes <name>_surf_flux for every isotope tracer. run_impl calls it after
-  // the bulk state (m_sfc_*) and the generic fluxes are computed, and before
-  // the property fluxes, so isotopes can carry properties. No-op here.
-  virtual void compute_isotope_fluxes () {}
-
   // Steps of run_impl
   void compute_bulk_state ();
   void compute_generic_fluxes ();
+  void compute_isotope_fluxes ();
   void compute_property_fluxes ();
 
   // Sets q = r_init*q_ref for every init: ratio tracer on the given grid
@@ -76,9 +69,16 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // One entry per tracer in tracers_file, sorted by name. Subclasses may set
-  // r_ocn/r_init in their constructor: both are read at initialize/run time.
+  // One entry per tracer in tracers_file, sorted by name. r_ocn/r_init for
+  // isotope specs are resolved by m_isotopes.resolve() in the constructor,
+  // before initialize/run time reads them.
   std::vector<water_tracers::TracerSpec> m_specs;
+
+  // Isotope-specific state (species table, runtime formulation options,
+  // resolved isotope tracers). Always constructed; empty/inert unless
+  // EAMXX_HAS_WATER_ISOTOPES is defined and the tracers file defines
+  // isotope entries. See compute_isotope_fluxes().
+  wiso::WaterIsotopes m_isotopes;
 
   // Per-column bottom-level bulk state, filled at the start of run_impl:
   //  - m_sfc_f: ocnfrac, set to 0 where the ocean state is not valid

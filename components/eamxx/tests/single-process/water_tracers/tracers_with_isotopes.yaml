@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-# As water_tracers.yaml, plus isotopes and a property carried by an isotope
+# As tracers_generic.yaml, plus isotopes and a property carried by an isotope
 tracers:
   wtrc_bp: {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
   wtrc_bf: {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}

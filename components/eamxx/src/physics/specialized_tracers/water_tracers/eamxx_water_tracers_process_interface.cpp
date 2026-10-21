@@ -1,5 +1,6 @@
 #include "eamxx_water_tracers_process_interface.hpp"
 #include "eamxx_water_tracers_functions.hpp"
+#include "../water_isotopes/eamxx_water_isotopes_ocean_flux.hpp"
 
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/physics/physics_constants.hpp"
@@ -51,15 +52,13 @@ bool uses_geometry (const wt::TracerSpec& spec)
 
 // =========================================================================================
 WaterTracers::WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : WaterTracers(comm, params, water_tracers::RegistryOptions{})
-{
-  // Nothing to do here
-}
-
-WaterTracers::WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& params,
-                            const water_tracers::RegistryOptions& opts)
   : AtmosphereProcess(comm, params)
 {
+  water_tracers::RegistryOptions opts;
+#ifdef EAMXX_HAS_WATER_ISOTOPES
+  wiso::WaterIsotopes::enable(opts);
+#endif
+
   const std::string key = "tracers_file";
   EKAT_REQUIRE_MSG(m_params.isParameter(key) and m_params.isType<std::string>(key) and
                    m_params.get<std::string>(key)!="",
@@ -67,6 +66,11 @@ WaterTracers::WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& p
       "  'tracers_file' is missing or empty. Set it to the water tracer YAML file.\n");
 
   m_specs = water_tracers::parse_tracers_file(m_params.get<std::string>(key), opts);
+
+  // Reading the isotope formulation options is safe even with no isotope
+  // tracers: they are simply never read by compute_isotope_fluxes below.
+  m_isotopes.configure(m_params);
+  m_isotopes.resolve(m_specs);
 }
 
 // =========================================================================================
@@ -386,6 +390,45 @@ void WaterTracers::compute_property_fluxes ()
       flux(icol) = wt::property_ocean_flux(Pack1(sfc_f(icol)), Pack1(sfc_evap(icol)), Pack1(p),
                                            Pack1(f_c(icol)), Pack1(q_p(icol, kbot)),
                                            Pack1(q_c(icol, kbot)))[0];
+    });
+  }
+}
+
+// =========================================================================================
+void WaterTracers::compute_isotope_fluxes ()
+{
+  // Local copies, so the lambda captures views and values rather than `this`.
+  const auto sfc_f     = m_sfc_f;
+  const auto sfc_rho   = m_sfc_rho;
+  const auto sfc_ustar = m_sfc_ustar;
+  const auto sfc_re    = m_sfc_re;
+  const auto sfc_ssq   = m_sfc_ssq;
+  const auto sfc_qv    = m_sfc_qv;
+  const auto sfc_evap  = m_sfc_evap;
+  const auto sfc_sst   = m_sfc_sst;
+  const auto iso_params = m_isotopes.parameters();
+  const int  ilev_bot  = m_num_levs - 1;
+
+  // Tracers may also live on another grid (e.g. physics_gll for initial
+  // conditions), so look them up on this process' physics grid explicitly.
+  const auto& grid_name = m_grid->name();
+
+  // One kernel per isotope: there are at most a handful, and each reads a
+  // different tracer field. No-op when there are no isotope tracers.
+  for (const auto& iso : m_isotopes.tracers()) {
+    const auto q_i  = get_field_in(iso.name, grid_name).get_view<const Real**>();
+    const auto flux = get_field_out(iso.name + "_surf_flux", grid_name).get_view<Real*>();
+    const auto species = iso.species;
+    const Real r_ocn   = iso.r_ocn;
+
+    Kokkos::parallel_for("water_isotopes_ocean_flux_" + iso.name,
+                         KT::RangePolicy(0, m_num_cols),
+                         KOKKOS_LAMBDA(const int icol) {
+      flux(icol) = wiso::isotope_ocean_flux(
+          Pack1(sfc_f(icol)), Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)),
+          Pack1(sfc_re(icol)), Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)),
+          Pack1(q_i(icol, ilev_bot)), Pack1(sfc_evap(icol)), Pack1(sfc_sst(icol)),
+          r_ocn, species, iso_params)[0];
     });
   }
 }

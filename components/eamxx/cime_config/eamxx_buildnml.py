@@ -1413,11 +1413,11 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 def find_tracers_files(eamxx_dict):
 ###############################################################################
     """
-    Return the tracers_file values of all water_tracers/water_isotopes
-    processes in the (dict form of the) eamxx atm procs tree.
+    Return the tracers_file values of all water_tracers processes in the
+    (dict form of the) eamxx atm procs tree.
 
-    >>> d = {'atm_procs_list': ['sc_import', 'water_isotopes', 'physics'],
-    ...      'water_isotopes': {'tracers_file': './wt.yaml'},
+    >>> d = {'atm_procs_list': ['sc_import', 'water_tracers', 'physics'],
+    ...      'water_tracers': {'tracers_file': './wt.yaml'},
     ...      'physics': {'atm_procs_list': ['p3'], 'p3': {}}}
     >>> find_tracers_files(d)
     ['./wt.yaml']
@@ -1428,7 +1428,7 @@ def find_tracers_files(eamxx_dict):
     for name, sub in eamxx_dict.items():
         if not isinstance(sub, dict):
             continue
-        if name in ("water_tracers", "water_isotopes") and "tracers_file" in sub:
+        if name == "water_tracers" and "tracers_file" in sub:
             result.append(sub["tracers_file"])
         else:
             result.extend(find_tracers_files(sub))
@@ -1460,20 +1460,20 @@ def add_tracer_initial_conditions(ic_dict, tracer_names):
 def copy_water_tracers_file(case, caseroot, scream_input):
 ###############################################################################
     """
-    If water_tracers/water_isotopes are active, copy their (shared) tracers_file
-    to $RUNDIR/data, point the scream_input dict at the copy, and add
-    initial_conditions::<name>: 0.0 for each tracer without an IC entry.
+    If water_tracers is active, copy its tracers_file to $RUNDIR/data, point
+    the scream_input dict at the copy, and add initial_conditions::<name>: 0.0
+    for each tracer without an IC entry.
     """
     tracers_files = find_tracers_files(scream_input["eamxx"])
     if len(tracers_files)==0:
         return
 
     expect (len(set(tracers_files))==1,
-            f"water_tracers and water_isotopes must share one tracers_file, got {tracers_files}")
+            f"water_tracers must have exactly one tracers_file, got {tracers_files}")
     src = tracers_files[0]
     expect (src is not None and str(src).strip() not in ("", "None"),
-            "water_tracers/water_isotopes is in atm_procs_list, but tracers_file is not set.\n"
-            "  Use, e.g., ./atmchange water_isotopes::tracers_file=/path/to/tracers.yaml")
+            "water_tracers is in atm_procs_list, but tracers_file is not set.\n"
+            "  Use, e.g., ./atmchange water_tracers::tracers_file=/path/to/tracers.yaml")
 
     # Relative paths are relative to the case directory (where atmchange is run)
     src_yaml = os.path.expanduser(str(src).strip())
@@ -1492,7 +1492,7 @@ def copy_water_tracers_file(case, caseroot, scream_input):
     def repoint(d):
         for name, sub in d.items():
             if isinstance(sub, dict):
-                if name in ("water_tracers", "water_isotopes") and "tracers_file" in sub:
+                if name == "water_tracers" and "tracers_file" in sub:
                     sub["tracers_file"] = dst_yaml
                 else:
                     repoint(sub)

@@ -95,9 +95,9 @@ TracerSpec parse_entry (const std::string& path, const std::string& name,
     valid_keys = &generic_keys;
   } else if (type=="isotope") {
     EKAT_REQUIRE_MSG(opts.accept_isotopes,
-        ctx + "type: isotope entries need the water_isotopes process, but this file\n"
-        "  is being read by water_tracers. Put water_isotopes (not water_tracers) in\n"
-        "  atm_procs_list, or remove the isotope entries from the file.\n");
+        ctx + "type: isotope entries require EAMXX_ENABLE_WATER_ISOTOPES=ON at build\n"
+        "  time; this build was compiled with it OFF. Rebuild with isotope support\n"
+        "  enabled, or remove the isotope entries from the tracers file.\n");
     spec.type = TracerType::Isotope;
     valid_keys = &isotope_keys;
   } else if (type=="property") {

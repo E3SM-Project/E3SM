@@ -86,8 +86,8 @@ TEST_CASE("registry_errors") {
   fails("flux",    "  a: {type: generic, ocean_flux: bogus}\n", "unknown ocean_flux");
   fails("key",     "  a: {type: generic, rocn: 1}\n", "unknown key 'rocn'");
   fails("init",    "  a: {type: generic, init: bogus}\n", "unknown init");
-  fails("iso",     "  a: {type: isotope, species: HDO}\n", "water_isotopes");
-  fails("iso2",    "  a: {type: isotope, species: HDO}\n", "atm_procs_list");
+  fails("iso",     "  a: {type: isotope, species: HDO}\n", "EAMXX_ENABLE_WATER_ISOTOPES");
+  fails("iso2",    "  a: {type: isotope, species: HDO}\n", "Rebuild with isotope support");
   fails("species", "  a: {type: isotope, species: D2O}\n", "unknown isotope species", iso);
   fails("nospec",  "  a: {type: isotope}\n", "missing required key 'species'", iso);
   fails("rsv_qv",  "  qv: {type: generic}\n", "reserved");

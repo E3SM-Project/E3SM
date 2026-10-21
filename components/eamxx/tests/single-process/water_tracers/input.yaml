@@ -9,9 +9,9 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 eamxx:
-  atm_procs_list: [${WTRC_PROC}]
-  ${WTRC_PROC}:
-    tracers_file: water_tracers_${POSTFIX}.yaml
+  atm_procs_list: [water_tracers]
+  water_tracers:
+    tracers_file: ${TRACERS_FILE}
 
 # No geometry data: lat/lon-sourced property tracers are not used here
 grids_manager:

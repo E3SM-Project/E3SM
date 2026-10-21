@@ -21,3 +21,29 @@ CreateUnitTest(water_tracers_registry
   LIBS water_tracers
   LABELS water_tracers physics
 )
+
+# Isotope-specific unit tests. Isotope math is always compiled into
+# water_tracers, but these tests only make sense (and are only registered)
+# when the build also accepts isotope entries.
+if (EAMXX_ENABLE_WATER_ISOTOPES)
+  # Equilibrium water-isotope fractionation factor unit tests.
+  CreateUnitTest(water_isotopes_fractionation
+    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../water_isotopes/tests/eamxx_water_isotopes_fractionation_tests.cpp
+    LIBS water_tracers
+    LABELS water_tracers water_isotopes physics
+  )
+
+  # Runtime formulation selection unit tests.
+  CreateUnitTest(water_isotopes_runtime_options
+    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../water_isotopes/tests/water_isotopes_runtime_options_tests.cpp
+    LIBS water_tracers
+    LABELS water_tracers water_isotopes physics
+  )
+
+  # Isotope ocean evaporation flux: equilibrium invariants and H216O identity.
+  CreateUnitTest(water_isotopes_ocean_flux
+    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../water_isotopes/tests/water_isotopes_ocean_flux_tests.cpp
+    LIBS water_tracers
+    LABELS water_tracers water_isotopes physics
+  )
+endif()

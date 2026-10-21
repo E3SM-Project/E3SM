@@ -1,19 +1,15 @@
-#ifndef EAMXX_WATER_ISOTOPES_HPP
-#define EAMXX_WATER_ISOTOPES_HPP
+#ifndef EAMXX_WATER_ISOTOPES_OCEAN_FLUX_HPP
+#define EAMXX_WATER_ISOTOPES_OCEAN_FLUX_HPP
 
-#include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
 #include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_functions.hpp"
 #include "eamxx_water_isotopes_fractionation.hpp"
 #include "eamxx_water_isotopes_parameters.hpp"
-#include <ekat_parameter_list.hpp>
-
-#include <string>
-#include <vector>
 
 namespace scream
 {
 namespace wiso
 {
+
 /*
  * Upward (positive) ocean evaporation flux of one water isotopologue at the
  * bottom of a column [kg/m2/s], with equilibrium fractionation only:
@@ -68,60 +64,6 @@ ScalarT isotope_ocean_flux (
 }
 
 } // namespace wiso
-
-/*
- * The water_isotopes process: WaterTracers plus water isotopologue tracers.
- *
- * In addition to everything WaterTracers handles, it accepts `type: isotope`
- * entries in the shared tracers_file, for species H216O, HDO, H218O, H217O or
- * HTO. Each isotope's ocean ratio, R_ocn = std_iso_ratio * mean_ocean_enrichment
- * for the selected runtime formulations, is resolved on the host at
- * construction. It is also the isotope's default `init: ratio` value.
- *
- * The only isotope physics so far is the diagnostic ocean evaporation flux
- * <name>_surf_flux, with equilibrium liquid/vapor fractionation at the SST
- * (wiso::isotope_ocean_flux). Nothing is applied to qv or to any tracer.
- */
-
-class WaterIsotopes : public WaterTracers
-{
-public:
-  // Constructors
-  WaterIsotopes (const ekat::Comm& comm, const ekat::ParameterList& params);
-
-  // Override the name to distinguish from base WaterTracers
-  std::string name () const override { return "water_isotopes"; }
-
-#ifndef KOKKOS_ENABLE_CUDA
-  // Cuda requires methods enclosing __device__ lambda's to be public
-protected:
-#endif
-
-  // Writes <name>_surf_flux for every isotope tracer. WaterTracers::run_impl
-  // calls this after filling the bottom-level bulk state (m_sfc_*) and before
-  // the property-tracer fluxes, so an isotope can be a property carrier.
-  void compute_isotope_fluxes () override;
-
-private:
-
-  struct IsotopeTracer {
-    std::string              name;
-    wiso::WaterIsotopologues species;
-    Real                     r_ocn;
-  };
-
-  // Runtime configuration options for isotope formulations
-  wiso::WaterIsotopeRuntimeOptions m_runtime_options;
-
-  // Built once on the host from m_runtime_options and captured by value in
-  // kernels. Device code then reads only the resolved coefficient rows, never
-  // the constexpr formulation tables (PR #8697 B4).
-  wiso::WaterIsotopeParameters<Real> m_iso_params;
-
-  std::vector<IsotopeTracer> m_isotopes;
-
-}; // class WaterIsotopes
-
 } // namespace scream
 
-#endif // EAMXX_WATER_ISOTOPES_HPP
+#endif // EAMXX_WATER_ISOTOPES_OCEAN_FLUX_HPP

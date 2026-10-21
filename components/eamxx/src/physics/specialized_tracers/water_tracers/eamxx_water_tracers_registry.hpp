@@ -15,11 +15,12 @@ namespace scream {
 namespace water_tracers {
 
 /*
- * Host-only parser for the water tracer YAML file (the tracers_file parameter,
- * shared by the water_tracers and water_isotopes processes).
+ * Host-only parser for the water tracer YAML file (the tracers_file parameter
+ * of the water_tracers process).
  *
- * The file has one top-level key, `tracers`, a map keyed by tracer name.
- * Flow style and block style are both accepted:
+ * The file has one top-level key, `tracers`, a map keyed by tracer name, and
+ * freely mixes generic, isotope and property entries. Flow style and block
+ * style are both accepted:
  *
  *   tracers:
  *     wtrc_bp: {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
@@ -38,8 +39,10 @@ namespace water_tracers {
  *   generic:  type, ocean_flux (bulk_proportional [default] | bulk_formula),
  *             r_ocn (default 1), init (ratio [default] | zero),
  *             r_init (default r_ocn)
- *   isotope:  type, species (required), init (default ratio), r_init (default:
- *             the species' ocean ratio, set by the water_isotopes process)
+ *   isotope:  type, species (required), init (default ratio), r_init
+ *             (default: the species' ocean ratio, resolved by the process at
+ *             construction). Only accepted when the process is built with
+ *             EAMXX_ENABLE_WATER_ISOTOPES=ON.
  *   property: type, carrier (required; a generic or isotope tracer in this
  *             file), source (required; sst, t_bot, rh_sfc, lat, lon, x, y, z,
  *             or field), field_name and field_units (required iff source is

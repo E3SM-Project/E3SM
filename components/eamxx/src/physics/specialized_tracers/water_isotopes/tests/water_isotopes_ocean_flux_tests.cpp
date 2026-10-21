@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_process_interface.hpp"
+#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_ocean_flux.hpp"
 
 #include "share/core/eamxx_types.hpp"
 
