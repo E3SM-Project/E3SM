@@ -24,6 +24,6 @@ target_link_libraries(coupler_api PUBLIC ekat::YamlParser)
 target_compile_features(coupler_api PUBLIC cxx_std_20)
 
 add_library(E3SM::coupler_api ALIAS coupler_api)
-if(BUILD_EMULATOR_TESTS)
+if(EMULATOR_ENABLE_TESTS)
   add_subdirectory(tests)
 endif()

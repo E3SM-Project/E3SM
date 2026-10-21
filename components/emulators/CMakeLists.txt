@@ -8,7 +8,7 @@ set(
     CACHE PATH "FetchContent dependency cache"
     FORCE
 )
-option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
+option(EMULATOR_ENABLE_TESTS "Build emulator unit tests" ON)
 
 if (DEFINED E3SM_SOURCE_DIR)
   set(STANDALONE_MODE OFF)
@@ -107,7 +107,7 @@ if(EMULATOR_ENABLE_LIBTORCH)
   endif()
 endif()
 
-if(BUILD_EMULATOR_TESTS)
+if(EMULATOR_ENABLE_TESTS)
   # Enable testing at the top level
   enable_testing()
 endif()
