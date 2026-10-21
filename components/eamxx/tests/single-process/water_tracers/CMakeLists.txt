@@ -10,7 +10,7 @@ set (RUN_T0 2021-10-12-45000)
 
 CreateADUnitTestExec(water_tracers_standalone LIBS water_tracers)
 
-# Generic and property tracers only.
+# Generic tracers only.
 set (POSTFIX generic)
 set (TRACERS_FILE tracers_generic.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

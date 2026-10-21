@@ -5,8 +5,6 @@ averaging_type: instant
 field_names:
   - wtrc_bp_surf_flux
   - wtrc_bf_surf_flux
-  - p_sst_surf_flux
-  - p_fld_surf_flux
   - wtrc_bp
   - wtrc_bf
   - qv

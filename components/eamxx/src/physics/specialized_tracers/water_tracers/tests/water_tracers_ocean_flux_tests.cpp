@@ -54,22 +54,6 @@ TEST_CASE("generic_ocean_flux") {
   }
 }
 
-TEST_CASE("property_ocean_flux") {
-  const Real p = 300, f_c = 2e-5, q_p = 1.5e-3, q_c = 5e-6;
-  SECTION("evaporation: P*F_c") {
-    const Real e = E(f0, q0)[0];
-    REQUIRE(wt::property_ocean_flux(Pack1(f0), Pack1(e), Pack1(p), Pack1(f_c), Pack1(q_p), Pack1(q_c))[0] == p*f_c);
-  }
-  SECTION("dew: wtrc_ratio(q_p,q_c)*F_c") {
-    const Real e = E(f0, 0.03)[0];
-    const Real ref = (wt::wtrc_ratio(Pack1(q_p), Pack1(q_c))*Pack1(-f_c))[0];
-    REQUIRE(wt::property_ocean_flux(Pack1(f0), Pack1(e), Pack1(p), Pack1(-f_c), Pack1(q_p), Pack1(q_c))[0] == ref);
-  }
-  SECTION("not ocean: 0") {
-    REQUIRE(wt::property_ocean_flux(Pack1(0), Pack1(1e-5), Pack1(p), Pack1(f_c), Pack1(q_p), Pack1(q_c))[0] == 0);
-  }
-}
-
 TEST_CASE("invalid_ocean") {
   // Trap explicitly: no step may compute with fill values or NaN.
   const int saved = ekat::get_enabled_fpes();
@@ -103,7 +87,6 @@ TEST_CASE("invalid_ocean") {
     for (const auto kind : {wt::OceanFlux::BulkProportional, wt::OceanFlux::BulkFormula}) {
       REQUIRE(wt::generic_ocean_flux(kind, Real(1), f, Pack1(rho0), u, r, s, Pack1(q0), Pack1(q0), e)[0] == 0);
     }
-    REQUIRE(wt::property_ocean_flux(f, e, Pack1(1), Pack1(1e-5), Pack1(q0), Pack1(q0))[0] == 0);
   }
 
   // A valid state is left untouched, and E_ocn is the bulk formula exactly

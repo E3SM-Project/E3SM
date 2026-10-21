@@ -7,7 +7,7 @@ CreateUnitTest(water_tracers_functions
   LABELS water_tracers physics
 )
 
-# Generic and property tracer ocean fluxes, and the invalid-ocean rule.
+# Generic tracer ocean fluxes, and the invalid-ocean rule.
 CreateUnitTest(water_tracers_ocean_flux
   SOURCES water_tracers_ocean_flux_tests.cpp
   LIBS water_tracers

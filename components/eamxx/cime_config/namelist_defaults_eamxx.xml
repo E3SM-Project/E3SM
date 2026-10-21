@@ -301,11 +301,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
-    <!-- Water tracers (generic, isotope and/or property entries, all defined
-         in one tracers_file; isotope entries require a build with
+    <!-- Water tracers (generic and/or isotope entries, all defined in one
+         tracers_file; isotope entries require a build with
          EAMXX_ENABLE_WATER_ISOTOPES=ON) -->
     <water_tracers inherit="atm_proc_base">
-      <tracers_file type="file" doc="YAML file defining the water tracers (generic, isotope and/or property entries)"></tracers_file>
+      <tracers_file type="file" doc="YAML file defining the water tracers (generic and/or isotope entries)"></tracers_file>
       <liquid_vapor_formulation type="string" doc="Source for liquid/vapor fractionation parameters (only used if the tracers file defines isotope entries)">horita_wesolowski_1994</liquid_vapor_formulation>
       <ice_vapor_formulation type="string" doc="Source for ice/vapor fractionation parameters (only used if the tracers file defines isotope entries)">merlivat_nief_1967</ice_vapor_formulation>
       <standard_ratio_formulation type="string" doc="Normalize isotope ratios or use actual abundances (only used if the tracers file defines isotope entries)">normalized</standard_ratio_formulation>
