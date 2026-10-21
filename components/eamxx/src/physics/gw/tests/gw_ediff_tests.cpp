@@ -62,12 +62,7 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_ediff_f(d);
-      }
-      else {
-        gw_ediff(d);
-      }
+      gw_ediff(d);
     }
 
     // Verify BFB results, all data should be in C layout

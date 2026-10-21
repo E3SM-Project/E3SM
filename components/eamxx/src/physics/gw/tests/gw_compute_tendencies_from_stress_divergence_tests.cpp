@@ -58,12 +58,7 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gwd_compute_tendencies_from_stress_divergence_f(d);
-      }
-      else {
-        gwd_compute_tendencies_from_stress_divergence(d);
-      }
+      gwd_compute_tendencies_from_stress_divergence(d);
     }
 
     // Verify BFB results, all data should be in C layout

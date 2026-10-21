@@ -70,12 +70,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectGwSources : public UnitWrap::UnitTest
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_convect_gw_sources_f(d);
-      }
-      else {
-        gw_convect_gw_sources(d);
-      }
+      gw_convect_gw_sources(d);
     }
 
     // Verify BFB results, all data should be in C layout

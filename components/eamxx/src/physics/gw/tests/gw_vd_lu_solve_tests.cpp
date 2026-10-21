@@ -58,12 +58,7 @@ struct UnitWrap::UnitTest<D>::TestVdLuSolve : public UnitWrap::UnitTest<D>::Base
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        vd_lu_solve_f(d);
-      }
-      else {
-        vd_lu_solve(d);
-      }
+      vd_lu_solve(d);
     }
 
     // Verify BFB results, all data should be in C layout

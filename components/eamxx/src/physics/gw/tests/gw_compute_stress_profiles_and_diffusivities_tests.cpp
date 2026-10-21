@@ -59,12 +59,7 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gwd_compute_stress_profiles_and_diffusivities_f(d);
-      }
-      else {
-        gwd_compute_stress_profiles_and_diffusivities(d);
-      }
+      gwd_compute_stress_profiles_and_diffusivities(d);
     }
 
     const auto margin = std::numeric_limits<Real>::epsilon() *

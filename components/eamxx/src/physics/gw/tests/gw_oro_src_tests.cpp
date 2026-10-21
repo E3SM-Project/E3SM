@@ -57,12 +57,7 @@ struct UnitWrap::UnitTest<D>::TestGwOroSrc : public UnitWrap::UnitTest<D>::Base 
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_oro_src_f(d);
-      }
-      else {
-        gw_oro_src(d);
-      }
+      gw_oro_src(d);
     }
 
     // We need a tolerance since the order of operations is different from f90.
