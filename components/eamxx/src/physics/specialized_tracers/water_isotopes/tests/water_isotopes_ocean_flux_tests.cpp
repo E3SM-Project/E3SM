@@ -17,15 +17,15 @@ namespace scream {
 namespace {
 
 using Pack1 = ekat::Pack<Real, 1>;
-using WIF   = wiso::WaterIsotopeFractionation;
-using wiso::WaterIsotopologues;
+using WIF   = water_isotopes::WaterIsotopeFractionation;
+using water_isotopes::WaterIsotopologues;
 
 constexpr int num_species = etoi(WaterIsotopologues::Count);
 
 const char* const species_names[num_species] = {"H216O", "HDO", "H218O", "H217O", "HTO"};
 
 // Bottom-level bulk state of one ocean column, in the notation of
-// wiso::isotope_ocean_flux.
+// water_isotopes::isotope_ocean_flux.
 struct OceanState {
   Real f, rho, u, r, s, q, t_s;
 };
@@ -48,7 +48,7 @@ constexpr int num_evap_states = std::size(evap_states);
 // others make R_ocn != 1, so the invariants are not checked only at R == 1.
 struct Formulation {
   const char* label;
-  wiso::WaterIsotopeRuntimeOptions opts;
+  water_isotopes::WaterIsotopeRuntimeOptions opts;
 };
 
 std::vector<Formulation> formulations()
@@ -56,16 +56,16 @@ std::vector<Formulation> formulations()
   std::vector<Formulation> out(3);
   out[0].label = "defaults (horita_wesolowski_1994, normalized, modern)";
   out[1].label = "natural_abundance + LGM";
-  out[1].opts.standard_ratio   = wiso::StandardRatioFormulation::NaturalAbundance;
-  out[1].opts.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
+  out[1].opts.standard_ratio   = water_isotopes::StandardRatioFormulation::NaturalAbundance;
+  out[1].opts.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
   out[2].label = "majoube_1971 + LGM";
-  out[2].opts.liquid_vapor     = wiso::LiquidVaporFractionation::Majoube1971;
-  out[2].opts.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
+  out[2].opts.liquid_vapor     = water_isotopes::LiquidVaporFractionation::Majoube1971;
+  out[2].opts.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
   return out;
 }
 
 // Same host-side resolution as the WaterIsotopes constructor.
-Real ocean_ratio(const wiso::WaterIsotopeParameters<Real>& p, const WaterIsotopologues sp)
+Real ocean_ratio(const water_isotopes::WaterIsotopeParameters<Real>& p, const WaterIsotopologues sp)
 {
   return p.std_iso_ratio(sp) * p.mean_ocean_enrichment(sp);
 }
@@ -77,15 +77,15 @@ Real bulk_evap(const OceanState& st)
 }
 
 Real alpha_lv(const OceanState& st, const WaterIsotopologues sp,
-              const wiso::WaterIsotopeParameters<Real>& p)
+              const water_isotopes::WaterIsotopeParameters<Real>& p)
 {
-  return WIF::alpha_liquid_vapor(Pack1(st.t_s), sp, wiso::CondensedOverVapor, p)[0];
+  return WIF::alpha_liquid_vapor(Pack1(st.t_s), sp, water_isotopes::CondensedOverVapor, p)[0];
 }
 
 Real iso_flux(const OceanState& st, const Real q_i, const Real e_ocn, const Real r_ocn,
-              const WaterIsotopologues sp, const wiso::WaterIsotopeParameters<Real>& p)
+              const WaterIsotopologues sp, const water_isotopes::WaterIsotopeParameters<Real>& p)
 {
-  return wiso::isotope_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u), Pack1(st.r),
+  return water_isotopes::isotope_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u), Pack1(st.r),
                                   Pack1(st.s), Pack1(st.q), Pack1(q_i), Pack1(e_ocn),
                                   Pack1(st.t_s), r_ocn, sp, p)[0];
 }
@@ -102,11 +102,11 @@ void require_within(const Real computed, const Real expected, const Real rtol, c
 
 // Invariant (1) on device, with parameters built on the host and captured by
 // value (no formulation table is indexed on device), against the host value.
-void run_on_device(const wiso::WaterIsotopeRuntimeOptions& opts, const Real rtol)
+void run_on_device(const water_isotopes::WaterIsotopeRuntimeOptions& opts, const Real rtol)
 {
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
-  const wiso::WaterIsotopeParameters<Real> iso_params(opts);
+  const water_isotopes::WaterIsotopeParameters<Real> iso_params(opts);
   Kokkos::Array<Real, num_species> r_ocn;
   for (int isp = 0; isp < num_species; ++isp) {
     r_ocn[isp] = ocean_ratio(iso_params, static_cast<WaterIsotopologues>(isp));
@@ -127,10 +127,10 @@ void run_on_device(const wiso::WaterIsotopeRuntimeOptions& opts, const Real rtol
                                                        Pack1(st.r), Pack1(st.s), Pack1(st.q));
     for (int isp = 0; isp < num_species; ++isp) {
       const auto sp = static_cast<WaterIsotopologues>(isp);
-      const Pack1 alpha = WIF::alpha_liquid_vapor(Pack1(st.t_s), sp, wiso::CondensedOverVapor,
+      const Pack1 alpha = WIF::alpha_liquid_vapor(Pack1(st.t_s), sp, water_isotopes::CondensedOverVapor,
                                                   iso_params);
       const Pack1 q_i = (r_ocn[isp]/alpha)*st.q;
-      flux(i, isp) = wiso::isotope_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u),
+      flux(i, isp) = water_isotopes::isotope_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u),
                                               Pack1(st.r), Pack1(st.s), Pack1(st.q), q_i, e_ocn,
                                               Pack1(st.t_s), r_ocn[isp], sp, iso_params)[0];
     }
@@ -171,7 +171,7 @@ TEST_CASE("water_isotopes_ocean_flux") {
   SECTION("equilibrium_invariants") {
     for (const auto& form : formulations()) {
       INFO("formulation: " << form.label);
-      const wiso::WaterIsotopeParameters<Real> iso_params(form.opts);
+      const water_isotopes::WaterIsotopeParameters<Real> iso_params(form.opts);
 
       for (int isp = 0; isp < num_species; ++isp) {
         const auto sp = static_cast<WaterIsotopologues>(isp);
@@ -210,7 +210,7 @@ TEST_CASE("water_isotopes_ocean_flux") {
   SECTION("h216o_matches_bulk_evaporation_exactly") {
     // Default formulations: R_ocn == 1 and alpha == 1 exactly, so the isotope
     // branch reduces to bulk_ocean_flux(f, rho, u, r, s, q) bit-for-bit.
-    const wiso::WaterIsotopeParameters<Real> iso_params;
+    const water_isotopes::WaterIsotopeParameters<Real> iso_params;
     const auto sp = WaterIsotopologues::H216O;
     const Real r_ocn = ocean_ratio(iso_params, sp);
     REQUIRE(r_ocn == Real(1));
@@ -229,10 +229,10 @@ TEST_CASE("water_isotopes_ocean_flux") {
     /* Neither branch may evaluate alpha. The SST is NaN in every state below,
        so evaluating alpha would trip its temperature guard and abort. */
     const Real nan = std::numeric_limits<Real>::quiet_NaN();
-    wiso::WaterIsotopeRuntimeOptions opts;
-    opts.standard_ratio   = wiso::StandardRatioFormulation::NaturalAbundance;
-    opts.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
-    const wiso::WaterIsotopeParameters<Real> iso_params(opts);
+    water_isotopes::WaterIsotopeRuntimeOptions opts;
+    opts.standard_ratio   = water_isotopes::StandardRatioFormulation::NaturalAbundance;
+    opts.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
+    const water_isotopes::WaterIsotopeParameters<Real> iso_params(opts);
 
     const OceanState dew_states[] = {
       //  f    rho   ustar  re      ssq     qv      sst
@@ -266,9 +266,9 @@ TEST_CASE("water_isotopes_ocean_flux") {
   }
 
   SECTION("device_execution") {
-    wiso::WaterIsotopeRuntimeOptions opts;
-    opts.standard_ratio   = wiso::StandardRatioFormulation::NaturalAbundance;
-    opts.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
+    water_isotopes::WaterIsotopeRuntimeOptions opts;
+    opts.standard_ratio   = water_isotopes::StandardRatioFormulation::NaturalAbundance;
+    opts.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
     run_on_device(opts, rtol);
   }
 }

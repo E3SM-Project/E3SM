@@ -11,7 +11,7 @@
 
 namespace scream
 {
-namespace wiso
+namespace water_isotopes
 {
 
 // One resolved isotope tracer: its tracers_file name, species, and ocean
@@ -68,7 +68,7 @@ private:
 
 }; // class WaterIsotopes
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
 
 #endif // EAMXX_WATER_ISOTOPES_HPP

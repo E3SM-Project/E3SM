@@ -5,7 +5,7 @@
 #include "share/util/eamxx_utils.hpp"
 
 namespace scream {
-namespace wiso {
+namespace water_isotopes {
 
 /*
  * Physical parameters for water isotopologues.
@@ -235,7 +235,7 @@ public:
 // Convenience alias for Real precision
 using WaterIsotopeParametersReal = WaterIsotopeParameters<Real>;
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
 
 #endif // EAMXX_WATER_ISOTOPES_PARAMETERS_HPP

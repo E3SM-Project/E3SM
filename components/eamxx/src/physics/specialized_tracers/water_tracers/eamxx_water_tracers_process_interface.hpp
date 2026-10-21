@@ -26,7 +26,7 @@ namespace scream
  * Tracer kinds: generic (bulk_proportional or bulk_formula) and isotopes.
  * Isotope entries are only accepted when EAMXX_HAS_WATER_ISOTOPES is
  * defined; isotope-specific state and math live in the composed
- * wiso::WaterIsotopes member, m_isotopes.
+ * water_isotopes::WaterIsotopes member, m_isotopes.
  */
 
 class WaterTracers : public AtmosphereProcess
@@ -77,7 +77,7 @@ protected:
   // resolved isotope tracers). Always constructed; empty/inert unless
   // EAMXX_HAS_WATER_ISOTOPES is defined and the tracers file defines
   // isotope entries. See compute_isotope_fluxes().
-  wiso::WaterIsotopes m_isotopes;
+  water_isotopes::WaterIsotopes m_isotopes;
 
   // Per-column bottom-level bulk state, filled at the start of run_impl:
   //  - m_sfc_f: ocnfrac, set to 0 where the ocean state is not valid

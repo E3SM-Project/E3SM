@@ -27,7 +27,7 @@ WaterTracers::WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& p
 {
   water_tracers::RegistryOptions opts;
 #ifdef EAMXX_HAS_WATER_ISOTOPES
-  wiso::WaterIsotopes::enable(opts);
+  water_isotopes::WaterIsotopes::enable(opts);
 #endif
 
   const std::string key = "tracers_file";
@@ -279,7 +279,7 @@ void WaterTracers::compute_isotope_fluxes ()
     Kokkos::parallel_for("water_isotopes_ocean_flux_" + iso.name,
                          KT::RangePolicy(0, m_num_cols),
                          KOKKOS_LAMBDA(const int icol) {
-      flux(icol) = wiso::isotope_ocean_flux(
+      flux(icol) = water_isotopes::isotope_ocean_flux(
           Pack1(sfc_f(icol)), Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)),
           Pack1(sfc_re(icol)), Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)),
           Pack1(q_i(icol, ilev_bot)), Pack1(sfc_evap(icol)), Pack1(sfc_sst(icol)),

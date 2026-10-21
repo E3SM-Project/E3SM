@@ -11,7 +11,7 @@
 #include <cmath>  // std::exp/std::pow for the plain-Real path
 
 namespace scream {
-namespace wiso {
+namespace water_isotopes {
 
 /*
  * Equilibrium isotopic fractionation factors for water isotopologues.
@@ -175,7 +175,7 @@ public:
       const WisoAlphaDir dir,
       const WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params,
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true),
-      const char* caller = "wiso::alpha_equilibrium")
+      const char* caller = "water_isotopes::alpha_equilibrium")
   {
     using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
     using Params = WaterIsotopeParameters<RealT>;
@@ -210,7 +210,7 @@ public:
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
     return alpha_equilibrium(t, species, CondensedPhase::Liquid, dir, iso_params,
-                             range_mask, "wiso::alpha_liquid_vapor");
+                             range_mask, "water_isotopes::alpha_liquid_vapor");
   }
 
   template <typename ScalarT>
@@ -223,11 +223,11 @@ public:
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
     return alpha_equilibrium(t, species, CondensedPhase::Ice, dir, iso_params,
-                             range_mask, "wiso::alpha_ice_vapor");
+                             range_mask, "water_isotopes::alpha_ice_vapor");
   }
 };
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
 
 #endif // EAMXX_WATER_ISOTOPES_FRACTIONATION_HPP

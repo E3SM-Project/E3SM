@@ -7,7 +7,7 @@
 
 namespace scream
 {
-namespace wiso
+namespace water_isotopes
 {
 
 /*
@@ -63,7 +63,7 @@ ScalarT isotope_ocean_flux (
   return flux;
 }
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
 
 #endif // EAMXX_WATER_ISOTOPES_OCEAN_FLUX_HPP

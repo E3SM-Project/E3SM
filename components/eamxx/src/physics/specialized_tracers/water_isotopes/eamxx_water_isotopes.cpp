@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace scream {
-namespace wiso {
+namespace water_isotopes {
 namespace {
 
 // generic parse_option utility function.
@@ -120,5 +120,5 @@ void WaterIsotopes::resolve (std::vector<water_tracers::TracerSpec>& specs)
   }
 }
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
