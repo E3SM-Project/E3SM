@@ -32,7 +32,7 @@ cd "${BUILD_DIR}"
 if [ ! -f "CMakeCache.txt" ]; then
     print_status "Configuring CMake..."
     cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Debug  \
-    -DBUILD_EMULATOR_TESTS=ON \
+    -DEMULATOR_ENABLE_TESTS=ON \
     -DSTANDALONE_MODE=ON \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DFETCHCONTENT_BASE_DIR="$SCRIPT_DIR/downloads" \
