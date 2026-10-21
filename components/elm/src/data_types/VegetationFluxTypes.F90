@@ -223,8 +223,6 @@ module VegetationFluxTypes
     real(r8), pointer :: bgnpp                               (:) => null()    ! (gC/m2/s) belowground NPP
     real(r8), pointer :: litfall                             (:) => null()    ! (gC/m2/s) litterfall (leaves and fine roots)
     real(r8), pointer :: vegfire                             (:) => null()    ! (gC/m2/s) patch-level fire loss (obsolete, mark for removal)
-    real(r8), pointer :: cinputs                             (:) => null()    ! (gC/m2/s) patch-level carbon inputs (for balance checking)
-    real(r8), pointer :: coutputs                            (:) => null()    ! (gC/m2/s) patch-level carbon outputs (for balance checking)
 
     real(r8), pointer :: excess_cflux                        (:) => null()    ! C flux not allocated due to downregulation (gC/m2/s)
     real(r8), pointer :: availc                              (:) => null()    ! C flux available for allocation (gC/m2/s)
@@ -323,7 +321,6 @@ module VegetationFluxTypes
     real(r8), pointer :: fert_p_counter                      (:)     ! >0 fertilize; <=0 not
     real(r8), pointer :: biochem_pmin_to_plant               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
     real(r8), pointer :: dwt_seedp_to_ppool                  (:)     ! (gP/m2/s) seed source to PFT-level
-    real(r8), pointer :: sminp_to_plant_trans                (:)     ! plant p uptake through transpiration flow
     real(r8), pointer :: gap_ploss_litter                    (:)     ! total ploss from veg to litter pool due to gap mortality
     real(r8), pointer :: fire_ploss_litter                   (:)     ! total ploss from veg to litter pool due to fire
     real(r8), pointer :: hrv_ploss_litter                    (:)     ! total ploss from veg to litter pool due to harvest mortality
@@ -1024,8 +1021,6 @@ contains
        allocate(this%bgnpp                               (begp:endp)) ;    this%bgnpp                                (:) = spval
        allocate(this%litfall                             (begp:endp)) ;    this%litfall                              (:) = spval
        allocate(this%vegfire                             (begp:endp)) ;    this%vegfire                              (:) = spval
-       allocate(this%cinputs                             (begp:endp)) ;    this%cinputs                              (:) = spval
-       allocate(this%coutputs                            (begp:endp)) ;    this%coutputs                             (:) = spval
        allocate(this%excess_cflux                        (begp:endp)) ;    this%excess_cflux                         (:) = spval
        allocate(this%availc                              (begp:endp)) ;    this%availc                               (:) = spval
        allocate(this%xsmrpool_recover                    (begp:endp)) ;    this%xsmrpool_recover                     (:) = spval
@@ -2622,8 +2617,6 @@ contains
           this%agwdnpp(i)                             = value_patch
           this%litfall(i)                             = value_patch
           this%vegfire(i)                             = value_patch
-          this%cinputs(i)                             = value_patch
-          this%coutputs(i)                            = value_patch
           this%frootc_alloc(i)                        = value_patch
           this%frootc_loss(i)                         = value_patch
           this%leafc_alloc(i)                         = value_patch
@@ -3199,7 +3192,6 @@ contains
     allocate(this%uptake%plant_demand                       (begp:endp)) ; this%uptake%plant_demand                       (:) = spval
     allocate(this%retrans%avail_retrans                      (begp:endp)) ; this%retrans%avail_retrans                      (:) = spval
     allocate(this%uptake%smin_to_plant                      (begp:endp)) ; this%uptake%smin_to_plant                      (:) = spval
-    allocate(this%sminp_to_plant_trans                (begp:endp)) ; this%sminp_to_plant_trans                (:) = spval
     allocate(this%uptake%plant_demand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%uptake%plant_demand_vr (:,:) = spval
     allocate(this%uptake%supplement_to_plant                (begp:endp)) ; this%uptake%supplement_to_plant                (:) = 0.d0
     allocate(this%gap_ploss_litter                    (begp:endp)) ; this%gap_ploss_litter                    (:) = spval

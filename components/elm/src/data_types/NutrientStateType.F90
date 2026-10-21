@@ -52,9 +52,6 @@ module NutrientStateType
     real(r8), pointer :: trunc_sink               (:)    => null() ! (g/m2) column-level sink for nutrient truncation
     real(r8), pointer :: totlit              (:)    => null() ! (g/m2) total litter nutrient
     real(r8), pointer :: totsom              (:)    => null() ! (g/m2) total soil organic matter nutrient
-    real(r8), pointer :: som1                (:)    => null()
-    real(r8), pointer :: som2                (:)    => null()
-    real(r8), pointer :: som3                (:)    => null()
     real(r8), pointer :: totlit_1m           (:)    => null() ! (g/m2) total litter nutrient to 1 meter
     real(r8), pointer :: totsom_1m           (:)    => null() ! (g/m2) total soil organic matter nutrient to 1 meter
     real(r8), pointer :: totecosys           (:)    => null() ! (g/m2) total ecosystem nutrient, incl veg but excl pool
@@ -62,14 +59,6 @@ module NutrientStateType
     real(r8), pointer :: balance_beg                (:)    => null() ! (g/m2) nutrient mass, beginning of time step
     real(r8), pointer :: balance_end                (:)    => null() ! (g/m2) nutrient mass, end of time step
     real(r8), pointer :: balance_err                (:)    => null() ! (g/m2) nutrient balance error for the timestep
-    real(r8), pointer :: totpft_beg          (:)    => null()
-    real(r8), pointer :: cwd_beg             (:)    => null()
-    real(r8), pointer :: totlit_beg          (:)    => null()
-    real(r8), pointer :: totsom_beg          (:)    => null()
-    real(r8), pointer :: totpft_end          (:)    => null()
-    real(r8), pointer :: cwd_end             (:)    => null()
-    real(r8), pointer :: totlit_end          (:)    => null()
-    real(r8), pointer :: totsom_end          (:)    => null()
     real(r8), pointer :: cropseed_deficit    (:)    => null()
   end type column_nutrient_state
 
@@ -169,9 +158,6 @@ contains
     allocate(this%cwd                  (begc:endc))                     ; this%cwd                  (:)   = spval
     allocate(this%totlit               (begc:endc))                     ; this%totlit               (:)   = spval
     allocate(this%totsom               (begc:endc))                     ; this%totsom               (:)   = spval
-    allocate(this%som1                 (begc:endc))                     ; this%som1                 (:)   = spval
-    allocate(this%som2                 (begc:endc))                     ; this%som2                 (:)   = spval
-    allocate(this%som3                 (begc:endc))                     ; this%som3                 (:)   = spval
     allocate(this%totlit_1m            (begc:endc))                     ; this%totlit_1m            (:)   = spval
     allocate(this%totsom_1m            (begc:endc))                     ; this%totsom_1m            (:)   = spval
     allocate(this%totecosys            (begc:endc))                     ; this%totecosys            (:)   = spval
@@ -185,14 +171,6 @@ contains
     allocate(this%prod100              (begc:endc))                     ; this%prod100              (:)   = spval
     allocate(this%totprod              (begc:endc))                     ; this%totprod              (:)   = spval
     allocate(this%dyn_bal_adjustments  (begc:endc))                     ; this%dyn_bal_adjustments  (:)   = spval
-    allocate(this%totpft_beg           (begc:endc))                     ; this%totpft_beg           (:)   = spval
-    allocate(this%totpft_end           (begc:endc))                     ; this%totpft_end           (:)   = spval
-    allocate(this%cwd_beg              (begc:endc))                     ; this%cwd_beg              (:)   = spval
-    allocate(this%cwd_end              (begc:endc))                     ; this%cwd_end              (:)   = spval
-    allocate(this%totlit_beg           (begc:endc))                     ; this%totlit_beg           (:)   = spval
-    allocate(this%totlit_end           (begc:endc))                     ; this%totlit_end           (:)   = spval
-    allocate(this%totsom_beg           (begc:endc))                     ; this%totsom_beg           (:)   = spval
-    allocate(this%totsom_end           (begc:endc))                     ; this%totsom_end           (:)   = spval
     allocate(this%balance_beg                 (begc:endc))                     ; this%balance_beg                 (:)   = spval
     allocate(this%balance_end                 (begc:endc))                     ; this%balance_end                 (:)   = spval
     allocate(this%balance_err                 (begc:endc))                     ; this%balance_err                 (:)   = spval

@@ -15,9 +15,6 @@ module SharedParamsMod
 
       real(r8), pointer :: Q10_mr                => null() ! temperature dependence for maintenance respiraton
       real(r8), pointer :: Q10_hr                => null() ! temperature dependence for heterotrophic respiration
-      real(r8), pointer :: minpsi                => null() ! minimum soil water potential for heterotrophic resp
-      real(r8), pointer :: cwd_fcel              => null() ! cellulose fraction of coarse woody debris
-      real(r8), pointer :: cwd_flig              => null() ! lignin fraction of coarse woody debris
       real(r8), pointer :: froz_q10              => null() ! separate q10 for frozen soil respiration rates
       real(r8), pointer :: decomp_depth_efolding => null() ! e-folding depth for reduction in decomposition (m)
       real(r8), pointer :: mino2lim              => null() ! minimum anaerobic decomposition rate as a fraction of potential aerobic rate
@@ -58,9 +55,6 @@ contains
      !
      allocate(ParamsShareInst%Q10_mr               )
      allocate(ParamsShareInst%Q10_hr               )
-     allocate(ParamsShareInst%minpsi               )
-     allocate(ParamsShareInst%cwd_fcel             )
-     allocate(ParamsShareInst%cwd_flig             )
      allocate(ParamsShareInst%froz_q10             )
      allocate(ParamsShareInst%decomp_depth_efolding)
      allocate(ParamsShareInst%mino2lim             )
@@ -79,17 +73,14 @@ contains
      tString='minpsi_hr'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     ParamsShareInst%minpsi=tempr
 
      tString='cwd_fcel'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     ParamsShareInst%cwd_fcel=tempr
 
      tString='cwd_flig'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     ParamsShareInst%cwd_flig=tempr
 
      tString='froz_q10'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)

@@ -92,7 +92,6 @@ module ColumnFluxTypes
     real(r8), pointer :: qflx_rain_grnd       (:)   => null() ! rain on ground after interception (mm H2O/s) [+]
     real(r8), pointer :: qflx_snow_grnd       (:)   => null() ! snow on ground after interception (mm H2O/s) [+]
     real(r8), pointer :: qflx_sub_snow        (:)   => null() ! sublimation rate from snow pack (mm H2O /s) [+]
-    real(r8), pointer :: qflx_sub_snow_vol    (:)   => null() !
     real(r8), pointer :: qflx_evap_soi        (:)   => null() ! soil evaporation (mm H2O/s) (+ = to atm)
     real(r8), pointer :: qflx_evap_veg        (:)   => null() ! vegetation evaporation (mm H2O/s) (+ = to atm)
     real(r8), pointer :: qflx_evap_can        (:)   => null() ! evaporation from leaves and stems (mm H2O/s) (+ = to atm)
@@ -161,13 +160,7 @@ module ColumnFluxTypes
     real(r8), pointer :: qflx_from_uphill     (:)   => null() ! input to top soil layer from uphill topounit(s) (mm H2O/s))
     real(r8), pointer :: qflx_to_downhill     (:)   => null() ! output from column to the downhill topounit (mm H2O/s))
 
-    real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
-    real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
-    real(r8), pointer :: mflx_et_1d           (:)   => null() ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
-    real(r8), pointer :: mflx_drain_1d        (:)   => null() ! drainage from groundwater table (kg H2O /s)
     real(r8), pointer :: mflx_drain_perched_1d(:)   => null() ! drainage from perched water table (kg H2O /s)
-    real(r8), pointer :: mflx_snowlyr_1d      (:)   => null() ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
-    real(r8), pointer :: mflx_sub_snow_1d     (:)   => null() ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
     real(r8), pointer :: mflx_neg_snow_1d     (:)   => null() ! mass flux from top soil layer due to negative water content in snow layers (kg H2O /s)
     real(r8), pointer :: mflx_snowlyr         (:)   => null() ! mass flux to top soil layer due to disappearance of snow (kg H2O /s). This is for restart
     real(r8), pointer :: mflx_infl            (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
@@ -176,7 +169,6 @@ module ColumnFluxTypes
     real(r8), pointer :: mflx_sub_snow        (:)   => null() ! mass flux from top soil layer due to sublimation of snow (kg H2O /s)
     real(r8), pointer :: mflx_et              (:,:) => null() ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
     real(r8), pointer :: mflx_drain           (:,:) => null() ! drainage from groundwater table (kg H2O /s)
-    real(r8), pointer :: mflx_recharge        (:)   => null() ! recharge from soil column to unconfined aquifer (kg H2O /s)
 
   contains
     procedure, public :: Init    => col_wf_init
@@ -227,7 +219,6 @@ module ColumnFluxTypes
     real(r8), pointer :: litterc_loss                          (:)     => null() ! (gC/m2/s) col-level litter C loss
     ! patch averaged to column variables - to remove need for pcf_a instance
     real(r8), pointer :: rr                                    (:)     => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
-    real(r8), pointer :: rr_vr                                 (:,:)   => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
     real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)
     real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)
     real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)
@@ -268,8 +259,6 @@ module ColumnFluxTypes
     ! soil erosion fluxes
     ! summary (diagnostic) flux variables, not involved in mass balance
     ! deposition fluxes
-    real(r8), pointer :: ndep_to_sminn_nh3                     (:)     => null() ! atmospheric N depsotion to soil mineral NH3 (gN/m2/s)
-    real(r8), pointer :: ndep_to_sminn_no3                     (:)     => null() ! atmospheric N depsotion to soil mineral NO3 (gN/m2/s)
     real(r8), pointer :: nfix_to_sminn                         (:)     => null() ! symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
     real(r8), pointer :: nfix_to_ecosysn                       (:)     => null() ! total nitrogen fixation
     real(r8), pointer :: fert_to_sminn                         (:)     => null() ! fertilizer N to soil mineral N (gN/m2/s)
@@ -316,11 +305,8 @@ module ColumnFluxTypes
     ! leaching fluxes
     real(r8), pointer :: smin_no3_leached_vr                   (:,:)   => null() ! vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
     real(r8), pointer :: smin_no3_leached                      (:)     => null() ! soil mineral NO3 pool loss to leaching (gN/m2/s)
-    real(r8), pointer :: smin_nh4_leached                      (:)     => null() 
     real(r8), pointer :: smin_no3_runoff_vr                    (:,:)   => null() ! vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
     real(r8), pointer :: smin_no3_runoff                       (:)     => null() ! soil mineral NO3 pool loss to runoff (gN/m2/s)
-    real(r8), pointer :: smin_nh4_runoff                       (:)     => null() 
-    real(r8), pointer :: nh3_soi_flx                           (:)     => null()
     ! nitrification /denitrification diagnostic quantities
     real(r8), pointer :: smin_no3_massdens_vr                  (:,:)   => null() ! (ugN / g soil) soil nitrate concentration
     real(r8), pointer :: soil_bulkdensity                      (:,:)   => null() ! (kg soil / m3) bulk density of soil
@@ -341,9 +327,7 @@ module ColumnFluxTypes
     real(r8), pointer :: anaerobic_frac                        (:,:)   => null()
     ! (old version) denitrification fluxes
     real(r8), pointer :: sminn_to_denit_decomp_cascade_vr      (:,:,:) => null() ! vertically-resolved denitrification along decomp cascade (gN/m3/s)
-    real(r8), pointer :: sminn_to_denit_decomp_cascade         (:,:)   => null() ! vertically-integrated (diagnostic) denitrification along decomp cascade (gN/m2/s)
     real(r8), pointer :: sminn_to_denit_excess_vr              (:,:)   => null() ! vertically-resolved denitrification from excess mineral N pool (gN/m3/s)
-    real(r8), pointer :: sminn_to_denit_excess                 (:)     => null() ! vertically-integrated (diagnostic) denitrification from excess mineral N pool (gN/m2/s)
     ! (old version) leaching fluxes
     ! dynamic landcover fluxes
     ! wood product pool loss fluxes
@@ -418,7 +402,6 @@ module ColumnFluxTypes
     real(r8), pointer :: potential_immob_p                     (:)     => null() ! vert-int (diagnostic) potential P immobilization (gP/m2/s)
     real(r8), pointer :: actual_immob_p_vr                     (:,:)   => null() ! vertically-resolved actual P immobilization (gP/m3/s) at each level
     real(r8), pointer :: actual_immob_p                        (:)     => null() ! vert-int (diagnostic) actual P immobilization (gP/m2/s)
-    real(r8), pointer :: net_mineralization_p_vr               (:,:)   => null() 
     real(r8), pointer :: biochem_pmin_ppools_vr                (:,:,:) =>null() ! vertically-resolved biochemical P mineralization for each soi pool (gP/m3/s)
     real(r8), pointer :: biochem_pmin_vr                       (:,:)   =>null() ! vertically-resolved total biochemical P mineralization (gP/m3/s)
     real(r8), pointer :: biochem_pmin_to_ecosysp_vr            (:,:)   =>null() ! biochemical P mineralization directly goes to soil (gP/m3/s)
@@ -432,7 +415,6 @@ module ColumnFluxTypes
     real(r8), pointer :: secondp_to_labilep                    (:)     =>null() ! (gP/m3/s) flux of the desorption of secondary mineral P to labile P
     real(r8), pointer :: secondp_to_occlp_vr                   (:,:)   =>null() ! (gP/m3/s) flux of the occlusion of secondary P to occluded P
     real(r8), pointer :: secondp_to_occlp                      (:)     =>null() ! (gP/m3/s) flux of the occlusion of secondary P to occluded P
-    real(r8), pointer :: sminp_runoff                          (:)     => null()
     real(r8), pointer :: labilep_erode                         (:)     =>null() ! soil labile mineral P detachment (gP/m^2/s)
     real(r8), pointer :: labilep_deposit                       (:)     =>null() ! soil labile mineral P hillslope redeposition (gP/m^2/s)
     real(r8), pointer :: labilep_yield                         (:)     =>null() ! soil labile mineral P loss to inland waters (gP/m^2/s)
@@ -636,7 +618,6 @@ contains
     allocate(this%qflx_rain_grnd         (begc:endc))             ; this%qflx_rain_grnd       (:)   = spval
     allocate(this%qflx_snow_grnd         (begc:endc))             ; this%qflx_snow_grnd       (:)   = spval
     allocate(this%qflx_sub_snow          (begc:endc))             ; this%qflx_sub_snow        (:)   = spval
-    allocate(this%qflx_sub_snow_vol      (begc:endc))             ; this%qflx_sub_snow_vol    (:)   = spval
     allocate(this%qflx_evap_soi          (begc:endc))             ; this%qflx_evap_soi        (:)   = spval
     allocate(this%qflx_evap_veg          (begc:endc))             ; this%qflx_evap_veg        (:)   = spval
     allocate(this%qflx_evap_can          (begc:endc))             ; this%qflx_evap_can        (:)   = spval
@@ -706,14 +687,8 @@ contains
 
     !VSFM variables
     ncells = endc - begc + 1
-    allocate(this%mflx_infl_1d           (ncells))                ; this%mflx_infl_1d         (:)   = spval
-    allocate(this%mflx_dew_1d            (ncells))                ; this%mflx_dew_1d          (:)   = spval
-    allocate(this%mflx_snowlyr_1d        (ncells))                ; this%mflx_snowlyr_1d      (:)   = spval
-    allocate(this%mflx_sub_snow_1d       (ncells))                ; this%mflx_sub_snow_1d     (:)   = spval
     allocate(this%mflx_neg_snow_1d       (ncells))                ; this%mflx_neg_snow_1d     (:)   = spval
     ncells = (endc - begc + 1)*nlevgrnd
-    allocate(this%mflx_et_1d             (ncells))                ; this%mflx_et_1d           (:)   = spval
-    allocate(this%mflx_drain_1d          (ncells))                ; this%mflx_drain_1d        (:)   = spval
     allocate(this%mflx_drain_perched_1d  (ncells))                ; this%mflx_drain_perched_1d(:)   = spval
 
     allocate(this%mflx_snowlyr           (begc:endc))             ; this%mflx_snowlyr         (:)   = 0._r8
@@ -723,7 +698,6 @@ contains
     allocate(this%mflx_sub_snow          (begc:endc))             ; this%mflx_sub_snow        (:)   = spval
     allocate(this%mflx_et                (begc:endc,1:nlevgrnd))  ; this%mflx_et              (:,:) = spval
     allocate(this%mflx_drain             (begc:endc,1:nlevgrnd))  ; this%mflx_drain           (:,:) = spval
-    allocate(this%mflx_recharge          (begc:endc))             ; this%mflx_recharge        (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_wf
@@ -1051,7 +1025,6 @@ contains
     allocate(this%cwdc_loss                         (begc:endc))                  ; this%cwdc_loss                    (:)   = spval
     allocate(this%litterc_loss                      (begc:endc))                  ; this%litterc_loss                 (:)   = spval
     allocate(this%rr                                (begc:endc))                  ; this%rr                           (:)   = spval
-    allocate(this%rr_vr(begc:endc,1:nlevdecomp_full));                            this%rr_vr(:,:) = spval
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = spval
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = spval
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = spval
@@ -2754,8 +2727,6 @@ contains
     this%core%species = CN_SPECIES_N
     call column_nutrient_flux_init(this%core, begc, endc)
     allocate(this%mineral%dep_to_smin                   (begc:endc))                   ; this%mineral%dep_to_smin	                 (:)   = spval
-    allocate(this%ndep_to_sminn_nh3               (begc:endc))                   ; this%ndep_to_sminn_nh3                (:)   = spval
-    allocate(this%ndep_to_sminn_no3               (begc:endc))                   ; this%ndep_to_sminn_no3                (:)   = spval
     allocate(this%nfix_to_sminn                   (begc:endc))                   ; this%nfix_to_sminn	                 (:)   = spval
     allocate(this%nfix_to_ecosysn                 (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = spval
 
@@ -2780,11 +2751,8 @@ contains
     allocate(this%f_denit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = spval
     allocate(this%smin_no3_leached_vr             (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = spval
     allocate(this%smin_no3_leached                (begc:endc))                   ; this%smin_no3_leached               (:)   = spval
-    allocate(this%smin_nh4_leached                (begc:endc))                   ; this%smin_nh4_leached               (:)   = spval
     allocate(this%smin_no3_runoff_vr              (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr             (:,:) = spval
     allocate(this%smin_no3_runoff                 (begc:endc))                   ; this%smin_no3_runoff                (:)   = spval
-    allocate(this%nh3_soi_flx                     (begc:endc))                   ; this%nh3_soi_flx                     (:)  = spval
-    allocate(this%smin_nh4_runoff                 (begc:endc))                   ; this%smin_nh4_runoff                (:)   = spval
     allocate(this%pot_f_nit_vr                    (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr                   (:,:) = spval
     allocate(this%pot_f_nit                       (begc:endc))                   ; this%pot_f_nit                      (:)   = spval
     allocate(this%pot_f_denit_vr                  (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr                 (:,:) = spval
@@ -2855,9 +2823,7 @@ contains
     allocate(this%mineral%decomp_cascade_smin_flux_vr    (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%mineral%decomp_cascade_smin_flux_vr     (:,:,:) = spval
     allocate(this%mineral%decomp_cascade_smin_flux       (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%mineral%decomp_cascade_smin_flux        (:,:)   = spval
     allocate(this%sminn_to_denit_decomp_cascade_vr(begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%sminn_to_denit_decomp_cascade_vr (:,:,:) = spval
-    allocate(this%sminn_to_denit_decomp_cascade   (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%sminn_to_denit_decomp_cascade    (:,:)   = spval
     allocate(this%sminn_to_denit_excess_vr        (begc:endc,1:nlevdecomp_full                              )) ; this%sminn_to_denit_excess_vr         (:,:)   = spval
-    allocate(this%sminn_to_denit_excess           (begc:endc                                                )) ; this%sminn_to_denit_excess            (:)     = spval
     allocate(this%mineral%smin_leached_vr                (begc:endc,1:nlevdecomp_full                              )) ; this%mineral%smin_leached_vr                 (:,:)   = spval
     allocate(this%mineral%smin_leached                   (begc:endc                                                )) ; this%mineral%smin_leached                    (:)     = spval
     allocate(this%mineral%pmf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%mineral%pmf_decomp_cascade              (:,:,:) = spval
@@ -4459,7 +4425,6 @@ contains
     allocate(this%potential_immob_p_vr             (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_p_vr          (:,:) = spval
     allocate(this%actual_immob_p_vr                (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_p_vr             (:,:) = spval
     allocate(this%uptake%smin_to_plant_vr                (begc:endc,1:nlevdecomp_full)) ; this%uptake%smin_to_plant_vr             (:,:) = spval
-    allocate(this%net_mineralization_p_vr          (begc:endc,1:nlevdecomp_full)) ; this%net_mineralization_p_vr       (:,:) = spval
     allocate(this%mineral%supplement_to_smin_vr           (begc:endc,1:nlevdecomp_full)) ; this%mineral%supplement_to_smin_vr        (:,:) = spval
     allocate(this%mineral%gross_min_vr                    (begc:endc,1:nlevdecomp_full)) ; this%mineral%gross_min_vr                 (:,:) = spval
     allocate(this%mineral%net_min_vr                      (begc:endc,1:nlevdecomp_full)) ; this%mineral%net_min_vr                   (:,:) = spval
@@ -4480,7 +4445,6 @@ contains
     allocate(this%secondp_to_occlp                 (begc:endc))                   ; this%secondp_to_occlp              (:)   = spval
     allocate(this%mineral%smin_leached_vr                 (begc:endc,1:nlevdecomp_full)) ; this%mineral%smin_leached_vr              (:,:) = spval
     allocate(this%mineral%smin_leached                    (begc:endc))                   ; this%mineral%smin_leached                 (:)   = spval
-    allocate(this%sminp_runoff                     (begc:endc))                   ; this%sminp_runoff                  (:)   = spval
     allocate(this%labilep_yield_vr                 (begc:endc,1:nlevdecomp_full)) ; this%labilep_yield_vr              (:,:) = spval
     allocate(this%secondp_yield_vr                 (begc:endc,1:nlevdecomp_full)) ; this%secondp_yield_vr              (:,:) = spval
     allocate(this%occlp_yield_vr                   (begc:endc,1:nlevdecomp_full)) ; this%occlp_yield_vr                (:,:) = spval

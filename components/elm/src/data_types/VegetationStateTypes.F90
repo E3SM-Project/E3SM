@@ -129,41 +129,8 @@ module VegetationStateTypes
     ! variables supporting dynamic C/N/P allocation cost/benefit analysis
     real(r8), pointer :: npimbalance            (:)   => null()
     real(r8), pointer :: pnup_pfrootc           (:)   => null()
-    real(r8), pointer :: ppup_pfrootc           (:)   => null()
-    real(r8), pointer :: ptlai_pleafc           (:)   => null()
-    real(r8), pointer :: ppsnsun_ptlai          (:)   => null()
-    real(r8), pointer :: ppsnsun_pleafn         (:)   => null()
-    real(r8), pointer :: ppsnsun_pleafp         (:)   => null()
-    real(r8), pointer :: plmrsun_ptlai          (:)   => null()
-    real(r8), pointer :: plmrsun_pleafn         (:)   => null()
-    real(r8), pointer :: plaisun_ptlai          (:)   => null()
-    real(r8), pointer :: ppsnsha_ptlai          (:)   => null()
-    real(r8), pointer :: ppsnsha_pleafn         (:)   => null()
-    real(r8), pointer :: ppsnsha_pleafp         (:)   => null()
-    real(r8), pointer :: plmrsha_ptlai          (:)   => null()
-    real(r8), pointer :: plmrsha_pleafn         (:)   => null()
-    real(r8), pointer :: plaisha_ptlai          (:)   => null()
     real(r8), pointer :: benefit_pgpp_pleafc    (:)   => null()  ! partial gpp / partial leaf carbon (used by symbiotic n2 fixation and dynamic allocation)
-    real(r8), pointer :: benefit_pgpp_pleafn    (:)   => null()  ! partial gpp / partial leaf nitrogen (used by phosphatase activity and dynamic allocation)
-    real(r8), pointer :: benefit_pgpp_pleafp    (:)   => null()  ! partial gpp / partial leaf phosphorus (used by phosphatase activity and dynamic allocation)
-    real(r8), pointer :: cost_pgpp_pfrootc      (:)   => null()  ! partial gpp /  partial fine root carbon (used by dynamic allocation)
-    real(r8), pointer :: cost_plmr_pleafc       (:)   => null()  ! partial maintenance respiration /  partial leaf carbon (used by dynamic allocation)
-    real(r8), pointer :: cost_plmr_pleafn       (:)   => null()  ! partial maintenance respiration /  partial leaf nitrogen (used by dynamic allocation)
     ! variables supporting multi-layer canopy
-    real(r8), pointer :: ppsn_ptlai_z           (:,:) => null()
-    real(r8), pointer :: ppsn_pleafn_z          (:,:) => null()
-    real(r8), pointer :: ppsn_pleafp_z          (:,:) => null()
-    real(r8), pointer :: ppsn_ptlai_z_vcmax     (:,:) => null()
-    real(r8), pointer :: ppsn_pleafn_z_vcmax    (:,:) => null()
-    real(r8), pointer :: ppsn_pleafp_z_vcmax    (:,:) => null()
-    real(r8), pointer :: ppsn_ptlai_z_jmax      (:,:) => null()
-    real(r8), pointer :: ppsn_pleafn_z_jmax     (:,:) => null()
-    real(r8), pointer :: ppsn_pleafp_z_jmax     (:,:) => null()
-    real(r8), pointer :: ppsn_ptlai_z_tpu       (:,:) => null()
-    real(r8), pointer :: ppsn_pleafn_z_tpu      (:,:) => null()
-    real(r8), pointer :: ppsn_pleafp_z_tpu      (:,:) => null()
-    real(r8), pointer :: plmr_ptlai_z           (:,:) => null()
-    real(r8), pointer :: plmr_pleafn_z          (:,:) => null()
 
   contains
     procedure, public :: Init      => veg_ns_init
@@ -2338,40 +2305,7 @@ contains
     allocate(this%plant_n_buffer         (begp:endp))           ; this%plant_n_buffer      (:)   = spval
     allocate(this%npimbalance            (begp:endp))           ; this%npimbalance         (:)   = spval
     allocate(this%pnup_pfrootc           (begp:endp))           ; this%pnup_pfrootc        (:)   = spval
-    allocate(this%ppup_pfrootc           (begp:endp))           ; this%ppup_pfrootc        (:)   = spval
-    allocate(this%ptlai_pleafc           (begp:endp))           ; this%ptlai_pleafc        (:)   = spval
-    allocate(this%ppsnsun_ptlai          (begp:endp))           ; this%ppsnsun_ptlai       (:)   = spval
-    allocate(this%ppsnsun_pleafn         (begp:endp))           ; this%ppsnsun_pleafn      (:)   = spval
-    allocate(this%ppsnsun_pleafp         (begp:endp))           ; this%ppsnsun_pleafp      (:)   = spval
-    allocate(this%plmrsun_ptlai          (begp:endp))           ; this%plmrsun_ptlai       (:)   = spval
-    allocate(this%plmrsun_pleafn         (begp:endp))           ; this%plmrsun_pleafn      (:)   = spval
-    allocate(this%plaisun_ptlai          (begp:endp))           ; this%plaisun_ptlai       (:)   = spval
-    allocate(this%ppsnsha_ptlai          (begp:endp))           ; this%ppsnsha_ptlai       (:)   = spval
-    allocate(this%ppsnsha_pleafn         (begp:endp))           ; this%ppsnsha_pleafn      (:)   = spval
-    allocate(this%ppsnsha_pleafp         (begp:endp))           ; this%ppsnsha_pleafp      (:)   = spval
-    allocate(this%plmrsha_ptlai          (begp:endp))           ; this%plmrsha_ptlai       (:)   = spval
-    allocate(this%plmrsha_pleafn         (begp:endp))           ; this%plmrsha_pleafn      (:)   = spval
-    allocate(this%plaisha_ptlai          (begp:endp))           ; this%plaisha_ptlai       (:)   = spval
     allocate(this%benefit_pgpp_pleafc    (begp:endp))           ; this%benefit_pgpp_pleafc (:)   = spval
-    allocate(this%benefit_pgpp_pleafn    (begp:endp))           ; this%benefit_pgpp_pleafn (:)   = spval
-    allocate(this%benefit_pgpp_pleafp    (begp:endp))           ; this%benefit_pgpp_pleafp (:)   = spval
-    allocate(this%cost_pgpp_pfrootc      (begp:endp))           ; this%cost_pgpp_pfrootc   (:)   = spval
-    allocate(this%cost_plmr_pleafc       (begp:endp))           ; this%cost_plmr_pleafc    (:)   = spval
-    allocate(this%cost_plmr_pleafn       (begp:endp))           ; this%cost_plmr_pleafn    (:)   = spval
-    allocate(this%ppsn_ptlai_z           (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z        (:,:) = spval
-    allocate(this%ppsn_pleafn_z          (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z       (:,:) = spval
-    allocate(this%ppsn_pleafp_z          (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z       (:,:) = spval
-    allocate(this%ppsn_ptlai_z_vcmax     (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_vcmax  (:,:) = spval
-    allocate(this%ppsn_pleafn_z_vcmax    (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_vcmax (:,:) = spval
-    allocate(this%ppsn_pleafp_z_vcmax    (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_vcmax (:,:) = spval
-    allocate(this%ppsn_ptlai_z_jmax      (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_jmax   (:,:) = spval
-    allocate(this%ppsn_pleafn_z_jmax     (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_jmax  (:,:) = spval
-    allocate(this%ppsn_pleafp_z_jmax     (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_jmax  (:,:) = spval
-    allocate(this%ppsn_ptlai_z_tpu       (begp:endp,1:nlevcan)) ; this%ppsn_ptlai_z_tpu    (:,:) = spval
-    allocate(this%ppsn_pleafn_z_tpu      (begp:endp,1:nlevcan)) ; this%ppsn_pleafn_z_tpu   (:,:) = spval
-    allocate(this%ppsn_pleafp_z_tpu      (begp:endp,1:nlevcan)) ; this%ppsn_pleafp_z_tpu   (:,:) = spval
-    allocate(this%plmr_ptlai_z           (begp:endp,1:nlevcan)) ; this%plmr_ptlai_z        (:,:) = spval
-    allocate(this%plmr_pleafn_z          (begp:endp,1:nlevcan)) ; this%plmr_pleafn_z       (:,:) = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_ns

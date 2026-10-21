@@ -84,7 +84,6 @@ module atm2lndType
      real(r8), pointer :: forc_ndep_grc                 (:)   => null() ! nitrogen deposition rate (gN/m2/s)
      real(r8), pointer :: forc_pdep_grc                 (:)   => null() ! phosphorus deposition rate (gP/m2/s)
      real(r8), pointer :: forc_pc13o2_grc               (:)   => null() ! C13O2 partial pressure (Pa)
-     real(r8), pointer :: forc_po2_grc                  (:)   => null() ! O2 partial pressure (Pa)
      real(r8), pointer :: forc_aer_grc                  (:,:) => null() ! aerosol deposition array
      real(r8), pointer :: forc_pch4_grc                 (:)   => null() ! CH4 partial pressure (Pa)
      real(r8), pointer :: forc_ndep_mgrz_grc            (:)   => null() ! FAN nitrogen deposition (manure) rate (gN/m2/s)
@@ -122,29 +121,17 @@ module atm2lndType
      real(r8), pointer :: frac_h2orof_grc               (:)   => null() ! rof floodplain inundation fraction [-]
  
      ! anomaly forcing
-     real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_vwind_grc                  (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_tbot_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_pbot_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_shum_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_swdn_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_lwdn_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: bc_precip_grc                 (:)   => null() ! anomaly forcing - add bias correction
 
      ! time averaged quantities
      real(r8) , pointer :: fsd24_patch                  (:)   => null() ! patch 24hr average of direct beam radiation 
      real(r8) , pointer :: fsd240_patch                 (:)   => null() ! patch 240hr average of direct beam radiation 
      real(r8) , pointer :: fsi24_patch                  (:)   => null() ! patch 24hr average of diffuse beam radiation 
      real(r8) , pointer :: fsi240_patch                 (:)   => null() ! patch 240hr average of diffuse beam radiation 
-     real(r8) , pointer :: prec365_patch                (:)   => null() ! patch 365-day running mean of tot. precipitation
      real(r8) , pointer :: prec60_patch                 (:)   => null() ! patch 60-day running mean of tot. precipitation (mm/s) 
      real(r8) , pointer :: prec10_patch                 (:)   => null() ! patch 10-day running mean of tot. precipitation (mm/s) 
      real(r8) , pointer :: prec24_patch                 (:)   => null() ! patch 24-hour running mean of tot. precipitation (mm/s) 
      real(r8) , pointer :: rh24_patch                   (:)   => null() ! patch 24-hour running mean of relative humidity
      real(r8) , pointer :: wind24_patch                 (:)   => null() ! patch 24-hour running mean of wind
-     real(r8) , pointer :: t_mo_patch                   (:)   => null() ! patch 30-day average temperature (Kelvin)
-     real(r8) , pointer :: t_mo_min_patch               (:)   => null() ! patch annual min of t_mo (Kelvin)
 
      ! Needed for FNM precip downscaling, when used within CPL_BYPASS
      real(r8), pointer :: forc_uovern                   (:)   => null() ! Froude number (dimensionless)
@@ -262,7 +249,6 @@ contains
     allocate(this%forc_ndep_grc                 (begg:endg))        ; this%forc_ndep_grc                 (:)   = ival
     allocate(this%forc_pdep_grc                 (begg:endg))        ; this%forc_pdep_grc                 (:)   = ival
     allocate(this%forc_pc13o2_grc               (begg:endg))        ; this%forc_pc13o2_grc               (:)   = ival
-    allocate(this%forc_po2_grc                  (begg:endg))        ; this%forc_po2_grc                  (:)   = ival
     allocate(this%forc_aer_grc                  (begg:endg,14))     ; this%forc_aer_grc                  (:,:) = ival
     allocate(this%forc_pch4_grc                 (begg:endg))        ; this%forc_pch4_grc                 (:)   = ival
 
@@ -296,15 +282,6 @@ contains
     allocate(this%frac_h2orof_grc               (begg:endg))        ; this%frac_h2orof_grc               (:)   = ival
 
     ! anomaly forcing
-    allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
-    allocate(this%af_precip_grc                 (begg:endg))        ; this%af_precip_grc                 (:)   = ival
-    allocate(this%af_uwind_grc                  (begg:endg))        ; this%af_uwind_grc                  (:)   = ival
-    allocate(this%af_vwind_grc                  (begg:endg))        ; this%af_vwind_grc                  (:)   = ival
-    allocate(this%af_tbot_grc                   (begg:endg))        ; this%af_tbot_grc                   (:)   = ival
-    allocate(this%af_pbot_grc                   (begg:endg))        ; this%af_pbot_grc                   (:)   = ival
-    allocate(this%af_shum_grc                   (begg:endg))        ; this%af_shum_grc                   (:)   = ival
-    allocate(this%af_swdn_grc                   (begg:endg))        ; this%af_swdn_grc                   (:)   = ival
-    allocate(this%af_lwdn_grc                   (begg:endg))        ; this%af_lwdn_grc                   (:)   = ival
 
     allocate(this%fsd24_patch                   (begp:endp))        ; this%fsd24_patch                   (:)   = nan
     allocate(this%fsd240_patch                  (begp:endp))        ; this%fsd240_patch                  (:)   = nan
@@ -312,14 +289,11 @@ contains
     allocate(this%fsi240_patch                  (begp:endp))        ; this%fsi240_patch                  (:)   = nan
     allocate(this%prec10_patch                  (begp:endp))        ; this%prec10_patch                  (:)   = nan
     allocate(this%prec60_patch                  (begp:endp))        ; this%prec60_patch                  (:)   = nan
-    allocate(this%prec365_patch                 (begp:endp))        ; this%prec365_patch                 (:)   = nan
     if (use_fates) then
        allocate(this%prec24_patch               (begp:endp))        ; this%prec24_patch                  (:)   = nan
        allocate(this%rh24_patch                 (begp:endp))        ; this%rh24_patch                    (:)   = nan
        allocate(this%wind24_patch               (begp:endp))        ; this%wind24_patch                  (:)   = nan
     end if
-    allocate(this%t_mo_patch                    (begp:endp))        ; this%t_mo_patch               (:)   = nan
-    allocate(this%t_mo_min_patch                (begp:endp))        ; this%t_mo_min_patch           (:)   = spval ! TODO - initialize this elsewhere
     if ( use_fan ) then
        allocate(this%forc_ndep_mgrz_grc         (begg:endg))        ; this%forc_ndep_mgrz_grc            (:)   = ival
        allocate(this%forc_ndep_past_grc         (begg:endg))        ; this%forc_ndep_past_grc            (:)   = ival

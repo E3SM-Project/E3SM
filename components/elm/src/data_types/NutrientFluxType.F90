@@ -42,7 +42,6 @@ module NutrientFluxType
     real(r8), pointer :: decomp_cascade_transfer              (:,:)   => null() ! vertically-integrated (diagnostic) nutrient transferred along deomposition cascade (g/m2/s)
     real(r8), pointer :: decomp_pools_leached                 (:,:)   => null() ! nutrient loss from vertical transport from each decomposing nutrient pool (g/m^2/s)
     real(r8), pointer :: som_leached                         (:)     => null() ! total SOM nutrient loss from vertical transport (g/m^2/s)
-    real(r8), pointer :: som_runoff                          (:)     => null()
     real(r8), pointer :: phenology_to_litr_met             (:,:)   => null() ! nutrient fluxes associated with phenology (litterfall and crop) to litter metabolic pool (g/m3/s)
     real(r8), pointer :: phenology_to_litr_cel             (:,:)   => null() ! nutrient fluxes associated with phenology (litterfall and crop) to litter cellulose pool (g/m3/s)
     real(r8), pointer :: phenology_to_litr_lig             (:,:)   => null() ! nutrient fluxes associated with phenology (litterfall and crop) to litter lignin pool (g/m3/s)
@@ -346,7 +345,6 @@ contains
     allocate(this%fire_decomp_loss               (begc:endc))                   ; this%fire_decomp_loss              (:)   = spval
     allocate(this%fire_loss_p2c                  (begc:endc))                   ; this%fire_loss_p2c                 (:)   = spval
     allocate(this%som_leached                   (begc:endc))                   ; this%som_leached	                 (:)   = spval
-    allocate(this%som_runoff                    (begc:endc))                   ; this%som_runoff                   (:)  = spval
     allocate(this%som_erode                      (begc:endc))                   ; this%som_erode                     (:)   = spval
     allocate(this%som_deposit                    (begc:endc))                   ; this%som_deposit                   (:)   = spval
     allocate(this%som_yield                      (begc:endc))                   ; this%som_yield                     (:)   = spval

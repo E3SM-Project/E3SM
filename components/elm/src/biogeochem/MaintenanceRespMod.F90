@@ -32,7 +32,6 @@ module MaintenanceRespMod
   public :: readMaintenanceRespParams
 
    type, private :: MaintenanceRespParamsType
-      real(r8):: br_mr        !base rate for maintenance respiration(gC/gN/s)
    end type MaintenanceRespParamsType
 
   !type(MaintenanceRespParamsType),private ::  MaintenanceRespParamsInst

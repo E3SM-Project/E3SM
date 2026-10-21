@@ -168,7 +168,6 @@ module ColumnStateTypes
     real(r8), pointer :: deadstemc            (:)    => null() ! (gC/m2) column-level deadstemc (fire)
     real(r8), pointer :: fuelc                (:)    => null() ! fuel avalability factor for Reg.C (0-1)
     real(r8), pointer :: fuelc_crop           (:)    => null() ! fuel avalability factor for Reg.A (0-1)
-    real(r8), pointer :: frootc               (:)    => null() ! (gC/m2) column-level C pool for fine root
     real(r8), pointer :: totabgc              (:)    => null() ! (gC/m2) total column above ground carbon, excluding som
     real(r8), pointer :: totvegc_abg          (:)    => null() ! (gC/m2) total above vegetation carbon, excluding cpool averaged to column (p2c)
     real(r8), pointer :: decomp_som2c_vr      (:,:)  => null()
@@ -216,18 +215,6 @@ module ColumnStateTypes
     real(r8), pointer :: manure_tan_stored        (:)     => null() ! (gN/m2) manure TAN in storage
     real(r8), pointer :: fan_grz_fract            (:)     => null() ! unitless fraction of animals grazing
     real(r8), pointer :: fan_totn                 (:)     => null() ! (gN/m2) total N in FAN pools
-    real(r8), pointer :: sminn_beg                (:)     => null()
-    real(r8), pointer :: sminn_end                (:)     => null()
-    real(r8), pointer :: smin_no3_beg             (:)     => null()
-    real(r8), pointer :: smin_no3_end             (:)     => null()
-    real(r8), pointer :: smin_nh4_beg             (:)     => null()
-    real(r8), pointer :: smin_nh4_end             (:)     => null()
-    real(r8), pointer :: totprodn_beg             (:)     => null()
-    real(r8), pointer :: totprodn_end             (:)     => null()
-    real(r8), pointer :: seedn_beg                (:)     => null()
-    real(r8), pointer :: seedn_end                (:)     => null()
-    real(r8), pointer :: ntrunc_beg               (:)     => null()
-    real(r8), pointer :: ntrunc_end               (:)     => null()
   contains
     procedure, public :: Init       => col_ns_init
     procedure, public :: Restart    => col_ns_restart
@@ -263,12 +250,6 @@ module ColumnStateTypes
     real(r8), pointer :: occlp_vr_prev            (:,:)    => null()
     real(r8), pointer :: primp_vr_cur             (:,:)    => null()
     real(r8), pointer :: primp_vr_prev            (:,:)    => null()
-    real(r8), pointer :: solutionp_beg            (:)      => null()
-    real(r8), pointer :: labilep_beg              (:)      => null()
-    real(r8), pointer :: secondp_beg              (:)      => null()
-    real(r8), pointer :: solutionp_end            (:)      => null()
-    real(r8), pointer :: labilep_end              (:)      => null()
-    real(r8), pointer :: secondp_end              (:)      => null()
   contains
     procedure, public :: Init      => col_ps_init
     procedure, public :: Restart   => col_ps_restart
@@ -1331,7 +1312,6 @@ contains
     allocate(this%deadstemc            (begc:endc))     ; this%deadstemc            (:)     = spval
     allocate(this%fuelc                (begc:endc))     ; this%fuelc                (:)     = spval
     allocate(this%fuelc_crop           (begc:endc))     ; this%fuelc_crop           (:)     = spval
-    allocate(this%frootc               (begc:endc))     ; this%frootc               (:)     = spval
     allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = spval
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = spval
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = spval
@@ -2247,18 +2227,6 @@ contains
     allocate(this%manure_tan_stored     (begc:endc))                     ; this%manure_tan_stored     (:)   = spval 
     allocate(this%fan_grz_fract         (begc:endc))                     ; this%fan_grz_fract         (:)   = spval 
     allocate(this%fan_totn              (begc:endc))                     ; this%fan_totn              (:)   = spval
-    allocate(this%sminn_beg             (begc:endc))                     ; this%sminn_beg             (:)   = spval
-    allocate(this%sminn_end             (begc:endc))                     ; this%sminn_end             (:)   = spval
-    allocate(this%smin_no3_beg          (begc:endc))                     ; this%smin_no3_beg          (:)   = spval
-    allocate(this%smin_no3_end          (begc:endc))                     ; this%smin_no3_end          (:)   = spval
-    allocate(this%smin_nh4_beg          (begc:endc))                     ; this%smin_nh4_beg          (:)   = spval
-    allocate(this%smin_nh4_end          (begc:endc))                     ; this%smin_nh4_end          (:)   = spval
-    allocate(this%totprodn_beg          (begc:endc))                     ; this%totprodn_beg          (:)   = spval
-    allocate(this%totprodn_end          (begc:endc))                     ; this%totprodn_end          (:)   = spval
-    allocate(this%seedn_beg             (begc:endc))                     ; this%seedn_beg             (:)   = spval
-    allocate(this%seedn_end             (begc:endc))                     ; this%seedn_end             (:)   = spval
-    allocate(this%ntrunc_beg            (begc:endc))                     ; this%ntrunc_beg            (:)   = spval
-    allocate(this%ntrunc_end            (begc:endc))                     ; this%ntrunc_end            (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ns
@@ -3262,12 +3230,6 @@ contains
     allocate(this%occlp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%occlp_vr_prev        (:,:) = spval
     allocate(this%primp_vr_cur         (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_cur         (:,:) = spval
     allocate(this%primp_vr_prev        (begc:endc,1:nlevdecomp_full)) ; this%primp_vr_prev        (:,:) = spval
-    allocate(this%solutionp_beg        (begc:endc))                   ; this%solutionp_beg        (:)   = spval
-    allocate(this%labilep_beg          (begc:endc))                   ; this%labilep_beg          (:)   = spval
-    allocate(this%secondp_beg          (begc:endc))                   ; this%secondp_beg          (:)   = spval
-    allocate(this%labilep_end          (begc:endc))                   ; this%labilep_end          (:)   = spval
-    allocate(this%secondp_end          (begc:endc))                   ; this%secondp_end          (:)   = spval
-    allocate(this%solutionp_end        (begc:endc))                   ; this%solutionp_end        (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ps

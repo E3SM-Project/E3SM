@@ -49,7 +49,6 @@ module SoilLittDecompMod
   public :: SoilLittDecompAlloc2
   !
   type, public :: CNDecompParamsType
-     real(r8), pointer :: dnp => null()         !denitrification proportion
   end type CNDecompParamsType
 
   type(CNDecompParamsType)  , public ::  CNDecompParamsInst
@@ -80,11 +79,9 @@ contains
      real(r8)           :: tempr ! temporary to read in constant
      character(len=100) :: tString ! temp. var for reading
      !-----------------------------------------------------------------------
-     allocate(CNDecompParamsInst%dnp)
      tString='dnp'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     CNDecompParamsInst%dnp=tempr
 
    end subroutine readSoilLittDecompParams
 

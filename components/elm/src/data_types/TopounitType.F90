@@ -33,9 +33,6 @@ module TopounitType
     real(r8), pointer :: uphill_wt   (:) => null() ! sum of column weights on topounit in the hydrologyc filter
 
     ! Starting and ending indices for all subgrid types below the landunit level
-    integer , pointer :: lndi        (:) => null() ! beginning landunit index for each topounit
-    integer , pointer :: lndf        (:) => null() ! ending landunit index for each topounit
-    integer , pointer :: nlandunits  (:) => null() ! number of landunits for each topounit
     integer , pointer :: coli        (:) => null() ! beginning column index per landunit
     integer , pointer :: colf        (:) => null() ! ending column index for each landunit
     integer , pointer :: ncolumns    (:) => null() ! number of columns for each landunit
@@ -55,11 +52,6 @@ module TopounitType
     real(r8), pointer :: lat        (:) => null() ! mean latitude (radians)
     real(r8), pointer :: lon        (:) => null() ! mean longitude (radians)
     real(r8), pointer :: elevation  (:) => null() ! mean soil surface elevation, above mean sea level (m)
-    real(r8), pointer :: slope      (:) => null() ! mean slope angle (radians)
-    integer , pointer :: aspect     (:) => null() ! mean aspect angle, measured clockwise from north (radians)
-    real(r8), pointer :: emissivity (:) => null() ! mean surface emissivity
-    real(r8), pointer :: surfalb_dir(:,:) => null() ! (topunit,numrad) mean surface albedo (direct)
-    real(r8), pointer :: surfalb_dif(:,:) => null() ! (topunit,numrad) mean surface albedo (diffuse)
   contains
     procedure, public :: Init  => init_top_pp
     procedure, public :: Clean => clean_top_pp
@@ -82,9 +74,6 @@ module TopounitType
     allocate(this%wtgcell     (begt:endt)) ; this%wtgcell     (:) = spval
     allocate(this%downhill_ti (begt:endt)) ; this%downhill_ti (:) = ispval
     allocate(this%uphill_wt   (begt:endt)) ; this%uphill_wt   (:) = ispval
-    allocate(this%lndi        (begt:endt)) ; this%lndi        (:) = ispval
-    allocate(this%lndf        (begt:endt)) ; this%lndf        (:) = ispval
-    allocate(this%nlandunits  (begt:endt)) ; this%nlandunits  (:) = ispval
     allocate(this%coli        (begt:endt)) ; this%coli        (:) = ispval
     allocate(this%colf        (begt:endt)) ; this%colf        (:) = ispval
     allocate(this%ncolumns    (begt:endt)) ; this%ncolumns    (:) = ispval
@@ -99,11 +88,6 @@ module TopounitType
     allocate(this%lat         (begt:endt)) ; this%lat         (:) = spval
     allocate(this%lon         (begt:endt)) ; this%lon         (:) = spval
     allocate(this%elevation   (begt:endt)) ; this%elevation   (:) = spval
-    allocate(this%slope       (begt:endt)) ; this%slope       (:) = spval
-    allocate(this%aspect      (begt:endt)) ; this%aspect      (:) = ispval
-    allocate(this%emissivity  (begt:endt)) ; this%emissivity  (:) = spval
-    allocate(this%surfalb_dir (begt:endt,1:numrad)) ; this%surfalb_dir(:,:) = spval
-    allocate(this%surfalb_dif (begt:endt,1:numrad)) ; this%surfalb_dif(:,:) = spval 
   end subroutine init_top_pp
 
   !-----------------------------------------------------------------------
@@ -115,9 +99,6 @@ module TopounitType
     deallocate(this%wtgcell     )
     deallocate(this%downhill_ti )
     deallocate(this%uphill_wt   )
-    deallocate(this%lndi        )
-    deallocate(this%lndf        )
-    deallocate(this%nlandunits  )
     deallocate(this%coli        )
     deallocate(this%colf        )
     deallocate(this%ncolumns    )
@@ -131,11 +112,6 @@ module TopounitType
     deallocate(this%lat         )
     deallocate(this%lon         )
     deallocate(this%elevation   )
-    deallocate(this%slope       )
-    deallocate(this%aspect      )
-    deallocate(this%emissivity  )
-    deallocate(this%surfalb_dir )
-    deallocate(this%surfalb_dif )
   end subroutine clean_top_pp
 
 end module TopounitType

@@ -47,7 +47,6 @@ module NitrogenDynamicsMod
   !
   ! !PRIVATE DATA:
   type, public :: CNNDynamicsParamsType
-     real(r8) :: sf      ! soluble fraction of mineral N (unitless)
      real(r8) :: sf_no3  ! soluble fraction of NO3 (unitless)
   end type CNNDynamicsParamsType
 
@@ -104,7 +103,6 @@ contains
     tString='sf_minn'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNDynamicsParamsInst%sf=tempr
 
     tString='sf_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
