@@ -183,39 +183,6 @@ ScalarT generic_ocean_flux (const OceanFlux kind,
   return flux;
 }
 
-// -----------------------------------------------------------------------
-// Ocean flux of a property tracer p carried by the mass tracer c, where
-// P = scale*source + offset and f_c is the carrier's ocean flux:
-//
-//   not valid ocean (f <= 0):  0
-//   E_ocn > 0:                 P * f_c
-//   E_ocn <= 0 (dew):          wtrc_ratio(q_p, q_c) * f_c
-//
-// The branch keys on the bulk water flux E_ocn, as for every other tracer
-// kind, not on the sign of f_c: evaporating water carries the property of
-// the source region, and dew removes the tracer at its current ratio.
-// -----------------------------------------------------------------------
-template <typename ScalarT>
-KOKKOS_INLINE_FUNCTION
-ScalarT property_ocean_flux (const ScalarT& f, const ScalarT& e_ocn, const ScalarT& p,
-                             const ScalarT& f_c, const ScalarT& q_p, const ScalarT& q_c)
-{
-  using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
-
-  const auto ocean = f > RealT(0);
-  const auto evap  = ocean && e_ocn > RealT(0);
-  const auto dew   = ocean && !(e_ocn > RealT(0));
-
-  ScalarT flux(0);
-  if (evap.any()) {
-    flux.set(evap, p*f_c);
-  }
-  if (dew.any()) {
-    flux.set(dew, wtrc_ratio(q_p, q_c)*f_c);
-  }
-  return flux;
-}
-
 } // namespace water_tracers
 } // namespace scream
 

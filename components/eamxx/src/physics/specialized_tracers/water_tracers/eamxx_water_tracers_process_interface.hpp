@@ -23,10 +23,10 @@ namespace scream
  * ocn_ustar) and the bottom-level atmosphere, and is NOT applied to anything:
  * this process never changes qv or a tracer after initialization.
  *
- * Tracer kinds: generic (bulk_proportional or bulk_formula), property
- * tracers carried by a mass tracer, and isotopes. Isotope entries are only
- * accepted when EAMXX_HAS_WATER_ISOTOPES is defined; isotope-specific state
- * and math live in the composed wiso::WaterIsotopes member, m_isotopes.
+ * Tracer kinds: generic (bulk_proportional or bulk_formula) and isotopes.
+ * Isotope entries are only accepted when EAMXX_HAS_WATER_ISOTOPES is
+ * defined; isotope-specific state and math live in the composed
+ * wiso::WaterIsotopes member, m_isotopes.
  */
 
 class WaterTracers : public AtmosphereProcess
@@ -57,7 +57,6 @@ public:
   void compute_bulk_state ();
   void compute_generic_fluxes ();
   void compute_isotope_fluxes ();
-  void compute_property_fluxes ();
 
   // Sets q = r_init*q_ref for every init: ratio tracer on the given grid
   void apply_ratio_initial_conditions (const std::string& grid_name);

@@ -3,14 +3,10 @@
 #include "../water_isotopes/eamxx_water_isotopes_ocean_flux.hpp"
 
 #include "share/physics/eamxx_common_physics_functions.hpp"
-#include "share/physics/physics_constants.hpp"
 
 #include <ekat_assert.hpp>
-#include <ekat_kernel_assert.hpp>
 #include <ekat_pack.hpp>
 #include <ekat_units.hpp>
-
-#include <cmath>
 
 namespace scream
 {
@@ -22,31 +18,6 @@ namespace wt = water_tracers;
 // Kernels evaluate the functions in eamxx_water_tracers_functions.hpp one
 // column at a time, on the bottom level only, so a pack of one is enough.
 using Pack1 = ekat::Pack<Real,1>;
-
-// Property sources, resolved on the host so kernels switch on an enum.
-enum class PropertySource { SST, TBot, RhSfc, Lat, Lon, X, Y, Z, Field };
-
-PropertySource property_source (const std::string& s)
-{
-  if (s=="sst")    return PropertySource::SST;
-  if (s=="t_bot")  return PropertySource::TBot;
-  if (s=="rh_sfc") return PropertySource::RhSfc;
-  if (s=="lat")    return PropertySource::Lat;
-  if (s=="lon")    return PropertySource::Lon;
-  if (s=="x")      return PropertySource::X;
-  if (s=="y")      return PropertySource::Y;
-  if (s=="z")      return PropertySource::Z;
-  // The registry accepts no other source
-  return PropertySource::Field;
-}
-
-bool uses_geometry (const wt::TracerSpec& spec)
-{
-  if (spec.type!=wt::TracerType::Property) return false;
-  const auto src = property_source(spec.source);
-  return src==PropertySource::Lat or src==PropertySource::Lon or
-         src==PropertySource::X or src==PropertySource::Y or src==PropertySource::Z;
-}
 
 } // anonymous namespace
 
@@ -104,15 +75,10 @@ void WaterTracers::create_requests ()
 
   // The tracers and their diagnostic ocean fluxes. The flux group is not used
   // yet; it is where a later process will find the fluxes to apply.
-  // Property tracers are also registered as kg/kg (strictly, [P] kg/kg).
   bool any_ratio_init = false;
   for (const auto& spec : m_specs) {
     add_tracer<Updated>(spec.name, m_grid, kg/kg, ps, TracerAdvection::DynamicsAndTurbulence);
     add_field<Computed>(spec.name + "_surf_flux", scalar2d, kg/m2/s, grid_name, "tracer_surface_fluxes");
-    if (spec.type==water_tracers::TracerType::Property and spec.source=="field") {
-      add_field<Required>(spec.field_name, scalar2d,
-                          water_tracers::property_field_units(spec.field_units), grid_name);
-    }
     any_ratio_init |= spec.init==water_tracers::InitType::Ratio;
   }
 
@@ -156,35 +122,6 @@ void WaterTracers::create_requests ()
 // =========================================================================================
 void WaterTracers::initialize_impl (const RunType run_type)
 {
-  // Geometry-sourced properties need lat/lon in degrees (lat in [-90,90], lon
-  // in [0,360]), the bounds the registry used to check scale*source + offset
-  // >= 0. Mesh-free test grids may have no geometry data, or NaN-filled data.
-  // The tolerance only admits round-off (the kernel clamps to the bounds).
-  bool needs_geometry = false;
-  for (const auto& spec : m_specs) {
-    needs_geometry |= uses_geometry(spec);
-  }
-  if (needs_geometry) {
-    for (const std::string name : {"lat", "lon"}) {
-      EKAT_REQUIRE_MSG(m_grid->has_geometry_data(name),
-          "Error! A water tracer property uses source lat, lon, x, y or z, but grid '" +
-          m_grid->name() + "' has no '" + name + "' geometry data.\n");
-      Real lo, hi;
-      water_tracers::bounded_source_range(name, lo, hi);
-      const Real tol = 1e-6;
-      const auto f = m_grid->get_geometry_data(name);
-      f.sync_to_host();
-      const auto v = f.get_view<const Real*,Host>();
-      for (int icol=0; icol<m_num_cols; ++icol) {
-        EKAT_REQUIRE_MSG(not std::isnan(v(icol)) and v(icol)>=lo-tol and v(icol)<=hi+tol,
-            "Error! A water tracer property uses source lat, lon, x, y or z, but the '" + name +
-            "' geometry data of grid '" + m_grid->name() + "' is NaN or outside [" +
-            std::to_string(lo) + ", " + std::to_string(hi) + "] (column " + std::to_string(icol) +
-            ", value " + std::to_string(v(icol)) + ").\n");
-      }
-    }
-  }
-
   // On restarts the tracers come from the restart file. See [pgN initial
   // conditions] in create_requests for why the ratio ICs may go on physics_gll.
   if (run_type==RunType::Initial) {
@@ -208,22 +145,15 @@ void WaterTracers::apply_ratio_initial_conditions (const std::string& grid_name)
   const auto grid = m_grids_manager->get_grid(grid_name);
   const MDPolicy policy({0, 0}, {grid->get_num_local_dofs(), grid->get_num_vertical_levels()});
 
-  // Mass tracers first (q_i = r_init*qv), then properties (q_p = r_init*q_c),
-  // so a property sees its carrier's initial value.
-  for (const bool properties : {false, true}) {
-    for (const auto& spec : m_specs) {
-      if (spec.init!=water_tracers::InitType::Ratio or spec.is_mass_tracer()==properties) {
-        continue;
-      }
-      const auto& ref_name = properties ? spec.carrier : std::string("qv");
-      const auto q     = get_field_out(spec.name, grid_name).get_view<Real**>();
-      const auto q_ref = get_field_in(ref_name, grid_name).get_view<const Real**>();
-      const Real r_init = spec.r_init;
-      Kokkos::parallel_for("water_tracers_ratio_ic_" + spec.name, policy,
-                           KOKKOS_LAMBDA(const int icol, const int ilev) {
-        q(icol, ilev) = r_init*q_ref(icol, ilev);
-      });
-    }
+  const auto q_v = get_field_in("qv", grid_name).get_view<const Real**>();
+  for (const auto& spec : m_specs) {
+    if (spec.init!=water_tracers::InitType::Ratio) continue;
+    const auto q = get_field_out(spec.name, grid_name).get_view<Real**>();
+    const Real r_init = spec.r_init;
+    Kokkos::parallel_for("water_tracers_ratio_ic_" + spec.name, policy,
+                         KOKKOS_LAMBDA(const int icol, const int ilev) {
+      q(icol, ilev) = r_init*q_v(icol, ilev);
+    });
   }
   Kokkos::fence();
 }
@@ -236,8 +166,7 @@ void WaterTracers::run_impl (const double /* dt */)
   // kernel per tracer: tracers are few, and each reads different fields.
   compute_bulk_state();
   compute_generic_fluxes();
-  compute_isotope_fluxes();  // after generic and before property fluxes: isotopes may be carriers
-  compute_property_fluxes();
+  compute_isotope_fluxes();
 }
 
 // =========================================================================================
@@ -316,80 +245,6 @@ void WaterTracers::compute_generic_fluxes ()
           Pack1(sfc_f(icol)), Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)), Pack1(sfc_re(icol)),
           Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)), Pack1(q_i(icol, kbot)), Pack1(sfc_evap(icol)));
       flux(icol) = (f_i + wt::land_ice_tracer_flux<Pack1>())[0];
-    });
-  }
-}
-
-// =========================================================================================
-void WaterTracers::compute_property_fluxes ()
-{
-  using PC = physics::Constants<Real>;
-
-  const auto& gn  = m_grid->name();
-  const int  kbot = m_num_levs - 1;
-  const Real deg2rad = PC::Pi/180;
-
-  const auto sfc_f    = m_sfc_f;
-  const auto sfc_ssq  = m_sfc_ssq;
-  const auto sfc_qv   = m_sfc_qv;
-  const auto sfc_evap = m_sfc_evap;
-  const auto T_mid    = get_field_in("T_mid", gn).get_view<const Real**>();
-
-  for (const auto& spec : m_specs) {
-    if (spec.type!=water_tracers::TracerType::Property) continue;
-
-    const auto q_p  = get_field_in(spec.name, gn).get_view<const Real**>();
-    const auto q_c  = get_field_in(spec.carrier, gn).get_view<const Real**>();
-    const auto f_c  = get_field_out(spec.carrier + "_surf_flux", gn).get_view<const Real*>();
-    const auto flux = get_field_out(spec.name + "_surf_flux", gn).get_view<Real*>();
-
-    // Column values of the source. src1d holds sst, lat, lon or the named
-    // field; x, y and z use lat and lon. Unused views stay empty.
-    const auto source = property_source(spec.source);
-    KT::sview<const Real*> src1d, lat, lon;
-    switch (source) {
-      case PropertySource::SST:   src1d = m_sfc_sst; break;
-      case PropertySource::Field: src1d = get_field_in(spec.field_name, gn).get_strided_view<const Real*>(); break;
-      case PropertySource::Lat:   src1d = m_grid->get_geometry_data("lat").get_strided_view<const Real*>(); break;
-      case PropertySource::Lon:   src1d = m_grid->get_geometry_data("lon").get_strided_view<const Real*>(); break;
-      case PropertySource::X:
-      case PropertySource::Y:
-      case PropertySource::Z:
-        lat = m_grid->get_geometry_data("lat").get_strided_view<const Real*>();
-        lon = m_grid->get_geometry_data("lon").get_strided_view<const Real*>();
-        break;
-      default: break;
-    }
-    const Real scale  = spec.scale;
-    const Real offset = spec.offset;
-
-    Kokkos::parallel_for("water_tracers_ocean_flux_" + spec.name, KT::RangePolicy(0, m_num_cols),
-                         KOKKOS_LAMBDA(const int icol) {
-      // P only matters where the ocean evaporates (property_ocean_flux), so
-      // it is only formed there: elsewhere the source may hold fill values.
-      Real p = 0;
-      if (sfc_f(icol)>0 and sfc_evap(icol)>0) {
-        Real value;
-        switch (source) {
-          case PropertySource::TBot:  value = T_mid(icol, kbot); break;
-          case PropertySource::RhSfc: value = sfc_ssq(icol)>0 ? sfc_qv(icol)/sfc_ssq(icol) : Real(0); break;
-          // Clamped, so round-off at the poles or at lon=0/360 cannot take P
-          // outside the range the registry checked.
-          case PropertySource::Lat:   value = Kokkos::fmin(Kokkos::fmax(src1d(icol), Real(-90)), Real(90)); break;
-          case PropertySource::Lon:   value = Kokkos::fmin(Kokkos::fmax(src1d(icol), Real(0)), Real(360)); break;
-          case PropertySource::X:     value = Kokkos::cos(lat(icol)*deg2rad)*Kokkos::cos(lon(icol)*deg2rad); break;
-          case PropertySource::Y:     value = Kokkos::cos(lat(icol)*deg2rad)*Kokkos::sin(lon(icol)*deg2rad); break;
-          case PropertySource::Z:     value = Kokkos::sin(lat(icol)*deg2rad); break;
-          default:                    value = src1d(icol);  // sst, field
-        }
-        p = scale*value + offset;
-        // Bounded sources were checked at init; this catches the others.
-        EKAT_KERNEL_ASSERT_MSG(p>=0,
-            "Error! water tracer property value scale*source + offset is negative (or NaN).\n");
-      }
-      flux(icol) = wt::property_ocean_flux(Pack1(sfc_f(icol)), Pack1(sfc_evap(icol)), Pack1(p),
-                                           Pack1(f_c(icol)), Pack1(q_p(icol, kbot)),
-                                           Pack1(q_c(icol, kbot)))[0];
     });
   }
 }
