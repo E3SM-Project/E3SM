@@ -7,6 +7,7 @@
 
 #include "Analysis.h"
 #include "Forcing.h"
+#include "Frazil.h"
 #include "IOStream.h"
 #include "OceanDriver.h"
 #include "OceanState.h"
@@ -90,6 +91,7 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
    OceanState *DefOceanState   = OceanState::getDefault();
    TimeStepper *DefTimeStepper = TimeStepper::getDefault();
    Forcing *DefForcing         = Forcing::getDefault();
+   Frazil *DefFrazil           = Frazil::getDefault();
    VertCoord *DefVertCoord     = VertCoord::getDefault();
    SfcCoupling *DefSfcCoupling = SfcCoupling::getDefault();
    Analysis *DefAnalysis       = Analysis::getDefault();
@@ -131,7 +133,8 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
       }
 
       // Update fields exported to the coupler
-      DefSfcCoupling->updateExportFields(DefOceanState, Tracers::getAll(0));
+      DefSfcCoupling->updateExportFields(DefOceanState, Tracers::getAll(0),
+                                         DefFrazil);
       // Compute analysis fields whose alarms are ringing
       DefAnalysis->computeAll();
       // Write any IOStreams with their alarms ringing

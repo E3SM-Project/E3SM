@@ -12,6 +12,7 @@
 
 #include "DataTypes.h"
 #include "Forcing.h"
+#include "Frazil.h"
 #include "GlobalConstants.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
@@ -118,7 +119,8 @@ class OcnToCplFields {
 
    // Accumulate one ocean timestep's contribution to the running averages
    void updateFields(const OceanState *State, const Array3DReal &TracerArray,
-                     const Array1DReal &ExtraEnergy, I4 NAccumSteps,
+                     const Array1DReal &ExtraEnergy, const Frazil *FrazilPtr,
+                     const Real CouplingTimeStepSeconds, I4 NAccumSteps,
                      I4 NCellsOwned, I4 NEdgesAll);
 
    // Copy device arrays into their host mirrors and do unit conversion.
@@ -184,6 +186,8 @@ class SfcCoupling {
 
    // Number of ocn timesteps acccumulated over the coupling interval
    I4 NAccumSteps;
+   // Coupling timestep in seconds
+   Real CouplingTimeStepSeconds;
 
    CouplingLayout Layout; ///< Coupling layout (MCT or MOAB)
 
@@ -270,7 +274,8 @@ class SfcCoupling {
 
    /// Update the export fields
    void updateExportFields(const OceanState *State,
-                           const Array3DReal &TracerArray);
+                           const Array3DReal &TracerArray,
+                           const Frazil *FrazilPtr);
 };
 
 } // end namespace OMEGA
