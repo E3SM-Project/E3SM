@@ -11,15 +11,15 @@ namespace e3sm::emulator::inference {
 
 bool InferenceBackend::infer(const double *inputs, double *outputs, int batch_size) {
   EMULATOR_INFER_REQUIRE(
-      config.input_channels > 0 && config.output_channels > 0,
+      config_.input_channels > 0 && config_.output_channels > 0,
       "The flat-array infer() needs input_channels and output_channels, got "
-          << config.input_channels << " and " << config.output_channels
+          << config_.input_channels << " and " << config_.output_channels
           << ".");
 
   TensorMap in;
-  in.wrap("input", inputs, {batch_size, config.input_channels});
+  in.wrap("input", inputs, {batch_size, config_.input_channels});
   TensorMap out;
-  out.wrap("output", outputs, {batch_size, config.output_channels});
+  out.wrap("output", outputs, {batch_size, config_.output_channels});
   return infer(in, out);
 }
 

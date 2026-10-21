@@ -174,7 +174,7 @@ bool LibTorchBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
     for (const auto &tensor : inputs) {
       shapes += " " + tensor.to_string();
     }
-    throw InferenceError("The TorchScript module '" + config.model_path +
+    throw InferenceError("The TorchScript module '" + config().model_path +
                          "' failed in forward() with inputs" + shapes + ":\n" +
                          e.what());
   }
