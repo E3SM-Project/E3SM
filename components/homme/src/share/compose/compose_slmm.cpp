@@ -352,7 +352,7 @@ void slmm_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   }
 }
 
-void slmm_init_plane (homme::Real Sx, homme::Real Sy, homme::Real Lx, homme::Real Ly) {
+void slmm_init_plane (double Sx, double Sy, double Lx, double Ly) {
   slmm_assert(homme::g_advecter);
   homme::g_advecter->init_plane(Sx, Sy, Lx, Ly);
 }
@@ -376,14 +376,24 @@ void slmm_get_mpi_pattern (homme::Int* sl_mpi) {
 }
 
 void slmm_init_local_mesh (
-  homme::Int ie, homme::Cartesian3D* neigh_corners, homme::Int nnc,
-  homme::Cartesian3D* p_inside, homme::Int)
+  homme::Int ie, const homme::FortranCartesian3D* neigh_corners, homme::Int nnc,
+  const homme::FortranCartesian3D* p_inside, homme::Int)
 {
   amb::dev_init_threads();
+  homme::FA3<homme::Real> corners("Fortran mesh corners", 3, 4, nnc);
+  for (homme::Int ci = 0; ci < nnc; ++ci)
+    for (homme::Int vi = 0; vi < 4; ++vi) {
+      const auto& p = neigh_corners[4*ci + vi];
+      corners(0,vi,ci) = p.x;
+      corners(1,vi,ci) = p.y;
+      corners(2,vi,ci) = p.z;
+    }
+  const homme::Real inside[3] = {
+    static_cast<homme::Real>(p_inside->x),
+    static_cast<homme::Real>(p_inside->y),
+    static_cast<homme::Real>(p_inside->z)};
   homme::g_advecter->init_local_mesh_if_needed(
-    ie - 1, homme::FA3<const homme::Real>(
-      reinterpret_cast<const homme::Real*>(neigh_corners), 3, 4, nnc),
-    reinterpret_cast<const homme::Real*>(p_inside));
+    ie - 1, corners, inside);
   amb::dev_fin_threads();
 }
 
@@ -394,10 +404,13 @@ void slmm_init_finalize () {
   amb::dev_fin_threads();
 }
 
-void slmm_check_ref2sphere (homme::Int ie, homme::Cartesian3D* p) {
+void slmm_check_ref2sphere (homme::Int ie, const homme::FortranCartesian3D* p) {
   amb::dev_init_threads();
-  homme::g_advecter->check_ref2sphere(
-    ie - 1, reinterpret_cast<const homme::Real*>(p));
+  const homme::Real point[3] = {
+    static_cast<homme::Real>(p->x),
+    static_cast<homme::Real>(p->y),
+    static_cast<homme::Real>(p->z)};
+  homme::g_advecter->check_ref2sphere(ie - 1, point);
   amb::dev_fin_threads();
 }
 

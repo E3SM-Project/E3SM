@@ -43,6 +43,9 @@ template <typename MT> using QExtremaConst = ko::Const<QExtrema<MT> >;
 
 struct Cartesian3D { Real x, y, z; };
 
+// Match coordinate_systems_mod::cartesian3D_t, independent of C++ precision.
+struct FortranCartesian3D { double x, y, z; };
+
 template <typename VT> COMPOSE_FORCEINLINE_FUNCTION
 typename VT::value_type& idx_qext (const VT& qe, int ie, int q, int g, int lev) {
 #ifdef COMPOSE_PORT
