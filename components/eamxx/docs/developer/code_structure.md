@@ -29,6 +29,7 @@
     │   │   ├── mam/
     │   │   ├── nudging/
     │   │   ├── p3/
+    │   │   ├── rayleigh_friction/
     │   │   ├── rrtmgp/
     │   │   ├── share/
     │   │   ├── shoc/
