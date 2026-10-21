@@ -19,8 +19,10 @@ between runs has to be stored somewhere else:
 ## What runs
 
 To start with, one test:
-`SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
-puts every active component through the coupler. It runs in these images:
+`SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
+puts every active component through the coupler. With no `_P` option, CIME gives this grid
+one node, which the image's machine defines as the container's cores: 4 ranks per component
+on a hosted runner. It runs in these images:
 
 | Image | Arch | Baselines |
 | --- | --- | --- |
@@ -46,7 +48,7 @@ docker run --rm -v "$PWD:/projects/e3sm/work/E3SM" \
   -v /path/to/inputdata:/projects/e3sm/data/inputdata \
   ghcr.io/e3sm-project/e3sm-image:gnu13-openmpi4 bash -lc '
     . /projects/e3sm/cime/enable.sh && cd /projects/e3sm/work/E3SM/cime/scripts &&
-    ./create_test SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS \
+    ./create_test SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS \
       --machine e3sm-container --compiler gnu --wait'
 ```
 

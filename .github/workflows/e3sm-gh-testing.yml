@@ -63,7 +63,7 @@ jobs:
       matrix:
         env: [gnu13-openmpi4, intel2024-openmpi4]
         arch: [x86_64, aarch64]
-        test: [SMS_Vmoab_P8_Ln5.ne4pg2_oQU480.WCYCL2010NS]
+        test: [SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS]
         exclude:
           - {env: intel2024-openmpi4, arch: aarch64}
         # Each image's compiler, for create_test, and whether it compares baselines. Intel's
@@ -145,9 +145,7 @@ jobs:
         run: docker pull "$IMAGE"
       # As the image's default user (uid 1000), with the image's own CIME machine, which
       # enable.sh opts into. The runner's own uid is 1001, so hand it what the test writes to,
-      # and take it back after for the caches and the log upload. --proc-pool: create_test
-      # will not start a run with more ranks than its pool (cores plus 25% by default), and the
-      # machine oversubscribes, so let 8-rank runs start on a 4-core runner too.
+      # and take it back after for the caches and the log upload.
       - name: Run the tests
         id: run-tests
         run: |
@@ -163,7 +161,7 @@ jobs:
             "$IMAGE" bash -lc '. /projects/e3sm/cime/enable.sh &&
               cd /projects/e3sm/work/E3SM/cime/scripts &&
               ./create_test $TESTS $CT_FLAGS --machine e3sm-container --compiler "$COMPILER" \
-                --wait --test-id gh --parallel-jobs "$(nproc)" --proc-pool "$(( $(nproc) > 8 ? $(nproc) : 8 ))"' || rc=$?
+                --wait --test-id gh --parallel-jobs "$(nproc)"' || rc=$?
           sudo chown -R "$(id -u):$(id -g)" E3SM inputdata baselines scratch
           if [ "$(find inputdata -type f | wc -l)" -gt "$(cat inputdata.count)" ]; then
             echo "new_inputdata=true" >> "$GITHUB_OUTPUT"
