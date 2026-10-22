@@ -5,7 +5,6 @@
 #include "share/physics/eamxx_trcmix.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
@@ -74,9 +73,6 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
     // Make sure only unique names are added
     if (not ekat::contains(m_gas_names,it)) {
       m_gas_names.push_back(it);
-      if (it=="o3") {
-        TraceGasesWorkaround::singleton().add_active_gas(it + "_volume_mix_ratio");
-      }
     }
   }
 
