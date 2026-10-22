@@ -63,8 +63,40 @@ public:
                                    const Field& tracers_gll,
                                    Field& pseudo_density_gll);
 
+  // Setup the remapper between the dyn (GLL) grid and the FV physics grid, with pgN x pgN
+  // physics cells per element. Must be called after Homme's init1 phase has completed.
+  void init_fv_phys (const int pgN);
+
+  // The N in pgN, or -1 if the FV physics grid is not in use
+  int get_fv_phys_pgN () const { return m_pgN; }
+
+  // Remap the Homme state at the current n0 time level to the FV physics grid.
+  // All the input fields are outputs of this method, and they live on the FV physics grid.
+  //  - ps, phis: (COL)
+  //  - T, omega, dp: (COL,LEV)
+  //  - uv: (COL,CMP=2,LEV)
+  //  - q: (COL,CMP,LEV), with one component per tracer
+  //  - strain3d_fv: (COL,CMP=6,LEV). Only used (and must be valid) if 3d turbulence is on.
+  // The method also needs the field shear_strain3d_components_dyn, if 3d turbulence is on.
+  void remap_dyn_to_fv_phys (const Field& ps, const Field& phis,
+                             const Field& T, const Field& omega,
+                             const Field& uv, const Field& q,
+                             const Field& dp, const Field& strain3d_fv = Field());
+
+  // Remap the tendency/state fields from the FV physics grid to the dyn grid, into Homme's
+  // forcing data structures, and DSS the result.
+  //  - FT: (COL,LEV), the temperature to use to compute T tendencies
+  //  - FM: (COL,CMP=2,LEV), the horiz winds to use to compute the momentum tendencies
+  //  - q: (COL,CMP,LEV), with one component per tracer
+  //  - Km, Kh: (COL,LEV), the eddy diffusivities. Only used if 3d turbulence is on.
+  void remap_fv_phys_to_dyn (const Field& FT, const Field& FM, const Field& q,
+                             const Field& Km = Field(), const Field& Kh = Field());
+
 private:
   HommeInstance () = default;
+
+  // The N in pgN. Negative if the FV physics grid is not in use.
+  int m_pgN = -1;
 
   // The fields on the dynamics grid
   std::map<std::string,Field> m_dyn_fields;
