@@ -27,7 +27,7 @@ TEST_CASE ("find_filename_in_rpointer") {
 
   std::string suffix = ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   // File naming: eamxx.{r|rh}.{stream_id}.{output_spec}.{date_spec}.nc (no case name for unit tests)
-  std::string foo_fname  = "eamxx.r.foo.INSTANT.nsteps_x3"    + suffix;
+  std::string foo_fname  = "eamxx.r.INSTANT.nsteps_x3"    + suffix;
   std::string bar_fname  = "eamxx.rh.bar.AVERAGE.ndays_x1"  + suffix;
   std::string bar2_fname = "eamxx.rh.bar.AVERAGE.nhours_x6" + suffix;
 

@@ -14,7 +14,7 @@ eamxx:
   p3:
     max_total_ni: 720.0e3
   nudging:
-    nudging_filenames_patterns: [./shoc_p3_source_data_nudged.INSTANT.nsteps_x*.nc]
+    nudging_filenames_patterns: [./EAMxx.eamxx.h.shoc_p3_source_data_nudged.INSTANT.nsteps_x*.nc]
     nudging_fields: ["T_mid", "qv"]
     nudging_timescale: 1000
     use_nudging_weights: true
