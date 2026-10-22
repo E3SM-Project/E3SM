@@ -81,6 +81,14 @@ jobs:
         id: run-tests
         run: |
           ./cime/scripts/create_test ${{ matrix.name }} ${{ env.flags }} --wait
+      - name: Print TestStatus.log
+        if: ${{ always() && steps.run-tests.outcome == 'failure' }}
+        run: |
+          for f in /tmp/${{ matrix.name }}*/TestStatus.log; do
+            echo "::group::$f"
+            cat "$f"
+            echo "::endgroup::"
+          done
       - name: Upload log files
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
