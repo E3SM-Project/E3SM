@@ -3,7 +3,7 @@
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/remap/abstract_remapper.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/io/eamxx_io_utils.hpp"
