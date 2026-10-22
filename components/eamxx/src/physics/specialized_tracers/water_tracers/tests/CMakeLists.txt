@@ -1,6 +1,6 @@
 include(ScreamUtils)
 
-# wtrc_ratio and bulk_ocean_flux, incl. FPE safety (run in the fpe build too).
+# tracer_ratio and bulk_ocean_flux, incl. FPE safety (run in the fpe build too).
 CreateUnitTest(water_tracers_functions
   SOURCES water_tracers_functions_tests.cpp
   LIBS water_tracers

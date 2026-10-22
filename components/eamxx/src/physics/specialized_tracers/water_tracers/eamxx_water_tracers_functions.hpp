@@ -21,9 +21,13 @@ namespace water_tracers {
  * Fluxes are upward positive [kg/m2/s]: the opposite sign of the coupler's evap.
  */
 
-// Minimum water amount for a stable ratio computation.
-// From water_tracers.F90 (David Noone): smaller makes the scheme more accurate.
-static constexpr Real wtrc_qmin = 1.e-22;
+// Minimum |qtot| below which tracer_ratio() treats the denominator as unreliable
+// and returns r_std instead of dividing. Guards the masked division against
+// 0/0 on dry cells in FPE-trapping builds; not tied to any specific Fortran
+// source (water_isotopes.F90::wiso_ratio uses a different, unmasked scheme
+// with a six-orders-larger qtiny=1e-16, and its own comment flags that value
+// as unreconciled with this one).
+static constexpr Real water_tracers_qmin = 1.e-22;
 
 // The coupler fills out-of-domain ocean states with spval = 1e30
 // (share/util/shr_flux_mod.F90); anything this large is not a physical value.
@@ -33,20 +37,19 @@ static constexpr Real ocean_state_fill_threshold = 1.e20;
 enum class OceanFlux { BulkProportional, BulkFormula };
 
 // -----------------------------------------------------------------------
-// Tracer ratio R = qtrc/qtot, or r_std where |qtot| < wtrc_qmin.
+// Tracer ratio R = qtrc/qtot, or r_std where |qtot| < water_tracers_qmin.
 //
-// Port of water_tracers.F90::wtrc_ratio (David Noone). The denominator is
-// replaced by 1 on the masked lanes BEFORE dividing, so a dry cell
-// (qtot = qtrc = 0) never forms 0/0.
+// The denominator is replaced by 1 on the masked lanes BEFORE dividing, so
+// a dry cell (qtot = qtrc = 0) never forms 0/0.
 // -----------------------------------------------------------------------
 template <typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT wtrc_ratio (const ScalarT& qtrc, const ScalarT& qtot,
-                    const typename ekat::ScalarTraits<ScalarT>::scalar_type r_std = 1)
+ScalarT tracer_ratio (const ScalarT& qtrc, const ScalarT& qtot,
+                      const typename ekat::ScalarTraits<ScalarT>::scalar_type r_std = 1)
 {
   using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
 
-  const auto tiny = ekat::abs(qtot) < RealT(wtrc_qmin);
+  const auto tiny = ekat::abs(qtot) < RealT(water_tracers_qmin);
 
   ScalarT denom = qtot;
   denom.set(tiny, RealT(1));
@@ -150,7 +153,7 @@ ScalarT land_ice_tracer_flux ()
 //   not valid ocean (f <= 0):  0
 //   E_ocn > 0, BulkProportional: r_ocn * E_ocn
 //   E_ocn > 0, BulkFormula:      bulk_ocean_flux(f, rho, u, r, s*r_ocn, q_i)
-//   E_ocn <= 0 (dew):            wtrc_ratio(q_i, q) * E_ocn
+//   E_ocn <= 0 (dew):            tracer_ratio(q_i, q) * E_ocn
 //
 // BulkFormula is the isotope formula with alpha = 1. Dew removes the tracer
 // at its bottom-level ratio to qv.
@@ -178,7 +181,7 @@ ScalarT generic_ocean_flux (const OceanFlux kind,
     }
   }
   if (dew.any()) {
-    flux.set(dew, wtrc_ratio(q_i, q)*e_ocn);
+    flux.set(dew, tracer_ratio(q_i, q)*e_ocn);
   }
   return flux;
 }

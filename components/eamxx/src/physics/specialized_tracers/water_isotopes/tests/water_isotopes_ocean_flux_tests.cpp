@@ -254,7 +254,7 @@ TEST_CASE("water_isotopes_ocean_flux") {
         // Dew removes the tracer at its own bottom-level ratio. Same
         // expression as the implementation, so equality is exact.
         const Real q_i = Real(0.9)*r_ocn*st.q;
-        const Real expected = water_tracers::wtrc_ratio(Pack1(q_i), Pack1(st.q))[0]*e_ocn;
+        const Real expected = water_tracers::tracer_ratio(Pack1(q_i), Pack1(st.q))[0]*e_ocn;
         REQUIRE(iso_flux(st, q_i, e_ocn, r_ocn, sp, iso_params) == expected);
       }
 

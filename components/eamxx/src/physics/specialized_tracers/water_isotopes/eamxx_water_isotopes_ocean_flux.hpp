@@ -16,7 +16,7 @@ namespace water_isotopes
  *
  *   f <= 0 (not a valid ocean point): F_i = 0
  *   E_ocn > 0 (evaporation):          F_i = bulk_ocean_flux(f, rho, u, r, s*R_ocn/alpha, q_i)
- *   E_ocn <= 0 (dew):                 F_i = wtrc_ratio(q_i, q) * E_ocn
+ *   E_ocn <= 0 (dew):                 F_i = water_tracers::tracer_ratio(q_i, q) * E_ocn
  *
  * alpha = R_liquid/R_vapor at the SST, so s*R_ocn/alpha is the isotopologue's
  * saturation specific humidity over the ocean (the delq term of iCAM's
@@ -58,7 +58,7 @@ ScalarT isotope_ocean_flux (
     flux.set(evap, water_tracers::bulk_ocean_flux(f, rho, u, r, s*r_ocn/alpha, q_i));
   }
   if (dew.any()) {
-    flux.set(dew, water_tracers::wtrc_ratio(q_i, q)*e_ocn);
+    flux.set(dew, water_tracers::tracer_ratio(q_i, q)*e_ocn);
   }
   return flux;
 }

@@ -48,7 +48,7 @@ TEST_CASE("generic_ocean_flux") {
     const Real q = 0.03, q_i = 0.012;  // q > s: dew
     const Real e = E(f0, q)[0];
     REQUIRE(e < 0);
-    const Real ref = (wt::wtrc_ratio(Pack1(q_i), Pack1(q))*e)[0];
+    const Real ref = (wt::tracer_ratio(Pack1(q_i), Pack1(q))*e)[0];
     REQUIRE(generic(OF::BulkProportional, 0.5, q, q_i)[0] == ref);
     REQUIRE(generic(OF::BulkFormula,      0.5, q, q_i)[0] == ref);
   }

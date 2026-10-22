@@ -32,29 +32,29 @@ struct FpeTrap {
   }
 };
 
-TEST_CASE("wtrc_ratio") {
+TEST_CASE("tracer_ratio") {
   SECTION("normal ratio") {
-    const Pack1 r = wt::wtrc_ratio(Pack1(2e-3), Pack1(4e-3));
+    const Pack1 r = wt::tracer_ratio(Pack1(2e-3), Pack1(4e-3));
     REQUIRE(r[0] == Real(2e-3)/Real(4e-3));
   }
   SECTION("tiny denominator returns r_std") {
-    REQUIRE(wt::wtrc_ratio(Pack1(1e-24), Pack1(1e-23))[0] == Real(1));
-    REQUIRE(wt::wtrc_ratio(Pack1(1e-24), Pack1(-1e-23))[0] == Real(1));
-    REQUIRE(wt::wtrc_ratio(Pack1(1e-24), Pack1(1e-23), Real(0.5))[0] == Real(0.5));
+    REQUIRE(wt::tracer_ratio(Pack1(1e-24), Pack1(1e-23))[0] == Real(1));
+    REQUIRE(wt::tracer_ratio(Pack1(1e-24), Pack1(-1e-23))[0] == Real(1));
+    REQUIRE(wt::tracer_ratio(Pack1(1e-24), Pack1(1e-23), Real(0.5))[0] == Real(0.5));
   }
   SECTION("dry cell is FPE-safe") {
     FpeTrap trap;
-    REQUIRE(wt::wtrc_ratio(Pack1(0), Pack1(0))[0] == Real(1));
-    REQUIRE(wt::wtrc_ratio(Pack1(0), Pack1(0), Real(0.25))[0] == Real(0.25));
+    REQUIRE(wt::tracer_ratio(Pack1(0), Pack1(0))[0] == Real(1));
+    REQUIRE(wt::tracer_ratio(Pack1(0), Pack1(0), Real(0.25))[0] == Real(0.25));
   }
   SECTION("mixed lanes") {
     FpeTrap trap;
     Pack4 qtrc, qtot;
     qtrc[0] = 1e-3; qtot[0] = 2e-3;   // normal
     qtrc[1] = 0;    qtot[1] = 0;      // dry: 0/0 if not masked
-    qtrc[2] = 5e-4; qtot[2] = 1e-23;  // below wtrc_qmin
+    qtrc[2] = 5e-4; qtot[2] = 1e-23;  // below water_tracers_qmin
     qtrc[3] = 3e-3; qtot[3] = 3e-3;   // ratio 1
-    const Pack4 r = wt::wtrc_ratio(qtrc, qtot, Real(0.7));
+    const Pack4 r = wt::tracer_ratio(qtrc, qtot, Real(0.7));
     REQUIRE(r[0] == Real(1e-3)/Real(2e-3));
     REQUIRE(r[1] == Real(0.7));
     REQUIRE(r[2] == Real(0.7));
@@ -87,8 +87,8 @@ TEST_CASE("functions_on_device") {
   // Lane 0: normal; lane 1: dry cell; lane 2: E_ocn identity
   KT::view_1d<Real> out("out", 3);
   Kokkos::parallel_for(KT::RangePolicy(0, 1), KOKKOS_LAMBDA(const int) {
-    out(0) = wt::wtrc_ratio(Pack1(1e-3), Pack1(4e-3))[0];
-    out(1) = wt::wtrc_ratio(Pack1(0), Pack1(0), Real(0.5))[0];
+    out(0) = wt::tracer_ratio(Pack1(1e-3), Pack1(4e-3))[0];
+    out(1) = wt::tracer_ratio(Pack1(0), Pack1(0), Real(0.5))[0];
     const Pack1 e  = wt::bulk_ocean_flux(Pack1(1), Pack1(1.2), Pack1(0.3), Pack1(1.5e-3), Pack1(0.02), Pack1(0.01));
     const Pack1 e1 = wt::bulk_ocean_flux(Pack1(1), Pack1(1.2), Pack1(0.3), Pack1(1.5e-3), Pack1(Real(0.02)*Real(1)), Pack1(0.01));
     out(2) = (e1[0] == e[0]) ? 1 : 0;
