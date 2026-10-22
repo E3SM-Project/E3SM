@@ -33,6 +33,20 @@ run (const std::shared_ptr<FieldManager>& fm,
      const util::TimeStamp& t0,
      const RunType run_type)
 {
+  init_all_grids(fm,t0,run_type);
+
+  if (run_type==RunType::Restart) {
+    load_restart_extra_data();
+  } else {
+    finalize_startup(fm,t0);
+  }
+}
+
+void ModelInit::
+init_all_grids (const std::shared_ptr<FieldManager>& fm,
+                const util::TimeStamp& t0,
+                const RunType run_type)
+{
   const bool restart = run_type==RunType::Restart;
 
   if (not restart) {
@@ -50,12 +64,12 @@ run (const std::shared_ptr<FieldManager>& fm,
       init_startup_fields(fm,gn,t0);
     }
   }
+}
 
-  if (restart) {
-    load_restart_extra_data();
-    return;
-  }
-
+void ModelInit::
+finalize_startup (const std::shared_ptr<FieldManager>& fm,
+                  const util::TimeStamp& t0)
+{
   if (m_iop_data_manager) {
     // Load IOP data file data for initial time stamp
     m_iop_data_manager->read_iop_file_data(t0);
@@ -211,7 +225,7 @@ load_restart_extra_data () const
 std::vector<Field> ModelInit::
 get_fields (const std::shared_ptr<FieldManager>& fm,
             const std::string& group_name,
-            const std::string& grid_name) const
+            const std::string& grid_name)
 {
   std::vector<Field> fields;
   auto group = fm->get_field_group(group_name,grid_name);
