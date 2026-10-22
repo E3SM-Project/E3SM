@@ -67,8 +67,8 @@ protected:
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  // Sets the scream-allocated views inside the Homme c++ structures
-  void init_homme_views ();
+  // Log some info about Homme's setup
+  void print_homme_info ();
 
   // Propagates initial conditions to homme
   void initialize_homme_state ();
