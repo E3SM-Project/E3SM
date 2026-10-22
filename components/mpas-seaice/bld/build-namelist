@@ -424,6 +424,7 @@ my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 my $wave_spec              = "$xmlvars{'WAV_SPEC'}";
 my $wave_comp              = "$xmlvars{'COMP_WAV'}";
+my $COMP_OCN               = "$xmlvars{'COMP_OCN'}";
 
 my $SSTICE_GRID_FILENAME;
 my $SSTICE_DATA_FILENAME;
@@ -594,7 +595,11 @@ add_default($nl, 'config_forcing_precipitation_units');
 add_default($nl, 'config_forcing_sst_type');
 add_default($nl, 'config_forcing_bgc_type');
 add_default($nl, 'config_update_ocean_fluxes');
-add_default($nl, 'config_frazil_coupling_type');
+if ($COMP_OCN eq 'omega') {
+   add_default($nl, 'config_frazil_coupling_type', 'val'=>"'omega-fluxes'");
+} else {
+   add_default($nl, 'config_frazil_coupling_type');
+}
 add_default($nl, 'config_include_pond_freshwater_feedback');
 
 ###########################
