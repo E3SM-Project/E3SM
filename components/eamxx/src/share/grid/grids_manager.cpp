@@ -1,4 +1,6 @@
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
+
+#include <ekat_std_utils.hpp>
 
 namespace scream
 {

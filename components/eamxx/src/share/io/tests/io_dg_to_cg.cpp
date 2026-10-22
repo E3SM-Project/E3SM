@@ -6,7 +6,7 @@
 #include "share/data_managers/field_manager.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
 
