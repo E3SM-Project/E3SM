@@ -16,6 +16,9 @@
 namespace scream
 {
 
+// Forward declaration: ModelInit lives in the data_managers library, which depends on this one.
+class ModelInit;
+
 class GridsManager
 {
 public:
@@ -24,6 +27,7 @@ public:
   using grid_repo_type         = std::map<std::string, grid_ptr_type>;
   using nonconstgrid_ptr_type  = std::shared_ptr<grid_type>;
   using nonconstgrid_repo_type = std::map<std::string, nonconstgrid_ptr_type>;
+  using model_init_ptr_type    = std::shared_ptr<ModelInit>;
 
   GridsManager () = default;
   virtual ~GridsManager () = default;
@@ -38,6 +42,13 @@ public:
 
   virtual void build_grids () = 0;
 
+  // Create a ModelInit object specific to this grids manager, if its grids need one (e.g., because
+  // they come with a dynamics package that must be initialized together with the fields).
+  // Returns nullptr if the generic ModelInit is enough (the default).
+  // NOTE: the grids manager cannot create a plain ModelInit itself, since ModelInit depends on
+  //       the grid library, so the caller must handle the nullptr case.
+  model_init_ptr_type create_model_init (const ekat::ParameterList& params) const;
+
   const grid_repo_type& get_repo () const { return m_grids; }
 
   std::set<std::string> get_grid_names () const;
@@ -51,6 +62,10 @@ protected:
   void add_nonconst_grid (nonconstgrid_ptr_type grid);
   void add_grid (grid_ptr_type grid);
   void alias_grid (const std::string& grid_name, const std::string& grid_alias);
+
+  // Not pure: most grids managers need nothing special
+  virtual model_init_ptr_type
+  do_create_model_init (const ekat::ParameterList& params) const;
 
 private:
 
