@@ -55,7 +55,7 @@ initial_conditions:
       eff_radius_qi: 0.0
       qv: 0.0
       co2: 0.0
-      o3: 0.0
+      o3_volume_mix_ratio: 0.0
       n2o: 0.0
       co: 0.0
       ch4: 0.0
