@@ -149,7 +149,7 @@ TEST_CASE("dyn_grid_io")
   output.finalize();
 
   // Next, let's load all fields from file directly into the dyn grid fm
-  std::string filename = "dyn_grid_io.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  std::string filename = "eamxx.h.dyn_grid_io.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
   ekat::ParameterList in_params;
