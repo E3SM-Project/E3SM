@@ -4,6 +4,8 @@
 #include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/remap/identity_remapper.hpp"
+#include "share/remap/dg_to_cg_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -112,8 +114,6 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     m_transpose = params.get<bool>("transpose");
   }
 
-  auto gm = field_mgr->get_grids_manager();
-
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type    = str2avg(avg_type);
@@ -176,7 +176,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // Note: We currently support three remappers
   //   - vertical remapping from file
   //   - horizontal remapping from file
-  //   - online remapping which is setup using the create_remapper function
+  //   - online remapping to one of the aux grids of the fm grid (e.g., Dyn->PhysGLL)
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
   if (change_data_layout) {
@@ -272,9 +272,18 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       }
       m_horiz_remapper = hr;
     } else {
-      // Construct a generic remapper (likely, Dyn->PhysicsGLL)
+      // Construct a remapper to the aux grid (likely, Dyn->PhysicsGLL)
       grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
-      m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
+      if (grid_after_hr->name()==grid_after_vr->name()) {
+        m_horiz_remapper = std::make_shared<IdentityRemapper>(grid_after_vr);
+      } else {
+        EKAT_REQUIRE_MSG (grid_after_vr->type()==GridType::SE and grid_after_hr->type()==GridType::Point,
+            "Error! Online remapping to an aux grid is only supported from a SE grid to a Point grid.\n"
+            " - grid name: " + grid_after_vr->name() + "\n"
+            " - aux grid name: " + grid_after_hr->name() + "\n"
+            " - output_data_layout: " + output_data_layout + "\n");
+        m_horiz_remapper = std::make_shared<DGToCGRemapper>(grid_after_vr,grid_after_hr);
+      }
     }
     m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
     if (params.isParameter("enable_fine_grain_timers")) {

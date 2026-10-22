@@ -63,7 +63,6 @@ class OutputManager
 {
 public:
   using fm_type = FieldManager;
-  using gm_type = GridsManager;
   using globals_map_t = std::map<std::string,std::shared_ptr<std::any>>;
 
   // Constructor(s) & Destructor
