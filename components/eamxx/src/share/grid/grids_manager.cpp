@@ -42,6 +42,20 @@ has_grid (const std::string& grid_name) const
   return false;
 }
 
+auto GridsManager::
+create_model_init (const ekat::ParameterList& params) const
+ -> model_init_ptr_type
+{
+  return do_create_model_init(params);
+}
+
+auto GridsManager::
+do_create_model_init (const ekat::ParameterList& /* params */) const
+ -> model_init_ptr_type
+{
+  return nullptr;
+}
+
 void GridsManager::
 add_nonconst_grid (nonconstgrid_ptr_type grid)
 {
