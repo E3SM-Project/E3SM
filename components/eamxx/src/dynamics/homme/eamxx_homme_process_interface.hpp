@@ -4,6 +4,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/remap/abstract_remapper.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "dynamics/homme/homme_instance.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_pack.hpp>
@@ -77,9 +78,6 @@ protected:
   // Updates p_mid
   void update_pressure (const std::shared_ptr<const AbstractGrid>& grid);
 
-  // Copy initial states from n0 timelevel to other timelevels
-  void copy_dyn_states_to_all_timelevels ();
-
   void initialize_impl (const RunType run_type);
 
   void compute_horizontal_derivs_of_car_velocity ();
@@ -141,6 +139,13 @@ protected:
 
   // Some helper fields.
   std::map<std::string,Field>  m_helper_fields;
+
+  // The handle to Homme's data. The dynamics-grid helper fields that Homme's
+  // structures alias are shared with it (see share_dyn_fields_with_instance).
+  std::shared_ptr<HommeInstance> m_instance;
+
+  // Share (some of) the dynamics-grid helper fields with the HommeInstance
+  void share_dyn_fields_with_instance (const std::vector<std::string>& names);
 
   // Remapper for inputs and outputs, plus a special one for initial
   // conditions. These are used when the physics grid is the continuous GLL
