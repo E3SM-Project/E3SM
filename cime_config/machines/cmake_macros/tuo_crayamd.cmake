@@ -9,6 +9,13 @@ set(SCC  "${MPICC}")
 set(SCXX "${MPICXX}")
 set(SFC  "${MPIFC}")
 
+if (compile_threaded)
+  string(APPEND CMAKE_C_FLAGS " -fopenmp")
+  string(APPEND CMAKE_Fortran_FLAGS " -fopenmp")
+  string(APPEND CMAKE_CXX_FLAGS " -fopenmp")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
+endif()
+
 if (COMP_NAME STREQUAL gptl)
 	string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
@@ -29,9 +36,11 @@ string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g")
 
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
+# Match the more conservative Cray release settings already used on Frontier
+# to reduce optimizer-induced restart and history differences.
+string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
 
 if (COMP_NAME STREQUAL cpl)
 	# auto-detection not working, tries to use AMD variant, we need Cray variant

@@ -38,9 +38,11 @@ string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g")
 string(APPEND CMAKE_HIP_FLAGS_DEBUG " -O0 -g")
 
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
+# Match the more conservative Cray release settings already used on Frontier
+# to reduce optimizer-induced restart and history differences.
+string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
 string(APPEND CMAKE_HIP_FLAGS_RELEASE " -O2")
 
 # cray fortran outputs uppercase mod name, forces lowercase

@@ -29,9 +29,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="dane">
+    <mach name="dane|tuo">
       <pes compset=".+DATM.+SLND.+MPASSI.+MPASO.+DROF.+MALI.+SWAV" pesize="any">
-        <comment>mpas-ocean+dane: MPASO+MALI uses 64 tasks (graph part.64 available)</comment>
+        <comment>mpas-ocean+dane/tuo: MPASO+MALI uses 64 tasks (graph part.64 available)</comment>
         <ntasks>
           <ntasks_atm>64</ntasks_atm>
           <ntasks_lnd>64</ntasks_lnd>
