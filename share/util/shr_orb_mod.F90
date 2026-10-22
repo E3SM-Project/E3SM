@@ -712,7 +712,8 @@ CONTAINS
 
   !===============================================================================
 
-  SUBROUTINE shr_orb_decl(calday ,eccen ,mvelpp ,lambm0 ,obliqr ,delta ,eccf)
+   SUBROUTINE shr_orb_decl(calday ,eccen ,mvelpp ,lambm0 ,obliqr ,delta ,eccf, &
+       days_per_year)
 
     !-------------------------------------------------------------------------------
     !
@@ -736,10 +737,11 @@ CONTAINS
     ! of perihelion plus pi (radians)
     real   (SHR_KIND_R8),intent(out) :: delta  ! Solar declination angle in rad
     real   (SHR_KIND_R8),intent(out) :: eccf   ! Earth-sun distance factor (ie. (1/r)**2)
+      real   (SHR_KIND_R8),intent(in),optional :: days_per_year
 
     !---------------------------Local variables-----------------------------
-    real   (SHR_KIND_R8),parameter :: dayspy = 365.0_SHR_KIND_R8  ! days per year
-    real   (SHR_KIND_R8),parameter :: ve     = 80.5_SHR_KIND_R8   ! Calday of vernal equinox
+      real   (SHR_KIND_R8) :: dayspy  ! days per year
+      real   (SHR_KIND_R8) :: ve      ! Calday of vernal equinox
     ! assumes Jan 1 = calday 1
 
     real   (SHR_KIND_R8) ::   lambm  ! Lambda m, mean long of perihelion (rad)
@@ -765,7 +767,11 @@ CONTAINS
     ! days past or before (a negative increment) the vernal equinox divided by
     ! the days in a model year times the 2*pi radians in a complete orbit.
 
-    lambm = lambm0 + (calday - ve)*2._SHR_KIND_R8*pi/dayspy
+      dayspy = 365.0_SHR_KIND_R8
+      if (present(days_per_year)) dayspy = days_per_year
+      ve = 80.5_SHR_KIND_R8 + (dayspy - 365.0_SHR_KIND_R8)
+
+      lambm = lambm0 + (calday - ve)*2._SHR_KIND_R8*pi/dayspy
     lmm   = lambm  - mvelpp
 
     ! The earths true longitude, in radians, is then found from
