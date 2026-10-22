@@ -217,7 +217,9 @@ jobs:
             exit 0
           fi
           awk -v k="$NEW_KEY" '$2 != k' <<< "$entries" | while read -r id key; do
-            gh cache delete -R "$GITHUB_REPOSITORY" "$id" && echo "deleted $key"
+            # Another job of the run may have deleted it first
+            gh cache delete -R "$GITHUB_REPOSITORY" "$id" && echo "deleted $key" ||
+              echo "could not delete $key (another job may already have)"
           done
       - name: Upload logs
         if: ${{ always() }}
