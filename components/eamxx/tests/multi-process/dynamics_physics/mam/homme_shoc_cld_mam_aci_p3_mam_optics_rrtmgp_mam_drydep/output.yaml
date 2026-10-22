@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_mam_aci_p3_mam_optics_rrtmgp_mam_drydep
+stream_id: homme_shoc_cld_mam_aci_p3_mam_optics_rrtmgp_mam_drydep
 averaging_type: instant
 fields:
   physics_gll:
