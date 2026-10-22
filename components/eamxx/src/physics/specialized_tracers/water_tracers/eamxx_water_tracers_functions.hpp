@@ -33,7 +33,7 @@ static constexpr Real water_tracers_qmin = 1.e-22;
 // (share/util/shr_flux_mod.F90); anything this large is not a physical value.
 static constexpr Real ocean_state_fill_threshold = 1.e20;
 
-// How a generic tracer's evaporation flux is formed (see generic_ocean_flux).
+// How a tracer's evaporation flux is formed (see ocean_flux).
 enum class OceanFlux { BulkProportional, BulkFormula };
 
 // -----------------------------------------------------------------------
@@ -148,28 +148,48 @@ ScalarT land_ice_tracer_flux ()
 }
 
 // -----------------------------------------------------------------------
-// Ocean flux of a generic tracer with ocean ratio r_ocn:
-//
-//   not valid ocean (f <= 0):  0
-//   E_ocn > 0, BulkProportional: r_ocn * E_ocn
-//   E_ocn > 0, BulkFormula:      bulk_ocean_flux(f, rho, u, r, s*r_ocn, q_i)
-//   E_ocn <= 0 (dew):            tracer_ratio(q_i, q) * E_ocn
-//
-// BulkFormula is the isotope formula with alpha = 1. Dew removes the tracer
-// at its bottom-level ratio to qv.
+// True where f marks a valid ocean point and e_ocn is evaporation (not dew).
+// Factored out so a caller that must compute something only on evaporating
+// lanes (e.g. an isotope's temperature-dependent fractionation factor) can
+// build the same mask ocean_flux uses internally, without a second copy of
+// the boolean expression.
 // -----------------------------------------------------------------------
 template <typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT generic_ocean_flux (const OceanFlux kind,
-                            const typename ekat::ScalarTraits<ScalarT>::scalar_type r_ocn,
-                            const ScalarT& f, const ScalarT& rho, const ScalarT& u,
-                            const ScalarT& r, const ScalarT& s, const ScalarT& q,
-                            const ScalarT& q_i, const ScalarT& e_ocn)
+ekat::Mask<ScalarT::n> is_evaporating (const ScalarT& f, const ScalarT& e_ocn)
+{
+  using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
+  return f > RealT(0) && e_ocn > RealT(0);
+}
+
+// -----------------------------------------------------------------------
+// Ocean flux of a tracer with ocean ratio r_ocn and equilibrium fractionation
+// factor alpha (default 1, i.e. no fractionation):
+//
+//   not valid ocean (f <= 0):  0
+//   E_ocn > 0, BulkProportional: r_ocn * E_ocn
+//   E_ocn > 0, BulkFormula:      bulk_ocean_flux(f, rho, u, r, s*r_ocn/alpha, q_i)
+//   E_ocn <= 0 (dew):            tracer_ratio(q_i, q) * E_ocn
+//
+// alpha is used only in the BulkFormula evap branch; BulkProportional and dew
+// are unaffected by it, so a caller that omits alpha (every generic tracer,
+// and any isotope species or build where alpha == 1, e.g. H216O) gets exactly
+// today's BulkFormula result bit-for-bit. Dew removes the tracer at its
+// bottom-level ratio to qv.
+// -----------------------------------------------------------------------
+template <typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT ocean_flux (const OceanFlux kind,
+                    const typename ekat::ScalarTraits<ScalarT>::scalar_type r_ocn,
+                    const ScalarT& f, const ScalarT& rho, const ScalarT& u,
+                    const ScalarT& r, const ScalarT& s, const ScalarT& q,
+                    const ScalarT& q_i, const ScalarT& e_ocn,
+                    const ScalarT& alpha = ScalarT(1))
 {
   using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
 
   const auto ocean = f > RealT(0);
-  const auto evap  = ocean && e_ocn > RealT(0);
+  const auto evap  = is_evaporating(f, e_ocn);
   const auto dew   = ocean && !(e_ocn > RealT(0));
 
   ScalarT flux(0);
@@ -177,7 +197,7 @@ ScalarT generic_ocean_flux (const OceanFlux kind,
     if (kind == OceanFlux::BulkProportional) {
       flux.set(evap, r_ocn*e_ocn);
     } else {
-      flux.set(evap, bulk_ocean_flux(f, rho, u, r, s*r_ocn, q_i));
+      flux.set(evap, bulk_ocean_flux(f, rho, u, r, s*r_ocn/alpha, q_i));
     }
   }
   if (dew.any()) {

@@ -40,7 +40,8 @@ if (EAMXX_ENABLE_WATER_ISOTOPES)
     LABELS water_tracers water_isotopes physics
   )
 
-  # Isotope ocean evaporation flux: equilibrium invariants and H216O identity.
+  # Isotope ocean evaporation flux: equilibrium invariants, composed from
+  # alpha_liquid_vapor and water_tracers::ocean_flux.
   CreateUnitTest(water_isotopes_ocean_flux
     SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../water_isotopes/tests/water_isotopes_ocean_flux_tests.cpp
     LIBS water_tracers

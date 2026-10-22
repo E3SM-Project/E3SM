@@ -1,6 +1,6 @@
 #include "eamxx_water_tracers_process_interface.hpp"
 #include "eamxx_water_tracers_functions.hpp"
-#include "../water_isotopes/eamxx_water_isotopes_ocean_flux.hpp"
+#include "../water_isotopes/eamxx_water_isotopes_fractionation.hpp"
 
 #include "share/physics/eamxx_common_physics_functions.hpp"
 
@@ -241,7 +241,7 @@ void WaterTracers::compute_generic_fluxes ()
 
     Kokkos::parallel_for("water_tracers_ocean_flux_" + spec.name, KT::RangePolicy(0, m_num_cols),
                          KOKKOS_LAMBDA(const int icol) {
-      const Pack1 f_i = wt::generic_ocean_flux(kind, r_ocn,
+      const Pack1 f_i = wt::ocean_flux(kind, r_ocn,
           Pack1(sfc_f(icol)), Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)), Pack1(sfc_re(icol)),
           Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)), Pack1(q_i(icol, kbot)), Pack1(sfc_evap(icol)));
       flux(icol) = (f_i + wt::land_ice_tracer_flux<Pack1>())[0];
@@ -279,11 +279,14 @@ void WaterTracers::compute_isotope_fluxes ()
     Kokkos::parallel_for("water_isotopes_ocean_flux_" + iso.name,
                          KT::RangePolicy(0, m_num_cols),
                          KOKKOS_LAMBDA(const int icol) {
-      flux(icol) = water_isotopes::isotope_ocean_flux(
-          Pack1(sfc_f(icol)), Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)),
-          Pack1(sfc_re(icol)), Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)),
-          Pack1(q_i(icol, ilev_bot)), Pack1(sfc_evap(icol)), Pack1(sfc_sst(icol)),
-          r_ocn, species, iso_params)[0];
+      const Pack1 f(sfc_f(icol)), e(sfc_evap(icol));
+      const auto evap = wt::is_evaporating(f, e);
+      const Pack1 alpha = water_isotopes::WaterIsotopeFractionation::alpha_liquid_vapor(
+          Pack1(sfc_sst(icol)), species, water_isotopes::CondensedOverVapor, iso_params, evap);
+      flux(icol) = wt::ocean_flux(wt::OceanFlux::BulkFormula, r_ocn,
+          f, Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)), Pack1(sfc_re(icol)),
+          Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)), Pack1(q_i(icol, ilev_bot)), e,
+          alpha)[0];
     });
   }
 }

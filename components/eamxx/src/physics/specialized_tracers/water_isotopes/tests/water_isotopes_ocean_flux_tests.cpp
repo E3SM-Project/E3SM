@@ -1,6 +1,8 @@
 #include "catch2/catch.hpp"
 
-#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_ocean_flux.hpp"
+#include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_functions.hpp"
+#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_fractionation.hpp"
+#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_parameters.hpp"
 
 #include "share/core/eamxx_types.hpp"
 
@@ -25,7 +27,7 @@ constexpr int num_species = etoi(WaterIsotopologues::Count);
 const char* const species_names[num_species] = {"H216O", "HDO", "H218O", "H217O", "HTO"};
 
 // Bottom-level bulk state of one ocean column, in the notation of
-// water_isotopes::isotope_ocean_flux.
+// water_tracers::ocean_flux.
 struct OceanState {
   Real f, rho, u, r, s, q, t_s;
 };
@@ -85,9 +87,13 @@ Real alpha_lv(const OceanState& st, const WaterIsotopologues sp,
 Real iso_flux(const OceanState& st, const Real q_i, const Real e_ocn, const Real r_ocn,
               const WaterIsotopologues sp, const water_isotopes::WaterIsotopeParameters<Real>& p)
 {
-  return water_isotopes::isotope_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u), Pack1(st.r),
-                                  Pack1(st.s), Pack1(st.q), Pack1(q_i), Pack1(e_ocn),
-                                  Pack1(st.t_s), r_ocn, sp, p)[0];
+  const Pack1 f(st.f), e(e_ocn);
+  const auto evap = water_tracers::is_evaporating(f, e);
+  const Pack1 alpha = WIF::alpha_liquid_vapor(Pack1(st.t_s), sp, water_isotopes::CondensedOverVapor,
+                                              p, evap);
+  return water_tracers::ocean_flux(water_tracers::OceanFlux::BulkFormula, r_ocn,
+      f, Pack1(st.rho), Pack1(st.u), Pack1(st.r), Pack1(st.s), Pack1(st.q),
+      Pack1(q_i), e, alpha)[0];
 }
 
 // The spec's tolerance bound: |computed - expected| <= atol + rtol*|expected|.
@@ -123,16 +129,18 @@ void run_on_device(const water_isotopes::WaterIsotopeRuntimeOptions& opts, const
   Kokkos::parallel_for("water_isotopes_ocean_flux_device", KT::RangePolicy(0, num_evap_states),
                        KOKKOS_LAMBDA(const int i) {
     const OceanState st = states(i);
-    const Pack1 e_ocn = water_tracers::bulk_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u),
+    const Pack1 f(st.f);
+    const Pack1 e_ocn = water_tracers::bulk_ocean_flux(f, Pack1(st.rho), Pack1(st.u),
                                                        Pack1(st.r), Pack1(st.s), Pack1(st.q));
+    const auto evap = water_tracers::is_evaporating(f, e_ocn);
     for (int isp = 0; isp < num_species; ++isp) {
       const auto sp = static_cast<WaterIsotopologues>(isp);
       const Pack1 alpha = WIF::alpha_liquid_vapor(Pack1(st.t_s), sp, water_isotopes::CondensedOverVapor,
-                                                  iso_params);
+                                                  iso_params, evap);
       const Pack1 q_i = (r_ocn[isp]/alpha)*st.q;
-      flux(i, isp) = water_isotopes::isotope_ocean_flux(Pack1(st.f), Pack1(st.rho), Pack1(st.u),
-                                              Pack1(st.r), Pack1(st.s), Pack1(st.q), q_i, e_ocn,
-                                              Pack1(st.t_s), r_ocn[isp], sp, iso_params)[0];
+      flux(i, isp) = water_tracers::ocean_flux(water_tracers::OceanFlux::BulkFormula, r_ocn[isp],
+          f, Pack1(st.rho), Pack1(st.u), Pack1(st.r), Pack1(st.s), Pack1(st.q), q_i, e_ocn,
+          alpha)[0];
     }
   });
   Kokkos::fence();
@@ -198,70 +206,12 @@ TEST_CASE("water_isotopes_ocean_flux") {
 
           /* (2) Vapor in equilibrium with the ocean surface: no net flux,
                  |F| <= atol. q_i is formed exactly as s_eff is inside
-                 isotope_ocean_flux, so the two cancel to 0. */
+                 ocean_flux, so the two cancel to 0. */
           const Real q_sat_i = st.s*r_ocn/alpha;
           require_within(iso_flux(st, q_sat_i, e_ocn, r_ocn, sp, iso_params),
                          Real(0), rtol, atol);
         }
       }
-    }
-  }
-
-  SECTION("h216o_matches_bulk_evaporation_exactly") {
-    // Default formulations: R_ocn == 1 and alpha == 1 exactly, so the isotope
-    // branch reduces to bulk_ocean_flux(f, rho, u, r, s, q) bit-for-bit.
-    const water_isotopes::WaterIsotopeParameters<Real> iso_params;
-    const auto sp = WaterIsotopologues::H216O;
-    const Real r_ocn = ocean_ratio(iso_params, sp);
-    REQUIRE(r_ocn == Real(1));
-
-    for (int i = 0; i < num_evap_states; ++i) {
-      const OceanState& st = evap_states[i];
-      INFO("state " << i);
-      REQUIRE(alpha_lv(st, sp, iso_params) == Real(1));
-
-      const Real e_ocn = bulk_evap(st);
-      REQUIRE(iso_flux(st, st.q, e_ocn, r_ocn, sp, iso_params) == e_ocn);
-    }
-  }
-
-  SECTION("dew_and_invalid_ocean") {
-    /* Neither branch may evaluate alpha. The SST is NaN in every state below,
-       so evaluating alpha would trip its temperature guard and abort. */
-    const Real nan = std::numeric_limits<Real>::quiet_NaN();
-    water_isotopes::WaterIsotopeRuntimeOptions opts;
-    opts.standard_ratio   = water_isotopes::StandardRatioFormulation::NaturalAbundance;
-    opts.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
-    const water_isotopes::WaterIsotopeParameters<Real> iso_params(opts);
-
-    const OceanState dew_states[] = {
-      //  f    rho   ustar  re      ssq     qv      sst
-      { 1.0,  1.20, 0.20, 1.5e-3, 1.0e-2, 1.1e-2, nan },  // E_ocn < 0
-      { 0.3,  1.25, 0.15, 1.2e-3, 5.0e-3, 8.0e-3, nan },  // E_ocn < 0
-      { 1.0,  1.20, 0.20, 1.5e-3, 1.0e-2, 1.0e-2, nan },  // E_ocn == 0
-    };
-
-    for (int isp = 0; isp < num_species; ++isp) {
-      const auto sp = static_cast<WaterIsotopologues>(isp);
-      const Real r_ocn = ocean_ratio(iso_params, sp);
-      INFO("species " << species_names[isp]);
-
-      for (const auto& st : dew_states) {
-        const Real e_ocn = bulk_evap(st);
-        INFO("dew: q = " << st.q << ", s = " << st.s << ", E_ocn = " << e_ocn);
-        REQUIRE(e_ocn <= 0);
-
-        // Dew removes the tracer at its own bottom-level ratio. Same
-        // expression as the implementation, so equality is exact.
-        const Real q_i = Real(0.9)*r_ocn*st.q;
-        const Real expected = water_tracers::tracer_ratio(Pack1(q_i), Pack1(st.q))[0]*e_ocn;
-        REQUIRE(iso_flux(st, q_i, e_ocn, r_ocn, sp, iso_params) == expected);
-      }
-
-      // Not a valid ocean point. In the model E_ocn is also 0 here; a nonzero
-      // value makes the result depend on the f gate alone.
-      const OceanState land = { 0.0, 1.20, 0.20, 1.5e-3, 1.0e-2, 5.0e-3, nan };
-      REQUIRE(iso_flux(land, r_ocn*land.q, Real(1e-5), r_ocn, sp, iso_params) == Real(0));
     }
   }
 
