@@ -70,12 +70,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectProjectWinds : public UnitWrap::UnitT
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_convect_project_winds_f(d);
-      }
-      else {
-        gw_convect_project_winds(d);
-      }
+      gw_convect_project_winds(d);
     }
 
     // Verify BFB results, all data should be in C layout

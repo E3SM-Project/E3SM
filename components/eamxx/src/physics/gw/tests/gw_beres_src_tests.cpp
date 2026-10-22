@@ -76,12 +76,7 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_beres_src_f(d);
-      }
-      else {
-        gw_beres_src(d);
-      }
+      gw_beres_src(d);
     }
 
     // Verify BFB results, all data should be in C layout
