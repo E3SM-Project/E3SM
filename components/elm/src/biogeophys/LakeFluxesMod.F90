@@ -139,6 +139,8 @@ contains
     real(r8) :: qflx_evap_cap                      ! water-availability cap on qflx_evap_soi (kg/m2/s)
     logical  :: evap_water_limited                 ! true if qflx_evap_soi(p) was capped by water availability this iteration
     real(r8) :: dtime                               ! land model time step (sec)
+    real(r8) :: evap_coef                          ! forc_rho/raw: evaporation per unit humidity difference (kg/m2/s per kg/kg)
+    real(r8) :: dqdT_coef                          ! evap_coef * d(qsatg)/dT
     real(r8) :: betaprime(bounds%begc:bounds%endc) ! Effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
     real(r8) :: e_ref2m                            ! 2 m height surface saturated vapor pressure [Pa]
     real(r8) :: de2mdT                             ! derivative of 2 m height surface saturated vapor pressure on t_ref2m
@@ -485,11 +487,10 @@ contains
                end if
                if (forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p) > qflx_evap_cap) then
                   evap_water_limited = .true.
-                  ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(t) + 3._r8*stftg3(p)*tgbef(c) &
-                       + forc_rho(t)*cpair/rah(p)*thm(p) &
-                       - htvp(c)*qflx_evap_cap &
-                       + tksur(c)*tsur(c)/dzsur(c)
-                  bx  = 4._r8*stftg3(p) + forc_rho(t)*cpair/rah(p) + tksur(c)/dzsur(c)
+                  evap_coef = forc_rho(t)/raw(p)
+                  dqdT_coef = qsatgdT(c)*evap_coef
+                  ax = ax + htvp(c)*(evap_coef*(qsatg(c)-forc_q(t)) - dqdT_coef*tgbef(c) - qflx_evap_cap)
+                  bx = bx - htvp(c)*dqdT_coef
                   t_grnd(c) = ax/bx
                   if(t_grnd(c)>tgbef(c)+20._r8)then
                     t_grnd(c)=tgbef(c)+20._r8
