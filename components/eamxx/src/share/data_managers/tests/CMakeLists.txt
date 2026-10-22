@@ -7,4 +7,11 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES field_mgr_tests.cpp
     LIBS eamxx_data_managers
   )
+
+  # Test model init
+  CreateUnitTest(model_init
+    SOURCES model_init_tests.cpp
+    LIBS eamxx_data_managers
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
 endif()
