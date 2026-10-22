@@ -70,12 +70,7 @@ struct UnitWrap::UnitTest<D>::TestGwStormSpeed : public UnitWrap::UnitTest<D>::B
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_storm_speed_f(d);
-      }
-      else {
-        gw_storm_speed(d);
-      }
+      gw_storm_speed(d);
     }
 
     // We need a tolerance since the order of operations is different from f90.

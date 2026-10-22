@@ -58,12 +58,7 @@ struct UnitWrap::UnitTest<D>::TestGwdProjectTau : public UnitWrap::UnitTest<D>::
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gwd_project_tau_f(d);
-      }
-      else {
-        gwd_project_tau(d);
-      }
+      gwd_project_tau(d);
     }
 
     // Verify BFB results, all data should be in C layout
