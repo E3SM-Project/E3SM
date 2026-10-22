@@ -45,6 +45,9 @@ module gllfvremap_mod
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod, only: bfb_pow
 #endif
+#ifdef HORIZ_OPENMP
+  use thread_mod, only: hthreads
+#endif
 
   implicit none
 
