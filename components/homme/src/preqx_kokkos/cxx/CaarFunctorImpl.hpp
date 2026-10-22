@@ -368,7 +368,7 @@ struct CaarFunctorImpl {
   KOKKOS_INLINE_FUNCTION
   void accumulate_eta_dot_dpdn(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
-                         KOKKOS_LAMBDA(const int idx) {
+                         KOKKOS_CLASS_LAMBDA(const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
       for(int k = 0; k < NUM_LEV; ++k){
@@ -383,7 +383,7 @@ struct CaarFunctorImpl {
   KOKKOS_INLINE_FUNCTION
   void assign_zero_to_sdot_sum(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
-                         KOKKOS_LAMBDA(const int idx) {
+                         KOKKOS_CLASS_LAMBDA(const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
       m_buffers.sdot_sum(kv.team_idx, igp, jgp) = 0;
@@ -395,7 +395,7 @@ struct CaarFunctorImpl {
   void compute_eta_dot_dpdn_vertadv_euler(KernelVariables &kv) const {
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
-                         KOKKOS_LAMBDA(const int idx) {
+                         KOKKOS_CLASS_LAMBDA(const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
@@ -632,7 +632,7 @@ struct CaarFunctorImpl {
   KOKKOS_INLINE_FUNCTION
   void preq_vertadv(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
-                         KOKKOS_LAMBDA(const int idx) {
+                         KOKKOS_CLASS_LAMBDA(const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
