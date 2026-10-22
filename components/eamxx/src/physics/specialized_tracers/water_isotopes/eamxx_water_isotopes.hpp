@@ -28,33 +28,21 @@ struct IsotopeTracer {
  * formulation options (liquid/vapor and ice/vapor fractionation, standard
  * ratio, ocean enrichment), and the isotope tracers resolved from a parsed
  * tracers_file.
- *
- * This is a plain helper class, not an AtmosphereProcess: it owns no fields
- * and makes no field-manager calls. WaterTracers owns one unconditionally
- * (empty/inert unless EAMXX_HAS_WATER_ISOTOPES is defined and the tracers
- * file actually defines isotope entries) and does its own field lookups and
- * kernel launches around the state and math this class provides.
  */
 class WaterIsotopes
 {
 public:
   // Allows `type: isotope` entries in the tracers file and lists every
   // species name parse_tracers_file should accept. Called only when
-  // EAMXX_HAS_WATER_ISOTOPES is defined; otherwise opts.accept_isotopes stays
-  // false and the registry rejects any isotope entry outright.
+  // EAMXX_HAS_WATER_ISOTOPES is true.
   static void enable (water_tracers::RegistryOptions& opts);
 
-  // Reads the runtime formulation options from the process's parameters
-  // (liquid_vapor_formulation, ice_vapor_formulation, standard_ratio_formulation,
-  // ocean_enrichment_formulation; see eamxx_water_tracers_registry.hpp for
-  // defaults). Safe to call unconditionally: with no isotope tracers these
-  // options are simply never read.
+  // Reads the runtime formulation options from the process's parameters.
+  // with no isotope tracers these options are just never read.
   void configure (ekat::ParameterList& params);
 
   // Resolves r_ocn (and the default r_init) for every Isotope spec from the
-  // parameter tables, and records {name, species, r_ocn} for each. No-op if
-  // specs contains no isotope entries (which the registry guarantees unless
-  // enable() was called first).
+  // parameter tables, and records {name, species, r_ocn} for each.
   void resolve (std::vector<water_tracers::TracerSpec>& specs);
 
   const std::vector<IsotopeTracer>& tracers () const { return m_isotopes; }

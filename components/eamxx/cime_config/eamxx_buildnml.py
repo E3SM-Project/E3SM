@@ -1410,7 +1410,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         ordered_dump(scream_input, fd)
 
 ###############################################################################
-def find_tracers_files(eamxx_dict):
+def find_water_tracers_files(eamxx_dict):
 ###############################################################################
     """
     Return the tracers_file values of all water_tracers processes in the
@@ -1419,38 +1419,38 @@ def find_tracers_files(eamxx_dict):
     >>> d = {'atm_procs_list': ['sc_import', 'water_tracers', 'physics'],
     ...      'water_tracers': {'tracers_file': './wt.yaml'},
     ...      'physics': {'atm_procs_list': ['p3'], 'p3': {}}}
-    >>> find_tracers_files(d)
+    >>> find_water_tracers_files(d)
     ['./wt.yaml']
-    >>> find_tracers_files({'atm_procs_list': ['p3'], 'p3': {}})
+    >>> find_water_tracers_files({'atm_procs_list': ['p3'], 'p3': {}})
     []
     """
     result = []
     for name, sub in eamxx_dict.items():
         if not isinstance(sub, dict):
             continue
-        if name == "water_tracers" and "tracers_file" in sub:
-            result.append(sub["tracers_file"])
+        if name == "water_tracers" and "water_tracers_file" in sub:
+            result.append(sub["water_tracers_file"])
         else:
-            result.extend(find_tracers_files(sub))
+            result.extend(find_water_tracers_files(sub))
     return result
 
 ###############################################################################
-def add_tracer_initial_conditions(ic_dict, tracer_names):
+def add_water_tracer_initial_conditions(ic_dict, water_tracer_names):
 ###############################################################################
     """
     Initialize to 0 every tracer that has no initial_conditions entry yet, so the
-    driver does not look for it in the IC file. Tracers with init: ratio are
+    driver does not look for it in the IC file. Water tracers with init: ratio are
     then set by the tracer process itself on an initial run; restarts read
     tracers from the restart file.
 
     >>> ic = {'filename': 'ic.nc', 'wtrc_a': 2.0}
-    >>> add_tracer_initial_conditions(ic, ['wtrc_a', 'wtrc_b'])
+    >>> add_water_tracer_initial_conditions(ic, ['wtrc_a', 'wtrc_b'])
     ['wtrc_b']
     >>> ic['wtrc_a'], ic['wtrc_b']
     (2.0, 0.0)
     """
     added = []
-    for name in tracer_names:
+    for name in water_tracer_names:
         if name not in ic_dict:
             ic_dict[name] = 0.0
             added.append(name)
@@ -1460,26 +1460,26 @@ def add_tracer_initial_conditions(ic_dict, tracer_names):
 def copy_water_tracers_file(case, caseroot, scream_input):
 ###############################################################################
     """
-    If water_tracers is active, copy its tracers_file to $RUNDIR/data, point
+    If water_tracers is active, copy its water_tracers_file to $RUNDIR/data, point
     the scream_input dict at the copy, and add initial_conditions::<name>: 0.0
     for each tracer without an IC entry.
     """
-    tracers_files = find_tracers_files(scream_input["eamxx"])
+    tracers_files = find_water_tracers_files(scream_input["eamxx"])
     if len(tracers_files)==0:
         return
 
-    expect (len(set(tracers_files))==1,
-            f"water_tracers must have exactly one tracers_file, got {tracers_files}")
+    expect (len(set(water_tracers_files))==1,
+            f"water_tracers must have exactly one water_tracers_file, got {water_tracers_files}")
     src = tracers_files[0]
     expect (src is not None and str(src).strip() not in ("", "None"),
-            "water_tracers is in atm_procs_list, but tracers_file is not set.\n"
+            "water_tracers is in atm_procs_list, but water_tracers_file is not set.\n"
             "  Use, e.g., ./atmchange water_tracers::tracers_file=/path/to/tracers.yaml")
 
     # Relative paths are relative to the case directory (where atmchange is run)
     src_yaml = os.path.expanduser(str(src).strip())
     if not os.path.isabs(src_yaml):
         src_yaml = os.path.join(caseroot, src_yaml)
-    expect (os.path.isfile(src_yaml), f"tracers_file '{src_yaml}' does not exist")
+    expect (os.path.isfile(src_yaml), f"water_tracers_file '{src_yaml}' does not exist")
     dst_yaml = os.path.join(case.get_value("RUNDIR"),'data',os.path.basename(src_yaml))
     with SharedArea():
         safe_copy(src_yaml,dst_yaml)
@@ -1487,18 +1487,18 @@ def copy_water_tracers_file(case, caseroot, scream_input):
     with open(dst_yaml,"r") as fd:
         tracers = yaml.load(fd,Loader=yaml.SafeLoader)
     expect (isinstance(tracers,dict) and isinstance(tracers.get("tracers"),dict),
-            f"tracers_file '{src_yaml}' must have a top-level 'tracers' map")
+            f"water_tracers_file '{src_yaml}' must have a top-level 'tracers' map")
 
     def repoint(d):
         for name, sub in d.items():
             if isinstance(sub, dict):
                 if name == "water_tracers" and "tracers_file" in sub:
-                    sub["tracers_file"] = dst_yaml
+                    sub["water_tracers_file"] = dst_yaml
                 else:
                     repoint(sub)
     repoint(scream_input["eamxx"])
 
-    add_tracer_initial_conditions(scream_input["initial_conditions"], list(tracers["tracers"].keys()))
+    add_water_tracer_initial_conditions(scream_input["initial_conditions"], list(tracers["tracers"].keys()))
 
 ###############################################################################
 def archive_case_docs(caseroot):
