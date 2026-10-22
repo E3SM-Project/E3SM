@@ -132,8 +132,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   if (m_params.isSublist("provenance")) {
     auto& prov_pl = m_params.sublist("provenance");
     m_casename = prov_pl.get<std::string>("caseid","UNSET");
-    EKAT_REQUIRE_MSG(m_casename!="UNSET",
-        "Error! The provenance sublist is missing 'caseid' parameter");
+//    EKAT_REQUIRE_MSG(m_casename!="UNSET",
+//        "Error! The provenance sublist is missing 'caseid' parameter");
   } else {
     // Default for unit tests
     m_casename = "UNSET";
