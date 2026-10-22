@@ -146,6 +146,7 @@ contains
 
 #ifdef TRILINOS
     real (c_double) ,allocatable, dimension(:) :: xstate(:)
+    integer :: i,j,k,lx,lenx
 
     ! state_object is a derived data type passed thru noxinit as a pointer
     type(derived_type) ,target         :: state_object
