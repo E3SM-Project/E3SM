@@ -18,6 +18,6 @@
 <base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_USA.csv</base_gcam_co2_file>
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_USA.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_degdays_mapping_file>iac/giac/gcam/gcam_6_0/mappings/degree_days_USA.xml</gcam2elm_degdays_mapping_file>
-<elm2gcam_co2_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_usa_mapping.csv</elm2gcam_co2_mapping_file>
+<elm2gcam_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_usa_mapping.csv</elm2gcam_mapping_file>
 
 </namelist_defaults>
