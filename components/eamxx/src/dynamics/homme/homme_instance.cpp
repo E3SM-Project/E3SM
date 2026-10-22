@@ -464,6 +464,32 @@ remap_dyn_to_fv_phys (const Field& ps, const Field& phis,
 }
 
 void HommeInstance::
+remap_tracer_dyn_to_fv_phys (const Field& f_dgll, const Field& f_phys)
+{
+  EKAT_REQUIRE_MSG (m_pgN>0, "Error! The FV physics grid was not setup in HommeInstance.\n");
+
+  const auto& c = Homme::Context::singleton();
+  auto& gfr = c.get<Homme::GllFvRemap>();
+  const auto time_idx = c.get<Homme::TimeLevel>().n0;
+  constexpr int NGP = HOMMEXX_NP;
+  constexpr int ngll = NGP*NGP;
+  const int npg = m_pgN*m_pgN;
+
+  const auto& v_dgll = f_dgll.get_view<const Real****>();
+  const auto& v_phys = f_phys.get_view<Real**>();
+  const int nelem = v_dgll.extent_int(0);
+  assert(v_dgll.extent_int(1)*v_dgll.extent_int(2) == ngll);
+  assert(nelem*npg == v_phys.extent_int(0));
+
+  const auto in_dgll = Homme::GllFvRemap::CPhys3T(
+    v_dgll.data(), nelem, 1, ngll, v_dgll.extent_int(3));
+  const auto out_phys = Homme::GllFvRemap::Phys3T(
+    v_phys.data(), nelem, npg, 1, v_phys.extent_int(1));
+  gfr.remap_tracer_dyn_to_fv_phys(time_idx, 1, in_dgll, out_phys);
+  Kokkos::fence();
+}
+
+void HommeInstance::
 remap_fv_phys_to_dyn (const Field& FT, const Field& FM, const Field& q,
                       const Field& Km_phys, const Field& Kh_phys)
 {
