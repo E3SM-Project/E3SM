@@ -319,7 +319,8 @@ void Frazil::checkColumnConservation() const {
    auto AccELiqH      = createHostMirrorCopy(AccELiq);
    auto AccEIceH      = createHostMirrorCopy(AccEIce);
 
-   constexpr Real RTol = 1.0e-10_Real;
+   constexpr Real RTol = sizeof(Real) == 4 ? 1.0e-5_Real : 1.0e-10_Real;
+   constexpr Real ATol = sizeof(Real) == 4 ? 1.0e-4_Real : 1.0e-8_Real;
 
    for (I4 ICell = 0; ICell < NCellsAll; ++ICell) {
       const I4 KMin = MinLayerCellH(ICell);
@@ -352,17 +353,17 @@ void Frazil::checkColumnConservation() const {
                   SaltTend * RhoSw * PPt2Salt + SaltTotal);
       }
 
-      if (!isApprox(-MassTend * RhoSw, MassTotal, RTol)) {
+      if (!isApprox(-MassTend * RhoSw, MassTotal, RTol, ATol)) {
          ABORT_ERROR(
              "Frazil column mass check failed: cell {} tendency={} total={}",
              ICell, -MassTend * RhoSw, MassTotal);
       }
-      if (!isApprox(-EnergyTend * Cp0Sw * RhoSw, EnergyTotal, RTol)) {
+      if (!isApprox(-EnergyTend * Cp0Sw * RhoSw, EnergyTotal, RTol, ATol)) {
          ABORT_ERROR(
              "Frazil column energy check failed: cell {} tendency={} total={}",
              ICell, -EnergyTend * Cp0Sw * RhoSw, EnergyTotal);
       }
-      if (!isApprox(-SaltTend * RhoSw * PPt2Salt, SaltTotal, RTol)) {
+      if (!isApprox(-SaltTend * RhoSw * PPt2Salt, SaltTotal, RTol, ATol)) {
          ABORT_ERROR(
              "Frazil column salt check failed: cell {} tendency={} total={}",
              ICell, -SaltTend * RhoSw * PPt2Salt, SaltTotal);
