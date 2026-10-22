@@ -11,7 +11,7 @@ module decompInitMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc, iam, npes, mpicom, comp_id
   use abortutils      , only : endrun
-  use elm_varctl      , only : iulog, use_fates
+  use elm_varctl      , only : iulog, use_fates, use_polygonal_tundra
   use elm_varcon      , only : grlnd
   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp
@@ -1744,125 +1744,59 @@ contains
     !  - PFTs, and
     !  - cohorts.
     !
+    ! Ghost grid cells are only used for lateral subsurface flow, which only needs the
+    ! naturally vegetated soil column. So each ghost grid cell gets exactly one
+    ! topounit, one (istsoil) landunit, one column and one patch; this must stay
+    ! consistent with initGhostGridcells.
+    !
     ! !USES:
 #ifdef MOAB_LATERAL
-    use subgridMod, only : subgrid_get_gcellinfo
-    use MOABGridType
-    use iso_c_binding
-    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
-         iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh, &
-         iMOAB_GetIntTagStorage, iMOAB_SetIntTagStorage, iMOAB_SynchronizeTags
+    use MOABGridType, only : moab_gcell
 #endif
-
     !
     implicit none
     !
     ! !ARGUMENTS:
     integer , pointer, optional  :: glcmask(:)             ! glc mask
     !
-    ! !LOCAL VARIABLES:
-#ifdef MOAB_LATERAL
-    integer                      :: begg,endg              ! begin/end indices for grid
-    integer                      :: anumg                  ! lnd num gridcells
-    integer                      :: ln                     ! temporary
-    integer                      :: itunits             ! temporary
-    integer                      :: ilunits                ! temporary
-    integer                      :: icols                  ! temporary
-    integer                      :: ipfts                  ! temporary
-    integer                      :: icohorts               ! temporary
-    integer, allocatable         :: data_int(:,:)
-    integer                      :: tagtype, numcomp, entity_type(1), numtags, tag_indices(1)
-    integer                      :: g, moab_idx
-    integer                      :: ierr
-    character(len=1024)          :: tagname
-#endif
 #ifdef MOAB_LATERAL
 
-      call get_proc_bounds(begg, endg)
-
-      tagname     = 'nsubgrid'//C_NULL_CHAR
-      tagtype     = 0    ! dense, integer
-      numtags     = 1    ! creating a single tag to exchange information about ELM subgrid
-      numcomp     = 5    ! number of following subgrid structures: topounits, landunits, columns, pfts, and cohorts
-      entity_type(1) = 1 ! element (or cell) based data
-
-      ! define the tag
-      ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numcomp, tag_indices(1))
-
-      ! allocate memory for the data
-      allocate(data_int(numcomp, moab_gcell%num_ghosted))
-
-      ! initializat the data
-      data_int(:,:) = -1
-
-      ! now loop over grid cells and fill value in data_int
-      do anumg = begg, endg
-          ln  = anumg
-          if (max_topounits > 1) then
-             if (present(glcmask)) then
-                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-                     ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
-             else
-                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-                     ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
-             endif
-          else
-             if (present(glcmask)) then
-                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-                     ncohorts=icohorts, glcmask=glcmask(ln))
-             else
-                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-                     ncohorts=icohorts )
-             endif
-          endif
-
-          ! use ELM-to-MOAB index
-          moab_idx = moab_gcell%elm2moab(ln)
-
-          ! fill the values
-          data_int(1, moab_idx) = itunits
-          data_int(2, moab_idx) = ilunits
-          data_int(3, moab_idx) = icols
-          data_int(4, moab_idx) = ipfts
-          data_int(5, moab_idx) = icohorts
-      end do
-
-      ! Set the data in MOAB tag
-      ierr = iMOAB_SetIntTagStorage(mlndghostid, tagname, moab_gcell%num_ghosted * numcomp, entity_type(1), data_int)
-      if (ierr > 0) call endrun('Error: setting values failed')
-
-      ! Do halo exchange
-      ierr = iMOAB_SynchronizeTags(mlndghostid, numtags, tag_indices(1), entity_type(1))
-      if (ierr > 0) call endrun('Error: synchronization failed')
-
-      ! Get the data from MAOB tag
-      ierr = iMOAB_GetIntTagStorage(mlndghostid, tagname, moab_gcell%num_ghosted * numcomp, entity_type(1), data_int)
-      if (ierr > 0) call endrun('Error: getting values failed')
+      if (max_topounits > 1 .or. use_polygonal_tundra) then
+         call endrun(msg='ERROR: decompInit_ghosts only supports one naturally vegetated '// &
+              'column per grid cell (max_topounits = 1 and no polygonal tundra)'// &
+              errMsg(__FILE__, __LINE__))
+      end if
 
       ! Get number of ghost quantites at all subgrid categories
       procinfo%ncells_ghost    = moab_gcell%num_ghost
-      procinfo%ntunits_ghost   = 0
-      procinfo%nlunits_ghost   = 0
-      procinfo%ncols_ghost     = 0
-      procinfo%npfts_ghost     = 0
+      procinfo%ntunits_ghost   = procinfo%ncells_ghost
+      procinfo%nlunits_ghost   = procinfo%ncells_ghost
+      procinfo%ncols_ghost     = procinfo%ncells_ghost
+      procinfo%npfts_ghost     = procinfo%ncells_ghost
       procinfo%nCohorts_ghost  = 0
 
-      ! loop over all cells and save values for ghost cells
-      do g = 1, moab_gcell%num_ghosted
-         if (.not.moab_gcell%is_owned(g)) then
-            procinfo%ntunits_ghost   = procinfo%ntunits_ghost  + data_int(1, g)
-            procinfo%nlunits_ghost   = procinfo%nlunits_ghost  + data_int(2, g)
-            procinfo%ncols_ghost     = procinfo%ncols_ghost    + data_int(3, g)
-            procinfo%npfts_ghost     = procinfo%npfts_ghost    + data_int(4, g)
-            procinfo%nCohorts_ghost  = procinfo%nCohorts_ghost + data_int(5, g)
-         end if
-      end do
-
-      ! free up memory
-      deallocate(data_int)
-
+      ! Ghost quantities are placed right after the locally owned ones
       procinfo%begg_ghost      = procinfo%endg + 1
-      procinfo%endg_ghost      = procinfo%endg + procinfo%ncells_ghost
+      procinfo%begt_ghost      = procinfo%endt + 1
+      procinfo%begl_ghost      = procinfo%endl + 1
+      procinfo%begc_ghost      = procinfo%endc + 1
+      procinfo%begp_ghost      = procinfo%endp + 1
+      procinfo%begCohort_ghost = procinfo%endCohort + 1
+
+      procinfo%endg_ghost      = procinfo%endg      + procinfo%ncells_ghost
+      procinfo%endt_ghost      = procinfo%endt      + procinfo%ntunits_ghost
+      procinfo%endl_ghost      = procinfo%endl      + procinfo%nlunits_ghost
+      procinfo%endc_ghost      = procinfo%endc      + procinfo%ncols_ghost
+      procinfo%endp_ghost      = procinfo%endp      + procinfo%npfts_ghost
+      procinfo%endCohort_ghost = procinfo%endCohort + procinfo%nCohorts_ghost
+
+      ! All = local + ghost
+      procinfo%ncells_all      = procinfo%ncells    + procinfo%ncells_ghost
+      procinfo%ntunits_all     = procinfo%ntunits   + procinfo%ntunits_ghost
+      procinfo%nlunits_all     = procinfo%nlunits   + procinfo%nlunits_ghost
+      procinfo%ncols_all       = procinfo%ncols     + procinfo%ncols_ghost
+      procinfo%npfts_all       = procinfo%npfts     + procinfo%npfts_ghost
+      procinfo%nCohorts_all    = procinfo%nCohorts  + procinfo%nCohorts_ghost
 
       ! Set 'begin' index for subgrid categories
       procinfo%begg_all        = procinfo%begg
@@ -1873,12 +1807,12 @@ contains
       procinfo%begCohort_all   = procinfo%begCohort
 
       ! Set 'end' index for subgrid categories
-      procinfo%endg_all        = procinfo%endg      + procinfo%ncells_ghost
-      procinfo%endt_all        = procinfo%endt      + procinfo%ntunits_ghost
-      procinfo%endl_all        = procinfo%endl      + procinfo%nlunits_ghost
-      procinfo%endc_all        = procinfo%endc      + procinfo%ncols_ghost
-      procinfo%endp_all        = procinfo%endp      + procinfo%npfts_ghost
-      procinfo%endCohort_all   = procinfo%endCohort + procinfo%nCohorts_ghost
+      procinfo%endg_all        = procinfo%endg_ghost
+      procinfo%endt_all        = procinfo%endt_ghost
+      procinfo%endl_all        = procinfo%endl_ghost
+      procinfo%endc_all        = procinfo%endc_ghost
+      procinfo%endp_all        = procinfo%endp_ghost
+      procinfo%endCohort_all   = procinfo%endCohort_ghost
 
 #else
       ! No ghost cells

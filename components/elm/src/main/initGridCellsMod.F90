@@ -720,16 +720,26 @@ contains
   subroutine initGhostColumnsMOAB()
     !
     ! DESCRIPTION
+    ! Build the full subgrid hierarchy (patch -> column -> landunit -> topounit ->
+    ! gridcell) for ghost grid cells. Each ghost grid cell gets one topounit, one
+    ! naturally vegetated (istsoil) landunit, one soil column and one bare-ground patch,
+    ! which matches the counts reserved in decompInit_ghosts. Weights are set to 1; they
+    ! are only meaningful within the ghost cell and must not be used for grid cell sums.
     !
     use decompMod        , only : get_proc_bounds
     use domainLateralMod , only : ldomain_lateral, GridLevelIntegerDataHaloExchange
+    use subgridWeightsMod, only : compute_higher_order_weights
+    use landunit_varcon  , only : istsoil
+    use elm_varcon       , only : spval, ispval
+    use elm_varpar       , only : natpft_lb
     !
     implicit none
     !
     ! LOCAL VARIABLES
     type(bounds_type)  :: bounds_proc ! temporary
+    type(bounds_type)  :: bounds_ghost
     integer, pointer   :: num_nat_veg_columns(:)
-    integer            :: g, c
+    integer            :: g, c, ti, li, ci, pi
     integer, parameter :: icol_nat_veg = 1
 
     call get_proc_bounds(bounds_proc)
@@ -754,15 +764,51 @@ contains
     ! do the halo exchange
     call GridLevelIntegerDataHaloExchange(ldomain_lateral, bounds_proc%begg, bounds_proc%endg, bounds_proc%endg_all, num_nat_veg_columns)
 
-    ! for ghost columns, set mapping to ghost grid cell
-    c = bounds_proc%endc
+    ! decompInit_ghosts reserved one topounit/landunit/column/patch per ghost grid cell
     do g = bounds_proc%endg + 1, bounds_proc%endg_all
-       if (num_nat_veg_columns(g) > 0) then
-          c = c + 1
-          col_pp%gridcell(c) = g
-          col_pp%itype(c)    = icol_nat_veg
-       endif
+       if (num_nat_veg_columns(g) /= 1) then
+          write(iulog,*) 'ERROR: ghost grid cell ', g, ' has ', num_nat_veg_columns(g), &
+               ' naturally vegetated columns; expected 1'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
     end do
+    deallocate(num_nat_veg_columns)
+
+    ! build the ghost subgrid hierarchy, placed right after the owned entities
+    ti = bounds_proc%endt
+    li = bounds_proc%endl
+    ci = bounds_proc%endc
+    pi = bounds_proc%endp
+    do g = bounds_proc%endg + 1, bounds_proc%endg_all
+       call add_topounit(ti=ti, gi=g, wtgcell=1._r8, elv=spval, slp=spval, asp=ispval, &
+            topo_ind=1, is_tpu_active=.true.)
+       call add_landunit(li=li, ti=ti, ltype=istsoil, wttopounit=1._r8)
+       call add_column(ci=ci, li=li, ctype=icol_nat_veg, wtlunit=1._r8, is_soil=.true.)
+       call add_patch(pi=pi, ci=ci, ptype=natpft_lb, wtcol=1._r8, is_on_soil_col=.true.)
+    end do
+
+    if (ti /= bounds_proc%endt_all .or. li /= bounds_proc%endl_all .or. &
+         ci /= bounds_proc%endc_all .or. pi /= bounds_proc%endp_all) then
+       write(iulog,*) 'ERROR: ghost subgrid counts do not match decompInit_ghosts'
+       write(iulog,*) '  t: ', ti, bounds_proc%endt_all
+       write(iulog,*) '  l: ', li, bounds_proc%endl_all
+       write(iulog,*) '  c: ', ci, bounds_proc%endc_all
+       write(iulog,*) '  p: ', pi, bounds_proc%endp_all
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    ! fill in the down pointers and higher-order weights over the ghost range only
+    if (bounds_proc%endg_all > bounds_proc%endg) then
+       bounds_ghost      = bounds_proc
+       bounds_ghost%begg = bounds_proc%endg + 1 ; bounds_ghost%endg = bounds_proc%endg_all
+       bounds_ghost%begt = bounds_proc%endt + 1 ; bounds_ghost%endt = bounds_proc%endt_all
+       bounds_ghost%begl = bounds_proc%endl + 1 ; bounds_ghost%endl = bounds_proc%endl_all
+       bounds_ghost%begc = bounds_proc%endc + 1 ; bounds_ghost%endc = bounds_proc%endc_all
+       bounds_ghost%begp = bounds_proc%endp + 1 ; bounds_ghost%endp = bounds_proc%endp_all
+
+       call elm_ptrs_compdown(bounds_ghost)
+       call compute_higher_order_weights(bounds_ghost)
+    end if
 
   end subroutine initGhostColumnsMOAB
 #endif
