@@ -38,6 +38,15 @@ public:
   // Fields are cheap handles to the same data, so we can return them by value
   Field get_dyn_field (const std::string& name) const;
 
+  // Share a Field living on the physics grid with the instance. The fields currently
+  // shared are FT_phys and FM_phys, the T and uv (COL,LEV)/(COL,CMP=2,LEV) at the end of
+  // the last Homme step, needed to compute T and uv tendencies at the next step.
+  void add_phys_field (const std::string& name, const Field& f);
+
+  bool has_phys_field (const std::string& name) const { return m_phys_fields.count(name)>0; }
+
+  Field get_phys_field (const std::string& name) const;
+
   // Set the views of the dyn fields into the Homme c++ structures.
   // The following fields must have been added: v_dyn, vtheta_dp_dyn, phi_int_dyn, w_int_dyn,
   // dp3d_dyn, ps_dyn, omega_dyn, Q_dyn, Qdp_dyn, FQ_dyn, FT_dyn, FM_dyn. If Homme is set up
@@ -106,6 +115,9 @@ private:
 
   // The fields on the dynamics grid
   std::map<std::string,Field> m_dyn_fields;
+
+  // The fields on the physics grid
+  std::map<std::string,Field> m_phys_fields;
 };
 
 } // namespace scream
