@@ -186,8 +186,9 @@ class SfcCoupling {
 
    // Number of ocn timesteps acccumulated over the coupling interval
    I4 NAccumSteps;
-   // Coupling timestep in seconds
-   Real CouplingTimeStepSeconds;
+   // Length of coupling timestep in second. Follows Omegas convention of
+   // storing timestep length as a double (cf. Real) to maintain precision
+   R8 CouplingTimeStepSeconds;
 
    CouplingLayout Layout; ///< Coupling layout (MCT or MOAB)
 
