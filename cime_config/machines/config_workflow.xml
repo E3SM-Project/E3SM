@@ -39,6 +39,12 @@
         <tasks_per_node>1</tasks_per_node>
         <walltime>02:00:00</walltime>
       </runtime_parameters>
+      <runtime_parameters MACH="pm-gpu">
+        <queue>shared</queue>
+      </runtime_parameters>
+      <runtime_parameters MACH="pm-cpu">
+        <queue>shared</queue>
+      </runtime_parameters>
     </job>
     <job name="case.run">
       <template>template.case.run</template>
