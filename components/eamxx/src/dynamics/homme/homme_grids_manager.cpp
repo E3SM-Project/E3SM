@@ -1,7 +1,6 @@
 #include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
-#include "dynamics/homme/physics_dynamics_remapper.hpp"
 
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
@@ -14,7 +13,6 @@
 #include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/physics/physics_constants.hpp"
 
@@ -57,36 +55,6 @@ HommeGridsManager::~HommeGridsManager()
 
   // This class is done with Homme. Remove from its users list
   HommeContextUser::singleton().remove_user();
-}
-
-HommeGridsManager::remapper_ptr_type
-HommeGridsManager::do_create_remapper(const grid_ptr_type from_grid,
-                                      const grid_ptr_type to_grid) const
-{
-  const auto from = from_grid->name();
-  const auto to   = to_grid->name();
-
-  EKAT_REQUIRE_MSG ( from=="dynamics" || to=="dynamics",
-    "Error! Either source or target grid must be 'dynamics'.\n");
-
-  const bool p2d = to=="dynamics";
-
-  if (from=="physics_gll" || to=="physics_gll") {
-    using PDR = PhysicsDynamicsRemapper;
-
-    auto dyn_grid = get_grid("dynamics");
-    auto phys_grid = get_grid("physics_gll");
-
-    auto pd_remapper = std::make_shared<PDR>(phys_grid,dyn_grid);
-    if (p2d) {
-      return pd_remapper;
-    } else {
-      return std::make_shared<InverseRemapper>(pd_remapper);
-    }
-  } else {
-    EKAT_ERROR_MSG("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
-  }
-  return nullptr;
 }
 
 void HommeGridsManager::

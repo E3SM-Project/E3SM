@@ -31,18 +31,6 @@ public:
     add_grid(p);
     add_grids(std::forward<Pointers>(ptrs)...);
   }
-
-protected:
-  remapper_ptr_type
-  do_create_remapper (const grid_ptr_type from_grid,
-                      const grid_ptr_type to_grid) const override
-  {
-    EKAT_ERROR_MSG (
-        "Error! LibraryGridsManager is not capable of creating remappers.\n"
-        " - from_grid: " + from_grid->name() + "\n"
-        " - to_grid:   " + to_grid->name() + "\n");
-    return nullptr;
-  }
 };
 
 } // namespace scream

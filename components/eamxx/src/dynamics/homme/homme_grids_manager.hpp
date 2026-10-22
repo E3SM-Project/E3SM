@@ -33,10 +33,6 @@ protected:
 
 protected:
 
-  remapper_ptr_type
-  do_create_remapper (const grid_ptr_type from_grid,
-                      const grid_ptr_type to_grid) const;
-
   void build_pg_codes ();
 
   // Read vertical coordinates and set them in hommexx's structures
