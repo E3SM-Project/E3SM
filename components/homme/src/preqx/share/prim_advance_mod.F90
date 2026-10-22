@@ -143,10 +143,13 @@ contains
     real (kind=real_kind) :: dt2, dt_vis, eta_ave_w
 
     integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage, qn0
+#if defined(TRILINOS) || defined(ENERGY_DIAGNOSTICS)
+    integer :: k
+#endif
 
 #ifdef TRILINOS
     real (c_double) ,allocatable, dimension(:) :: xstate(:)
-    integer :: i,j,k,lx,lenx
+    integer :: i,j,lx,lenx
 
     ! state_object is a derived data type passed thru noxinit as a pointer
     type(derived_type) ,target         :: state_object
