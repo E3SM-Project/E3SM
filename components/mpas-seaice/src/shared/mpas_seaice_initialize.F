@@ -2780,9 +2780,10 @@ contains
            messageType=MPAS_LOG_CRIT)
     endif
 
-    if (trim(config_frazil_coupling_type) /= "external") then
+    if (trim(config_frazil_coupling_type) /= "external" .and. &
+      trim(config_frazil_coupling_type) /= "omega-fluxes") then
       call mpas_log_write(&
-           'seaice_check_configs_coupled: config_frazil_coupling_type must be external', &
+           'seaice_check_configs_coupled: config_frazil_coupling_type must be external or omega-fluxes', &
            messageType=MPAS_LOG_CRIT)
     endif
 
