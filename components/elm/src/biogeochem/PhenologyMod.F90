@@ -3543,6 +3543,8 @@ contains
 
     ! !LOCAL VARIABLES:
     integer :: fp,c,p,j       ! indices
+    integer :: i, nlit        ! index into and length of lit_fp
+    integer :: lit_fp(num_soilp) ! filter positions of patches with nonzero litterfall
     real(r8):: wt_col
     !-----------------------------------------------------------------------
 
@@ -3585,8 +3587,29 @@ contains
          phenology_p_to_litr_lig_p           =>    col_pf%phenology_p_to_litr_lig_p   & ! Output: [real(r8) (:,:) ]  P fluxes associated with phenology (litterfall and crop) to litter lignin pool (gP/m3/s)
          )
 
+      ! A patch whose litterfall fluxes are all zero adds only zeros to the
+      ! column fluxes, which start at +0 (CNZero) and are only added to, so
+      ! leaving it out changes nothing. The others keep their filter order.
+      nlit = 0
+      do fp = 1,num_soilp
+         p = filter_soilp(fp)
+         if (leafc_to_litter(p) /= 0._r8 .or. frootc_to_litter(p) /= 0._r8 .or. &
+             leafn_to_litter(p) /= 0._r8 .or. frootn_to_litter(p) /= 0._r8 .or. &
+             leafp_to_litter(p) /= 0._r8 .or. frootp_to_litter(p) /= 0._r8) then
+            nlit = nlit + 1
+            lit_fp(nlit) = fp
+         else if (iscft(ivt(p))) then
+            if (livestemc_to_litter(p) /= 0._r8 .or. livestemn_to_litter(p) /= 0._r8 .or. &
+                livestemp_to_litter(p) /= 0._r8) then
+               nlit = nlit + 1
+               lit_fp(nlit) = fp
+            end if
+         end if
+      end do
+
       do j = 1, nlevdecomp
-            do fp = 1,num_soilp
+            do i = 1,nlit
+               fp = lit_fp(i)
                p = filter_soilp(fp)
                c = veg_pp%column(p)
                wt_col = wtcol(p)
