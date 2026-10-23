@@ -161,11 +161,13 @@ set_elem_data (const int ie,
     const auto fsc = HostViewUnmanaged<const F90Real [NP][NP][3]>(sphere_cart);
 #if HOMMEXX_SINGLE_PREC
     // For single precision, deep_copy cannot be used
+    auto host_sphere_cart = Kokkos::create_mirror_view(m_sphere_cart);
     Kokkos::parallel_for(
       Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0}, {NP, NP, 3}),
       KOKKOS_LAMBDA(const int igp, const int jgp, const int k) {
-        Homme::subview(m_sphere_cart, ie)(igp,jgp,k) = static_cast<Real>(fsc(igp,jgp,k));
+        Homme::subview(host_sphere_cart, ie)(igp,jgp,k) = static_cast<Real>(fsc(igp,jgp,k));
       });
+    Kokkos::deep_copy(m_sphere_cart, host_sphere_cart);
 #else
     Kokkos::deep_copy(Homme::subview(m_sphere_cart, ie), fsc);
 #endif
@@ -174,11 +176,13 @@ set_elem_data (const int ie,
     const auto fsl = HostViewUnmanaged<const F90Real [NP][NP][2]>(sphere_latlon);
 #if HOMMEXX_SINGLE_PREC
     // For single precision, deep_copy cannot be used
+    auto host_sphere_latlon = Kokkos::create_mirror_view(m_sphere_latlon);
     Kokkos::parallel_for(
       Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0}, {NP, NP, 2}),
       KOKKOS_LAMBDA(const int igp, const int jgp, const int k) {
-        Homme::subview(m_sphere_latlon, ie)(igp,jgp,k) = static_cast<Real>(fsl(igp,jgp,k));
+        Homme::subview(host_sphere_latlon, ie)(igp,jgp,k) = static_cast<Real>(fsl(igp,jgp,k));
       });
+    Kokkos::deep_copy(m_sphere_latlon, host_sphere_latlon);
 #else
     Kokkos::deep_copy(Homme::subview(m_sphere_latlon, ie), fsl);
 #endif
