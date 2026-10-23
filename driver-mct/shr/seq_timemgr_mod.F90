@@ -44,6 +44,7 @@ module seq_timemgr_mod
   public :: seq_timemgr_clockPrint        ! Print sync clock information
 
   public :: seq_timemgr_EClockGetData     ! Get data from an ESMF clock
+   public :: seq_timemgr_GetCalendar
 
   public :: seq_timemgr_EClockDateInSync  ! compare EClock to ymd/tod
   public :: seq_timemgr_alarmSetOn        ! Turn an alarm on
@@ -1233,11 +1234,16 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
-       curr_ymd, curr_tod, prev_ymd, prev_tod, start_ymd,     &
+   function seq_timemgr_GetCalendar() result(calendar)
+      character(len=SHR_KIND_CS) :: calendar
+      calendar = seq_timemgr_calendar
+   end function seq_timemgr_GetCalendar
+
+   subroutine seq_timemgr_EClockGetData( EClock, curr_yr, curr_mon, curr_day,    &
+          curr_ymd, curr_tod, prev_ymd, prev_tod, start_ymd,     &
        start_tod, StepNo, ref_ymd, ref_tod,         &
        stop_ymd, stop_tod, dtime, ECurrTime, alarmcount,      &
-       curr_cday, next_cday, curr_time, prev_time, calendar)
+      curr_cday, next_cday, curr_time, prev_time, calendar, next_ymd, next_tod)
 
     implicit none
 
@@ -1263,6 +1269,8 @@ contains
     type(ESMF_Time),      intent(OUT), optional :: ECurrTime  ! Current ESMF time
     real(SHR_KIND_R8)   , intent(OUT), optional :: curr_cday  ! current calendar day
     real(SHR_KIND_R8)   , intent(OUT), optional :: next_cday  ! current calendar day
+   integer(SHR_KIND_IN), intent(OUT), optional :: next_ymd
+   real(SHR_KIND_R8), intent(OUT), optional :: next_tod
     real(SHR_KIND_R8)   , intent(OUT), optional :: curr_time  ! time interval between current time
     ! and reference date
     real(SHR_KIND_R8)   , intent(OUT), optional :: prev_time  ! time interval between previous time
@@ -1320,7 +1328,7 @@ contains
     if ( present(dtime)    ) dtime    = ldtime
     if ( present(curr_cday)) curr_cday = doy
     if ( present(alarmcount)) alarmcount = acount
-    if ( present(next_cday)) then
+   if (present(next_cday) .or. present(next_ymd) .or. present(next_tod)) then
        call ESMF_TimeSet(tmpTime, yy=yy, mm=mm, dd=dd, s=tod, calendar=seq_timemgr_cal, rc=rc )
        call seq_timemgr_ESMFCodeCheck( rc, msg=subname//"Error from TimeSet tmpTime")
        call ESMF_TimeIntervalSet( tmpDTime, d=1, rc=rc )
@@ -1328,7 +1336,10 @@ contains
        tmpTime = tmpTime + tmpDTime
        call ESMF_TimeGet(tmpTime, dayOfYear_r8=tmpdoy, rc=rc)
        call seq_timemgr_ESMFCodeCheck( rc, msg=subname//"Error from TimeGet tmpdoy")
-       next_cday = tmpdoy
+      if (present(next_cday)) next_cday = tmpdoy
+      call seq_timemgr_ETimeGet(tmpTime, ymd=ymd, tod=tod)
+      if (present(next_ymd)) next_ymd = ymd
+      if (present(next_tod)) next_tod = real(tod, SHR_KIND_R8)
     endif
 
     ! ---Current Time (the time interval between the current date and the reference date) ---

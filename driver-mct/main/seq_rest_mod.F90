@@ -42,6 +42,7 @@ module seq_rest_mod
 
   ! "infodata" gathers various control flags into one datatype
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getData
+   use seq_infodata_mod, only: seq_infodata_UseEquationOfTime
 
   ! clock & alarm routines
   use seq_timemgr_mod, only: seq_timemgr_type, seq_timemgr_EClockGetData
@@ -397,6 +398,7 @@ contains
     character(CL) :: cvar             ! char variable
     integer(IN)   :: ivar             ! integer variable
     real(r8)      :: rvar             ! real variable
+   logical :: solar_time_valid
     logical       :: whead,wdata      ! flags header/data writing
     logical       :: cplroot          ! root pe on cpl id
     integer(IN)   :: iun              ! unit number
@@ -528,6 +530,14 @@ contains
           end if
           call seq_infodata_GetData(infodata,nextsw_cday=rvar)
           call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_cday',whead=whead,wdata=wdata)
+         call seq_io_write(rest_file,1,'seq_infodata_solar_time_version',whead=whead,wdata=wdata)
+             call seq_io_write(rest_file,merge(1,0,seq_infodata_UseEquationOfTime(infodata)), &
+               'seq_infodata_orb_use_equation_of_time',whead=whead,wdata=wdata)
+          call seq_infodata_GetData(infodata, nextsw_ymd=ivar, nextsw_tod=rvar, nextsw_valid=solar_time_valid)
+          call seq_io_write(rest_file,ivar,'seq_infodata_nextsw_ymd',whead=whead,wdata=wdata)
+          call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_tod',whead=whead,wdata=wdata)
+          call seq_io_write(rest_file,merge(1,0,solar_time_valid), &
+            'seq_infodata_nextsw_valid',whead=whead,wdata=wdata)
           call seq_infodata_GetData(infodata,precip_fact=rvar)
           call seq_io_write(rest_file,rvar,'seq_infodata_precip_fact',whead=whead,wdata=wdata)
           call seq_infodata_GetData(infodata,case_name=cvar)

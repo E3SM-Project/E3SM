@@ -16,6 +16,7 @@ module seq_flux_mct
   use seq_flds_mod
   use seq_comm_mct
   use seq_infodata_mod
+   use seq_timemgr_mod, only: seq_timemgr_GetCalendar, seq_timemgr_gregorian
 
   use component_type_mod
 
@@ -883,6 +884,9 @@ contains
     real(r8)            :: eccf                 ! Earth orbit eccentricity factor
     real(r8)            :: calday               ! calendar day including fraction, at 0e
     real(r8)            :: nextsw_cday          ! calendar day of next atm shortwave
+   integer(in) :: nextsw_ymd
+   real(r8) :: nextsw_tod
+   logical :: nextsw_valid
     integer(in)         :: ier                  ! error code
     integer(in)         :: kx,kr                ! fractions indices
     integer(in)         :: klat,klon       ! field indices
@@ -1079,10 +1083,19 @@ contains
        ! Will only do albedo calculation if nextsw_cday is not -1.
 
        call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday,orb_eccen=eccen, &
-            orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr)
+            orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
+            nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, nextsw_valid=nextsw_valid)
        if (nextsw_cday >= -0.5_r8) then
           calday = nextsw_cday
-          call shr_orb_decl(calday, eccen, mvelpp,lambm0, obliqr, delta, eccf)
+          if (seq_timemgr_GetCalendar() == seq_timemgr_gregorian) then
+             if (.not. nextsw_valid) then
+                call shr_sys_abort('Gregorian ocean albedo requires a full next-shortwave timestamp; old restart is ambiguous')
+             end if
+             call seq_infodata_SolarDecl(infodata, nextsw_ymd, nextsw_tod, seq_timemgr_gregorian, delta, eccf)
+             calday = 1._r8 + nextsw_tod / 86400._r8
+          else
+             call shr_orb_decl(calday, eccen, mvelpp,lambm0, obliqr, delta, eccf)
+          end if
           ! Compute albedos
           do n=1,nloc_of
              rlat = const_deg2rad * olats(n)

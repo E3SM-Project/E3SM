@@ -30,6 +30,13 @@ MODULE seq_infodata_mod
   use seq_comm_mct, only: num_inst_wav, num_inst_iac
   use shr_orb_mod,  only: SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL, shr_orb_params
   use shr_orb_mod,  only: set_constant_zenith_angle_deg
+  use shr_orb_mod, only: shr_orb_decl, shr_orb_decl_gregorian
+   use shr_orb_mod, only: shr_orb_context_type
+   use shr_cal_mod, only: shr_cal_solarDecl
+   use shr_cal_mod, only: shr_cal_validDate
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+  use shr_cal_mod, only: shr_cal_calendarName, shr_cal_gregorian, &
+     shr_cal_date2julian, shr_cal_gregorianElapsedDays
 
   implicit none
 
@@ -38,6 +45,7 @@ MODULE seq_infodata_mod
   ! !PUBLIC TYPES:
 
   public :: seq_infodata_type
+   public :: seq_infodata_GetOrbitalContext
 
   ! !PUBLIC MEMBER FUNCTIONS
 
@@ -47,6 +55,8 @@ MODULE seq_infodata_mod
   public :: seq_infodata_PutData         ! Change values
   public :: seq_infodata_Print           ! print current info
   public :: seq_infodata_Exchange        ! exchange data across pes
+   public :: seq_infodata_SolarDecl
+   public :: seq_infodata_UseEquationOfTime
 
   ! !PUBLIC DATA MEMBERS:
 
@@ -57,7 +67,7 @@ MODULE seq_infodata_mod
   character(len=*), public, parameter :: seq_infodata_start_type_cont  = "continue"
   character(len=*), public, parameter :: seq_infodata_start_type_brnch = "branch"
   character(len=*), public, parameter :: seq_infodata_orb_fixed_year       = 'fixed_year'
-  character(len=*), public, parameter :: seq_infodata_orb_variable_year    = 'variable_year'
+   character(len=*), public, parameter :: seq_infodata_orb_variable_year    = 'variable_orbit_year'
   character(len=*), public, parameter :: seq_infodata_orb_fixed_parameters = 'fixed_parameters'
 
   ! For seq_nlmap_mod.
@@ -99,6 +109,7 @@ MODULE seq_infodata_mod
      integer(SHR_KIND_IN)    :: orb_iyear       ! orbital year
      integer(SHR_KIND_IN)    :: orb_iyear_align ! model year associated with orb year
      character(SHR_KIND_CL)  :: orb_mode        ! orbital mode
+   logical                 :: orb_use_equation_of_time = .false.
      real(SHR_KIND_R8)       :: orb_eccen       ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_obliq       ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_mvelp       ! See shr_orb_mod
@@ -250,6 +261,9 @@ MODULE seq_infodata_mod
 
      !--- set via components and may be time varying ---
      real(SHR_KIND_R8)       :: nextsw_cday     ! calendar of next atm shortwave
+   integer(SHR_KIND_IN)    :: nextsw_ymd = 0
+   real(SHR_KIND_R8)       :: nextsw_tod = -1.0_SHR_KIND_R8
+   logical                :: nextsw_valid = .false.
      real(SHR_KIND_R8)       :: precip_fact     ! precip factor
      integer(SHR_KIND_IN)    :: atm_phase       ! atm phase
      integer(SHR_KIND_IN)    :: lnd_phase       ! lnd phase
@@ -294,6 +308,56 @@ MODULE seq_infodata_mod
 
   !===============================================================================
 CONTAINS
+
+  subroutine validate_solar_timestamp(infodata)
+    type(seq_infodata_type), intent(in) :: infodata
+
+    if (.not. infodata%nextsw_valid) return
+    if (.not. ieee_is_finite(infodata%nextsw_cday) .or. .not. ieee_is_finite(infodata%nextsw_tod)) &
+       call shr_sys_abort('seq_infodata: non-finite next-shortwave timestamp')
+    if (infodata%nextsw_cday < 0.0_SHR_KIND_R8 .or. infodata%nextsw_tod < 0.0_SHR_KIND_R8 .or. &
+       infodata%nextsw_tod >= 86400.0_SHR_KIND_R8) &
+       call shr_sys_abort('seq_infodata: invalid next-shortwave time or validity')
+    if (.not. shr_cal_validDate(infodata%nextsw_ymd,shr_cal_gregorian)) &
+       call shr_sys_abort('seq_infodata: invalid next-shortwave date')
+  end subroutine validate_solar_timestamp
+
+   subroutine seq_infodata_GetOrbitalContext(infodata, context)
+      type(seq_infodata_type), intent(in) :: infodata
+      type(shr_orb_context_type), intent(out) :: context
+
+      context%fixed_year = infodata%orb_mode == seq_infodata_orb_fixed_year
+      context%variable_year = infodata%orb_mode == seq_infodata_orb_variable_year
+      context%perpetual = infodata%perpetual
+      context%use_equation_of_time = infodata%orb_use_equation_of_time
+      context%iyear = infodata%orb_iyear
+      context%iyear_align = infodata%orb_iyear_align
+      context%perpetual_ymd = infodata%perpetual_ymd
+      context%eccen = infodata%orb_eccen
+      context%obliq = infodata%orb_obliq
+      context%mvelp = infodata%orb_mvelp
+      context%obliqr = infodata%orb_obliqr
+      context%lambm0 = infodata%orb_lambm0
+      context%mvelpp = infodata%orb_mvelpp
+   end subroutine seq_infodata_GetOrbitalContext
+
+   logical function seq_infodata_UseEquationOfTime(infodata)
+      type(seq_infodata_type), intent(in) :: infodata
+      seq_infodata_UseEquationOfTime = infodata%orb_use_equation_of_time
+   end function seq_infodata_UseEquationOfTime
+
+   subroutine seq_infodata_SolarDecl(infodata, ymd, tod, calendar, delta, eccf, eot_seconds)
+    type(seq_infodata_type), intent(in) :: infodata
+    integer(SHR_KIND_IN), intent(in) :: ymd
+    real(SHR_KIND_R8), intent(in) :: tod
+    character(len=*), intent(in) :: calendar
+    real(SHR_KIND_R8), intent(out) :: delta, eccf
+   real(SHR_KIND_R8), intent(out), optional :: eot_seconds
+    type(shr_orb_context_type) :: context
+
+    call seq_infodata_GetOrbitalContext(infodata, context)
+   call shr_cal_solarDecl(context, ymd, tod, calendar, delta, eccf, eot_seconds)
+  end subroutine seq_infodata_SolarDecl
   !===============================================================================
 
   !===============================================================================
@@ -316,7 +380,7 @@ CONTAINS
     use shr_string_mod,  only : shr_string_toUpper, shr_string_listAppend
     use shr_mpi_mod,     only : shr_mpi_bcast
     use seq_timemgr_mod, only : seq_timemgr_pause_active
-    use seq_io_read_mod, only : seq_io_read
+   use seq_io_read_mod, only : seq_io_read, seq_io_hasField
     use pio,             only : file_desc_t
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -369,6 +433,7 @@ CONTAINS
     integer(SHR_KIND_IN)   :: orb_iyear          ! orbital year
     integer(SHR_KIND_IN)   :: orb_iyear_align    ! model year associated with orb year
     character(SHR_KIND_CL) :: orb_mode           ! orbital mode
+   logical :: orb_use_equation_of_time
     real(SHR_KIND_R8)      :: orb_obliq          ! Obliquity of orbit
     real(SHR_KIND_R8)      :: orb_eccen          ! Eccentricity of orbit
     real(SHR_KIND_R8)      :: orb_mvelp          ! Location of vernal equinox
@@ -472,6 +537,7 @@ CONTAINS
          flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
+         orb_use_equation_of_time, &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
          constant_zenith_deg,                              &
          wv_sat_scheme, wv_sat_transition_start,           &
@@ -542,6 +608,7 @@ CONTAINS
        perpetual             = .false.
        perpetual_ymd         = -999
        orb_mode              = seq_infodata_orb_fixed_year
+      orb_use_equation_of_time = .false.
        orb_iyear             = SHR_ORB_UNDEF_INT
        orb_iyear_align       = SHR_ORB_UNDEF_INT
        orb_obliq             = SHR_ORB_UNDEF_REAL
@@ -833,6 +900,9 @@ CONTAINS
                                     ! not sure if it exists always actually
 
        infodata%nextsw_cday   = -1.0_SHR_KIND_R8
+      infodata%nextsw_ymd = 0
+      infodata%nextsw_tod = -1.0_SHR_KIND_R8
+      infodata%nextsw_valid = .false.
        infodata%precip_fact   =  1.0_SHR_KIND_R8
        infodata%atm_phase     = 1
        infodata%lnd_phase     = 1
@@ -852,6 +922,7 @@ CONTAINS
        !---------------------------------------------------------------
        ! check orbital mode, reset unused parameters, validate settings
        !---------------------------------------------------------------
+      if (trim(orb_mode) == 'variable_year') orb_mode = seq_infodata_orb_variable_year
        if (trim(orb_mode) == trim(seq_infodata_orb_fixed_year)) then
           orb_obliq = SHR_ORB_UNDEF_REAL
           orb_eccen = SHR_ORB_UNDEF_REAL
@@ -868,7 +939,7 @@ CONTAINS
           if (orb_iyear       == SHR_ORB_UNDEF_INT .or. &
                orb_iyear_align == SHR_ORB_UNDEF_INT) then
              write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
-             write(logunit,*) trim(subname),' ERROR: variable_year settings = ',orb_iyear,orb_iyear_align
+             write(logunit,*) trim(subname),' ERROR: variable_orbit_year settings = ',orb_iyear,orb_iyear_align
              call shr_sys_abort(subname//' ERROR: invalid settings for orb_mode '//trim(orb_mode))
           endif
        elseif (trim(orb_mode) == trim(seq_infodata_orb_fixed_parameters)) then
@@ -892,6 +963,12 @@ CONTAINS
             orb_obliqr, orb_lambm0, orb_mvelpp, .true.)
 
        infodata%orb_mode   = orb_mode
+      infodata%orb_use_equation_of_time = orb_use_equation_of_time
+#ifdef ESMF_INTERFACE
+      if (orb_use_equation_of_time) &
+           call shr_sys_abort('orb_use_equation_of_time requires the MCT or MOAB solar-context interface')
+#endif
+      if (loglevel > 0) write(logunit,*) 'orb_use_equation_of_time = ', orb_use_equation_of_time
        infodata%orb_iyear  = orb_iyear
        infodata%orb_iyear_align = orb_iyear_align
        infodata%orb_eccen  = orb_eccen
@@ -942,13 +1019,35 @@ CONTAINS
        call shr_mpi_bcast(infodata%restart_file,mpicom)
        !--- NOTE: use CPLID here because seq_io is only value on CPLID
        if (seq_comm_iamin(CPLID)) then
+          ierr = 0
+          if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_orb_use_equation_of_time')) then
+             call seq_io_read(infodata%restart_file, pioid, ierr, 'seq_infodata_orb_use_equation_of_time')
+          end if
+          if (ierr /= 0 .and. ierr /= 1) call shr_sys_abort('Invalid restart equation-of-time convention')
+          if (seq_comm_iamroot(ID)) then
+             if ((ierr == 1) .neqv. infodata%orb_use_equation_of_time) &
+                  call shr_sys_abort('Restart equation-of-time convention differs from orb_use_equation_of_time')
+          end if
           call seq_io_read(infodata%restart_file,pioid,infodata%nextsw_cday   ,'seq_infodata_nextsw_cday')
+          if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_solar_time_version')) then
+             call seq_io_read(infodata%restart_file, pioid, ierr, 'seq_infodata_solar_time_version')
+             if (ierr /= 1) call shr_sys_abort('Unsupported restart solar timestamp version')
+             call seq_io_read(infodata%restart_file, pioid, infodata%nextsw_ymd, 'seq_infodata_nextsw_ymd')
+             call seq_io_read(infodata%restart_file, pioid, infodata%nextsw_tod, 'seq_infodata_nextsw_tod')
+             call seq_io_read(infodata%restart_file, pioid, ierr, 'seq_infodata_nextsw_valid')
+             if (ierr /= 0 .and. ierr /= 1) call shr_sys_abort('Invalid restart solar timestamp validity')
+             infodata%nextsw_valid = ierr == 1
+             call validate_solar_timestamp(infodata)
+          end if
           call seq_io_read(infodata%restart_file,pioid,infodata%precip_fact   ,'seq_infodata_precip_fact')
           call seq_io_read(infodata%restart_file,pioid,infodata%rest_case_name,'seq_infodata_case_name')
           call seq_io_read(infodata%restart_file,pioid,infodata%rmean_rmv_ice_runoff   ,'seq_infodata_rmean_rmv_ice_runoff')
        endif
        !--- Send from CPLID ROOT to GLOBALID ROOT, use bcast as surrogate
        call shr_mpi_bcast(infodata%nextsw_cday,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%nextsw_ymd,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%nextsw_tod,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%nextsw_valid,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%precip_fact,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%rest_case_name,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%rmean_rmv_ice_runoff,mpicom,pebcast=seq_comm_gloroot(CPLID))
@@ -1084,7 +1183,7 @@ CONTAINS
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
        glc_valid_input, nlmaps_verbosity, nlmaps_atm2srf_conserve,        &
-       nlmaps_exclude_fields, rmean_rmv_ice_runoff)
+      nlmaps_exclude_fields, rmean_rmv_ice_runoff, nextsw_ymd, nextsw_tod, nextsw_valid)
 
     implicit none
 
@@ -1266,6 +1365,9 @@ CONTAINS
     character(SHR_KIND_CL), optional, intent(OUT) :: atm_mesh
 
     real(SHR_KIND_R8),      optional, intent(OUT) :: nextsw_cday             ! calendar of next atm shortwave
+   integer(SHR_KIND_IN), optional, intent(out) :: nextsw_ymd
+   real(SHR_KIND_R8), optional, intent(out) :: nextsw_tod
+   logical, optional, intent(out) :: nextsw_valid
     real(SHR_KIND_R8),      optional, intent(OUT) :: precip_fact             ! precip factor
     real(SHR_KIND_R8),      optional, intent(OUT) :: flux_epbalfact          ! adjusted precip factor
     integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_phase               ! atm phase
@@ -1465,6 +1567,9 @@ CONTAINS
     if ( present(atm_mesh)       ) atm_mesh       = infodata%atm_mesh
 
     if ( present(nextsw_cday)    ) nextsw_cday    = infodata%nextsw_cday
+   if (present(nextsw_ymd)) nextsw_ymd = infodata%nextsw_ymd
+   if (present(nextsw_tod)) nextsw_tod = infodata%nextsw_tod
+   if (present(nextsw_valid)) nextsw_valid = infodata%nextsw_valid
     if ( present(precip_fact)    ) precip_fact    = infodata%precip_fact
     if ( present(flux_epbalfact) ) then
        flux_epbalfact = 1.0_SHR_KIND_R8
@@ -1666,7 +1771,7 @@ CONTAINS
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, glc_valid_input,                   &
        nlmaps_verbosity, nlmaps_atm2srf_conserve, nlmaps_exclude_fields,  &
-       rmean_rmv_ice_runoff)
+      rmean_rmv_ice_runoff, nextsw_ymd, nextsw_tod, nextsw_valid)
 
 
 
@@ -1849,6 +1954,9 @@ CONTAINS
     character(SHR_KIND_CL), optional, intent(IN)    :: atm_mesh
 
     real(SHR_KIND_R8),      optional, intent(IN)    :: nextsw_cday        ! calendar of next atm shortwave
+   integer(SHR_KIND_IN), optional, intent(in) :: nextsw_ymd
+   real(SHR_KIND_R8), optional, intent(in) :: nextsw_tod
+   logical, optional, intent(in) :: nextsw_valid
     real(SHR_KIND_R8),      optional, intent(IN)    :: precip_fact        ! precip factor
     integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_phase          ! atm phase
     integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_phase          ! lnd phase
@@ -2046,7 +2154,25 @@ CONTAINS
     if ( present(ice_domain)     ) infodata%ice_domain     = ice_domain
     if ( present(atm_mesh)       ) infodata%atm_mesh       = atm_mesh
 
-    if ( present(nextsw_cday)    ) infodata%nextsw_cday    = nextsw_cday
+    if (present(nextsw_cday)) then
+       infodata%nextsw_cday = nextsw_cday
+       infodata%nextsw_ymd = 0
+       infodata%nextsw_tod = -1.0_SHR_KIND_R8
+       infodata%nextsw_valid = .false.
+    end if
+    if (present(nextsw_ymd) .or. present(nextsw_tod) .or. present(nextsw_valid)) then
+       if (.not. present(nextsw_ymd) .or. .not. present(nextsw_tod) .or. &
+            .not. present(nextsw_valid) .or. .not. present(nextsw_cday)) then
+          call shr_sys_abort('seq_infodata_PutData: incomplete next-shortwave timestamp')
+       end if
+       infodata%nextsw_ymd = nextsw_ymd
+       infodata%nextsw_tod = nextsw_tod
+       infodata%nextsw_valid = nextsw_valid
+      call validate_solar_timestamp(infodata)
+       if (nextsw_valid .and. nextsw_cday < 0.0_SHR_KIND_R8) then
+          call shr_sys_abort('seq_infodata_PutData: inconsistent next-shortwave validity')
+       end if
+    end if
     if ( present(precip_fact)    ) infodata%precip_fact    = precip_fact
     if ( present(atm_phase)      ) infodata%atm_phase      = atm_phase
     if ( present(lnd_phase)      ) infodata%lnd_phase      = lnd_phase
@@ -2226,6 +2352,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%orb_iyear,               mpicom)
     call shr_mpi_bcast(infodata%orb_iyear_align,         mpicom)
     call shr_mpi_bcast(infodata%orb_mode,                mpicom)
+   call shr_mpi_bcast(infodata%orb_use_equation_of_time, mpicom)
     call shr_mpi_bcast(infodata%orb_eccen,               mpicom)
     call shr_mpi_bcast(infodata%orb_obliq,               mpicom)
     call shr_mpi_bcast(infodata%orb_mvelp,               mpicom)
@@ -2371,6 +2498,9 @@ CONTAINS
     call shr_mpi_bcast(infodata%ice_domain,              mpicom)
     call shr_mpi_bcast(infodata%atm_mesh,                mpicom)
     call shr_mpi_bcast(infodata%nextsw_cday,             mpicom)
+   call shr_mpi_bcast(infodata%nextsw_ymd,              mpicom)
+   call shr_mpi_bcast(infodata%nextsw_tod,              mpicom)
+   call shr_mpi_bcast(infodata%nextsw_valid,            mpicom)
     call shr_mpi_bcast(infodata%precip_fact,             mpicom)
     call shr_mpi_bcast(infodata%atm_phase,               mpicom)
     call shr_mpi_bcast(infodata%lnd_phase,               mpicom)
@@ -2734,6 +2864,9 @@ CONTAINS
     ! Run-time data exchanges
     if (atm2cplr) then
        call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cmppe)
+      call shr_mpi_bcast(infodata%nextsw_ymd,         mpicom, pebcast=cmppe)
+      call shr_mpi_bcast(infodata%nextsw_tod,         mpicom, pebcast=cmppe)
+      call shr_mpi_bcast(infodata%nextsw_valid,       mpicom, pebcast=cmppe)
     endif
 
     if (ocn2cplr) then
@@ -2743,6 +2876,9 @@ CONTAINS
 
     if (cpl2r) then
        call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cplpe)
+      call shr_mpi_bcast(infodata%nextsw_ymd,         mpicom, pebcast=cplpe)
+      call shr_mpi_bcast(infodata%nextsw_tod,         mpicom, pebcast=cplpe)
+      call shr_mpi_bcast(infodata%nextsw_valid,       mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_valid_input,    mpicom, pebcast=cplpe)
@@ -3117,6 +3253,7 @@ CONTAINS
     write(logunit,F0A) subname,'atm_mesh                 = ', infodata%atm_mesh
 
     write(logunit,F0R) subname,'nextsw_cday              = ', infodata%nextsw_cday
+   write(logunit,*) subname, 'nextsw timestamp = ', infodata%nextsw_ymd, infodata%nextsw_tod, infodata%nextsw_valid
     write(logunit,F0R) subname,'precip_fact              = ', infodata%precip_fact
     write(logunit,F0L) subname,'atm_aero                 = ', infodata%atm_aero
 

@@ -614,6 +614,20 @@
     </values>
   </entry>
 
+  <entry id="orb_use_equation_of_time">
+    <type>logical</type>
+    <category>orbital</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Apply apparent minus mean solar time to solar hour angles. Independent
+      of CALENDAR and orb_mode; does not change declination, distance or clocks.
+      Disabled by default until all solar-geometry consumers are integrated.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="orb_iyear_align">
     <type>integer</type>
     <category>orbital</category>

@@ -43,6 +43,7 @@ module seq_io_read_mod
   ! !PUBLIC MEMBER FUNCTIONS:
 
   public seq_io_read
+   public seq_io_hasField
 
   ! !PUBLIC DATA MEMBERS
 
@@ -70,6 +71,21 @@ module seq_io_read_mod
   !=================================================================================
 contains
   !=================================================================================
+
+   logical function seq_io_hasField(filename, pioid, dname)
+      character(len=*), intent(in) :: filename, dname
+      type(file_desc_t) :: pioid
+      type(var_desc_t) :: varid
+      character(CL) :: field_name
+      logical :: addprefix
+      integer :: rcode
+
+      call seq_io_read_openfile(filename, pioid, addprefix)
+      field_name = dname
+      if (addprefix) field_name = prefix // trim(dname)
+      rcode = pio_inq_varid(pioid, trim(field_name), varid)
+      seq_io_hasField = rcode == 0
+   end function seq_io_hasField
 
   !===============================================================================
   !BOP ===========================================================================
