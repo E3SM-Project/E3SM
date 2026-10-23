@@ -135,11 +135,21 @@ contains
     ! Work arrays are indexed by position in the soil column filter
     real(r8):: cn_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools)
     real(r8):: cp_decomp_pools(num_soilc,1:nlevdecomp,1:ndecomp_pools)
-    real(r8):: cp_decomp_pools_new(num_soilc,1:nlevdecomp,1:ndecomp_pools)               !C:P ratio of new SOM
     integer, parameter :: i_atm = 0
     ! For methane code
     ! phr_vr is col_cf%phr_vr (associate below)
     real(r8):: hrsum(num_soilc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
+    ! Filter-position copies of the (c,j) fields that are read or summed in every
+    ! pass over the transitions k. Each sum is still over k in increasing order.
+    real(r8):: immob_loc(num_soilc,1:nlevdecomp)      ! potential_immob_vr
+    real(r8):: immob_p_loc(num_soilc,1:nlevdecomp)    ! potential_immob_p_vr
+    real(r8):: phr_loc(num_soilc,1:nlevdecomp)        ! phr_vr
+    real(r8):: gross_nmin_loc(num_soilc,1:nlevdecomp) ! gross_nmin_vr
+    real(r8):: gross_pmin_loc(num_soilc,1:nlevdecomp) ! gross_pmin_vr
+    real(r8):: net_nmin_loc(num_soilc,1:nlevdecomp)   ! net_nmin_vr
+    real(r8):: net_pmin_loc(num_soilc,1:nlevdecomp)   ! net_pmin_vr
+    real(r8):: fpi_loc(num_soilc,1:nlevdecomp)        ! fpi_vr
+    real(r8):: fpi_p_loc(num_soilc,1:nlevdecomp)      ! fpi_p_vr
 
     !-----------------------------------------------------------------------
 
@@ -248,12 +258,6 @@ contains
                end do
             end do
          end if
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               cp_decomp_pools_new(fc,j,l) = initial_cp_ratio(l)
-            end do
-         end do
       end do
 
       ! calculate the non-nitrogen-limited fluxes
@@ -270,12 +274,11 @@ contains
 
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            potential_immob_vr(c,j) = 0._r8
-            potential_immob_p_vr(c,j) = 0._r8
-            gross_nmin_vr(c,j) = 0._r8
-            gross_pmin_vr(c,j) = 0._r8
-            phr_vr(c,j) = 0._r8
+            immob_loc(fc,j) = 0._r8
+            immob_p_loc(fc,j) = 0._r8
+            gross_nmin_loc(fc,j) = 0._r8
+            gross_pmin_loc(fc,j) = 0._r8
+            phr_loc(fc,j) = 0._r8
          end do
       end do
 
@@ -321,11 +324,11 @@ contains
 
                         if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
 !                           ratio = cp_decomp_pools(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
-                           ratio = cp_decomp_pools_new(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
+                           ratio = initial_cp_ratio(cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
                         endif
 
                         pmpf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
-                             / cp_decomp_pools_new(fc,j,cascade_receiver_pool(k)) )
+                             / initial_cp_ratio(cascade_receiver_pool(k)) )
 
                      else   ! 100% respiration
                         if(decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
@@ -340,18 +343,31 @@ contains
                end if
 
                if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
-                  potential_immob_vr(c,j) = potential_immob_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+                  immob_loc(fc,j) = immob_loc(fc,j) + pmnf_decomp_cascade(c,j,k)
                else if (.not. is_rd) then
-                  gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - pmnf_decomp_cascade(c,j,k)
+                  gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - pmnf_decomp_cascade(c,j,k)
                end if
                if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
-                  potential_immob_p_vr(c,j) = potential_immob_p_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+                  immob_p_loc(fc,j) = immob_p_loc(fc,j) + pmpf_decomp_cascade(c,j,k)
                else if (.not. is_rd) then
-                  gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
+                  gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - pmpf_decomp_cascade(c,j,k)
                end if
 
-               phr_vr(c,j) = phr_vr(c,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
+               phr_loc(fc,j) = phr_loc(fc,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
             end do
+         end do
+      end do
+
+      ! Store the sums accumulated above. Nothing reads these fields in the loop
+      ! above; their first readers are nitrif_denitrif and Allocation2 below.
+      do j = 1,nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            potential_immob_vr(c,j) = immob_loc(fc,j)
+            potential_immob_p_vr(c,j) = immob_p_loc(fc,j)
+            gross_nmin_vr(c,j) = gross_nmin_loc(fc,j)
+            gross_pmin_vr(c,j) = gross_pmin_loc(fc,j)
+            phr_vr(c,j) = phr_loc(fc,j)
          end do
       end do
       call t_stopf('SLDA-potential')
@@ -396,11 +412,17 @@ contains
 
       call t_startf('SLDA-actual')
       ! Zero the sums that are accumulated in the loop over transitions below.
+      ! net_nmin_vr and net_pmin_vr keep their incoming value as the start of the
+      ! sum. fpi_vr and fpi_p_vr are not changed in this loop, so a copy is exact.
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            gross_nmin_vr(c,j) = 0.0_r8
-            gross_pmin_vr(c,j) = 0.0_r8
+            fpi_loc(fc,j) = fpi_vr(c,j)
+            fpi_p_loc(fc,j) = fpi_p_vr(c,j)
+            net_nmin_loc(fc,j) = net_nmin_vr(c,j)
+            net_pmin_loc(fc,j) = net_pmin_vr(c,j)
+            gross_nmin_loc(fc,j) = 0.0_r8
+            gross_pmin_loc(fc,j) = 0.0_r8
             hrsum(fc,j) = 0._r8
          end do
       end do
@@ -433,17 +455,17 @@ contains
                decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
                   if ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) > 0._r8 ) then    ! N and P co-limitation
-                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )
-                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_vr(c,j),fpi_p_vr(c,j) )   !!! immobilization step
+                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )
+                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )   !!! immobilization step
                   elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation
-                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_vr(c,j)
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_vr(c,j)
-                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_vr(c,j) !!! immobilization step
+                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_loc(fc,j)
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_loc(fc,j)
+                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_loc(fc,j) !!! immobilization step
                   elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation
-                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_p_vr(c,j)
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_vr(c,j)
-                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_vr(c,j) !!! immobilization step
+                     p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_p_loc(fc,j)
+                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_loc(fc,j)
+                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_loc(fc,j) !!! immobilization step
                   end if
                   decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
                   decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(fc,j,k)
@@ -465,8 +487,8 @@ contains
                      decomp_cascade_sminn_flux_vr(c,j,k) = - pmnf_decomp_cascade(c,j,k)
                      decomp_cascade_sminp_flux_vr(c,j,k) = - pmpf_decomp_cascade(c,j,k)
                   endif
-                  net_nmin_vr(c,j) = net_nmin_vr(c,j) - pmnf_decomp_cascade(c,j,k)
-                  net_pmin_vr(c,j) = net_pmin_vr(c,j) - pmpf_decomp_cascade(c,j,k)
+                  net_nmin_loc(fc,j) = net_nmin_loc(fc,j) - pmnf_decomp_cascade(c,j,k)
+                  net_pmin_loc(fc,j) = net_pmin_loc(fc,j) - pmpf_decomp_cascade(c,j,k)
                else
                   decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
@@ -476,10 +498,10 @@ contains
 
                if (is_rd) then
                   if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then
-                      gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
+                      gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                   end if
                   if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then
-                      gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
+                      gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
                   end if
                else
                   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
@@ -487,14 +509,14 @@ contains
                      soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
                   else
                      soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                     gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
+                     gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                   end if
                   if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
                      soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                      soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
                   else
                      soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                     gross_pmin_vr(c,j) = gross_pmin_vr(c,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
+                     gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
                   end if
                end if
 
@@ -502,6 +524,17 @@ contains
                   hrsum(fc,j) = hrsum(fc,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
                end if
             end do
+         end do
+      end do
+
+      ! Store the sums accumulated above
+      do j = 1,nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            net_nmin_vr(c,j) = net_nmin_loc(fc,j)
+            net_pmin_vr(c,j) = net_pmin_loc(fc,j)
+            gross_nmin_vr(c,j) = gross_nmin_loc(fc,j)
+            gross_pmin_vr(c,j) = gross_pmin_loc(fc,j)
          end do
       end do
 
