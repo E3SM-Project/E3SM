@@ -76,12 +76,13 @@ using lview_3d  = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>
 using liview_1d = Kokkos::View<int*,      Kokkos::LayoutLeft, Kokkos::HostSpace>;
 using liview_2d = Kokkos::View<int**,     Kokkos::LayoutLeft, Kokkos::HostSpace>;
 
-// Device views in the layout the port uses
-using dview_1d  = Kokkos::View<double*,   DefaultDevice>;
-using dview_2d  = Kokkos::View<double**,  DefaultDevice>;
-using dview_3d  = Kokkos::View<double***, DefaultDevice>;
-using diview_1d = Kokkos::View<int*,      DefaultDevice>;
-using diview_2d = Kokkos::View<int**,     DefaultDevice>;
+// Device views in the layout the port uses (LayoutRight, which is not the default
+// layout on GPU)
+using dview_1d  = F::view_1d<double>;
+using dview_2d  = F::view_2d<double>;
+using dview_3d  = F::view_3d<double>;
+using diview_1d = F::view_1d<int>;
+using diview_2d = F::view_2d<int>;
 
 using Policy2 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>;
 using Policy3 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>;
