@@ -289,6 +289,9 @@ contains
     real(r8) :: delt_soil
     real(r8) :: delt_h2osfc
     real(r8) :: lw_grnd
+    real(r8) :: lsai_exp(bounds%begp:bounds%endp)    ! exp(-LSAI), iteration invariant
+    real(r8) :: rdl_num(bounds%begp:bounds%endp)     ! numerator of rdl, iteration invariant
+    real(r8) :: lw_grnd_p(bounds%begp:bounds%endp)   ! lw_grnd, iteration invariant
     real(r8) :: delq_snow
     real(r8) :: delq_soil
     real(r8) :: delq_h2osfc
@@ -783,6 +786,28 @@ contains
          
       end do
 
+      ! Terms of the stability iteration whose inputs do not change during it.
+      ! They are computed with the same scalar expressions as before, so they
+      ! keep the same values.
+      !DIR$ NOVECTOR
+      do f = 1, fn
+         p = filterp(f)
+         c = veg_pp%column(p)
+
+         lsai_exp(p) = exp(-(elai(p)+esai(p)))
+
+         !Litter layer resistance. Added by K.Sakaguchi
+         snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
+         fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
+         elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
+         rdl_num(p) = 1._r8 - exp(-elai_dl)
+
+         ! fractionate ground emitted longwave
+         lw_grnd_p(p) = (frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
+              +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
+              +frac_h2osfc(c)*t_h2osfc(c)**4)
+      end do
+
       ! Set counter for leaf temperature iteration (itlef)
 
       itlef = 1
@@ -849,7 +874,7 @@ contains
             ! Parameterization for variation of csoilc with canopy density from
             ! X. Zeng, University of Arizona
 
-            w = exp(-(elai(p)+esai(p)))
+            w = lsai_exp(p)
 
             ! changed by K.Sakaguchi from here
             ! transfer coefficient over bare soil is changed to a local variable
@@ -1047,10 +1072,7 @@ contains
             wtlq    = frac_veg_nosno(p)*(elai(p)+esai(p))/rb(p) * rpp   ! leaf
 
             !Litter layer resistance. Added by K.Sakaguchi
-            snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
-            fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
-            elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
-            rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
+            rdl = rdl_num(p) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
 
             ! add litter resistance and Lee and Pielke 1992 beta
             if (delq(p) < 0._r8) then  !dew. Do not apply beta for negative flux (follow old rsoil)
@@ -1085,9 +1107,7 @@ contains
                erre = efe(p) - efeold
             end if
             ! fractionate ground emitted longwave
-            lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
-                 +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
-                 +frac_h2osfc(c)*t_h2osfc(c)**4)
+            lw_grnd = lw_grnd_p(p)
 
             dt_veg(p) = (sabv(p) + air(p) + bir(p)*t_veg(p)**4 + &
                  cir(p)*lw_grnd - efsh - efe(p)) / &
@@ -1232,9 +1252,7 @@ contains
 
          ! Energy balance check in canopy
 
-         lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
-              +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
-              +frac_h2osfc(c)*t_h2osfc(c)**4)
+         lw_grnd = lw_grnd_p(p)
 
          err(p) = sabv(p) + air(p) + bir(p)*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p)) &
                                 !+ cir(p)*t_grnd(c)**4 - eflx_sh_veg(p) - hvap*qflx_evap_veg(p)
