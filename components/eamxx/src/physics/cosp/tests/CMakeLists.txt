@@ -9,6 +9,6 @@ target_include_directories(cosp_f90_shims PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/..
 # BFB tests of the C++ leaf routines against the Fortran
 CreateUnitTest(cosp_leaf_tests
   SOURCES cosp_leaf_tests.cpp cosp_misr_tests.cpp cosp_isccp_tests.cpp
-          cosp_modis_tests.cpp
+          cosp_modis_tests.cpp cosp_main_tests.cpp
   LIBS eamxx_cosp cosp_f90_shims
   LABELS "cosp;physics")

@@ -1,6 +1,8 @@
 # EAMxx COSP: C++/Kokkos port plan
 
-Status: M0 timers and the `cosp_impl` switch are in; M1 (leaf kernels plus BFB tests) in progress.
+Status: M0, M1 and M2 are done on CPU. `cosp_impl: cxx` with `cosp_subcolumns: 1` runs the whole
+COSP call on device and matches the Fortran bit for bit (`cosp_main_bfb` in `cosp_leaf_tests`).
+Not yet run in `cosp_standalone` or on GPU. Next: M3 (SCOPS, 10 subcolumns).
 Branch: `whannah/eamxx/cosp-cxx-port`, based on E3SM master `ac6eaa2`.
 COSP submodule (`components/eam/src/physics/cosp2/external`): E3SM-Project/COSPv2.0 `afd43be` (branch `e3sm-master`).
 
@@ -161,7 +163,17 @@ which EAMxx uses one (the tau/CTP joint histogram), so the port can skip the res
    this becomes a predicated loop over all columns with no compaction.
 5. **Bin order flips.** ISCCP reverses the pressure axis (`cosp.F90:962`) and MODIS does the same
    (`cosp.F90:1399-1400`). Easy to get wrong when the outputs move to LayoutRight.
-6. **Vertical order.** COSP gets levels top to bottom here, same as EAMxx (`cosp_c2f.F90:334-344`
+6. **Input checks switch simulators off for the whole chunk.** `cosp_errorCheck` (`cosp.F90`)
+   looks at all columns passed in, and a single out-of-range value (for example `qv < 0`
+   anywhere switches ISCCP off, `T_mid < 0` ISCCP and MISR, `tau_067 < 0` all three, `asym` or
+   `ss_alb` outside their ranges MODIS) turns the simulator off and sets its outputs to `R_UNDEF`
+   in every column of the rank. The C++ reproduces this with one reduction over the inputs. It is
+   arguably a bug (a tiny negative `qv` blanks ISCCP for the whole rank), worth revisiting once the
+   port is in.
+7. **The MODIS tau/CTP histogram ignores the retrieved size,** except for its sign. So the size
+   retrieval only needs to be right to the extent that it decides `re_fill` or not; the BFB tests
+   check it directly anyway.
+8. **Vertical order.** COSP gets levels top to bottom here, same as EAMxx (`cosp_c2f.F90:334-344`
    passes them unflipped), so no flips are needed on input.
 
 ## 6. Target design
@@ -233,6 +245,10 @@ seeding, and pulling in upstream CFMIP changes.
 - Leaf-level BFB tests live in `src/physics/cosp/tests/` (`cosp_leaf_tests`): `cosp_f90_shims.F90`
   exposes individual Fortran routines through `bind(C)`, and each Catch2 test runs the Fortran and
   the C++ kernel on the same random inputs and requires exact equality.
+- `cosp_main_bfb` compares the whole C++ call (`Functions::cosp_main`) with `cosp_c2f_run` from
+  the real EAMxx bridge, including the out-of-range input cases above.
+- `cosp_c2f_init` can only be called once per process (`cosp_init` allocates module arrays), and
+  the MODIS histogram size `numMODISTauBins` is only set by `cosp_init`, so the shims set it.
 - `tests/single-process/cosp/` already has a `cosp_standalone` AD test (ne4, 72 levels, 2/5/48
   steps) with a baseline compare. It's the natural place for Fortran vs C++ whole-pipeline
   comparisons.
