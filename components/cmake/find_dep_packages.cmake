@@ -48,7 +48,14 @@ if (USE_PETSC)
   find_package(PETSc REQUIRED)
 endif()
 
-find_package(PIO REQUIRED)
+if (NOT DEFINED ENV{SCORPIO_DIR})
+  set(ENV{SCORPIO_DIR} ${INSTALL_SHAREDPATH})
+endif()
+
+#set(CMAKE_FIND_DEBUG_MODE TRUE)
+if (NOT SCORPIO_FOUND)
+  find_package(SCORPIO REQUIRED)
+endif()
 find_package(MCT REQUIRED)
 find_package(CsmShare REQUIRED)
 
