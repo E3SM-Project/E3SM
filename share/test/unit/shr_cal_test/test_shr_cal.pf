@@ -96,6 +96,7 @@ contains
     context%obliqr = 0.409_r8
     context%lambm0 = -0.0327_r8
     context%mvelpp = 4.94_r8
+    @assertTrue(context%use_equation_of_time)
     do mode = 1, 2
       calendar = shr_cal_noleap
       if (mode == 2) calendar = shr_cal_gregorian

@@ -625,10 +625,10 @@
     <desc>
       Apply apparent minus mean solar time to solar hour angles. Independent
       of CALENDAR and orb_mode; does not change declination, distance or clocks.
-      Disabled by default until all solar-geometry consumers are integrated.
+      Enabled by default; set false to retain the mean-solar-time convention.
     </desc>
     <values>
-      <value>.false.</value>
+      <value>.true.</value>
     </values>
   </entry>
 

@@ -27,7 +27,7 @@ MODULE shr_orb_mod
      logical :: fixed_year = .false.
      logical :: variable_year = .false.
      logical :: perpetual = .false.
-   logical :: use_equation_of_time = .false.
+   logical :: use_equation_of_time = .true.
      integer(SHR_KIND_IN) :: iyear = SHR_ORB_UNDEF_INT
      integer(SHR_KIND_IN) :: iyear_align = SHR_ORB_UNDEF_INT
      integer(SHR_KIND_IN) :: perpetual_ymd = 0

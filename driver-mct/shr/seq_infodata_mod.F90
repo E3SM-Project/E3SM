@@ -109,7 +109,7 @@ MODULE seq_infodata_mod
      integer(SHR_KIND_IN)    :: orb_iyear       ! orbital year
      integer(SHR_KIND_IN)    :: orb_iyear_align ! model year associated with orb year
      character(SHR_KIND_CL)  :: orb_mode        ! orbital mode
-   logical                 :: orb_use_equation_of_time = .false.
+   logical                 :: orb_use_equation_of_time = .true.
      real(SHR_KIND_R8)       :: orb_eccen       ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_obliq       ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_mvelp       ! See shr_orb_mod
@@ -596,7 +596,7 @@ CONTAINS
        perpetual             = .false.
        perpetual_ymd         = -999
        orb_mode              = seq_infodata_orb_fixed_year
-      orb_use_equation_of_time = .false.
+      orb_use_equation_of_time = .true.
        orb_iyear             = SHR_ORB_UNDEF_INT
        orb_iyear_align       = SHR_ORB_UNDEF_INT
        orb_obliq             = SHR_ORB_UNDEF_REAL

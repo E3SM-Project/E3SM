@@ -903,7 +903,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const bool has_coupled_geometry = shr_orb_has_geometry_callback_c2f();
   const bool coupled_eot = shr_orb_use_equation_of_time_c2f();
   const bool has_local_eot = m_params.isParameter("use_equation_of_time");
-  const bool local_eot = has_local_eot ? m_params.get<bool>("use_equation_of_time") : false;
+  const bool local_eot = has_local_eot ? m_params.get<bool>("use_equation_of_time") : true;
   EKAT_REQUIRE_MSG(!has_coupled_geometry ||
            !has_local_eot || local_eot == coupled_eot,
                    "MAM equation-of-time setting conflicts with the coupled driver.");
