@@ -277,6 +277,18 @@ contains
 
     ! Initialize output because solar radiation only done if coszen > 0
 
+    ! The snow layer absorption factors have no band index, so zero them
+    ! once rather than once per band
+    do fc = 1,num_nourbanc
+       c = filter_nourbanc(fc)
+       do i=-nlevsno+1,1,1
+          flx_absdv(c,i) = 0._r8
+          flx_absdn(c,i) = 0._r8
+          flx_absiv(c,i) = 0._r8
+          flx_absin(c,i) = 0._r8
+       enddo
+    end do
+
     do ib = 1, numrad
        do fc = 1,num_nourbanc
           c = filter_nourbanc(fc)
@@ -292,12 +304,6 @@ contains
           albgri_oc(c,ib)  = 0._r8
           albgrd_dst(c,ib) = 0._r8
           albgri_dst(c,ib) = 0._r8
-          do i=-nlevsno+1,1,1
-             flx_absdv(c,i) = 0._r8
-             flx_absdn(c,i) = 0._r8
-             flx_absiv(c,i) = 0._r8
-             flx_absin(c,i) = 0._r8
-          enddo
        end do
 
        do fp = 1,num_nourbanp
