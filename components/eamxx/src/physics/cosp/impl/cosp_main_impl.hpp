@@ -17,11 +17,13 @@ namespace cosp {
 
 template <typename S, typename D>
 Functions<S,D>::Workspace::Workspace(const int ncol, const int nsubcol, const int nlev)
- : tau        ("cosp_ws_tau",         ncol, nsubcol, nlev)
+ : frac_out   ("cosp_ws_frac_out",    ncol, nsubcol, nlev)
+ , tau        ("cosp_ws_tau",         ncol, nsubcol, nlev)
  , dem        ("cosp_ws_dem",         ncol, nsubcol, nlev)
  , liqfrac    ("cosp_ws_liqfrac",     ncol, nsubcol, nlev)
  , g          ("cosp_ws_g",           ncol, nsubcol, nlev)
  , w0         ("cosp_ws_w0",          ncol, nsubcol, nlev)
+ , threshold  ("cosp_ws_threshold",   ncol, nsubcol)
  , boxtau     ("cosp_ws_boxtau",      ncol, nsubcol)
  , boxptop    ("cosp_ws_boxptop",     ncol, nsubcol)
  , boxttop    ("cosp_ws_boxttop",     ncol, nsubcol)
@@ -46,10 +48,6 @@ void Functions<S,D>::cosp_main(
     const view_3d<S>& isccp_ctptau, const view_3d<S>& modis_ctptau,
     const view_3d<S>& misr_cthtau, const Workspace& ws)
 {
-  EKAT_REQUIRE_MSG(nsubcol == 1,
-      "Error! The C++ COSP only supports cosp_subcolumns=1 so far (got " +
-      std::to_string(nsubcol) + ").\n");
-
   using ExeSpace = typename KT::ExeSpace;
   using Policy2  = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>;
   using Policy3  = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>;
@@ -62,6 +60,10 @@ void Functions<S,D>::cosp_main(
   // Bits of the simulators that cosp_errorCheck switches off
   constexpr int isccp_off = 1, misr_off = 2, modis_off = 4;
 
+  // Overlap assumption of the subcolumn generator (maximum-random), set in cosp_c2f.F90
+  constexpr int overlap = 3;
+
+  const auto frac_out = ws.frac_out, threshold = ws.threshold;
   const auto tau = ws.tau, dem = ws.dem, liqfrac = ws.liqfrac, g = ws.g, w0 = ws.w0;
   const auto boxtau = ws.boxtau, boxptop = ws.boxptop, boxttop = ws.boxttop;
   const auto misr_tau = ws.misr_tau, misr_ztop = ws.misr_ztop;
@@ -69,22 +71,73 @@ void Functions<S,D>::cosp_main(
   const auto modis_phase = ws.modis_phase;
 
   // -----------------------------------------------------------------------------------
-  // Optical inputs (subsample_and_optics). With one subcolumn the inputs are converted
-  // from in-cloud to grid-box values, and frac_out is 1 (stratiform) everywhere.
+  // Subcolumns (subsample_and_optics). With one subcolumn, frac_out is 1 (stratiform)
+  // everywhere and SCOPS is skipped. Otherwise each point gets its own RNG stream, seeded
+  // from its surface pressure relative to the min/max over all points.
+  if (nsubcol > 1) {
+    S psfc_min, psfc_max;
+    Kokkos::parallel_reduce("cosp_psfc_minmax", Kokkos::RangePolicy<ExeSpace>(0,ncol),
+                            KOKKOS_LAMBDA (const int j, S& lmin, S& lmax) {
+      lmin = Kokkos::min(lmin, p_int(j,nlev));
+      lmax = Kokkos::max(lmax, p_int(j,nlev));
+    }, Kokkos::Min<S>(psfc_min), Kokkos::Max<S>(psfc_max));
+
+    Kokkos::parallel_for("cosp_scops", Kokkos::RangePolicy<ExeSpace>(0,ncol),
+                         KOKKOS_LAMBDA (const int j) {
+      using Kokkos::ALL;
+      using Kokkos::subview;
+      const auto seed      = scops_seed(ncol, p_int(j,nlev), psfc_min, psfc_max);
+      const auto seed_last = scops_seed(ncol, p_int(ncol-1,nlev), psfc_min, psfc_max);
+      // No convective cloud fraction in EAMxx
+      auto conv = [] (const int) { return S(0); };
+      scops(nlev, nsubcol, seed, seed_last, subview(cldfrac, j, ALL), conv, overlap,
+            subview(frac_out, j, ALL, ALL), subview(threshold, j, ALL));
+    });
+  }
+
+  // -----------------------------------------------------------------------------------
+  // Optical inputs (subsample_and_optics). Inputs are in-cloud values; with one subcolumn
+  // they are converted to grid-box values instead.
   Kokkos::parallel_for("cosp_optics", Policy3({0,0,0},{ncol,nsubcol,nlev}),
                        KOKKOS_LAMBDA (const int j, const int i, const int k) {
-    const S frac_out = C::I_LSC;
-    const S dtau_s = cldfrac(j,k)*dtau067(j,k);
-    const S dem_s  = 1 - Kokkos::exp(-cldfrac(j,k)*dtau105(j,k));
-    const S t = simulator_optics(frac_out, 0, dtau_s);
+    const S fo = nsubcol == 1 ? S(C::I_LSC) : frac_out(j,i,k);
+    const S dtau_s = nsubcol == 1 ? cldfrac(j,k)*dtau067(j,k) : dtau067(j,k);
+    const S dem_s  = nsubcol == 1 ? 1 - Kokkos::exp(-cldfrac(j,k)*dtau105(j,k))
+                                  : 1 - Kokkos::exp(-dtau105(j,k));
+    const S t = simulator_optics(fo, 0, dtau_s);
     tau(j,i,k) = t;
-    dem(j,i,k) = simulator_optics(frac_out, 0, dem_s);
+    dem(j,i,k) = simulator_optics(fo, 0, dem_s);
 
-    // MODIS: there is no convective cloud, and the sizes go through m and back
-    const S cloud_water = simulator_optics(frac_out, 0, qc(j,k));
-    const S cloud_ice   = simulator_optics(frac_out, 0, qi(j,k));
-    const S water_size  = simulator_optics(frac_out, 0, S(1e-6)*reff_qc(j,k));
-    const S ice_size    = simulator_optics(frac_out, 0, S(1e-6)*reff_qi(j,k));
+    // Subcolumn condensate and sizes. There is no convective cloud, and the sizes go
+    // through m and back.
+    S lsliq, lsice, lsliq_size, lsice_size;
+    if (nsubcol == 1) {
+      lsliq      = qc(j,k);
+      lsice      = qi(j,k);
+      lsliq_size = S(1e-6)*reff_qc(j,k);
+      lsice_size = S(1e-6)*reff_qi(j,k);
+    } else {
+      // Stratiform condensate goes into the cloudy subcolumns, scaled up by the fraction
+      // of cloudy subcolumns
+      const bool ls = fo == C::I_LSC;
+      lsliq      = ls ? qc(j,k) : S(0);
+      lsice      = ls ? qi(j,k) : S(0);
+      lsliq_size = ls ? S(1e-6)*reff_qc(j,k) : S(0);
+      lsice_size = ls ? S(1e-6)*reff_qi(j,k) : S(0);
+      S frac_ls = 0;
+      for (int n = 0; n < nsubcol; ++n) {
+        if (frac_out(j,n,k) == C::I_LSC) frac_ls = frac_ls + 1;
+      }
+      frac_ls = frac_ls/nsubcol;
+      if (frac_ls != 0) {
+        lsliq = lsliq/frac_ls;
+        lsice = lsice/frac_ls;
+      }
+    }
+    const S cloud_water = simulator_optics(fo, 0, lsliq);
+    const S cloud_ice   = simulator_optics(fo, 0, lsice);
+    const S water_size  = simulator_optics(fo, 0, lsliq_size);
+    const S ice_size    = simulator_optics(fo, 0, lsice_size);
     S tau_liq, tau_ice;
     modis_optics_partition(cloud_water, cloud_ice, water_size, ice_size, t, tau_liq, tau_ice);
     modis_optics(tau_liq, water_size*S(1.0e6), tau_ice, ice_size*S(1.0e6),

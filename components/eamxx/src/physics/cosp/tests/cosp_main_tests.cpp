@@ -7,8 +7,13 @@
 
 /*
  * BFB test of the whole C++ COSP call (cosp_main) against the Fortran one EAMxx uses
- * (cosp_c2f_run), with one subcolumn.
+ * (cosp_c2f_run). The Fortran can only be initialized once per process, so the number of
+ * subcolumns is set at compile time, and each value gets its own test executable.
  */
+
+#ifndef COSP_TEST_NSUBCOL
+#define COSP_TEST_NSUBCOL 1
+#endif
 
 using namespace scream;
 using namespace scream::cosp_test;
@@ -66,7 +71,7 @@ struct CospOutputs {
 
 void run_fortran (const CospInputs& in, const double emsfc_lw, const CospOutputs& out) {
   using C = F::C;
-  cosp_c2f_run(in.ncol, 1, in.nlev, C::ntau, C::npres, C::nhgt, emsfc_lw, in.sunlit.data(),
+  cosp_c2f_run(in.ncol, COSP_TEST_NSUBCOL, in.nlev, C::ntau, C::npres, C::nhgt, emsfc_lw, in.sunlit.data(),
                in.skt.data(), in.T_mid.data(), in.p_mid.data(), in.p_int.data(),
                in.z_mid.data(), in.qv.data(), in.qc.data(), in.qi.data(), in.cldfrac.data(),
                in.reff_qc.data(), in.reff_qi.data(), in.dtau067.data(), in.dtau105.data(),
@@ -88,7 +93,7 @@ int run_cxx_and_compare (const CospInputs& in, const double emsfc_lw, const Cosp
   dview_1d cldtot("cldtot", ncol);
   dview_3d isccp("isccp", ncol, C::ntau, C::npres), modis("modis", ncol, C::ntau, C::npres),
            misr("misr", ncol, C::ntau, C::nhgt);
-  F::cosp_main(ncol, 1, nlev, emsfc_lw, sunlit, to_device<dview_1d>(in.skt, "skt"),
+  F::cosp_main(ncol, COSP_TEST_NSUBCOL, nlev, emsfc_lw, sunlit, to_device<dview_1d>(in.skt, "skt"),
                to_device<dview_2d>(in.T_mid, "T_mid"), to_device<dview_2d>(in.p_mid, "p_mid"),
                to_device<dview_2d>(in.p_int, "p_int"), to_device<dview_2d>(in.z_mid, "z_mid"),
                to_device<dview_2d>(in.qv, "qv"), to_device<dview_2d>(in.qc, "qc"),
@@ -128,8 +133,10 @@ TEST_CASE("cosp_main_bfb", "[cosp]")
   const int ncol = 256, nlev = 72;
   const double emsfc_lw = 0.99;
 
-  cosp_c2f_init(ncol, 1, nlev);
-  F::Workspace ws(ncol, 1, nlev);
+  const int nsubcol = COSP_TEST_NSUBCOL;
+  INFO("nsubcol=" << nsubcol);
+  cosp_c2f_init(ncol, nsubcol, nlev);
+  F::Workspace ws(ncol, nsubcol, nlev);
 
   // cosp_c2f_init can only run once (cosp_init allocates module arrays), so this is one
   // test case without sections
@@ -142,6 +149,17 @@ TEST_CASE("cosp_main_bfb", "[cosp]")
       CHECK(sunlit_total(in, out.isccp_ctptau) > 0);
       CHECK(sunlit_total(in, out.modis_ctptau) > 0);
       CHECK(sunlit_total(in, out.misr_cthtau)  > 0);
+      if (nsubcol > 1) {
+        // Partly cloudy columns give histogram entries other than 0 and 100
+        int npartial = 0;
+        for (int j = 0; j < ncol; ++j)
+          for (int a = 0; a < C::ntau; ++a)
+            for (int b = 0; b < C::npres; ++b) {
+              const double v = out.modis_ctptau(j,a,b);
+              if (in.sunlit(j) == 1 && v > 0 && v < 100) ++npartial;
+            }
+        CHECK(npartial > 0);
+      }
     }
   }
 

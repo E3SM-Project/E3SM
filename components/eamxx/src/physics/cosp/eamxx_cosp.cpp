@@ -35,9 +35,6 @@ Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
     (m_cosp_impl == "fortran") || (m_cosp_impl == "cxx"),
     "cosp_impl " + m_cosp_impl + " not supported (valid values: fortran, cxx)"
   );
-  EKAT_REQUIRE_MSG(m_cosp_impl == "fortran" || m_num_subcols == 1,
-    "cosp_impl=cxx only supports cosp_subcolumns=1 so far; the subcolumn generator "
-    "(SCOPS) has not been ported yet");
 }
 
 // =========================================================================================

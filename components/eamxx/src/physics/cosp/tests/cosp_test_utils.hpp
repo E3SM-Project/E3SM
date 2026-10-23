@@ -44,6 +44,8 @@ void cosp_modis_subcolumn_f(int npoints, int ncol, int nlev, const double* phalf
                             const double* tau, const double* liqfrac, const double* g,
                             const double* w0, const double* isccp_ctp, int* phase, double* ctp,
                             double* tau_ret, double* size_ret);
+void cosp_scops_f(int npoints, int nlev, int ncol, const int* seeds, const double* cc,
+                  const double* conv, int overlap, double* frac_out);
 void cosp_two_stream_f(int n, const double* tau, const double* g, const double* w0,
                        double* ref, double* tra, double* ref2);
 void cosp_modis_column_f(int npoints, int ncol, const int* phase, const double* ctp,
