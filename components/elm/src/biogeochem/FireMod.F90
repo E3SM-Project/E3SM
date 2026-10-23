@@ -123,7 +123,7 @@ contains
     !
       !$acc routine seq
     ! !USES:
-    use elm_varpar           , only: max_patch_per_col
+    use elm_varpar           , only: max_col_npfts
     use elm_varcon           , only: secspday, spval
     use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
@@ -300,7 +300,7 @@ contains
         cropf_col(c) = 0._r8
         lfwt(c)      = 0._r8
      end do
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            if (pi <=  col_pp%npfts(c)) then
@@ -324,7 +324,7 @@ contains
         c = filter_soilc(fc)
         fuelc_crop(c)=0._r8
      end do
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            if (pi <=  col_pp%npfts(c)) then
@@ -363,7 +363,7 @@ contains
            dtrotr_col(c)=0._r8
         end if
      end do
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            g = col_pp%gridcell(c)
@@ -504,7 +504,7 @@ contains
         end if
      end do
 
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            g = col_pp%gridcell(c)

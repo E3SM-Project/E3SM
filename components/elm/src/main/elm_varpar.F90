@@ -119,6 +119,8 @@ module elm_varpar
   
   integer :: maxpatch_glcmec    ! max number of elevation classes
   integer :: max_patch_per_col
+  integer :: max_col_npfts      ! largest number of patches on any column of this task
+                                ! (set in elm_initializeMod once the subgrid structure is built)
 
   real(r8) :: mach_eps            ! machine epsilon
   !

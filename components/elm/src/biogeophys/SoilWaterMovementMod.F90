@@ -1066,7 +1066,7 @@ contains
       !$acc routine seq
     use decompMod        , only : bounds_type
     use shr_kind_mod     , only : r8 => shr_kind_r8
-    use elm_varpar       , only : nlevsoi, max_patch_per_col
+    use elm_varpar       , only : nlevsoi, max_col_npfts
     use SoilStateType    , only : soilstate_type
     use VegetationType   , only : veg_pp
     use ColumnType       , only : col_pp
@@ -1114,7 +1114,7 @@ contains
          end do
       end do
 
-      do pi = 1,max_patch_per_col
+      do pi = 1,max_col_npfts
          do fc = 1, num_filterc
             c = filterc(fc)
             nlevbed = nlev2bed(c)
@@ -1152,7 +1152,7 @@ contains
          end do
       end do
 
-      do pi = 1,max_patch_per_col
+      do pi = 1,max_col_npfts
          do j = 1,nlevsoi
             do fc = 1, num_filterc
                c = filterc(fc)
@@ -1183,7 +1183,7 @@ contains
       !$acc routine seq
         use decompMod        , only : bounds_type
         use elm_varpar       , only : nlevsoi
-        use elm_varpar       , only : max_patch_per_col
+        use elm_varpar       , only : max_col_npfts
         use SoilStateType    , only : soilstate_type
         use CanopyStateType  , only : canopystate_type
         use VegetationType   , only : veg_pp
@@ -1243,7 +1243,7 @@ contains
              do j = 1, nlevsoi
                 grav2 = z(c,j) * 1000._r8
                 temp(c) = 0._r8
-                do pi = 1,max_patch_per_col
+                do pi = 1,max_col_npfts
                    if (pi <= col_pp%npfts(c)) then
                       p = col_pp%pfti(c) + pi - 1
                       if (veg_pp%active(p).and.frac_veg_nosno(p)>0) then

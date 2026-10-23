@@ -52,7 +52,7 @@ contains
     ! 
     ! !USES:
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
-    use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
+    use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, max_col_npfts
     use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
     use pftvarcon   , only : rootprof_beta, noveg
     !
@@ -226,7 +226,7 @@ contains
          !      cinput_rootfr(bounds%begp:bounds%endp, :), &
          !      col_cinput_rootfr(bounds%begc:bounds%endc, :), &
          !      'unity')
-         do pi = 1,maxpatch_pft
+         do pi = 1,max_col_npfts
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                if (pi <=  col_pp%npfts(c)) then
