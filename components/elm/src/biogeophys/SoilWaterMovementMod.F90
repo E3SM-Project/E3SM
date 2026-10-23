@@ -274,6 +274,8 @@ contains
     real(r8) :: dsmpds                                       !temporary variable
     real(r8) :: dhkds                                        !temporary variable
     real(r8) :: hktmp                                        !temporary variable
+    real(r8) :: powbase                                      !base of a Clapp-Hornberger power
+    real(r8) :: powexp                                       !exponent of the ice impedance power
     integer  :: filter_dense(1:num_hydrologyc)               ! identity filter for the filter-indexed locals
     type(bounds_type) :: bounds_dense                        ! bounds of the filter-indexed locals
     !-----------------------------------------------------------------------
@@ -410,7 +412,13 @@ contains
                vol_eq(fc,j) = max(vol_eq(fc,j),0.0_r8)
                vol_eq(fc,j) = min(watsat(c,j),vol_eq(fc,j))
             endif
-            zq(fc,j) = -sucsat(c,j)*(max(vol_eq(fc,j)/watsat(c,j),0.01_r8))**(-bsw(c,j))
+            ! pow(1,y) is exactly 1, so a saturated layer skips the pow call
+            powbase = max(vol_eq(fc,j)/watsat(c,j),0.01_r8)
+            if (powbase == 1._r8) then
+               zq(fc,j) = -sucsat(c,j)*1._r8
+            else
+               zq(fc,j) = -sucsat(c,j)*(powbase)**(-bsw(c,j))
+            end if
             zq(fc,j) = max(smpmin(c), zq(fc,j))
          end do
       end do
@@ -449,13 +457,24 @@ contains
                     (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
             endif
             s1 = min(1._r8, s1)
-            s2 = hksat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
+            ! pow(1,y) is exactly 1, so a saturated interface skips the pow call
+            if (s1 == 1._r8) then
+               s2 = hksat(c,j)*1._r8
+            else
+               s2 = hksat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
+            end if
 
             ! replace fracice with impedance factor, as in zhao 97,99
             if (origflag == 1) then
                imped(fc,j)=(1._r8-0.5_r8*(fracice(c,j)+fracice(c,min(nlevsoi, j+1))))
             else
-               imped(fc,j)=10._r8**(-e_ice*(0.5_r8*(icefrac(c,j)+icefrac(c,min(nlevsoi, j+1)))))
+               ! pow(x,+-0) is exactly 1, so ice-free layer pairs skip the pow call
+               powexp = -e_ice*(0.5_r8*(icefrac(c,j)+icefrac(c,min(nlevsoi, j+1))))
+               if (powexp == 0._r8) then
+                  imped(fc,j) = 1._r8
+               else
+                  imped(fc,j)=10._r8**(powexp)
+               end if
             endif
             hk(fc,j) = imped(fc,j)*s1*s2
             dhkdw(fc,j) = imped(fc,j)*(2._r8*bsw(c,j)+3._r8)*s2* &
@@ -481,7 +500,12 @@ contains
 
             !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp(fc,j), dsmpds)
 
-            smp(fc,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
+            if (s_node == 1._r8) then
+               ! pow(1,y) is exactly 1
+               smp(fc,j) = -sucsat(c,j)*1._r8
+            else
+               smp(fc,j) = -sucsat(c,j)*s_node**(-bsw(c,j))
+            end if
             smp(fc,j) = max(smpmin(c), smp(fc,j))
             !do not turn on the line below, which will cause bit to bit error, jyt, 2014 Mar 6
             !dsmpdw(fc,j) = dsmpds/watsat(c,j)
