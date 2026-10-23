@@ -38,7 +38,7 @@ contains
     integer , intent(in)    :: numf                            ! filter dimension
     integer , intent(in)    :: nband                           ! band width
     integer , intent(in)    :: filter(:)                       ! filter
-    real(r8), intent(in)    :: b( bounds%begc: , 1:   , lbj: ) ! compact band matrix [col, nband, j]
+    real(r8), intent(in)    :: b( 1: , 1:   , lbj: )           ! compact band matrix [filter column (fc), nband, j]
     real(r8), intent(in)    :: r( bounds%begc: , lbj: )        ! "r" rhs of linear system [col, j]
     real(r8), intent(inout) :: u( bounds%begc: , lbj: )        ! solution [col, j]
     !
@@ -54,7 +54,7 @@ contains
     ! Enforce expected array sizes
     SHR_ASSERT_ALL((ubound(jtop) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(jbot) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(b)    == (/bounds%endc, nband, ubj/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(b)    == (/numf, nband, ubj/)),        errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(r)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(u)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
 
@@ -179,7 +179,7 @@ contains
 !scs: replace ubj with jbot
        n=jbot(ci)-jtop(ci)+1
 
-       call set_band_storage(ci, n)
+       call set_band_storage(ci, fc, n)
 
 ! on input result is rhs, on output result is solution vector
        result(1:n)=r(ci,jtop(ci):jbot(ci))
@@ -194,7 +194,7 @@ contains
           write(iulog,*)'dgbsv info: ',ci,info
           
           ! dgbsv overwrote ab with its factorization, so set it again
-          call set_band_storage(ci, n)
+          call set_band_storage(ci, fc, n)
           write(iulog,*) ''
           write(iulog,*) 'ab matrix'
           do j=1,n
@@ -211,18 +211,19 @@ contains
 
   contains
 
-    subroutine set_band_storage(ci, n)
-      ! Set ab(:,1:n) to the matrix of column ci in the band storage of dgbsv
+    subroutine set_band_storage(ci, fc, n)
+      ! Set ab(:,1:n) to the matrix of column ci (filter index fc) in the band storage of dgbsv
       integer, intent(in) :: ci  ! column index
+      integer, intent(in) :: fc  ! filter index of column ci (index of b)
       integer, intent(in) :: n   ! number of levels in the system
 
       ab(:,1:n)=0.0_r8
 
-      ab(kl+ku-1,3:n)=b(ci,1,jtop(ci):jbot(ci)-2)   ! 2nd superdiagonal
-      ab(kl+ku+0,2:n)=b(ci,2,jtop(ci):jbot(ci)-1)   ! 1st superdiagonal
-      ab(kl+ku+1,1:n)=b(ci,3,jtop(ci):jbot(ci))     ! diagonal
-      ab(kl+ku+2,1:n-1)=b(ci,4,jtop(ci)+1:jbot(ci)) ! 1st subdiagonal
-      ab(kl+ku+3,1:n-2)=b(ci,5,jtop(ci)+2:jbot(ci)) ! 2nd subdiagonal
+      ab(kl+ku-1,3:n)=b(fc,1,jtop(ci):jbot(ci)-2)   ! 2nd superdiagonal
+      ab(kl+ku+0,2:n)=b(fc,2,jtop(ci):jbot(ci)-1)   ! 1st superdiagonal
+      ab(kl+ku+1,1:n)=b(fc,3,jtop(ci):jbot(ci))     ! diagonal
+      ab(kl+ku+2,1:n-1)=b(fc,4,jtop(ci)+1:jbot(ci)) ! 1st subdiagonal
+      ab(kl+ku+3,1:n-2)=b(fc,5,jtop(ci)+2:jbot(ci)) ! 2nd subdiagonal
 
     end subroutine set_band_storage
   end subroutine BandDiagonal
