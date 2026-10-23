@@ -2,6 +2,7 @@
 #define SCREAM_COSP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "physics/cosp/cosp_cxx_functions.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -54,6 +55,10 @@ protected:
 public:
 #endif
   void run_impl        (const double dt);
+
+  // The two implementations of the COSP call (inputs on device, outputs filled on device)
+  void run_fortran ();
+  void run_cxx ();
 protected:
   void finalize_impl   ();
 
@@ -78,6 +83,9 @@ protected:
   Field m_z_mid;
   Field m_z_int;
   Field m_sunlit_real;
+
+  // Scratch space of the C++ COSP (cosp_impl=cxx)
+  cosp::Functions<Real,DefaultDevice>::Workspace m_cxx_ws;
 }; // class Cosp
 
 } // namespace scream

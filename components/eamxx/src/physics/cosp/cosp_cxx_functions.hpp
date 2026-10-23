@@ -182,6 +182,41 @@ struct Functions
   static void hist2d(const int npts, const V1& var1, const V2& var2,
                      const int nbin1, const B1& bin1, const int nbin2, const B2& bin2,
                      const H& hist);
+
+  // ---------------------------------------------------------------------------------------
+  // Driver (cosp_c2f_run in cosp_c2f.F90, and cosp_simulator in cosp.F90)
+
+  // Scratch space for cosp_main: optical inputs by (column, subcolumn, level), and
+  // simulator results by (column, subcolumn)
+  struct Workspace {
+    view_3d<Scalar> tau, dem, liqfrac, g, w0;
+    view_2d<Scalar> boxtau, boxptop, boxttop, misr_tau, misr_ztop, modis_ctp, modis_tau,
+                    modis_size;
+    view_2d<int>    modis_phase;
+
+    Workspace() = default;
+    Workspace(const int ncol, const int nsubcol, const int nlev);
+  };
+
+  // The whole COSP call for EAMxx: ISCCP total cloud area and tau/CTP histogram, MODIS
+  // tau/CTP histogram (pressure from the surface up, as the Fortran returns them), and
+  // MISR tau/CTH histogram, by column. Inputs are in-cloud values, levels go from the
+  // top down. Night columns get R_UNDEF; the caller replaces them with its fill value.
+  static void cosp_main(const int ncol, const int nsubcol, const int nlev,
+                        const Scalar emsfc_lw,
+                        const view_1d<const int>& sunlit, const view_1d<const Scalar>& skt,
+                        const view_2d<const Scalar>& T_mid, const view_2d<const Scalar>& p_mid,
+                        const view_2d<const Scalar>& p_int, const view_2d<const Scalar>& z_mid,
+                        const view_2d<const Scalar>& qv, const view_2d<const Scalar>& qc,
+                        const view_2d<const Scalar>& qi, const view_2d<const Scalar>& cldfrac,
+                        const view_2d<const Scalar>& reff_qc,
+                        const view_2d<const Scalar>& reff_qi,
+                        const view_2d<const Scalar>& dtau067,
+                        const view_2d<const Scalar>& dtau105,
+                        const view_1d<Scalar>& isccp_cldtot,
+                        const view_3d<Scalar>& isccp_ctptau,
+                        const view_3d<Scalar>& modis_ctptau,
+                        const view_3d<Scalar>& misr_cthtau, const Workspace& ws);
 };
 
 } // namespace cosp
@@ -193,5 +228,6 @@ struct Functions
 #include "physics/cosp/impl/cosp_misr_impl.hpp"
 #include "physics/cosp/impl/cosp_isccp_impl.hpp"
 #include "physics/cosp/impl/cosp_modis_impl.hpp"
+#include "physics/cosp/impl/cosp_main_impl.hpp"
 
 #endif // SCREAM_COSP_CXX_FUNCTIONS_HPP

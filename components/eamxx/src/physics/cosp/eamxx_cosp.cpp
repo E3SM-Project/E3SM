@@ -35,8 +35,9 @@ Cosp::Cosp (const ekat::Comm& comm, const ekat::ParameterList& params)
     (m_cosp_impl == "fortran") || (m_cosp_impl == "cxx"),
     "cosp_impl " + m_cosp_impl + " not supported (valid values: fortran, cxx)"
   );
-  EKAT_REQUIRE_MSG(m_cosp_impl == "fortran",
-    "cosp_impl=cxx is not implemented yet; the C++/Kokkos port of COSP is in progress");
+  EKAT_REQUIRE_MSG(m_cosp_impl == "fortran" || m_num_subcols == 1,
+    "cosp_impl=cxx only supports cosp_subcolumns=1 so far; the subcolumn generator "
+    "(SCOPS) has not been ported yet");
 }
 
 // =========================================================================================
@@ -114,8 +115,12 @@ void Cosp::create_requests()
 // =========================================================================================
 void Cosp::initialize_impl (const RunType /* run_type */)
 {
-  // Set property checks for fields in this process
-  CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
+  // Set up the Fortran COSP, or the scratch space of the C++ one
+  if (m_cosp_impl == "fortran") {
+    CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
+  } else {
+    m_cxx_ws = cosp::Functions<Real,DefaultDevice>::Workspace(m_num_cols, m_num_subcols, m_num_levs);
+  }
 
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
@@ -228,30 +233,6 @@ void Cosp::run_impl (const double dt)
 
   // Call COSP wrapper routines
   if (update_cosp) {
-    // Get fields from field manager; note that we get host views because this
-    // interface serves primarily as a wrapper to a c++ to f90 bridge for the COSP
-    // all then need to be copied to layoutLeft views to permute the indices for
-    // F90.
-
-    // Ensure host data of input fields is up to date
-    start_timer("EAMxx::cosp::sync_to_host");
-    get_field_in("qv").sync_to_host();
-    get_field_in("qc").sync_to_host();
-    get_field_in("qi").sync_to_host();
-    get_field_in("surf_radiative_T").sync_to_host();
-    get_field_in("T_mid").sync_to_host();
-    get_field_in("p_mid").sync_to_host();
-    get_field_in("p_int").sync_to_host();
-    get_field_in("cldfrac_rad").sync_to_host();
-    get_field_in("eff_radius_qc").sync_to_host();
-    get_field_in("eff_radius_qi").sync_to_host();
-    get_field_in("dtau067").sync_to_host();
-    get_field_in("dtau105").sync_to_host();
-
-    m_sunlit_real.deep_copy(get_field_in("sunlit_mask"));
-    m_sunlit_real.sync_to_host();
-    stop_timer("EAMxx::cosp::sync_to_host");
-
     // Compute z_mid
     start_timer("EAMxx::cosp::z_mid");
     const auto T_mid_d = get_field_in("T_mid").get_view<const Real**>();
@@ -297,67 +278,11 @@ void Cosp::run_impl (const double dt)
     Kokkos::fence();
     stop_timer("EAMxx::cosp::z_mid");
 
-    start_timer("EAMxx::cosp::sync_to_host");
-    m_z_mid.sync_to_host();
-    stop_timer("EAMxx::cosp::sync_to_host");
-    const auto z_mid_h = m_z_mid.get_view<const Real**,Host>();
-    const auto T_mid_h   = get_field_in("T_mid").get_view<const Real**, Host>();
-    const auto qv_h      = get_field_in("qv").get_view<const Real**, Host>();
-    const auto p_mid_h   = get_field_in("p_mid").get_view<const Real**,Host>();
-    const auto qc_h      = get_field_in("qc").get_view<const Real**, Host>();
-    const auto qi_h      = get_field_in("qi").get_view<const Real**, Host>();
-    const auto sunlit_h  = m_sunlit_real.get_view<const Real*, Host>();
-    const auto skt_h     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
-    const auto p_int_h   = get_field_in("p_int").get_view<const Real**, Host>();
-    const auto cldfrac_h = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
-    const auto reff_qc_h = get_field_in("eff_radius_qc").get_view<const Real**, Host>();
-    const auto reff_qi_h = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
-    const auto dtau067_h = get_field_in("dtau067").get_view<const Real**, Host>();
-    const auto dtau105_h = get_field_in("dtau105").get_view<const Real**, Host>();
-
-    auto isccp_cldtot_h = get_field_out("isccp_cldtot").get_view<Real*, Host>();
-    auto isccp_ctptau_h = get_field_out("isccp_ctptau").get_view<Real***, Host>();
-    auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real***, Host>();
-    auto misr_cthtau_h  = get_field_out("misr_cthtau"). get_view<Real***, Host>();
-
-    Real emsfc_lw = 0.99;
-    start_timer("EAMxx::cosp::main");
-    CospFunc::main(
-            m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
-            sunlit_h, skt_h, T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h,
-            cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h, dtau105_h,
-            isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
-    );
-    stop_timer("EAMxx::cosp::main");
-
-    // Mask night values
-    start_timer("EAMxx::cosp::night_mask");
-    constexpr auto fill_value = constants::fill_value<Real>;
-    for (int i = 0; i < m_num_cols; i++) {
-      if (sunlit_h(i) == 0) {
-        // if night, set to fill val
-        isccp_cldtot_h(i) = fill_value;
-        for (int j = 0; j < m_num_tau; j++) {
-          for (int k = 0; k < m_num_ctp; k++) {
-            isccp_ctptau_h(i,j,k) = fill_value;
-            modis_ctptau_h(i,j,k) = fill_value;
-          }
-          for (int k = 0; k < m_num_cth; k++) {
-            misr_cthtau_h (i,j,k) = fill_value;
-          }
-        }
-      }
+    if (m_cosp_impl == "fortran") {
+      run_fortran();
+    } else {
+      run_cxx();
     }
-
-    stop_timer("EAMxx::cosp::night_mask");
-
-    // Make sure dev data is up to date
-    start_timer("EAMxx::cosp::sync_to_dev");
-    get_field_out("isccp_cldtot").sync_to_dev();
-    get_field_out("isccp_ctptau").sync_to_dev();
-    get_field_out("modis_ctptau").sync_to_dev();
-    get_field_out("misr_cthtau").sync_to_dev();
-    stop_timer("EAMxx::cosp::sync_to_dev");
 
     // Update the ctptau and cthtau masks by broadcasting sunlit mask
     const auto& sunlit = get_field_in("sunlit_mask");
@@ -383,10 +308,151 @@ void Cosp::run_impl (const double dt)
 }
 
 // =========================================================================================
+void Cosp::run_fortran ()
+{
+  // The Fortran COSP runs on host: get host views, which CospFunc::main then copies to
+  // layoutLeft views to permute the indices for F90.
+
+  // Ensure host data of input fields is up to date
+  start_timer("EAMxx::cosp::sync_to_host");
+  get_field_in("qv").sync_to_host();
+  get_field_in("qc").sync_to_host();
+  get_field_in("qi").sync_to_host();
+  get_field_in("surf_radiative_T").sync_to_host();
+  get_field_in("T_mid").sync_to_host();
+  get_field_in("p_mid").sync_to_host();
+  get_field_in("p_int").sync_to_host();
+  get_field_in("cldfrac_rad").sync_to_host();
+  get_field_in("eff_radius_qc").sync_to_host();
+  get_field_in("eff_radius_qi").sync_to_host();
+  get_field_in("dtau067").sync_to_host();
+  get_field_in("dtau105").sync_to_host();
+
+  m_sunlit_real.deep_copy(get_field_in("sunlit_mask"));
+  m_sunlit_real.sync_to_host();
+  m_z_mid.sync_to_host();
+  stop_timer("EAMxx::cosp::sync_to_host");
+
+  const auto z_mid_h = m_z_mid.get_view<const Real**,Host>();
+  const auto T_mid_h   = get_field_in("T_mid").get_view<const Real**, Host>();
+  const auto qv_h      = get_field_in("qv").get_view<const Real**, Host>();
+  const auto p_mid_h   = get_field_in("p_mid").get_view<const Real**,Host>();
+  const auto qc_h      = get_field_in("qc").get_view<const Real**, Host>();
+  const auto qi_h      = get_field_in("qi").get_view<const Real**, Host>();
+  const auto sunlit_h  = m_sunlit_real.get_view<const Real*, Host>();
+  const auto skt_h     = get_field_in("surf_radiative_T").get_view<const Real*, Host>();
+  const auto p_int_h   = get_field_in("p_int").get_view<const Real**, Host>();
+  const auto cldfrac_h = get_field_in("cldfrac_rad").get_view<const Real**, Host>();
+  const auto reff_qc_h = get_field_in("eff_radius_qc").get_view<const Real**, Host>();
+  const auto reff_qi_h = get_field_in("eff_radius_qi").get_view<const Real**, Host>();
+  const auto dtau067_h = get_field_in("dtau067").get_view<const Real**, Host>();
+  const auto dtau105_h = get_field_in("dtau105").get_view<const Real**, Host>();
+
+  auto isccp_cldtot_h = get_field_out("isccp_cldtot").get_view<Real*, Host>();
+  auto isccp_ctptau_h = get_field_out("isccp_ctptau").get_view<Real***, Host>();
+  auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real***, Host>();
+  auto misr_cthtau_h  = get_field_out("misr_cthtau"). get_view<Real***, Host>();
+
+  Real emsfc_lw = 0.99;
+  start_timer("EAMxx::cosp::main");
+  CospFunc::main(
+          m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
+          sunlit_h, skt_h, T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h,
+          cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h, dtau105_h,
+          isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h
+  );
+  stop_timer("EAMxx::cosp::main");
+
+  // Mask night values
+  start_timer("EAMxx::cosp::night_mask");
+  constexpr auto fill_value = constants::fill_value<Real>;
+  for (int i = 0; i < m_num_cols; i++) {
+    if (sunlit_h(i) == 0) {
+      // if night, set to fill val
+      isccp_cldtot_h(i) = fill_value;
+      for (int j = 0; j < m_num_tau; j++) {
+        for (int k = 0; k < m_num_ctp; k++) {
+          isccp_ctptau_h(i,j,k) = fill_value;
+          modis_ctptau_h(i,j,k) = fill_value;
+        }
+        for (int k = 0; k < m_num_cth; k++) {
+          misr_cthtau_h (i,j,k) = fill_value;
+        }
+      }
+    }
+  }
+  stop_timer("EAMxx::cosp::night_mask");
+
+  // Make sure dev data is up to date
+  start_timer("EAMxx::cosp::sync_to_dev");
+  get_field_out("isccp_cldtot").sync_to_dev();
+  get_field_out("isccp_ctptau").sync_to_dev();
+  get_field_out("modis_ctptau").sync_to_dev();
+  get_field_out("misr_cthtau").sync_to_dev();
+  stop_timer("EAMxx::cosp::sync_to_dev");
+}
+
+// =========================================================================================
+void Cosp::run_cxx ()
+{
+  // The C++ COSP runs on device, directly on the fields
+  using CF = cosp::Functions<Real,DefaultDevice>;
+
+  const auto sunlit = get_field_in("sunlit_mask").get_view<const int*>();
+  auto isccp_cldtot = get_field_out("isccp_cldtot").get_view<Real*>();
+  auto isccp_ctptau = get_field_out("isccp_ctptau").get_view<Real***>();
+  auto modis_ctptau = get_field_out("modis_ctptau").get_view<Real***>();
+  auto misr_cthtau  = get_field_out("misr_cthtau").get_view<Real***>();
+
+  const Real emsfc_lw = 0.99;
+  start_timer("EAMxx::cosp::main");
+  CF::cosp_main(m_num_cols, m_num_subcols, m_num_levs, emsfc_lw, sunlit,
+                get_field_in("surf_radiative_T").get_view<const Real*>(),
+                get_field_in("T_mid").get_view<const Real**>(),
+                get_field_in("p_mid").get_view<const Real**>(),
+                get_field_in("p_int").get_view<const Real**>(),
+                m_z_mid.get_view<const Real**>(),
+                get_field_in("qv").get_view<const Real**>(),
+                get_field_in("qc").get_view<const Real**>(),
+                get_field_in("qi").get_view<const Real**>(),
+                get_field_in("cldfrac_rad").get_view<const Real**>(),
+                get_field_in("eff_radius_qc").get_view<const Real**>(),
+                get_field_in("eff_radius_qi").get_view<const Real**>(),
+                get_field_in("dtau067").get_view<const Real**>(),
+                get_field_in("dtau105").get_view<const Real**>(),
+                isccp_cldtot, isccp_ctptau, modis_ctptau, misr_cthtau, m_cxx_ws);
+  Kokkos::fence();
+  stop_timer("EAMxx::cosp::main");
+
+  // Mask night values
+  start_timer("EAMxx::cosp::night_mask");
+  constexpr auto fill_value = constants::fill_value<Real>;
+  const int ntau = m_num_tau, nctp = m_num_ctp, ncth = m_num_cth;
+  using ExeSpace = typename KokkosTypes<DefaultDevice>::ExeSpace;
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,m_num_cols), KOKKOS_LAMBDA (const int i) {
+    if (sunlit(i) != 0) return;
+    isccp_cldtot(i) = fill_value;
+    for (int j = 0; j < ntau; j++) {
+      for (int k = 0; k < nctp; k++) {
+        isccp_ctptau(i,j,k) = fill_value;
+        modis_ctptau(i,j,k) = fill_value;
+      }
+      for (int k = 0; k < ncth; k++) {
+        misr_cthtau(i,j,k) = fill_value;
+      }
+    }
+  });
+  Kokkos::fence();
+  stop_timer("EAMxx::cosp::night_mask");
+}
+
+// =========================================================================================
 void Cosp::finalize_impl()
 {
   // Finalize COSP wrappers
-  CospFunc::finalize();
+  if (m_cosp_impl == "fortran") {
+    CospFunc::finalize();
+  }
 }
 
 } // namespace scream
