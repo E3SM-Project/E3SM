@@ -234,6 +234,7 @@ contains
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     logical, pointer :: config_scale_dismf_by_removed_ice_runoff
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
+   character (len=StrKIND), pointer :: eot_sw_absorption_type
 
     ! ssh coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -797,6 +798,12 @@ contains
     call mpas_log_write( 'Initial time '//trim(timeStamp))
 
     ! read initial data required for variable shortwave
+       if (seq_infodata_UseEquationOfTime(infodata)) then
+        call mpas_pool_get_config(domain % configs, 'config_sw_absorption_type', eot_sw_absorption_type)
+        if (trim(eot_sw_absorption_type) == 'ohlmann00') &
+           call shr_sys_abort('EOT is unsupported with MPAS-Ocean ohlmann00 prescribed zenithAngle; '// &
+              'disable orb_use_equation_of_time or select jerlov/none absorption')
+       end if
     call mpas_timer_start('io_shortwave',.false.)
     call ocn_get_shortWaveData(domain_ptr % streamManager, domain, domain % clock, .true.)
     call mpas_timer_stop('io_shortwave')

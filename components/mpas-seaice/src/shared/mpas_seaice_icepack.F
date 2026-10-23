@@ -2906,6 +2906,10 @@ contains
 
     real(kind=RKIND), pointer :: &
          dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+     integer(kind=IKIND), pointer :: nextShortwaveDate, nextShortwaveTimeValid
+     integer(kind=IKIND), pointer :: shortwaveUseEquationOfTime
+     real(kind=RKIND), pointer :: nextShortwaveSeconds, nextShortwaveDeclination
+     real(kind=RKIND), pointer :: nextShortwaveEquationOfTime
 
     character(len=strKIND), pointer :: &
          config_calendar_type
@@ -3003,6 +3007,12 @@ contains
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
 
        call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
+     call MPAS_pool_get_array(shortwave, "nextShortwaveDate", nextShortwaveDate)
+     call MPAS_pool_get_array(shortwave, "nextShortwaveSeconds", nextShortwaveSeconds)
+     call MPAS_pool_get_array(shortwave, "nextShortwaveDeclination", nextShortwaveDeclination)
+     call MPAS_pool_get_array(shortwave, "nextShortwaveTimeValid", nextShortwaveTimeValid)
+     call MPAS_pool_get_array(shortwave, "nextShortwaveEquationOfTime", nextShortwaveEquationOfTime)
+     call MPAS_pool_get_array(shortwave, "shortwaveUseEquationOfTime", shortwaveUseEquationOfTime)
        call MPAS_pool_get_array(shortwave, "solarZenithAngleCosine", solarZenithAngleCosine)
        call MPAS_pool_get_array(shortwave, "albedoVisibleDirectCategory", albedoVisibleDirectCategory)
        call MPAS_pool_get_array(shortwave, "albedoVisibleDiffuseCategory", albedoVisibleDiffuseCategory)
@@ -3096,6 +3106,12 @@ contains
                calendar_type=calendarType, &
                days_per_year=daysInYear, &
                nextsw_cday=dayOfNextShortwaveCalculation, &
+               solar_ymd=nextShortwaveDate, &
+               solar_tod=nextShortwaveSeconds, &
+               solar_declination=nextShortwaveDeclination, &
+               solar_valid=nextShortwaveTimeValid == 1, &
+               solar_eot_seconds=nextShortwaveEquationOfTime, &
+               solar_use_eot=shortwaveUseEquationOfTime == 1, &
                yday=dayOfYear, &
                sec=secondsIntoDay, &
                swvdr=shortwaveVisibleDirectDown(iCell), &

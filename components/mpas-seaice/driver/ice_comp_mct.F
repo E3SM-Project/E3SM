@@ -131,6 +131,38 @@ module ice_comp_mct
 
 contains
 
+   subroutine update_solar_timestamp(infodata, shortwave, active)
+      type(seq_infodata_type), pointer, intent(in) :: infodata
+      type(MPAS_Pool_Type), pointer, intent(in) :: shortwave
+      logical, intent(in) :: active
+      integer(kind=IKIND), pointer :: solar_ymd, solar_time_valid
+      integer(kind=IKIND), pointer :: solar_use_eot
+      real(kind=RKIND), pointer :: solar_tod, solar_declination
+      real(kind=RKIND), pointer :: solar_eot_seconds
+      real(kind=RKIND) :: solar_eccf
+      logical :: solar_valid
+
+      call MPAS_pool_get_array(shortwave, 'nextShortwaveDate', solar_ymd)
+      call MPAS_pool_get_array(shortwave, 'nextShortwaveSeconds', solar_tod)
+      call MPAS_pool_get_array(shortwave, 'nextShortwaveDeclination', solar_declination)
+      call MPAS_pool_get_array(shortwave, 'nextShortwaveTimeValid', solar_time_valid)
+      call MPAS_pool_get_array(shortwave, 'nextShortwaveEquationOfTime', solar_eot_seconds)
+      call MPAS_pool_get_array(shortwave, 'shortwaveUseEquationOfTime', solar_use_eot)
+      solar_eot_seconds = 0._RKIND
+      solar_use_eot = merge(1, 0, seq_infodata_UseEquationOfTime(infodata))
+      solar_ymd = 0
+      solar_tod = -1._RKIND
+      solar_declination = 0._RKIND
+      solar_time_valid = 0
+      if (.not. active) return
+      if (seq_timemgr_GetCalendar() /= 'GREGORIAN' .and. solar_use_eot == 0) return
+      call seq_infodata_GetData(infodata, nextsw_ymd=solar_ymd, nextsw_tod=solar_tod, nextsw_valid=solar_valid)
+      if (.not. solar_valid) call shr_sys_abort('Gregorian MPAS sea ice requires a full next-shortwave timestamp')
+       call seq_infodata_SolarDecl(infodata, solar_ymd, solar_tod, seq_timemgr_GetCalendar(), &
+          solar_declination, solar_eccf, solar_eot_seconds)
+      solar_time_valid = 1
+   end subroutine update_solar_timestamp
+
 !***********************************************************************
 !BOP
 !
@@ -652,6 +684,7 @@ contains
 
        ! Set dayOfNextShortwaveCalculation to -1 for continue and branch runs.
        if (trim(runtype) /= 'initial') dayOfNextShortwaveCalculation = -1
+      call update_solar_timestamp(infodata, shortwave, dayOfNextShortwaveCalculation >= 0._RKIND)
        call mpas_log_write('dayOfNextShortwaveCalculation = $r', realArgs=(/dayOfNextShortwaveCalculation/))
 
        block => block % next
@@ -1241,6 +1274,7 @@ contains
          call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
          call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
          call seq_infodata_GetData(infodata, nextsw_cday=dayOfNextShortwaveCalculation )
+         call update_solar_timestamp(infodata, shortwave, dayOfNextShortwaveCalculation >= 0._RKIND)
 
          ! perform post coupling operations
          call post_atmospheric_coupling(block)

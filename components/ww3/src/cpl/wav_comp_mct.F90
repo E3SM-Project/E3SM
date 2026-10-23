@@ -186,6 +186,7 @@
                                     cs=>shr_kind_cs, cl=>shr_kind_cl
       use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
       use seq_timemgr_mod  , only : seq_timemgr_eclockgetdata, &
+                                    seq_timemgr_GetCalendar, &
                                     seq_timemgr_RestartAlarmIsOn, &
                                     seq_timemgr_historyAlarmIsOn
       use seq_infodata_mod , only : seq_infodata_type, seq_infodata_getdata, seq_infodata_putdata, &
@@ -800,7 +801,7 @@ CONTAINS
       iprt = 0
       flagstidein = .false.
       call w3init ( imod, IsMulti, fext, nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
-           pnames, iprt, prtfrm, mpi_comm, flagstidein)
+         pnames, iprt, prtfrm, mpi_comm, flagstidein, coupled_calendar=seq_timemgr_GetCalendar())
 
       if ( iaproc .eq. napout ) then
         write (ndso,*) 'after w3init'

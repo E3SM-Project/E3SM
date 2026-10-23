@@ -5046,6 +5046,12 @@
 
 	<!-- shortwave radiation -->
 	<var_struct name="shortwave" time_levs="1" packages="pkgColumnPackage">
+		<var name="nextShortwaveDate" type="integer" dimensions="Time" units="yyyymmdd"/>
+		<var name="nextShortwaveSeconds" type="real" dimensions="Time" units="s"/>
+		<var name="nextShortwaveDeclination" type="real" dimensions="Time" units="radian"/>
+		<var name="nextShortwaveTimeValid" type="integer" dimensions="Time" units="1"/>
+		<var name="nextShortwaveEquationOfTime" type="real" dimensions="Time" units="s"/>
+		<var name="shortwaveUseEquationOfTime" type="integer" dimensions="Time" units="1"/>
 		<var name="dayOfNextShortwaveCalculation"
 		     type="real"
 		     dimensions="Time"
