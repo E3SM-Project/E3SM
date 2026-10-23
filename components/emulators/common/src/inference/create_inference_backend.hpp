@@ -19,7 +19,7 @@ namespace e3sm::emulator::inference {
  * @return Shared pointer to new backend instance
  * @throws InferenceError if the type is unknown or was not built
  */
-std::shared_ptr<InferenceBackend>
+std::unique_ptr<InferenceBackend>
 create_backend(BackendType type, const InferenceConfig &config);
 
 } // namespace e3sm::emulator::inference

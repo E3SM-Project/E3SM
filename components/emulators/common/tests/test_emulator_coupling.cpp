@@ -1,7 +1,3 @@
-#include "inference_backend.hpp"
-#include "inference_config.hpp"
-#include "stub_inference_backend.hpp"
-#include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
@@ -36,10 +32,8 @@ TEST_CASE("Test Emulator Couplings") {
   auto forcing_emulator = ForcingEmulator{create_forcing};
   auto test_emulator = Emulator{create_emu};
   */
-  auto stub_forcing = std::unique_ptr<inference::InferenceBackend>(new inference::StubBackend(inference::InferenceConfig{}));
-  auto forcing_emulator = Emulator{create_forcing, std::move(stub_forcing)};
-  auto stub_test = std::unique_ptr<inference::InferenceBackend>(new inference::StubBackend(inference::InferenceConfig{}));
-  auto test_emulator = Emulator{create_emu, std::move(stub_test)};
+  auto forcing_emulator = Emulator{create_forcing};
+  auto test_emulator = Emulator{create_emu};
   REQUIRE(!forcing_emulator.input_fields().empty());
   REQUIRE(!test_emulator.input_fields().empty());
   REQUIRE(!forcing_emulator.output_fields().empty());
