@@ -16,7 +16,7 @@ module lnd2atmMod
   use elm_varctl           , only : use_lnd_rof_two_way, use_finetop_rad
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
-  use subgridAveMod        , only : p2g, c2g, p2t  
+  use subgridAveMod        , only : p2t
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
   use CH4Mod               , only : ch4_type
@@ -45,6 +45,11 @@ module lnd2atmMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: lnd2atm
   public :: lnd2atm_minimal
+  private :: l2a_map_init
+  private :: l2a_p2g_1d
+  private :: l2a_p2g_2d
+  private :: l2a_c2g_1d
+  private :: l2a_c2g_2d
 
   integer, parameter :: unity = 0, urbanf = 1, urbans = 2
   integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
@@ -76,6 +81,12 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g, t, ib                                  ! index
+    integer  :: npts_p                                          ! number of entries in pts_p
+    integer  :: npts_c                                          ! number of entries in pts_c
+    integer  :: pts_p(bounds%endp-bounds%begp+1)                ! active patches with nonzero wtgcell
+    integer  :: pts_c(bounds%endc-bounds%begc+1)                ! active columns with nonzero wtgcell
+    real(r8) :: scale_c2l(bounds%begc:bounds%endc,unity:urbans) ! c2l scale factors [col, scale type]
+    real(r8) :: scale_l2g(bounds%begl:bounds%endl)              ! l2g scale factors for unity [landunit]
     !------------------------------------------------------------------------
     associate( &
       h2osno => col_ws%h2osno  , &
@@ -103,34 +114,41 @@ contains
       sky_view_factor    => grc_pp%sky_view_factor              &
       )
 
-    call c2g(bounds, &
-         h2osno    (bounds%begc:bounds%endc) , &
-         h2osno_grc(bounds%begg:bounds%endg)    , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity)
+    ! Map to gridcells over the active points with nonzero gridcell weight only
+    call l2a_map_init(bounds, npts_p, pts_p, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,unity:urbans), scale_l2g(bounds%begl:bounds%endl))
+
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         h2osno (bounds%begc:bounds%endc), &
+         h2osno_grc(bounds%begg:bounds%endg))
 
     do g = bounds%begg,bounds%endg
        h2osno_grc(g) = h2osno_grc(g)/1000._r8
     end do
 
-    call c2g(bounds, nlevgrnd, &
-         h2osoi_vol    (bounds%begc:bounds%endc,:), &
-         h2osoi_vol_grc(bounds%begg:bounds%endg,:)    , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_c2g_2d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         nlevgrnd, &
+         h2osoi_vol (bounds%begc:bounds%endc,:), &
+         h2osoi_vol_grc(bounds%begg:bounds%endg,:))
 
-    call p2g(bounds, numrad, &
-         albd_patch(bounds%begp:bounds%endp,:) , &
-         albd_grc  (bounds%begg:bounds%endg,:) , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_p2g_2d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         numrad, &
+         albd_patch(bounds%begp:bounds%endp,:), &
+         albd_grc (bounds%begg:bounds%endg,:))
 
-    call p2g(bounds, numrad, &
-         albi_patch(bounds%begp:bounds%endp,:) , &
-         albi_grc  (bounds%begg:bounds%endg,:) , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_p2g_2d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         numrad, &
+         albi_patch(bounds%begp:bounds%endp,:), &
+         albi_grc (bounds%begg:bounds%endg,:))
 
-    call p2g(bounds, &
-         eflx_lwrad_out     (bounds%begp:bounds%endp), &
-         eflx_lwrad_out_grc (bounds%begg:bounds%endg), &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         eflx_lwrad_out (bounds%begp:bounds%endp), &
+         eflx_lwrad_out_grc (bounds%begg:bounds%endg))
 
     if (use_finetop_rad) then
          do g = bounds%begg,bounds%endg
@@ -156,25 +174,25 @@ contains
     
     if (use_finetop_rad) then
        ! calculate gridcell level reflected radiation
-       call p2g(bounds, &
-            fsr_vis_d_patch(bounds%begp:bounds%endp) , &
-            fsr_vis_d_grc  (bounds%begg:bounds%endg) , &
-            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+       call l2a_p2g_1d(bounds, npts_p, pts_p, &
+            scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+            fsr_vis_d_patch(bounds%begp:bounds%endp), &
+            fsr_vis_d_grc (bounds%begg:bounds%endg))
 
-       call p2g(bounds, &
-            fsr_vis_i_patch(bounds%begp:bounds%endp) , &
-            fsr_vis_i_grc  (bounds%begg:bounds%endg) , &
-            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+       call l2a_p2g_1d(bounds, npts_p, pts_p, &
+            scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+            fsr_vis_i_patch(bounds%begp:bounds%endp), &
+            fsr_vis_i_grc (bounds%begg:bounds%endg))
 
-       call p2g(bounds, &
-            fsr_nir_d_patch(bounds%begp:bounds%endp) , &
-            fsr_nir_d_grc  (bounds%begg:bounds%endg) , &
-            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+       call l2a_p2g_1d(bounds, npts_p, pts_p, &
+            scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+            fsr_nir_d_patch(bounds%begp:bounds%endp), &
+            fsr_nir_d_grc (bounds%begg:bounds%endg))
 
-       call p2g(bounds, &
-            fsr_nir_i_patch(bounds%begp:bounds%endp) , &
-            fsr_nir_i_grc  (bounds%begg:bounds%endg) , &
-            p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+       call l2a_p2g_1d(bounds, npts_p, pts_p, &
+            scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+            fsr_nir_i_patch(bounds%begp:bounds%endp), &
+            fsr_nir_i_grc (bounds%begg:bounds%endg))
 
        ! calculate gridcell level apparent albedo 
        do g = bounds%begg,bounds%endg 
@@ -257,6 +275,12 @@ contains
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+    integer  :: npts_p                                          ! number of entries in pts_p
+    integer  :: npts_c                                          ! number of entries in pts_c
+    integer  :: pts_p(bounds%endp-bounds%begp+1)                ! active patches with nonzero wtgcell
+    integer  :: pts_c(bounds%endc-bounds%begc+1)                ! active columns with nonzero wtgcell
+    real(r8) :: scale_c2l(bounds%begc:bounds%endc,unity:urbans) ! c2l scale factors [col, scale type]
+    real(r8) :: scale_l2g(bounds%begl:bounds%endl)              ! l2g scale factors for unity [landunit]
     !------------------------------------------------------------------------
     associate( &
       t_ref2m     => veg_es%t_ref2m , &
@@ -330,75 +354,79 @@ contains
     call lnd2atm_minimal(bounds, &
          surfalb_vars, solarabs_vars, energyflux_vars, atm2lnd_vars, lnd2atm_vars)
 
-    call p2g(bounds, &
-         t_ref2m    (bounds%begp:bounds%endp), &
-         t_ref2m_grc(bounds%begg:bounds%endg), &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    ! Map to gridcells over the active points with nonzero gridcell weight only
+    call l2a_map_init(bounds, npts_p, pts_p, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,unity:urbans), scale_l2g(bounds%begl:bounds%endl))
 
-    call p2g(bounds, &
-         q_ref2m    (bounds%begp:bounds%endp) , &
-         q_ref2m_grc(bounds%begg:bounds%endg)      , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         t_ref2m (bounds%begp:bounds%endp), &
+         t_ref2m_grc(bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         u10_elm_patch(bounds%begp:bounds%endp) , &
-         u_ref10m_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         q_ref2m (bounds%begp:bounds%endp), &
+         q_ref2m_grc(bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         u10_with_gusts_elm_patch(bounds%begp:bounds%endp) , &
-         u_ref10m_with_gusts_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         u10_elm_patch(bounds%begp:bounds%endp), &
+         u_ref10m_grc (bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         taux     (bounds%begp:bounds%endp), &
-         taux_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         u10_with_gusts_elm_patch(bounds%begp:bounds%endp), &
+         u_ref10m_with_gusts_grc (bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         tauy     (bounds%begp:bounds%endp)     , &
-         tauy_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         taux (bounds%begp:bounds%endp), &
+         taux_grc (bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         qflx_evap_tot    (bounds%begp:bounds%endp)     , &
-         qflx_evap_tot_grc(bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         tauy (bounds%begp:bounds%endp), &
+         tauy_grc (bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         fsa_patch(bounds%begp:bounds%endp) , &
-         fsa_grc  (bounds%begg:bounds%endg)  , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_evap_tot (bounds%begp:bounds%endp), &
+         qflx_evap_tot_grc(bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         fv_patch(bounds%begp:bounds%endp) , &
-         fv_grc  (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         fsa_patch(bounds%begp:bounds%endp), &
+         fsa_grc (bounds%begg:bounds%endg))
 
-    call p2g(bounds, &
-         ram1_patch(bounds%begp:bounds%endp) , &
-         ram1_grc  (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         fv_patch(bounds%begp:bounds%endp), &
+         fv_grc (bounds%begg:bounds%endg))
 
-    call p2g( bounds, &
-         eflx_sh_tot     (bounds%begp:bounds%endp) , &
-         eflx_sh_tot_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity,c2l_scale_type=urbanf,l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         ram1_patch(bounds%begp:bounds%endp), &
+         ram1_grc (bounds%begg:bounds%endg))
+
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         eflx_sh_tot (bounds%begp:bounds%endp), &
+         eflx_sh_tot_grc (bounds%begg:bounds%endg))
 
     do g = bounds%begg, bounds%endg
        eflx_sh_tot_grc(g) =  eflx_sh_tot_grc(g) - grc_ef%eflx_dynbal(g)
     enddo
 
-    call p2g(bounds, &
-         eflx_lh_tot    (bounds%begp:bounds%endp), &
-         eflx_lh_tot_grc(bounds%begg:bounds%endg)      , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_p2g_1d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         eflx_lh_tot (bounds%begp:bounds%endp), &
+         eflx_lh_tot_grc(bounds%begg:bounds%endg))
 
     if (use_cn .or. use_fates) then
-       call c2g(bounds, &
-            nee    (bounds%begc:bounds%endc)   , &
-            nee_grc(bounds%begg:bounds%endg)   , &
-            c2l_scale_type= unity, l2g_scale_type=unity)
+       call l2a_c2g_1d(bounds, npts_c, pts_c, &
+            scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+            nee (bounds%begc:bounds%endc), &
+            nee_grc(bounds%begg:bounds%endg))
 
        if (use_lch4) then
           if (.not. ch4offline) then
@@ -422,96 +450,99 @@ contains
 
     ! drydepvel
     if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
-       call p2g(bounds, n_drydep, &
-            velocity_patch(bounds%begp:bounds%endp,:) , &
-            ddvel_grc     (bounds%begg:bounds%endg,:)   , &
-            p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+       call l2a_p2g_2d(bounds, npts_p, pts_p, &
+            scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+            n_drydep, &
+            velocity_patch(bounds%begp:bounds%endp,:), &
+            ddvel_grc (bounds%begg:bounds%endg,:))
     endif
 
     ! voc emission flux
     if (use_voc .and. shr_megan_mechcomps_n>0) then
-       call p2g(bounds, shr_megan_mechcomps_n, &
+       call l2a_p2g_2d(bounds, npts_p, pts_p, &
+            scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+            shr_megan_mechcomps_n, &
             vocemis_vars%vocflx_patch, &
-            lnd2atm_vars%flxvoc_grc  , &
-            p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+            lnd2atm_vars%flxvoc_grc)
     end if
 
     ! dust emission flux
-    call p2g(bounds, ndst, &
+    call l2a_p2g_2d(bounds, npts_p, pts_p, &
+         scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+         ndst, &
          flx_mss_vrt_dst_patch(bounds%begp:bounds%endp,:), &
-         flxdst_grc           (bounds%begg:bounds%endg,:), &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         flxdst_grc (bounds%begg:bounds%endg,:))
 
 
     ! ch4 flux
     if (use_lch4) then
-       call c2g( bounds,     &
-            ch4_surf_flux_tot_col(bounds%begc:bounds%endc) , &
-            flux_ch4_grc         (bounds%begg:bounds%endg) , &
-            c2l_scale_type= unity, l2g_scale_type=unity )
+       call l2a_c2g_1d(bounds, npts_c, pts_c, &
+            scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+            ch4_surf_flux_tot_col(bounds%begc:bounds%endc), &
+            flux_ch4_grc (bounds%begg:bounds%endg))
     end if
 
     ! nh3 flux
     if (shr_fan_to_atm) then
-       call c2g(bounds,     &
+       call l2a_c2g_1d(bounds, npts_c, pts_c, &
+            scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
             nh3_total (bounds%begc:bounds%endc), &
-            lnd2atm_vars%flux_nh3_grc  (bounds%begg:bounds%endg), &
-            c2l_scale_type= unity, l2g_scale_type=unity)
+            lnd2atm_vars%flux_nh3_grc (bounds%begg:bounds%endg))
     end if
 
     !----------------------------------------------------
     ! lnd -> rof
     !----------------------------------------------------
 
-    call c2g( bounds, &
-         qflx_runoff    (bounds%begc:bounds%endc) , &
-         qflx_rofliq_grc(bounds%begg:bounds%endg)  , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_runoff (bounds%begc:bounds%endc), &
+         qflx_rofliq_grc(bounds%begg:bounds%endg))
 
     do g = bounds%begg, bounds%endg
        qflx_rofliq_grc(g) = qflx_rofliq_grc(g) - grc_wf%qflx_liq_dynbal(g)
     enddo
 
-    call c2g( bounds, &
-         qflx_surf           (bounds%begc:bounds%endc)   , &
-         qflx_rofliq_qsur_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_surf (bounds%begc:bounds%endc), &
+         qflx_rofliq_qsur_grc(bounds%begg:bounds%endg))
 
-    call c2g( bounds, &
-         qflx_h2osfc_surf     (bounds%begc:bounds%endc)  , &
-         qflx_rofliq_qsurp_grc(bounds%begg:bounds%endg)  , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_h2osfc_surf (bounds%begc:bounds%endc), &
+         qflx_rofliq_qsurp_grc(bounds%begg:bounds%endg))
 
-    call c2g( bounds, &
-         qflx_irr_demand    (bounds%begc:bounds%endc)   , &
-         qflx_irr_demand_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_irr_demand (bounds%begc:bounds%endc), &
+         qflx_irr_demand_grc(bounds%begg:bounds%endg))
 
-    call c2g( bounds, &
-         qflx_drain          (bounds%begc:bounds%endc)   , &
-         qflx_rofliq_qsub_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_drain (bounds%begc:bounds%endc), &
+         qflx_rofliq_qsub_grc(bounds%begg:bounds%endg))
 
-    call c2g( bounds, &
-         qflx_drain_perched   (bounds%begc:bounds%endc)  , &
-         qflx_rofliq_qsubp_grc(bounds%begg:bounds%endg)  , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_drain_perched (bounds%begc:bounds%endc), &
+         qflx_rofliq_qsubp_grc(bounds%begg:bounds%endg))
 
-    call c2g( bounds, &
-         qflx_qrgwl          (bounds%begc:bounds%endc)         , &
-         qflx_rofliq_qgwl_grc(bounds%begg:bounds%endg)    , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_qrgwl (bounds%begc:bounds%endc), &
+         qflx_rofliq_qgwl_grc(bounds%begg:bounds%endg))
     
     qflx_snwcp_ice(bounds%begc:bounds%endc) = qflx_snwcp_ice(bounds%begc:bounds%endc) + qflx_ice_runoff_xs(bounds%begc:bounds%endc) 
-    call c2g( bounds, &
-         qflx_snwcp_ice (bounds%begc:bounds%endc)     ,  &
-         qflx_rofice_grc(bounds%begg:bounds%endg)     ,  &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         qflx_snwcp_ice (bounds%begc:bounds%endc), &
+         qflx_rofice_grc(bounds%begg:bounds%endg))
 
-    call c2g(bounds,  &
-              coszen_col (bounds%begc:bounds%endc), &
-              coszen_str (bounds%begg:bounds%endg), &
-              c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         coszen_col (bounds%begc:bounds%endc), &
+         coszen_str (bounds%begg:bounds%endg))
 
     do g = bounds%begg, bounds%endg
        qflx_rofice_grc(g) = qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)
@@ -520,47 +551,48 @@ contains
     ! land river two-way coupling
     ! Average up  to gridcell for the inundation drainage
     if (use_lnd_rof_two_way) then
-          call c2g( bounds, & 
-                     qflx_h2orof_drain(bounds%begc:bounds%endc)     , &
-                     qflx_h2orof_drain_grc(bounds%begg:bounds%endg) , &
-                     c2l_scale_type=unity,l2g_scale_type=unity )
+          call l2a_c2g_1d(bounds, npts_c, pts_c, &
+               scale_c2l(bounds%begc:bounds%endc,unity), scale_l2g(bounds%begl:bounds%endl), &
+               qflx_h2orof_drain(bounds%begc:bounds%endc), &
+               qflx_h2orof_drain_grc(bounds%begg:bounds%endg))
     endif
 
-    call c2g( bounds, &
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
          col_ws%wslake_col(bounds%begc:bounds%endc), &
-         lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+         lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg))
 
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb
     ! second add river storage as gridcell average depth (1.e-3 converts [m3/km2] to [mm])
     ! TODO - this was in BalanceCheckMod - not sure where it belongs?
 
-    call c2g( bounds, &
-         endwb(bounds%begc:bounds%endc) , &
-         tws  (bounds%begg:bounds%endg) , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
+         endwb(bounds%begc:bounds%endc), &
+         tws (bounds%begg:bounds%endg))
     do g = bounds%begg, bounds%endg
        tws(g) = tws(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
     enddo
 
 
-    call c2g( bounds, &
-         t_grnd    (bounds%begc:bounds%endc)   , &
-         t_grnd_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbans, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbans), scale_l2g(bounds%begl:bounds%endl), &
+         t_grnd (bounds%begc:bounds%endc), &
+         t_grnd_grc(bounds%begg:bounds%endg))
 
     !do lvl = -nlevsno+1, nlevgrnd
-        call c2g( bounds, nlevgrnd+nlevsno, &
-            t_soisno    (bounds%begc:bounds%endc,:), &
-            t_soisno_grc(bounds%begg:bounds%endg,:), &
-            c2l_scale_type= urbans, l2g_scale_type=unity )
+        call l2a_c2g_2d(bounds, npts_c, pts_c, &
+             scale_c2l(bounds%begc:bounds%endc,urbans), scale_l2g(bounds%begl:bounds%endl), &
+             nlevgrnd+nlevsno, &
+             t_soisno (bounds%begc:bounds%endc,:), &
+             t_soisno_grc(bounds%begg:bounds%endg,:))
     !enddo
 
-    call c2g( bounds, &
-         zwt_col(bounds%begc:bounds%endc)   , &
-         zwt_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbans, l2g_scale_type=unity )
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbans), scale_l2g(bounds%begl:bounds%endl), &
+         zwt_col(bounds%begc:bounds%endc), &
+         zwt_grc(bounds%begg:bounds%endg))
 
     do g = bounds%begg,bounds%endg
        ! TODO temperary treatment in case weird values after c2g
@@ -573,10 +605,10 @@ contains
 
     end do
 
-    call c2g( bounds, &
+    call l2a_c2g_1d(bounds, npts_c, pts_c, &
+         scale_c2l(bounds%begc:bounds%endc,urbanf), scale_l2g(bounds%begl:bounds%endl), &
          sedflux_vars%sed_yld_col(bounds%begc:bounds%endc), &
-         lnd2atm_vars%qflx_rofmud_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+         lnd2atm_vars%qflx_rofmud_grc(bounds%begg:bounds%endg))
     
     end associate
   end subroutine lnd2atm
@@ -665,5 +697,294 @@ contains
 
         return
     end function avg_tsoil
+
+  !------------------------------------------------------------------------
+  subroutine l2a_map_init(bounds, npts_p, pts_p, npts_c, pts_c, scale_c2l, scale_l2g)
+    !
+    ! !DESCRIPTION:
+    ! Set up the active patches and columns with nonzero gridcell weight, in
+    ! index order, and the subgrid averaging scale factors (c2l: unity, urbanf
+    ! and urbans; l2g: unity) used by lnd2atm_minimal and lnd2atm, so that
+    ! l2a_p2g_1d/2d and l2a_c2g_1d/2d map fields to gridcells over these points
+    ! only. p2g and c2g (used before) loop over all allocated points, skip the
+    ! same points and set up the same scale factors on every call, so the
+    ! results are the same.
+    !
+    ! !USES:
+      !$acc routine seq
+    use subgridAveMod , only : create_scale_c2l, build_scale_l2g_gpu
+    use VegetationType, only : veg_pp
+    use ColumnType    , only : col_pp
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)    :: bounds
+    integer          , intent(out)   :: npts_p                        ! number of entries in pts_p
+    integer          , intent(out)   :: pts_p(:)                      ! active patches with nonzero wtgcell
+    integer          , intent(out)   :: npts_c                        ! number of entries in pts_c
+    integer          , intent(out)   :: pts_c(:)                      ! active columns with nonzero wtgcell
+    real(r8)         , intent(inout) :: scale_c2l(bounds%begc:,unity:) ! c2l scale factors [col, scale type]
+    real(r8)         , intent(inout) :: scale_l2g(bounds%begl:)        ! l2g scale factors for unity [landunit]
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p, c, ic
+    !------------------------------------------------------------------------
+
+    npts_p = 0
+    do p = bounds%begp,bounds%endp
+       if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
+          npts_p = npts_p + 1
+          pts_p(npts_p) = p
+       end if
+    end do
+
+    npts_c = 0
+    do c = bounds%begc,bounds%endc
+       if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
+          npts_c = npts_c + 1
+          pts_c(npts_c) = c
+       end if
+    end do
+
+    do ic = unity, urbans
+       call create_scale_c2l(bounds, ic, scale_c2l(bounds%begc:bounds%endc,ic))
+    end do
+
+    call build_scale_l2g_gpu(bounds, unity, scale_l2g(bounds%begl:bounds%endl))
+
+  end subroutine l2a_map_init
+
+  !------------------------------------------------------------------------
+  subroutine l2a_p2g_1d(bounds, npts_p, pts_p, scale_c2l, scale_l2g, parr, garr)
+    !
+    ! !DESCRIPTION:
+    ! Same as p2g_1d_gpu with p2c_scale_type=unity and l2g_scale_type=unity,
+    ! over the patches pts_p and with the scale factors set up in l2a_map_init
+    !
+    ! !USES:
+      !$acc routine seq
+    use VegetationType, only : veg_pp
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)  :: bounds
+    integer , intent(in)  :: npts_p                ! number of entries in pts_p
+    integer , intent(in)  :: pts_p(:)              ! active patches with nonzero wtgcell
+    real(r8), intent(in)  :: scale_c2l(bounds%begc:) ! c2l scale factors of the averaging type
+    real(r8), intent(in)  :: scale_l2g(bounds%begl:) ! l2g scale factors
+    real(r8), intent(in)  :: parr( bounds%begp: )  ! input pft array
+    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fp,p,c,l,g,index                   ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: scale_p2c                          ! scale factor
+    real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    scale_p2c = 1.0_r8
+
+    garr(bounds%begg : bounds%endg) = spval
+    sumwt(bounds%begg : bounds%endg) = 0._r8
+    do fp = 1,npts_p
+       p = pts_p(fp)
+       c = veg_pp%column(p)
+       l = veg_pp%landunit(p)
+       if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+          g = veg_pp%gridcell(p)
+          if (sumwt(g) == 0._r8) garr(g) = 0._r8
+          garr(g) = garr(g) + parr(p) * scale_p2c * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+          sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
+       end if
+    end do
+    found = .false.
+    do g = bounds%begg, bounds%endg
+       if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = g
+       else if (sumwt(g) /= 0._r8) then
+          garr(g) = garr(g)/sumwt(g)
+       end if
+    end do
+    if (found) then
+       ! as in p2g_1d_gpu, report and continue
+       print *,'p2g_1d error: sumwt is greater than 1.0 at g= ',index
+    end if
+
+  end subroutine l2a_p2g_1d
+
+  !------------------------------------------------------------------------
+  subroutine l2a_p2g_2d(bounds, npts_p, pts_p, scale_c2l, scale_l2g, num2d, parr, garr)
+    !
+    ! !DESCRIPTION:
+    ! Same as p2g_2d_gpu with p2c_scale_type=unity and l2g_scale_type=unity,
+    ! over the patches pts_p and with the scale factors set up in l2a_map_init
+    !
+    ! !USES:
+      !$acc routine seq
+    use VegetationType, only : veg_pp
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)  :: bounds
+    integer , intent(in)  :: npts_p                    ! number of entries in pts_p
+    integer , intent(in)  :: pts_p(:)                  ! active patches with nonzero wtgcell
+    real(r8), intent(in)  :: scale_c2l(bounds%begc:)   ! c2l scale factors of the averaging type
+    real(r8), intent(in)  :: scale_l2g(bounds%begl:)   ! l2g scale factors
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: parr( bounds%begp: , 1: ) ! input pft array
+    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,fp,p,c,l,g,index                     ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: scale_p2c                              ! scale factor
+    real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    scale_p2c = 1.0_r8
+
+    garr(bounds%begg : bounds%endg, :) = spval
+    do j = 1,num2d
+       sumwt(bounds%begg : bounds%endg) = 0._r8
+       do fp = 1,npts_p
+          p = pts_p(fp)
+          c = veg_pp%column(p)
+          l = veg_pp%landunit(p)
+          if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+             g = veg_pp%gridcell(p)
+             if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
+             garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+             sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
+          end if
+       end do
+       found = .false.
+       do g = bounds%begg, bounds%endg
+          if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index = g
+          else if (sumwt(g) /= 0._r8) then
+             garr(g,j) = garr(g,j)/sumwt(g)
+          end if
+       end do
+       if (found) then
+          ! as in p2g_2d_gpu, report and stop
+          print *,'p2g_2d error: sumwt gt 1.0 at g/sumwt = ',index,sumwt(index)
+          stop
+       end if
+    end do
+
+  end subroutine l2a_p2g_2d
+
+  !------------------------------------------------------------------------
+  subroutine l2a_c2g_1d(bounds, npts_c, pts_c, scale_c2l, scale_l2g, carr, garr)
+    !
+    ! !DESCRIPTION:
+    ! Same as c2g_1d_gpu (and c2g_1d) with l2g_scale_type=unity, over the
+    ! columns pts_c and with the scale factors set up in l2a_map_init
+    !
+    ! !USES:
+      !$acc routine seq
+    use ColumnType  , only : col_pp
+    use elm_varcon  , only : nameg
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)  :: bounds
+    integer , intent(in)  :: npts_c                ! number of entries in pts_c
+    integer , intent(in)  :: pts_c(:)              ! active columns with nonzero wtgcell
+    real(r8), intent(in)  :: scale_c2l(bounds%begc:) ! c2l scale factors of the averaging type
+    real(r8), intent(in)  :: scale_l2g(bounds%begl:) ! l2g scale factors
+    real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array
+    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fc,c,l,g,index                     ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    garr(bounds%begg : bounds%endg) = spval
+    sumwt(bounds%begg : bounds%endg) = 0._r8
+    do fc = 1,npts_c
+       c = pts_c(fc)
+       l = col_pp%landunit(c)
+       if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+          g = col_pp%gridcell(c)
+          if (sumwt(g) == 0._r8) garr(g) = 0._r8
+          garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+          sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+       end if
+    end do
+    found = .false.
+    do g = bounds%begg, bounds%endg
+       if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = g
+       else if (sumwt(g) /= 0._r8) then
+          garr(g) = garr(g)/sumwt(g)
+       end if
+    end do
+    if (found) then
+#ifndef _OPENACC
+       write(iulog,*) 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+#endif
+    end if
+
+  end subroutine l2a_c2g_1d
+
+  !------------------------------------------------------------------------
+  subroutine l2a_c2g_2d(bounds, npts_c, pts_c, scale_c2l, scale_l2g, num2d, carr, garr)
+    !
+    ! !DESCRIPTION:
+    ! Same as c2g_2d_gpu with l2g_scale_type=unity, over the columns pts_c
+    ! and with the scale factors set up in l2a_map_init
+    !
+    ! !USES:
+      !$acc routine seq
+    use ColumnType  , only : col_pp
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)  :: bounds
+    integer , intent(in)  :: npts_c                    ! number of entries in pts_c
+    integer , intent(in)  :: pts_c(:)                  ! active columns with nonzero wtgcell
+    real(r8), intent(in)  :: scale_c2l(bounds%begc:)   ! c2l scale factors of the averaging type
+    real(r8), intent(in)  :: scale_l2g(bounds%begl:)   ! l2g scale factors
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: carr( bounds%begc: , 1: ) ! input column array
+    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,fc,c,l,g,index                       ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    garr(bounds%begg : bounds%endg,:) = spval
+    do j = 1,num2d
+       sumwt(bounds%begg : bounds%endg) = 0._r8
+       do fc = 1,npts_c
+          c = pts_c(fc)
+          l = col_pp%landunit(c)
+          if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+             g = col_pp%gridcell(c)
+             if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
+             garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+             sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+          end if
+       end do
+       found = .false.
+       do g = bounds%begg, bounds%endg
+          if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index = g
+          else if (sumwt(g) /= 0._r8) then
+             garr(g,j) = garr(g,j)/sumwt(g)
+          end if
+       end do
+       if (found) then
+          ! as in c2g_2d_gpu, report and continue
+          print *, 'c2g_2d error: sumwt is greater than 1.0 at g= ',index
+       end if
+    end do
+
+  end subroutine l2a_c2g_2d
 
 end module lnd2atmMod
