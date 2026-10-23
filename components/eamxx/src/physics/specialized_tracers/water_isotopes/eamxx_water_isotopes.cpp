@@ -34,7 +34,7 @@ E parse_option (ekat::ParameterList& p,
   return choices.begin()->second;  // unreachable; silences -Wreturn-type warning
 }
 
-// Species names accepted in `species:` of a tracers_file isotope entry.
+// Species names accepted in `species:` of a water_tracers_file isotope entry.
 // Host-only: device code receives the resolved enum, never this table.
 constexpr std::pair<const char*, WaterIsotopologues> species_names[] = {
   {"H216O", WaterIsotopologues::H216O},
@@ -44,7 +44,7 @@ constexpr std::pair<const char*, WaterIsotopologues> species_names[] = {
   {"HTO",   WaterIsotopologues::HTO},
 };
 static_assert(std::size(species_names) == etoi(WaterIsotopologues::Count),
-              "Every WaterIsotopologues species needs a tracers_file name.");
+              "Every WaterIsotopologues species needs a water_tracers_file name.");
 
 WaterIsotopologues species_from_name (const std::string& name)
 {

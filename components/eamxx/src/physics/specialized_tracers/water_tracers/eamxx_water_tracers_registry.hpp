@@ -14,7 +14,7 @@ namespace scream {
 namespace water_tracers {
 
 /*
- * Host-only parser for the water tracer YAML file (the tracers_file parameter
+ * Host-only parser for the water tracer YAML file (the water_tracers_file parameter
  * of the water_tracers process).
  *
  * The file has one top-level key, `tracers`, a map keyed by tracer name, and
@@ -22,9 +22,12 @@ namespace water_tracers {
  * both accepted:
  *
  *   tracers:
- *     wtrc_bp: {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
- *     wtrc_bf: {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}
- *     hdo:     {type: isotope, species: HDO}
+ *     wtrc_bp:  {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
+ *     wtrc_bf:  {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}
+ *     wtrc_hdo: {type: isotope, species: HDO}
+ *
+ * Tracer names must start with `wtrc_` (so they cannot alias any other
+ * field) and must not end in `_surf_flux` (each tracer registers one).
  *
  * Keys by type (anything else is an error, so a misspelled key cannot be
  * silently ignored):

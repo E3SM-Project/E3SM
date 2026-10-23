@@ -14,7 +14,7 @@ CreateUnitTest(water_tracers_ocean_flux
   LABELS water_tracers physics
 )
 
-# tracers_file parsing and validation. The test writes its YAML fixtures
+# water_tracers_file parsing and validation. The test writes its YAML fixtures
 # into the working directory.
 CreateUnitTest(water_tracers_registry
   SOURCES water_tracers_registry_tests.cpp

@@ -14,7 +14,7 @@ namespace scream
 namespace water_isotopes
 {
 
-// One resolved isotope tracer: its tracers_file name, species, and ocean
+// One resolved isotope tracer: its water_tracers_file name, species, and ocean
 // ratio R_ocn (resolved from the parameter tables by WaterIsotopes::resolve).
 struct IsotopeTracer {
   std::string        name;
@@ -27,7 +27,7 @@ struct IsotopeTracer {
  * process: which species names are valid in the tracers file, the runtime
  * formulation options (liquid/vapor and ice/vapor fractionation, standard
  * ratio, ocean enrichment), and the isotope tracers resolved from a parsed
- * tracers_file.
+ * water_tracers_file.
  */
 class WaterIsotopes
 {

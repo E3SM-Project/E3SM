@@ -10,11 +10,12 @@ namespace water_tracers {
 
 namespace {
 
-// Fields that other processes already register as tracers. A water tracer
-// with one of these names would silently alias them.
-const std::vector<std::string> reserved_names =
-  {"qv", "qc", "qr", "qi", "qm", "nc", "nr", "ni", "bm", "tke"};
+// Every water tracer name must start with this prefix, so that it cannot
+// alias a field registered by this or any other process (qv, sst, o3, ...).
+const std::string name_prefix = "wtrc_";
 
+// Each tracer also registers <name>_surf_flux, so no tracer name may end in
+// it (wtrc_a_surf_flux would collide with the flux field of wtrc_a).
 const std::string flux_suffix = "_surf_flux";
 
 const std::vector<std::string> generic_keys  = {"type", "ocean_flux", "r_ocn", "init", "r_init"};
@@ -27,7 +28,7 @@ bool ends_with (const std::string& s, const std::string& suffix) {
 
 // Context prefix for error messages
 std::string where (const std::string& path, const std::string& tracer) {
-  return "Error! In tracers_file '" + path + "', tracer '" + tracer + "': ";
+  return "Error! In water_tracers_file '" + path + "', tracer '" + tracer + "': ";
 }
 
 // ekat's YAML parser stores a scalar as the first of bool, int, double,
@@ -72,9 +73,10 @@ TracerSpec parse_entry (const std::string& path, const std::string& name,
 {
   const auto ctx = where(path, name);
 
-  EKAT_REQUIRE_MSG(not ekat::contains(reserved_names, name) and not ends_with(name, flux_suffix),
-      ctx + "the name is reserved. Tracer names cannot be one of {" +
-      ekat::join(reserved_names, ", ") + "} or end in '" + flux_suffix + "'.\n");
+  EKAT_REQUIRE_MSG(name.size()>name_prefix.size() and name.compare(0, name_prefix.size(), name_prefix)==0,
+      ctx + "tracer names must start with '" + name_prefix + "' (e.g. " + name_prefix + "hdo).\n");
+  EKAT_REQUIRE_MSG(not ends_with(name, flux_suffix),
+      ctx + "tracer names cannot end in '" + flux_suffix + "'.\n");
 
   TracerSpec spec;
   spec.name  = name;
@@ -160,7 +162,7 @@ std::vector<TracerSpec> parse_tracers_file (const std::string& path,
 {
   const auto file = ekat::parse_yaml_file(path);
   EKAT_REQUIRE_MSG(file.isSublist("tracers"),
-      "Error! tracers_file '" + path + "' needs a top-level 'tracers' map, keyed by tracer name.\n");
+      "Error! water_tracers_file '" + path + "' needs a top-level 'tracers' map, keyed by tracer name.\n");
   const auto& tracers = file.sublist("tracers");
 
   const auto scalars = tracers.param_names();

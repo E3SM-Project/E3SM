@@ -30,11 +30,11 @@ WaterTracers::WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& p
   water_isotopes::WaterIsotopes::enable(opts);
 #endif
 
-  const std::string key = "tracers_file";
+  const std::string key = "water_tracers_file";
   EKAT_REQUIRE_MSG(m_params.isParameter(key) and m_params.isType<std::string>(key) and
                    m_params.get<std::string>(key)!="",
       "Error! Process '" + m_params.name() + "' is in atm_procs_list, but its parameter\n"
-      "  'tracers_file' is missing or empty. Set it to the water tracer YAML file.\n");
+      "  'water_tracers_file' is missing or empty. Set it to the water tracer YAML file.\n");
 
   m_specs = water_tracers::parse_tracers_file(m_params.get<std::string>(key), opts);
 
@@ -88,9 +88,10 @@ void WaterTracers::create_requests ()
   // copies unset (AtmosphereDriver::set_initial_conditions, "fvphyshack").
   // HommeDynamics then remaps the physics_gll "tracers" group to the dynamics
   // grid, and the dynamics state to pgN, at the end of its own initialize_impl.
-  // This process runs before homme, so on pgN its qv is still unset during
-  // initialize_impl, and anything it wrote to its pgN tracers would be
-  // overwritten by homme's remap.
+  // This process must run before homme (CIME cases enforce this in
+  // check_water_tracers_init_order, eamxx_buildnml.py), so on pgN its qv is
+  // still unset during initialize_impl, and anything it wrote to its pgN
+  // tracers would be overwritten by homme's remap.
   // Hence, in a pgN run we also request qv and the tracers on physics_gll, set
   // the init: ratio tracers there (see initialize_impl), and homme carries
   // them to the dynamics grid and to pgN, like every other tracer IC. The

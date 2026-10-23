@@ -2,7 +2,7 @@
 #
 # This folder groups the "auxiliary tracer" physics processes. Currently
 # there is one process, water_tracers, which accepts generic and isotope
-# tracer entries in a single tracers_file. The build is governed by these
+# tracer entries in a single water_tracers_file. The build is governed by these
 # CMake options:
 #
 #   EAMXX_ENABLE_WATER_TRACERS  - build the water tracer process

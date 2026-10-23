@@ -1413,11 +1413,11 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 def find_water_tracers_files(eamxx_dict):
 ###############################################################################
     """
-    Return the tracers_file values of all water_tracers processes in the
+    Return the water_tracers_file values of all water_tracers processes in the
     (dict form of the) eamxx atm procs tree.
 
     >>> d = {'atm_procs_list': ['sc_import', 'water_tracers', 'physics'],
-    ...      'water_tracers': {'tracers_file': './wt.yaml'},
+    ...      'water_tracers': {'water_tracers_file': './wt.yaml'},
     ...      'physics': {'atm_procs_list': ['p3'], 'p3': {}}}
     >>> find_water_tracers_files(d)
     ['./wt.yaml']
@@ -1433,6 +1433,65 @@ def find_water_tracers_files(eamxx_dict):
         else:
             result.extend(find_water_tracers_files(sub))
     return result
+
+###############################################################################
+def atm_procs_init_order(group_dict):
+###############################################################################
+    """
+    Return the names of all atm processes in the (dict form of the) eamxx atm
+    procs tree, in the order they are initialized: the order of each group's
+    atm_procs_list, with nested groups expanded in place.
+
+    >>> d = {'atm_procs_list': ['sc_import', 'homme', 'physics'],
+    ...      'physics': {'atm_procs_list': 'shoc,water_tracers', 'shoc': {}}}
+    >>> atm_procs_init_order(d)
+    ['sc_import', 'homme', 'shoc', 'water_tracers']
+    """
+    procs = group_dict.get("atm_procs_list", [])
+    if isinstance(procs, str):
+        procs = [p.strip() for p in procs.split(",") if p.strip()]
+
+    result = []
+    for name in procs:
+        sub = group_dict.get(name)
+        if isinstance(sub, dict) and "atm_procs_list" in sub:
+            result.extend(atm_procs_init_order(sub))
+        else:
+            result.append(name)
+    return result
+
+###############################################################################
+def check_water_tracers_init_order(eamxx_dict, physics_grid_type, has_ratio_init):
+###############################################################################
+    """
+    On a pgN physics grid, water_tracers sets its init: ratio tracers on the
+    physics_gll copies, which homme remaps to the dynamics and pgN grids at the
+    end of its own initialization. So water_tracers must be initialized before
+    homme, or those initial conditions are silently lost (see [pgN initial
+    conditions] in eamxx_water_tracers_process_interface.cpp).
+
+    >>> good = {'atm_procs_list': 'sc_import,water_tracers,homme,physics'}
+    >>> check_water_tracers_init_order(good, 'pg2', True)
+    >>> bad = {'atm_procs_list': ['sc_import', 'homme', 'physics'],
+    ...        'physics': {'atm_procs_list': ['shoc', 'water_tracers']}}
+    >>> check_water_tracers_init_order(bad, 'gll', True)
+    >>> check_water_tracers_init_order(bad, 'pg2', False)
+    >>> check_water_tracers_init_order(bad, 'pg2', True) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: water_tracers must come before homme in atm_procs_list on a pg2 physics grid, ...
+    """
+    if str(physics_grid_type).strip().lower() == "gll" or not has_ratio_init:
+        return
+
+    order = atm_procs_init_order(eamxx_dict)
+    if "homme" not in order or "water_tracers" not in order:
+        return
+
+    expect (order.index("water_tracers") < order.index("homme"),
+            f"water_tracers must come before homme in atm_procs_list on a {physics_grid_type} physics grid, "
+            "or its init: ratio initial conditions are lost.\n"
+            "  Remove it from its current group and add it to the top-level list, e.g.\n"
+            "    ./atmchange atm_procs_list=sc_import,water_tracers,homme,physics,sc_export")
 
 ###############################################################################
 def add_water_tracer_initial_conditions(ic_dict, water_tracer_names):
@@ -1468,12 +1527,12 @@ def copy_water_tracers_file(case, caseroot, scream_input):
     if len(tracers_files)==0:
         return
 
-    expect (len(set(water_tracers_files))==1,
-            f"water_tracers must have exactly one water_tracers_file, got {water_tracers_files}")
+    expect (len(set(tracers_files))==1,
+            f"water_tracers must have exactly one water_tracers_file, got {tracers_files}")
     src = tracers_files[0]
     expect (src is not None and str(src).strip() not in ("", "None"),
             "water_tracers is in atm_procs_list, but water_tracers_file is not set.\n"
-            "  Use, e.g., ./atmchange water_tracers::tracers_file=/path/to/tracers.yaml")
+            "  Use, e.g., ./atmchange water_tracers::water_tracers_file=/path/to/tracers.yaml")
 
     # Relative paths are relative to the case directory (where atmchange is run)
     src_yaml = os.path.expanduser(str(src).strip())
@@ -1489,10 +1548,17 @@ def copy_water_tracers_file(case, caseroot, scream_input):
     expect (isinstance(tracers,dict) and isinstance(tracers.get("tracers"),dict),
             f"water_tracers_file '{src_yaml}' must have a top-level 'tracers' map")
 
+    # Every type defaults to init: ratio
+    has_ratio_init = any(str(e.get("init", "ratio")) != "zero"
+                         for e in tracers["tracers"].values() if isinstance(e, dict))
+    check_water_tracers_init_order(scream_input["eamxx"],
+                                   scream_input["grids_manager"].get("physics_grid_type", "gll"),
+                                   has_ratio_init)
+
     def repoint(d):
         for name, sub in d.items():
             if isinstance(sub, dict):
-                if name == "water_tracers" and "tracers_file" in sub:
+                if name == "water_tracers" and "water_tracers_file" in sub:
                     sub["water_tracers_file"] = dst_yaml
                 else:
                     repoint(sub)

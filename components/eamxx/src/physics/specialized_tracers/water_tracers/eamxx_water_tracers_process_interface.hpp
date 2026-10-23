@@ -15,7 +15,7 @@ namespace scream
 /*
  * Water tracers: extra water species that follow qv through the model.
  *
- * The tracers are defined in a YAML file (the tracers_file parameter; see
+ * The tracers are defined in a YAML file (the water_tracers_file parameter; see
  * eamxx_water_tracers_registry.hpp). Each one is registered as an advected
  * tracer <name> [kg/kg], plus a diagnostic <name>_surf_flux [kg/m2/s], the
  * upward ocean evaporation flux of that tracer. The flux is computed every
@@ -68,7 +68,7 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // One entry per tracer in tracers_file, sorted by name. r_ocn/r_init for
+  // One entry per tracer in water_tracers_file, sorted by name. r_ocn/r_init for
   // isotope specs are resolved by m_isotopes.resolve() in the constructor,
   // before initialize/run time reads them.
   std::vector<water_tracers::TracerSpec> m_specs;
