@@ -29,16 +29,24 @@ module PrecisionControlMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp)
+  subroutine PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, skip_deep)
     !
     ! !DESCRIPTION:
     ! On the radiation time step, force leaf and deadstem c and n to 0 if
     ! they get too small.
     !
+    ! With skip_deep, the column checks cover only levels 1:nlevdecomp. The
+    ! caller sets it only when nothing has written levels below nlevdecomp of
+    ! the pools checked here since the previous call on the same filter. Those
+    ! levels are then fixed points of the checks: a truncated pool is already
+    ! +0 with its N also +0, so cc and cn stay +0 and adding them leaves
+    ! ctrunc_vr and ntrunc_vr unchanged, and no smin_no3_vr/smin_nh4_vr value
+    ! is left in the reset range.
+    !
     ! !USES:
       !$acc routine seq
     use elm_varctl , only : iulog, use_c13, use_c14, use_fates
-    use elm_varpar , only : nlevdecomp_full, crop_prog
+    use elm_varpar , only : nlevdecomp_full, nlevdecomp, crop_prog
     use pftvarcon  , only : iscft
     use CNDecompCascadeConType , only : decomp_cascade_con
     !
@@ -47,9 +55,11 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patchs in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    logical                  , intent(in)    :: skip_deep       ! true => check column levels 1:nlevdecomp only
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k,l  ! indices
+    integer :: nlev_pc    ! deepest level checked in the column loops
     integer :: fp,fc    ! lake filter indices
     real(r8):: pc,pn,pp    ! truncation terms for patch-level corrections
     real(r8):: cc,cn,cp    ! truncation terms for column-level corrections
@@ -559,11 +569,16 @@ contains
       end if ! end of if(.not.use_fates)
 
 
-         ! column loop
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+         nlev_pc = nlevdecomp_full
+         if (skip_deep) nlev_pc = nlevdecomp
 
-            do j = 1,nlevdecomp_full
+         ! column loop, with the columns innermost (memory order). The work for
+         ! each (c,j) touches only that column and level, so the order across
+         ! (c,j) does not matter.
+         do j = 1,nlev_pc
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+
                ! initialize the column-level C and N truncation terms
                cc = 0._r8
                if ( use_c13 ) cc13 = 0._r8
@@ -608,13 +623,13 @@ contains
                endif
             end do
 
-         end do   ! end of column loop
+         end do   ! end of level loop
 
          ! remove small negative perturbations for stability purposes, if any should arise.
          
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            do j = 1,nlevdecomp_full
+            do j = 1,nlev_pc
                if (abs(col_ns%smin_no3_vr(c,j)) < ncrit/1e4_r8) then
                   if ( col_ns%smin_no3_vr(c,j)  < 0._r8 ) then
 #ifndef _OPENACC
