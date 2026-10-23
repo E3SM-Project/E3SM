@@ -9585,19 +9585,21 @@ contains
           this%m_n_to_litr_cel_fire(idx,j)             = value_column
           this%m_n_to_litr_lig_fire(idx,j)             = value_column
 
-          this%net_nmin_vr(idx,j)                      = value_column
-
           end associate
        end do
     end do
 
-    ! Never written outside this routine, so they keep the zero set here.
+    ! sminn_nh4/no3_input_vr are never written outside this routine, so they
+    ! keep the zero set here. net_nmin_vr is assigned for every filter column
+    ! and level 1:nlevdecomp by SoilLittDecompAlloc, which outside the ELM
+    ! interface starts its sum from +0 instead of reading it.
     if (do_zero_rewritten) then
        do j = 1, nlevdecomp_full
           do fi = 1,num_column,flux_setvalues_block_size
              associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
              this%sminn_nh4_input_vr(idx,j) = value_column
              this%sminn_no3_input_vr(idx,j) = value_column
+             this%net_nmin_vr(idx,j)        = value_column
              end associate
           end do
        end do
@@ -11214,9 +11216,6 @@ contains
           this%m_p_to_litr_cel_fire(idx,j)             = value_column
           this%m_p_to_litr_lig_fire(idx,j)             = value_column
 
-
-          this%net_pmin_vr(idx,j)                      = value_column
-
           end associate
        end do
     end do
@@ -11392,6 +11391,9 @@ contains
              this%plant_pdemand_vr(idx,j)           = value_column
              this%adsorb_to_labilep_vr(idx,j)       = value_column
              this%desorb_to_solutionp_vr(idx,j)     = value_column
+             ! Assigned for every filter column and level 1:nlevdecomp by
+             ! SoilLittDecompAlloc (see net_nmin_vr in col_nf_setvalues).
+             this%net_pmin_vr(idx,j)                = value_column
              end associate
           end do
        end do

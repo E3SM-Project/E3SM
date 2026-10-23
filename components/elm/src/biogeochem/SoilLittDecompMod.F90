@@ -526,19 +526,32 @@ contains
       call t_startf('SLDA-actual')
       ! Zero the sums that are accumulated in the loop over transitions below.
       ! net_nmin_vr and net_pmin_vr keep their incoming value as the start of the
-      ! sum. fpi_vr and fpi_p_vr are not changed in this loop, so a copy is exact.
+      ! sum. Outside the ELM interface that value is always the +0 stored by
+      ! CNZero (nothing else writes them before this point), so the sums start
+      ! from +0 and CNZero zeroes them only on full-zero steps. The ELM interface
+      ! loads them from its own data before this call. fpi_vr and fpi_p_vr are
+      ! not changed in this loop, so a copy is exact.
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             fpi_loc(fc,j) = fpi_vr(c,j)
             fpi_p_loc(fc,j) = fpi_p_vr(c,j)
-            net_nmin_loc(fc,j) = net_nmin_vr(c,j)
-            net_pmin_loc(fc,j) = net_pmin_vr(c,j)
+            net_nmin_loc(fc,j) = 0._r8
+            net_pmin_loc(fc,j) = 0._r8
             gross_nmin_loc(fc,j) = 0.0_r8
             gross_pmin_loc(fc,j) = 0.0_r8
             hrsum(fc,j) = 0._r8
          end do
       end do
+      if (use_elm_interface) then
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               net_nmin_loc(fc,j) = net_nmin_vr(c,j)
+               net_pmin_loc(fc,j) = net_pmin_vr(c,j)
+            end do
+         end do
+      end if
       if (.not. is_rd) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
