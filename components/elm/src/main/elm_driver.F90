@@ -158,7 +158,7 @@ module elm_driver
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
   use FanStreamMod           , only : fanstream_interp
-  use dynSubgridControlMod   , only : get_subgrid_weights_updated
+  use dynSubgridControlMod   , only : get_subgrid_weights_updated, get_do_harvest
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -400,12 +400,20 @@ contains
 
        if (use_cn .or. use_fates) then
           call t_startf('cnpzero')
-          call grc_cf%ZeroDWT(bounds_clump)
-          call col_cf%ZeroDWT(bounds_clump)
-          call grc_nf%ZeroDWT(bounds_clump)
-          call col_nf%ZeroDWT(bounds_clump)
-          call grc_pf%ZeroDWT(bounds_clump)
-          call col_pf%ZeroDWT(bounds_clump)
+          ! The column and gridcell dwt fluxes are written only by the
+          ! dynSubgrid_driver conservation updates, in steps where weights may
+          ! have changed, and the gridcell wood harvest fluxes only with harvest.
+          ! So they need zeroing only after such a step. Here
+          ! get_subgrid_weights_updated() still refers to the previous step (it
+          ! is .true. on the first step of a run or restart).
+          if (get_subgrid_weights_updated() .or. get_do_harvest() .or. iac_present .or. use_fates) then
+             call grc_cf%ZeroDWT(bounds_clump)
+             call col_cf%ZeroDWT(bounds_clump)
+             call grc_nf%ZeroDWT(bounds_clump)
+             call col_nf%ZeroDWT(bounds_clump)
+             call grc_pf%ZeroDWT(bounds_clump)
+             call col_pf%ZeroDWT(bounds_clump)
+          end if
           call t_stopf('cnpzero')
        end if
 
