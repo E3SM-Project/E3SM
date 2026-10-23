@@ -7906,7 +7906,15 @@ contains
        end do
     end if
     
+    ! The litter pools of the source-sink term are assigned (not accumulated)
+    ! for every filter column and level 1:nlevdecomp by Carbon/Nitrogen/
+    ! PhosphorusStateUpdate1 outside FATES and PFLOTRAN, and nothing reads them
+    ! earlier in the step, so they are zeroed only on zero_rewritten steps. Pass
+    ! zero_rewritten=.false. only with the filter those updates use, and force
+    ! it on for any new writer that accumulates into these pools.
     do k = 1, ndecomp_pools
+       if (.not. do_zero_rewritten .and. &
+            (k == i_met_lit .or. k == i_cel_lit .or. k == i_lig_lit)) cycle
        do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
@@ -9692,7 +9700,10 @@ contains
           end do
        end do
 
+    ! Litter pools are assigned by NitrogenStateUpdate1 (see col_cf_setvalues).
     do k = 1, ndecomp_pools
+       if (.not. do_zero_rewritten .and. &
+            (k == i_met_lit .or. k == i_cel_lit .or. k == i_lig_lit)) cycle
        do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
@@ -11291,12 +11302,24 @@ contains
        end do
     end do
 
+    ! biochem_pmin_ppools_vr is written only where the P pool is positive, so
+    ! it is zeroed on every step.
     do k = 1, ndecomp_pools
        do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_ppools_sourcesink(i,j,k) = value_column
              this%biochem_pmin_ppools_vr(i,j,k) = value_column
+          end do
+       end do
+    end do
+    ! Litter pools are assigned by PhosphorusStateUpdate1 (see col_cf_setvalues).
+    do k = 1, ndecomp_pools
+       if (.not. do_zero_rewritten .and. &
+            (k == i_met_lit .or. k == i_cel_lit .or. k == i_lig_lit)) cycle
+       do j = 1, nlevz
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_ppools_sourcesink(i,j,k) = value_column
           end do
        end do
     end do
