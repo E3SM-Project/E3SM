@@ -596,18 +596,22 @@
     <type>char</type>
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>fixed_year,variable_year,fixed_parameters</valid_values>
+    <valid_values>fixed_year,variable_orbit_year,variable_year,fixed_parameters</valid_values>
     <desc>
       orbital model setting.  this sets how the orbital mode will be
       configured.
       "fixed_year" uses the orb_iyear and other orb inputs are ignored.  In
       this mode, the orbital parameters are constant and based on the year.
-      "variable_year" uses the orb_iyear and orb_iyear_align.  In this mode,
+      The vernal-equinox reference is calendar day 80.5 annually under either
+      calendar; Gregorian orbital speed uses the actual civil-year length.
+      "variable_orbit_year" uses the orb_iyear and orb_iyear_align.  In this mode,
       the orbital parameters vary as the model year advances and the model
       year orb_iyear_align has the equivalent orbital year of orb_iyear.
+      "variable_year" is a backward-compatible alias for "variable_orbit_year".
+      Orbital mode is independent of CALENDAR.
       "fixed_parameters" uses the orb_eccen, orb_mvelp, and orb_obliq to set
       the orbital parameters which then remain constant through the model
-      integration. [fixed_year, variable_year, fixed_parameters]  (default: 'fixed_year'.)
+      integration. (default: 'fixed_year'.)
     </desc>
     <values>
       <value>fixed_year</value>
@@ -633,10 +637,13 @@
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      model year associated with orb_iyear when orb_mode is variable_year. (default: 1990)
+      model year associated with orb_iyear when orb_mode is variable_orbit_year.
+      Defaults to the leading numeric compset epoch, or 1850 for 20TR compsets.
+      If the epoch is unknown, set this explicitly for variable_orbit_year.
+      The undefined value is SHR_ORB_UNDEF_INT (2000000000).
     </desc>
     <values>
-      <value>1990</value>
+      <value>2000000000</value>
     </values>
   </entry>
 
@@ -645,10 +652,14 @@
     <category>orbital</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      year of orbit, used when orb_mode is fixed_year or variable_year. (default: 1990)
+      year of orbit, used when orb_mode is fixed_year or variable_orbit_year.
+      Defaults to the leading numeric compset epoch, or 1850 for 20TR compsets,
+      independent of CALENDAR. If the epoch is unknown, set this explicitly
+      or supply fixed_parameters. The undefined value is
+      SHR_ORB_UNDEF_INT (2000000000).
     </desc>
     <values>
-      <value>1990</value>
+      <value>2000000000</value>
     </values>
   </entry>
 

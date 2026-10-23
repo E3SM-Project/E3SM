@@ -23,6 +23,29 @@ from CIME.XML.grids import Grids
 
 logger = logging.getLogger(__name__)
 
+def _set_orbital_defaults(nmlgen, time_token):
+    orbital_epoch = re.match(r'^([0-9]+)', time_token)
+    orbital_year = '1850' if time_token.startswith('20TR') else (
+        orbital_epoch.group(1) if orbital_epoch else None)
+    for name in ('orb_iyear', 'orb_iyear_align'):
+        if nmlgen.get_value(name) == '2000000000' and orbital_year is not None:
+            nmlgen.set_value(name, value=orbital_year)
+
+    mode = nmlgen.get_value('orb_mode')
+    if mode == 'fixed_parameters':
+        for name in ('orb_eccen', 'orb_mvelp', 'orb_obliq'):
+            expect(float(nmlgen.get_value(name).lower().replace('d', 'e')) != 1.e36,
+                   "Set {} in user_nl_cpl for orb_mode='fixed_parameters'".format(name))
+    else:
+        expect(nmlgen.get_value('orb_iyear') != '2000000000',
+               "Cannot infer an orbital epoch from compset time token '{}'. "
+               "Set orb_iyear in user_nl_cpl, or select orb_mode='fixed_parameters' "
+               "and supply orb_eccen, orb_mvelp, and orb_obliq.".format(time_token))
+        if mode in ('variable_orbit_year', 'variable_year'):
+            expect(nmlgen.get_value('orb_iyear_align') != '2000000000',
+                   "Set orb_iyear_align in user_nl_cpl for orb_mode='{}' "
+                   "when the compset orbital epoch is unknown.".format(mode))
+
 ###############################################################################
 def _create_drv_namelists(case, infile, confdir, nmlgen, files):
 ###############################################################################
@@ -97,6 +120,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     # Initialize namelist defaults
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
+    _set_orbital_defaults(nmlgen, config['iyear'])
 
     #--------------------------------
     # Overwrite: set brnch_retain_casename
