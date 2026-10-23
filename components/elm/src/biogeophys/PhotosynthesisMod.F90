@@ -1527,6 +1527,7 @@ contains
 
     real(r8) :: aquad, bquad, cquad  ! terms for quadratic equations
     real(r8) :: r1, r2               ! roots of quadratic equation
+    real(r8) :: qq                   ! temporary term for the quadratic solution
     real(r8) :: fnps                 ! fraction of light absorbed by non-photosynthetic pigments
     real(r8) :: theta_psii           ! empirical curvature parameter for electron transport rate
     real(r8) :: theta_ip             ! empirical curvature parameter for ap photosynthesis co-limitation
@@ -1538,6 +1539,8 @@ contains
     ! block: the associate copied the descriptors of 17 arrays on every call, more
     ! work than the arithmetic below. The arithmetic and its operand order are
     ! unchanged, and ac, aj, ap, ag and an are stored as before.
+    ! The three quadratic solves are written out with the same expressions as
+    ! QuadraticMod's quadratic, which is in another file and so is not inlined.
 
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       fnps = 0.15_r8
@@ -1575,13 +1578,43 @@ contains
       aquad = photosyns_vars%theta_cj_patch(p)
       bquad = -(ac + aj)
       cquad = ac * aj
-      call quadratic (aquad, bquad, cquad, r1, r2)
+      ! quadratic (aquad, bquad, cquad, r1, r2) written out, as in QuadraticMod
+      if (aquad == 0._r8) then
+         write (iulog,*) 'Quadratic solution error: a = ',aquad
+         call endrun(msg=errmsg(__FILE__, __LINE__))
+      end if
+      if (bquad >= 0._r8) then
+         qq = -0.5_r8 * (bquad + sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      else
+         qq = -0.5_r8 * (bquad - sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      end if
+      r1 = qq / aquad
+      if (qq /= 0._r8) then
+         r2 = cquad / qq
+      else
+         r2 = 1.e36_r8
+      end if
       ai = min(r1,r2)
 
       aquad = theta_ip
       bquad = -(ai + ap)
       cquad = ai * ap
-      call quadratic (aquad, bquad, cquad, r1, r2)
+      ! quadratic (aquad, bquad, cquad, r1, r2) written out, as in QuadraticMod
+      if (aquad == 0._r8) then
+         write (iulog,*) 'Quadratic solution error: a = ',aquad
+         call endrun(msg=errmsg(__FILE__, __LINE__))
+      end if
+      if (bquad >= 0._r8) then
+         qq = -0.5_r8 * (bquad + sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      else
+         qq = -0.5_r8 * (bquad - sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      end if
+      r1 = qq / aquad
+      if (qq /= 0._r8) then
+         r2 = cquad / qq
+      else
+         r2 = 1.e36_r8
+      end if
       ag = min(r1,r2)
 
       ! Net photosynthesis. Exit iteration if an < 0
@@ -1606,7 +1639,22 @@ contains
       aquad = cs
       bquad = cs*(gb_mol - photosyns_vars%bbb_patch(p)) - photosyns_vars%mbb_patch(p)*an*forc_pbot
       cquad = -gb_mol*(cs*photosyns_vars%bbb_patch(p) + photosyns_vars%mbb_patch(p)*an*forc_pbot*rh_can)
-      call quadratic (aquad, bquad, cquad, r1, r2)
+      ! quadratic (aquad, bquad, cquad, r1, r2) written out, as in QuadraticMod
+      if (aquad == 0._r8) then
+         write (iulog,*) 'Quadratic solution error: a = ',aquad
+         call endrun(msg=errmsg(__FILE__, __LINE__))
+      end if
+      if (bquad >= 0._r8) then
+         qq = -0.5_r8 * (bquad + sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      else
+         qq = -0.5_r8 * (bquad - sqrt(bquad*bquad - 4._r8*aquad*cquad))
+      end if
+      r1 = qq / aquad
+      if (qq /= 0._r8) then
+         r2 = cquad / qq
+      else
+         r2 = 1.e36_r8
+      end if
       gs_mol = max(r1,r2)
 
       ! Derive new estimate for ci
