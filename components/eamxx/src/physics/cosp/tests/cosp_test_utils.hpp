@@ -12,11 +12,13 @@
  * Helpers shared by the BFB tests of the C++/Kokkos COSP port against the Fortran.
  * The tests always use double, since the Fortran library is double (wp = dp).
  *
- * On CPU builds the C++ must match the Fortran exactly. On GPU builds the C++ runs on
- * device, with fused multiply-adds and the device math library, while the Fortran runs
- * on host, so only close agreement is possible: values must agree to a relative
- * tolerance, and a small fraction of entries may differ by more (a roundoff difference
- * can flip a discrete choice, such as a histogram bin or a retrieval succeeding).
+ * On CPU builds with the strict floating point model the C++ must match the Fortran
+ * exactly. Otherwise only close agreement is possible: on GPU the C++ runs on device,
+ * with fused multiply-adds and the device math library, and with the precise or fast
+ * models the C++ and Fortran compilers are free to contract and vectorize differently
+ * (Intel does at -fp-model precise). Values must then agree to a relative tolerance,
+ * and a small fraction of entries may differ by more (a roundoff difference can flip a
+ * discrete choice, such as a histogram bin or a retrieval succeeding).
  */
 
 // C bindings to the Fortran routines, see cosp_f90_shims.F90
@@ -84,11 +86,16 @@ using diview_2d = Kokkos::View<int**,     DefaultDevice>;
 using Policy2 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>;
 using Policy3 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>;
 
-// Whether the C++ is required to match the Fortran exactly (CPU builds), see above
+// Whether the C++ is required to match the Fortran exactly (CPU builds with the strict
+// floating point model), see above
+#ifdef COSP_TEST_EXACT_BFB
 constexpr bool exact_bfb = !ekat::OnGpu<ExeSpace>::value;
+#else
+constexpr bool exact_bfb = false;
+#endif
 
-// Whether a C++ value matches the Fortran one. The GPU tolerance is loose enough for
-// the single precision arithmetic in the RNG.
+// Whether a C++ value matches the Fortran one. The tolerance is loose enough for the
+// single precision arithmetic in the RNG.
 inline bool same (const double a, const double b) {
   if (exact_bfb) return a == b;
   constexpr double rtol = 1e-6, atol = 1e-12;
@@ -96,7 +103,8 @@ inline bool same (const double a, const double b) {
   return d <= atol || d <= rtol*std::max(std::abs(a), std::abs(b));
 }
 
-// Number of entries out of n that may fail same(): none on CPU, 0.1% (at least 1) on GPU.
+// Number of entries out of n that may fail same(): none when exact, otherwise 0.1% (at
+// least 1).
 // Roundoff flips are rare (about 5e-6 of the MODIS histogram entries in a month-long
 // Frontier run), so this still catches real bugs that affect a few percent of entries.
 inline int allowed_diffs (const size_t n) {
