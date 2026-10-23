@@ -16,6 +16,7 @@
 #include "VerticalRemapManager.hpp"
 #include "HyperviscosityFunctor.hpp"
 #include "TimeLevel.hpp"
+#include "GllFvRemap.hpp"
 #include "Tracers.hpp"
 #include "mpi/ConnectivityHelpers.hpp"
 #include "utilities/MathUtils.hpp"
@@ -31,12 +32,16 @@
 
 // Ekat includes
 #include <ekat_assert.hpp>
+
+#include <cassert>
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_subview_utils.hpp>
 #include <ekat_pack.hpp>
 #include <ekat_math_utils.hpp>
 #include <ekat_pack_utils.hpp>
 #include <ekat_workspace.hpp>
+
+extern "C" void gfr_init_hxx();
 
 namespace scream
 {
@@ -350,6 +355,98 @@ init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
 
   // Copy IC states on all timelevel slices
   copy_dyn_states_to_all_timelevels ();
+}
+
+void HommeInstance::init_fv_phys (const int pgN)
+{
+  EKAT_REQUIRE_MSG (pgN>0, "Error! Invalid pgN value: " + std::to_string(pgN) + "\n");
+  m_pgN = pgN;
+
+  using namespace Homme;
+  auto& c = Context::singleton();
+  auto& gfr = c.get<GllFvRemap>();
+  gfr.reset(c.get<SimulationParams>());
+  gfr_init_hxx();
+}
+
+void HommeInstance::
+remap_dyn_to_fv_phys (const Field& ps, const Field& phis,
+                      const Field& T, const Field& omega,
+                      const Field& uv, const Field& q,
+                      const Field& dp, const Field& strain3d_fv)
+{
+  EKAT_REQUIRE_MSG (m_pgN>0, "Error! The FV physics grid was not setup in HommeInstance.\n");
+
+  const auto& c = Homme::Context::singleton();
+  auto& gfr = c.get<Homme::GllFvRemap>();
+  const auto time_idx = c.get<Homme::TimeLevel>().n0;
+  constexpr int NGP = HOMMEXX_NP;
+  const int nelem = get_dyn_field("v_dyn").get_header().get_identifier().get_layout().dim(0);
+  const auto npg = m_pgN*m_pgN;
+  const auto nlev = T.get_view<Real**>().extent_int(1);
+  const auto nq = q.get_view<Real***>().extent_int(1);
+  assert(T.get_view<Real**>().extent_int(0) == nelem*npg);
+  assert(uv.get_view<Real***>().extent_int(1) == 2);
+
+  const auto ps_p = Homme::GllFvRemap::Phys1T(ps.get_view<Real*>().data(), nelem, npg);
+  const auto phis_p = Homme::GllFvRemap::Phys1T(phis.get_view<Real*>().data(), nelem, npg);
+  const auto T_p = Homme::GllFvRemap::Phys2T(T.get_view<Real**>().data(), nelem, npg, nlev);
+  const auto omega_p = Homme::GllFvRemap::Phys2T(omega.get_view<Real**>().data(), nelem, npg, nlev);
+  const auto uv_p = Homme::GllFvRemap::Phys3T(uv.get_view<Real***>().data(), nelem, npg, 2, nlev);
+  const auto q_p = Homme::GllFvRemap::Phys3T(q.get_view<Real***>().data(), nelem, npg, nq, nlev);
+  const auto dp_p = Homme::GllFvRemap::Phys2T(dp.get_view<Real**>().data(), nelem, npg, nlev);
+
+  const auto& params = c.get<Homme::SimulationParams>();
+  if (params.do_3d_turbulence) {
+    const auto strain3d_components_gll = Homme::GllFvRemap::CPhys3T(
+      get_dyn_field("shear_strain3d_components_dyn").get_view<const Real*****>().data(),
+      nelem, NGP*NGP, 6, nlev);
+    const auto strain3d_components_fv = Homme::GllFvRemap::Phys3T(
+      strain3d_fv.get_view<Real***>().data(), nelem, npg, 6, nlev);
+    gfr.run_dyn_to_fv_phys(time_idx, ps_p, phis_p, T_p, omega_p,
+                           &strain3d_components_gll, &strain3d_components_fv,
+                           uv_p, q_p, &dp_p);
+  } else {
+    gfr.run_dyn_to_fv_phys(time_idx, ps_p, phis_p, T_p, omega_p,
+                           nullptr, nullptr, uv_p, q_p, &dp_p);
+  }
+  Kokkos::fence();
+}
+
+void HommeInstance::
+remap_fv_phys_to_dyn (const Field& FT, const Field& FM, const Field& q,
+                      const Field& Km_phys, const Field& Kh_phys)
+{
+  EKAT_REQUIRE_MSG (m_pgN>0, "Error! The FV physics grid was not setup in HommeInstance.\n");
+
+  const auto& c = Homme::Context::singleton();
+  auto& gfr = c.get<Homme::GllFvRemap>();
+  const auto time_idx = c.get<Homme::TimeLevel>().n0;
+  const int nelem = get_dyn_field("v_dyn").get_header().get_identifier().get_layout().dim(0);
+  const auto npg = m_pgN*m_pgN;
+  const auto nlev = FT.get_view<const Real**>().extent_int(1);
+  const auto nq = q.get_view<const Real***>().extent_int(1);
+  assert(FT.get_view<const Real**>().extent_int(0) == nelem*npg);
+
+  const auto uv_ndim = FM.get_view<const Real***>().extent_int(1);
+  assert(uv_ndim == 2);
+
+  const auto T_p = Homme::GllFvRemap::CPhys2T(FT.get_view<const Real**>().data(), nelem, npg, nlev);
+  const auto uv_p = Homme::GllFvRemap::CPhys3T(FM.get_view<const Real***>().data(), nelem, npg, uv_ndim, nlev);
+  const auto q_p = Homme::GllFvRemap::CPhys3T(q.get_view<const Real***>().data(), nelem, npg, nq, nlev);
+
+  const auto& params = c.get<Homme::SimulationParams>();
+  if (params.do_3d_turbulence) {
+    const auto Km = Homme::GllFvRemap::CPhys2T(Km_phys.get_view<const Real**>().data(), nelem, npg, nlev);
+    const auto Kh = Homme::GllFvRemap::CPhys2T(Kh_phys.get_view<const Real**>().data(), nelem, npg, nlev);
+    gfr.run_fv_phys_to_dyn(time_idx, T_p, uv_p, q_p, &Km, &Kh);
+  } else {
+    gfr.run_fv_phys_to_dyn(time_idx, T_p, uv_p, q_p);
+  }
+
+  Kokkos::fence();
+  gfr.run_fv_phys_to_dyn_dss();
+  Kokkos::fence();
 }
 
 } // namespace scream

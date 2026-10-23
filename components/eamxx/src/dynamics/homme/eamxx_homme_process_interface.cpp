@@ -230,7 +230,7 @@ void HommeDynamics::create_requests ()
   share_dyn_fields_with_instance({"v_dyn","vtheta_dp_dyn","dp3d_dyn","w_int_dyn","phi_int_dyn",
                                   "ps_dyn","phis_dyn","omega_dyn","Qdp_dyn"});
   if (params.do_3d_turbulence) {
-    share_dyn_fields_with_instance({"Km_dyn","Kh_dyn"});
+    share_dyn_fields_with_instance({"Km_dyn","Kh_dyn","shear_strain3d_components_dyn"});
   }
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
