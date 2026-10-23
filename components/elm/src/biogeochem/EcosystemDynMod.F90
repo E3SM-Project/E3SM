@@ -214,14 +214,22 @@ contains
     call t_stopf('PUpdate3')
 
     call t_startf('CNPsum')
+    call t_startf('CNPsum-precision')
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp  )
+    call t_stopf('CNPsum-precision')
 
+    call t_startf('CNPsum-col_cf_ch4')
     call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_cf_ch4')
 
     ! Only update the veg_ data structures if we are using cn
     if(.not.use_fates) then
+       call t_startf('CNPsum-veg_cf_ch4')
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
+       call t_stopf('CNPsum-veg_cf_ch4')
+       call t_startf('CNPsum-veg_cf')
        call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
+       call t_stopf('CNPsum-veg_cf')
        if ( use_c13 ) then
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
           call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c13')
@@ -230,7 +238,9 @@ contains
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
           call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c14')
        end if
+       call t_startf('CNPsum-veg_cs')
        call veg_cs_Summary(veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
+       call t_stopf('CNPsum-veg_cs')
        if ( use_c13 ) then
           call veg_cs_Summary(c13_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
           call col_cs_Summary(c13_col_cs,bounds, num_soilc, filter_soilc)
@@ -239,10 +249,18 @@ contains
           call veg_cs_Summary(c14_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
           call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc)
        end if
+       call t_startf('CNPsum-veg_nf')
        call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
+       call t_stopf('CNPsum-veg_nf')
+       call t_startf('CNPsum-veg_ns')
        call veg_ns_Summary(veg_ns, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
+       call t_stopf('CNPsum-veg_ns')
+       call t_startf('CNPsum-veg_pf')
        call veg_pf_Summary(veg_pf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+       call t_stopf('CNPsum-veg_pf')
+       call t_startf('CNPsum-veg_ps')
        call veg_ps_Summary(veg_ps, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
+       call t_stopf('CNPsum-veg_ps')
     else
        ! In this scenario, we simply zero all of the
        ! column level variables that would had been upscaled
@@ -255,14 +273,26 @@ contains
        call col_pf%ZeroForFates(bounds,num_soilc, filter_soilc)
     end if
 
+    call t_startf('CNPsum-col_cf')
     call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk')
+    call t_stopf('CNPsum-col_cf')
+    call t_startf('CNPsum-col_cs')
     call col_cs_Summary(col_cs,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_cs')
 
+    call t_startf('CNPsum-col_nf')
     call col_nf_Summary(col_nf,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_nf')
+    call t_startf('CNPsum-col_ns')
     call col_ns_Summary(col_ns,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_ns')
 
+    call t_startf('CNPsum-col_pf')
     call col_pf_Summary(col_pf,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_pf')
+    call t_startf('CNPsum-col_ps')
     call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_ps')
 
     call t_stopf('CNPsum')
 
@@ -776,8 +806,10 @@ contains
 
 
 
+       call t_startf('CNUpdate2-CState2')
        call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             col_cs, veg_cs, col_cf, veg_cf, dt)
+       call t_stopf('CNUpdate2-CState2')
 
        if ( use_c13 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -787,11 +819,15 @@ contains
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
        end if
+       call t_startf('CNUpdate2-NState2')
        call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt )
+       call t_stopf('CNUpdate2-NState2')
 
+       call t_startf('CNUpdate2-PState2')
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
+       call t_stopf('CNUpdate2-PState2')
 
        if (get_do_harvest() .or. iac_present) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -811,8 +847,10 @@ contains
 
 
 
+       call t_startf('CNUpdate2-CState2h')
        call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
              col_cs, veg_cs, col_cf, veg_cf, dt)
+       call t_stopf('CNUpdate2-CState2h')
        if ( use_c13 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf, dt)
@@ -822,22 +860,34 @@ contains
                c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
        end if
 
+       call t_startf('CNUpdate2-NState2h')
        call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
+       call t_stopf('CNUpdate2-NState2h')
 
+       call t_startf('CNUpdate2-PState2h')
        call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
+       call t_stopf('CNUpdate2-PState2h')
 
+       call t_startf('CNUpdate2-WoodProducts')
        call WoodProducts(num_soilc, filter_soilc )
+       call t_stopf('CNUpdate2-WoodProducts')
 
+       call t_startf('CNUpdate2-CropHarvestPools')
        call CropHarvestPools(num_soilc, filter_soilc, dt)
+       call t_stopf('CNUpdate2-CropHarvestPools')
 
+       call t_startf('CNUpdate2-FireArea')
        call FireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, energyflux_vars, soilhydrology_vars, &
             cnstate_vars )
+       call t_stopf('CNUpdate2-FireArea')
 
+       call t_startf('CNUpdate2-FireFluxes')
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars)
+       call t_stopf('CNUpdate2-FireFluxes')
 
 
        call t_stopf('CNUpdate2')
