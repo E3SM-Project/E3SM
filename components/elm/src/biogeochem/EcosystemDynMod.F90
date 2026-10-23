@@ -284,7 +284,9 @@ contains
     end if
 
     call t_startf('CNPsum-col_cf')
-    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk')
+    ! hr_current relies on col_cf_summary_for_ch4(col_cf) at the end of
+    ! EcosystemDynNoLeaching2 having set the HR fluxes this step
+    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk', hr_current=.true.)
     call t_stopf('CNPsum-col_cf')
     call t_startf('CNPsum-col_cs')
     call col_cs_Summary(col_cs,bounds, num_soilc, filter_soilc)
