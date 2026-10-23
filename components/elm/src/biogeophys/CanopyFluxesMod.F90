@@ -316,6 +316,13 @@ contains
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
+#ifndef _OPENACC
+    real(r8), allocatable :: ps_tfac(:,:)         ! temperature factors shared by the sun and sha Photosynthesis calls
+    integer , allocatable :: ps_tfac_flag(:)      ! which ps_tfac factors are set, per filter position
+#else
+    real(r8) :: ps_tfac(bounds%endp-bounds%begp+1,11)
+    integer  :: ps_tfac_flag(bounds%endp-bounds%begp+1)
+#endif
 
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -781,6 +788,9 @@ contains
       itlef = 1
       fnorig = fn
       fporig(1:fn) = filterp(1:fn)
+#ifndef _OPENACC
+      allocate(ps_tfac(max(fn,1),11), ps_tfac_flag(max(fn,1)))
+#endif
 
       ! Begin stability iteration
       call t_startf('can_iter')
@@ -926,7 +936,7 @@ contains
                call Photosynthesis (bounds, fn, filterp, &
                         svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                         dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
-                        canopystate_vars, photosyns_vars, 'sun')
+                        canopystate_vars, photosyns_vars, 'sun', ps_tfac, ps_tfac_flag, .false.)
             end if
 
             if ( use_c13 ) then
@@ -948,7 +958,7 @@ contains
               call Photosynthesis (bounds, fn, filterp, &
                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                    dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
-                   canopystate_vars, photosyns_vars, 'sha')
+                   canopystate_vars, photosyns_vars, 'sha', ps_tfac, ps_tfac_flag, .true.)
             end if
 
 
@@ -1205,6 +1215,9 @@ contains
 
       end do ITERATION     ! End stability iteration
       call t_stopf('can_iter')
+#ifndef _OPENACC
+      deallocate(ps_tfac, ps_tfac_flag)
+#endif
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)
