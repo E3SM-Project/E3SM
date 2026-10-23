@@ -51,6 +51,11 @@ module ice_comp_mct
                               calendar_type, nextsw_cday, days_per_year,&
                               get_daycal, leap_year_count, nyr, new_year
   use ice_orbital,     only : eccen, obliqr, lambm0, mvelpp
+   use ice_calendar, only: nextsw_ymd, nextsw_tod, nextsw_valid, nextsw_declination, nextsw_eccf
+   use seq_infodata_mod, only: seq_infodata_SolarDecl
+   use seq_infodata_mod, only: seq_infodata_UseEquationOfTime
+   use ice_calendar, only: nextsw_eot_seconds, use_equation_of_time
+   use seq_timemgr_mod, only: seq_timemgr_GetCalendar
   use ice_timers
   use ice_probability, only : init_numIceCells, print_numIceCells,  &
  			      write_numIceCells, accum_numIceCells2
@@ -210,7 +215,16 @@ contains
          gsMap=gsMap_ice, dom=dom_i, infodata=infodata)
 
     ! Determine time of next atmospheric shortwave calculation
-    call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
+    call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+         nextsw_tod=nextsw_tod, nextsw_valid=nextsw_valid)
+       use_equation_of_time = seq_infodata_UseEquationOfTime(infodata)
+       nextsw_eot_seconds = 0._dbl_kind
+       if ((seq_timemgr_GetCalendar() == 'GREGORIAN' .or. use_equation_of_time) .and. &
+          nextsw_cday >= 0._dbl_kind) then
+       if (.not. nextsw_valid) call shr_sys_abort('Gregorian CICE requires a full next-shortwave timestamp')
+        call seq_infodata_SolarDecl(infodata, nextsw_ymd, nextsw_tod, seq_timemgr_GetCalendar(), &
+           nextsw_declination, nextsw_eccf, nextsw_eot_seconds)
+    end if
 
     ! Determine if aerosols are coming from the coupler
     call seq_infodata_GetData(infodata, atm_aero=atm_aero )
@@ -253,7 +267,10 @@ contains
 
     ! Set nextsw_cday to -1 for continue and branch runs.
 
-    if (trim(runtype) /= 'initial') nextsw_cday = -1
+    if (trim(runtype) /= 'initial') then
+       nextsw_cday = -1
+       nextsw_valid = .false.
+    end if
 
     !=============================================================
     ! Set ice dtime to ice coupling frequency
@@ -573,7 +590,16 @@ contains
          gsMap=gsMap_i)
 
     ! Determine time of next atmospheric shortwave calculation
-    call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
+    call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+         nextsw_tod=nextsw_tod, nextsw_valid=nextsw_valid)
+       use_equation_of_time = seq_infodata_UseEquationOfTime(infodata)
+       nextsw_eot_seconds = 0._dbl_kind
+       if ((seq_timemgr_GetCalendar() == 'GREGORIAN' .or. use_equation_of_time) .and. &
+          nextsw_cday >= 0._dbl_kind) then
+       if (.not. nextsw_valid) call shr_sys_abort('Gregorian CICE requires a full next-shortwave timestamp')
+        call seq_infodata_SolarDecl(infodata, nextsw_ymd, nextsw_tod, seq_timemgr_GetCalendar(), &
+           nextsw_declination, nextsw_eccf, nextsw_eot_seconds)
+    end if
 
     ! Determine orbital parameters
     call seq_infodata_GetData(infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &

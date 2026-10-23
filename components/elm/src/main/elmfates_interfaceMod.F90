@@ -2862,6 +2862,7 @@ contains
  subroutine wrap_canopy_radiation(this, bounds_clump, surfalb_inst,nextsw_cday,declinp1)
 
    use shr_orb_mod, only: shr_orb_cosz
+    use elm_varorb, only: elm_nextsw_eot_seconds
 
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
@@ -2871,6 +2872,7 @@ contains
     
     ! locals
     integer                                    :: s,c,p,ifp,icp,nc,g
+   real(r8) :: eot_seconds
 
     associate(&
          albgrd_col   =>    surfalb_inst%albgrd_col         , & !in
@@ -2885,13 +2887,15 @@ contains
          ftii         =>    surfalb_inst%ftii_patch)            !out
 
     nc = bounds_clump%clump_index
+   eot_seconds = elm_nextsw_eot_seconds()
 
     do s = 1, this%fates(nc)%nsites
 
        c = this%f2hmap(nc)%fcolumn(s)
        g = col_pp%gridcell(c)
 
-       coszen_col(c) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+        coszen_col(c) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), &
+           declinp1, eot_seconds=eot_seconds)
 
        this%fates(nc)%bc_in(s)%coszen = coszen_col(c)
        

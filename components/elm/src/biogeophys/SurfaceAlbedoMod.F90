@@ -33,6 +33,7 @@ module SurfaceAlbedoMod
   use elm_instMod , only : alm_fates
   use topounit_varcon   , only : max_topounits  
   use TopounitType      , only : top_pp
+   use elm_varorb        , only : elm_nextsw_eot_seconds
   !
   implicit none
   save
@@ -136,6 +137,7 @@ contains
     real(r8) :: blai(bounds%begp:bounds%endp)              ! lai buried by snow: tlai - elai
     real(r8) :: bsai(bounds%begp:bounds%endp)              ! sai buried by snow: tsai - esai
     real(r8) :: sza,saa,deg2rad,slope_rad,aspect_rad
+   real(r8) :: eot_seconds
 
     real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar zenith angle for next time step (grc)
     real(r8) :: coszen_patch    (bounds%begp:bounds%endp)                                 ! cosine solar zenith angle for next time step (pft)
@@ -242,16 +244,20 @@ contains
     ! Cosine solar zenith angle for next time step
 
     deg2rad = SHR_CONST_PI/180._r8
+   eot_seconds = elm_nextsw_eot_seconds()
     if (.not. use_finetop_rad) then
        do g = bounds%begg,bounds%endg
-          coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+         coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), &
+            declinp1, eot_seconds=eot_seconds)
           cosinc_gcell(g) = coszen_gcell(g)
        end do
     else
        do g = bounds%begg,bounds%endg
-          coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+         coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), &
+            declinp1, eot_seconds=eot_seconds)
           sza = acos(coszen_gcell(g)) ! solar zenith angle
-          saa = shr_orb_azimuth(nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1, sza) ! solar azimuth angle
+         saa = shr_orb_azimuth(nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), &
+            declinp1, sza, eot_seconds=eot_seconds)
 
           slope_rad = grc_pp%slope_deg(g) * deg2rad
           aspect_rad = grc_pp%aspect_deg(g) * deg2rad

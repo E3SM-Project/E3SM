@@ -507,6 +507,8 @@ contains
     !
     ! !USES:
     use shr_orb_mod           , only : shr_orb_decl
+   use elm_varorb, only: elm_orbital_decl
+   use elm_time_manager, only: get_calendar
     use shr_scam_mod          , only : shr_scam_getCloseLatLon
     use seq_drydep_mod        , only : n_drydep, drydep_method, DD_XLND
     use elm_varpar            , only : nlevsno, numpft, crop_prog, nlevsoi,max_patch_per_col
@@ -648,11 +650,21 @@ contains
     call t_startf('init_orbd')
 
     calday = get_curr_calday()
-    call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr, declin, eccf )
+    if (get_calendar() == 'GREGORIAN') then
+       call get_curr_date(yr, mon, day, ncsec)
+       call elm_orbital_decl(yr * 10000 + mon * 100 + day, real(ncsec, r8), get_calendar(), declin, eccf)
+    else
+       call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr, declin, eccf )
+    end if
 
     dtime = get_step_size()
     caldaym1 = get_curr_calday(offset=-int(dtime))
-    call shr_orb_decl( caldaym1, eccen, mvelpp, lambm0, obliqr, declinm1, eccf )
+    if (get_calendar() == 'GREGORIAN') then
+       call get_curr_date(yr, mon, day, ncsec, offset=-int(dtime))
+       call elm_orbital_decl(yr * 10000 + mon * 100 + day, real(ncsec, r8), get_calendar(), declinm1, eccf)
+    else
+       call shr_orb_decl( caldaym1, eccen, mvelpp, lambm0, obliqr, declinm1, eccf )
+    end if
 
     call t_stopf('init_orbd')
 

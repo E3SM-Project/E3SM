@@ -461,6 +461,7 @@ contains
     use domainMod       , only : ldomain
     use shr_orb_mod
     use shr_const_mod   , only : SHR_CONST_PI
+   use elm_varorb      , only : elm_nextsw_eot_seconds
     use elm_varpar      , only : numrad, ndir_horizon_angle
     !
     ! !ARGUMENTS:
@@ -475,6 +476,7 @@ contains
     integer  :: g,topo    ! indices
     integer  :: dd,ib
     real(r8) :: cossza
+   real(r8) :: eot_seconds
     real(r8) :: slope_rad
     real(r8) :: aspect_rad
     real(r8) :: deg2rad
@@ -514,6 +516,7 @@ contains
          )
 
      deg2rad = SHR_CONST_PI/180._r8
+   eot_seconds = elm_nextsw_eot_seconds()
 
       ! Initialize column forcing (needs to be done for ALL active columns)
      do g = bounds%begg, bounds%endg
@@ -532,7 +535,7 @@ contains
          end do
 
          ! calculate cosine of solar zenith angle
-         cossza = shr_orb_cosz(nextsw_cday, lat(g), lon(g), declin)
+         cossza = shr_orb_cosz(nextsw_cday, lat(g), lon(g), declin, eot_seconds=eot_seconds)
 
          slope_rad = slope_deg(g) * deg2rad
          aspect_rad = aspect_deg(g) * deg2rad
@@ -550,7 +553,7 @@ contains
             sza(g) = acos(cossza)
 
             ! solar azimuth angle
-            saa(g) = shr_orb_azimuth(nextsw_cday, lat(g), lon(g), declin,sza(g))
+            saa(g) = shr_orb_azimuth(nextsw_cday, lat(g), lon(g), declin, sza(g), eot_seconds=eot_seconds)
 
             ! calculat local solar zenith angle
             cosinc(g) = cos(slope_rad) * cossza + sin(slope_rad) * sin(sza(g)) * cos(aspect_rad - saa(g))

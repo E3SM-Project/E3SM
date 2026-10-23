@@ -66,7 +66,10 @@ contains
     use shr_log_mod      , only : errMsg => shr_log_errMsg
     use shr_kind_mod     , only : SHR_KIND_CL
     use elm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
+    use elm_time_manager, only: get_curr_date
+    use shr_cal_mod, only: shr_cal_date2julian
     use elm_initializeMod, only : initialize1, initialize2, initialize3
+    use elm_varorb, only: elm_set_orbital_context
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
     use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland, fatmlndfrc, &
@@ -351,6 +354,7 @@ contains
 #endif
     ! Finish initializing elm
 
+    call elm_set_orbital_context(infodata)
     call initialize2()
     call initialize3()
 
@@ -402,7 +406,12 @@ contains
       !this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
       nstep = get_nstep()
-      nextsw_cday = mod((nstep/(86400._r8/dtime_elm))*1.0_r8,365._r8)+1._r8
+      if (calendar == 'GREGORIAN') then
+        call get_curr_date(yr, mon, day, tod)
+        call shr_cal_date2julian(yr * 10000 + mon * 100 + day, tod, nextsw_cday, calendar)
+      else
+        nextsw_cday = mod((nstep/(86400._r8/dtime_elm))*1.0_r8,365._r8)+1._r8
+      end if
       call set_nextsw_cday( nextsw_cday )
     end if
 
@@ -450,6 +459,9 @@ contains
     use abortutils      ,  only : endrun
     use elm_varctl      ,  only : iulog
     use elm_varorb      ,  only : eccen, obliqr, lambm0, mvelpp
+    use elm_varorb, only: elm_orbital_decl, elm_set_orbital_context, elm_set_nextsw_solar_time
+    use seq_infodata_mod, only: seq_infodata_UseEquationOfTime
+    use shr_cal_mod, only: shr_cal_date2julian
     use shr_file_mod    ,  only : shr_file_setLogUnit, shr_file_setLogLevel
     use shr_file_mod    ,  only : shr_file_getLogUnit, shr_file_getLogLevel
     use seq_cdata_mod   ,  only : seq_cdata, seq_cdata_setptrs
@@ -491,6 +503,10 @@ contains
     logical      :: dosend               ! true => send data back to driver
     logical      :: doalb                ! .true. ==> do albedo calculation on this time step
     real(r8)     :: nextsw_cday          ! calday from clock of next radiation computation
+    integer :: nextsw_ymd, solar_year, solar_month, solar_day, solar_seconds
+    real(r8) :: nextsw_tod
+    logical :: nextsw_valid
+    character(len=64) :: calendar
     real(r8)     :: caldayp1             ! elm calday plus dtime offset
     integer      :: shrlogunit,shrloglev ! old values for share log unit and log level
     integer      :: lbnum                ! input to memory diagnostic
@@ -533,8 +549,9 @@ contains
     call seq_cdata_setptrs(cdata_l, infodata=infodata, dom=dom_l)
     call seq_timemgr_EClockGetData(EClock, &
          curr_ymd=ymd, curr_tod=tod_sync,  &
-         curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync)
-    call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday )
+          curr_yr=yr_sync, curr_mon=mon_sync, curr_day=day_sync, calendar=calendar)
+        call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+          nextsw_tod=nextsw_tod, nextsw_valid=nextsw_valid)
 
     call set_nextsw_cday( nextsw_cday )
     dtime = get_step_size()
@@ -544,7 +561,9 @@ contains
       !Calcualte next radiation calendar day (since atm model did not run to set this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
       nstep = get_nstep()
-      nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8
+      if (calendar /= 'GREGORIAN') then
+        nextsw_cday = mod((nstep/(86400._r8/dtime))*1.0_r8,365._r8)+1._r8
+      end if
       call set_nextsw_cday( nextsw_cday )
     end if
 
@@ -597,10 +616,27 @@ contains
 
        nstep = get_nstep()
        caldayp1 = get_curr_calday(offset=dtime)
+      if (calendar == 'GREGORIAN' .or. seq_infodata_UseEquationOfTime(infodata)) then
+         call get_curr_date(solar_year, solar_month, solar_day, solar_seconds, offset=dtime)
+         if (.not. atm_present) then
+           nextsw_ymd = solar_year * 10000 + solar_month * 100 + solar_day
+           nextsw_tod = real(solar_seconds, r8)
+           nextsw_valid = .true.
+           call shr_cal_date2julian(nextsw_ymd, solar_seconds, nextsw_cday, calendar)
+           call set_nextsw_cday(nextsw_cday)
+         else if (nextsw_cday >= -0.5_r8 .and. .not. nextsw_valid) then
+           call endrun('Gregorian/EOT ELM requires a full next-shortwave timestamp; old restart is ambiguous')
+         end if
+       end if
        if (nstep == 0) then
 	        doalb = .false.
        else if (nstep == 1) then
-          doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8)
+         if (calendar == 'GREGORIAN' .or. seq_infodata_UseEquationOfTime(infodata)) then
+           doalb = nextsw_valid .and. nextsw_ymd == solar_year * 10000 + solar_month * 100 + solar_day &
+              .and. abs(nextsw_tod - real(solar_seconds, r8)) < 1.e-6_r8
+         else
+           doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8)
+         end if
        else
           doalb = (nextsw_cday >= -0.5_r8)
        end if
@@ -619,8 +655,18 @@ contains
        call t_startf ('elm_run')
        call t_startf ('shr_orb_decl')
        calday = get_curr_calday()
-       call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
-       call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
+       if (seq_infodata_UseEquationOfTime(infodata)) then
+         call elm_set_orbital_context(infodata)
+         call elm_set_nextsw_solar_time(nextsw_ymd, nextsw_tod, nextsw_valid, nextsw_cday)
+       end if
+       if (calendar == 'GREGORIAN' .or. seq_infodata_UseEquationOfTime(infodata)) then
+         call elm_orbital_decl(ymd, real(tod, r8), calendar, declin, eccf)
+         declinp1 = declin
+         if (nextsw_valid) call elm_orbital_decl(nextsw_ymd, nextsw_tod, calendar, declinp1, eccf)
+       else
+         call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
+         call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
+       end if
        call t_stopf ('shr_orb_decl')
        call elm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
        call t_stopf ('elm_run')

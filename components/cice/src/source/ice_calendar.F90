@@ -32,6 +32,14 @@
       implicit none
       save
 
+      integer(kind=int_kind) :: nextsw_ymd = 0
+      real(kind=dbl_kind) :: nextsw_tod = -1.0_dbl_kind
+      real(kind=dbl_kind) :: nextsw_declination = 0.0_dbl_kind
+      real(kind=dbl_kind) :: nextsw_eccf = 1.0_dbl_kind
+      real(kind=dbl_kind) :: nextsw_eot_seconds = 0.0_dbl_kind
+      logical :: use_equation_of_time = .false.
+      logical :: nextsw_valid = .false.
+
       integer (kind=int_kind) :: &
          days_per_year        , & ! number of days in one year
          daymo(12)            , & ! number of days in each month

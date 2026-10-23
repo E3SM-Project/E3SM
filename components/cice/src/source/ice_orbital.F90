@@ -110,6 +110,9 @@
 !
       use ice_calendar, only: yday, sec, secday, days_per_year, &
                               calendar_type, nextsw_cday
+      use ice_calendar, only: nextsw_valid, nextsw_tod, nextsw_declination, nextsw_eccf
+      use ice_calendar, only: nextsw_eot_seconds, use_equation_of_time
+      use ice_exit, only: abort_ice
 ! 
 ! !INPUT/OUTPUT PARAMETERS: 
 ! 
@@ -143,19 +146,24 @@
 ! Solar declination for next time step
  
 #ifdef CCSMCOUPLED
-      if (calendar_type == "GREGORIAN") then
-         ydayp1 = min(nextsw_cday, real(days_per_year,kind=dbl_kind))
-      else
-         ydayp1 = nextsw_cday
-      endif
+            ydayp1 = nextsw_cday
 #else
       ydayp1 = yday + sec/secday
 #endif
  
       if (ydayp1 > -0.5_dbl_kind) then
 
-      call shr_orb_decl(ydayp1, eccen, mvelpp, lambm0, &
-                        obliqr, delta, eccf)
+            if (calendar_type == 'GREGORIAN' .or. use_equation_of_time) then
+                  if (.not. nextsw_valid) then
+                        call abort_ice('Gregorian CICE requires a coupled full solar timestamp and declination')
+                  end if
+                  ydayp1 = 1.0_dbl_kind + nextsw_tod / secday
+                  delta = nextsw_declination
+                  eccf = nextsw_eccf
+            else
+                  call shr_orb_decl(ydayp1, eccen, mvelpp, lambm0, &
+                                                      obliqr, delta, eccf)
+            end if
 
       coszen(:,:) = c0  ! sun at horizon
 
@@ -171,9 +179,14 @@
 !         coszen(i,j) = shr_orb_cosz(ydayp1, &
 !                                    tlat(i,j),tlon(i,j),delta)
 
-         coszen(i,j) = sin(tlat(i,j))*sin(delta) - &
+       if (use_equation_of_time) then
+          coszen(i,j) = shr_orb_cosz(ydayp1, tlat(i,j), tlon(i,j), delta, &
+             eot_seconds=nextsw_eot_seconds)
+       else
+       coszen(i,j) = sin(tlat(i,j))*sin(delta) - &
                        cos(tlat(i,j))*cos(delta)   &
                       *cos(ydayp1*c2*pi + tlon(i,j))
+       end if
 
       enddo
  

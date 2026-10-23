@@ -44,6 +44,9 @@ module ice_comp_esmf
                               calendar_type, nextsw_cday, days_per_year,&
                               get_daycal, leap_year_count, nyr, new_year
   use ice_orbital,     only : eccen, obliqr, lambm0, mvelpp
+   use ice_calendar, only: nextsw_ymd, nextsw_tod, nextsw_valid, nextsw_declination, nextsw_eccf
+   use shr_cal_mod, only: shr_cal_validDate, shr_cal_gregorian
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use ice_timers
   use ice_probability, only : init_numIceCells, print_numIceCells,  &
                               write_numIceCells, accum_numIceCells2
@@ -89,6 +92,32 @@ module ice_comp_esmf
 !=======================================================================
 
 contains
+
+subroutine read_solar_context(export_state, EClock)
+    type(ESMF_State), intent(inout) :: export_state
+    type(ESMF_Clock), intent(in) :: EClock
+    character(len=32) :: solar_calendar
+    integer :: solar_rc
+
+    nextsw_valid = .false.
+    call seq_timemgr_EClockGetData(EClock, calendar=solar_calendar)
+    if (solar_calendar /= shr_cal_gregorian .or. nextsw_cday < 0._dbl_kind) return
+    call ESMF_AttributeGet(export_state, name='nextsw_ymd', value=nextsw_ymd, rc=solar_rc)
+    if (solar_rc /= ESMF_SUCCESS) call shr_sys_abort('Gregorian CICE ESMF: missing nextsw_ymd attribute')
+    call ESMF_AttributeGet(export_state, name='nextsw_tod', value=nextsw_tod, rc=solar_rc)
+    if (solar_rc /= ESMF_SUCCESS) call shr_sys_abort('Gregorian CICE ESMF: missing nextsw_tod attribute')
+    call ESMF_AttributeGet(export_state, name='nextsw_valid', value=nextsw_valid, rc=solar_rc)
+    if (solar_rc /= ESMF_SUCCESS) call shr_sys_abort('Gregorian CICE ESMF: missing nextsw_valid attribute')
+    call ESMF_AttributeGet(export_state, name='nextsw_declination', value=nextsw_declination, rc=solar_rc)
+    if (solar_rc /= ESMF_SUCCESS) call shr_sys_abort('Gregorian CICE ESMF: missing nextsw_declination attribute')
+    call ESMF_AttributeGet(export_state, name='nextsw_eccf', value=nextsw_eccf, rc=solar_rc)
+    if (solar_rc /= ESMF_SUCCESS) call shr_sys_abort('Gregorian CICE ESMF: missing nextsw_eccf attribute')
+    if (.not. nextsw_valid .or. .not. shr_cal_validDate(nextsw_ymd,shr_cal_gregorian) .or. &
+       .not. ieee_is_finite(nextsw_tod) .or. .not. ieee_is_finite(nextsw_declination) .or. &
+       .not. ieee_is_finite(nextsw_eccf)) call shr_sys_abort('Gregorian CICE ESMF: invalid solar context')
+    if (nextsw_tod < 0._dbl_kind .or. nextsw_tod >= secday .or. nextsw_eccf <= 0._dbl_kind) &
+       call shr_sys_abort('Gregorian CICE ESMF: invalid solar time or distance factor')
+end subroutine read_solar_context
 
 !=======================================================================
 subroutine ice_register_esmf(comp, rc)
@@ -203,6 +232,7 @@ end subroutine
    ! Determine time of next atmospheric shortwave calculation
    call ESMF_AttributeGet(export_state, name="nextsw_cday", value=nextsw_cday, rc=rc)
    if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+   call read_solar_context(export_state, EClock)
 
    ! Determine if aerosols are coming through the coupler
    call ESMF_AttributeGet(export_state, name="atm_aero", value=atm_aero, rc=rc)
@@ -261,7 +291,10 @@ end subroutine
     end if
 
     ! Set nextsw_cday to -1 for continue and branch runs.
-    if (trim(runtype) /= 'initial') nextsw_cday = -1
+    if (trim(runtype) /= 'initial') then
+       nextsw_cday = -1
+       nextsw_valid = .false.
+    endif
 
     !=============================================================
     ! Set ice dtime to ice coupling frequency
@@ -608,6 +641,7 @@ subroutine ice_run_esmf(comp, import_state, export_state, EClock, rc)
 
     call ESMF_AttributeGet(export_state, name="nextsw_cday", value=nextsw_cday, rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+   call read_solar_context(export_state, EClock)
 
    ! Determine orbital parameters
    call ESMF_AttributeGet(export_state, name="orb_eccen", value=eccen, rc=rc)
