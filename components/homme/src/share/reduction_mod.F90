@@ -564,7 +564,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
   use parallel_mod, only : ORDERED, mpireal_t, mpi_min, mpi_max, mpi_sum, mpi_success
-   use mpi
+   use mpi, only: MPI_Barrier, MPI_Error_String
 #else
   use dimensions_mod, only : nelem
   use parallel_mod, only : ORDERED
