@@ -352,12 +352,15 @@ contains
        end if
 
 
+       ! dyn_hwcontent_final reuses the contents from dyn_hwcontent_init when
+       ! weights_updated is false, so any code between the two that changes
+       ! weights or water or heat state must set weights_updated
        call t_startf('dyn_hwcontent_final')
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            energyflux_vars, dt)
+            energyflux_vars, dt, weights_updated)
        call t_stopf('dyn_hwcontent_final')
 
        if (use_cn .and. weights_updated) then
