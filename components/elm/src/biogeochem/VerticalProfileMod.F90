@@ -55,7 +55,7 @@ contains
     use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, max_col_npfts
     use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
     use elm_varctl  , only : use_fates, create_glacier_mec_landunit, iac_present
-    use pftvarcon   , only : rootprof_beta, noveg
+    use pftvarcon   , only : rootprof_beta, noveg, mxpft
     use dynSubgridControlMod, only : get_subgrid_weights_updated, get_do_transient_pfts, get_do_transient_crops
     !
     ! !ARGUMENTS:
@@ -76,6 +76,12 @@ contains
     real(r8) :: col_cinput_rootfr(bounds%begc:bounds%endc, 1:nlevdecomp_full)  ! col-native root fraction used for calculating inputs
     integer  :: c, j, fc, p, fp, pi
     logical  :: zero_all      ! zero the profiles of all patches and columns, not only the filtered ones
+    ! The beta root profile terms and the shallower surface profile depend only
+    ! on the PFT, the level and the number of layers to bedrock, so they are
+    ! computed once per value rather than for every patch and level
+    real(r8) :: beta_pow(0:nlevdecomp, 0:mxpft)        ! rootprof_beta(pft) ** (zisoi(j)*100)
+    logical  :: beta_pow_set(0:mxpft)                  ! beta_pow is set for the PFT
+    real(r8) :: surface_prof_bed(1:nlevdecomp, 1:max(nlevdecomp-1,1)) ! surface profile for columns with nlevbed < nlevdecomp
     integer  :: alt_ind
     integer  :: nlevbed
     ! debugging temp variables
@@ -161,6 +167,17 @@ contains
             col_cinput_rootfr(c, :) = 0._r8
          end do
 
+         ! These loops make the same scalar calls as the expressions they replace
+         if (nlevdecomp > 1) then
+            do nlevbed = 1, nlevdecomp-1
+               !DIR$ NOVECTOR
+               do j = 1, nlevdecomp
+                  surface_prof_bed(j,nlevbed) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))
+               end do
+            end do
+         end if
+         beta_pow_set(:) = .false.
+
          if ( exponential_rooting_profile ) then
             if ( .not. pftspecific_rootingprofile ) then
                ! define rooting profile from exponential parameters
@@ -178,10 +195,17 @@ contains
                   nlevbed = nlev2bed(c)
                   rootfr_tot = 0._r8
                   if (veg_pp%itype(p) /= noveg) then
+                     if (.not. beta_pow_set(veg_pp%itype(p))) then
+                        !DIR$ NOVECTOR
+                        do j = 0, nlevdecomp
+                           beta_pow(j,veg_pp%itype(p)) = rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8)
+                        end do
+                        beta_pow_set(veg_pp%itype(p)) = .true.
+                     end if
                      do j = 1, nlevdecomp
                         if (j <= nlevbed) then
-                           cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
-                             rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8) ) &
+                           cinput_rootfr(p,j) = ( beta_pow(j-1,veg_pp%itype(p)) - &
+                             beta_pow(j,veg_pp%itype(p)) ) &
                              / dzsoi_decomp(j)
                            rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
                         else
@@ -217,7 +241,9 @@ contains
             surface_prof_tot = 0._r8
             do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
-               if (nlevbed < nlevdecomp) then
+               if (nlevbed < nlevdecomp .and. nlevbed >= 1) then
+                  surface_prof_tot = surface_prof_tot + surface_prof_bed(j,nlevbed) * dzsoi_decomp(j)
+               else if (nlevbed < nlevdecomp) then
                   surface_prof_tot = surface_prof_tot + exp(log(surface_prof(j)) * zisoi(nlevdecomp) / &
                   	zisoi(nlevbed)) * dzsoi_decomp(j)
                else
@@ -233,9 +259,10 @@ contains
                   ! set all surface processes to shallower profile
                   if (j <= nlevbed) then
                      if (nlevbed < nlevdecomp) then
-                        leaf_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                        ! here 1 <= j <= nlevbed
+                        leaf_prof(p,j) = surface_prof_bed(j,nlevbed)/ &
                         	surface_prof_tot
-                        stem_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                        stem_prof(p,j) = surface_prof_bed(j,nlevbed)/ &
                         	surface_prof_tot
                      else
                         leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
