@@ -7834,7 +7834,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine col_cf_setvalues ( this, num_column, filter_column, value_column, &
-       zero_harvest, zero_erosion, zero_transport, zero_deep)
+       zero_harvest, zero_erosion, zero_transport, zero_deep, zero_rewritten)
     ! !DESCRIPTION:
     ! Set column-level carbon fluxes
     !
@@ -7847,6 +7847,7 @@ contains
     logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
     logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
     logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before use or never written (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -7857,6 +7858,7 @@ contains
     logical :: do_zero_erosion
     logical :: do_zero_transport
     logical :: do_zero_deep
+    logical :: do_zero_rewritten
     integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
@@ -7871,6 +7873,8 @@ contains
     if (present(zero_deep)) do_zero_deep = zero_deep
     nlevz = nlevdecomp_full
     if (.not. do_zero_deep) nlevz = nlevdecomp
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
     do j = 1, nlevz
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -7900,12 +7904,15 @@ contains
           this%decomp_cascade_ctransfer(i,l) = value_column
        end do
     end do
-    do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
-          this%f_co2_soil_vr(i,j) = value_column
+    ! Written only through the ELM interface (PFLOTRAN); otherwise it keeps this zero.
+    if (do_zero_rewritten) then
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%f_co2_soil_vr(i,j) = value_column
+          end do
        end do
-    end do
+    end if
     
     do k = 1, ndecomp_pools
        do j = 1, nlevz
@@ -9515,7 +9522,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine col_nf_setvalues ( this, num_column, filter_column, value_column, &
-       zero_harvest, zero_fan, zero_erosion, zero_deep)
+       zero_harvest, zero_fan, zero_erosion, zero_deep, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set column-level nitrogen fluxes
@@ -9529,6 +9536,7 @@ contains
     logical , intent(in), optional :: zero_fan       ! zero the FAN fluxes (default .true.)
     logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
     logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before use or never written (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -9539,6 +9547,7 @@ contains
     logical :: do_zero_fan
     logical :: do_zero_erosion
     logical :: do_zero_deep
+    logical :: do_zero_rewritten
     integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
@@ -9553,6 +9562,8 @@ contains
     if (present(zero_deep)) do_zero_deep = zero_deep
     nlevz = nlevdecomp_full
     if (.not. do_zero_deep) nlevz = nlevdecomp
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
     do j = 1, nlevz
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -9575,12 +9586,22 @@ contains
           this%m_n_to_litr_lig_fire(idx,j)             = value_column
 
           this%net_nmin_vr(idx,j)                      = value_column
-          this%sminn_nh4_input_vr(idx,j)               = value_column !not used anywhere?
-          this%sminn_no3_input_vr(idx,j)               = value_column !not used anywhere?
 
           end associate
        end do
     end do
+
+    ! Never written outside this routine, so they keep the zero set here.
+    if (do_zero_rewritten) then
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%sminn_nh4_input_vr(idx,j) = value_column
+             this%sminn_no3_input_vr(idx,j) = value_column
+             end associate
+          end do
+       end do
+    end if
 
     if( use_pflotran .and. pf_cmode) then 
 
@@ -11131,7 +11152,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine col_pf_setvalues ( this, num_column, filter_column, value_column, &
-       zero_harvest, zero_erosion, zero_transport, zero_deep)
+       zero_harvest, zero_erosion, zero_transport, zero_deep, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
@@ -11144,6 +11165,7 @@ contains
     logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
     logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
     logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before use or never written (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -11154,6 +11176,7 @@ contains
     logical :: do_zero_erosion
     logical :: do_zero_transport
     logical :: do_zero_deep
+    logical :: do_zero_rewritten
     integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
@@ -11168,6 +11191,8 @@ contains
     if (present(zero_deep)) do_zero_deep = zero_deep
     nlevz = nlevdecomp_full
     if (.not. do_zero_deep) nlevz = nlevdecomp
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
     do j = 1, nlevz
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -11189,13 +11214,6 @@ contains
           this%m_p_to_litr_cel_fire(idx,j)             = value_column
           this%m_p_to_litr_lig_fire(idx,j)             = value_column
 
-          this%primp_to_labilep_vr(idx,j)              = value_column
-          this%labilep_to_secondp_vr(idx,j)            = value_column
-          this%secondp_to_labilep_vr(idx,j)            = value_column
-          this%secondp_to_occlp_vr(idx,j)              = value_column
-
-          this%sminp_leached_vr(idx,j)                 = value_column
-
 
           this%potential_immob_p_vr(idx,j)             = value_column
           this%actual_immob_p_vr(idx,j)                = value_column
@@ -11203,7 +11221,6 @@ contains
           this%supplement_to_sminp_vr(idx,j)           = value_column
           this%gross_pmin_vr(idx,j)                    = value_column
           this%net_pmin_vr(idx,j)                      = value_column
-          this%biochem_pmin_vr(idx,j)                  = value_column
           this%biochem_pmin_to_ecosysp_vr(idx,j)       = value_column
 
           ! bgc interface & pflotran
@@ -11326,6 +11343,25 @@ contains
        this%sminp_net_transport_delta(i)   = value_column
      end do
   end if
+
+    ! Rewritten for every filter column on levels 1:nlevdecomp by PhosphorusWeathering,
+    ! PhosphorusAdsportion/Desoprtion/Occlusion, PhosphorusLeaching and PhosphorusBiochemMin
+    ! (or _balance) before any read; with RD and nu_com_phosphatase biochem_pmin_vr
+    ! is never written and keeps this zero. Deeper levels are never written.
+    if (do_zero_rewritten) then
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%primp_to_labilep_vr(idx,j)   = value_column
+             this%labilep_to_secondp_vr(idx,j) = value_column
+             this%secondp_to_labilep_vr(idx,j) = value_column
+             this%secondp_to_occlp_vr(idx,j)   = value_column
+             this%sminp_leached_vr(idx,j)      = value_column
+             this%biochem_pmin_vr(idx,j)       = value_column
+             end associate
+          end do
+       end do
+    end if
 
     ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
     if (do_zero_harvest) then
