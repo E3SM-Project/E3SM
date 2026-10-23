@@ -19,6 +19,13 @@ ENDIF ()
 
 MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
+# Allow to skip the comparison of the tests' output against baselines (e.g., if we only care about
+# comparisons within the same build, like f90 vs cxx)
+OPTION(HOMME_SKIP_BASELINE_COMPARE "Skip the comparison against baseline results in the tests" OFF)
+IF (HOMME_SKIP_BASELINE_COMPARE)
+  MESSAGE(STATUS "HOMME_SKIP_BASELINE_COMPARE is ON: tests will not be compared against baselines")
+ENDIF ()
+
 # Determine if there is a submission system
 OPTION(USE_QUEUING "Whether run tests through the queue" TRUE)
 IF (USE_QUEUING)
