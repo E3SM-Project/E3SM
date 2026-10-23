@@ -75,6 +75,18 @@ Field HommeInstance::get_dyn_field (const std::string& name) const
   return m_dyn_fields.at(name);
 }
 
+void HommeInstance::add_phys_field (const std::string& name, const Field& f)
+{
+  m_phys_fields[name] = f;
+}
+
+Field HommeInstance::get_phys_field (const std::string& name) const
+{
+  EKAT_REQUIRE_MSG (has_phys_field(name),
+      "Error! The phys field '" + name + "' was not added to the HommeInstance.\n");
+  return m_phys_fields.at(name);
+}
+
 void HommeInstance::init_views ()
 {
   const auto& c = Homme::Context::singleton();
