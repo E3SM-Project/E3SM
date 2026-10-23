@@ -33,11 +33,13 @@ struct OceanState {
 };
 
 // Evaporating states (q < s), with ssq roughly the saturation value at the
-// SST. The SSTs lie inside the fitted range of every liquid/vapor formulation,
-// so the debug build prints no extrapolation warnings. q/s stays below ~0.8
-// so that the cancellation in s - q does not dominate the round-off.
+// SST. The first is at the sea-water freezing point, below the fitted range
+// of every liquid/vapor formulation but above its Tmin_warn, so the debug
+// build prints no extrapolation warnings. q/s stays below ~0.8 so that the
+// cancellation in s - q does not dominate the round-off.
 const OceanState evap_states[] = {
   //  f     rho   ustar  re      ssq      qv      sst [K]
+  {  1.0,  1.29,  0.10, 1.0e-3, 3.2e-3,  2.5e-3, 271.35 },
   {  1.0,  1.27,  0.10, 1.0e-3, 3.8e-3,  3.0e-3, 273.15 },
   {  0.5,  1.24,  0.25, 1.2e-3, 7.6e-3,  6.0e-3, 283.15 },
   {  0.25, 1.20,  0.30, 1.5e-3, 1.45e-2, 1.0e-2, 293.15 },
