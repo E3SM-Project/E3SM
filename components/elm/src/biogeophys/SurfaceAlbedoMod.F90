@@ -348,16 +348,29 @@ contains
     end do
 
     ! zero aerosol input arrays
+    ! The forcing arrays are read only when use_snicar_frc is true. The
+    ! feedback array is overwritten below for every species that DO_SNO_AER
+    ! and DO_SNO_OC select, so only the remaining species need the zero
+    ! (keep this guard in step with the copies below).
     do aer = 1, sno_nbr_aer
-       do i = -nlevsno+1, 0
-          do c = bounds%begc, bounds%endc
-             mss_cnc_aer_in_frc_pur(c,i,aer) = 0._r8
-             mss_cnc_aer_in_frc_bc(c,i,aer)  = 0._r8
-             mss_cnc_aer_in_frc_oc(c,i,aer)  = 0._r8
-             mss_cnc_aer_in_frc_dst(c,i,aer) = 0._r8
-             mss_cnc_aer_in_fdb(c,i,aer)     = 0._r8
+       if (use_snicar_frc) then
+          do i = -nlevsno+1, 0
+             do c = bounds%begc, bounds%endc
+                mss_cnc_aer_in_frc_pur(c,i,aer) = 0._r8
+                mss_cnc_aer_in_frc_bc(c,i,aer)  = 0._r8
+                mss_cnc_aer_in_frc_oc(c,i,aer)  = 0._r8
+                mss_cnc_aer_in_frc_dst(c,i,aer) = 0._r8
+             end do
           end do
-       end do
+       end if
+       if ((.not. DO_SNO_AER) .or. &
+           ((aer == 3 .or. aer == 4) .and. (.not. DO_SNO_OC))) then
+          do i = -nlevsno+1, 0
+             do c = bounds%begc, bounds%endc
+                mss_cnc_aer_in_fdb(c,i,aer) = 0._r8
+             end do
+          end do
+       end if
     end do
 
     ! Set aerosol input arrays
