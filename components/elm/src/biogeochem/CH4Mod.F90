@@ -2562,6 +2562,24 @@ contains
     real(r8) :: rootfr_vr(1:nlevsoi) ! Root fraction over depth
     real(r8) :: aeretran
 
+    ! Big-leaf path: SiteOxAere evaluated level by level for all filter patches (see below)
+    integer  :: pt_col(num_methp)        ! column of each filter patch
+    integer  :: pt_grc(num_methp)        ! gridcell of each filter patch
+    logical  :: pt_veg(num_methp)        ! is_vegetated of each filter patch
+    real(r8) :: pt_poros(num_methp)      ! poros_tiller of each filter patch, updated level by level as in SiteOxAere
+    real(r8) :: pt_qtran(num_methp)      ! qflx_tran_veg
+    real(r8) :: pt_npp(num_methp)        ! annsum_npp
+    real(r8) :: pt_agnpp(num_methp)      ! annavg_agnpp
+    real(r8) :: pt_bgnpp(num_methp)      ! annavg_bgnpp
+    real(r8) :: pt_elai(num_methp)       ! elai
+    real(r8) :: pt_frootc(num_methp)     ! frootc
+    real(r8) :: pt_gcond(num_methp)      ! grnd_ch4_cond
+    real(r8) :: pt_wtcol(num_methp)      ! wtcol
+    real(r8) :: tranloss_j, aere_j, oxaere_j
+    real(r8) :: diffus_aere, oxdiffus, area_tiller, m_tiller, n_tiller
+    real(r8) :: h2osoi_vol_min, k_h_cc, k_h_inv, anpp, nppratio, conc_ch4_wat, aerecond
+    real(r8), parameter :: smallnumber = 1.e-12_r8
+
     logical :: is_vegetated ! is this a vegetated patch?
     
     ! ch4 aerenchyma parameters
@@ -2653,7 +2671,124 @@ contains
       nc = bounds%clump_index
 
       ! point loop to partition aerenchyma flux into each soil layer
-      if (.not. lake) then
+      if (.not. lake .and. .not. use_fates) then
+
+         ! Big-leaf patches only (no column is a FATES column without use_fates). This is the
+         ! arithmetic of SiteOxAere and of the accumulation loop of the patch loop below, for one
+         ! patch and level at a time, with the level loop outside the patch loop so that the
+         ! (column, level) and (patch, level) arrays are read in memory order. SiteOxAere carries
+         ! only poros_tiller from one level of a patch to the next, kept here in pt_poros(fp), and
+         ! each (c,j) accumulator still adds its patch terms in filter order, so it is BFB.
+         !DIR$ NOVECTOR
+         do fp = 1, num_methp
+            p = filter_methp (fp)
+            c = veg_pp%column(p)
+            pt_col(fp) = c
+            pt_grc(fp) = col_pp%gridcell(c)
+            pt_veg(fp) = (veg_pp%itype(p) /= noveg)
+            if (graminoid(veg_pp%itype(p)) == 1 .or. crop(veg_pp%itype(p)) == 1) then
+               pt_poros(fp) = 0.3_r8  ! Colmer 2003
+            else
+               pt_poros(fp) = 0.3_r8 * CH4ParamsInst%nongrassporosratio
+            end if
+            pt_qtran(fp)  = qflx_tran_veg(p)
+            pt_npp(fp)    = annsum_npp(p)
+            pt_agnpp(fp)  = annavg_agnpp(p)
+            pt_bgnpp(fp)  = annavg_bgnpp(p)
+            pt_elai(fp)   = elai(p)
+            pt_frootc(fp) = frootc(p)
+            pt_gcond(fp)  = grnd_ch4_cond(p)
+            pt_wtcol(fp)  = wtcol(p)
+         end do
+
+         diffus_aere = d_con_g(1,1)*1.e-4_r8  ! for CH4: m^2/s
+
+         !DIR$ NOVECTOR
+         do j = 1, nlevsoi
+            !DIR$ NOVECTOR
+            do fp = 1, num_methp
+               p = filter_methp (fp)
+               c = pt_col(fp)
+               g = pt_grc(fp)
+
+               ! Calculate transpiration loss
+               if (transpirationloss .and. pt_veg(fp)) then
+                  ! Calculate water concentration
+                  h2osoi_vol_min = min(watsat(c,j), h2osoi_vol(c,j))
+                  k_h_inv = k_h_inv_vr(c,j,1)
+                  k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm
+                  conc_ch4_wat = conc_ch4(c,j) / ( (watsat(c,j)-h2osoi_vol_min)/k_h_cc + h2osoi_vol_min)
+
+                  tranloss_j = conc_ch4_wat * rootr(p,j)*pt_qtran(fp) / dz(c,j) / 1000._r8
+                  tranloss_j = max(tranloss_j, 0._r8) ! in case transpiration is pathological
+               else
+                  tranloss_j = 0._r8
+               end if
+
+               ! Calculate aerenchyma diffusion
+               if (j > jwt(c) .and. t_soisno(c,j) > tfrz .and. pt_veg(fp)) then
+                  anpp = pt_npp(fp) ! g C / m^2/yr
+                  anpp = max(anpp, 0._r8) ! NPP can be negative b/c of consumption of storage pools
+
+                  if (pt_agnpp(fp) /= spval .and. pt_bgnpp(fp) /= spval .and. &
+                       pt_agnpp(fp) > 0._r8 .and. pt_bgnpp(fp) > 0._r8) then
+                     nppratio = pt_bgnpp(fp) / (pt_agnpp(fp) + pt_bgnpp(fp))
+                  else
+                     nppratio = 0.5_r8
+                  end if
+
+                  if (usefrootc) then
+                     m_tiller = pt_frootc(fp) ! This will yield much smaller aere area.
+                  else
+                     m_tiller = anpp * nppratio * pt_elai(fp)
+                  end if
+
+                  n_tiller = m_tiller / 0.22_r8
+
+                  if (sat == 0) then
+                     pt_poros(fp) = pt_poros(fp) * CH4ParamsInst%unsat_aere_ratio
+                  end if
+
+                  pt_poros(fp) = max(pt_poros(fp), CH4ParamsInst%porosmin)
+
+                  area_tiller = CH4ParamsInst%scale_factor_aere * n_tiller * pt_poros(fp) * rpi * 2.9e-3_r8**2._r8 ! (m2/m2)
+
+                  k_h_inv = k_h_inv_vr(c,j,1) ! (4.12) Wania (L atm/mol)
+                  k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                  aerecond = area_tiller * rootfr(p,j) * diffus_aere / (z(c,j)*CH4ParamsInst%rob)
+                  ! Add in boundary layer resistance
+                  aerecond = 1._r8 / (1._r8/(aerecond+smallnumber) + 1._r8/(pt_gcond(fp)+smallnumber))
+
+                  aere_j = aerecond * (conc_ch4(c,j)/watsat(c,j)/k_h_cc - c_atm(g,1)) / dz(c,j) ![mol/m3-total/s]
+                  aere_j = max(aere_j, 0._r8) ! prevent backwards diffusion
+
+                  ! Do oxygen diffusion into layer
+                  k_h_inv = k_h_inv_vr(c,j,2)
+                  k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
+                  oxdiffus = diffus_aere * d_con_g(2,1) / d_con_g(1,1) ! adjust for O2:CH4 molecular diffusion
+                  aerecond = area_tiller * rootfr(p,j) * oxdiffus / (z(c,j)*CH4ParamsInst%rob)
+                  aerecond = 1._r8 / (1._r8/(aerecond+smallnumber) + 1._r8/(pt_gcond(fp)+smallnumber))
+                  oxaere_j = -aerecond *(conc_o2(c,j)/watsat(c,j)/k_h_cc - c_atm(g,2)) / dz(c,j) ![mol/m3-total/s]
+                  oxaere_j = max(oxaere_j, 0._r8)
+                  ! Diffusion in is positive; prevent backwards diffusion
+                  if ( .not. use_aereoxid_prog ) then ! fixed aere oxid proportion; will be done in ch4_tran
+                     oxaere_j = 0._r8
+                  end if
+               else
+                  aere_j = 0._r8
+                  oxaere_j = 0._r8
+               end if ! veg type, below water table, & above freezing
+
+               ! Impose limitation based on available methane during timestep
+               ! By imposing the limitation here, don't allow aerenchyma access to methane from other Patches.
+               aeretran = min(aere_j+tranloss_j, conc_ch4(c,j)/dtime + ch4_prod_depth(c,j))
+               ch4_aere_depth (c, j) = ch4_aere_depth(c,j) + aeretran*pt_wtcol(fp) !pft weight in col.
+               ch4_tran_depth (c, j) = ch4_tran_depth(c,j) + min(tranloss_j, aeretran)*pt_wtcol(fp)
+               o2_aere_depth  (c, j) = o2_aere_depth (c,j) + oxaere_j*pt_wtcol(fp)
+            end do
+         end do
+
+      else if (.not. lake) then
 
          do fp = 1, num_methp
             p = filter_methp (fp)
