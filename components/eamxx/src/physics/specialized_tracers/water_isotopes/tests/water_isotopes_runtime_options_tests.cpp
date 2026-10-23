@@ -12,9 +12,9 @@
 namespace scream {
 namespace {
 
-using wiso::WaterIsotopeParameters;
-using wiso::WaterIsotopeRuntimeOptions;
-using wiso::WaterIsotopeFractionation;
+using water_isotopes::WaterIsotopeParameters;
+using water_isotopes::WaterIsotopeRuntimeOptions;
+using water_isotopes::WaterIsotopeFractionation;
 
 TEST_CASE("runtime_formulation_selection") {
 
@@ -25,21 +25,21 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Verify all 1.0
     for (int i = 0; i < 5; ++i) {
-      REQUIRE(iso_params_normalized.std_iso_ratio(static_cast<wiso::WaterIsotopologues>(i)) == Real(1.0));
+      REQUIRE(iso_params_normalized.std_iso_ratio(static_cast<water_isotopes::WaterIsotopologues>(i)) == Real(1.0));
     }
 
     // Test 2: Natural abundance
     WaterIsotopeRuntimeOptions opts_natural;
-    opts_natural.standard_ratio = wiso::StandardRatioFormulation::NaturalAbundance;
+    opts_natural.standard_ratio = water_isotopes::StandardRatioFormulation::NaturalAbundance;
     WaterIsotopeParameters<Real> iso_params_natural(opts_natural);
 
     // Verify natural abundance values
-    REQUIRE(iso_params_natural.std_iso_ratio(wiso::WaterIsotopologues::H216O) == Real(0.9976));
-    REQUIRE(std::abs(iso_params_natural.std_iso_ratio(wiso::WaterIsotopologues::HDO) - Real(155.76e-6)) < 1e-8);
-    REQUIRE(std::abs(iso_params_natural.std_iso_ratio(wiso::WaterIsotopologues::H218O) - Real(2005.20e-6)) < 1e-6);
+    REQUIRE(iso_params_natural.std_iso_ratio(water_isotopes::WaterIsotopologues::H216O) == Real(0.9976));
+    REQUIRE(std::abs(iso_params_natural.std_iso_ratio(water_isotopes::WaterIsotopologues::HDO) - Real(155.76e-6)) < 1e-8);
+    REQUIRE(std::abs(iso_params_natural.std_iso_ratio(water_isotopes::WaterIsotopologues::H218O) - Real(2005.20e-6)) < 1e-6);
 
     // Verify they differ
-    REQUIRE(iso_params_normalized.std_iso_ratio(wiso::WaterIsotopologues::HDO) != iso_params_natural.std_iso_ratio(wiso::WaterIsotopologues::HDO));
+    REQUIRE(iso_params_normalized.std_iso_ratio(water_isotopes::WaterIsotopologues::HDO) != iso_params_natural.std_iso_ratio(water_isotopes::WaterIsotopologues::HDO));
   }
 
   SECTION("ocean_enrichment_formulations") {
@@ -49,26 +49,26 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Verify all 1.0
     for (int i = 0; i < 5; ++i) {
-      REQUIRE(iso_params_none.mean_ocean_enrichment(static_cast<wiso::WaterIsotopologues>(i)) == Real(1.0));
+      REQUIRE(iso_params_none.mean_ocean_enrichment(static_cast<water_isotopes::WaterIsotopologues>(i)) == Real(1.0));
     }
 
     // Test 2: LGM
     WaterIsotopeRuntimeOptions opts_lgm;
-    opts_lgm.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
+    opts_lgm.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
     WaterIsotopeParameters<Real> iso_params_lgm(opts_lgm);
 
     // Verify LGM values
-    REQUIRE(iso_params_lgm.mean_ocean_enrichment(wiso::WaterIsotopologues::H216O) == Real(1.0));
-    REQUIRE(std::abs(iso_params_lgm.mean_ocean_enrichment(wiso::WaterIsotopologues::HDO) - Real(1.0128)) < 1e-5);
-    REQUIRE(std::abs(iso_params_lgm.mean_ocean_enrichment(wiso::WaterIsotopologues::H218O) - Real(1.0016)) < 1e-5);
+    REQUIRE(iso_params_lgm.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::H216O) == Real(1.0));
+    REQUIRE(std::abs(iso_params_lgm.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::HDO) - Real(1.0128)) < 1e-5);
+    REQUIRE(std::abs(iso_params_lgm.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::H218O) - Real(1.0016)) < 1e-5);
 
     // Verify they differ
-    REQUIRE(iso_params_none.mean_ocean_enrichment(wiso::WaterIsotopologues::HDO) != iso_params_lgm.mean_ocean_enrichment(wiso::WaterIsotopologues::HDO));
+    REQUIRE(iso_params_none.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::HDO) != iso_params_lgm.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::HDO));
   }
 
   SECTION("liquid_vapor_fractionation") {
-    using wiso::CondensedPhase;
-    using wiso::IsoElement;
+    using water_isotopes::CondensedPhase;
+    using water_isotopes::IsoElement;
 
     // Test 1: Default (Horita & Wesolowski 1994)
     WaterIsotopeRuntimeOptions opts_horita;
@@ -85,7 +85,7 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Test 2: Majoube 1971
     WaterIsotopeRuntimeOptions opts_majoube;
-    opts_majoube.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
+    opts_majoube.liquid_vapor = water_isotopes::LiquidVaporFractionation::Majoube1971;
     WaterIsotopeParameters<Real> iso_params_majoube(opts_majoube);
 
     const auto& majoube_h = iso_params_majoube.alpha_eq_coeffs(CondensedPhase::Liquid,
@@ -105,8 +105,8 @@ TEST_CASE("runtime_formulation_selection") {
   }
 
   SECTION("ice_vapor_fractionation") {
-    using wiso::CondensedPhase;
-    using wiso::IsoElement;
+    using water_isotopes::CondensedPhase;
+    using water_isotopes::IsoElement;
 
     // Test 1: Default (Merlivat & Nief 1967 for HDO, Majoube 1971 for H218O)
     WaterIsotopeRuntimeOptions opts_merlivat;
@@ -128,7 +128,7 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Test 2: isoCAM3
     WaterIsotopeRuntimeOptions opts_isocam3;
-    opts_isocam3.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
+    opts_isocam3.ice_vapor = water_isotopes::IceVaporFractionation::IsoCAM3;
     WaterIsotopeParameters<Real> iso_params_isocam3(opts_isocam3);
 
     const auto& isocam3_h = iso_params_isocam3.alpha_eq_coeffs(CondensedPhase::Ice,
@@ -148,21 +148,21 @@ TEST_CASE("runtime_formulation_selection") {
   SECTION("combined_formulations") {
     // Test using all alternative formulations together
     WaterIsotopeRuntimeOptions opts_alt;
-    opts_alt.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
-    opts_alt.standard_ratio = wiso::StandardRatioFormulation::NaturalAbundance;
-    opts_alt.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
-    opts_alt.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
+    opts_alt.liquid_vapor = water_isotopes::LiquidVaporFractionation::Majoube1971;
+    opts_alt.standard_ratio = water_isotopes::StandardRatioFormulation::NaturalAbundance;
+    opts_alt.ocean_enrichment = water_isotopes::OceanEnrichmentFormulation::LGM;
+    opts_alt.ice_vapor = water_isotopes::IceVaporFractionation::IsoCAM3;
 
     WaterIsotopeParameters<Real> iso_params_alt(opts_alt);
     WaterIsotopeParameters<Real> iso_params_default;  // All defaults
 
     // Verify each setting was applied correctly
-    REQUIRE(iso_params_alt.std_iso_ratio(wiso::WaterIsotopologues::HDO) != iso_params_default.std_iso_ratio(wiso::WaterIsotopologues::HDO));
-    REQUIRE(iso_params_alt.mean_ocean_enrichment(wiso::WaterIsotopologues::HDO) != iso_params_default.mean_ocean_enrichment(wiso::WaterIsotopologues::HDO));
-    REQUIRE(iso_params_alt.alpha_eq_coeffs(wiso::CondensedPhase::Liquid, wiso::IsoElement::Hydrogen).T_3 !=
-            iso_params_default.alpha_eq_coeffs(wiso::CondensedPhase::Liquid, wiso::IsoElement::Hydrogen).T_3);
-    REQUIRE(iso_params_alt.alpha_eq_coeffs(wiso::CondensedPhase::Ice, wiso::IsoElement::Hydrogen).T_2 !=
-            iso_params_default.alpha_eq_coeffs(wiso::CondensedPhase::Ice, wiso::IsoElement::Hydrogen).T_2);
+    REQUIRE(iso_params_alt.std_iso_ratio(water_isotopes::WaterIsotopologues::HDO) != iso_params_default.std_iso_ratio(water_isotopes::WaterIsotopologues::HDO));
+    REQUIRE(iso_params_alt.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::HDO) != iso_params_default.mean_ocean_enrichment(water_isotopes::WaterIsotopologues::HDO));
+    REQUIRE(iso_params_alt.alpha_eq_coeffs(water_isotopes::CondensedPhase::Liquid, water_isotopes::IsoElement::Hydrogen).T_3 !=
+            iso_params_default.alpha_eq_coeffs(water_isotopes::CondensedPhase::Liquid, water_isotopes::IsoElement::Hydrogen).T_3);
+    REQUIRE(iso_params_alt.alpha_eq_coeffs(water_isotopes::CondensedPhase::Ice, water_isotopes::IsoElement::Hydrogen).T_2 !=
+            iso_params_default.alpha_eq_coeffs(water_isotopes::CondensedPhase::Ice, water_isotopes::IsoElement::Hydrogen).T_2);
   }
 
   SECTION("fractionation_with_runtime_parameters") {
@@ -174,14 +174,14 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeRuntimeOptions opts_horita;
     WaterIsotopeParameters<Real> iso_params_horita(opts_horita);
     Real alpha_lv_horita = WaterIsotopeFractionation::alpha_liquid_vapor(
-      temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params_horita)[0];
+      temp, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params_horita)[0];
 
     // Majoube 1971
     WaterIsotopeRuntimeOptions opts_majoube;
-    opts_majoube.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
+    opts_majoube.liquid_vapor = water_isotopes::LiquidVaporFractionation::Majoube1971;
     WaterIsotopeParameters<Real> iso_params_majoube(opts_majoube);
     Real alpha_lv_majoube = WaterIsotopeFractionation::alpha_liquid_vapor(
-      temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params_majoube)[0];
+      temp, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params_majoube)[0];
 
     // Verify they produce different fractionation factors
     REQUIRE(alpha_lv_horita != alpha_lv_majoube);
@@ -201,16 +201,16 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeParameters<Real> iso_params;
 
     REQUIRE((WaterIsotopeFractionation::alpha_liquid_vapor(
-              temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params) ==
+              temp, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params) ==
             WaterIsotopeFractionation::alpha_equilibrium(
-              temp, wiso::WaterIsotopologues::HDO, wiso::CondensedPhase::Liquid,
-              wiso::CondensedOverVapor, iso_params)).all());
+              temp, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedPhase::Liquid,
+              water_isotopes::CondensedOverVapor, iso_params)).all());
 
     REQUIRE((WaterIsotopeFractionation::alpha_ice_vapor(
-              temp, wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor, iso_params) ==
+              temp, water_isotopes::WaterIsotopologues::H218O, water_isotopes::CondensedOverVapor, iso_params) ==
             WaterIsotopeFractionation::alpha_equilibrium(
-              temp, wiso::WaterIsotopologues::H218O, wiso::CondensedPhase::Ice,
-              wiso::CondensedOverVapor, iso_params)).all());
+              temp, water_isotopes::WaterIsotopologues::H218O, water_isotopes::CondensedPhase::Ice,
+              water_isotopes::CondensedOverVapor, iso_params)).all());
   }
 }
 

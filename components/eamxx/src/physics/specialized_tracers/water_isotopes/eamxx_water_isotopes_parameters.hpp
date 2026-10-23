@@ -5,7 +5,7 @@
 #include "share/util/eamxx_utils.hpp"
 
 namespace scream {
-namespace wiso {
+namespace water_isotopes {
 
 /*
  * Physical parameters for water isotopologues.
@@ -56,9 +56,16 @@ struct PolynomialCoefficients {
   Real T3, T2, T1, T0, T_1, T_2, T_3, T_4, T_6;
 };
 
-// set boundaries from polynomial regression
+// Temperature range of each fit
 struct TemperatureBounds {
   Real Tmin, Tmax;  // [K] range of the published regression
+  // [K] Lowest temperature evaluated without a debug-build warning. Equal to
+  // Tmin for ice; below it for liquid, whose fits are extrapolated as is to
+  // supercooled and freezing-point sea water (as in the EAM Fortran,
+  // share/util/water_isotopes.F90). For Horita & Wesolowski (1994) at the
+  // sea-water freezing point (271.35 K), 10^3*ln(alpha) is 108.62 (HDO) and
+  // 11.96 (H218O), against 105.97 and 11.75 at 273.15 K.
+  Real Tmin_warn;
 };
 
 struct EquilibriumFractionationCoefficients {
@@ -85,22 +92,22 @@ static constexpr EquilibriumFractionationCoefficients
 alpha_eq_liq_table[etoi(LiquidVaporFractionation::FormulationCount)]
                   [etoi(IsoElement::Count)] = {
   // Horita & Wesolowski (1994), 0-364 C
-  { /* Hydrogen */ {{273.15, 637.15}, {1.1588e-6, -1.6201e-3, 7.9484e-1, -1.6104e2, 0., 0., 2.9992e9, 0., 0.}},
-    /* Oxygen   */ {{273.15, 637.15}, {0., 0., 0., -7.685, 6.7123e3, -1.6664e6, 3.5041e8, 0., 0.}} },
+  { /* Hydrogen */ {{273.15, 637.15, 253.15}, {1.1588e-6, -1.6201e-3, 7.9484e-1, -1.6104e2, 0., 0., 2.9992e9, 0., 0.}},
+    /* Oxygen   */ {{273.15, 637.15, 253.15}, {0., 0., 0., -7.685, 6.7123e3, -1.6664e6, 3.5041e8, 0., 0.}} },
   // Majoube (1971), 0-100 C
-  { /* Hydrogen */ {{273.15, 373.15}, {0., 0., 0., 5.2612e1, -7.6248e4, 2.4844e7, 0., 0., 0.}},
-    /* Oxygen   */ {{273.15, 373.15}, {0., 0., 0., -2.0667, -4.156e2, 1.137e6, 0., 0., 0.}} }
+  { /* Hydrogen */ {{273.15, 373.15, 253.15}, {0., 0., 0., 5.2612e1, -7.6248e4, 2.4844e7, 0., 0., 0.}},
+    /* Oxygen   */ {{273.15, 373.15, 253.15}, {0., 0., 0., -2.0667, -4.156e2, 1.137e6, 0., 0., 0.}} }
 };
 
 static constexpr EquilibriumFractionationCoefficients
 alpha_eq_ice_table[etoi(IceVaporFractionation::FormulationCount)]
                   [etoi(IsoElement::Count)] = {
   // Default: two different studies, one per element.
-  { /* Hydrogen */ {{233.15, 273.15}, {0., 0., 0., -9.45e1, 0., 1.6289e7, 0., 0., 0.}},  // Merlivat & Nief (1967), -40..0 C
-    /* Oxygen   */ {{239.75, 273.15}, {0., 0., 0., -2.8224e1, 1.1839e4, 0., 0., 0., 0.}} },  // Majoube (1971), NOT M&N
+  { /* Hydrogen */ {{233.15, 273.15, 233.15}, {0., 0., 0., -9.45e1, 0., 1.6289e7, 0., 0., 0.}},  // Merlivat & Nief (1967), -40..0 C
+    /* Oxygen   */ {{239.75, 273.15, 239.75}, {0., 0., 0., -2.8224e1, 1.1839e4, 0., 0., 0., 0.}} },  // Majoube (1971), NOT M&N
   // isoCAM3: same functional fits, extrapolated to -70 C.
-  { /* Hydrogen */ {{203.15, 273.15}, {0., 0., 0., -9.34e1, 0., 1.6288e7, 0., 0., 0.}},
-    /* Oxygen   */ {{203.15, 273.15}, {0., 0., 0., -2.8224e1, 1.1839e4, 0., 0., 0., 0.}} }
+  { /* Hydrogen */ {{203.15, 273.15, 203.15}, {0., 0., 0., -9.34e1, 0., 1.6288e7, 0., 0., 0.}},
+    /* Oxygen   */ {{203.15, 273.15, 203.15}, {0., 0., 0., -2.8224e1, 1.1839e4, 0., 0., 0., 0.}} }
 };
 
 // Provenance strings, for logging. Host-only: deliberately not part of the
@@ -235,7 +242,7 @@ public:
 // Convenience alias for Real precision
 using WaterIsotopeParametersReal = WaterIsotopeParameters<Real>;
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
 
 #endif // EAMXX_WATER_ISOTOPES_PARAMETERS_HPP
