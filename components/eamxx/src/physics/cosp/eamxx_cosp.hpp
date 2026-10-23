@@ -61,6 +61,9 @@ protected:
   int m_cosp_frequency;
   ekat::CaseInsensitiveString m_cosp_frequency_units;
 
+  // Which COSP implementation to run (fortran or cxx); temporary, see constructor
+  ekat::CaseInsensitiveString m_cosp_impl;
+
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_subcols;

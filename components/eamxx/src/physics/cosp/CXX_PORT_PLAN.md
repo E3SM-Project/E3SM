@@ -1,6 +1,6 @@
 # EAMxx COSP: C++/Kokkos port plan
 
-Status: planning, no port code yet.
+Status: M0 timers and the `cosp_impl` switch are in; M1 (leaf kernels plus BFB tests) in progress.
 Branch: `whannah/eamxx/cosp-cxx-port`, based on E3SM master `ac6eaa2`.
 COSP submodule (`components/eam/src/physics/cosp2/external`): E3SM-Project/COSPv2.0 `afd43be` (branch `e3sm-master`).
 
@@ -140,13 +140,17 @@ which EAMxx uses one (the tau/CTP joint histogram), so the port can skip the res
 
 ## 5. BFB hazards worth knowing up front
 
-1. **Single precision literals and default-real conversions.** The E3SM fork of COSP is full of
+1. **Single precision literals and default-real conversions.** The `cosp` library target doesn't
+   link `scream_share`, so it never gets EAMxx's `-fdefault-real-8 -fdefault-double-8`, while
+   `cosp_c2f.F90` (in `eamxx_cosp`) does. So unsuffixed literals are single precision inside the
+   library but double precision in the bridge. The E3SM fork of COSP is full of
    them: `transmax(j) .le. 0.9999999` (a float, so 0.99999988...) and `tb .gt. 260.` in
    `icarus.F90:352-365`, `1.e-20` and `3.41817e-7` in `icarus.F90:268-269`,
    `real(count(...))/ncol` in `icarus.F90:574` and `MISR_simulator.F90:278`, and the `-999.`
    single precision sentinel in MISR. Each one needs an explicit `float` in the C++ to stay BFB. Fixing them is a
    separate, deliberately non-BFB step after the port lands.
-2. **FMA on GPU.** nvcc contracts `a*b+c` by default. BFB against Fortran is a CPU-build test.
+2. **FMA on GPU.** nvcc contracts `a*b+c` by default. The standalone CPU builds use
+   `-ffp-contract=off` for both C++ and Fortran, so BFB against Fortran is a CPU-build test.
    GPU builds get compared against CPU C++ with a tolerance.
 3. **Histogram outputs are discrete.** A roundoff difference in tau or cloud-top pressure can move
    a subcolumn to the neighbouring bin, so "matches to roundoff" isn't a meaningful check on the
@@ -222,15 +226,24 @@ seeding, and pulling in upstream CFMIP changes.
 - Standalone EAMxx builds and runs on a generic Linux box per `components/eamxx/AGENTS.md`
   (`test-all-eamxx -m copilot-testing`), CPU only. That's enough for all the BFB-vs-Fortran work
   in M1 to M3. GPU checks need Perlmutter.
+- Gotchas setting that up in a fresh container: `scripts/setup-copilot-env.sh` still lists
+  `externals/haero`, which no longer exists, so its submodule step fails and ekat/scorpio/mam4xx/
+  rrtmgp have to be initialized by hand. Input data downloads from LCRC may be blocked, in which
+  case empty placeholder files (as `AGENTS.md` suggests) are enough to configure.
+- Leaf-level BFB tests live in `src/physics/cosp/tests/` (`cosp_leaf_tests`): `cosp_f90_shims.F90`
+  exposes individual Fortran routines through `bind(C)`, and each Catch2 test runs the Fortran and
+  the C++ kernel on the same random inputs and requires exact equality.
 - `tests/single-process/cosp/` already has a `cosp_standalone` AD test (ne4, 72 levels, 2/5/48
   steps) with a baseline compare. It's the natural place for Fortran vs C++ whole-pipeline
   comparisons.
 
-## 9. Open questions
+## 9. Decisions (Walter, 2026-10-22)
 
-1. What did the colleague's ne30pg2 case set for `cosp_subcolumns` (default is 10)?
-2. Is strict BFB against the current Fortran (on CPU) the bar for the port? It looks achievable
-   and keeps validation simple, so that's the recommendation.
-3. Port the E3SM fork as-is (BFB, single precision quirks included), then fix the quirks as a
-   separate step? Recommended, versus porting from upstream CFMIP directly.
-4. OK with a temporary `cosp_impl` runtime switch during the transition?
+1. The colleague's ne30pg2 test used the default `cosp_subcolumns = 10`. Production runs will use
+   `cosp_subcolumns = 1`, so the 1-subcolumn path (M2) comes before SCOPS (M3).
+2. Strict BFB against the current Fortran (CPU builds) is the bar. If it turns out to be a
+   struggle somewhere, raise it rather than quietly relaxing it.
+3. The temporary `cosp_impl: fortran | cxx` switch is approved.
+
+Still open: whether to port from the E3SM fork as-is and fix the single precision quirks later
+(the working assumption, since it's the only way to stay BFB), or start from upstream CFMIP.
