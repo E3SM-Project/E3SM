@@ -22,9 +22,48 @@ module ActiveLayerMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public:: alt_calc
+  public:: alt_annual_update_step
   !-----------------------------------------------------------------------
   
 contains
+
+  !-----------------------------------------------------------------------
+  logical function alt_update_date(mon, day, sec, dtime, update_mon)
+    !
+    ! !DESCRIPTION:
+    ! Return .true. in the time step in which alt_calc copies the annual maxima to
+    ! the prior year values for the columns updated in month update_mon
+    !
+    ! !ARGUMENTS:
+    integer, intent(in) :: mon, day, sec    ! current date
+    integer, intent(in) :: dtime            ! time step length in seconds
+    integer, intent(in) :: update_mon       ! month of the update (1 or 7)
+    !-----------------------------------------------------------------------
+
+    alt_update_date = (mon .eq. update_mon) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1)
+
+  end function alt_update_date
+
+  !-----------------------------------------------------------------------
+  logical function alt_annual_update_step()
+    !
+    ! !DESCRIPTION:
+    ! Return .true. in the time steps in which alt_calc copies altmax to
+    ! altmax_lastyear (1 January for NH columns, 1 July for SH columns)
+    !
+    ! !USES:
+    use elm_time_manager , only : get_curr_date, get_step_size
+    !
+    ! !LOCAL VARIABLES:
+    integer :: year, mon, day, sec, dtime
+    !-----------------------------------------------------------------------
+
+    call get_curr_date(year, mon, day, sec)
+    dtime = get_step_size()
+    alt_annual_update_step = alt_update_date(mon, day, sec, dtime, 1) .or. &
+         alt_update_date(mon, day, sec, dtime, 7)
+
+  end function alt_annual_update_step
 
   !-----------------------------------------------------------------------
   subroutine alt_calc(num_soilc, filter_soilc, &
@@ -94,9 +133,10 @@ contains
 
       ! on a set annual timestep, update annual maxima
       ! make this 1 January for NH columns, 1 July for SH columns
+      ! (alt_annual_update_step uses the same date test)
       call get_curr_date(year, mon, day, sec)
       dtime =  get_step_size()
-      if ( (mon .eq. 1) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
+      if ( alt_update_date(mon, day, sec, dtime, 1) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
@@ -109,7 +149,7 @@ contains
             endif
          end do
       endif
-      if ( (mon .eq. 7) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
+      if ( alt_update_date(mon, day, sec, dtime, 7) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
