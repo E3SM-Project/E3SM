@@ -158,6 +158,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_process_interface.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_fv_phys.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/homme_instance.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/homme_model_init.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_rayleigh_friction.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/physics_dynamics_remapper.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/homme_grids_manager.cpp
