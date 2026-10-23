@@ -1184,12 +1184,6 @@ contains
 
          end do   ! end of filtered pft loop
 
-         do f = 1, fn
-           p = filterp(f)
-           t = veg_pp%topounit(p)
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
-         enddo
-
          ! Test for convergence
          iter_final = itlef
          itlef = itlef+1
@@ -1221,6 +1215,14 @@ contains
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)
+
+      ! lbl_rsc_h2o is not read inside the iteration, so only each patch's value from
+      ! its last iteration was kept; t_veg and uaf are not changed after that
+      do f = 1, fn
+        p = filterp(f)
+        t = veg_pp%topounit(p)
+        lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(p)/(uaf(p)**2._r8+1.e-10_r8)   !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
+      enddo
 
       do f = 1, fn
          p = filterp(f)
