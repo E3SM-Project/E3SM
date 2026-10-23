@@ -2,6 +2,7 @@
 #define SCREAM_COSP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "physics/cosp/cosp_cxx_functions.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -54,12 +55,19 @@ protected:
 public:
 #endif
   void run_impl        (const double dt);
+
+  // The two implementations of the COSP call (inputs on device, outputs filled on device)
+  void run_fortran ();
+  void run_cxx ();
 protected:
   void finalize_impl   ();
 
   // cosp frequency; positive is interpreted as number of steps, negative as number of hours
   int m_cosp_frequency;
   ekat::CaseInsensitiveString m_cosp_frequency_units;
+
+  // Which COSP implementation to run (fortran or cxx); temporary, see constructor
+  ekat::CaseInsensitiveString m_cosp_impl;
 
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
@@ -75,6 +83,9 @@ protected:
   Field m_z_mid;
   Field m_z_int;
   Field m_sunlit_real;
+
+  // Scratch space of the C++ COSP (cosp_impl=cxx)
+  cosp::Functions<Real,DefaultDevice>::Workspace m_cxx_ws;
 }; // class Cosp
 
 } // namespace scream
