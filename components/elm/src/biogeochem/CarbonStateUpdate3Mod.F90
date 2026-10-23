@@ -53,39 +53,52 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
+    logical :: fire_add  ! the column-level fire fluxes are applied (not PFLOTRAN C mode)
+    logical :: fire_loss ! the pool's fire loss is applied
     !-----------------------------------------------------------------------
 
-      ! column level carbon fluxes from fire
-      if (.not.(use_pflotran .and. pf_cmode)) then
-          do j = 1, nlevdecomp
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                ! pft-level wood to column-level CWD (uncombusted wood)
-                col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) &
-                     + col_cf%fire_mortality_c_to_cwdc(c,j) * dt
-
-                ! pft-level wood to column-level litter (uncombusted wood)
-                col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) &
-                     + col_cf%m_c_to_litr_met_fire(c,j)* dt
-                col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) &
-                     + col_cf%m_c_to_litr_cel_fire(c,j)* dt
-                col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) &
-                     + col_cf%m_c_to_litr_lig_fire(c,j)* dt
-             end do
-          end do
-      end if !(.not.(use_pflotran .and. pf_cmode))
-
-      ! litter and CWD losses to fire
+      ! Decomposing pools: each entry gets the fire additions to CWD and litter,
+      ! then the fire losses, in the same order and with the same expressions as
+      ! the separate loops before.
+      fire_add = .not.(use_pflotran .and. pf_cmode)
       do l = 1, ndecomp_pools
+         ! litter and CWD losses to fire
          ! FireFluxes sets the fire loss of pools that are neither litter nor CWD
          ! to +0, and x - (+0)*dt is x. Isotope fluxes are scaled copies that
          ! may be -0, so keep every pool when isotopes are on.
-         if (.not. (use_c13 .or. use_c14) .and. .not. (decomp_cascade_con%is_litter(l) .or. &
-              decomp_cascade_con%is_cwd(l))) cycle
+         fire_loss = (use_c13 .or. use_c14) .or. decomp_cascade_con%is_litter(l) .or. &
+              decomp_cascade_con%is_cwd(l)
+         if (.not. fire_loss .and. .not. (fire_add .and. (l == i_cwd .or. l == i_met_lit .or. &
+              l == i_cel_lit .or. l == i_lig_lit))) cycle
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
+               if (fire_add) then
+                  ! column level carbon fluxes from fire
+                  ! pft-level wood to column-level CWD (uncombusted wood)
+                  if (l == i_cwd) then
+                     col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) &
+                          + col_cf%fire_mortality_c_to_cwdc(c,j) * dt
+                  end if
+
+                  ! pft-level wood to column-level litter (uncombusted wood)
+                  if (l == i_met_lit) then
+                     col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) &
+                          + col_cf%m_c_to_litr_met_fire(c,j)* dt
+                  end if
+                  if (l == i_cel_lit) then
+                     col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) &
+                          + col_cf%m_c_to_litr_cel_fire(c,j)* dt
+                  end if
+                  if (l == i_lig_lit) then
+                     col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) &
+                          + col_cf%m_c_to_litr_lig_fire(c,j)* dt
+                  end if
+               end if
+
+               if (fire_loss) then
+                  col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
+               end if
             end do
          end do
       end do
