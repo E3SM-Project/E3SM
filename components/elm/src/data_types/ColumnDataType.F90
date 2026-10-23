@@ -7883,8 +7883,6 @@ contains
           this%m_c_to_litr_cel_fire(idx,j)          = value_column
           this%m_c_to_litr_lig_fire(idx,j)          = value_column
 
-          this%hr_vr(idx,j)                         = value_column
-
           end associate
        end do
     end do
@@ -7894,12 +7892,16 @@ contains
           this%decomp_cascade_ctransfer(i,l) = value_column
        end do
     end do
-    ! Written only through the ELM interface (PFLOTRAN); otherwise it keeps this zero.
+    ! f_co2_soil_vr is written only through the ELM interface (PFLOTRAN);
+    ! otherwise it keeps this zero. hr_vr is set to zero and summed for every
+    ! filter column and level 1:nlevdecomp by col_cf_summary_for_ch4 at the end
+    ! of EcosystemDynNoLeaching2, and only the PFLOTRAN path reads it earlier.
     if (do_zero_rewritten) then
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
              this%f_co2_soil_vr(i,j) = value_column
+             this%hr_vr(i,j)         = value_column
           end do
        end do
     end if
@@ -9737,8 +9739,10 @@ contains
       end do
    end if
 
-   if(use_crop) then 
-     do j = 1, nlevz
+   ! Assigned for every filter column and level 1:nlevdecomp by NAllocationRD or
+   ! NAllocationECAMIC (Allocation2) before any read.
+   if(use_crop .and. do_zero_rewritten) then 
+     do j = 1, nlevdecomp_full
        do fi = 1,num_column
          i = filter_column(fi)
          this%f_nit_vr(i,j)      = value_column
@@ -11139,6 +11143,8 @@ contains
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
+    ! !USES:
+    use elm_varctl, only : carbon_only, carbonnitrogen_only
     ! !ARGUMENTS:
     class (column_phosphorus_flux) :: this
     integer , intent(in) :: num_column
@@ -11198,23 +11204,25 @@ contains
           this%m_p_to_litr_lig_fire(idx,j)             = value_column
 
 
-          this%potential_immob_p_vr(idx,j)             = value_column
-          this%actual_immob_p_vr(idx,j)                = value_column
-          this%sminp_to_plant_vr(idx,j)                = value_column
-          this%supplement_to_sminp_vr(idx,j)           = value_column
-          this%gross_pmin_vr(idx,j)                    = value_column
           this%net_pmin_vr(idx,j)                      = value_column
-          this%biochem_pmin_to_ecosysp_vr(idx,j)       = value_column
-
-          ! bgc interface & pflotran
-          this%plant_pdemand_vr(idx,j)                 = value_column
-          this%adsorb_to_labilep_vr(idx,j)             = value_column
-          this%desorb_to_solutionp_vr(idx,j)           = value_column
-          
 
           end associate
        end do
     end do
+
+    ! Written only in the carbon_only or carbonnitrogen_only branches of the P
+    ! allocation (phase 2); otherwise it keeps the zero set here. The flags change
+    ! only after CNZero in a step, so CNZero still sees a flag on in the step
+    ! after one that wrote it.
+    if (do_zero_rewritten .or. carbon_only .or. carbonnitrogen_only) then
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%supplement_to_sminp_vr(idx,j) = value_column
+             end associate
+          end do
+       end do
+    end if
 
     do fi = 1,num_column,flux_setvalues_block_size
        associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
@@ -11345,6 +11353,22 @@ contains
              this%secondp_to_occlp_vr(idx,j)   = value_column
              this%sminp_leached_vr(idx,j)      = value_column
              this%biochem_pmin_vr(idx,j)       = value_column
+             ! Assigned for every filter column and level 1:nlevdecomp before
+             ! any read: potential_immob_p_vr and gross_pmin_vr in
+             ! SoilLittDecompAlloc, actual_immob_p_vr and sminp_to_plant_vr in
+             ! Allocation2, adsorb_to_labilep_vr and desorb_to_solutionp_vr in
+             ! Allocation2 (ECA/MIC) or PhosphorusStateUpdate3 (RD).
+             ! biochem_pmin_to_ecosysp_vr is set and read only inside
+             ! PhosphorusBiochemMin_balance; plant_pdemand_vr is written only
+             ! through the ELM interface.
+             this%potential_immob_p_vr(idx,j)       = value_column
+             this%actual_immob_p_vr(idx,j)          = value_column
+             this%sminp_to_plant_vr(idx,j)          = value_column
+             this%gross_pmin_vr(idx,j)              = value_column
+             this%biochem_pmin_to_ecosysp_vr(idx,j) = value_column
+             this%plant_pdemand_vr(idx,j)           = value_column
+             this%adsorb_to_labilep_vr(idx,j)       = value_column
+             this%desorb_to_solutionp_vr(idx,j)     = value_column
              end associate
           end do
        end do
