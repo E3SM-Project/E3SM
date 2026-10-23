@@ -17,17 +17,18 @@ void Functions<S,D>::compute_tms(
   const view_2d<const Scalar>& z_mid,
   const view_1d<const Scalar>& sgh,
   const view_1d<const Scalar>& landfrac,
+  const Scalar&                obstacle_height_factor,
+  const Scalar&                obstacle_height_min,
+  const Scalar&                roughness_length_factor,
+  const Scalar&                roughness_length_max,
+  const Scalar&                wspd_squared_min,
+  const Scalar&                drag_scaling_factor,
   const view_1d<Scalar>&       ksrf,
   const view_2d<Scalar>&       tau_tms)
 {
   using C  = physics::Constants<Scalar>;
 
-  // Define some constants used
-  const Scalar horomin = 1;                // Minimum value of subgrid orographic height for mountain stress [ m ]
-  const Scalar z0max   = 100;              // Maximum value of z_0 for orography [ m ]
-  const Scalar dv2min  = 0.01;             // Minimum shear squared [ m2/s2 ]
-  const Scalar orocnst = C::orocnst;       // Converts from standard deviation to height [ no unit ]
-  const Scalar z0fac   = C::z0fac;         // Factor determining z_0 from orographic standard deviation [ no unit ]
+  // Physical constants used below
   const Scalar karman  = C::Karman;        // von Karman constant
   const Scalar gravit  = C::gravit.value;  // Acceleration due to gravity
   const Scalar rair    = C::Rair.value;    // Gas constant for dry air
@@ -43,17 +44,17 @@ void Functions<S,D>::compute_tms(
     const auto exner_i  = ekat::subview(exner, i);
     const auto z_mid_i  = ekat::subview(z_mid, i);
 
-    // Determine subgrid orgraphic height (mean to peak)
-    const auto horo = orocnst*sgh(i);
+    // Determine subgrid orgraphic height (mean to peak / characteristic obstacle height)
+    const auto obstacle_height = obstacle_height_factor*sgh(i);
 
-    if (horo < horomin) {
-      // No mountain stress if horo is too small
+    if (obstacle_height < obstacle_height_min) {
+      // No mountain stress if obstacle_height is too small
       ksrf(i)       = 0;
       tau_tms(i, 0) = 0;
       tau_tms(i, 1) = 0;
     } else {
-      // Determine z0m for orography
-      const auto z0oro = ekat::impl::min(z0fac*horo, z0max);
+      // Determine z0m for orography (effective roughness length)
+      const auto z0oro = ekat::impl::min(roughness_length_factor*obstacle_height, roughness_length_max);
 
       // Calculate neutral drag coefficient
       const auto tmp = karman/std::log((z_mid_i(nlevs-1) + z0oro )/z0oro);
@@ -64,7 +65,7 @@ void Functions<S,D>::compute_tms(
       const auto kt = nlevs-2;
       const auto tmp_u = u_wind_i(kt) - u_wind_i(kb);
       const auto tmp_v = v_wind_i(kt) - v_wind_i(kb);
-      const auto dv2 = ekat::impl::max(tmp_u*tmp_u + tmp_v*tmp_v, dv2min);
+      const auto dv2 = ekat::impl::max(tmp_u*tmp_u + tmp_v*tmp_v, wspd_squared_min);
 
       const auto ri  = 2*gravit*(t_mid_i(kt)*exner_i(kt) - t_mid_i(kb)*exner_i(kb))*(z_mid_i(kt) - z_mid_i(kb))/
                       ((t_mid_i(kt)*exner_i(kt) + t_mid_i(kb)*exner_i(kb))*dv2);
@@ -80,7 +81,9 @@ void Functions<S,D>::compute_tms(
       const auto rho = p_mid_i(nlevs-1)/(rair*t_mid_i(nlevs-1));
       const auto vmag = std::sqrt(u_wind_i(nlevs-1)*u_wind_i(nlevs-1) +
                                   v_wind_i(nlevs-1)*v_wind_i(nlevs-1));
-      ksrf(i)       = rho*cd*vmag*landfrac(i);
+      // drag_scaling_factor is a tunable knob to scale back the strength of TMS.
+      // tau_tms is derived from ksrf below, so it is scaled consistently.
+      ksrf(i)       = drag_scaling_factor*rho*cd*vmag*landfrac(i);
       tau_tms(i, 0) = -ksrf(i)*u_wind_i(nlevs-1);
       tau_tms(i, 1) = -ksrf(i)*v_wind_i(nlevs-1);
     }

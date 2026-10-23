@@ -720,7 +720,14 @@ be lost if SCREAM_HACK_XML is not enabled.
     </cosp>
 
     <!-- Turbulent Mountain Stress -->
-    <tms inherit="atm_proc_base"/>
+    <tms inherit="atm_proc_base">
+      <obstacle_height_factor  type="real" doc="Factor to convert SGH to characteristic obstacle height">1.0</obstacle_height_factor>
+      <obstacle_height_min     type="real" doc="Minimum characteristic obstacle height">1.0</obstacle_height_min>
+      <roughness_length_factor type="real" doc="Factor to convert obstacle height to eff roughness length">0.075</roughness_length_factor>
+      <roughness_length_max    type="real" doc="Maximum effective roughness length">100.0</roughness_length_max>
+      <wspd_squared_min        type="real" doc="Minimum lowest level wind speed squared [m2/s2]">0.01</wspd_squared_min>
+      <drag_scaling_factor     type="real" doc="Scaling factor for TMS drag coefficient and stress">1.0</drag_scaling_factor>
+    </tms>
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>

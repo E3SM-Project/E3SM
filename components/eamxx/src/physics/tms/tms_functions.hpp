@@ -38,6 +38,20 @@ struct Functions
   using view_3d = typename KT::template view_3d<S>;
 
   //
+  // --------- Constants ---------
+  //
+
+  // Default values for the TMS tuning parameters.
+  struct Defaults {
+    static constexpr Scalar obstacle_height_factor  = 1.0;   // Factor to convert SGH to characteristic obstacle height [ no unit ]
+    static constexpr Scalar obstacle_height_min     = 1.0;   // Minimum characteristic obstacle height [ m ]
+    static constexpr Scalar roughness_length_factor = 0.075; // Factor to convert obstacle height to eff roughness length [ no unit ]
+    static constexpr Scalar roughness_length_max    = 100.0; // Maximum effective roughness length [ m ]
+    static constexpr Scalar wspd_squared_min        = 0.01;  // Minimum lowest level wind speed squared [ m2/s2 ]
+    static constexpr Scalar drag_scaling_factor     = 1.0;   // Scaling factor for TMS drag coefficient and stress [ no unit ]
+  };
+
+  //
   // --------- Functions ---------
   //
   static void compute_tms(
@@ -50,6 +64,12 @@ struct Functions
     const view_2d<const Scalar>& z_mid,
     const view_1d<const Scalar>& sgh,
     const view_1d<const Scalar>& landfrac,
+    const Scalar&                obstacle_height_factor,
+    const Scalar&                obstacle_height_min,
+    const Scalar&                roughness_length_factor,
+    const Scalar&                roughness_length_max,
+    const Scalar&                wspd_squared_min,
+    const Scalar&                drag_scaling_factor,
     const view_1d<Scalar>&       ksrf,
     const view_2d<Scalar>&       tau_tms);
 
