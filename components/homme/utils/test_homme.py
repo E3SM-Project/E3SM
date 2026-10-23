@@ -72,6 +72,12 @@ def _parse_args(argv):
         help="If true, generate baselines, otherwise compare against existing ones"
     )
     parser.add_argument(
+        "--no-baseline",
+        action="store_true",
+        help="Do not compare against baselines (e.g., for --bfb, where we only care about f90 vs cxx). "
+             "Cannot be used with --generate.",
+    )
+    parser.add_argument(
         "--baseline-root",
         default=None,
         help="Baseline root directory.",
@@ -149,6 +155,9 @@ def ensure_paths(args,machine):
     """
     Ensures the root, work, and baseline dirs exist 
     """
+    expect(not (args.no_baseline and args.generate),
+           "ERROR: --no-baseline and --generate cannot be used together")
+
     root_dir = pathlib.Path(args.root_dir).resolve()
 
     expect(root_dir.is_dir() and root_dir.name == "homme",
@@ -158,6 +167,9 @@ def ensure_paths(args,machine):
         work_dir = pathlib.Path(args.work_dir).resolve()
     else:
         work_dir = root_dir / "ctest-build"
+
+    if args.no_baseline:
+        return root_dir, work_dir, None
 
     # We may need some mach defaults here
     if args.compiler:
@@ -214,7 +226,10 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     cmd += f" -D BUILD_WORK_DIR={work_dir}"
     cmd += f" -D MACHINE_FILE={machine_file}"
     cmd += f" -D BFB_TESTING={_bool_str(args.bfb)}"
-    cmd += f" -D BASELINE_DIR={baseline_dir}"
+    if args.no_baseline:
+        cmd += " -D NO_BASELINE=TRUE"
+    else:
+        cmd += f" -D BASELINE_DIR={baseline_dir}"
     cmd += f" -D DEBUG={_bool_str(args.debug)}"
     cmd += f" -D GENERATE={args.generate}"
     cmd += f" -D BUILD_PARALLEL_LEVEL={make_j}"
