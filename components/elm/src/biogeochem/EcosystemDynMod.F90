@@ -160,8 +160,15 @@ contains
     type(canopystate_type)   , intent(inout) :: canopystate_vars
 
     real(r8) :: dt
+    logical  :: hrv_zero   ! harvest fluxes zeroed in CNZero are all +0
     !-----------------------------------------------------------------------
     dt = dtime_mod;
+
+    ! The harvest fluxes are written only by CNHarvest (do_harvest or IAC) or
+    ! FATES. Without those, CNZero leaves them at +0 (zero_harvest is then
+    ! zero_unused), so the summaries can skip reading them. Keep this in sync
+    ! with zero_harvest in EcosystemDynNoLeaching1 and the CNHarvest call.
+    hrv_zero = .not. (get_do_harvest() .or. iac_present .or. use_fates)
 
     ! only do if ed is off
     call t_startf('PhosphorusWeathering')
@@ -230,7 +237,8 @@ contains
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
        call t_stopf('CNPsum-veg_cf_ch4')
        call t_startf('CNPsum-veg_cf')
-       call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
+       call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf, &
+            hrv_zero=hrv_zero)
        call t_stopf('CNPsum-veg_cf')
        if ( use_c13 ) then
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
@@ -252,13 +260,15 @@ contains
           call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc)
        end if
        call t_startf('CNPsum-veg_nf')
-       call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
+       call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf, &
+            hrv_zero=hrv_zero)
        call t_stopf('CNPsum-veg_nf')
        call t_startf('CNPsum-veg_ns')
        call veg_ns_Summary(veg_ns, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
        call t_stopf('CNPsum-veg_ns')
        call t_startf('CNPsum-veg_pf')
-       call veg_pf_Summary(veg_pf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+       call veg_pf_Summary(veg_pf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf, &
+            hrv_zero=hrv_zero)
        call t_stopf('CNPsum-veg_pf')
        call t_startf('CNPsum-veg_ps')
        call veg_ps_Summary(veg_ps, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
@@ -392,6 +402,7 @@ contains
     ! rewritten every step by SoilLittVertTransp for the levels and pools it
     ! uses, and the rest stay zero. Isotope fluxes are always zeroed.
     zero_unused  = get_subgrid_weights_updated() .or. is_first_step() .or. is_first_restart_step()
+    ! (EcosystemDynLeaching relies on this condition to skip the harvest fluxes)
     zero_harvest = zero_unused .or. get_do_harvest() .or. iac_present .or. use_fates
     zero_fan     = zero_unused .or. use_fan .or. fan_to_bgc_veg .or. fan_to_bgc_crop
     zero_erosion = zero_unused .or. ero_ccycle
