@@ -127,6 +127,52 @@ struct Functions
                           const H& fq);
 
   // ---------------------------------------------------------------------------------------
+  // MODIS simulator (modis_simulator.F90), tau/CTP joint histogram only
+
+  // two_stream_reflectance and two_stream (beam = 2) for one layer
+  KOKKOS_INLINE_FUNCTION
+  static Scalar two_stream_reflectance(const Scalar tau, const Scalar g, const Scalar w0);
+  KOKKOS_INLINE_FUNCTION
+  static void two_stream(const Scalar tau, const Scalar g, const Scalar w0, Scalar& ref,
+                         Scalar& tra);
+
+  // compute_toa_reflectace (with adding_doubling); tau, g, w0 by level
+  template <typename VT, typename VG, typename VW>
+  KOKKOS_INLINE_FUNCTION
+  static Scalar compute_toa_reflectance(const int nlev, const VT& tau, const VG& g, const VW& w0);
+
+  // cloud_top_pressure, as called from modis_subcolumn; phalf by interface
+  template <typename VT, typename VPH>
+  KOKKOS_INLINE_FUNCTION
+  static Scalar modis_cloud_top_pressure(const int nlev, const VT& tau, const VPH& phalf,
+                                         const Scalar tau_limit);
+
+  // weight_by_extinction
+  template <typename VT, typename VF>
+  KOKKOS_INLINE_FUNCTION
+  static Scalar modis_weight_by_extinction(const int nlev, const VT& tau, const VF& f,
+                                           const Scalar tau_limit);
+
+  // Size retrieval of modis_subcolumn (interpolate_to_min over the trial radii), in m
+  KOKKOS_INLINE_FUNCTION
+  static Scalar modis_retrieve_size(const int phase, const Scalar tau, const Scalar obs_refl);
+
+  // modis_subcolumn for one subcolumn of a sunlit point; profiles by level, phalf by
+  // interface, isccp_ctp is the ISCCP boxptop (Pa) of this subcolumn
+  template <typename VPH, typename VT, typename VF, typename VG, typename VW>
+  KOKKOS_INLINE_FUNCTION
+  static void modis_subcolumn(const int nlev, const VPH& phalf, const VT& tau,
+                              const VF& liq_frac, const VG& g, const VW& w0,
+                              const Scalar isccp_ctp, int& phase, Scalar& ctp, Scalar& tau_ret,
+                              Scalar& size_ret);
+
+  // modis_column for one sunlit point; inputs by subcolumn, fq is (ntau, npres)
+  template <typename VPh, typename VC, typename VT, typename VS, typename H>
+  KOKKOS_INLINE_FUNCTION
+  static void modis_column(const int ncol, const VPh& phase, const VC& ctp, const VT& tau,
+                           const VS& size, const H& fq);
+
+  // ---------------------------------------------------------------------------------------
   // Statistics (cosp_stats.F90)
 
   // hist2D: joint histogram of npts samples; bin1/bin2 hold nbin1+1/nbin2+1 edges, and
@@ -146,5 +192,6 @@ struct Functions
 #include "physics/cosp/impl/cosp_stats_impl.hpp"
 #include "physics/cosp/impl/cosp_misr_impl.hpp"
 #include "physics/cosp/impl/cosp_isccp_impl.hpp"
+#include "physics/cosp/impl/cosp_modis_impl.hpp"
 
 #endif // SCREAM_COSP_CXX_FUNCTIONS_HPP
