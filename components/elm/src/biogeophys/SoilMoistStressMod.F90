@@ -335,6 +335,9 @@ contains
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8) :: smp_node, s_node  !temporary variables
     real(r8) :: smp_node_lf       !temporary variable
+    real(r8) :: smp_node_c        !column soil suction for rresis, before the patch limit
+    real(r8) :: smp_node_lf_c     !column soil suction for btran2, before the patch limit
+    integer :: c_last             !column whose suctions are in smp_node_c and smp_node_lf_c
     integer :: p, f, j, c, l      !indices
     !------------------------------------------------------------------------------
 
@@ -361,6 +364,7 @@ contains
          h2osoi_liqvol => col_ws%h2osoi_liqvol   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture
          )
       do j = 1,nlevgrnd
+         c_last = -1
          do f = 1, fn
             p = filterp(f)
             c = veg_pp%column(p)
@@ -371,12 +375,24 @@ contains
             if (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz + tc_stress) then
                     rootr(p,j) = 0._r8
             else
-               s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
-               !smp_node = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
-               !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
-               smp_node = -sucsat(c,j)*s_node**( -bsw(c,j) )
+               ! The two suctions depend only on the column and level, so they are
+               ! computed once for the filter patches of the same column (the same
+               ! expressions on the same inputs, so the same values).
+               if (c /= c_last) then
+                  s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
+                  !smp_node = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
+                  !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
+                  smp_node_c = -sucsat(c,j)*s_node**( -bsw(c,j) )
 
-               smp_node = max(smpsc(veg_pp%itype(p)), smp_node)
+                  !smp_node_lf = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
+                  s_node = h2osoi_vol(c,j)/watsat(c,j)
+
+                  !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node_lf)
+                  smp_node_lf_c = -sucsat(c,j)*s_node**( -bsw(c,j) )
+                  c_last = c
+               end if
+
+               smp_node = max(smpsc(veg_pp%itype(p)), smp_node_c)
 
                rresis(p,j) = min( (eff_porosity(c,j)/watsat(c,j))* &
                     (smp_node - smpsc(veg_pp%itype(p))) / (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
@@ -391,14 +407,8 @@ contains
                  btran(p)    = btran(p) + max(rootr(p,j),0._r8)
                endif
 
-               !smp_node_lf = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
-               s_node = h2osoi_vol(c,j)/watsat(c,j)
-
-               !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node_lf)
-               smp_node_lf = -sucsat(c,j)*s_node**( -bsw(c,j) )
-
                !smp_node_lf =  -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j))
-               smp_node_lf = max(smpsc(veg_pp%itype(p)), smp_node_lf)
+               smp_node_lf = max(smpsc(veg_pp%itype(p)), smp_node_lf_c)
                btran2(p)   = btran2(p) +rootfr(p,j)*min((smp_node_lf - smpsc(veg_pp%itype(p))) / &
                     (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
             endif
@@ -453,15 +463,20 @@ contains
     !------------------------------------------------------------------------------
 
     !define normalized rootfraction for unfrozen soil
-    rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd) = 0._r8
+    ! rootfr_unf is only read when perchroot or perchroot_alt is set, so it is only
+    ! filled and normalized then; otherwise it is left undefined, and any new read
+    ! of it outside that case needs the zeroing below restored.
+    if (perchroot .or. perchroot_alt) then
+       rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd) = 0._r8
 
-    call normalize_unfrozen_rootfr(bounds,  &
-         ubj = nlevgrnd,                    &
-         fn = fn,                           &
-         filterp = filterp,                 &
-         canopystate_vars=canopystate_vars, &
-         soilstate_vars=soilstate_vars,     &
-         rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
+       call normalize_unfrozen_rootfr(bounds,  &
+            ubj = nlevgrnd,                    &
+            fn = fn,                           &
+            filterp = filterp,                 &
+            canopystate_vars=canopystate_vars, &
+            soilstate_vars=soilstate_vars,     &
+            rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
+    end if
 
     !suppose h2osoi_liq, eff_porosity are already computed somewhere else
 
