@@ -228,6 +228,8 @@ contains
     integer  :: ncoef                                ! number of distinct tridiagonal matrices
     integer  :: icoef(ndecomp_pools)                 ! matrix used by each pool
     integer  :: s_rep                                ! pool used to build the matrix when one serves all pools
+    integer  :: fb, fe                               ! first and last filter position of a block of columns
+    integer, parameter :: nblk = 128                 ! columns per block in the tridiagonal solves
     ! For each distinct matrix: sub-diagonal (a), super-diagonal (c), forward-elimination
     ! factors (bet, gam) and the factor of the concentration in the right-hand side (r)
     real(r8), allocatable :: a_coef(:,:,:), c_coef(:,:,:), bet_coef(:,:,:), gam_coef(:,:,:), r_coef(:,:,:)
@@ -429,61 +431,75 @@ contains
       endif
 
       !------ loop over litter/som types
-      do i_type = 1, ntype
+      if (use_vertsoilc) then
 
-         if (use_vertsoilc) then
+         ! Columns are independent, so solve every tracer type and pool for one
+         ! block of filter columns at a time. The block's concentrations, sources,
+         ! tendencies and matrix factors then stay in cache from the forward
+         ! elimination to the back substitution. Each column's arithmetic and the
+         ! order of its operations are unchanged.
+         do fb = 1, num_soilc, nblk
+            fe = min(fb + nblk - 1, num_soilc)
 
-            do s = 1, ndecomp_pools
-               if ( is_cwd(s) ) then
-                  ! for CWD pools, just add
-                  do j = 1,nlevdecomp
-                     do fc = 1, num_soilc
+            do i_type = 1, ntype
+
+               do s = 1, ndecomp_pools
+                  if ( is_cwd(s) ) then
+                     ! for CWD pools, just add
+                     do j = 1,nlevdecomp
+                        do fc = fb, fe
+                           c = filter_soilc (fc)
+                           transport_ptr_list(i_type)%conc_ptr(c,j,s) = transport_ptr_list(i_type)%conc_ptr(c,j,s) &
+                                                                        + transport_ptr_list(i_type)%src_ptr(c,j,s)
+                        end do
+                     end do
+                     cycle
+                  end if
+
+                  l = icoef(s)
+
+                  ! Build the right-hand side, store the initial concentration and
+                  ! source terms for the tendency calculation, and eliminate forward.
+                  ! The top boundary row has r = 0 and b = 1.
+                  do fc = fb, fe
+                     conc_trcr(fc,0) = 0._r8 / bet_coef(fc,0,l)
+                  end do
+                  do j = 1, nlevdecomp
+                     do fc = fb, fe
                         c = filter_soilc (fc)
-                        transport_ptr_list(i_type)%conc_ptr(c,j,s) = transport_ptr_list(i_type)%conc_ptr(c,j,s) &
-                                                                     + transport_ptr_list(i_type)%src_ptr(c,j,s)
+                        conc_old = transport_ptr_list(i_type)%conc_ptr(c,j,s)
+                        r_tri = transport_ptr_list(i_type)%src_ptr(c,j,s) * dzsoi_decomp(j) /dtime_mod + r_coef(fc,j,l) * conc_old
+                        ! subtract initial concentration and source terms for tendency calculation
+                        transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) = 0._r8 - (conc_old + transport_ptr_list(i_type)%src_ptr(c,j,s))
+                        conc_trcr(fc,j) = (r_tri - a_coef(fc,j,l)*conc_trcr(fc,j-1)) / bet_coef(fc,j,l)
                      end do
                   end do
-                  cycle
-               end if
-
-               l = icoef(s)
-
-               ! Build the right-hand side, store the initial concentration and
-               ! source terms for the tendency calculation, and eliminate forward.
-               ! The top boundary row has r = 0 and b = 1.
-               do fc = 1, num_soilc
-                  conc_trcr(fc,0) = 0._r8 / bet_coef(fc,0,l)
-               end do
-               do j = 1, nlevdecomp
-                  do fc = 1, num_soilc
-                     c = filter_soilc (fc)
-                     conc_old = transport_ptr_list(i_type)%conc_ptr(c,j,s)
-                     r_tri = transport_ptr_list(i_type)%src_ptr(c,j,s) * dzsoi_decomp(j) /dtime_mod + r_coef(fc,j,l) * conc_old
-                     ! subtract initial concentration and source terms for tendency calculation
-                     transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) = 0._r8 - (conc_old + transport_ptr_list(i_type)%src_ptr(c,j,s))
-                     conc_trcr(fc,j) = (r_tri - a_coef(fc,j,l)*conc_trcr(fc,j-1)) / bet_coef(fc,j,l)
+                  ! The bottom boundary row has r = 0.
+                  do fc = fb, fe
+                     conc_trcr(fc,nlevdecomp+1) = (0._r8 - a_coef(fc,nlevdecomp+1,l)*conc_trcr(fc,nlevdecomp)) &
+                                                  / bet_coef(fc,nlevdecomp+1,l)
                   end do
-               end do
-               ! The bottom boundary row has r = 0.
-               do fc = 1, num_soilc
-                  conc_trcr(fc,nlevdecomp+1) = (0._r8 - a_coef(fc,nlevdecomp+1,l)*conc_trcr(fc,nlevdecomp)) &
-                                               / bet_coef(fc,nlevdecomp+1,l)
-               end do
 
-               ! Back substitution. Level j is final once it is reached, so add the
-               ! post-transport concentration to the tendency term and store it.
-               do j = nlevdecomp,1,-1
-                  do fc = 1, num_soilc
-                     c = filter_soilc (fc)
-                     conc_trcr(fc,j) = conc_trcr(fc,j) - gam_coef(fc,j+1,l) * conc_trcr(fc,j+1)
-                     transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) = (transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) &
-                                                                        + conc_trcr(fc,j))/dtime_mod
-                     transport_ptr_list(i_type)%conc_ptr(c,j,s) = conc_trcr(fc,j)
+                  ! Back substitution. Level j is final once it is reached, so add the
+                  ! post-transport concentration to the tendency term and store it.
+                  do j = nlevdecomp,1,-1
+                     do fc = fb, fe
+                        c = filter_soilc (fc)
+                        conc_trcr(fc,j) = conc_trcr(fc,j) - gam_coef(fc,j+1,l) * conc_trcr(fc,j+1)
+                        transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) = (transport_ptr_list(i_type)%trcr_tend_ptr(c,j,s) &
+                                                                           + conc_trcr(fc,j))/dtime_mod
+                        transport_ptr_list(i_type)%conc_ptr(c,j,s) = conc_trcr(fc,j)
+                     end do
                   end do
-               end do
-            end do ! s (pool loop)
+               end do ! s (pool loop)
 
-         else !use_vertsoilc?
+            end do  ! i_type
+
+         end do  ! fb
+
+      else !use_vertsoilc?
+
+         do i_type = 1, ntype
 
             !! for single level case, no transport; just update the fluxes calculated in the StateUpdate1 subroutines
             do l = 1, ndecomp_pools
@@ -497,9 +513,9 @@ contains
                end do
             end do
 
-         endif
+         end do  ! i_type
 
-      end do  ! i_type
+      endif
 
       if (use_vertsoilc) then
          deallocate(a_coef, c_coef, bet_coef, gam_coef, r_coef)
