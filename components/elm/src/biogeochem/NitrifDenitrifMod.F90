@@ -24,6 +24,7 @@ module NitrifDenitrifMod
   !
   public :: nitrif_denitrif
   public :: readNitrifDenitrifParams
+  public :: NitrifDenitrifInit
   !
   type, public :: NitrifDenitrifParamsType
    real(r8), pointer :: k_nitr_max             => null()   !  maximum nitrification rate constant (1/s)
@@ -40,6 +41,13 @@ module NitrifDenitrifMod
 
   logical, public :: no_frozen_nitrif_denitrif = .false.  ! stop nitrification and denitrification in frozen soils
   !$acc declare create(no_frozen_nitrif_denitrif)
+
+  ! Soil-structure factor of the gas diffusivity at field capacity. It depends only on
+  ! watsat, watfc, bsw, cellorg and organic_max, which do not change during a run, so it
+  ! is computed the first time a column is in the soil filter and reused afterwards.
+  real(r8), allocatable :: diffus_soil_fac(:,:)     ! (begc:endc,1:nlevdecomp)
+  logical , allocatable :: diffus_soil_fac_set(:)   ! (begc:endc)
+  !$acc declare create(diffus_soil_fac, diffus_soil_fac_set)
   !-----------------------------------------------------------------------
 
 contains
@@ -109,6 +117,24 @@ contains
   end subroutine readNitrifDenitrifParams
 
   !-----------------------------------------------------------------------
+  subroutine NitrifDenitrifInit(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Allocate the saved soil-structure diffusivity factor (proc bounds)
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    !-----------------------------------------------------------------------
+    if (use_lch4) then
+       allocate(diffus_soil_fac(bounds%begc:bounds%endc,1:nlevdecomp))
+       allocate(diffus_soil_fac_set(bounds%begc:bounds%endc))
+       diffus_soil_fac(:,:) = spval
+       diffus_soil_fac_set(:) = .false.
+       !$acc update device(diffus_soil_fac, diffus_soil_fac_set)
+    end if
+  end subroutine NitrifDenitrifInit
+
+  !-----------------------------------------------------------------------
   subroutine nitrif_denitrif(bounds, num_soilc, filter_soilc, &
        soilstate_vars, ch4_vars)
     !
@@ -136,6 +162,8 @@ contains
     real(r8) :: mu, sigma
     real(r8) :: t
     real(r8) :: pH(num_soilc)
+    real(r8) :: k_nitr_ph            ! pH factor of nitrification, the same for all points
+    logical  :: k_nitr_ph_set        ! k_nitr_ph has been computed in this call
     !debug-- put these type structure for outing to hist files
     real(r8) :: co2diff_con(2)                      ! diffusion constants for CO2
     real(r8) :: eps
@@ -231,6 +259,30 @@ contains
       co2diff_con(1) =   0.1325_r8
       co2diff_con(2) =   0.0009_r8
 
+      if (use_lch4) then
+         ! Soil-structure factor of the diffusivity, once per column (see diffus_soil_fac)
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if (.not. diffus_soil_fac_set(c)) then
+               !DIR$ NOVECTOR
+               do j = 1, nlevdecomp
+                  f_a = 1._r8 - watfc(c,j) / watsat(c,j)
+                  eps =  watsat(c,j)-watfc(c,j) ! Air-filled fraction of total soil volume
+                  if (organic_max > 0._r8) then
+                     om_frac = min(cellorg(c,j)/organic_max, 1._r8)
+                     ! Use first power, not square as in iniTimeConst
+                  else
+                     om_frac = 1._r8
+                  end if
+                  diffus_soil_fac(c,j) = om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2 + &
+                       (1._r8-om_frac) * eps**2 * f_a**(3._r8 / bsw(c,j))
+               end do
+               diffus_soil_fac_set(c) = .true.
+            end if
+         end do
+      end if
+
+      k_nitr_ph_set = .false.
       do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -238,21 +290,13 @@ contains
             !---------------- calculate soil anoxia state
             ! calculate gas diffusivity of soil at field capacity here
             ! use expression from methane code, but neglect OM for now
-            f_a = 1._r8 - watfc(c,j) / watsat(c,j)
-            eps =  watsat(c,j)-watfc(c,j) ! Air-filled fraction of total soil volume
+            ! (the soil-structure factor is in diffus_soil_fac, computed above)
 
             ! use diffusivity calculation including peat
             if (use_lch4) then
 
-               if (organic_max > 0._r8) then
-                  om_frac = min(cellorg(c,j)/organic_max, 1._r8)
-                  ! Use first power, not square as in iniTimeConst
-               else
-                  om_frac = 1._r8
-               end if
                diffus (c,j) = (d_con_g(2,1) + d_con_g(2,2)*t_soisno(c,j)) * 1.e-4_r8 * &
-                    (om_frac * f_a**(10._r8/3._r8) / watsat(c,j)**2 + &
-                    (1._r8-om_frac) * eps**2 * f_a**(3._r8 / bsw(c,j)) )
+                    diffus_soil_fac(c,j)
 
                ! calculate anoxic fraction of soils
                ! use rijtema and kroess model after Riley et al., 2000
@@ -305,7 +349,12 @@ contains
             k_nitr_t_vr(c,j) = min(t_scalar(c,j), 1._r8)
 
             ! ph function from Parton et al., (2001, 1996)
-            k_nitr_ph_vr(c,j) = 0.56 + atan(rpi * 0.45 * (-5.+ pH(fc)))/rpi
+            ! pH(:) has the same value everywhere, so compute the factor once per call
+            if (.not. k_nitr_ph_set) then
+               k_nitr_ph = 0.56 + atan(rpi * 0.45 * (-5.+ pH(fc)))/rpi
+               k_nitr_ph_set = .true.
+            end if
+            k_nitr_ph_vr(c,j) = k_nitr_ph
 
             ! moisture function-- assume the same moisture function as limits heterotrophic respiration
             ! Parton et al. base their nitrification- soil moisture rate constants based on heterotrophic rates-- can we do the same?
