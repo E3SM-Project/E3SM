@@ -23,6 +23,7 @@ Functions<S,D>::Workspace::Workspace(const int ncol, const int nsubcol, const in
  , liqfrac    ("cosp_ws_liqfrac",     ncol, nsubcol, nlev)
  , g          ("cosp_ws_g",           ncol, nsubcol, nlev)
  , w0         ("cosp_ws_w0",          ncol, nsubcol, nlev)
+ , frac_ls    ("cosp_ws_frac_ls",     ncol, nlev)
  , threshold  ("cosp_ws_threshold",   ncol, nsubcol)
  , boxtau     ("cosp_ws_boxtau",      ncol, nsubcol)
  , boxptop    ("cosp_ws_boxptop",     ncol, nsubcol)
@@ -66,6 +67,7 @@ void Functions<S,D>::cosp_main(
   // One declarator per line: the views have different types, and clang rejects a
   // multi-declarator auto that deduces different types
   const auto frac_out  = ws.frac_out;
+  const auto frac_ls   = ws.frac_ls;
   const auto threshold = ws.threshold;
   const auto tau     = ws.tau;
   const auto dem     = ws.dem;
@@ -104,6 +106,15 @@ void Functions<S,D>::cosp_main(
       auto conv = [] (const int) { return S(0); };
       scops(nlev, nsubcol, seed, seed_last, subview(cldfrac, j, ALL), conv, overlap,
             subview(frac_out, j, ALL, ALL), subview(threshold, j, ALL));
+
+      // Fraction of stratiform subcolumns at each level, used to scale the condensate
+      for (int k = 0; k < nlev; ++k) {
+        S n_ls = 0;
+        for (int i = 0; i < nsubcol; ++i) {
+          if (frac_out(j,i,k) == C::I_LSC) n_ls = n_ls + 1;
+        }
+        frac_ls(j,k) = n_ls/nsubcol;
+      }
     });
   }
 
@@ -136,14 +147,9 @@ void Functions<S,D>::cosp_main(
       lsice      = ls ? qi(j,k) : S(0);
       lsliq_size = ls ? S(1e-6)*reff_qc(j,k) : S(0);
       lsice_size = ls ? S(1e-6)*reff_qi(j,k) : S(0);
-      S frac_ls = 0;
-      for (int n = 0; n < nsubcol; ++n) {
-        if (frac_out(j,n,k) == C::I_LSC) frac_ls = frac_ls + 1;
-      }
-      frac_ls = frac_ls/nsubcol;
-      if (frac_ls != 0) {
-        lsliq = lsliq/frac_ls;
-        lsice = lsice/frac_ls;
+      if (frac_ls(j,k) != 0) {
+        lsliq = lsliq/frac_ls(j,k);
+        lsice = lsice/frac_ls(j,k);
       }
     }
     const S cloud_water = simulator_optics(fo, 0, lsliq);
