@@ -3,6 +3,7 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/util/eamxx_timing.hpp"
+#include "share/util/eamxx_model_name.hpp"
 #include "share/core/eamxx_config.hpp"
 
 #include <ekat_comm.hpp>
@@ -126,6 +127,18 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     }
   }
 
+  // Get the case name early, as we need it for history restart file search
+  // For unit tests that don't provide provenance, use a default case name
+  if (m_params.isSublist("provenance")) {
+    auto& prov_pl = m_params.sublist("provenance");
+    m_casename = prov_pl.get<std::string>("caseid","UNSET");
+//    EKAT_REQUIRE_MSG(m_casename!="UNSET",
+//        "Error! The provenance sublist is missing 'caseid' parameter");
+  } else {
+    // Default for unit tests
+    m_casename = "UNSET";
+  }
+
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
   if (m_save_grid_data) {
@@ -161,16 +174,25 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // for average output we also need to restore the accumulation state of the output fields
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
-  //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
+  //       stream_id, so allow to specify a different stream_id for the restart file.
   bool branch_run = m_params.sublist("restart").get("branch_run",false);
   if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
-    // Allow to skip history restart, or to specify a filename_prefix for the restart file
-    // that is different from the filename_prefix of the current output.
+    // Allow to skip history restart, or to specify a stream_id for the restart file
+    // that is different from the stream_id of the current output.
     auto& restart_pl = m_params.sublist("restart");
-    auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_filename_prefix);
+    auto hist_restart_stream_id = restart_pl.get("stream_id",m_stream_id);
+
+    // Build the full prefix for history restart search
+    // Skip case name if it's "UNSET" (unit tests)
+    std::string hist_restart_prefix;
+    if (m_casename != "UNSET") {
+      hist_restart_prefix = m_casename + "." + get_eamxx_model_name();
+    } else {
+      hist_restart_prefix = get_eamxx_model_name();
+    }
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
-    auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,
+    auto rhist_file = find_filename_in_rpointer(hist_restart_prefix,false,m_io_comm,m_run_t0,
                                                 skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
 
     if (rhist_file=="") {
@@ -340,7 +362,7 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
-  m_atm_logger->debug("[OutputManager::init_timestep] filename_prefix: " + m_filename_prefix + "\n");
+  m_atm_logger->debug("[OutputManager::init_timestep] stream_id: " + m_stream_id + "\n");
 
   for (auto s : m_output_streams) {
     s->init_timestep(start_of_step);
@@ -365,7 +387,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
       "Try to increase 'frequency' and/or 'frequency_units' in your output yaml file.\n");
 
-  m_atm_logger->debug("[OutputManager::run] filename_prefix: " + m_filename_prefix + "\n");
+  m_atm_logger->debug("[OutputManager::run] stream_id: " + m_stream_id + "\n");
 
   using namespace scorpio;
 
@@ -593,7 +615,7 @@ void OutputManager::finalize()
   m_globals.clear();
   m_io_comm = {};
   m_params  = {};
-  m_filename_prefix = {};
+  m_stream_id = {};
   m_time_bnds = {};
   m_avg_type = {};
   m_output_control = {};
@@ -618,12 +640,32 @@ std::string OutputManager::
 compute_filename (const IOFileSpecs& file_specs,
                   const util::TimeStamp& timestamp) const
 {
-  auto filename = m_filename_prefix + file_specs.suffix();
+  std::string filename;
+
+  // Start with model name, optionally prefixed with case name
+  // Skip case name if it's "UNSET" (common in unit tests)
+  if (m_casename != "UNSET") {
+    filename = m_casename + "." + get_eamxx_model_name();
+  } else {
+    filename = get_eamxx_model_name();
+  }
+
+  // Add file type suffix (.r, .h, or .rh)
+  filename += file_specs.suffix();
+
+  // For history and history-restart, add user's stream identifier
+  if (file_specs.ftype == FileType::ModelOutput ||
+      file_specs.ftype == FileType::HistoryRestart) {
+    // m_stream_id contains user's custom identifier from yaml
+    filename += "." + m_stream_id;
+  }
+  // Note: For ModelRestart, we skip the stream_id
+
   const auto& control = m_output_control;
 
-  // Always add avg type and frequency info
+  // Add output_spec: avg type and frequency info
   filename += "." + e2str(m_avg_type);
-  filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
+  filename += "." + control.frequency_units + "_x" + std::to_string(control.frequency);
 
   // For standalone EAMxx, we may have 2+ versions of the same test running with two
   // different choices of ranks. To avoid name clashing for the output files,
@@ -678,7 +720,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       fields_pl.sublist(gname).set("field_names",fnames);
       fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
     }
-    m_filename_prefix = m_params.get<std::string>("filename_prefix");
+    m_stream_id = m_params.get<std::string>("stream_id");
 
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("floating_point_precision","real");
@@ -707,7 +749,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
-    m_filename_prefix = m_params.get<std::string>("filename_prefix");
+    m_stream_id = m_params.get<std::string>("stream_id");
     m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
 
     // Allow user to ask for higher precision for normal model output,
@@ -720,9 +762,11 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
         "  - supported values: float, single, double, real\n");
   }
 
+  // Note: m_casename is already set in setup() before this is called
+
   // Output control
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
-      "Error! The output control YAML file for " + m_filename_prefix + " is missing the sublist 'output_control'");
+      "Error! The output control YAML file for " + m_stream_id + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
@@ -1044,7 +1088,7 @@ push_to_logger()
   };
 
   m_atm_logger->info("[EAMxx::output_manager] - New Output stream");
-  m_atm_logger->info("           Filename prefix: " + m_filename_prefix);
+  m_atm_logger->info("           Filename prefix: " + m_stream_id);
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());

@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_p3_${POSTFIX}
+stream_id: shoc_p3_${POSTFIX}
 averaging_type: instant
 field_names:
   - T_mid

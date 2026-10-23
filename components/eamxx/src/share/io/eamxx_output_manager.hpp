@@ -160,8 +160,11 @@ protected:
   ekat::Comm                     m_io_comm;
   ekat::ParameterList            m_params;
 
-  // The output filename root
-  std::string       m_filename_prefix;
+  // The case name from the simulation
+  std::string       m_casename;
+
+  // The user-provided stream identifier for output files
+  std::string       m_stream_id;
 
   std::vector<double> m_time_bnds;
 

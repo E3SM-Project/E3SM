@@ -34,7 +34,7 @@ include (CompareNCFiles)
 
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
-  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME EAMxx.eamxx.h.${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS shoc physics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
@@ -43,7 +43,7 @@ CompareNCFilesFamilyMpi (
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname shoc_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
+  set (fname EAMxx.eamxx.h.shoc_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
   set (tname shoc_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname}
@@ -59,7 +59,7 @@ endforeach()
 # components in all output NC files matches the content of corresponding components
 # of the vector quantities
 foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-  set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${RANK}.${RUN_T0}.nc)
+  set (nc_file EAMxx.eamxx.h.shoc_standalone_output.INSTANT.nsteps_x1.np${RANK}.${RUN_T0}.nc)
   add_test (NAME check_U_V_slices_np${RANK}
             COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
             -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,:,:)" "horiz_winds(:,:,2,:)=V(:,:,:)"
@@ -79,7 +79,7 @@ endforeach()
 if (SCREAM_ENABLE_BASELINE_TESTS)
   # Compare one of the output files with the baselines.
   # Note: one is enough, since we already check that np1 is BFB with npX
-  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
+  set (OUT_FILE EAMxx.eamxx.h.${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME})
 endif()
 
@@ -88,7 +88,7 @@ endif()
 ################################
 
 # These tests ensure that the compare-nc-files script doesn't always pass
-set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc)
+set (nc_file EAMxx.eamxx.h.shoc_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.${RUN_T0}.nc)
 
 # Legitimate diff
 add_test (NAME check_U_V_slices_fail_diff

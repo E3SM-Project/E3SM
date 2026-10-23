@@ -50,8 +50,8 @@ if (EAMXX_ENABLE_PYTHON)
     FIXTURES_SETUP cldfrac_py)
 
   # Compare output of py and cpp tests
-  set (SRC_FILE "cldfrac_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
-  set (TGT_FILE "cldfrac_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+  set (SRC_FILE "EAMxx.eamxx.h.cldfrac_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+  set (TGT_FILE "EAMxx.eamxx.h.cldfrac_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
   set (TEST_NAME cldfrac_standalone_cpp_vs_py)
   add_test (NAME ${TEST_NAME}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -77,8 +77,8 @@ if (EAMXX_ENABLE_PYTHON)
       FIXTURES_SETUP cldfrac_cupy)
 
     # Compare output of cupy and cpp tests
-    set (SRC_FILE "cldfrac_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
-    set (TGT_FILE "cldfrac_standalone_output_cupy.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+    set (SRC_FILE "EAMxx.eamxx.h.cldfrac_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+    set (TGT_FILE "EAMxx.eamxx.h.cldfrac_standalone_output_cupy.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
     set (TEST_NAME cldfrac_standalone_cpp_vs_cupy)
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -135,8 +135,8 @@ if (EAMXX_ENABLE_PYTHON)
 
     if (HAS_CLD_FRAC_NET_PY)
       # Compare output of py and cpp tests of cld_frac_net
-      set (SRC_FILE "cld_frac_net_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
-      set (TGT_FILE "cld_frac_net_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+      set (SRC_FILE "EAMxx.eamxx.h.cld_frac_net_standalone_output_cpp.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
+      set (TGT_FILE "EAMxx.eamxx.h.cld_frac_net_standalone_output_py.INSTANT.nsteps_x1.np1.${RUN_T0}.nc")
       set (TEST_NAME cld_frac_net_standalone_cpp_vs_py)
       add_test (NAME ${TEST_NAME}
         COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files

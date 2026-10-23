@@ -170,7 +170,7 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_diags"));
+  om_pl.set("stream_id",std::string("io_diags"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("instant"));
   auto& ctrl_pl = om_pl.sublist("output_control");
@@ -216,7 +216,7 @@ void read (const int seed, const ekat::Comm& comm)
   auto f0 = f.clone(CloneFlags::CopyData);
 
   // Create reader pl
-  std::string casename = "io_diags";
+  std::string casename = "eamxx.h.io_diags";
   auto filename = casename
     + ".INSTANT.nsteps_x1"
     + ".np" + std::to_string(comm.size())

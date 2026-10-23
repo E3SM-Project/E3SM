@@ -25,7 +25,7 @@ std::string find_filename_in_rpointer (
   std::string filename;
   bool found = false;
   std::string content;
-  std::string suffix = model_restart ? ".r." : ".rhist.";
+  std::string suffix = model_restart ? ".r." : ".rh.";
   std::string pattern_str = filename_prefix + suffix;
 
   // The AD will pass a default constructed control, since it doesn't know the values
@@ -38,7 +38,9 @@ std::string find_filename_in_rpointer (
   } else {
     EKAT_REQUIRE_MSG (control.output_enabled(),
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
-        " - filename prefix: " + filename_prefix + "\n");
+        " - restart file prefix: " + filename_prefix + "\n");
+    // For history restart, need wildcard for stream_id
+    pattern_str += R"([^.]+\.)";  // Match stream_id
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
   }
   if (is_scream_standalone()) {
@@ -77,25 +79,23 @@ std::string find_filename_in_rpointer (
     if (model_restart) {
       EKAT_ERROR_MSG (
           "Error! Restart requested, but no model restart file found in 'rpointer.atm'.\n"
-          "   model restart filename prefix: " + filename_prefix + "\n"
-          "   model restart filename pattern: " + pattern_str + "\n"
+          "   restart file prefix: " + filename_prefix + "\n"
+          "   restart file pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   rpointer content:\n" + content + "\n\n");
     } else {
       EKAT_ERROR_MSG (
           "Error! Restart requested, but no history restart file found in 'rpointer.atm'.\n"
-          "   hist restart filename prefix: " + filename_prefix + "\n"
-          "   hist restart filename pattern: " + pattern_str + "\n"
+          "   restart file prefix: " + filename_prefix + "\n"
+          "   restart file pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   avg_type         : " + e2str(avg_type) + "\n"
           "   output freq      : " + std::to_string(control.frequency) + "\n"
           "   output freq units: " + control.frequency_units + "\n"
           "   rpointer content:\n" + content + "\n\n"
           " Did you change output specs (avg type, freq, or freq units) across restart? If so, please, remember that it is not allowed.\n"
-          " It is also possible you are using a rhist file create before commit 6b7d441330d. That commit changed how rhist file names\n"
-          " are formed. In particular, we no longer use INSTANT.${REST_OPTION}_x${REST_N}, but we use the avg type, and freq/freq_option\n"
-          " of the output stream (to avoid name clashes if 2 streams only differ for one of those). If you want to use your rhist file,\n"
-          " please rename it, so that the avg-type, freq, and freq_option reflect those of the output stream.\n");
+          " NOTE: File naming changed - old .rhist files are now .rh and include stream_id.\n"
+          " If restarting from old files, you'll need to regenerate restart files with the new naming convention.\n");
     }
   }
 

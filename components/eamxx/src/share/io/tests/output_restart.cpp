@@ -126,13 +126,13 @@ TEST_CASE("output_restart","io")
 
     // 1. Run for full 20 days, no restarts needed
     auto fm_mono = clone_fm(fm0);
-    output_params.set<std::string>("filename_prefix","monolithic");
+    output_params.set<std::string>("stream_id","monolithic");
     output_params.sublist("checkpoint_control").set<std::string>("frequency_units","never");
     run(fm_mono,t0,t0,20);
 
     // 2. Run for 15 days on fm0, write restart every 5 steps
     auto fm_rest = clone_fm(fm0);
-    output_params.set<std::string>("filename_prefix","restarted");
+    output_params.set<std::string>("stream_id","restarted");
     output_params.sublist("checkpoint_control").set<std::string>("frequency_units","nsteps");
     run(fm_rest,t0,t0,15);
 
