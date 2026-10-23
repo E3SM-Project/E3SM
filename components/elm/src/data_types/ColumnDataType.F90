@@ -3076,59 +3076,64 @@ contains
     integer  :: fp,fc           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     integer  :: nlev
+    logical  :: do_1m           ! level j counts in the 1 meter integrals
+    real(r8) :: dz_1m           ! thickness of level j counted in the 1 meter integrals
     !-----------------------------------------------------------------------
 
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
-    ! vertically integrate each of the decomposing C pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%decomp_cpools(c,l) = 0._r8
-       end do
-    end do
-
-    do l = 1, ndecomp_pools
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_cpools(c,l) = &
-                  this%decomp_cpools(c,l) + &
-                  this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
+    ! vertically integrate each of the decomposing C pools, and for vertically
+    ! resolved soil BGC also to 1 meter in the same pass, so that each level of
+    ! decomp_cpools_vr is read once. Each sum keeps its terms and order over j.
+    maxdepth = 1._r8
     if ( nlevdecomp > 1) then
-       ! vertically integrate each of the decomposing C pools to 1 meter
-       maxdepth = 1._r8
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_cpools_1m(c,l) = 0._r8
           end do
        end do
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_cpools_1m(c,l) = &
-                        this%decomp_cpools_1m(c,l) + &
-                        this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_cpools_1m(c,l) = &
-                        this%decomp_cpools_1m(c,l) + &
-                        this%decomp_cpools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
+    end if
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_cpools(c,l) = 0._r8
        end do
+       do j = 1, nlev
+          ! thickness of level j counted in the 1 meter integral, if any
+          do_1m = .false.
+          if ( nlevdecomp > 1 .and. j <= nlevdecomp ) then
+             if ( zisoi(j) <= maxdepth ) then
+                do_1m = .true.
+                dz_1m = dzsoi_decomp(j)
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do_1m = .true.
+                dz_1m = maxdepth - zisoi(j-1)
+             endif
+          end if
+          if (do_1m) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools(c,l) = &
+                     this%decomp_cpools(c,l) + &
+                     this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+                this%decomp_cpools_1m(c,l) = &
+                     this%decomp_cpools_1m(c,l) + &
+                     this%decomp_cpools_vr(c,j,l) * dz_1m
+             end do
+          else
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools(c,l) = &
+                     this%decomp_cpools(c,l) + &
+                     this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+             end do
+          end if
+       end do
+    end do
 
+    if ( nlevdecomp > 1) then
        ! total litter carbon in the top meter (TOTLITC_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
@@ -4295,6 +4300,8 @@ contains
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
     integer  :: nlev
+    logical  :: do_1m       ! level j counts in the 1 meter integrals
+    real(r8) :: dz_1m       ! thickness of level j counted in the 1 meter integrals
     !-----------------------------------------------------------------------
 
     ! vertically integrate NO3 NH4 N2O pools
@@ -4327,53 +4334,58 @@ contains
        end do
     end do
 
-    ! vertically integrate each of the decomposing N pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%decomp_npools(c,l) = 0._r8
-       end do
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_npools(c,l) = &
-                  this%decomp_npools(c,l) + &
-                  this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
-    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+    ! vertically integrate each of the decomposing N pools, and for vertically
+    ! resolved soil BGC also to 1 meter in the same pass, so that each level of
+    ! decomp_npools_vr is read once. Each sum keeps its terms and order over j.
+    maxdepth = 1._r8
     if ( nlevdecomp > 1) then
-
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_npools_1m(c,l) = 0._r8
           end do
        end do
-
-       ! vertically integrate each of the decomposing n pools to 1 meter
-       maxdepth = 1._r8
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_npools_1m(c,l) = &
-                        this%decomp_npools_1m(c,l) + &
-                        this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_npools_1m(c,l) = &
-                        this%decomp_npools_1m(c,l) + &
-                        this%decomp_npools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
+    end if
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_npools(c,l) = 0._r8
        end do
+       do j = 1, nlev
+          ! thickness of level j counted in the 1 meter integral, if any
+          do_1m = .false.
+          if ( nlevdecomp > 1 .and. j <= nlevdecomp ) then
+             if ( zisoi(j) <= maxdepth ) then
+                do_1m = .true.
+                dz_1m = dzsoi_decomp(j)
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do_1m = .true.
+                dz_1m = maxdepth - zisoi(j-1)
+             endif
+          end if
+          if (do_1m) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_npools(c,l) = &
+                     this%decomp_npools(c,l) + &
+                     this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+                this%decomp_npools_1m(c,l) = &
+                     this%decomp_npools_1m(c,l) + &
+                     this%decomp_npools_vr(c,j,l) * dz_1m
+             end do
+          else
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_npools(c,l) = &
+                     this%decomp_npools(c,l) + &
+                     this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+             end do
+          end if
+       end do
+    end do
+
+    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+    if ( nlevdecomp > 1) then
 
        ! total litter nitrogen to 1 meter (TOTLITN_1m)
        do fc = 1,num_soilc
@@ -5338,7 +5350,11 @@ contains
     integer  :: c,j,k,l   ! indices
     integer  :: fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    logical  :: do_1m       ! level j counts in the 1 meter integrals
+    real(r8) :: dz_1m       ! thickness of level j counted in the 1 meter integrals
     !-----------------------------------------------------------------------
+   ! The inorganic P pools, sminp_vr, sminp and ptrunc are integrated in one
+   ! pass over the levels (each sum keeps its order over j)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%solutionp(c) =0._r8
@@ -5346,6 +5362,8 @@ contains
       this%secondp(c)   =0._r8
       this%occlp(c)     =0._r8
       this%primp(c)     =0._r8
+      this%sminp(c)     =0._r8
+      this%ptrunc(c)    =0._r8
    end do
 
    do j = 1, nlevdecomp
@@ -5366,26 +5384,25 @@ contains
          this%primp(c) = &
               this%primp(c) + &
               this%primp_vr(c,j) * dzsoi_decomp(j)
+
+         ! total sminp
+         this%sminp_vr(c,j) = this%solutionp_vr(c,j) + &
+                                  this%labilep_vr(c,j) + &
+                                  this%secondp_vr(c,j)
+         this%sminp(c) =  this%sminp(c) + &
+         this%sminp_vr(c,j) * dzsoi_decomp(j)
+
+         ! total col_ptrunc
+         this%ptrunc(c) = &
+              this%ptrunc(c) + &
+              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
       end do
    end do
 
-   ! vertically integrate each of the decomposing P pools
-   do l = 1, ndecomp_pools
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%decomp_ppools(c,l) = 0._r8
-      end do
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%decomp_ppools(c,l) = &
-                 this%decomp_ppools(c,l) + &
-                 this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
-         end do
-      end do
-   end do
-
-   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+   ! vertically integrate each of the decomposing P pools, and for vertically
+   ! resolved soil BGC also to 1 meter in the same pass, so that each level of
+   ! decomp_ppools_vr is read once. Each sum keeps its terms and order over j.
+   maxdepth = 1._r8
    if ( nlevdecomp > 1) then
       do l = 1, ndecomp_pools
          do fc = 1,num_soilc
@@ -5393,28 +5410,47 @@ contains
             this%decomp_ppools_1m(c,l) = 0._r8
          end do
       end do
-
-      ! vertically integrate each of the decomposing n pools to 1 meter
-      maxdepth = 1._r8
-      do l = 1, ndecomp_pools
-         do j = 1, nlevdecomp
-            if ( zisoi(j) <= maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%decomp_ppools_1m(c,l) = &
-                       this%decomp_ppools_1m(c,l) + &
-                       this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
-               end do
-            elseif ( zisoi(j-1) < maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%decomp_ppools_1m(c,l) = &
-                       this%decomp_ppools_1m(c,l) + &
-                       this%decomp_ppools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-               end do
-            endif
-         end do
+   end if
+   do l = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%decomp_ppools(c,l) = 0._r8
       end do
+      do j = 1, nlevdecomp
+         ! thickness of level j counted in the 1 meter integral, if any
+         do_1m = .false.
+         if ( nlevdecomp > 1 ) then
+            if ( zisoi(j) <= maxdepth ) then
+               do_1m = .true.
+               dz_1m = dzsoi_decomp(j)
+            elseif ( zisoi(j-1) < maxdepth ) then
+               do_1m = .true.
+               dz_1m = maxdepth - zisoi(j-1)
+            endif
+         end if
+         if (do_1m) then
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               this%decomp_ppools(c,l) = &
+                    this%decomp_ppools(c,l) + &
+                    this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+               this%decomp_ppools_1m(c,l) = &
+                    this%decomp_ppools_1m(c,l) + &
+                    this%decomp_ppools_vr(c,j,l) * dz_1m
+            end do
+         else
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               this%decomp_ppools(c,l) = &
+                    this%decomp_ppools(c,l) + &
+                    this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+            end do
+         end if
+      end do
+   end do
+
+   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+   if ( nlevdecomp > 1) then
 
       ! total litter phosphorus to 1 meter (TOTLITN_1m)
       do fc = 1,num_soilc
@@ -5498,40 +5534,7 @@ contains
       end if
    end do
 
-   ! total sminp
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%sminp(c)      = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%sminp_vr(c,j) = this%solutionp_vr(c,j) + &
-                                  this%labilep_vr(c,j) + &
-                                  this%secondp_vr(c,j)
-      end do
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%sminp(c) =  this%sminp(c) + &
-         this%sminp_vr(c,j) * dzsoi_decomp(j)
-      end do
-   end do
-
-   ! total col_ntrunc
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%ptrunc(c) = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%ptrunc(c) = &
-              this%ptrunc(c) + &
-              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
-      end do
-   end do
+   ! (sminp_vr, sminp and ptrunc are computed with the inorganic P pools above)
 
    do fc = 1,num_soilc
       c = filter_soilc(fc)
