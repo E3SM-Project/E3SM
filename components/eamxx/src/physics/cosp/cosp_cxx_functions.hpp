@@ -71,6 +71,62 @@ struct Functions
   static Scalar get_ssa_nir(const int phase, const Scalar re);
 
   // ---------------------------------------------------------------------------------------
+  // ISCCP simulator (icarus.F90), for isccp_top_height = 1, isccp_top_height_direction = 2
+
+  // Per-point quantities shared by all the subcolumns of a point
+  struct IcarusPoint {
+    Scalar ptrop, attrop, atmax;  // tropopause pressure and temperature, max T below it
+    int    itrop;                 // tropopause level index (0-based)
+    Scalar fluxtop_clrsky;        // clear-sky TOA flux
+    Scalar meantbclr;             // clear-sky brightness temperature
+    Scalar btcmin;                // flux of the minimum cloud brightness temperature
+  };
+
+  KOKKOS_INLINE_FUNCTION
+  static Scalar icarus_dem_wv(const Scalar pfull, const Scalar phalf_top, const Scalar phalf_bot,
+                              const Scalar qv, const Scalar at);
+  KOKKOS_INLINE_FUNCTION
+  static Scalar icarus_bb(const Scalar t);
+  KOKKOS_INLINE_FUNCTION
+  static Scalar icarus_tb(const Scalar flux);
+
+  // Per-point part of icarus_subcolumn; qv, at, pfull by level, phalf by interface
+  template <typename VQ, typename VA, typename VP, typename VPH>
+  KOKKOS_INLINE_FUNCTION
+  static IcarusPoint icarus_point(const int nlev, const Scalar skt, const Scalar emsfc_lw,
+                                  const VQ& qv, const VA& at, const VP& pfull, const VPH& phalf);
+
+  // icarus_subcolumn for one subcolumn of one point; dtau and dem by level
+  template <typename VT, typename VE, typename VQ, typename VA, typename VP, typename VPH>
+  KOKKOS_INLINE_FUNCTION
+  static void icarus_subcolumn(const int nlev, const int sunlit, const IcarusPoint& pt,
+                               const VT& dtau, const VE& dem, const Scalar skt,
+                               const Scalar emsfc_lw, const VQ& qv, const VA& at,
+                               const VP& pfull, const VPH& phalf,
+                               Scalar& boxtau, Scalar& boxptop, Scalar& boxttop);
+
+  // icarus_column for one point; boxtau, boxptop (Pa) by subcolumn, fq is (ntau, npres)
+  template <typename VT, typename VP, typename H>
+  KOKKOS_INLINE_FUNCTION
+  static void icarus_column(const int ncol, const int sunlit, const VT& boxtau,
+                            const VP& boxptop, const H& fq, Scalar& totalcldarea);
+
+  // ---------------------------------------------------------------------------------------
+  // MISR simulator (MISR_simulator.F90)
+
+  // misr_subcolumn for one point and one subcolumn; dtau, zfull and at are indexed by level
+  template <typename VT, typename VZ, typename VA>
+  KOKKOS_INLINE_FUNCTION
+  static void misr_subcolumn(const int nlev, const VT& dtau, const VZ& zfull, const VA& at,
+                             const int sunlit, Scalar& tau_out, Scalar& ztop);
+
+  // misr_column for one point; ztop and tau are indexed by subcolumn, fq is (ntau, nhgt)
+  template <typename VZ, typename VT, typename H>
+  KOKKOS_INLINE_FUNCTION
+  static void misr_column(const int ncol, const VZ& ztop, const int sunlit, const VT& tau,
+                          const H& fq);
+
+  // ---------------------------------------------------------------------------------------
   // Statistics (cosp_stats.F90)
 
   // hist2D: joint histogram of npts samples; bin1/bin2 hold nbin1+1/nbin2+1 edges, and
@@ -88,5 +144,7 @@ struct Functions
 #include "physics/cosp/impl/cosp_rng_impl.hpp"
 #include "physics/cosp/impl/cosp_optics_impl.hpp"
 #include "physics/cosp/impl/cosp_stats_impl.hpp"
+#include "physics/cosp/impl/cosp_misr_impl.hpp"
+#include "physics/cosp/impl/cosp_isccp_impl.hpp"
 
 #endif // SCREAM_COSP_CXX_FUNCTIONS_HPP

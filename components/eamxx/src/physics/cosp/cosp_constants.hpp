@@ -38,6 +38,65 @@ struct Constants
 
   // Ice density used in MODIS phase partitioning (cosp_optics.F90, 0.93_wp)
   static constexpr Scalar ice_density = 0.93;
+
+  // ---------------------------------------------------------------------------------------
+  // Missing value (cosp_config.F90; a single precision literal)
+  static constexpr Scalar R_UNDEF = Scalar(-1.0E30f);
+
+  // ---------------------------------------------------------------------------------------
+  // Histogram bin boundaries (cosp_config.F90): real(wp) parameters initialized from
+  // single precision literals
+  static constexpr int ntau = 7;  // optical depth bins
+  static constexpr int npres = 7; // cloud-top pressure bins
+  static constexpr int nhgt = 16; // cloud-top height bins
+
+  // tau_binBounds, ntau+1 values
+  KOKKOS_INLINE_FUNCTION
+  static Scalar tau_binBounds (const int i) {
+    constexpr float v[ntau+1] = {0.0f, 0.3f, 1.3f, 3.6f, 9.4f, 23.f, 60.f, 10000.f};
+    return Scalar(v[i]);
+  }
+
+  // pres_binBounds (hPa), npres+1 values
+  KOKKOS_INLINE_FUNCTION
+  static Scalar pres_binBounds (const int i) {
+    constexpr float v[npres+1] = {0.f, 180.f, 310.f, 440.f, 560.f, 680.f, 800.f, 10000.f};
+    return Scalar(v[i]);
+  }
+
+  // hgt_binBounds (km), nhgt+1 values
+  KOKKOS_INLINE_FUNCTION
+  static Scalar hgt_binBounds (const int i) {
+    constexpr float v[nhgt+1] = {-.99f, 0.f, 0.5f, 1.f, 1.5f, 2.f, 2.5f, 3.f, 4.f, 5.f, 7.f,
+                                 9.f, 11.f, 13.f, 15.f, 17.f, 99.f};
+    return Scalar(v[i]);
+  }
+
+  // ---------------------------------------------------------------------------------------
+  // MISR simulator (MISR_simulator.F90)
+  static constexpr int numMISRTauBins = ntau;
+  static constexpr int numMISRHgtBins = nhgt;
+
+  // tauchk = -1.*log(0.9999999), evaluated in single precision at compile time by the
+  // Fortran compiler. Hard-coded, since a runtime logf can differ from it by one ulp.
+  static constexpr Scalar misr_tauchk = Scalar(0x1.000002p-23);
+
+  // ---------------------------------------------------------------------------------------
+  // ISCCP simulator (icarus.F90)
+  static constexpr int numISCCPTauBins  = ntau;
+  static constexpr int numISCCPPresBins = npres;
+
+  // tauchk = -1._wp*log(0.9999999_wp), as evaluated by the Fortran compiler
+  static constexpr Scalar isccp_tauchk = Scalar(0x1.ad7f2b1049b9fp-24);
+  static constexpr Scalar isccp_taumin = 0.3;
+  static constexpr Scalar pstd         = 1013250.0; // Mean sea-level pressure (Pa)
+  static constexpr Scalar isccp_t0     = 296.0;     // Mean surface temperature (K)
+
+  // Physical constants used by ICARUS (cosp_constants.F90)
+  static constexpr Scalar amw  = 18.01534;   // Water [g/mol]
+  static constexpr Scalar amd  = 28.9644;    // Dry air [g/mol]
+  static constexpr Scalar avo  = 6.023E23;   // Avogadro constant [1/mol]
+  static constexpr Scalar grav = 9.806650;   // Gravitational acceleration [m/s2]
 };
 
 } // namespace cosp

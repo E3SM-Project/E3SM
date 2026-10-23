@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "physics/cosp/cosp_cxx_functions.hpp"
+#include "physics/cosp/tests/cosp_test_utils.hpp"
 
 #include <random>
 #include <vector>
@@ -11,80 +11,10 @@
  *
  * The tests always use double, since the Fortran library is double (wp = dp).
  */
-
-extern "C" {
-void cosp_rng_f(int n, int ndraw, const int* seeds, double* rnd);
-void cosp_simulator_optics_f(int dim1, int dim2, int dim3, const double* flag,
-                             const double* var1, const double* var2, double* varout);
-void cosp_modis_optics_partition_f(int npoints, int ncolumns, int nlev,
-                                   const double* cloud_water, const double* cloud_ice,
-                                   const double* water_size, const double* ice_size,
-                                   const double* tau, double* tau_liq, double* tau_ice);
-void cosp_modis_optics_f(int npoints, int ncolumns, int nlev,
-                         const double* tau_liq, const double* size_liq,
-                         const double* tau_ice, const double* size_ice,
-                         double* frac_liq, double* g, double* w0);
-void cosp_nir_fits_f(int n, int phase, const double* re, double* g, double* w0);
-void cosp_hist2d_f(int npts, const double* var1, const double* var2,
-                   int nbin1, const double* bin1, int nbin2, const double* bin2, double* hist);
-}
-
 namespace {
 
 using namespace scream;
-
-using F   = cosp::Functions<double, DefaultDevice>;
-using KT  = ekat::KokkosTypes<DefaultDevice>;
-using ExeSpace = typename KT::ExeSpace;
-
-// LayoutLeft host views, matching Fortran memory order
-using lview_1d = Kokkos::View<double*,   Kokkos::LayoutLeft, Kokkos::HostSpace>;
-using lview_2d = Kokkos::View<double**,  Kokkos::LayoutLeft, Kokkos::HostSpace>;
-using lview_3d = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-
-// Device views in the layout the port uses
-using dview_1d = Kokkos::View<double*,   DefaultDevice>;
-using dview_2d = Kokkos::View<double**,  DefaultDevice>;
-using dview_3d = Kokkos::View<double***, DefaultDevice>;
-
-using Policy3 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>;
-
-std::mt19937_64 engine (20261022);
-
-double uniform (const double lo, const double hi) {
-  return std::uniform_real_distribution<double>(lo,hi)(engine);
-}
-
-// Fill a host view, setting a fraction of the entries to exactly zero
-template <typename V>
-void fill_random (const V& v, const double lo, const double hi, const double frac_zero = 0) {
-  auto* p = v.data();
-  for (size_t i = 0; i < v.size(); ++i) {
-    p[i] = uniform(0,1) < frac_zero ? 0.0 : uniform(lo,hi);
-  }
-}
-
-// Copy a LayoutLeft host view to a (LayoutRight) device view of the same extents
-template <typename DV, typename HV>
-DV to_device (const HV& h, const std::string& name) {
-  DV d(name, h.extent(0), h.extent(1), h.extent(2));
-  auto dh = Kokkos::create_mirror_view(d);
-  Kokkos::deep_copy(dh, h);
-  Kokkos::deep_copy(d, dh);
-  return d;
-}
-
-// Count entries of a device view that differ from a LayoutLeft host view
-template <typename DV, typename HV>
-int count_diffs (const DV& d, const HV& h) {
-  auto dh = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), d);
-  int ndiff = 0;
-  for (size_t i = 0; i < h.extent(0); ++i)
-    for (size_t j = 0; j < h.extent(1); ++j)
-      for (size_t k = 0; k < h.extent(2); ++k)
-        if (dh(i,j,k) != h(i,j,k)) ++ndiff;
-  return ndiff;
-}
+using namespace scream::cosp_test;
 
 constexpr int npoints = 37;
 constexpr int ncols   = 10;
