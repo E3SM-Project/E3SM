@@ -1,0 +1,234 @@
+name: e3sm-gh
+
+# CIME tests on GitHub-hosted runners, inside the E3SM container images
+# (github.com/E3SM-Project/containers) with their own CIME machine, e3sm-container. Adapted
+# from that repo's e3sm-case.yaml. Hosted runners keep nothing between runs, so inputdata and
+# baselines live in this repo's Actions cache, under separate keys:
+#
+# - inputdata: one entry per test, shared by every image and arch. Runs restore the newest
+#   entry and download only what it lacks. A run on master that downloaded anything saves a
+#   new entry and, once it is saved, deletes the older ones.
+# - baselines: one entry per image, arch and test, written only by a bless (a manual run on
+#   master with bless checked). Entries cannot be overwritten, so each bless adds one and
+#   every other run restores the newest. Entries saved on master are visible to all PRs,
+#   while a PR cannot change them. With no baseline found, the test runs without comparing.
+#
+# See docs/dev-guide/gh-hosted-testing.md for the rationale and the plan to move baselines
+# to a registry.
+
+on:
+  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!docs/**'
+      - '!components/*/docs/**'
+      - '!components/*/mkdocs.yml'
+      - '!.github/**'
+      - '.github/workflows/e3sm-gh-testing.yml'
+
+  # Manual run on master is used to bless
+  workflow_dispatch:
+    inputs:
+      bless:
+        description: 'Generate baselines (master only)'
+        required: true
+        type: boolean
+
+  # Nightly, which also keeps the cache entries from expiring (7 days unused)
+  schedule:
+    - cron: '0 8 * * *'
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # To delete superseded inputdata cache entries
+  actions: write
+
+env:
+  generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [gnu13-openmpi4, intel2024-openmpi4]
+        arch: [x86_64, aarch64]
+        test: [SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS]
+        exclude:
+          - {env: intel2024-openmpi4, arch: aarch64}
+        # Each image's compiler, for create_test, and whether it compares baselines. Intel's
+        # answers depend on which CPU a hosted runner happens to have (its math libraries
+        # pick code paths by CPU), so intel builds and runs, but does not compare.
+        include:
+          - {env: gnu13-openmpi4, compiler: gnu, baselines: true}
+          - {env: intel2024-openmpi4, compiler: intel, baselines: false}
+    name: ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})
+    env:
+      IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.env }}
+      TESTS: ${{ matrix.test }}
+      COMPILER: ${{ matrix.compiler }}
+      BASELINES_KEY: e3sm-gh-baselines-${{ matrix.env }}-${{ matrix.arch }}-${{ matrix.test }}
+      INPUTDATA_KEY: e3sm-gh-inputdata-${{ matrix.test }}
+    steps:
+      - name: Refuse to bless off master
+        # Baselines saved from any other ref are visible to that ref only
+        if: env.generate == 'true' && github.ref != 'refs/heads/master'
+        run: |
+          echo "::error::bless only from master (this is ${{ github.ref }})"
+          exit 1
+      # Hosted runners start with ~20 GB free; the image, E3SM with submodules, inputdata
+      # and a case build need more. These are preinstalled SDKs nothing here uses.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost /usr/local/.ghcup /usr/share/swift
+          sudo docker image prune --all --force > /dev/null
+          df -h /
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          path: E3SM
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./E3SM/.github/actions/show-workflow-trigger
+      - name: Restore inputdata
+        id: inputdata
+        uses: actions/cache/restore@v6
+        with:
+          path: inputdata
+          key: ${{ env.INPUTDATA_KEY }}-${{ github.run_id }}
+          restore-keys: ${{ env.INPUTDATA_KEY }}-
+      - name: Restore baselines
+        id: baselines
+        if: env.generate != 'true' && matrix.baselines
+        uses: actions/cache/restore@v6
+        with:
+          path: baselines
+          key: ${{ env.BASELINES_KEY }}-${{ github.sha }}
+          restore-keys: ${{ env.BASELINES_KEY }}-
+      - name: Choose baseline flags
+        run: |
+          if [ "${{ matrix.baselines }}" != true ]; then
+            flags=""; baselines="not compared for this compiler"
+          elif [ "$generate" = true ]; then
+            flags="-o -g -b master"; baselines="generated"
+          elif [ -n "${{ steps.baselines.outputs.cache-matched-key }}" ]; then
+            flags="-c -b master"; baselines="compared with \`${{ steps.baselines.outputs.cache-matched-key }}\`"
+          else
+            flags=""; baselines="none found, not compared"
+            echo "::warning::no baselines for this test; bless from master to add them"
+          fi
+          echo "CT_FLAGS=$flags" >> "$GITHUB_ENV"
+          echo "BASELINES=$baselines" >> "$GITHUB_ENV"
+      # TODO: remove once #8926 is merged. Until then CIME does not know EAM's P3 opens this
+      # file, so nothing downloads it and the run dies without it (#5953).
+      - name: Fetch the P3 lookup table
+        run: |
+          f=atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
+          if [ ! -f "inputdata/$f" ]; then
+            mkdir -p "inputdata/$(dirname "$f")"
+            curl -fsSL --retry 3 -o "inputdata/$f" "https://web.lcrc.anl.gov/public/e3sm/inputdata/$f"
+          fi
+      - name: Pull the image
+        run: docker pull "$IMAGE"
+      # As the image's default user (uid 1000), with the image's own CIME machine, which
+      # enable.sh opts into. The runner's own uid is 1001, so hand it what the test writes to,
+      # and take it back after for the caches and the log upload.
+      - name: Run the tests
+        id: run-tests
+        run: |
+          mkdir -p inputdata baselines scratch
+          find inputdata -type f | wc -l > inputdata.count
+          sudo chown -R 1000:1000 E3SM inputdata baselines scratch
+          rc=0
+          docker run --rm -e TESTS -e CT_FLAGS -e COMPILER \
+            -v "$PWD/E3SM:/projects/e3sm/work/E3SM" \
+            -v "$PWD/inputdata:/projects/e3sm/data/inputdata" \
+            -v "$PWD/baselines:/projects/e3sm/data/baselines" \
+            -v "$PWD/scratch:/home/e3sm/e3sm_scratch" \
+            "$IMAGE" bash -lc '. /projects/e3sm/cime/enable.sh &&
+              cd /projects/e3sm/work/E3SM/cime/scripts &&
+              ./create_test $TESTS $CT_FLAGS --machine e3sm-container --compiler "$COMPILER" \
+                --wait --test-id gh --parallel-jobs "$(nproc)"' || rc=$?
+          sudo chown -R "$(id -u):$(id -g)" E3SM inputdata baselines scratch
+          if [ "$(find inputdata -type f | wc -l)" -gt "$(cat inputdata.count)" ]; then
+            echo "new_inputdata=true" >> "$GITHUB_OUTPUT"
+          fi
+          # bless_log, next to the baselines, records the E3SM commit that made them; record
+          # the image too, since a different image can change answers on its own.
+          image=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE")
+          if [ "$generate" = true ]; then
+            echo "$image" > baselines/image
+          elif [ -f baselines/image ] && [ "$(cat baselines/image)" != "$image" ]; then
+            echo "::warning::baselines were made with $(cat baselines/image), not this image; a baseline DIFF may come from the image"
+            BASELINES="$BASELINES (made with \`$(cat baselines/image)\`)"
+          fi
+          {
+            echo "### ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})"
+            echo
+            echo "Image \`$image\`, CPU $(lscpu | sed -n 's/^Model name: *//p'), baselines: $BASELINES"
+            echo
+            echo '```'
+            cat scratch/*.gh/TestStatus 2>/dev/null || echo "no TestStatus"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          du -sh inputdata baselines
+          exit "$rc"
+      - name: Save baselines
+        if: env.generate == 'true' && matrix.baselines
+        uses: actions/cache/save@v6
+        with:
+          path: baselines
+          key: ${{ env.BASELINES_KEY }}-${{ github.sha }}-${{ github.run_id }}
+      # From master only: an entry saved on any other ref is visible to that ref alone, while
+      # the cleanup below is repository-wide. The first job of a run to get here saves; the
+      # others find the key taken and only warn.
+      - name: Save inputdata
+        id: save-inputdata
+        if: github.ref == 'refs/heads/master' && steps.run-tests.outputs.new_inputdata == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: inputdata
+          key: ${{ steps.inputdata.outputs.cache-primary-key }}
+      # cache/save succeeds even when it saved nothing (upload failed, or another job of the
+      # run holds the key and has not finished), so delete only once the new entry is listed.
+      - name: Delete superseded inputdata
+        if: steps.save-inputdata.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW_KEY: ${{ steps.inputdata.outputs.cache-primary-key }}
+        run: |
+          entries=$(gh cache list -R "$GITHUB_REPOSITORY" --ref refs/heads/master \
+            --key "$INPUTDATA_KEY-" --limit 100 --json id,key --jq '.[] | "\(.id) \(.key)"')
+          if ! awk -v k="$NEW_KEY" '$2 == k { found = 1 } END { exit !found }' <<< "$entries"; then
+            echo "$NEW_KEY is not saved on master; keeping the older entries"
+            exit 0
+          fi
+          awk -v k="$NEW_KEY" '$2 != k' <<< "$entries" | while read -r id key; do
+            # Another job of the run may have deleted it first
+            gh cache delete -R "$GITHUB_REPOSITORY" "$id" && echo "deleted $key" ||
+              echo "could not delete $key (another job may already have)"
+          done
+      - name: Upload logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs.${{ matrix.test }}.${{ matrix.env }}.${{ matrix.arch }}
+          path: |
+            scratch/*.gh/TestStatus*
+            scratch/*.gh/bld/*.bldlog.*
+            scratch/*.gh/run/*.log.*
+            scratch/*.gh/run/*.cprnc.out
+          retention-days: 14
