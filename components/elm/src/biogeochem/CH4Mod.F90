@@ -1370,6 +1370,12 @@ contains
     integer  :: nc                                     ! clump index
     real(r8) :: log_kh_theta(2)                        ! log(kh_theta) for CH4 and O2
     real(r8), allocatable :: k_h_inv_vr(:,:,:)         ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2], filter columns only
+    real(r8), allocatable :: q10prod_vr(:,:)           ! Q10 factor for CH4 production [col, lev], soil filter columns only
+    real(r8), allocatable :: q10oxid_vr(:,:)           ! Q10 factor for CH4 oxidation [col, lev], filter columns only
+    real(r8) :: q10ch4                                 ! additional Q10 for methane production
+    real(r8) :: q10ch4base                             ! temperature at which the effective f_ch4 equals the constant f_ch4
+    real(r8) :: q10_ch4oxid                            ! Q10 oxidation constant
+    real(r8) :: t0                                     ! base temperature for the oxidation Q10
     !-----------------------------------------------------------------------
 
     associate(                                                                 &
@@ -1656,6 +1662,24 @@ contains
          end do
       end do
 
+      ! Q10 factors of ch4_prod and ch4_oxid, which are also the same in both passes. Same
+      ! expressions and scalar pow as in those routines, so it is BFB.
+      allocate(q10prod_vr(begc:endc, 1:nlevsoi))
+      allocate(q10oxid_vr(begc:endc, 1:nlevsoi))
+      q10ch4      = CH4ParamsInst%q10ch4
+      q10ch4base  = CH4ParamsInst%q10ch4base
+      q10_ch4oxid = CH4ParamsInst%q10_ch4oxid
+      t0 = tfrz + 12._r8
+      !DIR$ NOVECTOR
+      do j = 1, nlevsoi
+         !DIR$ NOVECTOR
+         do fc = 1, num_soilc
+            c = filter_soilc(fc)
+            q10prod_vr(c,j) = q10ch4**((col_es%t_soisno(c,j) - q10ch4base)/10._r8)
+            q10oxid_vr(c,j) = q10_ch4oxid ** ((col_es%t_soisno(c,j) - t0) / 10._r8)
+         end do
+      end do
+
       !-------------------------------------------------
       ! Loop over saturated and unsaturated, non-lakes
       !------------------------------------------------
@@ -1710,7 +1734,7 @@ contains
          call ch4_prod (bounds, &
               num_soilc, filter_soilc, &
               num_soilp, filter_soilp, &
-              jwt(begc:endc), sat, lake, &
+              jwt(begc:endc), q10prod_vr(begc:endc,:), sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_prod'//trim(tsfx))
 
@@ -1718,7 +1742,7 @@ contains
          call t_startf('ch4_oxid'//trim(tsfx))
          call ch4_oxid (bounds, &
               num_soilc, filter_soilc, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), sat, lake, &
+              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), q10oxid_vr(begc:endc,:), sat, lake, &
               soilstate_vars, ch4_vars, dtime)
          call t_stopf('ch4_oxid'//trim(tsfx))
 
@@ -1773,12 +1797,20 @@ contains
                end do
             end do
          end do
+         !DIR$ NOVECTOR
+         do j = 1, nlevsoi
+            !DIR$ NOVECTOR
+            do fc = 1, num_lakec
+               c = filter_lakec(fc)
+               q10oxid_vr(c,j) = q10_ch4oxid ** ((col_es%t_soisno(c,j) - t0) / 10._r8)
+            end do
+         end do
 
          ! calculate CH4 production in each lake layer
          call t_startf('ch4_prod-lake')
          call ch4_prod (bounds, &
               num_lakec, filter_lakec, &
-              0, dummyfilter, jwt(begc:endc), sat, lake, &
+              0, dummyfilter, jwt(begc:endc), q10prod_vr(begc:endc,:), sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_prod-lake')
 
@@ -1786,7 +1818,8 @@ contains
          call t_startf('ch4_oxid-lake')
          call ch4_oxid (bounds, &
               num_lakec, filter_lakec, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), sat, lake, soilstate_vars, ch4_vars, dtime)
+              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), q10oxid_vr(begc:endc,:), sat, lake, &
+              soilstate_vars, ch4_vars, dtime)
          call t_stopf('ch4_oxid-lake')
 
          ! calculate CH4 aerenchyma losses in each lake layer
@@ -1975,6 +2008,8 @@ contains
            c2l_scale_type= 0, l2g_scale_type=0 )
 
       deallocate(k_h_inv_vr)
+      deallocate(q10prod_vr)
+      deallocate(q10oxid_vr)
 
     end associate
 
@@ -1982,7 +2017,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ch4_prod (bounds, num_methc, filter_methc, num_methp, &
-       filter_methp, jwt, sat, lake, &
+       filter_methp, jwt, q10prod_vr, sat, lake, &
        soilstate_vars, ch4_vars, dtime, elm_fates)
     !
     ! !DESCRIPTION:
@@ -2006,6 +2041,7 @@ contains
     integer                 , intent(in)    :: num_methp           ! number of soil points in pft filter
     integer                 , intent(in)    :: filter_methp(:)     ! patch filter for soil points
     integer                 , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
+    real(r8)                , intent(in)    :: q10prod_vr( bounds%begc: , 1: ) ! q10ch4**((T-q10ch4base)/10) [col, lev]
     integer                 , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                 , intent(in)    :: lake                ! function called with lake filter
     type(soilstate_type)    , intent(inout) :: soilstate_vars
@@ -2224,7 +2260,7 @@ contains
             ! f_ch4.
             f_ch4_adj = 1.0_r8
             if (.not. lake) then
-               t_fact_ch4 = q10ch4**((t_soisno(c,j) - q10ch4base)/10._r8)
+               t_fact_ch4 = q10prod_vr(c,j)
                ! Adjust f_ch4 by the ratio
                f_ch4_adj = f_ch4 * t_fact_ch4
 
@@ -2330,7 +2366,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine ch4_oxid (bounds, &
        num_methc, filter_methc, &
-       jwt, k_h_inv_vr, sat, lake, soilstate_vars, ch4_vars, dtime)
+       jwt, k_h_inv_vr, q10oxid_vr, sat, lake, soilstate_vars, ch4_vars, dtime)
     !
     ! !DESCRIPTION:
     ! Oxidation is based on double Michaelis-Mentin kinetics, and is adjusted for low soil moisture.
@@ -2345,6 +2381,7 @@ contains
     integer                , intent(in) :: filter_methc(:)     ! column filter for soil points
     integer                , intent(in) :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
     real(r8)               , intent(in) :: k_h_inv_vr( bounds%begc: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2]
+    real(r8)               , intent(in) :: q10oxid_vr( bounds%begc: , 1: ) ! q10_ch4oxid**((T-t0)/10) [col, lev]
     integer                , intent(in) :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                , intent(in) :: lake                ! function called with lake filter
     type(soilstate_type)   , intent(inout) :: soilstate_vars
@@ -2460,7 +2497,7 @@ contains
             oxid_a              = vmax_eff     * h2osoi_vol_min* conc_ch4_rel / (k_m_eff + conc_ch4_rel) &
                                 ![mol/m3-t/s]         [mol/m3-w/s]    [m3-w/m3-t]     [mol/m3-w]    [mol/m3-w]  [mol/m3-w]
                  * conc_o2_rel / (k_m_o2 + conc_o2_rel) &
-                 * q10_ch4oxid ** ((t_soisno(c,j) - t0) / 10._r8) * smp_fact
+                 * q10oxid_vr(c,j) * smp_fact
 
             ! For all landunits / levels, prevent oxidation if at or below freezing
             if (t_soisno(c,j) <= tfrz) oxid_a = 0._r8
