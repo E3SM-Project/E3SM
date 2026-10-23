@@ -227,15 +227,13 @@ contains
     call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp  )
     call t_stopf('CNPsum-precision')
 
-    call t_startf('CNPsum-col_cf_ch4')
-    call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
-    call t_stopf('CNPsum-col_cf_ch4')
+    ! col_cf_summary_for_ch4 and veg_cf_summary_for_ch4 already ran at the end
+    ! of EcosystemDynNoLeaching2, and nothing since has changed their inputs
+    ! (decomp_cascade_hr_vr and the veg cpool_to_*/xfer_to_* fluxes), so
+    ! calling them again here would rewrite the same values.
 
     ! Only update the veg_ data structures if we are using cn
     if(.not.use_fates) then
-       call t_startf('CNPsum-veg_cf_ch4')
-       call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
-       call t_stopf('CNPsum-veg_cf_ch4')
        call t_startf('CNPsum-veg_cf')
        call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf, &
             hrv_zero=hrv_zero)
@@ -968,6 +966,8 @@ contains
                cnstate_vars)
        end if
 
+       ! CNPsum in EcosystemDynLeaching relies on this call and the bulk
+       ! col_cf_summary_for_ch4 call below being the last ones this step.
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
        if( use_c13 ) then
           call col_cf_summary_for_ch4(c13_col_cf,bounds, num_soilc, filter_soilc)
