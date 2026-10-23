@@ -118,6 +118,10 @@ contains
     integer :: c,p,j,l,k ! indices
     integer :: fp,fc     ! lake filter indices
     real(r8), parameter :: frootc_nfix_thc = 10._r8  !threshold fine root carbon for nitrogen fixation gC/m2
+    ! Filter-position copies of one level of decomp_npools_sourcesink and
+    ! decomp_cascade_ntransfer_vr, used while summing the source-sink terms
+    real(r8) :: ss_loc(num_soilc,ndecomp_pools)
+    real(r8) :: tr_loc(num_soilc,ndecomp_cascade_transitions)
 
     integer:: kyr                     ! current year
     integer:: kmo                     ! month of year  (1, ..., 12)
@@ -142,6 +146,9 @@ contains
 
       if (.not.(use_pflotran .and. pf_cmode)) then
 
+         ! Mineral N. The cascade below does not touch these pools or read
+         ! anything written here, so each (c,j) gets all its updates in one pass,
+         ! in the same order as the separate loops before.
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
@@ -150,78 +157,12 @@ contains
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
 
-               ! plant to litter fluxes
-               ! phenology and dynamic landcover fluxes
-               if(.not.use_fates) then
-                  col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
-                       col_nf%phenology_n_to_litr_met_n(c,j) * dt
-
-                  col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
-                       col_nf%phenology_n_to_litr_cel_n(c,j) * dt
-
-                  col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
-                       col_nf%phenology_n_to_litr_lig_n(c,j) * dt
-               end if
-            end do
-         end do
-
-         ! repeating N dep and fixation for crops
-         if ( crop_prog )then
-            do j = 1, nlevdecomp
-
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
+               ! repeating N dep and fixation for crops
+               if ( crop_prog )then
                   ! N deposition and fixation (put all into NH4 pool)
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
                   col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-               end do
-            end do
-         end if
-
-         ! decomposition fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-
-                  col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                       col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
-                       col_nf%decomp_cascade_ntransfer_vr(c,j,k) * dt
-               end do
-            end do
-         end do
-
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1, nlevdecomp
-                  ! column loop
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-
-                     col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) = &
-                          col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) + &
-                          (col_nf%decomp_cascade_ntransfer_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
-                  end do
-               end do
-            else  ! terminal transitions
-               do j = 1, nlevdecomp
-                  ! column loop
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                          col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
-                          col_nf%decomp_cascade_sminn_flux_vr(c,j,k) * dt
-                  end do
-               end do
-            end if
-         end do
-
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+               end if
 
                ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
                col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
@@ -251,6 +192,69 @@ contains
                col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
 
             end do ! end of column loop
+         end do
+
+         ! The source-sink terms of each level are summed in dense filter-position
+         ! locals and stored once. Each pool gets the same terms in the same order
+         ! as before: the plant to litter fluxes (or the value it holds on entry),
+         ! then the donor terms in k order, then the receiver and terminal terms
+         ! in k order.
+         do j = 1, nlevdecomp
+            do l = 1, ndecomp_pools
+               ! the litter pools are set from the plant to litter fluxes below
+               if (.not.use_fates .and. (l == i_met_lit .or. l == i_cel_lit .or. l == i_lig_lit)) cycle
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  ss_loc(fc,l) = col_nf%decomp_npools_sourcesink(c,j,l)
+               end do
+            end do
+
+            ! plant to litter fluxes
+            ! phenology and dynamic landcover fluxes
+            if(.not.use_fates) then
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  ss_loc(fc,i_met_lit) = col_nf%phenology_n_to_litr_met_n(c,j) * dt
+                  ss_loc(fc,i_cel_lit) = col_nf%phenology_n_to_litr_cel_n(c,j) * dt
+                  ss_loc(fc,i_lig_lit) = col_nf%phenology_n_to_litr_lig_n(c,j) * dt
+               end do
+            end if
+
+            ! decomposition fluxes
+            do k = 1, ndecomp_cascade_transitions
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  tr_loc(fc,k) = col_nf%decomp_cascade_ntransfer_vr(c,j,k)
+                  ss_loc(fc,cascade_donor_pool(k)) = ss_loc(fc,cascade_donor_pool(k)) - &
+                       tr_loc(fc,k) * dt
+               end do
+            end do
+
+            do k = 1, ndecomp_cascade_transitions
+               if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+                  ! column loop
+                  do fc = 1,num_soilc
+                     c = filter_soilc(fc)
+                     ss_loc(fc,cascade_receiver_pool(k)) = ss_loc(fc,cascade_receiver_pool(k)) + &
+                          (tr_loc(fc,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
+                  end do
+               else  ! terminal transitions
+                  ! column loop
+                  do fc = 1,num_soilc
+                     c = filter_soilc(fc)
+                     ss_loc(fc,cascade_donor_pool(k)) = ss_loc(fc,cascade_donor_pool(k)) - &
+                          col_nf%decomp_cascade_sminn_flux_vr(c,j,k) * dt
+                  end do
+               end if
+            end do
+
+            do l = 1, ndecomp_pools
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  col_nf%decomp_npools_sourcesink(c,j,l) = ss_loc(fc,l)
+               end do
+            end do
          end do
 
       endif  
