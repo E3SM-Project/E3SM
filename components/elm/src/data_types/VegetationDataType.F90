@@ -8660,7 +8660,7 @@ module VegetationDataType
 
   !-----------------------------------------------------------------------
   subroutine veg_cf_setvalues ( this, num_patch, filter_patch, value_patch, &
-       zero_harvest)
+       zero_harvest, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set vegetation-level carbon fluxes
@@ -8671,6 +8671,7 @@ module VegetationDataType
     integer , intent(in) :: filter_patch(:)
     real(r8), intent(in) :: value_patch
     logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before any read (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -8678,9 +8679,12 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     integer :: fi,i     ! loop index
     logical :: do_zero_harvest
+    logical :: do_zero_rewritten
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
     if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
 
     if(.not.use_fates) then
        do fi = 1,num_patch,flux_setvalues_block_size
@@ -8694,29 +8698,11 @@ module VegetationDataType
           this%deadcrootc_xfer_to_deadcrootc(idx)       = value_patch
           this%leafc_to_litter(idx)                     = value_patch
           this%frootc_to_litter(idx)                    = value_patch
-          this%leaf_mr(idx)                             = value_patch
           this%froot_mr(idx)                            = value_patch
           this%livestem_mr(idx)                         = value_patch
           this%livecroot_mr(idx)                        = value_patch
           this%grain_mr(idx)                            = value_patch
-          this%leaf_curmr(idx)                          = value_patch
-          this%froot_curmr(idx)                         = value_patch
-          this%livestem_curmr(idx)                      = value_patch
-          this%livecroot_curmr(idx)                     = value_patch
-          this%grain_curmr(idx)                         = value_patch
-          this%leaf_xsmr(idx)                           = value_patch
-          this%froot_xsmr(idx)                          = value_patch
-          this%livestem_xsmr(idx)                       = value_patch
-          this%livecroot_xsmr(idx)                      = value_patch
-          this%grain_xsmr(idx)                          = value_patch
-          this%xr(idx)                                  = value_patch
-          this%psnsun_to_cpool(idx)                     = value_patch
-          this%psnshade_to_cpool(idx)                   = value_patch
           this%cpool_to_xsmrpool(idx)                   = value_patch
-          this%cpool_to_leafc(idx)                      = value_patch
-          this%cpool_to_leafc_storage(idx)              = value_patch
-          this%cpool_to_frootc(idx)                     = value_patch
-          this%cpool_to_frootc_storage(idx)             = value_patch
           this%cpool_to_livestemc(idx)                  = value_patch
           this%cpool_to_livestemc_storage(idx)          = value_patch
           this%cpool_to_deadstemc(idx)                  = value_patch
@@ -8725,7 +8711,6 @@ module VegetationDataType
           this%cpool_to_livecrootc_storage(idx)         = value_patch
           this%cpool_to_deadcrootc(idx)                 = value_patch
           this%cpool_to_deadcrootc_storage(idx)         = value_patch
-          this%cpool_to_gresp_storage(idx)              = value_patch
           
           this%cpool_livestem_gr(idx)                   = value_patch
           this%cpool_livestem_storage_gr(idx)           = value_patch
@@ -8749,35 +8734,70 @@ module VegetationDataType
           this%gresp_storage_to_xfer(idx)               = value_patch
           this%livestemc_to_deadstemc(idx)              = value_patch
           this%livecrootc_to_deadcrootc(idx)            = value_patch
-          this%gpp(idx)                                 = value_patch
-          this%gpp_before_downreg(idx)                  = value_patch
-          this%mr(idx)                                  = value_patch
-          this%current_gr(idx)                          = value_patch
-          this%transfer_gr(idx)                         = value_patch
-          this%storage_gr(idx)                          = value_patch
-          this%gr(idx)                                  = value_patch
-          this%ar(idx)                                  = value_patch
-          this%rr(idx)                                  = value_patch
           this%npp(idx)                                 = value_patch
-          this%agnpp(idx)                               = value_patch
-          this%bgnpp(idx)                               = value_patch
-          this%agwdnpp(idx)                             = value_patch
-          this%litfall(idx)                             = value_patch
-          this%vegfire(idx)                             = value_patch
-          this%wood_harvestc(idx)                       = value_patch
           this%cinputs(idx)                             = value_patch
           this%coutputs(idx)                            = value_patch
-          this%fire_closs(idx)                          = value_patch
-          this%frootc_alloc(idx)                        = value_patch
-          this%frootc_loss(idx)                         = value_patch
-          this%leafc_alloc(idx)                         = value_patch
-          this%leafc_loss(idx)                          = value_patch
-          this%woodc_alloc(idx)                         = value_patch
-          this%woodc_loss(idx)                          = value_patch
           this%xsmrpool_turnover(idx)                   = value_patch
 
           end associate
        end do
+
+       ! These fluxes are assigned for every filter patch before any read in
+       ! each step: leaf_mr and xr by MaintenanceResp; psnsun/psnshade_to_cpool,
+       ! gpp_before_downreg and the *_curmr and *_xsmr fluxes by TotalNPDemand
+       ! (Allocation1); cpool_to_leafc/frootc (and storage) and
+       ! cpool_to_gresp_storage by DistributeN_RD/_ECAMIC (Allocation3); rr by
+       ! veg_cf_summary_rr, agnpp/bgnpp/agwdnpp by veg_cf_summary_for_ch4 and
+       ! the rest by veg_cf_summary. So they need zeroing only when patches may
+       ! have become active. A new reader before those writers, or a writer
+       ! that skips some patches, must move the field back to the block above.
+       if (do_zero_rewritten) then
+          do fi = 1,num_patch,flux_setvalues_block_size
+             associate (idx => filter_patch(fi:min(fi+flux_setvalues_block_size-1,num_patch)))
+             this%leaf_mr(idx)                   = value_patch
+             this%xr(idx)                        = value_patch
+             this%psnsun_to_cpool(idx)           = value_patch
+             this%psnshade_to_cpool(idx)         = value_patch
+             this%gpp_before_downreg(idx)        = value_patch
+             this%leaf_curmr(idx)                = value_patch
+             this%froot_curmr(idx)               = value_patch
+             this%livestem_curmr(idx)            = value_patch
+             this%livecroot_curmr(idx)           = value_patch
+             this%grain_curmr(idx)               = value_patch
+             this%leaf_xsmr(idx)                 = value_patch
+             this%froot_xsmr(idx)                = value_patch
+             this%livestem_xsmr(idx)             = value_patch
+             this%livecroot_xsmr(idx)            = value_patch
+             this%grain_xsmr(idx)                = value_patch
+             this%cpool_to_leafc(idx)            = value_patch
+             this%cpool_to_leafc_storage(idx)    = value_patch
+             this%cpool_to_frootc(idx)           = value_patch
+             this%cpool_to_frootc_storage(idx)   = value_patch
+             this%cpool_to_gresp_storage(idx)    = value_patch
+             this%gpp(idx)                       = value_patch
+             this%mr(idx)                        = value_patch
+             this%current_gr(idx)                = value_patch
+             this%transfer_gr(idx)               = value_patch
+             this%storage_gr(idx)                = value_patch
+             this%gr(idx)                        = value_patch
+             this%ar(idx)                        = value_patch
+             this%rr(idx)                        = value_patch
+             this%agnpp(idx)                     = value_patch
+             this%bgnpp(idx)                     = value_patch
+             this%agwdnpp(idx)                   = value_patch
+             this%litfall(idx)                   = value_patch
+             this%vegfire(idx)                   = value_patch
+             this%wood_harvestc(idx)             = value_patch
+             this%fire_closs(idx)                = value_patch
+             this%frootc_alloc(idx)              = value_patch
+             this%frootc_loss(idx)               = value_patch
+             this%leafc_alloc(idx)               = value_patch
+             this%leafc_loss(idx)                = value_patch
+             this%woodc_alloc(idx)               = value_patch
+             this%woodc_loss(idx)                = value_patch
+             end associate
+          end do
+       end if
     end if !(.not.use_fates)
 
     if ( crop_prog )then
@@ -9666,7 +9686,7 @@ module VegetationDataType
 
   !-----------------------------------------------------------------------
   subroutine veg_nf_setvalues ( this, num_patch, filter_patch, value_patch, &
-       zero_harvest)
+       zero_harvest, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set vegetation-level nitrogen fluxes
@@ -9677,6 +9697,7 @@ module VegetationDataType
     integer , intent(in)             :: filter_patch(:)
     real(r8), intent(in)             :: value_patch
     logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before any read (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -9684,9 +9705,12 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     integer :: fi,i     ! loop index
     logical :: do_zero_harvest
+    logical :: do_zero_rewritten
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
     if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
 
     do fi = 1,num_patch,flux_setvalues_block_size
        associate (idx => filter_patch(fi:min(fi+flux_setvalues_block_size-1,num_patch)))
@@ -9707,12 +9731,6 @@ module VegetationDataType
        this%leafn_to_litter(idx)                     = value_patch
        this%leafn_to_retransn(idx)                   = value_patch
        this%frootn_to_litter(idx)                    = value_patch
-       this%retransn_to_npool(idx)                   = value_patch
-       this%sminn_to_npool(idx)                      = value_patch
-       this%npool_to_leafn(idx)                      = value_patch
-       this%npool_to_leafn_storage(idx)              = value_patch
-       this%npool_to_frootn(idx)                     = value_patch
-       this%npool_to_frootn_storage(idx)             = value_patch
        this%npool_to_livestemn(idx)                  = value_patch
        this%npool_to_livestemn_storage(idx)          = value_patch
        this%npool_to_deadstemn(idx)                  = value_patch
@@ -9731,19 +9749,37 @@ module VegetationDataType
        this%livestemn_to_retransn(idx)               = value_patch
        this%livecrootn_to_deadcrootn(idx)            = value_patch
        this%livecrootn_to_retransn(idx)              = value_patch
-       this%ndeploy(idx)                             = value_patch
-       this%wood_harvestn(idx)                       = value_patch
-       this%fire_nloss(idx)                          = value_patch
        this%nfix_to_plantn(idx)                      = value_patch
-       this%gap_nloss_litter(idx)                    = value_patch
-       this%fire_nloss_litter(idx)                   = value_patch
-       this%hrv_nloss_litter(idx)                    = value_patch
        this%sen_nloss_litter(idx)                    = value_patch
        this%crop_seedn_to_leaf(idx)                  = value_patch
        this%livestemn_to_litter(idx)                 = value_patch
 
        end associate
     end do
+
+    ! These fluxes are assigned for every filter patch before any read in each
+    ! step: retransn_to_npool by TotalNPDemand (Allocation1), sminn_to_npool and
+    ! the leaf and fine root npool_to_* fluxes by DistributeN_RD/_ECAMIC
+    ! (Allocation3), and the rest by veg_nf_summary, their only reader. So they
+    ! need zeroing only when patches may have become active (see veg_cf_setvalues).
+    if (do_zero_rewritten) then
+       do fi = 1,num_patch,flux_setvalues_block_size
+          associate (idx => filter_patch(fi:min(fi+flux_setvalues_block_size-1,num_patch)))
+          this%retransn_to_npool(idx)         = value_patch
+          this%sminn_to_npool(idx)            = value_patch
+          this%npool_to_leafn(idx)            = value_patch
+          this%npool_to_leafn_storage(idx)    = value_patch
+          this%npool_to_frootn(idx)           = value_patch
+          this%npool_to_frootn_storage(idx)   = value_patch
+          this%ndeploy(idx)                   = value_patch
+          this%wood_harvestn(idx)             = value_patch
+          this%fire_nloss(idx)                = value_patch
+          this%gap_nloss_litter(idx)          = value_patch
+          this%fire_nloss_litter(idx)         = value_patch
+          this%hrv_nloss_litter(idx)          = value_patch
+          end associate
+       end do
+    end if
 
     if ( crop_prog )then
        do fi = 1,num_patch,flux_setvalues_block_size
@@ -10780,7 +10816,7 @@ module VegetationDataType
 
   !-----------------------------------------------------------------------
   subroutine veg_pf_setvalues ( this, num_patch, filter_patch, value_patch, &
-       zero_harvest)
+       zero_harvest, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
@@ -10791,6 +10827,7 @@ module VegetationDataType
     integer , intent(in) :: filter_patch(:)
     real(r8), intent(in) :: value_patch
     logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before any read (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -10798,9 +10835,12 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     integer :: fi,i     ! loop index
     logical :: do_zero_harvest
+    logical :: do_zero_rewritten
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
     if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
     do fi = 1,num_patch,flux_setvalues_block_size
        associate (idx => filter_patch(fi:min(fi+flux_setvalues_block_size-1,num_patch)))
 
@@ -10818,12 +10858,6 @@ module VegetationDataType
        this%leafp_to_litter(idx)                     = value_patch
        this%leafp_to_retransp(idx)                   = value_patch
        this%frootp_to_litter(idx)                    = value_patch
-       this%retransp_to_ppool(idx)                   = value_patch
-       this%sminp_to_ppool(idx)                      = value_patch
-       this%ppool_to_leafp(idx)                      = value_patch
-       this%ppool_to_leafp_storage(idx)              = value_patch
-       this%ppool_to_frootp(idx)                     = value_patch
-       this%ppool_to_frootp_storage(idx)             = value_patch
        this%ppool_to_livestemp(idx)                  = value_patch
        this%ppool_to_livestemp_storage(idx)          = value_patch
        this%ppool_to_deadstemp(idx)                  = value_patch
@@ -10842,18 +10876,36 @@ module VegetationDataType
        this%livestemp_to_retransp(idx)               = value_patch
        this%livecrootp_to_deadcrootp(idx)            = value_patch
        this%livecrootp_to_retransp(idx)              = value_patch
-       this%pdeploy(idx)                             = value_patch
-       this%wood_harvestp(idx)                       = value_patch
-       this%fire_ploss(idx)                          = value_patch
        this%biochem_pmin_to_plant(idx)               = value_patch
-       this%gap_ploss_litter(idx)                    = value_patch
-       this%fire_ploss_litter(idx)                   = value_patch
-       this%hrv_ploss_litter(idx)                    = value_patch
        this%sen_ploss_litter(idx)                    = value_patch
        this%livestemp_to_litter(idx)                 = value_patch
 
        end associate
     end do
+
+    ! These fluxes are assigned for every filter patch before any read in each
+    ! step: retransp_to_ppool by TotalNPDemand (Allocation1), sminp_to_ppool and
+    ! the leaf and fine root ppool_to_* fluxes by DistributeN_RD/_ECAMIC
+    ! (Allocation3), and the rest by veg_pf_summary, their only reader. So they
+    ! need zeroing only when patches may have become active (see veg_cf_setvalues).
+    if (do_zero_rewritten) then
+       do fi = 1,num_patch,flux_setvalues_block_size
+          associate (idx => filter_patch(fi:min(fi+flux_setvalues_block_size-1,num_patch)))
+          this%retransp_to_ppool(idx)         = value_patch
+          this%sminp_to_ppool(idx)            = value_patch
+          this%ppool_to_leafp(idx)            = value_patch
+          this%ppool_to_leafp_storage(idx)    = value_patch
+          this%ppool_to_frootp(idx)           = value_patch
+          this%ppool_to_frootp_storage(idx)   = value_patch
+          this%pdeploy(idx)                   = value_patch
+          this%wood_harvestp(idx)             = value_patch
+          this%fire_ploss(idx)                = value_patch
+          this%gap_ploss_litter(idx)          = value_patch
+          this%fire_ploss_litter(idx)         = value_patch
+          this%hrv_ploss_litter(idx)          = value_patch
+          end associate
+       end do
+    end if
 
     if ( crop_prog )then
        do fi = 1,num_patch,flux_setvalues_block_size
