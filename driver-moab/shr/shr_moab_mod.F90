@@ -7,7 +7,8 @@ module shr_moab_mod
 
  use shr_sys_mod,      only: shr_sys_abort
  use seq_comm_mct,     only: logunit
- use seq_comm_mct,     only: atm_pg_active, mbaxid,mb_scm_land,mblxid,mb_dead_comps
+ use seq_comm_mct,     only: atm_pg_active, mbaxid, mb_scm_atm, mb_scm_land, mblxid, mb_dead_comps, &
+                              mb_scm_ocn, mboxid, mb_scm_ice, mbixid
  use shr_kind_mod,     only: CXX => shr_kind_CXX
  use shr_kind_mod    , only: R8 => SHR_KIND_R8
  use mct_mod,          only: mct_aVect
@@ -17,12 +18,27 @@ module shr_moab_mod
  private
 
  public :: mbGetnCells
+ public :: mbGetEntityType
  public :: mbGetCellTagVals
  public :: mbSetCellTagVals
  public :: moab_set_tag_from_av
  public :: moab_set_av_from_tag
 
 contains
+
+ integer function mbGetEntityType(moabid)
+   integer, intent(in) :: moabid
+
+   if (((mb_scm_atm .and. (mbaxid .eq. moabid)) .or. &
+       (.not. atm_pg_active .and. (mbaxid .eq. moabid)) .or. &
+       (mb_scm_land .and. (mblxid .eq. moabid)) .or. &
+       (mb_scm_ocn  .and. (mboxid .eq. moabid)) .or. &
+       (mb_scm_ice  .and. (mbixid .eq. moabid))) .and. .not. mb_dead_comps) then
+      mbGetEntityType = 0 ! vertices
+   else
+      mbGetEntityType = 1 ! elements
+   endif
+ end function mbGetEntityType
 
 !===============================================================================
 ! !BOP =========================================================================
@@ -69,8 +85,7 @@ contains
    endif
 
    ! only case on coupler side that we actually want number of vertices is when we use spectral atm
-   if (((.not. atm_pg_active .and. (mbaxid .eq. moabid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. moabid))) .and. .not. mb_dead_comps) then
+   if (mbGetEntityType(moabid) == 0) then
     mbGetnCells = nvert(1)
    else
     mbGetnCells = nvise(1)
@@ -105,12 +120,7 @@ contains
     character(*), parameter   :: subname = '(mbGetCellTagVals) '
 !-----------------------------------------------------------------------
 !
-    if (((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. mbid))) .and. .not. mb_dead_comps) then
-      ent_type = 0
-    else
-      ent_type = 1
-    endif
+    ent_type = mbGetEntityType(mbid)
     
     tagname = trim(intag)//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage (mbid, tagname, nMax , ent_type, inarray)
@@ -149,12 +159,7 @@ contains
 !-----------------------------------------------------------------------
 !
 
-    if (((.not. atm_pg_active .and. (mbaxid .eq. mbid)) .or. &
-       (mb_scm_land .and. (mblxid .eq. mbid))) .and. .not. mb_dead_comps) then
-      ent_type = 0
-    else
-      ent_type = 1
-    endif
+    ent_type = mbGetEntityType(mbid)
     tagname = trim(intag)//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage (mbid, tagname, nMax , ent_type, inarray)
     if (ierr .ne. 0) then
