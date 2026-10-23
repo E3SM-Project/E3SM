@@ -150,6 +150,19 @@ contains
     real(r8):: net_pmin_loc(num_soilc,1:nlevdecomp)   ! net_pmin_vr
     real(r8):: fpi_loc(num_soilc,1:nlevdecomp)        ! fpi_vr
     real(r8):: fpi_p_loc(num_soilc,1:nlevdecomp)      ! fpi_p_vr
+    ! Filter-position copies of the decomposing C, N and P pools. The pools are not
+    ! changed in this routine, nor in nitrif_denitrif and Allocation2_ResolveNPLimit,
+    ! so each (c,j,l) is gathered once and the copies are exact.
+    real(r8), allocatable :: cpool_loc(:,:,:)  ! decomp_cpools_vr (num_soilc,nlevdecomp,ndecomp_pools)
+    real(r8), allocatable :: npool_loc(:,:,:)  ! decomp_npools_vr
+    real(r8), allocatable :: ppool_loc(:,:,:)  ! decomp_ppools_vr
+    ! Filter-position copies of the potential mineral N and P fluxes, which the second
+    ! pass over the transitions scales and uses. Only Allocation2_ResolveNPLimit reads
+    ! pmnf_decomp_cascade and pmpf_decomp_cascade, before the second pass, so the scaled
+    ! values are kept here and not stored back: after this routine the two fields hold
+    ! the potential (unscaled) fluxes.
+    real(r8), allocatable :: pmnf_loc(:,:,:)   ! (num_soilc,nlevdecomp,ndecomp_cascade_transitions)
+    real(r8), allocatable :: pmpf_loc(:,:,:)
 
     !-----------------------------------------------------------------------
 
@@ -218,21 +231,38 @@ contains
       ! column loop to calculate potential decomp rates and total immobilization
       ! demand.
 
+      ! allocatable, so that they do not enlarge the stack frame of large clumps
+      allocate(cpool_loc(num_soilc,1:nlevdecomp,1:ndecomp_pools))
+      allocate(npool_loc(num_soilc,1:nlevdecomp,1:ndecomp_pools))
+      allocate(ppool_loc(num_soilc,1:nlevdecomp,1:ndecomp_pools))
+      allocate(pmnf_loc(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions))
+      allocate(pmpf_loc(num_soilc,1:nlevdecomp,1:ndecomp_cascade_transitions))
+
+      !! gather the pools of the filtered columns (see cpool_loc)
+      do l = 1, ndecomp_pools
+         do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               cpool_loc(fc,j,l) = decomp_cpools_vr(c,j,l)
+               npool_loc(fc,j,l) = decomp_npools_vr(c,j,l)
+               ppool_loc(fc,j,l) = decomp_ppools_vr(c,j,l)
+            end do
+         end do
+      end do
+
       !! calculate c:n ratios of applicable pools
       do l = 1, ndecomp_pools
          if ( floating_cn_ratio_decomp_pools(l) ) then
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  if ( decomp_npools_vr(c,j,l) > 0._r8 ) then
-                     cn_decomp_pools(fc,j,l) = decomp_cpools_vr(c,j,l) / decomp_npools_vr(c,j,l)
+                  if ( npool_loc(fc,j,l) > 0._r8 ) then
+                     cn_decomp_pools(fc,j,l) = cpool_loc(fc,j,l) / npool_loc(fc,j,l)
                   end if
                end do
             end do
          else
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
-                  c = filter_soilc(fc)
                   cn_decomp_pools(fc,j,l) = initial_cn_ratio(l)
                end do
             end do
@@ -244,16 +274,14 @@ contains
          if ( floating_cp_ratio_decomp_pools(l) ) then
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  if ( decomp_ppools_vr(c,j,l) > 0._r8 ) then
-                     cp_decomp_pools(fc,j,l) = decomp_cpools_vr(c,j,l) / decomp_ppools_vr(c,j,l)
+                  if ( ppool_loc(fc,j,l) > 0._r8 ) then
+                     cp_decomp_pools(fc,j,l) = cpool_loc(fc,j,l) / ppool_loc(fc,j,l)
                   end if
                end do
             end do
          else
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
-                  c = filter_soilc(fc)
                   cp_decomp_pools(fc,j,l) = initial_cp_ratio(l)
                end do
             end do
@@ -293,17 +321,17 @@ contains
                pmnf_decomp_cascade(c,j,k) = 0._r8
                pmpf_decomp_cascade(c,j,k) = 0._r8
 
-               if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. &
+               if (cpool_loc(fc,j,cascade_donor_pool(k)) > 0._r8 .and. &
                     decomp_k(c,j,cascade_donor_pool(k)) > 0._r8 ) then
 
-                 p_decomp_cpool_loss(fc,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
+                 p_decomp_cpool_loss(fc,j,k) = cpool_loc(fc,j,cascade_donor_pool(k)) &
                        * decomp_k(c,j,cascade_donor_pool(k))  * pathfrac_decomp_cascade(c,j,k)
                   if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
 
                      if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
                         ratio = 0._r8
 
-                        if (decomp_npools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
+                        if (npool_loc(fc,j,cascade_donor_pool(k)) > 0._r8) then
                            ratio = cn_decomp_pools(fc,j,cascade_receiver_pool(k))/cn_decomp_pools(fc,j,cascade_donor_pool(k))
                         endif
                         pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(fc,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
@@ -322,7 +350,7 @@ contains
                      if (cascade_receiver_pool(k) /= i_atm ) then  ! not 100% respiration
                         ratio = 0._r8
 
-                        if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
+                        if (ppool_loc(fc,j,cascade_donor_pool(k)) > 0._r8) then
 !                           ratio = cp_decomp_pools(fc,j,cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
                            ratio = initial_cp_ratio(cascade_receiver_pool(k))/cp_decomp_pools(fc,j,cascade_donor_pool(k))
                         endif
@@ -331,7 +359,7 @@ contains
                              / initial_cp_ratio(cascade_receiver_pool(k)) )
 
                      else   ! 100% respiration
-                        if(decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
+                        if(ppool_loc(fc,j,cascade_donor_pool(k)) > 0._r8) then
                           pmpf_decomp_cascade(c,j,k) = - p_decomp_cpool_loss(fc,j,k) / cp_decomp_pools(fc,j,cascade_donor_pool(k))
                        end if
                      endif
@@ -354,6 +382,10 @@ contains
                end if
 
                phr_loc(fc,j) = phr_loc(fc,j) + rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
+
+               ! keep the potential fluxes for the second pass
+               pmnf_loc(fc,j,k) = pmnf_decomp_cascade(c,j,k)
+               pmpf_loc(fc,j,k) = pmpf_decomp_cascade(c,j,k)
             end do
          end do
       end do
@@ -453,42 +485,42 @@ contains
                decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                decomp_cascade_sminn_flux_vr(c,j,k) = 0._r8
                decomp_cascade_sminp_flux_vr(c,j,k) = 0._r8
-               if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
-                  if ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) > 0._r8 ) then    ! N and P co-limitation
+               if (cpool_loc(fc,j,cascade_donor_pool(k)) > 0._r8) then
+                  if ( pmnf_loc(fc,j,k) > 0._r8 .and. pmpf_loc(fc,j,k) > 0._r8 ) then    ! N and P co-limitation
                      p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )
-                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )   !!! immobilization step
-                  elseif ( pmnf_decomp_cascade(c,j,k) > 0._r8 .and. pmpf_decomp_cascade(c,j,k) <= 0._r8 ) then  ! N limitation
+                     pmnf_loc(fc,j,k) = pmnf_loc(fc,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )
+                     pmpf_loc(fc,j,k) = pmpf_loc(fc,j,k) * min( fpi_loc(fc,j),fpi_p_loc(fc,j) )   !!! immobilization step
+                  elseif ( pmnf_loc(fc,j,k) > 0._r8 .and. pmpf_loc(fc,j,k) <= 0._r8 ) then  ! N limitation
                      p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_loc(fc,j)
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_loc(fc,j)
-                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_loc(fc,j) !!! immobilization step
-                  elseif ( pmnf_decomp_cascade(c,j,k) <= 0._r8 .and. pmpf_decomp_cascade(c,j,k) >  0._r8 ) then  ! P limitation
+                     pmnf_loc(fc,j,k) = pmnf_loc(fc,j,k) * fpi_loc(fc,j)
+                     pmpf_loc(fc,j,k) = pmpf_loc(fc,j,k) * fpi_loc(fc,j) !!! immobilization step
+                  elseif ( pmnf_loc(fc,j,k) <= 0._r8 .and. pmpf_loc(fc,j,k) >  0._r8 ) then  ! P limitation
                      p_decomp_cpool_loss(fc,j,k) = p_decomp_cpool_loss(fc,j,k) * fpi_p_loc(fc,j)
-                     pmnf_decomp_cascade(c,j,k) = pmnf_decomp_cascade(c,j,k) * fpi_p_loc(fc,j)
-                     pmpf_decomp_cascade(c,j,k) = pmpf_decomp_cascade(c,j,k) * fpi_p_loc(fc,j) !!! immobilization step
+                     pmnf_loc(fc,j,k) = pmnf_loc(fc,j,k) * fpi_p_loc(fc,j)
+                     pmpf_loc(fc,j,k) = pmpf_loc(fc,j,k) * fpi_p_loc(fc,j) !!! immobilization step
                   end if
                   decomp_cascade_hr_vr(c,j,k) = rf_decomp_cascade(c,j,k) * p_decomp_cpool_loss(fc,j,k)
                   decomp_cascade_ctransfer_vr(c,j,k) = (1._r8 - rf_decomp_cascade(c,j,k)) * p_decomp_cpool_loss(fc,j,k)
-                  if (decomp_npools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
+                  if (npool_loc(fc,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
                      decomp_cascade_ntransfer_vr(c,j,k) = p_decomp_cpool_loss(fc,j,k) / cn_decomp_pools(fc,j,cascade_donor_pool(k))
                   else
                      decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   endif
                   !!! phosphorus fluxes
-                  if (decomp_ppools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
+                  if (ppool_loc(fc,j,cascade_donor_pool(k)) > 0._r8 .and. cascade_receiver_pool(k) /= i_atm) then
                      decomp_cascade_ptransfer_vr(c,j,k) = p_decomp_cpool_loss(fc,j,k) / cp_decomp_pools(fc,j,cascade_donor_pool(k))
                   else
                      decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
                   endif
                   if ( cascade_receiver_pool(k) /= 0 ) then
-                     decomp_cascade_sminn_flux_vr(c,j,k) = pmnf_decomp_cascade(c,j,k)
-                     decomp_cascade_sminp_flux_vr(c,j,k) = pmpf_decomp_cascade(c,j,k)
+                     decomp_cascade_sminn_flux_vr(c,j,k) = pmnf_loc(fc,j,k)
+                     decomp_cascade_sminp_flux_vr(c,j,k) = pmpf_loc(fc,j,k)
                   else  ! keep sign convention negative for terminal pools
-                     decomp_cascade_sminn_flux_vr(c,j,k) = - pmnf_decomp_cascade(c,j,k)
-                     decomp_cascade_sminp_flux_vr(c,j,k) = - pmpf_decomp_cascade(c,j,k)
+                     decomp_cascade_sminn_flux_vr(c,j,k) = - pmnf_loc(fc,j,k)
+                     decomp_cascade_sminp_flux_vr(c,j,k) = - pmpf_loc(fc,j,k)
                   endif
-                  net_nmin_loc(fc,j) = net_nmin_loc(fc,j) - pmnf_decomp_cascade(c,j,k)
-                  net_pmin_loc(fc,j) = net_pmin_loc(fc,j) - pmpf_decomp_cascade(c,j,k)
+                  net_nmin_loc(fc,j) = net_nmin_loc(fc,j) - pmnf_loc(fc,j,k)
+                  net_pmin_loc(fc,j) = net_pmin_loc(fc,j) - pmpf_loc(fc,j,k)
                else
                   decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
                   decomp_cascade_ptransfer_vr(c,j,k) = 0._r8
@@ -497,26 +529,26 @@ contains
                end if
 
                if (is_rd) then
-                  if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then
-                      gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
+                  if (pmnf_loc(fc,j,k) <= 0._r8) then
+                      gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - 1.0_r8*pmnf_loc(fc,j,k)
                   end if
-                  if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then
-                      gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
+                  if (pmpf_loc(fc,j,k) <= 0._r8) then
+                      gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - 1.0_r8*pmpf_loc(fc,j,k)
                   end if
                else
-                  if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
-                     soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                     soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
+                  if (pmnf_loc(fc,j,k) > 0._r8) then
+                     soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_loc(fc,j,k)*dzsoi_decomp(j)
+                     soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_loc(fc,j,k)
                   else
-                     soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                     gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
+                     soil_n_grossmin_flux(c) = soil_n_grossmin_flux(c) -1.0_r8*pmnf_loc(fc,j,k)*dzsoi_decomp(j)
+                     gross_nmin_loc(fc,j) = gross_nmin_loc(fc,j) - 1.0_r8*pmnf_loc(fc,j,k)
                   end if
-                  if (pmpf_decomp_cascade(c,j,k) > 0._r8) then
-                     soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                     soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_decomp_cascade(c,j,k)
+                  if (pmpf_loc(fc,j,k) > 0._r8) then
+                     soil_p_immob_flux(c) = soil_p_immob_flux(c) + pmpf_loc(fc,j,k)*dzsoi_decomp(j)
+                     soil_p_immob_flux_vr(c,j) = soil_p_immob_flux_vr(c,j) + pmpf_loc(fc,j,k)
                   else
-                     soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
-                     gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - 1.0_r8*pmpf_decomp_cascade(c,j,k)
+                     soil_p_grossmin_flux(c) = soil_p_grossmin_flux(c) -1.0_r8*pmpf_loc(fc,j,k)*dzsoi_decomp(j)
+                     gross_pmin_loc(fc,j) = gross_pmin_loc(fc,j) - 1.0_r8*pmpf_loc(fc,j,k)
                   end if
                end if
 
@@ -554,6 +586,8 @@ contains
          end do
       end if
       call t_stopf('SLDA-actual')
+
+      deallocate(cpool_loc, npool_loc, ppool_loc, pmnf_loc, pmpf_loc)
 
     end associate
 
