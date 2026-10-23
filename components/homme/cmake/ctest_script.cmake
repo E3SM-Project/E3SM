@@ -11,8 +11,8 @@ if (NOT DEFINED BUILD_WORK_DIR)
   set(BUILD_WORK_DIR "${HOMME_ROOT}/ctest-build")
 endif()
 
-if (NOT DEFINED MACHINE)
-  message(FATAL_ERROR "MACHINE is required (e.g., -DMACHINE=pm-cpu)")
+if (NOT DEFINED MACHINE_FILE)
+  message(FATAL_ERROR "MACHINE_FILE is required (e.g., -DMACHINE_FILE=pm-cpu-bfb)")
 endif()
 
 if (NOT DEFINED BFB_TESTING)
@@ -46,13 +46,8 @@ endif()
 # ---------------------------------------------------------------------------
 # Derived settings
 # ---------------------------------------------------------------------------
-if (BFB_TESTING)
-  set(_machine_suffix "-bfb")
-else()
-  set(_machine_suffix "")
-endif()
-
-set(_machine_file "${HOMME_ROOT}/cmake/machineFiles/${MACHINE}${_machine_suffix}.cmake")
+# MACHINE_FILE is the name (without .cmake) of a file in cmake/machineFiles
+set(_machine_file "${HOMME_ROOT}/cmake/machineFiles/${MACHINE_FILE}.cmake")
 if (NOT EXISTS "${_machine_file}")
   message(FATAL_ERROR "Machine file not found: ${_machine_file}")
 endif()
