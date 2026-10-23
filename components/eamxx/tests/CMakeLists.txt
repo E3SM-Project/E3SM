@@ -79,6 +79,9 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   SetVarDependingOnTestSize(TEST_RANK_START ${SCREAM_TEST_MAX_RANKS} 1 1)
   set(TEST_RANK_END ${SCREAM_TEST_MAX_RANKS})
 
+  # Default test casename
+  set(EAMXX_TEST_CASENAME "EAMxxStandAloneTest" CACHE STRING "Casename for EAMxx stand alone tests")
+
   # Initial condition files used in the tests
   set(EAMxx_tests_IC_FILE_72lev         "screami_unit_tests_ne2np4L72_20260813.nc")
   set(EAMxx_tests_IC_FILE_128lev        "screami_unit_tests_ne2np4L128_20260813.nc")
