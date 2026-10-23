@@ -259,6 +259,40 @@ module histFileMod
   !
   character(len=max_chars) :: TimeConst3DVars_Filename = ' '
   character(len=max_chars) :: TimeConst3DVars          = ' '
+  !
+  ! Active points with nonzero gridcell weight, and the subgrid averaging scale
+  ! factors, used to map history fields to gridcells. They are set up once per
+  ! call of hist_update_hbuf (see hbuf_map_init), so that mapping each field
+  ! does not loop over all allocated points.
+  !
+  integer , parameter   :: hbuf_max_scale_types = 8
+  integer , allocatable :: hbuf_pts_p(:)          ! active patches with nonzero wtgcell, in index order
+  integer , allocatable :: hbuf_pts_c(:)          ! active columns with nonzero wtgcell, in index order
+  integer , allocatable :: hbuf_pts_l(:)          ! active landunits with nonzero wtgcell, in index order
+  integer               :: hbuf_npts_p            ! number of entries in hbuf_pts_p
+  integer               :: hbuf_npts_c            ! number of entries in hbuf_pts_c
+  integer               :: hbuf_npts_l            ! number of entries in hbuf_pts_l
+  integer               :: hbuf_n_c2l_types       ! number of c2l scale types in hbuf_scale_c2l
+  integer               :: hbuf_n_l2g_types       ! number of l2g scale types in hbuf_scale_l2g
+  character(len=hist_dim_name_length) :: hbuf_c2l_types(hbuf_max_scale_types) ! c2l scale types set up so far
+  character(len=hist_dim_name_length) :: hbuf_l2g_types(hbuf_max_scale_types) ! l2g scale types set up so far
+  real(r8), allocatable :: hbuf_scale_c2l(:,:)    ! c2l scale factors [col, c2l scale type]
+  real(r8), allocatable :: hbuf_scale_l2g(:,:)    ! l2g scale factors [landunit, l2g scale type]
+
+  interface hbuf_p2g
+     module procedure hbuf_p2g_1d
+     module procedure hbuf_p2g_2d
+  end interface hbuf_p2g
+
+  interface hbuf_c2g
+     module procedure hbuf_c2g_1d
+     module procedure hbuf_c2g_2d
+  end interface hbuf_c2g
+
+  interface hbuf_l2g
+     module procedure hbuf_l2g_1d
+     module procedure hbuf_l2g_2d
+  end interface hbuf_l2g
   !-----------------------------------------------------------------------
 
 contains
@@ -1004,6 +1038,8 @@ contains
     character(len=*),parameter :: subname = 'hist_update_hbuf'
     !-----------------------------------------------------------------------
 
+    call hbuf_map_init(bounds)
+
     do t = 1,ntapes
 !$OMP PARALLEL DO PRIVATE (f, numdims, num2d)
        do f = 1,tape(t)%nflds
@@ -1021,6 +1057,456 @@ contains
   end subroutine hist_update_hbuf
 
   !-----------------------------------------------------------------------
+  subroutine hbuf_map_init(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Set up the lists of active points with nonzero gridcell weight and the
+    ! subgrid averaging scale factors of all fields on the history tapes, for
+    ! mapping fields to gridcells in hist_update_hbuf_field_1d/2d. The mapping
+    ! then gives the same results as p2g, c2g and l2g, which loop over all
+    ! allocated points and set up the scale factors for each field.
+    !
+    ! !USES:
+    use subgridAveMod   , only : create_scale_c2l, build_scale_l2g
+    use decompMod       , only : BOUNDS_LEVEL_PROC
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: t, f, i, p, c, l
+    character(len=hist_dim_name_length) :: type1d       ! 1d clm pointer type of the field
+    character(len=hist_dim_name_length) :: type1d_out   ! 1d history buffer type of the field
+    character(len=hist_dim_name_length) :: scale_type
+    character(len=*),parameter :: subname = 'hbuf_map_init'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(__FILE__, __LINE__))
+
+    if (.not. allocated(hbuf_pts_p)) then
+       allocate(hbuf_pts_p(bounds%endp-bounds%begp+1))
+       allocate(hbuf_pts_c(bounds%endc-bounds%begc+1))
+       allocate(hbuf_pts_l(bounds%endl-bounds%begl+1))
+       allocate(hbuf_scale_c2l(bounds%begc:bounds%endc, hbuf_max_scale_types))
+       allocate(hbuf_scale_l2g(bounds%begl:bounds%endl, hbuf_max_scale_types))
+    end if
+
+    hbuf_npts_p = 0
+    do p = bounds%begp,bounds%endp
+       if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
+          hbuf_npts_p = hbuf_npts_p + 1
+          hbuf_pts_p(hbuf_npts_p) = p
+       end if
+    end do
+    hbuf_npts_c = 0
+    do c = bounds%begc,bounds%endc
+       if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
+          hbuf_npts_c = hbuf_npts_c + 1
+          hbuf_pts_c(hbuf_npts_c) = c
+       end if
+    end do
+    hbuf_npts_l = 0
+    do l = bounds%begl,bounds%endl
+       if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
+          hbuf_npts_l = hbuf_npts_l + 1
+          hbuf_pts_l(hbuf_npts_l) = l
+       end if
+    end do
+
+    ! Set up the scale factors of the fields mapped to gridcells with
+    ! hbuf_p2g, hbuf_c2g or hbuf_l2g here, outside the threaded loop over
+    ! fields, which then only looks them up
+    hbuf_n_c2l_types = 0
+    hbuf_n_l2g_types = 0
+    do t = 1,ntapes
+       do f = 1,tape(t)%nflds
+          type1d     = tape(t)%hlist(f)%field%type1d
+          type1d_out = tape(t)%hlist(f)%field%type1d_out
+          if (.not. (type1d_out == nameg .or. type1d_out == grlnd)) cycle
+          if (.not. (type1d == namep .or. type1d == namec .or. type1d == namel)) cycle
+
+          scale_type = tape(t)%hlist(f)%field%c2l_scale_type
+          if (type1d /= namel .and. all(hbuf_c2l_types(1:hbuf_n_c2l_types) /= scale_type)) then
+             if (hbuf_n_c2l_types == hbuf_max_scale_types) then
+                write(iulog,*) trim(subname),' ERROR: too many c2l scale types'
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             end if
+             hbuf_n_c2l_types = hbuf_n_c2l_types + 1
+             i = hbuf_n_c2l_types
+             hbuf_c2l_types(i) = scale_type
+             call create_scale_c2l(bounds, scale_type, hbuf_scale_c2l(bounds%begc:bounds%endc, i))
+          end if
+
+          scale_type = tape(t)%hlist(f)%field%l2g_scale_type
+          if (all(hbuf_l2g_types(1:hbuf_n_l2g_types) /= scale_type)) then
+             if (hbuf_n_l2g_types == hbuf_max_scale_types) then
+                write(iulog,*) trim(subname),' ERROR: too many l2g scale types'
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             end if
+             hbuf_n_l2g_types = hbuf_n_l2g_types + 1
+             i = hbuf_n_l2g_types
+             hbuf_l2g_types(i) = scale_type
+             call build_scale_l2g(bounds, scale_type, hbuf_scale_l2g(bounds%begl:bounds%endl, i))
+          end if
+       end do
+    end do
+
+  end subroutine hbuf_map_init
+
+  !-----------------------------------------------------------------------
+  integer function hbuf_scale_index(types, ntypes, scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Return the index of scale_type in types(1:ntypes), as set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in) :: types(:)
+    integer         , intent(in) :: ntypes
+    character(len=*), intent(in) :: scale_type
+    !
+    ! !LOCAL VARIABLES:
+    integer :: i
+    !-----------------------------------------------------------------------
+
+    do i = 1, ntypes
+       if (types(i) == scale_type) then
+          hbuf_scale_index = i
+          return
+       end if
+    end do
+    write(iulog,*) 'hbuf_scale_index ERROR: scale type ',trim(scale_type),' was not set up'
+    call endrun(msg=errMsg(__FILE__, __LINE__))
+
+  end function hbuf_scale_index
+
+  !-----------------------------------------------------------------------
+  subroutine hbuf_p2g_1d(bounds, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Same as p2g_1d, over the patches and with the scale factors set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    real(r8), intent(in)  :: parr( bounds%begp: )  ! input pft array
+    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    character(len=*), intent(in) :: p2c_scale_type ! scale factor type for averaging
+    character(len=*), intent(in) :: c2l_scale_type ! scale factor type for averaging
+    character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fp,p,c,l,g,index,ic,il             ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: scale_p2c                          ! scale factor
+    real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    if (p2c_scale_type == 'unity') then
+       scale_p2c = 1.0_r8
+    else
+       write(iulog,*)'hbuf_p2g_1d error: scale type ',p2c_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    ic = hbuf_scale_index(hbuf_c2l_types, hbuf_n_c2l_types, c2l_scale_type)
+    il = hbuf_scale_index(hbuf_l2g_types, hbuf_n_l2g_types, l2g_scale_type)
+
+    garr(bounds%begg : bounds%endg) = spval
+    sumwt(bounds%begg : bounds%endg) = 0._r8
+    do fp = 1,hbuf_npts_p
+       p = hbuf_pts_p(fp)
+       c = veg_pp%column(p)
+       l = veg_pp%landunit(p)
+       if (parr(p) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
+          g = veg_pp%gridcell(p)
+          if (sumwt(g) == 0._r8) garr(g) = 0._r8
+          garr(g) = garr(g) + parr(p) * scale_p2c * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * veg_pp%wtgcell(p)
+          sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
+       end if
+    end do
+    found = .false.
+    do g = bounds%begg, bounds%endg
+       if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = g
+       else if (sumwt(g) /= 0._r8) then
+          garr(g) = garr(g)/sumwt(g)
+       end if
+    end do
+    if (found) then
+       write(iulog,*)'hbuf_p2g_1d error: sumwt is greater than 1.0 at g= ',index
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine hbuf_p2g_1d
+
+  !-----------------------------------------------------------------------
+  subroutine hbuf_p2g_2d(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Same as p2g_2d, over the patches and with the scale factors set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: parr( bounds%begp: , 1: ) ! input pft array
+    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    character(len=*), intent(in) :: p2c_scale_type     ! scale factor type for averaging
+    character(len=*), intent(in) :: c2l_scale_type     ! scale factor type for averaging
+    character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,fp,p,c,l,g,index,ic,il               ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: scale_p2c                              ! scale factor
+    real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
+
+    if (p2c_scale_type == 'unity') then
+       scale_p2c = 1.0_r8
+    else
+       write(iulog,*)'hbuf_p2g_2d error: scale type ',p2c_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    ic = hbuf_scale_index(hbuf_c2l_types, hbuf_n_c2l_types, c2l_scale_type)
+    il = hbuf_scale_index(hbuf_l2g_types, hbuf_n_l2g_types, l2g_scale_type)
+
+    garr(bounds%begg : bounds%endg, :) = spval
+    do j = 1,num2d
+       sumwt(bounds%begg : bounds%endg) = 0._r8
+       do fp = 1,hbuf_npts_p
+          p = hbuf_pts_p(fp)
+          c = veg_pp%column(p)
+          l = veg_pp%landunit(p)
+          if (parr(p,j) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
+             g = veg_pp%gridcell(p)
+             if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
+             garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * veg_pp%wtgcell(p)
+             sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
+          end if
+       end do
+       found = .false.
+       do g = bounds%begg, bounds%endg
+          if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index = g
+          else if (sumwt(g) /= 0._r8) then
+             garr(g,j) = garr(g,j)/sumwt(g)
+          end if
+       end do
+       if (found) then
+          write(iulog,*)'hbuf_p2g_2d error: sumwt gt 1.0 at g/sumwt = ',index,sumwt(index)
+          call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+  end subroutine hbuf_p2g_2d
+
+  !-----------------------------------------------------------------------
+  subroutine hbuf_c2g_1d(bounds, carr, garr, c2l_scale_type, l2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Same as c2g_1d, over the columns and with the scale factors set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array
+    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    character(len=*), intent(in) :: c2l_scale_type ! scale factor type for averaging
+    character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fc,c,l,g,index,ic,il               ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    ic = hbuf_scale_index(hbuf_c2l_types, hbuf_n_c2l_types, c2l_scale_type)
+    il = hbuf_scale_index(hbuf_l2g_types, hbuf_n_l2g_types, l2g_scale_type)
+
+    garr(bounds%begg : bounds%endg) = spval
+    sumwt(bounds%begg : bounds%endg) = 0._r8
+    do fc = 1,hbuf_npts_c
+       c = hbuf_pts_c(fc)
+       l = col_pp%landunit(c)
+       if (carr(c) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
+          g = col_pp%gridcell(c)
+          if (sumwt(g) == 0._r8) garr(g) = 0._r8
+          garr(g) = garr(g) + carr(c) * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * col_pp%wtgcell(c)
+          sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+       end if
+    end do
+    found = .false.
+    do g = bounds%begg, bounds%endg
+       if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = g
+       else if (sumwt(g) /= 0._r8) then
+          garr(g) = garr(g)/sumwt(g)
+       end if
+    end do
+    if (found) then
+       write(iulog,*)'hbuf_c2g_1d error: sumwt is greater than 1.0 at g= ',index
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine hbuf_c2g_1d
+
+  !-----------------------------------------------------------------------
+  subroutine hbuf_c2g_2d(bounds, num2d, carr, garr, c2l_scale_type, l2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Same as c2g_2d, over the columns and with the scale factors set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: carr( bounds%begc: , 1: ) ! input column array
+    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    character(len=*), intent(in) :: c2l_scale_type     ! scale factor type for averaging
+    character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,fc,c,l,g,index,ic,il                 ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
+
+    ic = hbuf_scale_index(hbuf_c2l_types, hbuf_n_c2l_types, c2l_scale_type)
+    il = hbuf_scale_index(hbuf_l2g_types, hbuf_n_l2g_types, l2g_scale_type)
+
+    garr(bounds%begg : bounds%endg,:) = spval
+    do j = 1,num2d
+       sumwt(bounds%begg : bounds%endg) = 0._r8
+       do fc = 1,hbuf_npts_c
+          c = hbuf_pts_c(fc)
+          l = col_pp%landunit(c)
+          if (carr(c,j) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
+             g = col_pp%gridcell(c)
+             if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
+             garr(g,j) = garr(g,j) + carr(c,j) * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * col_pp%wtgcell(c)
+             sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+          end if
+       end do
+       found = .false.
+       do g = bounds%begg, bounds%endg
+          if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index = g
+          else if (sumwt(g) /= 0._r8) then
+             garr(g,j) = garr(g,j)/sumwt(g)
+          end if
+       end do
+       if (found) then
+          write(iulog,*)'hbuf_c2g_2d error: sumwt is greater than 1.0 at g= ',index
+          call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+  end subroutine hbuf_c2g_2d
+
+  !-----------------------------------------------------------------------
+  subroutine hbuf_l2g_1d(bounds, larr, garr, l2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Same as l2g_1d, over the landunits and with the scale factors set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    real(r8), intent(in)  :: larr( bounds%begl: )  ! input landunit array
+    real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+    character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fl,l,g,index,il                    ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    il = hbuf_scale_index(hbuf_l2g_types, hbuf_n_l2g_types, l2g_scale_type)
+
+    garr(bounds%begg : bounds%endg) = spval
+    sumwt(bounds%begg : bounds%endg) = 0._r8
+    do fl = 1,hbuf_npts_l
+       l = hbuf_pts_l(fl)
+       if (larr(l) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
+          g = lun_pp%gridcell(l)
+          if (sumwt(g) == 0._r8) garr(g) = 0._r8
+          garr(g) = garr(g) + larr(l) * hbuf_scale_l2g(l,il) * lun_pp%wtgcell(l)
+          sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
+       end if
+    end do
+    found = .false.
+    do g = bounds%begg, bounds%endg
+       if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = g
+       else if (sumwt(g) /= 0._r8) then
+          garr(g) = garr(g)/sumwt(g)
+       end if
+    end do
+    if (found) then
+       write(iulog,*) 'hbuf_l2g_1d error: sumwt is greater than 1.0 at g= ',index
+       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine hbuf_l2g_1d
+
+  !-----------------------------------------------------------------------
+  subroutine hbuf_l2g_2d(bounds, num2d, larr, garr, l2g_scale_type)
+    !
+    ! !DESCRIPTION:
+    ! Same as l2g_2d, over the landunits and with the scale factors set up in hbuf_map_init
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: larr( bounds%begl: , 1: ) ! input landunit array
+    real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+    character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,fl,l,g,index,il                      ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
+
+    il = hbuf_scale_index(hbuf_l2g_types, hbuf_n_l2g_types, l2g_scale_type)
+
+    garr(bounds%begg : bounds%endg, :) = spval
+    do j = 1,num2d
+       sumwt(bounds%begg : bounds%endg) = 0._r8
+       do fl = 1,hbuf_npts_l
+          l = hbuf_pts_l(fl)
+          if (larr(l,j) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
+             g = lun_pp%gridcell(l)
+             if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
+             garr(g,j) = garr(g,j) + larr(l,j) * hbuf_scale_l2g(l,il) * lun_pp%wtgcell(l)
+             sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
+          end if
+       end do
+       found = .false.
+       do g = bounds%begg,bounds%endg
+          if (sumwt(g) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index= g
+          else if (sumwt(g) /= 0._r8) then
+             garr(g,j) = garr(g,j)/sumwt(g)
+          end if
+       end do
+       if (found) then
+          write(iulog,*) 'hbuf_l2g_2d error: sumwt is greater than 1.0 at g= ',index,' lev= ',j
+          call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+  end subroutine hbuf_l2g_2d
+
+  !-----------------------------------------------------------------------
   subroutine hist_update_hbuf_field_1d (t, f, bounds)
     !
     ! !DESCRIPTION:
@@ -1031,7 +1517,7 @@ contains
     ! call to p2g, and the lack of explicit bounds on its arguments; see also bug 1786)
     !
     ! !USES:
-    use subgridAveMod   , only : p2g, c2g, l2g, t2g
+    use subgridAveMod   , only : t2g
     use landunit_varcon , only : istice_mec
     use decompMod       , only : BOUNDS_LEVEL_PROC
     !
@@ -1090,19 +1576,19 @@ contains
           ! for some fields, the lower bound has been reset to 1 due to taking a pointer
           ! to an array slice. Thus, this code will NOT work properly if done within a
           ! threaded region! (See also bug 1786)
-          call p2g(bounds, &
+          call hbuf_p2g(bounds, &
                field, &
                field_gcell(bounds%begg:bounds%endg), &
                p2c_scale_type, c2l_scale_type, l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namec) then
-          call c2g(bounds, &
+          call hbuf_c2g(bounds, &
                field, &
                field_gcell(bounds%begg:bounds%endg), &
                c2l_scale_type, l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namel) then
-          call l2g(bounds, &
+          call hbuf_l2g(bounds, &
                field, &
                field_gcell(bounds%begg:bounds%endg), &
                l2g_scale_type)
@@ -1281,7 +1767,7 @@ contains
     ! call to p2g, and the lack of explicit bounds on its arguments; see also bug 1786)
     !
     ! !USES:
-    use subgridAveMod   , only : p2g, c2g, l2g, t2g
+    use subgridAveMod   , only : t2g
     use landunit_varcon , only : istice_mec
     use decompMod       , only : BOUNDS_LEVEL_PROC
     !
@@ -1366,19 +1852,19 @@ contains
           ! for some fields, the lower bound has been reset to 1 due to taking a pointer
           ! to an array slice. Thus, this code will NOT work properly if done within a
           ! threaded region! (See also bug 1786)
-          call p2g(bounds, num2d, &
+          call hbuf_p2g(bounds, num2d, &
                field, &
                field_gcell(bounds%begg:bounds%endg, :), &
                p2c_scale_type, c2l_scale_type, l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namec) then
-          call c2g(bounds, num2d, &
+          call hbuf_c2g(bounds, num2d, &
                field, &
                field_gcell(bounds%begg:bounds%endg, :), &
                c2l_scale_type, l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namel) then
-          call l2g(bounds, num2d, &
+          call hbuf_l2g(bounds, num2d, &
                field, &
                field_gcell(bounds%begg:bounds%endg, :), &
                l2g_scale_type)

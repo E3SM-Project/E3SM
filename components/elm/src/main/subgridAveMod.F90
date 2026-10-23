@@ -103,7 +103,7 @@ module subgridAveMod
 
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: build_scale_l2g
+  public  :: build_scale_l2g   ! also used by histFileMod
   private :: create_scale_l2g_lookup
   private :: build_scale_l2t
   private :: create_scale_l2t_lookup
