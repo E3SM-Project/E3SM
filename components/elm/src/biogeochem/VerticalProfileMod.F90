@@ -54,7 +54,9 @@ contains
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, max_col_npfts
     use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
+    use elm_varctl  , only : use_fates, create_glacier_mec_landunit, iac_present
     use pftvarcon   , only : rootprof_beta, noveg
+    use dynSubgridControlMod, only : get_subgrid_weights_updated, get_do_transient_pfts, get_do_transient_crops
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -73,6 +75,7 @@ contains
     real(r8) :: cinput_rootfr(bounds%begp:bounds%endp, 1:nlevdecomp_full)      ! pft-native root fraction used for calculating inputs
     real(r8) :: col_cinput_rootfr(bounds%begc:bounds%endc, 1:nlevdecomp_full)  ! col-native root fraction used for calculating inputs
     integer  :: c, j, fc, p, fp, pi
+    logical  :: zero_all      ! zero the profiles of all patches and columns, not only the filtered ones
     integer  :: alt_ind
     integer  :: nlevbed
     ! debugging temp variables
@@ -118,16 +121,45 @@ contains
          end do
 
          ! initialize profiles to zero
-         leaf_prof(begp:endp, :)      = 0._r8
-         froot_prof(begp:endp, :)     = 0._r8
-         croot_prof(begp:endp, :)     = 0._r8
-         stem_prof(begp:endp, :)      = 0._r8
-         nfixation_prof(begc:endc, :) = 0._r8
-         ndep_prof(begc:endc, :)      = 0._r8
-         pdep_prof(begc:endc, :)      = 0._r8
+         ! The profiles are set below only for the filtered patches and columns.
+         ! Elsewhere they are zero. Only this routine writes them, so outside
+         ! the filters they stay zero once zeroed, unless patches and columns
+         ! can become active or inactive: zero them everywhere on the first step
+         ! of a run or restart (when they are still spval) and whenever subgrid
+         ! weights can change, and otherwise only on the filters.
+         zero_all = get_subgrid_weights_updated() .or. get_do_transient_pfts() .or. &
+              get_do_transient_crops() .or. use_fates .or. create_glacier_mec_landunit .or. iac_present
+         if (zero_all) then
+            leaf_prof(begp:endp, :)      = 0._r8
+            froot_prof(begp:endp, :)     = 0._r8
+            croot_prof(begp:endp, :)     = 0._r8
+            stem_prof(begp:endp, :)      = 0._r8
+            nfixation_prof(begc:endc, :) = 0._r8
+            ndep_prof(begc:endc, :)      = 0._r8
+            pdep_prof(begc:endc, :)      = 0._r8
+         else
+            do fp = 1,num_soilp
+               p = filter_soilp(fp)
+               leaf_prof(p, :)  = 0._r8
+               froot_prof(p, :) = 0._r8
+               croot_prof(p, :) = 0._r8
+               stem_prof(p, :)  = 0._r8
+            end do
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               nfixation_prof(c, :) = 0._r8
+               ndep_prof(c, :)      = 0._r8
+               pdep_prof(c, :)      = 0._r8
+            end do
+         end if
 
-         cinput_rootfr(begp:endp, :)     = 0._r8
-         col_cinput_rootfr(begc:endc, :) = 0._r8
+         ! The local root fractions are read only on the filtered columns and
+         ! all their patches
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            cinput_rootfr(col_pp%pfti(c):col_pp%pftf(c), :) = 0._r8
+            col_cinput_rootfr(c, :) = 0._r8
+         end do
 
          if ( exponential_rooting_profile ) then
             if ( .not. pftspecific_rootingprofile ) then
