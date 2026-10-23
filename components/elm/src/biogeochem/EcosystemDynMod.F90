@@ -368,6 +368,7 @@ contains
     logical  :: zero_harvest   ! zero the harvest fluxes in CNZero
     logical  :: zero_fan       ! zero the FAN fluxes in CNZero
     logical  :: zero_erosion   ! zero the erosion fluxes in CNZero
+    logical  :: zero_full      ! zero all decomposition levels in CNZero
     !-----------------------------------------------------------------------
     dt = dtime_mod;
     year = year_curr; mon = mon_curr; day = day_curr; sec= secs_curr
@@ -392,6 +393,11 @@ contains
     zero_harvest = zero_unused .or. get_do_harvest() .or. iac_present .or. use_fates
     zero_fan     = zero_unused .or. use_fan .or. fan_to_bgc_veg .or. fan_to_bgc_crop
     zero_erosion = zero_unused .or. ero_ccycle
+    ! ELM writes the column vertically resolved fluxes only on levels 1:nlevdecomp,
+    ! so the deeper levels keep the zero set here. FATES and the ELM interface
+    ! (PFLOTRAN) write differently, so keep full zeroing there. Any new writer to
+    ! the deeper levels must also force zero_full.
+    zero_full    = zero_unused .or. use_fates .or. use_elm_interface .or. use_pflotran
 
     if(.not.use_fates) then
        call t_startf('CNZero-veg_cf')
@@ -418,15 +424,18 @@ contains
 
     call t_startf('CNZero-col_cf')
     call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8, &
-         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused)
+         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused, &
+         zero_deep=zero_full)
     call t_stopf('CNZero-col_cf')
     call t_startf('CNZero-col_nf')
     call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8, &
-         zero_harvest=zero_harvest, zero_fan=zero_fan, zero_erosion=zero_erosion)
+         zero_harvest=zero_harvest, zero_fan=zero_fan, zero_erosion=zero_erosion, &
+         zero_deep=zero_full)
     call t_stopf('CNZero-col_nf')
     call t_startf('CNZero-col_pf')
     call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8, &
-         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused)
+         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused, &
+         zero_deep=zero_full)
     call t_stopf('CNZero-col_pf')
 
     call t_stopf('CNZero')
