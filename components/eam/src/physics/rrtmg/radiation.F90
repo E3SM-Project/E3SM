@@ -338,13 +338,17 @@ end function radiation_do
 
 !================================================================================================
 
-real(r8) function radiation_nextsw_cday()
+real(r8) function radiation_nextsw_cday(next_ymd, next_tod)
   
 !----------------------------------------------------------------------- 
 ! Purpose: Returns calendar day of next sw radiation calculation
 !-----------------------------------------------------------------------
 
-   use time_manager, only: get_curr_calday, get_nstep, get_step_size
+   use time_manager, only: get_curr_calday, get_nstep, get_step_size, get_curr_date
+
+   integer, optional, intent(out) :: next_ymd
+   real(r8), optional, intent(out) :: next_tod
+   integer :: solar_year, solar_month, solar_day, solar_seconds
 
    ! Local variables
    integer :: nstep      ! timestep counter
@@ -355,6 +359,8 @@ real(r8) function radiation_nextsw_cday()
    !-----------------------------------------------------------------------
 
    radiation_nextsw_cday = -1._r8
+   if (present(next_ymd)) next_ymd = 0
+   if (present(next_tod)) next_tod = -1._r8
    dosw   = .false.
    nstep  = get_nstep()
    dtime  = get_step_size()
@@ -364,7 +370,12 @@ real(r8) function radiation_nextsw_cday()
          nstep = nstep + 1
          offset = offset + dtime
          if (radiation_do('sw', nstep)) then
-            radiation_nextsw_cday = get_curr_calday(offset=offset) 
+            radiation_nextsw_cday = get_curr_calday(offset=offset)
+            if (present(next_ymd) .or. present(next_tod)) then
+               call get_curr_date(solar_year, solar_month, solar_day, solar_seconds, offset=offset)
+               if (present(next_ymd)) next_ymd = solar_year * 10000 + solar_month * 100 + solar_day
+               if (present(next_tod)) next_tod = real(solar_seconds, r8)
+            end if
             dosw = .true.
          end if
       end do
@@ -1651,7 +1662,7 @@ subroutine radinp(ncol, pmid, pint, pmidrd, pintrd, eccf)
 ! 
 ! Author: CCM1, CMS Contact J. Kiehl
 !-----------------------------------------------------------------------
-   use shr_orb_mod
+   use orbit, only: orbital_decl
    use time_manager, only: get_curr_calday
 
 !------------------------------Arguments--------------------------------
@@ -1680,8 +1691,7 @@ subroutine radinp(ncol, pmid, pint, pmidrd, pintrd, eccf)
 !-----------------------------------------------------------------------
 !
    calday = get_curr_calday()
-   call shr_orb_decl (calday  ,eccen     ,mvelpp  ,lambm0  ,obliqr  , &
-                      delta   ,eccf)
+   call orbital_decl(calday, delta, eccf)
 
 !
 ! Convert pressure from pascals to dynes/cm2

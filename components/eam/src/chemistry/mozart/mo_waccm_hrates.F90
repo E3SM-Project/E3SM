@@ -110,7 +110,7 @@
       use mo_mean_mass,      only : set_mean_mass
       use set_cp,            only : calc_cp
       use cam_history,       only : outfld
-      use shr_orb_mod,       only : shr_orb_decl
+      use orbit, only: orbital_decl
       use time_manager,      only : get_curr_calday
       use cam_control_mod,   only : lambm0, eccen, mvelpp, obliqr
       use mo_constants,      only : r2d
@@ -319,8 +319,7 @@
 !-----------------------------------------------------------------------      
 !     	... set the earth-sun distance factor
 !-----------------------------------------------------------------------      
-      call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr  , &
-                         delta, esfact )
+      call orbital_decl(calday, delta, esfact)
 !-----------------------------------------------------------------------      
 !     	... set the column densities
 !-----------------------------------------------------------------------      

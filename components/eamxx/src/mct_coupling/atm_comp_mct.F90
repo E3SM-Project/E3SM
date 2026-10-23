@@ -1,4 +1,7 @@
 module atm_comp_mct
+  use seq_timemgr_mod, only: seq_timemgr_GetCalendar
+  use shr_orb_mod, only: shr_orb_context_type
+  use iso_c_binding, only: c_bool, c_int, c_double
 
   ! Modules used acros atm_xyz_mct routines
 
@@ -65,7 +68,44 @@ module atm_comp_mct
 #endif
 #endif
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  type(shr_orb_context_type), save, private :: coupled_solar_context
+  character(len=16), save, private :: coupled_solar_calendar = 'NO_LEAP'
+
 CONTAINS
+
+  subroutine configure_solar_context(infodata)
+    use iso_c_binding, only: c_funloc
+    use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetOrbitalContext
+    use eamxx_f2c_mod, only: scream_set_solar_callback, scream_set_solar_geometry_callback
+    type(seq_infodata_type), intent(in) :: infodata
+
+    call seq_infodata_GetOrbitalContext(infodata, coupled_solar_context)
+        coupled_solar_calendar = seq_timemgr_GetCalendar()
+        if (coupled_solar_calendar == 'GREGORIAN') &
+          call scream_set_solar_callback(c_funloc(evaluate_coupled_solar_decl))
+        call scream_set_solar_geometry_callback(c_funloc(evaluate_coupled_solar_geometry), &
+          logical(coupled_solar_context%use_equation_of_time, c_bool))
+  end subroutine configure_solar_context
+
+  logical(c_bool) function evaluate_coupled_solar_decl(ymd, tod, delta, eccf) bind(C)
+    use shr_cal_mod, only: shr_cal_solarDecl
+    integer(c_int), value :: ymd
+    real(c_double), value :: tod
+    real(c_double), intent(out) :: delta, eccf
+
+    call shr_cal_solarDecl(coupled_solar_context, ymd, tod, 'GREGORIAN', delta, eccf)
+    evaluate_coupled_solar_decl = .true._c_bool
+  end function evaluate_coupled_solar_decl
+
+  logical(c_bool) function evaluate_coupled_solar_geometry(ymd, tod, delta, eccf, eot_seconds) bind(C)
+    use shr_cal_mod, only: shr_cal_solarDecl
+    integer(c_int), value :: ymd
+    real(c_double), value :: tod
+    real(c_double), intent(out) :: delta, eccf, eot_seconds
+
+    call shr_cal_solarDecl(coupled_solar_context, ymd, tod, coupled_solar_calendar, delta, eccf, eot_seconds)
+    evaluate_coupled_solar_geometry = .true._c_bool
+  end function evaluate_coupled_solar_geometry
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
@@ -281,7 +321,10 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
+    call configure_solar_context(infodata)
     call scream_init_atm ()
+        if (seq_timemgr_GetCalendar() == 'GREGORIAN' .or. coupled_solar_context%use_equation_of_time) &
+          call publish_solar_time(infodata)
 #ifdef HAVE_MOAB
     ! data should be set now inside moab from import and export fields
     ! do we import and export or just export at init stage ?
@@ -341,6 +384,8 @@ CONTAINS
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
+    integer :: nextsw_ymd
+    real(R8) :: nextsw_tod
     integer                          :: dt_scream
 #ifdef HAVE_MOAB
     integer        :: ierr
@@ -358,7 +403,8 @@ CONTAINS
          infodata=infodata)
 
     ! Get time step info
-    call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday, dtime=dt_scream)
+        call seq_timemgr_EClockGetData(EClock, next_cday=nextsw_cday, dtime=dt_scream, &
+          next_ymd=nextsw_ymd, next_tod=nextsw_tod)
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
@@ -385,6 +431,7 @@ CONTAINS
 
 #endif
     ! Run scream
+    call configure_solar_context(infodata)
     call scream_run( dt_scream )
 
 #ifdef HAVE_MOAB
@@ -401,9 +448,27 @@ CONTAINS
 #endif
 #endif
     ! Set time of next radiadtion computation
-    call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday)
+    if (seq_timemgr_GetCalendar() == 'GREGORIAN' .or. coupled_solar_context%use_equation_of_time) then
+      call publish_solar_time(infodata)
+    else
+      call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+          nextsw_tod=nextsw_tod, nextsw_valid=.true.)
+    endif
 
   end subroutine atm_run_mct
+
+  subroutine publish_solar_time(infodata)
+    use iso_c_binding, only: c_int, c_double
+    use eamxx_f2c_mod, only: scream_nextsw_time
+    use seq_infodata_mod, only: seq_infodata_type, seq_infodata_PutData
+    type(seq_infodata_type), intent(inout) :: infodata
+    integer(c_int) :: solar_ymd
+    real(c_double) :: solar_tod, solar_cday
+
+    call scream_nextsw_time(solar_ymd, solar_tod, solar_cday)
+    call seq_infodata_PutData(infodata, nextsw_cday=solar_cday, nextsw_ymd=solar_ymd, &
+        nextsw_tod=solar_tod, nextsw_valid=solar_cday >= 0._c_double)
+  end subroutine publish_solar_time
 
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)

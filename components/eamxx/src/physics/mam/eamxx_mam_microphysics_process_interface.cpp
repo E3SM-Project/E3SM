@@ -3,6 +3,7 @@
 // impl namespace for some driver level functions for microphysics
 
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "share/core/eamxx_config.hpp"
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
@@ -10,6 +11,8 @@
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
+
+#include <cmath>
 
 namespace scream
 {
@@ -891,31 +894,74 @@ void MAMMicrophysics::run_impl(const double dt) {
   // angle. This operation is performed on the host because the routine
   // shr_orb_cosz_c2f has not been ported to C++.
   auto orbital_year = m_orbital_year;
-  // Note: We need double precision because
-  // shr_orb_params_c2f and shr_orb_decl_c2f only support double precision.
-  double obliqr, lambm0, mvelpp;
-  double eccen = m_orbital_eccen;
-  double obliq = m_orbital_obliq;
-  double mvelp = m_orbital_mvelp;
-  // Use the orbital parameters to calculate the solar declination and
-  // eccentricity factor
+  const auto orbital_timestamp = start_of_step_ts();
+  auto calday = orbital_timestamp.frac_of_year_in_days() + 1;
   double delta, eccf;
-  if(eccen >= 0 && obliq >= 0 && mvelp >= 0) {
-    // use fixed orbital parameters; to force this, we need to set
-    // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
-    // our c2f bridge as shr_orb_undef_int_c2f
-    orbital_year = shr_orb_undef_int_c2f;
-  } else if(orbital_year < 0) {
-    // compute orbital parameters based on current year
-    orbital_year = start_of_step_ts().get_year();
-  }
-  shr_orb_params_c2f(&orbital_year,                                       // in
-                     &eccen, &obliq, &mvelp, &obliqr, &lambm0, &mvelpp);  // out
+  const auto solar_ymd = orbital_timestamp.get_year() * 10000 + orbital_timestamp.get_month() * 100 +
+                         orbital_timestamp.get_day();
+  const auto solar_tod = (calday - std::floor(calday)) * 86400;
+  const bool has_coupled_geometry = shr_orb_has_geometry_callback_c2f();
+  const bool coupled_eot = shr_orb_use_equation_of_time_c2f();
+  const bool has_local_eot = m_params.isParameter("use_equation_of_time");
+  const bool local_eot = has_local_eot ? m_params.get<bool>("use_equation_of_time") : false;
+  EKAT_REQUIRE_MSG(!has_coupled_geometry ||
+           !has_local_eot || local_eot == coupled_eot,
+                   "MAM equation-of-time setting conflicts with the coupled driver.");
+  const bool use_eot = has_coupled_geometry ? coupled_eot : local_eot;
+  double eot_seconds = 0;
+  const bool coupled_orbit = coupled_eot
+      ? shr_orb_coupled_geometry_c2f(solar_ymd, solar_tod, &delta, &eccf, &eot_seconds)
+      : use_leap_year() && shr_orb_coupled_decl_c2f(solar_ymd, solar_tod, &delta, &eccf);
+  EKAT_REQUIRE_MSG(!coupled_eot || coupled_orbit, "MAM coupled EOT geometry is unavailable.");
+  if (!coupled_orbit) {
+    // Note: We need double precision because
+    // shr_orb_params_c2f and shr_orb_decl_c2f only support double precision.
+    double obliqr, lambm0, mvelpp;
+    double eccen = m_orbital_eccen;
+    double obliq = m_orbital_obliq;
+    double mvelp = m_orbital_mvelp;
+    // Use the orbital parameters to calculate the solar declination and
+    // eccentricity factor
+    if(eccen >= 0 && obliq >= 0 && mvelp >= 0) {
+      // use fixed orbital parameters; to force this, we need to set
+      // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
+      // our c2f bridge as shr_orb_undef_int_c2f
+      orbital_year = shr_orb_undef_int_c2f;
+    } else if(orbital_year < 0) {
+      // compute orbital parameters based on current year
+      orbital_year = orbital_timestamp.get_year();
+    }
+    if (use_leap_year() && m_orbital_year < 0 && orbital_year != shr_orb_undef_int_c2f) {
+      const auto year_fraction = (calday - 1) / orbital_timestamp.days_in_curr_year();
+      shr_orb_params_continuous_c2f(orbital_year, year_fraction, &eccen, &obliq,
+                                    &mvelp, &obliqr, &lambm0, &mvelpp);
+    } else {
+      shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, &obliqr, &lambm0, &mvelpp);
+    }
 
-  // Want day + fraction; calday 1 == Jan 1 0Z
-  auto calday = start_of_step_ts().frac_of_year_in_days() + 1;
-  shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0, obliqr,  // in
-                   &delta, &eccf);                         // out
+    // Want day + fraction; calday 1 == Jan 1 0Z
+    if (use_leap_year() && m_orbital_year >= 0 && orbital_year != shr_orb_undef_int_c2f) {
+      shr_orb_decl_fixed_year_c2f(calday, orbital_timestamp.days_in_curr_year(), eccen, mvelpp,
+                                 lambm0, obliqr, &delta, &eccf, &eot_seconds, use_eot);
+    } else if (use_leap_year()) {
+      const util::TimeStamp epoch(2000, 1, 1, 0, 0, 0);
+      const util::TimeStamp midnight(orbital_timestamp.get_year(), orbital_timestamp.get_month(),
+                                     orbital_timestamp.get_day(), 0, 0, 0);
+      const auto elapsed_days = midnight.days_from(epoch) + (calday - std::floor(calday));
+      if (use_eot) {
+        shr_orb_decl_gregorian_eot_c2f(elapsed_days, eccen, mvelpp, lambm0,
+                                     obliqr, &delta, &eccf, &eot_seconds);
+      } else {
+        shr_orb_decl_gregorian_c2f(elapsed_days, eccen, mvelpp, lambm0, obliqr, &delta, &eccf);
+      }
+    } else {
+      if (use_eot) {
+        shr_orb_decl_eot_c2f(calday, eccen, mvelpp, lambm0, obliqr, &delta, &eccf, &eot_seconds);
+      } else {
+        shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0, obliqr, &delta, &eccf);
+      }
+    }
+  }
   {
     const auto col_latitudes_host =
         grid_->get_geometry_data("lat").get_view<const Real *, Host>();
@@ -932,7 +978,9 @@ void MAMMicrophysics::run_impl(const double dt) {
           col_latitudes_host(i) * M_PI / 180.0;  // Convert lat/lon to radians
       Real lon = col_longitudes_host(i) * M_PI / 180.0;
       // what's the aerosol microphys frequency?
-      Real temp = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+        Real temp = use_eot
+          ? shr_orb_cosz_eot_c2f(calday, lat, lon, delta, dt, eot_seconds)
+          : shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
       acos_cosine_zenith_host_(i) = acos(temp);
     }
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);

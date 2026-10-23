@@ -305,7 +305,7 @@ contains
     use mo_strato_sad,     only : strato_sad_set
     use mo_strato_rates,   only : ratecon_sfstrat
     use mo_aero_settling,  only : strat_aer_settling
-    use shr_orb_mod,       only : shr_orb_decl
+   use orbit, only: orbital_decl
     use cam_control_mod,   only : lambm0, eccen, mvelpp, obliqr
     use mo_strato_rates,   only : has_strato_chem
     use short_lived_species,only: set_short_lived_species,get_short_lived_species
@@ -781,8 +781,7 @@ contains
     !-----------------------------------------------------------------------      
 
     esfact = 1._r8
-    call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr  , &
-         delta, esfact )
+   call orbital_decl(calday, delta, esfact)
 
     if ( do_cloudj_photolysis ) then 
 

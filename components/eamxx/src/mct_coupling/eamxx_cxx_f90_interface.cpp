@@ -1,9 +1,14 @@
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process_group.hpp"
 #include "control/atmosphere_driver.hpp"
 #include "control/surface_coupling_utils.hpp"
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
+#ifdef EAMXX_HAS_RRTMGP
+#include "physics/rrtmgp/rrtmgp_utils.hpp"
+#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#endif
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "control/register_surface_coupling.hpp"
 
@@ -19,6 +24,7 @@
 #include <ekat_pack.hpp>
 #include <ekat_assert.hpp>
 #include <ekat_fpe.hpp>
+#include <cmath>
 
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
 #include <hip/hip_runtime.h>
@@ -26,6 +32,28 @@
 
 // Anonymous namespace, for some utility functions
 namespace {
+
+int radiation_frequency(const scream::AtmosphereProcessGroup& group) {
+  if (!group.has_process("rrtmgp")) return -1;
+  EKAT_REQUIRE_MSG(group.get_num_subcycles() == 1,
+      "Coupled solar geometry requires an unsubcycled atmosphere process group.");
+  for (int process_index = 0; process_index < group.get_num_processes(); ++process_index) {
+    const auto process = group.get_process(process_index);
+    if (process->type() == scream::AtmosphereProcessType::Group) {
+      const auto& nested = dynamic_cast<const scream::AtmosphereProcessGroup&>(*process);
+      const auto frequency = radiation_frequency(nested);
+      if (frequency >= 0) return frequency;
+    }
+#ifdef EAMXX_HAS_RRTMGP
+    if (const auto radiation = dynamic_cast<const scream::RRTMGPRadiation*>(process.get())) {
+      EKAT_REQUIRE_MSG(radiation->get_num_subcycles() == 1 && radiation->m_rad_freq_in_steps >= 0,
+          "Coupled solar geometry requires unsubcycled RRTMGP with nonnegative rad_frequency.");
+      return radiation->m_rad_freq_in_steps;
+    }
+#endif
+  }
+  return -1;
+}
 
 // Utility function, that wraps a lambda, and disable/restores
 // fpes at entry/exit.
@@ -253,6 +281,20 @@ void scream_init_atm ()
   });
 }
 
+void scream_set_solar_callback(bool (*callback)(int, double, double*, double*)) {
+#ifdef EAMXX_HAS_RRTMGP
+  shr_orb_set_decl_callback_c2f(callback);
+#endif
+}
+
+void scream_set_solar_geometry_callback(bool (*callback)(int, double, double*, double*, double*), bool enabled) {
+#ifdef EAMXX_HAS_RRTMGP
+  shr_orb_set_geometry_callback_c2f(callback, enabled);
+#else
+  EKAT_REQUIRE_MSG(!enabled, "Equation of time requires the EAMxx shared solar-geometry bridge.");
+#endif
+}
+
 /*===============================================================================================*/
 void scream_run (const int dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
@@ -262,12 +304,33 @@ void scream_run (const int dt) {
     ad.run(dt);
   });
 }
+void scream_nextsw_time(int* ymd, double* tod, double* cday) {
+  *ymd = 0;
+  *tod = -1;
+  *cday = -1;
+  fpe_guard_wrapper([&]() {
+#ifdef EAMXX_HAS_RRTMGP
+    const auto& ad = get_ad_nonconst();
+    const auto frequency = radiation_frequency(*ad.get_atm_processes());
+    const auto& timestamp = ad.get_atm_time_stamp();
+    if (frequency >= 0 && scream::rrtmgp::radiation_do(frequency, timestamp.get_num_steps())) {
+      *ymd = timestamp.get_year() * 10000 + timestamp.get_month() * 100 + timestamp.get_day();
+      *cday = timestamp.frac_of_year_in_days() + 1;
+      *tod = (*cday - std::floor(*cday)) * 86400;
+    }
+#endif
+  });
+}
 /*===============================================================================================*/
 void scream_finalize (/* args ? */) {
   fpe_guard_wrapper([&](){
     // Get the AD, and finalize it
     auto& ad = get_ad_nonconst();
     ad.finalize();
+  #ifdef EAMXX_HAS_RRTMGP
+    shr_orb_set_decl_callback_c2f(nullptr);
+    shr_orb_set_geometry_callback_c2f(nullptr, false);
+  #endif
 
     // Clean up the context
     // Note: doing the cleanup here via

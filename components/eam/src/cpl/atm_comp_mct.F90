@@ -31,6 +31,7 @@ module atm_comp_mct
   use cam_instance     , only: cam_instance_init, inst_index, inst_suffix
   use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
   use radiation        , only: radiation_do, radiation_nextsw_cday
+   use orbit, only: orbit_set_context
   use phys_grid        , only: get_ncols_p, ngcols, get_gcol_p, get_rlat_all_p, &
 	                       get_rlon_all_p, get_area_all_p
   use ppgrid           , only: pcols, begchunk, endchunk
@@ -157,6 +158,9 @@ CONTAINS
     integer :: iradsw
     logical :: exists           ! true if file exists
     real(r8):: nextsw_cday      ! calendar of next atm shortwave
+   integer :: nextsw_ymd
+   real(r8) :: nextsw_tod
+   integer :: solar_year, solar_month, solar_day, solar_seconds
     integer :: stepno           ! time step
     integer :: dtime_sync       ! integer timestep size
     integer :: currentymd       ! current year-month-day
@@ -364,6 +368,7 @@ CONTAINS
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
        !
        call t_startf('cam_init')
+      call orbit_set_context(infodata)
        call cam_init( cam_out, cam_in, mpicom_atm, &
             start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
             perpetual_run, perpetual_ymd, calendar)
@@ -450,7 +455,11 @@ CONTAINS
        !
        if (nsrest == 0) then
           nextsw_cday = get_curr_calday()
-          call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
+           call get_curr_date(yr, mon, day, tod)
+           nextsw_ymd = yr * 10000 + mon * 100 + day
+           nextsw_tod = real(tod, r8)
+           call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+                nextsw_tod=nextsw_tod, nextsw_valid=.true.)
        end if
 
        ! End redirection of share output to cam log
@@ -561,15 +570,22 @@ CONTAINS
        dtime = get_step_size()
        nstep = get_nstep()
        if (nstep < 1 .or. dtime < atm_cpl_dt) then
-          nextsw_cday = radiation_nextsw_cday()
+          nextsw_cday = radiation_nextsw_cday(nextsw_ymd, nextsw_tod)
        else if (dtime == atm_cpl_dt) then
           caldayp1 = get_curr_calday(offset=int(dtime))
-          nextsw_cday = radiation_nextsw_cday()
-          if (caldayp1 /= nextsw_cday) nextsw_cday = -1._r8
+          nextsw_cday = radiation_nextsw_cday(nextsw_ymd, nextsw_tod)
+          if (seq_timemgr_GetCalendar() == 'GREGORIAN') then
+             call get_curr_date(solar_year, solar_month, solar_day, solar_seconds, offset=dtime)
+             if (nextsw_ymd /= solar_year * 10000 + solar_month * 100 + solar_day .or. &
+                  abs(nextsw_tod - real(solar_seconds,r8)) > 1.e-6_r8) nextsw_cday = -1._r8
+          else
+             if (caldayp1 /= nextsw_cday) nextsw_cday = -1._r8
+          end if
        else
           call shr_sys_abort('dtime must be less than or equal to atm_cpl_dt')
        end if
-       call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
+        call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+           nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8)
 
        ! End redirection of share output to cam log
 
@@ -634,6 +650,9 @@ CONTAINS
     integer :: shrlogunit,shrloglev ! old values
     real(r8):: caldayp1        ! CAM calendar day for for next cam time step
     real(r8):: nextsw_cday     ! calendar of next atm shortwave
+   integer :: nextsw_ymd
+   real(r8) :: nextsw_tod
+   integer :: solar_year, solar_month, solar_day, solar_seconds
     logical :: rstwr           ! .true. ==> write restart file before returning
     logical :: nlend           ! Flag signaling last time-step
     logical :: rstwr_sync      ! .true. ==> write restart file before returning
@@ -777,16 +796,23 @@ CONTAINS
     call seq_timemgr_EClockGetData(Eclock,dtime=atm_cpl_dt)
     dtime = get_step_size()
     if (dtime < atm_cpl_dt) then
-       nextsw_cday = radiation_nextsw_cday()
+      nextsw_cday = radiation_nextsw_cday(nextsw_ymd, nextsw_tod)
     else if (dtime == atm_cpl_dt) then
        caldayp1 = get_curr_calday(offset=int(dtime))
-       nextsw_cday = radiation_nextsw_cday()
-       if (caldayp1 /= nextsw_cday) nextsw_cday = -1._r8
+      nextsw_cday = radiation_nextsw_cday(nextsw_ymd, nextsw_tod)
+       if (seq_timemgr_GetCalendar() == 'GREGORIAN') then
+          call get_curr_date(solar_year, solar_month, solar_day, solar_seconds, offset=dtime)
+          if (nextsw_ymd /= solar_year * 10000 + solar_month * 100 + solar_day .or. &
+               abs(nextsw_tod - real(solar_seconds,r8)) > 1.e-6_r8) nextsw_cday = -1._r8
+       else
+          if (caldayp1 /= nextsw_cday) nextsw_cday = -1._r8
+       end if
     else
        call shr_sys_abort('dtime must be less than or equal to atm_cpl_dt')
     end if
 
-    call seq_infodata_PutData( infodata, nextsw_cday=nextsw_cday )
+       call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+          nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8)
 
     ! Write merged surface data restart file if appropriate
 

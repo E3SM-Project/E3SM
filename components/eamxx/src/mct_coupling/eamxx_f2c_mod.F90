@@ -99,6 +99,23 @@ interface
     integer(kind=c_int), value, intent(in) :: dt
   end subroutine scream_run
 
+  subroutine scream_nextsw_time(ymd, tod, cday) bind(c)
+    use iso_c_binding, only: c_int, c_double
+    integer(c_int), intent(out) :: ymd
+    real(c_double), intent(out) :: tod, cday
+  end subroutine scream_nextsw_time
+
+  subroutine scream_set_solar_callback(callback) bind(c)
+    use iso_c_binding, only: c_funptr
+    type(c_funptr), value :: callback
+  end subroutine scream_set_solar_callback
+
+  subroutine scream_set_solar_geometry_callback(callback, enabled) bind(c)
+    use iso_c_binding, only: c_funptr, c_bool
+    type(c_funptr), value :: callback
+    logical(c_bool), value :: enabled
+  end subroutine scream_set_solar_geometry_callback
+
   subroutine scream_finalize () bind(c)
   end subroutine scream_finalize
 
