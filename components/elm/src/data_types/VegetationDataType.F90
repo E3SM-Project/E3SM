@@ -8126,7 +8126,7 @@ module VegetationDataType
 
 
   !-----------------------------------------------------------------------
-  subroutine veg_cf_summary(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, isotope, col_cf_input)
+  subroutine veg_cf_summary(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, isotope, col_cf_input, hrv_zero)
     !
     ! !DESCRIPTION:
     ! patch-level carbon flux summary calculations
@@ -8142,10 +8142,13 @@ module VegetationDataType
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     character(len=*)       , intent(in)    :: isotope
     type(column_carbon_flux), intent(inout):: col_cf_input    ! receives p2c output
+    logical, optional      , intent(in)    :: hrv_zero        ! true => harvest fluxes zeroed in CNZero are all +0
     !
     ! !LOCAL VARIABLES:
     integer  :: p,j,k,l       ! indices
     integer  :: fp            ! lake filter indices
+    integer  :: fc,c          ! column filter indices
+    logical  :: skip_hrv      ! skip reading the harvest fluxes
     !-----------------------------------------------------------------------
     associate( &
       gpp_patch => this%gpp , &
@@ -8167,6 +8170,12 @@ module VegetationDataType
       )
 
     if (use_fates) return
+
+    ! When harvest is off, the hrv_* fluxes in the zero_harvest block of
+    ! veg_cf_setvalues are never written and stay +0. Adding any number of +0
+    ! terms to x gives the same bits as x + 0, so they need not be read.
+    skip_hrv = .false.
+    if (present(hrv_zero)) skip_hrv = hrv_zero
 
     ! patch loop
     do fp = 1,num_soilp
@@ -8325,6 +8334,9 @@ module VegetationDataType
             this%m_gresp_storage_to_litter_fire(p)      + &
             this%m_gresp_xfer_to_litter_fire(p)        
             
+       if (skip_hrv) then
+            this%litfall(p) = this%litfall(p) + 0._r8
+       else
             this%litfall(p) = this%litfall(p) + &
               this%hrv_leafc_to_litter(p)                 + &
               this%hrv_leafc_storage_to_litter(p)         + &
@@ -8346,14 +8358,19 @@ module VegetationDataType
               this%hrv_gresp_storage_to_litter(p)         + &
               this%hrv_gresp_xfer_to_litter(p)            + &
               this%hrv_cpool_to_litter(p)
+       end if
        
        ! patch-level fire losses (VEGFIRE)
        this%vegfire(p) = 0._r8
 
        ! patch-level wood harvest
-       this%wood_harvestc(p) = &
-            this%hrv_deadstemc_to_prod10c(p) + &
-            this%hrv_deadstemc_to_prod100c(p)
+       if (skip_hrv) then
+          this%wood_harvestc(p) = 0._r8
+       else
+          this%wood_harvestc(p) = &
+               this%hrv_deadstemc_to_prod10c(p) + &
+               this%hrv_deadstemc_to_prod100c(p)
+       end if
        if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%wood_harvestc(p) = &
                this%wood_harvestc(p) + &
@@ -8405,8 +8422,12 @@ module VegetationDataType
             this%m_frootc_to_litter_fire(p)  + &
             this%frootc_to_litter(p)
       ! if(use_crop) then 
+       if (skip_hrv) then
+           this%frootc_loss(p) =  this%frootc_loss(p) + 0._r8
+       else
            this%frootc_loss(p) =  this%frootc_loss(p) + &
                  this%hrv_frootc_to_litter(p)     
+       end if
       ! endif 
        ! (LEAFC_ALLOC) - leaf C allocation
        this%leafc_alloc(p) = &
@@ -8420,8 +8441,12 @@ module VegetationDataType
             this%m_leafc_to_litter_fire(p) + &
             this%leafc_to_litter(p)
        
-       this%leafc_loss(p) =  this%leafc_loss(p) + &
-            this%hrv_leafc_to_litter(p)  
+       if (skip_hrv) then
+          this%leafc_loss(p) =  this%leafc_loss(p) + 0._r8
+       else
+          this%leafc_loss(p) =  this%leafc_loss(p) + &
+               this%hrv_leafc_to_litter(p)  
+       end if
 
        if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%leafc_loss(p) = &
@@ -8452,6 +8477,9 @@ module VegetationDataType
             this%m_livecrootc_to_fire(p)             + &
             this%m_deadcrootc_to_fire(p)             
            
+       if (skip_hrv) then
+        this%woodc_loss(p) = this%woodc_loss(p) + 0._r8
+       else
         this%woodc_loss(p) = this%woodc_loss(p) + &
             this%hrv_livestemc_to_litter(p)          + &
             this%hrv_livestemc_storage_to_litter(p)  + &
@@ -8466,6 +8494,7 @@ module VegetationDataType
             this%hrv_deadcrootc_to_litter(p)         + &
             this%hrv_deadcrootc_storage_to_litter(p) + &
             this%hrv_deadcrootc_xfer_to_litter(p)
+       end if
        ! putting the harvested crop stem and grain in the wood loss bdrewniak
        if ( crop_prog .and. iscft(veg_pp%itype(p)))then
           this%woodc_loss(p) = &
@@ -8504,9 +8533,17 @@ module VegetationDataType
          litfall_patch(bounds%begp:bounds%endp), &
          litfall_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
-         hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
+    if (skip_hrv) then
+       ! p2c of an all +0 patch field gives +0 on every column
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          hrv_xsmrpool_to_atm_col(c) = 0._r8
+       end do
+    else
+       call p2c(bounds, num_soilc, filter_soilc, &
+            hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
+            hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
+    end if
 
     end associate
 
@@ -9755,7 +9792,7 @@ module VegetationDataType
   end subroutine veg_nf_setvalues
 
   !-----------------------------------------------------------------------
-  subroutine veg_nf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
+  subroutine veg_nf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf, hrv_zero)
     !
     ! !DESCRIPTION:
     ! Vegetation-level nitrogen flux summary calculations
@@ -9768,11 +9805,13 @@ module VegetationDataType
     integer                     , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                     , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type (column_nitrogen_flux), intent(inout)  :: col_nf          ! column-level nitrogen state for p2c
+    logical, optional           , intent(in)    :: hrv_zero        ! true => harvest fluxes zeroed in CNZero are all +0
 
     !
     ! !LOCAL VARIABLES:
     integer  :: c,p             ! indices
     integer  :: fp              ! filter indices
+    logical  :: skip_hrv        ! skip reading the harvest fluxes
     !-----------------------------------------------------------------------
     associate(&
       fire_nloss_patch => this%fire_nloss ,&
@@ -9780,6 +9819,11 @@ module VegetationDataType
       wood_harvestn_patch =>  this%wood_harvestn, &
       wood_harvestn_col   => col_nf%wood_harvestn &
       )
+
+    ! When harvest is off, the hrv_* fluxes in the zero_harvest block of
+    ! veg_nf_setvalues stay +0, and a sum of +0 terms is +0.
+    skip_hrv = .false.
+    if (present(hrv_zero)) skip_hrv = hrv_zero
 
     do fp = 1,num_soilp
        p = filter_soilp(fp)
@@ -9790,9 +9834,13 @@ module VegetationDataType
             this%retransn_to_npool(p)
 
        ! pft-level wood harvest
-       this%wood_harvestn(p) = &
-            this%hrv_deadstemn_to_prod10n(p) + &
-            this%hrv_deadstemn_to_prod100n(p)
+       if (skip_hrv) then
+          this%wood_harvestn(p) = 0._r8
+       else
+          this%wood_harvestn(p) = &
+               this%hrv_deadstemn_to_prod10n(p) + &
+               this%hrv_deadstemn_to_prod100n(p)
+       end if
        if ( crop_prog .and. iscft(veg_pp%itype(p)))then
             this%wood_harvestn(p) = &
             this%wood_harvestn(p) + &
@@ -9866,26 +9914,30 @@ module VegetationDataType
            this%m_livecrootn_xfer_to_litter_fire(p)      + &
            this%m_deadcrootn_xfer_to_litter_fire(p)
 
-      this%hrv_nloss_litter(p) = &
-           this%hrv_retransn_to_litter(p)          + &
-           this%hrv_npool_to_litter(p)             + &
-           this%hrv_leafn_to_litter(p)             + &
-           this%hrv_leafn_storage_to_litter(p)     + &
-           this%hrv_leafn_xfer_to_litter(p)        + &
-           this%hrv_frootn_to_litter(p)            + &
-           this%hrv_frootn_storage_to_litter(p)    + &
-           this%hrv_frootn_xfer_to_litter(p)       + &
-           this%hrv_livestemn_to_litter(p)         + &
-           this%hrv_livestemn_storage_to_litter(p) + &
-           this%hrv_livestemn_xfer_to_litter(p)    + &
-           this%hrv_deadstemn_storage_to_litter(p) + &
-           this%hrv_deadstemn_xfer_to_litter(p)    + &
-           this%hrv_livecrootn_to_litter(p)        + &
-           this%hrv_livecrootn_storage_to_litter(p)+ &
-           this%hrv_livecrootn_xfer_to_litter(p)   + &
-           this%hrv_deadcrootn_to_litter(p)        + &
-           this%hrv_deadcrootn_storage_to_litter(p)+ &
-           this%hrv_deadcrootn_xfer_to_litter(p)
+      if (skip_hrv) then
+         this%hrv_nloss_litter(p) = 0._r8
+      else
+         this%hrv_nloss_litter(p) = &
+              this%hrv_retransn_to_litter(p)          + &
+              this%hrv_npool_to_litter(p)             + &
+              this%hrv_leafn_to_litter(p)             + &
+              this%hrv_leafn_storage_to_litter(p)     + &
+              this%hrv_leafn_xfer_to_litter(p)        + &
+              this%hrv_frootn_to_litter(p)            + &
+              this%hrv_frootn_storage_to_litter(p)    + &
+              this%hrv_frootn_xfer_to_litter(p)       + &
+              this%hrv_livestemn_to_litter(p)         + &
+              this%hrv_livestemn_storage_to_litter(p) + &
+              this%hrv_livestemn_xfer_to_litter(p)    + &
+              this%hrv_deadstemn_storage_to_litter(p) + &
+              this%hrv_deadstemn_xfer_to_litter(p)    + &
+              this%hrv_livecrootn_to_litter(p)        + &
+              this%hrv_livecrootn_storage_to_litter(p)+ &
+              this%hrv_livecrootn_xfer_to_litter(p)   + &
+              this%hrv_deadcrootn_to_litter(p)        + &
+              this%hrv_deadcrootn_storage_to_litter(p)+ &
+              this%hrv_deadcrootn_xfer_to_litter(p)
+      end if
 
           !Exit if any of the litter N loss terms are NaN
           if (isnan(this%sen_nloss_litter(p)) .or.  &
@@ -10850,7 +10902,7 @@ module VegetationDataType
   end subroutine veg_pf_setvalues
 
   !-----------------------------------------------------------------------
-  subroutine veg_pf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+  subroutine veg_pf_summary(this, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf, hrv_zero)
     !
     ! !ARGUMENTS:
     class (vegetation_phosphorus_flux) :: this
@@ -10860,9 +10912,11 @@ module VegetationDataType
     integer           , intent(in)     :: num_soilp       ! number of soil patches in filter
     integer           , intent(in)     :: filter_soilp(:) ! filter for soil patches
     type(column_phosphorus_flux), intent(inout) :: col_pf
+    logical, optional , intent(in)     :: hrv_zero        ! true => harvest fluxes zeroed in CNZero are all +0
     !
     ! !LOCAL VARIABLES:
     integer  :: p, fp   ! indices
+    logical  :: skip_hrv ! skip reading the harvest fluxes
     !-----------------------------------------------------------------------
     associate( &
       fire_ploss_patch => this%fire_ploss      ,&
@@ -10870,6 +10924,12 @@ module VegetationDataType
       wood_harvestp_patch  => this%wood_harvestp ,&
       wood_harvestp_col => col_pf%wood_harvestp &
       )
+
+    ! When harvest is off, the hrv_* fluxes in the zero_harvest block of
+    ! veg_pf_setvalues stay +0, and a sum of +0 terms is +0.
+    skip_hrv = .false.
+    if (present(hrv_zero)) skip_hrv = hrv_zero
+
     do fp = 1,num_soilp
        p = filter_soilp(fp)
 
@@ -10879,9 +10939,13 @@ module VegetationDataType
             this%retransp_to_ppool(p)
 
        ! pft-level wood harvest
-       this%wood_harvestp(p) = &
-            this%hrv_deadstemp_to_prod10p(p) + &
-            this%hrv_deadstemp_to_prod100p(p)
+       if (skip_hrv) then
+          this%wood_harvestp(p) = 0._r8
+       else
+          this%wood_harvestp(p) = &
+               this%hrv_deadstemp_to_prod10p(p) + &
+               this%hrv_deadstemp_to_prod100p(p)
+       end if
        if ( crop_prog .and. iscft(veg_pp%itype(p)))then
             this%wood_harvestp(p) = &
             this%wood_harvestp(p) + &
@@ -10955,26 +11019,30 @@ module VegetationDataType
            this%m_livecrootp_xfer_to_litter_fire(p)      + &
            this%m_deadcrootp_xfer_to_litter_fire(p)
 
-      this%hrv_ploss_litter(p) = &
-           this%hrv_retransp_to_litter(p)         + &
-           this%hrv_ppool_to_litter(p)            + &
-           this%hrv_leafp_to_litter(p)            + &
-           this%hrv_leafp_storage_to_litter(p)    + &
-           this%hrv_leafp_xfer_to_litter(p)       + &
-           this%hrv_frootp_to_litter(p)           + &
-           this%hrv_frootp_storage_to_litter(p)   + &
-           this%hrv_frootp_xfer_to_litter(p)      + &
-           this%hrv_livestemp_to_litter(p)        + &
-           this%hrv_livestemp_storage_to_litter(p)+ &
-           this%hrv_livestemp_xfer_to_litter(p)   + &
-           this%hrv_deadstemp_storage_to_litter(p)+ &
-           this%hrv_deadstemp_xfer_to_litter(p)   + &
-           this%hrv_livecrootp_to_litter(p)       + &
-           this%hrv_livecrootp_storage_to_litter(p)+ &
-           this%hrv_livecrootp_xfer_to_litter(p)  + &
-           this%hrv_deadcrootp_to_litter(p)       + &
-           this%hrv_deadcrootp_storage_to_litter(p)+ &
-           this%hrv_deadcrootp_xfer_to_litter(p)
+      if (skip_hrv) then
+         this%hrv_ploss_litter(p) = 0._r8
+      else
+         this%hrv_ploss_litter(p) = &
+              this%hrv_retransp_to_litter(p)         + &
+              this%hrv_ppool_to_litter(p)            + &
+              this%hrv_leafp_to_litter(p)            + &
+              this%hrv_leafp_storage_to_litter(p)    + &
+              this%hrv_leafp_xfer_to_litter(p)       + &
+              this%hrv_frootp_to_litter(p)           + &
+              this%hrv_frootp_storage_to_litter(p)   + &
+              this%hrv_frootp_xfer_to_litter(p)      + &
+              this%hrv_livestemp_to_litter(p)        + &
+              this%hrv_livestemp_storage_to_litter(p)+ &
+              this%hrv_livestemp_xfer_to_litter(p)   + &
+              this%hrv_deadstemp_storage_to_litter(p)+ &
+              this%hrv_deadstemp_xfer_to_litter(p)   + &
+              this%hrv_livecrootp_to_litter(p)       + &
+              this%hrv_livecrootp_storage_to_litter(p)+ &
+              this%hrv_livecrootp_xfer_to_litter(p)  + &
+              this%hrv_deadcrootp_to_litter(p)       + &
+              this%hrv_deadcrootp_storage_to_litter(p)+ &
+              this%hrv_deadcrootp_xfer_to_litter(p)
+      end if
 
           ! Exit if any of the following are NaN
           if (isnan(this%sen_ploss_litter(p)) .or. &
