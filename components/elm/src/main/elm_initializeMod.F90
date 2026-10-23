@@ -536,6 +536,7 @@ contains
     use pdepStreamMod         , only : pdep_init, pdep_interp
     use DecompCascadeBGCMod , only : init_decompcascade_bgc
     use DecompCascadeCNMod  , only : init_decompcascade_cn
+    use SoilLittDecompMod   , only : SoilLittDecompInit
     use CNDecompCascadeContype, only : init_decomp_cascade_constants
     use VegetationPropertiesType        , only : veg_vp
     use SoilorderConType      , only : soilorderconInit
@@ -722,6 +723,7 @@ contains
         ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
           call init_decompcascade_cn(bounds_proc, cnstate_vars)
        end if
+       call SoilLittDecompInit(bounds_proc, cnstate_vars)
     endif
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
