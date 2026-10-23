@@ -9,6 +9,10 @@ set(
     FORCE
 )
 option(EMULATOR_ENABLE_TESTS "Build emulator unit tests" ON)
+if(EMULATOR_ENABLE_TESTS)
+  # Enable testing at the top level
+  enable_testing()
+endif()
 
 if (DEFINED E3SM_SOURCE_DIR)
   set(STANDALONE_MODE OFF)
@@ -107,11 +111,6 @@ if(EMULATOR_ENABLE_LIBTORCH)
   endif()
 endif()
 
-if(EMULATOR_ENABLE_TESTS)
-  # Enable testing at the top level
-  enable_testing()
-endif()
-
 if (STANDALONE_MODE)
   # We need to disable the useless, harmful C++ MPI bindings, and no one method seems to work.
   set(MPI_CXX_SKIP_MPICXX ON)
@@ -152,6 +151,7 @@ if (STANDALONE_MODE)
   include_directories(${PROJECT_BINARY_DIR}/include)
   link_directories(${PROJECT_BINARY_DIR}/lib)
 endif()
+
 
 # Add subdirectories
 add_subdirectory(common)

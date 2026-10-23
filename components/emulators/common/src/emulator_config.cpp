@@ -1,10 +1,15 @@
+#include "inference_backend.hpp"
+#include <algorithm>
+#include <cctype>
 #include <ekat_yaml.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
 #include <filesystem>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace e3sm::emulator {
 namespace {
@@ -25,6 +30,21 @@ TensorLayout get_layout_from_string(std::string layout) {
     return TensorLayout::FeatureMajor;
   }
   throw std::runtime_error("Unknown Layout requested: " + layout);
+}
+
+inference::BackendType get_backend_type_from_string(std::string type) {
+
+  auto op = [](const unsigned char c) { return std::tolower(c); };
+  std::ranges::transform(type, type.begin(), op);
+  if (type == "python") {
+    return inference::BackendType::PYTHON;
+  } else if (type == "libtorch") {
+    return inference::BackendType::LIBTORCH;
+  } else if (type == "stub") {
+    return inference::BackendType::STUB;
+  }
+  throw std::runtime_error("Unrecognized BackendType requested! " +
+                           std::string(type));
 }
 
 std::string to_string(TensorLayout layout) {
@@ -82,6 +102,8 @@ EmulatorConfig read_emulator_config(const std::filesystem::path& filename) {
       get_layout_from_string(model_attrs.get<std::string>("output_layout"));
   cfg.model.input_layout =
       get_layout_from_string(model_attrs.get<std::string>("input_layout"));
+  cfg.model.backend_type =
+      get_backend_type_from_string(model_attrs.get<std::string>("backend"));
 
   // Get Sample Space Information
   const auto& sample_info = params.sublist("sample_space");

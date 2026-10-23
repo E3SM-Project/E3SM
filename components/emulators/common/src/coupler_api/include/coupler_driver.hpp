@@ -26,7 +26,7 @@ public:
   }
 
   void initialize(const std::string& filename);
-  bool is_initialized(const std::string& filename) const { return initialized_; }
+  bool is_initialized() const { return initialized_; }
 
   void run(const ProcessRunOpts run_opts) {
     for (auto& component : components_) {
