@@ -1256,7 +1256,7 @@ contains
             wt_cft(nl,t,nmiscanthusirrig) = 0._r8
             wt_cft(nl,t,nswitchgrass)     = wt_cft(nl,t,nswitchgrass)  + wt_cft(nl,t,nswitchgrassirrig)
             wt_cft(nl,t,nswitchgrassirrig) = 0._r8
-            wt_cft(nl,t,npoplar)         = wt_cft(nl,t,npoplar) + wt_cft(nl,t,npoplar)
+            wt_cft(nl,t,npoplar)         = wt_cft(nl,t,npoplar) + wt_cft(nl,t,npoplarirrig)
             wt_cft(nl,t,npoplarirrig)    = 0._r8
             wt_cft(nl,t,nwillow)         = wt_cft(nl,t,nwillow) + wt_cft(nl,t,nwillowirrig)
             wt_cft(nl,t,nwillowirrig)    = 0._r8
