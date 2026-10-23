@@ -6,11 +6,15 @@ module cosp_f90_shims
   use cosp_kinds,                only: wp
   use mod_rng,                   only: rng_state, init_rng, get_rng
   use cosp_optics,               only: cosp_simulator_optics, modis_optics_partition, modis_optics
-  use mod_modis_sim,             only: get_g_nir, get_ssa_nir
+  use mod_modis_sim,             only: get_g_nir, get_ssa_nir, modis_subcolumn, modis_column, &
+                                       two_stream, two_stream_reflectance
   use mod_cosp_modis_interface,  only: cosp_modis_init
   use mod_cosp_stats,            only: hist2D
   use mod_cosp_config,           only: R_UNDEF, tau_binBounds, pres_binBounds, hgt_binBounds, &
-                                       ntau, npres, nhgt, numMISRHgtBins, numMISRTauBins
+                                       ntau, npres, nhgt, numMISRHgtBins, numMISRTauBins, &
+                                       numMODISTauBins, numMODISPresBins, numMODISReffIceBins, &
+                                       numMODISReffLiqBins, modis_histTau, modis_histTauEdges, &
+                                       modis_histTauCenters, tau_binEdges, tau_binCenters
   use mod_misr_simulator,        only: misr_subcolumn, misr_column, misr_tauchk => tauchk
   use mod_icarus,                only: icarus_subcolumn, icarus_column, isccp_tauchk => tauchk
   use mod_cosp_isccp_interface,  only: cosp_isccp_init
@@ -143,5 +147,61 @@ contains
     call icarus_column(npoints, ncol, boxtau, boxptop/100._wp, sunlit_i, boxttop, fq, &
          meanalbedocld, meanptop, meantaucld, totalcldarea, meantb)
   end subroutine cosp_icarus_f
+
+  ! MODIS subcolumn retrievals for npoints (sunlit) points, as cosp.F90 calls them
+  subroutine cosp_modis_subcolumn_f(npoints, ncol, nlev, phalf, tau, liqfrac, g, w0, isccp_ctp, &
+       phase, ctp, tau_ret, size_ret) bind(C, name='cosp_modis_subcolumn_f')
+    integer(c_int), value, intent(in) :: npoints, ncol, nlev
+    real(c_double), intent(in)        :: phalf(npoints,nlev+1), isccp_ctp(npoints,ncol)
+    real(c_double), intent(in), dimension(npoints,ncol,nlev) :: tau, liqfrac, g, w0
+    integer(c_int), intent(out)       :: phase(npoints,ncol)
+    real(c_double), intent(out), dimension(npoints,ncol) :: ctp, tau_ret, size_ret
+    integer :: phase_i(ncol), i
+    call cosp_modis_init()
+    do i = 1, npoints
+       call modis_subcolumn(ncol, nlev, phalf(i,:), tau(i,:,:), liqfrac(i,:,:), g(i,:,:), &
+            w0(i,:,:), isccp_ctp(i,:), phase_i, ctp(i,:), tau_ret(i,:), size_ret(i,:))
+       phase(i,:) = phase_i
+    enddo
+  end subroutine cosp_modis_subcolumn_f
+
+  ! MODIS column statistics; only the tau/CTP joint histogram is returned
+  subroutine cosp_modis_column_f(npoints, ncol, phase, ctp, tau, size_ret, fq) &
+       bind(C, name='cosp_modis_column_f')
+    integer(c_int), value, intent(in) :: npoints, ncol
+    integer(c_int), intent(in)        :: phase(npoints,ncol)
+    real(c_double), intent(in), dimension(npoints,ncol) :: ctp, tau, size_ret
+    real(c_double), intent(out)       :: fq(npoints,ntau,numMODISPresBins)
+    real(wp), dimension(npoints) :: cf_tot, cf_liq, cf_ice, cf_hi, cf_mid, cf_lo, tau_tot, &
+         tau_liq, tau_ice, ltau_tot, ltau_liq, ltau_ice, sz_liq, sz_ice, ctp_mean, lwp, iwp
+    real(wp) :: fq_ice(npoints,ntau,numMODISReffIceBins), fq_liq(npoints,ntau,numMODISReffLiqBins)
+    integer :: phase_i(npoints,ncol)
+    ! The tau bins, and their number, are set in cosp_init. Until then numMODISTauBins is
+    ! 0 and the histograms are empty.
+    if (.not. allocated(modis_histTau)) then
+       allocate(modis_histTau(ntau+1), modis_histTauEdges(2,ntau), modis_histTauCenters(ntau))
+       numMODISTauBins      = ntau
+       modis_histTau        = tau_binBounds
+       modis_histTauEdges   = tau_binEdges
+       modis_histTauCenters = tau_binCenters
+    endif
+    call cosp_modis_init()
+    phase_i = phase
+    call modis_column(npoints, ncol, phase_i, ctp, tau, size_ret, cf_tot, cf_liq, cf_ice, &
+         cf_hi, cf_mid, cf_lo, tau_tot, tau_liq, tau_ice, ltau_tot, ltau_liq, ltau_ice, &
+         sz_liq, sz_ice, ctp_mean, lwp, iwp, fq, fq_ice, fq_liq)
+  end subroutine cosp_modis_column_f
+
+  ! Two-stream reflectance and transmittance of single layers
+  subroutine cosp_two_stream_f(n, tau, g, w0, ref, tra, ref2) bind(C, name='cosp_two_stream_f')
+    integer(c_int), value, intent(in) :: n
+    real(c_double), intent(in)        :: tau(n), g(n), w0(n)
+    real(c_double), intent(out)       :: ref(n), tra(n), ref2(n)
+    integer :: i
+    do i = 1, n
+       call two_stream(tau(i), g(i), w0(i), ref(i), tra(i))
+    enddo
+    ref2 = two_stream_reflectance(tau, g, w0)
+  end subroutine cosp_two_stream_f
 
 end module cosp_f90_shims

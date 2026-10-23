@@ -40,6 +40,14 @@ void cosp_icarus_f(int npoints, int ncol, int nlev, const int* sunlit, const dou
                    double* totalcldarea);
 void cosp_misr_column_f(int npoints, int ncol, const double* ztop, const int* sunlit,
                         const double* tau, double* fq);
+void cosp_modis_subcolumn_f(int npoints, int ncol, int nlev, const double* phalf,
+                            const double* tau, const double* liqfrac, const double* g,
+                            const double* w0, const double* isccp_ctp, int* phase, double* ctp,
+                            double* tau_ret, double* size_ret);
+void cosp_two_stream_f(int n, const double* tau, const double* g, const double* w0,
+                       double* ref, double* tra, double* ref2);
+void cosp_modis_column_f(int npoints, int ncol, const int* phase, const double* ctp,
+                         const double* tau, const double* size_ret, double* fq);
 }
 
 namespace scream {
@@ -54,12 +62,14 @@ using lview_1d  = Kokkos::View<double*,   Kokkos::LayoutLeft, Kokkos::HostSpace>
 using lview_2d  = Kokkos::View<double**,  Kokkos::LayoutLeft, Kokkos::HostSpace>;
 using lview_3d  = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
 using liview_1d = Kokkos::View<int*,      Kokkos::LayoutLeft, Kokkos::HostSpace>;
+using liview_2d = Kokkos::View<int**,     Kokkos::LayoutLeft, Kokkos::HostSpace>;
 
 // Device views in the layout the port uses
 using dview_1d  = Kokkos::View<double*,   DefaultDevice>;
 using dview_2d  = Kokkos::View<double**,  DefaultDevice>;
 using dview_3d  = Kokkos::View<double***, DefaultDevice>;
 using diview_1d = Kokkos::View<int*,      DefaultDevice>;
+using diview_2d = Kokkos::View<int**,     DefaultDevice>;
 
 using Policy2 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>;
 using Policy3 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>;

@@ -35,6 +35,12 @@ struct Constants
   static constexpr int phaseIsLiquid       = 1;
   static constexpr int phaseIsIce          = 2;
   static constexpr int phaseIsUndetermined = 3;
+  static constexpr Scalar min_OpticalThickness          = 0.3;     // Minimum detectable tau
+  static constexpr Scalar CO2Slicing_PressureLimit      = 70000.0; // Pa
+  static constexpr Scalar CO2Slicing_TauLimit           = 1.0;
+  static constexpr Scalar phase_TauLimit                = 1.0;
+  static constexpr Scalar phaseDiscrimination_Threshold = 0.7;
+  static constexpr Scalar re_fill                       = -999.0;
 
   // Ice density used in MODIS phase partitioning (cosp_optics.F90, 0.93_wp)
   static constexpr Scalar ice_density = 0.93;
@@ -71,6 +77,11 @@ struct Constants
                                  9.f, 11.f, 13.f, 15.f, 17.f, 99.f};
     return Scalar(v[i]);
   }
+
+  // ---------------------------------------------------------------------------------------
+  // MODIS simulator histogram sizes (cosp_config.F90)
+  static constexpr int numMODISTauBins  = ntau;
+  static constexpr int numMODISPresBins = npres;
 
   // ---------------------------------------------------------------------------------------
   // MISR simulator (MISR_simulator.F90)
