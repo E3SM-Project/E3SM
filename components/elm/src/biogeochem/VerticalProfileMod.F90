@@ -21,6 +21,7 @@ module VerticalProfileMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public:: decomp_vertprofiles
+  public:: decomp_vertprofiles_static
   !
   logical , public :: exponential_rooting_profile = .true.
   logical , public :: pftspecific_rootingprofile = .true.
@@ -31,6 +32,29 @@ module VerticalProfileMod
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  logical function decomp_vertprofiles_static()
+    !
+    ! !DESCRIPTION:
+    ! Return .true. when no subgrid weights can change in this time step and none
+    ! changed in the previous one (get_subgrid_weights_updated), and the root
+    ! profile is not taken from rootfr_patch. The profiles that decomp_vertprofiles
+    ! computes for a patch or column then depend only on data that do not change
+    ! during the run (PFT, layers to bedrock, weights) and on altmax_lastyear_indx
+    ! of the column, which alt_calc changes only in alt_annual_update_step.
+    ! The conditions must include all those of zero_all in decomp_vertprofiles.
+    !
+    ! !USES:
+    use elm_varctl  , only : use_fates, create_glacier_mec_landunit, iac_present, use_dynroot
+    use dynSubgridControlMod, only : get_subgrid_weights_updated, get_do_transient_pfts, get_do_transient_crops
+    !-----------------------------------------------------------------------
+
+    decomp_vertprofiles_static = .not. ( get_subgrid_weights_updated() .or. get_do_transient_pfts() .or. &
+         get_do_transient_crops() .or. use_fates .or. create_glacier_mec_landunit .or. iac_present .or. &
+         use_dynroot .or. .not. exponential_rooting_profile )
+
+  end function decomp_vertprofiles_static
 
   !-----------------------------------------------------------------------
   subroutine decomp_vertprofiles(bounds, &
