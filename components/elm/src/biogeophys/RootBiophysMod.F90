@@ -87,7 +87,7 @@ contains
     use shr_log_mod    , only : errMsg => shr_log_errMsg   
     use decompMod      , only : bounds_type
     use pftvarcon      , only : noveg, roota_par, rootb_par  !these pars shall be moved to here and set as private in the future
-    use elm_varctl     , only : use_var_soil_thick
+    use elm_varctl     , only : use_var_soil_thick,use_fates
     use VegetationType , only : veg_pp
     use ColumnType     , only : col_pp
     !
@@ -110,9 +110,13 @@ contains
     ! Y(d =0.1m) = 1-beta^(10 cm) and Y(d=d_obs)=0.99 with
     ! beta & d_obs given in Zeng et al. (1998).   
 
-    do p = bounds%begp,bounds%endp   
-
-       if (veg_pp%itype(p) /= noveg .and. .not.veg_pp%is_fates(p)) then
+    if(use_fates)then
+       do p = bounds%begp,bounds%endp
+          rootfr(p,1:ubj) = 0._r8
+       end do
+    else
+       do p = bounds%begp,bounds%endp   
+       if (veg_pp%itype(p) /= noveg ) then
           c = veg_pp%column(p)
 	  nlevbed = njbed(c)
 	  totrootfr = 0._r8
@@ -141,6 +145,7 @@ contains
        endif
 
     enddo
+    end if
     return
 
   end function zeng2001_rootfr
