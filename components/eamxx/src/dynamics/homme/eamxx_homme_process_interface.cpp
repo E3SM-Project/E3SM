@@ -188,14 +188,6 @@ void HommeDynamics::create_requests ()
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
 
-  if (fv_phys_active()) {
-    // The atm input fields on the pg grid are initialized by HommeModelInit, using temporary
-    // copies on the GLL grid, so there is no need to request them here. The only exception
-    // are the trace gases (see [rrtmgp active gases] in eamxx_homme_fv_phys.cpp), which
-    // are still requested on the GLL grid.
-    fv_phys_rrtmgp_active_gases_init(m_grids_manager);
-  }
-
   // Dynamics grid states
   create_helper_field("v_dyn",        {EL,TL,CMP,GP,GP,LEV}, {nelem,NTL,2,NP,NP,nlev_mid}, dgn);
   create_helper_field("vtheta_dp_dyn",{EL,TL,    GP,GP,LEV}, {nelem,NTL,  NP,NP,nlev_mid}, dgn);
@@ -481,10 +473,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   get_field_out("p_mid")    .get_header().get_tracking().update_time_stamp(start_of_step_ts());
   get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(start_of_step_ts());
   get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(start_of_step_ts());
-
-  if (fv_phys_active()) {
-    fv_phys_rrtmgp_active_gases_remap(run_type);
-  }
 
   // Set up field property checks
   // Note: We are seeing near epsilon negative values in a handful of places.
