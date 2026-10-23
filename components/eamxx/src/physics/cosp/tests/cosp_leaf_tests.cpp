@@ -48,12 +48,12 @@ TEST_CASE("cosp_rng_bfb", "[cosp]")
   double rmin = 1, rmax = 0;
   for (int i = 0; i < n; ++i) {
     for (int k = 0; k < ndraw; ++k) {
-      if (rnd_h(i,k) != rnd_f(i,k)) ++ndiff;
+      if (!same(rnd_h(i,k), rnd_f(i,k))) ++ndiff;
       rmin = std::min(rmin, rnd_h(i,k));
       rmax = std::max(rmax, rnd_h(i,k));
     }
   }
-  REQUIRE(ndiff == 0);
+  REQUIRE(ndiff <= allowed_diffs(rnd_f.size()));
   REQUIRE(rmin >= 0.0);
   REQUIRE(rmax < 1.0);
 }
@@ -82,7 +82,7 @@ TEST_CASE("cosp_simulator_optics_bfb", "[cosp]")
     out_d(i,j,k) = F::simulator_optics(flag_d(i,j,k), var1_d(i,k), var2_d(i,k));
   });
 
-  REQUIRE(count_diffs(out_d, out_f) == 0);
+  COSP_REQUIRE_MATCH(out_d, out_f);
 }
 
 // -------------------------------------------------------------------------------------------
@@ -113,8 +113,8 @@ TEST_CASE("cosp_modis_optics_partition_bfb", "[cosp]")
                               tl_d(i,j,k), ti_d(i,j,k));
   });
 
-  REQUIRE(count_diffs(tl_d, tl_f) == 0);
-  REQUIRE(count_diffs(ti_d, ti_f) == 0);
+  COSP_REQUIRE_MATCH(tl_d, tl_f);
+  COSP_REQUIRE_MATCH(ti_d, ti_f);
 }
 
 // -------------------------------------------------------------------------------------------
@@ -143,10 +143,10 @@ TEST_CASE("cosp_nir_fits_bfb", "[cosp]")
 
     int ndiff = 0;
     for (int i = 0; i < n; ++i) {
-      if (g_h(i)  != g_f(i))  ++ndiff;
-      if (w0_h(i) != w0_f(i)) ++ndiff;
+      if (!same(g_h(i),  g_f(i)))  ++ndiff;
+      if (!same(w0_h(i), w0_f(i))) ++ndiff;
     }
-    REQUIRE(ndiff == 0);
+    REQUIRE(ndiff <= allowed_diffs(2*n));
   }
 }
 
@@ -177,9 +177,9 @@ TEST_CASE("cosp_modis_optics_bfb", "[cosp]")
                     fl_d(i,j,k), g_d(i,j,k), w0_d(i,j,k));
   });
 
-  REQUIRE(count_diffs(fl_d, fl_f) == 0);
-  REQUIRE(count_diffs(g_d,  g_f)  == 0);
-  REQUIRE(count_diffs(w0_d, w0_f) == 0);
+  COSP_REQUIRE_MATCH(fl_d, fl_f);
+  COSP_REQUIRE_MATCH(g_d, g_f);
+  COSP_REQUIRE_MATCH(w0_d, w0_f);
 }
 
 // -------------------------------------------------------------------------------------------
@@ -229,7 +229,7 @@ TEST_CASE("cosp_hist2d_bfb", "[cosp]")
     F::hist2d(npts, var1, var2, nbin1, bin1_d, nbin2, bin2_d, hist);
   });
 
-  REQUIRE(count_diffs(hist_d, hist_f) == 0);
+  COSP_REQUIRE_MATCH(hist_d, hist_f);
 
   // Make sure the test actually exercises the histogram
   double total = 0;

@@ -88,9 +88,9 @@ TEST_CASE("cosp_misr_bfb", "[cosp]")
       F::misr_column(ncol, ztop, sunlit_d(j), tau, fq);
     });
 
-    REQUIRE(count_diffs(tau_d,  tau_f)  == 0);
-    REQUIRE(count_diffs(ztop_d, ztop_f) == 0);
-    REQUIRE(count_diffs(fq_d,   fq_f)   == 0);
+    COSP_REQUIRE_MATCH(tau_d, tau_f);
+    COSP_REQUIRE_MATCH(ztop_d, ztop_f);
+    COSP_REQUIRE_MATCH(fq_d, fq_f);
 
     // Make sure the inputs exercise the interesting branches: thin clouds flagged with
     // ztop = -1, clear subcolumns, interpolated tops, and a non-empty histogram

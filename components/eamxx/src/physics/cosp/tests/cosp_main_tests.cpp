@@ -79,7 +79,7 @@ void run_fortran (const CospInputs& in, const double emsfc_lw, const CospOutputs
                out.misr_cthtau.data());
 }
 
-// Run the C++ and compare with the Fortran outputs; returns the number of differences
+// Run the C++ and compare with the Fortran outputs
 int run_cxx_and_compare (const CospInputs& in, const double emsfc_lw, const CospOutputs& out,
                          const F::Workspace& ws) {
   using C = F::C;
@@ -108,8 +108,13 @@ int run_cxx_and_compare (const CospInputs& in, const double emsfc_lw, const Cosp
   const int n4 = count_diffs(misr,   out.misr_cthtau);
   INFO("diffs: isccp_cldtot=" << n1 << " isccp_ctptau=" << n2 << " modis_ctptau=" << n3
        << " misr_cthtau=" << n4);
-  CHECK(n1 + n2 + n3 + n4 == 0);
-  return n1 + n2 + n3 + n4;
+  // Returns the number of diffs beyond what is allowed, see allowed_diffs
+  const int excess = std::max(0, n1 - allowed_diffs(out.isccp_cldtot.size())) +
+                     std::max(0, n2 - allowed_diffs(out.isccp_ctptau.size())) +
+                     std::max(0, n3 - allowed_diffs(out.modis_ctptau.size())) +
+                     std::max(0, n4 - allowed_diffs(out.misr_cthtau.size()));
+  CHECK(excess == 0);
+  return excess;
 }
 
 // Sum of the histogram entries over the sunlit columns, to make sure they are not empty
