@@ -1373,6 +1373,10 @@ contains
     real(r8), allocatable :: q10prod_vr(:,:)           ! Q10 factor for CH4 production [soil filter position, lev]
     real(r8), allocatable :: q10oxid_vr(:,:)           ! Q10 factor for CH4 oxidation [filter position, lev]
     integer  :: col2fc(bounds%begc:bounds%endc)        ! position of each column in filter_soilc (0 if not in it)
+    real(r8), allocatable :: rr_vr(:,:)                ! vertically resolved column-mean root respiration (g C/m^2/s) [soil filter position, lev]
+    integer  :: rr_fc(num_soilp)                       ! filter position of the column of each patch with root respiration, else 0
+    real(r8) :: rr_p(num_soilp)                        ! rr of each filter patch
+    real(r8) :: rr_wt(num_soilp)                       ! wtcol of each filter patch
     real(r8) :: q10ch4                                 ! additional Q10 for methane production
     real(r8) :: q10ch4base                             ! temperature at which the effective f_ch4 equals the constant f_ch4
     real(r8) :: q10_ch4oxid                            ! Q10 oxidation constant
@@ -1699,6 +1703,49 @@ contains
          end do
       end do
 
+      ! Vertically resolved column-mean root respiration for ch4_prod. It does not depend on the
+      ! saturated/unsaturated pass, so it is computed once per step instead of in each pass. For
+      ! each (c,j) the patch terms are the same products, added in the same (filter) order, so it is BFB.
+      allocate(rr_vr(num_soilc, 1:nlevsoi))
+      do j = 1, nlevsoi
+         do fc = 1, num_soilc
+            rr_vr(fc,j) = 0.0_r8
+         end do
+      end do
+      do fp = 1, num_soilp
+         p = filter_soilp(fp)
+         c = veg_pp%column(p)
+         rr_fc(fp) = 0
+         if(.not.col_pp%is_fates(c)) then
+            if (veg_pp%wtcol(p) > 0._r8 .and. veg_pp%itype(p) /= noveg) then
+               rr_fc(fp) = col2fc(c)
+               rr_p(fp)  = veg_cf%rr(p)
+               rr_wt(fp) = veg_pp%wtcol(p)
+            end if
+         end if
+      end do
+      !DIR$ NOVECTOR
+      do j = 1, nlevsoi
+         !DIR$ NOVECTOR
+         do fp = 1, num_soilp
+            if (rr_fc(fp) > 0) then
+               p = filter_soilp(fp)
+               rr_vr(rr_fc(fp),j) = rr_vr(rr_fc(fp),j) + rr_p(fp)*rootfr(p,j)*rr_wt(fp)
+            end if
+         end do
+      end do
+      if (use_fates) then
+         nc = bounds%clump_index
+         do s = 1,elm_fates%fates(nc)%nsites
+            c = elm_fates%f2hmap(nc)%fcolumn(s)
+            if (col2fc(c) > 0) then
+               do j=1, elm_fates%fates(nc)%bc_in(s)%nlevsoil
+                  rr_vr(col2fc(c),j) = elm_fates%fates(nc)%bc_out(s)%root_resp(j)
+               end do
+            end if
+         end do
+      end if
+
       !-------------------------------------------------
       ! Loop over saturated and unsaturated, non-lakes
       !------------------------------------------------
@@ -1753,7 +1800,7 @@ contains
          call ch4_prod (bounds, &
               num_soilc, filter_soilc, &
               num_soilp, filter_soilp, &
-              jwt(begc:endc), q10prod_vr, sat, lake, &
+              jwt(begc:endc), q10prod_vr, rr_vr, sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_prod'//trim(tsfx))
 
@@ -1829,7 +1876,7 @@ contains
          call t_startf('ch4_prod-lake')
          call ch4_prod (bounds, &
               num_lakec, filter_lakec, &
-              0, dummyfilter, jwt(begc:endc), q10prod_vr, sat, lake, &
+              0, dummyfilter, jwt(begc:endc), q10prod_vr, rr_vr, sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_prod-lake')
 
@@ -2029,6 +2076,7 @@ contains
       deallocate(k_h_inv_vr)
       deallocate(q10prod_vr)
       deallocate(q10oxid_vr)
+      deallocate(rr_vr)
 
     end associate
 
@@ -2036,7 +2084,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ch4_prod (bounds, num_methc, filter_methc, num_methp, &
-       filter_methp, jwt, q10prod_vr, sat, lake, &
+       filter_methp, jwt, q10prod_vr, rr_vr, sat, lake, &
        soilstate_vars, ch4_vars, dtime, elm_fates)
     !
     ! !DESCRIPTION:
@@ -2051,7 +2099,6 @@ contains
     use elm_varctl         , only: anoxia
     use elm_varpar         , only: nlevdecomp, nlevdecomp_full
     use SharedParamsMod    , only: nlev_soildecomp_standard
-    use pftvarcon          , only: noveg
     !
     ! !ARGUMENTS:
     type(bounds_type)       , intent(in)    :: bounds
@@ -2061,6 +2108,7 @@ contains
     integer                 , intent(in)    :: filter_methp(:)     ! patch filter for soil points
     integer                 , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
     real(r8)                , intent(in)    :: q10prod_vr( 1: , 1: ) ! q10ch4**((T-q10ch4base)/10) [filter position, lev]
+    real(r8)                , intent(in)    :: rr_vr( 1: , 1: )      ! vertically resolved column-mean root respiration (g C/m^2/s) [soil filter position, lev], not read for lakes
     integer                 , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                 , intent(in)    :: lake                ! function called with lake filter
     type(soilstate_type)    , intent(inout) :: soilstate_vars
@@ -2071,9 +2119,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: p,c,j,g,s        ! indices
-    integer  :: nc
     integer  :: fc               ! column index
-    integer  :: fp               ! PATCH index
     real(r8) :: base_decomp      ! base rate (mol/m2/s)
     real(r8) :: q10lake          ! For now, take to be the same as q10ch4 * 1.5.
     real(r8) :: q10lakebase      ! (K) base temperature for lake CH4 production
@@ -2098,8 +2144,6 @@ contains
     real(r8)            :: seasonalfin                    ! finundated in excess of respiration-weighted annual average
     real(r8)            :: oxinhib                        ! inhibition of methane production by oxygen (m^3/mol)
 
-    ! For calculating column average (rootfrac(p,j)*rr(p,j))
-    real(r8) :: rr_vr(bounds%begc:bounds%endc, 1:nlevsoi) ! vertically resolved column-mean root respiration (g C/m^2/s)
     real(r8), pointer :: ch4_prod_depth(:,:)              ! backwards compatibility
     real(r8), pointer :: o2_decomp_depth(:,:)             ! backwards compatibility
     real(r8), pointer :: co2_decomp_depth(:,:)            ! backwards compatibility
@@ -2110,7 +2154,6 @@ contains
     ! Enforce expected array sizes
 
     associate(                                                     &
-         wtcol          =>    veg_pp%wtcol                          , & ! Input:  [real(r8) (:)    ]  weight (relative to column)
          dz             =>    col_pp%dz                             , & ! Input:  [real(r8) (:,:)  ]  layer thickness (m)  (-nlevsno+1:nlevsoi)
          z              =>    col_pp%z                              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)
          zi             =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)
@@ -2119,7 +2162,6 @@ contains
 
          h2osoi_vol     =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         rr             =>    veg_cf%rr           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
          somhr          =>    col_cf%somhr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
          lithr          =>    col_cf%lithr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration
          hr_vr          =>    col_cf%hr_vr          , & ! Input:  [real(r8) (:,:)  ]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -2170,38 +2212,8 @@ contains
 
       q10lake = q10ch4 * 1.5_r8
 
-      ! PATCH loop to calculate vertically resolved column-averaged root respiration
-      ! rr_vr is only read at filter columns, which are zeroed here, so it needs no spval fill
-      if (.not. lake) then
-         do fp = 1, num_methc
-            c = filter_methc(fp)
-            rr_vr(c,:) = 0.0_r8
-         end do
-
-         do fp = 1, num_methp
-            p = filter_methp(fp)
-            c = veg_pp%column(p)
-            if(.not.col_pp%is_fates(c)) then
-               if (wtcol(p) > 0._r8 .and. veg_pp%itype(p) /= noveg) then
-                  do j=1,nlevsoi
-                     rr_vr(c,j) = rr_vr(c,j) + rr(p)*rootfr(p,j)*wtcol(p)
-                  enddo
-               end if
-            end if
-         end do
-         
-         if(use_fates) then
-            nc = bounds%clump_index
-            do s = 1,elm_fates%fates(nc)%nsites 
-               c = elm_fates%f2hmap(nc)%fcolumn(s)
-               do j=1, elm_fates%fates(nc)%bc_in(s)%nlevsoil
-                  rr_vr(c,j) = elm_fates%fates(nc)%bc_out(s)%root_resp(j)
-               end do
-            end do
-            
-         end if
-
-      end if
+      ! The vertically resolved column-averaged root respiration rr_vr is computed once per step
+      ! in the CH4 driver (it is the same in the unsaturated and saturated passes)
 
       partition_z = 1._r8
       base_decomp = 0.0_r8
@@ -2353,7 +2365,7 @@ contains
             ! Add root respiration
             if (.not. lake) then
                !o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + col_rr(c)*rootfr(c,j)/catomw/dz(c,j) ! mol/m^3/s
-               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + rr_vr(c,j)/catomw/dz(c,j) ! mol/m^3/s
+               o2_decomp_depth(c,j) = o2_decomp_depth(c,j) + rr_vr(fc,j)/catomw/dz(c,j) ! mol/m^3/s
                ! g C/m2/s ! gC/mol O2 ! m
             end if
 
