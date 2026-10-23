@@ -1530,93 +1530,88 @@ contains
     real(r8) :: fnps                 ! fraction of light absorbed by non-photosynthetic pigments
     real(r8) :: theta_psii           ! empirical curvature parameter for electron transport rate
     real(r8) :: theta_ip             ! empirical curvature parameter for ap photosynthesis co-limitation
+    real(r8) :: forc_pbot            ! atmospheric pressure (Pa)
+    real(r8) :: ac, aj, ap, ag, an   ! this layer's ac, aj, ap, ag and an (umol CO2/m**2/s)
     !------------------------------------------------------------------------------
 
-    associate(&
-         forc_pbot  => top_as%pbot                             , & ! Output: [real(r8) (:)   ]  atmospheric pressure (Pa)
-         c3flag     => photosyns_vars%c3flag_patch             , & ! Output: [logical  (:)   ]  true if C3 and false if C4
-         ac         => photosyns_vars%ac_patch                 , & ! Output: [real(r8) (:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
-         aj         => photosyns_vars%aj_patch                 , & ! Output: [real(r8) (:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)
-         ap         => photosyns_vars%ap_patch                 , & ! Output: [real(r8) (:,:) ]  product-limited (C3) or CO2-limited (C4) gross photosynthesis (umol CO2/m**2/s)
-         ag         => photosyns_vars%ag_patch                 , & ! Output: [real(r8) (:,:) ]  co-limited gross leaf photosynthesis (umol CO2/m**2/s)
-         an         => photosyns_vars%an_patch                 , & ! Output: [real(r8) (:,:) ]  net leaf photosynthesis (umol CO2/m**2/s)
-         vcmax_z    => photosyns_vars%vcmax_z_patch            , & ! Input:  [real(r8) (:,:) ]  maximum rate of carboxylation (umol co2/m**2/s)
-         cp         => photosyns_vars%cp_patch                 , & ! Output: [real(r8) (:)   ]  CO2 compensation point (Pa)
-         kc         => photosyns_vars%kc_patch                 , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for CO2 (Pa)
-         ko         => photosyns_vars%ko_patch                 , & ! Output: [real(r8) (:)   ]  Michaelis-Menten constant for O2 (Pa)
-         qe         => photosyns_vars%qe_patch                 , & ! Output: [real(r8) (:)   ]  quantum efficiency, used only for C4 (mol CO2 / mol photons)
-         tpu_z      => photosyns_vars%tpu_z_patch              , & ! Output: [real(r8) (:,:) ]  triose phosphate utilization rate (umol CO2/m**2/s)
-         kp_z       => photosyns_vars%kp_z_patch               , & ! Output: [real(r8) (:,:) ]  initial slope of CO2 response curve (C4 plants)
-         theta_cj   => photosyns_vars%theta_cj_patch           , & ! Output: [real(r8) (:)   ]  empirical curvature parameter for ac, aj photosynthesis co-limitation
-         bbb        => photosyns_vars%bbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
-         mbb        => photosyns_vars%mbb_patch                  & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship
-         )
+    ! The photosyns_vars arrays are referenced directly, not through an associate
+    ! block: the associate copied the descriptors of 17 arrays on every call, more
+    ! work than the arithmetic below. The arithmetic and its operand order are
+    ! unchanged, and ac, aj, ap, ag and an are stored as before.
 
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       fnps = 0.15_r8
       theta_psii = 0.7_r8
       theta_ip = 0.95_r8
 
-      if (c3flag(p)) then
+      forc_pbot = top_as%pbot(t)
+
+      if (photosyns_vars%c3flag_patch(p)) then
          ! C3: Rubisco-limited photosynthesis
-         ac(p,iv) = vcmax_z(p,iv) * max(ci-cp(p), 0._r8) / (ci+kc(p)*(1._r8+oair/ko(p)))
+         ac = photosyns_vars%vcmax_z_patch(p,iv) * max(ci-photosyns_vars%cp_patch(p), 0._r8) / &
+              (ci+photosyns_vars%kc_patch(p)*(1._r8+oair/photosyns_vars%ko_patch(p)))
 
          ! C3: RuBP-limited photosynthesis
-         aj(p,iv) = je * max(ci-cp(p), 0._r8) / (4._r8*ci+8._r8*cp(p))
+         aj = je * max(ci-photosyns_vars%cp_patch(p), 0._r8) / (4._r8*ci+8._r8*photosyns_vars%cp_patch(p))
 
          ! C3: Product-limited photosynthesis
-         ap(p,iv) = 3._r8 * tpu_z(p,iv)
+         ap = 3._r8 * photosyns_vars%tpu_z_patch(p,iv)
 
       else
 
          ! C4: Rubisco-limited photosynthesis
-         ac(p,iv) = vcmax_z(p,iv)
+         ac = photosyns_vars%vcmax_z_patch(p,iv)
 
          ! C4: RuBP-limited photosynthesis
-         aj(p,iv) = qe(p) * par_z * 4.6_r8
+         aj = photosyns_vars%qe_patch(p) * par_z * 4.6_r8
 
          ! C4: PEP carboxylase-limited (CO2-limited)
-         ap(p,iv) = kp_z(p,iv) * max(ci, 0._r8) / forc_pbot(t)
+         ap = photosyns_vars%kp_z_patch(p,iv) * max(ci, 0._r8) / forc_pbot
 
       end if
 
       ! Gross photosynthesis. First co-limit ac and aj. Then co-limit ap
 
-      aquad = theta_cj(p)
-      bquad = -(ac(p,iv) + aj(p,iv))
-      cquad = ac(p,iv) * aj(p,iv)
+      aquad = photosyns_vars%theta_cj_patch(p)
+      bquad = -(ac + aj)
+      cquad = ac * aj
       call quadratic (aquad, bquad, cquad, r1, r2)
       ai = min(r1,r2)
 
       aquad = theta_ip
-      bquad = -(ai + ap(p,iv))
-      cquad = ai * ap(p,iv)
+      bquad = -(ai + ap)
+      cquad = ai * ap
       call quadratic (aquad, bquad, cquad, r1, r2)
-      ag(p,iv) = min(r1,r2)
+      ag = min(r1,r2)
 
       ! Net photosynthesis. Exit iteration if an < 0
 
-      an(p,iv) = ag(p,iv) - lmr_z
-      if (an(p,iv) < 0._r8) then
+      an = ag - lmr_z
+
+      photosyns_vars%ac_patch(p,iv) = ac
+      photosyns_vars%aj_patch(p,iv) = aj
+      photosyns_vars%ap_patch(p,iv) = ap
+      photosyns_vars%ag_patch(p,iv) = ag
+      photosyns_vars%an_patch(p,iv) = an
+
+      if (an < 0._r8) then
          fval = 0._r8
          return
       endif
       ! Quadratic gs_mol calculation with an known. Valid for an >= 0.
       ! With an <= 0, then gs_mol = bbb
 
-      cs = cair - 1.4_r8/gb_mol * an(p,iv) * forc_pbot(t)
+      cs = cair - 1.4_r8/gb_mol * an * forc_pbot
       cs = max(cs,1.e-06_r8)
       aquad = cs
-      bquad = cs*(gb_mol - bbb(p)) - mbb(p)*an(p,iv)*forc_pbot(t)
-      cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(t)*rh_can)
+      bquad = cs*(gb_mol - photosyns_vars%bbb_patch(p)) - photosyns_vars%mbb_patch(p)*an*forc_pbot
+      cquad = -gb_mol*(cs*photosyns_vars%bbb_patch(p) + photosyns_vars%mbb_patch(p)*an*forc_pbot*rh_can)
       call quadratic (aquad, bquad, cquad, r1, r2)
       gs_mol = max(r1,r2)
 
       ! Derive new estimate for ci
 
-      fval =ci - cair + an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
-
-    end associate
+      fval =ci - cair + an * forc_pbot * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
 
   end subroutine ci_func
   !------------------------------------------------------------------------------
