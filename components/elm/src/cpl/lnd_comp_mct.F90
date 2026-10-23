@@ -94,6 +94,7 @@ contains
     use elm_varctl       , only:  elm_varctl_set_iac_flag
     use elm_varctl       , only : use_lnd_rof_two_way, use_ocn_lnd_one_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
+    use ImportExportStatsMod, only : ImportExportStats_Init
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
@@ -336,6 +337,10 @@ contains
     call mct_aVect_init(l2x_l, rList=seq_flds_l2x_fields, lsize=lsz)
     call mct_aVect_zero(l2x_l)
 
+    ! Register every coupler field for import/export statistics. The namelist has been
+    ! read by initialize1 above, so do_import_export_stats is known here.
+    call ImportExportStats_Init(bounds, x2l_l, l2x_l)
+
 #ifdef HAVE_MOAB
     mblsize = lsz
     nsend = mct_avect_nRattr(l2x_l)
@@ -457,6 +462,10 @@ contains
     use seq_timemgr_mod ,  only : seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
     use seq_infodata_mod,  only : seq_infodata_type, seq_infodata_GetData
     use spmdMod         ,  only : masterproc, mpicom
+    use elm_varctl      ,  only : import_export_stats_inst, import_export_stats_daily
+    use elm_varctl      ,  only : import_export_stats_month, import_export_stats_ann
+    use elm_varctl      ,  only : import_export_stats_ltann, import_export_stats_ltend
+    use ImportExportStatsMod, only : ImportExportStats_Print
     use perf_mod        ,  only : t_startf, t_stopf, t_barrierf
     use shr_orb_mod     ,  only : shr_orb_decl
     use mct_mod
@@ -641,6 +650,17 @@ contains
 #endif
        call t_stopf ('lc_lnd_export')
 #endif
+
+       ! Statistics of the fields imported from and exported to the coupler. Both
+       ! directions are complete for this time step at this point. Collective, so it is
+       ! called by every task and outside any OpenMP region.
+
+       call t_startf ('lc_lnd_impexp_stats')
+       call ImportExportStats_Print(import_export_stats_inst,  &
+            import_export_stats_daily, import_export_stats_month, &
+            import_export_stats_ann,   import_export_stats_ltann, &
+            import_export_stats_ltend, nlend)
+       call t_stopf ('lc_lnd_impexp_stats')
 
        ! Advance elm time step
 
