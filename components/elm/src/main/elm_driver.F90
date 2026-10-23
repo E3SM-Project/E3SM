@@ -158,6 +158,7 @@ module elm_driver
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
   use FanStreamMod           , only : fanstream_interp
+  use dynSubgridControlMod   , only : get_subgrid_weights_updated
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -245,6 +246,7 @@ contains
     character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump
     type(bounds_type)    :: bounds_proc
+    logical              :: cnp_summaries_current   ! veg and column C, N and P summaries match the current state
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
@@ -467,6 +469,7 @@ contains
        grc_cs, grc_cf , glc2lnd_vars,  crop_vars, iac2lnd_vars)
     call t_stopf('dyn_subgrid')
 
+    cnp_summaries_current = .false.
     if (use_cn  .or. use_fates) then
        nstep = get_nstep()
 
@@ -477,40 +480,46 @@ contains
        else
           call t_startf('cnbalchk_at_grid')
 
+          ! If dynSubgrid_driver changed no weights, it changed no C, N or P
+          ! state, so the summaries from cnpinit are still current
+          cnp_summaries_current = use_cn .and. .not. use_fates .and. .not. get_subgrid_weights_updated()
+
           !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
           do nc = 1,nclumps
              call get_clump_bounds(nc, bounds_clump)
 
-             if(use_cn) then
-                call veg_cs%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+             if (.not. cnp_summaries_current) then
+                if(use_cn) then
+                   call veg_cs%Summary(bounds_clump, &
+                        filter(nc)%num_soilc, filter(nc)%soilc, &
+                        filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
 
-                call veg_ns%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+                   call veg_ns%Summary(bounds_clump, &
+                        filter(nc)%num_soilc, filter(nc)%soilc, &
+                        filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
 
-                call veg_ps%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+                   call veg_ps%Summary(bounds_clump, &
+                        filter(nc)%num_soilc, filter(nc)%soilc, &
+                        filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
 
-             elseif(use_fates)then
-                ! In this scenario, we simply zero all of the
-                ! column level variables that would had been upscaled
-                ! in the veg summary with p2c
-                call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-                call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-                call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                elseif(use_fates)then
+                   ! In this scenario, we simply zero all of the
+                   ! column level variables that would had been upscaled
+                   ! in the veg summary with p2c
+                   call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                   call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                   call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                end if
+
+                call col_cs%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
+
+                call col_ns%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
+
+                call col_ps%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
              end if
-
-             call col_cs%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc)
-
-             call col_ns%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc)
-
-             call col_ps%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc)
 
              call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -527,6 +536,10 @@ contains
           end do
           !$OMP END PARALLEL DO
           call t_stopf('cnbalchk_at_grid')
+
+          ! The summaries are now current; nothing below changes C, N or P
+          ! state before the beginning balances
+          cnp_summaries_current = use_cn .and. .not. use_fates
 
        end if
     end if
@@ -563,15 +576,17 @@ contains
        call t_startf('begcnpbal')
        ! call veg summary before col summary, for p2c
        if (use_cn) then
-          call veg_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call veg_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call veg_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          if (.not. cnp_summaries_current) then
+             call veg_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+             call veg_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+             call veg_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          end if
        elseif(use_fates)then
           ! In this scenario, we simply zero all of the
           ! column level variables that would had been upscaled
@@ -585,12 +600,14 @@ contains
 
        if (use_cn  .or. use_fates) then
           call t_startf('begcnpbalwf')
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+          if (.not. cnp_summaries_current) then
+             call col_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+          end if
           call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_cs)
