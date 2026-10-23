@@ -1913,12 +1913,7 @@ contains
     real(r8) , intent(out) :: rvector( bounds%begc: , -nlevsno: )        ! RHS vector used in numerical solution of temperature
     !
     ! !LOCAL VARIABLES:
-    integer  :: c                                                       ! indices
-    integer  :: fc                                                      ! lake filtered column indices
     real(r8) :: fn_h2osfc(bounds%begc:bounds%endc)                      ! heat diffusion through standing-water/soil interface [W/m2]
-    real(r8) :: rt_snow(bounds%begc:bounds%endc,-nlevsno:-1)            ! RHS vector corresponding to snow layers
-    real(r8) :: rt_ssw(bounds%begc:bounds%endc,1)                       ! RHS vector corresponding to standing surface water
-    real(r8) :: rt_soil(bounds%begc:bounds%endc,1:nlevgrnd)             ! RHS vector corresponding to soil layer
     !-----------------------------------------------------------------------
 
     associate(                                              &
@@ -1931,7 +1926,9 @@ contains
          )
 
       ! rvector is set at all levels of the filter columns below and is only
-      ! read there, so no fill is needed (non-filter entries are undefined)
+      ! read there, so no fill is needed (non-filter entries are undefined).
+      ! The snow (-nlevsno:-1), standing surface water (0) and soil
+      ! (1:nlevgrnd) parts of rvector are set in place by the routines below.
 
       ! Set entries in RHS vector for snow layers
       call SetRHSVec_Snow(bounds, num_filter, filter, &
@@ -1942,7 +1939,7 @@ contains
            fact( begc:endc, -nlevsno+1: ),                     &
            fn( begc:endc, -nlevsno+1: ),                       &
            t_soisno ( begc:endc, -nlevsno+1: ),                &
-           rt_snow( begc:endc, -nlevsno:))
+           rvector( begc:endc, -nlevsno:-1 ))
 
       ! Set entries in RHS vector for surface water layer
       call SetRHSVec_StandingSurfaceWater(bounds, num_filter, filter, &
@@ -1955,7 +1952,7 @@ contains
            fn_h2osfc( begc:endc ),                                             &
            t_soisno ( begc:endc, -nlevsno+1: ),                                &
            t_h2osfc ( begc:endc),                                              &
-           rt_ssw( begc:endc, 1:1))
+           rvector( begc:endc, 0:0 ))
 
       ! Set entries in RHS vector for soil layers. SetRHSVec_StandingSurfaceWater
       ! must be called first since it computes fn_h2osfc.
@@ -1971,15 +1968,7 @@ contains
            frac_h2osfc ( begc:endc),                           &
            frac_sno_eff( begc:endc),                           &
            t_soisno ( begc:endc, -nlevsno+1: ),                &
-           rt_soil( begc:endc, 1: ))
-
-      ! Combine the RHS vector
-      do fc = 1,num_filter
-         c = filter(fc)
-         rvector(c, -nlevsno:-1) = rt_snow(c, -nlevsno:-1)
-         rvector(c, 0         )  = rt_ssw(c, 1          )
-         rvector(c, 1:nlevgrnd)  = rt_soil(c, 1:nlevgrnd )
-      end do
+           rvector( begc:endc, 1:nlevgrnd ))
 
     end associate
 
@@ -2088,7 +2077,7 @@ contains
     real(r8), intent(out) :: fn_h2osfc (bounds%begc: )           ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:) ! soil temperature (Kelvin)
     real(r8), intent(in)  :: t_h2osfc(bounds%begc:)              ! surface water temperature temperature (Kelvin)
-    real(r8), intent(out) :: rt(bounds%begc:bounds%endc, 1:1 )   ! rhs vector entries
+    real(r8), intent(out) :: rt(bounds%begc: , 1: )              ! rhs vector entries (rt(:,1) is the standing surface water level)
     !
     ! !LOCAL VARIABLES:
     integer  :: c                                               ! indices
