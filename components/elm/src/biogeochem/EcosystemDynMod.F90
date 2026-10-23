@@ -161,6 +161,7 @@ contains
 
     real(r8) :: dt
     logical  :: hrv_zero   ! harvest fluxes zeroed in CNZero are all +0
+    logical  :: pc_skip_deep ! PrecisionControl may skip levels below nlevdecomp
     !-----------------------------------------------------------------------
     dt = dtime_mod;
 
@@ -224,7 +225,19 @@ contains
 
     call t_startf('CNPsum')
     call t_startf('CNPsum-precision')
-    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp  )
+    ! Within a step, ELM writes decomp_cpools_vr, decomp_npools_vr, ctrunc_vr,
+    ! ntrunc_vr, smin_no3_vr and smin_nh4_vr only on levels 1:nlevdecomp, so
+    ! after one full PrecisionControl pass the deeper levels are fixed points
+    ! of it. Do the full depth on the first step of a run or restart (restart
+    ! read can rescale pools for spinup), after subgrid weights may have
+    ! changed (new filter columns), and where other code writes those levels:
+    ! FATES, the ELM interface/PFLOTRAN, C14Decay (isotopes) and the ECA/MIC
+    ! branch of PrecisionControl. Any new writer to the deeper levels must
+    ! also be added here.
+    pc_skip_deep = .not. (get_subgrid_weights_updated() .or. is_first_step() .or. &
+         is_first_restart_step() .or. use_fates .or. use_elm_interface .or. &
+         use_pflotran .or. use_c13 .or. use_c14 .or. nu_com /= 'RD')
+    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, pc_skip_deep)
     call t_stopf('CNPsum-precision')
 
     ! col_cf_summary_for_ch4 and veg_cf_summary_for_ch4 already ran at the end
