@@ -72,12 +72,12 @@ module elm_driver
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
-  use VerticalProfileMod   , only : decomp_vertprofiles
+  use VerticalProfileMod   , only : decomp_vertprofiles, decomp_vertprofiles_static
   use FireMod              , only : FireInterp
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
   use pdepStreamMod          , only : pdep_interp
-  use ActiveLayerMod         , only : alt_calc
+  use ActiveLayerMod         , only : alt_calc, alt_annual_update_step
   use CH4Mod                 , only : CH4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
@@ -256,6 +256,7 @@ contains
     type(bounds_type)    :: bounds_proc
     logical              :: cnp_summaries_current   ! veg and column C, N and P summaries match the current state
     logical              :: cnpinit_summaries_current ! the end-of-step summaries of the previous step are still current
+    logical              :: decomp_vert_all         ! compute the decomposition profiles of inactive points too
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
@@ -339,6 +340,13 @@ contains
     ! the associated filter updates, too (otherwise we get a carbon balance error)
     ! ==================================================================================
 
+    ! The profiles of inactive points depend only on inputs that cannot change while
+    ! decomp_vertprofiles_static() is .true., except in the steps in which alt_calc
+    ! updates altmax_lastyear_indx. In the other steps they still hold the values
+    ! computed in the last step that included them, so only the active points are
+    ! computed. Here get_subgrid_weights_updated() still refers to the previous step.
+    decomp_vert_all = (.not. decomp_vertprofiles_static()) .or. alt_annual_update_step()
+
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -357,12 +365,19 @@ contains
 
        if(use_fates .or. use_cn) then
 
-          call decomp_vertprofiles(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, &
-               filter_inactive_and_active(nc)%soilc, &
-               filter_inactive_and_active(nc)%num_soilp, &
-               filter_inactive_and_active(nc)%soilp, &
-               soilstate_vars, canopystate_vars, cnstate_vars)
+          if (decomp_vert_all) then
+             call decomp_vertprofiles(bounds_clump, &
+                  filter_inactive_and_active(nc)%num_soilc, &
+                  filter_inactive_and_active(nc)%soilc, &
+                  filter_inactive_and_active(nc)%num_soilp, &
+                  filter_inactive_and_active(nc)%soilp, &
+                  soilstate_vars, canopystate_vars, cnstate_vars)
+          else
+             call decomp_vertprofiles(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, &
+                  soilstate_vars, canopystate_vars, cnstate_vars)
+          end if
        end if
        call t_stopf("decomp_vert")
     end do
