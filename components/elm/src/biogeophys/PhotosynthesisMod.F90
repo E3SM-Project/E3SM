@@ -261,6 +261,7 @@ contains
     real(r8) :: jmax25top      ! canopy top: maximum electron transport rate at 25C (umol electrons/m**2/s)
     real(r8) :: tpu25top       ! canopy top: triose phosphate utilization rate at 25C (umol CO2/m**2/s)
     real(r8) :: lmr25top       ! canopy top: leaf maintenance respiration rate at 25C (umol CO2/m**2/s)
+    real(r8) :: lmr25top_base  ! 2.525e-6 * Q10_mr**0.5, the patch independent part of lmr25top
     real(r8) :: kp25top        ! canopy top: initial slope of CO2 response curve (C4 plants) at 25C
 
     real(r8) :: vcmax25        ! leaf layer: maximum rate of carboxylation at 25C (umol CO2/m**2/s)
@@ -555,6 +556,11 @@ contains
       ! Loop through each canopy layer to calculate nitrogen profile using
       ! cumulative lai at the midpoint of the layer
 
+      ! Patch independent part of lmr25top below (same expression, computed once)
+      if (use_cn) then
+         lmr25top_base = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
+      end if
+
       do f = 1, fn
          p = filterp(f)
          if ( .not. nu_com_leaf_physiology) then
@@ -686,11 +692,14 @@ contains
          ! Remove daylength factor from vcmax25 so that kn is based on maximum vcmax25
          ! But not used as defined here if using sun/shade big leaf code. Instead,
          ! will use canopy integrated scaling factors from SurfaceAlbedo.
+         ! kn is only read by the multi-layer code (nlevcan > 1), so skip it otherwise.
 
-         if (dayl_factor(p) .eq. 0._r8) then
-            kn(p) =  0._r8
-         else
-            kn(p) = exp(0.00963_r8 * vcmax25top/dayl_factor(p) - 2.43_r8)
+         if (nlevcan > 1) then
+            if (dayl_factor(p) .eq. 0._r8) then
+               kn(p) =  0._r8
+            else
+               kn(p) = exp(0.00963_r8 * vcmax25top/dayl_factor(p) - 2.43_r8)
+            end if
          end if
 
          if (use_cn) then
@@ -710,7 +719,7 @@ contains
             !
             ! Then scale this value at the top of the canopy for canopy depth
 
-            lmr25top = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
+            lmr25top = lmr25top_base
             lmr25top = lmr25top * lnc(p) / 12.e-06_r8
          else
             ! Leaf maintenance respiration in proportion to vcmax25top
