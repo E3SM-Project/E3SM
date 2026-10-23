@@ -67,7 +67,7 @@ module controlMod
                         use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
                         use_elm_interface, use_elm_bgc, use_pflotran, &
-                        use_hydrstress, domain_decomp_type, &
+                        use_hydrstress, domain_decomp_type, decomp_weight_patch_factor, &
                         use_IM2_hillslope_hydrology, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
@@ -359,7 +359,7 @@ contains
 
     namelist /elm_inparm/ use_hydrstress
 
-    namelist /elm_inparm/ domain_decomp_type
+    namelist /elm_inparm/ domain_decomp_type, decomp_weight_patch_factor
 
     namelist /elm_inparm/ &
          use_IM2_hillslope_hydrology
@@ -959,6 +959,7 @@ contains
 
     ! domain decomposition
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (decomp_weight_patch_factor, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! hillslope connectivity via topounits
     call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)

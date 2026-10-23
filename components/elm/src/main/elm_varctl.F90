@@ -461,6 +461,9 @@ module elm_varctl
   ! Domain decomposition
   !-----------------------------------------------------------------------
   character(len=256), public :: domain_decomp_type    = 'round_robin'
+  ! With domain_decomp_type = 'round_robin_weighted': weight of an active soil patch
+  ! relative to an active soil column in the gridcell weights (0 => columns only)
+  real(r8), public :: decomp_weight_patch_factor = 0._r8
 
   !-----------------------------------------------------------------------
   ! Subgrid hillslope hydrologic connectivity (through topounits)
