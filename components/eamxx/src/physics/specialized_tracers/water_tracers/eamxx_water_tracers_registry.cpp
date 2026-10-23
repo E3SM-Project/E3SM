@@ -143,7 +143,8 @@ TracerSpec parse_entry (const std::string& path, const std::string& name,
     case TracerType::Isotope:
     {
       // r_ocn (and the default r_init) come from the isotope parameter
-      // tables; the water_isotopes process sets them after parsing.
+      // tables; the water_isotopes process sets them, and ocean_flux, after
+      // parsing.
       spec.species = require_token(entry, "species", ctx, "the isotopologue");
       EKAT_REQUIRE_MSG(ekat::contains(opts.isotope_species, spec.species),
           ctx + "unknown isotope species '" + spec.species + "'. Valid species: " +

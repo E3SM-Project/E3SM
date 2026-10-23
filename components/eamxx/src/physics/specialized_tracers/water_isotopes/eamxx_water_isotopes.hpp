@@ -14,20 +14,12 @@ namespace scream
 namespace water_isotopes
 {
 
-// One resolved isotope tracer: its water_tracers_file name, species, and ocean
-// ratio R_ocn (resolved from the parameter tables by WaterIsotopes::resolve).
-struct IsotopeTracer {
-  std::string        name;
-  WaterIsotopologues species;
-  Real               r_ocn;
-};
-
 /*
  * Isotope-specific state and configuration composed into the water_tracers
- * process: which species names are valid in the tracers file, the runtime
+ * process: which species names are valid in the tracers file, and the runtime
  * formulation options (liquid/vapor and ice/vapor fractionation, standard
- * ratio, ocean enrichment), and the isotope tracers resolved from a parsed
- * water_tracers_file.
+ * ratio, ocean enrichment). Per-tracer data (name, species, R_ocn) lives only
+ * in the water_tracers::TracerSpec entries, which resolve() completes.
  */
 class WaterIsotopes
 {
@@ -41,18 +33,19 @@ public:
   // with no isotope tracers these options are just never read.
   void configure (ekat::ParameterList& params);
 
-  // Resolves r_ocn (and the default r_init) for every Isotope spec from the
-  // parameter tables, and records {name, species, r_ocn} for each.
-  void resolve (std::vector<water_tracers::TracerSpec>& specs);
+  // Completes every Isotope spec: r_ocn (and the default r_init) from the
+  // parameter tables, and ocean_flux = BulkFormula (the only form that takes
+  // the fractionation factor; see water_tracers::ocean_flux).
+  void resolve (std::vector<water_tracers::TracerSpec>& specs) const;
 
-  const std::vector<IsotopeTracer>& tracers () const { return m_isotopes; }
+  // The species enum of an Isotope spec, from its `species:` name. Host-only.
+  static WaterIsotopologues species (const water_tracers::TracerSpec& spec);
 
   const WaterIsotopeParameters<Real>& parameters () const { return m_iso_params; }
 
 private:
   WaterIsotopeRuntimeOptions   m_runtime_options;
   WaterIsotopeParameters<Real> m_iso_params;
-  std::vector<IsotopeTracer>   m_isotopes;
 
 }; // class WaterIsotopes
 

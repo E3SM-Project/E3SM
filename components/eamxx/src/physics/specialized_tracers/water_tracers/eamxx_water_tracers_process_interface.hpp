@@ -55,8 +55,7 @@ public:
 
   // Steps of run_impl
   void compute_bulk_state ();
-  void compute_generic_fluxes ();
-  void compute_isotope_fluxes ();
+  void compute_tracer_fluxes ();
 
   // Sets q = r_init*q_ref for every init: ratio tracer on the given grid
   void apply_ratio_initial_conditions (const std::string& grid_name);
@@ -68,15 +67,14 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // One entry per tracer in water_tracers_file, sorted by name. r_ocn/r_init for
-  // isotope specs are resolved by m_isotopes.resolve() in the constructor,
-  // before initialize/run time reads them.
+  // One entry per tracer in water_tracers_file, sorted by name. r_ocn/r_init and
+  // ocean_flux for isotope specs are resolved by m_isotopes.resolve() in the
+  // constructor, before initialize/run time reads them.
   std::vector<water_tracers::TracerSpec> m_specs;
 
-  // Isotope-specific state (species table, runtime formulation options,
-  // resolved isotope tracers). Always constructed; empty/inert unless
-  // EAMXX_HAS_WATER_ISOTOPES is defined and the tracers file defines
-  // isotope entries. See compute_isotope_fluxes().
+  // Isotope-specific state (species table, runtime formulation options).
+  // Always constructed; inert unless EAMXX_HAS_WATER_ISOTOPES is defined and
+  // the tracers file defines isotope entries. See compute_tracer_fluxes().
   water_isotopes::WaterIsotopes m_isotopes;
 
   // Per-column bottom-level bulk state, filled at the start of run_impl:
@@ -84,12 +82,11 @@ protected:
   //  - m_sfc_ustar, m_sfc_re, m_sfc_ssq: ocn_ustar, ocn_re, ocn_ssq, set to
   //    0 where the ocean state is not valid (so they never hold fill values)
   //  - m_sfc_rho: bottom-level air density [kg/m3]
-  //  - m_sfc_qv: bottom-level qv [kg/kg]
   //  - m_sfc_evap: E_ocn = bulk_ocean_flux(f,rho,u,r,s,q) [kg/m2/s], upward
   //    positive, exactly 0 where the ocean state is not valid
-  //  - m_sfc_sst: sst [K], as imported
+  // compute_tracer_fluxes reads qv and sst from their fields directly.
   KT::view_1d<Real> m_sfc_f, m_sfc_rho, m_sfc_ustar, m_sfc_re, m_sfc_ssq,
-                    m_sfc_qv, m_sfc_evap, m_sfc_sst;
+                    m_sfc_evap;
 
 private:
 

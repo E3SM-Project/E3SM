@@ -46,16 +46,6 @@ constexpr std::pair<const char*, WaterIsotopologues> species_names[] = {
 static_assert(std::size(species_names) == etoi(WaterIsotopologues::Count),
               "Every WaterIsotopologues species needs a water_tracers_file name.");
 
-WaterIsotopologues species_from_name (const std::string& name)
-{
-  for (const auto& [str, species] : species_names) {
-    if (name == str) return species;
-  }
-  // The registry already rejects names missing from isotope_species.
-  EKAT_ERROR_MSG("Error! Unknown water isotope species '" + name + "'.\n");
-  return WaterIsotopologues::H216O;  // unreachable; see parse_option
-}
-
 } // anonymous namespace
 
 // =========================================================================================
@@ -102,7 +92,18 @@ void WaterIsotopes::configure (ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void WaterIsotopes::resolve (std::vector<water_tracers::TracerSpec>& specs)
+WaterIsotopologues WaterIsotopes::species (const water_tracers::TracerSpec& spec)
+{
+  for (const auto& [str, sp] : species_names) {
+    if (spec.species == str) return sp;
+  }
+  // The registry already rejects names missing from isotope_species.
+  EKAT_ERROR_MSG("Error! Unknown water isotope species '" + spec.species + "'.\n");
+  return WaterIsotopologues::H216O;  // unreachable; see parse_option
+}
+
+// =========================================================================================
+void WaterIsotopes::resolve (std::vector<water_tracers::TracerSpec>& specs) const
 {
   // Resolve each isotope's ocean ratio here, on the host, so kernels get a
   // plain Real. The tracer's own `init: ratio` is applied later, in
@@ -110,13 +111,13 @@ void WaterIsotopes::resolve (std::vector<water_tracers::TracerSpec>& specs)
   for (auto& spec : specs) {
     if (spec.type != water_tracers::TracerType::Isotope) continue;
 
-    const auto species = species_from_name(spec.species);
-    spec.r_ocn = m_iso_params.std_iso_ratio(species) *
-                 m_iso_params.mean_ocean_enrichment(species);
+    const auto sp = species(spec);
+    spec.r_ocn = m_iso_params.std_iso_ratio(sp) *
+                 m_iso_params.mean_ocean_enrichment(sp);
     if (!spec.r_init_given) {
       spec.r_init = spec.r_ocn;
     }
-    m_isotopes.push_back({spec.name, species, spec.r_ocn});
+    spec.ocean_flux = water_tracers::OceanFlux::BulkFormula;
   }
 }
 

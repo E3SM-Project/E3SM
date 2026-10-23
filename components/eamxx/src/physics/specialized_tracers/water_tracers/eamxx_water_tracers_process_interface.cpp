@@ -39,7 +39,7 @@ WaterTracers::WaterTracers (const ekat::Comm& comm, const ekat::ParameterList& p
   m_specs = water_tracers::parse_tracers_file(m_params.get<std::string>(key), opts);
 
   // Reading the isotope formulation options is safe even with no isotope
-  // tracers: they are simply never read by compute_isotope_fluxes below.
+  // tracers: compute_tracer_fluxes only evaluates them for isotope tracers.
   m_isotopes.configure(m_params);
   m_isotopes.resolve(m_specs);
 }
@@ -115,9 +115,7 @@ void WaterTracers::create_requests ()
   m_sfc_ustar = KT::view_1d<Real>("water_tracers_sfc_ustar", m_num_cols);
   m_sfc_re    = KT::view_1d<Real>("water_tracers_sfc_re",    m_num_cols);
   m_sfc_ssq   = KT::view_1d<Real>("water_tracers_sfc_ssq",   m_num_cols);
-  m_sfc_qv    = KT::view_1d<Real>("water_tracers_sfc_qv",    m_num_cols);
   m_sfc_evap  = KT::view_1d<Real>("water_tracers_sfc_evap",  m_num_cols);
-  m_sfc_sst   = KT::view_1d<Real>("water_tracers_sfc_sst",   m_num_cols);
 }
 
 // =========================================================================================
@@ -163,11 +161,9 @@ void WaterTracers::apply_ratio_initial_conditions (const std::string& grid_name)
 void WaterTracers::run_impl (const double /* dt */)
 {
   // Each step below is a column kernel over the bottom level only, so a
-  // RangePolicy over columns is used rather than a TeamPolicy. There is one
-  // kernel per tracer: tracers are few, and each reads different fields.
+  // RangePolicy over columns is used rather than a TeamPolicy.
   compute_bulk_state();
-  compute_generic_fluxes();
-  compute_isotope_fluxes();
+  compute_tracer_fluxes();
 }
 
 // =========================================================================================
@@ -183,7 +179,6 @@ void WaterTracers::compute_bulk_state ()
   const auto p_mid   = get_field_in("p_mid",          gn).get_view<const Real**>();
   const auto dp      = get_field_in("pseudo_density", gn).get_view<const Real**>();
   const auto ocnfrac = get_field_in("ocnfrac",        gn).get_view<const Real*>();
-  const auto sst     = get_field_in("sst",            gn).get_view<const Real*>();
   const auto ssq     = get_field_in("ocn_ssq",        gn).get_view<const Real*>();
   const auto re      = get_field_in("ocn_re",         gn).get_view<const Real*>();
   const auto ustar   = get_field_in("ocn_ustar",      gn).get_view<const Real*>();
@@ -193,9 +188,7 @@ void WaterTracers::compute_bulk_state ()
   const auto sfc_ustar = m_sfc_ustar;
   const auto sfc_re    = m_sfc_re;
   const auto sfc_ssq   = m_sfc_ssq;
-  const auto sfc_qv    = m_sfc_qv;
   const auto sfc_evap  = m_sfc_evap;
-  const auto sfc_sst   = m_sfc_sst;
 
   Kokkos::parallel_for("water_tracers_bulk_state", KT::RangePolicy(0, m_num_cols),
                        KOKKOS_LAMBDA(const int icol) {
@@ -212,82 +205,58 @@ void WaterTracers::compute_bulk_state ()
     sfc_ustar(icol) = u[0];
     sfc_re(icol)    = r[0];
     sfc_ssq(icol)   = s[0];
-    sfc_qv(icol)    = q;
     sfc_evap(icol)  = e[0];
-    sfc_sst(icol)   = sst(icol);
   });
 }
 
 // =========================================================================================
-void WaterTracers::compute_generic_fluxes ()
+void WaterTracers::compute_tracer_fluxes ()
 {
+  // Tracers may also live on another grid (e.g. physics_gll for initial
+  // conditions), so look them up on this process' physics grid explicitly.
   const auto& gn  = m_grid->name();
   const int  kbot = m_num_levs - 1;
 
-  const auto sfc_f     = m_sfc_f;
-  const auto sfc_rho   = m_sfc_rho;
-  const auto sfc_ustar = m_sfc_ustar;
-  const auto sfc_re    = m_sfc_re;
-  const auto sfc_ssq   = m_sfc_ssq;
-  const auto sfc_qv    = m_sfc_qv;
-  const auto sfc_evap  = m_sfc_evap;
+  const auto qv  = get_field_in("qv",  gn).get_view<const Real**>();
+  const auto sst = get_field_in("sst", gn).get_view<const Real*>();
 
-  for (const auto& spec : m_specs) {
-    if (spec.type!=water_tracers::TracerType::Generic) continue;
-
-    const auto q_i  = get_field_in(spec.name, gn).get_view<const Real**>();
-    const auto flux = get_field_out(spec.name + "_surf_flux", gn).get_view<Real*>();
-    const auto kind  = spec.ocean_flux;
-    const Real r_ocn = spec.r_ocn;
-
-    Kokkos::parallel_for("water_tracers_ocean_flux_" + spec.name, KT::RangePolicy(0, m_num_cols),
-                         KOKKOS_LAMBDA(const int icol) {
-      const Pack1 f_i = wt::ocean_flux(kind, r_ocn,
-          Pack1(sfc_f(icol)), Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)), Pack1(sfc_re(icol)),
-          Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)), Pack1(q_i(icol, kbot)), Pack1(sfc_evap(icol)));
-      flux(icol) = (f_i + wt::land_ice_tracer_flux<Pack1>())[0];
-    });
-  }
-}
-
-// =========================================================================================
-void WaterTracers::compute_isotope_fluxes ()
-{
   // Local copies, so the lambda captures views and values rather than `this`.
   const auto sfc_f     = m_sfc_f;
   const auto sfc_rho   = m_sfc_rho;
   const auto sfc_ustar = m_sfc_ustar;
   const auto sfc_re    = m_sfc_re;
   const auto sfc_ssq   = m_sfc_ssq;
-  const auto sfc_qv    = m_sfc_qv;
   const auto sfc_evap  = m_sfc_evap;
-  const auto sfc_sst   = m_sfc_sst;
   const auto iso_params = m_isotopes.parameters();
-  const int  ilev_bot  = m_num_levs - 1;
 
-  // Tracers may also live on another grid (e.g. physics_gll for initial
-  // conditions), so look them up on this process' physics grid explicitly.
-  const auto& grid_name = m_grid->name();
+  // One kernel per tracer: tracers are few, their number is only known at
+  // runtime, and each reads and writes its own fields.
+  for (const auto& spec : m_specs) {
+    const auto q_i  = get_field_in(spec.name, gn).get_view<const Real**>();
+    const auto flux = get_field_out(spec.name + "_surf_flux", gn).get_view<Real*>();
+    const auto kind  = spec.ocean_flux;
+    const Real r_ocn = spec.r_ocn;
 
-  // One kernel per isotope: there are at most a handful, and each reads a
-  // different tracer field. No-op when there are no isotope tracers.
-  for (const auto& iso : m_isotopes.tracers()) {
-    const auto q_i  = get_field_in(iso.name, grid_name).get_view<const Real**>();
-    const auto flux = get_field_out(iso.name + "_surf_flux", grid_name).get_view<Real*>();
-    const auto species = iso.species;
-    const Real r_ocn   = iso.r_ocn;
+    // Only isotopes fractionate; every other tracer uses alpha = 1. The
+    // species is unused unless fractionates is true.
+    const bool fractionates = spec.type==water_tracers::TracerType::Isotope;
+    const auto species = fractionates ? water_isotopes::WaterIsotopes::species(spec)
+                                      : water_isotopes::WaterIsotopologues::H216O;
 
-    Kokkos::parallel_for("water_isotopes_ocean_flux_" + iso.name,
-                         KT::RangePolicy(0, m_num_cols),
+    Kokkos::parallel_for("water_tracers_ocean_flux_" + spec.name, KT::RangePolicy(0, m_num_cols),
                          KOKKOS_LAMBDA(const int icol) {
       const Pack1 f(sfc_f(icol)), e(sfc_evap(icol));
-      const auto evap = wt::is_evaporating(f, e);
-      const Pack1 alpha = water_isotopes::WaterIsotopeFractionation::alpha_liquid_vapor(
-          Pack1(sfc_sst(icol)), species, water_isotopes::CondensedOverVapor, iso_params, evap);
-      flux(icol) = wt::ocean_flux(wt::OceanFlux::BulkFormula, r_ocn,
+      Pack1 alpha(1);
+      if (fractionates) {
+        alpha = water_isotopes::WaterIsotopeFractionation::alpha_liquid_vapor(
+            Pack1(sst(icol)), species, water_isotopes::CondensedOverVapor, iso_params,
+            wt::is_evaporating(f, e));
+      }
+      const Pack1 f_i = wt::ocean_flux(kind, r_ocn,
           f, Pack1(sfc_rho(icol)), Pack1(sfc_ustar(icol)), Pack1(sfc_re(icol)),
-          Pack1(sfc_ssq(icol)), Pack1(sfc_qv(icol)), Pack1(q_i(icol, ilev_bot)), e,
-          alpha)[0];
+          Pack1(sfc_ssq(icol)), Pack1(qv(icol, kbot)), Pack1(q_i(icol, kbot)), e,
+          alpha);
+      flux(icol) = (f_i + wt::land_ice_tracer_flux<Pack1>())[0];
     });
   }
 }

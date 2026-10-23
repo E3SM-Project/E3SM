@@ -63,6 +63,7 @@ struct TracerSpec {
   TracerType  type = TracerType::Generic;
 
   // Isotope tracers only: one of RegistryOptions::isotope_species
+  // (water_isotopes::WaterIsotopes::species() maps it to the species enum)
   std::string species;
 
   // Ocean ratio R_ocn. Generic: from the file (default 1). Isotope: set by the
@@ -76,7 +77,8 @@ struct TracerSpec {
   bool r_init_given = false;
   Real r_init = 1;
 
-  // Generic tracers only
+  // Generic: from the file (default bulk_proportional). Isotope: set to
+  // BulkFormula by the water_isotopes process, like r_ocn.
   OceanFlux ocean_flux = OceanFlux::BulkProportional;
 
   // The tracer's raw entry from the file. Extension point for keys added by
