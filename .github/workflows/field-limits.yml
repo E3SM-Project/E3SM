@@ -1,0 +1,40 @@
+name: field-limits
+
+# If the limits dictionary is touched in a PR, check its entries, that the
+# generated Fortran module is up to date, and that no new field is added as
+# unreviewed. Whether every field sent to the coupler has an entry is checked by
+# the model at startup (shr_bounds_require).
+
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'share/field_limits.yaml'
+      - 'share/gen_field_limits.py'
+      - 'share/util/shr_field_limits_mod.F90'
+      - '.github/workflows/field-limits.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install PyYAML
+      run: python -m pip install pyyaml
+    - name: Check the limits dictionary
+      run: |
+        base=""
+        if git show "origin/${{ github.base_ref }}:share/field_limits.yaml" > "$RUNNER_TEMP/base_field_limits.yaml" 2>/dev/null; then
+          base="--base $RUNNER_TEMP/base_field_limits.yaml"
+        fi
+        python share/gen_field_limits.py --check $base
