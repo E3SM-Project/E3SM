@@ -1787,6 +1787,9 @@ contains
     real(r8) :: coeff_rdir(3,0:7)                         ! regression coefficients for f_rdir
     real(r8) :: coeff_dif(4,0:7)                          ! regression coefficients for f_dif
     real(r8) :: coeff_rdif(3,0:7)                         ! regression coefficients for f_rdif
+    integer  :: g_last                                    ! gridcell of the factors below
+    real(r8) :: cosz_last                                 ! cosz of the factors below
+    real(r8) :: f_dir_g, f_rdir_g, f_dif_g, f_rdif_g      ! f_dir, f_rdir, f_dif and f_rdif for g_last and cosz_last
 
     data coeff_dir(:,1) /2.045E+1_r8, 6.792E-1_r8, -2.103E+1_r8/
     data coeff_dir(:,2) /1.993E+0_r8, 9.284E-1_r8, -2.911E+0_r8/
@@ -1859,6 +1862,12 @@ contains
 
      next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
 
+     ! The factors f_dir, f_rdir, f_dif and f_rdif depend only on the gridcell
+     ! and cosz, so they are computed once for consecutive patches with the same
+     ! gridcell and cosz (g_last, cosz_last) and then set on each patch
+     g_last    = bounds%begg - 1
+     cosz_last = 0._r8
+
      do fp = 1,num_pft
         p = filter_pft(fp)
         g = pgridcell(p)
@@ -1872,6 +1881,10 @@ contains
          if (lon_180 > pi) lon_180 = lon_180-2._r8*pi    
     
          if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
+          if (g /= g_last .or. cosz /= cosz_last) then
+            g_last    = g
+            cosz_last = cosz
+
             local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8
 
             if (local_timeofday >= 86400._r8) then
@@ -1907,14 +1920,14 @@ contains
                      coeff_dir(2,izen) * solar_inc + coeff_dir(3,izen)
             ftemp2 = coeff_dir(1,izen+1) * sky_view(g) + &
                      coeff_dir(2,izen+1) * solar_inc + coeff_dir(3,izen+1)
-            f_dir(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
-            f_dir(p,1:numrad) = max(-1._r8,f_dir(p,1:numrad))
+            f_dir_g = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_dir_g = max(-1._r8,f_dir_g)
 
             ftemp1 = coeff_rdir(1,izen) * sky_view(g) + &
                      coeff_rdir(2,izen) * terrain_config(g) + coeff_rdir(3,izen)
             ftemp2 = coeff_rdir(1,izen+1) * sky_view(g) + &
                      coeff_rdir(2,izen+1) * terrain_config(g) + coeff_rdir(3,izen+1)
-            f_rdir(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_rdir_g = ftemp2 * dzen1 + ftemp1 * dzen2
 
             ftemp1 = coeff_dif(1,izen) * stdev_elev(g) + &
                      coeff_dif(2,izen) * sky_view(g) + &
@@ -1922,14 +1935,20 @@ contains
             ftemp2 = coeff_dif(1,izen+1) * stdev_elev(g) + &
                      coeff_dif(2,izen+1) * sky_view(g) + &
                      coeff_dif(3,izen+1) * solar_inc + coeff_dif(4,izen+1)
-            f_dif(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
-            f_dif(p,1:numrad) = max(-1._r8,f_dif(p,1:numrad)) 
+            f_dif_g = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_dif_g = max(-1._r8,f_dif_g)
 
             ftemp1 = coeff_rdif(1,izen) * sky_view(g) + &
                      coeff_rdif(2,izen) * terrain_config(g) + coeff_rdif(3,izen)
             ftemp2 = coeff_rdif(1,izen+1) * sky_view(g) + &
                      coeff_rdif(2,izen+1) * terrain_config(g) + coeff_rdif(3,izen+1)
-            f_rdif(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_rdif_g = ftemp2 * dzen1 + ftemp1 * dzen2
+          end if
+
+            f_dir(p,1:numrad)  = f_dir_g
+            f_rdir(p,1:numrad) = f_rdir_g
+            f_dif(p,1:numrad)  = f_dif_g
+            f_rdif(p,1:numrad) = f_rdif_g
             
             if(.not. is_veg) then
                do ib = 1, numrad
