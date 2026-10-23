@@ -212,7 +212,7 @@ contains
   subroutine Photosynthesis ( bounds, fn, filterp, &
        esat_tv, eair, oair, cair, rb, btran, &
        dayl_factor, atm2lnd_vars, surfalb_vars, solarabs_vars, &
-       canopystate_vars, photosyns_vars, phase)
+       canopystate_vars, photosyns_vars, phase, tfac, tfac_flag, reuse_tfac)
     !
     ! !DESCRIPTION:
     ! Leaf photosynthesis and stomatal conductance calculation as described by
@@ -244,6 +244,9 @@ contains
     type(canopystate_type) , intent(inout)    :: canopystate_vars
     type(photosyns_type)   , intent(inout)    :: photosyns_vars
     character(len=3)       , intent(in)    :: phase                          ! 'sun' or 'sha'
+    real(r8)               , intent(inout) :: tfac(:,:)                      ! (fn,11) temperature factors shared by the sun and sha calls
+    integer                , intent(inout) :: tfac_flag(:)                   ! (fn) 0: none, 1: lmr, 2: lmr and daytime factors in tfac
+    logical                , intent(in)    :: reuse_tfac                     ! true only for the sha call that follows the sun call
 
     !
     ! !LOCAL VARIABLES:
@@ -492,7 +495,6 @@ contains
          tpuhd   = veg_vp%tpuhd(veg_pp%itype(p))   !200000._r8
          lmrhd   = veg_vp%lmrhd(veg_pp%itype(p))   !150650._r8
          lmrse   = veg_vp%lmrse(veg_pp%itype(p))   !490._r8
-         lmrc    = fth25 (lmrhd, lmrse)
 
          ! C3 or C4 photosynthesis logical variable
 
@@ -536,11 +538,18 @@ contains
          sco  = 0.5_r8 * 0.209_r8 / (42.75_r8 / 1.e06_r8)
          cp25 = 0.5_r8 * oair(p) / sco
 
-         kc(p) = kc25 * ft(t_veg(p), kcha)
-         ko(p) = ko25 * ft(t_veg(p), koha)
-         cp(p) = cp25 * ft(t_veg(p), cpha)
+         ! The sha call sees the same t_veg, forc_pbot and oair as the sun call,
+         ! so kc, ko and cp left by the sun call are already the values computed here
+         if (.not. reuse_tfac) then
+            kc(p) = kc25 * ft(t_veg(p), kcha)
+            ko(p) = ko25 * ft(t_veg(p), koha)
+            cp(p) = cp25 * ft(t_veg(p), cpha)
+         end if
 
       end do
+
+      ! lmrc is a scalar, so only the value from the last filter patch was ever used below
+      if (fn > 0) lmrc = fth25 (lmrhd, lmrse)
 
       ! Multi-layer parameters scaled by leaf nitrogen profile.
       ! Loop through each canopy layer to calculate nitrogen profile using
@@ -715,6 +724,10 @@ contains
 
          ! Loop through canopy layers (above snow). Respiration needs to be
          ! calculated every timestep. Others are calculated only if daytime
+         ! The temperature factors depend only on t_veg, t10 and the last filter
+         ! patch's parameters, which are the same in the sun and sha calls, so the
+         ! sha call reuses the factors stored by the sun call.
+         if (.not. reuse_tfac) tfac_flag(f) = 0
          laican = 0._r8
          rad_layers_patch = nrad(p)
          do iv = 1, rad_layers_patch
@@ -738,11 +751,21 @@ contains
             ! Maintenance respiration
 
             lmr25 = lmr25top * nscaler
+            if (tfac_flag(f) < 1) then
+               if (c3flag(p)) then
+                  tfac(f,1) = ft(t_veg(p), lmrha)
+                  tfac(f,2) = fth(t_veg(p), lmrhd, lmrse, lmrc)
+               else
+                  tfac(f,1) = 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
+                  tfac(f,2) = 1._r8 + exp( 1.3_r8*(t_veg(p)-(tfrz+55._r8)) )
+               end if
+               tfac_flag(f) = 1
+            end if
             if (c3flag(p)) then
-               lmr_z(p,iv) = lmr25 * ft(t_veg(p), lmrha) * fth(t_veg(p), lmrhd, lmrse, lmrc)
+               lmr_z(p,iv) = lmr25 * tfac(f,1) * tfac(f,2)
             else
-               lmr_z(p,iv) = lmr25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
-               lmr_z(p,iv) = lmr_z(p,iv) / (1._r8 + exp( 1.3_r8*(t_veg(p)-(tfrz+55._r8)) ))
+               lmr_z(p,iv) = lmr25 * tfac(f,1)
+               lmr_z(p,iv) = lmr_z(p,iv) / tfac(f,2)
             end if
 
             if (par_z(p,iv) <= 0._r8) then           ! night time
@@ -765,23 +788,37 @@ contains
 
                ! Adjust for temperature
 
-               vcmaxse = 668.39_r8 - 1.07_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
-               jmaxse  = 659.70_r8 - 0.75_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
-               tpuse = vcmaxse
-               vcmaxc = fth25 (vcmaxhd, vcmaxse)
-               jmaxc  = fth25 (jmaxhd, jmaxse)
-               tpuc   = fth25 (tpuhd, tpuse)
-               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), vcmaxha) * fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
-               jmax_z(p,iv) = jmax25 * ft(t_veg(p), jmaxha) * fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
-               tpu_z(p,iv) = tpu25 * ft(t_veg(p), tpuha) * fth(t_veg(p), tpuhd, tpuse, tpuc)
+               if (tfac_flag(f) < 2) then
+                  vcmaxse = 668.39_r8 - 1.07_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
+                  jmaxse  = 659.70_r8 - 0.75_r8 * min(max((t10(p)-tfrz),11._r8),35._r8)
+                  tpuse = vcmaxse
+                  vcmaxc = fth25 (vcmaxhd, vcmaxse)
+                  jmaxc  = fth25 (jmaxhd, jmaxse)
+                  tpuc   = fth25 (tpuhd, tpuse)
+                  tfac(f,3) = ft(t_veg(p), vcmaxha)
+                  tfac(f,4) = fth(t_veg(p), vcmaxhd, vcmaxse, vcmaxc)
+                  tfac(f,5) = ft(t_veg(p), jmaxha)
+                  tfac(f,6) = fth(t_veg(p), jmaxhd, jmaxse, jmaxc)
+                  tfac(f,7) = ft(t_veg(p), tpuha)
+                  tfac(f,8) = fth(t_veg(p), tpuhd, tpuse, tpuc)
+                  tfac(f,9) = 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
+                  if (.not. c3flag(p)) then
+                     tfac(f,10) = 1._r8 + exp( 0.2_r8*((tfrz+15._r8)-t_veg(p)) )
+                     tfac(f,11) = 1._r8 + exp( 0.3_r8*(t_veg(p)-(tfrz+40._r8)) )
+                  end if
+                  tfac_flag(f) = 2
+               end if
+               vcmax_z(p,iv) = vcmax25 * tfac(f,3) * tfac(f,4)
+               jmax_z(p,iv) = jmax25 * tfac(f,5) * tfac(f,6)
+               tpu_z(p,iv) = tpu25 * tfac(f,7) * tfac(f,8)
 
                if (.not. c3flag(p)) then
-                  vcmax_z(p,iv) = vcmax25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
-                  vcmax_z(p,iv) = vcmax_z(p,iv) / (1._r8 + exp( 0.2_r8*((tfrz+15._r8)-t_veg(p)) ))
-                  vcmax_z(p,iv) = vcmax_z(p,iv) / (1._r8 + exp( 0.3_r8*(t_veg(p)-(tfrz+40._r8)) ))
+                  vcmax_z(p,iv) = vcmax25 * tfac(f,9)
+                  vcmax_z(p,iv) = vcmax_z(p,iv) / tfac(f,10)
+                  vcmax_z(p,iv) = vcmax_z(p,iv) / tfac(f,11)
                end if
 
-               kp_z(p,iv) = kp25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
+               kp_z(p,iv) = kp25 * tfac(f,9)
 
             end if
 
