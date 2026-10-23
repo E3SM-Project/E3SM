@@ -1759,7 +1759,7 @@ contains
       !$acc routine seq
     use decompMod        , only : bounds_type
     use shr_kind_mod     , only : r8 => shr_kind_r8
-    use elm_varpar       , only : nlevsoi, max_col_npfts
+    use elm_varpar       , only : nlevsoi
     use SoilStateType    , only : soilstate_type
     use VegetationType   , only : veg_pp
     use ColumnType       , only : col_pp
@@ -1774,7 +1774,7 @@ contains
     integer  :: p,c,fc,j                                              ! do loop indices
     integer  :: pi                                                    ! patch index
     integer  :: nlevbed                                               ! number of layers to bedrock
-    real(r8) :: temp(bounds%begc:bounds%endc)                         ! accumulator for rootr weighting
+    real(r8) :: temp_c                                                ! accumulator for rootr weighting of column c
     associate(&
           nlev2bed            =>    col_pp%nlevbed                     , & ! Input:  [integer  (:)   ]  number of layers to bedrock
           qflx_rootsoi_col    => col_wf%qflx_rootsoi    , & ! Output: [real(r8) (:,:) ]
@@ -1797,7 +1797,9 @@ contains
       ! weighting depends on both the per-unit-area transpiration
       ! of the PATCH and the PATCHEs area relative to all PATCHES.
 
-      temp(bounds%begc : bounds%endc) = 0._r8
+      ! Each column is processed on its own: the accumulators rootr_col(c,j)
+      ! and temp_c still add the patches of the column in increasing patch
+      ! order, and every other value is computed per patch or per (c,j).
 
       do fc = 1, num_filterc
          c = filterc(fc)
@@ -1805,63 +1807,40 @@ contains
          do j = 1, nlevbed
             rootr_col(c,j) = 0._r8
          end do
-      end do
 
-      do pi = 1,max_col_npfts
-         do fc = 1, num_filterc
-            c = filterc(fc)
-            nlevbed = nlev2bed(c)
-            do j = 1,nlevbed
-               if (pi <= col_pp%npfts(c)) then
-                  p = col_pp%pfti(c) + pi - 1
-                  if (veg_pp%active(p)) then
-                     rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * &
-                          qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
-                     qflx_rootsoi_frac_patch(p,j) = rootr_patch(p,j) * qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
-                  end if
-               end if
-            end do
-         end do
-         do fc = 1, num_filterc
-            c = filterc(fc)
-            if (pi <= col_pp%npfts(c)) then
-               p = col_pp%pfti(c) + pi - 1
-               if (veg_pp%active(p)) then
-                  temp(c) = temp(c) + qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
-               end if
+         temp_c = 0._r8
+         do pi = 1, col_pp%npfts(c)
+            p = col_pp%pfti(c) + pi - 1
+            if (veg_pp%active(p)) then
+               do j = 1, nlevbed
+                  rootr_col(c,j) = rootr_col(c,j) + rootr_patch(p,j) * &
+                       qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
+                  qflx_rootsoi_frac_patch(p,j) = rootr_patch(p,j) * qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
+               end do
+               temp_c = temp_c + qflx_tran_veg_patch(p) * veg_pp%wtcol(p)
             end if
          end do
-      end do
 
-      do fc = 1, num_filterc
-         c = filterc(fc)
-         nlevbed = nlev2bed(c)
          do j = 1, nlevbed
-            if (temp(c) /= 0._r8) then
-               rootr_col(c,j) = rootr_col(c,j)/temp(c)
+            if (temp_c /= 0._r8) then
+               rootr_col(c,j) = rootr_col(c,j)/temp_c
             end if
             qflx_rootsoi_col(c,j) = rootr_col(c,j)*qflx_tran_veg_col(c)
+         end do
 
+         do pi = 1, col_pp%npfts(c)
+            p = col_pp%pfti(c) + pi - 1
+            if (veg_pp%active(p)) then
+               do j = 1, nlevsoi
+                  if(rootr_col(c,j)==0._r8)then
+                     qflx_rootsoi_frac_patch(p,j) = 0._r8
+                  else
+                     qflx_rootsoi_frac_patch(p,j) = qflx_rootsoi_frac_patch(p,j)/(temp_c*rootr_col(c,j))
+                  endif
+               end do
+            end if
          end do
       end do
-
-      do pi = 1,max_col_npfts
-         do j = 1,nlevsoi
-            do fc = 1, num_filterc
-               c = filterc(fc)
-               if (pi <= col_pp%npfts(c)) then
-                  p = col_pp%pfti(c) + pi - 1
-                  if (veg_pp%active(p)) then
-                    if(rootr_col(c,j)==0._r8)then
-                      qflx_rootsoi_frac_patch(p,j) = 0._r8
-                    else
-                      qflx_rootsoi_frac_patch(p,j) = qflx_rootsoi_frac_patch(p,j)/(temp(c)*rootr_col(c,j))
-                    endif
-                  end if
-               end if
-            end do
-         end do
-       enddo
     end associate
     return
  end subroutine Compute_EffecRootFrac_And_VertTranSink_Default
