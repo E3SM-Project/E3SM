@@ -293,6 +293,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: fc,c,pi,p,j               ! indices
+    logical, allocatable :: has_flux(:)  ! the patch has a nonzero gap mortality flux to litter
     !-----------------------------------------------------------------------
 
     associate(                                                                              &
@@ -393,6 +394,52 @@ contains
 
          )
 
+      ! A patch whose gap mortality fluxes to litter are all zero adds only
+      ! zeros below, which leaves the column fluxes unchanged, so skip it
+      allocate(has_flux(lbound(veg_pp%active,1):ubound(veg_pp%active,1)))
+      do pi = 1,max_col_npfts
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if (pi <=  col_pp%npfts(c)) then
+               p = col_pp%pfti(c) + pi - 1
+               has_flux(p) = .false.
+               if (veg_pp%active(p)) then
+                  has_flux(p) = m_cpool_to_litter(p) /= 0._r8 .or. m_deadcrootc_storage_to_litter(p) /= 0._r8 .or. &
+                       m_deadcrootc_to_litter(p) /= 0._r8 .or. m_deadcrootc_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_deadcrootn_storage_to_litter(p) /= 0._r8 .or. m_deadcrootn_to_litter(p) /= 0._r8 .or. &
+                       m_deadcrootn_xfer_to_litter(p) /= 0._r8 .or. m_deadcrootp_storage_to_litter(p) /= 0._r8 .or. &
+                       m_deadcrootp_to_litter(p) /= 0._r8 .or. m_deadcrootp_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_deadstemc_storage_to_litter(p) /= 0._r8 .or. m_deadstemc_to_litter(p) /= 0._r8 .or. &
+                       m_deadstemc_xfer_to_litter(p) /= 0._r8 .or. m_deadstemn_storage_to_litter(p) /= 0._r8 .or. &
+                       m_deadstemn_to_litter(p) /= 0._r8 .or. m_deadstemn_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_deadstemp_storage_to_litter(p) /= 0._r8 .or. m_deadstemp_to_litter(p) /= 0._r8 .or. &
+                       m_deadstemp_xfer_to_litter(p) /= 0._r8 .or. m_frootc_storage_to_litter(p) /= 0._r8 .or. &
+                       m_frootc_to_litter(p) /= 0._r8 .or. m_frootc_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_frootn_storage_to_litter(p) /= 0._r8 .or. m_frootn_to_litter(p) /= 0._r8 .or. &
+                       m_frootn_xfer_to_litter(p) /= 0._r8 .or. m_frootp_storage_to_litter(p) /= 0._r8 .or. &
+                       m_frootp_to_litter(p) /= 0._r8 .or. m_frootp_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_gresp_storage_to_litter(p) /= 0._r8 .or. m_gresp_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_leafc_storage_to_litter(p) /= 0._r8 .or. m_leafc_to_litter(p) /= 0._r8 .or. &
+                       m_leafc_xfer_to_litter(p) /= 0._r8 .or. m_leafn_storage_to_litter(p) /= 0._r8 .or. &
+                       m_leafn_to_litter(p) /= 0._r8 .or. m_leafn_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_leafp_storage_to_litter(p) /= 0._r8 .or. m_leafp_to_litter(p) /= 0._r8 .or. &
+                       m_leafp_xfer_to_litter(p) /= 0._r8 .or. m_livecrootc_storage_to_litter(p) /= 0._r8 .or. &
+                       m_livecrootc_to_litter(p) /= 0._r8 .or. m_livecrootc_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_livecrootn_storage_to_litter(p) /= 0._r8 .or. m_livecrootn_to_litter(p) /= 0._r8 .or. &
+                       m_livecrootn_xfer_to_litter(p) /= 0._r8 .or. m_livecrootp_storage_to_litter(p) /= 0._r8 .or. &
+                       m_livecrootp_to_litter(p) /= 0._r8 .or. m_livecrootp_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_livestemc_storage_to_litter(p) /= 0._r8 .or. m_livestemc_to_litter(p) /= 0._r8 .or. &
+                       m_livestemc_xfer_to_litter(p) /= 0._r8 .or. m_livestemn_storage_to_litter(p) /= 0._r8 .or. &
+                       m_livestemn_to_litter(p) /= 0._r8 .or. m_livestemn_xfer_to_litter(p) /= 0._r8 .or. &
+                       m_livestemp_storage_to_litter(p) /= 0._r8 .or. m_livestemp_to_litter(p) /= 0._r8 .or. &
+                       m_livestemp_xfer_to_litter(p) /= 0._r8 .or. m_npool_to_litter(p) /= 0._r8 .or. &
+                       m_ppool_to_litter(p) /= 0._r8 .or. m_retransn_to_litter(p) /= 0._r8 .or. &
+                       m_retransp_to_litter(p) /= 0._r8
+               end if
+            end if
+         end do
+      end do
+
       do j = 1,nlevdecomp
          do pi = 1,max_col_npfts
             do fc = 1,num_soilc
@@ -401,7 +448,7 @@ contains
                if (pi <=  col_pp%npfts(c)) then
                   p = col_pp%pfti(c) + pi - 1
 
-                  if (veg_pp%active(p)) then
+                  if (has_flux(p)) then
 
                      ! leaf gap mortality carbon fluxes
                      gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
@@ -549,6 +596,8 @@ contains
             end do
          end do
       end do
+
+      deallocate(has_flux)
 
     end associate
 
