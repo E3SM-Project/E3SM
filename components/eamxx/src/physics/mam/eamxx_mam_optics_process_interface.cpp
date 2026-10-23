@@ -184,9 +184,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-  // FIXME: In other MAM4xx processes,
-  // we are using pseudo_density instead of pseudo_density_dry to set
-  // dry_atm_.p_del.
+  // Optics uses dry mass; layer geometry uses total mass from wet_atm_.
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 

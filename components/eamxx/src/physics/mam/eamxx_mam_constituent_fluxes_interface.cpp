@@ -170,9 +170,7 @@ void MAMConstituentFluxes::run_impl(const double dt) {
                               dry_atm,        // out
                               icol);          // in
     team.team_barrier();
-    // vertical heights has to be computed after computing dry mixing ratios
-    // for atmosphere
-    compute_vertical_layer_heights(team,     // in
+    compute_vertical_layer_heights(team, wet_atm,  // in
                                    dry_atm,  // out
                                    icol);    // in
     team.team_barrier();

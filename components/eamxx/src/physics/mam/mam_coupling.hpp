@@ -215,6 +215,7 @@ const char *cld_aero_mmr_field_name(const int mode, const int species) {
 // This type stores multi-column views related specifically to the wet
 // atmospheric state used by EAMxx.
 struct WetAtmosphere {
+  const_view_2d p_del;  // total hydrostatic pressure thickness [Pa]
   const_view_2d
       qv;  // wet water vapor specific humidity [kg vapor / kg moist air]
   const_view_2d qc;  // wet cloud liquid water mass mixing ratio [kg cloud
@@ -601,6 +602,7 @@ mam4::Tendencies aerosols_tendencies_for_column(const AerosolState &dry_aero,
 // the given index.
 KOKKOS_INLINE_FUNCTION
 void compute_vertical_layer_heights(const Team &team,
+                                    const WetAtmosphere &wet_atm,
                                     const DryAtmosphere &dry_atm,
                                     const int column_index) {
   EKAT_KERNEL_ASSERT_MSG(
@@ -612,12 +614,11 @@ void compute_vertical_layer_heights(const Team &team,
   const auto z_iface = ekat::subview(dry_atm.z_iface, column_index);
   const auto z_mid   = ekat::subview(dry_atm.z_mid, column_index);
   // inputs
-  const auto qv             = ekat::subview(dry_atm.qv, column_index);
+  const auto qv             = ekat::subview(wet_atm.qv, column_index);
   const auto p_mid          = ekat::subview(dry_atm.p_mid, column_index);
   const auto T_mid          = ekat::subview(dry_atm.T_mid, column_index);
-  const auto pseudo_density = ekat::subview(dry_atm.p_del, column_index);
+  const auto pseudo_density = ekat::subview(wet_atm.p_del, column_index);
 
-  // NOTE: we are using dry qv. Does calculate_dz require dry or wet?
   PF::calculate_dz(team, pseudo_density, p_mid, T_mid, qv,  // inputs
                    dz);                                     // output
   team.team_barrier();
@@ -644,11 +645,8 @@ void compute_updraft_velocities(const Team &team, const WetAtmosphere &wet_atm,
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
-    dry_atm.dz(i, k) =
-        PF::calculate_dz(dry_atm.p_del(i, k), dry_atm.p_mid(i, k),
-                         dry_atm.T_mid(i, k), wet_atm.qv(i, k));
     const auto rho =
-        PF::calculate_density(dry_atm.p_del(i, k), dry_atm.dz(i, k));
+        PF::calculate_density(wet_atm.p_del(i, k), dry_atm.dz(i, k));
     dry_atm.w_updraft(i, k) =
         PF::calculate_vertical_velocity(dry_atm.omega(i, k), rho);
   });

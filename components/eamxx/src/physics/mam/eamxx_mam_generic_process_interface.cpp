@@ -328,7 +328,7 @@ void MAMGenericInterface::populate_interstitial_wet_aero(
 
 void MAMGenericInterface::populate_wet_atm(
     mam_coupling::WetAtmosphere &wet_atm) {
-  // store fields only to be converted to dry mmrs in wet_atm_
+  wet_atm.p_del = get_field_in("pseudo_density").get_view<const Real **>();
   wet_atm.qv = get_field_in("qv").get_view<const Real **>();
   wet_atm.qc = get_field_in("qc").get_view<const Real **>();
   wet_atm.nc = get_field_in("nc").get_view<const Real **>();
@@ -478,9 +478,7 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
         mam_coupling::compute_dry_mixing_ratios(team, wet_atm, wet_aero,
                                                 dry_aero, i);
         team.team_barrier();
-        // vertical heights has to be computed after computing dry mixing ratios
-        // for atmosphere
-        mam_coupling::compute_vertical_layer_heights(team, dry_atm, i);
+        mam_coupling::compute_vertical_layer_heights(team, wet_atm, dry_atm, i);
         mam_coupling::compute_updraft_velocities(team, wet_atm, dry_atm, i);
         // allows kernels below to use layer heights operator()
         team.team_barrier();
