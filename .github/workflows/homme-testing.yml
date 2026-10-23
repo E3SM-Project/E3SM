@@ -3,20 +3,22 @@ name: homme
 # Standalone testing of Homme (components/homme), via components/homme/utils/test_homme.py, on the
 # self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change.
 #
-# Jobs (matrix): runner in {gnu, intel, cuda}.
-#  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>.cmake
+# Jobs (matrix): runner in {gnu, intel, cuda} x bfb in {false, true} (no cuda bfb yet).
+#  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>[-bfb].cmake
 #    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnugpu.
+#  - bfb jobs set HOMMEXX_BFB_TESTING=ON (with strict fp flags), to compare the cxx and f90 builds
+#    against each other within the same build. They do not compare against baselines (--no-baseline).
 #  - Only the submodules that Homme needs (cime, ekat, scorpio) are checked out.
 #
 # Resources: Homme tests do not reserve cpus/gpus, so the 'Set test resources' step splits the node:
 #  max ranks per test (USE_NUM_PROCS) x threads per rank x number of concurrent tests (--run-parallel-level)
 #  must fit in the node (MAX_MPITASKS_PER_NODE in CIME's config_machines.xml).
 #
-# Baselines: the jobs compare against baselines in <BASELINE_ROOT of ghci>/<compiler>/master/homme
+# Baselines: non-bfb jobs compare against baselines in <BASELINE_ROOT of ghci>/<compiler>/master/homme
 # (i.e., /projects/e3sm/data/baselines/ghci/<compiler>/master/homme). They must be generated first:
 # run this workflow manually (workflow_dispatch) with 'bless' set, on the branch whose results should become the
-# baselines (normally master). Until then, the tests that compare against baselines fail (the unit tests are
-# not affected).
+# baselines (normally master). Until then, the tests that compare against baselines fail (the unit tests and the
+# bfb jobs are not affected).
 
 on:
   # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
@@ -58,9 +60,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The runner label is also the name of the compiler config: machine file is ghci-<runner>.cmake
+        # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
         runner: [gnu, intel, cuda]
-    name: ${{ matrix.runner }}
+        # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags
+        bfb: [false, true]
+        exclude:
+          # TODO: add a cuda bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
+          - {runner: cuda, bfb: true}
+    name: ${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -143,6 +150,13 @@ jobs:
       - name: Run test_homme.py
         working-directory: components/homme
         run: |
+          # BFB jobs use the machine file ghci-<runner>-bfb.cmake (via --bfb), and only care about cxx vs f90
+          # comparisons within the same build, so they do not compare against baselines.
+          bfb_flag=()
+          if [ "${{ matrix.bfb }}" = "true" ]; then
+            bfb_flag=(--bfb --no-baseline)
+          fi
+
           # CUDA_CMAKE_CONFIGS (set by get-cuda-arch) is a semicolon-separated list of key=val
           # (empty tokens are ignored, so this is a no-op for non-cuda runners)
           cuda_flags=()
@@ -153,10 +167,10 @@ jobs:
             fi
           done
 
-          # Each runner has its own machine file (ghci-<runner>.cmake).
+          # Each runner has its own machine file (ghci-<runner>[-bfb].cmake).
           cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               "${cuda_flags[@]}")
+               "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then
             cmd+=(-g)
           fi
@@ -224,7 +238,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: log-files-${{ matrix.runner }}
+          name: log-files-${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
           path: |
             components/homme/ctest-build/CMakeCache.txt
             components/homme/ctest-build/Testing/**
