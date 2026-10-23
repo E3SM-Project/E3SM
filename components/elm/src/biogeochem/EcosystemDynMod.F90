@@ -89,6 +89,7 @@ contains
     use FireMod      , only : FireInit
     use C14DecayMod  , only : C14_init_BombSpike
     use FanUpdateMod , only : fanInit
+    use NitrifDenitrifMod, only : NitrifDenitrifInit
     !
     ! !ARGUMENTS:
     implicit none
@@ -97,6 +98,7 @@ contains
     !-----------------------------------------------------------------------
 
     call AllocationInit (bounds, elm_fates)
+    call NitrifDenitrifInit (bounds)
 
     if(use_fates) return
 
