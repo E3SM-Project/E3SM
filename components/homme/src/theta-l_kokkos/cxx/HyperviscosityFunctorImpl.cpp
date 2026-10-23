@@ -119,11 +119,11 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   // components/homme/src/theta-l/share/model_init_mod.F90
   // instead we will get m_nu_scale_top and m_nu_scale_top_ilev_pack_lim from the
   //  Fortran-initialized ref states, which will have the correct values if tom_sponge_start > 0.0.
-  //  If tom_sponge_start = 0.0, then we will compute m_nu_scale_top using the existing logic in HyperviscosityFunctorImpl::init_params, 
+  //  If tom_sponge_start = 0.0, then we will compute m_nu_scale_top using the existing logic in HyperviscosityFunctorImpl::init_params,
   // which is equivalent to the old logic when tom_sponge_start was not a parameter.
-  // In addition, we will not delete the following block of code because using the 
+  // In addition, we will not delete the following block of code because using the
   // Fortran-initialization produces non-BFB results for case when tom_sponge_start == 0.0.
-  const bool compute_nu_scale_top = m_data.tom_sponge_start > 0.0; 
+  const bool compute_nu_scale_top = m_data.tom_sponge_start > 0.0;
   if (m_data.nu_top>0 && !compute_nu_scale_top ) {
     m_nu_scale_top = ExecViewManaged<Scalar[NUM_LEV]>("nu_scale_top");
     ExecViewManaged<Scalar[NUM_LEV]>::host_mirror_type h_nu_scale_top;
@@ -169,7 +169,7 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   }
 
 
-  
+
   // Init ElementOps
   m_elem_ops.init(m_hvcoord);
 
@@ -309,7 +309,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   m_data.dt = dt;
   m_data.dt_hvs = dt/m_data.hypervis_subcycle;
-  if (m_data.hypervis_subcycle_tom > 0) { 
+  if (m_data.hypervis_subcycle_tom > 0) {
     m_data.dt_hvs_tom = dt/m_data.hypervis_subcycle_tom;
   }else{
     //won't be used
@@ -426,7 +426,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   Kokkos::fence();
 
-  // sponge layer 
+  // sponge layer
   if (m_data.nu_top > 0) {
     const int ne = m_geometry.num_elems();
     for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
@@ -528,7 +528,7 @@ void HyperviscosityFunctorImpl::operator() (const TagNutopLaplaceConst&, const T
       const auto vtens  = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
       const auto ttens  = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
       const auto dptens = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
-     
+
       MidColumn wtens, phitens;
       if (m_process_nh_vars) {
         wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
@@ -605,7 +605,7 @@ void HyperviscosityFunctorImpl::operator() (const TagNutopLaplaceTensor&, const 
       const auto vtens  = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
       const auto ttens  = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
       const auto dptens = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
-     
+
       MidColumn wtens, phitens;
       if (m_process_nh_vars) {
         wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
@@ -770,7 +770,7 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
       MidColumn wtens;
       IntColumn Km_i;
 
-      Real max_diffusivity = std::numeric_limits<Real>::max();
+      Real max_diffusivity = Kokkos::Experimental::finite_max_v<Real>;
       if (m_data.horiz_turb_subcycle > 0 && lambda_vis > 0 && m_data.dt_hvs_sgs > 0) {
         const auto& dinv = m_geometry.m_dinv;
         const Real a = dinv(kv.ie,0,0,igp,jgp);
