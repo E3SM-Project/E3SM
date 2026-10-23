@@ -2391,7 +2391,11 @@ contains
 
     ! Assemble the full matrix
 
-    bmatrix(bounds%begc:bounds%endc, :, :) = 0.0_r8
+    ! Only the filter columns are used
+    do fc = 1,num_filter
+       c = filter(fc)
+       bmatrix(c, :, :) = 0.0_r8
+    end do
     do fc = 1,num_filter
        c = filter(fc)
 
@@ -2463,8 +2467,12 @@ contains
          )
 
       ! Initialize
-      bmatrix_snow(begc:endc, :, :)      = 0.0_r8
-      bmatrix_snow_soil(begc:endc, :, :) = 0.0_r8
+      ! Only the filter columns are used
+      do fc = 1,num_filter
+         c = filter(fc)
+         bmatrix_snow(c, :, :) = 0.0_r8
+         bmatrix_snow_soil(c, :, :) = 0.0_r8
+      end do
 
       do j = -nlevsno+1,0
          do fc = 1,num_filter
@@ -2541,8 +2549,12 @@ contains
          )
 
       ! Initialize
-      bmatrix_soil(begc:endc, :, :)      = 0.0_r8
-      bmatrix_soil_snow(begc:endc, :, :) = 0.0_r8
+      ! Only the filter columns are used
+      do fc = 1,num_filter
+         c = filter(fc)
+         bmatrix_soil(c, :, :) = 0.0_r8
+         bmatrix_soil_snow(c, :, :) = 0.0_r8
+      end do
 
       !
       ! urban sunwall, shadewall, and roof columns -------------------------------------
@@ -2688,9 +2700,13 @@ contains
     !-----------------------------------------------------------------------
 
     ! Initialize
-    bmatrix_ssw(bounds%begc:bounds%endc, :, :)      = 0.0_r8
-    bmatrix_ssw_soil(bounds%begc:bounds%endc, :, :) = 0.0_r8
-    bmatrix_soil_ssw(bounds%begc:bounds%endc, :, :) = 0.0_r8
+    ! Only the filter columns are used
+    do fc = 1,num_filter
+       c = filter(fc)
+       bmatrix_ssw(c, :, :) = 0.0_r8
+       bmatrix_ssw_soil(c, :, :) = 0.0_r8
+       bmatrix_soil_ssw(c, :, :) = 0.0_r8
+    end do
 
     do fc = 1,num_filter
        c = filter(fc)
