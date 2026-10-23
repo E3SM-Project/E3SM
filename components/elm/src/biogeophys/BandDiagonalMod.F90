@@ -46,7 +46,7 @@ contains
     integer  :: j,ci,fc,info,m,n              !indices
     integer  :: kl,ku                         !number of sub/super diagonals
     integer, allocatable :: ipiv(:)           !temporary
-    real(r8),allocatable :: ab(:,:),temp(:,:) !compact storage array
+    real(r8),allocatable :: ab(:,:)           !compact storage array
     real(r8),allocatable :: result(:)
 
     !-----------------------------------------------------------------------
@@ -162,60 +162,69 @@ contains
 !kl+ku+1 rows and n columns
 !AB(KL+KU+1+i-j,j) = A(i,j)
 
+    ! The work arrays are sized for the largest system (all levels between lbj
+    ! and ubj) and allocated once; each column uses their leading parts
+    kl=(nband-1)/2
+    ku=kl
+! m is the number of rows required for storage space by dgbsv
+    m=2*kl+ku+1
+    allocate(ab(m,ubj-lbj+1))
+    allocate(ipiv(ubj-lbj+1))
+    allocate(result(ubj-lbj+1))
+
     do fc = 1,numf
        ci = filter(fc)
 
-       kl=(nband-1)/2
-       ku=kl
-! m is the number of rows required for storage space by dgbsv
-       m=2*kl+ku+1
 ! n is the number of levels (snow/soil)
 !scs: replace ubj with jbot
        n=jbot(ci)-jtop(ci)+1
 
-       allocate(ab(m,n))
-       ab=0.0
-
-       ab(kl+ku-1,3:n)=b(ci,1,jtop(ci):jbot(ci)-2)   ! 2nd superdiagonal
-       ab(kl+ku+0,2:n)=b(ci,2,jtop(ci):jbot(ci)-1)   ! 1st superdiagonal
-       ab(kl+ku+1,1:n)=b(ci,3,jtop(ci):jbot(ci))     ! diagonal
-       ab(kl+ku+2,1:n-1)=b(ci,4,jtop(ci)+1:jbot(ci)) ! 1st subdiagonal
-       ab(kl+ku+3,1:n-2)=b(ci,5,jtop(ci)+2:jbot(ci)) ! 2nd subdiagonal
-
-       allocate(temp(m,n))
-       temp=ab
-
-       allocate(ipiv(n))
-       allocate(result(n))
+       call set_band_storage(ci, n)
 
 ! on input result is rhs, on output result is solution vector
-       result(:)=r(ci,jtop(ci):jbot(ci))
+       result(1:n)=r(ci,jtop(ci):jbot(ci))
 
 !       DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
        call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
-       u(ci,jtop(ci):jbot(ci))=result(:)
+       u(ci,jtop(ci):jbot(ci))=result(1:n)
 
        if(info /= 0) then 
           write(iulog,*)'index: ', ci
           write(iulog,*)'n,kl,ku,m ',n,kl,ku,m
           write(iulog,*)'dgbsv info: ',ci,info
           
+          ! dgbsv overwrote ab with its factorization, so set it again
+          call set_band_storage(ci, n)
           write(iulog,*) ''
           write(iulog,*) 'ab matrix'
           do j=1,n
-             !             write(iulog,'(i2,7f18.7)') j,temp(:,j)
-             write(iulog,'(i2,5f18.7)') j,temp(3:7,j)
+             write(iulog,'(i2,5f18.7)') j,ab(3:7,j)
           enddo
           write(iulog,*) ''
           stop
        endif
-       deallocate(temp)
-
-       deallocate(ab)
-       deallocate(ipiv)
-       deallocate(result)
     end do
 
+    deallocate(ab)
+    deallocate(ipiv)
+    deallocate(result)
+
+  contains
+
+    subroutine set_band_storage(ci, n)
+      ! Set ab(:,1:n) to the matrix of column ci in the band storage of dgbsv
+      integer, intent(in) :: ci  ! column index
+      integer, intent(in) :: n   ! number of levels in the system
+
+      ab(:,1:n)=0.0_r8
+
+      ab(kl+ku-1,3:n)=b(ci,1,jtop(ci):jbot(ci)-2)   ! 2nd superdiagonal
+      ab(kl+ku+0,2:n)=b(ci,2,jtop(ci):jbot(ci)-1)   ! 1st superdiagonal
+      ab(kl+ku+1,1:n)=b(ci,3,jtop(ci):jbot(ci))     ! diagonal
+      ab(kl+ku+2,1:n-1)=b(ci,4,jtop(ci)+1:jbot(ci)) ! 1st subdiagonal
+      ab(kl+ku+3,1:n-2)=b(ci,5,jtop(ci)+2:jbot(ci)) ! 2nd subdiagonal
+
+    end subroutine set_band_storage
   end subroutine BandDiagonal
 
 end module BandDiagonalMod
