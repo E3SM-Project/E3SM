@@ -7834,7 +7834,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine col_cf_setvalues ( this, num_column, filter_column, value_column, &
-       zero_harvest, zero_erosion, zero_transport)
+       zero_harvest, zero_erosion, zero_transport, zero_deep)
     ! !DESCRIPTION:
     ! Set column-level carbon fluxes
     !
@@ -7846,6 +7846,7 @@ contains
     logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
     logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
     logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
+    logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -7855,6 +7856,8 @@ contains
     logical :: do_zero_harvest
     logical :: do_zero_erosion
     logical :: do_zero_transport
+    logical :: do_zero_deep
+    integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
     if (present(zero_harvest)) do_zero_harvest = zero_harvest
@@ -7862,7 +7865,13 @@ contains
     if (present(zero_erosion)) do_zero_erosion = zero_erosion
     do_zero_transport = .true.
     if (present(zero_transport)) do_zero_transport = zero_transport
-    do j = 1, nlevdecomp_full
+    ! Levels below nlevdecomp of the vertically resolved fluxes are written only
+    ! here (with zero), so they need zeroing only when the caller asks.
+    do_zero_deep = .true.
+    if (present(zero_deep)) do_zero_deep = zero_deep
+    nlevz = nlevdecomp_full
+    if (.not. do_zero_deep) nlevz = nlevdecomp
+    do j = 1, nlevz
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
@@ -7904,7 +7913,7 @@ contains
     end do
     
     do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
+       do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_cpools_sourcesink(i,j,k) = value_column
@@ -9501,7 +9510,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine col_nf_setvalues ( this, num_column, filter_column, value_column, &
-       zero_harvest, zero_fan, zero_erosion)
+       zero_harvest, zero_fan, zero_erosion, zero_deep)
     !
     ! !DESCRIPTION:
     ! Set column-level nitrogen fluxes
@@ -9514,6 +9523,7 @@ contains
     logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
     logical , intent(in), optional :: zero_fan       ! zero the FAN fluxes (default .true.)
     logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
+    logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -9523,6 +9533,8 @@ contains
     logical :: do_zero_harvest
     logical :: do_zero_fan
     logical :: do_zero_erosion
+    logical :: do_zero_deep
+    integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
     if (present(zero_harvest)) do_zero_harvest = zero_harvest
@@ -9530,7 +9542,13 @@ contains
     if (present(zero_fan)) do_zero_fan = zero_fan
     do_zero_erosion = .true.
     if (present(zero_erosion)) do_zero_erosion = zero_erosion
-    do j = 1, nlevdecomp_full
+    ! Levels below nlevdecomp of the vertically resolved fluxes are written only
+    ! here (with zero), so they need zeroing only when the caller asks.
+    do_zero_deep = .true.
+    if (present(zero_deep)) do_zero_deep = zero_deep
+    nlevz = nlevdecomp_full
+    if (.not. do_zero_deep) nlevz = nlevdecomp
+    do j = 1, nlevz
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
@@ -9663,7 +9681,7 @@ contains
        end do
 
     do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
+       do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_npools_sourcesink(i,j,k) = value_column
@@ -9710,7 +9728,7 @@ contains
    end if
 
    if(use_crop) then 
-     do j = 1, nlevdecomp_full
+     do j = 1, nlevz
        do fi = 1,num_column
          i = filter_column(fi)
          this%f_nit_vr(i,j)      = value_column
@@ -11104,7 +11122,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine col_pf_setvalues ( this, num_column, filter_column, value_column, &
-       zero_harvest, zero_erosion, zero_transport)
+       zero_harvest, zero_erosion, zero_transport, zero_deep)
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
@@ -11116,6 +11134,7 @@ contains
     logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
     logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
     logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
+    logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
     !
     ! Process a short block of filtered entries one field at a time. This
     ! keeps stores to each array together instead of interleaving dozens of
@@ -11125,6 +11144,8 @@ contains
     logical :: do_zero_harvest
     logical :: do_zero_erosion
     logical :: do_zero_transport
+    logical :: do_zero_deep
+    integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
     do_zero_harvest = .true.
     if (present(zero_harvest)) do_zero_harvest = zero_harvest
@@ -11132,7 +11153,13 @@ contains
     if (present(zero_erosion)) do_zero_erosion = zero_erosion
     do_zero_transport = .true.
     if (present(zero_transport)) do_zero_transport = zero_transport
-    do j = 1, nlevdecomp_full
+    ! Levels below nlevdecomp of the vertically resolved fluxes are written only
+    ! here (with zero), so they need zeroing only when the caller asks.
+    do_zero_deep = .true.
+    if (present(zero_deep)) do_zero_deep = zero_deep
+    nlevz = nlevdecomp_full
+    if (.not. do_zero_deep) nlevz = nlevdecomp
+    do j = 1, nlevz
        do fi = 1,num_column,flux_setvalues_block_size
           associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
@@ -11254,7 +11281,7 @@ contains
     end do
 
     do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
+       do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_ppools_sourcesink(i,j,k) = value_column
