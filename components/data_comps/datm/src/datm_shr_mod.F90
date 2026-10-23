@@ -9,6 +9,7 @@ module datm_shr_mod
   use shr_strdata_mod, only : shr_strdata_readnml
   use shr_dmodel_mod , only : shr_dmodel_mapset
   use shr_cal_mod    , only : shr_cal_date2julian
+   use shr_cal_mod, only: shr_cal_advDateInt, shr_cal_calendarName, shr_cal_gregorian
   use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
   use shr_strdata_mod, only : shr_strdata_type
   use mct_mod
@@ -184,7 +185,7 @@ CONTAINS
   end subroutine datm_shr_read_namelists
 
   !===============================================================================
-  real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, calendar )
+   real(R8) function datm_shr_getNextRadCDay( ymd, tod, stepno, dtime, iradsw, calendar, next_ymd, next_tod )
 
     ! !DESCRIPTION:
     !  Return the calendar day of the next radiation time-step.
@@ -198,15 +199,21 @@ CONTAINS
     integer(IN), intent(IN)    :: dtime
     integer(IN), intent(IN)    :: iradsw
     character(*),intent(in)    :: calendar
+   integer(IN), optional, intent(out) :: next_ymd
+   real(R8), optional, intent(out) :: next_tod
 
     !----- local -----
     real(R8) :: nextsw_cday
     real(R8) :: julday
     integer  :: liradsw
+   integer :: solar_offset, solar_ymd, solar_tod
     character(*),parameter :: subName =  '(datm_shr_getNextRadCDay) '
     !-------------------------------------------------------------------------------
 
     liradsw = iradsw
+   solar_offset = dtime
+   if (present(next_ymd)) next_ymd = 0
+   if (present(next_tod)) next_tod = -1._r8
     if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
 
     call shr_cal_date2julian(ymd,tod,julday,calendar)
@@ -214,11 +221,20 @@ CONTAINS
     if (liradsw > 1) then
        if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
           nextsw_cday = julday + 2*dtime/SHR_CONST_CDAY
+          solar_offset = 2 * dtime
        else
           nextsw_cday = -1._r8
        end if
     else
        nextsw_cday = julday + dtime/SHR_CONST_CDAY
+    end if
+    if (nextsw_cday >= 0._r8) then
+       call shr_cal_advDateInt(solar_offset, 'seconds', ymd, tod, solar_ymd, solar_tod, calendar)
+       if (present(next_ymd)) next_ymd = solar_ymd
+       if (present(next_tod)) next_tod = real(solar_tod, R8)
+       if (shr_cal_calendarName(calendar) == shr_cal_gregorian) then
+          call shr_cal_date2julian(solar_ymd, solar_tod, nextsw_cday, calendar)
+       end if
     end if
     datm_shr_getNextRadCDay = nextsw_cday
 

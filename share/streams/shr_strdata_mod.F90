@@ -4,7 +4,7 @@ module shr_strdata_mod
   !    holds data and methods to advance data models
 
   use shr_const_mod , only : SHR_CONST_PI
-  use shr_kind_mod  , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8
+   use shr_kind_mod  , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, I8=>SHR_KIND_I8
   use shr_kind_mod  , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_kind_mod  , only : CXX=>SHR_KIND_CXX
   use shr_sys_mod   , only : shr_sys_abort, shr_sys_flush
@@ -15,6 +15,7 @@ module shr_strdata_mod
   use shr_cal_mod   , only : shr_cal_calendarname, shr_cal_timeSet
   use shr_cal_mod   , only : shr_cal_noleap, shr_cal_gregorian
   use shr_cal_mod   , only : shr_cal_date2ymd, shr_cal_ymd2date
+   use shr_cal_mod   , only : shr_cal_advDateInt
   use shr_orb_mod   , only : shr_orb_decl, shr_orb_cosz, shr_orb_undef_real
   use shr_nl_mod    , only : shr_nl_find_group_name
   use shr_stream_mod ! stream data type and methods
@@ -27,7 +28,9 @@ module shr_strdata_mod
   use pio            ! pio
   use esmf
 
-  implicit none
+   use shr_orb_mod, only: shr_orb_context_type
+
+   implicit none
   private
 
   ! !PUBLIC TYPES:
@@ -39,6 +42,7 @@ module shr_strdata_mod
   public shr_strdata_restRead
   public shr_strdata_restWrite
   public shr_strdata_setOrbs
+   public shr_strdata_setOrbitalContext
   public shr_strdata_print
   public shr_strdata_init
   public shr_strdata_init_model_domain
@@ -96,7 +100,12 @@ module shr_strdata_mod
      real(R8)                       :: mvelpp
      real(R8)                       :: lambm0
      real(R8)                       :: obliqr
-     integer(IN)                    :: modeldt           ! model dt in seconds
+   integer(IN)                    :: modeldt = 0
+   logical                        :: solar_cache_valid(nStrMax) = .false.
+   integer(IN)                    :: solar_lb_ymd(nStrMax) = 0, solar_lb_tod(nStrMax) = 0
+   integer(IN)                    :: solar_ub_ymd(nStrMax) = 0, solar_ub_tod(nStrMax) = 0
+   type(shr_orb_context_type)      :: solar_context
+   logical                        :: solar_context_valid = .false.
 
      ! --- model domain info, internal, public ---
      character(CL)                  :: domainFile        ! file containing domain info (set my input)
@@ -152,6 +161,82 @@ module shr_strdata_mod
 !===============================================================================
 contains
 !===============================================================================
+
+      subroutine solar_model_window(SDAT, stream_index, ymd, tod, lb_ymd, lb_tod, ub_ymd, ub_tod)
+      type(shr_strdata_type), intent(in) :: SDAT
+        integer(IN), intent(in) :: stream_index, ymd, tod
+      integer(IN), intent(out) :: lb_ymd, lb_tod, ub_ymd, ub_tod
+        integer(IN) :: lower_seconds, upper_seconds, candidate_ymd, candidate_tod, shift
+        integer(I8) :: interval_seconds
+        type(ESMF_Time) :: sample_time, bound_time
+        type(ESMF_TimeInterval) :: interval
+
+        call mapped_day_bounds(ymd, lower_seconds, upper_seconds)
+        if (tod < lower_seconds .or. tod >= upper_seconds) then
+          call shr_sys_abort('Gregorian solar normalization: model sample outside mapped forcing interval')
+      endif
+        lb_ymd = ymd
+        lb_tod = lower_seconds
+        ub_ymd = ymd
+        ub_tod = upper_seconds
+
+        do while (lb_tod == 0 .and. lb_ymd > SDAT%ymdLB(stream_index))
+           call shr_cal_advDateInt(-1, 'days', lb_ymd, 0, candidate_ymd, candidate_tod, SDAT%calendar)
+           call mapped_day_bounds(candidate_ymd, lower_seconds, upper_seconds)
+           if (upper_seconds /= 86400 .or. lower_seconds >= upper_seconds) exit
+           lb_ymd = candidate_ymd
+           lb_tod = lower_seconds
+        enddo
+        do while (ub_tod == 86400)
+           call shr_cal_advDateInt(1, 'days', ub_ymd, 0, candidate_ymd, candidate_tod, SDAT%calendar)
+           call mapped_day_bounds(candidate_ymd, lower_seconds, upper_seconds)
+           if (lower_seconds /= 0 .or. lower_seconds >= upper_seconds) exit
+           ub_ymd = candidate_ymd
+           ub_tod = upper_seconds
+        enddo
+
+        call shr_cal_advDateInt(ub_tod, 'seconds', ub_ymd, 0, candidate_ymd, candidate_tod, SDAT%calendar)
+        ub_ymd = candidate_ymd
+        ub_tod = candidate_tod
+        call shr_cal_timeSet(sample_time, ymd, tod, SDAT%calendar)
+        call shr_cal_timeSet(bound_time, lb_ymd, lb_tod, SDAT%calendar)
+        interval = sample_time - bound_time
+        call ESMF_TimeIntervalGet(interval, s_i8=interval_seconds)
+        shift = int(modulo(interval_seconds, int(SDAT%modeldt, I8)), IN)
+        call shr_cal_advDateInt(shift, 'seconds', lb_ymd, lb_tod, candidate_ymd, candidate_tod, SDAT%calendar)
+        lb_ymd = candidate_ymd
+        lb_tod = candidate_tod
+        call shr_cal_timeSet(bound_time, ub_ymd, ub_tod, SDAT%calendar)
+        interval = bound_time - sample_time
+        call ESMF_TimeIntervalGet(interval, s_i8=interval_seconds)
+        shift = int(modulo(-interval_seconds, int(SDAT%modeldt, I8)), IN)
+        call shr_cal_advDateInt(shift, 'seconds', ub_ymd, ub_tod, candidate_ymd, candidate_tod, SDAT%calendar)
+        ub_ymd = candidate_ymd
+        ub_tod = candidate_tod
+
+      contains
+
+        subroutine mapped_day_bounds(model_ymd, lower, upper)
+           integer(IN), intent(in) :: model_ymd
+           integer(IN), intent(out) :: lower, upper
+           integer(IN) :: mapped_ymd, year, month, day
+
+           mapped_ymd = model_ymd
+           if (SDAT%stream(stream_index)%calendar == shr_cal_noleap) then
+              call shr_cal_date2ymd(model_ymd, year, month, day)
+              if (month == 2 .and. day == 29) call shr_cal_ymd2date(year, 2, 28, mapped_ymd)
+           endif
+           lower = 0
+           upper = 86400
+           if (mapped_ymd < SDAT%ymdLB(stream_index) .or. mapped_ymd > SDAT%ymdUB(stream_index)) then
+              upper = 0
+              return
+           endif
+           if (mapped_ymd == SDAT%ymdLB(stream_index)) lower = SDAT%todLB(stream_index)
+           if (mapped_ymd == SDAT%ymdUB(stream_index)) upper = SDAT%todUB(stream_index)
+        end subroutine mapped_day_bounds
+
+   end subroutine solar_model_window
 
   subroutine shr_strdata_init( &
        SDAT,mpicom,compid,name,scmmode,scm_multcols,scmlon,scmlat, &
@@ -766,6 +851,7 @@ contains
     real(R8),pointer           :: tavCosz(:)           ! cosz, time avg over [LB,UB]
     real(R8),pointer           :: xlon(:),ylon(:)
     real(R8),parameter         :: solZenMin = 0.001_R8 ! minimum solar zenith angle
+   integer(IN) :: solar_lb_ymd, solar_lb_tod, solar_ub_ymd, solar_ub_tod
 
     type(ESMF_Time)            :: timeLB, timeUB       ! lb and ub times
     type(ESMF_TimeInterval)    :: timeint              ! delta time
@@ -1060,17 +1146,41 @@ contains
 
              call t_startf(trim(lstr)//trim(timname)//'_coszenC')
              cosz = 0.0_r8
-             call shr_tInterp_getCosz(cosz,lonr,latr,ymdmod(n),todmod, &
-                  SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%stream(n)%calendar)
+             if (SDAT%calendar == shr_cal_gregorian .or. SDAT%solar_context%use_equation_of_time) then
+                if (.not. SDAT%solar_context_valid) call shr_sys_abort('Gregorian forcing requires orbital context')
+                call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod, &
+                     SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%calendar,SDAT%solar_context)
+             else
+                call shr_tInterp_getCosz(cosz,lonr,latr,ymdmod(n),todmod, &
+                   SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%stream(n)%calendar,legacy_orbit=.true.)
+             endif
              call t_stopf(trim(lstr)//trim(timname)//'_coszenC')
 
-             if (newdata(n)) then
+             if (SDAT%calendar == shr_cal_gregorian .or. SDAT%solar_context%use_equation_of_time) then
+                if (newdata(n) .or. .not. SDAT%solar_cache_valid(n) .or. &
+                               ymd < SDAT%solar_lb_ymd(n) .or. &
+                               (ymd == SDAT%solar_lb_ymd(n) .and. tod < SDAT%solar_lb_tod(n)) .or. &
+                               ymd > SDAT%solar_ub_ymd(n) .or. &
+                               (ymd == SDAT%solar_ub_ymd(n) .and. tod >= SDAT%solar_ub_tod(n))) then
+                            call solar_model_window(SDAT,n,ymd,tod,solar_lb_ymd,solar_lb_tod,solar_ub_ymd,solar_ub_tod)
+                   call shr_tInterp_getAvgCosz(tavCosz,lonr,latr,solar_lb_ymd,solar_lb_tod,solar_ub_ymd,solar_ub_tod, &
+                        SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%modeldt,SDAT%calendar,SDAT%solar_context)
+                   call mct_avect_importRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz,lsizeF)
+                   SDAT%solar_lb_ymd(n) = solar_lb_ymd
+                   SDAT%solar_lb_tod(n) = solar_lb_tod
+                   SDAT%solar_ub_ymd(n) = solar_ub_ymd
+                   SDAT%solar_ub_tod(n) = solar_ub_tod
+                   SDAT%solar_cache_valid(n) = .true.
+                else
+                   call mct_avect_exportRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz)
+                endif
+             else if (newdata(n)) then
                 !--- compute a new avg cosz ---
                 call t_startf(trim(lstr)//trim(timname)//'_coszenN')
                 call shr_tInterp_getAvgCosz(tavCosz,lonr,latr, &
                      SDAT%ymdLB(n),SDAT%todLB(n), SDAT%ymdUB(n),SDAT%todUB(n), &
                      SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%modeldt,&
-                     SDAT%stream(n)%calendar)
+                     SDAT%stream(n)%calendar,legacy_orbit=.true.)
                 call mct_avect_importRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz,lsizeF)
                 call t_stopf(trim(lstr)//trim(timname)//'_coszenN')
              else
@@ -1080,7 +1190,7 @@ contains
 
              !--- t-interp is LB data normalized with this factor: cosz/tavCosz ---
              do i = 1,lsizeF
-                if (cosz(i) > solZenMin) then
+                if (cosz(i) > solZenMin .and. tavCosz(i) > 0._r8) then
                    SDAT%avs(n)%rAttr(:,i) = SDAT%avFLB(n)%rAttr(:,i)*cosz(i)/tavCosz(i)
                 else
                    SDAT%avs(n)%rAttr(:,i) =  0._r8
@@ -1252,9 +1362,27 @@ contains
     SDAT%mvelpp  = mvelpp
     SDAT%lambm0  = lambm0
     SDAT%obliqr  = obliqr
+   if (SDAT%modeldt /= modeldt) SDAT%solar_cache_valid = .false.
     SDAT%modeldt = modeldt
 
   end subroutine shr_strdata_setOrbs
+
+   subroutine shr_strdata_setOrbitalContext(SDAT, context)
+      type(shr_strdata_type), intent(inout) :: SDAT
+      type(shr_orb_context_type), intent(in) :: context
+
+       if ((context%variable_year .neqv. SDAT%solar_context%variable_year) .or. &
+          (context%fixed_year .neqv. SDAT%solar_context%fixed_year) .or. &
+          (context%use_equation_of_time .neqv. SDAT%solar_context%use_equation_of_time) .or. &
+          (context%perpetual .neqv. SDAT%solar_context%perpetual) .or. &
+          context%iyear /= SDAT%solar_context%iyear .or. context%iyear_align /= SDAT%solar_context%iyear_align .or. &
+          context%perpetual_ymd /= SDAT%solar_context%perpetual_ymd .or. context%eccen /= SDAT%solar_context%eccen .or. &
+          context%obliq /= SDAT%solar_context%obliq .or. context%mvelp /= SDAT%solar_context%mvelp .or. &
+          context%obliqr /= SDAT%solar_context%obliqr .or. context%lambm0 /= SDAT%solar_context%lambm0 .or. &
+          context%mvelpp /= SDAT%solar_context%mvelpp) SDAT%solar_cache_valid = .false.
+       SDAT%solar_context = context
+      SDAT%solar_context_valid = .true.
+   end subroutine shr_strdata_setOrbitalContext
 
   !===============================================================================
 
@@ -1447,6 +1575,7 @@ contains
     SDAT%nyg   = 0
     SDAT%nzg   = 0
     SDAT%eccen  = SHR_ORB_UNDEF_REAL
+   SDAT%solar_cache_valid = .false.
     SDAT%mvelpp = SHR_ORB_UNDEF_REAL
     SDAT%lambm0 = SHR_ORB_UNDEF_REAL
     SDAT%obliqr = SHR_ORB_UNDEF_REAL

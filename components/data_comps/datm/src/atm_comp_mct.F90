@@ -10,6 +10,9 @@ module atm_comp_mct
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_strdata_mod , only: shr_strdata_type
+     use shr_strdata_mod , only: shr_strdata_setOrbitalContext
+     use shr_orb_mod, only: shr_orb_context_type
+     use seq_infodata_mod, only: seq_infodata_GetOrbitalContext
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
   use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
   use shr_file_mod    , only: shr_file_freeunit
@@ -84,6 +87,8 @@ CONTAINS
     real(R8)          :: orbLambm0                 ! orb mean long of perhelion (radians)
     real(R8)          :: orbObliqr                 ! orb obliquity (radians)
     real(R8)          :: nextsw_cday               ! calendar of next atm sw
+     integer(IN) :: nextsw_ymd
+     real(R8) :: nextsw_tod
 
 #ifdef HAVE_MOAB
     integer(IN)       :: ATM_PHYS_CID  ! used to create a new comp id for phys atm; 200+ compid
@@ -184,12 +189,13 @@ CONTAINS
     call seq_infodata_PutData( infodata, atm_mesh=SDATM%domainFile)
 #endif
   
-    call datm_comp_init(Eclock, x2a, a2x, &
+     call set_orbital_context(infodata)
+     call datm_comp_init(Eclock, x2a, a2x, &
          seq_flds_x2a_fields, seq_flds_a2x_fields, &
          SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
          scmMode, scmlat, scmlon, &
-         orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday)
+         orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday, nextsw_ymd, nextsw_tod)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from datm
@@ -200,10 +206,12 @@ CONTAINS
             atm_nx=SDATM%nxg, &
             atm_ny=SDATM%nyg, &
             atm_aero=presaero, &
-            nextsw_cday=nextsw_cday )
+            nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, &
+            nextsw_valid=nextsw_cday >= 0._r8)
     else
        call seq_infodata_PutData(infodata, &
-            nextsw_cday=nextsw_cday )
+            nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, &
+            nextsw_valid=nextsw_cday >= 0._r8)
     end if
 
     !----------------------------------------------------------------------------
@@ -218,7 +226,15 @@ CONTAINS
     call shr_file_setLogLevel(shrloglev)
     call shr_sys_flush(logunit)
 
-  end subroutine atm_init_mct
+     end subroutine atm_init_mct
+
+     subroutine set_orbital_context(infodata)
+          type(seq_infodata_type), intent(in) :: infodata
+          type(shr_orb_context_type) :: context
+
+          call seq_infodata_GetOrbitalContext(infodata, context)
+          call shr_strdata_setOrbitalContext(SDATM, context)
+     end subroutine set_orbital_context
 
   !===============================================================================
   subroutine atm_run_mct( EClock, cdata,  x2a, a2x)
@@ -244,6 +260,8 @@ CONTAINS
     real(R8)                         :: orbLambm0      ! orb mean long of perhelion (radians)
     real(R8)                         :: orbObliqr      ! orb obliquity (radians)
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
+     integer(IN) :: nextsw_ymd
+     real(R8) :: nextsw_tod
     character(*), parameter :: subName = "(atm_run_mct) "
     !-------------------------------------------------------------------------------
 
@@ -264,7 +282,8 @@ CONTAINS
          orb_lambm0=orbLambm0, &
          orb_obliqr=orbObliqr)
 
-    call datm_comp_run( &
+     call set_orbital_context(infodata)
+     call datm_comp_run( &
          EClock = EClock, &
          x2a = x2a, &
          a2x = a2x, &
@@ -282,9 +301,10 @@ CONTAINS
          orbLambm0 = orbLambm0, &
          orbObliqr = orbObliqr, &
          nextsw_cday = nextsw_cday, &
-         case_name = case_name)
+         case_name = case_name, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod)
 
-    call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday )
+    call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+         nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

@@ -20,6 +20,7 @@ module shr_tInterp_mod
   use shr_log_mod, only: s_loglev  => shr_log_Level
   use shr_log_mod, only: s_logunit => shr_log_Unit
   use shr_orb_mod, only: shr_orb_cosz, shr_orb_decl
+   use shr_orb_mod, only: shr_orb_context_type
   use esmf
 
   implicit none
@@ -234,7 +235,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine shr_tInterp_getAvgCosz(tavCosz,lonr,latr,ymd1,tod1,ymd2,tod2,eccen,mvelpp,lambm0,obliqr,dt,&
-       calendar)
+   calendar, solar_context, legacy_orbit)
 
     implicit none
 
@@ -253,6 +254,8 @@ contains
     real(SHR_KIND_R8)   ,intent(in)   :: obliqr     ! orb param
     integer(SHR_KIND_IN),intent(in)   :: dt         ! model time step in secs
     character(*)        ,intent(in)   :: calendar   ! calendar type
+   type(shr_orb_context_type), intent(in), optional :: solar_context
+   logical, intent(in), optional :: legacy_orbit
 
     !EOP
 
@@ -266,6 +269,8 @@ contains
     integer(SHR_KIND_IN) :: ldt                ! local dt as needed
     integer(SHR_KIND_I8) :: ldt8               ! local dt as needed in i8
     integer(SHR_KIND_I8) :: dtsec              ! delta time from timeint
+   logical :: gregorian_orbit
+   logical :: use_eot
     real(SHR_KIND_R8),pointer :: cosz(:)       ! cos(zenith angle)
 
     !----- formats -----
@@ -283,6 +288,14 @@ contains
     endif
 
     ldt = dt
+    use_eot = .false.
+    if (present(solar_context)) use_eot = solar_context%use_equation_of_time
+    gregorian_orbit = shr_cal_calendarName(calendar) == shr_cal_gregorian
+    gregorian_orbit = gregorian_orbit .or. use_eot
+    if (present(legacy_orbit)) then
+       if (legacy_orbit .and. use_eot) call shr_sys_abort(subname//'EOT cannot use the legacy orbit path')
+       if (legacy_orbit) gregorian_orbit = .false.
+    endif
 
     !--- get LB & UB dates ---
     call shr_cal_timeSet(reday1,ymd1,tod1,calendar)
@@ -292,9 +305,14 @@ contains
     timeint = reday2-reday1
     call ESMF_TimeIntervalGet(timeint,s_i8=dtsec)
     ldt8 = ldt
-    if (mod(dtsec,ldt8) /= 0) then
-       ldt8 = (dtsec)/((dtsec)/ldt8+1)
-       ldt = ldt8
+   if (gregorian_orbit) then
+       if (dt <= 0 .or. dtsec <= 0) call shr_sys_abort(subname//'invalid Gregorian solar averaging interval')
+       if (.not. present(solar_context)) call shr_sys_abort(subname//'Gregorian solar context is required')
+    else
+       if (mod(dtsec,ldt8) /= 0) then
+          ldt8 = (dtsec)/((dtsec)/ldt8+1)
+          ldt = ldt8
+       endif
     endif
 
     !--- compute time average ---
@@ -305,8 +323,9 @@ contains
     tod     = tod1
     do while( reday < reday2) ! mid-interval t-steps thru interval [LB,UB]
 
+      if (gregorian_orbit) ldt = int(min(int(dt,SHR_KIND_I8), dtsec-n))
        !--- get next cosz value for t-avg ---
-       call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar)
+      call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar,solar_context,legacy_orbit)
        n = n + ldt
        tavCosz = tavCosz + cosz*real(ldt,SHR_KIND_R8)  ! add to partial sum
 
@@ -339,7 +358,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar)
+   subroutine shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar,solar_context,legacy_orbit)
 
     implicit none
 
@@ -356,6 +375,8 @@ contains
     real(SHR_KIND_R8)   ,intent(in)    :: lambm0     ! orb param
     real(SHR_KIND_R8)   ,intent(in)    :: obliqr     ! orb param
     character(*),        intent(in)    :: calendar   ! calendar type
+   type(shr_orb_context_type), intent(in), optional :: solar_context
+   logical, intent(in), optional :: legacy_orbit
 
     !EOP
 
@@ -364,6 +385,9 @@ contains
     integer(SHR_KIND_IN) :: lsize
     real(SHR_KIND_R8)    :: calday      ! julian days
     real(SHR_KIND_R8)    :: declin,eccf ! orb params
+   logical :: gregorian_orbit
+   logical :: use_eot
+   real(SHR_KIND_R8) :: eot_seconds
 
     real(SHR_KIND_R8),parameter :: solZenMin = 0.001_SHR_KIND_R8 ! min solar zenith angle
 
@@ -381,10 +405,30 @@ contains
     endif
 
     call shr_cal_date2julian(ymd,tod,calday,calendar)
-    call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr, declin, eccf)
+    use_eot = .false.
+    if (present(solar_context)) use_eot = solar_context%use_equation_of_time
+    eot_seconds = 0._SHR_KIND_R8
+    gregorian_orbit = shr_cal_calendarName(calendar) == shr_cal_gregorian
+    if (present(legacy_orbit)) then
+       if (legacy_orbit .and. use_eot) call shr_sys_abort(subname//'EOT cannot use the legacy orbit path')
+       if (legacy_orbit) gregorian_orbit = .false.
+    endif
+    if (gregorian_orbit .or. use_eot) then
+       if (.not. present(solar_context)) call shr_sys_abort(subname//'Gregorian solar context is required')
+       call shr_cal_solarDecl(solar_context, ymd, real(tod,SHR_KIND_R8), calendar, declin, eccf, eot_seconds)
+    else
+       call shr_orb_decl( calday, eccen, mvelpp, lambm0, obliqr, declin, eccf)
+    endif
     do n = 1,lsize
+       if (use_eot) then
+          cosz(n) = max(solZenMin, shr_orb_cosz(calday, latr(n), lonr(n), declin, eot_seconds=eot_seconds))
+       else
        cosz(n) = max(solZenMin, shr_orb_cosz( calday, latr(n), lonr(n), declin))
+       end if
     end do
+   if (gregorian_orbit .or. use_eot) then
+       where (cosz <= solZenMin) cosz = 0.0_SHR_KIND_R8
+    endif
 
   end subroutine shr_tInterp_getCosz
 

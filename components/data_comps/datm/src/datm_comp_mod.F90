@@ -213,7 +213,7 @@ CONTAINS
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
        scmMode, scmlat, scmlon, &
-       orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday)
+      orbEccen, orbMvelpp, orbLambm0, orbObliqr, phase, nextsw_cday, nextsw_ymd, nextsw_tod)
 
 #ifdef HAVE_MOAB
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
@@ -250,6 +250,8 @@ CONTAINS
     real(R8)               , intent(in)    :: orbObliqr           ! orb obliquity (radians)
     integer                , intent(in)    :: phase               ! initialization phase index
     real(R8)               , intent(out)   :: nextsw_cday         ! calendar of next atm sw
+   integer(IN), optional, intent(out) :: nextsw_ymd
+   real(R8), optional, intent(out) :: nextsw_tod
 
     !--- local variables ---
     integer(IN)   :: n,k         ! generic counters
@@ -690,9 +692,13 @@ CONTAINS
           call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
           call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=idt )
           call seq_timemgr_EClockGetData( EClock, calendar=calendar )
-          nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
+         nextsw_cday = datm_shr_getNextRadCDay(CurrentYMD, CurrentTOD, stepno, idt, iradsw, &
+            calendar, nextsw_ymd, nextsw_tod)
        else
           call seq_timemgr_EClockGetData( EClock, curr_cday=nextsw_cday, stepno=stepno )
+          call seq_timemgr_EClockGetData(EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+          if (present(nextsw_ymd)) nextsw_ymd = CurrentYMD
+          if (present(nextsw_tod)) nextsw_tod = real(CurrentTOD, R8)
        endif
 
     else  ! phase = 2
@@ -700,7 +706,8 @@ CONTAINS
        call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
        call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=idt)
        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
-       nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
+        nextsw_cday = datm_shr_getNextRadCDay(CurrentYMD, CurrentTOD, stepno, idt, iradsw, &
+           calendar, nextsw_ymd, nextsw_tod)
 
     endif
 
@@ -726,7 +733,7 @@ CONTAINS
          orbMvelpp = orbMvelpp, &
          orbLambm0 = orbLambm0, &
          orbObliqr = orbObliqr, &
-         nextsw_cday = nextsw_cday)
+         nextsw_cday = nextsw_cday, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod)
     call t_adj_detailf(-2)
 
     call t_stopf('DATM_INIT')
@@ -738,7 +745,7 @@ CONTAINS
        SDATM, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, &
        orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       nextsw_cday, case_name)
+      nextsw_cday, case_name, nextsw_ymd, nextsw_tod)
 
     ! !DESCRIPTION: run method for datm model
 #ifdef HAVE_MOAB
@@ -770,6 +777,8 @@ CONTAINS
     real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     real(R8)               , intent(out)   :: nextsw_cday      ! calendar of next atm sw
     character(CL)          , intent(in), optional :: case_name ! case name
+   integer(IN), optional, intent(out) :: nextsw_ymd
+   real(R8), optional, intent(out) :: nextsw_tod
 
     !--- local ---
     integer(IN)   :: CurrentYMD        ! model date
@@ -848,7 +857,8 @@ CONTAINS
     call t_barrierf('datm_BARRIER',mpicom)
     call t_startf('datm')
 
-    nextsw_cday = datm_shr_getNextRadCDay( CurrentYMD, CurrentTOD, stepno, idt, iradsw, calendar )
+       nextsw_cday = datm_shr_getNextRadCDay(CurrentYMD, CurrentTOD, stepno, idt, iradsw, &
+          calendar, nextsw_ymd, nextsw_tod)
 
     !--- set data needed for cosz t-interp method ---
     call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,idt)
