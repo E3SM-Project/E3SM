@@ -3688,7 +3688,7 @@ contains
    !
    ! !USES:
       !$acc routine seq
-   use elm_varpar, only : maxpatch_pft
+   use elm_varpar, only : max_col_npfts
    type(cnstate_type)       , intent(in)    :: cnstate_vars
    !
    ! !ARGUMENTS:
@@ -3718,7 +3718,7 @@ contains
    chrv_cropp_to_prod1p                =>   col_pf%hrv_cropp_to_prod1p      & ! InOut:  [real(r8) (:)] column level crop phosphorus harvested
    )
 
-   do pi = 1,maxpatch_pft
+   do pi = 1,max_col_npfts
       do fc = 1,num_soilc
          c = filter_soilc(fc)
 
