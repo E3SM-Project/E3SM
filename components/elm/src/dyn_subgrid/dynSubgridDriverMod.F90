@@ -233,6 +233,7 @@ contains
     type(bounds_type) :: bounds_clump ! clump-level bounds
     real(r8)          :: dt
     logical           :: weights_updated ! some provider may have changed subgrid weights this step
+    logical           :: weights_may_change ! weights_updated, or new annual crop data may still set it
     logical           :: crop_updated    ! new annual crop data were applied this step
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
@@ -249,6 +250,11 @@ contains
     weights_updated = get_do_transient_pfts() .or. use_fates .or. use_fates_luh .or. &
          create_glacier_mec_landunit .or. iac_present .or. &
          is_first_step() .or. is_first_restart_step()
+    ! prior_weights, patch_state_updater and column_state_updater are only read
+    ! in the weights_updated blocks below, so they need setting only when
+    ! weights_updated may end up .true.; dyncrop_interp can still set it, and
+    ! so must any other code that sets it after the first clump loop
+    weights_may_change = weights_updated .or. get_do_transient_crops()
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -265,11 +271,13 @@ contains
             energyflux_vars)
        call t_stopf('dyn_hwcontent_init')
 
-       call t_startf('dyn_prior_weights')
-       call set_prior_weights(prior_weights, bounds_clump)
-       call set_old_patch_weights  (patch_state_updater,bounds_clump)
-       call set_old_column_weights (column_state_updater,bounds_clump)
-       call t_stopf('dyn_prior_weights')
+       if (weights_may_change) then
+          call t_startf('dyn_prior_weights')
+          call set_prior_weights(prior_weights, bounds_clump)
+          call set_old_patch_weights  (patch_state_updater,bounds_clump)
+          call set_old_column_weights (column_state_updater,bounds_clump)
+          call t_stopf('dyn_prior_weights')
+       end if
     end do
     !$OMP END PARALLEL DO
 
@@ -336,8 +344,10 @@ contains
           call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
           call t_stopf('dyn_wrapup_weights')
        end if
-       call set_new_patch_weights (patch_state_updater ,bounds_clump)
-       call set_new_column_weights(column_state_updater,bounds_clump, nc)
+       if (weights_updated) then
+          call set_new_patch_weights (patch_state_updater ,bounds_clump)
+          call set_new_column_weights(column_state_updater,bounds_clump, nc)
+       end if
 
 
        if (weights_updated) then
