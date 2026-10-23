@@ -687,6 +687,8 @@ contains
      real(r8):: froz_q10                     ! separate q10 for frozen soil respiration rates.  default to same as above zero rates
      real(r8):: decomp_depth_efolding        ! (meters) e-folding depth for reduction in decomposition [
      real(r8):: depth_scalar(bounds%begc:bounds%endc,1:nlevdecomp)
+     real(r8):: depth_scalar_lev(1:nlevdecomp)  ! depth_scalar of each level (same for all columns)
+     real(r8):: q10_frozen_base              ! Q10**(-25/10), the same for all frozen points
      real(r8) :: mino2lim                    ! minimum anaerobic decomposition rate as a
      !-----------------------------------------------------------------------
 
@@ -912,6 +914,7 @@ contains
           ! atmospheric CO2 concentration in global simulations. This does not impact
           ! the base rates at 25 C, which are calibrated from microcosm studies.
 
+          q10_frozen_base = Q10**(-25._r8/10._r8)
           do j = 1, nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
@@ -920,7 +923,7 @@ contains
                 if (t_soisno(c,j) >= SHR_CONST_TKFRZ) then
                    t_scalar(c,j)= (Q10**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))
                 else
-                   t_scalar(c,j)= (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))
+                   t_scalar(c,j)= (q10_frozen_base)*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))
                 endif
              end do
           end do
@@ -982,10 +985,15 @@ contains
        if (use_vertsoilc) then
           ! add a term to reduce decomposition rate at depth
           ! for now used a fixed e-folding depth
+          ! the factor depends only on the level: one (scalar) exp per level
+          !DIR$ NOVECTOR
+          do j = 1, nlevdecomp
+             depth_scalar_lev(j) = exp(-zsoi(j)/decomp_depth_efolding)
+          end do
           do j = 1, nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                depth_scalar(c,j) = exp(-zsoi(j)/decomp_depth_efolding)
+                depth_scalar(c,j) = depth_scalar_lev(j)
              end do
           end do
        end if
