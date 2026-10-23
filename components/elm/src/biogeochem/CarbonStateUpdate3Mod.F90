@@ -10,6 +10,7 @@ module CarbonStateUpdate3Mod
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use elm_varctl       , only : use_erosion, ero_ccycle
+  use elm_varctl       , only : use_c13, use_c14
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -76,6 +77,11 @@ contains
 
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools
+         ! FireFluxes sets the fire loss of pools that are neither litter nor CWD
+         ! to +0, and x - (+0)*dt is x. Isotope fluxes are scaled copies that
+         ! may be -0, so keep every pool when isotopes are on.
+         if (.not. (use_c13 .or. use_c14) .and. .not. (decomp_cascade_con%is_litter(l) .or. &
+              decomp_cascade_con%is_cwd(l))) cycle
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
