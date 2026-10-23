@@ -57,7 +57,7 @@ srun -n 1 ./mksurfdata_map < namelist
 
 ## Modifications for use on Chrysalis
 
-The general instructions above also apply to use on Chrysalis. To build the necessary executable on Chrysalis, 
+The general instructions above also apply to use on Chrysalis. To build the necessary executable on Chrysalis,
 use the following instructions.
 
 ```bash
@@ -80,8 +80,6 @@ export USER_LDFLAGS="-L$(nc-config --prefix)/lib -lnetcdf \
 
 USER_FC=ifort make VERBOSE=1
 
-# update data input directory path for LCRC  
+# update data input directory path for LCRC
 DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
 ```
-
-
