@@ -45,6 +45,22 @@ struct Functions
   static Scalar get_rng(RngState& seed);
 
   // ---------------------------------------------------------------------------------------
+  // Subcolumn generator (scops.F90)
+
+  // RNG seed of one point from its surface pressure, as subsample_and_optics sets it
+  KOKKOS_INLINE_FUNCTION
+  static RngState scops_seed(const int npoints, const Scalar psfc, const Scalar psfc_min,
+                             const Scalar psfc_max);
+
+  // scops for one point; cc and conv by level, frac_out is (ncol, nlev), threshold is
+  // scratch of size ncol
+  template <typename VC, typename VV, typename VF, typename VT>
+  KOKKOS_INLINE_FUNCTION
+  static void scops(const int nlev, const int ncol, RngState seed, RngState seed_last,
+                    const VC& cc, const VV& conv, int overlap, const VF& frac_out,
+                    const VT& threshold);
+
+  // ---------------------------------------------------------------------------------------
   // Optics (cosp_optics.F90, and the MODIS fits in modis_simulator.F90)
 
   // cosp_simulator_optics (2D and 3D): pick the stratiform or convective value
@@ -189,8 +205,8 @@ struct Functions
   // Scratch space for cosp_main: optical inputs by (column, subcolumn, level), and
   // simulator results by (column, subcolumn)
   struct Workspace {
-    view_3d<Scalar> tau, dem, liqfrac, g, w0;
-    view_2d<Scalar> boxtau, boxptop, boxttop, misr_tau, misr_ztop, modis_ctp, modis_tau,
+    view_3d<Scalar> frac_out, tau, dem, liqfrac, g, w0;
+    view_2d<Scalar> threshold, boxtau, boxptop, boxttop, misr_tau, misr_ztop, modis_ctp, modis_tau,
                     modis_size;
     view_2d<int>    modis_phase;
 
@@ -223,6 +239,7 @@ struct Functions
 } // namespace scream
 
 #include "physics/cosp/impl/cosp_rng_impl.hpp"
+#include "physics/cosp/impl/cosp_scops_impl.hpp"
 #include "physics/cosp/impl/cosp_optics_impl.hpp"
 #include "physics/cosp/impl/cosp_stats_impl.hpp"
 #include "physics/cosp/impl/cosp_misr_impl.hpp"

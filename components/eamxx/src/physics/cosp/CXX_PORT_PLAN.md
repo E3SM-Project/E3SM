@@ -1,10 +1,9 @@
 # EAMxx COSP: C++/Kokkos port plan
 
-Status: M0, M1 and M2 are done on CPU. `cosp_impl: cxx` with `cosp_subcolumns: 1` runs the whole
-COSP call on device and matches the Fortran bit for bit (`cosp_main_bfb` in `cosp_leaf_tests`).
-Not yet run in `cosp_standalone` or on GPU. Next: M3 (SCOPS, 10 subcolumns).
-Branch: `whannah/eamxx/cosp-cxx-port`, based on E3SM master `ac6eaa2`.
-COSP submodule (`components/eam/src/physics/cosp2/external`): E3SM-Project/COSPv2.0 `afd43be` (branch `e3sm-master`).
+Status: M0 to M3 are done on CPU. `cosp_impl: cxx` runs the whole COSP call on device, for any
+number of subcolumns, and matches the Fortran bit for bit (`cosp_main_bfb` in `cosp_leaf_tests`
+for 1 subcolumn, `cosp_main_nsubcol10_tests` for 10). Not yet run in `cosp_standalone` or on GPU.
+Next: M4 (GPU and performance).
 
 ## 1. Goal
 
@@ -173,7 +172,12 @@ which EAMxx uses one (the tau/CTP joint histogram), so the port can skip the res
 7. **The MODIS tau/CTP histogram ignores the retrieved size,** except for its sign. So the size
    retrieval only needs to be right to the extent that it decides `re_fill` or not; the BFB tests
    check it directly anyway.
-8. **Vertical order.** COSP gets levels top to bottom here, same as EAMxx (`cosp_c2f.F90:334-344`
+8. **SCOPS quirks kept for BFB.** The subcolumn positions `boxpos` are computed in single
+   precision; at the first level the initial thresholds use `ran(npoints)`, the last point's
+   draw, for every point (dead, since they get overwritten, but the draws still advance each
+   stream); and the seeds use the min/max surface pressure over the rank, so the subcolumns
+   depend on the decomposition. With equal min and max the Fortran converts a NaN to integer.
+9. **Vertical order.** COSP gets levels top to bottom here, same as EAMxx (`cosp_c2f.F90:334-344`
    passes them unflipped), so no flips are needed on input.
 
 ## 6. Target design

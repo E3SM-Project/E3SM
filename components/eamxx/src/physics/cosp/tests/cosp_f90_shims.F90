@@ -18,6 +18,7 @@ module cosp_f90_shims
   use mod_misr_simulator,        only: misr_subcolumn, misr_column, misr_tauchk => tauchk
   use mod_icarus,                only: icarus_subcolumn, icarus_column, isccp_tauchk => tauchk
   use mod_cosp_isccp_interface,  only: cosp_isccp_init
+  use mod_scops,                 only: scops
 
   implicit none
 
@@ -203,5 +204,23 @@ contains
     enddo
     ref2 = two_stream_reflectance(tau, g, w0)
   end subroutine cosp_two_stream_f
+
+  ! SCOPS for npoints points with the given RNG seeds
+  subroutine cosp_scops_f(npoints, nlev, ncol, seeds, cc, conv, overlap, frac_out) &
+       bind(C, name='cosp_scops_f')
+    integer(c_int), value, intent(in) :: npoints, nlev, ncol, overlap
+    integer(c_int), intent(in)        :: seeds(npoints)
+    real(c_double), intent(in)        :: cc(npoints,nlev), conv(npoints,nlev)
+    real(c_double), intent(out)       :: frac_out(npoints,ncol,nlev)
+    type(rng_state) :: rngs(npoints)
+    integer :: seed(npoints), ov
+    real(wp) :: cc_(npoints,nlev), conv_(npoints,nlev)
+    seed = seeds
+    ov = overlap
+    cc_ = cc
+    conv_ = conv
+    call init_rng(rngs, seed)
+    call scops(npoints, nlev, ncol, rngs, cc_, conv_, ov, frac_out, 0)
+  end subroutine cosp_scops_f
 
 end module cosp_f90_shims
