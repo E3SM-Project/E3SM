@@ -480,8 +480,9 @@ contains
 
 
          ! Zero absorbed radiative fluxes:
+         ! (the whole of flx_abs_lcl was zeroed on every layer pass; once is enough)
+         flx_abs_lcl(:,:)   = 0._r8
          do i=-nlevsno+1,1,1
-            flx_abs_lcl(:,:)   = 0._r8
             flx_abs(c_idx,i,:) = 0._r8
          enddo
 
@@ -2207,8 +2208,9 @@ contains
           g_idx = col_pp%gridcell(c_idx)
 
           ! Zero absorbed radiative fluxes:
+          ! (the whole of flx_abs_lcl was zeroed on every layer pass; once is enough)
+          flx_abs_lcl(:,:)   = 0._r8
           do i=-nlevsno+1,1,1
-             flx_abs_lcl(:,:)   = 0._r8
              flx_abs(c_idx,i,:) = 0._r8
           enddo
 
