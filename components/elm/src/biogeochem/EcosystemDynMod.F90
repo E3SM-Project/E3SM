@@ -423,14 +423,14 @@ contains
     ! so the deeper levels keep the zero set here. FATES and the ELM interface
     ! (PFLOTRAN) write differently, so keep full zeroing there. Any new writer to
     ! the deeper levels must also force zero_full. Some other fluxes are never
-    ! written, or are rewritten on every filter column and level before any read,
-    ! so they too are zeroed only on these steps.
+    ! written, or are rewritten on every filter column (or patch) and level before
+    ! any read, so they too are zeroed only on these steps.
     zero_full    = zero_unused .or. use_fates .or. use_elm_interface .or. use_pflotran
 
     if(.not.use_fates) then
        call t_startf('CNZero-veg_cf')
        call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8, &
-            zero_harvest=zero_harvest)
+            zero_harvest=zero_harvest, zero_rewritten=zero_full)
        call t_stopf('CNZero-veg_cf')
        if ( use_c13 ) then
           call veg_cf_setvalues(c13_veg_cf,num_soilp, filter_soilp, 0._r8)
@@ -442,11 +442,11 @@ contains
        end if
        call t_startf('CNZero-veg_nf')
        call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8, &
-            zero_harvest=zero_harvest)
+            zero_harvest=zero_harvest, zero_rewritten=zero_full)
        call t_stopf('CNZero-veg_nf')
        call t_startf('CNZero-veg_pf')
        call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8, &
-            zero_harvest=zero_harvest)
+            zero_harvest=zero_harvest, zero_rewritten=zero_full)
        call t_stopf('CNZero-veg_pf')
     end if
 
