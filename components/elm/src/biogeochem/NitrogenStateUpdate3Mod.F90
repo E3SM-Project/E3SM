@@ -83,6 +83,10 @@ contains
 
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools
+         ! Outside FATES, FireFluxes sets the fire loss of pools that are neither
+         ! litter nor CWD to +0, and x - (+0)*dt is x
+         if (.not. use_fates .and. .not. (decomp_cascade_con%is_litter(l) .or. &
+              decomp_cascade_con%is_cwd(l))) cycle
          do j = 1, nlevdecomp
             ! column loop
             do fc = 1,num_soilc
