@@ -29,7 +29,7 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
     throw std::runtime_error("Attempted to register field twice");
   }
 
-  auto [it, inserted] = lookup_.emplace(std::move(key), id);
+  lookup_.emplace(std::move(key), id);
   fields_.emplace_back(std::move(field));
 
   return id;
@@ -70,6 +70,7 @@ std::string to_string(const MergeType merge_type) {
   case MergeType::ScaledByFraction:
     return "ScaledByFraction";
   }
+  throw std::runtime_error("Unsupported MergeType");
 }
 
 const RegisteredFieldAttributes

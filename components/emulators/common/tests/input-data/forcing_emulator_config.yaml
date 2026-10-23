@@ -5,6 +5,7 @@ emulator:
     path: unused.pt
     input_layout: FeatureMajor
     output_layout: FeatureMajor
+    backend: STUB
 
 sample_space:
   dimensions:

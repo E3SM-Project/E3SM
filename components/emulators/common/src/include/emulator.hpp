@@ -102,7 +102,7 @@ struct CreateConfig {
  */
 class Emulator {
 public:
-  Emulator(const CreateConfig config, std::unique_ptr<inference::InferenceBackend> backend);
+  Emulator(const CreateConfig config);
   ~Emulator() = default;
 
   // Lifecycle methods
@@ -193,6 +193,8 @@ private:
 
   bool m_initialized = false;
   int m_step_count = 0;
+
+  ModelConfig m_model_config;
 
   // dimensions_ holds the domain info over which the emulator needs to be
   // allocated.

@@ -3,6 +3,9 @@
  * @brief Implementation of the Emulator base class.
  */
 
+#include "inference_backend.hpp"
+#include "inference_config.hpp"
+#include "create_inference_backend.hpp"
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <emulator_config.hpp>
@@ -11,8 +14,8 @@
 #include <process.hpp>
 
 #include <ekat_yaml.hpp>
-#include <moab/iMOAB.h>
 #include <moab/Types.hpp>
+#include <moab/iMOAB.h>
 
 #include <algorithm>
 #include <cctype>
@@ -140,9 +143,9 @@ std::span<double> Emulator::field_view(std::string_view name) {
   return field_view(desc);
 }
 
-Emulator::Emulator(const CreateConfig cfg, std::unique_ptr<inference::InferenceBackend> backend)
+Emulator::Emulator(const CreateConfig cfg)
     : m_config_path(cfg.path), m_grid(cfg.grid), m_component_id(-1),
-      m_moab_app_id(-1), m_initialized(false), m_step_count(0), backend_(std::move(backend)) {
+      m_moab_app_id(-1), m_initialized(false), m_step_count(0) {
   initialize();
 }
 
@@ -151,7 +154,7 @@ void Emulator::initialize() {
     throw std::runtime_error("Emulator already initialized");
   }
 
-  const auto config = read_emulator_config(m_config_path);
+  const EmulatorConfig config = read_emulator_config(m_config_path);
 
   m_name = config.name;
   if (config.type == "process") {
@@ -159,6 +162,7 @@ void Emulator::initialize() {
   } else {
     m_type = EmulatorType::Component;
   }
+  m_model_config = std::move(config.model);
 
   const auto input_size = append_fields(config.inputs, ModelFieldRole::Input);
   const auto output_size =
@@ -166,6 +170,13 @@ void Emulator::initialize() {
 
   input_fields_.resize(input_size);
   output_fields_.resize(output_size);
+
+  inference::InferenceConfig infer_config;
+  infer_config.model_path = config.model.path;
+  infer_config.input_channels = config.inputs.size();
+  infer_config.output_channels = config.outputs.size();
+  // NOTE: How should we handle the additional options to pass to backend?
+  // backend_ = inference::create_backend(m_model_config.backend_type, infer_config);
 
   m_initialized = true;
 }
@@ -443,4 +454,4 @@ void Emulator::register_with_moab() {
   // create_seq_flds_a2x_fields(e);
 }
 
-} // namespace emulator
+} // namespace e3sm::emulator

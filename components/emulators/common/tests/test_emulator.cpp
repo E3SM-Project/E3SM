@@ -17,8 +17,9 @@ TEST_CASE("Emulator initialization builds field layout") {
       TEST_DATA_DIR "/simple_emulator_config.yaml";
 
   Emulator emu{
-      CreateConfig{.path = std::move(config_file), .grid = make_test_grid()},
-      std::unique_ptr<inference::InferenceBackend>(new inference::StubBackend(inference::InferenceConfig{})),
+      CreateConfig{.path = std::move(config_file), .grid = make_test_grid()}
+      // std::unique_ptr<inference::InferenceBackend>(new
+      // inference::StubBackend(inference::InferenceConfig{})),
   };
 
   REQUIRE(emu.is_initialized());

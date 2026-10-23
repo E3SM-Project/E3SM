@@ -5,6 +5,7 @@ emulator:
     path: land_model.pt
     input_layout: SampleMajor
     output_layout: FeatureMajor
+    backend: STUB
 
 sample_space:
   dimensions:

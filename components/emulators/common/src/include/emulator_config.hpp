@@ -1,6 +1,7 @@
 #ifndef E3SM_EMULATOR_CONFIG_HPP
 #define E3SM_EMULATOR_CONFIG_HPP
 
+#include "inference_backend.hpp"
 #include <field_registry.hpp>
 
 #include <filesystem>
@@ -33,11 +34,13 @@ enum class ModelFieldRole {
  * @brief: Struct to hold information relevant to NN to be used
  * @fields:
  *  - path
+ *  - backend_type
  *  - input_layout
  *  - output_layout
  */
 struct ModelConfig {
   std::filesystem::path path;
+  inference::BackendType backend_type = inference::BackendType::STUB;
   TensorLayout input_layout = TensorLayout::SampleMajor;
   TensorLayout output_layout = TensorLayout::SampleMajor;
 };

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.28)
+project(EmualtorCoupler LANGUAGES CXX)
 add_library(coupler_api
   coupler_types.F90
   field_registry.cpp
@@ -6,6 +8,35 @@ add_library(coupler_api
   coupler_driver.cpp
   process.cpp
 )
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(coupler_api PRIVATE
+        $<$<CONFIG:Debug>:
+            -Og
+            -g3
+            -fno-omit-frame-pointer
+            -fno-optimize-sibling-calls
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wshadow
+            -Wconversion
+            -Wsign-conversion
+            -Wformat=2
+            -Wnull-dereference
+            -fsanitize=address,undefined
+            -fno-sanitize-recover=all
+        >
+    )
+ target_compile_definitions(coupler_api PRIVATE
+        $<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>
+    )
+
+    # PUBLIC propagates sanitizer runtime linking to consuming executables,
+    # including when my_library is static.
+    target_link_options(coupler_api PUBLIC
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+endif()
 
 set(_coupler_api_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/modules")
 
