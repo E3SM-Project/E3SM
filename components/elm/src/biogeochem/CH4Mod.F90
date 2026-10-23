@@ -1369,9 +1369,10 @@ contains
     integer  :: dummyfilter(1)                         ! empty filter
     integer  :: nc                                     ! clump index
     real(r8) :: log_kh_theta(2)                        ! log(kh_theta) for CH4 and O2
-    real(r8), allocatable :: k_h_inv_vr(:,:,:)         ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2], filter columns only
-    real(r8), allocatable :: q10prod_vr(:,:)           ! Q10 factor for CH4 production [col, lev], soil filter columns only
-    real(r8), allocatable :: q10oxid_vr(:,:)           ! Q10 factor for CH4 oxidation [col, lev], filter columns only
+    real(r8), allocatable :: k_h_inv_vr(:,:,:)         ! 1/Henry's constant (L atm/mol) [filter position, lev, CH4/O2]
+    real(r8), allocatable :: q10prod_vr(:,:)           ! Q10 factor for CH4 production [soil filter position, lev]
+    real(r8), allocatable :: q10oxid_vr(:,:)           ! Q10 factor for CH4 oxidation [filter position, lev]
+    integer  :: col2fc(bounds%begc:bounds%endc)        ! position of each column in filter_soilc (0 if not in it)
     real(r8) :: q10ch4                                 ! additional Q10 for methane production
     real(r8) :: q10ch4base                             ! temperature at which the effective f_ch4 equals the constant f_ch4
     real(r8) :: q10_ch4oxid                            ! Q10 oxidation constant
@@ -1646,10 +1647,26 @@ contains
         !c_atm(g,3) =  forc_pco2(t) / rgasm / forc_t(t) ! [mol/m3 air] - Not currently used
       enddo
 
+      ! Position of each soil filter column in the filter, for the patch loops of ch4_aere
+      col2fc(begc:endc) = 0
+      do fc = 1, num_soilc
+         col2fc(filter_soilc(fc)) = fc
+      end do
+#ifndef NDEBUG
+      ! Only execute this code if DEBUG=TRUE: every soil filter patch is on a soil filter column
+      do fp = 1, num_soilp
+         if (col2fc(veg_pp%column(filter_soilp(fp))) == 0) then
+            call endrun(msg=' ERROR: soil filter patch on a column outside the soil filter'//errMsg(__FILE__, __LINE__))
+         end if
+      end do
+#endif
+
       ! Henry's law term for each filter column and soil layer. t_soisno is not changed in this
       ! module, so ch4_oxid, ch4_aere, ch4_ebul and ch4_tran (both passes) can share it; the
       ! expression and the scalar exp are the same as at the original call sites, so it is BFB.
-      allocate(k_h_inv_vr(begc:endc, 1:nlevsoi, 1:2))
+      ! The table (and the Q10 tables below) is indexed by filter position, so that it is dense;
+      ! the lake pass refills it for the lake filter after the soil passes are done.
+      allocate(k_h_inv_vr(max(num_soilc,num_lakec), 1:nlevsoi, 1:2))
       do s = 1, 2
          log_kh_theta(s) = log (kh_theta(s))
       end do
@@ -1659,15 +1676,15 @@ contains
             !DIR$ NOVECTOR
             do fc = 1, num_soilc
                c = filter_soilc(fc)
-               k_h_inv_vr(c,j,s) = exp(-c_h_inv(s) * (1._r8 / col_es%t_soisno(c,j) - 1._r8 / kh_tbase) + log_kh_theta(s))
+               k_h_inv_vr(fc,j,s) = exp(-c_h_inv(s) * (1._r8 / col_es%t_soisno(c,j) - 1._r8 / kh_tbase) + log_kh_theta(s))
             end do
          end do
       end do
 
       ! Q10 factors of ch4_prod and ch4_oxid, which are also the same in both passes. Same
       ! expressions and scalar pow as in those routines, so it is BFB.
-      allocate(q10prod_vr(begc:endc, 1:nlevsoi))
-      allocate(q10oxid_vr(begc:endc, 1:nlevsoi))
+      allocate(q10prod_vr(num_soilc, 1:nlevsoi))
+      allocate(q10oxid_vr(max(num_soilc,num_lakec), 1:nlevsoi))
       q10ch4      = CH4ParamsInst%q10ch4
       q10ch4base  = CH4ParamsInst%q10ch4base
       q10_ch4oxid = CH4ParamsInst%q10_ch4oxid
@@ -1677,8 +1694,8 @@ contains
          !DIR$ NOVECTOR
          do fc = 1, num_soilc
             c = filter_soilc(fc)
-            q10prod_vr(c,j) = q10ch4**((col_es%t_soisno(c,j) - q10ch4base)/10._r8)
-            q10oxid_vr(c,j) = q10_ch4oxid ** ((col_es%t_soisno(c,j) - t0) / 10._r8)
+            q10prod_vr(fc,j) = q10ch4**((col_es%t_soisno(c,j) - q10ch4base)/10._r8)
+            q10oxid_vr(fc,j) = q10_ch4oxid ** ((col_es%t_soisno(c,j) - t0) / 10._r8)
          end do
       end do
 
@@ -1736,7 +1753,7 @@ contains
          call ch4_prod (bounds, &
               num_soilc, filter_soilc, &
               num_soilp, filter_soilp, &
-              jwt(begc:endc), q10prod_vr(begc:endc,:), sat, lake, &
+              jwt(begc:endc), q10prod_vr, sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_prod'//trim(tsfx))
 
@@ -1744,7 +1761,7 @@ contains
          call t_startf('ch4_oxid'//trim(tsfx))
          call ch4_oxid (bounds, &
               num_soilc, filter_soilc, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), q10oxid_vr(begc:endc,:), sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, q10oxid_vr, sat, lake, &
               soilstate_vars, ch4_vars, dtime)
          call t_stopf('ch4_oxid'//trim(tsfx))
 
@@ -1753,7 +1770,7 @@ contains
          call ch4_aere (bounds, &
               num_soilc, filter_soilc, &
               num_soilp, filter_soilp, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, col2fc(begc:endc), sat, lake, &
               canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_aere'//trim(tsfx))
 
@@ -1761,7 +1778,7 @@ contains
          call t_startf('ch4_ebul'//trim(tsfx))
          call ch4_ebul (bounds, &
               num_soilc, filter_soilc, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, sat, lake, &
               atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
          call t_stopf('ch4_ebul'//trim(tsfx))
 
@@ -1770,7 +1787,7 @@ contains
          call t_startf('ch4_tran'//trim(tsfx))
          call ch4_tran (bounds, &
               num_soilc, filter_soilc, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), dtime_ch4, sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, dtime_ch4, sat, lake, &
               soilstate_vars, energyflux_vars, ch4_vars, dtime)
          call t_stopf('ch4_tran'//trim(tsfx))
 
@@ -1795,7 +1812,7 @@ contains
                !DIR$ NOVECTOR
                do fc = 1, num_lakec
                   c = filter_lakec(fc)
-                  k_h_inv_vr(c,j,s) = exp(-c_h_inv(s) * (1._r8 / col_es%t_soisno(c,j) - 1._r8 / kh_tbase) + log_kh_theta(s))
+                  k_h_inv_vr(fc,j,s) = exp(-c_h_inv(s) * (1._r8 / col_es%t_soisno(c,j) - 1._r8 / kh_tbase) + log_kh_theta(s))
                end do
             end do
          end do
@@ -1804,7 +1821,7 @@ contains
             !DIR$ NOVECTOR
             do fc = 1, num_lakec
                c = filter_lakec(fc)
-               q10oxid_vr(c,j) = q10_ch4oxid ** ((col_es%t_soisno(c,j) - t0) / 10._r8)
+               q10oxid_vr(fc,j) = q10_ch4oxid ** ((col_es%t_soisno(c,j) - t0) / 10._r8)
             end do
          end do
 
@@ -1812,7 +1829,7 @@ contains
          call t_startf('ch4_prod-lake')
          call ch4_prod (bounds, &
               num_lakec, filter_lakec, &
-              0, dummyfilter, jwt(begc:endc), q10prod_vr(begc:endc,:), sat, lake, &
+              0, dummyfilter, jwt(begc:endc), q10prod_vr, sat, lake, &
               soilstate_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_prod-lake')
 
@@ -1820,7 +1837,7 @@ contains
          call t_startf('ch4_oxid-lake')
          call ch4_oxid (bounds, &
               num_lakec, filter_lakec, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), q10oxid_vr(begc:endc,:), sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, q10oxid_vr, sat, lake, &
               soilstate_vars, ch4_vars, dtime)
          call t_stopf('ch4_oxid-lake')
 
@@ -1829,7 +1846,7 @@ contains
          call t_startf('ch4_aere-lake')
          call ch4_aere (bounds, &
               num_lakec, filter_lakec, &
-              0, dummyfilter, jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), sat, lake, &
+              0, dummyfilter, jwt(begc:endc), k_h_inv_vr, col2fc(begc:endc), sat, lake, &
               canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
          call t_stopf('ch4_aere-lake')
 
@@ -1837,7 +1854,7 @@ contains
          call t_startf('ch4_ebul-lake')
          call ch4_ebul (bounds, &
               num_lakec, filter_lakec, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, sat, lake, &
               atm2lnd_vars, lakestate_vars, soilstate_vars,ch4_vars, dtime)
          call t_stopf('ch4_ebul-lake')
 
@@ -1846,7 +1863,7 @@ contains
          call t_startf('ch4_tran-lake')
          call ch4_tran (bounds, &
               num_lakec, filter_lakec, &
-              jwt(begc:endc), k_h_inv_vr(begc:endc,:,:), dtime_ch4, sat, lake, &
+              jwt(begc:endc), k_h_inv_vr, dtime_ch4, sat, lake, &
               soilstate_vars, energyflux_vars, ch4_vars, dtime)
          call t_stopf('ch4_tran-lake')
 
@@ -2043,7 +2060,7 @@ contains
     integer                 , intent(in)    :: num_methp           ! number of soil points in pft filter
     integer                 , intent(in)    :: filter_methp(:)     ! patch filter for soil points
     integer                 , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
-    real(r8)                , intent(in)    :: q10prod_vr( bounds%begc: , 1: ) ! q10ch4**((T-q10ch4base)/10) [col, lev]
+    real(r8)                , intent(in)    :: q10prod_vr( 1: , 1: ) ! q10ch4**((T-q10ch4base)/10) [filter position, lev]
     integer                 , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                 , intent(in)    :: lake                ! function called with lake filter
     type(soilstate_type)    , intent(inout) :: soilstate_vars
@@ -2190,7 +2207,9 @@ contains
       base_decomp = 0.0_r8
 
       ! column loop to partition decomposition_rate into each soil layer
+      ! (the loop has scalar pow calls and stays scalar)
       do j=1,nlevsoi
+         !DIR$ NOVECTOR
          do fc = 1, num_methc
             c = filter_methc (fc)
             g = col_pp%gridcell(c)
@@ -2261,7 +2280,7 @@ contains
             ! f_ch4.
             f_ch4_adj = 1.0_r8
             if (.not. lake) then
-               t_fact_ch4 = q10prod_vr(c,j)
+               t_fact_ch4 = q10prod_vr(fc,j)
                ! Adjust f_ch4 by the ratio
                f_ch4_adj = f_ch4 * t_fact_ch4
 
@@ -2381,8 +2400,8 @@ contains
     integer                , intent(in) :: num_methc           ! number of column soil points in column filter
     integer                , intent(in) :: filter_methc(:)     ! column filter for soil points
     integer                , intent(in) :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
-    real(r8)               , intent(in) :: k_h_inv_vr( bounds%begc: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2]
-    real(r8)               , intent(in) :: q10oxid_vr( bounds%begc: , 1: ) ! q10_ch4oxid**((T-t0)/10) [col, lev]
+    real(r8)               , intent(in) :: k_h_inv_vr( 1: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [filter position, lev, CH4/O2]
+    real(r8)               , intent(in) :: q10oxid_vr( 1: , 1: ) ! q10_ch4oxid**((T-t0)/10) [filter position, lev]
     integer                , intent(in) :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                , intent(in) :: lake                ! function called with lake filter
     type(soilstate_type)   , intent(inout) :: soilstate_vars
@@ -2458,8 +2477,9 @@ contains
 
       t0 = tfrz + 12._r8 ! Walter, for Michigan site where the 45 M/h comes from
 
-      ! Loop to determine oxidation in each layer
+      ! Loop to determine oxidation in each layer (it has a scalar exp call and stays scalar)
       do j=1,nlevsoi
+         !DIR$ NOVECTOR
          do fc = 1, num_methc
             c = filter_methc(fc)
 
@@ -2483,11 +2503,11 @@ contains
             end if
 
             if (j  <=  jwt(c)) then ! Above the water table
-               k_h_inv = k_h_inv_vr(c,j,1)
+               k_h_inv = k_h_inv_vr(fc,j,1)
                k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                conc_ch4_rel = conc_ch4(c,j) / (h2osoi_vol_min + porevol/k_h_cc)
 
-               k_h_inv = k_h_inv_vr(c,j,2)
+               k_h_inv = k_h_inv_vr(fc,j,2)
                k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                conc_o2_rel  = conc_o2(c,j) / (h2osoi_vol_min + porevol/k_h_cc)
             else
@@ -2498,7 +2518,7 @@ contains
             oxid_a              = vmax_eff     * h2osoi_vol_min* conc_ch4_rel / (k_m_eff + conc_ch4_rel) &
                                 ![mol/m3-t/s]         [mol/m3-w/s]    [m3-w/m3-t]     [mol/m3-w]    [mol/m3-w]  [mol/m3-w]
                  * conc_o2_rel / (k_m_o2 + conc_o2_rel) &
-                 * q10oxid_vr(c,j) * smp_fact
+                 * q10oxid_vr(fc,j) * smp_fact
 
             ! For all landunits / levels, prevent oxidation if at or below freezing
             if (t_soisno(c,j) <= tfrz) oxid_a = 0._r8
@@ -2516,7 +2536,7 @@ contains
   subroutine ch4_aere (bounds, &
        num_methc, filter_methc, &
        num_methp, filter_methp, &
-       jwt, k_h_inv_vr, sat, lake, &
+       jwt, k_h_inv_vr, col2fc, sat, lake, &
        canopystate_vars, soilstate_vars, energyflux_vars, ch4_vars, dtime, elm_fates)
     !
     ! !DESCRIPTION:
@@ -2539,7 +2559,8 @@ contains
     integer                , intent(in)    :: num_methp           ! number of soil points in pft filter
     integer                , intent(in)    :: filter_methp(:)     ! patch filter for soil points
     integer                , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
-    real(r8)               , intent(in)    :: k_h_inv_vr( bounds%begc: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2]
+    real(r8)               , intent(in)    :: k_h_inv_vr( 1: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [filter position, lev, CH4/O2]
+    integer                , intent(in)    :: col2fc( bounds%begc: ) ! position of each column in the soil column filter
     integer                , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                , intent(in)    :: lake             ! function called with lake filter
     type(canopystate_type) , intent(in)    :: canopystate_vars
@@ -2565,6 +2586,7 @@ contains
     ! Big-leaf path: SiteOxAere evaluated level by level for all filter patches (see below)
     integer  :: pt_col(num_methp)        ! column of each filter patch
     integer  :: pt_grc(num_methp)        ! gridcell of each filter patch
+    integer  :: pt_fc(num_methp)         ! position of the column of each filter patch in the column filter
     logical  :: pt_veg(num_methp)        ! is_vegetated of each filter patch
     real(r8) :: pt_poros(num_methp)      ! poros_tiller of each filter patch, updated level by level as in SiteOxAere
     real(r8) :: pt_qtran(num_methp)      ! qflx_tran_veg
@@ -2685,6 +2707,7 @@ contains
             c = veg_pp%column(p)
             pt_col(fp) = c
             pt_grc(fp) = col_pp%gridcell(c)
+            pt_fc(fp)  = col2fc(c)
             pt_veg(fp) = (veg_pp%itype(p) /= noveg)
             if (graminoid(veg_pp%itype(p)) == 1 .or. crop(veg_pp%itype(p)) == 1) then
                pt_poros(fp) = 0.3_r8  ! Colmer 2003
@@ -2715,7 +2738,7 @@ contains
                if (transpirationloss .and. pt_veg(fp)) then
                   ! Calculate water concentration
                   h2osoi_vol_min = min(watsat(c,j), h2osoi_vol(c,j))
-                  k_h_inv = k_h_inv_vr(c,j,1)
+                  k_h_inv = k_h_inv_vr(pt_fc(fp),j,1)
                   k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm
                   conc_ch4_wat = conc_ch4(c,j) / ( (watsat(c,j)-h2osoi_vol_min)/k_h_cc + h2osoi_vol_min)
 
@@ -2753,7 +2776,7 @@ contains
 
                   area_tiller = CH4ParamsInst%scale_factor_aere * n_tiller * pt_poros(fp) * rpi * 2.9e-3_r8**2._r8 ! (m2/m2)
 
-                  k_h_inv = k_h_inv_vr(c,j,1) ! (4.12) Wania (L atm/mol)
+                  k_h_inv = k_h_inv_vr(pt_fc(fp),j,1) ! (4.12) Wania (L atm/mol)
                   k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                   aerecond = area_tiller * rootfr(p,j) * diffus_aere / (z(c,j)*CH4ParamsInst%rob)
                   ! Add in boundary layer resistance
@@ -2763,7 +2786,7 @@ contains
                   aere_j = max(aere_j, 0._r8) ! prevent backwards diffusion
 
                   ! Do oxygen diffusion into layer
-                  k_h_inv = k_h_inv_vr(c,j,2)
+                  k_h_inv = k_h_inv_vr(pt_fc(fp),j,2)
                   k_h_cc = t_soisno(c,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                   oxdiffus = diffus_aere * d_con_g(2,1) / d_con_g(1,1) ! adjust for O2:CH4 molecular diffusion
                   aerecond = area_tiller * rootfr(p,j) * oxdiffus / (z(c,j)*CH4ParamsInst%rob)
@@ -2843,7 +2866,7 @@ contains
                  elai(p), frootc_ptr, poros_tiller, rootfr_vr(1:nlevsoi), &
                  grnd_ch4_cond(p), conc_o2(c,1:nlevsoi), c_atm(g,1:2), &
                  z(c,1:nlevsoi), dz(c,1:nlevsoi), sat, &
-                 k_h_inv_vr(c,1:nlevsoi,1), k_h_inv_vr(c,1:nlevsoi,2), &
+                 k_h_inv_vr(col2fc(c),1:nlevsoi,1), k_h_inv_vr(col2fc(c),1:nlevsoi,2), &
                  tranloss(1:nlevsoi), &    ! Out
                  aere(1:nlevsoi), &         ! Out
                  oxaere(1:nlevsoi))         ! Out
@@ -3057,7 +3080,7 @@ contains
     integer                , intent(in)    :: num_methc           ! number of column soil points in column filter
     integer                , intent(in)    :: filter_methc(:)     ! column filter for soil points
     integer                , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
-    real(r8)               , intent(in)    :: k_h_inv_vr( bounds%begc: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2]
+    real(r8)               , intent(in)    :: k_h_inv_vr( 1: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [filter position, lev, CH4/O2]
     integer                , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                , intent(in)    :: lake             ! function called with lake filter
     type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
@@ -3132,7 +3155,7 @@ contains
 
             if (j  >  jwt(c) .and. t_soisno(c,j) > tfrz) then ! Ebullition occurs only below the water table
 
-               k_h_inv = k_h_inv_vr(c,j,1) ! (4.12 Wania) (atm.L/mol)
+               k_h_inv = k_h_inv_vr(fc,j,1) ! (4.12 Wania) (atm.L/mol)
                k_h = 1._r8 / k_h_inv ! (mol/L.atm)
                k_h_cc = t_soisno(c,j) * k_h * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
 
@@ -3195,7 +3218,7 @@ contains
     integer                , intent(in)    :: num_methc           ! number of column soil points in column filter
     integer                , intent(in)    :: filter_methc(:)     ! column filter for soil points
     integer                , intent(in)    :: jwt( bounds%begc: ) ! index of the soil layer right above the water table (-) [col]
-    real(r8)               , intent(in)    :: k_h_inv_vr( bounds%begc: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [col, lev, CH4/O2]
+    real(r8)               , intent(in)    :: k_h_inv_vr( 1: , 1: , 1: ) ! 1/Henry's constant (L atm/mol) [filter position, lev, CH4/O2]
     integer                , intent(in)    :: sat                 ! 0 = unsaturated; 1 = saturated
     logical                , intent(in)    :: lake      ! function called with lake filter
     real(r8)               , intent(in)    :: dtime_ch4           ! time step for ch4 calculations
@@ -3503,7 +3526,7 @@ contains
                   ! (4.12) Wania (L atm/mol)
                   k_h_cc(fc,j,s) = t_grnd(c) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                else
-                  k_h_inv = k_h_inv_vr(c,j,s)
+                  k_h_inv = k_h_inv_vr(fc,j,s)
                   ! (4.12) Wania (L atm/mol)
                   k_h_cc(fc,j,s) = tsf(fc,j) / k_h_inv * rgasLatm ! (4.21) Wania [(mol/m3w) / (mol/m3g)]
                end if
