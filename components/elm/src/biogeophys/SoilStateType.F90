@@ -49,7 +49,6 @@ module SoilStateType
 
      ! hydraulic properties
      real(r8), pointer :: hksat_col            (:,:) ! col hydraulic conductivity at saturation (mm H2O /s)
-     real(r8), pointer :: hksat_min_col        (:,:) ! col mineral hydraulic conductivity at saturation (hksat) (mm/s)
      real(r8), pointer :: hk_l_col             (:,:) ! col hydraulic conductivity (mm/s)
      real(r8), pointer :: smp_l_col            (:,:) ! col soil matric potential (mm)
      real(r8), pointer :: smpmin_col           (:)   ! col restriction for min of soil potential (mm)
@@ -156,7 +155,6 @@ contains
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = spval
 
     allocate(this%hksat_col            (begc_all:endc_all,nlevgrnd))    ; this%hksat_col            (:,:) = spval
-    allocate(this%hksat_min_col        (begc:endc,nlevgrnd))            ; this%hksat_min_col        (:,:) = spval
     allocate(this%hk_l_col             (begc:endc,nlevgrnd))            ; this%hk_l_col             (:,:) = spval
     allocate(this%smp_l_col            (begc:endc,nlevgrnd))            ; this%smp_l_col            (:,:) = spval
     allocate(this%smpmin_col           (begc:endc))                     ; this%smpmin_col           (:)   = spval
@@ -760,7 +758,6 @@ contains
                 tkm                       = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
                 this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
                 this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
-                this%hksat_min_col(c,lev) = xksat
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
                 if (om_frac > pcalpha) then

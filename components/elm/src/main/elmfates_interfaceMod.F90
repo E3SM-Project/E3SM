@@ -1468,14 +1468,14 @@ contains
                                   this%fates(nc)%bc_in(s), &
                                   this%fates(nc)%bc_out(s))
          
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
+         col_cf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+              col_cf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
               this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
+         col_cf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+              col_cf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
               this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp)* dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+         col_cf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+              col_cf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
               this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * dtime
 
          col_cf%litfall(c) = &
@@ -1490,39 +1490,39 @@ contains
 
          if (trim(fates_parteh_mode)==trim(elmfates_cnp)) then
 
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
+            col_pf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+                 col_pf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp) * dtime
 
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
+            col_pf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+                 col_pf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)* dtime
 
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+            col_pf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+                 col_pf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp) * dtime
 
             ! Diagnostic for mass balancing (gP/m2/s)
-            col_pf%plant_to_litter_pflux(c) = &
+            col_pf%core%plant_to_litter_flux(c) = &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
             ! Transfer Nitrogen
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
-                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
+            col_nf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+                 col_nf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp) * dtime
 
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
-                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
+            col_nf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+                 col_nf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)* dtime
 
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
-                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+            col_nf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+                 col_nf%core%decomp_pools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp) * dtime
 
             ! Diagnostic for mass balancing  (gN/m2/s)
-            col_nf%plant_to_litter_nflux(c) = &
+            col_nf%core%plant_to_litter_flux(c) = &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
@@ -2777,8 +2777,8 @@ contains
    integer                                        :: nc
 
    associate(&
-         hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
-         hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
+         hrv_deadstemc_to_prod10c     => col_cf%core%hrv_deadstem_to_prod10    , &
+         hrv_deadstemc_to_prod100c    => col_cf%core%hrv_deadstem_to_prod100)
  
     nc = bounds_clump%clump_index
     ! Loop over columns
@@ -2819,7 +2819,7 @@ contains
         nep     => col_cf%nep    , &
         nee     => col_cf%nee    , &
         nbp     => col_cf%nbp    , &
-        product_closs => col_cf%product_closs ,  &
+        product_closs => col_cf%core%product_loss ,  &
         hr     => col_cf%hr)
  
     nc = bounds_clump%clump_index
@@ -2865,10 +2865,10 @@ contains
    integer                                        :: nc
 
    associate(&
-        totecosysc     => col_cs%totecosysc, &
-        totlitc        => col_cs%totlitc, &
-        totsomc        => col_cs%totsomc, &
-        totprodc       => col_cs%totprodc)
+        totecosysc     => col_cs%core%totecosys, &
+        totlitc        => col_cs%core%totlit, &
+        totsomc        => col_cs%core%totsom, &
+        totprodc       => col_cs%core%totprod)
  
     nc = bounds_clump%clump_index
     ! Loop over columns
@@ -3122,8 +3122,8 @@ contains
 
     associate(&
         hr            => col_cf%hr,      & ! (gC/m2/s) total heterotrophic respiration
-        totsomc       => col_cs%totsomc, & ! (gC/m2) total soil organic matter carbon
-        totlitc       => col_cs%totlitc, &   ! (gC/m2) total litter carbon in BGC pools
+        totsomc       => col_cs%core%totsom, & ! (gC/m2) total soil organic matter carbon
+        totlitc       => col_cs%core%totlit, &   ! (gC/m2) total litter carbon in BGC pools
         eflx_lh_tot   => veg_ef%eflx_lh_tot, &   ! (W/m2) latent heat flux
         eflx_sh_tot   => veg_ef%eflx_sh_tot, &   ! (W/m2) sensible heat flux
         fsa_patch     => solarabs_inst%fsa_patch, &  ! (W/m2) absorbed solar flux

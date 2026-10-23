@@ -81,7 +81,6 @@ module decompMod
      integer :: begl_ghost, endl_ghost           ! beginning and ending landunit index
      integer :: begc_ghost, endc_ghost           ! beginning and ending column index
      integer :: begp_ghost, endp_ghost           ! beginning and ending pft index
-     integer :: begCohort_ghost, endCohort_ghost ! beginning and ending cohort indices
 
      ! The following variables correspond to "ALL" (=Local + Ghost) quantites
      integer :: begg_all, endg_all               ! beginning and ending gridcell index
@@ -127,7 +126,6 @@ module decompMod
      integer         :: begl_ghost, endl_ghost           ! beginning and ending landunit index
      integer         :: begc_ghost, endc_ghost           ! beginning and ending column index
      integer         :: begp_ghost, endp_ghost           ! beginning and ending pft index
-     integer         :: begCohort_ghost, endCohort_ghost ! beginning and ending cohort indices
 
      ! The following variables correspond to "ALL" (=Local + Ghost) quantites on a proc
      integer         :: ncells_all                       ! number of gridcells in proc

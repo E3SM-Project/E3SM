@@ -68,9 +68,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                        &
-         decomp_cpools_vr =>    col_cs%decomp_cpools_vr       , & ! Input: [real(r8) (:,:,:) ] SOM C pools [gC/m3]
-         decomp_npools_vr =>    col_ns%decomp_npools_vr       , & ! Input: [real(r8) (:,:,:) ] SOM N pools [gN/m3]
-         decomp_ppools_vr =>    col_ps%decomp_ppools_vr       , & ! Input: [real(r8) (:,:,:) ] SOM P pools [gP/m3]
+         decomp_cpools_vr =>    col_cs%core%decomp_pools_vr       , & ! Input: [real(r8) (:,:,:) ] SOM C pools [gC/m3]
+         decomp_npools_vr =>    col_ns%core%decomp_pools_vr       , & ! Input: [real(r8) (:,:,:) ] SOM N pools [gN/m3]
+         decomp_ppools_vr =>    col_ps%core%decomp_pools_vr       , & ! Input: [real(r8) (:,:,:) ] SOM P pools [gP/m3]
          labilep_vr       =>    col_ps%labilep_vr             , & ! Input: [real(r8) (:,:) ] soil labile mineral P [gP/m3]
          secondp_vr       =>    col_ps%secondp_vr             , & ! Input: [real(r8) (:,:) ] soil secondary mineral P [gP/m3]
          occlp_vr         =>    col_ps%occlp_vr               , & ! Input: [real(r8) (:,:) ] soil occluded mineral P [gP/m3]
@@ -94,17 +94,17 @@ contains
          primp_deposit    =>    col_pf%primp_deposit          , & ! Output: [real(r8) (:) ] primary mineral P hillslope redeposition (gP/m2/s)
          primp_yield_vr   =>    col_pf%primp_yield_vr         , & ! Output: [real(r8) (:,:) ] vertically-resolved primary mineral P loss (gP/m3/s)
 
-         cpools_erode     =>    col_cf%decomp_cpools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing C detachment (gC/m2/s)
-         cpools_deposit   =>    col_cf%decomp_cpools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing C redeposition (gC/m2/s)
-         cpools_yield_vr  =>    col_cf%decomp_cpools_yield_vr , & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing C loss (gC/m3/s)
+         cpools_erode     =>    col_cf%core%decomp_pools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing C detachment (gC/m2/s)
+         cpools_deposit   =>    col_cf%core%decomp_pools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing C redeposition (gC/m2/s)
+         cpools_yield_vr  =>    col_cf%core%decomp_pools_yield_vr , & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing C loss (gC/m3/s)
 
-         npools_erode     =>    col_nf%decomp_npools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing N detachment (gN/m2/s)
-         npools_deposit   =>    col_nf%decomp_npools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing N redeposition (gN/m2/s)
-         npools_yield_vr  =>    col_nf%decomp_npools_yield_vr , & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing N loss (gN/m3/s)
+         npools_erode     =>    col_nf%core%decomp_pools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing N detachment (gN/m2/s)
+         npools_deposit   =>    col_nf%core%decomp_pools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing N redeposition (gN/m2/s)
+         npools_yield_vr  =>    col_nf%core%decomp_pools_yield_vr , & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing N loss (gN/m3/s)
 
-         ppools_erode     =>    col_pf%decomp_ppools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing P detachment (gP/m2/s)
-         ppools_deposit   =>    col_pf%decomp_ppools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing P redeposition (gP/m2/s)
-         ppools_yield_vr  =>    col_pf%decomp_ppools_yield_vr   & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing P loss (gP/m3/s)
+         ppools_erode     =>    col_pf%core%decomp_pools_erode    , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing P detachment (gP/m2/s)
+         ppools_deposit   =>    col_pf%core%decomp_pools_deposit  , & ! Output: [real(r8) (:,:) ] vertically-integrated decomposing P redeposition (gP/m2/s)
+         ppools_yield_vr  =>    col_pf%core%decomp_pools_yield_vr   & ! Output: [real(r8) (:,:,:) ] vertically-resolved decomposing P loss (gP/m3/s)
          )
 
          dt = dtime_mod

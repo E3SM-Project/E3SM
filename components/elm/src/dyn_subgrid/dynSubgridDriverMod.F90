@@ -32,9 +32,11 @@ module dynSubgridDriverMod
   use filterMod           , only : filter, filter_inactive_and_active
 
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
-  use ColumnDataType      , only : column_carbon_state, column_carbon_flux
+  use ColumnStateTypes, only : column_carbon_state
+  use ColumnFluxTypes, only : column_carbon_flux
   use ColumnDataType      , only : col_ns, col_ps
-  use VegetationDataType  , only : vegetation_carbon_state, veg_ns, veg_ps
+  use VegetationStateTypes, only : vegetation_carbon_state
+  use VegetationDataType, only : veg_ns, veg_ps
 
   use elm_varctl          , only : iac_present
   use shr_log_mod         , only : errMsg => shr_log_errMsg

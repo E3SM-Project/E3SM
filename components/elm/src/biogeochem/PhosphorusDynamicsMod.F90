@@ -20,7 +20,8 @@ module PhosphorusDynamicsMod
   use CNStateType         , only : cnstate_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
-  use ColumnDataType      , only : col_ws, col_wf, nfix_timeconst, col_ps, col_pf
+  use ColumnDataType, only : col_ws, col_wf, col_ps, col_pf
+  use ColumnFluxTypes, only : nfix_timeconst
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp
@@ -68,7 +69,7 @@ contains
 
     associate(&
          forc_pdep     =>  atm2lnd_vars%forc_pdep_grc     , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)
-         pdep_to_sminp =>  col_pf%pdep_to_sminp   & ! Output: [real(r8) (:)]
+         pdep_to_sminp =>  col_pf%mineral%dep_to_smin   & ! Output: [real(r8) (:)]
          )
 
       begc = bounds%begc
@@ -326,7 +327,7 @@ contains
          qflx_surf           => col_wf%qflx_surf          , & !Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
 
          solutionp_vr        => col_ps%solutionp_vr       , & !Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral N
-         sminp_leached_vr    => col_pf%sminp_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)
+         sminp_leached_vr    => col_pf%mineral%smin_leached_vr     & !Output: [real(r8) (:,:) ]  rate of mineral N leaching (gP/m3/s)
          )
    
       !$acc data create(tot_water(:), sum1)  
@@ -416,7 +417,7 @@ contains
     associate(&
 
          isoilorder     => cnstate_vars%isoilorder                            ,&
-         decomp_ppools_vr_col => col_ps%decomp_ppools_vr    ,&
+         decomp_ppools_vr_col => col_ps%core%decomp_pools_vr    ,&
 
          biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr  ,&
          biochem_pmin_vr_col  => col_pf%biochem_pmin_vr      ,&
@@ -519,7 +520,7 @@ contains
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
-         decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
+         decomp_ppools_vr_col => col_ps%core%decomp_pools_vr, &
          lamda_ptase          => veg_vp%lamda_ptase, &
          ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &

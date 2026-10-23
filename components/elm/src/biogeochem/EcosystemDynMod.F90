@@ -47,15 +47,17 @@ module EcosystemDynMod
 
 
   use timeinfoMod
-  use VegetationDataType , only : veg_cf_summary, veg_cf_summary_for_ch4, veg_cf_summary_rr
-  use VegetationDataType , only : veg_nf_summary, veg_ns_summary, veg_cs_Summary
-  use VegetationDataType , only : veg_pf_summary, veg_ps_summary
-  use VegetationDataType , only : veg_cf_setvalues, veg_nf_setvalues, veg_pf_setvalues
+  use VegetationFluxTypes , only : veg_cf_summary, veg_cf_summary_for_ch4, veg_cf_summary_rr
+  use VegetationFluxTypes, only : veg_nf_summary
+  use VegetationStateTypes, only : veg_ns_summary, veg_cs_Summary
+  use VegetationFluxTypes, only : veg_pf_summary
+  use VegetationStateTypes, only : veg_ps_summary
+  use VegetationFluxTypes , only : veg_cf_setvalues, veg_nf_setvalues, veg_pf_setvalues
 
-  use ColumnDataType , only : col_cf_summary, col_nf_summary, col_pf_Summary
-  use ColumnDataType , only : col_cs_summary, col_ns_summary, col_ps_summary
-  use ColumnDataType , only : col_cf_summary_for_ch4
-  use ColumnDataType , only : col_cf_setvalues, col_nf_setvalues, col_pf_setvalues 
+  use ColumnFluxTypes , only : col_cf_summary, col_nf_summary, col_pf_Summary
+  use ColumnStateTypes , only : col_cs_summary, col_ns_summary, col_ps_summary
+  use ColumnFluxTypes , only : col_cf_summary_for_ch4
+  use ColumnFluxTypes , only : col_cf_setvalues, col_nf_setvalues, col_pf_setvalues 
 
 
   !
