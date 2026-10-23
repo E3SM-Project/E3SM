@@ -62,7 +62,6 @@ subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
   logical ::  initialized = .false.
 
   integer,  parameter :: zcoords = 0                                    ! we are not using z coords
-  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
   real(rl), parameter ::      &
       T0      = 300.d0,       &                                         ! temperature (K)
       ztop    = 12000.d0,     &                                         ! model top (m)
@@ -70,7 +69,7 @@ subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(4),dp,eta_dot,dp_dn       ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,q(4),dp,eta_dot,dp_dn       ! pointwise field values
 
   ! set analytic vertical coordinates at t=0
   if(.not. initialized) then
@@ -131,7 +130,6 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
   logical ::  initialized = .false.
 
   integer,  parameter :: zcoords = 0                                    ! we are not using z coords
-  logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
   real(rl), parameter ::      &
       T0      = 300.d0,       &                                         ! temperature (K)
       ztop    = 12000.d0,     &                                         ! model top (m)
@@ -139,7 +137,7 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat                                                    ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(2),dp,eta_dot,dp_dn       ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,q(2),dp,eta_dot,dp_dn       ! pointwise field values
 
   ! set analytic vertical coordinates at t=0
   if(.not. initialized) then
@@ -210,7 +208,7 @@ subroutine dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,n0,n1,deriv)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(4),dp,gc                 ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,q(4),dp,gc                 ! pointwise field values
   real(rl):: grad_p(np,np,2),p_i(np,np),u_i(np,np),v_i(np,np)
 
   ! set analytic vertical coordinates at t=0
@@ -283,7 +281,7 @@ subroutine dcmip2012_test1_conv(test_case,elem,hybrid,hvcoord,deriv,nets,nete,ti
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyai,hyam,hybi,hybm                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(5),dp,eta_dot,dp_dn      ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,q(5),dp,eta_dot,dp_dn      ! pointwise field values
   logical :: use_w
   real(rl):: grad_p(np,np,2),p_i(np,np),u_i(np,np),v_i(np,np)
 
@@ -376,8 +374,8 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
-  real(rl):: dpp(np,np,nlev), he
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,q(1),dp    ! pointwise field values
+  real(rl):: he
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-0: steady state atmosphere with orography'
 
@@ -427,12 +425,12 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
   real(rl), parameter ::   &
       Teq     = 300.d0,    &                                            ! temperature at equator
-      ztop    = 30000.d0,	 &                                            ! model top (m)
+      ztop    = 30000.d0,  &                                            ! model top (m)
       H       = Rd*Teq/g                                                ! characteristic height scale
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 2-x: steady state atmosphere with orography'
 
@@ -495,7 +493,7 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
       H       = Rd*Teq/g                                                ! characteristic height scale
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,phis_ps,ps,rho,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,ps,rho,dp    ! pointwise field values
   real(rl):: ztop
 
   if (testid .eq. 1) then
@@ -557,7 +555,6 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
 
   integer  :: ie, k
   real(rl) :: ztop, zc, z(np,np,nlev), z_i(np,np,nlevp)
-  real(rl) :: f_d(nlev) 
 
   if (test_case == "mtest1") then
     ztop    = 20000.d0        ! model top
@@ -601,14 +598,14 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
 
   real(rl), parameter ::    &                                           ! parameters needed to get eta from z
-    T0      = 300.d0,       &	! temperature (k)
+    T0      = 300.d0,       & ! temperature (k)
     ztop    = 10000.d0,     & ! model top (m)
     N       = 0.01d0,       & ! Brunt-Vaisala frequency
     bigG    = (g*g)/(N*N*Cp)  ! temperature, isothermal
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: lon,lat,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,T_mean,ps,rho,rho_mean,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 3-0: nonhydrostatic gravity waves'
 
@@ -645,13 +642,12 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord        
   integer,            intent(in)            :: nets,nete      
   integer,  parameter :: zcoords = 0                          ! we are not using z coords
-  logical,  parameter :: use_eta = .true.                     ! we are using hybrid eta coords
 
   real(rl), parameter :: ps_test = 100000.0d0
 
   integer :: i,j,k,ie                                                   !
   real(rl):: lon,lat,hyam,hybm,hyai,hybi
-  real(rl):: p,z,phis,u,v,w,T,ps,rho,dp    !pointwise field values
+  real(rl):: z,phis,u,v,w,T,ps,rho,dp    !pointwise field values
   real(rl):: q,q1,q2,qarray(3),pressure
   integer :: qs
   real(rl):: ztop    = 10000.d0
@@ -816,7 +812,6 @@ subroutine set_tracers(q,nq, dp,i,j,k,lat,lon,elem)
   integer,          intent(in)    :: i,j,k,nq
   type(element_t),  intent(inout) :: elem
 
-  real(rl), parameter :: wl = 1.0 ! checkerboard wavelength in dg
   integer :: qi
 
   if (nq>qsize) call abortmp('qsize set too small for dcmip test case')

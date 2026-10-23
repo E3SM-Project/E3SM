@@ -331,8 +331,7 @@ contains
 
   subroutine genzoltanpart(GridEdge,GridVertex, comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use gridgraph_mod, only : GridVertex_t, GridEdge_t, freegraph, createsubgridgraph, printgridvertex
-    use kinds, only : int_kind
-    use dimensions_mod , only : nmpi_per_node, npart, nnodes, nelem
+    use dimensions_mod , only : npart, nelem
     !use control_mod, only:  partmethod
     !use params_mod, only : wrecursive
     use, intrinsic :: iso_c_binding, only : C_CHAR, C_NULL_CHAR
@@ -351,26 +350,14 @@ contains
     integer , target, allocatable :: xadj(:),adjncy(:)    ! Adjacency structure for METIS
     real(kind=REAL_KIND),  target, allocatable :: vwgt(:),adjwgt(:)    ! Weights for the adj struct for METIS
 
-    integer , target, allocatable :: xadj_nl(:),adjncy_nl(:)
-    integer , target, allocatable :: vwgt_nl(:),adjwgt_nl(:)
 
-    type (GridVertex_t), allocatable   :: SubVertex(:)
 
     !integer(kind=int_kind), allocatable          :: part(:)
-    integer, allocatable          :: part_nl(:),local2global_nl(:)
-    integer, allocatable          :: part_fl(:),local2global_fl(:)
 
 
-    integer, allocatable          :: cnt(:),newnum(:),oldnum(:)
 
-    integer                       :: nelem_edge,numflag,edgecut,wgtflag
-    integer                       :: head_part,tail_part
-    integer                       :: options(5)
-    integer                       :: i,j,ii,ig,in,ip,if
-    integer                       :: nelem_nl,nelem_fl,newPartition
-    integer                       :: partitionmethod,numpartitions
-    integer                       :: nodes_per_frame
-    logical , parameter           :: Debug = .true.
+    integer                       :: nelem_edge
+    integer                       :: in,if
     nelem_edge = SIZE(GridEdge) 
 
     !print *, "nelem = ", nelem
@@ -401,13 +388,12 @@ contains
     integer,intent(out)           :: xadj(:),adjncy(:)
     real(kind=REAL_KIND), intent(out)           :: adjwgt(:)
 
-    integer                         :: i,j,k,ii,jj
+    integer                         :: i,j,k,ii
     integer                         :: degree,nelem
     !integer(kind=int_kind),allocatable  :: neigh_list(:),sort_indices(:)
     !real(kind=REAL_KIND),allocatable    :: neigh_wgt(:)
     integer(kind=int_kind) :: neigh_list(num_neighbors), &
                               sort_indices(num_neighbors)
-    real(kind=REAL_KIND) :: neigh_wgt(num_neighbors)
     integer                         :: max_neigh
 
     integer :: start, cnt

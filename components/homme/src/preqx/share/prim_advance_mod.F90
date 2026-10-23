@@ -40,7 +40,7 @@ contains
     type (parallel_t) :: par
     type (element_t), intent(inout), target   :: elem(:)
     character(len=*), intent(in) :: integration
-    integer :: i, ie
+    integer :: i
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
     allocate(ur_weights(qsplit))
@@ -75,7 +75,6 @@ contains
     integer              , intent(in)             :: nete
     real (kind=real_kind), intent(in)             :: eta_ave_w
 
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: time
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
 
@@ -119,7 +118,7 @@ contains
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
 
     use bndry_mod,      only: bndry_exchangev
-    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit, integration
+    use control_mod,    only: prescribed_wind, qsplit, tstep_type, rsplit, qsplit
     use edgetype_mod,   only: EdgeBuffer_t
     use reduction_mod,  only: reductionbuffer_ordered_1d_t
     use time_mod,       only: timelevel_qdp
@@ -141,13 +140,16 @@ contains
     integer              , intent(in)            :: nete
     logical,               intent(in)            :: compute_diagnostics
 
-    real (kind=real_kind) ::  dt2, time, dt_vis, x, eta_ave_w
+    real (kind=real_kind) :: dt2, dt_vis, eta_ave_w
 
-    integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
-    integer :: n,i,j,lx,lenx
+    integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage, qn0
+#if defined(TRILINOS) || defined(ENERGY_DIAGNOSTICS)
+    integer :: k
+#endif
 
 #ifdef TRILINOS
     real (c_double) ,allocatable, dimension(:) :: xstate(:)
+    integer :: i,j,lx,lenx
 
     ! state_object is a derived data type passed thru noxinit as a pointer
     type(derived_type) ,target         :: state_object
@@ -560,8 +562,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
 
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
+  integer :: ie
 
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
@@ -581,7 +582,7 @@ contains
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, swest
+  use control_mod, only : nu, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top
   use hybvcoord_mod, only : hvcoord_t
   use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk
   use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
@@ -606,9 +607,6 @@ contains
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ttens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
-  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
-  real (kind=real_kind), dimension(2,2,2)                       :: cflux
-  real (kind=real_kind), dimension(np,np,nlev) :: p
   type (EdgeDescriptor_t)                                       :: desc
 
 
@@ -621,7 +619,6 @@ contains
   real (kind=real_kind), dimension(np,np) :: lap_t,lap_dp
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating
-  real (kind=real_kind) :: temp(np,np,nlev)
 
 
 
@@ -891,7 +888,7 @@ contains
   use derivative_mod, only : subcell_div_fluxes, subcell_dss_fluxes
   use edgetype_mod,   only : edgedescriptor_t
   use bndry_mod,      only : bndry_exchangev
-  use control_mod,    only : moisture, qsplit, use_cpstar, rsplit, swest
+  use control_mod,    only : use_cpstar, rsplit
   use hybvcoord_mod,  only : hvcoord_t
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
   use physics_mod,    only : virtual_specific_heat, virtual_temperature
@@ -925,16 +922,12 @@ contains
   real (kind=real_kind), dimension(np,np)      :: vgrad_T    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p
-  real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p_m_pmet  ! gradient(p - p_met)
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: T_vadv     ! temperature vertical advection
   real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
-  real (kind=real_kind), dimension(np,np,nlev+1) :: ph               ! half level pressures on p-grid
   real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
-  real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)          :: corners
-  real (kind=real_kind), dimension(2,2,2)                         :: cflux
   real (kind=real_kind) ::  kappa_star(np,np,nlev)
   real (kind=real_kind) ::  vtens1(np,np,nlev)
   real (kind=real_kind) ::  vtens2(np,np,nlev)

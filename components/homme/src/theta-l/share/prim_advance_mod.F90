@@ -521,7 +521,7 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
 
-  integer :: k,ie
+  integer :: ie
   do ie=nets,nete
 
      elem(ie)%state%vtheta_dp(:,:,:,np1) = elem(ie)%state%vtheta_dp(:,:,:,np1) + dt*elem(ie)%derived%FVTheta(:,:,:)

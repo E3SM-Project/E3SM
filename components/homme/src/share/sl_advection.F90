@@ -907,7 +907,6 @@ contains
     ! local
     integer :: k,ie,q
     real (kind=real_kind), dimension(np,np) :: lap_p
-    logical var_coef1
 
     !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
     !so tensor is only used on second call to laplace_sphere_wk
@@ -1351,9 +1350,8 @@ contains
     logical, intent(in) :: independent_time_steps
 
 #ifdef HOMME_ENABLE_COMPOSE
-    integer :: step, ie, info, limiter_active_count, k, i, j
-    real(real_kind) :: alpha(2), dtsub, a, p(3)
-    real(real_kind), allocatable :: ptmp(:,:,:,:,:), vtmp(:,:,:,:,:)
+    integer :: step, ie, info, limiter_active_count, k
+    real(real_kind) :: alpha(2), dtsub, a
 
     call t_startf('SLMM_trajectory')
 
@@ -1697,7 +1695,7 @@ contains
     integer, intent(in) :: nets, nete
     real(real_kind), intent(in) :: vdep(:,:,:,:,:)
 
-    real(real_kind) :: norm, p(3), eta_dot_kp1
+    real(real_kind) :: norm, p(3)
     integer :: ie, k, j, i
 
     do ie = nets, nete

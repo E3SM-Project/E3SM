@@ -30,7 +30,6 @@ contains
   subroutine MeshPlaneTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
 
   use parallel_mod,           only : abortmp
-  use dimensions_mod,         only : np,  max_elements_attached_to_node
   use coordinate_systems_mod, only : cartesian2D_t, cartesian3D_t, cube_face_number_from_cart, &
                                      cube_face_number_from_sphere, cart2cubedsphere
   use gridgraph_mod,          only : GridVertex_t
@@ -39,9 +38,8 @@ contains
   use gridgraph_mod,          only : initgridedge, num_neighbors
   use control_mod,            only : north, south, east, west, neast, seast, swest, nwest, partmethod, &
                                      z2_map_method, coord_transform_method
-  use params_mod,             only : SFCURVE, SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
 
-  use kinds, only : iulog, real_kind
+  use kinds, only : real_kind
   use zoltan_mod, only : is_zoltan_partition, is_zoltan_task_mapping
 
   implicit none
@@ -62,13 +60,11 @@ contains
   !======================================================================
      subroutine MeshPlaneTopology(GridEdge, GridVertex)
       use parallel_mod,           only : abortmp
-      use dimensions_mod,         only : np,  max_elements_attached_to_node
       use coordinate_systems_mod, only : cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere
       use gridgraph_mod,          only : GridVertex_t
       use gridgraph_mod,          only : GridEdge_t
       use cube_mod,               only : CubeSetupEdgeIndex
       use gridgraph_mod,          only : initgridedge, num_neighbors
-      use control_mod,            only : north, south, east, west, neast, seast, swest, nwest
 
       implicit none
       type (GridEdge_t),   intent(inout) :: GridEdge(:)

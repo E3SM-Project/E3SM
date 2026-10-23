@@ -20,11 +20,11 @@ module dry_planar_tests
 
 !OG take from physical const mod instead
 
-  real(rl), parameter :: Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				                        g	= 9.80616d0,	&	! Gravity (m s^2)
-				                        cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
-                                p0	= 100000.d0, &! reference pressure (Pa)
-                                kappa   = Rd/cp
+  real(rl), parameter :: Rd    = 287.0d0,   & ! Ideal gas const dry air (J kg^-1 K^1)
+                         g     = 9.80616d0, & ! Gravity (m s^2)
+                         cp    = 1004.5d0,  & ! Specific heat capacity (J kg^-1 K^1)
+                         p0    = 100000.d0, & ! reference pressure (Pa)
+                         kappa = Rd/cp
 
 !consts for kessler-defined qsat
   real(rl), parameter :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
@@ -80,14 +80,14 @@ subroutine general_gravity_wave_init(elem,hybrid,hvcoord,nets,nete,d,f)
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
 
   real(rl), parameter ::    &                                           ! parameters needed to get eta from z
-    T0      = 300.d0,       &	! temperature (k)
+    T0      = 300.d0,       & ! temperature (k)
     ztop    = 10000.d0,     & ! model top (m)
     N       = 0.01d0,       & ! Brunt-Vaisala frequency
     bigG    = (g*g)/(N*N*Cp)  ! temperature, isothermal
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,T_mean,ps,rho,rho_mean,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing planar gravity wave'
 

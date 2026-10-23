@@ -128,7 +128,7 @@ contains
     type (element_t),     intent(in), target  :: elem(:)
     type (hybrid_t),      intent(in)          :: hybrid
 
-    integer                  :: i, j, ie, k, kptr, kmax
+    integer                  :: i, j, ie
     real (kind=real_kind)    :: rspheremp(np,np)
     real (kind=real_kind)    :: invvol(np,np)
     real (kind=real_kind)    :: error, max_error, max_invvol, maxrsphere
@@ -188,14 +188,11 @@ contains
     type (hybrid_t),      intent(in)          :: hybrid
 
     type (quadrature_t)              :: gll_pts
-    type (cartesian2d_t)             :: cv_cartp(0:np,0:np)
     type (cartesian3d_t)             :: quad(4),corners3d(4)
     real (kind=longdouble_kind)      :: cv_pts(0:np)
-    real (kind=real_kind)            :: rvert
     real (kind=real_kind)            :: test(np,np,1)
 
     integer                          :: i, j, ie, k, kmax,kmax2, kk
-    logical                          :: Debug=.FALSE.,keep
 
     gll_pts = gausslobatto(np)
     ! gll points
@@ -405,7 +402,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     use edge_mod,     only : ghostVpack3d, ghostVunpack3d
     use parallel_mod, only : abortmp
     use dimensions_mod, only : max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : neast, nwest, seast, swest
     use parallel_mod, only : abortmp
 
     implicit none
@@ -413,7 +410,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     type (hybrid_t),      intent(in) :: hybrid
     integer                          :: nets,nete
 !   local
-    integer :: i,j,k,m,n,o,p,ie,m2
+    integer :: i,j,k,m,o,p,ie,m2
     real (kind=real_kind)    :: vertpack  (    0:np,       0:np,    3)
     real (kind=real_kind)    :: vertpack2 (    1:np+1,     1:np+1,  3)
     real (kind=real_kind)    :: vertunpack(   -1:np+1,    -1:np+1,  3)
@@ -803,9 +800,8 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     use quadrature_mod, only : quadrature_t
 
     type (cartesian2d_t)  :: corner
-    real (kind=real_kind) :: dx,dy,da,integral,x,y
+    real (kind=real_kind) :: dx,dy,integral,x,y
 
-    integer               :: i,j
 
 
     ! cubed-sphere cell area, from Lauritzen & Nair MWR 2008
@@ -990,7 +986,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     use hybrid_mod, only : hybrid_t
 
     use quadrature_mod, only : quadrature_t, gausslobatto
-    use dimensions_mod, only : nlev,nelem
+    use dimensions_mod, only : nelem
     use cube_mod, only : convert_gbl_index
 
     integer,              intent(in)    :: nets,nete
@@ -999,28 +995,25 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
 
     type (cartesian2d_t)             :: cartp_com(np,np)  ! center of mass
     type (cartesian2d_t)             :: cartp_nm1(0:np,0:np)
-    real (kind=real_kind)            :: delx_k,dely_k,sum_dbg,r
-    integer                          :: i,j,ie,k,kptr,gllpts,nvert,k2,ie1,je1,face_no,kinsert
+    real (kind=real_kind)            :: delx_k,dely_k
+    integer                          :: i,j,ie,k,nvert,k2,ie1,je1,face_no
     integer                          ::  iter,iter_max,i1,j1
-    real (kind=real_kind)            :: diff(np,np),diffy(np-1,np-1),diffx(np-1,np-1)
+    real (kind=real_kind)            :: diff(np,np)
     real (kind=real_kind)            :: dx,dy,a1(nets:nete),a2(nets:nete),d1(nets:nete),d1mid(nets:nete)
-    real (kind=real_kind)            :: d2,d1_global,d1_global_mid,sphere1,sphere2,diff2,diff3
-    real (kind=real_kind)            :: diff23,diff32,diff33,diff22
+    real (kind=real_kind)            :: d2,d1_global,d1_global_mid,sphere1,sphere2
     real (kind=longdouble_kind)      :: gllnm1(0:np)
-    type (cartesian2d_t)             :: corner,start,end,cv_loc_2d(4,np,np),cvnew_loc_2d(4,np,np)
+    type (cartesian2d_t)             :: start,end,cv_loc_2d(4,np,np),cvnew_loc_2d(4,np,np)
     type (cartesian3D_t)             :: cart,cv_loc_3d(nv,np,np)
     type (cartesian3D_t)             :: temp3d(nv)
     type (cartesian2d_t)             :: cartp2d(np,np)
     type (cartesian2d_t)             :: x1,x2,x3,x
     type (cartesian2d_t)             :: sq1(4),sq2(4),pent(5)
-    type (cartesian3D_t)             :: x1_3d,x2_3d,x3_3d
+    type (cartesian3D_t)             :: x2_3d,x3_3d
     type (quadrature_t)              :: gll
     type (cartesian2d_t)             :: dir,dirsum
-    type (spherical_polar_t)         :: polar_tmp(0:np,0:np)
-    real (kind=real_kind)            :: rvert,area1,area2,ave,lat(4),lon(4)
-    real (kind=real_kind)            :: s,ds,triarea,triarea_target
-    real (kind=real_kind)            :: xp1,xm1,yp1,ym1,sumdiff
-    real (kind=real_kind)            :: tiny=1e-11,norm
+    real (kind=real_kind)            :: rvert,area2,lat(4),lon(4)
+    real (kind=real_kind)            :: s
+    real (kind=real_kind)            :: sumdiff
     real (kind=real_kind)            :: tol=2e-11  ! convergece outer iteration
 
     ! area difference to trigger pentagons.  
@@ -1032,13 +1025,11 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     ! ne=240 1e-4:  add 5688/ 345600 pentagons, area ratio: 1.0004
     ! ne=240 1e-5:  add 5736/ 345600 pentagons, area ratio: 1.000000078
     real (kind=real_kind)            :: tol_use_pentagons=1e-5
-    logical                          :: Debug=.FALSE.,keep
+    logical                          :: keep
 
-    integer :: face1,face2,found,ie_max,movex,movey,moved,ii,kmax
+    integer :: ie_max,movex,movey,moved,ii,kmax
     integer :: nskip,npent
     integer :: nskipie(nets:nete), npentie(nets:nete)
-    type (cartesian2d_t)             :: vert1_2d, vert_2d,vert2_2d
-    type (cartesian3D_t)             :: vert1,vert2,vert_inserted(7)
 
 
     kmax=4
@@ -1659,14 +1650,14 @@ subroutine construct_cv_gll(elem,hybrid,nets,nete)
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : edgeVpack, edgeVunpack, edgeVunpackVert
-    use parallel_mod, only : abortmp	
+    use parallel_mod, only : abortmp
 
     implicit none
     type (element_t),     intent(in), target    :: elem(:)
     type (hybrid_t),      intent(in) :: hybrid
     integer :: nets,nete
 !   local      
-    integer :: i,j,k,ie,kptr,nvert,ie2
+    integer :: i,j,k,ie,kptr,nvert
     logical :: corner
     real (kind=real_kind)  :: test(np,np,1),vertpack(np,np,3),rvert
     type (cartesian2d_t)             :: vert(4)
@@ -2010,9 +2001,9 @@ end subroutine  construct_cv_gll
     integer,              intent(in) :: nets,nete
     type (hybrid_t),      intent(in) :: hybrid
 
-    real (kind=real_kind)            :: psum,ptot,Vol_tmp(1),corr,maxelem_variation
-    real (kind=real_kind)            :: vol(np,np,nets:nete),r,rmin,rmax,a1,a2,locmin,locmax,emin,emax,dx,dy
-    integer                          :: i,j,ie,kptr,face
+    real (kind=real_kind)            :: psum,ptot,maxelem_variation
+    real (kind=real_kind)            :: r,rmin,rmax,a1,a2,locmin,locmax,emin,emax,dx,dy
+    integer                          :: i,j,ie,face
 
     real (kind=real_kind), dimension(:,:), pointer :: locvol
 
@@ -2102,7 +2093,6 @@ end subroutine  construct_cv_gll
     endif
 
 
-100 format (A13,1(E24.15))
 
   end subroutine VerifVolumes
 

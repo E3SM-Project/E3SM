@@ -47,7 +47,7 @@ contains
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
     use dimensions_mod, only : np
-    use physical_constants, only : dd_pi, domain_size
+    use physical_constants, only : domain_size
     use parallel_mod, only: global_shared_buf, global_shared_sum
 
     type(element_t)      , intent(in) :: elem(:)
@@ -738,7 +738,7 @@ contains
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t
 
-    type(element_t), intent(in) :: elem(:)	
+    type(element_t), intent(in) :: elem(:)
     integer              , intent(in) :: npts,nets,nete
     real (kind=real_kind), intent(in) :: h(npts,npts,nets:nete)  ! computed soln
     real (kind=real_kind), intent(in) :: ht(npts,npts,nets:nete) ! true soln
