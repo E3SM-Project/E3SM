@@ -100,6 +100,9 @@ constexpr bool exact_bfb = false;
 inline bool same (const double a, const double b) {
   if (exact_bfb) return a == b;
   constexpr double rtol = 1e-6, atol = 1e-12;
+  // Non-finite values only match exactly, as in the exact mode (an inf would otherwise
+  // pass the relative check against any finite value)
+  if (!std::isfinite(a) || !std::isfinite(b)) return a == b;
   const double d = std::abs(a - b);
   return d <= atol || d <= rtol*std::max(std::abs(a), std::abs(b));
 }
