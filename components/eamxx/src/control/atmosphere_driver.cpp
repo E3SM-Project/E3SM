@@ -770,9 +770,9 @@ void AtmosphereDriver::create_output_managers () {
   if (io_params.isSublist("model_restart")) {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
-    // Model restart files don't use stream_id; filename is just {case}.eamxx.r.*
+    // Model restart files don't use stream_name; filename is just {case}.eamxx.r.*
     // The {case}.eamxx part is added automatically in compute_filename()
-    params.set<std::string>("stream_id","");  // Empty for model restart
+    params.set<std::string>("stream_name","");  // Empty for model restart
     params.set<std::string>("averaging_type","instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
@@ -798,16 +798,16 @@ void AtmosphereDriver::create_output_managers () {
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
-    // Check if the stream_id for this file has already been set.
-    // Support legacy filename_prefix parameter by using it as stream_id
-    if (not params.isParameter("stream_id")) {
+    // Check if the stream_name for this file has already been set.
+    // Support legacy filename_prefix parameter by using it as stream_name
+    if (not params.isParameter("stream_name")) {
       if (params.isParameter("filename_prefix")) {
-        // Use legacy filename_prefix as stream_id
+        // Use legacy filename_prefix as stream_name
         auto prefix = params.get<std::string>("filename_prefix");
-        params.set<std::string>("stream_id",prefix);
+        params.set<std::string>("stream_name",prefix);
       } else {
-        // No stream_id or filename_prefix specified, use default
-        params.set<std::string>("stream_id","output");
+        // No stream_name or filename_prefix specified, use default
+        params.set<std::string>("stream_name","output");
       }
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");

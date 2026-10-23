@@ -686,7 +686,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   using vos_type = std::vector<std::string>;
   ekat::ParameterList params;
 
-  params.set<std::string>("stream_id",name);
+  params.set<std::string>("stream_name",name);
   params.set<std::string>("averaging_type","instant");
   params.set<std::string>("floating_point_precision","real");
   auto& oc = params.sublist("output_control");
@@ -721,7 +721,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 /*==========================================================================================================*/
 std::string get_filename(const std::string& name, ekat::Comm& comm, const std::string& tstamp)
 {
-  // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+  // File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
   return "eamxx.h." + name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
 
 }
