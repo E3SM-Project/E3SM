@@ -72,7 +72,9 @@ contains
     !  here seem to only depend on quantities that are valid over inactive as well as active
     !  points. However, note that this routine is (mistakenly) called from two places
     !  currently - the above note applies to its call from the driver, but its call from
-    !  SoilLittDecompMod uses the standard filters that just apply over active points
+    !  EcosystemDynNoLeaching1 uses the standard filters that just apply over active points.
+    !  When decomp_vertprofiles_static() is .true., the driver calls it over the active
+    !  points only (except on the alt_calc update dates), and the second call is skipped.
     ! 
     ! !USES:
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp

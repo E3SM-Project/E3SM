@@ -39,7 +39,7 @@ module EcosystemDynMod
   use elm_instMod  , only : alm_fates
   ! bgc interface & pflotran
   use elm_varctl         , only : use_elm_interface, use_elm_bgc, use_pflotran, pf_cmode, pf_hmode
-  use VerticalProfileMod , only : decomp_vertprofiles
+  use VerticalProfileMod , only : decomp_vertprofiles, decomp_vertprofiles_static
   use AllocationMod      , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl         , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
@@ -538,10 +538,15 @@ contains
 
     !-------------------------------------------------------------------------------------------------
     ! 'decomp_vertprofiles' (calc nfixation_prof) is moved from SoilLittDecompAlloc:
+    ! The driver computed the profiles of these points earlier in this step. When
+    ! decomp_vertprofiles_static() is .true. here, no weights changed since then and
+    ! alt_calc does not run in between, so a second call would recompute the same values.
     ! ------------------------------------------------------------------------------------------------
-    call decomp_vertprofiles(bounds,                        &
-          num_soilc, filter_soilc, num_soilp, filter_soilp, &
-          soilstate_vars, canopystate_vars, cnstate_vars)
+    if (.not. decomp_vertprofiles_static()) then
+       call decomp_vertprofiles(bounds,                        &
+             num_soilc, filter_soilc, num_soilp, filter_soilp, &
+             soilstate_vars, canopystate_vars, cnstate_vars)
+    end if
 
     !-------------------------------------------------------------------------------------------------
     ! This subroutine evaluates the current state of N and P supplementation
