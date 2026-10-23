@@ -707,6 +707,7 @@ contains
    real(r8):: m_veg                ! speedup factor for accelerated decomp
    integer :: fp,fc                ! filter indices
    real(r8):: f                    ! rate for fire effects (1/s)
+   logical :: patch_burns(num_soilp) ! f /= 0 for the patch at this filter position
    integer :: itype
    real(r8):: cc_other_sc, wt_col, baf_crop_sc,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj
 
@@ -1004,6 +1005,10 @@ contains
            end if
         end if
 
+        ! Every patch fire flux below is a product with f, so all of them
+        ! are zero where f is
+        patch_burns(fp) = (f /= 0._r8)
+
         ! apply this rate to the pft state variables to get flux rates
         ! biomass burning
         ! carbon fluxes
@@ -1261,6 +1266,9 @@ contains
      ! fire-induced transfer of carbon and nitrogen pools to litter and cwd
      ! add phosphorus transfer fluxes -X.YANG
      do fp = 1,num_soilp
+       ! A patch without fire fluxes would add only zeros
+       if (.not. patch_burns(fp)) cycle
+
        p = filter_soilp(fp)
        c = veg_pp%column(p)
        wt_col = veg_pp%wtcol(p)
