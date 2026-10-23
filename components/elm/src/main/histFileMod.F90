@@ -278,6 +278,12 @@ module histFileMod
   character(len=hist_dim_name_length) :: hbuf_l2g_types(hbuf_max_scale_types) ! l2g scale types set up so far
   real(r8), allocatable :: hbuf_scale_c2l(:,:)    ! c2l scale factors [col, c2l scale type]
   real(r8), allocatable :: hbuf_scale_l2g(:,:)    ! l2g scale factors [landunit, l2g scale type]
+  ! The gridcell, wtgcell and scale factors of each listed point, in the order
+  ! of hbuf_pts_p/c/l, so that mapping a field reads them contiguously
+  integer , allocatable :: hbuf_g_p(:), hbuf_g_c(:), hbuf_g_l(:)          ! gridcell of each listed point
+  real(r8), allocatable :: hbuf_wt_p(:), hbuf_wt_c(:), hbuf_wt_l(:)       ! wtgcell of each listed point
+  real(r8), allocatable :: hbuf_sc_p(:,:), hbuf_sc_c(:,:)                 ! c2l scale factor of the column of each listed point [point, c2l scale type]
+  real(r8), allocatable :: hbuf_sl_p(:,:), hbuf_sl_c(:,:), hbuf_sl_l(:,:) ! l2g scale factor of the landunit of each listed point [point, l2g scale type]
 
   interface hbuf_p2g
      module procedure hbuf_p2g_1d
@@ -1074,7 +1080,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: t, f, i, p, c, l
+    integer :: t, f, i, p, c, l, fp, fc, fl
     character(len=hist_dim_name_length) :: type1d       ! 1d clm pointer type of the field
     character(len=hist_dim_name_length) :: type1d_out   ! 1d history buffer type of the field
     character(len=hist_dim_name_length) :: scale_type
@@ -1089,6 +1095,14 @@ contains
        allocate(hbuf_pts_l(bounds%endl-bounds%begl+1))
        allocate(hbuf_scale_c2l(bounds%begc:bounds%endc, hbuf_max_scale_types))
        allocate(hbuf_scale_l2g(bounds%begl:bounds%endl, hbuf_max_scale_types))
+       allocate(hbuf_g_p(bounds%endp-bounds%begp+1), hbuf_wt_p(bounds%endp-bounds%begp+1))
+       allocate(hbuf_g_c(bounds%endc-bounds%begc+1), hbuf_wt_c(bounds%endc-bounds%begc+1))
+       allocate(hbuf_g_l(bounds%endl-bounds%begl+1), hbuf_wt_l(bounds%endl-bounds%begl+1))
+       allocate(hbuf_sc_p(bounds%endp-bounds%begp+1, hbuf_max_scale_types))
+       allocate(hbuf_sl_p(bounds%endp-bounds%begp+1, hbuf_max_scale_types))
+       allocate(hbuf_sc_c(bounds%endc-bounds%begc+1, hbuf_max_scale_types))
+       allocate(hbuf_sl_c(bounds%endc-bounds%begc+1, hbuf_max_scale_types))
+       allocate(hbuf_sl_l(bounds%endl-bounds%begl+1, hbuf_max_scale_types))
     end if
 
     hbuf_npts_p = 0
@@ -1151,6 +1165,43 @@ contains
        end do
     end do
 
+    ! Copy the gridcell, weight and scale factors of each listed point in list
+    ! order; the mapping reads these copies instead of gathering the same
+    ! values through the subgrid index arrays
+    do fp = 1,hbuf_npts_p
+       p = hbuf_pts_p(fp)
+       c = veg_pp%column(p)
+       l = veg_pp%landunit(p)
+       hbuf_g_p(fp)  = veg_pp%gridcell(p)
+       hbuf_wt_p(fp) = veg_pp%wtgcell(p)
+       do i = 1,hbuf_n_c2l_types
+          hbuf_sc_p(fp,i) = hbuf_scale_c2l(c,i)
+       end do
+       do i = 1,hbuf_n_l2g_types
+          hbuf_sl_p(fp,i) = hbuf_scale_l2g(l,i)
+       end do
+    end do
+    do fc = 1,hbuf_npts_c
+       c = hbuf_pts_c(fc)
+       l = col_pp%landunit(c)
+       hbuf_g_c(fc)  = col_pp%gridcell(c)
+       hbuf_wt_c(fc) = col_pp%wtgcell(c)
+       do i = 1,hbuf_n_c2l_types
+          hbuf_sc_c(fc,i) = hbuf_scale_c2l(c,i)
+       end do
+       do i = 1,hbuf_n_l2g_types
+          hbuf_sl_c(fc,i) = hbuf_scale_l2g(l,i)
+       end do
+    end do
+    do fl = 1,hbuf_npts_l
+       l = hbuf_pts_l(fl)
+       hbuf_g_l(fl)  = lun_pp%gridcell(l)
+       hbuf_wt_l(fl) = lun_pp%wtgcell(l)
+       do i = 1,hbuf_n_l2g_types
+          hbuf_sl_l(fl,i) = hbuf_scale_l2g(l,i)
+       end do
+    end do
+
   end subroutine hbuf_map_init
 
   !-----------------------------------------------------------------------
@@ -1194,7 +1245,7 @@ contains
     character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: fp,p,c,l,g,index,ic,il             ! indices
+    integer  :: fp,p,g,index,ic,il                 ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: scale_p2c                          ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
@@ -1213,13 +1264,11 @@ contains
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do fp = 1,hbuf_npts_p
        p = hbuf_pts_p(fp)
-       c = veg_pp%column(p)
-       l = veg_pp%landunit(p)
-       if (parr(p) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
-          g = veg_pp%gridcell(p)
+       if (parr(p) /= spval .and. hbuf_sc_p(fp,ic) /= spval .and. hbuf_sl_p(fp,il) /= spval) then
+          g = hbuf_g_p(fp)
           if (sumwt(g) == 0._r8) garr(g) = 0._r8
-          garr(g) = garr(g) + parr(p) * scale_p2c * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * veg_pp%wtgcell(p)
-          sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
+          garr(g) = garr(g) + parr(p) * scale_p2c * hbuf_sc_p(fp,ic) * hbuf_sl_p(fp,il) * hbuf_wt_p(fp)
+          sumwt(g) = sumwt(g) + hbuf_wt_p(fp)
        end if
     end do
     found = .false.
@@ -1254,7 +1303,7 @@ contains
     character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,fp,p,c,l,g,index,ic,il               ! indices
+    integer  :: j,fp,p,g,index,ic,il                   ! indices
     logical  :: found                                  ! temporary for error check
     real(r8) :: scale_p2c                              ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
@@ -1276,13 +1325,11 @@ contains
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do fp = 1,hbuf_npts_p
           p = hbuf_pts_p(fp)
-          c = veg_pp%column(p)
-          l = veg_pp%landunit(p)
-          if (parr(p,j) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
-             g = veg_pp%gridcell(p)
+          if (parr(p,j) /= spval .and. hbuf_sc_p(fp,ic) /= spval .and. hbuf_sl_p(fp,il) /= spval) then
+             g = hbuf_g_p(fp)
              if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-             garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * veg_pp%wtgcell(p)
-             sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
+             garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c * hbuf_sc_p(fp,ic) * hbuf_sl_p(fp,il) * hbuf_wt_p(fp)
+             sumwt(g) = sumwt(g) + hbuf_wt_p(fp)
           end if
        end do
        found = .false.
@@ -1316,7 +1363,7 @@ contains
     character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: fc,c,l,g,index,ic,il               ! indices
+    integer  :: fc,c,g,index,ic,il                 ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
@@ -1328,12 +1375,11 @@ contains
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do fc = 1,hbuf_npts_c
        c = hbuf_pts_c(fc)
-       l = col_pp%landunit(c)
-       if (carr(c) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
-          g = col_pp%gridcell(c)
+       if (carr(c) /= spval .and. hbuf_sc_c(fc,ic) /= spval .and. hbuf_sl_c(fc,il) /= spval) then
+          g = hbuf_g_c(fc)
           if (sumwt(g) == 0._r8) garr(g) = 0._r8
-          garr(g) = garr(g) + carr(c) * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * col_pp%wtgcell(c)
-          sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+          garr(g) = garr(g) + carr(c) * hbuf_sc_c(fc,ic) * hbuf_sl_c(fc,il) * hbuf_wt_c(fc)
+          sumwt(g) = sumwt(g) + hbuf_wt_c(fc)
        end if
     end do
     found = .false.
@@ -1367,7 +1413,7 @@ contains
     character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,fc,c,l,g,index,ic,il                 ! indices
+    integer  :: j,fc,c,g,index,ic,il                   ! indices
     logical  :: found                                  ! temporary for error check
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
@@ -1382,12 +1428,11 @@ contains
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do fc = 1,hbuf_npts_c
           c = hbuf_pts_c(fc)
-          l = col_pp%landunit(c)
-          if (carr(c,j) /= spval .and. hbuf_scale_c2l(c,ic) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
-             g = col_pp%gridcell(c)
+          if (carr(c,j) /= spval .and. hbuf_sc_c(fc,ic) /= spval .and. hbuf_sl_c(fc,il) /= spval) then
+             g = hbuf_g_c(fc)
              if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-             garr(g,j) = garr(g,j) + carr(c,j) * hbuf_scale_c2l(c,ic) * hbuf_scale_l2g(l,il) * col_pp%wtgcell(c)
-             sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+             garr(g,j) = garr(g,j) + carr(c,j) * hbuf_sc_c(fc,ic) * hbuf_sl_c(fc,il) * hbuf_wt_c(fc)
+             sumwt(g) = sumwt(g) + hbuf_wt_c(fc)
           end if
        end do
        found = .false.
@@ -1431,11 +1476,11 @@ contains
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do fl = 1,hbuf_npts_l
        l = hbuf_pts_l(fl)
-       if (larr(l) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
-          g = lun_pp%gridcell(l)
+       if (larr(l) /= spval .and. hbuf_sl_l(fl,il) /= spval) then
+          g = hbuf_g_l(fl)
           if (sumwt(g) == 0._r8) garr(g) = 0._r8
-          garr(g) = garr(g) + larr(l) * hbuf_scale_l2g(l,il) * lun_pp%wtgcell(l)
-          sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
+          garr(g) = garr(g) + larr(l) * hbuf_sl_l(fl,il) * hbuf_wt_l(fl)
+          sumwt(g) = sumwt(g) + hbuf_wt_l(fl)
        end if
     end do
     found = .false.
@@ -1482,11 +1527,11 @@ contains
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do fl = 1,hbuf_npts_l
           l = hbuf_pts_l(fl)
-          if (larr(l,j) /= spval .and. hbuf_scale_l2g(l,il) /= spval) then
-             g = lun_pp%gridcell(l)
+          if (larr(l,j) /= spval .and. hbuf_sl_l(fl,il) /= spval) then
+             g = hbuf_g_l(fl)
              if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-             garr(g,j) = garr(g,j) + larr(l,j) * hbuf_scale_l2g(l,il) * lun_pp%wtgcell(l)
-             sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
+             garr(g,j) = garr(g,j) + larr(l,j) * hbuf_sl_l(fl,il) * hbuf_wt_l(fl)
+             sumwt(g) = sumwt(g) + hbuf_wt_l(fl)
           end if
        end do
        found = .false.
