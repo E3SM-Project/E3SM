@@ -176,7 +176,7 @@ void Emulator::initialize() {
   infer_config.input_channels = config.inputs.size();
   infer_config.output_channels = config.outputs.size();
   // NOTE: How should we handle the additional options to pass to backend?
-  // backend_ = inference::create_backend(m_model_config.backend_type, infer_config);
+  backend_ = inference::create_backend(m_model_config.backend_type, infer_config);
 
   m_initialized = true;
 }
@@ -199,8 +199,20 @@ void Emulator::run(const ProcessRunOpts opts) {
     throw std::runtime_error("Emulator::run() called before initialize()");
   }
 
-  // TODO: wrap input/output fields in tensor maps
+  // wrap input/output fields in tensor maps
   inference::TensorMap inputs = {}, outputs = {};
+  for (const EmulatorFieldDesc &field: field_descriptors()) {
+    std::vector<std::int64_t> dims;
+    for (const auto& dim_name : field.config.dimensions) {
+      const DimensionDesc& dim_desc = dimension(dim_name);
+      dims.push_back(static_cast<std::int64_t>(dim_desc.global_extent));
+    }
+    if (field.role == ModelFieldRole::Input) {
+      inputs.wrap(field.config.name, &input_fields_[field.offset], dims);
+    } else { // field_desc.role == ModelFieldRole::Output
+      outputs.wrap(field.config.name, &output_fields_[field.offset], dims);
+    }
+  }
   backend_->infer(inputs, outputs);
 
   m_step_count++;
