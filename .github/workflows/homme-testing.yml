@@ -1,0 +1,231 @@
+name: homme
+
+# Standalone testing of Homme (components/homme), via components/homme/utils/test_homme.py, on the
+# self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change.
+#
+# Jobs (matrix): runner in {gnu, intel, cuda}.
+#  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>.cmake
+#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnugpu.
+#  - Only the submodules that Homme needs (cime, ekat, scorpio) are checked out.
+#
+# Resources: Homme tests do not reserve cpus/gpus, so the 'Set test resources' step splits the node:
+#  max ranks per test (USE_NUM_PROCS) x threads per rank x number of concurrent tests (--run-parallel-level)
+#  must fit in the node (MAX_MPITASKS_PER_NODE in CIME's config_machines.xml).
+#
+# Baselines: the jobs compare against baselines in <BASELINE_ROOT of ghci>/<compiler>/master/homme
+# (i.e., /projects/e3sm/data/baselines/ghci/<compiler>/master/homme). They must be generated first:
+# run this workflow manually (workflow_dispatch) with 'bless' set, on the branch whose results should become the
+# baselines (normally master). Until then, the tests that compare against baselines fail (the unit tests are
+# not affected).
+
+on:
+  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - '.github/workflows/homme-testing.yml'
+      - '.github/actions/get-cuda-arch/**'
+      - 'cime_config/machines/config_machines.xml'
+      - 'components/homme/**'
+      - 'externals/ekat'
+      - 'externals/scorpio'
+
+  # Manual run is used to bless
+  workflow_dispatch:
+    inputs:
+      bless:
+        description: 'Generate baselines'
+        required: true
+        type: boolean
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  tests:
+    runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
+    strategy:
+      fail-fast: false
+      matrix:
+        # The runner label is also the name of the compiler config: machine file is ghci-<runner>.cmake
+        runner: [gnu, intel, cuda]
+    name: ${{ matrix.runner }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+      - name: Check out the submodules that homme needs
+        run: |
+          # Homme only needs cime (python, timing lib, genf90, cprnc), ekat (+kokkos), and scorpio.
+          # The submodules in .gitmodules use ssh urls, which may not work on the runners, so
+          # we rewrite them to https (all the submodules are public, so no credentials are needed).
+          # The -c option is inherited by the git commands run for the (nested) submodules.
+          git -c url."https://github.com/".insteadOf=git@github.com: \
+              submodule update --init --recursive --depth=1 \
+              cime externals/ekat externals/scorpio
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Get CUDA Arch
+        if: ${{ matrix.runner == 'cuda' }}
+        uses: ./.github/actions/get-cuda-arch
+      - name: Set test resources
+        run: |
+          # Homme tests do not reserve cpus/gpus, so we must make sure to not oversubscribe the node.
+          # Here we figure out the compiler (as CIME calls it), and how to split the node between ranks
+          # per test, threads per rank, and number of tests running at the same time.
+          # The results are set in the env, for the next steps.
+          if [ -n "${CUDA_CMAKE_CONFIGS:-}" ]; then
+            # GPU runner (get-cuda-arch has set the cuda arch)
+            compiler=gnugpu
+            ranks=2    # one rank per GPU (2 GPUs per node)
+            threads=1
+
+            # The MPI wrappers must use nvcc_wrapper as backend compiler, both when configuring and
+            # when building (so this must be in the env of the next step). Honor any pre-existing setting.
+            nvcc_wrapper="$GITHUB_WORKSPACE/externals/ekat/extern/kokkos/bin/nvcc_wrapper"
+            {
+              echo "NVCC_WRAPPER_DEFAULT_COMPILER=${NVCC_WRAPPER_DEFAULT_COMPILER:-g++}"
+              echo "OMPI_CXX=${OMPI_CXX:-$nvcc_wrapper}"
+              echo "MPICH_CXX=${MPICH_CXX:-$nvcc_wrapper}"
+            } >> "$GITHUB_ENV"
+          else
+            compiler=${{ matrix.runner }}
+            ranks=4
+            threads=2
+
+            # The Kokkos OpenMP pool defaults to ALL the cores of the node, for EACH rank. That oversubscribes
+            # the node, and can give a pool size that is not a power of 2 (which breaks some tests:
+            # "vector_length (N) must be a power of 2"). So we set the threads explicitly.
+            echo "OMP_NUM_THREADS=$threads" >> "$GITHUB_ENV"
+
+            # Same as in CIME's config for ghci: the default stack size of the OpenMP threads is too small
+            echo "OMP_STACKSIZE=64M" >> "$GITHUB_ENV"
+          fi
+
+          # How many ranks/gpus fit in the node, according to CIME (this depends on the compiler)
+          capacity=$(python3 -I - "$compiler" <<'EOF'
+          import sys
+          sys.path.append("cime")
+          import CIME.XML.machines as M
+          mach = M.Machines("cime_config/machines/config_machines.xml", machine="ghci")
+          mach.set_value("COMPILER", sys.argv[1])
+          print(mach.get_value("MAX_MPITASKS_PER_NODE"))
+          EOF
+          )
+
+          if ! [[ "$capacity" =~ ^[0-9]+$ ]]; then
+            echo "::error::Could not determine the node capacity from CIME (got '$capacity')"
+            exit 1
+          fi
+
+          # The ranks and threads of a test use up ranks*threads of the capacity (cores or gpus)
+          parallel=$(( capacity / (ranks * threads) ))
+          if [ "$parallel" -lt 1 ]; then
+            parallel=1
+          fi
+          echo "compiler=$compiler, capacity=$capacity, ranks=$ranks, threads=$threads -> $parallel tests at once"
+          echo "HOMME_COMPILER=$compiler" >> "$GITHUB_ENV"
+          echo "HOMME_PARALLEL=$parallel" >> "$GITHUB_ENV"
+          echo "HOMME_RANKS=$ranks" >> "$GITHUB_ENV"
+      - name: Run test_homme.py
+        working-directory: components/homme
+        run: |
+          # CUDA_CMAKE_CONFIGS (set by get-cuda-arch) is a semicolon-separated list of key=val
+          # (empty tokens are ignored, so this is a no-op for non-cuda runners)
+          cuda_flags=()
+          IFS=';' read -ra configs <<< "${CUDA_CMAKE_CONFIGS:-}"
+          for config in "${configs[@]}"; do
+            if [ -n "$config" ]; then
+              cuda_flags+=(--cmake-opt "$config")
+            fi
+          done
+
+          # Each runner has its own machine file (ghci-<runner>.cmake).
+          cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
+               -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
+               "${cuda_flags[@]}")
+          if [ "${{ env.generate }}" = "true" ]; then
+            cmd+=(-g)
+          fi
+
+          # Like other E3SM machines (see resource_limits in config_machines.xml), use an unlimited stack.
+          # With few ranks per test, each rank holds a lot of data, and the default stack (8MB) is not enough
+          # (e.g., the I/O of some tests segfaults). If the hard limit is lower, use that.
+          ulimit -s unlimited 2>/dev/null || ulimit -s "$(ulimit -H -s)"
+
+          # Print the full command, then run it
+          echo "test_homme call: ${cmd[*]}"
+          "${cmd[@]}"
+      - name: Show stderr/stdout of failed tests
+        if: failure()
+        working-directory: components/homme/ctest-build/tests
+        run: |
+          # The ctest log only says "check out/err files", so show (a few of) them here.
+          # First, the list of failed tests (lines are '<num>:<name>')
+          shopt -s nullglob
+          # (in dashboard mode, ctest appends a timestamp to the name: use the latest)
+          failed_list=""
+          candidates=(../Testing/Temporary/LastTestsFailed*.log)
+          if [ "${#candidates[@]}" -gt 0 ]; then
+            failed_list=$(ls -t "${candidates[@]}" | head -n 1)
+          fi
+          echo "=============== failed tests"
+          if [ -n "$failed_list" ]; then
+            cat "$failed_list"
+          fi
+
+          # Then, stderr/stdout of the first few failed tests that are not cxx-vs-f90 comparisons (which have
+          # no files of their own: their output is in the log). If we cannot tell, just show the first few.
+          names=()
+          if [ -n "$failed_list" ] && [ -s "$failed_list" ]; then
+            while IFS=: read -r _ name; do
+              case "$name" in
+                *_cxx_vs_f90) ;;
+                *) names+=("$name") ;;
+              esac
+            done < "$failed_list"
+          fi
+          if [ "${#names[@]}" -eq 0 ]; then
+            names=(*)
+          fi
+          n=0
+          for name in "${names[@]}"; do
+            for f in "$name"/*.err; do
+              [ -s "$f" ] || continue
+              # Skip the lines of stack traces, which hide the actual error message
+              echo "=============== $f (first 30 lines, without stack frames)"
+              grep -v -E '^[^ ]+ +[0-9A-Fa-f]{16} |^\[0x' "$f" | head -n 30 || true
+              out="${f%.err}.out"
+              if [ -s "$out" ]; then
+                echo "--------------- $out (last 15 lines)"
+                tail -n 15 "$out"
+              fi
+              n=$(( n + 1 ))
+              break
+            done
+            if [ "$n" -ge 4 ]; then
+              break
+            fi
+          done
+      - name: Upload ctest logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: log-files-${{ matrix.runner }}
+          path: |
+            components/homme/ctest-build/CMakeCache.txt
+            components/homme/ctest-build/Testing/**
+            components/homme/ctest-build/tests/**/*.err

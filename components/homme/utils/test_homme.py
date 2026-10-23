@@ -9,6 +9,7 @@ import subprocess
 import os
 import sys
 import shutil
+import shlex
 import getpass
 
 DEFAULT_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -44,6 +45,13 @@ def _parse_args(argv):
         "--compiler",
         default=None,
         help="In case the machine supports 2+ compilers, the user can ask for a specific one",
+    )
+    parser.add_argument(
+        "--machine-file",
+        default=None,
+        help="Name (without -bfb suffix and .cmake extension) of the file in components/homme/cmake/machineFiles "
+             "to use, instead of the one named like the machine. Useful if the machine supports 2+ compilers, "
+             "and each needs its own file (e.g., ghci-gnu).",
     )
     parser.add_argument(
         "-r",
@@ -194,12 +202,17 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     ctest_j = args.run_parallel_level
     if args.run_parallel_level <= 0:
         ctest_j = machine.get_value('MAX_TASKS_PER_NODE')
+    # The machine file is named after the machine, unless the user asks for a different one
+    machine_file = args.machine_file or args.machine
+    if args.bfb:
+        machine_file += "-bfb"
+
     cmd  =  "ctest --output-on-failure"
     cmd +=  " " + " ".join(args.ctest_arg)
     cmd += f" -S {ctest_script}"
     cmd += f" -D HOMME_ROOT={root_dir}"
     cmd += f" -D BUILD_WORK_DIR={work_dir}"
-    cmd += f" -D MACHINE={args.machine}"
+    cmd += f" -D MACHINE_FILE={machine_file}"
     cmd += f" -D BFB_TESTING={_bool_str(args.bfb)}"
     cmd += f" -D BASELINE_DIR={baseline_dir}"
     cmd += f" -D DEBUG={_bool_str(args.debug)}"
@@ -211,7 +224,8 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     if args.cprnc_dir:
         cmd += f" -D CPRNC_DIR={pathlib.Path(args.cprnc_dir).resolve()}"
     if cmake_opts:
-        cmd += f" -D EXTRA_CMAKE_OPTIONS={';'.join(cmake_opts)}"
+        # The opts are joined with ';' (a cmake list), so quote it to keep the shell from splitting it
+        cmd += " -D " + shlex.quote(f"EXTRA_CMAKE_OPTIONS={';'.join(cmake_opts)}")
 
     return cmd
 
