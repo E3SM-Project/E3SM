@@ -202,10 +202,12 @@ struct Functions
   // ---------------------------------------------------------------------------------------
   // Driver (cosp_c2f_run in cosp_c2f.F90, and cosp_simulator in cosp.F90)
 
-  // Scratch space for cosp_main: optical inputs by (column, subcolumn, level), and
-  // simulator results by (column, subcolumn)
+  // Scratch space for cosp_main: optical inputs by (column, subcolumn, level), the
+  // fraction of stratiform subcolumns by (column, level), and simulator results by
+  // (column, subcolumn)
   struct Workspace {
     view_3d<Scalar> frac_out, tau, dem, liqfrac, g, w0;
+    view_2d<Scalar> frac_ls;
     view_2d<Scalar> threshold, boxtau, boxptop, boxttop, misr_tau, misr_ztop, modis_ctp, modis_tau,
                     modis_size;
     view_2d<int>    modis_phase;
