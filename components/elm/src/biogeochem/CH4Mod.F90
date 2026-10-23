@@ -1467,7 +1467,6 @@ contains
       ch4_surf_flux_tot(begc:endc) = 0._r8
       ch4_prod_tot(begc:endc)      = 0._r8
       ch4_oxid_tot(begc:endc)      = 0._r8
-      rootfraction(begp:endp,:)    = spval
 
       ! Adjustment to NEE for methane production - oxidation
       nem_col(begc:endc)           = 0._r8
@@ -1580,6 +1579,9 @@ contains
       ! Determine rootfr_col and also check for inactive columns
 
       if (nlevdecomp == 1) then
+
+         ! rootfraction is only used in this block, so it is only initialized here
+         rootfraction(begp:endp,:) = spval
 
          nc = bounds%clump_index
          
@@ -2152,9 +2154,8 @@ contains
       q10lake = q10ch4 * 1.5_r8
 
       ! PATCH loop to calculate vertically resolved column-averaged root respiration
+      ! rr_vr is only read at filter columns, which are zeroed here, so it needs no spval fill
       if (.not. lake) then
-         rr_vr(bounds%begc:bounds%endc,:) = spval
-
          do fp = 1, num_methc
             c = filter_methc(fp)
             rr_vr(c,:) = 0.0_r8
