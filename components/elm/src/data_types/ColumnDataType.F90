@@ -7342,7 +7342,7 @@ contains
   end subroutine col_cf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope)
+  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope, hr_current)
     !
     ! !DESCRIPTION:
     ! column-level carbon flux summary calculations
@@ -7354,6 +7354,8 @@ contains
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     character(len=*)       , intent(in)    :: isotope
+    logical, optional      , intent(in)    :: hr_current ! true => somhr, lithr, decomp_cascade_hr and hr_vr
+                                                         ! are already set by col_cf_summary_for_ch4
     !
     ! !LOCAL VARIABLES:
     real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
@@ -7361,6 +7363,7 @@ contains
     integer  :: fc              ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     integer  :: nlev
+    logical  :: skip_hr         ! skip recomputing the HR fluxes
     !-----------------------------------------------------------------------
     associate(&
          is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
@@ -7429,6 +7432,13 @@ contains
 
     endif
 
+    ! Without PFLOTRAN, the block below repeats col_cf_summary_for_ch4 exactly.
+    ! With hr_current, that routine already ran on unchanged decomp_cascade_hr_vr
+    ! (end of EcosystemDynNoLeaching2), so recomputing would give the same bits.
+    skip_hr = .false.
+    if (present(hr_current)) skip_hr = hr_current .and. .not. (use_pflotran .and. pf_cmode)
+
+    if (.not. skip_hr) then
     ! some zeroing
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -7493,6 +7503,7 @@ contains
           end do
        end do
     end do
+    end if ! .not. skip_hr
 
     !----------------------------------------------------------------
     ! bgc interface & pflotran:
