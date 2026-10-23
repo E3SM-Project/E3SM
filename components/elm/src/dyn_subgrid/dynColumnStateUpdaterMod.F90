@@ -276,13 +276,15 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine update_column_state_no_special_handling(this, bounds, clump_index, &
-       var, fractional_area_old, fractional_area_new, adjustment)
+       var, fractional_area_old, fractional_area_new, adjustment, scope_crossing_mass_grc)
     !
     ! !DESCRIPTION:
     ! Adjust the values of a column-level state variable due to changes in subgrid
     ! weights.
     !
-    ! This method does no special handling of any columns.
+    ! This method does no special handling of any columns: real mass moves into/out of
+    ! special-landunit columns' own state like any other column. If
+    ! scope_crossing_mass_grc is provided, the special-landunit portion is also reported there.
     !
     ! !USES:
     !$acc routine seq
@@ -307,6 +309,9 @@ contains
 
     ! Apparent state adjustment in each column
     real(r8), optional, intent(out) :: adjustment( bounds%begc: )
+
+    ! Mass crossing into/out of a special-landunit column
+    real(r8), optional, intent(inout) :: scope_crossing_mass_grc( bounds%begg: )
     !
     ! !LOCAL VARIABLES:
     real(r8) :: vals_input(bounds%begc:bounds%endc)
@@ -336,16 +341,30 @@ contains
        ! explicit bounds not needed on any of these arguments - and specifying explicit
        ! bounds defeats some later bounds checking (for fractional_area_old and
        ! fractional_area_new)
-       call update_column_state_with_optional_fractions(this, &
-            bounds = bounds, &
-            vals_input = vals_input, &
-            vals_input_valid = vals_input_valid, &
-            has_prognostic_state = has_prognostic_state, &
-            var = var, &
-            non_conserved_mass = non_conserved_mass, &
-            fractional_area_old = fractional_area_old, &
-            fractional_area_new = fractional_area_new, &
-            adjustment = adjustment)
+       if (present(scope_crossing_mass_grc)) then
+          call update_column_state_with_optional_fractions(this, &
+               bounds = bounds, &
+               vals_input = vals_input, &
+               vals_input_valid = vals_input_valid, &
+               has_prognostic_state = has_prognostic_state, &
+               var = var, &
+               non_conserved_mass = non_conserved_mass, &
+               fractional_area_old = fractional_area_old, &
+               fractional_area_new = fractional_area_new, &
+               adjustment = adjustment, &
+               scope_crossing_mass_grc = scope_crossing_mass_grc)
+       else
+          call update_column_state_with_optional_fractions(this, &
+               bounds = bounds, &
+               vals_input = vals_input, &
+               vals_input_valid = vals_input_valid, &
+               has_prognostic_state = has_prognostic_state, &
+               var = var, &
+               non_conserved_mass = non_conserved_mass, &
+               fractional_area_old = fractional_area_old, &
+               fractional_area_new = fractional_area_new, &
+               adjustment = adjustment)
+       end if
 
        ! Since there is no special handling in this routine, the non_conserved_mass variable
        ! should not have any accumulation. We allow for roundoff-level accumulation in case
@@ -680,7 +699,7 @@ contains
        vals_input, vals_input_valid, has_prognostic_state, &
        var, non_conserved_mass, &
        fractional_area_old, fractional_area_new, &
-       adjustment)
+       adjustment, scope_crossing_mass_grc)
     !
     ! !DESCRIPTION:
     ! Intermediate routine between the public routines and the real work routine
@@ -726,6 +745,9 @@ contains
 
     ! Apparent state adjustment in each column
     real(r8), optional, intent(inout) :: adjustment( bounds%begc: )
+
+    ! Mass crossing into/out of a special-landunit column
+    real(r8), optional, intent(inout) :: scope_crossing_mass_grc( bounds%begg: )
     !
     ! !LOCAL VARIABLES:
     real(r8) :: my_fractional_area_old(bounds%begc:bounds%endc)
@@ -754,16 +776,30 @@ contains
        my_fractional_area_new(bounds%begc:bounds%endc) = 1._r8
     end if
 
-    call update_column_state(this,&
-         bounds = bounds, &
-         vals_input = vals_input(bounds%begc:bounds%endc), &
-         vals_input_valid = vals_input_valid(bounds%begc:bounds%endc), &
-         has_prognostic_state = has_prognostic_state(bounds%begc:bounds%endc), &
-         fractional_area_old = my_fractional_area_old(bounds%begc:bounds%endc), &
-         fractional_area_new = my_fractional_area_new(bounds%begc:bounds%endc), &
-         var = var(bounds%begc:bounds%endc), &
-         non_conserved_mass = non_conserved_mass(bounds%begg:bounds%endg), &
-         adjustment = adjustment)
+    if (present(scope_crossing_mass_grc)) then
+       call update_column_state(this,&
+            bounds = bounds, &
+            vals_input = vals_input(bounds%begc:bounds%endc), &
+            vals_input_valid = vals_input_valid(bounds%begc:bounds%endc), &
+            has_prognostic_state = has_prognostic_state(bounds%begc:bounds%endc), &
+            fractional_area_old = my_fractional_area_old(bounds%begc:bounds%endc), &
+            fractional_area_new = my_fractional_area_new(bounds%begc:bounds%endc), &
+            var = var(bounds%begc:bounds%endc), &
+            non_conserved_mass = non_conserved_mass(bounds%begg:bounds%endg), &
+            adjustment = adjustment, &
+            scope_crossing_mass_grc = scope_crossing_mass_grc(bounds%begg:bounds%endg))
+    else
+       call update_column_state(this,&
+            bounds = bounds, &
+            vals_input = vals_input(bounds%begc:bounds%endc), &
+            vals_input_valid = vals_input_valid(bounds%begc:bounds%endc), &
+            has_prognostic_state = has_prognostic_state(bounds%begc:bounds%endc), &
+            fractional_area_old = my_fractional_area_old(bounds%begc:bounds%endc), &
+            fractional_area_new = my_fractional_area_new(bounds%begc:bounds%endc), &
+            var = var(bounds%begc:bounds%endc), &
+            non_conserved_mass = non_conserved_mass(bounds%begg:bounds%endg), &
+            adjustment = adjustment)
+    end if
 
   end subroutine update_column_state_with_optional_fractions
 
@@ -772,7 +808,7 @@ contains
   subroutine update_column_state(this, bounds, &
        vals_input, vals_input_valid, has_prognostic_state, &
        fractional_area_old, fractional_area_new, &
-       var, non_conserved_mass, adjustment)
+       var, non_conserved_mass, adjustment, scope_crossing_mass_grc)
     !
     ! !DESCRIPTION:
     ! Do the work of updating a column-level state variable due to changes in subgrid
@@ -813,9 +849,20 @@ contains
 
     ! Apparent state adjustment in each column
     real(r8), optional, intent(inout) :: adjustment( bounds%begc: )
+
+    ! Mass (per unit of grid cell area) that moved into or out of a "special" landunit
+    ! column (urban, lake, glacier, ...). Unlike non_conserved_mass, this mass
+    ! is NOT destroyed - rather it is frozen in the special column's own state, and
+    ! outside the filter_soilc-summed scope that totcolc/totcoln/totcolp track,
+    ! so the balance check needs it reported as a flux.
+    ! Positive = left the tracked scope (entered a special column)
+    ! Negative = re-entered it (left a special column).
+    ! Accumulates on top of whatever is already present, like non_conserved_mass.
+    real(r8), optional, intent(inout) :: scope_crossing_mass_grc( bounds%begg: )
     !
     ! !LOCAL VARIABLES:
     integer  :: c, g
+    logical  :: col_is_special
 
     ! whether vals_input /= var in the columns where it should be equal
     logical :: bad_vals_input(bounds%begc:bounds%endc)
@@ -872,7 +919,14 @@ contains
           end if
           area_lost = -1._r8 * this%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost
-          area_weighted_loss = area_lost * vals_input(c) * fractional_area_old(c)
+          if (vals_input(c) == spval) then
+             ! Column still holds the cold-start missing-data sentinel (never had real
+             ! state for this quantity) - treat as zero mass rather than pooling the
+             ! sentinel itself, which would poison the whole grid cell's redistribution.
+             area_weighted_loss = 0._r8
+          else
+             area_weighted_loss = area_lost * vals_input(c) * fractional_area_old(c)
+          end if
           total_loss_grc(g) = total_loss_grc(g) + area_weighted_loss
 
           if (.not. has_prognostic_state(c)) then
@@ -880,6 +934,14 @@ contains
              ! really some fictitious quantity. So we track how much of this fictitious
              ! quantity we added to the system.
              non_conserved_mass(g) = non_conserved_mass(g) - area_weighted_loss
+          end if
+
+          if (present(scope_crossing_mass_grc)) then
+             col_is_special = landunit_is_special(lun_pp%itype(col_pp%landunit(c)))
+             if (col_is_special) then
+                ! Mass re-entering the tracked scope as it leaves this special column.
+                scope_crossing_mass_grc(g) = scope_crossing_mass_grc(g) - area_weighted_loss
+             end if
           end if
        end if
     end do
@@ -909,13 +971,32 @@ contains
              ! columns were all 0 - in which case the value of var is irrelevant for
              ! conservation purposes.
              if (fractional_area_new(c) /= 0._r8) then
-                var(c) = (this%cwtgcell_old(c) * var(c) * fractional_area_old(c) + mass_gained) / &
-                     (this%cwtgcell_new(c) * fractional_area_new(c))
+                ! Guard against cwtgcell_old(c)==0 or var(c)==spval: either means no real
+                ! "old" contribution exists to carry forward (e.g. a special column
+                ! tracked for the first time). Treat as zero rather than multiplying a
+                ! real weight by the spval sentinel. adjustment(c) is computed in each
+                ! branch below so it's never derived from a possibly-sentinel val_old.
+                if (this%cwtgcell_old(c) == 0._r8 .or. var(c) == spval) then
+                   var(c) = mass_gained / (this%cwtgcell_new(c) * fractional_area_new(c))
+                   if (present(adjustment)) then
+                      adjustment(c) = var(c) * fractional_area_new(c)
+                   end if
+                else
+                   var(c) = (this%cwtgcell_old(c) * var(c) * fractional_area_old(c) + mass_gained) / &
+                        (this%cwtgcell_new(c) * fractional_area_new(c))
+                   if (present(adjustment)) then
+                      adjustment(c) = var(c) * fractional_area_new(c) - &
+                           val_old * fractional_area_old(c)
+                   end if
+                end if
              end if
 
-             if (present(adjustment)) then
-                adjustment(c) = var(c) * fractional_area_new(c) - &
-                     val_old * fractional_area_old(c)
+             if (present(scope_crossing_mass_grc)) then
+                col_is_special = landunit_is_special(lun_pp%itype(col_pp%landunit(c)))
+                if (col_is_special) then
+                   ! Mass leaving the tracked scope as it freezes into this special column.
+                   scope_crossing_mass_grc(g) = scope_crossing_mass_grc(g) + mass_gained
+                end if
              end if
           else
              non_conserved_mass(g) = non_conserved_mass(g) + mass_gained

@@ -98,7 +98,7 @@ contains
     ! Returns true if the landunit type ltype is a special landunit; returns false otherwise
     !
     ! !USES:
-    !
+      !$acc routine seq
     ! !ARGUMENTS:
     logical :: is_special  ! function result
     integer :: ltype       ! landunit type of interest
