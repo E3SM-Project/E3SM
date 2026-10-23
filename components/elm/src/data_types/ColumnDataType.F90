@@ -7723,28 +7723,9 @@ contains
     end if
 
 
-    do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%plant_to_litter_cflux(c) = 0._r8
-        this%plant_to_cwd_cflux(c) = 0._r8
-        do j = 1, nlev
-            this%plant_to_litter_cflux(c) = &
-                this%plant_to_litter_cflux(c)  + &
-                this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_cflux(c) = &
-                this%plant_to_cwd_cflux(c) + &
-                this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
-        end do
-    end do
+    ! plant_to_litter_cflux and plant_to_cwd_cflux are not integrated here:
+    ! no history field, restart variable or balance check reads them (the
+    ! arrays stay allocated). Restore the integration if a reader is added.
 
     end associate
 
@@ -10046,24 +10027,14 @@ contains
     end if
 
     ! supplementary N supplement_to_sminn
+    ! (sminn_input, sminn_nh4_input and sminn_no3_input are not integrated:
+    ! nothing reads them; restore the integration if a reader is added)
     do j = 1, nlev
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%supplement_to_sminn(c) = &
                this%supplement_to_sminn(c) + &
                this%supplement_to_sminn_vr(c,j) * dzsoi_decomp(j)
-
-          this%sminn_input(c) = &
-               this%sminn_input(c) + &
-               (this%sminn_nh4_input_vr(c,j)+this%sminn_no3_input_vr(c,j))*dzsoi_decomp(j)
-
-          this%sminn_nh4_input(c) = &
-               this%sminn_nh4_input(c) + &
-               this%sminn_nh4_input_vr(c,j)*dzsoi_decomp(j)
-
-          this%sminn_no3_input(c) = &
-               this%sminn_no3_input(c) + &
-               this%sminn_no3_input_vr(c,j)*dzsoi_decomp(j)
        end do
     end do
 
@@ -10086,15 +10057,15 @@ contains
           this%decomp_npools_leached(c,l) = 0._r8
        end do
        if(l /= i_cwd)then
+         ! bgc_npool_inputs is not accumulated: nothing reads it, and its
+         ! inputs bgc_npool_ext_inputs_vr and bgc_npool_ext_loss_vr are never
+         ! written after initialization (spval - spval only added +0 to spval).
          do j = 1, nlev
            do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_npools_leached(c,l) = &
                   this%decomp_npools_leached(c,l) + &
                   this%decomp_npools_transport_tendency(c,j,l) * dzsoi_decomp(j)
-
-             this%bgc_npool_inputs(c,l) = this%bgc_npool_inputs(c,l) + &
-                (this%bgc_npool_ext_inputs_vr(c,j,l)-this%bgc_npool_ext_loss_vr(c,j,l))*dzsoi_decomp(j)
            end do
          end do
        endif
@@ -10107,13 +10078,17 @@ contains
     end do
 
     ! FATES uses the plant_to_litter_nflux variable for mass accounting, so bypass here
+    ! The vertical integrations below run with the column loop innermost
+    ! (memory order); each column's sum keeps its order over j and over the
+    ! terms. plant_to_cwd_nflux is not integrated, since nothing reads it.
     if(.not.use_fates)then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-
           this%plant_to_litter_nflux(c) = 0._r8
-          this%plant_to_cwd_nflux(c) = 0._r8
-          do j = 1, nlev
+       end do
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
              this%plant_to_litter_nflux(c) = &
                   this%plant_to_litter_nflux(c)  + &
                   this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
@@ -10125,10 +10100,6 @@ contains
                   this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-             this%plant_to_cwd_nflux(c) = &
-                  this%plant_to_cwd_nflux(c) + &
-                  this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
-                  this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
           end do
        end do
     end if
@@ -10137,7 +10108,10 @@ contains
        c = filter_soilc(fc)
        this%smin_no3_to_plant(c) = 0._r8
        this%smin_nh4_to_plant(c) = 0._r8
-       do j = 1, nlev
+    enddo
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
           this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + &
                this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
           this%smin_nh4_to_plant(c)= this%smin_nh4_to_plant(c) + &
@@ -11762,16 +11736,19 @@ contains
        end do
     end do
 
+    ! The vertical integrations below run with the column loop innermost
+    ! (memory order); each column's sum keeps its order over j and over the
+    ! terms. smin_p_to_plant and plant_to_cwd_pflux are not integrated, since
+    ! nothing reads them (restore the integration if a reader is added).
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%actual_immob_p(c) = 0._r8
-       this%smin_p_to_plant(c) = 0._r8
-
-       do j = 1, nlevdecomp
+    end do
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
           this%actual_immob_p(c)= this%actual_immob_p(c) + &
                this%actual_immob_p_vr(c,j) * dzsoi_decomp(j)
-          this%smin_p_to_plant(c)= this%smin_p_to_plant(c) + &
-               this%sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -11780,8 +11757,10 @@ contains
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%plant_to_litter_pflux(c) = 0._r8
-          this%plant_to_cwd_pflux(c) = 0._r8
-          do j = 1, nlevdecomp
+       end do
+       do j = 1, nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
              this%plant_to_litter_pflux(c) = &
                   this%plant_to_litter_pflux(c)  + &
                   this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
@@ -11793,10 +11772,6 @@ contains
                   this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-             this%plant_to_cwd_pflux(c) = &
-                  this%plant_to_cwd_pflux(c) + &
-                  this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
-                  this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
           end do
        end do
     end if
