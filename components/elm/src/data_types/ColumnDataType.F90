@@ -7786,7 +7786,9 @@ contains
     enddo
 
     if ((.not. (use_pflotran .and. pf_cmode))) then
-      ! vertically integrate HR and decomposition cascade fluxes
+      ! vertically integrate HR and decomposition cascade fluxes, and sum the
+      ! vertically resolved HR in the same pass. Each sum keeps its original
+      ! order (over j for decomp_cascade_hr, over k for hr_vr).
       do k = 1, ndecomp_cascade_transitions
 
        do j = 1,nlevdecomp
@@ -7796,6 +7798,11 @@ contains
              this%decomp_cascade_hr(c,k) = &
                 this%decomp_cascade_hr(c,k) + &
                 this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+
+             ! total heterotrophic respiration, vertically resolved (HR)
+             this%hr_vr(c,j) = &
+                this%hr_vr(c,j) + &
+                this%decomp_cascade_hr_vr(c,j,k)
 
           end do
        end do
@@ -7825,18 +7832,6 @@ contains
         end if
       end do
 
-      ! total heterotrophic respiration, vertically resolved (HR)
-
-      do k = 1, ndecomp_cascade_transitions
-        do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%hr_vr(c,j) = &
-                this%hr_vr(c,j) + &
-                this%decomp_cascade_hr_vr(c,j,k)
-          end do
-        end do
-      end do
     endif
 
     end associate
