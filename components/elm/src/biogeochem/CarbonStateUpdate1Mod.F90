@@ -6,7 +6,7 @@ module CarbonStateUpdate1Mod
   ! !USES:
   use shr_kind_mod            , only : r8 => shr_kind_r8
   use decompMod               , only : bounds_type
-  use elm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
+  use elm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varcon              , only : dzsoi_decomp
   use elm_varctl              , only : nu_com, use_c13, use_c14
@@ -195,6 +195,10 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c,p,j,k,l ! indices
     integer  :: fp,fc     ! lake filter indices
+    ! Filter-position copies of one level of decomp_cpools_sourcesink and
+    ! decomp_cascade_ctransfer_vr, used while summing the source-sink terms
+    real(r8) :: ss_loc(num_soilc,ndecomp_pools)
+    real(r8) :: tr_loc(num_soilc,ndecomp_cascade_transitions)
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
@@ -217,47 +221,58 @@ contains
 
       if (.not.(use_pflotran .and. pf_cmode)) then
 
-         ! plant to litter fluxes
-         if(.not.use_fates)then
-            do j = 1,nlevdecomp
+         ! The source-sink terms of each level are summed in dense filter-position
+         ! locals and stored once. Each pool gets the same terms in the same order
+         ! as before: the plant to litter fluxes (or the value it holds on entry),
+         ! then the donor terms in k order, then the receiver terms in k order.
+         do j = 1,nlevdecomp
+            do l = 1, ndecomp_pools
+               ! the litter pools are set from the plant to litter fluxes below
+               if (.not.use_fates .and. (l == i_met_lit .or. l == i_cel_lit .or. l == i_lig_lit)) cycle
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  ss_loc(fc,l) = col_cf%decomp_cpools_sourcesink(c,j,l)
+               end do
+            end do
+
+            ! plant to litter fluxes
+            if(.not.use_fates)then
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   ! phenology and dynamic land cover fluxes
-                  col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
-                       col_cf%phenology_c_to_litr_met_c(c,j) * dt
-                  col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
-                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt
-                  col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
-                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+                  ss_loc(fc,i_met_lit) = col_cf%phenology_c_to_litr_met_c(c,j) * dt
+                  ss_loc(fc,i_cel_lit) = col_cf%phenology_c_to_litr_cel_c(c,j) * dt
+                  ss_loc(fc,i_lig_lit) = col_cf%phenology_c_to_litr_lig_c(c,j) * dt
                end do
-            end do
-         end if
+            end if
 
-         ! litter and SOM HR fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
+            ! litter and SOM HR fluxes
+            do k = 1, ndecomp_cascade_transitions
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                       col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) &
-                       - ( col_cf%decomp_cascade_hr_vr(c,j,k) + col_cf%decomp_cascade_ctransfer_vr(c,j,k)) *dt
+                  tr_loc(fc,k) = col_cf%decomp_cascade_ctransfer_vr(c,j,k)
+                  ss_loc(fc,cascade_donor_pool(k)) = ss_loc(fc,cascade_donor_pool(k)) &
+                       - ( col_cf%decomp_cascade_hr_vr(c,j,k) + tr_loc(fc,k)) *dt
                end do
             end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1,nlevdecomp
+            do k = 1, ndecomp_cascade_transitions
+               if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
                   ! column loop
                   do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) = &
-                          col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
-                          + col_cf%decomp_cascade_ctransfer_vr(c,j,k)*dt
+                     ss_loc(fc,cascade_receiver_pool(k)) = ss_loc(fc,cascade_receiver_pool(k)) &
+                          + tr_loc(fc,k)*dt
                   end do
+               end if
+            end do
+
+            do l = 1, ndecomp_pools
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  col_cf%decomp_cpools_sourcesink(c,j,l) = ss_loc(fc,l)
                end do
-            end if
+            end do
          end do
 
       endif   
