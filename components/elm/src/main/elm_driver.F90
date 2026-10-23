@@ -198,6 +198,14 @@ module elm_driver
   private :: elm_drv_patch2col
   private :: elm_drv_init      ! Initialization of variables needed from previous timestep
   private :: write_diagnostic  ! Write diagnostic information to log file
+  !
+  ! !PRIVATE DATA:
+  ! Whether the vegetation and column C, N and P state summaries computed at the
+  ! end of EcosystemDynLeaching in the previous time step still match the C, N
+  ! and P state. Set after the main physics loop, cleared after a restart write,
+  ! and .false. at the start of every run. Any code added after
+  ! EcosystemDynLeaching that changes C, N or P state must clear it.
+  logical, private, save :: cnp_end_summaries_valid = .false.
   !-----------------------------------------------------------------------
 
 contains
@@ -247,6 +255,7 @@ contains
     type(bounds_type)    :: bounds_clump
     type(bounds_type)    :: bounds_proc
     logical              :: cnp_summaries_current   ! veg and column C, N and P summaries match the current state
+    logical              :: cnpinit_summaries_current ! the end-of-step summaries of the previous step are still current
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
@@ -363,6 +372,18 @@ contains
     ! Zero fluxes for transient land cover
     ! ============================================================================
 
+    ! The state summaries in cnpinit repeat those at the end of
+    ! EcosystemDynLeaching in the previous step: nothing after them changes the
+    ! C, N or P state, and the soil filters change only in dynSubgrid_driver.
+    ! The veg ZeroDWT calls zero dispveg*, storveg*, totveg* and totpft* at all
+    ! patches before the summaries rewrite the filter patches; outside the
+    ! filters these are already zero unless the filters changed in the previous
+    ! step. get_subgrid_weights_updated() still refers to the previous step here
+    ! (it is .true. on the first step of a run or restart).
+    cnpinit_summaries_current = cnp_end_summaries_valid .and. use_cn .and. .not. use_fates &
+         .and. .not. get_subgrid_weights_updated() .and. .not. use_elm_interface &
+         .and. .not. use_fan .and. .not. iac_present
+
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -384,7 +405,9 @@ contains
        if (use_cn) then
           call t_startf('cnpvegzero')
 
-          call veg_cs%ZeroDwt(bounds_clump)
+          if (.not. cnpinit_summaries_current) then
+             call veg_cs%ZeroDwt(bounds_clump)
+          end if
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
              call c13_col_cf%ZeroDWT(bounds_clump)
@@ -393,8 +416,10 @@ contains
              call c14_grc_cf%ZeroDWT(bounds_clump)
              call c14_col_cf%ZeroDWT(bounds_clump)
           end if
-          call veg_ns%ZeroDWT(bounds_clump)
-          call veg_ps%ZeroDWT(bounds_clump)
+          if (.not. cnpinit_summaries_current) then
+             call veg_ns%ZeroDWT(bounds_clump)
+             call veg_ps%ZeroDWT(bounds_clump)
+          end if
           call t_stopf('cnpvegzero')
        end if
 
@@ -419,15 +444,17 @@ contains
 
        call t_startf('cnpvegsumm')
        if(use_cn) then
-          call veg_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call veg_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call veg_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          if (.not. cnpinit_summaries_current) then
+             call veg_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+             call veg_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+             call veg_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          end if
 
        elseif(use_fates)then
           ! In this scenario, we simply zero all of the
@@ -441,14 +468,16 @@ contains
 
        if(use_cn .or. use_fates)then
 
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+          if (.not. cnpinit_summaries_current) then
+             call col_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+          end if
 
           call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalance(bounds_clump, col_ns, grc_ns)
@@ -1358,6 +1387,10 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    ! EcosystemDynLeaching computed the C, N and P state summaries of the
+    ! current state and soil filters in the loop above
+    cnp_end_summaries_valid = use_cn .and. .not. use_fates
+
     ! Pass fates seed dispersal information to all nodes
     if (use_fates) then
        if (fates_seeddisp_cadence /= fates_dispersal_cadence_none) call alm_fates%WrapGlobalSeedDispersal()
@@ -1524,6 +1557,8 @@ contains
 
 
           call t_stopf('elm_drv_io_wrest')
+          ! Recompute the summaries in cnpinit after a restart write
+          cnp_end_summaries_valid = .false.
        end if
        call t_stopf('elm_drv_io')
 
