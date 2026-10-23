@@ -11310,14 +11310,18 @@ contains
        end do
     end do
       
-   do k = 1, ndecomp_pools
-      do j = 1, nlevdecomp_full
-         do fi = 1,num_column
-            i = filter_column(fi)
-            this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
+   ! Rewritten by FireFluxes for every filter column, level 1:nlevdecomp and pool
+   ! before any read (as m_decomp_npools_to_fire_vr); deeper levels stay zero.
+   if (do_zero_rewritten) then
+      do k = 1, ndecomp_pools
+         do j = 1, nlevdecomp_full
+            do fi = 1,num_column
+               i = filter_column(fi)
+               this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
+            end do
          end do
       end do
-   end do
+   end if
 
     ! pflotran
     if(nstep_mod == 0 .or. is_first_restart_step() ) then 
