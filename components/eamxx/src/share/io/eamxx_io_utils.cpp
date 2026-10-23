@@ -40,8 +40,8 @@ std::string find_filename_in_rpointer (
     EKAT_REQUIRE_MSG (control.output_enabled(),
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
         " - restart file prefix: " + filename_prefix + "\n");
-    // For history restart, need wildcard for stream_id
-    pattern_str += R"([^.]+\.)";  // Match stream_id
+    // For history restart, need wildcard for stream_name
+    pattern_str += R"([^.]+\.)";  // Match stream_name
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
   }
   if (is_scream_standalone()) {
@@ -95,7 +95,7 @@ std::string find_filename_in_rpointer (
           "   output freq units: " + control.frequency_units + "\n"
           "   rpointer content:\n" + content + "\n\n"
           " Did you change output specs (avg type, freq, or freq units) across restart? If so, please, remember that it is not allowed.\n"
-          " NOTE: File naming changed - old .rhist files are now .rh and include stream_id.\n"
+          " NOTE: File naming changed - old .rhist files are now .rh and include stream_name.\n"
           " If restarting from old files, you'll need to regenerate restart files with the new naming convention.\n");
     }
   }

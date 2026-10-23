@@ -122,12 +122,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   set(AVG_TYPES INSTANT MAX MIN AVERAGE)
   foreach (AVG_TYPE IN LISTS AVG_TYPES)
     foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
-      set(stream_id_N "io_transpose_N")
-      set(stream_id_T "io_transpose_T")
+      set(stream_name_N "io_transpose_N")
+      set(stream_name_T "io_transpose_T")
       set(suffix "${AVG_TYPE}.nsteps_x3.np${MPI_RANKS}.2023-02-17-00000.nc")
-      # File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc (no case name for unit tests)
-      set(file_N "eamxx.h.${stream_id_N}.${suffix}")
-      set(file_T "eamxx.h.${stream_id_T}.${suffix}")
+      # File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc (no case name for unit tests)
+      set(file_N "eamxx.h.${stream_name_N}.${suffix}")
+      set(file_T "eamxx.h.${stream_name_T}.${suffix}")
       
       # Add test to compare files using compare-nc-files script
       # The script should handle transposed dimensions automatically with -a flag
@@ -164,7 +164,7 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   )
 
   # For each avg_type and rank combination, compare the monolithic and restared run
-  # File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc (no case name for unit tests)
+  # File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc (no case name for unit tests)
   include (CompareNCFiles)
   foreach (AVG_TYPE IN ITEMS INSTANT AVERAGE)
     foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})

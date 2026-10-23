@@ -174,13 +174,13 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // for average output we also need to restore the accumulation state of the output fields
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
-  //       stream_id, so allow to specify a different stream_id for the restart file.
+  //       stream_name, so allow to specify a different stream_name for the restart file.
   bool branch_run = m_params.sublist("restart").get("branch_run",false);
   if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
-    // Allow to skip history restart, or to specify a stream_id for the restart file
-    // that is different from the stream_id of the current output.
+    // Allow to skip history restart, or to specify a stream_name for the restart file
+    // that is different from the stream_name of the current output.
     auto& restart_pl = m_params.sublist("restart");
-    auto hist_restart_stream_id = restart_pl.get("stream_id",m_stream_id);
+    auto hist_restart_stream_name = restart_pl.get("stream_name",m_stream_name);
 
     // Build the full prefix for history restart search
     // Skip case name if it's "UNSET" (unit tests)
@@ -362,7 +362,7 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
-  m_atm_logger->debug("[OutputManager::init_timestep] stream_id: " + m_stream_id + "\n");
+  m_atm_logger->debug("[OutputManager::init_timestep] stream_name: " + m_stream_name + "\n");
 
   for (auto s : m_output_streams) {
     s->init_timestep(start_of_step);
@@ -387,7 +387,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       "The most likely cause is an output frequency that is faster than the atm timestep.\n"
       "Try to increase 'frequency' and/or 'frequency_units' in your output yaml file.\n");
 
-  m_atm_logger->debug("[OutputManager::run] stream_id: " + m_stream_id + "\n");
+  m_atm_logger->debug("[OutputManager::run] stream_name: " + m_stream_name + "\n");
 
   using namespace scorpio;
 
@@ -615,7 +615,7 @@ void OutputManager::finalize()
   m_globals.clear();
   m_io_comm = {};
   m_params  = {};
-  m_stream_id = {};
+  m_stream_name = {};
   m_time_bnds = {};
   m_avg_type = {};
   m_output_control = {};
@@ -656,10 +656,10 @@ compute_filename (const IOFileSpecs& file_specs,
   // For history and history-restart, add user's stream identifier
   if (file_specs.ftype == FileType::ModelOutput ||
       file_specs.ftype == FileType::HistoryRestart) {
-    // m_stream_id contains user's custom identifier from yaml
-    filename += "." + m_stream_id;
+    // m_stream_name contains user's custom identifier from yaml
+    filename += "." + m_stream_name;
   }
-  // Note: For ModelRestart, we skip the stream_id
+  // Note: For ModelRestart, we skip the stream_name
 
   const auto& control = m_output_control;
 
@@ -720,7 +720,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       fields_pl.sublist(gname).set("field_names",fnames);
       fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
     }
-    m_stream_id = m_params.get<std::string>("stream_id");
+    m_stream_name = m_params.get<std::string>("stream_name");
 
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("floating_point_precision","real");
@@ -749,7 +749,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
-    m_stream_id = m_params.get<std::string>("stream_id");
+    m_stream_name = m_params.get<std::string>("stream_name");
     m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
 
     // Allow user to ask for higher precision for normal model output,
@@ -766,7 +766,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
 
   // Output control
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
-      "Error! The output control YAML file for " + m_stream_id + " is missing the sublist 'output_control'");
+      "Error! The output control YAML file for " + m_stream_name + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.set_frequency_units(out_control_pl.get<std::string>("frequency_units"));
 
@@ -1088,7 +1088,7 @@ push_to_logger()
   };
 
   m_atm_logger->info("[EAMxx::output_manager] - New Output stream");
-  m_atm_logger->info("           Filename prefix: " + m_stream_id);
+  m_atm_logger->info("               Stream name: " + m_stream_name);
   m_atm_logger->info("                    Run t0: " + m_run_t0.to_string());
   m_atm_logger->info("                   Case t0: " + m_case_t0.to_string());
   m_atm_logger->info("              Reference t0: " + m_output_control.last_write_ts.to_string());

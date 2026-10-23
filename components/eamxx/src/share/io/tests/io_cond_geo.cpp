@@ -99,12 +99,12 @@ add_conditional_geo (const std::shared_ptr<const AbstractGrid>& grid,
 
 // Build an OutputManager parameter list for a single-field instant output
 ekat::ParameterList
-make_om_params (const std::string& prefix,
+make_om_params (const std::string& stream_name,
                 const std::vector<std::string>& field_names,
                 const bool save_grid_data)
 {
   ekat::ParameterList pl;
-  pl.set("stream_id", prefix);
+  pl.set("stream_name", stream_name);
   pl.set("field_names", field_names);
   pl.set("averaging_type", std::string("INSTANT"));
   auto& ctrl = pl.sublist("output_control");
@@ -154,7 +154,7 @@ TEST_CASE ("io_conditional_geo_data")
     om.finalize();
 
     // Verify: "swband" dim should NOT be in the file
-    // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+    // File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
     std::string fname = "eamxx.h.io_cond_geo_no_swband.INSTANT.nsteps_x1.np"
                         + std::to_string(comm.size())
                         + "." + t0.to_string() + ".nc";
@@ -184,7 +184,7 @@ TEST_CASE ("io_conditional_geo_data")
     om.finalize();
 
     // Verify: "swband" dim should be in the file and both geo vars present
-    // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+    // File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
     std::string fname = "eamxx.h.io_cond_geo_with_swband.INSTANT.nsteps_x1.np"
                         + std::to_string(comm.size())
                         + "." + t0.to_string() + ".nc";

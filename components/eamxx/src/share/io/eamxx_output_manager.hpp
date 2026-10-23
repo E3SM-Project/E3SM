@@ -164,7 +164,7 @@ protected:
   std::string       m_casename;
 
   // The user-provided stream identifier for output files
-  std::string       m_stream_id;
+  std::string       m_stream_name;
 
   std::vector<double> m_time_bnds;
 

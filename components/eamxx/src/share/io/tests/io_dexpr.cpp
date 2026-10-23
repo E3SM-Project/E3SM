@@ -81,14 +81,14 @@ create_test_fm (const std::shared_ptr<const GridsManager>& gm,
 }
 
 // NOTE: the 'aliases' section only exists in the full fields->$grid syntax
-ekat::ParameterList output_params (const std::string& prefix,
+ekat::ParameterList output_params (const std::string& stream_name,
                                    const std::string& grid_name,
                                    const std::vector<std::string>& field_names,
                                    const std::vector<std::string>& aliases = {},
                                    const int freq = 1)
 {
   ekat::ParameterList params;
-  params.set<std::string>("stream_id",prefix);
+  params.set<std::string>("stream_name",stream_name);
   params.set<std::string>("averaging_type","INSTANT");
   params.set<std::string>("floating_point_precision","real");
 
@@ -139,11 +139,11 @@ TEST_CASE ("io_with_expressions")
   util::TimeStamp t0({2023,1,1},{0,0,0});
   auto fm = create_test_fm(gm,grid,t0);
 
-  const std::string prefix = "io_dexpr";
+  const std::string stream_name = "io_dexpr";
   const int dt = 1;
   const int nsteps = 3;
 
-  auto params = output_params(prefix,gname,
+  auto params = output_params(stream_name,gname,
       {
         // An expression must be given a name, since field names go into the
         // nc file verbatim
@@ -194,7 +194,7 @@ TEST_CASE ("io_with_expressions")
 
   // NOTE: the file is named after the FIRST snapshot in it, which is t0+dt
   //       here, since we skip the t0 output
-  const auto filename = "eamxx.h." + prefix + ".INSTANT.nsteps_x1.np" +
+  const auto filename = "eamxx.h." + stream_name + ".INSTANT.nsteps_x1.np" +
                         std::to_string(comm.size()) + "." + (t0+dt).to_string() + ".nc";
   std::ifstream file_check(filename);
   REQUIRE (file_check.good());
