@@ -284,7 +284,7 @@ contains
     ! to the column level and assign them to the three litter pools
     !
     ! !USES:
-    use elm_varpar , only : nlevdecomp, max_col_npfts
+    use elm_varpar , only : nlevdecomp
     !
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -293,7 +293,26 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: fc,c,pi,p,j               ! indices
-    logical, allocatable :: has_flux(:)  ! the patch has a nonzero gap mortality flux to litter
+    ! Level-independent leading factors of the patch terms added to the
+    ! column fluxes (each term is factor * profile(p,j), the same product
+    ! as the original left-to-right evaluation)
+    real(r8) :: kc_leaf_met, kc_leaf_cel, kc_leaf_lig    ! leaf C to litter
+    real(r8) :: kc_froot_met, kc_froot_cel, kc_froot_lig ! fine root C to litter
+    real(r8) :: kc_stem_cwd, kc_croot_cwd                ! wood C to CWD
+    real(r8) :: kc_sto_leaf, kc_sto_froot, kc_sto_stem, kc_sto_croot ! storage C
+    real(r8) :: kc_xfr_leaf, kc_xfr_froot, kc_xfr_stem, kc_xfr_croot ! transfer C
+    real(r8) :: kn_leaf_met, kn_leaf_cel, kn_leaf_lig    ! leaf N to litter
+    real(r8) :: kn_froot_met, kn_froot_cel, kn_froot_lig ! fine root N to litter
+    real(r8) :: kn_stem_cwd, kn_croot_cwd                ! wood N to CWD
+    real(r8) :: kn_retrans, kn_pool                      ! retranslocated and storage N pool
+    real(r8) :: kn_sto_leaf, kn_sto_froot, kn_sto_stem, kn_sto_croot ! storage N
+    real(r8) :: kn_xfr_leaf, kn_xfr_froot, kn_xfr_stem, kn_xfr_croot ! transfer N
+    real(r8) :: kp_leaf_met, kp_leaf_cel, kp_leaf_lig    ! leaf P to litter
+    real(r8) :: kp_froot_met, kp_froot_cel, kp_froot_lig ! fine root P to litter
+    real(r8) :: kp_stem_cwd, kp_croot_cwd                ! wood P to CWD
+    real(r8) :: kp_retrans, kp_pool                      ! retranslocated and storage P pool
+    real(r8) :: kp_sto_leaf, kp_sto_froot, kp_sto_stem, kp_sto_croot ! storage P
+    real(r8) :: kp_xfr_leaf, kp_xfr_froot, kp_xfr_stem, kp_xfr_croot ! transfer P
     !-----------------------------------------------------------------------
 
     associate(                                                                              &
@@ -394,210 +413,206 @@ contains
 
          )
 
+      ! Each column flux (c,j) receives the terms of the patches of column c
+      ! in patch order and, within a patch, in statement order, exactly as in
+      ! a loop over levels, patches and columns; the (c,j) are independent,
+      ! so loop over columns, then patches, then levels. The patch fluxes are
+      ! read once per patch instead of once per level, and the column fluxes
+      ! of one column stay in cache across its patches.
       ! A patch whose gap mortality fluxes to litter are all zero adds only
-      ! zeros below, which leaves the column fluxes unchanged, so skip it
-      allocate(has_flux(lbound(veg_pp%active,1):ubound(veg_pp%active,1)))
-      do pi = 1,max_col_npfts
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            if (pi <=  col_pp%npfts(c)) then
-               p = col_pp%pfti(c) + pi - 1
-               has_flux(p) = .false.
-               if (veg_pp%active(p)) then
-                  has_flux(p) = m_cpool_to_litter(p) /= 0._r8 .or. m_deadcrootc_storage_to_litter(p) /= 0._r8 .or. &
-                       m_deadcrootc_to_litter(p) /= 0._r8 .or. m_deadcrootc_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_deadcrootn_storage_to_litter(p) /= 0._r8 .or. m_deadcrootn_to_litter(p) /= 0._r8 .or. &
-                       m_deadcrootn_xfer_to_litter(p) /= 0._r8 .or. m_deadcrootp_storage_to_litter(p) /= 0._r8 .or. &
-                       m_deadcrootp_to_litter(p) /= 0._r8 .or. m_deadcrootp_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_deadstemc_storage_to_litter(p) /= 0._r8 .or. m_deadstemc_to_litter(p) /= 0._r8 .or. &
-                       m_deadstemc_xfer_to_litter(p) /= 0._r8 .or. m_deadstemn_storage_to_litter(p) /= 0._r8 .or. &
-                       m_deadstemn_to_litter(p) /= 0._r8 .or. m_deadstemn_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_deadstemp_storage_to_litter(p) /= 0._r8 .or. m_deadstemp_to_litter(p) /= 0._r8 .or. &
-                       m_deadstemp_xfer_to_litter(p) /= 0._r8 .or. m_frootc_storage_to_litter(p) /= 0._r8 .or. &
-                       m_frootc_to_litter(p) /= 0._r8 .or. m_frootc_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_frootn_storage_to_litter(p) /= 0._r8 .or. m_frootn_to_litter(p) /= 0._r8 .or. &
-                       m_frootn_xfer_to_litter(p) /= 0._r8 .or. m_frootp_storage_to_litter(p) /= 0._r8 .or. &
-                       m_frootp_to_litter(p) /= 0._r8 .or. m_frootp_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_gresp_storage_to_litter(p) /= 0._r8 .or. m_gresp_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_leafc_storage_to_litter(p) /= 0._r8 .or. m_leafc_to_litter(p) /= 0._r8 .or. &
-                       m_leafc_xfer_to_litter(p) /= 0._r8 .or. m_leafn_storage_to_litter(p) /= 0._r8 .or. &
-                       m_leafn_to_litter(p) /= 0._r8 .or. m_leafn_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_leafp_storage_to_litter(p) /= 0._r8 .or. m_leafp_to_litter(p) /= 0._r8 .or. &
-                       m_leafp_xfer_to_litter(p) /= 0._r8 .or. m_livecrootc_storage_to_litter(p) /= 0._r8 .or. &
-                       m_livecrootc_to_litter(p) /= 0._r8 .or. m_livecrootc_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_livecrootn_storage_to_litter(p) /= 0._r8 .or. m_livecrootn_to_litter(p) /= 0._r8 .or. &
-                       m_livecrootn_xfer_to_litter(p) /= 0._r8 .or. m_livecrootp_storage_to_litter(p) /= 0._r8 .or. &
-                       m_livecrootp_to_litter(p) /= 0._r8 .or. m_livecrootp_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_livestemc_storage_to_litter(p) /= 0._r8 .or. m_livestemc_to_litter(p) /= 0._r8 .or. &
-                       m_livestemc_xfer_to_litter(p) /= 0._r8 .or. m_livestemn_storage_to_litter(p) /= 0._r8 .or. &
-                       m_livestemn_to_litter(p) /= 0._r8 .or. m_livestemn_xfer_to_litter(p) /= 0._r8 .or. &
-                       m_livestemp_storage_to_litter(p) /= 0._r8 .or. m_livestemp_to_litter(p) /= 0._r8 .or. &
-                       m_livestemp_xfer_to_litter(p) /= 0._r8 .or. m_npool_to_litter(p) /= 0._r8 .or. &
-                       m_ppool_to_litter(p) /= 0._r8 .or. m_retransn_to_litter(p) /= 0._r8 .or. &
-                       m_retransp_to_litter(p) /= 0._r8
-               end if
-            end if
-         end do
-      end do
+      ! zeros, which leaves the column fluxes unchanged, so skip it
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         do pi = 1,col_pp%npfts(c)
+            p = col_pp%pfti(c) + pi - 1
 
-      do j = 1,nlevdecomp
-         do pi = 1,max_col_npfts
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+            if (.not. veg_pp%active(p)) cycle
+            if (.not. (m_cpool_to_litter(p) /= 0._r8 .or. m_deadcrootc_storage_to_litter(p) /= 0._r8 .or. &
+                 m_deadcrootc_to_litter(p) /= 0._r8 .or. m_deadcrootc_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_deadcrootn_storage_to_litter(p) /= 0._r8 .or. m_deadcrootn_to_litter(p) /= 0._r8 .or. &
+                 m_deadcrootn_xfer_to_litter(p) /= 0._r8 .or. m_deadcrootp_storage_to_litter(p) /= 0._r8 .or. &
+                 m_deadcrootp_to_litter(p) /= 0._r8 .or. m_deadcrootp_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_deadstemc_storage_to_litter(p) /= 0._r8 .or. m_deadstemc_to_litter(p) /= 0._r8 .or. &
+                 m_deadstemc_xfer_to_litter(p) /= 0._r8 .or. m_deadstemn_storage_to_litter(p) /= 0._r8 .or. &
+                 m_deadstemn_to_litter(p) /= 0._r8 .or. m_deadstemn_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_deadstemp_storage_to_litter(p) /= 0._r8 .or. m_deadstemp_to_litter(p) /= 0._r8 .or. &
+                 m_deadstemp_xfer_to_litter(p) /= 0._r8 .or. m_frootc_storage_to_litter(p) /= 0._r8 .or. &
+                 m_frootc_to_litter(p) /= 0._r8 .or. m_frootc_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_frootn_storage_to_litter(p) /= 0._r8 .or. m_frootn_to_litter(p) /= 0._r8 .or. &
+                 m_frootn_xfer_to_litter(p) /= 0._r8 .or. m_frootp_storage_to_litter(p) /= 0._r8 .or. &
+                 m_frootp_to_litter(p) /= 0._r8 .or. m_frootp_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_gresp_storage_to_litter(p) /= 0._r8 .or. m_gresp_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_leafc_storage_to_litter(p) /= 0._r8 .or. m_leafc_to_litter(p) /= 0._r8 .or. &
+                 m_leafc_xfer_to_litter(p) /= 0._r8 .or. m_leafn_storage_to_litter(p) /= 0._r8 .or. &
+                 m_leafn_to_litter(p) /= 0._r8 .or. m_leafn_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_leafp_storage_to_litter(p) /= 0._r8 .or. m_leafp_to_litter(p) /= 0._r8 .or. &
+                 m_leafp_xfer_to_litter(p) /= 0._r8 .or. m_livecrootc_storage_to_litter(p) /= 0._r8 .or. &
+                 m_livecrootc_to_litter(p) /= 0._r8 .or. m_livecrootc_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_livecrootn_storage_to_litter(p) /= 0._r8 .or. m_livecrootn_to_litter(p) /= 0._r8 .or. &
+                 m_livecrootn_xfer_to_litter(p) /= 0._r8 .or. m_livecrootp_storage_to_litter(p) /= 0._r8 .or. &
+                 m_livecrootp_to_litter(p) /= 0._r8 .or. m_livecrootp_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_livestemc_storage_to_litter(p) /= 0._r8 .or. m_livestemc_to_litter(p) /= 0._r8 .or. &
+                 m_livestemc_xfer_to_litter(p) /= 0._r8 .or. m_livestemn_storage_to_litter(p) /= 0._r8 .or. &
+                 m_livestemn_to_litter(p) /= 0._r8 .or. m_livestemn_xfer_to_litter(p) /= 0._r8 .or. &
+                 m_livestemp_storage_to_litter(p) /= 0._r8 .or. m_livestemp_to_litter(p) /= 0._r8 .or. &
+                 m_livestemp_xfer_to_litter(p) /= 0._r8 .or. m_npool_to_litter(p) /= 0._r8 .or. &
+                 m_ppool_to_litter(p) /= 0._r8 .or. m_retransn_to_litter(p) /= 0._r8 .or. &
+                 m_retransp_to_litter(p) /= 0._r8)) cycle
 
-               if (pi <=  col_pp%npfts(c)) then
-                  p = col_pp%pfti(c) + pi - 1
+            ! Leading factors, evaluated left to right as in the full
+            ! products below: ((flux * fraction) * wtcol) * prof(p,j)
+            ! and ((sum of fluxes) * wtcol) * prof(p,j)
 
-                  if (has_flux(p)) then
+            ! carbon
+            kc_leaf_met  = m_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+            kc_leaf_cel  = m_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+            kc_leaf_lig  = m_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
+            kc_froot_met = m_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p)
+            kc_froot_cel = m_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p)
+            kc_froot_lig = m_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p)
+            kc_stem_cwd  = (m_livestemc_to_litter(p) + m_deadstemc_to_litter(p))  * wtcol(p)
+            kc_croot_cwd = (m_livecrootc_to_litter(p) + m_deadcrootc_to_litter(p)) * wtcol(p)
+            kc_sto_leaf  = (m_cpool_to_litter(p) + m_leafc_storage_to_litter(p) + m_gresp_storage_to_litter(p)) * wtcol(p)
+            kc_sto_froot = m_frootc_storage_to_litter(p)     * wtcol(p)
+            kc_sto_stem  = (m_livestemc_storage_to_litter(p) + m_deadstemc_storage_to_litter(p))  * wtcol(p)
+            kc_sto_croot = (m_livecrootc_storage_to_litter(p) + m_deadcrootc_storage_to_litter(p)) * wtcol(p)
+            kc_xfr_leaf  = (m_leafc_xfer_to_litter(p) + m_gresp_xfer_to_litter(p))     * wtcol(p)
+            kc_xfr_froot = m_frootc_xfer_to_litter(p)     * wtcol(p)
+            kc_xfr_stem  = (m_livestemc_xfer_to_litter(p) + m_deadstemc_xfer_to_litter(p))  * wtcol(p)
+            kc_xfr_croot = (m_livecrootc_xfer_to_litter(p) + m_deadcrootc_xfer_to_litter(p)) * wtcol(p)
 
-                     ! leaf gap mortality carbon fluxes
-                     gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
-                          m_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_c_to_litr_cel_c(c,j) = gap_mortality_c_to_litr_cel_c(c,j) + &
-                          m_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_c_to_litr_lig_c(c,j) = gap_mortality_c_to_litr_lig_c(c,j) + &
-                          m_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+            ! nitrogen
+            kn_leaf_met  = m_leafn_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+            kn_leaf_cel  = m_leafn_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+            kn_leaf_lig  = m_leafn_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
+            kn_froot_met = m_frootn_to_litter(p) * fr_flab(ivt(p)) * wtcol(p)
+            kn_froot_cel = m_frootn_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p)
+            kn_froot_lig = m_frootn_to_litter(p) * fr_flig(ivt(p)) * wtcol(p)
+            kn_stem_cwd  = (m_livestemn_to_litter(p) + m_deadstemn_to_litter(p))  * wtcol(p)
+            kn_croot_cwd = (m_livecrootn_to_litter(p) + m_deadcrootn_to_litter(p)) * wtcol(p)
+            kn_retrans   = m_retransn_to_litter(p) * wtcol(p)
+            kn_pool      = m_npool_to_litter(p) * wtcol(p)
+            kn_sto_leaf  = m_leafn_storage_to_litter(p)      * wtcol(p)
+            kn_sto_froot = m_frootn_storage_to_litter(p)     * wtcol(p)
+            kn_sto_stem  = (m_livestemn_storage_to_litter(p) + m_deadstemn_storage_to_litter(p))  * wtcol(p)
+            kn_sto_croot = (m_livecrootn_storage_to_litter(p) + m_deadcrootn_storage_to_litter(p)) * wtcol(p)
+            kn_xfr_leaf  = m_leafn_xfer_to_litter(p)      * wtcol(p)
+            kn_xfr_froot = m_frootn_xfer_to_litter(p)     * wtcol(p)
+            kn_xfr_stem  = (m_livestemn_xfer_to_litter(p) + m_deadstemn_xfer_to_litter(p))  * wtcol(p)
+            kn_xfr_croot = (m_livecrootn_xfer_to_litter(p) + m_deadcrootn_xfer_to_litter(p)) * wtcol(p)
 
-                     ! fine root gap mortality carbon fluxes
-                     gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
-                          m_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_c_to_litr_cel_c(c,j) = gap_mortality_c_to_litr_cel_c(c,j) + &
-                          m_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_c_to_litr_lig_c(c,j) = gap_mortality_c_to_litr_lig_c(c,j) + &
-                          m_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+            ! phosphorus
+            kp_leaf_met  = m_leafp_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+            kp_leaf_cel  = m_leafp_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+            kp_leaf_lig  = m_leafp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
+            kp_froot_met = m_frootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p)
+            kp_froot_cel = m_frootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p)
+            kp_froot_lig = m_frootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p)
+            kp_stem_cwd  = (m_livestemp_to_litter(p) + m_deadstemp_to_litter(p))  * wtcol(p)
+            kp_croot_cwd = (m_livecrootp_to_litter(p) + m_deadcrootp_to_litter(p)) * wtcol(p)
+            kp_retrans   = m_retransp_to_litter(p) * wtcol(p)
+            kp_pool      = m_ppool_to_litter(p) * wtcol(p)
+            kp_sto_leaf  = m_leafp_storage_to_litter(p)      * wtcol(p)
+            kp_sto_froot = m_frootp_storage_to_litter(p)     * wtcol(p)
+            kp_sto_stem  = (m_livestemp_storage_to_litter(p) + m_deadstemp_storage_to_litter(p))  * wtcol(p)
+            kp_sto_croot = (m_livecrootp_storage_to_litter(p) + m_deadcrootp_storage_to_litter(p)) * wtcol(p)
+            kp_xfr_leaf  = m_leafp_xfer_to_litter(p)      * wtcol(p)
+            kp_xfr_froot = m_frootp_xfer_to_litter(p)     * wtcol(p)
+            kp_xfr_stem  = (m_livestemp_xfer_to_litter(p) + m_deadstemp_xfer_to_litter(p))  * wtcol(p)
+            kp_xfr_croot = (m_livecrootp_xfer_to_litter(p) + m_deadcrootp_xfer_to_litter(p)) * wtcol(p)
 
-                     ! wood gap mortality carbon fluxes
-                     gap_mortality_c_to_cwdc(c,j)  = gap_mortality_c_to_cwdc(c,j)  + &
-                          (m_livestemc_to_litter(p) + m_deadstemc_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_c_to_cwdc(c,j) = gap_mortality_c_to_cwdc(c,j) + &
-                          (m_livecrootc_to_litter(p) + m_deadcrootc_to_litter(p)) * wtcol(p) * croot_prof(p,j)
-                     ! storage gap mortality carbon fluxes
-                     gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
-                          (m_cpool_to_litter(p) + m_leafc_storage_to_litter(p) + m_gresp_storage_to_litter(p)) * wtcol(p)&
-                          * leaf_prof(p,j)
-                     gap_mortality_c_to_litr_met_c(c,j)     = gap_mortality_c_to_litr_met_c(c,j)     + &
-                          m_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_c_to_litr_met_c(c,j)  = gap_mortality_c_to_litr_met_c(c,j)  + &
-                          (m_livestemc_storage_to_litter(p) + m_deadstemc_storage_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
-                          (m_livecrootc_storage_to_litter(p) + m_deadcrootc_storage_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+            do j = 1,nlevdecomp
 
-                     ! transfer gap mortality carbon fluxes
-                     gap_mortality_c_to_litr_met_c(c,j)      = gap_mortality_c_to_litr_met_c(c,j)      + &
-                          (m_leafc_xfer_to_litter(p) + m_gresp_xfer_to_litter(p))     * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_c_to_litr_met_c(c,j)     = gap_mortality_c_to_litr_met_c(c,j)     + &
-                          m_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_c_to_litr_met_c(c,j)  = gap_mortality_c_to_litr_met_c(c,j)  + &
-                          (m_livestemc_xfer_to_litter(p) + m_deadstemc_xfer_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + &
-                          (m_livecrootc_xfer_to_litter(p) + m_deadcrootc_xfer_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! leaf gap mortality carbon fluxes
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_leaf_met * leaf_prof(p,j)
+               gap_mortality_c_to_litr_cel_c(c,j) = gap_mortality_c_to_litr_cel_c(c,j) + kc_leaf_cel * leaf_prof(p,j)
+               gap_mortality_c_to_litr_lig_c(c,j) = gap_mortality_c_to_litr_lig_c(c,j) + kc_leaf_lig * leaf_prof(p,j)
 
-                     ! leaf gap mortality nitrogen fluxes
-                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
-                          m_leafn_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_n_to_litr_cel_n(c,j) = gap_mortality_n_to_litr_cel_n(c,j) + &
-                          m_leafn_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_n_to_litr_lig_n(c,j) = gap_mortality_n_to_litr_lig_n(c,j) + &
-                          m_leafn_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+               ! fine root gap mortality carbon fluxes
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_froot_met * froot_prof(p,j)
+               gap_mortality_c_to_litr_cel_c(c,j) = gap_mortality_c_to_litr_cel_c(c,j) + kc_froot_cel * froot_prof(p,j)
+               gap_mortality_c_to_litr_lig_c(c,j) = gap_mortality_c_to_litr_lig_c(c,j) + kc_froot_lig * froot_prof(p,j)
 
-                     ! fine root litter nitrogen fluxes
-                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
-                          m_frootn_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_n_to_litr_cel_n(c,j) = gap_mortality_n_to_litr_cel_n(c,j) + &
-                          m_frootn_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_n_to_litr_lig_n(c,j) = gap_mortality_n_to_litr_lig_n(c,j) + &
-                          m_frootn_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+               ! wood gap mortality carbon fluxes
+               gap_mortality_c_to_cwdc(c,j) = gap_mortality_c_to_cwdc(c,j) + kc_stem_cwd  * stem_prof(p,j)
+               gap_mortality_c_to_cwdc(c,j) = gap_mortality_c_to_cwdc(c,j) + kc_croot_cwd * croot_prof(p,j)
 
-                     ! wood gap mortality nitrogen fluxes
-                     gap_mortality_n_to_cwdn(c,j)  = gap_mortality_n_to_cwdn(c,j)  + &
-                          (m_livestemn_to_litter(p) + m_deadstemn_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_n_to_cwdn(c,j) = gap_mortality_n_to_cwdn(c,j) + &
-                          (m_livecrootn_to_litter(p) + m_deadcrootn_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! storage gap mortality carbon fluxes
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_sto_leaf  * leaf_prof(p,j)
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_sto_froot * froot_prof(p,j)
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_sto_stem  * stem_prof(p,j)
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_sto_croot * croot_prof(p,j)
 
-                     ! retranslocated N pool gap mortality fluxes
-                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
-                          m_retransn_to_litter(p) * wtcol(p) * leaf_prof(p,j)
-                     ! storage N pool gap mortality fluxes
-                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
-                          m_npool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+               ! transfer gap mortality carbon fluxes
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_xfr_leaf  * leaf_prof(p,j)
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_xfr_froot * froot_prof(p,j)
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_xfr_stem  * stem_prof(p,j)
+               gap_mortality_c_to_litr_met_c(c,j) = gap_mortality_c_to_litr_met_c(c,j) + kc_xfr_croot * croot_prof(p,j)
 
-                     ! storage gap mortality nitrogen fluxes
-                     gap_mortality_n_to_litr_met_n(c,j)      = gap_mortality_n_to_litr_met_n(c,j)      + &
-                          m_leafn_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_n_to_litr_met_n(c,j)     = gap_mortality_n_to_litr_met_n(c,j)     + &
-                          m_frootn_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_n_to_litr_met_n(c,j)  = gap_mortality_n_to_litr_met_n(c,j)  + &
-                          (m_livestemn_storage_to_litter(p) + m_deadstemn_storage_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
-                          (m_livecrootn_storage_to_litter(p) + m_deadcrootn_storage_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! leaf gap mortality nitrogen fluxes
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_leaf_met * leaf_prof(p,j)
+               gap_mortality_n_to_litr_cel_n(c,j) = gap_mortality_n_to_litr_cel_n(c,j) + kn_leaf_cel * leaf_prof(p,j)
+               gap_mortality_n_to_litr_lig_n(c,j) = gap_mortality_n_to_litr_lig_n(c,j) + kn_leaf_lig * leaf_prof(p,j)
 
-                     ! transfer gap mortality nitrogen fluxes
-                     gap_mortality_n_to_litr_met_n(c,j)      = gap_mortality_n_to_litr_met_n(c,j)      + &
-                          m_leafn_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_n_to_litr_met_n(c,j)     = gap_mortality_n_to_litr_met_n(c,j)     + &
-                          m_frootn_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_n_to_litr_met_n(c,j)  = gap_mortality_n_to_litr_met_n(c,j)  + &
-                          (m_livestemn_xfer_to_litter(p) + m_deadstemn_xfer_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + &
-                          (m_livecrootn_xfer_to_litter(p) + m_deadcrootn_xfer_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! fine root litter nitrogen fluxes
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_froot_met * froot_prof(p,j)
+               gap_mortality_n_to_litr_cel_n(c,j) = gap_mortality_n_to_litr_cel_n(c,j) + kn_froot_cel * froot_prof(p,j)
+               gap_mortality_n_to_litr_lig_n(c,j) = gap_mortality_n_to_litr_lig_n(c,j) + kn_froot_lig * froot_prof(p,j)
 
-                     ! leaf gap mortality phosphorus fluxes
-                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
-                          m_leafp_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_p_to_litr_cel_p(c,j) = gap_mortality_p_to_litr_cel_p(c,j) + &
-                          m_leafp_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_p_to_litr_lig_p(c,j) = gap_mortality_p_to_litr_lig_p(c,j) + &
-                          m_leafp_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+               ! wood gap mortality nitrogen fluxes
+               gap_mortality_n_to_cwdn(c,j) = gap_mortality_n_to_cwdn(c,j) + kn_stem_cwd  * stem_prof(p,j)
+               gap_mortality_n_to_cwdn(c,j) = gap_mortality_n_to_cwdn(c,j) + kn_croot_cwd * croot_prof(p,j)
 
-                     ! fine root litter phosphorus fluxes
-                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
-                          m_frootp_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_p_to_litr_cel_p(c,j) = gap_mortality_p_to_litr_cel_p(c,j) + &
-                          m_frootp_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_p_to_litr_lig_p(c,j) = gap_mortality_p_to_litr_lig_p(c,j) + &
-                          m_frootp_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+               ! retranslocated N pool gap mortality fluxes
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_retrans * leaf_prof(p,j)
+               ! storage N pool gap mortality fluxes
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_pool * leaf_prof(p,j)
 
-                     ! wood gap mortality phosphorus fluxes
-                     gap_mortality_p_to_cwdp(c,j)  = gap_mortality_p_to_cwdp(c,j)  + &
-                          (m_livestemp_to_litter(p) + m_deadstemp_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_p_to_cwdp(c,j) = gap_mortality_p_to_cwdp(c,j) + &
-                          (m_livecrootp_to_litter(p) + m_deadcrootp_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! storage gap mortality nitrogen fluxes
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_sto_leaf  * leaf_prof(p,j)
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_sto_froot * froot_prof(p,j)
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_sto_stem  * stem_prof(p,j)
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_sto_croot * croot_prof(p,j)
 
-                     ! retranslocated N pool gap mortality fluxes
-                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
-                          m_retransp_to_litter(p) * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
-                          m_ppool_to_litter(p) * wtcol(p) * leaf_prof(p,j)
+               ! transfer gap mortality nitrogen fluxes
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_xfr_leaf  * leaf_prof(p,j)
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_xfr_froot * froot_prof(p,j)
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_xfr_stem  * stem_prof(p,j)
+               gap_mortality_n_to_litr_met_n(c,j) = gap_mortality_n_to_litr_met_n(c,j) + kn_xfr_croot * croot_prof(p,j)
 
+               ! leaf gap mortality phosphorus fluxes
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_leaf_met * leaf_prof(p,j)
+               gap_mortality_p_to_litr_cel_p(c,j) = gap_mortality_p_to_litr_cel_p(c,j) + kp_leaf_cel * leaf_prof(p,j)
+               gap_mortality_p_to_litr_lig_p(c,j) = gap_mortality_p_to_litr_lig_p(c,j) + kp_leaf_lig * leaf_prof(p,j)
 
-                     ! storage gap mortality phosphorus fluxes
-                     gap_mortality_p_to_litr_met_p(c,j)      = gap_mortality_p_to_litr_met_p(c,j)      + &
-                          m_leafp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j)     = gap_mortality_p_to_litr_met_p(c,j)     + &
-                          m_frootp_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j)  = gap_mortality_p_to_litr_met_p(c,j)  + &
-                          (m_livestemp_storage_to_litter(p) + m_deadstemp_storage_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
-                          (m_livecrootp_storage_to_litter(p) + m_deadcrootp_storage_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! fine root litter phosphorus fluxes
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_froot_met * froot_prof(p,j)
+               gap_mortality_p_to_litr_cel_p(c,j) = gap_mortality_p_to_litr_cel_p(c,j) + kp_froot_cel * froot_prof(p,j)
+               gap_mortality_p_to_litr_lig_p(c,j) = gap_mortality_p_to_litr_lig_p(c,j) + kp_froot_lig * froot_prof(p,j)
 
-                     ! transfer gap mortality phosphorus fluxes
-                     gap_mortality_p_to_litr_met_p(c,j)      = gap_mortality_p_to_litr_met_p(c,j)      + &
-                          m_leafp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j)     = gap_mortality_p_to_litr_met_p(c,j)     + &
-                          m_frootp_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j)  = gap_mortality_p_to_litr_met_p(c,j)  + &
-                          (m_livestemp_xfer_to_litter(p) + m_deadstemp_xfer_to_litter(p))  * wtcol(p) * stem_prof(p,j)
-                     gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + &
-                          (m_livecrootp_xfer_to_litter(p) + m_deadcrootp_xfer_to_litter(p)) * wtcol(p) * croot_prof(p,j)
+               ! wood gap mortality phosphorus fluxes
+               gap_mortality_p_to_cwdp(c,j) = gap_mortality_p_to_cwdp(c,j) + kp_stem_cwd  * stem_prof(p,j)
+               gap_mortality_p_to_cwdp(c,j) = gap_mortality_p_to_cwdp(c,j) + kp_croot_cwd * croot_prof(p,j)
 
-                  end if
-               end if
+               ! retranslocated P pool gap mortality fluxes
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_retrans * leaf_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_pool * leaf_prof(p,j)
+
+               ! storage gap mortality phosphorus fluxes
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_sto_leaf  * leaf_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_sto_froot * froot_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_sto_stem  * stem_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_sto_croot * croot_prof(p,j)
+
+               ! transfer gap mortality phosphorus fluxes
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_xfr_leaf  * leaf_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_xfr_froot * froot_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_xfr_stem  * stem_prof(p,j)
+               gap_mortality_p_to_litr_met_p(c,j) = gap_mortality_p_to_litr_met_p(c,j) + kp_xfr_croot * croot_prof(p,j)
 
             end do
          end do
       end do
-
-      deallocate(has_flux)
 
     end associate
 
