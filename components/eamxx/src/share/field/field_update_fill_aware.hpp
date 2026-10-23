@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_UPDATE_FILL_AWARE_HPP
 
 #include "share/field/field.hpp"
-#include "share/field/field_visit.hpp"
+#include "share/field/field_pfor.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream
@@ -10,77 +10,24 @@ namespace scream
 
 namespace details {
 
-template<CombineMode CM, typename LhsView, typename RhsView, typename ST>
-struct CombineViewsFillAwareHelper {
-
-  using exec_space = typename LhsView::traits::execution_space;
-
-  static constexpr int N = LhsView::rank();
-
-  template<int M>
-  using MDRange = Kokkos::MDRangePolicy<
-                    exec_space,
-                    Kokkos::Rank<M,Kokkos::Iterate::Right,Kokkos::Iterate::Right>
-                  >;
-
-  void run (const std::vector<int>& dims) const {
-    if constexpr (N==0) {
-      Kokkos::RangePolicy<exec_space> policy(0,1);
-      Kokkos::parallel_for(policy,*this);
-    } else if constexpr (N==1) {
-      Kokkos::RangePolicy<exec_space> policy(0,dims[0]);
-      Kokkos::parallel_for(policy,*this);
-    } else if constexpr (N==2) {
-      MDRange<2> policy({0,0},{dims[0],dims[1]});
-      Kokkos::parallel_for(policy,*this);
-    } else if constexpr (N==3) {
-      MDRange<3> policy({0,0,0},{dims[0],dims[1],dims[2]});
-      Kokkos::parallel_for(policy,*this);
-    } else if constexpr (N==4) {
-      MDRange<4> policy({0,0,0,0},{dims[0],dims[1],dims[2],dims[3]});
-      Kokkos::parallel_for(policy,*this);
-    } else if constexpr (N==5) {
-      MDRange<5> policy({0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4]});
-      Kokkos::parallel_for(policy,*this);
-    } else if constexpr (N==6) {
-      MDRange<6> policy({0,0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]});
-      Kokkos::parallel_for(policy,*this);
-    } else {
-      EKAT_ERROR_MSG ("Unsupported rank! Should be in [0,6].\n");
-    }
-  }
-
-  template<typename... Args>
-  KOKKOS_INLINE_FUNCTION
-  void operator() (Args... indices) const {
-    auto& lhs_val = lhs.access(indices...);
-    combine_fill_aware<CM>(rhs.access(indices...),lhs_val,alpha,beta);
-    if constexpr (CM==CombineMode::Update)
-      if (gamma!=constants::fill_value<ST>)
-        lhs_val += gamma;
-  }
-
+// NOTE: kernels that go through field_pfor must be functors with a templated operator()
+//       (not generic lambdas), since extended lambdas cannot be generic.
+template<CombineMode CM, typename ST>
+struct UpdateFillAwareKernel {
   ST alpha;
   ST beta;
   ST gamma;
-  LhsView lhs;
-  RhsView rhs;
-};
 
-template<CombineMode CM, typename LhsView, typename RhsView, typename ST>
-void
-cvfah (LhsView lhs, RhsView rhs,
-     ST alpha, ST beta, ST gamma,
-     const std::vector<int>& dims)
-{
-  CombineViewsFillAwareHelper <CM, LhsView, RhsView,  ST> helper;
-  helper.lhs = lhs;
-  helper.rhs = rhs;
-  helper.alpha = alpha;
-  helper.beta = beta;
-  helper.gamma = gamma;
-  helper.run(dims);
-}
+  template<typename YView, typename XView, typename... Idx>
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const YView& y, const XView& x, const Idx&... i) const {
+    auto& y_val = y(i...);
+    combine_fill_aware<CM>(x(i...),y_val,alpha,beta);
+    if constexpr (CM==CombineMode::Update)
+      if (gamma!=constants::fill_value<ST>)
+        y_val += gamma;
+  }
+};
 
 } // namespace details
 
@@ -88,15 +35,11 @@ template<CombineMode CM, typename ST, typename XST>
 void Field::
 update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma) const
 {
-  const auto& layout = x.get_header().get_identifier().get_layout();
-  const auto& dims = layout.dims();
-
   // Must handle the case where one of the two views is strided (or both)
-  details::visit_field_views(layout.rank(),
-    [&](const auto& y_view, const auto& x_view) {
-      details::cvfah<CM>(y_view,x_view,alpha,beta,gamma,dims);
-    },
-    details::view_as<ST>(*this), details::view_as<const XST>(x));
+  details::field_pfor(details::UpdateFillAwareKernel<CM,ST>{alpha,beta,gamma},
+                      details::view_as<ST>(*this), details::view_as<const XST>(x));
+
+  // field_pfor is asynchronous, but the Field update methods are blocking
   Kokkos::fence();
 }
 
