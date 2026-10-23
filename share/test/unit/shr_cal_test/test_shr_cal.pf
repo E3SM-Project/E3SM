@@ -7,6 +7,7 @@ module test_shr_cal
   use shr_kind_mod , only : r8 => shr_kind_r8, i4 => shr_kind_in, i8 => shr_kind_i8
   use esmf, only : ESMF_Initialize, ESMF_Finalize, ESMF_Time, ESMF_TimeSet
   use esmf, only : ESMF_CALKIND_GREGORIAN
+  use shr_orb_mod, only : shr_orb_context_type, shr_orb_decl_gregorian
 
   implicit none
 
@@ -20,6 +21,102 @@ module test_shr_cal
   real(r8), parameter :: tol = 1.e-13_r8
 
 contains
+
+  @Test
+  subroutine fixed_year_equinox_reference(this)
+    class(TestShrCal), intent(inout) :: this
+    type(shr_orb_context_type) :: context
+    integer, parameter :: years(6) = [1999, 2000, 2001, 1900, 2100, 2400]
+    integer :: year, year_index, date, calendar_index
+    real(r8) :: delta, eccf, eot
+    character(32) :: calendar
+
+    context%eccen = 0._r8
+    context%obliqr = 0.409_r8
+    context%lambm0 = 0._r8
+    context%mvelpp = 0._r8
+    do calendar_index = 1, 2
+      calendar = shr_cal_noleap
+      if (calendar_index == 2) calendar = shr_cal_gregorian
+      do year_index = 1, size(years)
+        year = years(year_index)
+        date = year*10000 + 321
+        if (calendar_index == 2 .and. mod(year,4) == 0 .and. &
+             (mod(year,100) /= 0 .or. mod(year,400) == 0)) date = date - 1
+        context%fixed_year = .true.
+        call shr_cal_solarDecl(context,date,43200._r8,calendar,delta,eccf,eot)
+        @assertEqual(0._r8, delta)
+        @assertEqual(1._r8, eccf)
+        context%use_equation_of_time = .true.
+        call shr_cal_solarDecl(context,date,43200._r8,calendar,delta,eccf,eot)
+        @assertEqual(0._r8, delta)
+        @assertEqual(0._r8, eot)
+        call shr_cal_solarDecl(context,date,43140._r8,calendar,delta,eccf,eot)
+        @assertTrue(delta < 0._r8)
+        call shr_cal_solarDecl(context,date,43260._r8,calendar,delta,eccf,eot)
+        @assertTrue(delta > 0._r8)
+        context%use_equation_of_time = .false.
+        if (calendar_index == 1) then
+          context%fixed_year = .false.
+          call shr_cal_solarDecl(context,date,43200._r8,calendar,delta,eccf)
+          @assertEqual(0._r8, delta)
+        end if
+      end do
+    end do
+  end subroutine fixed_year_equinox_reference
+
+  @Test
+  subroutine continuous_equinox_reference(this)
+    class(TestShrCal), intent(inout) :: this
+    type(shr_orb_context_type) :: context
+    real(r8) :: elapsed, delta, eccf, expected_delta, expected_eccf
+
+    context%eccen = 0._r8
+    context%obliqr = 0.409_r8
+    context%lambm0 = 0._r8
+    context%mvelpp = 0._r8
+    elapsed = shr_cal_gregorianElapsedDays(20000320,43200._r8)
+    call shr_orb_decl_gregorian(elapsed,context%eccen,context%mvelpp,context%lambm0, &
+         context%obliqr,expected_delta,expected_eccf)
+    call shr_cal_solarDecl(context,20000320,43200._r8,shr_cal_gregorian,delta,eccf)
+    @assertEqual(transfer(expected_delta,0_i8), transfer(delta,0_i8))
+    @assertEqual(transfer(expected_eccf,0_i8), transfer(eccf,0_i8))
+    @assertTrue(abs(delta) > 1.e-8_r8)
+  end subroutine continuous_equinox_reference
+
+  @Test
+  subroutine solar_equation_of_time(this)
+    class(TestShrCal), intent(inout) :: this
+    type(shr_orb_context_type) :: context
+    real(r8) :: delta, eccf, eot, reference_delta, reference_eccf, reference_eot
+    integer :: mode
+    character(32) :: calendar
+
+    context%eccen = 0.0167_r8
+    context%obliqr = 0.409_r8
+    context%lambm0 = -0.0327_r8
+    context%mvelpp = 4.94_r8
+    do mode = 1, 2
+      calendar = shr_cal_noleap
+      if (mode == 2) calendar = shr_cal_gregorian
+      context%use_equation_of_time = .false.
+      context%perpetual = .false.
+      call shr_cal_solarDecl(context,20000320,43200._r8,calendar,reference_delta,reference_eccf,eot)
+      @assertEqual(0._r8, eot)
+      context%use_equation_of_time = .true.
+      call shr_cal_solarDecl(context,20000320,43200._r8,calendar,delta,eccf,reference_eot)
+      @assertEqual(transfer(reference_delta,0_i8), transfer(delta,0_i8))
+      @assertEqual(transfer(reference_eccf,0_i8), transfer(eccf,0_i8))
+      @assertTrue(abs(reference_eot) < 1200._r8)
+      @assertTrue(abs(reference_eot) > 1._r8)
+      context%perpetual = .true.
+      context%perpetual_ymd = 20000320
+      call shr_cal_solarDecl(context,20001103,43200._r8,calendar,delta,eccf,eot)
+      @assertEqual(reference_eot, eot)
+      @assertEqual(reference_delta, delta)
+      @assertEqual(reference_eccf, eccf)
+    end do
+  end subroutine solar_equation_of_time
 
   subroutine setUp(this)
     class(TestShrCal), intent(inout) :: this

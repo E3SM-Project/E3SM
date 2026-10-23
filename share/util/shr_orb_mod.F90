@@ -15,11 +15,29 @@ MODULE shr_orb_mod
   public :: shr_orb_cosz
   public :: shr_orb_params
   public :: shr_orb_decl
+   public :: shr_orb_decl_fixed_year
+   public :: shr_orb_decl_gregorian
   public :: shr_orb_print
   public :: set_constant_zenith_angle_deg
 
   real   (SHR_KIND_R8),public,parameter :: SHR_ORB_UNDEF_REAL = 1.e36_SHR_KIND_R8 ! undefined real
   integer(SHR_KIND_IN),public,parameter :: SHR_ORB_UNDEF_INT  = 2000000000        ! undefined int
+
+  type, public :: shr_orb_context_type
+     logical :: fixed_year = .false.
+     logical :: variable_year = .false.
+     logical :: perpetual = .false.
+   logical :: use_equation_of_time = .false.
+     integer(SHR_KIND_IN) :: iyear = SHR_ORB_UNDEF_INT
+     integer(SHR_KIND_IN) :: iyear_align = SHR_ORB_UNDEF_INT
+     integer(SHR_KIND_IN) :: perpetual_ymd = 0
+     real(SHR_KIND_R8) :: eccen = SHR_ORB_UNDEF_REAL
+     real(SHR_KIND_R8) :: obliq = SHR_ORB_UNDEF_REAL
+     real(SHR_KIND_R8) :: mvelp = SHR_ORB_UNDEF_REAL
+     real(SHR_KIND_R8) :: obliqr = SHR_ORB_UNDEF_REAL
+     real(SHR_KIND_R8) :: lambm0 = SHR_ORB_UNDEF_REAL
+     real(SHR_KIND_R8) :: mvelpp = SHR_ORB_UNDEF_REAL
+  end type shr_orb_context_type
 
   !----------------------------------------------------------------------------
   ! PRIVATE: by default everything else is private to this module
@@ -49,7 +67,7 @@ CONTAINS
 
   !=======================================================================
   !=======================================================================
-  real(SHR_KIND_R8) pure function shr_orb_azimuth(jday,lat,lon,declin,z)
+   real(SHR_KIND_R8) pure function shr_orb_azimuth(jday,lat,lon,declin,z,eot_seconds)
 
     !----------------------------------------------------------------------------
     !
@@ -63,11 +81,18 @@ CONTAINS
     real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
     real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination  (radians)
     real   (SHR_KIND_R8),intent(in) :: z      ! Solar zenith angle (radians)
+   real(SHR_KIND_R8), intent(in), optional :: eot_seconds
   
     real(SHR_KIND_R8) :: hour_angle
     !----------------------------------------------------------------------------
  
     hour_angle = 2.0_SHR_KIND_R8*pi*((jday-floor(jday)) - 0.5_SHR_KIND_R8) + lon
+    if (present(eot_seconds)) then
+       if (eot_seconds /= 0.0_SHR_KIND_R8) then
+          hour_angle = hour_angle + 2.0_SHR_KIND_R8*pi*eot_seconds/86400.0_SHR_KIND_R8
+          hour_angle = modulo(hour_angle + pi, 2.0_SHR_KIND_R8*pi) - pi
+       end if
+    end if
 
     ! constrain hour_angle to [-pi,pi] to determine east/west below
     if(hour_angle > pi) hour_angle = hour_angle - 2.0_SHR_KIND_R8*pi
@@ -86,7 +111,7 @@ CONTAINS
 
   !=======================================================================
 
-  real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg,uniform_angle)
+   real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg,uniform_angle,eot_seconds)
 
     !----------------------------------------------------------------------------
     !
@@ -107,6 +132,7 @@ CONTAINS
     real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination (radians)
     real   (SHR_KIND_R8),intent(in), optional   :: dt_avg ! if present and set non-zero, then use in the
     real   (SHR_KIND_R8),intent(in), optional   :: uniform_angle ! if present and true, apply uniform insolation 
+   real(SHR_KIND_R8), intent(in), optional :: eot_seconds
     ! average cosz calculation
     logical :: use_dt_avg
 
@@ -127,6 +153,18 @@ CONTAINS
     if (present(dt_avg)) then
       if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
     end if
+      if (present(eot_seconds)) then
+         if (eot_seconds /= 0.0_SHR_KIND_R8) then
+            if (use_dt_avg) then
+               shr_orb_cosz = shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg, eot_seconds)
+            else
+               shr_orb_cosz = sin(lat)*sin(declin) - cos(lat)*cos(declin) * &
+                      cos((jday-floor(jday))*2.0_SHR_KIND_R8*pi + lon + &
+                            2.0_SHR_KIND_R8*pi*eot_seconds/86400.0_SHR_KIND_R8)
+            end if
+            return
+         end if
+      end if
     ! If dt for the average cosz is specified, then call the shr_orb_avg_cosz
     if (use_dt_avg) then
       shr_orb_cosz = shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
@@ -145,7 +183,7 @@ CONTAINS
   ! Ref.  : Zhou et al., GRL, 2015
   !=======================================================================
 
-  real (SHR_KIND_R8) pure function shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+   real (SHR_KIND_R8) pure function shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg, eot_seconds)
 
     use shr_const_mod, only : pi => shr_const_pi
 
@@ -159,6 +197,7 @@ CONTAINS
     real(SHR_KIND_R8), intent(in) :: lon    ! longitude (radian)
     real(SHR_KIND_R8), intent(in) :: declin ! solar declination (radian)
     real(SHR_KIND_R8), intent(in) :: dt_avg ! dt for averaged cosz calculation
+   real(SHR_KIND_R8), intent(in), optional :: eot_seconds
 
     !-----------------------------------------------------------------------
     ! Local Arguments
@@ -209,6 +248,11 @@ CONTAINS
 
     ! adjust t to be between -pi and pi
     t1 = (jday - int(jday)) * twopi + lon - pi
+    if (present(eot_seconds)) then
+       if (eot_seconds /= 0.0_SHR_KIND_R8) then
+          t1 = modulo(t1 + twopi*eot_seconds/86400.0_SHR_KIND_R8 + pi, twopi) - pi
+       end if
+    end if
 
     if (t1 >=  pi) then
        t1 = t1 - twopi
@@ -272,7 +316,9 @@ CONTAINS
   !===============================================================================
 
   SUBROUTINE shr_orb_params( iyear_AD , eccen  , obliq , mvelp     ,     &
-       &               obliqr   , lambm0 , mvelpp, log_print )
+          &               obliqr   , lambm0 , mvelpp, log_print, year_fraction )
+
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
 
     !-------------------------------------------------------------------------------
     !
@@ -299,6 +345,7 @@ CONTAINS
     real   (SHR_KIND_R8),intent(out)   :: mvelpp    ! moving vernal equinox long
     ! of perihelion plus pi (rad)
     logical             ,intent(in)    :: log_print ! Flags print of status/error
+   real(SHR_KIND_R8), optional, intent(in) :: year_fraction
 
     !------------------------------ Parameters ----------------------------------
     integer(SHR_KIND_IN),parameter :: poblen =47 ! # of elements in series wrt obliquity
@@ -551,6 +598,15 @@ CONTAINS
           write(s_logunit,F01) 'Calculate orbit for year: ' , iyear_AD
        end if
        yb4_1950AD = 1950.0_SHR_KIND_R8 - real(iyear_AD,SHR_KIND_R8)
+       if (present(year_fraction)) then
+          if (.not. ieee_is_finite(year_fraction)) then
+             call shr_sys_abort(subname//' ERROR: nonfinite year fraction')
+          end if
+          if (year_fraction < 0.0_SHR_KIND_R8 .or. year_fraction >= 1.0_SHR_KIND_R8) then
+             call shr_sys_abort(subname//' ERROR: year fraction must be in [0,1)')
+          end if
+          yb4_1950AD = yb4_1950AD - year_fraction
+       end if
        if ( abs(yb4_1950AD) .gt. 1000000.0_SHR_KIND_R8 )then
           write(s_logunit,F00) 'orbit only valid for years+-1000000'
           write(s_logunit,F00) 'Relative to 1950 AD'
@@ -713,7 +769,7 @@ CONTAINS
   !===============================================================================
 
    SUBROUTINE shr_orb_decl(calday ,eccen ,mvelpp ,lambm0 ,obliqr ,delta ,eccf, &
-       days_per_year)
+         days_per_year, eot_seconds)
 
     !-------------------------------------------------------------------------------
     !
@@ -738,6 +794,7 @@ CONTAINS
     real   (SHR_KIND_R8),intent(out) :: delta  ! Solar declination angle in rad
     real   (SHR_KIND_R8),intent(out) :: eccf   ! Earth-sun distance factor (ie. (1/r)**2)
       real   (SHR_KIND_R8),intent(in),optional :: days_per_year
+      real(SHR_KIND_R8), intent(out), optional :: eot_seconds
 
     !---------------------------Local variables-----------------------------
       real   (SHR_KIND_R8) :: dayspy  ! days per year
@@ -749,6 +806,7 @@ CONTAINS
     real   (SHR_KIND_R8) ::   lamb   ! Lambda, the earths long of perihelion
     real   (SHR_KIND_R8) ::   invrho ! Inverse normalized sun/earth distance
     real   (SHR_KIND_R8) ::   sinl   ! Sine of lmm
+   real(SHR_KIND_R8) :: right_ascension, time_angle
 
     ! Compute eccentricity factor and solar declination using
     ! day value where a round day (such as 213.0) refers to 0z at
@@ -767,11 +825,14 @@ CONTAINS
     ! days past or before (a negative increment) the vernal equinox divided by
     ! the days in a model year times the 2*pi radians in a complete orbit.
 
-      dayspy = 365.0_SHR_KIND_R8
-      if (present(days_per_year)) dayspy = days_per_year
-      ve = 80.5_SHR_KIND_R8 + (dayspy - 365.0_SHR_KIND_R8)
+    dayspy = 365.0_SHR_KIND_R8
+    if (present(days_per_year)) dayspy = days_per_year
+    if (dayspy /= 365.0_SHR_KIND_R8 .and. dayspy /= 366.0_SHR_KIND_R8) then
+       call shr_sys_abort('(shr_orb_decl) days_per_year must be 365 or 366')
+    end if
+    ve = 80.5_SHR_KIND_R8 + (dayspy - 365.0_SHR_KIND_R8)
 
-      lambm = lambm0 + (calday - ve)*2._SHR_KIND_R8*pi/dayspy
+    lambm = lambm0 + (calday - ve)*2._SHR_KIND_R8*pi/dayspy
     lmm   = lambm  - mvelpp
 
     ! The earths true longitude, in radians, is then found from
@@ -793,10 +854,49 @@ CONTAINS
 
     delta  = asin(sin(obliqr)*sin(lamb))
     eccf   = invrho*invrho
+    if (present(eot_seconds)) then
+       right_ascension = atan2(cos(obliqr)*sin(lamb), cos(lamb))
+       time_angle = lambm - right_ascension
+       eot_seconds = atan2(sin(time_angle), cos(time_angle))*86400.0_SHR_KIND_R8/(2.0_SHR_KIND_R8*pi)
+    end if
 
     return
 
   END SUBROUTINE shr_orb_decl
+
+  !===============================================================================
+
+  subroutine shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, &
+     delta, eccf, eot_seconds)
+    real(SHR_KIND_R8), intent(in) :: calday, days_per_year, eccen, mvelpp, lambm0, obliqr
+    real(SHR_KIND_R8), intent(out) :: delta, eccf
+    real(SHR_KIND_R8), intent(out), optional :: eot_seconds
+
+    call shr_orb_decl(calday + (days_per_year - 365.0_SHR_KIND_R8), eccen, mvelpp, lambm0, obliqr, &
+       delta, eccf, days_per_year=days_per_year, eot_seconds=eot_seconds)
+  end subroutine shr_orb_decl_fixed_year
+
+   SUBROUTINE shr_orb_decl_gregorian(days_since_20000101, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds)
+
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+
+    real(SHR_KIND_R8), intent(in) :: days_since_20000101
+    real(SHR_KIND_R8), intent(in) :: eccen, mvelpp, lambm0, obliqr
+    real(SHR_KIND_R8), intent(out) :: delta, eccf
+   real(SHR_KIND_R8), intent(out), optional :: eot_seconds
+
+    real(SHR_KIND_R8), parameter :: gregorian_orbit_period = 365.2422_SHR_KIND_R8
+    real(SHR_KIND_R8) :: orbital_day
+
+    if (.not. ieee_is_finite(days_since_20000101)) then
+       call shr_sys_abort('(shr_orb_decl_gregorian) elapsed days must be finite')
+    end if
+
+    orbital_day = 1.0_SHR_KIND_R8 + 365.0_SHR_KIND_R8 &
+         * modulo(days_since_20000101, gregorian_orbit_period) / gregorian_orbit_period
+   call shr_orb_decl(orbital_day, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds=eot_seconds)
+
+  END SUBROUTINE shr_orb_decl_gregorian
 
   !===============================================================================
 

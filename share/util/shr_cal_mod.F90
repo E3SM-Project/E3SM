@@ -38,6 +38,8 @@ module shr_cal_mod
   use shr_log_mod, only: s_loglev  => shr_log_Level
   use shr_log_mod, only: s_logunit => shr_log_Unit
   use esmf
+   use shr_orb_mod, only: shr_orb_context_type, shr_orb_params, shr_orb_decl, shr_orb_decl_gregorian
+   use shr_orb_mod, only: shr_orb_decl_fixed_year
 
   implicit none
 
@@ -71,10 +73,12 @@ module shr_cal_mod
   ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: shr_cal_calendarName       ! checks and returns valid cal name
+   public :: shr_cal_solarDecl
   public :: shr_cal_numDaysinMonth     ! number of days in a month
   public :: shr_cal_numDaysinYear      ! number of days in a year
   public :: shr_cal_elapsDaysStrtMonth ! elapsed days on start of month
   public :: shr_cal_timeset     ! set ESMF Time from ymd, s, shr_cal calendar
+   public :: shr_cal_gregorianElapsedDays
   public :: shr_cal_date2ymd   ! converts coded-date   to yr,month,day
   public :: shr_cal_date2julian! converts coded-date,sec to julian days
   public :: shr_cal_ymd2julian ! converts yr,month,day,sec to julian days
@@ -267,7 +271,103 @@ contains
     endif
   end subroutine shr_cal_timeSet_int
 
-  subroutine shr_cal_timeSet_long(etime,ymd,sec,calendar, rc)
+   subroutine shr_cal_solarDecl(context, ymd, tod, calendar, delta, eccf, eot_seconds)
+       type(shr_orb_context_type), intent(in) :: context
+       integer(SHR_KIND_IN), intent(in) :: ymd
+       real(SHR_KIND_R8), intent(in) :: tod
+       character(len=*), intent(in) :: calendar
+       real(SHR_KIND_R8), intent(out) :: delta, eccf
+      real(SHR_KIND_R8), intent(out), optional :: eot_seconds
+       integer(SHR_KIND_IN) :: seasonal_ymd, year, orbital_year
+       real(SHR_KIND_R8) :: elapsed_days, calday, year_start, next_year_start, year_fraction
+      real(SHR_KIND_R8) :: days_per_year
+       real(SHR_KIND_R8) :: eccen, obliq, mvelp, obliqr, lambm0, mvelpp
+
+      if (present(eot_seconds)) eot_seconds = 0.0_SHR_KIND_R8
+      seasonal_ymd = ymd
+       if (context%perpetual) seasonal_ymd = context%perpetual_ymd
+       eccen = context%eccen
+       obliqr = context%obliqr
+       lambm0 = context%lambm0
+       mvelpp = context%mvelpp
+       if (shr_cal_calendarName(calendar) == shr_cal_gregorian) then
+          elapsed_days = shr_cal_gregorianElapsedDays(ymd, tod)
+          if (context%variable_year) then
+             year = ymd / 10000
+             year_start = shr_cal_gregorianElapsedDays(year * 10000 + 101, 0.0_SHR_KIND_R8)
+             next_year_start = shr_cal_gregorianElapsedDays((year + 1) * 10000 + 101, 0.0_SHR_KIND_R8)
+             year_fraction = (elapsed_days - year_start) / (next_year_start - year_start)
+             orbital_year = context%iyear + year - context%iyear_align
+             obliq = context%obliq
+             mvelp = context%mvelp
+             call shr_orb_params(orbital_year, eccen, obliq, mvelp, obliqr, lambm0, mvelpp, &
+                  .false., year_fraction=year_fraction)
+          end if
+          elapsed_days = shr_cal_gregorianElapsedDays(seasonal_ymd, tod)
+          if (context%fixed_year) then
+             call shr_cal_date2julian(seasonal_ymd, int(tod), calday, calendar)
+             calday = calday + (tod - real(int(tod), SHR_KIND_R8)) / 86400.0_SHR_KIND_R8
+             year = seasonal_ymd / 10000
+             year_start = shr_cal_gregorianElapsedDays(year * 10000 + 101, 0.0_SHR_KIND_R8)
+             next_year_start = shr_cal_gregorianElapsedDays((year + 1) * 10000 + 101, 0.0_SHR_KIND_R8)
+             days_per_year = next_year_start - year_start
+             if (context%use_equation_of_time .and. present(eot_seconds)) then
+                call shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, &
+                     delta, eccf, eot_seconds)
+             else
+                call shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+             end if
+          else if (context%use_equation_of_time .and. present(eot_seconds)) then
+             call shr_orb_decl_gregorian(elapsed_days, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds)
+          else
+             call shr_orb_decl_gregorian(elapsed_days, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+          end if
+       else
+          call shr_cal_date2julian(seasonal_ymd, int(tod), calday, calendar)
+          calday = calday + (tod - real(int(tod), SHR_KIND_R8)) / 86400.0_SHR_KIND_R8
+          if (context%use_equation_of_time .and. present(eot_seconds)) then
+             call shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds=eot_seconds)
+          else
+             call shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+          end if
+       end if
+     end subroutine shr_cal_solarDecl
+
+     function shr_cal_gregorianElapsedDays(ymd, tod) result(elapsed_days)
+
+      use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+
+      integer(SHR_KIND_IN), intent(in) :: ymd
+      real(SHR_KIND_R8), intent(in) :: tod
+      real(SHR_KIND_R8) :: elapsed_days
+      integer(SHR_KIND_I8), parameter :: seconds_per_day = 86400_SHR_KIND_I8
+      integer(SHR_KIND_I8) :: elapsed_seconds
+      integer :: rc
+      type(ESMF_Time) :: date, epoch
+      type(ESMF_TimeInterval) :: elapsed
+
+      if (.not. ieee_is_finite(tod)) then
+          call shr_sys_abort('(shr_cal_gregorianElapsedDays) nonfinite time of day')
+      end if
+      if (.not. shr_cal_validDate(ymd, shr_cal_gregorian) .or. &
+             tod < 0.0_SHR_KIND_R8 .or. tod >= real(seconds_per_day, SHR_KIND_R8)) then
+          call shr_sys_abort('(shr_cal_gregorianElapsedDays) invalid date or time of day')
+      end if
+
+      call shr_cal_timeSet(date, ymd, 0, shr_cal_gregorian, rc=rc)
+      if (rc /= ESMF_SUCCESS) call shr_sys_abort('(shr_cal_gregorianElapsedDays) invalid date')
+      call shr_cal_timeSet(epoch, 20000101, 0, shr_cal_gregorian, rc=rc)
+      if (rc /= ESMF_SUCCESS) call shr_sys_abort('(shr_cal_gregorianElapsedDays) invalid epoch')
+      elapsed = date - epoch
+      call ESMF_TimeIntervalGet(elapsed, s_i8=elapsed_seconds, rc=rc)
+      if (rc /= ESMF_SUCCESS) call shr_sys_abort('(shr_cal_gregorianElapsedDays) invalid interval')
+      elapsed_days = real(elapsed_seconds / seconds_per_day, SHR_KIND_R8) &
+             + (real(mod(elapsed_seconds, seconds_per_day), SHR_KIND_R8) + tod) &
+             / real(seconds_per_day, SHR_KIND_R8)
+
+   end function shr_cal_gregorianElapsedDays
+
+   subroutine shr_cal_timeSet_long(etime,ymd,sec,calendar, rc)
 
     implicit none
 
