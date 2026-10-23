@@ -71,7 +71,7 @@ contains
     use elm_varpar                , only: cft_lb, cft_ub, maxpatch_glcmec
     use elm_varpar                , only: mxpft, numveg, mxpft_nc, numpft
     use elm_varpar                , only: update_pft_array_bounds
-    use elm_varpar                , only: surfpft_lb, surfpft_ub
+    use elm_varpar                , only: surfpft_lb, surfpft_ub, max_col_npfts
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec, max_polygon, max_non_poly_lunit
     use column_varcon             , only: col_itype_to_icemec_class
@@ -400,6 +400,13 @@ contains
 
     call initGridCells()
     call initGhostGridCells()
+
+    ! Loops over the patches of each column can stop at the largest number of
+    ! patches on any column, since the subgrid structure does not change
+    max_col_npfts = 0
+    if (bounds_proc%endc >= bounds_proc%begc) then
+       max_col_npfts = maxval(col_pp%npfts(bounds_proc%begc:bounds_proc%endc))
+    end if
 #ifdef MOAB_LATERAL
     call c2c_connections%Init(bounds_proc)
 #endif

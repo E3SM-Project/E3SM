@@ -1521,7 +1521,7 @@ contains
       !$acc routine seq
     use elm_varcon     , only : sb, hvap
     use column_varcon  , only : icol_road_perv, icol_road_imperv
-    use elm_varpar     , only : nlevsno, max_patch_per_col
+    use elm_varpar     , only : nlevsno, max_col_npfts
     !
     ! !ARGUMENTS:
     implicit none
@@ -1640,7 +1640,7 @@ contains
       hs_h2osfc(begc:endc) = 0._r8
       hs(begc:endc)        = 0._r8
       dhsdT(begc:endc)     = 0._r8
-      do pi = 1,max_patch_per_col
+      do pi = 1,max_col_npfts
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             if ( pi <= col_pp%npfts(c) ) then
@@ -1719,7 +1719,7 @@ contains
       hs_top(begc:endc)                    = 0._r8
       hs_top_snow(begc:endc)               = 0._r8
 
-      do pi = 1,max_patch_per_col
+      do pi = 1,max_col_npfts
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             lyr_top = snl(c) + 1

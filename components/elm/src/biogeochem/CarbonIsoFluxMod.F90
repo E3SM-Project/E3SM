@@ -7,7 +7,7 @@ module CarbonIsoFluxMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varpar             , only : ndecomp_cascade_transitions, nlevdecomp, ndecomp_pools
-  use elm_varpar             , only : max_patch_per_col, maxpatch_pft
+  use elm_varpar             , only : max_col_npfts
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
@@ -861,7 +861,7 @@ contains
 
       ! calculate the column-level flux of deadstem and deadcrootc to cwdc as the result of fire mortality.
 
-      do pi = 1,max_patch_per_col
+      do pi = 1,max_col_npfts
          do fc = 1,num_soilc
             cc = filter_soilc(fc)
             if ( pi <=  col_pp%npfts(cc) ) then
@@ -946,7 +946,7 @@ contains
          )
 
       do j = 1, nlevdecomp
-         do pi = 1,max_patch_per_col
+         do pi = 1,max_col_npfts
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
@@ -1052,7 +1052,7 @@ contains
           )
 
        do j = 1, nlevdecomp
-          do pi = 1,maxpatch_pft
+          do pi = 1,max_col_npfts
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
 
@@ -1204,7 +1204,7 @@ contains
           )
 
        do j = 1, nlevdecomp
-          do pi = 1,maxpatch_pft
+          do pi = 1,max_col_npfts
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
 
@@ -1279,7 +1279,7 @@ contains
           end do
        end do
 
-       do pi = 1,maxpatch_pft
+       do pi = 1,max_col_npfts
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              if (pi <=  col_pp%npfts(c)) then
