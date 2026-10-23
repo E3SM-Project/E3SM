@@ -269,7 +269,8 @@ contains
 
       ! Thermal conductivity and Heat capacity
 
-      tk_h2osfc(begc:endc) = spval
+      ! tk_h2osfc is set by SoilThermProp on every filter column and is only
+      ! read there, so no fill is needed (non-filter entries are undefined)
       call SoilThermProp(bounds, num_nolakec, filter_nolakec, &
            tk(begc:endc, :), &
            cv(begc:endc, :), &
@@ -322,9 +323,11 @@ contains
       ! initialize initial temperature vector
 
       call t_startf('SoilTempInit')
-      tvector(begc:endc, :) = spval
+      ! Only filter columns of tvector are read, so only they get the
+      ! spval fill (non-filter entries are undefined)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
+         tvector(c,:) = spval
          do j = snl(c)+1, 0
             tvector(c,j-1) = t_soisno(c,j)
          end do
@@ -1636,10 +1639,15 @@ contains
          endif
       end do
 
-      hs_soil(begc:endc)   = 0._r8
-      hs_h2osfc(begc:endc) = 0._r8
-      hs(begc:endc)        = 0._r8
-      dhsdT(begc:endc)     = 0._r8
+      ! Only filter columns are read, so only they are zeroed
+      ! (non-filter entries are undefined)
+      do fc = 1,num_nolakec
+         c = filter_nolakec(fc)
+         hs_soil(c)   = 0._r8
+         hs_h2osfc(c) = 0._r8
+         hs(c)        = 0._r8
+         dhsdT(c)     = 0._r8
+      end do
       do pi = 1,max_col_npfts
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -1715,9 +1723,14 @@ contains
       ! to each layer
 
       ! Initialize:
-      sabg_lyr_col(begc:endc,-nlevsno+1:1) = 0._r8
-      hs_top(begc:endc)                    = 0._r8
-      hs_top_snow(begc:endc)               = 0._r8
+      ! Only filter columns are read, so only they are zeroed
+      ! (non-filter entries are undefined)
+      do fc = 1,num_nolakec
+         c = filter_nolakec(fc)
+         sabg_lyr_col(c,-nlevsno+1:1) = 0._r8
+         hs_top(c)                    = 0._r8
+         hs_top_snow(c)               = 0._r8
+      end do
 
       do pi = 1,max_col_npfts
          do fc = 1,num_nolakec
@@ -1918,8 +1931,8 @@ contains
          endc         => bounds%endc                        & ! Input: [integer ] ending column index
          )
 
-      ! Initialize
-      rvector(begc:endc, :) = spval
+      ! rvector is set at all levels of the filter columns below and is only
+      ! read there, so no fill is needed (non-filter entries are undefined)
 
       ! Set entries in RHS vector for snow layers
       call SetRHSVec_Snow(bounds, num_filter, filter, &
@@ -2013,7 +2026,12 @@ contains
          )
 
       ! Initialize
-      rt(begc:endc, : ) = spval
+      ! Only filter columns are read, so only they get the spval fill
+      ! (non-filter entries are undefined)
+      do fc = 1,num_filter
+         c = filter(fc)
+         rt(c, : ) = spval
+      end do
 
       do fc = 1,num_filter
          c = filter(fc)
@@ -2079,8 +2097,8 @@ contains
     real(r8) :: dzm                                             ! used in computing tridiagonal matrix
     !-----------------------------------------------------------------------
 
-    ! Initialize
-    rt(bounds%begc:bounds%endc, : ) = spval
+    ! rt(c,1) is set below on every filter column and is only read there,
+    ! so no fill is needed (non-filter entries are undefined)
 
     do fc = 1,num_filter
        c = filter(fc)
@@ -2141,7 +2159,12 @@ contains
          )
 
       ! Initialize
-      rt(begc:endc, : ) = spval
+      ! Only filter columns are read, so only they get the spval fill
+      ! (non-filter entries are undefined)
+      do fc = 1,num_filter
+         c = filter(fc)
+         rt(c, : ) = spval
+      end do
 
       !
       ! urban sunwall, shadewall, and roof columns -------------------------------------
