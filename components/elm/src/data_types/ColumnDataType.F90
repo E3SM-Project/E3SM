@@ -7889,11 +7889,6 @@ contains
           this%m_c_to_litr_cel_fire(idx,j)          = value_column
           this%m_c_to_litr_lig_fire(idx,j)          = value_column
 
-          this%harvest_c_to_litr_met_c(idx,j)       = value_column
-          this%harvest_c_to_litr_cel_c(idx,j)       = value_column
-          this%harvest_c_to_litr_lig_c(idx,j)       = value_column
-          this%harvest_c_to_cwdc(idx,j)             = value_column
-
           this%hr_vr(idx,j)                         = value_column
 
           end associate
@@ -8013,6 +8008,16 @@ contains
           this%hrv_deadstemc_to_prod100c(idx) = value_column
           this%hrv_xsmrpool_to_atm(idx)       = value_column
           end associate
+       end do
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%harvest_c_to_litr_met_c(idx,j) = value_column
+             this%harvest_c_to_litr_cel_c(idx,j) = value_column
+             this%harvest_c_to_litr_lig_c(idx,j) = value_column
+             this%harvest_c_to_cwdc(idx,j)       = value_column
+             end associate
+          end do
        end do
     end if
 
@@ -9569,12 +9574,6 @@ contains
           this%m_n_to_litr_cel_fire(idx,j)             = value_column
           this%m_n_to_litr_lig_fire(idx,j)             = value_column
 
-          ! harvest
-          this%harvest_n_to_litr_met_n(idx,j)          = value_column
-          this%harvest_n_to_litr_cel_n(idx,j)          = value_column
-          this%harvest_n_to_litr_lig_n(idx,j)          = value_column
-          this%harvest_n_to_cwdn(idx,j)                = value_column
-
           this%net_nmin_vr(idx,j)                      = value_column
           this%sminn_nh4_input_vr(idx,j)               = value_column !not used anywhere?
           this%sminn_no3_input_vr(idx,j)               = value_column !not used anywhere?
@@ -9744,6 +9743,16 @@ contains
           this%hrv_deadstemn_to_prod10n(idx)  = value_column
           this%hrv_deadstemn_to_prod100n(idx) = value_column
           end associate
+       end do
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%harvest_n_to_litr_met_n(idx,j) = value_column
+             this%harvest_n_to_litr_cel_n(idx,j) = value_column
+             this%harvest_n_to_litr_lig_n(idx,j) = value_column
+             this%harvest_n_to_cwdn(idx,j)       = value_column
+             end associate
+          end do
        end do
     end if
 
@@ -11180,12 +11189,6 @@ contains
           this%m_p_to_litr_cel_fire(idx,j)             = value_column
           this%m_p_to_litr_lig_fire(idx,j)             = value_column
 
-          ! harvest
-          this%harvest_p_to_litr_met_p(idx,j)          = value_column
-          this%harvest_p_to_litr_cel_p(idx,j)          = value_column
-          this%harvest_p_to_litr_lig_p(idx,j)          = value_column
-          this%harvest_p_to_cwdp(idx,j)                = value_column
-
           this%primp_to_labilep_vr(idx,j)              = value_column
           this%labilep_to_secondp_vr(idx,j)            = value_column
           this%secondp_to_labilep_vr(idx,j)            = value_column
@@ -11331,6 +11334,16 @@ contains
           this%hrv_deadstemp_to_prod10p(idx)  = value_column
           this%hrv_deadstemp_to_prod100p(idx) = value_column
           end associate
+       end do
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%harvest_p_to_litr_met_p(idx,j) = value_column
+             this%harvest_p_to_litr_cel_p(idx,j) = value_column
+             this%harvest_p_to_litr_lig_p(idx,j) = value_column
+             this%harvest_p_to_cwdp(idx,j)       = value_column
+             end associate
+          end do
        end do
     end if
 
