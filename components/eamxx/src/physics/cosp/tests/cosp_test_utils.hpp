@@ -3,12 +3,20 @@
 
 #include "physics/cosp/cosp_cxx_functions.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <random>
 #include <string>
 
 /*
  * Helpers shared by the BFB tests of the C++/Kokkos COSP port against the Fortran.
  * The tests always use double, since the Fortran library is double (wp = dp).
+ *
+ * On CPU builds the C++ must match the Fortran exactly. On GPU builds the C++ runs on
+ * device, with fused multiply-adds and the device math library, while the Fortran runs
+ * on host, so only close agreement is possible: values must agree to a relative
+ * tolerance, and a small fraction of entries may differ by more (a roundoff difference
+ * can flip a discrete choice, such as a histogram bin or a retrieval succeeding).
  */
 
 // C bindings to the Fortran routines, see cosp_f90_shims.F90
@@ -76,6 +84,25 @@ using diview_2d = Kokkos::View<int**,     DefaultDevice>;
 using Policy2 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<2>>;
 using Policy3 = Kokkos::MDRangePolicy<ExeSpace, Kokkos::Rank<3>>;
 
+// Whether the C++ is required to match the Fortran exactly (CPU builds), see above
+constexpr bool exact_bfb = !ekat::OnGpu<ExeSpace>::value;
+
+// Whether a C++ value matches the Fortran one. The GPU tolerance is loose enough for
+// the single precision arithmetic in the RNG.
+inline bool same (const double a, const double b) {
+  if (exact_bfb) return a == b;
+  constexpr double rtol = 1e-6, atol = 1e-12;
+  const double d = std::abs(a - b);
+  return d <= atol || d <= rtol*std::max(std::abs(a), std::abs(b));
+}
+
+// Number of entries out of n that may fail same(): none on CPU, 0.1% (at least 1) on GPU.
+// Roundoff flips are rare (about 5e-6 of the MODIS histogram entries in a month-long
+// Frontier run), so this still catches real bugs that affect a few percent of entries.
+inline int allowed_diffs (const size_t n) {
+  return exact_bfb ? 0 : std::max(1, static_cast<int>(n/1000));
+}
+
 inline std::mt19937_64& engine () {
   static std::mt19937_64 e (20261022);
   return e;
@@ -107,26 +134,29 @@ DV to_device (const HV& h, const std::string& name) {
   return d;
 }
 
-// Count entries of a device view that differ from a LayoutLeft host view
+// Count entries of a device view that don't match a LayoutLeft host view, see same()
 template <typename DV, typename HV>
 int count_diffs (const DV& d, const HV& h) {
   auto dh = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), d);
   int ndiff = 0;
   if constexpr (HV::rank == 1) {
     for (size_t i = 0; i < h.extent(0); ++i)
-      if (dh(i) != h(i)) ++ndiff;
+      if (!same(dh(i), h(i))) ++ndiff;
   } else if constexpr (HV::rank == 2) {
     for (size_t i = 0; i < h.extent(0); ++i)
       for (size_t j = 0; j < h.extent(1); ++j)
-        if (dh(i,j) != h(i,j)) ++ndiff;
+        if (!same(dh(i,j), h(i,j))) ++ndiff;
   } else {
     for (size_t i = 0; i < h.extent(0); ++i)
       for (size_t j = 0; j < h.extent(1); ++j)
         for (size_t k = 0; k < h.extent(2); ++k)
-          if (dh(i,j,k) != h(i,j,k)) ++ndiff;
+          if (!same(dh(i,j,k), h(i,j,k))) ++ndiff;
   }
   return ndiff;
 }
+
+// Check that a device view matches the Fortran result in a host view, see above
+#define COSP_REQUIRE_MATCH(d, h) REQUIRE(count_diffs(d, h) <= allowed_diffs(h.size()))
 
 // Rough atmospheric profiles for npoints columns of nlev levels, ordered top to bottom
 // as COSP expects: mid-level height (m) and temperature (K)

@@ -58,7 +58,7 @@ TEST_CASE("cosp_scops_bfb", "[cosp]")
       });
 
       INFO("overlap=" << overlap << " ncol=" << ncol);
-      REQUIRE(count_diffs(fo_d, fo_f) == 0);
+      COSP_REQUIRE_MATCH(fo_d, fo_f);
 
       // All three subcolumn types show up
       int n[3] = {0,0,0};

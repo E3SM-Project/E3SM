@@ -39,9 +39,9 @@ TEST_CASE("cosp_two_stream_bfb", "[cosp]")
     F::two_stream(tau_d(i), g_d(i), w0_d(i), ref_d(i), tra_d(i));
     ref2_d(i) = F::two_stream_reflectance(tau_d(i), g_d(i), w0_d(i));
   });
-  REQUIRE(count_diffs(ref_d,  ref_f)  == 0);
-  REQUIRE(count_diffs(tra_d,  tra_f)  == 0);
-  REQUIRE(count_diffs(ref2_d, ref2_f) == 0);
+  COSP_REQUIRE_MATCH(ref_d, ref_f);
+  COSP_REQUIRE_MATCH(tra_d, tra_f);
+  COSP_REQUIRE_MATCH(ref2_d, ref2_f);
 }
 
 // -------------------------------------------------------------------------------------------
@@ -151,11 +151,11 @@ TEST_CASE("cosp_modis_bfb", "[cosp]")
       F::modis_column(ncol, p, c, t, s, fq);
     });
 
-    REQUIRE(count_diffs(phase_d,   phase_f)   == 0);
-    REQUIRE(count_diffs(ctp_d,     ctp_f)     == 0);
-    REQUIRE(count_diffs(tau_ret_d, tau_ret_f) == 0);
-    REQUIRE(count_diffs(size_d,    size_f)    == 0);
-    REQUIRE(count_diffs(fq_d,      fq_f)      == 0);
+    COSP_REQUIRE_MATCH(phase_d, phase_f);
+    COSP_REQUIRE_MATCH(ctp_d, ctp_f);
+    COSP_REQUIRE_MATCH(tau_ret_d, tau_ret_f);
+    COSP_REQUIRE_MATCH(size_d, size_f);
+    COSP_REQUIRE_MATCH(fq_d, fq_f);
 
     // Make sure the inputs exercise the interesting branches
     int nphase[4] = {0,0,0,0}, n_fill = 0, n_size = 0, n_isccp = 0, n_co2 = 0;

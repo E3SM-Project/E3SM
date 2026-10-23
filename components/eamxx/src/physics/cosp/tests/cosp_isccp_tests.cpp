@@ -83,11 +83,11 @@ TEST_CASE("cosp_isccp_bfb", "[cosp]")
       F::icarus_column(ncol, sunlit_d(j), bt, bp, fq, cldarea_d(j));
     });
 
-    REQUIRE(count_diffs(boxtau_d,  boxtau_f)  == 0);
-    REQUIRE(count_diffs(boxptop_d, boxptop_f) == 0);
-    REQUIRE(count_diffs(boxttop_d, boxttop_f) == 0);
-    REQUIRE(count_diffs(fq_d,      fq_f)      == 0);
-    REQUIRE(count_diffs(cldarea_d, cldarea_f) == 0);
+    COSP_REQUIRE_MATCH(boxtau_d, boxtau_f);
+    COSP_REQUIRE_MATCH(boxptop_d, boxptop_f);
+    COSP_REQUIRE_MATCH(boxttop_d, boxttop_f);
+    COSP_REQUIRE_MATCH(fq_d, fq_f);
+    COSP_REQUIRE_MATCH(cldarea_d, cldarea_f);
 
     // Coverage: cloudy subcolumns with valid tops, at a range of pressures
     int ncloudy = 0, nhigh = 0, nlow = 0;
