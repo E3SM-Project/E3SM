@@ -3803,6 +3803,7 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, tape(t)%timeid, 'units', trim(str))
 
     calendar = timemgr_get_calendar_cf()
+    if (calendar == 'gregorian') calendar = 'proleptic_gregorian'
     ierr=pio_put_att (tape(t)%File, tape(t)%timeid, 'calendar', trim(calendar))
 
 

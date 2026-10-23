@@ -2627,7 +2627,7 @@ contains
        if (      trim(cal) == NO_LEAP_C   )then
           caldesc = "noleap"
        else if ( trim(cal) == GREGORIAN_C )then
-          caldesc = "gregorian"
+          caldesc = "proleptic_gregorian"
        end if
        call ncd_putatt(nfid(t), varid, 'calendar', caldesc)
        call ncd_putatt(nfid(t), varid, 'bounds', 'time_bounds')

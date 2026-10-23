@@ -33,7 +33,8 @@
 <config_dt ice_grid="RRSwISC6to18E3r5">900.0</config_dt>
 <config_dt ice_grid="SOwISC12to30E3r3">1800.0</config_dt>
 <config_dt ice_grid="SOwISC12to30E3r4">1800.0</config_dt>
-<config_calendar_type>'noleap'</config_calendar_type>
+<config_calendar_type calendar="NO_LEAP">'noleap'</config_calendar_type>
+<config_calendar_type>'gregorian'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'00-00-01_00:00:00'</config_run_duration>

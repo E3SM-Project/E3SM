@@ -15,7 +15,7 @@ module RtmHistFile
                              isgrid2d
   use RtmFileUtils  , only : get_filename, getfil
   use RtmTimeManager, only : get_nstep, get_curr_date, get_curr_time, get_ref_date, &
-                             get_prev_time, get_prev_date, is_last_step
+                             get_prev_time, get_prev_date, is_last_step, get_calendar
   use RtmSpmd       , only : masterproc
   use RtmIO
   use RtmDateTime
@@ -796,7 +796,11 @@ contains
        str = 'days since ' // basedate // " " // basesec
        call ncd_defvar(nfid(t), 'time', tape(t)%ncprec, 1, dim1id, varid, &
             long_name='time',units=str) 
-       call ncd_putatt(nfid(t), varid, 'calendar', 'noleap')
+       if (get_calendar() == 'GREGORIAN') then
+          call ncd_putatt(nfid(t), varid, 'calendar', 'proleptic_gregorian')
+       else
+          call ncd_putatt(nfid(t), varid, 'calendar', 'noleap')
+       end if
        call ncd_putatt(nfid(t), varid, 'bounds', 'time_bounds')
 
        dim1id(1) = time_dimid

@@ -57,7 +57,7 @@
       use ice_calendar, only: time, sec, idate, idate0, nyr, month, &
                               mday, write_ic, histfreq, histfreq_n, &
                               year_init, new_year, new_month, new_day, &
-                              dayyr, daymo, days_per_year
+                              dayyr, daymo, days_per_year, calendar_type
       use ice_work, only: work_g1, work_gr, work_gr3
       use ice_restart, only: lenstr, runid, lcdf64
       use ice_domain, only: distrb_info
@@ -208,6 +208,8 @@
       
       if (days_per_year == 360) then
          status = pio_put_att(File,varid,'calendar','360_day')
+      else if (calendar_type == 'GREGORIAN') then
+         status = pio_put_att(File,varid,'calendar','proleptic_gregorian')
       else
          status = pio_put_att(File,varid,'calendar','noleap')
       endif
@@ -690,7 +692,7 @@
       use ice_constants
       use ice_restart, only: lenstr, runid
       use ice_itd, only: c_hi_range
-      use ice_calendar, only: write_ic, dayyr, histfreq
+      use ice_calendar, only: write_ic, dayyr, histfreq, calendar_type
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
@@ -738,8 +740,13 @@
 #ifdef CCSMCOUPLED
         write (nu_hdr, 999) 'runid',runid,' '
 #endif
-        write (nu_hdr, 999) 'calendar','noleap',' '
-        write (title,'(a,i3,a)') 'All years have exactly ',int(dayyr),' days'
+            if (calendar_type == 'GREGORIAN') then
+               write (nu_hdr, 999) 'calendar','proleptic_gregorian',' '
+               title = 'Years have 365 or 366 days under the Gregorian leap-year rule'
+            else
+               write (nu_hdr, 999) 'calendar','noleap',' '
+               write (title,'(a,i3,a)') 'All years have exactly ',int(dayyr),' days'
+            endif
         write (nu_hdr, 999) 'comment',title,' '
         write (nu_hdr, 999) 'conventions','CICE',' '
         write (nu_hdr, 997) 'missing_value',spval

@@ -831,7 +831,7 @@ setup_file (      IOFileSpecs& filespecs,
 
     scorpio::define_var(filename,"time",time_units,{}, "double", "double",true);
     if (use_leap_year()) {
-      scorpio::set_attribute (filename,"time","calendar","gregorian");
+      scorpio::set_attribute (filename,"time","calendar","proleptic_gregorian");
     } else {
       scorpio::set_attribute (filename,"time","calendar","noleap");
     }
