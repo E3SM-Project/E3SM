@@ -1019,7 +1019,11 @@ if ($iceberg_mode eq 'data') {
 }
 add_default($nl, 'config_iceberg_temperature');
 add_default($nl, 'config_scale_dib_by_removed_ice_runoff');
-add_default($nl, 'config_salt_flux_coupling_type');
+if ($COMP_OCN eq 'omega') {
+   add_default($nl, 'config_salt_flux_coupling_type', 'val'=>"'prognostic'");
+} else {
+   add_default($nl, 'config_salt_flux_coupling_type');
+}
 add_default($nl, 'config_ice_ocean_drag_coefficient');
 
 ###############################
