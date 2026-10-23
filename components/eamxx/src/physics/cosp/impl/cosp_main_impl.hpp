@@ -63,11 +63,23 @@ void Functions<S,D>::cosp_main(
   // Overlap assumption of the subcolumn generator (maximum-random), set in cosp_c2f.F90
   constexpr int overlap = 3;
 
-  const auto frac_out = ws.frac_out, threshold = ws.threshold;
-  const auto tau = ws.tau, dem = ws.dem, liqfrac = ws.liqfrac, g = ws.g, w0 = ws.w0;
-  const auto boxtau = ws.boxtau, boxptop = ws.boxptop, boxttop = ws.boxttop;
-  const auto misr_tau = ws.misr_tau, misr_ztop = ws.misr_ztop;
-  const auto modis_ctp = ws.modis_ctp, modis_tau = ws.modis_tau, modis_size = ws.modis_size;
+  // One declarator per line: the views have different types, and clang rejects a
+  // multi-declarator auto that deduces different types
+  const auto frac_out  = ws.frac_out;
+  const auto threshold = ws.threshold;
+  const auto tau     = ws.tau;
+  const auto dem     = ws.dem;
+  const auto liqfrac = ws.liqfrac;
+  const auto g       = ws.g;
+  const auto w0      = ws.w0;
+  const auto boxtau  = ws.boxtau;
+  const auto boxptop = ws.boxptop;
+  const auto boxttop = ws.boxttop;
+  const auto misr_tau  = ws.misr_tau;
+  const auto misr_ztop = ws.misr_ztop;
+  const auto modis_ctp  = ws.modis_ctp;
+  const auto modis_tau  = ws.modis_tau;
+  const auto modis_size = ws.modis_size;
   const auto modis_phase = ws.modis_phase;
 
   // -----------------------------------------------------------------------------------
