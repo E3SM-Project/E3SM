@@ -770,8 +770,12 @@ contains
             !------------------------------------------------------------------
             ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
             !------------------------------------------------------------------
-            smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-            smin_no3_to_plant_vr_loc(:,:) = 0._r8
+            ! These copies are set and read only with PFLOTRAN (pf_cmode), and only on
+            ! the filter columns
+            if (use_pflotran .and. pf_cmode) then
+               smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+               smin_no3_to_plant_vr_loc(:,:) = 0._r8
+            end if
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
