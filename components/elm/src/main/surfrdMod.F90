@@ -158,7 +158,7 @@ contains
     ! !USES:
     use fileutils  , only : getfil
     use ncdio_pio  , only : ncd_inqvid
-    use elm_varctl , only : irrigate, create_crop_landunit
+    use elm_varctl , only : irrigate, create_crop_landunit, decomp_weight_patch_factor
     use elm_varpar , only : crop_prog, cft_lb, cft_ub, cft_size
     use pftvarcon  , only : npcropmax, mergetoelmpft
     use pftvarcon  , only : nc3crop, ncorn, nscereal, nwcereal, nsoybean, ncassava, ncotton
@@ -184,6 +184,7 @@ contains
     logical  :: readvar                  ! was the variable read
     integer  :: fni, fnj, fns            ! grid sizes on the surface dataset
     integer  :: dimid, varid, ncft       ! netCDF ids and size of the cft dimension
+    integer  :: nnat                     ! size of the natpft dimension
     integer  :: status                   ! PIO status
     integer  :: m, n, k                  ! indices
     integer  :: target_cft(cft_lb:cft_ub) ! crop type that each crop type on the file is merged into
@@ -313,16 +314,41 @@ contains
           end if
           cft_present(:) = cft_present(:) .or. (pct_cft(:) > 0._r8)
        end do
-       where (cft_present(:) .and. pct_crop(:) > 0._r8) weight(:) = weight(:) + 1._r8
+       where (cft_present(:) .and. pct_crop(:) > 0._r8) weight(:) = weight(:) + 1._r8 + decomp_weight_patch_factor
     end do
+
+    ! Add the natural vegetation patches (the crop columns have one patch each).
+    ! pct_crop and pct_cft are reused for PCT_NATVEG and PCT_NAT_PFT.
+    if (decomp_weight_patch_factor > 0._r8) then
+       if (ndims == 3) then
+          call ncd_io(ncid=ncid, varname='PCT_NATVEG', data=rdata2d, flag='read', readvar=readvar)
+          pct_crop(:) = reshape(rdata2d, (/fns/))
+       else
+          call ncd_io(ncid=ncid, varname='PCT_NATVEG', data=pct_crop, flag='read', readvar=readvar)
+       end if
+       if (.not. readvar) call endrun(msg=trim(subname)//' ERROR: PCT_NATVEG NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       call ncd_inqdid(ncid, 'natpft', dimid)
+       call ncd_inqdlen(ncid, dimid, nnat)
+       call ncd_inqvid(ncid, 'PCT_NAT_PFT', varid, vardesc, readvar=readvar)
+       if (.not. readvar) call endrun(msg=trim(subname)//' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+       do m = 1, nnat
+          if (ndims == 3) then
+             status = pio_get_var(ncid, varid, (/1, 1, m/), (/dlen(1), dlen(2), 1/), rdata2d)
+             pct_cft(:) = reshape(rdata2d, (/fns/))
+          else
+             status = pio_get_var(ncid, varid, (/1, m/), (/fns, 1/), pct_cft)
+          end if
+          where (pct_crop(:) > 0._r8 .and. pct_cft(:) > 0._r8) weight(:) = weight(:) + decomp_weight_patch_factor
+       end do
+    end if
 
     call ncd_pio_closefile(ncid)
     deallocate(pct_crop, pct_cft, cft_present)
     if (ndims == 3) deallocate(rdata2d)
 
     if (masterproc) then
-       write(iulog,*) trim(subname)//': estimated active soil columns per gridcell: total ', sum(weight), &
-            ', max ', maxval(weight)
+       write(iulog,*) trim(subname)//': gridcell weights (estimated active soil columns, plus ', &
+            decomp_weight_patch_factor, ' per active soil patch): total ', sum(weight), ', max ', maxval(weight)
     end if
 
   end subroutine surfrd_get_decomp_weights

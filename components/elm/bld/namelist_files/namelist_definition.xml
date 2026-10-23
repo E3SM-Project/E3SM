@@ -2029,6 +2029,15 @@ with positive weight after crop types are merged). This balances the column-leve
 across tasks in runs with prognostic crop. Without a crop landunit, it is the same as round_robin.
 </entry>
 
+<entry id="decomp_weight_patch_factor" type="real" category="elm_initialization"
+       group="elm_inparm" valid_values="" >
+With domain_decomp_type = round_robin_weighted, the cost of an active soil patch relative to an
+active soil column in the gridcell weights. A gridcell then weighs 1 plus this factor times the
+number of natural PFTs with positive weight (where the natural vegetation landunit has positive
+weight), plus, for each crop type with positive weight, 1 plus this factor. This also balances
+the patch-level work, such as canopy fluxes. Default: 0 (columns only)
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Namelist options related to within-gridcell hillslope hydrologic connectivity                                     -->
 <!-- ========================================================================================  -->
