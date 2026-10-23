@@ -292,6 +292,10 @@ contains
     real(r8) :: lsai_exp(bounds%begp:bounds%endp)    ! exp(-LSAI), iteration invariant
     real(r8) :: rdl_num(bounds%begp:bounds%endp)     ! numerator of rdl, iteration invariant
     real(r8) :: lw_grnd_p(bounds%begp:bounds%endp)   ! lw_grnd, iteration invariant
+    real(r8) :: obu_fv(bounds%begp:bounds%endp)      ! obu at each patch's last FrictionVelocity call
+    real(r8) :: um_fv(bounds%begp:bounds%endp)       ! um at each patch's last FrictionVelocity call
+    real(r8) :: ur_fv(bounds%begp:bounds%endp)       ! ur at each patch's last FrictionVelocity call
+    real(r8) :: ugust_fv(bounds%begp:bounds%endp)    ! ugust_total at each patch's last FrictionVelocity call
     real(r8) :: delq_snow
     real(r8) :: delq_soil
     real(r8) :: delq_h2osfc
@@ -822,12 +826,21 @@ contains
       ITERATION : do while (itlef <= itmax .and. fn > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
-         ! profiles of the surface boundary layer
+         ! profiles of the surface boundary layer. Only ustar, temp1, temp2 and fm
+         ! are needed in the iteration; the other outputs are computed once after
+         ! it from the inputs of each patch's last call, which are kept here.
+         do f = 1, fn
+            p = filterp(f)
+            obu_fv(p)   = obu(p)
+            um_fv(p)    = um(p)
+            ur_fv(p)    = ur(p)
+            ugust_fv(p) = ugust_total(p)
+         end do
          call FrictionVelocity (begp, endp, fn, filterp, &
               displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
               obu(begp:endp), itlef, ur(begp:endp), um(begp:endp), ugust_total(begp:endp), ustar(begp:endp), &
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
-              frictionvel_vars)
+              frictionvel_vars, part=1)
 
          do f = 1, fn
             p = filterp(f)
@@ -1235,6 +1248,16 @@ contains
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)
+
+      ! The FrictionVelocity outputs not used in the iteration (vds, u10, u10_elm,
+      ! u10_with_gusts_elm, va, fv, temp12m and temp22m), from the inputs of each
+      ! patch's last call in the iteration. ustar and fm are not changed after
+      ! that call, and displa and the roughness lengths not during the iteration.
+      call FrictionVelocity (begp, endp, fn, filterp, &
+           displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
+           obu_fv(begp:endp), itlef, ur_fv(begp:endp), um_fv(begp:endp), ugust_fv(begp:endp), ustar(begp:endp), &
+           temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
+           frictionvel_vars, part=2)
 
       ! lbl_rsc_h2o is not read inside the iteration, so only each patch's value from
       ! its last iteration was kept; t_veg and uaf are not changed after that
