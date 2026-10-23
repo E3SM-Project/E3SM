@@ -939,10 +939,12 @@ contains
        !  NEEDS TO BE AFTER SnowFiler is rebuilt, otherwise there
        !  can be zero snow layers but an active column in filter)
 
+       call t_startf('hnd_aerosolmasses')
        call AerosolMasses( bounds_clump,                                   &
             num_on=filter(nc)%num_snowc, filter_on=filter(nc)%snowc,       &
             num_off=filter(nc)%num_nosnowc, filter_off=filter(nc)%nosnowc, &
             aerosol_vars=aerosol_vars)
+       call t_stopf('hnd_aerosolmasses')
 
        call t_stopf('hydro without drainage')
 
