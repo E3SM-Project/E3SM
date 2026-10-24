@@ -488,6 +488,30 @@ const Field& Field::get_valid_mask () const
   return m_header->get_extra_data<Field>("valid_mask");
 }
 
+void Field::intersect_mask (const Field& x) const
+{
+  if (not x.has_valid_mask()) {
+    return;
+  }
+
+  EKAT_REQUIRE_MSG (has_valid_mask(),
+      "[Field::intersect_mask] Error! Cannot combine masks: rhs has a valid mask, but lhs does not.\n"
+      " - lhs name: " + name() + "\n"
+      " - rhs name: " + x.name() + "\n");
+  EKAT_REQUIRE_MSG (not is_read_only(),
+      "[Field::intersect_mask] Error! Cannot modify the valid mask of a read-only field.\n"
+      " - field name: " + name() + "\n");
+
+  const auto& y_mask = get_valid_mask();
+  const auto& x_mask = x.get_valid_mask();
+  if (y_mask.is_aliasing(x_mask)) {
+    return;
+  }
+
+  // Masks are 0/1 int fields, so multiplying them is a logical and
+  y_mask.scale(x_mask);
+}
+
 void Field::deep_copy (const ScalarWrapper value) const
 {
   // Check consistency of inputs
