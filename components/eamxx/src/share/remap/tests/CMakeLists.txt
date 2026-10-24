@@ -23,6 +23,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  # Test SE->point remap
+  CreateUnitTest(dg_to_cg_remapper
+    SOURCES dg_to_cg_remapper_tests.cpp
+    LIBS eamxx_remap
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test vertical remap
   CreateUnitTest(vertical_remapper
     SOURCES vertical_remapper_tests.cpp

@@ -1,7 +1,7 @@
 #ifndef SCREAM_HOMME_GRIDS_MANAGER_HPP
 #define SCREAM_HOMME_GRIDS_MANAGER_HPP
 
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 
 namespace scream
 {
@@ -32,10 +32,6 @@ protected:
                             const ci_string& rebalance);
 
 protected:
-
-  remapper_ptr_type
-  do_create_remapper (const grid_ptr_type from_grid,
-                      const grid_ptr_type to_grid) const;
 
   void build_pg_codes ();
 

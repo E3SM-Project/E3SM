@@ -1,6 +1,6 @@
 #include "share/data_managers/field_manager.hpp"
 
-#include "share/data_managers/library_grids_manager.hpp"
+#include "share/grid/library_grids_manager.hpp"
 
 namespace scream
 {
