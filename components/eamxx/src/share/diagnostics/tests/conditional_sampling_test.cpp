@@ -255,6 +255,113 @@ TEST_CASE("conditional_sampling") {
       }
     }
   }
+
+  SECTION("chained") {
+    // x.where(y>0.5).where(C): the mask is the intersection of the two conditions
+    auto x = create_field("x",ncols,0,nlevs,grid->name());
+    auto y = create_field("y",ncols,0,nlevs,grid->name());
+    auto z = create_field("z",ncols,0,nlevs,grid->name());
+    randomize_uniform(x,seed++);
+
+    params.set<std::string>("field_name", "x");
+    params.set<std::string>("condition_lhs", "y");
+    params.set<std::string>("condition_cmp", "gt");
+    params.set<std::string>("condition_rhs", "0.5");
+    auto diag1 = diag_factory.create("ConditionalSampling", comm, params, grid);
+    diag1->set_input_field(x);
+    diag1->set_input_field(y);
+    diag1->initialize();
+    auto d1 = diag1->get();
+
+    // The second condition is either on a field, or on the level index
+    int step = 0;
+    for (std::string lhs2 : {"z", "lev"}) {
+      params.set<std::string>("field_name", d1.name());
+      params.set<std::string>("condition_lhs", lhs2);
+      params.set<std::string>("condition_cmp", "gt");
+      params.set<std::string>("condition_rhs", lhs2=="lev" ? "3" : "0.5");
+      auto diag2 = diag_factory.create("ConditionalSampling", comm, params, grid);
+      diag2->set_input_field(d1);
+      if (lhs2!="lev") {
+        diag2->set_input_field(z);
+      }
+      diag2->initialize();
+
+      // Compute twice, with different data: the mask must not remember the first time
+      for (int n=0; n<2; ++n) {
+        ++step;
+        randomize_uniform(y,seed++);
+        randomize_uniform(z,seed++);
+        for (auto f : {x,y,z}) {
+          f.get_header().get_tracking().update_time_stamp(t0()+step);
+        }
+        diag1->compute(t0()+step);
+        diag2->compute(t0()+step);
+        auto d2 = diag2->get();
+
+        Field mask1 = d2.get_valid_mask().clone("mask1");
+        Field mask2 = d2.get_valid_mask().clone("mask2");
+        compute_mask(y,0.5,Comparison::GT,mask1);
+        if (lhs2=="lev") {
+          auto m2_h = mask2.get_view<int**,Host>();
+          for (int i=0; i<ncols; ++i) {
+            for (int k=0; k<nlevs; ++k) {
+              m2_h(i,k) = k>3 ? 1 : 0;
+            }
+          }
+          mask2.sync_to_dev();
+        } else {
+          compute_mask(z,0.5,Comparison::GT,mask2);
+        }
+        mask1.scale(mask2);
+        REQUIRE (views_are_equal(d2.get_valid_mask(),mask1));
+
+        // Where the mask is 0, the diag is fill_value. Compare entries one by one,
+        // since views_are_equal skips the entries that d2 masks out
+        d2.sync_to_host();
+        x.sync_to_host();
+        mask1.sync_to_host();
+        auto d2_h = d2.get_view<const Real**,Host>();
+        auto x_h  = x.get_view<const Real**,Host>();
+        auto m1_h = mask1.get_view<const int**,Host>();
+        for (int i=0; i<ncols; ++i) {
+          for (int k=0; k<nlevs; ++k) {
+            REQUIRE (d2_h(i,k)==(m1_h(i,k)==1 ? x_h(i,k) : fv));
+          }
+        }
+      }
+    }
+  }
+
+  SECTION("units") {
+    // Comparing two fields with different units is an error...
+    auto x = create_field("x",ncols,0,nlevs,grid->name());
+    FieldIdentifier y_fid("y",x.get_header().get_identifier().get_layout(),K, grid->name());
+    FieldIdentifier z_fid("z",x.get_header().get_identifier().get_layout(),Pa,grid->name());
+    Field y(y_fid,true), z(z_fid,true);
+    for (auto f : {y,z}) {
+      f.get_header().get_tracking().update_time_stamp(t0());
+    }
+    params.set<std::string>("field_name", "x");
+    params.set<std::string>("condition_lhs", "y");
+    params.set<std::string>("condition_cmp", "gt");
+    params.set<std::string>("condition_rhs", "z");
+    auto diag = diag_factory.create("ConditionalSampling", comm, params, grid);
+    diag->set_input_field(x);
+    diag->set_input_field(y);
+    diag->set_input_field(z);
+    REQUIRE_THROWS (diag->initialize());
+
+    // ...unless one of them never declared its units
+    FieldIdentifier w_fid("z",x.get_header().get_identifier().get_layout(),Units::invalid(),grid->name());
+    Field w(w_fid,true);
+    w.get_header().get_tracking().update_time_stamp(t0());
+    auto diag_ok = diag_factory.create("ConditionalSampling", comm, params, grid);
+    diag_ok->set_input_field(x);
+    diag_ok->set_input_field(y);
+    diag_ok->set_input_field(w);
+    REQUIRE_NOTHROW (diag_ok->initialize());
+  }
 }
 
 } // namespace scream
