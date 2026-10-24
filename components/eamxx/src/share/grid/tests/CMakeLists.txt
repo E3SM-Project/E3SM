@@ -23,9 +23,25 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  # Test the distributed directory of gids
+  CreateUnitTest(gid_directory
+    SOURCES gid_directory_tests.cpp
+    LIBS eamxx_grid
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test grid import-export
   CreateUnitTest(grid_imp_exp
     SOURCES grid_import_export_tests.cpp
+    LIBS eamxx_grid
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
+  # Compare grid import-export construction with the legacy algorithm (both correctness and timings).
+  # The problem size can be set with env vars (see the source file), and the executable can be run
+  # directly on any number of ranks.
+  CreateUnitTest(grid_imp_exp_bench
+    SOURCES grid_import_export_bench.cpp
     LIBS eamxx_grid
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )

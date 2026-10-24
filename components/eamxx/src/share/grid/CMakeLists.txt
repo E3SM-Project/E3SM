@@ -1,5 +1,6 @@
 add_library(eamxx_grid
   abstract_grid.cpp
+  gid_directory.cpp
   grid_import_export.cpp
   se_grid.cpp
   point_grid.cpp
