@@ -162,8 +162,13 @@ cd cime/scripts
 
 # Monitor test progress by going to the test directory and tailing the TestStatus.log file
 
-# Test naming format: TEST_TYPE.RESOLUTION.COMPSET[.MACHINE][.TESTMOD]
+# Test naming format: TESTTYPE[_modifiers].GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
 # Example: SMS_D_Ln5_P4.ne4pg2_oQU480.F2010.pm-cpu_gnu
+# Example with a testmod: ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5_gis4to40.IGELM_MLI.chrysalis_gnu.mali-landiceIG
+#
+# MACHINE_COMPILER is required when a TESTMODS field follows. Test names listed in
+# tests.py omit it, so they cannot be pasted directly into create_test -- insert the
+# machine_compiler field or the testmod is parsed as the machine.
 ```
 
 Test types for various properties of the model:
@@ -173,6 +178,49 @@ Test types for various properties of the model:
 - **PEM** - Test bit-for-bit when changing mpi task count
 - **PET** - Test bit-for-bit when changing thread count
 - **ERS_Ld** - Exact restart test run for lenght of d days
+
+Before claiming a change is tested, confirm the code path actually executed.
+Several driver features are off by default and are not exercised by the
+standard tests -- coupler budgets (`BUDGETS`, default FALSE) and auxiliary
+history files are examples. Grep the run log for output the new code produces,
+or enable the feature explicitly.
+
+To run a test with modified namelist settings, build it without running,
+edit the namelist, then submit:
+
+```bash
+./create_test TESTNAME -t TESTID --no-run
+# append settings to user_nl_cpl (or user_nl_<component>) in the case dir
+cd $CASEDIR && ./case.submit
+```
+
+Do not use `create_clone` on a test case to do this -- the clone inherits
+`env_test.xml` and `TestStatus` from the original and fails on the test-name
+mismatch.
+
+### Comparing model output between runs
+
+Use `cprnc` to compare two NetCDF history files field by field. Its path is a
+per-machine CIME variable, so get it from the case rather than hardcoding:
+
+```bash
+CPRNC=$(./xmlquery --value CCSM_CPRNC)
+$CPRNC -m baseline.nc new.nc
+```
+
+The summary line reports how many of N fields had non-zero differences, and
+`-m` adds per-field RMS and normalized RMS.
+
+Two rules that are easy to get wrong:
+
+- **Only compare runs of the same test.** Different test types stop at
+  different times and write history at different dates, so field counts are
+  not comparable between, say, an `SMS` and an `ERS_Ld3`. A field differing at
+  the last bit may simply not have diverged yet in the shorter run, which reads
+  as an improvement that is not real.
+- **Save a baseline before re-running.** Re-running a case overwrites its
+  `RUNDIR`. If the current output is a reference for a later comparison, copy
+  it somewhere first.
 
 ### Test Suites (defined in cime_config/tests.py)
 - e3sm_land_developer
@@ -228,6 +276,14 @@ Nightly results from test suites appear on https://my.cdash.org/index.php?projec
 - `/driver-moab/` - MOAB coupler driver
 - `/share/` - Shared utilities (timing, RNG, streams)
 - `/externals/` - External library submodules
+
+### Coupler drivers
+
+`driver_default = "moab"` in `cime_config/customize/config.py`, so cases use
+driver-moab unless opted out. The `_Vmct` test modifier (e.g. `ERS_Vmct_Ld3...`)
+selects driver-mct. When changing code shared by both drivers, or code in one
+driver that is meant to reproduce the other, test both -- a passing `_Vmct` test
+shows mct still runs, not that its answers are unchanged.
 
 ### External Dependencies (Git Submodules)
 
