@@ -54,6 +54,37 @@ The annual fixed-year convention changes Gregorian results relative to the
 earlier continuous-phase implementation. Use fresh initialization and new
 baselines rather than assuming compatibility with those Gregorian restarts.
 
+### CMIP Compatibility
+
+These changes address independent aspects of solar forcing and calendar
+support:
+
+- **Equation of time:** Correct solar hour angles to improve the seasonally
+	varying timing of radiation, regardless of calendar or CMIP participation.
+	This correction is intended to be consistent with CMIP7; it does not shift
+	orbital seasonal phase.
+- **Orbital year:** Correct the blanket 1990 default by deriving the orbital
+	year from the compset, such as 1850. CMIP configurations must use the
+	applicable protocol-prescribed year. This bug fix is independent of calendar
+	choice and equation-of-time support.
+- **Gregorian calendar:** Provide an optional proleptic Gregorian calendar for
+	observational consistency in seasonal-to-decadal (S2D) simulations, while
+	retaining CMIP orbital conventions and respecting experiment-specific
+	calendar requirements.
+- **Variable orbits:** Offer evolving orbital parameters as an explicit S2D
+	option, not for CMIP-protocol forced simulations requiring fixed orbital
+	settings. Solar System and Earth-Moon barycenter corrections are outside
+	the present scope; they may be considered for additional precision in
+	future non-CMIP applications.
+- **Vernal equinox:** Preserve the calendar-day-80.5 reference for fixed-year
+	orbits under either calendar as the intended CMIP convention. Do not change
+	this reference when using fixed-year orbital settings.
+
+These are intended compatibility choices, not certification of CMIP
+compliance. Confirmation requires the applicable CMIP/CMIP7 experiment and
+forcing guidance, together with model validation; local implementation checks
+alone do not establish compliance.
+
 ### Orbital Year Selection
 
 Orbital mode is independent of `CALENDAR`. Both calendars default to
