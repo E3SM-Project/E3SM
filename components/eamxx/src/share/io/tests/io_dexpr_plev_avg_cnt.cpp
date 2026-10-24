@@ -23,6 +23,8 @@
  * also when aliased, except for a field whose input is masked or may be filled.
  * Midpoint and interface fields do not share, since their ranges differ.
  * An alias of a filled model field uses the count of that field.
+ * Model fields have a count of their own, also if they share a mask, since
+ * their fill pattern need not follow it.
  * In MAX/MIN streams, an entry that is never valid is fill_value, also when
  * its count is shared with a field that is valid there.
  */
@@ -133,6 +135,21 @@ create_test_fm (const std::shared_ptr<const GridsManager>& gm,
   calc_F(F,0);
   fm->add_field(F);
 
+  // Two model fields with the same mask, valid everywhere, but S2 is filled
+  // everywhere (like a COSP output, which is refreshed less often than its mask)
+  Field shared_mask(FieldIdentifier("shared_mask",grid->get_2d_scalar_layout(),none,grid->name(),DataType::IntType));
+  shared_mask.allocate_view();
+  shared_mask.deep_copy(1);
+  for (std::string n : {"S1","S2"}) {
+    Field S(FieldIdentifier(n,grid->get_2d_scalar_layout(),K,grid->name()));
+    S.allocate_view();
+    S.set_valid_mask(shared_mask);
+    S.get_header().set_may_be_filled(true);
+    S.get_header().get_tracking().update_time_stamp(t0);
+    S.deep_copy(n=="S1" ? Real(3.0) : FILL);
+    fm->add_field(S);
+  }
+
   calc_fields(X,C,0);
   return fm;
 }
@@ -181,6 +198,8 @@ void run_and_check (const std::string& avg_type,
       "X_at_850hPa",
       "Xi_at_850hPa",
       "F_at_500hPa",
+      "S1",
+      "S2",
   });
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
@@ -203,7 +222,8 @@ void run_and_check (const std::string& avg_type,
       Xi.deep_copy(n);
       auto F = fm->get_field("F");
       calc_F(F,n);
-      for (auto f : {X,C,Xi,F,fm->get_field("p_mid"),fm->get_field("p_int"),fm->get_field("m2d")}) {
+      for (auto f : {X,C,Xi,F,fm->get_field("p_mid"),fm->get_field("p_int"),fm->get_field("m2d"),
+                     fm->get_field("S1"),fm->get_field("S2")}) {
         f.get_header().get_tracking().update_time_stamp(t);
       }
       om.run(t);
@@ -237,6 +257,10 @@ void run_and_check (const std::string& avg_type,
   CHECK (scorpio::has_var(filename,"avg_count_850hPa_int_ncol"));
   // A field whose input may be filled has its own count, also without a mask
   CHECK (scorpio::has_var(filename,"avg_count_F_at_500hPa_ncol"));
+  // Model fields with the same mask do not share
+  CHECK (scorpio::has_var(filename,"avg_count_S1_ncol"));
+  CHECK (scorpio::has_var(filename,"avg_count_S2_ncol"));
+  CHECK_FALSE (scorpio::has_var(filename,"avg_count_shared_mask_ncol"));
   scorpio::release_file(filename);
 
   {
@@ -248,7 +272,9 @@ void run_and_check (const std::string& avg_type,
     Field x8(FieldIdentifier("X_at_850hPa",layout2d,K,gname));
     Field xi8(FieldIdentifier("Xi_at_850hPa",layout2d,K,gname));
     Field f5(FieldIdentifier("F_at_500hPa",layout2d,K,gname));
-    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5}) {
+    Field s1(FieldIdentifier("S1",layout2d,K,gname));
+    Field s2(FieldIdentifier("S2",layout2d,K,gname));
+    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2}) {
       f->allocate_view();
       f->get_header().get_tracking().update_time_stamp(t0);
     }
@@ -256,9 +282,9 @@ void run_and_check (const std::string& avg_type,
     FieldReader reader;
     reader.set_file_specs(filename);
     reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-    reader.set_fields({xu,xm,c5,am,x8,xi8,f5});
+    reader.set_fields({xu,xm,c5,am,x8,xi8,f5,s1,s2});
     reader.read(0);
-    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5}) {
+    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2}) {
       f->sync_to_host();
     }
     auto xu_h = xu.get_view<const Real*,Host>();
@@ -268,6 +294,8 @@ void run_and_check (const std::string& avg_type,
     auto x8_h = x8.get_view<const Real*,Host>();
     auto xi8_h = xi8.get_view<const Real*,Host>();
     auto f5_h = f5.get_view<const Real*,Host>();
+    auto s1_h = s1.get_view<const Real*,Host>();
+    auto s2_h = s2.get_view<const Real*,Host>();
 
     const Real expected = expected_value(avg_type);
 
@@ -292,6 +320,10 @@ void run_and_check (const std::string& avg_type,
 
       // No valid samples: must be fill_value (it was 0 with a shared count)
       REQUIRE (xm_h(i)==FILL);
+
+      // S2 is never valid (with the count of S1, its average would be 0)
+      REQUIRE (s1_h(i)==Approx(3.0));
+      REQUIRE (s2_h(i)==FILL);
     }
   }
 }

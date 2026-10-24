@@ -1172,19 +1172,39 @@ process_requested_fields()
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Helper lambda to check if this fm_model field should trigger avg count
-  auto check_for_avg_cnt = [&](const Field& f) {
+  auto check_for_avg_cnt = [&](const Field& f, const bool count_by_mask = false) {
     // We need avg-count tracking for any averaged (non-instant) field that:
     //  - has a valid mask
     //  - is marked as potentially containing fill values (may_be_filled()).
     // Without this, fill-aware updates skip fill_value during accumulation (good)
     // but we would still divide by the raw nsteps, biasing the result low.
+    // A count is named after its field, unless the field is a diag whose mask has
+    // a name other than the default <name>_valid_mask (see Field::create_valid_mask).
+    // Such a name says where a condition holds (e.g., FieldAtPressureLevel names its
+    // mask after the level), and all diags with a mask of that name share a count.
+    // NOTE: model fields get a count of their own: their fill pattern need not follow
+    //       their mask (COSP outputs are refreshed on COSP steps only, but their mask
+    //       is the sunlit mask, which is refreshed every radiation step).
     if (m_avg_type!=OutputAvgType::Instant) {
       const bool may_be_filled = f.get_header().may_be_filled();
       if (f.has_valid_mask() or may_be_filled) {
         m_track_avg_cnt = true;
-        // Avoid duplicate insertion if already present (e.g., mask + filled both true)
+        std::string suffix = "_" + f.name();
+        if (count_by_mask and f.has_valid_mask()) {
+          auto ends_with = [](const std::string& s, const std::string& end) {
+            return s.size()>end.size() and s.compare(s.size()-end.size(),end.size(),end)==0;
+          };
+          const auto& mask_name = f.get_valid_mask().name();
+          if (not ends_with(mask_name,"_valid_mask")) {
+            // E.g., 500hPa_mask gives avg_count_500hPa_<layout>
+            const std::string end = "_mask";
+            suffix = "_" + (ends_with(mask_name,end) ? mask_name.substr(0,mask_name.size()-end.size())
+                                                     : mask_name);
+          }
+        }
+        // Avoid duplicate insertion if already present
         if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
-          m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
+          m_field_to_avg_cnt_suffix.emplace(f.name(), suffix);
         }
       }
     }
@@ -1209,41 +1229,12 @@ process_requested_fields()
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
 
-    // Some diags need some extra setup or trigger extra behaviors
-    std::string diag_avg_cnt_name = "";
-    auto& params = diag->get_params();
-    if (diag->name()=="FieldAtPressureLevel") {
-      diag_avg_cnt_name = "_"
-                        + params.get<std::string>("pressure_value")
-                        + params.get<std::string>("pressure_units");
-      m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
-    } else if (diag->name()=="FieldAtHeight") {
-      if (params.get<std::string>("surface_reference")=="sealevel") {
-        diag_avg_cnt_name = "_"
-                          + params.get<std::string>("height_value")
-                          + params.get<std::string>("height_units") + "_above_sealevel";
-        m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
-      }
-    }
-
-    // Diags at the same level share an avg count, unless their input has a mask of its own.
-    // Midpoint and interface fields do not share: the level can be in range for one only.
-    if (diag_avg_cnt_name!="" and params.isParameter("field_name")) {
-      const auto& f_in = fm_model->get_field(params.get<std::string>("field_name"));
-      if (f_in.has_valid_mask() or f_in.get_header().may_be_filled()) {
-        diag_avg_cnt_name = "";
-      } else if (f_in.get_header().get_identifier().get_layout().has_tag(ShortFieldTagsNames::ILEV)) {
-        diag_avg_cnt_name += "_int";
-      }
-    }
-    // Like model fields: any other diag gets its own avg count iff it is masked or may be filled
-    if (diag_avg_cnt_name=="") {
-      check_for_avg_cnt(diag_field);
-    }
+    // A diag gets an avg count like any field: by its mask, if it has one
+    check_for_avg_cnt(diag_field,true);
 
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
-      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
+      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),"");
     }
   };
 
