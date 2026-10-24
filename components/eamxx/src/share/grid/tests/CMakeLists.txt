@@ -23,6 +23,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  # Test the distributed directory of gids
+  CreateUnitTest(gid_directory
+    SOURCES gid_directory_tests.cpp
+    LIBS eamxx_grid
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test grid import-export
   CreateUnitTest(grid_imp_exp
     SOURCES grid_import_export_tests.cpp
