@@ -61,7 +61,7 @@ HorizontalRemapper (const grid_ptr_type& grid,
   // NOTE: the repo already checked that the grid matches one of the two.
   auto built_from_src = grid==m_remap_data->m_src_grid or
                         (grid!=m_remap_data->m_tgt_grid and
-                         grids_have_same_gids(grid,m_remap_data->m_src_grid));
+                         grid->has_same_gids_as(*m_remap_data->m_src_grid));
   // The grids really only matter for the horiz part. We may have 2+ remappers with
   // grids that only differ in terms of number of levs. Such remappers cannot
   // store the same generated grid.

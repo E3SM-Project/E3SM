@@ -10,11 +10,6 @@
 
 namespace scream {
 
-// Check whether two grids store the same GID values on this rank (the answer is not reduced over ranks).
-// NOTE: the grids need not be the same object (e.g., a clone with different nlevs)
-bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
-                           const std::shared_ptr<const AbstractGrid>& g2);
-
 enum class InterpType {
   Refine,
   Coarsen
