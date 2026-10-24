@@ -8,7 +8,46 @@
 #     "tests"   : (test1, test2, ...)    # Optional. The list of tests for this suite. See above for format. Tuple, list, or str.
 # }
 
+_CALENDAR_CASES = (
+    "ne4pg2_oQU480_rx1.A",
+    "ne4pg2_oQU480.WCYCL1850NS",
+    "T62_oQU120.CMPASO-NYF",
+    "T62_oQU240.GMPAS-NYF",
+    "T62_oQU240.DTESTM",
+    "f19_g16.I1850ELM",
+    "ne4pg2_oQU480.F1850",
+    "ne4pg2_ne4pg2.F2010-SCREAMv1",
+)
+
+_CALENDAR_PROFILES = ("nf0", "nf1", "nv0", "nv1", "gf0", "gf1", "gv0", "gv1")
+
 _TESTS = {
+
+    "e3sm_calendar_smoke" : {
+        "tests" : tuple(
+            "ERS_Ld6.{}.allactive-calendar_{}--allactive-calendar_{}".format(case, profile, boundary)
+            for case in _CALENDAR_CASES
+            for profile, boundary in (("gf1", "feb"), ("gv1", "rollover"))
+            )
+        },
+
+    "e3sm_calendar_short" : {
+        "tests" : tuple(
+            "ERS_Ld6.{}.allactive-calendar_{}--allactive-calendar_{}".format(case, profile, boundary)
+            for case in _CALENDAR_CASES
+            for profile in _CALENDAR_PROFILES
+            for boundary in ("feb", "rollover")
+            )
+        },
+
+    "e3sm_calendar_cycle" : {
+        "tests" : tuple(
+            "ERS_Ld{}.{}.allactive-calendar_{}--allactive-calendar_cycle".format(
+                1461 if profile.startswith("g") else 1460, case, profile)
+            for case in _CALENDAR_CASES
+            for profile in _CALENDAR_PROFILES
+            )
+        },
 
     "e3sm_mosart_developer" : {
         "share" : True,

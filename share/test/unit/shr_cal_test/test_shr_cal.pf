@@ -7,7 +7,7 @@ module test_shr_cal
   use shr_kind_mod , only : r8 => shr_kind_r8, i4 => shr_kind_in, i8 => shr_kind_i8
   use esmf, only : ESMF_Initialize, ESMF_Finalize, ESMF_Time, ESMF_TimeSet
   use esmf, only : ESMF_CALKIND_GREGORIAN
-  use shr_orb_mod, only : shr_orb_context_type, shr_orb_decl_gregorian
+  use shr_orb_mod, only : shr_orb_context_type, shr_orb_decl_gregorian, shr_orb_params
 
   implicit none
 
@@ -118,6 +118,69 @@ contains
       @assertEqual(reference_eccf, eccf)
     end do
   end subroutine solar_equation_of_time
+
+    @Test
+    subroutine variable_orbital_year_alignment(this)
+      class(TestShrCal), intent(inout) :: this
+      type(shr_orb_context_type) :: context
+      integer :: model_year, date, eot_mode
+      real(r8) :: elapsed, year_start, next_year_start, year_fraction
+      real(r8) :: eccen, obliq, mvelp, obliqr, lambm0, mvelpp
+      real(r8) :: delta, eccf, eot, expected_delta, expected_eccf, expected_eot, frozen_eccf
+
+      context%variable_year = .true.
+      context%iyear = 1850
+      context%iyear_align = 1999
+      call shr_orb_params(1850,context%eccen,context%obliq,context%mvelp, &
+        context%obliqr,context%lambm0,context%mvelpp,.false.)
+      do model_year = 1999, 2003
+     date = model_year*10000 + 101
+     elapsed = shr_cal_gregorianElapsedDays(date,43200._r8)
+     year_start = shr_cal_gregorianElapsedDays(date,0._r8)
+     next_year_start = shr_cal_gregorianElapsedDays((model_year+1)*10000+101,0._r8)
+     year_fraction = (elapsed-year_start)/(next_year_start-year_start)
+     do eot_mode = 0, 1
+       context%use_equation_of_time = eot_mode == 1
+       eccen = context%eccen
+       obliq = context%obliq
+       mvelp = context%mvelp
+       call shr_orb_params(1850+model_year-1999,eccen,obliq,mvelp,obliqr,lambm0,mvelpp, &
+         .false.,year_fraction=year_fraction)
+       call shr_orb_decl_gregorian(elapsed,eccen,mvelpp,lambm0,obliqr, &
+         expected_delta,expected_eccf,expected_eot)
+       if (eot_mode == 0) expected_eot = 0._r8
+       call shr_cal_solarDecl(context,date,43200._r8,shr_cal_gregorian,delta,eccf,eot)
+       @assertEqual(transfer(expected_delta,0_i8), transfer(delta,0_i8))
+       @assertEqual(transfer(expected_eccf,0_i8), transfer(eccf,0_i8))
+       @assertEqual(transfer(expected_eot,0_i8), transfer(eot,0_i8))
+       call shr_orb_decl_gregorian(elapsed,context%eccen,context%mvelpp,context%lambm0, &
+         context%obliqr,expected_delta,frozen_eccf)
+       @assertTrue(abs(eccf-frozen_eccf) > tol)
+     end do
+      end do
+    end subroutine variable_orbital_year_alignment
+
+    @Test
+    subroutine proleptic_gregorian_boundaries(this)
+      class(TestShrCal), intent(inout) :: this
+      integer, parameter :: years(6) = [1500, 1582, 1600, 1900, 2000, 2100]
+      integer, parameter :: february_intervals(6) = [1, 1, 2, 1, 2, 1]
+      integer :: year_index, year
+      real(r8) :: first_day, last_day
+
+      do year_index = 1, size(years)
+        year = years(year_index)
+        first_day = shr_cal_gregorianElapsedDays(year*10000+228,0._r8)
+        last_day = shr_cal_gregorianElapsedDays(year*10000+301,0._r8)
+        @assertEqual(real(february_intervals(year_index),r8), last_day-first_day)
+      end do
+      first_day = shr_cal_gregorianElapsedDays(15821004,0._r8)
+      last_day = shr_cal_gregorianElapsedDays(15821015,0._r8)
+      @assertEqual(11._r8, last_day-first_day)
+      first_day = shr_cal_gregorianElapsedDays(19990101,0._r8)
+      last_day = shr_cal_gregorianElapsedDays(20030101,0._r8)
+      @assertEqual(1461._r8, last_day-first_day)
+    end subroutine proleptic_gregorian_boundaries
 
   subroutine setUp(this)
     class(TestShrCal), intent(inout) :: this

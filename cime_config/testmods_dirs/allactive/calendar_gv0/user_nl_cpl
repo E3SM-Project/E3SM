@@ -1,0 +1,4 @@
+orb_mode = 'variable_orbit_year'
+orb_iyear = 1999
+orb_iyear_align = 1999
+orb_use_equation_of_time = .false.
