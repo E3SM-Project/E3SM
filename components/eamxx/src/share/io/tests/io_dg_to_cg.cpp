@@ -58,9 +58,12 @@ gid_type cg_gid (const int rank, const int ie, const int ip, const int jp)
 
 // The value stored in a field at a given gid. The weights make sure that
 // different components/levels contain different values
+// (we assume icmp<10 and ilev<100)
 Real value (const gid_type gid, const int icmp, const int ilev)
 {
-  return gid + 0.1*icmp + 0.01*ilev + 0.5;
+  // NOTE: these are integers (stored as Real), so that they are exact, no matter how the
+  //       compiler contracts/vectorizes the arithmetic at different call sites
+  return Real(gid)*1000 + icmp*100 + ilev;
 }
 
 std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
@@ -229,9 +232,10 @@ TEST_CASE("io_dg_to_cg")
     }
   }
 
-  REQUIRE (views_are_equal(r1,e1));
-  REQUIRE (views_are_equal(r2,e2));
-  REQUIRE (views_are_equal(r3,e3));
+  // NOTE: CHECK (rather than REQUIRE), so that all ranks reach the scorpio finalize call below
+  CHECK (views_are_equal(r1,e1));
+  CHECK (views_are_equal(r2,e2));
+  CHECK (views_are_equal(r3,e3));
 
   // Cleanup everything
   scorpio::finalize_subsystem();
