@@ -1,7 +1,6 @@
 # Diagnostic expressions
 
-As the underscore-based system is being deprecated, EAMxx can now
-build diagnostics from **expressions**:
+EAMxx builds derived diagnostics from **expressions**:
 
 ```yaml
 field_names:
@@ -10,15 +9,11 @@ field_names:
 ```
 
 Expressions are parsed by [`dexpr`](https://github.com/E3SM-Project/E3SM/tree/master/share/dexpr),
-the expression parser shared across E3SM components. They exist because the
-underscore syntax cannot express grouping: `qc_plus_qv_times_p_mid` is grouped
-by regex greediness, not by operator precedence (see
-[Binary arithmetics](binary_ops.md) and [Parsing precedence](parsing_precedence.md)).
-Written as an expression, it means what it looks like.
-
-Both syntaxes work, and they are resolved independently: a name is matched
-against the underscore patterns first, and only names that match none of them
-are read as an expression. Nothing you write today changes meaning.
+the expression parser shared across E3SM components. They replace the old
+underscore spellings (`T_mid_at_500hPa`, `qc_plus_qv`, ...), which are no
+longer accepted: such a name is read as a plain name, and the run aborts since
+no field or diagnostic answers to it. The table under [Functions](#functions)
+maps each old spelling to its expression.
 
 ## Expressions must be given a name
 
@@ -70,7 +65,7 @@ the stream is set up, since `+` and `-` need operands with the same units:
 `T_mid - 273.15` is an error.
 
 Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. Note this
-differs from the underscore spelling `qc_plus_qv_times_p_mid`, which means
+differs from the old underscore spelling `qc_plus_qv_times_p_mid`, which meant
 `(qc+qv)*p_mid`. When in doubt, parenthesize. (That pair only illustrates
 grouping: `qc+(qv*p_mid)` adds a mixing ratio to a pressure, and is rejected at
 run time for incompatible units, while `(qc+qv)*p_mid` is fine.)
@@ -81,7 +76,7 @@ Functions are written as methods on the field they act on, `X.f(..)`, and are
 named after their [xarray](https://docs.xarray.dev) counterparts wherever there
 is an honest analogue.
 
-| Expression | Equivalent underscore name |
+| Expression | Former underscore spelling (no longer accepted) |
 | ---------- | -------------------------- |
 | `X.isel(lev=10)` | `X_at_lev_10` |
 | `X.isel(lev=0)` | `X_at_model_top` |
@@ -101,6 +96,7 @@ is an honest analogue.
 | `X.over_dt()` | `X_over_dt` |
 | `X.tend()` | `X_atm_backtend` |
 | `X.broadcast_like(Y)` | (none) |
+| `p_mid.searchsorted(500, units='hPa')` | `lev_at_500hPa_mid` |
 
 Notes:
 
@@ -117,7 +113,7 @@ Notes:
   does the same at both ends, since a target elevation can legitimately sit
   below a mountain's surface, where the quantity is not defined. But
   `interp(z_mid=.., reference='surface')` is expected to always be well formed
-  close to the ground -- `wind_speed_at_2m_above_surface` should mean something
+  close to the ground -- `wind_speed.interp(z_mid=2,reference='surface')` should mean something
   even when the lowest model level sits well above 2m -- so it *extrapolates*
   using the nearest level instead of filling when the target is below the
   bottom entry. That exception is for the near-surface end only: above the
@@ -132,8 +128,8 @@ Notes:
   one step back, not two: a shift copies its operand at the start of each step,
   and an operand that is itself a shift has already been updated by then. So it
   is rejected at setup, and so are the same through an alias
-  (`l1 := X.shift(time=1)`, then `l1.shift(time=1)`), `X.shift(time=1).tend()`,
-  and the underscore `X_prev_prev`. For two steps back, put an operation between
+  (`l1 := X.shift(time=1)`, then `l1.shift(time=1)`) and
+  `X.shift(time=1).tend()`. For two steps back, put an operation between
   the shifts: `(X.shift(time=1)*1.0).shift(time=1)`. The shift of any other
   expression is one step back, e.g. `bt1.shift(time=1)` with
   `bt1 := X - X.shift(time=1)`.
@@ -141,9 +137,8 @@ Notes:
   An instant stream evaluates diagnostics on output steps only, so the value
   one *model step* back does not exist there unless the stream writes every
   step (`frequency_units: nsteps` with `frequency: 1`). In any other instant
-  stream, `(qv*T_mid).shift(time=1)` is rejected at setup, and so are
-  `(qv*T_mid).tend()` and the underscore `X_prev` and `X_atm_backtend` of a
-  diagnostic `X`; use an averaged stream. The shift of a model field
+  stream, `(qv*T_mid).shift(time=1)` is rejected at setup, and so is
+  `(qv*T_mid).tend()`; use an averaged stream. The shift of a model field
   (`T_mid.shift(time=1)`) is one model step in any stream.
 - `mean('col')` is always area weighted, so `weights` does not apply to it.
   `weights` for `'lev'` is `'dp'` or `'dz'`.
@@ -175,7 +170,7 @@ Notes:
   `mask.mean('lev')` and `lev>5` are not: each of those leaves `mask` or `lev`
   as an operand to be resolved on its own, and the run aborts with
   `The key 'mask' is not associated to any registered product`, since it is
-  neither a field nor a diagnostic. Both names are inherited from the underscore
+  neither a field nor a diagnostic. Both names come from the former underscore
   syntax (`mask_where_lev_gt_5`), not from xarray.
 - A negative number is written as it reads, as a threshold or as a factor:
   `omega.where(omega<=-0.1)`, `-2*T_mid`, `T_mid*(-2)`. In a `where`
@@ -184,17 +179,23 @@ Notes:
   takes a snapshot at `t0`, before any step has run, and `dt` is zero there, so
   the diagnostic aborts with "dt must be positive". Write them to an averaged
   stream (`averaging_type: average`, `max`, `min`) instead. This is a property
-  of the diagnostic, not of the syntax: the underscore spellings `X_over_dt` and
-  `X_atm_backtend` behave the same way.
+  of the diagnostic, not of the syntax.
 - **A `mask.where(..)` result cannot be written to file as is.** Its output
   has `int` data type and every variable is written as a real, so listing
-  `mask.where(..)` (or the underscore `mask_where_..`) in `field_names` is
-  rejected when the stream is set up. Multiplying by 1 promotes it to `Real`,
-  and `mask.where(ps>100000)*1.0` writes fine. Note the `*1.0` applies to the
-  field that `where` produced, which is a perfectly ordinary field; it is not an
-  operation on `mask`, which per the bullet above cannot be multiplied.
+  `mask.where(..)` in `field_names` is rejected when the stream is set up.
+  Multiplying by 1 promotes it to `Real`, and `mask.where(ps>100000)*1.0`
+  writes fine. Note the `*1.0` applies to the field that `where` produced,
+  which is a perfectly ordinary field; it is not an operation on `mask`, which
+  per the bullet above cannot be multiplied.
 - `X.tend()` is shorthand for `(X - X.shift(time=1)).over_dt()`, and inherits
   the `over_dt` restriction above.
+- `searchsorted` gives, per column, the level index that brackets a target
+  pressure or height. Its receiver picks the coordinate: `p_mid`/`p_int` for a
+  pressure (`units` defaults to `Pa`), `z_mid`/`z_int` for a height above sea
+  level, and `height_mid`/`height_int` for a height above the surface (`units`
+  defaults to `m`). `interp(..)` is built on it, so fields interpolated to the
+  same target share one search. Its output has `int` data type, so like
+  `mask.where(..)` it cannot be written as is.
 - Histogram bin edges are numbers in increasing order. They may be negative,
   and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
 
@@ -204,7 +205,7 @@ and so on.
 
 ### Where this departs from xarray
 
-`isel`, `interp`, `mean`, `sum`, `where` and `shift` mean what they mean in
+`isel`, `interp`, `mean`, `sum`, `where`, `shift` and `searchsorted` mean what they mean in
 xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 
 | | |
@@ -218,7 +219,7 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
-`mask` and `lev`, both inherited from the underscore syntax and both legal only
+`mask` and `lev`, both from the former underscore syntax and both legal only
 inside `where(..)`. See the note above for what they mean and where they may
 appear.
 

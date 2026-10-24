@@ -25,6 +25,8 @@
  * An alias of a filled model field uses the count of that field.
  * Model fields have a count of their own, also if they share a mask, since
  * their fill pattern need not follow it.
+ * A level that is not an integer, or is rendered with an exponent, finds the
+ * level-index diag it depends on, whose name repeats the level as rendered.
  * In MAX/MIN streams, an entry that is never valid is fill_value, also when
  * its count is shared with a field that is valid there.
  */
@@ -190,14 +192,16 @@ void run_and_check (const std::string& avg_type,
       "Xmasked := X.where(C>0)",
   });
   f_pl.set<std::vector<std::string>>("field_names",{
-      "X_at_500hPa",
-      "C500 := C_at_500hPa",
-      "Xmasked_at_500hPa",
+      "X_at_500hPa := X.interp(p_mid=500,units='hPa')",
+      "C500 := C.interp(p_mid=500,units='hPa')",
+      "Xmasked_at_500hPa := Xmasked.interp(p_mid=500,units='hPa')",
       // NOTE: the alias sorts before its target, and is processed first
       "AM := m2d",
-      "X_at_850hPa",
-      "Xi_at_850hPa",
-      "F_at_500hPa",
+      "X_at_850hPa := X.interp(p_mid=850,units='hPa')",
+      "Xi_at_850hPa := Xi.interp(p_mid=850,units='hPa')",
+      "F_at_500hPa := F.interp(p_mid=500,units='hPa')",
+      "X_at_500p5 := X.interp(p_mid=500.5,units='hPa')",
+      "X_at_tiny := X.interp(p_mid=0.00001,units='hPa')",
       "S1",
       "S2",
   });
@@ -261,6 +265,8 @@ void run_and_check (const std::string& avg_type,
   CHECK (scorpio::has_var(filename,"avg_count_S1_ncol"));
   CHECK (scorpio::has_var(filename,"avg_count_S2_ncol"));
   CHECK_FALSE (scorpio::has_var(filename,"avg_count_shared_mask_ncol"));
+  REQUIRE (scorpio::has_var(filename,"X_at_500p5"));
+  REQUIRE (scorpio::has_var(filename,"X_at_tiny"));
   scorpio::release_file(filename);
 
   {
@@ -274,7 +280,9 @@ void run_and_check (const std::string& avg_type,
     Field f5(FieldIdentifier("F_at_500hPa",layout2d,K,gname));
     Field s1(FieldIdentifier("S1",layout2d,K,gname));
     Field s2(FieldIdentifier("S2",layout2d,K,gname));
-    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2}) {
+    Field x55(FieldIdentifier("X_at_500p5",layout2d,K,gname));
+    Field xt(FieldIdentifier("X_at_tiny",layout2d,K,gname));
+    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2,&x55,&xt}) {
       f->allocate_view();
       f->get_header().get_tracking().update_time_stamp(t0);
     }
@@ -282,9 +290,9 @@ void run_and_check (const std::string& avg_type,
     FieldReader reader;
     reader.set_file_specs(filename);
     reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-    reader.set_fields({xu,xm,c5,am,x8,xi8,f5,s1,s2});
+    reader.set_fields({xu,xm,c5,am,x8,xi8,f5,s1,s2,x55,xt});
     reader.read(0);
-    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2}) {
+    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2,&x55,&xt}) {
       f->sync_to_host();
     }
     auto xu_h = xu.get_view<const Real*,Host>();
@@ -296,6 +304,8 @@ void run_and_check (const std::string& avg_type,
     auto f5_h = f5.get_view<const Real*,Host>();
     auto s1_h = s1.get_view<const Real*,Host>();
     auto s2_h = s2.get_view<const Real*,Host>();
+    auto x55_h = x55.get_view<const Real*,Host>();
+    auto xt_h  = xt.get_view<const Real*,Host>();
 
     const Real expected = expected_value(avg_type);
 
@@ -324,6 +334,10 @@ void run_and_check (const std::string& avg_type,
       // S2 is never valid (with the count of S1, its average would be 0)
       REQUIRE (s1_h(i)==Approx(3.0));
       REQUIRE (s2_h(i)==FILL);
+
+      // 500.5 hPa is in range, 0.00001 hPa is above the model top
+      REQUIRE (x55_h(i)==Approx(expected));
+      REQUIRE (xt_h(i)==FILL);
     }
   }
 }

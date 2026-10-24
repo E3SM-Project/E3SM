@@ -39,8 +39,8 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params,
   // the level indices bracketing this height is only done once, even if
   // multiple fields are requested at this same height.
   // We don't know yet which one (mid/int) we need.
-  m_index_name_mid = "lev_at_" + z_val + units + "_above_" + surf_ref + "_mid";
-  m_index_name_int = "lev_at_" + z_val + units + "_above_" + surf_ref + "_int";
+  m_index_name_mid = m_z_name + "_mid.searchsorted(" + z_val + ",units='" + units + "')";
+  m_index_name_int = m_z_name + "_int.searchsorted(" + z_val + ",units='" + units + "')";
   m_field_in_names.push_back(m_index_name_mid);
   m_field_in_names.push_back(m_index_name_int);
 }
@@ -62,8 +62,8 @@ initialize_impl ()
       "Error! Field rank not supported by FieldAtHeight.\n"
       " - field name: " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n"
-      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
-      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
+      "NOTE: if you requested something like 'X.mean('col').isel(..)',\n"
+      "      you can avoid this error by requesting 'X.isel(..).mean('col')' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"

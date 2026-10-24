@@ -17,18 +17,18 @@ Conditional sampling creates a new field where:
 - Fill values (default: large number) are used
   where the condition is **false**
 
-The general syntax is: `<input>_where_<condition>_<operator>_<value>`
+The general syntax is the [expression](expressions.md) `X.where(<lhs> <op> <rhs>)`.
 
 ## Supported operators
 
-| Operator | Aliases | Description |
-| -------- | ------- | ----------- |
-| `eq` | `==` | Equal to |
-| `ne` | `!=` | Not equal to |
-| `gt` | `>` | Greater than |
-| `ge` | `>=` | Greater than or equal to |
-| `lt` | `<` | Less than |
-| `le` | `<=` | Less than or equal to |
+| Operator | Description |
+| -------- | ----------- |
+| `==` | Equal to |
+| `!=` | Not equal to |
+| `>` | Greater than |
+| `>=` | Greater than or equal to |
+| `<` | Less than |
+| `<=` | Less than or equal to |
 
 ## Field-based conditional sampling
 
@@ -36,53 +36,48 @@ Compare the input field against another field at each grid point.
 
 **Examples**:
 
-- `T_mid_where_qv_gt_0.01`
-- `p_mid_where_T_mid_le_273.15`
-- `qv_where_p_mid_lt_50000`
+- `T_mid.where(qv>0.01)`
+- `p_mid.where(T_mid<=273.15)`
+- `qv.where(p_mid<50000)`
 
 ## Level-based conditional sampling
 
 Compare against the vertical level index (0-based indexing).
-Use the special condition field name `lev`.
+Use the special condition operand `lev`.
 
 **Examples**:
 
-- `T_mid_where_lev_gt_5`
-- `p_mid_where_lev_eq_0`
-- `qv_where_lev_le_10`
-- `T_mid_where_qv_at_lev_125_lt_qv_at_lev_128`
+- `T_mid.where(lev>5)`
+- `p_mid.where(lev==0)`
+- `qv.where(lev<=10)`
+- `T_mid.where(qv.isel(lev=125)<qv.isel(lev=128))`
 
 ## Mask-only calculation
 
 Compute a mask stating where the condition is met.
-Put `mask` where the sampled field name goes. It is a placeholder, not a field:
-nothing named `mask` exists in the field manager, and it is recognized only in
-that one position, so it cannot be requested or operated on by itself. The
-output will be `1` where the condition is satisfied and `0` elsewhere.
-This is particularly useful when combined with horizontal or vertical
-reductions to count occurrences of specific conditions.
+Put `mask` where the sampled field goes. It is a placeholder, not a field:
+nothing named `mask` exists in the field manager, and it is recognized only as
+the receiver of `.where(..)`, so it cannot be requested or operated on by
+itself. The output will be `1` where the condition is satisfied and `0`
+elsewhere. This is particularly useful when combined with horizontal or
+vertical reductions to count occurrences of specific conditions.
 
 **Examples**:
 
-- `mask_where_qv_gt_0.01`
-- `mask_where_T_mid_le_273.15`
-- `mask_where_p_mid_lt_50000`
-- `mask_where_lev_gt_5`
+- `mask.where(qv>0.01)`
+- `mask.where(T_mid<=273.15)`
+- `mask.where(p_mid<50000)`
+- `mask.where(lev>5)`
 
-To count the percentage of earth where the surface pressure is > 1e5Pa:
-
-- `mask_where_ps_gt_100000_horiz_avg`
-
-**A mask cannot currently be written to file.** The mask diagnostic's output has
-`int` data type, and IO cannot write it: listing a `mask_where_..` name in
-`field_names` aborts the run with a narrowing-conversion error. Reducing it does
-not help: `mask_where_ps_gt_100000_horiz_avg` is still an `int`. The workaround
-is to promote it to `Real` by multiplying by 1, which is easiest to write as an
-[expression](expressions.md):
+**A mask cannot currently be written to file as is.** The mask diagnostic's
+output has `int` data type, and IO cannot write it: listing `mask.where(..)` in
+`field_names` aborts the run with a narrowing-conversion error, and reducing it
+does not help. The workaround is to promote it to `Real` by multiplying by 1.
+E.g., the fraction of the earth where the surface pressure is > 1e5Pa:
 
 ```yaml
 field_names:
-  - wet_frac := mask.where(ps>100000)*1.0
+  - wet_frac := (mask.where(ps>100000)*1.0).mean('col')
 ```
 
 ## Caveats
@@ -95,11 +90,11 @@ field_names:
 - The condition and input fields must have the same layout
   (except for level-based sampling). In level-based sampling,
   the level index must be present in the field.
-- The condition is provided as a triplet of information string
-  (`<condition_lhs>_<operator>_<condition_rhs>`). We assume the user knows
-  the standard unit of the lhs/rhs that are used internally
-  in EAMxx field manager (there is no way to specify it).
-- The RHS in the condition can be a scalar value or another field/diag name
+- We assume the user knows the standard unit of the lhs/rhs that are used
+  internally in EAMxx field manager (there is no way to specify it).
+- The RHS in the condition can be a scalar value or another field/diag
+- `where` takes a single comparison. `and`/`or` are not supported; chain
+  `where(..)` calls instead.
 
 ## Example configuration
 
@@ -112,17 +107,17 @@ fields:
   physics_pg2:
     field_names:
       # Field-based conditional sampling
-      - T_mid_where_qv_gt_0.01
-      - p_mid_where_T_mid_le_273.15
-      - qv_where_p_mid_lt_50000
-      # Level-based conditional sampling  
-      - T_mid_where_lev_gt_5
-      - p_mid_where_lev_eq_0
-      - qv_where_lev_le_10
-      # Mask-based conditional sampling
-      - mask_where_qv_gt_0.01
-      - mask_where_T_mid_le_273.15
-      - mask_where_lev_gt_5
+      - T_wet   := T_mid.where(qv>0.01)
+      - p_cold  := p_mid.where(T_mid<=273.15)
+      - qv_high := qv.where(p_mid<50000)
+      # Level-based conditional sampling
+      - T_low   := T_mid.where(lev>5)
+      - p_top   := p_mid.where(lev==0)
+      - qv_top  := qv.where(lev<=10)
+      # Mask-based conditional sampling (promoted to Real, see above)
+      - wet     := mask.where(qv>0.01)*1.0
+      - cold    := mask.where(T_mid<=273.15)*1.0
+      - low     := mask.where(lev>5)*1.0
 output_control:
   frequency: 6
   frequency_units: nhours

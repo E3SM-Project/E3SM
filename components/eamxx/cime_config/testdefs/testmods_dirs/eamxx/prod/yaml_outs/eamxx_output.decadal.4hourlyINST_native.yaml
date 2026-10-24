@@ -10,16 +10,16 @@ fields:
     # For storm analysis
     - SeaLevelPressure
     - wind_speed_10m
-    - z_mid_at_500hPa
-    - z_mid_at_200hPa
+    - z_mid_at_500hPa := z_mid.interp(p_mid=500,units='hPa')
+    - z_mid_at_200hPa := z_mid.interp(p_mid=200,units='hPa')
     # For wind turbine study
-    - wind_speed_at_100m_above_surface
+    - wind_speed_at_100m_above_surface := wind_speed.interp(z_mid=100,reference='surface')
     # For atmospheric rivers
     - ZonalVapFlux
     - MeridionalVapFlux
     # Others
-    - omega_at_500hPa
-    - omega_at_850hPa
+    - omega_at_500hPa := omega.interp(p_mid=500,units='hPa')
+    - omega_at_850hPa := omega.interp(p_mid=850,units='hPa')
 output_control:
   frequency: 1
   frequency_units: nhours

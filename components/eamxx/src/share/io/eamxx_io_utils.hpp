@@ -77,8 +77,8 @@ std::string find_filename_in_rpointer (
     const OutputAvgType avg_type = OutputAvgType::Instant,
     const IOControl& control = {});
 
-// Create a diagnostic from a string representation of it.
-// E.g., create the diag to compute fieldX_at_500hPa.
+// Create a diagnostic from a string representation of it: an expression,
+// e.g. "T_mid.interp(p_mid=500,units='hPa')", or a diag name, e.g. "LiqWaterPath".
 std::shared_ptr<AbstractDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
