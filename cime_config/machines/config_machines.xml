@@ -2567,6 +2567,9 @@
       <env name="SPIO_ENABLE_ADIOSBP2NC_CONVERSION">1</env>
       <env name="SPIO_ADIOSBP2NC_CONVERSION_TOOL_EXTRA_ARGS">\-\-rm-bp-file-after-conv="(.*)(.eam.)(.*)"</env>
     </environment_variables-->
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="sandiatoss3">
