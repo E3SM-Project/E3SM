@@ -4,7 +4,7 @@ filename_prefix: p3_standalone_output
 averaging_type: instant
 field_names:
   - T_mid
-  - T_mid_at_2m_above_surface
+  - T_mid_at_2m_above_surface := T_mid.interp(z_mid=2,reference='surface')
   - T_prev_micro_step
   - qv
   - qc

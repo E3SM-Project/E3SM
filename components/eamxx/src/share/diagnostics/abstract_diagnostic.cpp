@@ -24,8 +24,8 @@ void AbstractDiagnostic::initialize ()
 
   // A diag names its output field from its params, e.g. BinaryOp builds
   // "<arg1>_<op>_<arg2>". That is not always what the customer asked for, and
-  // customers look the field up by name: 'X_atm_backtend' is an alias for
-  // 'X_minus_X_prev_over_dt'. So honor an explicit name when given one.
+  // customers look the field up by name: an expression diag is looked up by its
+  // expression. So honor an explicit name when given one.
   // NOTE: an alias shares tracking, alloc props and extra data, so masks,
   //       timestamps and avg-cnt bookkeeping carry over.
   if (m_params.isParameter("output_field_name")) {

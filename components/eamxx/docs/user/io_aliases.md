@@ -43,7 +43,7 @@ field_names:
   - "LWP:=LiqWaterPath"            # Aliased field
   - "p_mid"                        # Regular field name  
   - "temp:=T_mid"                  # Aliased field
-  - "surf_temp:=temp_at_model_bot" # Alias of diagnostic of an alias
+  - "surf_temp:=temp.isel(lev=-1)" # Alias of diagnostic of an alias
 ```
 
 ## Output Behavior
@@ -75,9 +75,9 @@ Declare such fields in an `aliases` subsection of the per-grid block:
 fields:
   physics_pg2:
     aliases:
-      - "MyDiag:=T_mid_times_p_mid"       # computed but NOT written to NC
+      - "MyDiag:=T_mid*p_mid"       # computed but NOT written to NC
     field_names:
-      - "MyDiagSqrd:=MyDiag_times_MyDiag" # uses MyDiag; IS written to NC
+      - "MyDiagSqrd:=MyDiag*MyDiag" # uses MyDiag; IS written to NC
 ```
 
 `MyDiag` is created and registered in the internal field manager so that
@@ -86,7 +86,7 @@ Only `MyDiagSqrd` is written.
 
 The `aliases` section uses the same `alias:=original` syntax as
 `field_names` entries, and the expression on the right-hand side is
-resolved with the same composable-diagnostic parser.
+resolved as an [expression](diags/expressions.md).
 
 Rules:
 

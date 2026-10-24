@@ -36,48 +36,48 @@ max_snapshots_per_file: 1
 fields:
   physics_pg2:
     field_names:
-    - T_mid_vert_avg_dp_weighted
-    - qv_vert_avg_dp_weighted
-    - RelativeHumidity_vert_avg_dp_weighted
-    - qc_vert_avg_dp_weighted
-    - qi_vert_avg_dp_weighted
-    - qr_vert_avg_dp_weighted
-    - qm_vert_avg_dp_weighted
-    - nc_vert_avg_dp_weighted
-    - ni_vert_avg_dp_weighted
-    - nr_vert_avg_dp_weighted
-    - cldfrac_tot_for_analysis_vert_avg_dp_weighted
-    - cldfrac_ice_for_analysis_vert_avg_dp_weighted
-    - cldfrac_liq_vert_avg_dp_weighted
-    - omega_vert_avg_dp_weighted
-    - U_vert_avg_dp_weighted
-    - V_vert_avg_dp_weighted
-    - z_mid_vert_avg_dp_weighted
-    - p_mid_vert_avg_dp_weighted
-    - tke_vert_avg_dp_weighted
-    - SW_flux_up_at_model_top
-    - SW_flux_dn_at_model_top
-    - LW_flux_up_at_model_top
-    - SW_clrsky_flux_up_at_model_top
-    - SW_clrsky_flux_dn_at_model_top
-    - LW_clrsky_flux_up_at_model_top
-    - SW_flux_up_at_model_bot
-    - SW_flux_dn_at_model_bot
-    - LW_flux_up_at_model_bot
-    - LW_flux_dn_at_model_bot
-    - SW_clrsky_flux_up_at_model_bot
-    - SW_clrsky_flux_dn_at_model_bot
-    - LW_clrsky_flux_dn_at_model_bot
+    - T_mid_vert_avg_dp_weighted := T_mid.mean('lev',weights='dp')
+    - qv_vert_avg_dp_weighted := qv.mean('lev',weights='dp')
+    - RelativeHumidity_vert_avg_dp_weighted := RelativeHumidity.mean('lev',weights='dp')
+    - qc_vert_avg_dp_weighted := qc.mean('lev',weights='dp')
+    - qi_vert_avg_dp_weighted := qi.mean('lev',weights='dp')
+    - qr_vert_avg_dp_weighted := qr.mean('lev',weights='dp')
+    - qm_vert_avg_dp_weighted := qm.mean('lev',weights='dp')
+    - nc_vert_avg_dp_weighted := nc.mean('lev',weights='dp')
+    - ni_vert_avg_dp_weighted := ni.mean('lev',weights='dp')
+    - nr_vert_avg_dp_weighted := nr.mean('lev',weights='dp')
+    - cldfrac_tot_for_analysis_vert_avg_dp_weighted := cldfrac_tot_for_analysis.mean('lev',weights='dp')
+    - cldfrac_ice_for_analysis_vert_avg_dp_weighted := cldfrac_ice_for_analysis.mean('lev',weights='dp')
+    - cldfrac_liq_vert_avg_dp_weighted := cldfrac_liq.mean('lev',weights='dp')
+    - omega_vert_avg_dp_weighted := omega.mean('lev',weights='dp')
+    - U_vert_avg_dp_weighted := U.mean('lev',weights='dp')
+    - V_vert_avg_dp_weighted := V.mean('lev',weights='dp')
+    - z_mid_vert_avg_dp_weighted := z_mid.mean('lev',weights='dp')
+    - p_mid_vert_avg_dp_weighted := p_mid.mean('lev',weights='dp')
+    - tke_vert_avg_dp_weighted := tke.mean('lev',weights='dp')
+    - SW_flux_up_at_model_top := SW_flux_up.isel(lev=0)
+    - SW_flux_dn_at_model_top := SW_flux_dn.isel(lev=0)
+    - LW_flux_up_at_model_top := LW_flux_up.isel(lev=0)
+    - SW_clrsky_flux_up_at_model_top := SW_clrsky_flux_up.isel(lev=0)
+    - SW_clrsky_flux_dn_at_model_top := SW_clrsky_flux_dn.isel(lev=0)
+    - LW_clrsky_flux_up_at_model_top := LW_clrsky_flux_up.isel(lev=0)
+    - SW_flux_up_at_model_bot := SW_flux_up.isel(lev=-1)
+    - SW_flux_dn_at_model_bot := SW_flux_dn.isel(lev=-1)
+    - LW_flux_up_at_model_bot := LW_flux_up.isel(lev=-1)
+    - LW_flux_dn_at_model_bot := LW_flux_dn.isel(lev=-1)
+    - SW_clrsky_flux_up_at_model_bot := SW_clrsky_flux_up.isel(lev=-1)
+    - SW_clrsky_flux_dn_at_model_bot := SW_clrsky_flux_dn.isel(lev=-1)
+    - LW_clrsky_flux_dn_at_model_bot := LW_clrsky_flux_dn.isel(lev=-1)
     - ShortwaveCloudForcing
     - LongwaveCloudForcing
     - ps
     - SeaLevelPressure
     - T_2m
-    - T_mid_at_2m_above_surface
-    - T_mid_at_20m_above_surface
+    - T_mid_at_2m_above_surface := T_mid.interp(z_mid=2,reference='surface')
+    - T_mid_at_20m_above_surface := T_mid.interp(z_mid=20,reference='surface')
     - qv_2m
-    - qv_at_2m_above_surface
-    - qv_at_20m_above_surface
+    - qv_at_2m_above_surface := qv.interp(z_mid=2,reference='surface')
+    - qv_at_20m_above_surface := qv.interp(z_mid=20,reference='surface')
     - surf_radiative_T
     - VapWaterPath
     - IceWaterPath
@@ -92,23 +92,23 @@ fields:
     - precip_ice_surf_mass_flux
     - landfrac
     - ocnfrac
-    - PotentialTemperature_at_700hPa
-    - PotentialTemperature_at_850hPa
-    - PotentialTemperature_at_1000hPa
-    - PotentialTemperature_at_2m_above_surface
-    - omega_at_500hPa
-    - omega_at_700hPa
-    - omega_at_850hPa
-    - RelativeHumidity_at_700hPa
-    - RelativeHumidity_at_1000hPa
-    - RelativeHumidity_at_2m_above_surface
+    - PotentialTemperature_at_700hPa := PotentialTemperature.interp(p_mid=700,units='hPa')
+    - PotentialTemperature_at_850hPa := PotentialTemperature.interp(p_mid=850,units='hPa')
+    - PotentialTemperature_at_1000hPa := PotentialTemperature.interp(p_mid=1000,units='hPa')
+    - PotentialTemperature_at_2m_above_surface := PotentialTemperature.interp(z_mid=2,reference='surface')
+    - omega_at_500hPa := omega.interp(p_mid=500,units='hPa')
+    - omega_at_700hPa := omega.interp(p_mid=700,units='hPa')
+    - omega_at_850hPa := omega.interp(p_mid=850,units='hPa')
+    - RelativeHumidity_at_700hPa := RelativeHumidity.interp(p_mid=700,units='hPa')
+    - RelativeHumidity_at_1000hPa := RelativeHumidity.interp(p_mid=1000,units='hPa')
+    - RelativeHumidity_at_2m_above_surface := RelativeHumidity.interp(z_mid=2,reference='surface')
     - wind_speed_10m
-    - z_mid_at_700hPa
-    - z_mid_at_1000hPa
-    - T_mid_at_850hPa
-    - T_mid_at_700hPa
-    - U_at_10m_above_surface
-    - V_at_10m_above_surface
+    - z_mid_at_700hPa := z_mid.interp(p_mid=700,units='hPa')
+    - z_mid_at_1000hPa := z_mid.interp(p_mid=1000,units='hPa')
+    - T_mid_at_850hPa := T_mid.interp(p_mid=850,units='hPa')
+    - T_mid_at_700hPa := T_mid.interp(p_mid=700,units='hPa')
+    - U_at_10m_above_surface := U.interp(z_mid=10,reference='surface')
+    - V_at_10m_above_surface := V.interp(z_mid=10,reference='surface')
 output_control:
   frequency: 1
   frequency_units: nmonths

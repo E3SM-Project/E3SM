@@ -129,7 +129,7 @@ TEST_CASE("io_with_aliases") {
       "qv",          // No alias - use original name
       "TEMP:=T_mid", // With alias
       "PSURF:=ps",   // With alias
-      "surf_temp:=TEMP_at_model_bot"
+      "surf_temp:=TEMP.isel(lev=-1)"
   };
   params.set("field_names", mixed_specs);
 

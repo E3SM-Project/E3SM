@@ -1271,9 +1271,9 @@ process_requested_fields()
   // We keep scanning the fields names and process a field, removing it from the list.
   // There MUST be at least ONE field we can process at every iteration, but
   // some field MAY have to wait until another is processed. E.g., if we have
-  // 'foo_at_900hPa' and 'foo:=horiz_winds', the latter (an alias) must be
+  // 'foo.interp(p_mid=900,units="hPa")' and 'foo:=horiz_winds', the latter (an alias) must be
   // processed first, as it adds the 'foo' alias field to the fm, which the
-  // diag 'foo_at_900hPa' needs to be correctly initialized.
+  // diag needs to be correctly initialized.
   // Notice that, thanks to how we create and add diags to m_diagnostics,
   // the order in which diags appear in m_diagnostics follows the evaluation
   // order, meaning that if diag A depends on diag B, then B appears *before* A.
@@ -1444,8 +1444,7 @@ process_requested_fields()
         (src!=operand ? " (an alias of " + src + ")" : "") + "\n"
         "A shift copies its operand at the start of the step, and a shifted operand has\n"
         "already been updated by then, so the result would lag one step, not two.\n"
-        "This includes X.shift(time=1).tend(), which contains a shift of X.shift(time=1),\n"
-        "and the underscore X_prev_prev.\n"
+        "This includes X.shift(time=1).tend(), which contains a shift of X.shift(time=1).\n"
         "For a two-step lag, put an operation between the shifts:\n"
         "  (X.shift(time=1)*1.0).shift(time=1)\n");
   }
