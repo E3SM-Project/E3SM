@@ -55,7 +55,13 @@ HorizontalRemapper (const grid_ptr_type& grid,
   // Horiz remappers are built from a map file, which only goes in one direction
   m_bwd_allowed = false;
 
-  auto built_from_src = grid==m_remap_data->m_src_grid;
+  // The remap data may have been created by another remapper, from a grid with the
+  // same GIDs but a different object (e.g., the tgt grid of a vertical remapper),
+  // so if the grid is neither of the stored ones, compare GIDs.
+  // NOTE: the repo already checked that the grid matches one of the two.
+  auto built_from_src = grid==m_remap_data->m_src_grid or
+                        (grid!=m_remap_data->m_tgt_grid and
+                         grid->has_same_gids_as(*m_remap_data->m_src_grid));
   // The grids really only matter for the horiz part. We may have 2+ remappers with
   // grids that only differ in terms of number of levs. Such remappers cannot
   // store the same generated grid.

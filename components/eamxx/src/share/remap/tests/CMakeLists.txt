@@ -23,6 +23,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  # Test two horiz remappers sharing the same map file
+  CreateUnitTest(horizontal_remapper_shared_map
+    SOURCES horizontal_remapper_shared_map_tests.cpp
+    LIBS eamxx_remap
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test vertical remap
   CreateUnitTest(vertical_remapper
     SOURCES vertical_remapper_tests.cpp
