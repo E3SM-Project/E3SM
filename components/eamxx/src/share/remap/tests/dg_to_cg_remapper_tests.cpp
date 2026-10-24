@@ -25,9 +25,12 @@ gid_type cg_gid (const int rank, const int ie, const int ip, const int jp)
 
 // The value stored in a field at a given gid. The weights make sure that
 // different components/levels contain different values
+// (we assume icmp<10 and ilev<100)
 Real value (const gid_type gid, const int icmp, const int ilev)
 {
-  return gid + 0.1*icmp + 0.01*ilev + 0.5;
+  // NOTE: these are integers (stored as Real), so that they are exact, no matter how the
+  //       compiler contracts/vectorizes the arithmetic at different call sites
+  return Real(gid)*1000 + icmp*100 + ilev;
 }
 
 std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
@@ -186,15 +189,15 @@ TEST_CASE ("dg_to_cg_remap")
     auto h_p_cmp = p_v3d_cmp.get_view<const Real**,Host>();
     for (int icol=0; icol<ncols; ++icol) {
       const auto gid = pt_gids(icol);
-      REQUIRE (h_p_s2d(icol)==value(gid,0,0));
+      CHECK (h_p_s2d(icol)==value(gid,0,0));
       for (int ic=0; ic<vec_dim; ++ic) {
-        REQUIRE (h_p_v2d(icol,ic)==value(gid,ic,0));
+        CHECK (h_p_v2d(icol,ic)==value(gid,ic,0));
       }
       for (int il=0; il<num_levs; ++il) {
-        REQUIRE (h_p_s3d(icol,il)==value(gid,0,il));
-        REQUIRE (h_p_cmp(icol,il)==value(gid,icmp,il));
+        CHECK (h_p_s3d(icol,il)==value(gid,0,il));
+        CHECK (h_p_cmp(icol,il)==value(gid,icmp,il));
         for (int ic=0; ic<vec_dim; ++ic) {
-          REQUIRE (h_p_v3d(icol,ic,il)==value(gid,ic,il));
+          CHECK (h_p_v3d(icol,ic,il)==value(gid,ic,il));
         }
       }
     }
