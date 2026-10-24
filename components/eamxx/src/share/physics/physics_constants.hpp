@@ -187,7 +187,8 @@ struct Constants
       dict["RWV"]         = RWV;
       dict["r_earth"]     = r_earth;
       dict["stebol"]      = stebol;
-      dict["omega"]       = omega;
+      // NOTE: not "omega", which is also the name of a field (the vertical velocity)
+      dict["omega_earth"] = omega;
     }
     return dict;
   }
