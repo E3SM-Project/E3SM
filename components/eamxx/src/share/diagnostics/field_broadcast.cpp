@@ -56,7 +56,7 @@ void FieldBroadcast::compute_impl ()
     const auto& mask = m_broadcasted.get_valid_mask();
     m_diagnostic_output.get_valid_mask().deep_copy(mask);
     m_diagnostic_output.deep_copy(m_broadcasted,mask);
-    // IO relies on fill_value for masked-out entries
+    // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
     if (m_diagnostic_output.data_type()==DataType::IntType) {
       m_diagnostic_output.deep_copy(constants::fill_value<int>,mask,true);
     } else {
