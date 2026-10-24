@@ -52,6 +52,18 @@ is written as the fill value, and so is anything computed from it, such as
 `X - X_prev`. From the second step onward `X_prev` reflects the normally
 captured start-of-step value.
 
+### Restarts
+
+No diagnostic state is saved in a restart file. If `X` is a model field in the
+restart set, a restart gives it a valid value before the first step, so
+`X_prev` continues as if the run had not stopped. Otherwise (a computed
+diagnostic, or a model field outside the restart set, such as one imported
+from the coupler during the step), the first step after a restart is like the
+first step of a run: `X_prev` is the fill value, and an averaged stream counts
+one sample fewer in that output window. A shift of an expression that contains
+a shift, such as `(X.shift(time=1)*1.0).shift(time=1)`, is the fill value for
+two steps.
+
 ## Example
 
 ```yaml
