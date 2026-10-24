@@ -190,14 +190,14 @@ void run_and_check (const std::string& avg_type,
       "Xmasked := X.where(C>0)",
   });
   f_pl.set<std::vector<std::string>>("field_names",{
-      "X_at_500hPa",
-      "C500 := C_at_500hPa",
-      "Xmasked_at_500hPa",
+      "X_at_500hPa := X.interp(p_mid=500,units='hPa')",
+      "C500 := C.interp(p_mid=500,units='hPa')",
+      "Xmasked_at_500hPa := Xmasked.interp(p_mid=500,units='hPa')",
       // NOTE: the alias sorts before its target, and is processed first
       "AM := m2d",
-      "X_at_850hPa",
-      "Xi_at_850hPa",
-      "F_at_500hPa",
+      "X_at_850hPa := X.interp(p_mid=850,units='hPa')",
+      "Xi_at_850hPa := Xi.interp(p_mid=850,units='hPa')",
+      "F_at_500hPa := F.interp(p_mid=500,units='hPa')",
       "S1",
       "S2",
   });

@@ -67,7 +67,9 @@ HeightLevelIndex (const ekat::Comm& comm, const ekat::ParameterList& params,
       " - valid values: 'mid', 'int'\n");
   m_z_field_name = z_name + "_" + layer;
 
-  m_diag_name = "lev_at_" + z_val + units + "_above_" + surf_ref + "_" + layer;
+  // Matches the dependency name FieldAtHeight declares, and the expression
+  // that builds this diag.
+  m_diag_name = m_z_field_name + ".searchsorted(" + z_val + ",units='" + units + "')";
 
   m_field_in_names.push_back(m_z_field_name);
 }

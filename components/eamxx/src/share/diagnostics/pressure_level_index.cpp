@@ -35,7 +35,9 @@ PressureLevelIndex (const ekat::Comm& comm, const ekat::ParameterList& params,
       " - valid values: 'mid', 'int'\n");
   m_pressure_name = "p_" + layer;
 
-  m_diag_name = "lev_at_" + p_value + units + "_" + layer;
+  // Matches the dependency name FieldAtPressureLevel declares, and the expression
+  // that builds this diag.
+  m_diag_name = m_pressure_name + ".searchsorted(" + p_value + ",units='" + units + "')";
 
   m_field_in_names.push_back(m_pressure_name);
 }

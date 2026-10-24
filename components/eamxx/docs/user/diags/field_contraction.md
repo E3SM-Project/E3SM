@@ -4,10 +4,9 @@ In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
 We can also automatically calculate zonal averages and histograms.
-We have *experimental* support for composing diagnostics; below,
-the horizontal and vertical reductions can be composed
-sequentially, but if using dp- or dz-weighted reductions,
-one must do the vertical reduction first.
+All of these are written as [expressions](expressions.md), and compose:
+e.g., `X.mean('lev',weights='dp').mean('col')`. If using dp- or dz-weighted
+vertical reductions, do the vertical reduction first.
 
 ## Horizontal reduction
 
@@ -23,12 +22,11 @@ We note that the field $F$ can have other dimensions ($\dots$).
 The weight $w$ is defined as the area fraction in column $i$,
 that is, the area in column $i$ divided by the total area in all columns.
 
-To select the horizontal reduction, you only need to suffix
-a field name `X` with `_horiz_avg` in the output requests.
+To select the horizontal reduction, request `X.mean('col')`.
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X_horiz_avg` | Area fraction | Average across all columns |
+| `X.mean('col')` | Area fraction | Average across all columns |
 
 ## Vertical reduction
 
@@ -41,18 +39,17 @@ $$
 where $F_{\dots k}$ is the field at level $k$,
 and $w_{k}$ is the weight at level $k$.
 
-To select the vertical reduction, you only need to suffix
-a field name `X` with `_vert_(avg|sum)_(dp|dz)_weighted` or
-`_vert_(avg|sum)` in the output yaml files.
+To select the vertical reduction, request `X.mean('lev')` or `X.sum('lev')`,
+optionally with `weights='dp'` or `weights='dz'`.
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X_vert_avg_dp_weighted` | $\Delta p_{k}$ | Average across all levels, weighted by $\Delta p_{k}$ |
-| `X_vert_sum_dp_weighted` | $\Delta p_{k}$ | Sum across all levels, weighted by $\Delta p_{k}$ |
-| `X_vert_avg_dz_weighted` | $\Delta z_{k}$ | Average across all levels, weighted by $\Delta z_{k}$ |
-| `X_vert_sum_dz_weighted` | $\Delta z_{k}$ | Sum across all levels, weighted by $\Delta z_{k}$ |
-| `X_vert_avg` | 1 | Average across all levels |
-| `X_vert_sum` | 1 | Sum across all levels |
+| `X.mean('lev',weights='dp')` | $\Delta p_{k}$ | Average across all levels, weighted by $\Delta p_{k}$ |
+| `X.sum('lev',weights='dp')` | $\Delta p_{k}$ | Sum across all levels, weighted by $\Delta p_{k}$ |
+| `X.mean('lev',weights='dz')` | $\Delta z_{k}$ | Average across all levels, weighted by $\Delta z_{k}$ |
+| `X.sum('lev',weights='dz')` | $\Delta z_{k}$ | Sum across all levels, weighted by $\Delta z_{k}$ |
+| `X.mean('lev')` | 1 | Average across all levels |
+| `X.sum('lev')` | 1 | Sum across all levels |
 
 The supported weighting options for now are
 
@@ -70,9 +67,8 @@ at least 2 in rank, e.g., (ncol, nlev).
 ## Zonal reduction
 
 We currently have a utility to calculate zonal averages online.
-To select the zonal average, you need to suffix
-a field name `X` with `_zonal_avg` and the
-number of bins `Y` as `_Y_bins`. All zonal averages are calculated
+To select the zonal average with `Y` latitude bins, request
+`X.zonal_mean(bins=Y)`. All zonal averages are calculated
 using the area fraction in each bin as the weight.
 
 For 180 latitude bins, the bins are defined
@@ -83,20 +79,19 @@ And so on...
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X_zonal_avg_Y_bins` | Area fraction | Average across the zonal direction |
+| `X.zonal_mean(bins=Y)` | Area fraction | Average across the zonal direction |
 
 ## Histograms
 
 We currently have a utility to calculate histograms online.
-To select the histogram, you need to suffix a field name `X` with
-`_histogram_` followed by the values specifying the edges of the bins,
-separated by `_`. For example, the histogram specified by
-`T_mid_histogram_250_270_290_310` has 5 bins effectively defined by
+To select the histogram, request `X.histogram(bins=[..])` with the edges
+of the bins. For example, the histogram specified by
+`T_mid.histogram(bins=[250,270,290,310])` has 5 bins effectively defined by
 [$-\infty$, 250), [250, 270), [270, 290), [290, 310), and [310, $\infty$).
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X_histogram_V0_V1_..._VN` | 1 or 0 | Count of field values within each range |
+| `X.histogram(bins=[V0,V1,...,VN])` | 1 or 0 | Count of field values within each range |
 
 ## Example
 
@@ -110,20 +105,20 @@ fields:
   physics_pg2:
     field_names:
       # in this example, we use T_mid in units of K
-      - T_mid_horiz_avg  # K
-      - T_mid_vert_avg_dp_weighted  # K
-      - T_mid_vert_sum_dp_weighted  # K * Pa * s / (m * m)
-      - T_mid_vert_avg_dz_weighted  # K
-      - T_mid_vert_sum_dz_weighted  # K * m
-      - T_mid_vert_avg  # K
-      - T_mid_vert_sum  # K
-      - T_mid_vert_sum_horiz_sum  # K
-      - T_mid_horiz_avg_vert_sum  # K
-      - T_mid_vert_sum_dz_weighted_horiz_avg  # K * m
-      - T_mid_vert_avg_dp_weighted_horiz_avg  # K
-      - T_mid_zonal_avg_180_bins  # K
-      - T_mid_zonal_avg_90_bins  # K
-      - T_mid_histogram_250_270_290_310 # count
+      - T_col      := T_mid.mean('col')                       # K
+      - T_dpavg    := T_mid.mean('lev',weights='dp')          # K
+      - T_dpsum    := T_mid.sum('lev',weights='dp')           # K * Pa * s / (m * m)
+      - T_dzavg    := T_mid.mean('lev',weights='dz')          # K
+      - T_dzsum    := T_mid.sum('lev',weights='dz')           # K * m
+      - T_vavg     := T_mid.mean('lev')                       # K
+      - T_vsum     := T_mid.sum('lev')                        # K
+      - T_vsum_col := T_mid.sum('lev').mean('col')            # K
+      - T_col_vsum := T_mid.mean('col').sum('lev')            # K
+      - T_dz_col   := T_mid.sum('lev',weights='dz').mean('col')  # K * m
+      - T_dp_col   := T_mid.mean('lev',weights='dp').mean('col') # K
+      - T_zon180   := T_mid.zonal_mean(bins=180)              # K
+      - T_zon90    := T_mid.zonal_mean(bins=90)               # K
+      - T_hist     := T_mid.histogram(bins=[250,270,290,310]) # count
 output_control:
   frequency: 1
   frequency_units: nmonths

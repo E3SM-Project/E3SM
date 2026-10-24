@@ -29,19 +29,19 @@ fields:
     - p_mid
     - tke
     # 2D fields
-    - SW_flux_up_at_model_top
-    - SW_flux_dn_at_model_top
-    - LW_flux_up_at_model_top
-    - SW_clrsky_flux_up_at_model_top
-    - SW_clrsky_flux_dn_at_model_top
-    - LW_clrsky_flux_up_at_model_top
-    - SW_flux_up_at_model_bot
-    - SW_flux_dn_at_model_bot
-    - LW_flux_up_at_model_bot
-    - LW_flux_dn_at_model_bot
-    - SW_clrsky_flux_up_at_model_bot
-    - SW_clrsky_flux_dn_at_model_bot
-    - LW_clrsky_flux_dn_at_model_bot
+    - SW_flux_up_at_model_top := SW_flux_up.isel(lev=0)
+    - SW_flux_dn_at_model_top := SW_flux_dn.isel(lev=0)
+    - LW_flux_up_at_model_top := LW_flux_up.isel(lev=0)
+    - SW_clrsky_flux_up_at_model_top := SW_clrsky_flux_up.isel(lev=0)
+    - SW_clrsky_flux_dn_at_model_top := SW_clrsky_flux_dn.isel(lev=0)
+    - LW_clrsky_flux_up_at_model_top := LW_clrsky_flux_up.isel(lev=0)
+    - SW_flux_up_at_model_bot := SW_flux_up.isel(lev=-1)
+    - SW_flux_dn_at_model_bot := SW_flux_dn.isel(lev=-1)
+    - LW_flux_up_at_model_bot := LW_flux_up.isel(lev=-1)
+    - LW_flux_dn_at_model_bot := LW_flux_dn.isel(lev=-1)
+    - SW_clrsky_flux_up_at_model_bot := SW_clrsky_flux_up.isel(lev=-1)
+    - SW_clrsky_flux_dn_at_model_bot := SW_clrsky_flux_dn.isel(lev=-1)
+    - LW_clrsky_flux_dn_at_model_bot := LW_clrsky_flux_dn.isel(lev=-1)
     - ShortwaveCloudForcing
     - LongwaveCloudForcing
     - ps
@@ -62,24 +62,24 @@ fields:
     - precip_ice_surf_mass_flux
     - landfrac
     - ocnfrac
-    - PotentialTemperature_at_700hPa
-    - PotentialTemperature_at_850hPa
-    - PotentialTemperature_at_1000hPa
-    - PotentialTemperature_at_2m_above_surface
-    - omega_at_500hPa
-    - omega_at_700hPa
-    - omega_at_850hPa
-    - RelativeHumidity_at_700hPa
-    - RelativeHumidity_at_1000hPa
-    - RelativeHumidity_at_2m_above_surface
+    - PotentialTemperature_at_700hPa := PotentialTemperature.interp(p_mid=700,units='hPa')
+    - PotentialTemperature_at_850hPa := PotentialTemperature.interp(p_mid=850,units='hPa')
+    - PotentialTemperature_at_1000hPa := PotentialTemperature.interp(p_mid=1000,units='hPa')
+    - PotentialTemperature_at_2m_above_surface := PotentialTemperature.interp(z_mid=2,reference='surface')
+    - omega_at_500hPa := omega.interp(p_mid=500,units='hPa')
+    - omega_at_700hPa := omega.interp(p_mid=700,units='hPa')
+    - omega_at_850hPa := omega.interp(p_mid=850,units='hPa')
+    - RelativeHumidity_at_700hPa := RelativeHumidity.interp(p_mid=700,units='hPa')
+    - RelativeHumidity_at_1000hPa := RelativeHumidity.interp(p_mid=1000,units='hPa')
+    - RelativeHumidity_at_2m_above_surface := RelativeHumidity.interp(z_mid=2,reference='surface')
     - wind_speed_10m
-    - z_mid_at_700hPa
-    - z_mid_at_1000hPa
-    - T_mid_at_850hPa
-    - T_mid_at_700hPa
+    - z_mid_at_700hPa := z_mid.interp(p_mid=700,units='hPa')
+    - z_mid_at_1000hPa := z_mid.interp(p_mid=1000,units='hPa')
+    - T_mid_at_850hPa := T_mid.interp(p_mid=850,units='hPa')
+    - T_mid_at_700hPa := T_mid.interp(p_mid=700,units='hPa')
     # For SST advection
-    - U_at_10m_above_surface
-    - V_at_10m_above_surface
+    - U_at_10m_above_surface := U.interp(z_mid=10,reference='surface')
+    - V_at_10m_above_surface := V.interp(z_mid=10,reference='surface')
     # COSP
     - isccp_ctptau
     - modis_ctptau

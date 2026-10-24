@@ -12,8 +12,9 @@ are designed generically and composably, and are requestable by users.
 - [Vertical derivative](vert_derivative.md)
 - [Previous-timestep field](field_prev.md)
 - [Field divided by timestep](field_over_dt.md)
-- [Built-in aliases](builtin_aliases.md)
 - [Diagnostic expressions](expressions.md)
-- [Parsing precedence](parsing_precedence.md)
+
+Derived diagnostics are requested as [expressions](expressions.md), e.g.
+`T_500 := T_mid.interp(p_mid=500,units='hPa')`.
 
 More details to follow.

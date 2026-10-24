@@ -695,7 +695,8 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 
   vos_type fields_out = {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
   if (p_ref>=0) {
-    fields_out.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
+    const auto p = std::to_string(p_ref);
+    fields_out.push_back("Y_int_at_"+p+"Pa := Y_int.interp(p_mid="+p+",units='Pa')");
   }
   if (!vert_remap && !horiz_remap) {
     fields_out.push_back("p_surf");
