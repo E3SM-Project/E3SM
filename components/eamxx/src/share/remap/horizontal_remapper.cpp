@@ -1306,7 +1306,6 @@ void HorizontalRemapper::setup_mpi_data_structures ()
     auto export_lids_offsets_h       = Kokkos::create_mirror_view(m_export_lids_offsets);
     std::map<int,std::vector<int>> lid2idxs;
     auto lids_h = imp_exp->export_lids_h();
-    auto pids_h = imp_exp->export_pids_h();
     for (int idx=0; idx<imp_exp->num_exports(); ++idx) {
       lid2idxs[imp_exp->export_lids_h()[idx]].push_back(idx);
     }

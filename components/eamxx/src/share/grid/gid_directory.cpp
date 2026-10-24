@@ -1,7 +1,7 @@
 #include "share/grid/gid_directory.hpp"
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_alltoallv.hpp"
 
 #include <ekat_assert.hpp>
 
@@ -15,47 +15,6 @@ namespace scream
 
 static_assert (std::is_same<GidDirectory::gid_type,AbstractGrid::gid_type>::value,
                "Error! GidDirectory::gid_type must match AbstractGrid::gid_type.\n");
-
-namespace {
-
-// Exchange data among all ranks. The data in 'send' must be grouped by destination rank, with
-// send_counts[p] entries for rank p. If recv_counts_known=false, recv_counts is computed
-// (with a MPI_Alltoall). Otherwise, it must already contain the right counts.
-template<typename T>
-void alltoallv (const ekat::Comm& comm,
-                const std::vector<T>& send, const std::vector<int>& send_counts,
-                std::vector<T>& recv, std::vector<int>& recv_counts,
-                const bool recv_counts_known)
-{
-  const int nranks = comm.size();
-  const auto mpi_comm = comm.mpi_comm();
-
-  if (not recv_counts_known) {
-    recv_counts.resize(nranks);
-    check_mpi_call(MPI_Alltoall(send_counts.data(),1,MPI_INT,recv_counts.data(),1,MPI_INT,mpi_comm),
-                   "[GidDirectory] exchanging counts");
-  }
-
-  std::vector<int> send_displs(nranks+1,0), recv_displs(nranks+1,0);
-  long long total_send = 0, total_recv = 0;
-  for (int p=0; p<nranks; ++p) {
-    send_displs[p] = total_send;
-    recv_displs[p] = total_recv;
-    total_send += send_counts[p];
-    total_recv += recv_counts[p];
-  }
-  EKAT_REQUIRE_MSG (total_send<=std::numeric_limits<int>::max() and
-                    total_recv<=std::numeric_limits<int>::max(),
-      "Error! [GidDirectory] Too many entries to exchange with MPI_Alltoallv.\n");
-
-  recv.resize(total_recv);
-  const auto mpi_t = ekat::get_mpi_type<T>();
-  check_mpi_call(MPI_Alltoallv(send.data(),send_counts.data(),send_displs.data(),mpi_t,
-                               recv.data(),recv_counts.data(),recv_displs.data(),mpi_t,mpi_comm),
-                 "[GidDirectory] exchanging data");
-}
-
-} // anonymous namespace
 
 int GidDirectory::directory_rank (const gid_type gid) const
 {
