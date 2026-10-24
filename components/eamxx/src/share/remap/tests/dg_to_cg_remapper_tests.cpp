@@ -118,6 +118,9 @@ TEST_CASE ("dg_to_cg_remap")
     REQUIRE_THROWS (std::make_shared<DGToCGRemapper>(se_grid,se_grid));
   }
 
+  // NOTE: we use CHECK (rather than REQUIRE) for the data checks, so that all ranks keep going in case of failure
+  //       on a subset of ranks. Otherwise, Catch would re-run the test case on the failing ranks only, and since
+  //       the grids creation is collective, the test would hang.
   SECTION ("dg_to_cg") {
     const int ncols = pt_subset_grid->get_num_local_dofs();
     const auto pt_gids = pt_subset_grid->get_dofs_gids().get_view<const gid_type*,Host>();
@@ -284,16 +287,16 @@ TEST_CASE ("dg_to_cg_remap")
       const int ip = l2i(idof,1);
       const int jp = l2i(idof,2);
       const auto gid = se_gids(idof);
-      REQUIRE (h_s2d(ie,ip,jp)==value(gid,0,0));
+      CHECK (h_s2d(ie,ip,jp)==value(gid,0,0));
       for (int ic=0; ic<vec_dim; ++ic) {
-        REQUIRE (h_v2d(ie,ic,ip,jp)==value(gid,ic,0));
+        CHECK (h_v2d(ie,ic,ip,jp)==value(gid,ic,0));
       }
       for (int il=0; il<num_levs; ++il) {
-        REQUIRE (h_s3d(ie,ip,jp,il)==value(gid,0,il));
+        CHECK (h_s3d(ie,ip,jp,il)==value(gid,0,il));
         for (int ic=0; ic<vec_dim; ++ic) {
-          REQUIRE (h_v3d(ie,ic,ip,jp,il)==value(gid,ic,il));
+          CHECK (h_v3d(ie,ic,ip,jp,il)==value(gid,ic,il));
           // Only one component of v3d_2 was remapped. The others must be untouched
-          REQUIRE (h_v3d_2(ie,ic,ip,jp,il)==(ic==icmp ? value(gid,icmp,il) : -1));
+          CHECK (h_v3d_2(ie,ic,ip,jp,il)==(ic==icmp ? value(gid,icmp,il) : -1));
         }
       }
     }
