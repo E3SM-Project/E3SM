@@ -5,7 +5,13 @@
 #include "share/remap/field_views_repo.hpp"
 #include "share/core/eamxx_config.hpp"
 
+#include "share/grid/grid_import_export.hpp"
+
 #include <ekat_pack.hpp>
+
+#include <mpi.h>
+#include <memory>
+#include <vector>
 
 namespace scream
 {
@@ -29,8 +35,15 @@ compute_cg_to_se_dof_map (const AbstractGrid& se_grid,
  * in the target grid receives the value of the corresponding dof in the source
  * grid. No interpolation is involved.
  *
- * Only the forward direction (SE->CG) is supported, since the opposite
- * direction would require some form of communication across elements.
+ * The forward direction (DG->CG) is a local gather: each CG column must correspond
+ * to a dof on the same rank.
+ *
+ * The backward direction (CG->DG) sets each dof of the SE grid to the value of the
+ * CG column with the same gid. The CG column may be owned by another rank, so this
+ * direction involves p2p communication. The comm schedule is created at the first
+ * call of remap_bwd (it's a collective operation).
+ * Every dof of the SE grid must correspond to a column of the CG grid (on some rank).
+ *
  * Fields on the SE grid can be subfields of other fields (but not subfields
  * of subfields), possibly with a dynamic subview info.
  */
@@ -58,8 +71,14 @@ protected:
 
   void registration_ends_impl () override;
   void remap_fwd_impl () override;
+  void remap_bwd_impl () override;
 
   void initialize_device_variables ();
+
+  // CG->DG requires communication. These methods set up/perform it.
+  void setup_bwd ();
+  void pack_and_send ();
+  void recv_and_unpack ();
 
   int m_num_cg_cols;
 
@@ -88,6 +107,62 @@ protected:
   // Note: we can't use the view extents, since the last extent may be padded
   KT::view_ND<int,1>  m_vec_dim;
 
+  // ----- CG->DG data structures ----- //
+
+  static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
+
+  template<typename T>
+  using view_1d = typename KT::template view_ND<T,1>;
+  template<typename T>
+  using hview_1d = typename view_1d<T>::host_mirror_type;
+
+  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
+  template<typename T>
+  using mpi_view_1d = std::conditional_t<MpiOnDev,view_1d<T>,hview_1d<T>>;
+
+  bool m_bwd_setup_done = false;
+
+  // For each unique local CG gid (the "overlap" grid), the list of local SE dofs with such gid.
+  // The dofs for the u-th CG gid are m_u2se_dofs[m_u2se_offsets[u]...m_u2se_offsets[u+1]-1]
+  view_1d<int>  m_u2se_offsets;
+  view_1d<int>  m_u2se_dofs;
+
+  // The imports/exports tell us which pid we get/send CG columns from/to.
+  // Imports are indexed by the unique local CG gid. Exports by the local CG column.
+  // All arrays are sorted by pid, and the offsets (size nranks+1) tell us where each pid starts.
+  int m_num_imports = 0;
+  int m_num_exports = 0;
+  view_1d<int>  m_imp_pids;
+  view_1d<int>  m_imp_lids;
+  view_1d<int>  m_imp_offsets;
+  view_1d<int>  m_exp_pids;
+  view_1d<int>  m_exp_lids;
+  view_1d<int>  m_exp_offsets;
+
+  // Size of one column of each field (and of all fields together), and offset of each field in the latter.
+  int m_total_col_size = 0;
+  view_1d<int>  m_f_col_size;
+  view_1d<int>  m_f_col_offset;
+
+  // The send/recv buffers for pack/unpack operations
+  view_1d<Real> m_send_buffer;
+  view_1d<Real> m_recv_buffer;
+
+  // The send/recv buf to feed to MPI (alias the above two if MpiOnDev=true)
+  mpi_view_1d<Real> m_mpi_send_buffer;
+  mpi_view_1d<Real> m_mpi_recv_buffer;
+
+  // Send/recv persistent requests
+  // NOTE: this class is used as a functor in Kokkos kernels, so it gets copied (and destroyed) around.
+  //       Hence, the requests cannot be freed in the destructor of this class. Instead, we store them in
+  //       a struct that is shared among copies, and that frees the requests when the last copy goes away.
+  struct MpiRequests {
+    ~MpiRequests ();
+    std::vector<MPI_Request>  send;
+    std::vector<MPI_Request>  recv;
+  };
+  std::shared_ptr<MpiRequests>  m_requests;
+
   template <typename MT>
   KOKKOS_FUNCTION
   void local_remap_2d (const MT& team) const;
@@ -99,10 +174,18 @@ protected:
 public:
   // These should be morally private, but CUDA complains that they cannot be private/protected
   struct RemapTag {};
+  struct PackTag {};
+  struct UnpackTag {};
 
   template<typename MT>
   KOKKOS_INLINE_FUNCTION
   void operator()(const RemapTag&, const MT &team) const;
+  template<typename MT>
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const PackTag&, const MT &team) const;
+  template<typename MT>
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const UnpackTag&, const MT &team) const;
 };
 
 } // namespace scream
