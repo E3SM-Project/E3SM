@@ -1200,6 +1200,16 @@ process_requested_fields()
             const std::string end = "_mask";
             suffix = "_" + (ends_with(mask_name,end) ? mask_name.substr(0,mask_name.size()-end.size())
                                                      : mask_name);
+            // The name may carry the non-column dims of the layout, to tell apart masks of
+            // different layouts (e.g., 500hPa_dim2_mask). The count name adds them anyway.
+            const auto& lt = f.get_header().get_identifier().get_layout();
+            std::string dims;
+            for (int i=1; i<lt.rank(); ++i) {
+              dims += "_" + lt.names()[i] + std::to_string(lt.dim(i));
+            }
+            if (dims!="" and ends_with(suffix,dims)) {
+              suffix.erase(suffix.size()-dims.size());
+            }
           }
         }
         // Avoid duplicate insertion if already present

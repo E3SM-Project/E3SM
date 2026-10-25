@@ -25,6 +25,8 @@
  * An alias of a filled model field uses the count of that field.
  * Model fields have a count of their own, also if they share a mask, since
  * their fill pattern need not follow it.
+ * A vector field at a level shares the level's count name; the count adds the
+ * vector dim to the name, as for any count.
  * In MAX/MIN streams, an entry that is never valid is fill_value, also when
  * its count is shared with a field that is valid there.
  */
@@ -116,6 +118,13 @@ create_test_fm (const std::shared_ptr<const GridsManager>& gm,
   Xi.deep_copy(0);
   fm->add_field(Xi);
 
+  // A vector field (set to the step number in the time loop)
+  Field W(FieldIdentifier("W",grid->get_3d_vector_layout(LEV,2),K,grid->name()));
+  W.allocate_view();
+  W.get_header().get_tracking().update_time_stamp(t0);
+  W.deep_copy(0);
+  fm->add_field(W);
+
   // A model field that is filled in the first local column
   Field M(FieldIdentifier("m2d",grid->get_2d_scalar_layout(),K,grid->name()));
   M.allocate_view();
@@ -200,6 +209,7 @@ void run_and_check (const std::string& avg_type,
       "F_at_500hPa",
       "S1",
       "S2",
+      "W_at_500hPa",
   });
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
@@ -222,7 +232,9 @@ void run_and_check (const std::string& avg_type,
       Xi.deep_copy(n);
       auto F = fm->get_field("F");
       calc_F(F,n);
-      for (auto f : {X,C,Xi,F,fm->get_field("p_mid"),fm->get_field("p_int"),fm->get_field("m2d"),
+      auto W = fm->get_field("W");
+      W.deep_copy(n);
+      for (auto f : {X,C,Xi,F,W,fm->get_field("p_mid"),fm->get_field("p_int"),fm->get_field("m2d"),
                      fm->get_field("S1"),fm->get_field("S2")}) {
         f.get_header().get_tracking().update_time_stamp(t);
       }
@@ -261,6 +273,9 @@ void run_and_check (const std::string& avg_type,
   CHECK (scorpio::has_var(filename,"avg_count_S1_ncol"));
   CHECK (scorpio::has_var(filename,"avg_count_S2_ncol"));
   CHECK_FALSE (scorpio::has_var(filename,"avg_count_shared_mask_ncol"));
+  // The vector field at 500 hPa: the count is named after the level and the layout
+  CHECK (scorpio::has_var(filename,"avg_count_500hPa_ncol_dim2"));
+  CHECK_FALSE (scorpio::has_var(filename,"avg_count_500hPa_dim2_ncol_dim2"));
   scorpio::release_file(filename);
 
   {
