@@ -2,6 +2,7 @@
 #include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_std_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_units.hpp>
 
 namespace scream
@@ -161,7 +162,9 @@ void FieldAtPressureLevel::compute_impl()
     });
   } else if (rank==3) {
     const int ndims = f.get_header().get_identifier().get_layout().get_vector_dim();
-    auto policy = KT::TeamPolicy(ncols,ndims);
+    // Let ekat pick the team size: ndims threads per team may be more than the
+    // backend allows (e.g., OpenMP with one thread)
+    auto policy = ekat::TeamPolicyFactory<KT::ExeSpace>::get_default_team_policy(ncols,ndims);
     auto diag = m_diagnostic_output.get_view<Real**>();
     auto dmask = m_diagnostic_output.get_valid_mask().get_view<int**>();
     auto fmask = masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
