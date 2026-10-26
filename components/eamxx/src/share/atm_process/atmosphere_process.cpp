@@ -274,6 +274,16 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
   }
 }
 
+void AtmosphereProcess::add_field_init (const std::shared_ptr<FieldInit>& init)
+{
+  EKAT_REQUIRE_MSG (init!=nullptr, "Error! Invalid (null) field init recipe.\n");
+  EKAT_REQUIRE_MSG (m_field_inits.count(init->name())==0,
+      "Error! Field init recipe already provided for this field.\n"
+      " - atm process: " + name() + "\n"
+      " - field name : " + init->name() + "\n");
+  m_field_inits[init->name()] = init;
+}
+
 void AtmosphereProcess::set_required_field (const Field& f) {
   // Sanity check
   EKAT_REQUIRE_MSG (has_required_field(f.get_header().get_identifier()),

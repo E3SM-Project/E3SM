@@ -114,6 +114,27 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   }
 }
 
+AtmosphereProcessGroup::strmap_t<std::shared_ptr<FieldInit>>
+AtmosphereProcessGroup::get_field_inits () const
+{
+  strmap_t<std::shared_ptr<FieldInit>> inits;
+  strmap_t<std::string> field2proc;
+  for (const auto& ap : m_atm_processes) {
+    // NOTE: if ap is a group, this returns the recipes of all its processes
+    for (const auto& it : ap->get_field_inits()) {
+      // A field is owned by one process only.
+      EKAT_REQUIRE_MSG (inits.count(it.first)==0,
+          "Error! Two atmosphere processes provide a recipe to init the same field.\n"
+          " - Field name    : " + it.first + "\n"
+          " - First atm proc : " + field2proc[it.first] + "\n"
+          " - Second atm proc: " + ap->name() + "\n");
+      inits[it.first] = it.second;
+      field2proc[it.first] = ap->name();
+    }
+  }
+  return inits;
+}
+
 std::shared_ptr<AtmosphereProcessGroup::atm_proc_type>
 AtmosphereProcessGroup::get_process_nonconst (const std::string& name) const {
   EKAT_REQUIRE_MSG(has_process(name), "Error! Process "+name+" requested from group "+this->name()+
