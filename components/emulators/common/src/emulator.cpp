@@ -3,9 +3,9 @@
  * @brief Implementation of the Emulator base class.
  */
 
+#include "create_inference_backend.hpp"
 #include "inference_backend.hpp"
 #include "inference_config.hpp"
-#include "create_inference_backend.hpp"
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <emulator_config.hpp>
@@ -45,6 +45,15 @@ std::string to_string(const DimensionDesc& desc) {
   out << "Dimension: " << desc.name
       << " Local/Global sizes: " << desc.local_extent << ", "
       << desc.global_extent << "\n";
+  return out.str();
+}
+
+std::string to_string(const EmulatorFieldDesc& desc) {
+  std::ostringstream out;
+  auto role = (desc.role == ModelFieldRole::Input) ? "input" : "output";
+  out << "Field: \n"
+      << to_string(desc.config) << "\n role: " << role
+      << "\n Offset/size: " << desc.offset << " / " << desc.size;
   return out.str();
 }
 
@@ -105,13 +114,18 @@ std::size_t Emulator::local_field_size(const FieldConfig& field) const {
   return size;
 }
 
-std::size_t Emulator::append_fields(std::span<const FieldConfig> fields,
+std::size_t Emulator::append_fields(std::span<const std::string> order,
+                                    std::span<const FieldConfig> fields,
                                     ModelFieldRole role) {
 
   std::size_t next_offset = 0;
 
-  for (const auto& field : fields) {
-    const auto field_size = local_field_size(field);
+  for (const std::string& field_name : order) {
+    auto field = std::ranges::find(fields, field_name, &FieldConfig::name);
+    if (field == fields.end()) {
+      throw std::runtime_error("Field " + field_name + " Not in fields");
+    }
+    const auto field_size = local_field_size(*field);
 
     if (next_offset > std::numeric_limits<std::size_t>::max() - field_size) {
       throw std::overflow_error("Emulator field-buffer size overflow");
@@ -119,7 +133,7 @@ std::size_t Emulator::append_fields(std::span<const FieldConfig> fields,
 
     field_descriptors_.push_back(EmulatorFieldDesc{
         .role = role,
-        .config = field,
+        .config = *field,
         .offset = next_offset,
         .size = field_size,
     });
@@ -143,41 +157,47 @@ std::span<double> Emulator::field_view(std::string_view name) {
   return field_view(desc);
 }
 
-Emulator::Emulator(const CreateConfig cfg)
-    : m_config_path(cfg.path), m_grid(cfg.grid), m_component_id(-1),
-      m_moab_app_id(-1), m_initialized(false), m_step_count(0) {
+Emulator::Emulator(const GridDesc grid, const EmulatorConfig emu_cfg)
+    : m_config_path("temp"), m_grid(grid), m_emulator_config(emu_cfg),
+      m_component_id(-1), m_moab_app_id(-1), m_initialized(false),
+      m_step_count(0) {
   initialize();
 }
 
-void Emulator::initialize() {
-  if (m_initialized) {
-    throw std::runtime_error("Emulator already initialized");
-  }
-
-  const EmulatorConfig config = read_emulator_config(m_config_path);
-
+void Emulator::apply_config(const EmulatorConfig& config) {
   m_name = config.name;
   if (config.type == "process") {
     m_type = EmulatorType::Process;
   } else {
     m_type = EmulatorType::Component;
   }
-  m_model_config = std::move(config.model);
 
-  const auto input_size = append_fields(config.inputs, ModelFieldRole::Input);
-  const auto output_size =
-      append_fields(config.outputs, ModelFieldRole::Output);
+  const auto input_size =
+      append_fields(config.input_order, config.inputs, ModelFieldRole::Input);
+  const auto output_size = append_fields(config.output_order, config.outputs,
+                                         ModelFieldRole::Output);
 
+  // for (const auto& field : field_descriptors()) {
+  //   std::cout << to_string(field) << std::endl;
+  // }
   input_fields_.resize(input_size);
   output_fields_.resize(output_size);
 
   inference::InferenceConfig infer_config;
   infer_config.model_path = config.model.path;
+  infer_config.options = std::move(config.model.options);
   infer_config.input_channels = config.inputs.size();
   infer_config.output_channels = config.outputs.size();
-  // NOTE: How should we handle the additional options to pass to backend?
-  backend_ = inference::create_backend(m_model_config.backend_type, infer_config);
 
+  backend_ = inference::create_backend(m_emulator_config.model.backend_type,
+                                       infer_config);
+}
+
+void Emulator::initialize() {
+  if (m_initialized) {
+    throw std::runtime_error("Emulator already initialized");
+  }
+  apply_config(m_emulator_config);
   m_initialized = true;
 }
 
@@ -201,16 +221,18 @@ void Emulator::run(const ProcessRunOpts opts) {
 
   // wrap input/output fields in tensor maps
   inference::TensorMap inputs = {}, outputs = {};
-  for (const EmulatorFieldDesc &field: field_descriptors()) {
+  for (const EmulatorFieldDesc& field : field_descriptors()) {
+    auto values = field_view(field);
     std::vector<std::int64_t> dims;
     for (const auto& dim_name : field.config.dimensions) {
       const DimensionDesc& dim_desc = dimension(dim_name);
       dims.push_back(static_cast<std::int64_t>(dim_desc.global_extent));
     }
     if (field.role == ModelFieldRole::Input) {
-      inputs.wrap(field.config.name, &input_fields_[field.offset], dims);
+      const double* data = values.data();
+      inputs.wrap(field.config.name, data, dims);
     } else { // field_desc.role == ModelFieldRole::Output
-      outputs.wrap(field.config.name, &output_fields_[field.offset], dims);
+      outputs.wrap(field.config.name, values.data(), dims);
     }
   }
   backend_->infer(inputs, outputs);

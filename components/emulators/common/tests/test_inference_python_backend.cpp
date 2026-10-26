@@ -1,4 +1,5 @@
 // Catch2 v2 single header
+#include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
@@ -27,7 +28,7 @@ InferenceConfig fixture() {
   return config;
 }
 
-std::shared_ptr<InferenceBackend> create(const InferenceConfig &config) {
+std::unique_ptr<InferenceBackend> create(const InferenceConfig &config) {
   return create_backend(BackendType::PYTHON, config);
 }
 

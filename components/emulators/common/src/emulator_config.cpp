@@ -9,7 +9,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 
 namespace e3sm::emulator {
 namespace {
@@ -77,6 +76,16 @@ std::vector<FieldConfig> read_fields(const ekat::ParameterList& params,
 
   return fields;
 }
+std::string filepath_to_absolute(const std::filesystem::path& parent_dir,
+                                 std::filesystem::path in_path) {
+  if (!in_path.empty()) {
+    if (in_path.is_relative()) {
+      in_path = parent_dir / in_path;
+    }
+    in_path = in_path.lexically_normal();
+  }
+  return in_path.string();
+}
 } // namespace
 
 /**
@@ -96,8 +105,14 @@ EmulatorConfig read_emulator_config(const std::filesystem::path& filename) {
   cfg.type = attrs.get<std::string>("type");
 
   // Get Model network configuration
+  const auto config_dir = std::filesystem::absolute(filename).parent_path();
+
   const auto& model_attrs = attrs.sublist("model");
-  cfg.model.path = model_attrs.get<std::string>("path");
+
+  // get model path and convert to absolute
+  cfg.model.path =
+      filepath_to_absolute(config_dir, model_attrs.get<std::string>("path"));
+
   cfg.model.output_layout =
       get_layout_from_string(model_attrs.get<std::string>("output_layout"));
   cfg.model.input_layout =
@@ -105,10 +120,24 @@ EmulatorConfig read_emulator_config(const std::filesystem::path& filename) {
   cfg.model.backend_type =
       get_backend_type_from_string(model_attrs.get<std::string>("backend"));
 
+  const auto& backend_options = model_attrs.sublist("options");
+  const auto& labels = backend_options.param_names();
+  for (const auto& label : labels) {
+    cfg.model.options[label] = backend_options.get<std::string>(label);
+  }
+  // Check that the python module name is specified
+  if (!cfg.model.options.contains("python_module") and
+      cfg.model.backend_type == inference::BackendType::PYTHON) {
+    throw std::runtime_error(
+        "PythonBackend REQUIRES 'python_module' option to be specified");
+  }
+
   // Get Sample Space Information
   const auto& sample_info = params.sublist("sample_space");
   cfg.dimensions = sample_info.get<std::vector<std::string>>("dimensions");
 
+  cfg.input_order = params.get<std::vector<std::string>>("input_order");
+  cfg.output_order = params.get<std::vector<std::string>>("output_order");
   // Get inputs
   cfg.inputs = read_fields(params, "inputs");
   // Get outputs
@@ -146,6 +175,17 @@ std::string to_string(const EmulatorConfig& cfg) {
   out_string << "| Sample Space dimensions: [ ";
   for (const auto& dim : cfg.dimensions) {
     out_string << dim << ", ";
+  }
+  out_string << "]\n";
+
+  out_string << "| input_order: [ ";
+  for(const auto& name : cfg.input_order){
+    out_string << name << ", ";
+  }
+  out_string << "]\n";
+  out_string << "| output_order: [ ";
+  for(const auto& name : cfg.output_order){
+    out_string << name << ", ";
   }
   out_string << "]\n";
 

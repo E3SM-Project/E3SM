@@ -26,24 +26,26 @@ fi
 
 # Create build directory
 mkdir -p "${BUILD_DIR}"
-cd "${BUILD_DIR}"
 
 # Configure (only if needed)
 if [ ! -f "CMakeCache.txt" ]; then
     print_status "Configuring CMake..."
-    cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Debug  \
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Debug  \
     -DEMULATOR_ENABLE_TESTS=ON \
     -DSTANDALONE_MODE=ON \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DFETCHCONTENT_BASE_DIR="$SCRIPT_DIR/downloads" \
     -DEMULATOR_ENABLE_LIBTORCH=ON \
-    -DEMULAOTR_ENABLE_PYTHON=ON \
-    "${CMAKE_ARGS[@]}"
+    -DEMULATOR_ENABLE_PYTHON=ON \
+    "${CMAKE_ARGS[@]}" || { 
+    rm -rf build/
+    exit 1
+    }
 fi
 
 # Build
 print_status "Building..."
-cmake --build . --parallel
+cmake --build "${BUILD_DIR}" --parallel
 
 # Build only mode - exit before running tests
 if [ "$BUILD_ONLY" = true ]; then
@@ -54,9 +56,9 @@ fi
 # Run tests
 print_status "Running tests..."
 if [ "$VERBOSE" = true ]; then
-    ctest --output-on-failure --verbose -R $test_name
+    ctest --test-dir "${BUILD_DIR}" --output-on-failure --verbose -R $test_name
 else
-    ctest --output-on-failure -R $test_name
+    ctest --test-dir "${BUILD_DIR}" --output-on-failure -R $test_name
 fi
 
 print_status "All tests passed!"

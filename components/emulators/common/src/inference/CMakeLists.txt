@@ -17,6 +17,7 @@ set(EMULATOR_INFERENCE_SOURCES
   create_inference_backend.cpp
 )
 
+
 if(EMULATOR_ENABLE_LIBTORCH)
   # Point CMAKE_PREFIX_PATH (or Torch_DIR) at the LibTorch install
   find_package(Torch REQUIRED)

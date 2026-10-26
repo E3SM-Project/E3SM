@@ -12,6 +12,8 @@ void CouplerDriver::initialize(const std::string& filename) {
   for (auto& component : components_) {
     component.populate_registry(coupler_.registry());
   }
+  std::cout << coupler_.registry().to_string() << std::endl;
+
   coupler_.build_routes(filename);
 
   for (auto& component : components_) {
@@ -34,7 +36,8 @@ AnyComponent& CouplerDriver::get_component(std::string_view name) {
     throw std::runtime_error("Invalid component requested" + std::string(name));
 }
 
-void CouplerDriver::run_component(std::string_view name, const ProcessRunOpts opts) {
+void CouplerDriver::run_component(std::string_view name,
+                                  const ProcessRunOpts opts) {
   auto& comp = get_component(name);
   import_component(name);
   comp.run(opts);
@@ -56,10 +59,8 @@ void CouplerDriver::import_component(std::string_view name) {
   auto& comp = get_component(name);
   const auto& buffers = coupler_.import_buffers(name);
 
-  std::cout << "Import buffers for " << name << " before import\n";
-  std::cout << std::endl;
   for (const auto& buf : buffers) {
-    coupler_.print_field_buffer(std::cout, buf.id, buf.data,10);
+    coupler_.print_field_buffer(std::cout, buf.id, buf.data, 10);
   }
   comp.import_fields(buffers);
 }

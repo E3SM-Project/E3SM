@@ -1,7 +1,6 @@
 # Common source library
 
 add_subdirectory(coupler_api)
-
 add_subdirectory(inference)
 
 # NOTE: for now, we assume an atmosphere emulator. Let's find a better place for this.
@@ -17,9 +16,6 @@ configure_file(
 set(EMULATOR_COMMON_CXX_SOURCES
   emulator.cpp
   emulator_config.cpp
-  # emulator_c_api.cpp
-  inference/stub_inference_backend.cpp
-  inference/create_inference_backend.cpp
 )
 
 set(EMULATOR_COMMON_F90_SOURCES

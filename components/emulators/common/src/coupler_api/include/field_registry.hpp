@@ -85,6 +85,8 @@ public:
   bool contains(const std::string& component,
                 const std::string& field_name) const;
 
+  std::string to_string() const;
+
 private:
   struct RegistryKey {
     std::string component;
@@ -106,6 +108,8 @@ private:
   std::vector<RegisteredField> fields_;
   std::unordered_map<RegistryKey, FieldID, RegistryKeyHash> lookup_;
 };
+
+std::string to_string(FieldRole role);
 
 } // namespace e3sm::coupler
 #endif

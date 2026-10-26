@@ -51,7 +51,7 @@ FieldID FieldRegistry::get_id(const std::string& component,
 
   const auto pair = lookup_.find(RegistryKey{component, field_name});
   if (pair == lookup_.end()) {
-    throw std::runtime_error("Coulding find " + field_name +
+    throw std::runtime_error("Couldn't find " + field_name +
                              " in registry for " + component);
   }
   return pair->second;
@@ -90,6 +90,35 @@ std::string to_string(const RegisteredFieldAttributes& attr,
           << spaces << "stdname: " + attr.standard_name + '\n'
           << spaces << "units: " + attr.units + '\n';
   return out_str.str();
+}
+
+std::string to_string(FieldRole role) {
+  switch (role) {
+  case FieldRole::Import:
+    return "Import";
+  case FieldRole::Export:
+    return "Export";
+  case FieldRole::ImportExport:
+    return "ImportExport";
+  }
+  throw std::runtime_error("Unsupported FieldRole");
+}
+
+std::string FieldRegistry::to_string() const {
+  std::ostringstream out;
+  out << "FieldRegistry: " << fields_.size() << " field(s)\n";
+
+  for (FieldID id = 0; id < fields_.size(); ++id) {
+    const auto& field = fields_[id];
+
+    out << "  Field ID: " << id << '\n'
+        << "    component: " << field.component << '\n'
+        << "    role: " << e3sm::coupler::to_string(field.role) << '\n'
+        << "    size: " << field.size << '\n'
+        << e3sm::coupler::to_string(field.attributes, "    ");
+  }
+
+  return out.str();
 }
 
 } // namespace e3sm::coupler
