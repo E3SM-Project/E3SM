@@ -3,6 +3,8 @@
 
 #include "share/data_managers/model_init.hpp"
 
+#include <set>
+
 namespace scream
 {
 
@@ -73,6 +75,15 @@ private:
   // The names of the (non-state) pg fields that are read from the IC file on the GLL grid,
   // and remapped to the pg grid.
   std::vector<std::string> m_remapped_fields;
+
+  // The names of all the pg fields that are inited on the GLL grid (and remapped): the state,
+  // the tracers, and the remapped fields. Their recipes (if any) run on the GLL grid.
+  std::set<std::string> m_staged_fields;
+
+  // Run the recipes of the fields pending init in fm, which holds the ICs on the GLL grid.
+  // Since some recipes may need the pseudo density, which is not an IC, compute it first.
+  void run_gll_field_inits (const std::shared_ptr<FieldManager>& fm,
+                            const util::TimeStamp& t0);
 };
 
 } // namespace scream

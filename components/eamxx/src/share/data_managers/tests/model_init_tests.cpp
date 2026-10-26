@@ -589,4 +589,146 @@ TEST_CASE ("model_init_no_perturbation_on_restart", "")
   scorpio::finalize_subsystem();
 }
 
+namespace {
+
+// y = a*x + b
+class LinearInit : public FieldInit {
+public:
+  LinearInit (const std::string& name, const std::string& input, const Real a, const Real b)
+   : FieldInit(name,{input}), m_input(input), m_a(a), m_b(b)
+  { /* Nothing to do here */ }
+
+  void init_field (Field& y, const std::map<std::string,Field>& xs) const override {
+    y.deep_copy(m_b);
+    y.update(xs.at(m_input),m_a,1.0);
+  }
+
+private:
+  std::string m_input;
+  Real        m_a;
+  Real        m_b;
+};
+
+std::shared_ptr<FieldInit> linear_init (const std::string& name, const std::string& input,
+                                        const Real a, const Real b)
+{
+  return std::make_shared<LinearInit>(name,input,a,b);
+}
+
+} // anonymous namespace
+
+TEST_CASE ("model_init_field_inits", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int ncols = 4;
+  const int nlevs = 3;
+
+  std::vector<FieldIdentifier> ids;
+  for (const auto& n : {"A","B","C","D"}) {
+    ids.push_back(FieldIdentifier(n,{{COL,LEV},{ncols,nlevs}},none,"point_grid"));
+  }
+  auto [grid,fm,gn] = make_fixture(comm,ncols,nlevs,ids,{"STARTUP"});
+
+  ekat::ParameterList params("initial_conditions");
+  params.sublist("constant_fields").sublist("overrides").set<double>("A",2.0);
+  // D has a recipe, but a default constant wins over it
+  params.sublist("constant_fields").sublist("defaults").set<double>("D",5.0);
+
+  ModelInit model_init(params);
+
+  // The recipes' order does not matter: C needs B, which needs A
+  model_init.set_field_inits({
+    {"C",linear_init("C","B",1.0,1.0)},
+    {"B",linear_init("B","A",3.0,0.0)},
+    {"D",linear_init("D","A",2.0,0.0)}
+  });
+
+  util::TimeStamp t0(2000,1,1,0,0,0);
+  model_init.run(fm,t0,RunType::Initial);
+
+  for (const auto& n : {"A","B","C","D"}) {
+    REQUIRE (fm->get_field(n,gn).get_header().get_tracking().get_time_stamp()==t0);
+  }
+  check_constant(fm->get_field("B",gn),6.0);
+  check_constant(fm->get_field("C",gn),7.0);
+  check_constant(fm->get_field("D",gn),5.0);
+}
+
+TEST_CASE ("model_init_field_inits_file", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  const int ncols = 4;
+  const int nlevs = 3;
+
+  std::vector<FieldIdentifier> ids;
+  for (const auto& n : {"A","F","G"}) {
+    ids.push_back(FieldIdentifier(n,{{COL,LEV},{ncols,nlevs}},none,"point_grid"));
+  }
+  auto [grid,fm,gn] = make_fixture(comm,ncols,nlevs,ids,{"STARTUP"});
+
+  // F is in the file: its recipe is not used. G is not: it needs F, which comes from file.
+  const std::string filename = "model_init_field_inits_np" + std::to_string(comm.size()) + ".nc";
+  write_file(filename,{{"A",1.0},{"F",4.0}},comm,ncols,nlevs);
+
+  ekat::ParameterList params("initial_conditions");
+  params.set<std::string>("filename",filename);
+
+  ModelInit model_init(params);
+  model_init.set_field_inits({
+    {"F",linear_init("F","A",0.0,9.0)},
+    {"G",linear_init("G","F",1.0,1.0)}
+  });
+
+  util::TimeStamp t0(2000,1,1,0,0,0);
+  model_init.run(fm,t0,RunType::Initial);
+
+  check_constant(fm->get_field("F",gn),4.0);
+  check_constant(fm->get_field("G",gn),5.0);
+  REQUIRE (fm->get_field("G",gn).get_header().get_tracking().get_time_stamp()==t0);
+
+  scorpio::finalize_subsystem();
+}
+
+TEST_CASE ("model_init_field_inits_errors", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int ncols = 4;
+  const int nlevs = 3;
+
+  std::vector<FieldIdentifier> ids;
+  for (const auto& n : {"X","Y"}) {
+    ids.push_back(FieldIdentifier(n,{{COL,LEV},{ncols,nlevs}},none,"point_grid"));
+  }
+  util::TimeStamp t0(2000,1,1,0,0,0);
+
+  auto run = [&](const std::map<std::string,std::shared_ptr<FieldInit>>& inits) {
+    auto [grid,fm,gn] = make_fixture(comm,ncols,nlevs,ids,{"STARTUP"});
+    ekat::ParameterList params("initial_conditions");
+    ModelInit model_init(params);
+    model_init.set_field_inits(inits);
+    model_init.run(fm,t0,RunType::Initial);
+  };
+
+  // Unknown input
+  REQUIRE_THROWS (run({{"X",linear_init("X","Z",1.0,0.0)},
+                       {"Y",linear_init("Y","X",1.0,0.0)}}));
+
+  // Circular dependency
+  REQUIRE_THROWS (run({{"X",linear_init("X","Y",1.0,0.0)},
+                       {"Y",linear_init("Y","X",1.0,0.0)}}));
+}
+
 } // namespace scream
