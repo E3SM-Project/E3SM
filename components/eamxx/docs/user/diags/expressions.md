@@ -127,7 +127,18 @@ Notes:
   that of `Y`. Notice that `Y` is only used for its layout, its values are
   never read.
 - `where` takes a single comparison. `and`/`or` are not supported; chain
-  `where(..)` calls instead.
+  `where(..)` calls instead. A chain is the intersection of its conditions:
+  `X.where(A>0).where(B>0)` is valid only where both hold.
+- **`X.sum('lev')` of a masked `X` is masked where no level is valid.** Invalid
+  levels are skipped, and a column with none left has no sum; it is written as
+  missing rather than as 0. `mean('lev')` behaves the same way. This is
+  xarray's `sum('lev', min_count=1)`, not its default `sum('lev')`, which
+  would give 0.
+- **A scalar threshold is in the field's own units, as the model stores them.**
+  `T_mid.where(T_mid<273.15)` is in kelvin, and `p_mid.where(p_mid>85000)` in
+  pascals, not hectopascals. A comparison between two *fields* is checked when
+  the stream is set up: `T_mid.where(T_mid>qv)` is rejected, since the units
+  differ. (A field that never declared its units is not checked.)
 - **`mask` and `lev` are placeholders, not fields.** Neither exists in the field
   manager, and neither means anything on its own. `mask` is only legal as the
   receiver of `.where(..)`: `mask.where(cond)` is the 0/1 indicator of `cond`
@@ -175,8 +186,8 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
 
-`X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, but computed
-in one sweep rather than as three diagnostics.
+`X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, expressed as
+one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
 `mask` and `lev`, both inherited from the underscore syntax and both legal only

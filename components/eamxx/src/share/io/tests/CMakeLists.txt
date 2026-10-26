@@ -35,6 +35,30 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## Conditional sampling in AVERAGE/MAX/MIN streams, and its avg counts
+  CreateUnitTest(io_dexpr_masks
+    SOURCES io_dexpr_masks.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
+  ## Fields at the same pressure level share an avg count, unless masked differently
+  CreateUnitTest(io_dexpr_plev_avg_cnt
+    SOURCES io_dexpr_plev_avg_cnt.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
+  ## The average of AODVis is over its valid (daylight) steps only
+  CreateUnitTest(io_aodvis_avg
+    SOURCES io_aodvis_avg.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   ## Test conditional geo data output (io_output_if_dim_exists feature)
   CreateUnitTest(io_cond_geo
     SOURCES io_cond_geo.cpp

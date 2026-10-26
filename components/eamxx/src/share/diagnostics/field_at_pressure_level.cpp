@@ -2,6 +2,7 @@
 #include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_std_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_units.hpp>
 
 namespace scream
@@ -77,7 +78,23 @@ initialize_impl ()
   m_index_name = tag==LEV ? m_index_name_mid : m_index_name_int;
 
   // Add a field representing the mask as extra data to the diagnostic field.
-  m_diagnostic_output.create_valid_mask();
+  // Unless the input is masked (or may be filled), the mask only says where the
+  // pressure level is in range, so all diags at this level and layer have the
+  // same mask. Name it after the level, so that they share an avg count in IO.
+  // NOTE: masks with the same name must hold the same values (IO and the horizontal
+  //       remapper rely on it), so the name also carries any vector dimension.
+  if (f.has_valid_mask() or f.get_header().may_be_filled()) {
+    m_diagnostic_output.create_valid_mask();
+  } else {
+    auto mask_name = m_params.get<std::string>("pressure_value")
+                   + m_params.get<std::string>("pressure_units")
+                   + (tag==ILEV ? "_int" : "");
+    const auto& d_layout = d_fid.get_layout();
+    for (int i=1; i<d_layout.rank(); ++i) {
+      mask_name += "_" + d_layout.names()[i] + std::to_string(d_layout.dim(i));
+    }
+    m_diagnostic_output.create_valid_mask(mask_name + "_mask");
+  }
   m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
@@ -145,7 +162,9 @@ void FieldAtPressureLevel::compute_impl()
     });
   } else if (rank==3) {
     const int ndims = f.get_header().get_identifier().get_layout().get_vector_dim();
-    auto policy = KT::TeamPolicy(ncols,ndims);
+    // Let ekat pick the team size: ndims threads per team may be more than the
+    // backend allows (e.g., OpenMP with one thread)
+    auto policy = ekat::TeamPolicyFactory<KT::ExeSpace>::get_default_team_policy(ncols,ndims);
     auto diag = m_diagnostic_output.get_view<Real**>();
     auto dmask = m_diagnostic_output.get_valid_mask().get_view<int**>();
     auto fmask = masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
