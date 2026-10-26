@@ -103,10 +103,12 @@ constexpr Real Rad2Deg =
     pcd::radian; // Radians to degrees (from Physical Constants Dictionary)
 constexpr Real Deg2Rad =
     pcd::degree; // Degrees to radians (from Physical Constants Dictionary)
-constexpr Real Salt2PPt = 1000.0;   // Salinity (kg/kg) to parts per thousand
-constexpr Real SS0      = 35.16504; // Standard ocean reference salinity (g/kg)
-constexpr Real Psu2Gpkg =
-    SS0 / 35.0; // Unit conversion factor for salinities (psu -> g/kg)
+constexpr Real Salt2PPt = 1000.0; // Salinity (kg/kg) to parts per thousand
+constexpr Real SS0      = pcd::ocean_reference_salinity_teos10;
+// Standard ocean reference salinity ~ g/kg (from Physical Constants Dictionary)
+constexpr Real Psu2Gpkg = pcd::reference_salinity_per_practical_salinity_teos10;
+// Unit conversion factor for salinities (psu -> g/kg) (from Physical Constants
+// Dictionary)
 constexpr Real Sfac       = 0.0248826675584615; // 1 / (40 * Psu2Gpkg)
 constexpr Real PPt2Salt   = 1.0e-3;    // Parts per thousand to salinity (kg/kg)
 constexpr Real Mass2Sv    = 1.0e-12;   // Mass flux (kg/s) to Sverdrup
