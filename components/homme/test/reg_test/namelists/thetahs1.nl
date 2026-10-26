@@ -1,5 +1,5 @@
 &ctl_nl
-! Match EAMxx ne30np4.pg2/L128v1 ctl_nl defaults.
+! Match EAMxx neXXnp4.pg2/L128v1 ctl_nl defaults (ne and tstep set by CMake).
 vthreads          = 1
 NThreads          = 1
 partmethod        = 4
@@ -9,13 +9,13 @@ u_perturb         = 1
 rotate_grid       = 0
 ne                = ${HOMME_TEST_NE}
 qsize             = 1
-nmax              = 36
+ndays             = 1
 statefreq         = 9999
 restartfreq       = 0
 restartfile       = "./R0001"
 runtype           = 0
 mesh_file         = '/dev/null'
-tstep             = 300
+tstep             = ${HOMME_TEST_TIME_STEP}
 dt_remap_factor   = 2
 dt_tracer_factor  = 6
 transport_alg     = 12

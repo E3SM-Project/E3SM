@@ -683,9 +683,22 @@ macro (set_homme_tests_parameters testFile profile)
 #HV scaled at 3.0 rate: 
 #ne30 1e15, ne2 3.4e18, ne4 4.2e17
 #ne6 1.25e17, ne13 1.23e16, ne1024 2.5e10
-  if ("${testFile}" MATCHES "^theta-fhs1(-kokkos)?(\\.cmake)?$")
-    # Keep both frontends consistent with the EAMxx ne30pg2 namelist.
-    set (HOMME_TEST_NE 30)
+  if ("${testFile}" MATCHES "^theta-fhs1(-ne([0-9]+))?(-kokkos)?(\\.cmake)?$")
+    # Keep both frontends consistent with the EAMxx L128 namelist.
+    # Resolution comes from an optional -neN in the file name (default ne30);
+    # EAMxx uses the same tensor nu for all resolutions, but se_tstep varies.
+    if (CMAKE_MATCH_2)
+      set (HOMME_TEST_NE ${CMAKE_MATCH_2})
+    else ()
+      set (HOMME_TEST_NE 30)
+    endif ()
+    if (HOMME_TEST_NE EQUAL 4)
+      set (HOMME_TEST_TIME_STEP 600)
+    elseif (HOMME_TEST_NE EQUAL 30)
+      set (HOMME_TEST_TIME_STEP 300)
+    else ()
+      message (FATAL_ERROR "theta-fhs1: no EAMxx se_tstep default for ne${HOMME_TEST_NE}")
+    endif ()
     set (HOMME_TEST_NDAYS 1)
     set (HOMME_TEST_NU 3.4e-8)
   elseif ("${testFile}" MATCHES "theta-f")

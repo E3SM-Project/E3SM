@@ -318,7 +318,7 @@ IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_THETA_KOKKOS)
 ENDIF()
 
 IF (BUILD_HOMME_THETA_KOKKOS AND NOT HOMMEXX_BFB_TESTING)
-  SET(MANUAL_THETA_TESTS theta-fhs1-kokkos.cmake)
+  SET(MANUAL_THETA_TESTS theta-fhs1-ne4-kokkos.cmake theta-fhs1-ne30-kokkos.cmake)
   createTestsWithProfile(MANUAL_THETA_TESTS dev)
 ENDIF()
 
