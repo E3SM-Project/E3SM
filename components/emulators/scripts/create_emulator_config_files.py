@@ -18,20 +18,10 @@ import yaml
 class Field:
     name: str
     dimensions: Sequence[str]
-    longname: str
-    stdname: str
-    units: str
-    attname: str | None = None
 
     def to_dict(self) -> dict:
         return {
             "name": self.name,
-            "attributes": {
-                "attname": self.attname if self.attname is not None else self.name,
-                "longname": self.longname,
-                "stdname": self.stdname,
-                "units": self.units,
-            },
             "dimensions": list(self.dimensions),
         }
 
@@ -178,26 +168,10 @@ class CoupledField:
                         f"{component.name}: expected exactly one {role} field named {name!r}"
                     )
                 actual = matches[0]
-                for attr in ("units", "stdname"):
-                    if getattr(actual, attr) != getattr(self.field, attr):
-                        raise ValueError(
-                            f"{component.name}.{name}: {attr} differs from coupling definition"
-                        )
-                expected_attname = (
-                    self.field.attname if self.field.attname is not None else name
-                )
-                actual_attname = (
-                    actual.attname if actual.attname is not None else actual.name
-                )
-                if actual_attname != expected_attname:
-                    raise ValueError(
-                        f"{component.name}.{name}: attname differs from coupling definition"
-                    )
         return {
             "kind": self.kind,
             "name": name,
             "merge_type": self.merge_type,
-            "attributes": self.field.to_dict()["attributes"],
             "sources": [e.name for e in self.sources],
             "destinations": [e.name for e in self.destinations],
         }
@@ -240,23 +214,14 @@ if __name__ == "__main__":
     temperature = Field(
         name="temperature",
         dimensions=["column"],
-        longname="Atmospheric temperature",
-        stdname="air_temperature",
-        units="K",
     )
     soil_moisture = Field(
         name="soil_moisture",
         dimensions=["column", "soil_levels"],
-        longname="Soil Moisture",
-        stdname="soil_moisture",
-        units="h2o kg m-2",
     )
     surface_flux = Field(
         name="surface_flux",
         dimensions=["column"],
-        longname="Surface Flux to atm",
-        stdname="energy",
-        units="W m-2",
     )
 
     forcing = EmulatorConfig(

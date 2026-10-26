@@ -65,13 +65,10 @@ std::vector<FieldConfig> read_fields(const ekat::ParameterList& params,
 
   for (const auto& field_name : field_names) {
     const auto& field_list = input_list.sublist(field_name);
-    const auto& attr_list = field_list.sublist("attributes");
-    const auto attributes = e3sm::coupler::read_attributes(attr_list);
     auto dimensions = field_list.get<std::vector<std::string>>("dimensions");
 
-    fields.emplace_back(FieldConfig{.name = field_name,
-                                    .attributes = std::move(attributes),
-                                    .dimensions = std::move(dimensions)});
+    fields.emplace_back(
+        FieldConfig{.name = field_name, .dimensions = std::move(dimensions)});
   }
 
   return fields;
@@ -162,8 +159,6 @@ std::string to_string(const FieldConfig& cfg) {
     out_str << dim << ", ";
   }
   out_str << "]\n";
-  out_str << '|' + TABS + "attributes:\n"
-          << to_string(cfg.attributes, '|' + TABS + TABS);
   return out_str.str();
 }
 
@@ -179,12 +174,12 @@ std::string to_string(const EmulatorConfig& cfg) {
   out_string << "]\n";
 
   out_string << "| input_order: [ ";
-  for(const auto& name : cfg.input_order){
+  for (const auto& name : cfg.input_order) {
     out_string << name << ", ";
   }
   out_string << "]\n";
   out_string << "| output_order: [ ";
-  for(const auto& name : cfg.output_order){
+  for (const auto& name : cfg.output_order) {
     out_string << name << ", ";
   }
   out_string << "]\n";

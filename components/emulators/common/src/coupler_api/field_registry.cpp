@@ -15,16 +15,12 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
         "Attempting to register field with no Component");
   }
 
-  if (field.attributes.name.empty()) {
+  if (field.name.empty()) {
     throw std::invalid_argument("Attempting to register field with no name");
   }
 
-  if (field.attributes.units.empty()) {
-    throw std::invalid_argument("Attempting to register field with no units");
-  }
-
   const auto id = static_cast<FieldID>(fields_.size());
-  RegistryKey key{field.component, field.attributes.name};
+  RegistryKey key{field.component, field.name};
   if (lookup_.contains(key)) {
     throw std::runtime_error("Attempted to register field twice");
   }
@@ -34,6 +30,7 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
 
   return id;
 }
+
 
 const RegisteredField& FieldRegistry::get(const std::string& component,
                                           const std::string& field_name) const {
@@ -115,7 +112,7 @@ std::string FieldRegistry::to_string() const {
         << "    component: " << field.component << '\n'
         << "    role: " << e3sm::coupler::to_string(field.role) << '\n'
         << "    size: " << field.size << '\n'
-        << e3sm::coupler::to_string(field.attributes, "    ");
+        << "    name: " << field.name;
   }
 
   return out.str();

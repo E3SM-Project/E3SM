@@ -18,9 +18,12 @@ TEST_CASE("Parse sample emulator config") {
   REQUIRE(config.type == "component");
 
   SECTION("model configuration") {
-    REQUIRE(config.model.path == std::filesystem::path{"land_model.pt"});
-    REQUIRE(config.model.input_layout == e3sm::emulator::TensorLayout::SampleMajor);
-    REQUIRE(config.model.output_layout == e3sm::emulator::TensorLayout::FeatureMajor);
+    REQUIRE(config.model.path.filename() ==
+            std::filesystem::path{"land_emulator.pt"});
+    REQUIRE(config.model.input_layout ==
+            e3sm::emulator::TensorLayout::FeatureMajor);
+    REQUIRE(config.model.output_layout ==
+            e3sm::emulator::TensorLayout::FeatureMajor);
   }
 
   SECTION("sample-space dimensions") {
@@ -35,8 +38,8 @@ TEST_CASE("Parse sample emulator config") {
   SECTION("input fields") {
     REQUIRE(config.inputs.size() == 2);
 
-    const auto temperature = std::ranges::find(config.inputs, "temperature",
-                                               &e3sm::emulator::FieldConfig::name);
+    const auto temperature = std::ranges::find(
+        config.inputs, "temperature", &e3sm::emulator::FieldConfig::name);
 
     REQUIRE(temperature != config.inputs.end());
 
@@ -46,8 +49,8 @@ TEST_CASE("Parse sample emulator config") {
 
     REQUIRE(temperature->dimensions == expected_temperature_dimensions);
 
-    const auto soil_moisture = std::ranges::find(config.inputs, "soil_moisture",
-                                                 &e3sm::emulator::FieldConfig::name);
+    const auto soil_moisture = std::ranges::find(
+        config.inputs, "soil_moisture", &e3sm::emulator::FieldConfig::name);
 
     REQUIRE(soil_moisture != config.inputs.end());
 
@@ -62,8 +65,8 @@ TEST_CASE("Parse sample emulator config") {
   SECTION("output fields") {
     REQUIRE(config.outputs.size() == 1);
 
-    const auto surface_flux = std::ranges::find(config.outputs, "surface_flux",
-                                                &e3sm::emulator::FieldConfig::name);
+    const auto surface_flux = std::ranges::find(
+        config.outputs, "surface_flux", &e3sm::emulator::FieldConfig::name);
 
     REQUIRE(surface_flux != config.outputs.end());
 
