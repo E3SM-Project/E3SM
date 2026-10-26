@@ -20,6 +20,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_utils
   )
 
+  # Test the distributed directory of gids
+  CreateUnitTest(gid_directory
+    SOURCES gid_directory_tests.cpp
+    LIBS eamxx_utils
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test array utils
   CreateUnitTest(array_utils
     SOURCES array_utils_tests.cpp
