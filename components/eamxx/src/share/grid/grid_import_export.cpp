@@ -1,6 +1,7 @@
 #include "grid_import_export.hpp"
 
 #include "share/util/gid_directory.hpp"
+#include "share/util/eamxx_alltoallv.hpp"
 #include "share/field/field_utils.hpp"
 
 #include <algorithm>
@@ -16,8 +17,6 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
   EKAT_REQUIRE_MSG (unique!=nullptr, "Error! Input unique grid pointer is null.\n");
   EKAT_REQUIRE_MSG (overlapped!=nullptr, "Error! Input overlapped grid pointer is null.\n");
 
-  m_unique = unique;
-  m_overlapped = overlapped;
   m_comm = unique->get_comm();
 
   const int nranks = m_comm.size();
@@ -67,58 +66,40 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
 
   m_import_lids = decltype(m_import_lids)("",m_num_imports);
   m_import_pids = decltype(m_import_pids)("",m_num_imports);
-  m_import_lids_h = Kokkos::create_mirror_view(m_import_lids);
-  m_import_pids_h = Kokkos::create_mirror_view(m_import_pids);
+  auto import_lids_h = Kokkos::create_mirror_view(m_import_lids);
+  auto import_pids_h = Kokkos::create_mirror_view(m_import_pids);
 
   std::vector<int> imp_count (nranks,0);
   std::vector<int> requested_lids (m_num_imports);
   for (int k=0; k<m_num_imports; ++k) {
     const int i = order[k];
-    m_import_lids_h(k) = i;
-    m_import_pids_h(k) = owner_pids[i];
+    import_lids_h(k) = i;
+    import_pids_h(k) = owner_pids[i];
     requested_lids[k]  = owner_lids[i];
     ++imp_count[owner_pids[i]];
   }
-  Kokkos::deep_copy(m_import_lids,m_import_lids_h);
-  Kokkos::deep_copy(m_import_pids,m_import_pids_h);
+  Kokkos::deep_copy(m_import_lids,import_lids_h);
+  Kokkos::deep_copy(m_import_pids,import_pids_h);
 
   // ------------------ Create export structures ----------------------- //
 
   // Send to each owner the lids we want from it. What we receive are the lids that others want from us,
   // already sorted by requesting pid, and (within each pid) by lid.
   std::vector<int> exported_lids, exp_count;
-  {
-    exp_count.resize(nranks);
-    check_mpi_call(MPI_Alltoall(imp_count.data(),1,MPI_INT,exp_count.data(),1,MPI_INT,m_comm.mpi_comm()),
-                   "GridImportExport, exchanging the number of requests");
-
-    std::vector<int> sdispl(nranks,0), rdispl(nranks,0);
-    long long tot_send = 0, tot_recv = 0;
-    for (int p=0; p<nranks; ++p) {
-      sdispl[p] = tot_send;
-      rdispl[p] = tot_recv;
-      tot_send += imp_count[p];
-      tot_recv += exp_count[p];
-    }
-    exported_lids.resize(tot_recv);
-    check_mpi_call(MPI_Alltoallv(requested_lids.data(),imp_count.data(),sdispl.data(),MPI_INT,
-                                 exported_lids.data(),exp_count.data(),rdispl.data(),MPI_INT,
-                                 m_comm.mpi_comm()),
-                   "GridImportExport, exchanging the requests");
-  }
+  alltoallv(m_comm,requested_lids,imp_count,exported_lids,exp_count,false);
 
   m_num_exports = exported_lids.size();
   m_export_pids = view_d("",m_num_exports);
   m_export_lids = view_d("",m_num_exports);
   m_export_lids_h = Kokkos::create_mirror_view(m_export_lids);
-  m_export_pids_h = Kokkos::create_mirror_view(m_export_pids);
+  auto export_pids_h = Kokkos::create_mirror_view(m_export_pids);
   for (int pid=0, pos=0; pid<nranks; ++pid) {
     for (int k=0; k<exp_count[pid]; ++k, ++pos) {
       m_export_lids_h(pos) = exported_lids[pos];
-      m_export_pids_h(pos) = pid;
+      export_pids_h(pos) = pid;
     }
   }
-  Kokkos::deep_copy(m_export_pids,m_export_pids_h);
+  Kokkos::deep_copy(m_export_pids,export_pids_h);
   Kokkos::deep_copy(m_export_lids,m_export_lids_h);
 
   // ------------------ Create offset views ----------------------- //
