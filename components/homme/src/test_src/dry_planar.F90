@@ -107,7 +107,7 @@ subroutine general_gravity_wave_init(elem,hybrid,hvcoord,nets,nete,d,f)
         call set_tracers(q,qsize, dp,i,j,k,y,x,elem(ie))
      enddo; enddo; enddo;
      do k=1,nlevp; do j=1,np; do i=1,np
-        call get_xycoordinates(x,y,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_xycoordinates_i(x,y,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call gravity_wave(x,y,p,z,zcoords,use_eta,hyai,hybi,d,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
         call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo;
@@ -580,6 +580,25 @@ subroutine get_xycoordinates(x,y,hyam,hybm, i,j,k,elem,hvcoord)
   ! get hybrid coeffiecients at midpoint of vertical level k
   hyam = hvcoord%hyam(k)
   hybm = hvcoord%hybm(k)
+
+end subroutine
+
+subroutine get_xycoordinates_i(x,y,hyai,hybi, i,j,k,elem,hvcoord)
+
+  ! get x,y, vertical interface coords at node(i,j,k)
+
+  real(rl),         intent(out):: x,y,hyai,hybi
+  integer,          intent(in) :: i,j,k
+  type(element_t),  intent(in) :: elem
+  type(hvcoord_t),  intent(in) :: hvcoord
+
+  ! get horizontal coordinates at column i,j
+  x  = elem%spherep(i,j)%lon
+  y  = elem%spherep(i,j)%lat
+
+  ! get hybrid coefficients at interface of vertical level k
+  hyai = hvcoord%hyai(k)
+  hybi = hvcoord%hybi(k)
 
 end subroutine
 

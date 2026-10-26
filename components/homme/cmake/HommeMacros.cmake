@@ -370,17 +370,24 @@ macro (setUpTestDir TEST_DIR)
     MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not defined. Quitting")
   ENDIF ()
   IF (NOT ${HOMME_QUEUING})
-    IF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS})
-      # Cap NUM_CPUS at MAX_NUM_PROCS.  When CIME passes USE_NUM_PROCS (e.g.
+    # Individual tests may set MAX_NUM_CPUS in their .cmake file to cap the
+    # maximum MPI rank count for that test (e.g. for RRM meshes or
+    # multi-element semi-Lagrangian halos).
+    SET(_HOMME_MAX_PROCS ${MAX_NUM_PROCS})
+    IF (MAX_NUM_CPUS AND ${MAX_NUM_CPUS} LESS ${_HOMME_MAX_PROCS})
+      SET(_HOMME_MAX_PROCS ${MAX_NUM_CPUS})
+    ENDIF ()
+    IF (${NUM_CPUS} GREATER ${_HOMME_MAX_PROCS})
+      # Cap NUM_CPUS at _HOMME_MAX_PROCS.  When CIME passes USE_NUM_PROCS (e.g.
       # from a _P96 test option), test_execs/CMakeLists.txt maps it to
       # MAX_NUM_PROCS so it is treated as "up to N ranks available" rather than
       # "every test must use exactly N ranks".
-      MESSAGE(STATUS "Test ${TEST_NAME}: lowering NUM_CPUS from ${NUM_CPUS} to ${MAX_NUM_PROCS} (MAX_NUM_PROCS=${MAX_NUM_PROCS})")
-      SET(NUM_CPUS ${MAX_NUM_PROCS})
+      MESSAGE(STATUS "Test ${TEST_NAME}: lowering NUM_CPUS from ${NUM_CPUS} to ${_HOMME_MAX_PROCS} (MAX_NUM_PROCS=${MAX_NUM_PROCS}, MAX_NUM_CPUS=${MAX_NUM_CPUS})")
+      SET(NUM_CPUS ${_HOMME_MAX_PROCS})
     ENDIF ()
-    # Raise NUM_CPUS toward MAX_NUM_PROCS when there is headroom.  Find the
+    # Raise NUM_CPUS toward _HOMME_MAX_PROCS when there is headroom.  Find the
     # largest valid MPI count for this test's problem size: the largest divisor
-    # of the total element count that is <= MAX_NUM_PROCS.  For a cube-sphere
+    # of the total element count that is <= _HOMME_MAX_PROCS.  For a cube-sphere
     # grid (topology "cube" or no topology set) total_elements = 6*ne^2; for a
     # planar grid total_elements = ne_x*ne_y.  We scan all namelist files for
     # ne/ne_x/ne_y, using the first file that contains a non-zero value.  This
@@ -389,7 +396,7 @@ macro (setUpTestDir TEST_DIR)
     # non-zero ne (e.g. swtc6-short-exodus.nl sorts before swtc6-short.nl).
     # Both hard-coded values (e.g. ne = 10) and CMake-variable references
     # (e.g. ne = ${HOMME_TEST_NE}) are handled.
-    IF (${NUM_CPUS} LESS ${MAX_NUM_PROCS} AND NAMELIST_FILES)
+    IF (${NUM_CPUS} LESS ${_HOMME_MAX_PROCS} AND NAMELIST_FILES)
       SET(_HOMME_TOTAL_ELEM 0)
       FOREACH (_HOMME_NL_FILE ${NAMELIST_FILES})
        IF (EXISTS "${_HOMME_NL_FILE}" AND _HOMME_TOTAL_ELEM EQUAL 0)
@@ -427,29 +434,26 @@ macro (setUpTestDir TEST_DIR)
         ENDIF ()
        ENDIF ()
       ENDFOREACH ()
-      # Determine the best MPI count to use, up to MAX_NUM_PROCS.
+      # Determine the best MPI count to use, up to _HOMME_MAX_PROCS.
       #
       # When total_elem is still 0 after scanning all namelists (e.g. a pure
-      # RRM mesh-file test with no regular namelist), or when
-      # total_elem >= MAX_NUM_PROCS (every rank gets at least one element),
-      # raise directly to MAX_NUM_PROCS.  HOMME's SFC partitioner handles
-      # uneven distributions, so exact divisibility is not required.
+      # RRM mesh-file test with ne = 0 and no regular namelist), keep the
+      # test's authored NUM_CPUS rather than blindly raising to _HOMME_MAX_PROCS,
+      # since the mesh file may have fewer elements than _HOMME_MAX_PROCS.
       #
-      # Only apply the divisor search when total_elem < MAX_NUM_PROCS, where
+      # Only apply the divisor search when total_elem < _HOMME_MAX_PROCS, where
       # we must cap at total_elem to avoid giving some ranks zero elements.
       IF (_HOMME_TOTAL_ELEM EQUAL 0)
-        # Unknown grid size (e.g., RRM mesh file): raise to MAX_NUM_PROCS.
-        SET(_HOMME_BEST_CPUS ${MAX_NUM_PROCS})
-        MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem unknown/mesh-file, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
-        SET(NUM_CPUS ${_HOMME_BEST_CPUS})
-      ELSEIF (_HOMME_TOTAL_ELEM GREATER_EQUAL ${MAX_NUM_PROCS})
-        # Large grid: every rank gets >= 1 element at MAX_NUM_PROCS.
-        SET(_HOMME_BEST_CPUS ${MAX_NUM_PROCS})
-        MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
+        # Unknown grid size (e.g., RRM mesh file): keep authored NUM_CPUS.
+        MESSAGE(STATUS "Test ${TEST_NAME}: keeping NUM_CPUS at ${NUM_CPUS} (total_elem unknown/mesh-file, max_procs=${_HOMME_MAX_PROCS})")
+      ELSEIF (_HOMME_TOTAL_ELEM GREATER_EQUAL ${_HOMME_MAX_PROCS})
+        # Large grid: every rank gets >= 1 element at _HOMME_MAX_PROCS.
+        SET(_HOMME_BEST_CPUS ${_HOMME_MAX_PROCS})
+        MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, max_procs=${_HOMME_MAX_PROCS})")
         SET(NUM_CPUS ${_HOMME_BEST_CPUS})
       ELSE ()
-        # Small grid (total_elem < MAX_NUM_PROCS): find the largest divisor
-        # of total_elem that is <= MAX_NUM_PROCS so no rank gets 0 elements.
+        # Small grid (total_elem < _HOMME_MAX_PROCS): find the largest divisor
+        # of total_elem that is <= _HOMME_MAX_PROCS so no rank gets 0 elements.
         # Algorithm: linear scan downward from total_elem (the natural cap)
         # to NUM_CPUS+1, stopping at the first candidate that evenly divides
         # total_elem.
@@ -464,7 +468,7 @@ macro (setUpTestDir TEST_DIR)
           MATH(EXPR _HOMME_CANDIDATE "${_HOMME_CANDIDATE} - 1")
         ENDWHILE ()
         IF (_HOMME_BEST_CPUS GREATER ${NUM_CPUS})
-          MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, MAX_NUM_PROCS=${MAX_NUM_PROCS})")
+          MESSAGE(STATUS "Test ${TEST_NAME}: raising NUM_CPUS from ${NUM_CPUS} to ${_HOMME_BEST_CPUS} (total_elem=${_HOMME_TOTAL_ELEM}, max_procs=${_HOMME_MAX_PROCS})")
           SET(NUM_CPUS ${_HOMME_BEST_CPUS})
         ENDIF ()
       ENDIF ()
@@ -594,6 +598,7 @@ macro(resetTestVariables)
   SET(NC_OUTPUT_CHECKREF)
   SET(TESTCASE_REF_TOL)
   SET(NUM_CPUS)
+  SET(MAX_NUM_CPUS)
   SET(OMP_NAMELIST_FILES)
   SET(OMP_NUM_THREADS)
   SET(TRILINOS_XML_FILE)
