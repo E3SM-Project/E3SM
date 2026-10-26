@@ -158,34 +158,27 @@ set_elem_data (const int ie,
   Kokkos::deep_copy(Homme::subview(m_vec_sph2cart,ie), h_vec_sph2cart);
 
   if (sphere_cart && m_sphere_cart.size() != 0) {
-    const auto fsc = HostViewUnmanaged<const F90Real [NP][NP][3]>(sphere_cart);
-#if HOMMEXX_SINGLE_PREC
-    // For single precision, deep_copy cannot be used
-    auto host_sphere_cart = Kokkos::create_mirror_view(m_sphere_cart);
+    const auto fsc              = HostViewUnmanaged<const F90Real [NP][NP][3]>(sphere_cart);
+    const auto dev_sphere_cart  = Homme::subview(m_sphere_cart, ie);
+    const auto host_sphere_cart = Kokkos::create_mirror_view(dev_sphere_cart);
+
     Kokkos::parallel_for(
       Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0}, {NP, NP, 3}),
       KOKKOS_LAMBDA(const int igp, const int jgp, const int k) {
-        Homme::subview(host_sphere_cart, ie)(igp,jgp,k) = static_cast<Real>(fsc(igp,jgp,k));
+        host_sphere_cart(igp,jgp,k) = static_cast<Real>(fsc(igp,jgp,k));
       });
-    Kokkos::deep_copy(m_sphere_cart, host_sphere_cart);
-#else
-    Kokkos::deep_copy(Homme::subview(m_sphere_cart, ie), fsc);
-#endif
+    Kokkos::deep_copy(dev_sphere_cart, host_sphere_cart);
   }
   if (sphere_latlon && m_sphere_latlon.size() != 0) {
     const auto fsl = HostViewUnmanaged<const F90Real [NP][NP][2]>(sphere_latlon);
-#if HOMMEXX_SINGLE_PREC
-    // For single precision, deep_copy cannot be used
-    auto host_sphere_latlon = Kokkos::create_mirror_view(m_sphere_latlon);
+    const auto dev_sphere_latlon  = Homme::subview(m_sphere_latlon, ie);
+    const auto host_sphere_latlon = Kokkos::create_mirror_view(dev_sphere_latlon);
     Kokkos::parallel_for(
       Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0}, {NP, NP, 2}),
       KOKKOS_LAMBDA(const int igp, const int jgp, const int k) {
-        Homme::subview(host_sphere_latlon, ie)(igp,jgp,k) = static_cast<Real>(fsl(igp,jgp,k));
+        host_sphere_latlon(igp,jgp,k) = static_cast<Real>(fsl(igp,jgp,k));
       });
-    Kokkos::deep_copy(m_sphere_latlon, host_sphere_latlon);
-#else
-    Kokkos::deep_copy(Homme::subview(m_sphere_latlon, ie), fsl);
-#endif
+    Kokkos::deep_copy(dev_sphere_latlon, host_sphere_latlon);
   }
 }
 
