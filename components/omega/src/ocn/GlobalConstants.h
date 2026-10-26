@@ -71,8 +71,9 @@ constexpr Real CpFw = pcd::pure_water_specific_heat_capacity_reference;
 constexpr Real CpSw = pcd::seawater_specific_heat_capacity_reference;
 // Specific heat capacity of seawater ~ J/(kg*K) (from Physical Constants
 // Dictionary)
-constexpr Real Cp0Sw =
-    3991.86795711963; // Specific heat capacity of seawater for TEOS-10
+constexpr Real Cp0Sw = pcd::seawater_specific_heat_capacity_teos10;
+// Specific heat capacity of seawater for TEOS-10 ~ J/(kg*K) (from Physical
+// Constants Dictionary)
 constexpr Real CpIce = pcd::sea_ice_specific_heat_capacity_reference;
 // Specific heat capacity of ice ~ J/(kg*K) (from Physical Constants Dictionary)
 constexpr Real LatIce = pcd::latent_heat_of_fusion_reference;
