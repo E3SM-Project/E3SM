@@ -83,7 +83,24 @@ initialize_impl ()
   // (see HeightLevelIndex), regardless of the surface reference, and a
   // target below the bottom entry is too for "above sealevel" heights;
   // plus the input field itself may carry its own mask.
-  m_diagnostic_output.create_valid_mask();
+  // Unless the input is masked (or may be filled), the mask only says where the
+  // height is in range, so all diags at this height and layer have the same
+  // mask. Name it after the height, so that they share an avg count in IO.
+  // NOTE: masks with the same name must hold the same values (IO and the horizontal
+  //       remapper rely on it), so the name also carries any vector dimension.
+  if (f.has_valid_mask() or f.get_header().may_be_filled()) {
+    m_diagnostic_output.create_valid_mask();
+  } else {
+    auto mask_name = m_params.get<std::string>("height_value")
+                   + m_params.get<std::string>("height_units")
+                   + "_above_" + m_params.get<std::string>("surface_reference")
+                   + (tag==ILEV ? "_int" : "");
+    const auto& d_layout = d_fid.get_layout();
+    for (int i=1; i<d_layout.rank(); ++i) {
+      mask_name += "_" + d_layout.names()[i] + std::to_string(d_layout.dim(i));
+    }
+    m_diagnostic_output.create_valid_mask(mask_name + "_mask");
+  }
   m_diagnostic_output.get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;

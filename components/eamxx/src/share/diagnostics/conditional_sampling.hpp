@@ -53,6 +53,7 @@ protected:
 
   Field m_lev_mask; // Only used if m_lhs_is_lev=true, both for mask diagnostics
                     // and for broadcasting in non-mask diagnostics
+  Field m_lev_mask_bcast; // m_lev_mask broadcast to the output layout (non-mask diagnostics only)
 };
 
 } // namespace scream
