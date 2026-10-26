@@ -325,6 +325,10 @@ contains
       cvmix_variables % Mdiff_iface(1:nVertLevels+1) = 0.0_RKIND
       cvmix_variables % Tdiff_iface(1:nVertLevels+1) = 0.0_RKIND
       cvmix_variables % Sdiff_iface(1:nVertLevels+1) = 0.0_RKIND
+      ! Only KPP computes the boundary layer index.  cvmix_coeffs_conv skips
+      ! interfaces above nint(kOBL_depth)+1, so without KPP it must be zero
+      ! for convection to apply over the whole column.
+      cvmix_variables % kOBL_depth = 0.0_RKIND
 
       allocate(OBLDepths(nVertLevels))
       allocate(interfaceForcings(nVertLevels))
