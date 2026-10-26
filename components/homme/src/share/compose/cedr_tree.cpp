@@ -311,12 +311,14 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets& ns,
     // Send to parents.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
-      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag);
+      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
+                 &lvl.me_send_req[i]);
     }
   }
   // Root to leaves.
   for (size_t il = ns.levels.size(); il > 0; --il) {
     auto& lvl = ns.levels[il-1];
+    mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
     // Get the global sum from parent.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
@@ -334,8 +336,13 @@ Int test_comm_pattern (const Parallel::Ptr& p, const NodeSets& ns,
     // Send.
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
       const auto& mmd = lvl.kids[i];
-      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag);
+      mpi::isend(*p, &data[mmd.offset], mmd.size, mmd.rank, NodeSets::mpitag,
+                 &lvl.kids_req[i]);
     }
+  }
+  for (size_t il = 0; il < ns.levels.size(); ++il) {
+    auto& lvl = ns.levels[il];
+    mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
   }
   { // Check that all leaf nodes have the right number.
     const Int desired_sum = (ncells*(ncells - 1)) / 2;
