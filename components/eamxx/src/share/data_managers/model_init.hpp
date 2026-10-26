@@ -1,6 +1,7 @@
 #ifndef EAMXX_MODEL_INIT_HPP
 #define EAMXX_MODEL_INIT_HPP
 
+#include "share/data_managers/field_init.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -50,6 +51,16 @@ class IOPDataManager;
 // and the IOP data (read at the run's t0) is used to set some of the fields on
 // the physics_gll grid (if any), before any perturbation is applied.
 //
+// Fields can also be inited by a FieldInit recipe (see field_init.hpp), which is how an atm process
+// can provide the IC for the fields it owns. For a given field, the order of precedence is
+//   1) an 'overrides' constant;
+//   2) the IC file (or the topography file, for topography fields);
+//   3) a 'defaults' constant;
+//   4) a FieldInit.
+// FieldInit recipes are run after all the fields of the previous types are inited, in an order
+// that satisfies the inputs dependencies (so, the order in which they are provided does not matter).
+// It is an error if a recipe's inputs cannot be resolved (unknown field, or circular dependency).
+//
 // For a startup run, ModelInit inits the fields in the STARTUP group (of each
 // grid); for a restart run, it inits those in the RESTART group. As in the
 // atmosphere driver, we assume that these groups only contain *leaf* fields
@@ -86,6 +97,11 @@ public:
     m_restart_extra_data = data;
   }
 
+  // Recipes to init fields (by name), for startup runs. See field_init.hpp.
+  void set_field_inits (const strmap_t<std::shared_ptr<FieldInit>>& inits) {
+    m_field_inits = inits;
+  }
+
   // Provide an IOP data manager, if running an IOP case. Only used for startup runs.
   void set_iop_data_manager (const std::shared_ptr<IOPDataManager>& iop) {
     m_iop_data_manager = iop;
@@ -105,6 +121,13 @@ protected:
   void init_all_grids (const std::shared_ptr<FieldManager>& fm,
                        const util::TimeStamp& t0,
                        const RunType run_type);
+
+  // Run the FieldInit recipes for the fields that init_startup_fields did not init
+  // (all of them, since the last call to this method), in an order that satisfies
+  // their inputs dependencies. The inputs are looked up in fm.
+  // This is the step after init_all_grids, for startup runs.
+  void run_pending_field_inits (const std::shared_ptr<FieldManager>& fm,
+                                const util::TimeStamp& t0);
 
   // Do what is left to do after the fields of a startup run have been inited: use the IOP
   // data (if any) to set some of the physics_gll fields, and apply the IC perturbation
@@ -197,6 +220,10 @@ protected:
   restart_extra_data_t  m_restart_extra_data;
 
   std::shared_ptr<IOPDataManager> m_iop_data_manager;
+
+  // Recipes to init fields, and the fields that are waiting to be inited with them
+  strmap_t<std::shared_ptr<FieldInit>> m_field_inits;
+  std::vector<Field>                   m_pending_field_inits;
 
   // Grids for which the IOP data manager has already set up its io info
   std::set<std::string> m_iop_io_grids;

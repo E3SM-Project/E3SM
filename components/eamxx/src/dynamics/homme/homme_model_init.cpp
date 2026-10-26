@@ -55,6 +55,7 @@ run (const std::shared_ptr<FieldManager>& fm,
   m_pgN = -1;
   m_pg_grid = "";
   m_remapped_fields.clear();
+  m_staged_fields.clear();
   for (const auto& gn : gm->get_grid_names()) {
     const int N = get_phys_grid_fv_param(gn);
     if (N>0) {
@@ -76,6 +77,7 @@ run (const std::shared_ptr<FieldManager>& fm,
   } else if (pg) {
     gll_ic_fm = create_gll_ic_field_manager(fm);
     init_all_grids(gll_ic_fm,t0,run_type);
+    run_gll_field_inits(gll_ic_fm,t0);
     finalize_startup(gll_ic_fm,t0);
 
     // Init the remaining fields (e.g., constants, topography, trace gases),
@@ -83,6 +85,7 @@ run (const std::shared_ptr<FieldManager>& fm,
     init_all_grids(fm,t0,run_type);
   } else {
     init_all_grids(fm,t0,run_type);
+    run_gll_field_inits(fm,t0);
     finalize_startup(fm,t0);
   }
 
@@ -231,8 +234,34 @@ run (const std::shared_ptr<FieldManager>& fm,
         remapped.push_back(strain3d_fv);
       }
       update_time_stamps(remapped,t0);
+
+      // Now that the pg fields are valid, init the ones that have a recipe and were not staged
+      run_pending_field_inits(fm,t0);
     }
   }
+}
+
+void HommeModelInit::
+run_gll_field_inits (const std::shared_ptr<FieldManager>& fm,
+                     const util::TimeStamp& t0)
+{
+  if (m_pending_field_inits.size()==0) {
+    return;
+  }
+
+  // The pseudo density is not an IC, but it is computed (hydrostatically) from ps
+  // when initing Homme's state. Make it available for the recipes.
+  const std::string gll = "physics_gll";
+  if (fm->has_field("pseudo_density",gll) and fm->has_field("ps",gll)) {
+    auto ps = fm->get_field("ps",gll);
+    if (ps.get_header().get_tracking().get_time_stamp().is_valid()) {
+      auto dp = fm->get_field("pseudo_density",gll);
+      HommeInstance::get()->init_pseudo_density(ps,dp);
+      dp.get_header().get_tracking().update_time_stamp(t0);
+    }
+  }
+
+  run_pending_field_inits(fm,t0);
 }
 
 std::vector<Field> HommeModelInit::
@@ -265,7 +294,14 @@ get_fields (const std::shared_ptr<FieldManager>& fm,
       if (overrides.isParameter(n) or topo_names.count(n)>0) {
         return false;
       }
-      return not (defaults.isParameter(n) and not (has_ic_file and scorpio::has_var(ic_file,n)));
+      if (has_ic_file and scorpio::has_var(ic_file,n)) {
+        // Can't read it on the pg grid
+        return true;
+      }
+      // Not in the IC file: keep it if it has a default constant, or a recipe (unless it is a
+      // staged field, whose recipe runs on the GLL grid)
+      return not (defaults.isParameter(n) or
+                  (m_field_inits.count(n)>0 and m_staged_fields.count(n)==0));
     });
   }
   return fields;
@@ -326,6 +362,7 @@ create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm)
     state_names.insert(n);
   }
   m_remapped_fields.clear();
+  m_staged_fields.clear();
   const bool has_ic_file = m_params.isParameter("filename");
   const auto ic_file = has_ic_file ? m_params.get<std::string>("filename") : std::string("");
   const auto& overrides = m_params.sublist("constant_fields").sublist("overrides");
@@ -344,6 +381,8 @@ create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm)
       ic_fm->register_field(FieldRequest(FieldIdentifier(name,gll->get_3d_scalar_layout(LEV),fid.get_units(),gln),N));
     }
   }
+  m_staged_fields = state_names;
+  m_staged_fields.insert(m_remapped_fields.begin(),m_remapped_fields.end());
   ic_fm->registration_ends();
 
   // As the driver does, add U/V subfields of horiz_winds

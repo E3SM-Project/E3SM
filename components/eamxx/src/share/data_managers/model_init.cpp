@@ -38,6 +38,7 @@ run (const std::shared_ptr<FieldManager>& fm,
   if (run_type==RunType::Restart) {
     load_restart_extra_data();
   } else {
+    run_pending_field_inits(fm,t0);
     finalize_startup(fm,t0);
   }
 }
@@ -63,6 +64,61 @@ init_all_grids (const std::shared_ptr<FieldManager>& fm,
     } else {
       init_startup_fields(fm,gn,t0);
     }
+  }
+}
+
+void ModelInit::
+run_pending_field_inits (const std::shared_ptr<FieldManager>& fm,
+                         const util::TimeStamp& t0)
+{
+  auto pending = m_pending_field_inits;
+  m_pending_field_inits.clear();
+
+  // Each pass inits the fields whose inputs are all inited. The inputs of a field
+  // can be fields that are pending too, so we need to repeat until there is nothing left.
+  while (pending.size()>0) {
+    std::vector<Field> not_ready;
+    for (auto y : pending) {
+      const auto& init = *m_field_inits.at(y.name());
+      const auto& gn = y.get_header().get_identifier().get_grid_name();
+
+      bool ready = true;
+      std::map<std::string,Field> xs;
+      for (const auto& xn : init.inputs()) {
+        EKAT_REQUIRE_MSG (fm->has_field(xn,gn),
+            "Error! Input field to init a field not found.\n"
+            " - field to init: " + y.name() + "\n"
+            " - input field  : " + xn + "\n"
+            " - grid name    : " + gn + "\n");
+        auto x = fm->get_field(xn,gn);
+        if (x.get_header().get_tracking().get_time_stamp().is_valid()) {
+          xs[xn] = x;
+        } else {
+          ready = false;
+        }
+      }
+
+      if (ready) {
+        init.init_field(y,xs);
+        update_time_stamps({y},t0);
+      } else {
+        not_ready.push_back(y);
+      }
+    }
+
+    if (not_ready.size()==pending.size()) {
+      std::string msg = "Error! Could not init some fields: their inputs are never inited "
+                        "(or they depend on each other).\n";
+      for (const auto& y : not_ready) {
+        msg += " - " + y.name() + " (inputs:";
+        for (const auto& xn : m_field_inits.at(y.name())->inputs()) {
+          msg += " " + xn;
+        }
+        msg += ")\n";
+      }
+      EKAT_ERROR_MSG (msg);
+    }
+    pending = not_ready;
   }
 }
 
@@ -123,6 +179,9 @@ init_startup_fields (const std::shared_ptr<FieldManager>& fm,
     } else if (defaults_pl.isParameter(fname) and not in_ic_file(fname)) {
       set_constant_field(f,defaults_pl);
       inited.push_back(f);
+    } else if (m_field_inits.count(fname)>0 and not in_ic_file(fname)) {
+      // Postpone: the recipe may need other fields that are not inited yet.
+      m_pending_field_inits.push_back(f);
     } else {
       to_read.push_back(f);
     }
