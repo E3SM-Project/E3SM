@@ -497,7 +497,7 @@
     <directives>
       <directive> --constraint=cpu</directive>
     </directives>
-    <directives queue="shared">
+    <directives workflow="case.build">
       <directive> --ntasks=1</directive>
       <directive> --cpus-per-task=32</directive>
     </directives>
