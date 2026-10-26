@@ -757,7 +757,7 @@ contains
 
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
     ! HIP must be initialized before MPI_Init for GPU-aware Cray MPICH. Call the
-    ! HIP runtime directly so this works for any atm component (not just EAMxx).
+    ! HIP runtime directly so this works for any component.
     interface
        integer(c_int) function hipInit(flags) bind(C, name="hipInit")
          import :: c_int
