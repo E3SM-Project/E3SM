@@ -21,6 +21,9 @@ std::string eamxx_git_version ();
 
 std::string eamxx_config_string();
 
+// String used for EAMxx model name in output, and other uses.
+std::string eamxx_model_name();
+
 // Utils to set/get whether leap year is used or not
 bool use_leap_year ();
 void set_use_leap_year (const bool use_leap);

@@ -10,7 +10,6 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/util/eamxx_model_name.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
@@ -195,7 +194,7 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
     // Build prefix, skipping case name if it's "UNSET" (unit tests)
-    std::string prefix = (casename != "UNSET") ? casename + "." + get_eamxx_model_name() : get_eamxx_model_name();
+    std::string prefix = (casename != "UNSET") ? casename + "." + eamxx_model_name() : eamxx_model_name();
     auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
 
     // Restart the num steps counter in the atm time stamp
@@ -291,7 +290,7 @@ void AtmosphereDriver::create_grids()
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
     // Build prefix, skipping case name if it's "UNSET" (unit tests)
-    std::string prefix = (casename != "UNSET") ? casename + "." + get_eamxx_model_name() : get_eamxx_model_name();
+    std::string prefix = (casename != "UNSET") ? casename + "." + eamxx_model_name() : eamxx_model_name();
     auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
@@ -960,7 +959,7 @@ void AtmosphereDriver::restart_model ()
   const auto& provenance = m_atm_params.sublist("provenance");
   const auto& casename = provenance.get<std::string>("rest_caseid");
   // Build prefix, skipping case name if it's "UNSET" (unit tests)
-  std::string prefix = (casename != "UNSET") ? casename + "." + get_eamxx_model_name() : get_eamxx_model_name();
+  std::string prefix = (casename != "UNSET") ? casename + "." + eamxx_model_name() : eamxx_model_name();
   auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);

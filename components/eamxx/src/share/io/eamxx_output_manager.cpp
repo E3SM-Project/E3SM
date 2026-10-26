@@ -3,7 +3,6 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/util/eamxx_model_name.hpp"
 #include "share/core/eamxx_config.hpp"
 
 #include <ekat_comm.hpp>
@@ -186,9 +185,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     // Skip case name if it's "UNSET" (unit tests)
     std::string hist_restart_prefix;
     if (m_casename != "UNSET") {
-      hist_restart_prefix = m_casename + "." + get_eamxx_model_name();
+      hist_restart_prefix = m_casename + "." + eamxx_model_name();
     } else {
-      hist_restart_prefix = get_eamxx_model_name();
+      hist_restart_prefix = eamxx_model_name();
     }
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
@@ -645,9 +644,9 @@ compute_filename (const IOFileSpecs& file_specs,
   // Start with model name, optionally prefixed with case name
   // Skip case name if it's "UNSET" (common in unit tests)
   if (m_casename != "UNSET") {
-    filename = m_casename + "." + get_eamxx_model_name();
+    filename = m_casename + "." + eamxx_model_name();
   } else {
-    filename = get_eamxx_model_name();
+    filename = eamxx_model_name();
   }
 
   // Add file type suffix (.r, .h, or .rh)
