@@ -56,6 +56,11 @@ public:
   // Copy states from the n0 timelevel to all the other timelevels
   void copy_dyn_states_to_all_timelevels ();
 
+  // Compute the hydrostatic pseudo density dp (COL,LEV) from the surface pressure ps (COL),
+  // using the hybrid coordinates. This is how the pseudo density of the initial conditions
+  // is computed. Does NOT update the time stamp.
+  void init_pseudo_density (const Field& ps, const Field& dp);
+
   // Init Homme's dynamics-grid state from the initial conditions on the GLL grid
   // (horiz_winds, T_mid, ps, phis, tracers). The pseudo density is first computed,
   // hydrostatically, on the GLL grid (so pseudo_density_gll is an output of this
