@@ -53,13 +53,11 @@ struct ModelConfig {
  *
  * @fields:
    - name
-   - e3sm::coupler::RegisteredFieldAttributes attributes;
    - dimensions
  */
 struct FieldConfig {
   // NOTE: maybe we will want some scaling or packing information
   std::string name;
-  e3sm::coupler::RegisteredFieldAttributes attributes;
   std::vector<std::string> dimensions;
 };
 

@@ -3,7 +3,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "test_emulator.hpp"
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 #include <emulator.hpp>

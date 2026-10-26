@@ -35,7 +35,7 @@ Emulator::make_registered_field(const EmulatorFieldDesc& field) {
   return RegisteredField{
       .role = role,
       .component = m_name,
-      .attributes = field.config.attributes,
+      .name = field.config.name,
       .size = field.size,
   };
 }

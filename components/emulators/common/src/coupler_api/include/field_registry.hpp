@@ -54,13 +54,14 @@ using ExportBuffer = FieldBuffer<double>;
 /**
   FieldRole role;
   std::string component;
-  RegisteredFieldAttributes attributes;
+  std::string name
   std::size_t size = 0;
  */
 struct RegisteredField {
   FieldRole role;
   std::string component;
-  RegisteredFieldAttributes attributes;
+  std::string name;
+  // RegisteredFieldAttributes attributes;
   std::size_t size = 0;
 };
 

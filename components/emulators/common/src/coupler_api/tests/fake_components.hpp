@@ -3,12 +3,11 @@
 
 #include "coupler.hpp"
 #include <field_registry.hpp>
+#include <process.hpp>
 #include <string_view>
 #include <vector>
-#include <process.hpp>
 
 namespace e3sm::coupler::test {
-
 
 class FakeAtmosphere {
 public:
@@ -16,60 +15,37 @@ public:
       : temperature_(ncols, 0.0), precipitation_(ncols, 0.0),
         surface_flux_(ncols, 0.0) {}
 
-  static constexpr std::string_view name(){
-    return "atm";
-  }
+  static constexpr std::string_view name() { return "atm"; }
 
   void populate_registry(FieldRegistry& registry) {
 
-    coupling_.register_coupled_field(
-        registry,
-        RegisteredField{
+    coupling_.register_coupled_field(registry,
+                                     RegisteredField{
 
-            .role = FieldRole::Export,
-            .component = "atm",
-            .attributes =
-                {
-                    .name = "temperature",
-                    .long_name = "Atmospheric temperature",
-                    .standard_name = "air_temperature",
-                    .units = "K",
-                },
-            .size = temperature_.size(),
-        },
-        temperature_);
+                                         .role = FieldRole::Export,
+                                         .component = "atm",
+                                         .name = "temperature",
+                                         .size = temperature_.size(),
+                                     },
+                                     temperature_);
 
-    coupling_.register_coupled_field(
-        registry,
-        {
-            .role = FieldRole::Export,
-            .component = "atm",
-            .attributes =
-                {
-                    .name = "precipitation",
-                    .long_name = "Precipitation",
-                    .standard_name = "precipitation_flux",
-                    .units = "kg m-2 s-1",
-                },
-            .size = precipitation_.size(),
-        },
-        precipitation_);
+    coupling_.register_coupled_field(registry,
+                                     {
+                                         .role = FieldRole::Export,
+                                         .component = "atm",
+                                         .name = "precipitation",
+                                         .size = precipitation_.size(),
+                                     },
+                                     precipitation_);
 
-    coupling_.register_coupled_field(
-        registry,
-        {
-            .role = FieldRole::Import,
-            .component = "atm",
-            .attributes =
-                {
-                    .name = "surface_flux",
-                    .long_name = "Surface energy flux",
-                    .standard_name = "",
-                    .units = "W m-2",
-                },
-            .size = surface_flux_.size(),
-        },
-        surface_flux_);
+    coupling_.register_coupled_field(registry,
+                                     {
+                                         .role = FieldRole::Import,
+                                         .component = "atm",
+                                         .name = "surface_flux",
+                                         .size = surface_flux_.size(),
+                                     },
+                                     surface_flux_);
   }
 
   void configure_coupling(const ActiveCouplingFields& plan) {
@@ -117,57 +93,34 @@ public:
       : temperature_(ncols, 0.0), precipitation_(ncols, 0.0),
         surface_flux_(ncols, 0.0) {}
 
-  static constexpr std::string_view name(){
-    return "lnd";
-  }
+  static constexpr std::string_view name() { return "lnd"; }
   void populate_registry(FieldRegistry& registry) {
-    coupling_.register_coupled_field(
-        registry,
-        {
-            .role = FieldRole::Import,
-            .component = "lnd",
-            .attributes =
-                {
-                    .name = "temperature",
-                    .long_name = "Atmospheric temperature over land",
-                    .standard_name = "air_temperature",
-                    .units = "K",
-                },
-            .size = temperature_.size(),
-        },
-        temperature_);
+    coupling_.register_coupled_field(registry,
+                                     {
+                                         .role = FieldRole::Import,
+                                         .component = "lnd",
+                                         .name = "temperature",
+                                         .size = temperature_.size(),
+                                     },
+                                     temperature_);
 
-    coupling_.register_coupled_field(
-        registry,
-        {
-            .role = FieldRole::Import,
-            .component = "lnd",
-            .attributes =
-                {
-                    .name = "precipitation",
-                    .long_name = "Precipitation over land",
-                    .standard_name = "precipitation_flux",
-                    .units = "kg m-2 s-1",
-                },
-            .size = precipitation_.size(),
-        },
-        precipitation_);
+    coupling_.register_coupled_field(registry,
+                                     {
+                                         .role = FieldRole::Import,
+                                         .component = "lnd",
+                                         .name = "precipitation",
+                                         .size = precipitation_.size(),
+                                     },
+                                     precipitation_);
 
-    coupling_.register_coupled_field(
-        registry,
-        {
-            .role = FieldRole::Export,
-            .component = "lnd",
-            .attributes =
-                {
-                    .name = "surface_flux",
-                    .long_name = "Surface energy flux",
-                    .standard_name = "",
-                    .units = "W m-2",
-                },
-            .size = surface_flux_.size(),
-        },
-        surface_flux_);
+    coupling_.register_coupled_field(registry,
+                                     {
+                                         .role = FieldRole::Export,
+                                         .component = "lnd",
+                                         .name = "surface_flux",
+                                         .size = surface_flux_.size(),
+                                     },
+                                     surface_flux_);
   }
 
   void run(const ProcessRunOpts) {

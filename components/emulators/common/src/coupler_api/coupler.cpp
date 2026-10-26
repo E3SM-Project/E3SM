@@ -1,7 +1,7 @@
-#include <field_registry.hpp>
 #include <algorithm>
 #include <coupler.hpp>
 #include <ekat_yaml.hpp>
+#include <field_registry.hpp>
 #include <filesystem>
 #include <stdexcept>
 #include <vector>
@@ -58,11 +58,9 @@ Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
   for (const auto& field_name : field_names) {
     // get the sub list for the field
     const auto& field = fields.sublist(field_name);
-
     const auto kind = field.get<std::string>("kind");
 
     const auto merge_type_str = field.get<std::string>("merge_type");
-
     MergeType merge_type;
     if (merge_type_str == "direct") {
       merge_type = MergeType::Direct;
@@ -73,24 +71,13 @@ Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
                          ":" + merge_type_str);
     }
 
-    const auto& attributes = field.sublist("attributes");
-    const auto attname = attributes.get<std::string>("attname");
-    const auto longname = attributes.get<std::string>("longname");
-    const auto stdname = attributes.get<std::string>("stdname");
-    const auto units = attributes.get<std::string>("units");
-
     const auto sources = field.get<std::vector<std::string>>("sources");
-
     const auto destinations =
         field.get<std::vector<std::string>>("destinations");
 
     entries.emplace_back(CoupledFieldEntry{
         .id = field_name,
         .merge_type = merge_type,
-        .attributes = {.name = field_name,
-                       .long_name = longname,
-                       .standard_name = stdname,
-                       .units = units},
         .sources = std::move(sources),
         .destinations = std::move(destinations),
     });
@@ -115,13 +102,6 @@ std::string to_string(const CoupledFieldEntry& entry) {
     out << ' ' << destination;
   }
   out << '\n';
-
-  out << "  attributes:\n";
-  out << "    attname: " << entry.attributes.name << '\n';
-  out << "    longname: " << entry.attributes.long_name << '\n';
-  out << "    stdname: " << entry.attributes.standard_name << '\n';
-  out << "    units: " << entry.attributes.units << '\n';
-
   return out.str();
 }
 
@@ -197,9 +177,8 @@ void Coupler::print_field_buffer(std::ostream& os, FieldID id,
                                  std::size_t count) const {
   const auto& field = registry_.get(id);
 
-  os << "      " << field.component << "::" << field.attributes.name
-     << " [id=" << id << ", size=" << field.size
-     << ", buffer_size=" << buffer.size()
+  os << "      " << field.component << "::" << field.name << " [id=" << id
+     << ", size=" << field.size << ", buffer_size=" << buffer.size()
      << ", buffer=" << static_cast<const void*>(buffer.data()) << "]\n";
 
   if (count > 0) {
@@ -253,14 +232,14 @@ void Coupler::print_coupling_plan(std::ostream& os) const {
     for (const auto id : plan.export_ids) {
       const auto& field = registry_.get(id);
 
-      os << "      " << field.attributes.name << " [id=" << id << "]\n";
+      os << "      " << field.name << " [id=" << id << "]\n";
     }
 
     os << "    imports:\n";
     for (const auto id : plan.import_ids) {
       const auto& field = registry_.get(id);
 
-      os << "      " << field.attributes.name << " [id=" << id << "]\n";
+      os << "      " << field.name << " [id=" << id << "]\n";
     }
   }
 }

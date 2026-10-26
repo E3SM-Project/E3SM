@@ -27,7 +27,6 @@ using CouplingBuffer = FieldBuffer<double>;
 struct CoupledFieldEntry {
   std::string id;
   MergeType merge_type;
-  RegisteredFieldAttributes attributes;
   std::vector<std::string> sources;
   std::vector<std::string> destinations;
 };
