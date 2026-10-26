@@ -5,15 +5,14 @@
 #ifndef E3SM_EMULATOR_HPP
 #define E3SM_EMULATOR_HPP
 
-
 #include "coupler_types.hpp"
 #include <coupler.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
 #include <inference_backend.hpp>
 #include <memory>
-#include <process.hpp>
 #include <mpi.h>
+#include <process.hpp>
 
 #include <cstddef>
 #include <span>
@@ -39,6 +38,8 @@ struct EmulatorFieldDesc {
   std::size_t offset;
   std::size_t size;
 };
+
+std::string to_string(const EmulatorFieldDesc& desc);
 
 /**
  * @brief C++-version EmulatorDimensionDesc
@@ -102,11 +103,15 @@ struct CreateConfig {
  */
 class Emulator {
 public:
-  Emulator(const CreateConfig config);
+  Emulator(const GridDesc grid, const EmulatorConfig emu_config);
+  Emulator(const CreateConfig config)
+      : Emulator(config.grid, read_emulator_config(config.path)) {};
+
   ~Emulator() = default;
 
   // Lifecycle methods
   void initialize();
+  void initialize_from_config();
   void run(const ProcessRunOpts opts);
   void finalize();
 
@@ -185,6 +190,7 @@ protected:
 private:
   std::filesystem::path m_config_path;
   GridDesc m_grid;
+  EmulatorConfig m_emulator_config;
   CouplingAdapter m_coupling;
   EmulatorType m_type;
   int m_component_id;
@@ -194,16 +200,16 @@ private:
   bool m_initialized = false;
   int m_step_count = 0;
 
-  ModelConfig m_model_config;
-
   // dimensions_ holds the domain info over which the emulator needs to be
   // allocated.
   const DimensionDesc& dimension(std::string_view name) const;
+  // initalization helpers
+  void apply_config(const EmulatorConfig& config);
 
   std::vector<EmulatorFieldDesc> field_descriptors_;
   std::size_t local_field_size(const FieldConfig& field) const;
   RegisteredField make_registered_field(const EmulatorFieldDesc& field);
-  std::size_t append_fields(std::span<const FieldConfig>, ModelFieldRole kind);
+  std::size_t append_fields(std::span<const std::string> order, std::span<const FieldConfig>, ModelFieldRole kind);
 
   // Flat Buffers for inputs and outputs
   std::vector<double> input_fields_;
@@ -212,6 +218,6 @@ private:
   std::unique_ptr<inference::InferenceBackend> backend_;
 };
 
-} // namespace emulator
+} // namespace e3sm::emulator
 
 #endif // E3SM_EMULATOR_HPP

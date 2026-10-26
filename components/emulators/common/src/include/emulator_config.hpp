@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace e3sm::emulator {
@@ -43,6 +44,7 @@ struct ModelConfig {
   inference::BackendType backend_type = inference::BackendType::STUB;
   TensorLayout input_layout = TensorLayout::SampleMajor;
   TensorLayout output_layout = TensorLayout::SampleMajor;
+  std::map<std::string, std::string> options;
 };
 
 /**
@@ -77,6 +79,9 @@ struct EmulatorConfig {
 
   ModelConfig model;
   std::vector<std::string> dimensions;
+
+  std::vector<std::string> input_order;
+  std::vector<std::string> output_order;
 
   std::vector<FieldConfig> inputs;
   std::vector<FieldConfig> outputs;

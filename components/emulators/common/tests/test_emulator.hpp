@@ -113,30 +113,6 @@ protected:
 };
 */
 
-inline GridDesc make_test_grid() {
-  return GridDesc{
-      .grid_type = 0,
-      .nx = 4,
-      .ny = 1,
-      .dimensions =
-          {
-              {
-                  .name = "column",
-                  .local_extent = 4,
-                  .global_extent = 4,
-              },
-              {
-                  .name = "soil_levels",
-                  .local_extent = 3,
-                  .global_extent = 3,
-              },
-          },
-      .col_gids = {0, 1, 2, 3},
-      .lat = {10.0, 20.0, 30.0, 40.0},
-      .lon = {-100.0, -99.0, -98.0, -97.0},
-      .area = {1.0, 1.0, 1.0, 1.0},
-  };
-}
 
 } // namespace e3sm::emulator::tests
 #endif

@@ -1,29 +1,23 @@
 emulator:
-  name: forcing-emulator
+  name: lnd-emulator
   type: component
   model:
-    path: unused.pt
+    path: land_emulator.pt
     input_layout: FeatureMajor
     output_layout: FeatureMajor
-    backend: STUB
-
+    backend: libtorch
+    options:
+      dtype: float64
 sample_space:
   dimensions:
-    - column
-    - soil_levels
-
+  - column
+  - soil_levels
+input_order:
+- temperature
+- soil_moisture
+output_order:
+- surface_flux
 inputs:
-  surface_flux:
-    name: surface_flux
-    attributes:
-      attname: surface_flux
-      longname: Surface Flux to atm
-      stdname: energy
-      units: W m-2
-    dimensions:
-      - column
-
-outputs:
   temperature:
     name: temperature
     attributes:
@@ -32,8 +26,7 @@ outputs:
       stdname: air_temperature
       units: K
     dimensions:
-      - column
-
+    - column
   soil_moisture:
     name: soil_moisture
     attributes:
@@ -42,5 +35,15 @@ outputs:
       stdname: soil_moisture
       units: h2o kg m-2
     dimensions:
-      - column
-      - soil_levels
+    - column
+    - soil_levels
+outputs:
+  surface_flux:
+    name: surface_flux
+    attributes:
+      attname: surface_flux
+      longname: Surface Flux to atm
+      stdname: energy
+      units: W m-2
+    dimensions:
+    - column

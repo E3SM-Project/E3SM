@@ -9,7 +9,7 @@
 
 TEST_CASE("Parse sample emulator config") {
   const std::filesystem::path config_file =
-      TEST_DATA_DIR "/simple_emulator_config.yaml";
+      TEST_DATA_DIR "/land_emulator_config.yaml";
 
   const auto config = e3sm::emulator::read_emulator_config(config_file);
   std::cout << config << std::endl;
