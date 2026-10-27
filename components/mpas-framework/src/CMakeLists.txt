@@ -82,7 +82,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 add_library(common)
 target_compile_definitions(common PRIVATE ${CPPDEFS})
 target_include_directories(common PRIVATE ${INCLUDES})
-target_link_libraries(common PUBLIC spio csm_share)
+target_link_libraries(common PUBLIC scorpio::piof scorpio::pioc csm_share)
 
 genf90_targets("${COMMON_RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "" "")
 target_sources(common PRIVATE ${SOURCES})
