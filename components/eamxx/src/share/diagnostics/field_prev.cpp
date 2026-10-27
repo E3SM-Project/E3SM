@@ -42,9 +42,6 @@ void FieldPrev::initialize_impl() {
   // at the first timestep, the field may have not been computed yet (but it's not masked per se)
   auto mask = m_diagnostic_output.create_valid_mask();
   mask.deep_copy(0);
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>);
 }
 
 void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
@@ -59,8 +56,6 @@ void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
       const auto& mask = m_diagnostic_output.get_valid_mask();
       mask.deep_copy(f_prev.get_valid_mask());
       m_diagnostic_output.deep_copy(f_prev,mask);
-      // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-      m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
     } else {
       m_diagnostic_output.deep_copy(f_prev);
       m_diagnostic_output.get_valid_mask().deep_copy(1);

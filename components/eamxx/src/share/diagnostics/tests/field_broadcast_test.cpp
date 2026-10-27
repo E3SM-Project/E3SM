@@ -99,7 +99,6 @@ TEST_CASE("field_broadcast") {
       for (int k=0; k<nlevs; ++k) {
         if (k==0) {
           REQUIRE (m_v(i,k)==0);
-          REQUIRE (d_v(i,k)==constants::fill_value<Real>);
         } else {
           REQUIRE (m_v(i,k)==1);
           REQUIRE (d_v(i,k)==x_v(k));
@@ -118,7 +117,6 @@ TEST_CASE("field_broadcast") {
       for (int k=0; k<nlevs; ++k) {
         if (k==1) {
           REQUIRE (m_v(i,k)==0);
-          REQUIRE (d_v(i,k)==constants::fill_value<Real>);
         } else {
           REQUIRE (m_v(i,k)==1);
           REQUIRE (d_v(i,k)==x_v(k));
@@ -127,7 +125,7 @@ TEST_CASE("field_broadcast") {
     }
   }
 
-  // Same for an int input, which is filled with the int fill value
+  // Same for an int input
   {
     Field x(FieldIdentifier("x",layout_l,none,grid->name(),DataType::IntType),true);
     x.deep_copy(3);
@@ -144,10 +142,15 @@ TEST_CASE("field_broadcast") {
     diag->compute(t0);
     auto d = diag->get();
     d.sync_to_host();
+    d.get_valid_mask().sync_to_host();
     auto d_v = d.get_view<const int**,Host>();
+    auto m_v = d.get_valid_mask().get_view<const int**,Host>();
     for (int i=0; i<nlocal; ++i) {
       for (int k=0; k<nlevs; ++k) {
-        REQUIRE (d_v(i,k)==(k==0 ? constants::fill_value<int> : 3));
+        REQUIRE (m_v(i,k)==(k==0 ? 0 : 1));
+        if (k>0) {
+          REQUIRE (d_v(i,k)==3);
+        }
       }
     }
   }

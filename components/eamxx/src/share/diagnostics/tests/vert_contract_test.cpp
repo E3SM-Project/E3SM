@@ -193,7 +193,6 @@ TEST_CASE("vert_contract") {
     for (int i=0; i<nlocal; ++i) {
       if (i==0) {
         REQUIRE(m_h(i)==0);
-        REQUIRE(d_h(i)==constants::fill_value<Real>);
       } else {
         Real ref = 0;
         for (int k=(i==1 ? 3 : 0); k<nlevs; ++k) ref += f_h(i,k);
