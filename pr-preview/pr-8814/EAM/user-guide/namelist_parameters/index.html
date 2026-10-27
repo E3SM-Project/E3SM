@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
   
@@ -447,6 +447,8 @@
       
         
       
+        
+      
     
     
     
@@ -513,6 +515,34 @@
     
   
     Adding Support for New Grids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../dev-guide/gh-hosted-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing on GitHub-hosted Runners
   
 
     
@@ -5306,13 +5336,12 @@
 </thead>
 <tbody>
 <tr>
-<td><code>dust_emis_scheme</code>*</td>
+<td><code>dust_emis_scheme</code><sup id="fnref:ds1"><a class="footnote-ref" href="#fn:ds1">1</a></sup></td>
 <td>The v3 dust emission scheme (Kok et al., 2014)</td>
-<td><code>2</code> <!-- markdownlint-disable MD033 --><br> (set to 1 to switch to the v1/v2 scheme)</td>
+<td><code>2</code><sup id="fnref:ds2"><a class="footnote-ref" href="#fn:ds2">2</a></sup></td>
 </tr>
 </tbody>
 </table>
-<p>*This parameter is set in <code>user_nl_drv</code></p>
 <h2 id="homme">HOMME</h2>
 <table>
 <thead>
@@ -5325,37 +5354,37 @@
 <tbody>
 <tr>
 <td><code>se_tstep</code></td>
-<td>Main dycore timestep. Additional parameters control the hyper viscsosity, trancer and vertical remap timesteps, which are derived from se_tstep. <!-- markdownlint-disable MD033 --><br> units = seconds</td>
-<td>Scales linearly with horizontal resolution. <br> NE30 default: <code>300</code></td>
+<td>Main dycore timestep.<sup id="fnref:dy1"><a class="footnote-ref" href="#fn:dy1">3</a></sup> [seconds]</td>
+<td>resolution dependent<sup id="fnref:dy2"><a class="footnote-ref" href="#fn:dy2">4</a></sup></td>
 </tr>
 <tr>
 <td><code>nu</code></td>
-<td>Tensor hyperviscosity coefficient, independent of spatial resolution. <br> units = 1/s</td>
+<td>Tensor hyperviscosity coefficient, independent of spatial resolution. [1/s]</td>
 <td><code>3.4e-8</code></td>
 </tr>
 <tr>
 <td><code>nu_top</code></td>
-<td>Scalar viscosity at model top. <br> units = m^2/s</td>
-<td>Horizontal resolution dependent <br> NE30 default: <code>2.5e5</code></td>
+<td>Scalar viscosity at model top.  [m^2/s]</td>
+<td>resolution dependent<sup id="fnref:dy3"><a class="footnote-ref" href="#fn:dy3">5</a></sup></td>
 </tr>
 <tr>
 <td><code>transport_alg</code></td>
 <td>Select between semi-lagrangian and Eulerian based transport schemes</td>
-<td><code>12</code> = semi-lagranian method with monotinicity and mass preservation</td>
+<td><code>12</code><sup id="fnref:dy4"><a class="footnote-ref" href="#fn:dy4">6</a></sup></td>
 </tr>
 <tr>
 <td><code>statefreq</code></td>
-<td>print a varieity of dycore metrics to the atm.log file every “statefreq” timesteps</td>
+<td>print a variety of dycore metrics to the atm.log file every “statefreq” timesteps</td>
 <td><code>480</code></td>
 </tr>
 <tr>
 <td><code>vert_remap_alg</code></td>
 <td>Algorithm used to remap the vertically lagrangian levels back to the reference levels</td>
-<td><code>10</code> = strict monotonicity applied on top of a 2nd order accurate PPM method</td>
+<td><code>10</code><sup id="fnref:dy5"><a class="footnote-ref" href="#fn:dy5">7</a></sup></td>
 </tr>
 <tr>
 <td><code>se_ftype</code></td>
-<td>Controls how physics tendencies are applied.  0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies</td>
+<td>Controls how physics tendencies are applied.<sup id="fnref:dy6"><a class="footnote-ref" href="#fn:dy6">8</a></sup></td>
 <td><code>2</code></td>
 </tr>
 </tbody>
@@ -5377,8 +5406,8 @@
 </tr>
 <tr>
 <td><code>mam_amicphys_optaa</code></td>
-<td>Recommended option of the new time-splitting treatment of H2SO4 production and loss</td>
-<td><code>1</code> <!-- markdownlint-disable MD033 --><br> (0 to turn it off)</td>
+<td>flag to use new time-splitting treatment of H2SO4 production and loss</td>
+<td><code>1</code></td>
 </tr>
 <tr>
 <td><code>n_so4_monolayers_pcage</code></td>
@@ -5409,17 +5438,17 @@
 </tr>
 <tr>
 <td><code>mam_mom_datapath</code></td>
-<td>Full pathname of the directory that contains the files specified in mam_mom_filelist</td>
+<td>Path that contains the files specified in mam_mom_filelist</td>
 <td><code>'atm/cam/chem/trop_mam/marine_BGC/'</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_filename</code></td>
-<td>Filename of file that contains a sequence of filenames for prescribed marine organic matter ocean concentrations.  The filenames in this file are relative to the directory specified by mam_mom_datapath.</td>
+<td>File name that contains a sequence of files for prescribed mom concentrations.<sup id="fnref:mom1"><a class="footnote-ref" href="#fn:mom1">9</a></sup></td>
 <td><code>'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_rmfile</code></td>
-<td>Remove the file containing prescribed aerosol deposition fluxes from local disk when no longer needed.</td>
+<td>Flag to remove the file containing prescribed aerosol deposition fluxes from local disk.</td>
 <td><code>FALSE</code></td>
 </tr>
 <tr>
@@ -5429,42 +5458,42 @@
 </tr>
 <tr>
 <td><code>mam_mom_datatype</code></td>
-<td>Type of time interpolation for data in mam_mom files. Can be set to <code>'CYCLICAL'</code>, <code>'SERIAL'</code>, <code>'INTERP_MISSING_MONTHS'</code>, or <code>'FIXED'</code>.</td>
+<td>Type of time interpolation for data in mam_mom files.<sup id="fnref:mom2"><a class="footnote-ref" href="#fn:mom2">10</a></sup></td>
 <td><code>'CYCLICAL'</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_cycle_yr</code></td>
-<td>The  cycle year of the prescribed aerosol flux data if mam_mom_type is <code>'CYCLICAL'</code>. Format: YYYY</td>
+<td>Cycle year for prescribed aerosol flux data if mam_mom_type=<code>'CYCLICAL'</code>.<sup id="fnref:mom3"><a class="footnote-ref" href="#fn:mom3">11</a></sup></td>
 <td><code>1</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_fixed_ymd</code></td>
-<td>The date at which the prescribed aerosol flux data is fixed if mam_mom_type is <code>'FIXED'</code>. Format: YYYYMMDD</td>
+<td>Date at which prescribed aerosol flux data is fixed if mam_mom_type=<code>'FIXED'</code>.<sup id="fnref:mom4"><a class="footnote-ref" href="#fn:mom4">12</a></sup></td>
 <td><code>0</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_fixed_tod</code></td>
-<td>The time of day (seconds) corresponding to mam_mom_fixed_ymd at which the prescribed aerosol flux data is fixed if mam_mom_type is 'FIXED'.</td>
+<td>The time of day (seconds) corresponding to mam_mom_fixed_ymd</td>
 <td><code>0</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_bubble_thickness</code></td>
-<td>Bubble film thickness (in m) for marine organic aerosol emission mechanism.  The physically reasonable range is approximately (0.1 - 1) x 10^ -6.</td>
+<td>Bubble film thickness (in m) for marine organic aerosol emission mechanism.<sup id="fnref:mom5"><a class="footnote-ref" href="#fn:mom5">13</a></sup></td>
 <td><code>0.1e-6</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_mixing_state</code></td>
-<td>Switch to select mixing state assumption in marine organic aerosol code. Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.</td>
+<td>Switch to select mixing state assumption in marine organic aerosol code.<sup id="fnref:mom6"><a class="footnote-ref" href="#fn:mom6">14</a></sup></td>
 <td><code>0</code> [Note: set to 3 in the atm_in namelist]</td>
 </tr>
 <tr>
 <td><code>mam_mom_parameterization</code></td>
-<td>Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></td>
+<td>Selection of alternate parameterizations for marine organic matter emissions.<sup id="fnref:mom7"><a class="footnote-ref" href="#fn:mom7">15</a></sup></td>
 <td><code>1</code></td>
 </tr>
 </tbody>
 </table>
-<p>*Note: non-default values have not been carefully tested and may not work as expected.</p>
+<p><em>Note: non-default values have not been carefully tested and may not work as expected.</em></p>
 <h2 id="predicted-particle-properties">Predicted Particle Properties</h2>
 <table>
 <thead>
@@ -5569,23 +5598,23 @@
 <tbody>
 <tr>
 <td><code>iradsw</code></td>
-<td>Frequency for updating shortwave fluxes and heating rate; iradsw &gt; 0 interpreted as number of timesteps, iradsw &lt; 0 interpreted as hours; iradsw = 0 disables shortwave radiation entirely</td>
+<td>Frequency for updating shortwave fluxes and heating rate.<sup id="fnref:rad1"><a class="footnote-ref" href="#fn:rad1">16</a></sup></td>
 <td><code>-1</code></td>
 </tr>
 <tr>
 <td><code>iradlw</code></td>
-<td>Frequency for updating longwave fluxes and heating rate; iradlw &gt; 0 interpreted as number of timesteps, iradlw &lt; 0 interpreted as hours; iradlw = 0 disables longwave radiation entirely</td>
+<td>Frequency for updating longwave fluxes and heating rate.<sup id="fnref:rad2"><a class="footnote-ref" href="#fn:rad2">17</a></sup></td>
 <td><code>-1</code></td>
 </tr>
 <tr>
 <td><code>irad_always</code></td>
-<td>Length of time in timesteps (irad_always &gt; 0) or in hours (irad_always &lt; 0) SW/LW radiation will be run continuously from the start of an initial or restart run</td>
+<td>Length of time in timesteps (irad_always&gt;0) or hours (irad_always&lt;0).<sup id="fnref:rad3"><a class="footnote-ref" href="#fn:rad3">18</a></sup></td>
 <td><code>0</code></td>
 </tr>
 <tr>
 <td><code>use_rad_dt_cosz</code></td>
-<td>If true, use the radiation dt for all cosz calculations; calculates solar zenith angle averaged over a time step. In default model solar zenith angle is held constant over time</td>
-<td><code>.true.</code>  <!-- markdownlint-disable MD033 --><br> (set by namelist_defaults_eam.xml for default physics)</td>
+<td>Flag to use radiation dt for all cosz calculations.<sup id="fnref:rad4"><a class="footnote-ref" href="#fn:rad4">19</a></sup></td>
+<td><code>.true.</code></td>
 </tr>
 <tr>
 <td><code>spectralflux</code></td>
@@ -5594,12 +5623,12 @@
 </tr>
 <tr>
 <td><code>liqcldoptics</code></td>
-<td>Choice of cloud optical property parameterization for liquid clouds. Valid options are ‘slingo’ or ‘gammadist’</td>
+<td>Choice of cloud optical property parameterization for liquid clouds.<sup id="fnref:rad5"><a class="footnote-ref" href="#fn:rad5">20</a></sup></td>
 <td><code>gammadist</code></td>
 </tr>
 <tr>
 <td><code>icecldoptics</code></td>
-<td>Choice of cloud optical property parameterization for ice clouds. Valid options are ‘ebertcurry’ or ‘mitchell’</td>
+<td>Choice of cloud optical property parameterization for ice clouds.<sup id="fnref:rad6"><a class="footnote-ref" href="#fn:rad6">21</a></sup></td>
 <td><code>mitchell</code></td>
 </tr>
 </tbody>
@@ -5644,17 +5673,11 @@
 <td>Number of negative buoyancy regions that are allowed</td>
 <td><code>1</code></td>
 </tr>
-</tbody>
-</table>
-<table>
-<thead>
 <tr>
-<th>dCAPE-ULL Parameters</th>
-<th>Description</th>
-<th>Default value</th>
+<td><code>zmconv_clos_dyn_adj</code></td>
+<td>Flag to apply mass flux adjustment to ZM convection scheme</td>
+<td><code>true</code></td>
 </tr>
-</thead>
-<tbody>
 <tr>
 <td><code>zmconv_trig_dcape</code></td>
 <td>Enable dynamic CAPE (DCAPE) trigger for ZM deep convection</td>
@@ -5683,34 +5706,18 @@
 </tr>
 <tr>
 <td><code>zmconv_auto_fac</code></td>
-<td>Cloud droplet-rain autoconversion enhancement factor in the convective microphysics scheme</td>
+<td>Cloud droplet-rain autoconversion enhancement factor</td>
 <td><code>7.0</code></td>
 </tr>
 <tr>
 <td><code>zmconv_accr_fac</code></td>
-<td>Cloud droplet-rain accretion enhancement factor in the convective microphysics scheme</td>
+<td>Cloud droplet-rain accretion enhancement factor</td>
 <td><code>1.5</code></td>
 </tr>
 <tr>
 <td><code>zmconv_micro_dcs</code></td>
 <td>Autoconversion size threshold for cloud ice to snow (m)</td>
 <td><code>150.E-6</code></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>Mass flux adj. Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_clos_dyn_adj</code></td>
-<td>Apply mass flux adjustment to ZM convection scheme</td>
-<td><code>true</code></td>
 </tr>
 </tbody>
 </table>
@@ -5757,7 +5764,7 @@
 <tbody>
 <tr>
 <td><code>cosp_lite</code></td>
-<td>This namelist sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).</td>
+<td>Flag to enable several options for lightweight COSP.<sup id="fnref:cosp6"><a class="footnote-ref" href="#fn:cosp6">22</a></sup></td>
 <td><code>false</code></td>
 </tr>
 </tbody>
@@ -5774,62 +5781,62 @@
 <tbody>
 <tr>
 <td><code>use_gw_oro</code></td>
-<td>This namelist controls the default linear orographic gravity wave drag (oGWD) for E3SM, if used, the default oGWD is turned on.</td>
+<td>Flag to enable linear orographic gravity wave drag.</td>
 <td><code>true</code></td>
 </tr>
 <tr>
 <td><code>do_tms</code></td>
-<td>This namelist controls the default Turbulent Mountain Stress (TMS) for E3SM, if used, the default TMS is turned on.</td>
+<td>Flag to enable Turbulent Mountain Stress (TMS).</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>effgw_oro</code></td>
-<td>Efficiency associated with orographic gravity waves.</td>
+<td>Efficiency of orographic gravity waves.</td>
 <td><code>0.375</code></td>
 </tr>
 <tr>
 <td><code>tms_orocnst</code></td>
-<td>Turbulent mountain stress parameter used when TMS calculation is turned on</td>
+<td>Turbulent mountain stress parameter.</td>
 <td><code>1.0</code></td>
 </tr>
 <tr>
 <td><code>tms_z0fac</code></td>
-<td>Factor determining z_0 from orographic standard deviation [ no unit ] for TMS.</td>
+<td>TMS factor for determining z_0 from orographic std deviation.</td>
 <td><code>0.75</code></td>
 </tr>
 <tr>
 <td><code>use_od_ls</code></td>
-<td>This namelist controls the new nonlinear oGWD, if used, the nonlinear oGWD is turned on. use_od_ls should not be used at the same time with use_gw_oro.</td>
+<td>Flag for new nonlinear oGWD.<sup id="fnref:gw1"><a class="footnote-ref" href="#fn:gw1">23</a></sup></td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>use_od_bl</code></td>
-<td>This namelist controls the Flow-blocking drag (FBD) scheme, if used, the FBD scheme is turned on.</td>
+<td>Flag for Flow-blocking drag (FBD) scheme.</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>use_od_ss</code></td>
-<td>This namelist controls the small-scale GWD (sGWD) scheme, if used, the sGWD scheme is turned on.</td>
+<td>Flag for small-scale GWD (sGWD) scheme.</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>use_od_fd</code></td>
-<td>This namelist controls the Turbulent orographic form drag (TOFD) scheme, if used, the TOFD scheme is turned on.</td>
+<td>Flag for Turbulent orographic form drag (TOFD) scheme.</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>od_ls_ncleff</code></td>
-<td>Tuning parameter of nonlinear oGWD. Stands for effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.</td>
+<td>Tuning parameter for nonlinear oGWD.<sup id="fnref:gw2"><a class="footnote-ref" href="#fn:gw2">24</a></sup></td>
 <td><code>3</code></td>
 </tr>
 <tr>
 <td><code>od_bl_ncd</code></td>
-<td>Tuning parameter of FBD. Stands for bulk drag coefficient. Scales the magnitude of FBD.</td>
+<td>Tuning parameter for FBD.<sup id="fnref:gw3"><a class="footnote-ref" href="#fn:gw3">25</a></sup></td>
 <td><code>3</code></td>
 </tr>
 <tr>
 <td><code>od_ss_sncleff</code></td>
-<td>Tuning parameter of sGWD. Stands for effective resolution of the grid for sGWD.Scales the magnitude of sGWD.</td>
+<td>Tuning parameter for sGWD.<sup id="fnref:gw4"><a class="footnote-ref" href="#fn:gw4">26</a></sup></td>
 <td><code>1</code></td>
 </tr>
 </tbody>
@@ -5837,17 +5844,95 @@
 <div class="footnote">
 <hr />
 <ol>
+<li id="fn:ds1">
+<p>This parameter is set in <code>user_nl_drv</code>&#160;<a class="footnote-backref" href="#fnref:ds1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:ds2">
+<p>Use <code>1</code> to revert to the v1/v2 scheme&#160;<a class="footnote-backref" href="#fnref:ds2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dy1">
+<p>Additional parameters control the hyper viscosity, tracer and vertical remap timesteps, which are derived from se_tstep.&#160;<a class="footnote-backref" href="#fnref:dy1" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dy2">
+<p>Scales linearly with horizontal resolution.&#160;<a class="footnote-backref" href="#fnref:dy2" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dy3">
+<p>Value is either resolution dependent, or static when <code>laplace_scaling=1</code>&#160;<a class="footnote-backref" href="#fnref:dy3" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dy4">
+<p>semi-lagranian method with monotonicity and mass preservation&#160;<a class="footnote-backref" href="#fnref:dy4" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dy5">
+<p>strict monotonicity applied on top of a 2nd order accurate PPM method&#160;<a class="footnote-backref" href="#fnref:dy5" title="Jump back to footnote 7 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dy6">
+<p>0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies&#160;<a class="footnote-backref" href="#fnref:dy6" title="Jump back to footnote 8 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom1">
+<p>The filenames in this file are relative to the directory specified by mam_mom_datapath.&#160;<a class="footnote-backref" href="#fnref:mom1" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom2">
+<p>Can be set to <code>'CYCLICAL'</code>, <code>'SERIAL'</code>, <code>'INTERP_MISSING_MONTHS'</code>, or <code>'FIXED'</code>.&#160;<a class="footnote-backref" href="#fnref:mom2" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom3">
+<p>Only if , Format: YYYY&#160;<a class="footnote-backref" href="#fnref:mom3" title="Jump back to footnote 11 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom4">
+<p>Format: YYYYMMDD&#160;<a class="footnote-backref" href="#fnref:mom4" title="Jump back to footnote 12 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom5">
+<p>The physically reasonable range is approximately (0.1 - 1) x 10^ -6.&#160;<a class="footnote-backref" href="#fnref:mom5" title="Jump back to footnote 13 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom6">
+<p>Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.&#160;<a class="footnote-backref" href="#fnref:mom6" title="Jump back to footnote 14 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom7">
+<p>Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">27</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">28</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">29</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013). <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">30</a></sup>&#160;<a class="footnote-backref" href="#fnref:mom7" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad1">
+<p>iradsw &gt; 0 interpreted as number of timesteps, iradsw &lt; 0 interpreted as hours; iradsw = 0 disables shortwave radiation entirely&#160;<a class="footnote-backref" href="#fnref:rad1" title="Jump back to footnote 16 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad2">
+<p>iradlw &gt; 0 interpreted as number of timesteps, iradlw &lt; 0 interpreted as hours; iradlw = 0 disables longwave radiation entirely&#160;<a class="footnote-backref" href="#fnref:rad2" title="Jump back to footnote 17 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad3">
+<p>SW/LW radiation will be run continuously from the start of an initial or restart run&#160;<a class="footnote-backref" href="#fnref:rad3" title="Jump back to footnote 18 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad4">
+<p>Calculates solar zenith angle averaged over a time step. In default model solar zenith angle is held constant over time. set by namelist_defaults_eam.xml for default physics.&#160;<a class="footnote-backref" href="#fnref:rad4" title="Jump back to footnote 19 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad5">
+<p>Valid options are <code>slingo</code> or <code>gammadist</code>&#160;<a class="footnote-backref" href="#fnref:rad5" title="Jump back to footnote 20 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad6">
+<p>Valid options are <code>ebertcurry</code> or <code>mitchell</code>&#160;<a class="footnote-backref" href="#fnref:rad6" title="Jump back to footnote 21 in the text">&#8617;</a></p>
+</li>
+<li id="fn:cosp6">
+<p>This sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).&#160;<a class="footnote-backref" href="#fnref:cosp6" title="Jump back to footnote 22 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw1">
+<p><code>use_od_ls</code> should not be used at the same time with <code>use_gw_oro</code>.&#160;<a class="footnote-backref" href="#fnref:gw1" title="Jump back to footnote 23 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw2">
+<p>Effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.&#160;<a class="footnote-backref" href="#fnref:gw2" title="Jump back to footnote 24 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw3">
+<p>Bulk drag coefficient. Scales the magnitude of FBD.&#160;<a class="footnote-backref" href="#fnref:gw3" title="Jump back to footnote 25 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw4">
+<p>Effective resolution of the grid for sGWD.Scales the magnitude of sGWD.&#160;<a class="footnote-backref" href="#fnref:gw4" title="Jump back to footnote 26 in the text">&#8617;</a></p>
+</li>
 <li id="fn:1">
-<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 27 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 28 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 29 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 30 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
@@ -5908,10 +5993,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../../javascript/mathjax.js"></script>
       
