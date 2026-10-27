@@ -165,6 +165,8 @@ ADD_CUSTOM_TARGET(check
 if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 # Force cprnc to be built when make check is run
 ADD_DEPENDENCIES(check cprnc)
+# Same for test-execs, since the tests need cprnc (a no-op if cprnc is a prebuilt binary, found via CPRNC_DIR)
+ADD_DEPENDENCIES(test-execs cprnc)
 endif()
 
 
