@@ -728,7 +728,7 @@ contains
     use shr_pio_mod, only : shr_pio_init1, shr_pio_init2
     use seq_comm_mct, only: num_inst_driver
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
-    use atm_comp_mct, only: atm_init_hip_mct
+    use iso_c_binding, only: c_int
 #endif
 #ifndef NO_MPIMOD
     use mpi
@@ -754,11 +754,22 @@ contains
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
 
     integer :: tmode ! Thread mode provided by the MPI library
+
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
+    ! HIP must be initialized before MPI_Init for GPU-aware Cray MPICH. Call the
+    ! HIP runtime directly so this works for any component.
+    interface
+       integer(c_int) function hipInit(flags) bind(C, name="hipInit")
+         import :: c_int
+         integer(c_int), value :: flags
+       end function hipInit
+    end interface
+#endif
     
     beg_count = shr_sys_irtc(irtc_rate)
     
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
-    call atm_init_hip_mct()
+    ierr = hipInit(0_c_int)
 #endif
 #if defined(MPI_INIT_THREADED)
     call mpi_init_thread(MPI_THREAD_MULTIPLE, tmode, ierr)
