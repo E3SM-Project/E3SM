@@ -3,6 +3,8 @@
 #include "share/field/field_reader.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
+#include "share/util/gid_directory.hpp"
+#include "share/util/eamxx_alltoallv.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -264,26 +266,42 @@ get_my_triplets (const std::vector<Triplet>& triplets)
 {
   using gid_type = AbstractGrid::gid_type;
 
-  // Create a grid where the GIDs are the id of rows or cols of the triplets we read
-  // We pick row/col based on which side of the remap was the input grid
-  std::set<gid_type> unique_gids;
-  for (const auto& t : triplets) {
-    unique_gids.insert(m_coarsening ? t.col : t.row);
-  }
-  auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,m_src_grid->get_comm());
-  auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  int k = 0;
-  for (auto gid : unique_gids) {
-    io_grid_gids_h(k++) = gid;
-  }
-  io_grid->get_dofs_gids().sync_to_dev();
+  const auto& comm = m_src_grid->get_comm();
+  const int nranks = comm.size();
 
-  // Group triplets to export by their gid
-  std::map<int,std::vector<Triplet>> io_triplets;
-  const auto& io_grid_gid2lid = io_grid->get_gid2lid_map();
-  for (const auto& t : triplets) {
-    auto io_lid = io_grid_gid2lid.at(m_coarsening ? t.col : t.row);
-    io_triplets[io_lid].emplace_back(t.row,t.col,t.w);
+  // Each triplet is needed by the rank that owns its row/col on the fine grid
+  // (i.e., the col if coarsening, the row if refining)
+  auto fine_grid = m_coarsening ? m_src_grid : m_tgt_grid;
+  auto fine_gid = [&](const Triplet& t) { return m_coarsening ? t.col : t.row; };
+
+  // Find who owns the fine grid gid of each triplet we read
+  const int ntriplets = triplets.size();
+  Field::view_host_t<gid_type*> gids ("",ntriplets);
+  for (int i=0; i<ntriplets; ++i) {
+    gids[i] = fine_gid(triplets[i]);
+  }
+  auto fine_gids_h = fine_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  GidDirectory<gid_type> directory (comm,fine_gids_h);
+  const auto owners = directory.lookup(gids);
+  const auto& owner_pids = owners.pids;
+  const auto& owner_lids = owners.lids;
+
+  // Group the triplets by owner. Within each owner, keep the order in which we read them
+  std::vector<int> send_counts (nranks,0);
+  for (int i=0; i<ntriplets; ++i) {
+    EKAT_REQUIRE_MSG (owner_pids[i]>=0,
+        "Error! Could not find the owner of one of the gids in the map file.\n"
+        "  - gid: " + std::to_string(gids[i]) + "\n"
+        "  - fine grid name: " + fine_grid->name() + "\n");
+    ++send_counts[owner_pids[i]];
+  }
+  std::vector<int> cursor (nranks,0);
+  for (int p=1; p<nranks; ++p) {
+    cursor[p] = cursor[p-1] + send_counts[p-1];
+  }
+  std::vector<Triplet> send_triplets (ntriplets);
+  for (int i=0; i<ntriplets; ++i) {
+    send_triplets[cursor[owner_pids[i]]++] = triplets[i];
   }
 
   // Create data type for a triplet
@@ -296,20 +314,31 @@ get_my_triplets (const std::vector<Triplet>& triplets)
   MPI_Type_create_struct (3,lengths,displacements,types,&mpi_triplet_t);
   MPI_Type_commit(&mpi_triplet_t);
 
-  // Create import-export and gather the triplets we need for our local mat-vec
-  auto fine_grid = m_coarsening ? m_src_grid : m_tgt_grid;
-  std::map<int,std::vector<Triplet>> my_triplets_map;
-  GridImportExport imp_exp (fine_grid,io_grid);
-  imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  // Send the triplets to their owners
+  std::vector<Triplet> my_triplets;
+  std::vector<int> recv_counts;
+  alltoallv(comm,send_triplets,send_counts,my_triplets,recv_counts,false,mpi_triplet_t);
   MPI_Type_free(&mpi_triplet_t);
 
-  std::vector<Triplet> my_triplets;
-  for (auto& it : my_triplets_map) {
-    my_triplets.reserve(my_triplets.size()+it.second.size());
-    std::move(it.second.begin(),it.second.end(),std::back_inserter(my_triplets));
+  // Sort the triplets we received by the lid of their fine grid gid. We use a stable sort so that,
+  // within a lid, triplets are ordered by sending rank, and then by the order in which they were read.
+  const auto& gid2lid = fine_grid->get_gid2lid_map();
+  const int nmine = my_triplets.size();
+  std::vector<int> my_lids (nmine);
+  for (int i=0; i<nmine; ++i) {
+    my_lids[i] = gid2lid.at(fine_gid(my_triplets[i]));
+  }
+  std::vector<int> order (nmine);
+  std::iota(order.begin(),order.end(),0);
+  std::stable_sort(order.begin(),order.end(),
+                   [&](const int a, const int b) { return my_lids[a]<my_lids[b]; });
+  std::vector<Triplet> sorted_triplets;
+  sorted_triplets.reserve(nmine);
+  for (int i : order) {
+    sorted_triplets.push_back(my_triplets[i]);
   }
 
-  return my_triplets;
+  return sorted_triplets;
 }
 
 void HorizRemapperData::
