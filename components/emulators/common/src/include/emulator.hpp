@@ -85,16 +85,6 @@ struct GridDesc {
 };
 
 /**
- * @brief:
-  std::filesystem::path path;
-  GridDesc grid;
- */
-struct CreateConfig {
-  std::filesystem::path path;
-  GridDesc grid;
-};
-
-/**
  * @brief Abstract base class for all E3SM emulators.
  *
  * Provides the common infrastructure for emulators.
@@ -104,14 +94,10 @@ struct CreateConfig {
 class Emulator {
 public:
   Emulator(const GridDesc grid, const EmulatorConfig emu_config);
-  Emulator(const CreateConfig config)
-      : Emulator(config.grid, read_emulator_config(config.path)) {};
-
   ~Emulator() = default;
 
   // Lifecycle methods
   void initialize();
-  void initialize_from_config();
   void run(const ProcessRunOpts opts);
   void finalize();
 

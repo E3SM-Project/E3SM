@@ -6,7 +6,6 @@
 
 #include <filesystem>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace e3sm::emulator {
