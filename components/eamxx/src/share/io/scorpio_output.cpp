@@ -433,7 +433,6 @@ void AtmosphereOutput::init()
     // NOTE: f is the field after the remap, so it also covers masks created by the vertical remapper
     if (m_avg_type!=OutputAvgType::Instant and f.has_valid_mask()) {
       // Create and store a Field to track the averaging count for this layout
-      m_track_avg_cnt = true;
       set_avg_cnt_tracking(f);
     }
   }
@@ -507,10 +506,10 @@ run (const std::string& filename, const util::TimeStamp& ts,
   auto fm_scorpio = m_field_mgrs[Scorpio];
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
-  // If tracking avg count, update the count at each field location separately.
-  // We do count++ only where the field is valid (or everywhere, if the field has no valid mask).
+  // Update the count at each field location separately (only masked fields have a count).
+  // We do count++ only where the field is valid.
   // Note, we assume that all fields that share a count are also masked in the same way.
-  if (m_track_avg_cnt) {
+  if (not m_field_to_avg_count.empty()) {
     start_timer("EAMxx::IO::avg_cnt");
     // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
     for (auto& [fname, count] : m_field_to_avg_count) {
