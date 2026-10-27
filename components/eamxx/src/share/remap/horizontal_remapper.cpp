@@ -663,7 +663,10 @@ local_mat_vec_masked (const Field& x, const Field& y) const
         const auto end = row_offsets(row+1);
         Real accum = 0;
         for (int icol=beg; icol<end; ++icol) {
-          accum += weights(icol)*x_view(col_lids(icol))*m_view(col_lids(icol));
+          // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+          if (m_view(col_lids(icol))!=0) {
+            accum += weights(icol)*x_view(col_lids(icol))*m_view(col_lids(icol));
+          }
         }
         y_view(row) = accum;
       });
@@ -686,7 +689,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
                             [&](const int j){
           Pack accum = 0;
           for (int icol=beg; icol<end; ++icol) {
-            accum += weights(icol)*x_view(col_lids(icol),j)*m_view(col_lids(icol),j);
+            // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+            accum.set(m_view(col_lids(icol),j)!=0, accum + weights(icol)*x_view(col_lids(icol),j)*m_view(col_lids(icol),j));
           }
           y_view(row,j) = accum;
         });
@@ -713,7 +717,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
           const int k = idx % dim2;
           Pack accum = 0;
           for (int icol=beg; icol<end; ++icol) {
-            accum += weights(icol)*x_view(col_lids(icol),j,k)*m_view(col_lids(icol),j,k);
+            // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+            accum.set(m_view(col_lids(icol),j,k)!=0, accum + weights(icol)*x_view(col_lids(icol),j,k)*m_view(col_lids(icol),j,k));
           }
           y_view(row,j,k) = accum;
         });
@@ -742,7 +747,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
           const int l =  idx % dim3;
           Pack accum = 0;
           for (int icol=beg; icol<end; ++icol) {
-            accum += weights(icol)*x_view(col_lids(icol),j,k,l)*m_view(col_lids(icol),j,k,l);
+            // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+            accum.set(m_view(col_lids(icol),j,k,l)!=0, accum + weights(icol)*x_view(col_lids(icol),j,k,l)*m_view(col_lids(icol),j,k,l));
           }
           y_view(row,j,k,l) = accum;
         });
