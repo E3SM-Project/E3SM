@@ -9,6 +9,9 @@ that the user knows how to create a case, and what the `case.setup`,
 `case.build`, and `case.submit` commands do.
 
 This user guide is still under construction.
+
+- [MAM4xx gas-chemistry solver selection](mam_gas_chemistry.md)
+
 In the meantime, in case you do not find the information you need,
 we suggest visiting our public
 [EAMxx user guide](https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/3858890786/EAMxx+User+s+Guide)
