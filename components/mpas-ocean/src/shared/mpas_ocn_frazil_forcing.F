@@ -649,7 +649,8 @@ contains
             newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
 
             ! Determine new salt in frazil
-            newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity
+            newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity &
+               * config_frazil_ice_density * 0.001_RKIND
 
             ! Determine new energy in frazil = latent + sensible heat
             if (config_include_sensible_heat_frazil) then
@@ -755,7 +756,8 @@ contains
 
         !Determine salt expelled in the upper layer to if using fixed frazil salinity sea ice coupling
         if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. config_expel_excess_frazil_salt) then
-           newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
+           newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity &
+              * config_frazil_ice_density * 0.001_RKIND
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
             !Warning: salt conservation error. Track with lowSalinityFrazilIce
             lowSalinityFrazilIce(iCell) = newThicknessWeightedSaltContent - sumNewThicknessWeightedSaltContent

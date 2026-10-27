@@ -2675,7 +2675,7 @@
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
-			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 description="Salt mass per unit area associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
@@ -4526,7 +4526,7 @@
 			 packages="frazilIce"
 		/>
 		<var name="lowSalinityFrazilIce" type="real" dimensions="nCells Time" units="kg m^-2"
-			 description="min(0,AccumulatedFrazilIceMass * reference salinity - accumulatedFrazilIceSalinity), non-zero indicates possible non-conservation"
+			 description="Salt mass deficit per unit area of newly formed frazil relative to the reference salinity; positive indicates insufficient salt"
 			 packages="frazilIce"
 		/>
 		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
