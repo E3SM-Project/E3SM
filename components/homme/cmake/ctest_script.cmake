@@ -102,38 +102,32 @@ if (_cfg_rv)
   set(_had_failure TRUE)
 else()
   # -------------------------------------------------------------------------
-  # Build test-execs
+  # Build
   # -------------------------------------------------------------------------
+  if (GENERATE)
+    # For generate, Homme uses 'make baseline', rather than rely on ctest labels.
+    # The target depends on all the test executables, so it builds them first, then runs the tests.
+    message(STATUS "HOMME ctest script: generate baselines")
+    set(_build_target "baseline")
+  else()
+    set(_build_target "test-execs")
+  endif()
+
   ctest_build(
-    TARGET "test-execs"
+    TARGET "${_build_target}"
     FLAGS "-j${BUILD_PARALLEL_LEVEL}"
     RETURN_VALUE _bld_rv
   )
   if (_bld_rv)
     set(_had_failure TRUE)
-  else()
-    if (GENERATE)
-      # -----------------------------------------------------------------------
-      # For generate, Homme uses 'make baseline', rather than rely on ctest labels...
-      # -----------------------------------------------------------------------
-      message(STATUS "HOMME ctest script: generate baselines")
-      ctest_build(
-        TARGET "baseline"
-        FLAGS "-j${BUILD_PARALLEL_LEVEL}"
-        RETURN_VALUE _bld_rv
-      )
-      if (_bld_rv)
-        set(_had_failure TRUE)
-      endif()
-    else()
-      message(STATUS "HOMME ctest script: compare against baselines")
-      ctest_test(
-        PARALLEL_LEVEL ${RUN_PARALLEL_LEVEL}
-        RETURN_VALUE _test_rv
-      )
-      if (_test_rv)
-        set(_had_failure TRUE)
-      endif()
+  elseif (NOT GENERATE)
+    message(STATUS "HOMME ctest script: compare against baselines")
+    ctest_test(
+      PARALLEL_LEVEL ${RUN_PARALLEL_LEVEL}
+      RETURN_VALUE _test_rv
+    )
+    if (_test_rv)
+      set(_had_failure TRUE)
     endif()
   endif()
 endif()
