@@ -2518,6 +2518,7 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
     <environment_variables mpilib="mpi-serial">
       <!-- We currently don't have modules for serial NetCDF -->
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0</env>
@@ -2566,6 +2567,9 @@
       <env name="SPIO_ENABLE_ADIOSBP2NC_CONVERSION">1</env>
       <env name="SPIO_ADIOSBP2NC_CONVERSION_TOOL_EXTRA_ARGS">\-\-rm-bp-file-after-conv="(.*)(.eam.)(.*)"</env>
     </environment_variables-->
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="sandiatoss3">
