@@ -50,7 +50,7 @@ module @COMPONENT@_comp_mct
    integer                :: log_unit
 
    type(c_ptr) :: emulators
-CONTAINS
+contains
 
    !==========================================================================
    subroutine @COMPONENT@_init_mct(EClock, cdata, x2a, a2x, NLFilename)
