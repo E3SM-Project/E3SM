@@ -130,7 +130,6 @@ void FieldAtHeight::compute_impl()
   using cmask3d_t = Field::view_dev_t<const int***>;
 
   auto z_tgt = m_z;
-  constexpr auto fval = constants::fill_value<Real>;
   // Whether the INPUT field has its own mask (our own output mask
   // always exists, see initialize_impl, so no need to track that here).
   bool f_masked = f.has_valid_mask();
@@ -147,7 +146,6 @@ void FieldAtHeight::compute_impl()
         auto k0 = idx_v(i,0);
         if (k0<0) {
           // Out of range, and not extrapolating (see HeightLevelIndex).
-          d_view(i) = fval;
           d_mask(i) = 0;
           return;
         }
@@ -187,7 +185,6 @@ void FieldAtHeight::compute_impl()
         auto k0 = idx_v(i,0);
         if (k0<0) {
           // Out of range, and not extrapolating (see HeightLevelIndex).
-          d_view(i,j) = fval;
           d_mask(i,j) = 0;
           return;
         }
@@ -211,10 +208,6 @@ void FieldAtHeight::compute_impl()
         }
     });
   }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto& mask = m_diagnostic_output.get_valid_mask();
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
 }
 
 } //namespace scream

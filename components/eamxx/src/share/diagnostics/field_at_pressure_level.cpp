@@ -133,7 +133,6 @@ void FieldAtPressureLevel::compute_impl()
   const int ncols = pl.dim(0);
 
   auto p_tgt = m_pressure_level;
-  constexpr auto fval = constants::fill_value<Real>;
   bool masked = f.has_valid_mask();
   if (rank==2) {
     auto policy = KT::RangePolicy(0,ncols);
@@ -144,7 +143,6 @@ void FieldAtPressureLevel::compute_impl()
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int icol) {
       auto k0 = idx_v(icol,0);
       if (k0<0) {
-        diag(icol) = fval;
         dmask(icol) = 0;
         return;
       }
@@ -174,7 +172,6 @@ void FieldAtPressureLevel::compute_impl()
       auto k1 = idx_v(icol,1);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),[&](const int idim) {
         if (k0<0) {
-          diag(icol,idim) = fval; // TODO: don't bother setting an arbitrary value
           dmask(icol,idim) = 0;
         } else if (not masked or (fmask(icol,idim,k0)!=0 and fmask(icol,idim,k1)!=0)) {
           // k0 and k1 are always distinct (see PressureLevelIndex), so
@@ -190,11 +187,6 @@ void FieldAtPressureLevel::compute_impl()
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto& mask = m_diagnostic_output.get_valid_mask();
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
-
 }
 
 } //namespace scream

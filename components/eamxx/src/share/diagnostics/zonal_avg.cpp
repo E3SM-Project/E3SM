@@ -263,9 +263,6 @@ void ZonalAvg::compute_impl()
     auto& dmask = m_diagnostic_output.get_valid_mask();
     compute_mask(m_zonal_area,0,Comparison::NE,dmask);
     m_diagnostic_output.scale_inv(m_zonal_area,dmask);
-
-    // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>,dmask,true);
   } else {
     // Compute field zonal sum using scaled area as weight
     compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_bin_to_cols, &m_comm);
