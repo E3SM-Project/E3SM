@@ -2424,11 +2424,7 @@ contains
            endif
 
         else ! non-free surface (SOM)
-           if (x2i_i(index_x2i_Fioo_q, n) < 0.0_RKIND) then
-              freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
-           else
-              freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_frazilh, n)
-           end if
+           freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
 
            frazilMassFlux(i)           = 0.0_RKIND
            frazilSaltFlux(i)           = 0.0_RKIND

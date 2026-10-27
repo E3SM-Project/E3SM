@@ -533,6 +533,9 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Type of frazil ice coupling.
 
+Coupled configurations support 'external' and 'omega-fluxes'. The 'omega-fluxes'
+option requires config_ocean_surface_type = 'free'; use 'external' for slab oceans.
+
 Valid values: 'external', 'internal', 'fresh_ice_correction', 'omega-fluxes'
 Default: Defined in namelist_defaults.xml
 </entry>
