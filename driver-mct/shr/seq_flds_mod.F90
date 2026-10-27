@@ -2013,7 +2013,7 @@ contains
        call seq_flds_add(x2i_states,"So_fep1")
        longname = 'Ocean particulate iron concentration 1'
        stdname  = 'ocean_particulate_iron_conc_1'
-       units    = 'umol Fe m-3'
+      units    = 'mmol Fe m-3'
        attname  = 'So_fep1'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2022,7 +2022,7 @@ contains
        call seq_flds_add(x2i_states,"So_fep2")
        longname = 'Ocean particulate iron concentration 2'
        stdname  = 'ocean_particulate_iron_conc_2'
-       units    = 'umol Fe m-3'
+      units    = 'mmol Fe m-3'
        attname  = 'So_fep2'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2031,7 +2031,7 @@ contains
        call seq_flds_add(x2i_states,"So_fed1")
        longname = 'Ocean dissolved iron concentration 1'
        stdname  = 'ocean_dissolved_iron_conc_1'
-       units    = 'umol Fe m-3'
+      units    = 'mmol Fe m-3'
        attname  = 'So_fed1'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2040,7 +2040,7 @@ contains
        call seq_flds_add(x2i_states,"So_fed2")
        longname = 'Ocean dissolved iron concentration 2'
        stdname  = 'ocean_dissolved_iron_conc_2'
-       units    = 'umol Fe m-3'
+      units    = 'mmol Fe m-3'
        attname  = 'So_fed2'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2238,7 +2238,7 @@ contains
        call seq_flds_add(x2o_fluxes,"Fioi_fep1")
        longname = 'Sea ice particulate iron flux 1'
        stdname  = 'seaice_particulate_iron_flux_1'
-       units    = 'umol Fe m-2 s-1'
+      units    = 'mmol Fe m-2 s-1'
        attname  = 'Fioi_fep1'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2247,7 +2247,7 @@ contains
        call seq_flds_add(x2o_fluxes,"Fioi_fep2")
        longname = 'Sea ice particulate iron flux 2'
        stdname  = 'seaice_particulate_iron_flux_2'
-       units    = 'umol Fe m-2 s-1'
+      units    = 'mmol Fe m-2 s-1'
        attname  = 'Fioi_fep2'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2256,7 +2256,7 @@ contains
        call seq_flds_add(x2o_fluxes,"Fioi_fed1")
        longname = 'Sea ice dissolved iron flux 1'
        stdname  = 'seaice_dissolved_iron_flux_1'
-       units    = 'umol Fe m-2 s-1'
+      units    = 'mmol Fe m-2 s-1'
        attname  = 'Fioi_fed1'
        call metadata_set(attname, longname, stdname, units)
 
@@ -2265,7 +2265,7 @@ contains
        call seq_flds_add(x2o_fluxes,"Fioi_fed2")
        longname = 'Sea ice dissolved iron flux 2'
        stdname  = 'seaice_dissolved_iron_flux_2'
-       units    = 'umol Fe m-2 s-1'
+      units    = 'mmol Fe m-2 s-1'
        attname  = 'Fioi_fed2'
        call metadata_set(attname, longname, stdname, units)
 
