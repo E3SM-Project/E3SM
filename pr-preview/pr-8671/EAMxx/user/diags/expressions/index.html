@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
   
@@ -447,6 +447,8 @@
       
         
       
+        
+      
     
     
     
@@ -513,6 +515,34 @@
     
   
     Adding Support for New Grids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../dev-guide/gh-hosted-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing on GitHub-hosted Runners
   
 
     
@@ -5291,7 +5321,18 @@ is an honest analogue.</p>
   that of <code>Y</code>. Notice that <code>Y</code> is only used for its layout, its values are
   never read.</li>
 <li><code>where</code> takes a single comparison. <code>and</code>/<code>or</code> are not supported; chain
-  <code>where(..)</code> calls instead.</li>
+  <code>where(..)</code> calls instead. A chain is the intersection of its conditions:
+  <code>X.where(A&gt;0).where(B&gt;0)</code> is valid only where both hold.</li>
+<li><strong><code>X.sum('lev')</code> of a masked <code>X</code> is masked where no level is valid.</strong> Invalid
+  levels are skipped, and a column with none left has no sum; it is written as
+  missing rather than as 0. <code>mean('lev')</code> behaves the same way. This is
+  xarray's <code>sum('lev', min_count=1)</code>, not its default <code>sum('lev')</code>, which
+  would give 0.</li>
+<li><strong>A scalar threshold is in the field's own units, as the model stores them.</strong>
+  <code>T_mid.where(T_mid&lt;273.15)</code> is in kelvin, and <code>p_mid.where(p_mid&gt;85000)</code> in
+  pascals, not hectopascals. A comparison between two <em>fields</em> is checked when
+  the stream is set up: <code>T_mid.where(T_mid&gt;qv)</code> is rejected, since the units
+  differ. (A field that never declared its units is not checked.)</li>
 <li><strong><code>mask</code> and <code>lev</code> are placeholders, not fields.</strong> Neither exists in the field
   manager, and neither means anything on its own. <code>mask</code> is only legal as the
   receiver of <code>.where(..)</code>: <code>mask.where(cond)</code> is the 0/1 indicator of <code>cond</code>
@@ -5355,8 +5396,8 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 </tr>
 </tbody>
 </table>
-<p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, but computed
-in one sweep rather than as three diagnostics.</p>
+<p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, expressed as
+one diagnostic rather than as a graph of three.</p>
 <p>Two operand names have no xarray analogue at all, because they are not fields:
 <code>mask</code> and <code>lev</code>, both inherited from the underscore syntax and both legal only
 inside <code>where(..)</code>. See the note above for what they mean and where they may
@@ -5470,10 +5511,10 @@ them in step with this page: an example added here belongs in one of those.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../../../javascript/mathjax.js"></script>
       
