@@ -35,8 +35,8 @@ endif()
 
 # Grab mct and spio if we don't already have it
 find_package(MCT REQUIRED)
-if (NOT DEFINED ENV{SCORPIO_DIR})
-  set(ENV{SCORPIO_DIR} ${INSTALL_SHAREDPATH})
+if (NOT DEFINED ENV{SCORPIO_ROOT})
+  set(ENV{SCORPIO_ROOT} ${INSTALL_SHAREDPATH})
 endif()
 
 #set(CMAKE_FIND_DEBUG_MODE TRUE)
