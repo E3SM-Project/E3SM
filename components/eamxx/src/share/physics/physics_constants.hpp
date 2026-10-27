@@ -128,10 +128,6 @@ struct Constants
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
 
-  // Turbulent Mountain Stress constants
-  static constexpr Scalar orocnst     = 1;     // Converts from standard deviation to height [ no unit ]
-  static constexpr Scalar z0fac       = 0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
-
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
   // = 2 Beheng 1994
