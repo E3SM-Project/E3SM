@@ -27,7 +27,7 @@ void AbstractDiagnostic::initialize ()
   // customers look the field up by name: 'X_atm_backtend' is an alias for
   // 'X_minus_X_prev_over_dt'. So honor an explicit name when given one.
   // NOTE: an alias shares tracking, alloc props and extra data, so masks,
-  //       timestamps and avg-cnt bookkeeping carry over.
+  //       timestamps and valid-count bookkeeping carry over.
   if (m_params.isParameter("output_field_name")) {
     const auto& name = m_params.get<std::string>("output_field_name");
     if (name!=m_diagnostic_output.name()) {

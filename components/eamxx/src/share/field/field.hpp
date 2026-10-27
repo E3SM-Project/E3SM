@@ -239,7 +239,7 @@ public:
   // perform masked manipulations.
   // The default mask name, <field name>_valid_mask, says the mask is this field's
   // own. Any other name says where a condition holds, and masks with the same
-  // name must hold the same values: e.g., IO gives one avg count to the diags
+  // name must hold the same values: e.g., IO gives one valid count to the diags
   // whose masks share a name, and the horizontal remapper remaps such masks once.
 
   enum class MaskInit { Valid, Invalid, None };
