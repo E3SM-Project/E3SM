@@ -5113,7 +5113,10 @@ number of indices with <code>if constexpr (sizeof...(i)==2)</code>.</p>
 <p>Some things to keep in mind:</p>
 <ul>
 <li>All fields must have the same rank and extents (the tags are not compared), and
-  at most three fields can be passed. The call is blocking: it fences before returning.</li>
+  at most three fields can be passed.</li>
+<li>Like <code>Kokkos::parallel_for</code>, the call is asynchronous: it does not fence. Kernels launched on
+  the same execution space run in order, so consecutive calls can be chained without fencing.
+  Fence (e.g., with <code>Kokkos::fence()</code>, or by calling <code>sync_to_host()</code>) before using the results on host.</li>
 <li>The kernel must be a <strong>functor struct, not a <code>KOKKOS_LAMBDA</code></strong>. nvcc does not allow
   generic extended <code>__host__ __device__</code> lambdas (needed here, since the view types are
   not known when the lambda is written), nor extended lambdas whose captures are first used inside an
