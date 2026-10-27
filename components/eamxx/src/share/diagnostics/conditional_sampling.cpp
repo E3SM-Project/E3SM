@@ -215,8 +215,6 @@ void ConditionalSampling::compute_impl()
       mask.scale(f.get_valid_mask());
     }
     get().deep_copy(f,mask);
-    constexpr auto fv = constants::fill_value<Real>;
-    get().deep_copy(fv,mask,true);
   }
 }
 

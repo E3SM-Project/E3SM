@@ -67,8 +67,6 @@ void FieldOverDt::compute_impl()
   const auto dt_inv = 1 / static_cast<Real>(dt);
   if (f.has_valid_mask()) {
     get().update(f,dt_inv,0,f.get_valid_mask());
-    // TODO: remove when IO handles fill value internally
-    get().deep_copy(constants::fill_value<Real>,f.get_valid_mask(),true);
   } else {
     get().update(f,dt_inv,0);
   }

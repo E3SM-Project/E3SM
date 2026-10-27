@@ -90,8 +90,6 @@ void HorizAvg::compute_impl()
     compute_mask(m_denom,0,Comparison::NE,nonzero_denom);
 
     get().scale_inv(m_denom,nonzero_denom);
-    // IO relies on fill_value for masked-out entries
-    get().deep_copy(constants::fill_value<Real>,nonzero_denom,true);
   }
 }
 

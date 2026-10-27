@@ -200,11 +200,6 @@ void FieldAtPressureLevel::compute_impl()
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto mask = get().get_valid_mask();
-  get().deep_copy(constants::fill_value<Real>,mask,true);
-
 }
 
 } //namespace scream

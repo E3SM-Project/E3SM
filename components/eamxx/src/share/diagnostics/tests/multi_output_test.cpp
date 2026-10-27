@@ -61,7 +61,8 @@ protected:
         col_h(icol) += a_h(icol,ilev);
       }
       mask_h(icol) = b_h(icol)>0 ? 1 : 0;
-      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : constants::fill_value<Real>;
+      // Where the mask is 0, the data is unspecified (IO fills it, diags don't have to)
+      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : Real(-12345);
     }
     m_prof.sync_to_dev();
     m_col.sync_to_dev();
@@ -240,7 +241,6 @@ TEST_CASE ("multi_output") {
         ++nvalid;
       } else {
         REQUIRE (mask_h(icol)==0);
-        REQUIRE (msk_h(icol)==constants::fill_value<Real>);
       }
     }
     // Both branches were exercised

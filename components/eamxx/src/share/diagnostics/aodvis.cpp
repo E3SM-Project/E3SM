@@ -42,8 +42,6 @@ void AODVis::compute_impl()
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using RU  = ekat::ReductionUtils<typename KT::ExeSpace>;
 
-  constexpr auto fill_value = constants::fill_value<Real>;
-
   const auto aod     = get().get_view<Real *>();
   const auto tau_vis = m_fields_in.at("aero_tau_sw")
                            .subfield(1, m_vis_bnd)
@@ -56,11 +54,10 @@ void AODVis::compute_impl()
   Kokkos::parallel_for(
       "Compute " + get().name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
+        // Night columns are masked out (the mask is the sunlit mask), so no need to set them
         if(sunlit(icol)) {
           auto tau_icol = ekat::subview(tau_vis, icol);
           aod(icol)     = RU::view_reduction(team, 0, nlevs, tau_icol);
-        } else {
-          aod(icol) = fill_value;
         }
       });
 }

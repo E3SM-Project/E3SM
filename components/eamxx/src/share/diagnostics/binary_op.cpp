@@ -314,12 +314,6 @@ void BinaryOp::compute_impl()
     const auto& f2 = m_fields_in.at(m_arg2_name);
     apply_binary_op(get(), m_arg1_value, f2, m_binary_op_code);
   }
-
-  // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid
-  if (get().has_valid_mask()) {
-    constexpr auto fv = constants::fill_value<Real>;
-    get().deep_copy(fv,get().get_valid_mask(),true);
-  }
 }
 
 }  // namespace scream

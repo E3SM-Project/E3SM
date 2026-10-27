@@ -39,6 +39,9 @@ constexpr int nlevs = 3;
 constexpr int nsteps = 4;
 
 constexpr Real FILL = constants::fill_value<Real>;
+// Value of the data of the invalid entries of the test diags: it is NOT fill_value, since diags
+// don't have to set it (IO fills the entries that the valid mask says are invalid)
+constexpr Real GARBAGE = -12345;
 
 // On step n, at column g (global id) and level k:
 //  - a = n+g+k
@@ -109,7 +112,7 @@ protected:
         col_h(icol) += a_h(icol,ilev);
       }
       mask_h(icol) = b_h(icol)>0 ? 1 : 0;
-      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : FILL;
+      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : GARBAGE;
     }
     m_prof.sync_to_dev();
     m_col.sync_to_dev();
@@ -161,8 +164,8 @@ protected:
     auto mask_h = m_a.get_valid_mask().get_view<int*,Host>();
     for (int icol=0; icol<m_grid->get_num_local_dofs(); ++icol) {
       mask_h(icol) = b_h(icol)>0 ? 1 : 0;
-      fa_h(icol) = b_h(icol)>0 ? a_h(icol,0) : FILL;
-      fz_h(icol) = b_h(icol)>0 ? a_h(icol,nlevs-1) : FILL;
+      fa_h(icol) = b_h(icol)>0 ? a_h(icol,0) : GARBAGE;
+      fz_h(icol) = b_h(icol)>0 ? a_h(icol,nlevs-1) : GARBAGE;
     }
     m_a.sync_to_dev();
     m_z.sync_to_dev();
