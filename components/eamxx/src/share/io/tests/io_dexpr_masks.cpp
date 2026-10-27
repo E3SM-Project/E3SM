@@ -22,7 +22,7 @@
 /*
  * Conditional sampling in AVERAGE/MAX/MIN streams, against hand-computed values:
  *  - only the valid steps count, and an entry that was never valid is fill_value
- *  - each masked field gets its own valid-sample count, also if it is an alias
+ *  - fields that share a mask share the valid-sample count (an alias shares the mask of its target)
  *  - X.where(A).where(B) is the intersection of the two conditions
  */
 
@@ -147,16 +147,18 @@ void run_and_check (const std::string& avg_type,
   REQUIRE (file_check.good());
   file_check.close();
 
-  // Each masked field gets its own count, and no count is shared by layout
+  // A count is named after the mask: fields with different masks have different counts, and no count is
+  // shared by layout alone. b1 is an alias of a1, hence they share the mask, and the count
   scorpio::register_file(filename,scorpio::Read);
-  for (const std::string n : {"a1","a5","b1"}) {
+  for (const std::string n : {"a1","a5","b1","s5"}) {
     REQUIRE (scorpio::has_var(filename,n));
-    REQUIRE (scorpio::has_var(filename,"avg_count_" + n + "_ncol_lev"));
   }
-  REQUIRE (scorpio::has_var(filename,"s5"));
-  REQUIRE (scorpio::has_var(filename,"avg_count_s5_ncol"));
-  REQUIRE_FALSE (scorpio::has_var(filename,"avg_count_ncol_lev"));
-  REQUIRE_FALSE (scorpio::has_var(filename,"avg_count_ncol"));
+  REQUIRE (scorpio::has_var(filename,"num_valid_snapshots_X_where_C1_gt_0"));
+  REQUIRE (scorpio::has_var(filename,"num_valid_snapshots_X.where((C1>0))_where_C2_gt_0"));
+  REQUIRE (scorpio::has_var(filename,"num_valid_snapshots_X.where((C1>0)).where((C2>0))_vert_sum"));
+  REQUIRE_FALSE (scorpio::has_var(filename,"num_valid_snapshots_b1"));
+  REQUIRE_FALSE (scorpio::has_var(filename,"num_valid_snapshots_ncol_lev"));
+  REQUIRE_FALSE (scorpio::has_var(filename,"num_valid_snapshots_ncol"));
   // Fields that may hold fill values declare it
   CHECK (scorpio::has_attribute(filename,"a1","_FillValue"));
   CHECK (scorpio::has_attribute(filename,"s5","_FillValue"));

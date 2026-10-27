@@ -195,24 +195,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   process_requested_fields ();
   stop_timer("EAMxx::IO::setup_fields");
 
-  // Avg count only makes sense if we have
-  //  - non-instant output
-  //  - we have one between:
-  //    - vertically remapped output
-  //    - field_at_XhPa diagnostic
-  //    - fields that can contain invalid values (not yet supported, but RAD may want this at some point)
-  // We already set m_track_avg_cnt to true if field_at_XhPa is found in process_requested_fields.
-  // Hence, here we only check if vert remap is active
-
+  // Avg counts only make sense for non-instant output, and only for fields that have a valid
+  // mask (e.g., fields with a mask in the model, vertically remapped fields, or field_at_XhPa
+  // diagnostics). Unmasked fields have no invalid entries, so they need no count.
   if (m_avg_type!=OutputAvgType::Instant) {
-    if (params.isParameter("track_avg_cnt")) {
-      // This is to be used for unit testing only, so that we can test avg cnt even
-      // if there is no vert remap and no field_at_XhPa diagnostic in the stream
-      m_track_avg_cnt = params.get<bool>("track_avg_cnt");
-    }
-    if (use_vertical_remap_from_file) {
-      m_track_avg_cnt = true;
-    }
     if (params.isParameter("fill_threshold")) {
       m_avg_coeff_threshold = params.get<Real>("fill_threshold");
       EKAT_REQUIRE_MSG (m_avg_coeff_threshold>=0 and m_avg_coeff_threshold<1,
@@ -443,9 +429,12 @@ void AtmosphereOutput::init()
       }
     }
 
-    if (m_track_avg_cnt) {
+    // Fields with a valid mask need a count, to tell where the output is valid. Unmasked fields do not.
+    // NOTE: f is the field after the remap, so it also covers masks created by the vertical remapper
+    if (m_avg_type!=OutputAvgType::Instant and f.has_valid_mask()) {
       // Create and store a Field to track the averaging count for this layout
-      set_avg_cnt_tracking(fid);
+      m_track_avg_cnt = true;
+      set_avg_cnt_tracking(f);
     }
   }
 
@@ -554,11 +543,8 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
 
-      if (field.has_valid_mask()) {
-        count.update(field.get_valid_mask(),1,1);
-      } else {
-        count.add_scalar(1);
-      }
+      // Only masked fields have a count
+      count.update(field.get_valid_mask(),1,1);
 
       // Handle writing the average count variables to file
       if (is_write_step) {
@@ -585,11 +571,15 @@ run (const std::string& filename, const util::TimeStamp& ts,
         duration_write += duration_loc.count();
         stop_timer("EAMxx::IO::sync_and_write");
 
-        // If it's an output step, for Avg we need to ensure count>threshold. Where it is not,
-        // the average is invalid: this mask tells us where, so that later we only divide
-        // fields by count where it is valid (and fill the rest with fill_value)
-        if (output_step and m_avg_type==OutputAvgType::Average) {
-          int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
+        // If it's an output step, we need to ensure count>threshold. Where it is not, the output
+        // is invalid: this mask tells us where, so that later we only divide fields by count where
+        // it is valid (and fill the rest with fill_value). Average needs more than fill_threshold*nsteps
+        // valid samples, while for Max/Min one valid sample is enough.
+        // NOTE: fields sharing a count are masked the same way, so they share this mask too.
+        if (output_step and m_avg_type!=OutputAvgType::Instant) {
+          const int min_count = m_avg_type==OutputAvgType::Average
+                              ? static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output))
+                              : 0;
           compute_mask(count,min_count,Comparison::GT,count.get_header().get_extra_data<Field>("sufficient_count_mask"));
         }
       }
@@ -665,23 +655,14 @@ run (const std::string& filename, const util::TimeStamp& ts,
         // anywhere; the has_valid_mask check above guarantees that.
         const auto cnt_it = m_field_to_avg_count.find(field_name);
         if (cnt_it!=m_field_to_avg_count.end()) {
-          auto count = cnt_it->second;
-          auto& mask = count.get_header().get_extra_data<Field>("sufficient_count_mask");
+          const auto& count = cnt_it->second;
 
+          // The output is valid where the count is sufficient (see the count update above)
+          fill_mask = &count.get_header().get_extra_data<Field>("sufficient_count_mask");
+
+          // Divide by the count only where the average is valid
           if (m_avg_type==OutputAvgType::Average) {
-            // The average is valid where the count is above the threshold (see the count update above).
-            // Divide by the count only there
-            fill_mask = &mask;
-            f_out.scale_inv(count,mask);
-          } else {
-            // Max/Min: entries that were never valid still hold the initial -/+inf, and are invalid.
-            // NOTE: we must look at f_out itself, since the count may be shared with a field that
-            //       is masked differently (e.g., after a vertical remap). Hence we cannot use the count,
-            //       and use its mask as scratch, since it is not needed for Max/Min.
-            const Real init_val = m_avg_type==OutputAvgType::Max ? -std::numeric_limits<Real>::infinity()
-                                                                 :  std::numeric_limits<Real>::infinity();
-            compute_mask(f_out,init_val,Comparison::NE,mask);
-            fill_mask = &mask;
+            f_out.scale_inv(count,*fill_mask);
           }
         } else if (m_avg_type==OutputAvgType::Average) {
           // Divide by steps count only when the summation is complete
@@ -762,51 +743,61 @@ res_dep_memory_footprint () const
   return rdmf;
 }
 
-void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
+void AtmosphereOutput::set_avg_cnt_tracking(const Field& f)
 {
-  // Now create a Field to track the averaging count for this layout
+  // The count tells how many valid samples went into a masked field, so fields that share
+  // a mask share the count, which is named after the mask.
+  // NOTE: masks with the same name MUST hold the same values, hence have the same layout.
+  const auto& fid = f.get_header().get_identifier();
   const std::string& name = fid.name();
   const auto& layout = fid.get_layout();
-  const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
-  const auto tags = layout.tags();
-  std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
-  for (int i=0; i<layout.rank(); ++i) {
-    const auto t = layout.tag(i);
-    std::string tag_name = m_io_grid->has_special_tag_name(t)
-                         ? m_io_grid->get_special_tag_name(t)
-                         : layout.names()[i];
+  const auto& mask_name = f.get_valid_mask().name();
 
-    // If t==CMP, and the name stored in the layout is "dim" (the default) or "bin",
-    // we append also the extent, to allow different vector dims in the file
-    // TODO: generalize this to all tags, for now hardcoding to dim and bin only
-    tag_name += (tag_name=="dim" or tag_name=="bin") ? std::to_string(layout.dim(i)) : "";
-
-    avg_cnt_name += "_" + tag_name;
+  const auto it = m_mask_to_count.find(mask_name);
+  if (it!=m_mask_to_count.end()) {
+    const auto& count_layout = it->second.get_header().get_identifier().get_layout();
+    EKAT_REQUIRE_MSG (layout==count_layout,
+        "[AtmosphereOutput::set_avg_cnt_tracking] Error! Fields with the same valid mask name have different layouts.\n"
+        " - mask name   : " + mask_name + "\n"
+        " - field name  : " + name + "\n"
+        " - field layout: " + layout.to_string() + "\n"
+        " - other layout: " + count_layout.to_string() + "\n"
+        "Masks with the same name must hold the same values, so the name must tell them apart.\n");
+    m_field_to_avg_count[name] = it->second;
+    return;
   }
 
-  // Look for an avg count field with the right name
-  for (const auto& f : m_avg_counts) {
-    if (f.name()==avg_cnt_name) {
-      // We already created this avg count field
-      m_field_to_avg_count[name] = f;
-      return;
+  // First field with this mask: create the count, named after the mask (minus a trailing
+  // _valid_mask or _mask, just for readability, unless that name is already taken)
+  std::string stem = mask_name;
+  for (const std::string end : {"_valid_mask","_mask"}) {
+    if (stem.size()>end.size() and stem.compare(stem.size()-end.size(),end.size(),end)==0) {
+      stem.erase(stem.size()-end.size());
+      break;
     }
   }
-
-  // We have not created this avg count field yet.
+  std::string avg_cnt_name = "num_valid_snapshots_" + stem;
+  for (const auto& c : m_avg_counts) {
+    if (c.name()==avg_cnt_name) {
+      avg_cnt_name = "num_valid_snapshots_" + mask_name;
+      break;
+    }
+  }
   m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
   auto count_id = fid.clone(avg_cnt_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
   Field count(count_id);
   count.allocate_view();
 
-  // Mask telling where the count is sufficient, i.e., where cnt>threshold, so that the average is valid there.
-  // It is computed (once per count) only at output steps. For Max/Min it is just scratch space.
+  // Mask telling where the count is sufficient, i.e., where cnt>threshold (threshold=0 for Max/Min),
+  // so that the output is valid there.
+  // It is computed (once per count) only at output steps.
   // NOTE: this is NOT a valid mask of the count: the count is valid everywhere, and its updates must not be gated.
   count.get_header().set_extra_data("sufficient_count_mask",count.clone(avg_cnt_name + "_sufficient"));
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
+  m_mask_to_count[mask_name] = count;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
@@ -1197,51 +1188,6 @@ process_requested_fields()
       " - stream name:  " + m_stream_name + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
-  // Helper lambda to check if this fm_model field should trigger avg count
-  auto check_for_avg_cnt = [&](const Field& f, const bool count_by_mask = false) {
-    // We need avg-count tracking for any averaged (non-instant) field that has a valid mask.
-    // Without this, masked updates skip invalid entries during accumulation (good)
-    // but we would still divide by the raw nsteps, biasing the result low.
-    // A count is named after its field, unless the field is a diag whose mask has
-    // a name other than the default <name>_valid_mask (see Field::create_valid_mask).
-    // Such a name says where a condition holds (e.g., FieldAtPressureLevel names its
-    // mask after the level), and all diags with a mask of that name share a count.
-    // NOTE: model fields get a count of their own: they may be refreshed at different
-    //       times, even if they share a mask.
-    if (m_avg_type!=OutputAvgType::Instant) {
-      if (f.has_valid_mask()) {
-        m_track_avg_cnt = true;
-        std::string suffix = "_" + f.name();
-        if (count_by_mask and f.has_valid_mask()) {
-          auto ends_with = [](const std::string& s, const std::string& end) {
-            return s.size()>end.size() and s.compare(s.size()-end.size(),end.size(),end)==0;
-          };
-          const auto& mask_name = f.get_valid_mask().name();
-          if (not ends_with(mask_name,"_valid_mask")) {
-            // E.g., 500hPa_mask gives avg_count_500hPa_<layout>
-            const std::string end = "_mask";
-            suffix = "_" + (ends_with(mask_name,end) ? mask_name.substr(0,mask_name.size()-end.size())
-                                                     : mask_name);
-            // The name may carry the non-column dims of the layout, to tell apart masks of
-            // different layouts (e.g., 500hPa_dim2_mask). The count name adds them anyway.
-            const auto& lt = f.get_header().get_identifier().get_layout();
-            std::string dims;
-            for (int i=1; i<lt.rank(); ++i) {
-              dims += "_" + lt.names()[i] + std::to_string(lt.dim(i));
-            }
-            if (dims!="" and ends_with(suffix,dims)) {
-              suffix.erase(suffix.size()-dims.size());
-            }
-          }
-        }
-        // Avoid duplicate insertion if already present
-        if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
-          m_field_to_avg_cnt_suffix.emplace(f.name(), suffix);
-        }
-      }
-    }
-  };
-
   // Helper lambda that initializes a diagnostic
   auto init_diag = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
     // Set inputs in the diag
@@ -1260,14 +1206,6 @@ process_requested_fields()
 
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
-
-    // A diag gets an avg count like any field: by its mask, if it has one
-    check_for_avg_cnt(diag_field,true);
-
-    // If specified, set avg_cnt tracking for this diagnostic.
-    if (m_track_avg_cnt) {
-      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),"");
-    }
   };
 
   // Now process each requested field, if possible. We can process a field if either:
@@ -1306,9 +1244,6 @@ process_requested_fields()
     for (const auto& name : remaining) {
       if (fm_model->has_field(name)) {
         // This is a regular field, not a diagnostic nor an alias.
-        // Still, we might need to do some extra setup, like for avg_count.
-        const auto& f = m_field_mgrs[FromModel]->get_field(name);
-        check_for_avg_cnt(f);
         remove_these.insert(name);
       } else if (m_alias_to_orig.count(name)==1) {
         // An alias. If the aliased field was already processed, we can
@@ -1317,15 +1252,6 @@ process_requested_fields()
           const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
           auto alias = orig.alias(name);
           fm_model->add_field(alias);
-          // An alias is masked like its target: use the same avg count, or one
-          // named after the alias if the target has a count of its own
-          // NOTE: the target may be a model field that this loop has yet to visit
-          check_for_avg_cnt(orig);
-          auto cnt_it = m_field_to_avg_cnt_suffix.find(orig.name());
-          if (cnt_it!=m_field_to_avg_cnt_suffix.end()) {
-            const bool own_cnt = cnt_it->second=="_"+orig.name();
-            m_field_to_avg_cnt_suffix.emplace(name, own_cnt ? "_"+name : cnt_it->second);
-          }
           remove_these.insert(name);
         }
       } else {

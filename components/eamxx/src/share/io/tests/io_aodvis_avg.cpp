@@ -134,7 +134,7 @@ TEST_CASE ("averaged_aodvis")
 
   scorpio::register_file(filename,scorpio::Read);
   REQUIRE (scorpio::has_var(filename,aod_name));
-  REQUIRE (scorpio::has_var(filename,"avg_count_" + aod_name + "_ncol"));
+  REQUIRE (scorpio::has_var(filename,"num_valid_snapshots_" + aod_name));
   CHECK (scorpio::has_attribute(filename,aod_name,"_FillValue"));
   scorpio::release_file(filename);
 
