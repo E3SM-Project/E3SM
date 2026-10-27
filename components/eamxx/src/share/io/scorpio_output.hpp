@@ -248,7 +248,6 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt         = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
 
