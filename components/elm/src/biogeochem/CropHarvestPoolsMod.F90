@@ -53,18 +53,18 @@ contains
        c = filter_soilc(fc)
 
        ! calculate fluxes (1/sec)
-       col_cf%prod1c_loss(c)    = col_cs%prod1c(c)    * kprod1
+       col_cf%core%prod1_loss(c)    = col_cs%core%prod1(c)    * kprod1
 
        if ( use_c13 ) then
-          c13_col_cf%prod1c_loss(c)  = c13_col_cs%prod1c(c)  * kprod1
+          c13_col_cf%core%prod1_loss(c)  = c13_col_cs%core%prod1(c)  * kprod1
        endif
 
        if ( use_c14 ) then
-          c14_col_cf%prod1c_loss(c)  = c14_col_cs%prod1c(c)  * kprod1
+          c14_col_cf%core%prod1_loss(c)  = c14_col_cs%core%prod1(c)  * kprod1
        endif
 
-       col_nf%prod1n_loss(c)    = col_ns%prod1n(c)    * kprod1
-       col_pf%prod1p_loss(c)  = col_ps%prod1p(c)  * kprod1
+       col_nf%core%prod1_loss(c)    = col_ns%core%prod1(c)    * kprod1
+       col_pf%core%prod1_loss(c)  = col_ps%core%prod1(c)  * kprod1
     end do
 
 
@@ -73,29 +73,29 @@ contains
        c = filter_soilc(fc)
 
        ! fluxes into wood product pools, from harvest
-       col_cs%prod1c(c)    = col_cs%prod1c(c)    + &
-            col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest
-            col_cf%prod1c_loss(c)*dt                 ! from decomposition
+       col_cs%core%prod1(c)    = col_cs%core%prod1(c)    + &
+            col_cf%core%hrv_crop_to_prod1(c)*dt     - & ! from harvest
+            col_cf%core%prod1_loss(c)*dt                 ! from decomposition
 
        if ( use_c13 ) then
-          c13_col_cs%prod1c(c)  = c13_col_cs%prod1c(c)  + &
-               c13_col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest
-               c13_col_cf%prod1c_loss(c)*dt                 ! from decomposition
+          c13_col_cs%core%prod1(c)  = c13_col_cs%core%prod1(c)  + &
+               c13_col_cf%core%hrv_crop_to_prod1(c)*dt     - & ! from harvest
+               c13_col_cf%core%prod1_loss(c)*dt                 ! from decomposition
        endif
 
        if ( use_c14 ) then
-          c14_col_cs%prod1c(c)  = c14_col_cs%prod1c(c)  + &
-               c14_col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest
-               c14_col_cf%prod1c_loss(c)*dt                 ! from decomposition
+          c14_col_cs%core%prod1(c)  = c14_col_cs%core%prod1(c)  + &
+               c14_col_cf%core%hrv_crop_to_prod1(c)*dt     - & ! from harvest
+               c14_col_cf%core%prod1_loss(c)*dt                 ! from decomposition
        endif
 
-       col_ns%prod1n(c)    = col_ns%prod1n(c)    + &
-            col_nf%hrv_cropn_to_prod1n(c)*dt     - & ! from harvest
-            col_nf%prod1n_loss(c)*dt                 ! from decomposition
+       col_ns%core%prod1(c)    = col_ns%core%prod1(c)    + &
+            col_nf%core%hrv_crop_to_prod1(c)*dt     - & ! from harvest
+            col_nf%core%prod1_loss(c)*dt                 ! from decomposition
 
-       col_ps%prod1p(c)    = col_ps%prod1p(c)    + &
-            col_pf%hrv_cropp_to_prod1p(c)*dt     - & ! from harvest
-            col_pf%prod1p_loss(c)*dt                 ! from decomposition
+       col_ps%core%prod1(c)    = col_ps%core%prod1(c)    + &
+            col_pf%core%hrv_crop_to_prod1(c)*dt     - & ! from harvest
+            col_pf%core%prod1_loss(c)*dt                 ! from decomposition
 
     end do ! end of column loop
 

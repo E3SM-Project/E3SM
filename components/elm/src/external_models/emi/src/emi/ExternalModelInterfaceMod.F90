@@ -30,7 +30,6 @@ module ExternalModelInterfaceMod
   use EMI_ColumnType_Exchange               , only : EMI_Pack_ColumnType_for_EM
   use EMI_Filter_Exchange                   , only : EMI_Pack_Filter_for_EM
   use EMI_Landunit_Exchange                 , only : EMI_Pack_Landunit_for_EM
-  use EMI_CNCarbonStateType_ExchangeMod
   !
   implicit none
   !
@@ -431,7 +430,7 @@ contains
        num_filter_lun, filter_lun,                            &
        soilhydrology_vars, soilstate_vars, waterflux_vars,    &
        waterstate_vars, temperature_vars,  atm2lnd_vars,      &
-       canopystate_vars, energyflux_vars, carbonstate_vars)
+       canopystate_vars, energyflux_vars)
     !
     ! !DESCRIPTION:
     !
@@ -449,7 +448,6 @@ contains
     use atm2lndType            , only : atm2lnd_type
     use CanopyStateType        , only : canopystate_type
     use EnergyFluxType         , only : energyflux_type
-    use CNCarbonStateType      , only : carbonstate_type
     use decompMod              , only : get_clump_bounds
     !
     implicit none
@@ -475,7 +473,6 @@ contains
     type(atm2lnd_type)       , optional , intent(inout) :: atm2lnd_vars
     type(canopystate_type)   , optional , intent(inout) :: canopystate_vars
     type(energyflux_type)    , optional , intent(inout) :: energyflux_vars
-    type(carbonstate_type)   , optional , intent(inout) :: carbonstate_vars
     !
     integer          :: index_em
     real(r8)         :: dtime
@@ -658,12 +655,6 @@ contains
             num_filter_col, filter_col)
     deallocate(filter_col)
 
-    if (present(carbonstate_vars)  .and. &
-         present(num_hydrologyc)   .and. &
-         present(filter_hydrologyc)) then
-       call EMI_Pack_CNCarbonStateType_at_Column_Level_for_EM(l2e_driver_list(iem), em_stage, &
-            num_hydrologyc, filter_hydrologyc, carbonstate_vars)
-    endif
 
     call EMID_Verify_All_Data_Is_Set(l2e_driver_list(iem), em_stage)
 
@@ -757,12 +748,6 @@ contains
             num_nolakec_and_nourbanc, filter_nolakec_and_nourbanc, temperature_vars)
     endif
 
-    if (present(carbonstate_vars)  .and. &
-         present(num_hydrologyc)   .and. &
-         present(filter_hydrologyc)) then
-       call EMI_Unpack_CNCarbonStateType_at_Column_Level_from_EM(e2l_driver_list(iem), em_stage, &
-            num_hydrologyc, filter_hydrologyc, carbonstate_vars)
-    endif
 
     if (em_id == EM_ID_STUB) then
        write(iulog,*)'     2.4 Value of variables received by ELM'

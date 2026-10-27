@@ -143,8 +143,6 @@ module CNStateType
      real(r8), pointer :: tempmax_retransp_patch       (:)     ! patch temporary annual max of retranslocated P pool (gP/m2)
      real(r8), pointer :: annmax_retransp_patch        (:)     ! patch annual max of retranslocated P pool (gP/m2)
 
-     real(r8), pointer :: frootc_nfix_scalar_col       (:)     ! col scalar for nitrogen fixation
-     real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:) ! cn ratios of the decomposition pools
 
      real(r8), pointer :: fpg_nh4_vr_col               (:,:)   ! fraction of plant nh4 demand that is satisfied (no units) BGC mode
      real(r8), pointer :: fpg_no3_vr_col               (:,:)   ! fraction of plant no3 demand that is satisfied (no units) BGC mode
@@ -152,15 +150,11 @@ module CNStateType
      real(r8), pointer :: fpg_p_vr_col                 (:,:)   ! fraction of plant p demand that is satisfied (no units) 
      real(r8), pointer :: cn_scalar                    (:)     ! cn scaling factor for root n uptake kinetics (no units) 
      real(r8), pointer :: cp_scalar                    (:)     ! cp scaling factor for root p uptake kinetics (no units)
-     real(r8), pointer :: np_scalar                    (:)     ! np scaling factor for root n/p uptake kinetics (no units)
-     real(r8), pointer :: cost_ben_scalar              (:)     ! cost benefit analysis scaling factor for root n uptake kinetics (no units)
      real(r8), pointer :: cn_scalar_runmean            (:)     ! long term average of cn scaling factor for root n uptake kinetics (no units) 
      real(r8), pointer :: cp_scalar_runmean            (:)     ! long term average of cp scaling factor for root p uptake kinetics (no units)
      real(r8), pointer :: water_scalar                 (:)     ! water scaling factor for plant dynamic allocation
      real(r8), pointer :: water_scalar_runmean         (:)     ! long term average of water scaling factor for plant allocation
 
-     real(r8), pointer :: frac_loss_lit_to_fire_col        (:)
-     real(r8), pointer :: frac_loss_cwd_to_fire_col        (:)
 
      ! soil phosphorus pools Qing Z. 2017
      real(r8), pointer :: labp_col             (:)   ! labile phosphorus g/m2
@@ -293,8 +287,6 @@ contains
     allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = spval
     allocate(this%lfwt_col            (begc:endc))                   ; this%lfwt_col            (:)   = spval
     allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = spval
-    allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = spval
-    allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = spval
 
     allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = spval
     allocate(this%days_active_patch           (begp:endp)) ;    this%days_active_patch           (:) = spval
@@ -336,14 +328,10 @@ contains
     allocate(this%fpg_p_vr_col                (begc:endc,1:nlevdecomp_full)) ; this%fpg_p_vr_col  (:,:) = spval
     allocate(this%cn_scalar                   (begp:endp))                   ; this%cn_scalar     (:) = 0.0
     allocate(this%cp_scalar                   (begp:endp))                   ; this%cp_scalar     (:) = 0.0
-    allocate(this%np_scalar                   (begp:endp))                   ; this%np_scalar     (:) = 0.0
-    allocate(this%cost_ben_scalar             (begp:endp))                   ; this%cost_ben_scalar(:) = 0.0
     allocate(this%cn_scalar_runmean           (begp:endp))                   ; this%cn_scalar_runmean (:) = 0.0
     allocate(this%cp_scalar_runmean           (begp:endp))                   ; this%cp_scalar_runmean (:) = 0.0
     allocate(this%water_scalar                (begp:endp))                   ; this%water_scalar  (:) = 0._r8
     allocate(this%water_scalar_runmean        (begp:endp))                   ; this%water_scalar_runmean(:) = 0._r8
-    allocate(this%frac_loss_lit_to_fire_col       (begc:endc))               ; this%frac_loss_lit_to_fire_col(:) =0._r8
-    allocate(this%frac_loss_cwd_to_fire_col       (begc:endc))               ; this%frac_loss_cwd_to_fire_col(:) =0._r8
     allocate(fert_type                        (begc:endc))                   ; fert_type     (:) = 0
     allocate(fert_continue                    (begc:endc))                   ; fert_continue (:) =0
     allocate(fert_dose                        (begc:endc,1:12))              ; fert_dose     (:,:) = spval

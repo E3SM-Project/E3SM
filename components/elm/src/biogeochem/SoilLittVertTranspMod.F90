@@ -73,37 +73,37 @@ contains
       allocate(transport_ptr_list(ntype))
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! C
-      transport_ptr_list(1)%conc_ptr        => col_cs%decomp_cpools_vr
-      transport_ptr_list(1)%src_ptr         => col_cf%decomp_cpools_sourcesink
-      transport_ptr_list(1)%trcr_tend_ptr   => col_cf%decomp_cpools_transport_tendency
+      transport_ptr_list(1)%conc_ptr        => col_cs%core%decomp_pools_vr
+      transport_ptr_list(1)%src_ptr         => col_cf%core%decomp_pools_sourcesink
+      transport_ptr_list(1)%trcr_tend_ptr   => col_cf%core%decomp_pools_transport_tendency
       ! N
-      transport_ptr_list(2)%conc_ptr        => col_ns%decomp_npools_vr
-      transport_ptr_list(2)%src_ptr         => col_nf%decomp_npools_sourcesink
-      transport_ptr_list(2)%trcr_tend_ptr   => col_nf%decomp_npools_transport_tendency
+      transport_ptr_list(2)%conc_ptr        => col_ns%core%decomp_pools_vr
+      transport_ptr_list(2)%src_ptr         => col_nf%core%decomp_pools_sourcesink
+      transport_ptr_list(2)%trcr_tend_ptr   => col_nf%core%decomp_pools_transport_tendency
       ! P
-      transport_ptr_list(3)%conc_ptr        => col_ps%decomp_ppools_vr
-      transport_ptr_list(3)%src_ptr         => col_pf%decomp_ppools_sourcesink
-      transport_ptr_list(3)%trcr_tend_ptr   => col_pf%decomp_ppools_transport_tendency
+      transport_ptr_list(3)%conc_ptr        => col_ps%core%decomp_pools_vr
+      transport_ptr_list(3)%src_ptr         => col_pf%core%decomp_pools_sourcesink
+      transport_ptr_list(3)%trcr_tend_ptr   => col_pf%core%decomp_pools_transport_tendency
       ! c13 and c14 if there
       if(use_c14 .and. use_c13) then
          !
-         transport_ptr_list(4)%conc_ptr       => c13_col_cs%decomp_cpools_vr
-         transport_ptr_list(4)%src_ptr        => c13_col_cf%decomp_cpools_sourcesink
-         transport_ptr_list(4)%trcr_tend_ptr  => c13_col_cf%decomp_cpools_transport_tendency
+         transport_ptr_list(4)%conc_ptr       => c13_col_cs%core%decomp_pools_vr
+         transport_ptr_list(4)%src_ptr        => c13_col_cf%core%decomp_pools_sourcesink
+         transport_ptr_list(4)%trcr_tend_ptr  => c13_col_cf%core%decomp_pools_transport_tendency
          !
-         transport_ptr_list(5)%conc_ptr       => c14_col_cs%decomp_cpools_vr
-         transport_ptr_list(5)%src_ptr        => c14_col_cf%decomp_cpools_sourcesink
-         transport_ptr_list(5)%trcr_tend_ptr  => c14_col_cf%decomp_cpools_transport_tendency
+         transport_ptr_list(5)%conc_ptr       => c14_col_cs%core%decomp_pools_vr
+         transport_ptr_list(5)%src_ptr        => c14_col_cf%core%decomp_pools_sourcesink
+         transport_ptr_list(5)%trcr_tend_ptr  => c14_col_cf%core%decomp_pools_transport_tendency
       else
          if(use_c13) then
-            transport_ptr_list(4)%conc_ptr       => c13_col_cs%decomp_cpools_vr
-            transport_ptr_list(4)%src_ptr        => c13_col_cf%decomp_cpools_sourcesink
-            transport_ptr_list(4)%trcr_tend_ptr  => c13_col_cf%decomp_cpools_transport_tendency
+            transport_ptr_list(4)%conc_ptr       => c13_col_cs%core%decomp_pools_vr
+            transport_ptr_list(4)%src_ptr        => c13_col_cf%core%decomp_pools_sourcesink
+            transport_ptr_list(4)%trcr_tend_ptr  => c13_col_cf%core%decomp_pools_transport_tendency
          end if
          if (use_c14) then
-            transport_ptr_list(4)%conc_ptr       => c14_col_cs%decomp_cpools_vr
-            transport_ptr_list(4)%src_ptr        => c14_col_cf%decomp_cpools_sourcesink
-            transport_ptr_list(4)%trcr_tend_ptr  => c14_col_cf%decomp_cpools_transport_tendency
+            transport_ptr_list(4)%conc_ptr       => c14_col_cs%core%decomp_pools_vr
+            transport_ptr_list(4)%src_ptr        => c14_col_cf%core%decomp_pools_sourcesink
+            transport_ptr_list(4)%trcr_tend_ptr  => c14_col_cf%core%decomp_pools_transport_tendency
          end if
       end if
 

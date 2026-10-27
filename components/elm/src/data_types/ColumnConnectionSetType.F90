@@ -11,22 +11,10 @@ module ColumnConnectionSetType
   public
 
   type, public :: col_connection_set_type
-     Integer           :: nconn                          ! number of connections
      Integer, pointer  :: col_id_up(:)         => null() ! list of ids of upwind cells
      Integer, pointer  :: col_id_dn(:)         => null() ! list of ids of downwind cells
-     Integer, pointer  :: grid_id_up(:)        => null() ! list of ids of upwind cells
-     Integer, pointer  :: grid_id_dn(:)        => null() ! list of ids of downwind cells
      integer, pointer  :: grid_id_up_norder(:) => null() ! list of ids of upwind cells in natural order
      integer, pointer  :: grid_id_dn_norder(:) => null() ! list of ids of downwind cells in natural order
-     integer, pointer  :: col_up_forder(:)     => null() ! the order in which the lateral flux should be added for upwind cells
-     integer, pointer  :: col_dn_forder(:)     => null() ! the order in which the lateral flux should be added for downwind cells
-     Real(r8), pointer :: dist(:)              => null() ! list of distance vectors
-     Real(r8), pointer :: face_length(:)       => null() ! list of edge of faces normal to distance vectors
-     Real(r8), pointer :: uparea(:)            => null() ! list of up cell areas of horizaontal faces 
-     Real(r8), pointer :: downarea(:)          => null() ! list of down cell areas of horizaontal faces 
-     Real(r8), pointer :: dzg(:)               => null() ! list of areas of dz between downwind and upwind cells
-     Real(r8), pointer :: facecos(:)           => null() ! dot product of the cell face normal vector and cell centroid vector
-     Real(r8), pointer :: vertcos(:)           => null() ! dot product of the cell face normal vector and cell centroid vector for vertical flux, the rank for vertcos
      ! is from 1 to column size which is different from rank of lateral faces
    contains
 #ifdef MOAB_LATERAL
@@ -89,21 +77,10 @@ contains
     end do
 
     ! allocate and initialize data structure
-    this%nconn = nconn
     allocate(this%col_id_up(nconn))         ;  this%col_id_up(:)         = 0
     allocate(this%col_id_dn(nconn))         ;  this%col_id_dn(:)         = 0
-    allocate(this%grid_id_up(nconn))        ;  this%grid_id_up(:)        = 0
-    allocate(this%grid_id_dn(nconn))        ;  this%grid_id_dn(:)        = 0
     allocate(this%grid_id_up_norder(nconn)) ;  this%grid_id_up_norder(:) = 0
     allocate(this%grid_id_dn_norder(nconn)) ;  this%grid_id_dn_norder(:) = 0
-    allocate(this%col_up_forder(nconn))     ;  this%col_up_forder(:)     = 0
-    allocate(this%col_dn_forder(nconn))     ;  this%col_dn_forder(:)     = 0
-    allocate(this%face_length(nconn))       ;  this%face_length(:)       = 0
-    allocate(this%uparea(nconn))            ;  this%uparea(:)            = 0
-    allocate(this%downarea(nconn))          ;  this%downarea(:)          = 0
-    allocate(this%dist(nconn))              ;  this%dist(:)              = 0
-    allocate(this%dzg(nconn))               ;  this%dzg(:)               = 0
-    allocate(this%facecos(nconn))           ;  this%facecos(:)           = 0
 
     nconn = 0
     do iconn = 1, moab_edge_internal%num
@@ -119,8 +96,6 @@ contains
           this%col_id_up(nconn) = nat_col_id(g_up_elm)
           this%col_id_dn(nconn) = nat_col_id(g_dn_elm)
 
-          this%grid_id_up(nconn) = g_up_elm
-          this%grid_id_dn(nconn) = g_dn_elm
 
           this%grid_id_up_norder(nconn) = moab_gcell%natural_id(g_up_moab)
           this%grid_id_dn_norder(nconn) = moab_gcell%natural_id(g_dn_moab)

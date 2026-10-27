@@ -45,7 +45,7 @@ module elm_instMod
     type(bounds_type), intent(in) :: bounds_proc
 
     call col_pp%Init(bounds_proc%begc, bounds_proc%endc)
-    call col_ws%Init(bounds_proc%begc, bounds_proc%endc)
+    call col_ws%Init(bounds_proc%begc, bounds_proc%endc, col_es=col_es)
     call col_wf%Init(bounds_proc%begc, bounds_proc%endc)
     call col_ef%Init(bounds_proc%begc, bounds_proc%endc)
     call col_es%Init(bounds_proc%begc, bounds_proc%endc)
