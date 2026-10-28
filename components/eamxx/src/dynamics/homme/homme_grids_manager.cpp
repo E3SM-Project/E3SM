@@ -114,17 +114,16 @@ build_grids ()
       "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
 
   // We know we need the dyn grid, so build it
-  build_dynamics_grid ();
+  auto dyn_unique_grid_gids = build_dynamics_grid ();
 
   // Also the GLL grid with no rebalance is needed for sure
   build_physics_grid("gll","none");
 
-  // Set the physics_gll grid as io_aux_grid in the dyn grid
+  // The physics_gll grid is the unique grid of the dyn grid (same points, but without
+  // the repetitions due to the element boundaries). IO uses it to save the dyn grid fields.
   auto physics_gll_grid = get_grid_nonconst("physics_gll");
   auto dyn_grid = get_grid_nonconst("dynamics");
-  dyn_grid->set_aux_grid("default",physics_gll_grid);
-  dyn_grid->set_aux_grid("cg",physics_gll_grid);
-  dyn_grid->set_aux_grid("dg",dyn_grid);
+  dyn_grid->set_unique_grid(physics_gll_grid,dyn_unique_grid_gids);
 
   // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
@@ -141,10 +140,10 @@ build_grids ()
   cleanup_grid_init_data_f90 ();
 }
 
-void HommeGridsManager::build_dynamics_grid () {
+Field HommeGridsManager::build_dynamics_grid () {
   const std::string name = "dynamics";
   if (has_grid(name)) {
-    return;
+    return Field();
   }
 
   using gid_type = AbstractGrid::gid_type;
@@ -160,7 +159,11 @@ void HommeGridsManager::build_dynamics_grid () {
 
   // Filling the cg/dg gids, elgpgp, coords, lat/lon views
   auto dg_dofs = dyn_grid->get_dofs_gids();
-  auto cg_dofs = dyn_grid->get_cg_dofs_gids();
+  // The gids of the dyn grid dofs on the unique grid (physics_gll)
+  using namespace ShortFieldTagsNames;
+  Field cg_dofs (FieldIdentifier("unique_grid_gids",FieldLayout({CMP},{dyn_grid->get_num_local_dofs()}),
+                                 none,dyn_grid->name(),DataType::IntType));
+  cg_dofs.allocate_view();
   auto elgpgp  = dyn_grid->get_lid_to_idx_map();
   auto elgids  = dyn_grid->get_partitioned_dim_gids ();
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
@@ -195,6 +198,8 @@ void HommeGridsManager::build_dynamics_grid () {
 
   dyn_grid->m_disambiguation_suffix = "_d";
   add_nonconst_grid(dyn_grid);
+
+  return cg_dofs;
 }
 
 void HommeGridsManager::

@@ -77,6 +77,14 @@ std::string find_filename_in_rpointer (
     const OutputAvgType avg_type = OutputAvgType::Instant,
     const IOControl& control = {});
 
+// Interpret the 'output_data_layout' option of an output stream.
+//  - 'native': fields are written as they appear on their grid
+//  - 'unique': fields are written on the grid's unique grid (see AbstractGrid::get_unique_grid),
+//    which is the grid itself if it is already unique. E.g., the dynamics grid is written
+//    on the physics_gll grid. This is the default.
+// Returns true if the layout is 'native'. Throws if the option is not valid.
+bool is_native_output_layout (const std::string& output_data_layout);
+
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
 std::shared_ptr<AbstractDiagnostic>

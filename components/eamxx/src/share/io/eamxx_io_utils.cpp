@@ -6,6 +6,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
 
+#include <ekat_assert.hpp>
 #include <ekat_string_utils.hpp>
 
 #include <fstream>
@@ -296,6 +297,15 @@ create_diagnostic (const std::string& diag_field_name,
   auto diag = DiagnosticFactory::instance().create(diag_name,comm,params,grid);
 
   return diag;
+}
+
+bool is_native_output_layout (const std::string& output_data_layout)
+{
+  EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="unique",
+      "Error! Invalid output_data_layout.\n"
+      " - output_data_layout: " + output_data_layout + "\n"
+      " - valid choices: native, unique\n");
+  return output_data_layout=="native";
 }
 
 } // namespace scream

@@ -468,29 +468,63 @@ AbstractGrid::get_unique_gids () const
   return unique_dofs;
 }
 
-std::shared_ptr<AbstractGrid>
-AbstractGrid::get_aux_grid(const std::string& data_layout) const
+std::shared_ptr<const AbstractGrid>
+AbstractGrid::get_unique_grid () const
 {
-  if (m_aux_grids.count(data_layout)==1) {
-    return m_aux_grids.at(data_layout);
-  } else {
-    return nullptr;
+  if (m_unique_grid) {
+    return m_unique_grid;
   }
+  return shared_from_this();
+}
+
+std::shared_ptr<AbstractGrid>
+AbstractGrid::get_unique_grid ()
+{
+  if (m_unique_grid) {
+    return m_unique_grid;
+  }
+  return shared_from_this();
 }
 
 void AbstractGrid::
-set_aux_grid (const std::string& data_layout, const std::shared_ptr<AbstractGrid>& aux_grid)
+set_unique_grid (const std::shared_ptr<AbstractGrid>& unique_grid,
+                 const Field& unique_grid_gids)
 {
-  m_aux_grids[data_layout] = aux_grid;
+  EKAT_REQUIRE_MSG (unique_grid!=nullptr,
+      "Error! Cannot set a null unique grid.\n"
+      " - grid name: " + name() + "\n");
+  EKAT_REQUIRE_MSG (unique_grid.get()!=this,
+      "Error! A grid cannot be its own unique grid. Simply do not set it, if it has no replicated dofs.\n"
+      " - grid name: " + name() + "\n");
+  EKAT_REQUIRE_MSG (unique_grid->m_unique_grid==nullptr,
+      "Error! The unique grid of a grid must itself be unique.\n"
+      " - grid name       : " + name() + "\n"
+      " - unique grid name: " + unique_grid->name() + "\n");
+  EKAT_REQUIRE_MSG (unique_grid->get_num_vertical_levels()==get_num_vertical_levels(),
+      "Error! The unique grid of a grid must have the same number of vertical levels.\n"
+      " - grid name       : " + name() + "\n"
+      " - unique grid name: " + unique_grid->name() + "\n");
+  EKAT_REQUIRE_MSG (unique_grid_gids.is_allocated(),
+      "Error! The field with the unique grid gids is not allocated.\n"
+      " - grid name: " + name() + "\n");
+  const auto& gids_layout = unique_grid_gids.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG (gids_layout.rank()==1 and gids_layout.dim(0)==get_num_local_dofs(),
+      "Error! The field with the unique grid gids must have one entry for each local dof.\n"
+      " - grid name: " + name() + "\n"
+      " - num local dofs: " + std::to_string(get_num_local_dofs()) + "\n"
+      " - field layout: " + gids_layout.to_string() + "\n");
+
+  m_unique_grid = unique_grid;
+  m_unique_grid_gids = unique_grid_gids;
 }
 
-std::vector<std::string> AbstractGrid::get_aux_grids_keys () const
+Field AbstractGrid::
+get_unique_grid_gids () const
 {
-  std::vector<std::string> keys;
-  for (const auto& it : m_aux_grids) {
-    keys.push_back(it.first);
-  }
-  return keys;
+  EKAT_REQUIRE_MSG (m_unique_grid!=nullptr,
+      "Error! This grid has no unique grid (it has no replicated dofs), hence no unique grid gids.\n"
+      " - grid name: " + name() + "\n");
+  return m_unique_grid_gids.get_const();
 }
 
 std::vector<int> AbstractGrid::
@@ -593,6 +627,13 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
   m_is_unique_computed = src.m_is_unique_computed;
 
   m_vkind = src.m_vkind;
+
+  // The unique grid is shared (it is not cloned). The gids are cloned only for deep copies
+  m_unique_grid = src.m_unique_grid;
+  if (src.m_unique_grid_gids.is_allocated()) {
+    m_unique_grid_gids = shallow ? src.m_unique_grid_gids
+                                 : src.m_unique_grid_gids.clone(CloneFlags::CopyData);
+  }
 }
 
 } // namespace scream
