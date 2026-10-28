@@ -381,6 +381,11 @@ public:
 
 protected:
 
+  Field (const std::shared_ptr<header_type>& header,
+         const std::shared_ptr<dual_view_t<char*>>& data,
+         const bool is_read_only = false)
+    : m_header(header), m_data(data), m_is_read_only(is_read_only) {}
+
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 

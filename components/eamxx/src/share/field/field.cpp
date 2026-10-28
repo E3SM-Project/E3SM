@@ -204,11 +204,7 @@ Field::alias (const std::string& name) const {
 
 Field
 Field::alias (const std::string& name,const std::string& grid_name) const {
-  Field f;
-  f.m_header = get_header().alias(name,grid_name);
-  f.m_data = m_data;
-  f.m_is_read_only = m_is_read_only;
-  return f;
+  return Field(get_header().alias(name,grid_name), m_data, m_is_read_only);
 }
 
 Field
@@ -218,11 +214,7 @@ Field::alias (const std::string& name, const std::map<FieldTag,std::string>& tag
 
 Field
 Field::alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
-  Field f;
-  f.m_header = get_header().alias(name, grid_name, tag_names);
-  f.m_data = m_data;
-  f.m_is_read_only = m_is_read_only;
-  return f;
+  return Field(get_header().alias(name, grid_name, tag_names), m_data, m_is_read_only);
 }
 
 Field
@@ -232,11 +224,7 @@ Field::alias (const std::string& name, const std::map<std::string,std::string>& 
 
 Field
 Field::alias (const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const {
-  Field f;
-  f.m_header = get_header().alias(name, grid_name, tag_names);
-  f.m_data = m_data;
-  f.m_is_read_only = m_is_read_only;
-  return f;
+  return Field(get_header().alias(name, grid_name, tag_names), m_data, m_is_read_only);
 }
 
 Field Field::
@@ -255,12 +243,8 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name,lt.clone().strip_dim(idim),sf_units,id.get_grid_name(),id.data_type());
 
-  // Create empty subfield, then set header and views
-  // Note: we can access protected members, since it's the same type
-  Field sf;
-  sf.m_header = create_subfield_header(sf_id,m_header,idim,index,dynamic);
-  sf.m_data = m_data;
-  sf.m_is_read_only = m_is_read_only;
+  // Create subfield with header and views
+  Field sf(create_subfield_header(sf_id,m_header,idim,index,dynamic), m_data, m_is_read_only);
 
   if (not sf.m_header->get_alloc_properties().contiguous() and
       not sf.host_and_device_share_memory_space()) {
@@ -321,12 +305,9 @@ Field Field::subfield(const std::string& sf_name,
   // Create identifier for subfield
   FieldIdentifier sf_id(sf_name, sf_layout, sf_units, id.get_grid_name(), id.data_type());
 
-  // Create empty subfield, then set header and views
-  // Note: we can access protected members, since it's the same type
-  Field sf;
-  sf.m_header = create_subfield_header(sf_id, m_header, idim, index_beg,
-                                       index_end);
-  sf.m_data = m_data;
+  // Create subfield with header and views
+  Field sf(create_subfield_header(sf_id, m_header, idim, index_beg, index_end),
+           m_data, m_is_read_only);
 
   if (not sf.m_header->get_alloc_properties().contiguous() and
       not sf.host_and_device_share_memory_space()) {
