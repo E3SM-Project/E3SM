@@ -71,7 +71,7 @@ std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
   auto se_grid = std::make_shared<SEGrid>("se",num_elems,num_gp,num_levs,comm);
 
   auto dg_gids   = se_grid->get_dofs_gids();
-  auto cg_gids   = se_grid->get_cg_dofs_gids();
+  auto cg_gids   = se_grid->get_lid_to_unique_gid_map();
   auto elem_gids = se_grid->get_partitioned_dim_gids();
   auto lid2idx   = se_grid->get_lid_to_idx_map();
 
@@ -124,7 +124,7 @@ TEST_CASE("io_dg_to_cg")
 
   auto se_grid = build_se_grid(comm);
   auto cg_grid = build_cg_grid(comm);
-  se_grid->set_aux_grid("cg",cg_grid);
+  se_grid->set_unique_grid(cg_grid);
 
   auto gm = std::make_shared<TestGridsManager>();
   gm->add(se_grid);
@@ -147,7 +147,7 @@ TEST_CASE("io_dg_to_cg")
   fm->init_fields_time_stamp(t0);
 
   // Fill the SE fields with values that depend on the CG gid of each dof
-  const auto se_gids = se_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
+  const auto se_gids = se_grid->get_lid_to_unique_gid_map().get_view<const gid_type*,Host>();
   const auto l2i     = se_grid->get_lid_to_idx_map().get_view<const int**,Host>();
   {
     auto f1 = fm->get_field("field_1",se_grid->name());

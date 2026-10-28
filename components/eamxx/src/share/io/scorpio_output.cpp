@@ -162,15 +162,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
 
-  bool change_data_layout = false;
-  if (not fm_grid->get_aux_grid(output_data_layout)) {
-    EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
-        "Error! Grid for requested output_data_layout not found among this grid's aux grids.\n"
-        " - grid name: " + fm_grid->name() + "\n"
-        " - output_data_layout: " + output_data_layout + "\n");
-  } else {
-    change_data_layout = true;
-  }
+  // Unless the native layout is requested, fields are written on the unique grid of the fm grid
+  // (which is the same as the fm grid if it is already unique)
+  const bool native_layout = is_native_output_layout(output_data_layout);
+  const bool change_data_layout = not native_layout and fm_grid->get_unique_grid()!=fm_grid;
 
   // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
@@ -274,18 +269,14 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       }
       m_horiz_remapper = hr;
     } else {
-      // Construct a remapper to the aux grid (likely, Dyn->PhysicsGLL)
-      grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
-      if (grid_after_hr->name()==grid_after_vr->name()) {
-        m_horiz_remapper = std::make_shared<IdentityRemapper>(grid_after_vr);
-      } else {
-        EKAT_REQUIRE_MSG (grid_after_vr->type()==GridType::SE and grid_after_hr->type()==GridType::Point,
-            "Error! Online remapping to an aux grid is only supported from a SE grid to a Point grid.\n"
-            " - grid name: " + grid_after_vr->name() + "\n"
-            " - aux grid name: " + grid_after_hr->name() + "\n"
-            " - output_data_layout: " + output_data_layout + "\n");
-        m_horiz_remapper = std::make_shared<DGToCGRemapper>(grid_after_vr,grid_after_hr);
-      }
+      // Construct a remapper to the unique grid (likely, Dyn->PhysicsGLL)
+      grid_after_hr = fm_grid->get_unique_grid();
+      EKAT_REQUIRE_MSG (grid_after_vr->type()==GridType::SE and grid_after_hr->type()==GridType::Point,
+          "Error! Online remapping to the unique grid is only supported from a SE grid to a Point grid.\n"
+          " - grid name: " + grid_after_vr->name() + "\n"
+          " - unique grid name: " + grid_after_hr->name() + "\n"
+          " - output_data_layout: " + output_data_layout + "\n");
+      m_horiz_remapper = std::make_shared<DGToCGRemapper>(grid_after_vr,grid_after_hr);
     }
     m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
     if (params.isParameter("enable_fine_grain_timers")) {
@@ -353,9 +344,8 @@ void AtmosphereOutput::init()
   m_io_grid  = fm_after_hr->get_grid();
   m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
 
-  EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
-      "Error! I/O only supports grids which are 'unique', meaning that the\n"
-      "       map dof_gid->proc_id is well defined.\n");
+  // NOTE: we don't check that the gids are unique across ranks, since that is a (collective)
+  //       validation that the grids manager did when it created the grid (see check_valid_dofs).
   EKAT_REQUIRE_MSG (
       (m_io_grid->get_global_max_dof_gid()-m_io_grid->get_global_min_dof_gid()+1)==m_io_grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");

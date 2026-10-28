@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/grid/se_grid.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/grid/grid_utils.hpp"
 #include "share/core/eamxx_types.hpp"
 
@@ -60,6 +61,50 @@ TEST_CASE("se_grid", "") {
   for (int i=0; i<se_grid->get_num_local_dofs(); ++i) {
     REQUIRE (dcopy_gids[i]==grid_gids[i]);
   }
+}
+
+TEST_CASE("unique_grid", "") {
+  using gid_type = AbstractGrid::gid_type;
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int num_levels = 72;
+
+  auto gids_ptr = [](const Field& f) {
+    return f.get_view<const gid_type*,Host>().data();
+  };
+
+  // A grid that is already unique is its own unique grid, and its lid->unique gid map is the dofs gids
+  auto pt_grid = std::make_shared<PointGrid>("pt_grid",10,num_levels,comm);
+  REQUIRE (pt_grid->get_unique_grid()==pt_grid);
+  REQUIRE (std::const_pointer_cast<const AbstractGrid>(pt_grid)->get_unique_grid()==pt_grid);
+  REQUIRE (gids_ptr(pt_grid->get_lid_to_unique_gid_map())==gids_ptr(pt_grid->get_dofs_gids()));
+
+  auto se_grid = std::make_shared<SEGrid>("se_grid",4,4,num_levels,comm);
+  REQUIRE (se_grid->get_unique_grid()==se_grid);
+
+  // The lid->unique gid map of a SE grid is its own field, with the same length as the dofs gids
+  auto map = se_grid->get_lid_to_unique_gid_map();
+  REQUIRE (gids_ptr(map)!=gids_ptr(se_grid->get_dofs_gids()));
+  REQUIRE (map.get_header().get_identifier().get_layout().size()==se_grid->get_num_local_dofs());
+
+  // Set the unique grid
+  se_grid->set_unique_grid(pt_grid);
+  REQUIRE (se_grid->get_unique_grid()==pt_grid);
+  REQUIRE (std::const_pointer_cast<const AbstractGrid>(se_grid)->get_unique_grid()==pt_grid);
+
+  // The unique grid is unique
+  REQUIRE (pt_grid->get_unique_grid()==pt_grid);
+
+  // Invalid inputs
+  REQUIRE_THROWS (se_grid->set_unique_grid(nullptr));
+  auto other_pt_grid = std::make_shared<PointGrid>("other_pt_grid",10,num_levels,comm);
+  REQUIRE_THROWS (other_pt_grid->set_unique_grid(se_grid));   // se_grid is not unique
+  auto bad_levels = std::make_shared<PointGrid>("bad_levels",10,num_levels+1,comm);
+  REQUIRE_THROWS (se_grid->set_unique_grid(bad_levels));
+
+  // Setting the grid as its own unique grid resets it
+  se_grid->set_unique_grid(se_grid);
+  REQUIRE (se_grid->get_unique_grid()==se_grid);
 }
 
 } // anonymous namespace

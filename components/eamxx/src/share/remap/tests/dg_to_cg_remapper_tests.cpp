@@ -38,7 +38,7 @@ std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
   auto se_grid = std::make_shared<SEGrid>("se",num_elems,num_gp,num_levs,comm);
 
   auto dg_gids   = se_grid->get_dofs_gids();
-  auto cg_gids   = se_grid->get_cg_dofs_gids();
+  auto cg_gids   = se_grid->get_lid_to_unique_gid_map();
   auto elem_gids = se_grid->get_partitioned_dim_gids();
   auto lid2idx   = se_grid->get_lid_to_idx_map();
 
@@ -133,7 +133,7 @@ TEST_CASE ("dg_to_cg_remap")
     auto s3d = make_se_field("s3d",se_grid->get_3d_scalar_layout(LEV));
     auto v3d = make_se_field("v3d",se_grid->get_3d_vector_layout(LEV,vec_dim,"vec"));
 
-    const auto se_gids = se_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
+    const auto se_gids = se_grid->get_lid_to_unique_gid_map().get_view<const gid_type*,Host>();
     const auto l2i     = se_grid->get_lid_to_idx_map().get_view<const int**,Host>();
     {
       auto h_s2d = s2d.get_view<Real***,Host>();

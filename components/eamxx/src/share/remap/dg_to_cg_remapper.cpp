@@ -15,13 +15,10 @@ compute_cg_to_se_dof_map (const AbstractGrid& se_grid,
 {
   using gid_type = AbstractGrid::gid_type;
 
-  const auto* se = dynamic_cast<const SEGrid*>(&se_grid);
-  EKAT_REQUIRE_MSG(se!=nullptr, "Error! Something went wrong casting the input grid to a SEGrid.\n");
-
   const int num_cg_dofs = cg_grid.get_num_local_dofs();
   const int num_se_dofs = se_grid.get_num_local_dofs();
 
-  auto se_gids = se->get_cg_dofs_gids().get_view<const gid_type*>();
+  auto se_gids = se_grid.get_lid_to_unique_gid_map().get_view<const gid_type*>();
   auto cg_gids = cg_grid.get_dofs_gids().get_view<const gid_type*>();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_cg_dofs);
