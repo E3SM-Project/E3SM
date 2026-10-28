@@ -188,57 +188,6 @@ jobs:
           # Print the full command, then run it
           echo "test_homme call: ${cmd[*]}"
           "${cmd[@]}"
-      - name: Show stderr/stdout of failed tests
-        if: failure()
-        working-directory: components/homme/ctest-build/tests
-        run: |
-          # The ctest log only says "check out/err files", so show (a few of) them here.
-          # First, the list of failed tests (lines are '<num>:<name>')
-          shopt -s nullglob
-          # (in dashboard mode, ctest appends a timestamp to the name: use the latest)
-          failed_list=""
-          candidates=(../Testing/Temporary/LastTestsFailed*.log)
-          if [ "${#candidates[@]}" -gt 0 ]; then
-            failed_list=$(ls -t "${candidates[@]}" | head -n 1)
-          fi
-          echo "=============== failed tests"
-          if [ -n "$failed_list" ]; then
-            cat "$failed_list"
-          fi
-
-          # Then, stderr/stdout of the first few failed tests that are not cxx-vs-f90 comparisons (which have
-          # no files of their own: their output is in the log). If we cannot tell, just show the first few.
-          names=()
-          if [ -n "$failed_list" ] && [ -s "$failed_list" ]; then
-            while IFS=: read -r _ name; do
-              case "$name" in
-                *_cxx_vs_f90) ;;
-                *) names+=("$name") ;;
-              esac
-            done < "$failed_list"
-          fi
-          if [ "${#names[@]}" -eq 0 ]; then
-            names=(*)
-          fi
-          n=0
-          for name in "${names[@]}"; do
-            for f in "$name"/*.err; do
-              [ -s "$f" ] || continue
-              # Skip the lines of stack traces, which hide the actual error message
-              echo "=============== $f (first 30 lines, without stack frames)"
-              grep -v -E '^[^ ]+ +[0-9A-Fa-f]{16} |^\[0x' "$f" | head -n 30 || true
-              out="${f%.err}.out"
-              if [ -s "$out" ]; then
-                echo "--------------- $out (last 15 lines)"
-                tail -n 15 "$out"
-              fi
-              n=$(( n + 1 ))
-              break
-            done
-            if [ "$n" -ge 4 ]; then
-              break
-            fi
-          done
       - name: Upload ctest logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -248,3 +197,4 @@ jobs:
             components/homme/ctest-build/CMakeCache.txt
             components/homme/ctest-build/Testing/**
             components/homme/ctest-build/tests/**/*.err
+            components/homme/ctest-build/tests/**/*.out
