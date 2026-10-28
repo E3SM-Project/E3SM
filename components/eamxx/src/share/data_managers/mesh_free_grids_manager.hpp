@@ -1,7 +1,7 @@
 #ifndef SCREAM_MESH_FREE_GRIDS_MANAGER_HPP
 #define SCREAM_MESH_FREE_GRIDS_MANAGER_HPP
 
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 
 #include <ekat_comm.hpp>
 
@@ -18,9 +18,6 @@ namespace scream {
 class MeshFreeGridsManager : public GridsManager
 {
 public:
-  using string_pair = std::pair<std::string,std::string>;
-  using remap_repo_type = std::map<string_pair,remapper_ptr_type>;
-
   MeshFreeGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p);
 
   virtual ~MeshFreeGridsManager () = default;
@@ -42,14 +39,8 @@ protected:
     return m_params.get<std::string>("reference_grid");
   }
 
-  remapper_ptr_type
-  do_create_remapper (const grid_ptr_type from_grid,
-                      const grid_ptr_type to_grid) const;
-
   void load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const;
   void load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string& filename) const;
-  remap_repo_type     m_remappers;
-
   ekat::ParameterList m_params;
 
   ekat::Comm          m_comm;
