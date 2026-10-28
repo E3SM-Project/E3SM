@@ -43,9 +43,64 @@
     end do
  end do
  call test_equation_of_time()
+ call test_fixed_year_continuity()
  print *, 'PASS'
 
  contains
+
+ subroutine test_fixed_year_continuity()
+   use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+   use shr_kind_mod, only: SHR_KIND_I8
+   use shr_orb_mod, only: shr_orb_decl_fixed_year
+   real(SHR_KIND_R8) :: current_days, prior_days, next_days, epsilon, day
+   real(SHR_KIND_R8) :: before_delta, after_delta, before_factor, after_factor, before_eot, after_eot
+   real(SHR_KIND_R8) :: reference_delta, reference_factor, reference_eot, selected_days, orbital_day
+   integer :: current_length, prior_length, next_length, exponent, sample
+
+   do current_length = 365,366
+  current_days = real(current_length,SHR_KIND_R8)
+  do prior_length = 365,366
+    prior_days = real(prior_length,SHR_KIND_R8)
+    call shr_orb_decl_fixed_year(80.5_SHR_KIND_R8,current_days,prior_days, &
+      0._SHR_KIND_R8,0._SHR_KIND_R8,0._SHR_KIND_R8,0.409_SHR_KIND_R8, &
+      after_delta,after_factor,after_eot)
+    if (abs(after_delta) > 1.e-14_SHR_KIND_R8 .or. abs(after_eot) > 1.e-8_SHR_KIND_R8) stop 20
+    do sample = 1,current_length*4
+      day = 1._SHR_KIND_R8 + real(sample-1,SHR_KIND_R8)/4._SHR_KIND_R8
+      selected_days = current_days
+      if (day < 80.5_SHR_KIND_R8) selected_days = prior_days
+      orbital_day = day
+      if (selected_days /= 365._SHR_KIND_R8) &
+        orbital_day = 80.5_SHR_KIND_R8 + (day-80.5_SHR_KIND_R8)*365._SHR_KIND_R8/selected_days
+      call shr_orb_decl_fixed_year(day,current_days,prior_days,0.0167_SHR_KIND_R8, &
+        1.8_SHR_KIND_R8,0._SHR_KIND_R8,0.409_SHR_KIND_R8,after_delta,after_factor,after_eot)
+      call shr_orb_decl(orbital_day,0.0167_SHR_KIND_R8,1.8_SHR_KIND_R8,0._SHR_KIND_R8, &
+        0.409_SHR_KIND_R8,reference_delta,reference_factor,eot_seconds=reference_eot)
+      if (.not. all(ieee_is_finite([after_delta,after_factor,after_eot]))) stop 21
+      if (abs(after_delta) > 0.41_SHR_KIND_R8 .or. after_factor < 0.9_SHR_KIND_R8 .or. &
+        after_factor > 1.1_SHR_KIND_R8 .or. abs(after_eot) > 1200._SHR_KIND_R8) stop 22
+      if (transfer(after_delta,0_SHR_KIND_I8) /= transfer(reference_delta,0_SHR_KIND_I8)) stop 23
+      if (transfer(after_factor,0_SHR_KIND_I8) /= transfer(reference_factor,0_SHR_KIND_I8)) stop 24
+      if (transfer(after_eot,0_SHR_KIND_I8) /= transfer(reference_eot,0_SHR_KIND_I8)) stop 25
+    end do
+    do next_length = 365,366
+      next_days = real(next_length,SHR_KIND_R8)
+      do exponent = 3,8
+     epsilon = 10._SHR_KIND_R8**(-exponent)
+     call shr_orb_decl_fixed_year(current_days+1._SHR_KIND_R8-epsilon,current_days,prior_days, &
+       0.0167_SHR_KIND_R8,1.8_SHR_KIND_R8,0._SHR_KIND_R8,0.409_SHR_KIND_R8, &
+       before_delta,before_factor,before_eot)
+     call shr_orb_decl_fixed_year(1._SHR_KIND_R8+epsilon,next_days,current_days, &
+       0.0167_SHR_KIND_R8,1.8_SHR_KIND_R8,0._SHR_KIND_R8,0.409_SHR_KIND_R8, &
+       after_delta,after_factor,after_eot)
+     if (abs(after_delta-before_delta) > 0.03_SHR_KIND_R8*epsilon+1.e-12_SHR_KIND_R8) stop 26
+     if (abs(after_factor-before_factor) > 0.01_SHR_KIND_R8*epsilon+1.e-12_SHR_KIND_R8) stop 27
+     if (abs(after_eot-before_eot) > 100._SHR_KIND_R8*epsilon+1.e-8_SHR_KIND_R8) stop 28
+      end do
+    end do
+  end do
+   end do
+ end subroutine test_fixed_year_continuity
 
  subroutine test_equation_of_time()
    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite

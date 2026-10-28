@@ -822,7 +822,8 @@ contains
     real(r8)            :: calday               ! calendar day including fraction, at 0e
     real(r8)            :: nextsw_cday          ! calendar day of next atm shortwave
    integer(in) :: nextsw_ymd
-   real(r8) :: nextsw_tod
+   real(r8) :: nextsw_tod, nextsw_dt_avg
+   real(r8) :: eot_seconds
    logical :: nextsw_valid
     real(r8)            :: anidr                ! albedo: near infrared, direct
     real(r8)            :: avsdr                ! albedo: visible      , direct
@@ -918,10 +919,6 @@ contains
                & + a2x_o%rAttr(index_a2x_Faxa_swndf,n) &
                & + a2x_o%rAttr(index_a2x_Faxa_swvdr,n) &
                & + a2x_o%rAttr(index_a2x_Faxa_swvdf,n)
-          if ( anidr == 1.0_r8 ) then ! dark side of earth
-             swupc = 0.0_r8
-             swdnc = 0.0_r8
-          end if
           xao_o%rAttr(index_xao_Faox_swdn,n) = swdnc
           xao_o%rAttr(index_xao_Faox_swup,n) = swupc
        end do
@@ -931,14 +928,18 @@ contains
 
        call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday,orb_eccen=eccen, &
             orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
-            nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, nextsw_valid=nextsw_valid)
+            nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, nextsw_valid=nextsw_valid, &
+            nextsw_dt_avg=nextsw_dt_avg)
        if (nextsw_cday >= -0.5_r8) then
           calday = nextsw_cday
-          if (seq_timemgr_GetCalendar() == seq_timemgr_gregorian) then
+           eot_seconds = 0._r8
+           if (seq_timemgr_GetCalendar() == seq_timemgr_gregorian .or. &
+              seq_infodata_UseEquationOfTime(infodata)) then
              if (.not. nextsw_valid) then
-                call shr_sys_abort('Gregorian ocean albedo requires a full next-shortwave timestamp; old restart is ambiguous')
+                call shr_sys_abort('Context-aware ocean albedo requires a full next-shortwave timestamp')
              end if
-             call seq_infodata_SolarDecl(infodata, nextsw_ymd, nextsw_tod, seq_timemgr_gregorian, delta, eccf)
+               call seq_infodata_SolarDecl(infodata, nextsw_ymd, nextsw_tod, &
+                  seq_timemgr_GetCalendar(), delta, eccf, eot_seconds)
              calday = 1._r8 + nextsw_tod / 86400._r8
           else
              call shr_orb_decl(calday, eccen, mvelpp,lambm0, obliqr, delta, eccf)
@@ -947,7 +948,7 @@ contains
           do n=1,nloc_o
              rlat = const_deg2rad * lats(n)
              rlon = const_deg2rad * lons(n)
-             cosz = shr_orb_cosz( calday, rlat, rlon, delta )
+             cosz = shr_orb_cosz(calday, rlat, rlon, delta, dt_avg=nextsw_dt_avg, eot_seconds=eot_seconds)
              if (cosz  >  0.0_r8) then !--- sun hit --
                 anidr = (.026_r8/(cosz**1.7_r8 + 0.065_r8)) +   &
                      (.150_r8*(cosz         - 0.100_r8 ) *   &

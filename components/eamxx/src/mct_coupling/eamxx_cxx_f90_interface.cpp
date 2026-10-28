@@ -313,14 +313,17 @@ void scream_run (const int dt) {
     ad.run(dt);
   });
 }
-void scream_nextsw_time(int* ymd, double* tod, double* cday) {
+void scream_nextsw_time(const int dt, int* ymd, double* tod, double* cday, double* dt_avg) {
   *ymd = 0;
   *tod = -1;
   *cday = -1;
+  *dt_avg = 0;
   fpe_guard_wrapper([&]() {
+    EKAT_REQUIRE_MSG(dt > 0, "Shortwave scheduling requires the actual positive atmosphere timestep.");
 #ifdef EAMXX_HAS_RRTMGP
     const auto& ad = get_ad_nonconst();
     const auto frequency = radiation_frequency(*ad.get_atm_processes());
+    if (frequency > 0) *dt_avg = static_cast<double>(frequency) * dt;
     const auto& timestamp = ad.get_atm_time_stamp();
     if (frequency >= 0 && scream::rrtmgp::radiation_do(frequency, timestamp.get_num_steps())) {
       *ymd = timestamp.get_year() * 10000 + timestamp.get_month() * 100 + timestamp.get_day();

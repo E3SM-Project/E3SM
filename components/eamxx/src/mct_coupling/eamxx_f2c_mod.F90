@@ -101,10 +101,11 @@ interface
     integer(kind=c_int), value, intent(in) :: dt
   end subroutine scream_run
 
-  subroutine scream_nextsw_time(ymd, tod, cday) bind(c)
+  subroutine scream_nextsw_time(dt, ymd, tod, cday, dt_avg) bind(c)
     use iso_c_binding, only: c_int, c_double
+    integer(c_int), value, intent(in) :: dt
     integer(c_int), intent(out) :: ymd
-    real(c_double), intent(out) :: tod, cday
+    real(c_double), intent(out) :: tod, cday, dt_avg
   end subroutine scream_nextsw_time
 
   subroutine scream_set_solar_callback(callback) bind(c)

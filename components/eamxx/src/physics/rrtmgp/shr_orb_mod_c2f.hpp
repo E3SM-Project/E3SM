@@ -26,7 +26,7 @@ extern "C" void shr_orb_decl_gregorian_c2f(
         double obliqr, double *delta, double *eccf
         );
 extern "C" void shr_orb_decl_fixed_year_c2f(
-        double calday, double days_per_year, double eccen, double mvelpp,
+        double calday, double days_per_year, double previous_year_days, double eccen, double mvelpp,
         double lambm0, double obliqr, double* delta, double* eccf,
         double* eot_seconds, bool use_eot);
 extern "C" double shr_orb_cosz_c2f(

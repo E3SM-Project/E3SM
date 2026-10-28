@@ -37,6 +37,7 @@ save
 public :: &
    radiation_register,    &! registers radiation physics buffer fields
    radiation_nextsw_cday, &! calendar day of next radiation calculation
+   radiation_sw_dt_avg, &
    radiation_do,          &! query which radiation calcs are done this timestep
    radiation_init,        &! calls radini
    radiation_final,       &! deallocate
@@ -337,6 +338,10 @@ function radiation_do(op, timestep)
 end function radiation_do
 
 !================================================================================================
+
+real(r8) function radiation_sw_dt_avg()
+   radiation_sw_dt_avg = dt_avg
+end function radiation_sw_dt_avg
 
 real(r8) function radiation_nextsw_cday(next_ymd, next_tod)
   

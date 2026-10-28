@@ -169,6 +169,7 @@ CONTAINS
     integer(IN)                      :: ierr,mpi_ierr  ! error codes
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
     integer(IN)                      :: case_start_tod, case_start_ymd, cur_tod, cur_ymd
+    integer                          :: dt_scream
     integer                          :: lsize
     character(CS)                    :: run_type       ! type of run
     type(c_ptr) :: x2a_ptr, a2x_ptr
@@ -331,8 +332,8 @@ CONTAINS
 
     call configure_solar_context(infodata)
     call scream_init_atm ()
-        if (seq_timemgr_GetCalendar() == 'GREGORIAN' .or. coupled_solar_context%use_equation_of_time) &
-          call publish_solar_time(infodata)
+    call seq_timemgr_EClockGetData(EClock, dtime=dt_scream)
+    call publish_solar_time(infodata, dt_scream)
 #ifdef HAVE_MOAB
     ! data should be set now inside moab from import and export fields
     ! do we import and export or just export at init stage ?
@@ -456,26 +457,22 @@ CONTAINS
 #endif
 #endif
     ! Set time of next radiadtion computation
-    if (seq_timemgr_GetCalendar() == 'GREGORIAN' .or. coupled_solar_context%use_equation_of_time) then
-      call publish_solar_time(infodata)
-    else
-      call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
-          nextsw_tod=nextsw_tod, nextsw_valid=.true.)
-    endif
+    call publish_solar_time(infodata, dt_scream)
 
   end subroutine atm_run_mct
 
-  subroutine publish_solar_time(infodata)
+  subroutine publish_solar_time(infodata, dt)
     use iso_c_binding, only: c_int, c_double
     use eamxx_f2c_mod, only: scream_nextsw_time
     use seq_infodata_mod, only: seq_infodata_type, seq_infodata_PutData
     type(seq_infodata_type), intent(inout) :: infodata
+    integer(c_int), intent(in) :: dt
     integer(c_int) :: solar_ymd
-    real(c_double) :: solar_tod, solar_cday
+    real(c_double) :: solar_tod, solar_cday, solar_dt_avg
 
-    call scream_nextsw_time(solar_ymd, solar_tod, solar_cday)
+    call scream_nextsw_time(dt, solar_ymd, solar_tod, solar_cday, solar_dt_avg)
     call seq_infodata_PutData(infodata, nextsw_cday=solar_cday, nextsw_ymd=solar_ymd, &
-        nextsw_tod=solar_tod, nextsw_valid=solar_cday >= 0._c_double)
+      nextsw_tod=solar_tod, nextsw_valid=solar_cday >= 0._c_double, nextsw_dt_avg=solar_dt_avg)
   end subroutine publish_solar_time
 
   !===============================================================================

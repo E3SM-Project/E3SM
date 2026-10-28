@@ -113,18 +113,19 @@ contains
       call shr_orb_decl(calday, eccen, mvelpp, lambm0, obliqr, delta, eccf)
    end subroutine shr_orb_decl_c2f
 
-   subroutine shr_orb_decl_fixed_year_c2f(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, &
+   subroutine shr_orb_decl_fixed_year_c2f(calday, days_per_year, previous_year_days, eccen, mvelpp, lambm0, obliqr, &
          delta, eccf, eot_seconds, use_eot) bind(C)
       real(c_double), value :: calday, days_per_year, eccen, mvelpp, lambm0, obliqr
+      real(c_double), value :: previous_year_days
       real(c_double), intent(out) :: delta, eccf, eot_seconds
       logical(c_bool), value :: use_eot
 
       eot_seconds = 0.0_c_double
       if (use_eot) then
-         call shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, &
+         call shr_orb_decl_fixed_year(calday, days_per_year, previous_year_days, eccen, mvelpp, lambm0, obliqr, &
               delta, eccf, eot_seconds)
       else
-         call shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+         call shr_orb_decl_fixed_year(calday, days_per_year, previous_year_days, eccen, mvelpp, lambm0, obliqr, delta, eccf)
       end if
    end subroutine shr_orb_decl_fixed_year_c2f
 

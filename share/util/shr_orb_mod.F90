@@ -866,17 +866,30 @@ CONTAINS
 
   !===============================================================================
 
-  subroutine shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, &
+   ! One orbit between annual civil-day-80.5 anchors; before the anchor use the previous year's length.
+   ! This preserves phase through January 1 without resetting the fixed orbital elements.
+   subroutine shr_orb_decl_fixed_year(calday, days_per_year, previous_year_days, eccen, mvelpp, lambm0, obliqr, &
      delta, eccf, eot_seconds)
     real(SHR_KIND_R8), intent(in) :: calday, days_per_year, eccen, mvelpp, lambm0, obliqr
+    real(SHR_KIND_R8), intent(in) :: previous_year_days
     real(SHR_KIND_R8), intent(out) :: delta, eccf
     real(SHR_KIND_R8), intent(out), optional :: eot_seconds
+    real(SHR_KIND_R8) :: interval_days, orbital_day
 
-    call shr_orb_decl(calday + (days_per_year - 365.0_SHR_KIND_R8), eccen, mvelpp, lambm0, obliqr, &
-       delta, eccf, days_per_year=days_per_year, eot_seconds=eot_seconds)
+    if ((days_per_year /= 365._SHR_KIND_R8 .and. days_per_year /= 366._SHR_KIND_R8) .or. &
+       (previous_year_days /= 365._SHR_KIND_R8 .and. previous_year_days /= 366._SHR_KIND_R8)) &
+       call shr_sys_abort('shr_orb_decl_fixed_year: expected 365 or 366 day civil years')
+    interval_days = days_per_year
+    if (calday < 80.5_SHR_KIND_R8) interval_days = previous_year_days
+    orbital_day = calday
+    if (interval_days /= 365._SHR_KIND_R8) &
+       orbital_day = 80.5_SHR_KIND_R8 + (calday - 80.5_SHR_KIND_R8)*365._SHR_KIND_R8/interval_days
+    call shr_orb_decl(orbital_day, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds=eot_seconds)
   end subroutine shr_orb_decl_fixed_year
 
-   SUBROUTINE shr_orb_decl_gregorian(days_since_20000101, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds)
+   ! Variable-year/explicit-element phase uses elapsed days from 2000-01-01 00:00 and an idealized
+   ! 365.2422-day period, not the fixed-year annual civil anchors above; modulo also supports negative offsets.
+    SUBROUTINE shr_orb_decl_gregorian(days_since_20000101, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds)
 
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
 

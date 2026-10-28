@@ -118,6 +118,9 @@ MODULE seq_infodata_mod
    logical                 :: fudge_noleap_for_gregorian = .false.
    logical                 :: fudge_gregorian_to_noleap = .false.
    character(SHR_KIND_CS)   :: input_restart_calendar = ''
+   integer(SHR_KIND_IN) :: solar_phase_version = 0
+   integer(SHR_KIND_IN) :: ocean_solar_version = 0
+   real(SHR_KIND_R8) :: restart_solar_dt_avg = -1.0_SHR_KIND_R8
    character(input_calendar_selector_length) :: input_calendar_override_selectors(input_calendar_max_overrides) = ''
    character(64) :: input_calendar_override_calendars(input_calendar_max_overrides) = ''
    character(input_calendar_signature_length) :: input_restart_overrides = ''
@@ -274,6 +277,7 @@ MODULE seq_infodata_mod
      real(SHR_KIND_R8)       :: nextsw_cday     ! calendar of next atm shortwave
    integer(SHR_KIND_IN)    :: nextsw_ymd = 0
    real(SHR_KIND_R8)       :: nextsw_tod = -1.0_SHR_KIND_R8
+   real(SHR_KIND_R8)       :: nextsw_dt_avg = -1.0_SHR_KIND_R8
    logical                :: nextsw_valid = .false.
      real(SHR_KIND_R8)       :: precip_fact     ! precip factor
      integer(SHR_KIND_IN)    :: atm_phase       ! atm phase
@@ -332,6 +336,30 @@ CONTAINS
     if (.not. shr_cal_validDate(infodata%nextsw_ymd,shr_cal_gregorian)) &
        call shr_sys_abort('seq_infodata: invalid next-shortwave date')
   end subroutine validate_solar_timestamp
+
+  subroutine validate_ocean_solar(infodata)
+    type(seq_infodata_type), intent(in) :: infodata
+
+    if (.not. infodata%ocn_present .or. infodata%flux_albav) return
+    if (.not. ieee_is_finite(infodata%nextsw_dt_avg)) then
+       call shr_sys_abort('Non-finite ocean shortwave averaging interval')
+       return
+    end if
+    if (infodata%nextsw_dt_avg < 0.0_SHR_KIND_R8) &
+       call shr_sys_abort('Computed ocean albedo requires a finite nonnegative shortwave averaging interval')
+    if (infodata%read_restart) then
+       if (infodata%ocean_solar_version /= 1) &
+          call shr_sys_abort('Computed ocean exact restart requires interval-aware albedo provenance')
+       if (.not. ieee_is_finite(infodata%restart_solar_dt_avg)) then
+          call shr_sys_abort('Non-finite ocean restart shortwave averaging interval')
+          return
+       end if
+       if (infodata%restart_solar_dt_avg < 0.0_SHR_KIND_R8) &
+          call shr_sys_abort('Computed ocean restart is missing its shortwave averaging interval')
+       if (infodata%nextsw_dt_avg /= infodata%restart_solar_dt_avg) &
+          call shr_sys_abort('Shortwave averaging interval differs from the computed ocean restart')
+    end if
+  end subroutine validate_ocean_solar
 
    subroutine seq_infodata_GetOrbitalContext(infodata, context)
       type(seq_infodata_type), intent(in) :: infodata
@@ -938,6 +966,7 @@ CONTAINS
        infodata%nextsw_cday   = -1.0_SHR_KIND_R8
       infodata%nextsw_ymd = 0
       infodata%nextsw_tod = -1.0_SHR_KIND_R8
+      infodata%nextsw_dt_avg = -1.0_SHR_KIND_R8
       infodata%nextsw_valid = .false.
        infodata%precip_fact   =  1.0_SHR_KIND_R8
        infodata%atm_phase     = 1
@@ -1105,6 +1134,14 @@ CONTAINS
                   call shr_sys_abort('Restart equation-of-time convention differs from orb_use_equation_of_time')
           end if
           call seq_io_read(infodata%restart_file,pioid,infodata%nextsw_cday   ,'seq_infodata_nextsw_cday')
+          if (seq_io_hasField(infodata%restart_file,pioid,'seq_infodata_ocean_solar_version')) &
+             call seq_io_read(infodata%restart_file,pioid,infodata%ocean_solar_version, &
+                  'seq_infodata_ocean_solar_version')
+          if (seq_io_hasField(infodata%restart_file,pioid,'seq_infodata_nextsw_dt_avg')) &
+             call seq_io_read(infodata%restart_file,pioid,infodata%nextsw_dt_avg,'seq_infodata_nextsw_dt_avg')
+          infodata%restart_solar_dt_avg = infodata%nextsw_dt_avg
+         if (seq_io_hasField(infodata%restart_file,pioid,'seq_infodata_solar_phase_version')) &
+            call seq_io_read(infodata%restart_file,pioid,infodata%solar_phase_version,'seq_infodata_solar_phase_version')
           if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_solar_time_version')) then
              call seq_io_read(infodata%restart_file, pioid, ierr, 'seq_infodata_solar_time_version')
              if (ierr /= 1) call shr_sys_abort('Unsupported restart solar timestamp version')
@@ -1140,6 +1177,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%nextsw_cday,mpicom,pebcast=seq_comm_gloroot(CPLID))
       call shr_mpi_bcast(infodata%nextsw_ymd,mpicom,pebcast=seq_comm_gloroot(CPLID))
       call shr_mpi_bcast(infodata%nextsw_tod,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%nextsw_dt_avg,mpicom,pebcast=seq_comm_gloroot(CPLID))
       call shr_mpi_bcast(infodata%nextsw_valid,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%precip_fact,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%rest_case_name,mpicom,pebcast=seq_comm_gloroot(CPLID))
@@ -1230,6 +1268,12 @@ CONTAINS
 
     call seq_comm_setptrs(ID, mpicom=mpicom)
     call seq_infodata_bcast(infodata, mpicom)
+   if (infodata%read_restart) call validate_ocean_solar(infodata)
+       if (infodata%read_restart .and. seq_timemgr_GetCalendar() == shr_cal_gregorian .and. &
+          infodata%orb_mode == seq_infodata_orb_fixed_year) then
+        if (infodata%solar_phase_version /= 1) &
+           call shr_sys_abort('Gregorian fixed-year exact restart requires continuous day-80.5 phase provenance')
+       end if
        if (infodata%fudge_gregorian_to_noleap) then
         if (seq_timemgr_GetCalendar() /= shr_cal_noleap) &
            call shr_sys_abort('GREGORIAN_INPUT: fudge_gregorian_to_noleap requires CALENDAR=NO_LEAP')
@@ -1309,7 +1353,7 @@ CONTAINS
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
        glc_valid_input, nlmaps_verbosity, nlmaps_atm2srf_conserve,        &
-      nlmaps_exclude_fields, rmean_rmv_ice_runoff, nextsw_ymd, nextsw_tod, nextsw_valid)
+      nlmaps_exclude_fields, rmean_rmv_ice_runoff, nextsw_ymd, nextsw_tod, nextsw_valid, nextsw_dt_avg)
 
     implicit none
 
@@ -1493,6 +1537,7 @@ CONTAINS
     real(SHR_KIND_R8),      optional, intent(OUT) :: nextsw_cday             ! calendar of next atm shortwave
    integer(SHR_KIND_IN), optional, intent(out) :: nextsw_ymd
    real(SHR_KIND_R8), optional, intent(out) :: nextsw_tod
+   real(SHR_KIND_R8), optional, intent(out) :: nextsw_dt_avg
    logical, optional, intent(out) :: nextsw_valid
     real(SHR_KIND_R8),      optional, intent(OUT) :: precip_fact             ! precip factor
     real(SHR_KIND_R8),      optional, intent(OUT) :: flux_epbalfact          ! adjusted precip factor
@@ -1695,6 +1740,10 @@ CONTAINS
     if ( present(nextsw_cday)    ) nextsw_cday    = infodata%nextsw_cday
    if (present(nextsw_ymd)) nextsw_ymd = infodata%nextsw_ymd
    if (present(nextsw_tod)) nextsw_tod = infodata%nextsw_tod
+   if (present(nextsw_dt_avg)) then
+      call validate_ocean_solar(infodata)
+      nextsw_dt_avg = infodata%nextsw_dt_avg
+   end if
    if (present(nextsw_valid)) nextsw_valid = infodata%nextsw_valid
     if ( present(precip_fact)    ) precip_fact    = infodata%precip_fact
     if ( present(flux_epbalfact) ) then
@@ -1897,7 +1946,7 @@ CONTAINS
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, glc_valid_input,                   &
        nlmaps_verbosity, nlmaps_atm2srf_conserve, nlmaps_exclude_fields,  &
-      rmean_rmv_ice_runoff, nextsw_ymd, nextsw_tod, nextsw_valid)
+      rmean_rmv_ice_runoff, nextsw_ymd, nextsw_tod, nextsw_valid, nextsw_dt_avg)
 
 
 
@@ -2082,6 +2131,7 @@ CONTAINS
     real(SHR_KIND_R8),      optional, intent(IN)    :: nextsw_cday        ! calendar of next atm shortwave
    integer(SHR_KIND_IN), optional, intent(in) :: nextsw_ymd
    real(SHR_KIND_R8), optional, intent(in) :: nextsw_tod
+   real(SHR_KIND_R8), optional, intent(in) :: nextsw_dt_avg
    logical, optional, intent(in) :: nextsw_valid
     real(SHR_KIND_R8),      optional, intent(IN)    :: precip_fact        ! precip factor
     integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_phase          ! atm phase
@@ -2284,6 +2334,7 @@ CONTAINS
        infodata%nextsw_cday = nextsw_cday
        infodata%nextsw_ymd = 0
        infodata%nextsw_tod = -1.0_SHR_KIND_R8
+      infodata%nextsw_dt_avg = -1.0_SHR_KIND_R8
        infodata%nextsw_valid = .false.
     end if
     if (present(nextsw_ymd) .or. present(nextsw_tod) .or. present(nextsw_valid)) then
@@ -2298,6 +2349,17 @@ CONTAINS
        if (nextsw_valid .and. nextsw_cday < 0.0_SHR_KIND_R8) then
           call shr_sys_abort('seq_infodata_PutData: inconsistent next-shortwave validity')
        end if
+    end if
+    if (present(nextsw_dt_avg)) then
+       if (.not. present(nextsw_cday)) call shr_sys_abort('Shortwave interval requires its scheduled timestamp')
+       if (.not. ieee_is_finite(nextsw_dt_avg)) then
+          call shr_sys_abort('Non-finite shortwave averaging interval')
+          return
+       end if
+       if (nextsw_dt_avg < 0.0_SHR_KIND_R8) &
+          call shr_sys_abort('Invalid shortwave averaging interval')
+       infodata%nextsw_dt_avg = nextsw_dt_avg
+       call validate_ocean_solar(infodata)
     end if
     if ( present(precip_fact)    ) infodata%precip_fact    = precip_fact
     if ( present(atm_phase)      ) infodata%atm_phase      = atm_phase
@@ -2484,6 +2546,9 @@ CONTAINS
    call shr_mpi_bcast(infodata%input_calendar_override_selectors, mpicom)
    call shr_mpi_bcast(infodata%input_calendar_override_calendars, mpicom)
    call shr_mpi_bcast(infodata%input_restart_calendar, mpicom)
+   call shr_mpi_bcast(infodata%solar_phase_version, mpicom)
+   call shr_mpi_bcast(infodata%ocean_solar_version, mpicom)
+   call shr_mpi_bcast(infodata%restart_solar_dt_avg, mpicom)
     call shr_mpi_bcast(infodata%orb_eccen,               mpicom)
     call shr_mpi_bcast(infodata%orb_obliq,               mpicom)
     call shr_mpi_bcast(infodata%orb_mvelp,               mpicom)
@@ -2631,6 +2696,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%nextsw_cday,             mpicom)
    call shr_mpi_bcast(infodata%nextsw_ymd,              mpicom)
    call shr_mpi_bcast(infodata%nextsw_tod,              mpicom)
+   call shr_mpi_bcast(infodata%nextsw_dt_avg,           mpicom)
    call shr_mpi_bcast(infodata%nextsw_valid,            mpicom)
     call shr_mpi_bcast(infodata%precip_fact,             mpicom)
     call shr_mpi_bcast(infodata%atm_phase,               mpicom)
@@ -2997,6 +3063,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cmppe)
       call shr_mpi_bcast(infodata%nextsw_ymd,         mpicom, pebcast=cmppe)
       call shr_mpi_bcast(infodata%nextsw_tod,         mpicom, pebcast=cmppe)
+      call shr_mpi_bcast(infodata%nextsw_dt_avg,      mpicom, pebcast=cmppe)
       call shr_mpi_bcast(infodata%nextsw_valid,       mpicom, pebcast=cmppe)
     endif
 
@@ -3009,6 +3076,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%nextsw_cday,        mpicom, pebcast=cplpe)
       call shr_mpi_bcast(infodata%nextsw_ymd,         mpicom, pebcast=cplpe)
       call shr_mpi_bcast(infodata%nextsw_tod,         mpicom, pebcast=cplpe)
+      call shr_mpi_bcast(infodata%nextsw_dt_avg,      mpicom, pebcast=cplpe)
       call shr_mpi_bcast(infodata%nextsw_valid,       mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%precip_fact,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_g2lupdate,      mpicom, pebcast=cplpe)

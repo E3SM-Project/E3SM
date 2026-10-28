@@ -821,6 +821,10 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           call seq_infodata_GetData(infodata,nextsw_cday=rvar)
           call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_cday',whead=whead,wdata=wdata)
          call seq_io_write(rest_file,1,'seq_infodata_solar_time_version',whead=whead,wdata=wdata)
+         call seq_io_write(rest_file,1,'seq_infodata_solar_phase_version',whead=whead,wdata=wdata)
+         call seq_io_write(rest_file,1,'seq_infodata_ocean_solar_version',whead=whead,wdata=wdata)
+         call seq_infodata_GetData(infodata,nextsw_dt_avg=rvar)
+         call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_dt_avg',whead=whead,wdata=wdata)
              call seq_io_write(rest_file,merge(1,0,seq_infodata_UseEquationOfTime(infodata)), &
                'seq_infodata_orb_use_equation_of_time',whead=whead,wdata=wdata)
             call seq_io_write(rest_file,merge(1,0,seq_infodata_UseNoleapInput(infodata)), &
@@ -1163,6 +1167,10 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           call seq_infodata_GetData(infodata,nextsw_cday=rvar)
           call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_cday',whead=whead,wdata=wdata)
          call seq_io_write(rest_file,1,'seq_infodata_solar_time_version',whead=whead,wdata=wdata)
+         call seq_io_write(rest_file,1,'seq_infodata_solar_phase_version',whead=whead,wdata=wdata)
+         call seq_io_write(rest_file,1,'seq_infodata_ocean_solar_version',whead=whead,wdata=wdata)
+         call seq_infodata_GetData(infodata,nextsw_dt_avg=rvar)
+         call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_dt_avg',whead=whead,wdata=wdata)
              call seq_io_write(rest_file,merge(1,0,seq_infodata_UseEquationOfTime(infodata)), &
                'seq_infodata_orb_use_equation_of_time',whead=whead,wdata=wdata)
             call seq_io_write(rest_file,merge(1,0,seq_infodata_UseNoleapInput(infodata)), &

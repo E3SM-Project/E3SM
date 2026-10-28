@@ -417,7 +417,7 @@ contains
       real(SHR_KIND_R8), intent(out), optional :: eot_seconds
        integer(SHR_KIND_IN) :: seasonal_ymd, year, orbital_year
        real(SHR_KIND_R8) :: elapsed_days, calday, year_start, next_year_start, year_fraction
-      real(SHR_KIND_R8) :: days_per_year
+      real(SHR_KIND_R8) :: days_per_year, previous_year_days
        real(SHR_KIND_R8) :: eccen, obliq, mvelp, obliqr, lambm0, mvelpp
 
       if (present(eot_seconds)) eot_seconds = 0.0_SHR_KIND_R8
@@ -448,11 +448,14 @@ contains
              year_start = shr_cal_gregorianElapsedDays(year * 10000 + 101, 0.0_SHR_KIND_R8)
              next_year_start = shr_cal_gregorianElapsedDays((year + 1) * 10000 + 101, 0.0_SHR_KIND_R8)
              days_per_year = next_year_start - year_start
+               previous_year_days = 365._SHR_KIND_R8
+               if (mod(year-1,4) == 0 .and. (mod(year-1,100) /= 0 .or. mod(year-1,400) == 0)) &
+                  previous_year_days = 366._SHR_KIND_R8
              if (context%use_equation_of_time .and. present(eot_seconds)) then
-                call shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, &
+                call shr_orb_decl_fixed_year(calday, days_per_year, previous_year_days, eccen, mvelpp, lambm0, obliqr, &
                      delta, eccf, eot_seconds)
              else
-                call shr_orb_decl_fixed_year(calday, days_per_year, eccen, mvelpp, lambm0, obliqr, delta, eccf)
+                call shr_orb_decl_fixed_year(calday, days_per_year, previous_year_days, eccen, mvelpp, lambm0, obliqr, delta, eccf)
              end if
           else if (context%use_equation_of_time .and. present(eot_seconds)) then
              call shr_orb_decl_gregorian(elapsed_days, eccen, mvelpp, lambm0, obliqr, delta, eccf, eot_seconds)

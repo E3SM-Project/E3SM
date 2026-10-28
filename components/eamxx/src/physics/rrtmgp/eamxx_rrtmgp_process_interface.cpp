@@ -1,7 +1,7 @@
 #include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/eamxx_rrtmgp_process_interface.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
-#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "share/physics/physics_share.hpp"
 #include "share/core/eamxx_config.hpp"
 #include "share/physics/eamxx_trcmix.hpp"
 
@@ -652,73 +652,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
     auto gas_concs_k = m_gas_concs_k.concs;
     auto orig_ncol_k = m_gas_concs_k.ncol;
 
-    // Compute orbital parameters; these are used both for computing
-    // the solar zenith angle and also for computing total solar
-    // irradiance scaling (tsi_scaling).
-    auto calday = ts.frac_of_year_in_days() + 1;
-    double delta, eccf;
-    const auto solar_ymd = ts.get_year() * 10000 + ts.get_month() * 100 + ts.get_day();
-    const auto solar_tod = (calday - std::floor(calday)) * 86400;
-    const bool has_coupled_geometry = shr_orb_has_geometry_callback_c2f();
-    const bool coupled_eot = shr_orb_use_equation_of_time_c2f();
-    const bool has_local_eot = m_params.isParameter("use_equation_of_time");
-    const bool local_eot = has_local_eot ? m_params.get<bool>("use_equation_of_time") : true;
-    EKAT_REQUIRE_MSG(!has_coupled_geometry ||
-         !has_local_eot || local_eot == coupled_eot,
-             "RRTMGP equation-of-time setting conflicts with the coupled driver.");
-    const bool use_eot = has_coupled_geometry ? coupled_eot : local_eot;
-    double eot_seconds = 0;
-    const bool coupled_orbit = coupled_eot
-      ? shr_orb_coupled_geometry_c2f(solar_ymd, solar_tod, &delta, &eccf, &eot_seconds)
-      : use_leap_year() && shr_orb_coupled_decl_c2f(solar_ymd, solar_tod, &delta, &eccf);
-    EKAT_REQUIRE_MSG(!coupled_eot || coupled_orbit, "RRTMGP coupled EOT geometry is unavailable.");
-    if (!coupled_orbit) {
-      double obliqr, lambm0, mvelpp;
-      auto orbital_year = m_orbital_year;
-      auto eccen = m_orbital_eccen;
-      auto obliq = m_orbital_obliq;
-      auto mvelp = m_orbital_mvelp;
-      if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
-        // use fixed orbital parameters; to force this, we need to set
-        // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
-        // our c2f bridge as shr_orb_undef_int_c2f
-        orbital_year = shr_orb_undef_int_c2f;
-      } else if (orbital_year < 0) {
-        // compute orbital parameters based on current year
-        orbital_year = ts.get_year();
-      }
-      if (use_leap_year() && m_orbital_year < 0 && orbital_year != shr_orb_undef_int_c2f) {
-        const auto year_fraction = (calday - 1) / ts.days_in_curr_year();
-        shr_orb_params_continuous_c2f(orbital_year, year_fraction, &eccen, &obliq,
-                                      &mvelp, &obliqr, &lambm0, &mvelpp);
-      } else {
-        shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp,
-                           &obliqr, &lambm0, &mvelpp);
-      }
-      // Use the orbital parameters to calculate the solar declination and eccentricity factor
-      if (use_leap_year() && m_orbital_year >= 0 && orbital_year != shr_orb_undef_int_c2f) {
-        shr_orb_decl_fixed_year_c2f(calday, ts.days_in_curr_year(), eccen, mvelpp, lambm0,
-                                   obliqr, &delta, &eccf, &eot_seconds, use_eot);
-      } else if (use_leap_year()) {
-        const util::TimeStamp epoch(2000, 1, 1, 0, 0, 0);
-        const util::TimeStamp midnight(ts.get_year(), ts.get_month(), ts.get_day(), 0, 0, 0);
-        const auto elapsed_days = midnight.days_from(epoch) + (calday - std::floor(calday));
-        if (use_eot) {
-          shr_orb_decl_gregorian_eot_c2f(elapsed_days, eccen, mvelpp, lambm0,
-                                       obliqr, &delta, &eccf, &eot_seconds);
-        } else {
-          shr_orb_decl_gregorian_c2f(elapsed_days, eccen, mvelpp, lambm0,
-                                    obliqr, &delta, &eccf);
-        }
-      } else {
-        if (use_eot) {
-          shr_orb_decl_eot_c2f(calday, eccen, mvelpp, lambm0, obliqr, &delta, &eccf, &eot_seconds);
-        } else {
-          shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
-                           obliqr, &delta, &eccf);
-        }
-      }
-    }
+    const auto solar = physics::solar_geometry(ts, m_params, m_orbital_year,
+                                              m_orbital_eccen, m_orbital_obliq, m_orbital_mvelp);
+    auto eccf = solar.eccentricity_factor();
 
     // Overwrite eccf if using a fixed solar constant.
     auto fixed_total_solar_irradiance = m_fixed_total_solar_irradiance;
@@ -868,9 +804,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           for (int i=0;i<ncol;i++) {
             double lat = h_lat(i+beg)*PC::Pi/180.0;  // Convert lat/lon to radians
             double lon = h_lon(i+beg)*PC::Pi/180.0;
-            h_mu0(i) = use_eot
-              ? shr_orb_cosz_eot_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt, eot_seconds)
-              : shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
+            h_mu0(i) = solar.cosine_zenith(lat, lon, m_rad_freq_in_steps * dt);
           }
         }
         Kokkos::deep_copy(mu0_k,h_mu0);

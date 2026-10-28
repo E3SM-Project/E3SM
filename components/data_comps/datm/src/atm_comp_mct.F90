@@ -207,11 +207,11 @@ CONTAINS
             atm_ny=SDATM%nyg, &
             atm_aero=presaero, &
             nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, &
-            nextsw_valid=nextsw_cday >= 0._r8)
+            nextsw_valid=nextsw_cday >= 0._r8, nextsw_dt_avg=0._r8)
     else
        call seq_infodata_PutData(infodata, &
             nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod, &
-            nextsw_valid=nextsw_cday >= 0._r8)
+            nextsw_valid=nextsw_cday >= 0._r8, nextsw_dt_avg=0._r8)
     end if
 
     !----------------------------------------------------------------------------
@@ -304,7 +304,7 @@ CONTAINS
          case_name = case_name, nextsw_ymd=nextsw_ymd, nextsw_tod=nextsw_tod)
 
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
-         nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8)
+         nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8, nextsw_dt_avg=0._r8)
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

@@ -30,7 +30,7 @@ module atm_comp_mct
   use cam_comp
   use cam_instance     , only: cam_instance_init, inst_index, inst_suffix
   use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
-  use radiation        , only: radiation_do, radiation_nextsw_cday
+   use radiation        , only: radiation_do, radiation_nextsw_cday, radiation_sw_dt_avg
    use orbit, only: orbit_set_context
   use phys_grid        , only: get_ncols_p, ngcols, get_gcol_p, get_rlat_all_p, &
 	                       get_rlon_all_p, get_area_all_p
@@ -458,9 +458,12 @@ CONTAINS
            call get_curr_date(yr, mon, day, tod)
            nextsw_ymd = yr * 10000 + mon * 100 + day
            nextsw_tod = real(tod, r8)
-           call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
-                nextsw_tod=nextsw_tod, nextsw_valid=.true.)
+        else
+          call seq_infodata_GetData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+             nextsw_tod=nextsw_tod)
        end if
+        call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
+           nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8, nextsw_dt_avg=radiation_sw_dt_avg())
 
        ! End redirection of share output to cam log
 
@@ -585,7 +588,7 @@ CONTAINS
           call shr_sys_abort('dtime must be less than or equal to atm_cpl_dt')
        end if
         call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
-           nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8)
+           nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8, nextsw_dt_avg=radiation_sw_dt_avg())
 
        ! End redirection of share output to cam log
 
@@ -690,6 +693,7 @@ CONTAINS
 
     !load orbital parameters
 
+   call orbit_set_context(infodata)
     call seq_infodata_GetData( infodata,                                           &
        orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr)
 
@@ -812,7 +816,7 @@ CONTAINS
     end if
 
        call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday, nextsw_ymd=nextsw_ymd, &
-          nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8)
+          nextsw_tod=nextsw_tod, nextsw_valid=nextsw_cday >= 0._r8, nextsw_dt_avg=radiation_sw_dt_avg())
 
     ! Write merged surface data restart file if appropriate
 
