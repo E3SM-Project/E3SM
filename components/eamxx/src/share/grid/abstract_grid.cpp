@@ -468,29 +468,47 @@ AbstractGrid::get_unique_gids () const
   return unique_dofs;
 }
 
-std::shared_ptr<AbstractGrid>
-AbstractGrid::get_aux_grid(const std::string& data_layout) const
+std::shared_ptr<const AbstractGrid>
+AbstractGrid::get_unique_grid () const
 {
-  if (m_aux_grids.count(data_layout)==1) {
-    return m_aux_grids.at(data_layout);
-  } else {
-    return nullptr;
+  if (m_unique_grid) {
+    return m_unique_grid;
   }
+  return shared_from_this();
+}
+
+std::shared_ptr<AbstractGrid>
+AbstractGrid::get_unique_grid ()
+{
+  if (m_unique_grid) {
+    return m_unique_grid;
+  }
+  return shared_from_this();
 }
 
 void AbstractGrid::
-set_aux_grid (const std::string& data_layout, const std::shared_ptr<AbstractGrid>& aux_grid)
+set_unique_grid (const std::shared_ptr<AbstractGrid>& unique_grid)
 {
-  m_aux_grids[data_layout] = aux_grid;
-}
+  EKAT_REQUIRE_MSG (unique_grid!=nullptr,
+      "Error! Cannot set a null unique grid.\n"
+      " - grid name: " + name() + "\n");
 
-std::vector<std::string> AbstractGrid::get_aux_grids_keys () const
-{
-  std::vector<std::string> keys;
-  for (const auto& it : m_aux_grids) {
-    keys.push_back(it.first);
+  // Setting the grid as its own unique grid is allowed, and means "this grid is unique"
+  if (unique_grid.get()==this) {
+    m_unique_grid = nullptr;
+    return;
   }
-  return keys;
+
+  EKAT_REQUIRE_MSG (unique_grid->m_unique_grid==nullptr,
+      "Error! The unique grid of a grid must itself be unique.\n"
+      " - grid name       : " + name() + "\n"
+      " - unique grid name: " + unique_grid->name() + "\n");
+  EKAT_REQUIRE_MSG (unique_grid->get_num_vertical_levels()==get_num_vertical_levels(),
+      "Error! The unique grid of a grid must have the same number of vertical levels.\n"
+      " - grid name       : " + name() + "\n"
+      " - unique grid name: " + unique_grid->name() + "\n");
+
+  m_unique_grid = unique_grid;
 }
 
 std::vector<int> AbstractGrid::

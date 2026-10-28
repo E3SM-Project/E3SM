@@ -42,9 +42,11 @@ public:
     return m_num_global_elem;
   }
 
-  // Retrieve list of the CG grid dofs. Const version returns a read-only field
-  Field get_cg_dofs_gids ()       { return m_cg_dofs_gids;             }
-  Field get_cg_dofs_gids () const { return m_cg_dofs_gids.get_const(); }
+  // For each local dof (i.e., each (elem,gp,gp) triplet), the gid of the corresponding
+  // dof in the unique grid. Dofs on shared element boundaries have the same unique gid.
+  // Const version returns a read-only field. See AbstractGrid for more details.
+  Field get_lid_to_unique_gid_map ()       override { return m_lid_to_unique_gid;             }
+  Field get_lid_to_unique_gid_map () const override { return m_lid_to_unique_gid.get_const(); }
 
   std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                        const bool shallow) const override;
@@ -63,8 +65,8 @@ protected:
   mutable gid_type  m_global_min_elem_gid =  std::numeric_limits<gid_type>::max();
   mutable gid_type  m_global_max_elem_gid = -std::numeric_limits<gid_type>::max();
 
-  // The dofs gids for a CG version of this grid
-  Field m_cg_dofs_gids;
+  // The map lid->gid in the unique grid
+  Field m_lid_to_unique_gid;
 };
 
 } // namespace scream

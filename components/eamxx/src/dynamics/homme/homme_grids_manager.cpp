@@ -119,12 +119,11 @@ build_grids ()
   // Also the GLL grid with no rebalance is needed for sure
   build_physics_grid("gll","none");
 
-  // Set the physics_gll grid as io_aux_grid in the dyn grid
+  // The physics_gll grid is the unique grid of the dyn grid (same points, but without
+  // the repetitions due to the element boundaries). IO uses it to save the dyn grid fields.
   auto physics_gll_grid = get_grid_nonconst("physics_gll");
   auto dyn_grid = get_grid_nonconst("dynamics");
-  dyn_grid->set_aux_grid("default",physics_gll_grid);
-  dyn_grid->set_aux_grid("cg",physics_gll_grid);
-  dyn_grid->set_aux_grid("dg",dyn_grid);
+  dyn_grid->set_unique_grid(physics_gll_grid);
 
   // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
@@ -160,7 +159,7 @@ void HommeGridsManager::build_dynamics_grid () {
 
   // Filling the cg/dg gids, elgpgp, coords, lat/lon views
   auto dg_dofs = dyn_grid->get_dofs_gids();
-  auto cg_dofs = dyn_grid->get_cg_dofs_gids();
+  auto cg_dofs = dyn_grid->get_lid_to_unique_gid_map();
   auto elgpgp  = dyn_grid->get_lid_to_idx_map();
   auto elgids  = dyn_grid->get_partitioned_dim_gids ();
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);

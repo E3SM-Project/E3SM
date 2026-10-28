@@ -93,26 +93,19 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       const auto grid = field_mgr->get_grids_manager()->get_grid_nonconst(sname);
       const auto& gname = grid->name();
 
-      // If this is a GLL grid (or Dyn Grid, with GLL grid set as aux_io_grid)
+      // If this is a GLL grid (or Dyn Grid, with GLL grid set as its unique grid)
       // and PG2 fields were found above, we must reset the grid COL tag name to
       // be "ncol_d" to avoid conflicting lengths with ncol on the PG2 grid.
       if (pg2_grid_in_io_streams) {
         const auto& grid_pl = fields_pl.sublist(sname);
         auto io_grid = grid;
 
-        std::string output_data_layout = "default";
+        std::string output_data_layout = "unique";
         if (grid_pl.isParameter("output_data_layout")) {
           output_data_layout = grid_pl.get<std::string>("output_data_layout");
         }
-        auto aux_grid = grid->get_aux_grid(output_data_layout);
-        if (aux_grid) {
-          io_grid = aux_grid;
-        } else {
-          EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
-              "Error! Non-default output layout requested, but no aux grid found in this grid.\n"
-              " - grid name: " + grid->name() + "\n"
-              " - output_data_layout: " + output_data_layout + "\n"
-              " - suppored output layout choices: " + ekat::join(grid->get_aux_grids_keys(),",") + "\n");
+        if (not is_native_output_layout(output_data_layout)) {
+          io_grid = grid->get_unique_grid();
         }
 
         if (io_grid->name()=="physics_gll") {

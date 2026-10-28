@@ -37,7 +37,7 @@
  *        field_names:                  ARRAY OF STRINGS
  *     GRID_NAME_2:
  *        field_names:                  ARRAY OF STRINGS
- *        output_data_layout:           STRING                (default: 'default')
+ *        output_data_layout:           STRING                (default: 'unique')
  *     ...
  *     GRID_NAME_N:
  *        field_names:                  ARRAY OF STRINGS
@@ -65,15 +65,13 @@
  *     - GRID_NAME: parameters specifying fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
- *          This option is mostly used to enable dyn->phys_gll remap (to save storage),
- *          but can be expanded to support other online layout changes (e.g., transpose
- *          (ncol,[...,]nlev) layouts). The default value 'default' will use the default
- *          for this grid. Usually, 'default' does the same thing as 'native' (which does
- *          no layout change, and outputs the fields as they appear on this grid), but for
- *          the dynamics grid the default behavior is to remap to phys_gll layout.
- *          Other values are available on a per grid basis. E.g., the dynamics grid
- *          supports 'dg' (same as 'native') and 'cg' (which implements the dyn->phys_gll
- *          remap, which is the same behavior as 'default').
+ *          This option is mostly used to enable dyn->phys_gll remap (to save storage).
+ *          Valid values are 'native', which does no layout change, and outputs the
+ *          fields as they appear on this grid, and 'unique' (the default), which outputs
+ *          the fields on the unique grid of this grid (see AbstractGrid::get_unique_grid).
+ *          For grids that are already unique, the two choices are equivalent. For the
+ *          dynamics grid, the unique grid is phys_gll, so 'unique' implements the
+ *          dyn->phys_gll remap.
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
