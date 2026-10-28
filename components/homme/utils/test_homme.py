@@ -168,9 +168,9 @@ def ensure_paths(args,machine):
     if args.baseline_root:
         baseline_dir = pathlib.Path(args.baseline_root).resolve()
     else:
-        raw_name = machine.get_value('BASELINE_ROOT',resolved=False)
-        baseline_dir_name = raw_name.replace('$COMPILER',compiler)
-        baseline_dir = pathlib.Path(baseline_dir_name).resolve() / args.baseline_name / "homme"
+        machine.set_value('COMPILER', compiler)
+        raw_name = machine.get_value('BASELINE_ROOT', resolved=True)
+        baseline_dir = pathlib.Path(raw_name).resolve() / args.baseline_name / "homme"
 
     if args.generate:
         # Ok if dir does not exist, but we MUST be able to create it
@@ -207,7 +207,7 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     if args.bfb:
         machine_file += "-bfb"
 
-    cmd  =  "ctest --output-on-failure"
+    cmd  =  "ctest -V --output-on-failure"
     cmd +=  " " + " ".join(args.ctest_arg)
     cmd += f" -S {ctest_script}"
     cmd += f" -D HOMME_ROOT={root_dir}"
@@ -228,6 +228,40 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
         cmd += " -D " + shlex.quote(f"EXTRA_CMAKE_OPTIONS={';'.join(cmake_opts)}")
 
     return cmd
+
+def clean_work_dir(work_dir,root_dir):
+    """
+    Remove the build left in work_dir by a previous run (if any), so that stale state cannot affect this run.
+    E.g., an old CMakeCache.txt makes cmake silently ignore a changed --cmake-opt or machine file, and old test
+    outputs in work_dir/tests/baseline would end up in the baselines when generating them.
+
+    We only remove a dir if it is a cmake build dir of this homme source tree. If the dir is not empty and we
+    cannot tell that, we abort rather than risk removing something else (e.g., if the user passes a source dir).
+    """
+    if not work_dir.exists():
+        return
+
+    expect(work_dir.is_dir() and not work_dir.is_symlink(),
+           f"ERROR: work dir '{work_dir}' is not a directory")
+
+    if not any(work_dir.iterdir()):
+        return
+
+    # CMake records the source dir that a build dir was configured from
+    src_dir = None
+    cache = work_dir / "CMakeCache.txt"
+    if cache.is_file():
+        for line in cache.read_text(errors="replace").splitlines():
+            if line.startswith("CMAKE_HOME_DIRECTORY:"):
+                src_dir = pathlib.Path(line.split("=",1)[1]).resolve()
+                break
+
+    expect(src_dir == root_dir,
+           f"ERROR: work dir '{work_dir}' is not empty, and it is not a cmake build dir of '{root_dir}'.\n"
+           f"       Refusing to remove it. Remove it manually, or choose a different --work-dir.")
+
+    print(f"Removing previous build dir '{work_dir}'")
+    shutil.rmtree(work_dir)
 
 def dump_last_ctest_log(work_dir):
     """
@@ -283,11 +317,12 @@ def main(argv):
 
     cmd = _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine)
 
-    cmd = 'echo "nc root: $NETCDF_C_ROOT" && ' + cmd
     print(f"RUN: {cmd}")
     if args.dry_run:
         return 0
 
+    # Always start from a clean build dir, so no stale state (e.g., an old CMakeCache.txt) is silently reused
+    clean_work_dir(work_dir,root_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Run the command and capture the process result object
