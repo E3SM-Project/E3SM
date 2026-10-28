@@ -3,7 +3,7 @@
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/remap/abstract_remapper.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/io/eamxx_io_utils.hpp"
@@ -122,7 +122,6 @@ class AtmosphereOutput
 public:
   using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
-  using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
   using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
