@@ -36,7 +36,22 @@
         </rootpe>
       </pes>
     </mach>
-  </grid>	
+    <mach name="polaris">
+      <pes pesize="any" compset=".*_ELM%CNPRDCTCBCPHSWFMCROP_.*">
+        <comment>ELM BGC-Crop 2 node PEs for polaris</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_wav>-2</ntasks_wav>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_glc>-2</ntasks_glc>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
   <grid name="any">
     <mach name="any">
       <pes pesize="any" compset="any">
