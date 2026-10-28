@@ -109,7 +109,10 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  // Create the masks for the 4d fields
+  // Create the masks for the cosp output fields. Each has its own mask, which is only updated
+  // when we run cosp (which may be less often than the sunlit mask is refreshed), so that the
+  // mask says where the data is valid. Initially, the masks are all invalid (cosp has not run yet)
+  FieldLayout scalar2d_cldtot ( {COL}, {m_num_cols}, {e2str(COL)});
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
                                 {m_num_cols,m_num_tau,m_num_ctp},
                                 {e2str(COL), "cosp_tau", "cosp_prs"});
@@ -117,12 +120,14 @@ void Cosp::initialize_impl (const RunType /* run_type */)
                                 {m_num_cols,m_num_tau,m_num_cth},
                                 {e2str(COL), "cosp_tau", "cosp_cth"});
 
+  FieldIdentifier mcld_fid ("sunlit_mask_cldtot", scalar2d_cldtot, none, m_grid->name(), DataType::IntType);
   FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, none, m_grid->name(), DataType::IntType);
   FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, none, m_grid->name(), DataType::IntType);
+  Field mcld(mcld_fid,true);
   Field mctp(mctp_fid,true);
   Field mcth(mcth_fid,true);
   std::map<std::string,Field> masks = {
-    {"isccp_cldtot", get_field_in("sunlit_mask")},
+    {"isccp_cldtot", mcld},
     {"isccp_ctptau", mctp},
     {"modis_ctptau", mctp},
     {"misr_cthtau",  mcth},
@@ -130,7 +135,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Set the mask field for each of the cosp computed fields
   std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
   for (const auto& field_name : vnames) {
-    // the mask here is just the sunlit mask, so set it
+    // the mask is the sunlit mask at the time cosp ran (night values are fill_value)
     auto& f = get_field_out(field_name);
 
     f.set_valid_mask(masks.at(field_name));
@@ -333,8 +338,9 @@ void Cosp::run_impl (const double dt)
     get_field_out("modis_ctptau").sync_to_dev();
     get_field_out("misr_cthtau").sync_to_dev();
 
-    // Update the ctptau and cthtau masks by broadcasting sunlit mask
+    // Update the masks of the output fields with the sunlit mask (broadcasting it for the 4d fields)
     const auto& sunlit = get_field_in("sunlit_mask");
+    get_field_out("isccp_cldtot").get_valid_mask().deep_copy(sunlit);
     auto& ctptau = get_field_out("isccp_ctptau").get_valid_mask();
     auto& cthtau = get_field_out("misr_cthtau").get_valid_mask();
 
