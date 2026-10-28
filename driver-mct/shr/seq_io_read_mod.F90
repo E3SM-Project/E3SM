@@ -66,7 +66,6 @@ module seq_io_read_mod
   character(*) , parameter :: prefix = "seq_io_"
   character(*) , parameter :: version ='cpl7v10'
   character(*) , parameter :: version0='cpl7v00'
-  character(CL)            :: charvar   ! buffer for string read/write
 
   !=================================================================================
 contains
@@ -329,6 +328,7 @@ contains
     character(*),parameter          :: subName = '(seq_io_read_char) '
     logical :: addprefix
     integer :: rcode
+   character(max(CL,len(rdata))) :: input_text
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -346,8 +346,10 @@ contains
             ' not found in file=',trim(filename)
        call shr_sys_abort()
     endif
-    rcode = pio_get_var(pioid,varid,charvar)
-    rdata = trim(charvar)
+   input_text = ''
+   rcode = pio_get_var(pioid,varid,input_text)
+   if (rcode /= 0) call shr_sys_abort('seq_io_read_char: cannot read '//trim(dname))
+   rdata = trim(input_text)
 
   end subroutine seq_io_read_char
 
