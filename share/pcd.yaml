@@ -10,7 +10,7 @@
 #
 
 physical_constants_dictionary:
-  version_number: 0.1.0
+  version_number: 0.2.0
   institution: E3SM Project
   description: Community-based dictionary for consistent physical constant sets
   contact: E3SM Project
@@ -133,6 +133,14 @@ physical_constants_dictionary:
         Craig, H., Isotopic standards for carbon and oxygen and correction
         factors for mass-spectrometric analysis of carbon dioxide,
         Geochimica et Cosmochimica Acta, 12(1-2), 133-149, 1957.
+      "
+    TEOS10_2010:
+      description: "TEOS-10 manual defining the thermodynamic properties of seawater"
+      citation: "
+        IOC, SCOR and IAPSO, The international thermodynamic equation of
+        seawater - 2010: Calculation and use of thermodynamic properties,
+        Intergovernmental Oceanographic Commission, Manuals and Guides No. 56,
+        UNESCO (English), 196 pp., 2010.
       "
 
   set:
@@ -307,15 +315,15 @@ physical_constants_dictionary:
             "
 
           - name: molar_gas_constant
-            value: 8.314462618
+            formula: avogadro_constant * boltzmann_constant
             units: J mol-1 K-1
             prec: double
-            type: strict
+            type: formula
             uncertainty: exact
-            reference: NIST_CODATA2022
             description: "
               Gas constant used in the ideal gas law. It is equivalent to
               Boltzmann's constant espressed in J mol-1 K-1.
+              Derived constant. Defined as avogadro_constant * boltzmann_constant.
             "
           - name: molar_volume_of_ideal_gas
             value: 22.71095464E-03
@@ -353,11 +361,10 @@ physical_constants_dictionary:
               Reference molar mass of elemental oxygen.
             "
           - name: carbon_dioxide_molar_mass_reference
-            value: 0.0440095
+            formula: carbon_molar_mass_reference + 2 * oxygen_molar_mass_reference
             units: kg mol-1
             prec: double
-            type: strict
-            reference: IUPAC1997
+            type: formula
             description: "
               Derived from IUPAC standard atomic weights as
               carbon_molar_mass_reference + 2*oxygen_molar_mass_reference.
@@ -420,33 +427,30 @@ physical_constants_dictionary:
               Derived constant.
             "
           - name: flattening
-            value: 0.00335281068118
+            formula: (semimajor_axis - semiminor_axis) / semimajor_axis
             units: none
             prec: double
-            type: strict
+            type: formula
             uncertainty: exact
-            reference: GRS80
             description: "
               Defined as f = (semimajor_axis - semiminor_axis) / semimajor_axis.
               Derived constant.
             "
           - name: reciprocal_flattening
-            value: 298.257222101
+            formula: 1 / flattening
             units: none
             prec: double
-            type: strict
+            type: formula
             uncertainty: exact
-            reference: GRS80
             description: "
               Defined as 1/f. Derived constant.
             "
           - name: mean_radius
-            value: 6371008.7714
+            formula: (2 * semimajor_axis + semiminor_axis) / 3
             units: m
             prec: double
-            type: strict
+            type: formula
             uncertainty: exact
-            reference: GRS80
             description: "
               Derived constant. Equal to (2 semimajor_axis + semiminor_axis) / 3.
             "
@@ -607,11 +611,10 @@ physical_constants_dictionary:
               Reference latent heat required to convert liquid water to vapor.
             "
           - name: latent_heat_of_sublimation_reference
-            value: 2834700.0
+            formula: latent_heat_of_fusion_reference + latent_heat_of_vaporization_reference
             units: J kg-1
             prec: double
-            type: strict
-            reference: Smithsonian1951
+            type: formula
             description: "
               Derived constant. Defined as latent_heat_of_fusion_reference +
               latent_heat_of_vaporization_reference.
@@ -643,35 +646,32 @@ physical_constants_dictionary:
               thermodynamic parameterizations.
             "
           - name: dry_air_specific_gas_constant_reference
-            value: 287.04213968100532
+            formula: molar_gas_constant / dry_air_molar_mass_reference
             units: J kg-1 K-1
             prec: double
-            type: strict
-            reference: US_StdAtm_1976
+            type: formula
             description: "
               Derived constant. Defined as molar_gas_constant /
               dry_air_molar_mass_reference.
             "
           - name: water_vapor_specific_gas_constant_reference
-            value: 461.50436378774424
+            formula: molar_gas_constant / water_vapor_molar_mass_reference
             units: J kg-1 K-1
             prec: double
-            type: strict
-            reference: US_StdAtm_1976
+            type: formula
             description: "
               Derived constant. Defined as molar_gas_constant /
               water_vapor_molar_mass_reference.
             "
           - name: dry_air_density_at_standard_temperature_and_pressure
-            value: 1.2923190576466714
+            formula: standard_atmosphere / (dry_air_specific_gas_constant_reference * pure_water_freezing_temperature_reference)
             units: kg m-3
             prec: double
-            type: strict
-            reference: US_StdAtm_1976
+            type: formula
             description: "
               Derived constant. Defined as standard_atmosphere /
               (dry_air_specific_gas_constant_reference *
-              pure_water_freezing_temperature).
+              pure_water_freezing_temperature_reference).
             "
           - name: dry_air_specific_heat_capacity_reference
             value: 1004.64
@@ -717,6 +717,17 @@ physical_constants_dictionary:
             description: "
               Reference seawater specific heat capacity.
             "
+          - name: seawater_specific_heat_capacity_teos10
+            value: 3991.86795711963
+            units: J kg-1 K-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: TEOS10_2010
+            description: "
+              TEOS-10 specific heat capacity c_p^0, the ratio of potential
+              enthalpy to Conservative Temperature.
+            "
           - name: ocean_reference_salinity
             value: 34.7
             units: g kg-1
@@ -725,6 +736,28 @@ physical_constants_dictionary:
             reference: Levitus1982
             description: "
               Reference ocean salinity.
+            "
+          - name: ocean_reference_salinity_teos10
+            value: 35.16504
+            units: g kg-1
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: TEOS10_2010
+            description: "
+              TEOS-10 Standard Ocean Reference Salinity S_SO, the Reference
+              Salinity of seawater with a Practical Salinity of 35.
+            "
+          - name: reference_salinity_per_practical_salinity_teos10
+            formula: ocean_reference_salinity_teos10 / 35
+            units: g kg-1
+            prec: double
+            type: formula
+            uncertainty: exact
+            description: "
+              TEOS-10 factor u_PS converting Practical Salinity to Reference
+              Salinity. Derived constant. Defined as
+              ocean_reference_salinity_teos10 / 35.
             "
           - name: speed_of_sound_in_seawater_reference
             value: 1500.0
@@ -828,11 +861,10 @@ physical_constants_dictionary:
               Reference sea-ice salinity.
             "
           - name: sea_ice_thermal_diffusivity_reference
-            value: 1.0863739733765951E-06
+            formula: sea_ice_thermal_conductivity_reference / (sea_ice_density_reference * sea_ice_specific_heat_capacity_reference)
             units: m2 s-1
             prec: double
-            type: strict
-            reference: CuffeyPaterson2010
+            type: formula
             description: "
               Derived constant. Defined as
               sea_ice_thermal_conductivity_reference /
