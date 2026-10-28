@@ -21,7 +21,7 @@ void Functions<S,D>::compute_tms(
   const Scalar&                obstacle_height_min,
   const Scalar&                roughness_length_factor,
   const Scalar&                roughness_length_max,
-  const Scalar&                wspd_squared_min,
+  const Scalar&                ri_shear_sqr_min,
   const Scalar&                drag_scaling_factor,
   const view_1d<Scalar>&       ksrf,
   const view_2d<Scalar>&       tau_tms)
@@ -65,7 +65,9 @@ void Functions<S,D>::compute_tms(
       const auto kt = nlevs-2;
       const auto tmp_u = u_wind_i(kt) - u_wind_i(kb);
       const auto tmp_v = v_wind_i(kt) - v_wind_i(kb);
-      const auto dv2 = ekat::impl::max(tmp_u*tmp_u + tmp_v*tmp_v, wspd_squared_min);
+      // Floor the squared shear to avoid division by ~0; larger values cap Ri in weakly
+      // sheared stable conditions so TMS drag is not fully shut off
+      const auto dv2 = ekat::impl::max(tmp_u*tmp_u + tmp_v*tmp_v, ri_shear_sqr_min);
 
       const auto ri  = 2*gravit*(t_mid_i(kt)*exner_i(kt) - t_mid_i(kb)*exner_i(kb))*(z_mid_i(kt) - z_mid_i(kb))/
                       ((t_mid_i(kt)*exner_i(kt) + t_mid_i(kb)*exner_i(kb))*dv2);

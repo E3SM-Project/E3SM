@@ -143,7 +143,7 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
   const Real obstacle_height_min     = m_params.get<double>("obstacle_height_min",     Defaults::obstacle_height_min);
   const Real roughness_length_factor = m_params.get<double>("roughness_length_factor", Defaults::roughness_length_factor);
   const Real roughness_length_max    = m_params.get<double>("roughness_length_max",    Defaults::roughness_length_max);
-  const Real wspd_squared_min        = m_params.get<double>("wspd_squared_min",        Defaults::wspd_squared_min);
+  const Real ri_shear_sqr_min        = m_params.get<double>("ri_shear_sqr_min",        Defaults::ri_shear_sqr_min);
   const Real drag_scaling_factor     = m_params.get<double>("drag_scaling_factor",     Defaults::drag_scaling_factor);
 
   TMSFunctions::compute_tms(ncols, nlevs,
@@ -157,7 +157,7 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
                             obstacle_height_min,
                             roughness_length_factor,
                             roughness_length_max,
-                            wspd_squared_min,
+                            ri_shear_sqr_min,
                             drag_scaling_factor,
                             surf_drag_coeff_tms, wind_stress_tms);
 }

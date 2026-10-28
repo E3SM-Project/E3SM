@@ -80,7 +80,7 @@ void compute_tms_f(int ncols, int nlevs,
                        Defaults::obstacle_height_min,
                        Defaults::roughness_length_factor,
                        Defaults::roughness_length_max,
-                       Defaults::wspd_squared_min,
+                       Defaults::ri_shear_sqr_min,
                        Defaults::drag_scaling_factor,
                        ksrf_d, tau_d);
 
