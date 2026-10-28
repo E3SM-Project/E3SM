@@ -67,6 +67,7 @@ defaults:
 
 jobs:
   tests:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
       fail-fast: false
