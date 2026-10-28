@@ -2,6 +2,7 @@
 #define E3SM_COUPLER_DRIVER_HPP
 
 #include <coupler.hpp>
+#include <memory>
 #include <process.hpp>
 
 namespace e3sm::coupler {
@@ -10,19 +11,22 @@ namespace e3sm::coupler {
  */
 class CouplerDriver {
 public:
-  CouplerDriver(): coupler_(), initialized_(false), components_() {}
-
+  CouplerDriver() = default;
   // neither copyable nor movable
   CouplerDriver(CouplerDriver&) = delete;
   CouplerDriver(const CouplerDriver&) = delete;
-  CouplerDriver& operator=(const CouplerDriver&)  = delete;
+  CouplerDriver& operator=(const CouplerDriver&) = delete;
   CouplerDriver& operator=(const CouplerDriver&&) = delete;
 
-  template <CoupledProcess C> void add_component(C& component) {
+  template <CoupledProcess C> void add_component(std::unique_ptr<C> component) {
     if (initialized_) {
-      throw std::runtime_error("CouplerDriver: Can't add component after initialization!");
+      throw std::runtime_error(
+          "CouplerDriver: Can't add component after initialization!");
     }
-    components_.emplace_back(component);
+    if (!component) {
+      throw std::invalid_argument("CouplerDriver: Null component");
+    }
+    components_.emplace_back(std::move(component));
   }
 
   void initialize(const std::string& filename);
@@ -41,12 +45,16 @@ public:
 
   AnyComponent& get_component(std::string_view name);
 
+  template <CoupledProcess C> C& get_component_as(std::string_view name) {
+    return get_component(name).as<C>();
+  }
+
   Coupler& coupler() noexcept { return coupler_; }
 
 private:
-  Coupler coupler_;
-  bool    initialized_;
   std::vector<AnyComponent> components_;
+  Coupler coupler_;
+  bool initialized_ = false;
 };
 
 } // namespace e3sm::coupler

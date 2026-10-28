@@ -2,8 +2,10 @@
 #define E3SM_COUPLER_API_PROCESS_HPP
 #include "coupler.hpp"
 #include <field_registry.hpp>
+#include <memory>
 #include <span>
 #include <string_view>
+#include <typeindex>
 #include <vector>
 
 namespace e3sm::coupler {
@@ -15,6 +17,7 @@ struct FieldBinding {
 
 struct ProcessRunOpts {
   float dt;
+  int coupling_interval = 1;
 };
 
 template <typename T>
@@ -38,8 +41,10 @@ concept CoupledProcess =
 class AnyComponent {
 public:
   template <CoupledProcess C>
-  AnyComponent(C& component)
-      : object_(&component),
+  AnyComponent(std::unique_ptr<C> component)
+      : object_(component.release(),
+                [](void* obj) { delete static_cast<C*>(obj); }),
+        type_(typeid(C)),
         name_([](void* obj) { return static_cast<C*>(obj)->name(); }),
         populate_registry_([](void* obj, FieldRegistry& registry) {
           static_cast<C*>(obj)->populate_registry(registry);
@@ -47,7 +52,9 @@ public:
         configure_coupling_([](void* obj, const ActiveCouplingFields& plan) {
           static_cast<C*>(obj)->configure_coupling(plan);
         }),
-        run_([](void* obj, const ProcessRunOpts run_opts) { static_cast<C*>(obj)->run(run_opts); }),
+        run_([](void* obj, const ProcessRunOpts run_opts) {
+          static_cast<C*>(obj)->run(run_opts);
+        }),
         export_fields_([](void* obj, std::span<ExportBuffer> buf) {
           static_cast<C*>(obj)->export_fields(buf);
         }),
@@ -55,19 +62,26 @@ public:
           static_cast<C*>(obj)->import_fields(buf);
         }) {}
 
-  std::string_view name() const { return name_(object_); }
+  std::string_view name() const { return name_(object_.get()); }
   void populate_registry(FieldRegistry& registry) {
-    populate_registry_(object_, registry);
+    populate_registry_(object_.get(), registry);
   }
   void configure_coupling(const ActiveCouplingFields& plan) {
-    configure_coupling_(object_, plan);
+    configure_coupling_(object_.get(), plan);
   }
-  void run(const ProcessRunOpts run_opts) { run_(object_, run_opts); }
+  void run(const ProcessRunOpts run_opts) { run_(object_.get(), run_opts); }
   void export_fields(std::span<ExportBuffer> buf) {
-    export_fields_(object_, buf);
+    export_fields_(object_.get(), buf);
   }
   void import_fields(std::span<ImportBuffer> buf) {
-    import_fields_(object_, buf);
+    import_fields_(object_.get(), buf);
+  }
+
+  template <typename C> C& as() {
+    if (type_ != std::type_index(typeid(C))) {
+      throw std::bad_cast{};
+    }
+    return *static_cast<C*>(object_.get());
   }
 
 private:
@@ -78,7 +92,9 @@ private:
   using ExportFn = void (*)(void*, std::span<ExportBuffer>);
   using ImportFn = void (*)(void*, std::span<ImportBuffer>);
 
-  void* object_;
+  using DeleteFn = void (*)(void*);
+  std::unique_ptr<void, DeleteFn> object_;
+  std::type_index type_;
   NameFn name_;
   PopulateRegistryFn populate_registry_;
   ConfigCouplingFn configure_coupling_;

@@ -18,14 +18,9 @@ set(EMULATOR_COMMON_CXX_SOURCES
   emulator_config.cpp
 )
 
-set(EMULATOR_COMMON_F90_SOURCES
-  emulator_f2c_api.F90
-  emulator_handle.F90
-)
 
 add_library(emulator_common
   ${EMULATOR_COMMON_CXX_SOURCES}
-  ${EMULATOR_COMMON_F90_SOURCES}
 )
 
 target_link_libraries(emulator_common PUBLIC MOAB)

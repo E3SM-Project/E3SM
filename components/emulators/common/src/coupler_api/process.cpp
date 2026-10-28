@@ -4,14 +4,15 @@
 
 namespace e3sm::coupler {
 
-void CouplingAdapter::register_coupled_field(FieldRegistry& registry, RegisteredField metadata,
-    std::span<double> data) {
+void CouplingAdapter::register_coupled_field(FieldRegistry& registry,
+                                             RegisteredField metadata,
+                                             std::span<double> data) {
   const auto id = registry.register_field(std::move(metadata));
 
   fields_.push_back({
       .id = id,
       .data = data,
-      });
+  });
 }
 
 void CouplingAdapter::configure(const ActiveCouplingFields& plan) {
@@ -64,7 +65,8 @@ void CouplingAdapter::import_fields(std::span<const ImportBuffer> buffers) {
 /**
  * @brief Helper to resolve the FieldBinding corresponding to a FieldID
  * */
-std::vector<FieldBinding> CouplingAdapter::resolve(std::span<const FieldID> ids) const {
+std::vector<FieldBinding>
+CouplingAdapter::resolve(std::span<const FieldID> ids) const {
   std::vector<FieldBinding> result;
   result.reserve(ids.size());
 
