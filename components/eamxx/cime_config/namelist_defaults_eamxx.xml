@@ -315,20 +315,17 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
-    <!-- Water tracers -->
+    <!-- Water tracers (generic and/or isotope entries, all defined in one
+         water_tracers_file; isotope entries require a build with
+         EAMXX_ENABLE_WATER_ISOTOPES=ON) -->
     <water_tracers inherit="atm_proc_base">
-      <tracer_count type="integer" doc="Number of water tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+      <water_tracers_file type="file" doc="YAML file defining the water tracers (generic and/or isotope entries)"></water_tracers_file>
+      <liquid_vapor_formulation type="string" doc="Source for liquid/vapor fractionation parameters (only used if the tracers file defines isotope entries)">horita_wesolowski_1994</liquid_vapor_formulation>
+      <ice_vapor_formulation type="string" doc="Source for ice/vapor fractionation parameters (only used if the tracers file defines isotope entries)">merlivat_nief_1967</ice_vapor_formulation>
+      <standard_ratio_formulation type="string" doc="Normalize isotope ratios or use actual abundances (only used if the tracers file defines isotope entries)">normalized</standard_ratio_formulation>
+      <ocean_enrichment_formulation type="string" doc="Ocean isotopic enrichment/depletion relative to VSMOW (only used if the tracers file defines isotope entries)">modern</ocean_enrichment_formulation>
     </water_tracers>
 
-    <!-- Water isotopes (subclass of water tracers with fractionation physics) -->
-    <water_isotopes inherit="atm_proc_base">
-      <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
-      <liquid_vapor_formulation type="string" doc="Source for liquid/vapor fractionation parameters">horita_wesolowski_1994</liquid_vapor_formulation>
-      <ice_vapor_formulation type="string" doc="Source for ice/vapor fractionation parameters">merlivat_nief_1967</ice_vapor_formulation>
-      <standard_ratio_formulation type="string" doc="Normalize isotope ratios or use actual abundances">normalized</standard_ratio_formulation>
-      <ocean_enrichment_formulation type="string" doc="Ocean isotopic enrichment/depletion relative to VSMOW">modern</ocean_enrichment_formulation>
-    </water_isotopes>
-    
     <!-- Gravity Wave Drag -->
     <gw inherit="atm_proc_base">
       <use_gw_orographic type="logical" doc="Flag for orographic GWD">true</use_gw_orographic>
