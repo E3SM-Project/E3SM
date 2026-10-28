@@ -83,7 +83,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool shoc_1p5tke;
     bool extra_diags;
     bool do_3d_turb;
-    bool use_emulated_moments;
+    bool use_emulated_moment_w2;
+    bool use_emulated_moment_w3;
   };
 
   // This struct stores input views for shoc_main.
@@ -740,7 +741,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &do_3d_turb, const bool &extra_diags, const bool &use_emulated_moments,
+      const bool &do_3d_turb, const bool &extra_diags,
+      const bool &use_emulated_moment_w2, const bool &use_emulated_moment_w3,
       // Input Variables
       const Scalar &host_dx, const Scalar &host_dy, const uview_1d<const Pack> &zt_grid,
       const uview_1d<const Pack> &zi_grid, const uview_1d<const Pack> &pres,
@@ -788,7 +790,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &do_3d_turb, const bool &extra_diags, const bool &use_emulated_moments,
+      const bool &do_3d_turb, const bool &extra_diags,
+      const bool &use_emulated_moment_w2, const bool &use_emulated_moment_w3,
       // Input Variables
       const view_1d<const Scalar> &host_dx, const view_1d<const Scalar> &host_dy,
       const view_2d<const Pack> &zt_grid, const view_2d<const Pack> &zi_grid,

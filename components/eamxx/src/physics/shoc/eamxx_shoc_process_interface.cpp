@@ -318,7 +318,13 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
-  runtime_options.use_emulated_moments = m_params.get<bool>("use_shoc_moments_emulator", false);
+  // Keep the legacy switch as a compatibility alias for enabling both
+  // emulated moments.
+  const bool use_legacy_emulator = m_params.get<bool>("use_shoc_moments_emulator", false);
+  runtime_options.use_emulated_moment_w2 =
+    use_legacy_emulator || m_params.get<bool>("use_emulated_moment_w2", false);
+  runtime_options.use_emulated_moment_w3 =
+    use_legacy_emulator || m_params.get<bool>("use_emulated_moment_w3", false);
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -570,7 +576,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Initialize the embedded Python/Torch model lazily in run_impl, after the
   // atmosphere process has completed its first-step tendency bookkeeping.
 #else
-  EKAT_REQUIRE_MSG(!runtime_options.use_emulated_moments,
+  EKAT_REQUIRE_MSG(!runtime_options.use_emulated_moment_w2 &&
+                   !runtime_options.use_emulated_moment_w3,
                    "SHOC moments emulator requires EAMXX_ENABLE_INFERENCE=ON.");
 #endif
 }
@@ -596,7 +603,8 @@ void SHOCMacrophysics::run_impl (const double dt)
   Kokkos::fence();
 
 #ifdef EAMXX_HAS_INFERENCE
-  if (runtime_options.use_emulated_moments) {
+  if (runtime_options.use_emulated_moment_w2 ||
+      runtime_options.use_emulated_moment_w3) {
     if (!m_moments_emulator) {
       init_moments_emulator();
     }

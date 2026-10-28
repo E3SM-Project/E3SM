@@ -91,7 +91,8 @@ void Functions<S,D>::shoc_main_internal(
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const bool&                  extra_diags,
-  const bool&                  use_emulated_moments,
+  const bool&                  use_emulated_moment_w2,
+  const bool&                  use_emulated_moment_w3,
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
@@ -276,15 +277,19 @@ void Functions<S,D>::shoc_main_internal(
                             workspace,                              // Workspace
                             w3);                                    // Output
 
-    if (use_emulated_moments) {
+    if (use_emulated_moment_w2 || use_emulated_moment_w3) {
       const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
-        // w_sec and w3 are mid-level fields; do not write the extra
-        // interface pack from the emulator-inclusive input grid.
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlev)),
+      // w_sec and w3 are mid-level fields; do not write the extra
+      // interface pack from the emulator-inclusive input grid.
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlev)),
                            [&] (const Int& k) {
         const auto active = zi_grid(k) < 8000;
-        w_sec(k).set(active, ekat::max(min_emulated_w_sec, emulated_w_sec(k)));
-        w3(k).set(active, emulated_w3(k));
+        if (use_emulated_moment_w2) {
+          w_sec(k).set(active, ekat::max(min_emulated_w_sec, emulated_w_sec(k)));
+        }
+        if (use_emulated_moment_w3) {
+          w3(k).set(active, emulated_w3(k));
+        }
       });
       team.team_barrier();
     }
@@ -379,7 +384,8 @@ void Functions<S,D>::shoc_main_internal(
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const bool&                  extra_diags,
-  const bool&                  use_emulated_moments,
+  const bool&                  use_emulated_moment_w2,
+  const bool&                  use_emulated_moment_w3,
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
@@ -567,7 +573,7 @@ void Functions<S,D>::shoc_main_internal(
                                  workspace_mgr,                          // Workspace mgr
                                  w3);                                    // Output
 
-    if (use_emulated_moments) {
+    if (use_emulated_moment_w2 || use_emulated_moment_w3) {
       const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
       // w_sec and w3 are mid-level fields.  The emulator inputs include an
       // extra interface level, but that level must not be written here.
@@ -576,9 +582,13 @@ void Functions<S,D>::shoc_main_internal(
         const int k = idx%nlev;
         const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
         if (active) {
-          w_sec(i,k/Pack::n)[k%Pack::n] = ekat::max(
-            min_emulated_w_sec, emulated_w_sec(i,k/Pack::n)[k%Pack::n]);
-          w3(i,k/Pack::n)[k%Pack::n] = emulated_w3(i,k/Pack::n)[k%Pack::n];
+          if (use_emulated_moment_w2) {
+            w_sec(i,k/Pack::n)[k%Pack::n] = ekat::max(
+              min_emulated_w_sec, emulated_w_sec(i,k/Pack::n)[k%Pack::n]);
+          }
+          if (use_emulated_moment_w3) {
+            w3(i,k/Pack::n)[k%Pack::n] = emulated_w3(i,k/Pack::n)[k%Pack::n];
+          }
         }
       });
       Kokkos::fence();
@@ -762,7 +772,9 @@ Int Functions<S,D>::shoc_main(
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
                        c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke,                 // Runtime options
-                       do_3d_turb, extra_diags, shoc_runtime.use_emulated_moments, // Runtime options
+                       do_3d_turb, extra_diags,
+                       shoc_runtime.use_emulated_moment_w2,
+                       shoc_runtime.use_emulated_moment_w3, // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -792,7 +804,8 @@ Int Functions<S,D>::shoc_main(
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
     c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, extra_diags,
-    shoc_runtime.use_emulated_moments,                                  // Runtime options
+    shoc_runtime.use_emulated_moment_w2,
+    shoc_runtime.use_emulated_moment_w3,                                  // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input

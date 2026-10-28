@@ -271,6 +271,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
       <use_shoc_moments_emulator type="logical" doc="Replace SHOC vertical velocity moments with the Python emulator">false</use_shoc_moments_emulator>
+      <use_emulated_moment_w2 type="logical" doc="Replace SHOC w-prime-2 with the Python emulator">false</use_emulated_moment_w2>
+      <use_emulated_moment_w3 type="logical" doc="Replace SHOC w-prime-3 with the Python emulator">false</use_emulated_moment_w3>
       <shoc_moments_emulator_python_module type="string" doc="Python module containing create_emulator">standalone_emulator</shoc_moments_emulator_python_module>
       <shoc_moments_emulator_python_path type="string" doc="Directory containing the SHOC emulator Python module"></shoc_moments_emulator_python_path>
       <shoc_moments_emulator_model_path type="string" doc="Path to the SHOC emulator checkpoint; empty uses standalone_emulator.pt beside the module"></shoc_moments_emulator_model_path>
