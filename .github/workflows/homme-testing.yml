@@ -169,9 +169,13 @@ jobs:
           done
 
           # Each runner has its own machine file (ghci-<runner>[-bfb].cmake).
+          # The ctest timeout per test is 10 minutes by default, but the runners' hosts are shared (e.g., other
+          # users running builds), so some tests take twice as long as usual. Use Homme's own limit
+          # (HOMME_TESTING_TIMELIMIT in ghci.cmake). NOTE: the value must be separated by a space, since
+          # ctest silently ignores '--timeout=1800'.
           cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               "${bfb_flag[@]}" "${cuda_flags[@]}")
+               --ctest-arg="--timeout 1800" "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then
             cmd+=(-g)
           fi
