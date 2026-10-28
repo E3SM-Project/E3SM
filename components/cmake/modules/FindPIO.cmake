@@ -15,19 +15,32 @@ if (NOT PIO_LIBDIR)
   set(PIO_LIBDIR "${INSTALL_SHAREDPATH}/lib")
 endif()
 
+# Locate a library in PIO_LIBDIR (or the shared install dir), whether it was built static or shared
+function(find_pio_library var name)
+  find_library(${var} NAMES ${name} HINTS "${PIO_LIBDIR}" "${INSTALL_SHAREDPATH}/lib" NO_DEFAULT_PATH)
+  if (NOT ${var})
+    message(FATAL_ERROR "Could not find lib${name} in ${PIO_LIBDIR} or ${INSTALL_SHAREDPATH}/lib")
+  endif()
+endfunction()
+
 if (PIO_VERSION STREQUAL 2)
   # This is a pio2 library
-  set(PIOLIBS "${PIO_LIBDIR}/libpiof.a;${PIO_LIBDIR}/libpioc.a")
+  find_pio_library(PIO_PIOF_LIBRARY piof)
+  find_pio_library(PIO_PIOC_LIBRARY pioc)
+  set(PIOLIBS ${PIO_PIOF_LIBRARY} ${PIO_PIOC_LIBRARY})
   if (DEFINED ENV{ADIOS2_ROOT})
-    list(APPEND PIOLIBS "${PIO_LIBDIR}/libadios2pio-nm-lib.a")
+    find_pio_library(PIO_ADIOS2PIO_LIBRARY adios2pio-nm-lib)
+    list(APPEND PIOLIBS ${PIO_ADIOS2PIO_LIBRARY})
   endif()
 else()
   # This is a pio1 library
-  set(PIOLIBS "${PIO_LIBDIR}/libpio.a")
+  find_pio_library(PIO_PIO_LIBRARY pio)
+  set(PIOLIBS ${PIO_PIO_LIBRARY})
 endif()
 
-# Handle gptl. Just hardcode it for now.
-list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libgptl.a")
+# Handle gptl
+find_pio_library(PIO_GPTL_LIBRARY gptl)
+list(APPEND PIOLIBS ${PIO_GPTL_LIBRARY})
 
 # Find the MPI library
 if (NOT MPILIB STREQUAL "mpi-serial")
@@ -83,7 +96,8 @@ endif()
 list(APPEND PIOLIBS netcdf)
 
 if (MPILIB STREQUAL "mpi-serial")
-  list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libmpi-serial.a")
+  find_pio_library(PIO_MPI_SERIAL_LIBRARY mpi-serial)
+  list(APPEND PIOLIBS ${PIO_MPI_SERIAL_LIBRARY})
 else()
   find_package(MPI REQUIRED COMPONENTS C Fortran)
   list(APPEND PIOLIBS MPI::MPI_C MPI::MPI_Fortran)
