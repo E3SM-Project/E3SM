@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange RUN_STARTDATE=2100-02-27

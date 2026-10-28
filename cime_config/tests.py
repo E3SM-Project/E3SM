@@ -21,6 +21,11 @@ _CALENDAR_CASES = (
 
 _CALENDAR_PROFILES = ("nf0", "nf1", "nv0", "nv1", "gf0", "gf1", "gv0", "gv1")
 
+_SOLAR_PROFILES = ("nf0", "nf1", "gf0", "gf1")
+_SOLAR_BOUNDARIES = ("calendar_feb", "calendar_rollover", "solar_conservation_century",
+                     "solar_conservation_spring", "solar_conservation_autumn",
+                     "solar_conservation_summer", "solar_conservation_winter")
+
 _NOLEAP_INPUT_CASES = (
     "ne4pg2_oQU480_rx1.A",
     "T62_oQU120.CMPASO-NYF",
@@ -41,6 +46,37 @@ _GREGORIAN_INPUT_NEGATIVE = _NOLEAP_INPUT_NEGATIVE + (
 )
 
 _TESTS = {
+
+    "e3sm_solar_conservation" : {
+        "inherit" : ("e3sm_solar_conservation_smoke", "e3sm_solar_conservation_boundaries",
+                     "e3sm_solar_conservation_cadence", "e3sm_solar_conservation_unequal")
+        },
+
+    "e3sm_solar_conservation_smoke" : {
+        "tests" : tuple(
+            "SCV_Ld2.ne4pg2_oQU480.WCYCL1850NS.allactive-calendar_{}--allactive-solar_conservation--allactive-solar_conservation_spring".format(profile)
+            for profile in _SOLAR_PROFILES)
+        },
+
+    "e3sm_solar_conservation_boundaries" : {
+        "tests" : tuple(
+            "SCV_Ld6.ne4pg2_oQU480.WCYCL1850NS.allactive-calendar_{}--allactive-solar_conservation--allactive-{}".format(profile, boundary)
+            for profile in _SOLAR_PROFILES
+            for boundary in _SOLAR_BOUNDARIES)
+        },
+
+    "e3sm_solar_conservation_cadence" : {
+        "tests" : tuple(
+            "SCV_Ld6.ne4pg2_oQU480.WCYCL1850NS.allactive-calendar_{}--allactive-solar_conservation--allactive-solar_conservation_spring--allactive-solar_conservation_rad2".format(profile)
+            for profile in _SOLAR_PROFILES)
+        },
+
+    "e3sm_solar_conservation_unequal" : {
+        "tests" : tuple(
+            "SCV_Ld6.ne4pg2_oQU480.WCYCL1850NS.allactive-calendar_{}--allactive-solar_conservation--allactive-calendar_feb--allactive-solar_conservation_{}".format(profile, cadence)
+            for profile in _SOLAR_PROFILES
+            for cadence in ("ocn2", "ocn4", "ocn4--allactive-solar_conservation_rad2"))
+        },
 
     "e3sm_calendar_gregorian_to_noleap_smoke" : {
         "tests" : tuple(

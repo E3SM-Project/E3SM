@@ -1,0 +1,4 @@
+dtime = 1800
+iradsw = 1
+irad_always = 0
+use_rad_dt_cosz = .true.

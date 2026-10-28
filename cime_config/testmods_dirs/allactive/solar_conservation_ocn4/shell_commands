@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange OCN_NCPL=12
