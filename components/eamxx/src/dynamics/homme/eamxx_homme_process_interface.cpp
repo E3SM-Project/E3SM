@@ -25,6 +25,7 @@
 
 // Scream includes
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
@@ -201,7 +202,7 @@ void HommeDynamics::create_requests ()
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
     add_group<Required>("tracers",rgn,N, MonolithicAlloc::Required);
-    fv_phys_rrtmgp_active_gases_init(m_grids_manager);
+    fv_phys_rrtmgp_active_gases_init();
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
@@ -260,12 +261,9 @@ void HommeDynamics::create_requests ()
     // is more convenient to use two different remappers: the pd remapper will
     // remap into Homme's forcing views, while the dp remapper will remap from
     // Homme's states.
-    m_p2d_remapper = m_grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
-    m_d2p_remapper = m_grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
+    m_p2d_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_phys_grid,m_dyn_grid);
+    m_d2p_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
   }
-
-  // Create separate remapper for initial_conditions
-  m_ic_remapper = m_grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
 
   // Layout for 2D (1d horiz X 1d vertical) variable
   const auto& grid_name = m_phys_grid->name();
@@ -1094,18 +1092,19 @@ void HommeDynamics::restart_homme_state () {
   });
 
   if (fv_phys_active()) {
-    m_ic_remapper = nullptr;
     return;
   }
 
-  m_ic_remapper->register_field(m_helper_fields.at("FT_phys"),get_internal_field("vtheta_dp_dyn"));
-  m_ic_remapper->register_field(m_helper_fields.at("FM_phys"),get_internal_field("v_dyn"));
-  m_ic_remapper->register_field(get_field_out("pseudo_density",pgn),get_internal_field("dp3d_dyn"));
+  // Use a separate remapper for initial_conditions (dyn->phys, since we are restarting)
+  m_ic_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+  m_ic_remapper->register_field(get_internal_field("vtheta_dp_dyn"),m_helper_fields.at("FT_phys"));
+  m_ic_remapper->register_field(get_internal_field("v_dyn"),m_helper_fields.at("FM_phys"));
+  m_ic_remapper->register_field(get_internal_field("dp3d_dyn"),get_field_out("pseudo_density",pgn));
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
     auto Q_old = get_group_in("Q",pgn).monolithic_field();
-    m_ic_remapper->register_field(Q_old,Q_dyn);
+    m_ic_remapper->register_field(Q_dyn,Q_old);
 
     // Grab qv_ref_old from Q_old
     *qv_prev_ref = Q_old.get_component(0);
@@ -1115,12 +1114,12 @@ void HommeDynamics::restart_homme_state () {
     // NOTE: we need the end-of-homme-step qv on the ref grid, to do the Theta->T conversion
     //       to compute T_prev *in the same way as homme_post_process* did in the original run.
     create_helper_field("qv_prev_phys",{COL,LEV},{ncols,nlevs},pgn);
-    m_ic_remapper->register_field(m_helper_fields.at("qv_prev_phys"),Q_dyn.get_component(0));
+    m_ic_remapper->register_field(Q_dyn.get_component(0),m_helper_fields.at("qv_prev_phys"));
 
     *qv_prev_ref = m_helper_fields.at("qv_prev_phys");
   }
   m_ic_remapper->registration_ends();
-  m_ic_remapper->remap_bwd();
+  m_ic_remapper->remap_fwd();
   m_ic_remapper = nullptr; // Can clean up the IC remapper now.
 
   // Now that we have dp_ref, we can recompute pressure
@@ -1205,6 +1204,7 @@ void HommeDynamics::initialize_homme_state () {
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
+  m_ic_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid,m_dyn_grid);
   m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),get_internal_field("v_dyn"));
   m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),get_internal_field("dp3d_dyn"));
   m_ic_remapper->register_field(get_field_in("ps",rgn),get_internal_field("ps_dyn"));

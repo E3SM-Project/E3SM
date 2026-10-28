@@ -14,7 +14,8 @@ class BoundaryExchange;
 namespace scream
 {
 
-// Performs remap from physics to dynamics grids, and viceversa
+// Performs remap from physics to dynamics grids
+// Note: the opposite direction (dyn->phys) is not supported here. Use UniqueGridRemapper for that.
 class PhysicsDynamicsRemapper : public AbstractRemapper
 {
 public:
@@ -68,8 +69,6 @@ public:
   // These structs and function should be morally private, but CUDA complains that
   // they cannot be private/protected
 #endif
-  void create_p2d_map ();
-
   enum AllocPropType : int {
     PackAlloc      = 0,
     RealAlloc      = 2
@@ -155,7 +154,6 @@ protected:
 
   // Remap methods
   void remap_fwd_impl () override;
-  void remap_bwd_impl () override;
 
   // phys->dyn requires a halo-exchange. Since not all entries in dyn
   // are overwritten before the exchange, to avoid leftover garbage,
@@ -172,24 +170,12 @@ protected:
   KOKKOS_FUNCTION
   void local_remap_fwd_3d (const MT& team) const;
 
-  template <typename MT>
-  KOKKOS_FUNCTION
-  void local_remap_bwd_2d (const MT& team) const;
-
-  template <typename ScalarT, typename MT>
-  KOKKOS_FUNCTION
-  void local_remap_bwd_3d (const MT& team) const;
-
 public:
   struct RemapFwdTag {};
-  struct RemapBwdTag {};
 
   template<typename MT>
   KOKKOS_INLINE_FUNCTION
   void operator()(const RemapFwdTag&, const MT &team) const;
-  template<typename MT>
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const RemapBwdTag&, const MT &team) const;
 };
 
 } // namespace scream

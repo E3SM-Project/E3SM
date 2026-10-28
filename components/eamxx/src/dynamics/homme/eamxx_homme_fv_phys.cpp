@@ -12,6 +12,7 @@
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "dynamics/homme/physics_dynamics_remapper.hpp"
 
 // Ekat includes
 #include <ekat_assert.hpp>
@@ -263,7 +264,7 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
 void HommeDynamics
-::fv_phys_rrtmgp_active_gases_init (const std::shared_ptr<const GridsManager>& gm)
+::fv_phys_rrtmgp_active_gases_init ()
 {
   // NOTE: we would like to avoid this if it's a restart run, but at this point of the
   //       init sequence we still don't know the run type. So we must add the trace gases
@@ -283,7 +284,7 @@ void HommeDynamics
     // restart file.
     add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), mol/mol, pgn, ps);
   }
-  trace_gases_workaround.set_remapper(gm->create_remapper(m_cgll_grid, m_dyn_grid));
+  trace_gases_workaround.set_remapper(std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid, m_dyn_grid));
 }
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
