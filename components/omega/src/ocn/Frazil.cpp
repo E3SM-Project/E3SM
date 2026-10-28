@@ -284,9 +284,11 @@ void Frazil::registerFields() {
    FieldGroup::addFieldToGroup(FrazilSaltFlux.label(), "Frazil");
    FieldGroup::addFieldToGroup(FrazilEnergyFlux.label(), "Frazil");
 
-   FrazilMassField->attachData<Array1DReal>(FrazilMassFlux);
-   FrazilSaltField->attachData<Array1DReal>(FrazilSaltFlux);
-   FrazilEnergyField->attachData<Array1DReal>(FrazilEnergyFlux);
+   // Prevents export to cpl in ocnInit2 from being polluted with fill values
+   constexpr bool FillOnAttach = false;
+   FrazilMassField->attachData<Array1DReal>(FrazilMassFlux, FillOnAttach);
+   FrazilSaltField->attachData<Array1DReal>(FrazilSaltFlux, FillOnAttach);
+   FrazilEnergyField->attachData<Array1DReal>(FrazilEnergyFlux, FillOnAttach);
    FieldsRegistered = true;
 }
 
