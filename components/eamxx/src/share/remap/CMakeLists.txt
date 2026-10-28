@@ -4,6 +4,7 @@ add_library(eamxx_remap
   horizontal_remapper.cpp
   iop_remapper.cpp
   identity_remapper.cpp
+  unique_grid_remapper.cpp
   vertical_remapper.cpp
 )
 
