@@ -489,6 +489,14 @@ IF (HOMME_USE_KOKKOS)
     include (EkatBuildKokkos)
   endif()
 
+  # Kokkos' isinf/isnan wrappers trigger -Wtautological-constant-compare in clang-based compilers (e.g., icpx)
+  # when fast-math is on. The warning is emitted when compiling any file including Kokkos headers, so the
+  # option must be INTERFACE (not PRIVATE) on the kokkos core target to reach its consumers.
+  if (TARGET kokkoscore)
+    target_compile_options (kokkoscore INTERFACE
+      $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:Clang,IntelLLVM>>:-Wno-tautological-constant-compare>)
+  endif()
+
   # Add --fmad=false for BFB and CUDA
   if (HOMMEXX_BFB_TESTING AND Kokkos_ENABLE_CUDA AND TARGET kokkoscore)
     include (EkatSetCompilerFlags)
