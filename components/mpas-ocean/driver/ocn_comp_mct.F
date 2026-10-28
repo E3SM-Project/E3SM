@@ -126,7 +126,7 @@ module ocn_comp_mct
    integer :: itimestep, &  ! time step number for MPAS
               ocn_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
 
-   real (kind=RKIND) :: precFactor 
+   real (kind=RKIND) :: precFactor
 
 !=======================================================================
 
@@ -242,10 +242,10 @@ contains
     real (kind=RKIND), pointer :: &
        runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
-    ! freshwater balance adjustment 
+    ! freshwater balance adjustment
     logical, pointer :: config_use_precip_scaling
     character (len=StrKIND), pointer :: config_precip_scaling_mode
-    real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+    real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes
     real(kind=RKIND), pointer :: scalingFactor
 
 #ifdef HAVE_MOAB
@@ -849,9 +849,9 @@ contains
        ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
 
-       ! Initialize the precipitation scaling scheme 
+       ! Initialize the precipitation scaling scheme
        call ocn_scaled_sfwf_init(domain)
-       ! Ensure a valid first guess at the initial time 
+       ! Ensure a valid first guess at the initial time
        call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
        if (config_use_precip_scaling) then
           call mpas_pool_get_config(domain % configs, 'config_precip_scaling_mode', config_precip_scaling_mode)
@@ -859,10 +859,10 @@ contains
           block_ptr => domain % blocklist
           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
           call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
-          if (trim(config_precip_scaling_mode) == 'time-dependent') then 
+          if (trim(config_precip_scaling_mode) == 'time-dependent') then
             call mpas_pool_get_config(domain % configs, 'config_precip_scaling_initial_factor', scalingFactor)
           else if (trim(config_precip_scaling_mode) == 'constant') then
-            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_constant_factor', scalingFactor) 
+            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_constant_factor', scalingFactor)
           end if
           ! Broadcast the scalar to the field
           SFWFScalingFactor = scalingFactor
@@ -926,7 +926,7 @@ contains
       ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
 
-      ! initialize scaled data freshwater fluxes based on water balance relationship 
+      ! initialize scaled data freshwater fluxes based on water balance relationship
        call ocn_scaled_sfwf_init(domain)
 
     end if
@@ -965,13 +965,13 @@ contains
 
     !configuration for freshwater conservation
     call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
-    if (config_use_precip_scaling) then 
+    if (config_use_precip_scaling) then
       ! independent of space so should be no need to loop over blocks
       block_ptr => domain % blocklist
       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
       call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
       call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
-    end if 
+    end if
 
 !-----------------------------------------------------------------------
 !
@@ -1085,9 +1085,9 @@ contains
       real (kind=RKIND), pointer :: &
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
-      ! freshwater balance adjustment 
+      ! freshwater balance adjustment
       logical, pointer :: config_use_precip_scaling
-      real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+      real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes
 
 #ifdef HAVE_MOAB
     integer :: ent_type
@@ -1205,7 +1205,7 @@ contains
 
             if (config_submesoscale_enable) then
                 call mpas_timer_start("submesoscale eddy velocity compute", .false.)
-                call ocn_submesoscale_compute_velocity()
+                call ocn_submesoscale_compute_velocity(forcingPool)
                 call mpas_timer_stop("submesoscale eddy velocity compute")
             end if
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
@@ -1329,7 +1329,7 @@ contains
             call mpas_log_write('   Validating ocean state')
          endif
 
-        ! update scalling factors for freshwater fluxes 
+        ! update scalling factors for freshwater fluxes
         call ocn_update_scaling_factor(domain, timeLevel=1)
 
          call ocn_validate_state(domain, timeLevel=1)
@@ -2208,7 +2208,7 @@ contains
 
    real (kind=RKIND) :: riverFactor
 
-   ! freshwater balance adjustment 
+   ! freshwater balance adjustment
    logical, pointer :: config_use_precip_scaling
 
 !-----------------------------------------------------------------------
@@ -2247,7 +2247,7 @@ contains
    !configuration for freshwater balance constrains
    call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
    if (config_use_precip_scaling) then
-      !extract scaling factors 
+      !extract scaling factors
       call seq_infodata_GetData(infodata, precip_fact=precFactor)
    end if
 
@@ -2470,14 +2470,14 @@ contains
       do i = 1, nCellsSolve
         n = n + 1
         if ( windStressZonalField % isActive ) then
-           if (config_momentum_use_active_wave) then     
+           if (config_momentum_use_active_wave) then
               windStressZonal(i) = x2o_o(index_x2o_Foxx_taux, n) - (x2o_o(index_x2o_Faww_Tawx, n) - x2o_o(index_x2o_Fwow_Twox, n))
            else
               windStressZonal(i) = x2o_o(index_x2o_Foxx_taux, n)
            endif
         end if
         if ( windStressMeridionalField % isActive ) then
-           if (config_momentum_use_active_wave) then     
+           if (config_momentum_use_active_wave) then
               windStressMeridional(i) = x2o_o(index_x2o_Foxx_tauy, n) - (x2o_o(index_x2o_Faww_Tawy, n) - x2o_o(index_x2o_Fwow_Twoy, n))
            else
               windStressMeridional(i) = x2o_o(index_x2o_Foxx_tauy, n)
