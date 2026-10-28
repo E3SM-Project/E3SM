@@ -10,7 +10,7 @@
 #
 
 physical_constants_dictionary:
-  version_number: 0.1.1
+  version_number: 0.1.0
   institution: E3SM Project
   description: Community-based dictionary for consistent physical constant sets
   contact: E3SM Project
@@ -307,15 +307,15 @@ physical_constants_dictionary:
             "
 
           - name: molar_gas_constant
-            formula: avogadro_constant * boltzmann_constant
+            value: 8.314462618
             units: J mol-1 K-1
             prec: double
-            type: formula
+            type: strict
             uncertainty: exact
+            reference: NIST_CODATA2022
             description: "
               Gas constant used in the ideal gas law. It is equivalent to
               Boltzmann's constant espressed in J mol-1 K-1.
-              Derived constant. Defined as avogadro_constant * boltzmann_constant.
             "
           - name: molar_volume_of_ideal_gas
             value: 22.71095464E-03
@@ -353,10 +353,11 @@ physical_constants_dictionary:
               Reference molar mass of elemental oxygen.
             "
           - name: carbon_dioxide_molar_mass_reference
-            formula: carbon_molar_mass_reference + 2 * oxygen_molar_mass_reference
+            value: 0.0440095
             units: kg mol-1
             prec: double
-            type: formula
+            type: strict
+            reference: IUPAC1997
             description: "
               Derived from IUPAC standard atomic weights as
               carbon_molar_mass_reference + 2*oxygen_molar_mass_reference.
@@ -419,30 +420,33 @@ physical_constants_dictionary:
               Derived constant.
             "
           - name: flattening
-            formula: (semimajor_axis - semiminor_axis) / semimajor_axis
+            value: 0.00335281068118
             units: none
             prec: double
-            type: formula
+            type: strict
             uncertainty: exact
+            reference: GRS80
             description: "
               Defined as f = (semimajor_axis - semiminor_axis) / semimajor_axis.
               Derived constant.
             "
           - name: reciprocal_flattening
-            formula: 1 / flattening
+            value: 298.257222101
             units: none
             prec: double
-            type: formula
+            type: strict
             uncertainty: exact
+            reference: GRS80
             description: "
               Defined as 1/f. Derived constant.
             "
           - name: mean_radius
-            formula: (2 * semimajor_axis + semiminor_axis) / 3
+            value: 6371008.7714
             units: m
             prec: double
-            type: formula
+            type: strict
             uncertainty: exact
+            reference: GRS80
             description: "
               Derived constant. Equal to (2 semimajor_axis + semiminor_axis) / 3.
             "
@@ -603,10 +607,11 @@ physical_constants_dictionary:
               Reference latent heat required to convert liquid water to vapor.
             "
           - name: latent_heat_of_sublimation_reference
-            formula: latent_heat_of_fusion_reference + latent_heat_of_vaporization_reference
+            value: 2834700.0
             units: J kg-1
             prec: double
-            type: formula
+            type: strict
+            reference: Smithsonian1951
             description: "
               Derived constant. Defined as latent_heat_of_fusion_reference +
               latent_heat_of_vaporization_reference.
@@ -638,32 +643,35 @@ physical_constants_dictionary:
               thermodynamic parameterizations.
             "
           - name: dry_air_specific_gas_constant_reference
-            formula: molar_gas_constant / dry_air_molar_mass_reference
+            value: 287.04213968100532
             units: J kg-1 K-1
             prec: double
-            type: formula
+            type: strict
+            reference: US_StdAtm_1976
             description: "
               Derived constant. Defined as molar_gas_constant /
               dry_air_molar_mass_reference.
             "
           - name: water_vapor_specific_gas_constant_reference
-            formula: molar_gas_constant / water_vapor_molar_mass_reference
+            value: 461.50436378774424
             units: J kg-1 K-1
             prec: double
-            type: formula
+            type: strict
+            reference: US_StdAtm_1976
             description: "
               Derived constant. Defined as molar_gas_constant /
               water_vapor_molar_mass_reference.
             "
           - name: dry_air_density_at_standard_temperature_and_pressure
-            formula: standard_atmosphere / (dry_air_specific_gas_constant_reference * pure_water_freezing_temperature_reference)
+            value: 1.2923190576466714
             units: kg m-3
             prec: double
-            type: formula
+            type: strict
+            reference: US_StdAtm_1976
             description: "
               Derived constant. Defined as standard_atmosphere /
               (dry_air_specific_gas_constant_reference *
-              pure_water_freezing_temperature_reference).
+              pure_water_freezing_temperature).
             "
           - name: dry_air_specific_heat_capacity_reference
             value: 1004.64
@@ -820,10 +828,11 @@ physical_constants_dictionary:
               Reference sea-ice salinity.
             "
           - name: sea_ice_thermal_diffusivity_reference
-            formula: sea_ice_thermal_conductivity_reference / (sea_ice_density_reference * sea_ice_specific_heat_capacity_reference)
+            value: 1.0863739733765951E-06
             units: m2 s-1
             prec: double
-            type: formula
+            type: strict
+            reference: CuffeyPaterson2010
             description: "
               Derived constant. Defined as
               sea_ice_thermal_conductivity_reference /
