@@ -725,7 +725,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <obstacle_height_min     type="real" doc="Minimum characteristic obstacle height">1.0</obstacle_height_min>
       <roughness_length_factor type="real" doc="Factor to convert obstacle height to eff roughness length">0.075</roughness_length_factor>
       <roughness_length_max    type="real" doc="Maximum effective roughness length">100.0</roughness_length_max>
-      <wspd_squared_min        type="real" doc="Minimum lowest level wind speed squared [m2/s2]">0.01</wspd_squared_min>
+      <ri_shear_sqr_min        type="real" doc="Minimum squared wind shear between the lowest two levels for TMS Richardson number [m2/s2]">0.01</ri_shear_sqr_min>
       <drag_scaling_factor     type="real" doc="Scaling factor for TMS drag coefficient and stress">1.0</drag_scaling_factor>
     </tms>
 
