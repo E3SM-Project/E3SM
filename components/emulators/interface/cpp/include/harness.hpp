@@ -14,11 +14,6 @@ namespace e3sm::emulator {
 
 using namespace e3sm::coupler;
 
-struct ExternalField {
-  std::string label;
-  std::size_t extent;
-};
-
 struct BoundBuffers {
   std::span<double> out_buffer;
   std::span<double> in_buffer;
