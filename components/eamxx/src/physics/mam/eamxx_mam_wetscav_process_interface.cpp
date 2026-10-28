@@ -683,7 +683,7 @@ void MAMWetscav::run_impl(const double dt) {
 
     //----------- Derive deep convective cloud fraction from ZM mass flux ---
     auto zm_mass_flux_int_in = get_field_in("zm_mass_flux_int").get_view<const Real **>();
-
+    const Real zero=0.0;
     Kokkos::parallel_for("compute_dp_frac",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -699,10 +699,10 @@ void MAMWetscav::run_impl(const double dt) {
           constexpr Real dp2 = 500.0;
           const int kp1 = kk + 1;  // interface index below mid-level kk
           const Real cmfmc_deep =
-              Kokkos::max(0.0, zm_mass_flux_int_in(icol, kp1));
+              Kokkos::max(zero, zm_mass_flux_int_in(icol, kp1));
           dp_frac(icol, kk) = Kokkos::max(
-              0.0, Kokkos::min(dp1 * Kokkos::log(1.0 + dp2 * cmfmc_deep),
-                               0.60));
+              zero, Kokkos::min(dp1 * Kokkos::log(1.0 + dp2 * cmfmc_deep),
+                               Real(0.60)));
         });
       });
     Kokkos::fence();
