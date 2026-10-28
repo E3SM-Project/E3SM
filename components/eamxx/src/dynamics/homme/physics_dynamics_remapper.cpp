@@ -10,6 +10,7 @@
 
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
 
@@ -52,6 +53,8 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
   m_dyn_grid  = dyn_grid;
   m_phys_grid = phys_grid;
 
+  m_bwd_allowed = false;
+
   m_num_phys_cols = phys_grid->get_num_local_dofs();
   m_lid2elgp      = m_dyn_grid->get_lid_to_idx_map().get_view<const int**>();
 
@@ -59,7 +62,7 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
   // Notice that such dyn dof may not be unique (if phys dof is on an edge
   // of a SE element), but we don't care. We just need to find a match.
   // The BoundaryExchange already takes care of syncing all shared dyn dofs.
-  create_p2d_map ();
+  m_p2d = compute_unique_grid_dof_map(*dyn_grid,*phys_grid);
 }
 
 void PhysicsDynamicsRemapper::
@@ -76,41 +79,8 @@ initialize_device_variables()
   m_pack_alloc_property = decltype(m_pack_alloc_property) ("pack_alloc_property", this->m_num_fields);
   m_num_levels          = decltype(m_num_levels)          ("num_physical_levels", this->m_num_fields);
 
-  for (auto which : {'P','D'}) {
-    auto& repo   = which=='P' ? m_phys_repo : m_dyn_repo;
-    auto& fields = which=='P' ? m_src_fields: m_tgt_fields;
-
-    repo.views  = ViewsRepo::views_t ("views", this->m_num_fields);
-    repo.cviews = ViewsRepo::cviews_t("cviews",this->m_num_fields);
-
-    repo.h_views  = Kokkos::create_mirror_view(repo.views);
-    repo.h_cviews = Kokkos::create_mirror_view(repo.cviews);
-
-    auto get_view = [&] (const int i, const Field& f) {
-      const auto rank = f.get_header().get_identifier().get_layout().rank();
-      switch (rank) {
-        case 1: repo.h_cviews[i].v1d = f.get_view<const Real*>();      break;
-        case 2: repo.h_cviews[i].v2d = f.get_view<const Real**>();     break;
-        case 3: repo.h_cviews[i].v3d = f.get_view<const Real***>();    break;
-        case 4: repo.h_cviews[i].v4d = f.get_view<const Real****>();   break;
-        case 5: repo.h_cviews[i].v5d = f.get_view<const Real*****>();  break;
-      }
-      if (not f.is_read_only()) {
-        switch (rank) {
-          case 1: repo.h_views[i].v1d = f.get_view<Real*>();      break;
-          case 2: repo.h_views[i].v2d = f.get_view<Real**>();     break;
-          case 3: repo.h_views[i].v3d = f.get_view<Real***>();    break;
-          case 4: repo.h_views[i].v4d = f.get_view<Real****>();   break;
-          case 5: repo.h_views[i].v5d = f.get_view<Real*****>();  break;
-        }
-      }
-    };
-    for (int i=0; i<this->m_num_fields; ++i) {
-      get_view(i,fields[i]);
-    }
-    Kokkos::deep_copy(repo.views,  repo.h_views);
-    Kokkos::deep_copy(repo.cviews, repo.h_cviews);
-  }
+  m_phys_repo.init(m_src_fields);
+  m_dyn_repo.init(m_tgt_fields);
 
   auto h_layout              = Kokkos::create_mirror_view(m_layout);
   auto h_pack_alloc_property = Kokkos::create_mirror_view(m_pack_alloc_property);
@@ -123,20 +93,6 @@ initialize_device_variables()
 
     const auto& ph = phys.get_header();
     const auto& dh = dyn.get_header();
-
-    // A dynamic subfield will need some special treatment at runtime
-    // Namely, we'll need to re-extract the view every time,
-    // since the subview info may have changed
-    if (ph.get_parent()) {
-      EKAT_REQUIRE_MSG (ph.get_parent()->get_parent()==nullptr,
-          "Error! We do not support remapping of subfields of other subfields.\n");
-      m_subfield_info_phys[i] = ph.get_alloc_properties().get_subview_info();
-    }
-    if (dh.get_parent()) {
-      EKAT_REQUIRE_MSG (dh.get_parent()->get_parent()==nullptr,
-          "Error! We do not support remapping of subfields of other subfields.\n");
-      m_subfield_info_dyn[i] = dh.get_alloc_properties().get_subview_info();
-    }
 
     const auto& pl = ph.get_identifier().get_layout();
 
@@ -159,58 +115,6 @@ initialize_device_variables()
   Kokkos::deep_copy(m_layout,              h_layout             );
   Kokkos::deep_copy(m_pack_alloc_property, h_pack_alloc_property);
   Kokkos::deep_copy(m_num_levels,          h_num_levels         );
-}
-
-bool PhysicsDynamicsRemapper::
-subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
-                            const std::vector<Field>& fields) const
-{
-  for (const auto& it : subfield_info) {
-    const auto& f = fields[it.first];
-    const auto& info_old = it.second;
-    const auto& info_new = f.get_header().get_alloc_properties().get_subview_info();
-    if ( not(info_old==info_new) ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void PhysicsDynamicsRemapper::
-update_subfields_views (std::map<int,SubviewInfo>& subfield_info,
-                        const ViewsRepo& repo,
-                        const std::vector<Field>& fields) const
-{
-  auto get_view = [&] (const int i, const Field& f) {
-    const auto rank = f.get_header().get_identifier().get_layout().rank();
-    switch (rank) {
-      case 1: repo.h_cviews[i].v1d = f.get_view<const Real*>();      break;
-      case 2: repo.h_cviews[i].v2d = f.get_view<const Real**>();     break;
-      case 3: repo.h_cviews[i].v3d = f.get_view<const Real***>();    break;
-      case 4: repo.h_cviews[i].v4d = f.get_view<const Real****>();   break;
-      case 5: repo.h_cviews[i].v5d = f.get_view<const Real*****>();  break;
-    }
-    if (not f.is_read_only()) {
-      switch (rank) {
-        case 1: repo.h_views[i].v1d = f.get_view<Real*>();      break;
-        case 2: repo.h_views[i].v2d = f.get_view<Real**>();     break;
-        case 3: repo.h_views[i].v3d = f.get_view<Real***>();    break;
-        case 4: repo.h_views[i].v4d = f.get_view<Real****>();   break;
-        case 5: repo.h_views[i].v5d = f.get_view<Real*****>();  break;
-      }
-    }
-  };
-
-  for (auto& [fname, svi] : subfield_info) {
-    const auto& f = fields[fname];
-    const auto& new_svi = f.get_header().get_alloc_properties().get_subview_info();
-    if ( not(svi==new_svi) ) {
-      get_view(fname,f);
-      svi = new_svi;
-    }
-  }
-  Kokkos::deep_copy(repo.views,  repo.h_views);
-  Kokkos::deep_copy(repo.cviews, repo.h_cviews);
 }
 
 template <typename ScalarT, typename MT>
@@ -280,14 +184,14 @@ remap_fwd_impl ()
   // views cannot be changed after it's been setup. Therefore,
   // if subfield info has changed for some dyn fields, we're toast.
   EKAT_REQUIRE_MSG (
-      not subfields_info_has_changed(m_subfield_info_dyn,m_tgt_fields),
+      not m_dyn_repo.subfields_info_have_changed(m_tgt_fields),
       "Error! P->D remapping is not supported if some of the dyn fields\n"
       "       are subfields whose subview info has changed since setup.\n"
       "       Note: see field.hpp and field_alloc_prop.hpp for an explanation\n"
       "       of what a subfield and subview info).\n");
 
   // Check if we need to update the views for subfields on phys grid
-  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_src_fields);
+  m_phys_repo.update_subfields(m_src_fields);
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapFwdTag>;
 
@@ -317,21 +221,6 @@ remap_fwd_impl ()
 
   // Exchange element halo
   m_be->exchange();
-}
-
-void PhysicsDynamicsRemapper::
-remap_bwd_impl ()
-{
-  // Check if we need to update the views for subfields
-  update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_tgt_fields);
-  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_src_fields);
-
-  // TeamPolicy over m_num_phys_cols*this->m_num_fields. Unlike remap_fwd_impl,
-  // here we do not require setting dyn=0, allowing us to extend the TeamPolicy
-  using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
-  const TeamPolicy policy(this->m_num_fields*m_num_phys_cols,Kokkos::AUTO);
-  Kokkos::parallel_for(policy, *this);
-  Kokkos::fence();
 }
 
 void PhysicsDynamicsRemapper::
@@ -519,121 +408,6 @@ local_remap_fwd_3d (const MT& team) const
   }
 }
 
-template <typename MT>
-KOKKOS_FUNCTION
-void PhysicsDynamicsRemapper::
-local_remap_bwd_2d (const MT& team) const
-{
-  const int rank = team.league_rank();
-  const int i    = rank % this->m_num_fields;
-  const int icol = rank / this->m_num_fields;
-  const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
-
-  switch (m_layout(i)) {
-    case etoi(LayoutType::Scalar2D):
-    {
-      auto phys = m_phys_repo.views[i].v1d;
-      auto dyn  = m_dyn_repo.cviews[i].v3d;
-
-      phys(icol) = dyn(elgp[0],elgp[1],elgp[2]);
-      break;
-    }
-    case etoi(LayoutType::Vector2D):
-    {
-      auto phys = m_phys_repo.views[i].v2d;
-      auto dyn  = m_dyn_repo.cviews[i].v4d;
-      const int vec_dim = phys.extent(1);
-
-      const auto tr = Kokkos::TeamVectorRange(team, vec_dim);
-      const auto f = [&] (const int idim) {
-        phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
-      };
-      Kokkos::parallel_for(tr, f);
-      break;
-    }
-    default:
-      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
-  }
-}
-
-template <typename ScalarT, typename MT>
-KOKKOS_FUNCTION
-void PhysicsDynamicsRemapper::
-local_remap_bwd_3d (const MT& team) const
-{
-  const int rank = team.league_rank();
-  const int i    = rank % this->m_num_fields;
-  const int icol = rank / this->m_num_fields;
-  const auto& elgp = Kokkos::subview(m_lid2elgp,m_p2d(icol),Kokkos::ALL());
-
-  constexpr int PackSize = sizeof(ScalarT) / sizeof(Real);
-  using PI = ekat::PackInfo<PackSize>;
-  const int num_packs = PI::num_packs(m_num_levels(i));
-
-  switch (m_layout(i)) {
-    case etoi(LayoutType::Scalar3D):
-    {
-      auto phys = pack_view<      ScalarT>(m_phys_repo.views[i].v2d);
-      auto dyn  = pack_view<const ScalarT>(m_dyn_repo.cviews[i].v4d);
-
-      const auto tr = Kokkos::TeamVectorRange(team, num_packs);
-      const auto f = [&] (const int ilev) {
-        phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
-      };
-      Kokkos::parallel_for(tr, f);
-      break;
-    }
-    case etoi(LayoutType::Vector3D):
-    {
-      auto phys = pack_view<      ScalarT>(m_phys_repo.views[i].v3d);
-      auto dyn  = pack_view<const ScalarT>(m_dyn_repo.cviews[i].v5d);
-      const int vec_dim = phys.extent(1);
-
-      const auto tr = Kokkos::TeamVectorRange(team, vec_dim*num_packs);
-      const auto f = [&] (const int idx) {
-        const int idim = idx / num_packs;
-        const int ilev = idx % num_packs;
-        phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
-      };
-      Kokkos::parallel_for(tr, f);
-      break;
-    }
-    default:
-      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
-  }
-}
-
-void PhysicsDynamicsRemapper::
-create_p2d_map () {
-  auto num_phys_dofs = m_phys_grid->get_num_local_dofs();
-  auto num_dyn_dofs  = m_dyn_grid->get_num_local_dofs();
-
-  auto se_dyn = std::dynamic_pointer_cast<const SEGrid>(m_dyn_grid);
-  EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
-
-  using gid_type = AbstractGrid::gid_type;
-  auto dyn_gids  = se_dyn->get_unique_grid_gids().get_view<const gid_type*>();
-  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_type*>();
-
-  auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);
-  m_p2d = decltype(m_p2d) ("",num_phys_dofs);
-  auto p2d = m_p2d;
-
-  Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idof){
-    auto gid = phys_gids(idof);
-    bool found = false;
-    for (int i=0; i<num_dyn_dofs; ++i) {
-      if (dyn_gids(i)==gid) {
-        p2d(idof) = i;
-        found = true;
-        break;
-      }
-    }
-    EKAT_KERNEL_ASSERT_MSG (found, "Error! Physics grid gid not found in the dynamics grid.\n");
-    (void)found;
-  });
-}
-
 template<typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsDynamicsRemapper::
@@ -661,32 +435,6 @@ operator()(const RemapFwdTag&, const MT& team) const
         team.team_barrier();
 
         local_remap_fwd_3d<Real>(team);
-      }
-      break;
-    default:
-      EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement.\n");
-  }
-}
-
-template<typename MT>
-KOKKOS_INLINE_FUNCTION
-void PhysicsDynamicsRemapper::
-operator()(const RemapBwdTag&, const MT& team) const
-{
-  const int rank = team.league_rank();
-  const int i = rank % this->m_num_fields;
-
-  switch (m_layout(i)) {
-    case etoi(LayoutType::Scalar2D):
-    case etoi(LayoutType::Vector2D):
-      local_remap_bwd_2d(team);
-      break;
-    case etoi(LayoutType::Scalar3D):
-    case etoi(LayoutType::Vector3D):
-      if (m_pack_alloc_property(i) == AllocPropType::PackAlloc) {
-        local_remap_bwd_3d<pack_type>(team);
-      } else {
-        local_remap_bwd_3d<Real>(team);
       }
       break;
     default:
