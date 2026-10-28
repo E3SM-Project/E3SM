@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
-#include "share/remap/dg_to_cg_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
@@ -601,7 +601,7 @@ TEST_CASE("combo_remap", "") {
   remapper->registration_ends();
 
   // The dyn->phys direction is handled by a different remapper
-  std::shared_ptr<AbstractRemapper> d2p_remapper(new DGToCGRemapper(dyn_grid,phys_grid));
+  std::shared_ptr<AbstractRemapper> d2p_remapper(new UniqueGridRemapper(dyn_grid,phys_grid));
   d2p_remapper->register_field(s_2d_field_dyn, s_2d_field_phys);
   d2p_remapper->register_field(v_2d_field_dyn, v_2d_field_phys);
   d2p_remapper->register_field(s_3d_field_dyn, s_3d_field_phys);

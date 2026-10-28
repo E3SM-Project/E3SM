@@ -301,12 +301,11 @@ create_diagnostic (const std::string& diag_field_name,
 
 bool is_native_output_layout (const std::string& output_data_layout)
 {
-  const bool native = output_data_layout=="native" or output_data_layout=="dg";
-  EKAT_REQUIRE_MSG (native or output_data_layout=="default" or output_data_layout=="cg",
+  EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
       "Error! Invalid output_data_layout.\n"
       " - output_data_layout: " + output_data_layout + "\n"
-      " - valid choices: native, dg, default, cg\n");
-  return native;
+      " - valid choices: native, default\n");
+  return output_data_layout=="native";
 }
 
 } // namespace scream

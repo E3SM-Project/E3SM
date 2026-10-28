@@ -10,7 +10,7 @@
 
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
-#include "share/remap/dg_to_cg_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
 
@@ -62,7 +62,7 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
   // Notice that such dyn dof may not be unique (if phys dof is on an edge
   // of a SE element), but we don't care. We just need to find a match.
   // The BoundaryExchange already takes care of syncing all shared dyn dofs.
-  m_p2d = compute_cg_to_se_dof_map(*dyn_grid,*phys_grid);
+  m_p2d = compute_unique_grid_dof_map(*dyn_grid,*phys_grid);
 }
 
 void PhysicsDynamicsRemapper::

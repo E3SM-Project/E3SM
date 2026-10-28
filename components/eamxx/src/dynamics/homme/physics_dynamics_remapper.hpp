@@ -16,7 +16,7 @@ namespace scream
 {
 
 // Performs remap from physics to dynamics grids
-// Note: the opposite direction (dyn->phys) is not supported here. Use DGToCGRemapper for that.
+// Note: the opposite direction (dyn->phys) is not supported here. Use UniqueGridRemapper for that.
 class PhysicsDynamicsRemapper : public AbstractRemapper
 {
 public:

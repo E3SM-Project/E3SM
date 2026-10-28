@@ -24,8 +24,8 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   )
 
   # Test SE->point remap
-  CreateUnitTest(dg_to_cg_remapper
-    SOURCES dg_to_cg_remapper_tests.cpp
+  CreateUnitTest(unique_grid_remapper
+    SOURCES unique_grid_remapper_tests.cpp
     LIBS eamxx_remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )

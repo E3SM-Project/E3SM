@@ -32,11 +32,11 @@ constexpr int num_levs  = 2*SCREAM_PACK_SIZE+1;
 constexpr int vec_dim   = 2;
 
 /*
- * In this test we do a DG->CG remap "on the fly" during the output phase
+ * In this test we do a SE->unique grid remap "on the fly" during the output phase
  * (via the output_data_layout option), for fields defined on a SE grid.
  * Then, we load the generated file, and compare the values against the ones
- * we expect. Since the values of the SE fields are a function of the CG gid
- * of each dof, we know what the CG fields should contain.
+ * we expect. Since the values of the SE fields are a function of the unique gid
+ * of each dof, we know what the unique grid fields should contain.
  */
 
 // A grids manager where we can stuff grids
@@ -47,13 +47,13 @@ public:
   void add (const std::shared_ptr<AbstractGrid>& g) { add_nonconst_grid(g); }
 };
 
-// The CG gid of the gp (ie,ip,jp) on this rank. Elements form a strip,
+// The unique gid of the gp (ie,ip,jp) on this rank. Elements form a strip,
 // where consecutive elements share a edge: ip=num_gp-1 on element ie is
 // the same dof as ip=0 on element ie+1. Different ranks have disjoint dofs.
-int num_cg_cols_per_rank () { return (num_elems*(num_gp-1)+1)*num_gp; }
-gid_type cg_gid (const int rank, const int ie, const int ip, const int jp)
+int num_unique_cols_per_rank () { return (num_elems*(num_gp-1)+1)*num_gp; }
+gid_type unique_gid (const int rank, const int ie, const int ip, const int jp)
 {
-  return rank*num_cg_cols_per_rank() + (ie*(num_gp-1)+ip)*num_gp + jp;
+  return rank*num_unique_cols_per_rank() + (ie*(num_gp-1)+ip)*num_gp + jp;
 }
 
 // The value stored in a field at a given gid. The weights make sure that
@@ -70,13 +70,13 @@ std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
 {
   auto se_grid = std::make_shared<SEGrid>("se",num_elems,num_gp,num_levs,comm);
 
-  auto dg_gids   = se_grid->get_dofs_gids();
-  auto cg_gids   = se_grid->get_lid_to_unique_gid_map();
+  auto dofs_gids   = se_grid->get_dofs_gids();
+  auto unique_gids   = se_grid->get_lid_to_unique_gid_map();
   auto elem_gids = se_grid->get_partitioned_dim_gids();
   auto lid2idx   = se_grid->get_lid_to_idx_map();
 
-  auto h_dg   = dg_gids.get_view<gid_type*,Host>();
-  auto h_cg   = cg_gids.get_view<gid_type*,Host>();
+  auto h_dofs   = dofs_gids.get_view<gid_type*,Host>();
+  auto h_unique   = unique_gids.get_view<gid_type*,Host>();
   auto h_elem = elem_gids.get_view<gid_type*,Host>();
   auto h_l2i  = lid2idx.get_view<int**,Host>();
 
@@ -86,16 +86,16 @@ std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
     for (int ip=0; ip<num_gp; ++ip) {
       for (int jp=0; jp<num_gp; ++jp) {
         const int idof = ie*num_gp*num_gp + ip*num_gp + jp;
-        h_dg(idof) = rank*num_elems*num_gp*num_gp + idof;
-        h_cg(idof) = cg_gid(rank,ie,ip,jp);
+        h_dofs(idof) = rank*num_elems*num_gp*num_gp + idof;
+        h_unique(idof) = unique_gid(rank,ie,ip,jp);
         h_l2i(idof,0) = ie;
         h_l2i(idof,1) = ip;
         h_l2i(idof,2) = jp;
       }
     }
   }
-  dg_gids.sync_to_dev();
-  cg_gids.sync_to_dev();
+  dofs_gids.sync_to_dev();
+  unique_gids.sync_to_dev();
   elem_gids.sync_to_dev();
   lid2idx.sync_to_dev();
 
@@ -103,19 +103,19 @@ std::shared_ptr<SEGrid> build_se_grid (const ekat::Comm& comm)
 }
 
 // A point grid with all the unique dofs of the SE grid
-std::shared_ptr<PointGrid> build_cg_grid (const ekat::Comm& comm)
+std::shared_ptr<PointGrid> build_unique_grid (const ekat::Comm& comm)
 {
-  auto cg_grid = std::make_shared<PointGrid>("cg",num_cg_cols_per_rank(),num_levs,comm);
+  auto unique_grid = std::make_shared<PointGrid>("unique",num_unique_cols_per_rank(),num_levs,comm);
 
-  auto cg_gids = cg_grid->get_dofs_gids();
-  auto h_gids  = cg_gids.get_view<gid_type*,Host>();
-  std::iota(h_gids.data(),h_gids.data()+num_cg_cols_per_rank(),comm.rank()*num_cg_cols_per_rank());
-  cg_gids.sync_to_dev();
+  auto unique_gids = unique_grid->get_dofs_gids();
+  auto h_gids  = unique_gids.get_view<gid_type*,Host>();
+  std::iota(h_gids.data(),h_gids.data()+num_unique_cols_per_rank(),comm.rank()*num_unique_cols_per_rank());
+  unique_gids.sync_to_dev();
 
-  return cg_grid;
+  return unique_grid;
 }
 
-TEST_CASE("io_dg_to_cg")
+TEST_CASE("io_unique_grid")
 {
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -123,12 +123,12 @@ TEST_CASE("io_dg_to_cg")
   scorpio::init_subsystem(comm);
 
   auto se_grid = build_se_grid(comm);
-  auto cg_grid = build_cg_grid(comm);
-  se_grid->set_unique_grid(cg_grid);
+  auto unique_grid = build_unique_grid(comm);
+  se_grid->set_unique_grid(unique_grid);
 
   auto gm = std::make_shared<TestGridsManager>();
   gm->add(se_grid);
-  gm->add(cg_grid);
+  gm->add(unique_grid);
 
   // Create the SE fields
   auto nondim = ekat::units::none;
@@ -146,7 +146,7 @@ TEST_CASE("io_dg_to_cg")
   util::TimeStamp t0({2000,1,1},{0,0,0});
   fm->init_fields_time_stamp(t0);
 
-  // Fill the SE fields with values that depend on the CG gid of each dof
+  // Fill the SE fields with values that depend on the unique gid of each dof
   const auto se_gids = se_grid->get_lid_to_unique_gid_map().get_view<const gid_type*,Host>();
   const auto l2i     = se_grid->get_lid_to_idx_map().get_view<const int**,Host>();
   {
@@ -178,9 +178,9 @@ TEST_CASE("io_dg_to_cg")
   std::vector<std::string> fnames = {"field_1", "field_2", "field_3"};
   ekat::ParameterList out_params;
   out_params.set<std::string>("averaging_type","instant");
-  out_params.set<std::string>("filename_prefix","io_dg_to_cg");
+  out_params.set<std::string>("filename_prefix","io_unique_grid");
   out_params.sublist("fields").sublist(se_grid->name()).set<std::vector<std::string>>("field_names",fnames);
-  out_params.sublist("fields").sublist(se_grid->name()).set<std::string>("output_data_layout","cg");
+  out_params.sublist("fields").sublist(se_grid->name()).set<std::string>("output_data_layout","default");
 
   out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
@@ -193,32 +193,32 @@ TEST_CASE("io_dg_to_cg")
   output.finalize();
 
   // Next, load all fields from file into fields on the cg grid
-  std::string filename = "io_dg_to_cg.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  std::string filename = "io_unique_grid.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
   auto make_cg_field = [&](const FieldIdentifier& fid_se) {
     const auto& l = fid_se.get_layout();
-    FieldLayout cg_layout = cg_grid->equivalent_layout(l);
-    Field f(FieldIdentifier(fid_se.name(),cg_layout,nondim,cg_grid->name()));
+    FieldLayout cg_layout = unique_grid->equivalent_layout(l);
+    Field f(FieldIdentifier(fid_se.name(),cg_layout,nondim,unique_grid->name()));
     f.allocate_view();
     return f;
   };
   auto r1 = make_cg_field(fid_1);
   auto r2 = make_cg_field(fid_2);
   auto r3 = make_cg_field(fid_3);
-  read_fields (filename,{r1,r2,r3},cg_grid->get_partitioned_dim_gids(),comm);
+  read_fields (filename,{r1,r2,r3},unique_grid->get_partitioned_dim_gids(),comm);
 
   // Build the expected fields
   auto e1 = r1.clone("e1");
   auto e2 = r2.clone("e2");
   auto e3 = r3.clone("e3");
   {
-    const auto cg_gids = cg_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+    const auto unique_gids = unique_grid->get_dofs_gids().get_view<const gid_type*,Host>();
     auto h1 = e1.get_view<Real**,Host>();
     auto h2 = e2.get_view<Real***,Host>();
     auto h3 = e3.get_view<Real*,Host>();
-    for (int icol=0; icol<cg_grid->get_num_local_dofs(); ++icol) {
-      const auto gid = cg_gids(icol);
+    for (int icol=0; icol<unique_grid->get_num_local_dofs(); ++icol) {
+      const auto gid = unique_gids(icol);
       h3(icol) = value(gid,0,0);
       for (int il=0; il<num_levs; ++il) {
         h1(icol,il) = value(gid,0,il);

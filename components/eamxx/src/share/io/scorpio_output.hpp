@@ -67,11 +67,10 @@
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
  *          This option is mostly used to enable dyn->phys_gll remap (to save storage).
- *          Valid values are 'native' (alias 'dg'), which does no layout change, and
- *          outputs the fields as they appear on this grid, and 'default' (alias 'cg'),
- *          which outputs the fields on the unique grid of this grid (see
- *          AbstractGrid::get_unique_grid). For grids that are already unique, the two
- *          choices are equivalent. For the dynamics grid, the unique grid is phys_gll,
+ *          Valid values are 'native', which does no layout change, and outputs the
+ *          fields as they appear on this grid, and 'default', which outputs the fields
+ *          on the unique grid of this grid (see AbstractGrid::get_unique_grid).
+ *          For grids that are already unique, the two choices are equivalent. For the dynamics grid, the unique grid is phys_gll,
  *          so 'default' implements the dyn->phys_gll remap.
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.

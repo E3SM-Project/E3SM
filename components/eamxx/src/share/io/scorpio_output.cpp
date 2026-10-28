@@ -5,7 +5,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/identity_remapper.hpp"
-#include "share/remap/dg_to_cg_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -271,12 +271,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     } else {
       // Construct a remapper to the unique grid (likely, Dyn->PhysicsGLL)
       grid_after_hr = fm_grid->get_unique_grid();
-      EKAT_REQUIRE_MSG (grid_after_vr->type()==GridType::SE and grid_after_hr->type()==GridType::Point,
-          "Error! Online remapping to the unique grid is only supported from a SE grid to a Point grid.\n"
-          " - grid name: " + grid_after_vr->name() + "\n"
-          " - unique grid name: " + grid_after_hr->name() + "\n"
-          " - output_data_layout: " + output_data_layout + "\n");
-      m_horiz_remapper = std::make_shared<DGToCGRemapper>(grid_after_vr,grid_after_hr);
+      m_horiz_remapper = std::make_shared<UniqueGridRemapper>(grid_after_vr,grid_after_hr);
     }
     m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
     if (params.isParameter("enable_fine_grain_timers")) {

@@ -78,8 +78,8 @@ std::string find_filename_in_rpointer (
     const IOControl& control = {});
 
 // Interpret the 'output_data_layout' option of an output stream.
-//  - 'native' (or 'dg'): fields are written as they appear on their grid
-//  - 'default' (or 'cg'): fields are written on the grid's unique grid (see
+//  - 'native': fields are written as they appear on their grid
+//  - 'default': fields are written on the grid's unique grid (see
 //    AbstractGrid::get_unique_grid), which is the grid itself if it is already
 //    unique. E.g., the dynamics grid is written on the physics_gll grid.
 // Returns true if the layout is 'native'. Throws if the option is not valid.

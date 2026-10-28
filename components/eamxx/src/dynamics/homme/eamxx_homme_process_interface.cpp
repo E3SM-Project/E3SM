@@ -25,7 +25,7 @@
 
 // Scream includes
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
-#include "share/remap/dg_to_cg_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
@@ -262,7 +262,7 @@ void HommeDynamics::create_requests ()
     // remap into Homme's forcing views, while the dp remapper will remap from
     // Homme's states.
     m_p2d_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_phys_grid,m_dyn_grid);
-    m_d2p_remapper = std::make_shared<DGToCGRemapper>(m_dyn_grid,m_phys_grid);
+    m_d2p_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid,m_phys_grid);
   }
 
   // Layout for 2D (1d horiz X 1d vertical) variable
@@ -1096,7 +1096,7 @@ void HommeDynamics::restart_homme_state () {
   }
 
   // Use a separate remapper for initial_conditions (dyn->phys, since we are restarting)
-  m_ic_remapper = std::make_shared<DGToCGRemapper>(m_dyn_grid,m_cgll_grid);
+  m_ic_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid,m_cgll_grid);
   m_ic_remapper->register_field(get_internal_field("vtheta_dp_dyn"),m_helper_fields.at("FT_phys"));
   m_ic_remapper->register_field(get_internal_field("v_dyn"),m_helper_fields.at("FM_phys"));
   m_ic_remapper->register_field(get_internal_field("dp3d_dyn"),get_field_out("pseudo_density",pgn));
