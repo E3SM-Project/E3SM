@@ -5,7 +5,7 @@
 #include "share/atm_process/atmosphere_process_dag.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/data_managers/library_grids_manager.hpp"
+#include "share/grid/library_grids_manager.hpp"
 
 #include <ekat_parameter_list.hpp>
 
