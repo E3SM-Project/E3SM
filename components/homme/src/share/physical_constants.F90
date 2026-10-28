@@ -75,7 +75,15 @@ module physical_constants
 
 #endif
 
-real (kind=real_kind), public :: scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
+! scale_factor/scale_factor_inv are normally set from the geometry in
+! namelist_mod::readnl (rearth/rrearth for the sphere, 1/1 for the plane).
+! They are initialized here to the sphere defaults (= rearth0/rrearth0) so
+! that code paths which bypass readnl -- e.g. the homme unit-test harnesses
+! -- still have valid values. metric_atomic() divides by scale_factor_inv,
+! so leaving it at 0 triggers a SIGFPE in FPE builds.
+real (kind=real_kind), public :: scale_factor = 6.376D6
+real (kind=real_kind), public :: scale_factor_inv = 1.0_real_kind/6.376D6
+real (kind=real_kind), public :: domain_size, laplacian_rigid_factor
 real (kind=real_kind), public :: Lx = 0.0
 real (kind=real_kind), public :: Ly = 0.0 
 real (kind=real_kind), public :: Sx = 0.0
