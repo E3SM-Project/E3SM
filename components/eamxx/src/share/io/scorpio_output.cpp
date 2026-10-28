@@ -129,14 +129,14 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
 
-  std::string output_data_layout = "default";
+  auto output_layout = OutputDataLayout::Unique;
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
     m_fields_names = params.get<vos_t>("field_names");
     if (params.isParameter("output_data_layout"))
-      output_data_layout = params.get<std::string>("output_data_layout");
+      output_layout = str2output_layout(params.get<std::string>("output_data_layout"));
   } else if (params.isSublist("fields")){
     const auto& f_pl = params.sublist("fields");
     bool grid_found = false;
@@ -145,7 +145,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
         if (pl.isParameter("output_data_layout"))
-          output_data_layout = pl.get<std::string>("output_data_layout");
+          output_layout = str2output_layout(pl.get<std::string>("output_data_layout"));
         if (pl.isType<vos_t>("field_names")) {
           m_fields_names = pl.get<vos_t>("field_names");
         } else if (pl.isType<std::string>("field_names")) {
@@ -167,15 +167,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
 
-  bool change_data_layout = false;
-  if (not fm_grid->get_aux_grid(output_data_layout)) {
-    EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
-        "Error! Grid for requested output_data_layout not found among this grid's aux grids.\n"
-        " - grid name: " + fm_grid->name() + "\n"
-        " - output_data_layout: " + output_data_layout + "\n");
-  } else {
-    change_data_layout = true;
-  }
+  // Unless the native layout is requested, fields are written on the unique grid of the fm grid
+  // (which is the same as the fm grid if it is already unique)
+  const bool change_data_layout = output_layout==OutputDataLayout::Unique and fm_grid->get_unique_grid()!=fm_grid;
 
   // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
@@ -279,8 +273,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       }
       m_horiz_remapper = hr;
     } else {
-      // Construct a generic remapper (likely, Dyn->PhysicsGLL)
-      grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
+      // Construct a generic remapper to the unique grid (likely, Dyn->PhysicsGLL)
+      grid_after_hr = fm_grid->get_unique_grid();
       m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
     }
     m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
@@ -349,6 +343,7 @@ void AtmosphereOutput::init()
   m_io_grid  = fm_after_hr->get_grid();
   m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
 
+  // NOTE: we can't rely on the grids manager to have validated the gids (PointGrid does not).
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
       "       map dof_gid->proc_id is well defined.\n");
