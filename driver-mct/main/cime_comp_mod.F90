@@ -1062,6 +1062,7 @@ contains
   !===============================================================================
 
   subroutine cime_pre_init2()
+      use shr_solar_diag_mod, only: shr_solar_diag_configure
     use pio, only : file_desc_t, pio_closefile, pio_file_is_open
     use shr_const_mod, only: shr_const_tkfrz, shr_const_tktrip, &
          shr_const_mwwv, shr_const_mwdair
@@ -1254,6 +1255,7 @@ contains
     ! (via a use statement)
 
     call shr_map_setDopole(shr_map_dopole)
+   call shr_solar_diag_configure(do_budgets .and. budget_inst >= 4,initialize_only=.true.)
 
     call shr_reprosum_setopts(&
          repro_sum_use_ddpdd_in    = reprosum_use_ddpdd, &
@@ -2585,6 +2587,7 @@ contains
 
   subroutine cime_run()
     use shr_string_mod,      only: shr_string_listGetIndexF
+      use shr_solar_diag_mod,  only: shr_solar_diag_configure, shr_solar_diag_clock
     use seq_comm_mct,        only: atm_layout, lnd_layout, ice_layout
     use seq_comm_mct,        only: glc_layout, rof_layout, ocn_layout
     use seq_comm_mct,        only: wav_layout, esp_layout, iac_layout, num_inst_driver
@@ -2620,6 +2623,7 @@ contains
 113 format( A14, 999999999(:, ',', f13.3) )
 
     call t_startf ('CPL:cime_run_init')
+   call shr_solar_diag_configure(do_budgets .and. budget_inst >= 4)
     hashint = 0
     drv_resume=.FALSE.
 
@@ -2825,6 +2829,7 @@ contains
 
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
+      call shr_solar_diag_clock(ymd,real(tod,r8),real(dtime,r8))
        call shr_cal_date2ymd(ymd,year,month,day)
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
        atmrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_atmrun)
@@ -4088,7 +4093,7 @@ contains
 
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
-       call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
+      call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg',fractions=fractions_ox)
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
@@ -4265,7 +4270,7 @@ contains
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-          call prep_ocn_accum(timer='CPL:atmocnp_accum')
+          call prep_ocn_accum(timer='CPL:atmocnp_accum',fractions=fractions_ox)
        end if
 
        !----------------------------------------------------------

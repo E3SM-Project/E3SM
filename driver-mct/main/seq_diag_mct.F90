@@ -1995,6 +1995,20 @@ contains
              if (iam /= 0) return
           endif
 
+           if (ip == p_inst .and. plev >= 4) then
+              write(logunit,'(a,1x,i8.8,1x,i5,5(1x,es25.16e3))') &
+              'SOLAR_EXCHANGE_V1',cdate,sec, &
+              dataGpr(f_hswnet,c_atm_ar,ip), &
+              dataGpr(f_hswnet,c_lnd_lr,ip), &
+              dataGpr(f_hswnet,c_ocn_os,ip), &
+              dataGpr(f_hswnet,c_inh_ir,ip), &
+              dataGpr(f_hswnet,c_ish_ir,ip)
+              write(logunit,'(a,1x,i8.8,1x,i5,1x,l1,1x,i8.8,4(1x,es25.16e3))') &
+              'SOLAR_SCHEDULE_V1',cdate,sec,infodata%nextsw_valid, &
+              infodata%nextsw_ymd,infodata%nextsw_tod,infodata%nextsw_cday, &
+              infodata%nextsw_dt_avg,real(infodata%ocean_solar_version,r8)
+           endif
+
           ! ---------------------------------------------------------
           ! ---- detail atm budgets and breakdown into components ---
           ! ---------------------------------------------------------

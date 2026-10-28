@@ -1447,6 +1447,384 @@ do calendar_index=1,2"""
             self.assertIn("if (infodata%solar_phase_version /= 1)", metadata)
             self.assertIn("call shr_mpi_bcast(infodata%solar_phase_version, mpicom)", metadata)
 
+    @unittest.skipUnless(shutil.which("gfortran"), "gfortran is required for shared solar diagnostics")
+    def test_solar_diagnostic_module(self):
+        program = """
+    program probe
+    use shr_kind_mod,only:r8=>shr_kind_r8
+    use shr_solar_diag_mod
+    implicit none
+    real(r8) :: albedo(4,2)
+    albedo=.2_r8
+    call shr_solar_diag_configure(.true.)
+    call shr_solar_diag_schedule(20000229,3600._r8,.true.)
+    call shr_solar_diag_import(1,albedo)
+    call shr_solar_diag_import(3,albedo)
+    call shr_solar_diag_consume(1,20000229,3600._r8,albedo)
+    call shr_solar_diag_consume(3,20000229,3600._r8,albedo)
+    call shr_solar_diag_column(1,20000229,3600._r8,[300._r8],[200._r8],[100._r8])
+    call shr_solar_diag_radiation(1,20000229,3600._r8,albedo,[300._r8,300._r8], &
+     [200._r8,200._r8],reshape([.0098_r8,.0098_r8,.0098_r8,.0098_r8],[2,2]), &
+    reshape([50000._r8,50000._r8,50000._r8,50000._r8],[2,2]),9.8_r8,.true., &
+    top=reshape([310._r8,310._r8,10._r8,10._r8],[2,2]))
+    call shr_solar_diag_buffer([20._r8],[30._r8],[40._r8],[10._r8])
+    call shr_solar_diag_clock(20000229,3600._r8,1800._r8)
+    if (shr_solar_diag_dt /= 1800._r8) stop 2
+    call shr_solar_diag_configure(.false.)
+    call shr_solar_diag_configure(.true.)
+    call shr_solar_diag_schedule(20000229,3600._r8,.true.)
+    call shr_solar_diag_import(17,albedo,19)
+    call shr_solar_diag_import(19,albedo,19)
+    call shr_solar_diag_consume(17,20000229,3600._r8,albedo)
+    call shr_solar_diag_consume(19,20000229,3600._r8,albedo)
+    end program
+    """
+        sources = ("share/util/shr_solar_diag_mod.F90",)
+        result = self.compile_orbit_probe(program=program, extra_sources=sources)
+        self.assertIn("SOLAR_CONSUME_V1", result.stdout)
+        self.assertIn("SOLAR_COLUMN_V1", result.stdout)
+        for original, replacement, message in (
+            ("[100._r8]", "[90._r8]", "TOA/heating closure failed"),
+            ("[10._r8]", "[20._r8]", "buffer energy closure failed"),
+            ("310._r8,310._r8,10._r8,10._r8", "310._r8,310._r8,9._r8,9._r8", "upper layer closure failed"),
+            ("consume(1,20000229,3600._r8", "consume(1,20000229,5400._r8", "stale albedo consumption time"),
+            ("call shr_solar_diag_consume(1", "albedo=.3_r8\ncall shr_solar_diag_consume(1", "imported and consumed albedos differ")):
+            rejected = self.compile_orbit_probe(program=program.replace(original, replacement),
+                            extra_sources=sources, expected_returncode=99)
+            self.assertIn(message, rejected.stdout)
+            if message in ("TOA/heating closure failed", "upper layer closure failed"):
+                self.assertIn("chunk=1", rejected.stdout)
+                self.assertIn("column=1", rejected.stdout)
+                self.assertIn("tolerance=", rejected.stdout)
+
+
+    @unittest.skipUnless(shutil.which("gfortran"), "gfortran is required for the ocean buffer probe")
+    def test_solar_ocean_accumulator(self):
+        source = (ROOT / "driver-mct/main/prep_ocn_mod.F90").read_text()
+        routines = []
+        for name in ("prep_ocn_accum", "prep_ocn_accum_avg", "prep_ocn_solar_record"):
+            match = re.search(r"  subroutine " + name + r"\(.*?  end subroutine " + name + r"\b", source, re.DOTALL)
+            self.assertIsNotNone(match)
+            routines.append(match.group(0))
+        program = """
+module ocean_probe
+use shr_kind_mod,only:r8=>shr_kind_r8
+use shr_sys_mod,only:shr_sys_abort
+use shr_const_mod,only:shr_const_pi
+use shr_solar_diag_mod
+implicit none
+type mct_avect
+real(r8),allocatable::rAttr(:,:)
+end type
+type mct_ggrid
+type(mct_avect)::data
+end type
+type(mct_avect),target::held
+type(mct_ggrid),target::grid
+type(mct_avect),allocatable::x2oacc_ox(:)
+integer::ocn(1)=[1],num_inst_ocn=1,mpicom_CPLID=0,CPLID=0,logunit=6,x2oacc_ox_cnt=0
+contains
+function component_get_x2c_cx(instance) result(value)
+integer,intent(in)::instance
+type(mct_avect),pointer::value
+value=>held
+end function
+function component_get_dom_cx(instance) result(value)
+integer,intent(in)::instance
+type(mct_ggrid),pointer::value
+value=>grid
+end function
+integer function mct_aVect_indexRA(vector,name)
+type(mct_avect),intent(in)::vector
+character(*),intent(in)::name
+mct_aVect_indexRA=1
+if(name=='ifrac') mct_aVect_indexRA=2
+end function
+subroutine mct_avect_copy(source,destination)
+type(mct_avect),intent(in)::source
+type(mct_avect),intent(inout)::destination
+destination%rAttr=source%rAttr
+end subroutine
+subroutine mct_avect_accum(source,destination)
+type(mct_avect),intent(in)::source
+type(mct_avect),intent(inout)::destination
+destination%rAttr=destination%rAttr+source%rAttr
+end subroutine
+subroutine mct_avect_avg(vector,count)
+type(mct_avect),intent(inout)::vector
+integer,intent(in)::count
+vector%rAttr=vector%rAttr/count
+end subroutine
+subroutine t_drvstartf(timer,barrier)
+character(*),intent(in)::timer
+integer,optional,intent(in)::barrier
+end subroutine
+subroutine t_drvstopf(timer)
+character(*),intent(in)::timer
+end subroutine
+subroutine shr_mpi_sum(local,global,comm,tag)
+real(r8),intent(in)::local(:)
+real(r8),intent(out)::global(:)
+integer,intent(in)::comm
+character(*),intent(in)::tag
+global=local
+end subroutine
+subroutine seq_comm_getData(comm,iam)
+integer,intent(in)::comm
+integer,intent(out)::iam
+iam=0
+end subroutine
+""" + "\n".join(routines) + """
+end module
+program probe
+use ocean_probe
+implicit none
+type(mct_avect)::fractions(1)
+integer::step
+allocate(x2oacc_ox(1))
+allocate(held%rAttr(1,2),x2oacc_ox(1)%rAttr(1,2),fractions(1)%rAttr(2,2),grid%data%rAttr(1,2))
+x2oacc_ox(1)%rAttr=0
+grid%data%rAttr=2._r8*shr_const_pi
+fractions(1)%rAttr(1,:)=[.2_r8,.7_r8]
+fractions(1)%rAttr(2,:)=[.8_r8,.3_r8]
+call shr_solar_diag_configure(.true.)
+do step=1,4
+call shr_solar_diag_clock(20000229,real(step*1800,r8),1800._r8)
+held%rAttr(1,:)=[10._r8,20._r8]*step
+call prep_ocn_accum('probe',fractions)
+enddo
+if(x2oacc_ox_cnt/=4) stop 10
+call prep_ocn_accum_avg('probe',fractions)
+if(x2oacc_ox_cnt/=0) stop 11
+if(any(abs(held%rAttr(1,:)-[25._r8,50._r8])>1.e-12_r8)) stop 12
+end program
+"""
+        result = self.compile_orbit_probe(program=program, extra_sources=("share/util/shr_solar_diag_mod.F90",))
+        rows = [line.split() for line in result.stdout.splitlines() if "SOLAR_BUFFER_V1" in line]
+        self.assertEqual(len(rows), 5)
+        self.assertEqual([row[4] for row in rows], ["ADD"] * 4 + ["SEND"])
+        self.assertEqual(int(rows[-1][5]), 4)
+        self.assertAlmostEqual(float(rows[-1][8]), 270000.)
+        self.assertEqual(float(rows[-1][9]), 0.)
+
+
+    @unittest.skipUnless(shutil.which("gfortran"), "gfortran is required for atmosphere source probes")
+    def test_solar_atmosphere_source(self):
+        heating_source = (ROOT / "components/eam/src/physics/rrtmgp/radiation_utils.F90").read_text()
+        heating = re.search(r"   subroutine calculate_heating_rate\(.*?   end subroutine calculate_heating_rate",
+                            heating_source, re.DOTALL).group(0)
+        import_source = (ROOT / "components/eam/src/cpl/atm_import_export.F90").read_text()
+        capture = re.search(r"    if \(shr_solar_diag_enabled\) then.*?    endif", import_source, re.DOTALL).group(0)
+        for implementation in ("rrtmg", "rrtmgp"):
+            source = (ROOT / "components/eam/src/physics" / implementation / "radiation.F90").read_text()
+            routine = re.search(r"\bsubroutine radiation_tend\b.*?end subroutine radiation_tend", source, re.DOTALL).group(0)
+            self.assertIn("use shr_solar_diag_mod", routine)
+            self.assertNotIn("solar_top(:,:) =>", routine)
+            self.assertIn("pbuf_add_field('SOLAR_TOP','global'", source)
+            block = re.search(r"(?m)^\s*if \(shr_solar_diag_enabled\) then.*?^\s*endif", routine, re.DOTALL).group(0)
+            if implementation == "rrtmg":
+                top_source = (ROOT / "components/eam/src/physics/rrtmg/radsw.F90").read_text()
+                top_block = re.search(r"   if \(present\(solar_top\)\) then.*?   endif", top_source, re.DOTALL).group(0)
+                top_setup = """
+block
+integer,parameter::Nday=2,rrtmg_levs=3
+integer::IdxDay(2)=[1,2]
+real(r8),parameter::cpair=1004._r8,dps=1._r8/86400._r8
+real(r8)::fsntoa(2),swhr(2,3),pintmb(2,4)
+fsntoa=310
+swhr=0
+swhr(:,3)=10._r8*gravit/(50._r8*cpair*dps)
+pintmb=0
+pintmb(:,3)=.5_r8
+""" + top_block + "\nend block\n"
+            else:
+                self.assertIn("only: clip_values, calculate_heating_rate", routine)
+                top_block = re.search(r"         if \(shr_solar_diag_requested\) then.*?         endif", routine, re.DOTALL).group(0)
+                top_setup = """
+block
+integer,parameter::ktop=2
+type flux_type
+real(r8)::flux_up(2,4),flux_dn(2,4)
+end type
+type(flux_type)::fluxes_allsky
+real(r8)::pint(2,4),diag_hr(2,ktop-1)
+pint=reshape([0._r8,0._r8,50._r8,50._r8,50000._r8,50000._r8,100000._r8,100000._r8],[2,4])
+fluxes_allsky%flux_up=0
+fluxes_allsky%flux_dn=reshape([310._r8,310._r8,300._r8,300._r8,250._r8,250._r8,200._r8,200._r8],[2,4])
+""" + top_block + "\nend block\n"
+            top_routine = ("subroutine extra_layer(solar_top)\n"
+                           "real(r8),optional,intent(out)::solar_top(:,:)\n" + top_setup + "\nend subroutine\n")
+            top_setup = "call extra_layer(solar_top)\n"
+            program = """
+module physconst
+use shr_kind_mod,only:r8=>shr_kind_r8
+implicit none
+real(r8),parameter::gravit=9.8_r8
+end module
+module heating_probe
+use shr_kind_mod,only:r8=>shr_kind_r8
+implicit none
+contains
+subroutine assert(condition,message)
+use shr_sys_mod,only:shr_sys_abort
+logical,intent(in)::condition
+character(*),intent(in)::message
+if(.not.condition) call shr_sys_abort(message)
+end subroutine
+""" + heating + """
+end module
+program probe
+use shr_kind_mod,only:r8=>shr_kind_r8
+use shr_const_mod,only:shr_const_pi
+use shr_solar_diag_mod
+use physconst,only:gravit
+use heating_probe,only:calculate_heating_rate
+implicit none
+integer,parameter::pcols=2,pver=2,ncol=2,begchunk=1,endchunk=1
+type input_type
+real(r8)::asdir(2),asdif(2),aldir(2),aldif(2)
+end type
+type state_type
+integer::lchnk=1
+real(r8)::pdel(2,2)
+end type
+type(input_type)::cam_in
+type(state_type)::state
+integer::diag_year,diag_month,diag_day,diag_seconds
+real(r8)::diag_area(2),fsnt(2),fsns(2),qrs(2,2),pint(2,3),up(2,3),down(2,3),solar_top(2,2)
+cam_in%asdir=.1_r8
+cam_in%asdif=.2_r8
+cam_in%aldir=.3_r8
+cam_in%aldif=.4_r8
+call shr_solar_diag_configure(.true.)
+call shr_solar_diag_schedule(20000229,3600._r8,.true.)
+call capture_import([cam_in])
+pint=reshape([0._r8,0._r8,50000._r8,50000._r8,100000._r8,100000._r8],[2,3])
+up=0
+down=reshape([300._r8,300._r8,250._r8,250._r8,200._r8,200._r8],[2,3])
+call calculate_heating_rate(up,down,pint,qrs)
+state%pdel=pint(:,2:3)-pint(:,1:2)
+fsnt=300
+fsns=200
+""" + top_setup + block + """
+contains
+""" + top_routine + """
+subroutine capture_import(cam_in)
+type(input_type),intent(in)::cam_in(1)
+integer::c,ncols
+""" + capture + """
+end subroutine
+integer function get_ncols_p(chunk)
+integer,intent(in)::chunk
+get_ncols_p=2
+end function
+subroutine get_area_all_p(chunk,count,area)
+integer,intent(in)::chunk,count
+real(r8),intent(out)::area(count)
+area=2._r8*shr_const_pi
+end subroutine
+subroutine get_curr_date(year,month,day,seconds)
+integer,intent(out)::year,month,day,seconds
+year=2000
+month=2
+day=29
+seconds=3600
+end subroutine
+logical function radiation_do(operation)
+character(*),intent(in)::operation
+radiation_do=.true.
+end function
+end program
+"""
+            sources = ("share/util/shr_solar_diag_mod.F90",)
+            result = self.compile_orbit_probe(program=program, extra_sources=sources)
+            row = next(line.split() for line in result.stdout.splitlines() if "SOLAR_COLUMN_V1" in line)
+            self.assertAlmostEqual(float(row[6]), 310.)
+            self.assertAlmostEqual(float(row[7]), 200.)
+            self.assertAlmostEqual(float(row[8]), 110.)
+            self.assertAlmostEqual(float(row[10]), 1.)
+            if implementation == "rrtmgp":
+                no_extra = program.replace("integer,parameter::ktop=2", "integer,parameter::ktop=1")
+                no_extra = no_extra.replace("fsnt=300", "fsnt=310").replace(
+                    "down=reshape([300._r8,300._r8,", "down=reshape([310._r8,310._r8,")
+                self.compile_orbit_probe(program=no_extra, extra_sources=sources)
+            bad = program.replace("call capture_import([cam_in])", "call capture_import([cam_in])\ncam_in%asdir(2)=.9_r8")
+            rejected = self.compile_orbit_probe(program=bad, extra_sources=sources, expected_returncode=99)
+            self.assertIn("imported and consumed albedos differ", rejected.stdout)
+
+
+    @unittest.skipUnless(shutil.which("gfortran"), "gfortran is required for the Icepack source probe")
+    def test_icepack_solar_partition(self):
+        source = (ROOT / "components/mpas-seaice/src/icepack/columnphysics/icepack_shortwave.F90").read_text()
+        routine = re.search(r"      subroutine icepack_prep_radiation\(.*?      end subroutine icepack_prep_radiation",
+                            source, re.DOTALL)
+        self.assertIsNotNone(routine)
+        self.compile_orbit_probe(program="""
+module icepack_probe
+use shr_kind_mod, only: dbl_kind=>shr_kind_r8, int_kind=>shr_kind_in
+implicit none
+integer, parameter :: ncat=2,nilyr=2,nslyr=2
+real(dbl_kind), parameter :: c0=0,c1=1,puny=1.e-11_dbl_kind
+contains
+""" + routine.group(0) + """
+end module
+program probe
+use icepack_probe
+implicit none
+real(dbl_kind) :: area(2),surface(2),interior(2),transmitted(2),reference,netsw
+real(dbl_kind) :: visdir(2),visdif(2),nirdir(2),nirdif(2)
+real(dbl_kind) :: snow(2,2),ice(2,2),penetration(3,2),open_absorbed,ocean,retained,reflected
+integer :: category
+area=[.2_dbl_kind,.3_dbl_kind]
+reference=112
+surface=[.2_dbl_kind,.4_dbl_kind]*reference
+interior=[.5_dbl_kind,.3_dbl_kind]*reference
+transmitted=.3_dbl_kind*reference
+visdir=.1_dbl_kind*transmitted
+visdif=.2_dbl_kind*transmitted
+nirdir=.3_dbl_kind*transmitted
+nirdif=.4_dbl_kind*transmitted
+do category=1,2
+snow(:,category)=.1_dbl_kind*interior(category)
+ice(:,category)=.4_dbl_kind*interior(category)
+penetration(:,category)=transmitted(category)
+enddo
+call icepack_prep_radiation(.5_dbl_kind,area,60._dbl_kind,200._dbl_kind,40._dbl_kind,300._dbl_kind, &
+ .7_dbl_kind,.6_dbl_kind,.4_dbl_kind,.3_dbl_kind,reference,surface,interior,transmitted, &
+ visdir,visdif,nirdir,nirdif,penetration,snow,ice)
+netsw=60*.3_dbl_kind+200*.4_dbl_kind+40*.6_dbl_kind+300*.7_dbl_kind
+call require(maxval(abs(surface+interior+transmitted-netsw))<1.e-10_dbl_kind)
+call require(abs(sum(area*(surface+interior+transmitted))-.5_dbl_kind*netsw)<1.e-10_dbl_kind)
+call require(maxval(abs(visdir+visdif+nirdir+nirdif-transmitted))<1.e-10_dbl_kind)
+do category=1,2
+call require(abs(sum(snow(:,category))+sum(ice(:,category))-interior(category))<1.e-10_dbl_kind)
+enddo
+open_absorbed=60*.9_dbl_kind+200*.8_dbl_kind+40*.7_dbl_kind+300*.6_dbl_kind
+ocean=.5_dbl_kind*open_absorbed+sum(area*transmitted)
+retained=sum(area*(surface+interior))
+reflected=.5_dbl_kind*(600-netsw)+.5_dbl_kind*(600-open_absorbed)
+call require(abs(600-reflected-retained-ocean)<1.e-10_dbl_kind)
+call require(abs(600-reflected-retained-ocean-sum(area*transmitted))>1._dbl_kind)
+reference=netsw
+call icepack_prep_radiation(.5_dbl_kind,area,0._dbl_kind,0._dbl_kind,0._dbl_kind,0._dbl_kind, &
+ .7_dbl_kind,.6_dbl_kind,.4_dbl_kind,.3_dbl_kind,reference,surface,interior,transmitted, &
+ visdir,visdif,nirdir,nirdif,penetration,snow,ice)
+call require(maxval(abs(surface+interior+transmitted))==0._dbl_kind)
+reference=0
+call icepack_prep_radiation(.5_dbl_kind,area,60._dbl_kind,200._dbl_kind,40._dbl_kind,300._dbl_kind, &
+ 1._dbl_kind,1._dbl_kind,1._dbl_kind,1._dbl_kind,reference,surface,interior,transmitted, &
+ visdir,visdif,nirdir,nirdif,penetration,snow,ice)
+call require(reference==1._dbl_kind)
+call require(maxval(abs(surface+interior+transmitted))==0._dbl_kind)
+contains
+subroutine require(condition)
+logical,intent(in)::condition
+if(.not.condition) stop 14
+end subroutine
+end program
+""")
+
+
 
 
 

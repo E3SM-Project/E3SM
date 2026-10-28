@@ -1236,14 +1236,15 @@
     <type>integer</type>
     <category>budget</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>0,1,2,3</valid_values>
+    <valid_values>0,1,2,3,4</valid_values>
     <desc>
-      sets the diagnotics level of the instantaneous budgets. [0,1,2,3],
+      sets the diagnostics level of the instantaneous budgets. [0,1,2,3,4],
       written only if BUDGETS variable is true
       0=none,
       1=+net summary budgets,
       2=+detailed lnd/ocn/ice component budgets,
-      3=+detailed atm budgets
+      3=+detailed atm budgets,
+      4=+machine-readable shortwave exchange records for SCV
       default: 0
     </desc>
     <values>

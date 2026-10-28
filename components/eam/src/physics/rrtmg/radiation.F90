@@ -182,9 +182,13 @@ end subroutine radiation_readnl
 !-----------------------------------------------------------------------
 
     use physics_buffer,  only: pbuf_add_field, dtype_r8
+   use shr_solar_diag_mod, only: shr_solar_diag_requested
+
+   integer :: solar_top_idx
 
     call pbuf_add_field('QRS' , 'global',dtype_r8,(/pcols,pver/), qrs_idx) ! shortwave radiative heating rate 
     call pbuf_add_field('QRL' , 'global',dtype_r8,(/pcols,pver/), qrl_idx) ! longwave  radiative heating rate 
+   if (shr_solar_diag_requested) call pbuf_add_field('SOLAR_TOP','global',dtype_r8,(/pcols,2/),solar_top_idx)
 
     ! If the namelist has been configured for preserving the spectral fluxes, then create
     ! physics buffer variables to store the results.
@@ -860,10 +864,11 @@ end function radiation_nextsw_cday
 
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx, pbuf_get_index, pbuf_set_field
     
-    use phys_grid,       only: get_rlat_all_p, get_rlon_all_p
+   use phys_grid,       only: get_rlat_all_p, get_rlon_all_p, get_area_all_p
     use physics_types,   only: physics_state, physics_ptend
     use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
-    use time_manager,    only: get_curr_calday
+   use time_manager,    only: get_curr_calday, get_curr_date
+   use shr_solar_diag_mod, only: shr_solar_diag_radiation, shr_solar_diag_enabled, shr_solar_diag_requested
     use camsrfexch,      only: cam_out_t, cam_in_t
     use cam_history,     only: outfld
     use cam_history_support, only: fillvalue
@@ -874,7 +879,7 @@ end function radiation_nextsw_cday
     use radheat,         only: radheat_tend
     use ppgrid
     use pspect
-    use physconst,        only: cpair, stebol
+   use physconst,        only: cpair, stebol, gravit
     use radconstants,     only: nlwbands,idx_sw_diag
     use radsw,            only: rad_rrtmg_sw
     use radlw,            only: rad_rrtmg_lw
@@ -989,6 +994,7 @@ end function radiation_nextsw_cday
     real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction
     real(r8), pointer, dimension(:,:) :: qrs      ! shortwave radiative heating rate 
     real(r8), pointer, dimension(:,:) :: qrl      ! longwave  radiative heating rate 
+   real(r8), pointer :: solar_top(:,:)
     real(r8) :: qrsc(pcols,pver)                  ! clearsky shortwave radiative heating rate 
     real(r8) :: qrlc(pcols,pver)                  ! clearsky longwave  radiative heating rate 
 
@@ -1104,6 +1110,8 @@ end function radiation_nextsw_cday
 
     call pbuf_get_field(pbuf, qrs_idx,      qrs)
     call pbuf_get_field(pbuf, qrl_idx,      qrl)
+   nullify(solar_top)
+   if (shr_solar_diag_requested) call pbuf_get_field(pbuf,pbuf_get_index('SOLAR_TOP'),solar_top)
 
     if (spectralflux) then
       call pbuf_get_field(pbuf, su_idx, su)
@@ -1329,7 +1337,7 @@ end function radiation_nextsw_cday
                        Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
                        su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
-                       old_convert = .false.)
+                       old_convert = .false., solar_top=solar_top)
                   call t_stopf ('rad_rrtmg_sw')
                   !  Output net fluxes at 200 mb
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
@@ -1615,6 +1623,19 @@ end function radiation_nextsw_cday
     call radheat_tend(state, pbuf,  ptend, qrl, qrs, fsns, &
                       fsnt, flns, flnt, cam_in%asdir, net_flx)
     call t_stopf ('radheat_tend')
+
+    if (shr_solar_diag_enabled) then
+       block
+         integer :: diag_year,diag_month,diag_day,diag_seconds
+          real(r8) :: diag_area(pcols)
+         call get_curr_date(diag_year,diag_month,diag_day,diag_seconds)
+          call get_area_all_p(state%lchnk,pcols,diag_area)
+         call shr_solar_diag_radiation(state%lchnk,diag_year*10000+diag_month*100+diag_day, &
+              real(diag_seconds,r8),transpose(reshape([cam_in%asdir(:ncol),cam_in%asdif(:ncol), &
+              cam_in%aldir(:ncol),cam_in%aldif(:ncol)],[ncol,4])),fsnt(:ncol),fsns(:ncol), &
+              qrs(:ncol,:pver),state%pdel(:ncol,:pver),gravit,radiation_do('sw'),diag_area(:ncol),solar_top(:ncol,:))
+       end block
+    endif
 
     ! Compute heating rate for dtheta/dt 
     call t_startf ('heating_rate')

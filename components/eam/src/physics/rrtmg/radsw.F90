@@ -49,7 +49,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
                     Nday     ,Nnite      ,IdxDay       ,IdxNite      ,clm_rand_seed, &
                     su       ,sd         ,                             &
                     E_cld_tau, E_cld_tau_w, E_cld_tau_w_g, E_cld_tau_w_f,  &
-                    old_convert)
+                    old_convert, solar_top)
 
 
 !-----------------------------------------------------------------------
@@ -85,7 +85,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    use cmparray_mod,        only: CmpDayNite, ExpDayNite
    use phys_control,        only: phys_getopts
    use mcica_subcol_gen_sw, only: mcica_subcol_sw
-   use physconst,           only: cpair
+   use physconst,           only: cpair, gravit
    use rrtmg_state,         only: rrtmg_state_t
    
    ! Minimum cloud amount (as a fraction of the grid-box area) to 
@@ -141,6 +141,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(out) :: fsns(pcols)      ! Surface absorbed solar flux
    real(r8), intent(out) :: fsnt(pcols)      ! Total column absorbed solar flux
    real(r8), intent(out) :: fsntoa(pcols)    ! Net solar flux at TOA
+   real(r8), optional, intent(out) :: solar_top(:,:)
    real(r8), intent(out) :: fsutoa(pcols)    ! Upward solar flux at TOA
    real(r8), intent(out) :: fsds(pcols)      ! Flux shortwave downwelling surface
 
@@ -582,6 +583,12 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    ! Pass shortwave heating to CAM arrays and convert from K/d to J/kg/s
    qrs (1:Nday,pverp-rrtmg_levs+1:pver) = swhr (1:Nday,rrtmg_levs-1:1:-1)*cpair*dps
    qrsc(1:Nday,pverp-rrtmg_levs+1:pver) = swhrc(1:Nday,rrtmg_levs-1:1:-1)*cpair*dps
+   if (present(solar_top)) then
+      solar_top = 0._r8
+      solar_top(IdxDay(:Nday),1) = fsntoa(:Nday)
+      solar_top(IdxDay(:Nday),2) = swhr(:Nday,rrtmg_levs)*cpair*dps * &
+           (pintmb(:Nday,rrtmg_levs)-pintmb(:Nday,rrtmg_levs+1))*100._r8/gravit
+   endif
 
    ! Set spectral fluxes, reverse layering
    ! order=(/3,1,2/) maps the first index of swuflxs to the third index of su.

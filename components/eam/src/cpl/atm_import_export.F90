@@ -27,6 +27,7 @@ contains
     use time_manager  , only: is_first_step, get_curr_date
     use constituents  , only: pcnst
     use cam_abortutils, only: endrun
+   use shr_solar_diag_mod, only: shr_solar_diag_import, shr_solar_diag_enabled
     !
     ! Arguments
     !
@@ -271,6 +272,13 @@ contains
        first_time = .false.
     end if
 
+    if (shr_solar_diag_enabled) then
+       do c=begchunk,endchunk
+          ncols = get_ncols_p(c)
+          call shr_solar_diag_import(c,transpose(reshape([cam_in(c)%asdir(:ncols),cam_in(c)%asdif(:ncols), &
+            cam_in(c)%aldir(:ncols),cam_in(c)%aldif(:ncols)],[ncols,4])),endchunk)
+       enddo
+    endif
   end subroutine atm_import
 
   !===============================================================================

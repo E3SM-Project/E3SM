@@ -305,6 +305,7 @@ contains
       !----------------------------------------------------------------------------
 
       use physics_buffer, only: pbuf_add_field, dtype_r8
+      use shr_solar_diag_mod, only: shr_solar_diag_requested
 
       integer :: idx  ! dummy index for adding fields to physics buffer
 
@@ -316,6 +317,7 @@ contains
       ! module, just overwritten, so they may not need to be written to restarts.
       call pbuf_add_field('QRS', 'global', dtype_r8, (/pcols,pver/), idx)
       call pbuf_add_field('QRL', 'global', dtype_r8, (/pcols,pver/), idx)
+      if (shr_solar_diag_requested) call pbuf_add_field('SOLAR_TOP','global',dtype_r8,(/pcols,2/),idx)
 
       ! If the namelist has been configured for preserving the spectral fluxes, then create
       ! physics buffer variables to store the results. These are fluxes per
@@ -1070,6 +1072,10 @@ contains
 
       ! Performance module needed for timing functions
       use perf_mod, only: t_startf, t_stopf
+      use shr_solar_diag_mod, only: shr_solar_diag_radiation, shr_solar_diag_enabled, shr_solar_diag_requested
+      use time_manager, only: get_curr_date
+      use physconst, only: gravit
+      use phys_grid, only: get_area_all_p
 
       ! CAM derived types; needed for surface exchange fields, physics state, and
       ! tendency fields
@@ -1091,7 +1097,7 @@ contains
       use cam_history, only: outfld
 
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: clip_values
+      use radiation_utils, only: clip_values, calculate_heating_rate
       use cam_control_mod, only: aqua_planet
 
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
@@ -1149,6 +1155,10 @@ contains
       ! Pointers to heating rates on physics buffer
       real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate
       real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate
+      real(r8), pointer :: solar_top(:,:)
+      integer :: diag_year,diag_month,diag_day,diag_seconds
+      real(r8) :: diag_area(pcols)
+      real(r8) :: diag_hr(pcols,ktop-1)
 
       ! Pointers to fields on the physics buffer
       real(r8), pointer, dimension(:,:) :: &
@@ -1233,6 +1243,8 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+      nullify(solar_top)
+      if (shr_solar_diag_requested) call pbuf_get_field(pbuf,pbuf_get_index('SOLAR_TOP'),solar_top)
 
       ! Get fields from pbuf for optics
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
@@ -1433,6 +1445,16 @@ contains
 
          ! Set net fluxes used by other components (land?)
          call set_net_fluxes_sw(fluxes_allsky, fsds, fsns, fsnt)
+         if (shr_solar_diag_requested) then
+            solar_top(:ncol,1) = fluxes_allsky%flux_dn(:,1)-fluxes_allsky%flux_up(:,1)
+            solar_top(:ncol,2) = 0._r8
+            if (ktop > 1) then
+               call calculate_heating_rate(fluxes_allsky%flux_up(:,:ktop),fluxes_allsky%flux_dn(:,:ktop), &
+                    pint(:ncol,:ktop),diag_hr(:ncol,:))
+               solar_top(:ncol,2) = sum(diag_hr(:ncol,:) * &
+                    (pint(:ncol,2:ktop)-pint(:ncol,:ktop-1)),dim=2)/gravit
+            end if
+         endif
 
          ! Set surface fluxes that are used by the land model
          call export_surface_fluxes(fluxes_allsky, cam_out, 'shortwave')
@@ -1544,6 +1566,15 @@ contains
                         fsns, fsnt, flns, flnt, &
                         cam_in%asdir, net_flux)
       call t_stopf('radheat_tend')
+
+      if (shr_solar_diag_enabled) then
+         call get_curr_date(diag_year,diag_month,diag_day,diag_seconds)
+         call get_area_all_p(state%lchnk,pcols,diag_area)
+         call shr_solar_diag_radiation(state%lchnk,diag_year*10000+diag_month*100+diag_day, &
+           real(diag_seconds,r8),transpose(reshape([cam_in%asdir(:ncol),cam_in%asdif(:ncol), &
+           cam_in%aldir(:ncol),cam_in%aldif(:ncol)],[ncol,4])),fsnt(:ncol),fsns(:ncol), &
+              qrs(:ncol,:pver),state%pdel(:ncol,:pver),gravit,radiation_do('sw'),diag_area(:ncol),solar_top(:ncol,:))
+      endif
 
       ! Compute heating rate for dtheta/dt
       call t_startf ('rad_heating_rate')

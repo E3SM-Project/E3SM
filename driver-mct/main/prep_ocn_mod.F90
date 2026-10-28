@@ -19,6 +19,11 @@ module prep_ocn_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
+   use component_type_mod, only: component_get_dom_cx
+   use shr_solar_diag_mod, only: shr_solar_diag_enabled, shr_solar_diag_buffer
+   use shr_solar_diag_mod, only: shr_solar_diag_ymd, shr_solar_diag_tod, shr_solar_diag_dt
+   use shr_mpi_mod, only: shr_mpi_sum
+   use shr_const_mod, only: shr_const_pi
 
   implicit none
   save
@@ -401,7 +406,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ocn_accum(timer)
+   subroutine prep_ocn_accum(timer,fractions)
     !---------------------------------------------------------------
     ! Description
     ! Accumulate ocn inputs
@@ -410,9 +415,12 @@ contains
     !
     ! Arguments
     character(len=*)        , intent(in) :: timer
+   type(mct_avect), optional, intent(in) :: fractions(:)
     !
     ! Local Variables
     integer :: eoi
+   integer :: solar_index
+   real(r8), allocatable :: solar_before(:)
     type(mct_avect) , pointer   :: x2o_ox
     character(*)    , parameter :: subname = '(prep_ocn_accum)'
     !---------------------------------------------------------------
@@ -421,11 +429,22 @@ contains
     do eoi = 1,num_inst_ocn
        x2o_ox => component_get_x2c_cx(ocn(eoi))
 
+       if (shr_solar_diag_enabled) then
+          if (.not. present(fractions)) call shr_sys_abort('SOLAR_DIAG: ocean accumulator requires area fractions')
+          solar_index = mct_aVect_indexRA(x2o_ox,'Foxx_swnet')
+          if (allocated(solar_before)) deallocate(solar_before)
+          allocate(solar_before(size(x2o_ox%rAttr,2)))
+          solar_before = 0._r8
+          if (x2oacc_ox_cnt > 0) solar_before = x2oacc_ox(eoi)%rAttr(solar_index,:)*shr_solar_diag_dt
+       endif
        if (x2oacc_ox_cnt == 0) then
           call mct_avect_copy(x2o_ox, x2oacc_ox(eoi))
        else
           call mct_avect_accum(x2o_ox, x2oacc_ox(eoi))
        endif
+          if (shr_solar_diag_enabled) call prep_ocn_solar_record(eoi,'ADD',x2oacc_ox_cnt+1,fractions(eoi), &
+                  solar_before,x2o_ox%rAttr(solar_index,:)*shr_solar_diag_dt,0._r8*solar_before, &
+                  x2oacc_ox(eoi)%rAttr(solar_index,:)*shr_solar_diag_dt)
     enddo
     x2oacc_ox_cnt = x2oacc_ox_cnt + 1
     call t_drvstopf  (trim(timer))
@@ -434,22 +453,33 @@ contains
 
   !================================================================================================
 
-  subroutine prep_ocn_accum_avg(timer_accum)
+   subroutine prep_ocn_accum_avg(timer_accum,fractions)
     !---------------------------------------------------------------
     ! Description
     ! Finish accumulation ocn inputs
     !
     ! Arguments
     character(len=*), intent(in)    :: timer_accum
+   type(mct_avect), optional, intent(in) :: fractions(:)
     !
     ! Local Variables
     integer :: eoi
+   integer :: solar_index
+   real(r8), allocatable :: solar_before(:)
     type(mct_avect), pointer :: x2o_ox
     character(*), parameter  :: subname = '(prep_ocn_accum_avg)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer_accum), barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
+       if (shr_solar_diag_enabled) then
+          if (.not. present(fractions)) call shr_sys_abort('SOLAR_DIAG: ocean delivery requires area fractions')
+          solar_index = mct_aVect_indexRA(x2oacc_ox(eoi),'Foxx_swnet')
+          if (allocated(solar_before)) deallocate(solar_before)
+          allocate(solar_before(size(x2oacc_ox(eoi)%rAttr,2)))
+          solar_before = 0._r8
+          if (x2oacc_ox_cnt > 0) solar_before = x2oacc_ox(eoi)%rAttr(solar_index,:)*shr_solar_diag_dt
+       endif
        ! temporary formation of average
        if (x2oacc_ox_cnt > 1) then
           call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
@@ -458,11 +488,40 @@ contains
        ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2o_ox
        x2o_ox   => component_get_x2c_cx(ocn(eoi))
        call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
+       if (shr_solar_diag_enabled) then
+          if (x2oacc_ox_cnt == 0) then
+             if (any(x2o_ox%rAttr(solar_index,:) /= 0._r8)) call shr_sys_abort('SOLAR_DIAG: unfunded initial ocean delivery')
+          endif
+          call prep_ocn_solar_record(eoi,'SEND',x2oacc_ox_cnt,fractions(eoi),solar_before,0._r8*solar_before, &
+               x2o_ox%rAttr(solar_index,:)*(shr_solar_diag_dt*x2oacc_ox_cnt),0._r8*solar_before)
+       endif
     enddo
     x2oacc_ox_cnt = 0
     call t_drvstopf (trim(timer_accum))
 
   end subroutine prep_ocn_accum_avg
+
+  subroutine prep_ocn_solar_record(instance,operation,count,fraction,before,incoming,delivered,after)
+    integer, intent(in) :: instance,count
+    character(*), intent(in) :: operation
+    type(mct_avect), intent(in) :: fraction
+    real(r8), intent(in) :: before(:),incoming(:),delivered(:),after(:)
+    type(mct_ggrid), pointer :: domain
+    real(r8) :: weights(size(before)),local(4),global(4)
+    integer :: area_index,ocean_index,ice_index,iam
+    call shr_solar_diag_buffer(before,incoming,delivered,after)
+    domain => component_get_dom_cx(ocn(instance))
+    area_index = mct_aVect_indexRA(domain%data,'aream')
+    ocean_index = mct_aVect_indexRA(fraction,'ofrac')
+    ice_index = mct_aVect_indexRA(fraction,'ifrac')
+    weights = domain%data%rAttr(area_index,:)*(fraction%rAttr(ocean_index,:)+fraction%rAttr(ice_index,:)) &
+       /(4._r8*shr_const_pi)
+    local = [sum(weights*before),sum(weights*incoming),sum(weights*delivered),sum(weights*after)]
+    call shr_mpi_sum(local,global,mpicom_CPLID,'prep_ocn_solar_record')
+    call seq_comm_getData(CPLID,iam=iam)
+    if (iam == 0) write(logunit,'(a,1x,i8.8,1x,f12.4,1x,i5,1x,a,1x,i8,4(1x,es25.16e3))') &
+       'SOLAR_BUFFER_V1',shr_solar_diag_ymd,shr_solar_diag_tod,instance,operation,count,global
+  end subroutine prep_ocn_solar_record
 
   !================================================================================================
 

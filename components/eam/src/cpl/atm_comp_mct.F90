@@ -620,6 +620,7 @@ CONTAINS
     use pmgrid,          only: plev, plevp
     use constituents,    only: pcnst
     use shr_sys_mod,     only: shr_sys_flush
+   use shr_solar_diag_mod, only: shr_solar_diag_schedule
 
     !
     ! Arguments
@@ -702,6 +703,7 @@ CONTAINS
 
 
     ! Map input from cpl7 to eam data structure
+   call shr_solar_diag_schedule(infodata%nextsw_ymd,infodata%nextsw_tod,infodata%nextsw_valid)
     call t_startf ('CAM_import')
 #ifdef HAVE_MOAB
     tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
