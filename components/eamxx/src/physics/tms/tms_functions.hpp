@@ -47,7 +47,7 @@ struct Functions
     static constexpr Scalar obstacle_height_min     = 1.0;   // Minimum characteristic obstacle height [ m ]
     static constexpr Scalar roughness_length_factor = 0.075; // Factor to convert obstacle height to eff roughness length [ no unit ]
     static constexpr Scalar roughness_length_max    = 100.0; // Maximum effective roughness length [ m ]
-    static constexpr Scalar wspd_squared_min        = 0.01;  // Minimum lowest level wind speed squared [ m2/s2 ]
+    static constexpr Scalar ri_shear_sqr_min        = 0.01;  // Minimum squared wind shear between lowest two levels for Richardson number [ m2/s2 ]
     static constexpr Scalar drag_scaling_factor     = 1.0;   // Scaling factor for TMS drag coefficient and stress [ no unit ]
   };
 
@@ -68,7 +68,7 @@ struct Functions
     const Scalar&                obstacle_height_min,
     const Scalar&                roughness_length_factor,
     const Scalar&                roughness_length_max,
-    const Scalar&                wspd_squared_min,
+    const Scalar&                ri_shear_sqr_min,
     const Scalar&                drag_scaling_factor,
     const view_1d<Scalar>&       ksrf,
     const view_2d<Scalar>&       tau_tms);
