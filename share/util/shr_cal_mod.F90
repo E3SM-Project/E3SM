@@ -73,6 +73,11 @@ module shr_cal_mod
   ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: shr_cal_calendarName       ! checks and returns valid cal name
+   public :: shr_cal_setInputPolicy, shr_cal_useNoleapInput, shr_cal_inputCalendar
+   public :: shr_cal_useGregorianInput, shr_cal_useInputPolicy
+   public :: shr_cal_inputGregorianSeconds
+   public :: shr_cal_inputTimeMethod
+   public :: shr_cal_resolveInputFile
    public :: shr_cal_solarDecl
   public :: shr_cal_numDaysinMonth     ! number of days in a month
   public :: shr_cal_numDaysinYear      ! number of days in a year
@@ -148,10 +153,142 @@ module shr_cal_mod
 
   !--- trigger internal debug output ---
   integer(SHR_KIND_IN) :: debug = 0
+   logical, save :: noleap_input_enabled = .false.
+   logical, save :: gregorian_input_enabled = .false.
+   logical, save :: input_policy_initialized = .false.
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 contains
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   subroutine shr_cal_resolveInputFile(filename, stream, declared, present, calendar, flavor)
+      use shr_input_calendar_mod, only : input_calendar_get_override, input_calendar_resolve
+      character(*), intent(in) :: filename, stream, declared
+      logical, intent(in) :: present
+      character(*), intent(out) :: calendar
+      character(*), optional, intent(out) :: flavor
+      character(64) :: override, provenance
+      character(1024) :: rule, error
+      character(24) :: warning
+
+      call input_calendar_get_override(filename, stream, override, rule, error)
+      if (error == '') call input_calendar_resolve(declared, present, override, calendar, provenance, error, flavor)
+      if (error /= '') call shr_sys_abort(trim(error)//'; file='//trim(filename))
+      warning = 'WARNING NOLEAP_INPUT:'
+      if (shr_cal_useGregorianInput()) warning = 'WARNING GREGORIAN_INPUT:'
+      write(s_logunit,*) trim(warning),' resolved file=',trim(filename), &
+           ' declared=',trim(declared),' calendar=',trim(calendar),' origin=',trim(provenance)
+      if (override /= '') write(s_logunit,*) trim(warning),' explicit override=',trim(rule), &
+           ' calendar=',trim(override),'; no calendar was inferred'
+   end subroutine shr_cal_resolveInputFile
+
+   subroutine shr_cal_setInputPolicy(enabled, reverse)
+      logical, intent(in) :: enabled
+      logical, optional, intent(in) :: reverse
+      logical :: reverse_enabled
+
+      reverse_enabled = .false.
+      if (present(reverse)) reverse_enabled = reverse
+      if (enabled .and. reverse_enabled) &
+           call shr_sys_abort('INPUT_CALENDAR: input calendar policies are mutually exclusive')
+      if (input_policy_initialized) then
+          if ((enabled .neqv. noleap_input_enabled) .or. &
+               (reverse_enabled .neqv. gregorian_input_enabled)) &
+                  call shr_sys_abort('NOLEAP_INPUT: input calendar policy cannot change after initialization')
+      endif
+      noleap_input_enabled = enabled
+      gregorian_input_enabled = reverse_enabled
+      input_policy_initialized = .true.
+   end subroutine shr_cal_setInputPolicy
+
+   logical function shr_cal_useNoleapInput() result(enabled)
+      enabled = noleap_input_enabled
+   end function shr_cal_useNoleapInput
+
+   logical function shr_cal_useGregorianInput() result(enabled)
+      enabled = gregorian_input_enabled
+   end function shr_cal_useGregorianInput
+
+   logical function shr_cal_useInputPolicy() result(enabled)
+      enabled = noleap_input_enabled .or. gregorian_input_enabled
+   end function shr_cal_useInputPolicy
+
+   function shr_cal_inputGregorianSeconds(ymd, seconds) result(elapsed) bind(c)
+      use iso_c_binding, only : c_int, c_double
+      integer(c_int), value :: ymd
+      real(c_double), value :: seconds
+      real(c_double) :: elapsed
+      elapsed = shr_cal_gregorianElapsedDays(ymd,seconds)*86400.0_c_double
+   end function shr_cal_inputGregorianSeconds
+
+   function shr_cal_inputCalendar(model_calendar, source_calendar) result(calendar)
+      character(*), intent(in) :: model_calendar, source_calendar
+      character(len=shr_cal_calMaxLen) :: calendar
+
+      calendar = source_calendar
+      if (gregorian_input_enabled) then
+         if (shr_cal_calendarName(model_calendar) /= shr_cal_noleap) &
+              call shr_sys_abort('GREGORIAN_INPUT: fudge_gregorian_to_noleap requires CALENDAR=NO_LEAP')
+         calendar = shr_cal_calendarName(source_calendar)
+         return
+      endif
+      if (.not. noleap_input_enabled) return
+      if (shr_cal_calendarName(model_calendar) /= shr_cal_gregorian) &
+             call shr_sys_abort('NOLEAP_INPUT: fudge_noleap_for_gregorian requires CALENDAR=GREGORIAN')
+      calendar = shr_cal_calendarName(source_calendar)
+      if (calendar == shr_cal_noleap) calendar = shr_cal_gregorian
+   end function shr_cal_inputCalendar
+
+     function shr_cal_inputTimeMethod(methods) result(method)
+       character(*), intent(in) :: methods
+       character(len=32) :: method
+       character(len=len(methods)) :: lower_methods
+       character(len=*), parameter :: whitespace = ' '//achar(9)//achar(10)//achar(13)
+       integer :: position, colon, first, last, offset, length
+
+       method = ''
+       lower_methods = shr_string_toLower(methods)
+       length = len_trim(lower_methods)
+       position = 1
+       do while (position < length)
+          offset = index(lower_methods(position:),':')
+          if (offset == 0) exit
+          colon = position + offset - 1
+          last = colon - 1
+          do while (last > 0)
+             if (index(whitespace,lower_methods(last:last)) == 0) exit
+             last = last - 1
+          enddo
+          first = last
+          do while (first > 1)
+             if (index(whitespace,lower_methods(first-1:first-1)) > 0) exit
+             first = first - 1
+          enddo
+          if (first > 0 .and. last >= first) then
+             if (lower_methods(first:last) == 'time') then
+                if (len_trim(method) > 0) then
+                   method = 'multiple'
+                   return
+                endif
+                offset = verify(lower_methods(colon+1:),whitespace)
+                if (offset == 0) then
+                   method = 'unknown'
+                   return
+                endif
+                first = colon + offset
+                offset = scan(lower_methods(first:),whitespace//'(')
+                last = length
+                if (offset > 0) last = first + offset - 2
+                if (last < first .or. last-first+1 > len(method)) then
+                   method = 'unknown'
+                   return
+                endif
+                method = lower_methods(first:last)
+             endif
+          endif
+          position = colon + 1
+       enddo
+     end function shr_cal_inputTimeMethod
 
   !===============================================================================
   !BOP ===========================================================================

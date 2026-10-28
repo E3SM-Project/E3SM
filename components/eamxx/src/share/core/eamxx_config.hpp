@@ -24,6 +24,20 @@ std::string eamxx_config_string();
 // Utils to set/get whether leap year is used or not
 bool use_leap_year ();
 void set_use_leap_year (const bool use_leap);
+bool use_noleap_input ();
+void set_use_noleap_input (bool enabled);
+bool use_gregorian_input ();
+void set_use_gregorian_input (bool enabled);
+bool use_input_calendar_policy ();
+using input_calendar_seconds = double (*)(int, double);
+void set_input_calendar_seconds(input_calendar_seconds callback);
+double gregorian_input_seconds(int date, double seconds);
+using input_calendar_resolver = int (*)(const char*, int, const char*, int, int, char*, char*, char*, char*);
+void set_input_calendar_resolver(input_calendar_resolver resolver);
+std::string resolve_input_calendar(const std::string& filename, const std::string& declared,
+                                  bool metadata_present, std::string& provenance, std::string& flavor);
+void check_input_calendar_range(const std::string& flavor, int epoch, double seconds,
+                               double offset_seconds, const std::string& context);
 
 // Allow downstream code to avoid macros
 bool constexpr is_scream_standalone () {

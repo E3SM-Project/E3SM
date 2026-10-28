@@ -21,7 +21,84 @@ _CALENDAR_CASES = (
 
 _CALENDAR_PROFILES = ("nf0", "nf1", "nv0", "nv1", "gf0", "gf1", "gv0", "gv1")
 
+_NOLEAP_INPUT_CASES = (
+    "ne4pg2_oQU480_rx1.A",
+    "T62_oQU120.CMPASO-NYF",
+    "T62_oQU240.DTESTM",
+    "f19_g16.I1850ELM",
+)
+_NOLEAP_INPUT_POSITIVE = ("daily", "subdaily", "monthly", "gregorian", "off", "default", "cycling")
+_NOLEAP_INPUT_NEGATIVE = (
+    "missing_calendar", "empty_calendar", "bad_method", "mean", "ambiguous_bounds",
+    "bad_algorithm", "bad_lower", "bad_upper", "bad_model_calendar",
+    "restart_on", "restart_off",
+)
+
+_GREGORIAN_INPUT_POSITIVE = ("daily", "subdaily", "monthly", "noleap", "off", "default", "cycling")
+_GREGORIAN_INPUT_NEGATIVE = _NOLEAP_INPUT_NEGATIVE + (
+    "unsupported_calendar", "mixed_calendar", "both_flags", "override_conflict",
+    "restart_override", "restart_missing", "restart_corrupt",
+)
+
 _TESTS = {
+
+    "e3sm_calendar_gregorian_to_noleap_smoke" : {
+        "tests" : tuple(
+            "NLF_Ld6.{}.allactive-calendar_nf1--allactive-calendar_feb--allactive-calendar_gregorian_to_noleap_{}".format(
+                _NOLEAP_INPUT_CASES[0], fixture)
+            for fixture in ("daily", "subdaily"))
+        },
+
+    "e3sm_calendar_gregorian_to_noleap_short" : {
+        "tests" : tuple(
+            "NLF_Ld6.{}.allactive-calendar_nf1--allactive-calendar_{}--allactive-calendar_gregorian_to_noleap_{}".format(
+                case, boundary, fixture)
+            for case in _NOLEAP_INPUT_CASES
+            for boundary in ("feb", "rollover")
+            for fixture in _GREGORIAN_INPUT_POSITIVE)
+        },
+
+    "e3sm_calendar_gregorian_to_noleap_negative" : {
+        "tests" : tuple(
+            "NLN_Ld6.{}.allactive-calendar_nf1--allactive-calendar_feb--allactive-calendar_gregorian_to_noleap_{}".format(
+                _NOLEAP_INPUT_CASES[0], fixture)
+            for fixture in _GREGORIAN_INPUT_NEGATIVE)
+        },
+
+    "e3sm_calendar_gregorian_to_noleap_cycle" : {
+        "tests" : tuple(
+            "NLF_Ld1460.{}.allactive-calendar_nf1--allactive-calendar_cycle--allactive-calendar_gregorian_to_noleap_cycling".format(case)
+            for case in (_NOLEAP_INPUT_CASES[0], _NOLEAP_INPUT_CASES[-1]))
+        },
+
+    "e3sm_calendar_noleap_smoke" : {
+        "tests" : tuple(
+            "NLF_Ld6.{}.allactive-calendar_gf1--allactive-calendar_feb--allactive-calendar_noleap_{}".format(
+                _NOLEAP_INPUT_CASES[0], fixture)
+            for fixture in ("daily", "subdaily"))
+        },
+
+    "e3sm_calendar_noleap_short" : {
+        "tests" : tuple(
+            "NLF_Ld6.{}.allactive-calendar_gf1--allactive-calendar_{}--allactive-calendar_noleap_{}".format(
+                case, boundary, fixture)
+            for case in _NOLEAP_INPUT_CASES
+            for boundary in ("feb", "rollover")
+            for fixture in _NOLEAP_INPUT_POSITIVE)
+        },
+
+    "e3sm_calendar_noleap_negative" : {
+        "tests" : tuple(
+            "NLN_Ld6.{}.allactive-calendar_gf1--allactive-calendar_feb--allactive-calendar_noleap_{}".format(
+                _NOLEAP_INPUT_CASES[0], fixture)
+            for fixture in _NOLEAP_INPUT_NEGATIVE)
+        },
+
+    "e3sm_calendar_noleap_cycle" : {
+        "tests" : tuple(
+            "NLF_Ld1461.{}.allactive-calendar_gf1--allactive-calendar_cycle--allactive-calendar_noleap_cycling".format(case)
+            for case in (_NOLEAP_INPUT_CASES[0], _NOLEAP_INPUT_CASES[-1]))
+        },
 
     "e3sm_calendar_smoke" : {
         "tests" : tuple(

@@ -15,6 +15,8 @@ module shr_strdata_mod
   use shr_cal_mod   , only : shr_cal_calendarname, shr_cal_timeSet
   use shr_cal_mod   , only : shr_cal_noleap, shr_cal_gregorian
   use shr_cal_mod   , only : shr_cal_date2ymd, shr_cal_ymd2date
+   use shr_cal_mod   , only : shr_cal_useNoleapInput, shr_cal_inputCalendar, shr_cal_validDate
+   use shr_cal_mod   , only : shr_cal_useGregorianInput
    use shr_cal_mod   , only : shr_cal_advDateInt
   use shr_orb_mod   , only : shr_orb_decl, shr_orb_cosz, shr_orb_undef_real
   use shr_nl_mod    , only : shr_nl_find_group_name
@@ -106,6 +108,10 @@ module shr_strdata_mod
    integer(IN)                    :: solar_ub_ymd(nStrMax) = 0, solar_ub_tod(nStrMax) = 0
    type(shr_orb_context_type)      :: solar_context
    logical                        :: solar_context_valid = .false.
+       logical                        :: input_policy_checked(nStrMax) = .false.
+       logical                        :: input_leapday_active(nStrMax) = .false.
+       integer(IN)                    :: input_gap_count(nStrMax) = 0
+       logical                        :: input_log_root = .false.
 
      ! --- model domain info, internal, public ---
      character(CL)                  :: domainFile        ! file containing domain info (set my input)
@@ -180,7 +186,7 @@ contains
         ub_ymd = ymd
         ub_tod = upper_seconds
 
-        do while (lb_tod == 0 .and. lb_ymd > SDAT%ymdLB(stream_index))
+      do while (lb_tod == 0 .and. (lb_ymd > SDAT%ymdLB(stream_index) .or. shr_cal_useGregorianInput()))
            call shr_cal_advDateInt(-1, 'days', lb_ymd, 0, candidate_ymd, candidate_tod, SDAT%calendar)
            call mapped_day_bounds(candidate_ymd, lower_seconds, upper_seconds)
            if (upper_seconds /= 86400 .or. lower_seconds >= upper_seconds) exit
@@ -222,7 +228,11 @@ contains
            integer(IN) :: mapped_ymd, year, month, day
 
            mapped_ymd = model_ymd
-           if (SDAT%stream(stream_index)%calendar == shr_cal_noleap) then
+            if (shr_cal_useGregorianInput() .and. SDAT%stream(stream_index)%calendar == shr_cal_gregorian) then
+               mapped_ymd = model_ymd + &
+               (shr_stream_inputDate(SDAT%stream(stream_index),ymd)/10000-ymd/10000)*10000
+            endif
+           if (SDAT%stream(stream_index)%calendar == shr_cal_noleap .and. .not. shr_cal_useNoleapInput()) then
               call shr_cal_date2ymd(model_ymd, year, month, day)
               if (month == 2 .and. day == 29) call shr_cal_ymd2date(year, 2, 28, mapped_ymd)
            endif
@@ -842,6 +852,8 @@ contains
     type(mct_avect)         :: avRV,avFV
     character(len=32)       :: lstr
     logical                 :: ltimers
+   logical                 :: mapped_input, leapday_active
+   integer(IN)             :: leapday_ymd
     real(R8)                :: flb,fub   ! factor for lb and ub
 
     !--- for cosz method ---
@@ -890,6 +902,7 @@ contains
 
     call MPI_COMM_SIZE(mpicom,npes,ierr)
     call MPI_COMM_RANK(mpicom,my_task,ierr)
+   SDAT%input_log_root = my_task == 0
 
     mssrmlf = .false.
 
@@ -901,6 +914,37 @@ contains
        allocate(ymdmod(SDAT%nstreams))
 
        do n = 1,SDAT%nstreams
+          mapped_input = shr_cal_useNoleapInput() .and. SDAT%calendar == shr_cal_gregorian .and. &
+               SDAT%stream(n)%calendar == shr_cal_noleap
+          if (shr_cal_useGregorianInput() .and. SDAT%stream(n)%calendar == shr_cal_gregorian .and. &
+              .not. SDAT%input_policy_checked(n)) then
+             if (trim(SDAT%tintalgo(n)) /= 'linear' .and. trim(SDAT%tintalgo(n)) /= 'coszen') then
+                call shr_sys_abort('GREGORIAN_INPUT: only linear point samples and coszen means are supported')
+             endif
+             if (my_task == 0) then
+                write(logunit,*) 'WARNING GREGORIAN_INPUT: stream ',n,' source=GREGORIAN model=NO_LEAP'
+                write(logunit,*) 'WARNING GREGORIAN_INPUT: description=',trim(SDAT%streams(n))
+                write(logunit,*) 'WARNING GREGORIAN_INPUT: algorithm=',trim(SDAT%tintalgo(n))
+                write(logunit,*) 'WARNING GREGORIAN_INPUT: retain February 29 source brackets; no model visit'
+                write(logunit,*) 'WARNING GREGORIAN_INPUT: annual integrals are NOT conserved'
+             endif
+             SDAT%input_policy_checked(n) = .true.
+          endif
+          if (mapped_input .and. .not. SDAT%input_policy_checked(n)) then
+             if (trim(SDAT%tintalgo(n)) /= 'linear' .and. trim(SDAT%tintalgo(n)) /= 'coszen') then
+                if (my_task == 0) write(logunit,*) 'ERROR NOLEAP_INPUT: stream ',n, &
+                     ' algorithm=',trim(SDAT%tintalgo(n)), ' description=',trim(SDAT%streams(n))
+                call shr_sys_abort('NOLEAP_INPUT: only linear point samples and coszen means are supported')
+             endif
+             if (my_task == 0) then
+                write(logunit,*) 'WARNING NOLEAP_INPUT: stream ',n,' source=NO_LEAP model=GREGORIAN'
+                write(logunit,*) 'WARNING NOLEAP_INPUT: description=',trim(SDAT%streams(n))
+                write(logunit,*) 'WARNING NOLEAP_INPUT: algorithm=',trim(SDAT%tintalgo(n)), &
+                     ' source fields=',trim(SDAT%stream(n)%fldListFile)
+                write(logunit,*) 'WARNING NOLEAP_INPUT: retain record dates; annual integrals are NOT conserved'
+             endif
+             SDAT%input_policy_checked(n) = .true.
+          endif
           ! ------------------------------------------------------- !
           ! tcraig, Oct 11 2010.  Mismatching calendars: 4 cases    !
           ! ------------------------------------------------------- !
@@ -957,7 +1001,7 @@ contains
                   (trim(SDAT%stream(n)%calendar) == trim(shr_cal_noleap))) then
                 ! case (1), set feb 29 = feb 28
                 call shr_cal_date2ymd (ymd,year,month,day)
-                if (month == 2 .and. day == 29) then
+                if (month == 2 .and. day == 29 .and. .not. mapped_input) then
                    call shr_cal_ymd2date(year,2,28,ymdmod(n))
                 endif
              else if ((trim(SDAT%calendar) == trim(shr_cal_noleap)) .and. &
@@ -981,6 +1025,34 @@ contains
                SDAT%avRUB(n),SDAT%ymdUB(n),SDAT%todUB(n), &
                SDAT%avRFile(n), trim(SDAT%readmode(n)), newData(n), &
                istr=trim(lstr)//'_readLBUB')
+
+            ymdmod(n) = shr_stream_inputDate(SDAT%stream(n),ymdmod(n))
+
+          if (mapped_input) then
+             year = ymd/10000
+             leapday_ymd = year*10000 + 229
+             if (newData(n) .and. shr_cal_validDate(leapday_ymd, shr_cal_gregorian)) then
+                if (SDAT%ymdLB(n) < leapday_ymd .and. SDAT%ymdUB(n) > leapday_ymd) then
+                   SDAT%input_gap_count(n) = SDAT%input_gap_count(n) + 1
+                   if (my_task == 0) then
+                      write(logunit,*) 'WARNING NOLEAP_INPUT: stream ',n,' leap-day-spanning interval'
+                      write(logunit,*) 'WARNING NOLEAP_INPUT: lower record=',SDAT%ymdLB(n),SDAT%todLB(n), &
+                           ' upper record=',SDAT%ymdUB(n),SDAT%todUB(n)
+                   endif
+                endif
+             endif
+             leapday_active = mod(ymd,10000) == 229
+             if (leapday_active .neqv. SDAT%input_leapday_active(n)) then
+                if (my_task == 0) then
+                   if (leapday_active) then
+                      write(logunit,*) 'WARNING NOLEAP_INPUT: entering February 29; stream=',n,' date=',ymd,tod
+                   else
+                      write(logunit,*) 'WARNING NOLEAP_INPUT: leaving February 29; stream=',n,' date=',ymd,tod
+                   endif
+                endif
+                SDAT%input_leapday_active(n) = leapday_active
+             endif
+          endif
 
           if (debug > 0) then
              write(logunit,*) trim(subname),' newData flag = ',n,newData(n)
@@ -1146,7 +1218,8 @@ contains
 
              call t_startf(trim(lstr)//trim(timname)//'_coszenC')
              cosz = 0.0_r8
-             if (SDAT%calendar == shr_cal_gregorian .or. SDAT%solar_context%use_equation_of_time) then
+             if (SDAT%calendar == shr_cal_gregorian .or. SDAT%solar_context%use_equation_of_time .or. &
+                (shr_cal_useGregorianInput() .and. SDAT%stream(n)%calendar == shr_cal_gregorian)) then
                 if (.not. SDAT%solar_context_valid) call shr_sys_abort('Gregorian forcing requires orbital context')
                 call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod, &
                      SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%calendar,SDAT%solar_context)
@@ -1156,7 +1229,8 @@ contains
              endif
              call t_stopf(trim(lstr)//trim(timname)//'_coszenC')
 
-             if (SDAT%calendar == shr_cal_gregorian .or. SDAT%solar_context%use_equation_of_time) then
+             if (SDAT%calendar == shr_cal_gregorian .or. SDAT%solar_context%use_equation_of_time .or. &
+                (shr_cal_useGregorianInput() .and. SDAT%stream(n)%calendar == shr_cal_gregorian)) then
                 if (newdata(n) .or. .not. SDAT%solar_cache_valid(n) .or. &
                                ymd < SDAT%solar_lb_ymd(n) .or. &
                                (ymd == SDAT%solar_lb_ymd(n) .and. tod < SDAT%solar_lb_tod(n)) .or. &
@@ -1205,7 +1279,7 @@ contains
              call t_startf(trim(lstr)//trim(timname)//'_tint')
              call shr_tInterp_getFactors(SDAT%ymdlb(n),SDAT%todlb(n),SDAT%ymdub(n),SDAT%todub(n), &
                   ymdmod(n),todmod,flb,fub, &
-                  calendar=SDAT%stream(n)%calendar,algo=trim(SDAT%tintalgo(n)))
+                  calendar=shr_cal_inputCalendar(SDAT%calendar,SDAT%stream(n)%calendar),algo=trim(SDAT%tintalgo(n)))
              if (debug > 0) then
                 write(logunit,*) trim(subname),' interp = ',n,flb,fub
              endif
@@ -1256,6 +1330,9 @@ contains
     call mct_gsmap_clean(SDAT%gsmap)
 
     do n = 1, SDAT%nstreams
+        if (SDAT%input_policy_checked(n) .and. SDAT%input_log_root) &
+           write(logunit,*) 'WARNING NOLEAP_INPUT: stream summary; stream=',n, &
+              ' leap-day intervals in this segment=',SDAT%input_gap_count(n)
        call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc_r8(n))
        call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc_r4(n))
        call pio_freedecomp(SDAT%pio_subsystem, SDAT%pio_iodesc_int(n))
@@ -1286,6 +1363,9 @@ contains
 
     SDAT%dofill = .false.
     SDAT%domaps = .false.
+   SDAT%input_policy_checked = .false.
+   SDAT%input_leapday_active = .false.
+   SDAT%input_gap_count = 0
 
   end subroutine shr_strdata_clean
 
@@ -1571,6 +1651,9 @@ contains
     SDAT%todUB = -1
     SDAT%dtmin = 1.0e30
     SDAT%dtmax = 0.0
+   SDAT%input_policy_checked = .false.
+   SDAT%input_leapday_active = .false.
+   SDAT%input_gap_count = 0
     SDAT%nxg   = 0
     SDAT%nyg   = 0
     SDAT%nzg   = 0

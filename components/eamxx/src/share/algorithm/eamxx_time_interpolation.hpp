@@ -10,6 +10,7 @@
 #include "share/data_managers/field_manager.hpp"
 
 #include "share/io/scorpio_input.hpp"
+#include <set>
 
 namespace scream{
 namespace util {
@@ -63,6 +64,7 @@ protected:
   public:
     std::string filename;
     TimeStamp   timestamp;
+    double      source_seconds = 0;
     int         time_idx;
   };
 
@@ -83,12 +85,21 @@ protected:
   // Store the timestamps associated with the two time snaps
   TimeStamp m_time0;
   TimeStamp m_time1;
+  double m_source_time0 = 0;
+  double m_source_time1 = 0;
 
   // Variables related to the case where we use data from file
   std::vector<DataFromFileTriplet>           m_file_data_triplets;
   int                                        m_triplet_idx;
   std::shared_ptr<AtmosphereInput>           m_file_data_atm_input;
   bool                                       m_is_data_from_file=false;
+  bool                                       m_uses_noleap_data=false;
+  bool                                       m_uses_gregorian_data=false;
+  bool                                       m_log_root=true;
+  bool                                       m_input_leapday_active=false;
+  int                                        m_input_gap_count=0;
+  TimeStamp                                  m_last_reported_upper;
+  std::set<std::string>                       m_validated_input_files;
 
   std::shared_ptr<ekat::logger::LoggerBase>  m_logger = console_logger(ekat::logger::LogLevel::warn);
   std::string                                m_header;

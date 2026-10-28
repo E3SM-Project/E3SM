@@ -16,5 +16,16 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Time interpolation
   CreateUnitTest(time_interpolation "time_interpolation_tests.cpp"
     LIBS eamxx_algorithm
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS "~[calendar_noleap]~[calendar_gregorian_to_noleap]")
+
+  CreateUnitTestFromExec(time_interpolation_noleap time_interpolation
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS "[calendar_noleap]"
+    LABELS calendar_noleap)
+
+  CreateUnitTestFromExec(time_interpolation_gregorian_to_noleap time_interpolation
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS "[calendar_gregorian_to_noleap]"
+    LABELS calendar_gregorian_to_noleap)
 endif()

@@ -9,6 +9,8 @@
 namespace scream {
 namespace util {
 
+bool is_leap_year (const int yy);
+
 // Micro-struct, to hold a simulation time stamp
 class TimeStamp {
 public:
@@ -59,11 +61,14 @@ public:
 
   // This method checks that time shifts forward (i.e. that seconds is positive)
   TimeStamp& operator+= (double seconds);
+  TimeStamp& advance_noleap (double seconds);
 
   // Clones the stamps and sets num steps to given value. If -1, clones num steps too
   TimeStamp clone (const int num_steps);
 
 protected:
+
+  TimeStamp& advance (double seconds, bool noleap_source);
 
   std::vector<int> m_date;  // [year, month, day]
   std::vector<int> m_time;  // [hour, min, sec]

@@ -212,6 +212,8 @@ setup_iop_data_manager ()
     m_atm_params.sublist("driver_options").get("enable_iop", false);
   EKAT_REQUIRE_MSG(enable_iop, "Error! setup_iop_data_manager() is called, but enable_iop=false "
                                "in driver_options parameters.\n");
+  EKAT_REQUIRE_MSG(not use_input_calendar_policy(),
+      "NOLEAP_INPUT: IOPDataManager has no input-calendar adapter; disable the policy and use compatible forcing.");
 
   // Params must include iop_options sublist.
   const auto iop_sublist_exists = m_atm_params.isSublist("iop_options");

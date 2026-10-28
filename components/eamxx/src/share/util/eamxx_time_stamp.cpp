@@ -155,11 +155,21 @@ TimeStamp TimeStamp::curr_month_beg () const
 }
 
 TimeStamp& TimeStamp::operator+=(double seconds) {
+  return advance(seconds,false);
+}
+
+TimeStamp& TimeStamp::advance_noleap(double seconds) {
+  return advance(seconds,true);
+}
+
+TimeStamp& TimeStamp::advance(double seconds, const bool noleap_source) {
   // Sanity checks
   EKAT_REQUIRE_MSG (seconds>=0, "Error! Cannot rewind time.\n");
   EKAT_REQUIRE_MSG(is_valid(),
       "Error! The time stamp contains uninitialized values.\n"
       "       To use this object, use operator= with a valid rhs first.\n");
+  EKAT_REQUIRE_MSG (not noleap_source or get_month()!=2 or get_day()!=29,
+      "NOLEAP_INPUT: a no-leap source epoch cannot be February 29.\n");
 
   // Allow updating with fractional seconds (useful in case of subcycling)
   // The time stamp will never print fractions, but will allow them, keeping
@@ -209,8 +219,11 @@ TimeStamp& TimeStamp::operator+=(double seconds) {
     }
   }
 
-  while (dd>days_in_month(yy,mm)) {
-    dd -= days_in_month(yy,mm);
+  const auto source_month_days = [&]() {
+    return noleap_source and mm==2 ? 28 : days_in_month(yy,mm);
+  };
+  while (dd>source_month_days()) {
+    dd -= source_month_days();
     ++mm;
     
     if (mm>12) {

@@ -30,6 +30,7 @@ module mpas_forcing
 
   private
   public :: &
+     mpas_forcing_set_input_policy, &
        mpas_forcing_init_group, &
        mpas_forcing_init_field, &
        mpas_forcing_init_field_data, &
@@ -38,7 +39,14 @@ module mpas_forcing
        mpas_forcing_write_restart_times, &
        mpas_advance_forcing_clock
 
+   logical, save :: noleap_input_policy = .false.
+
 contains
+
+   subroutine mpas_forcing_set_input_policy(enabled)
+      logical, intent(in) :: enabled
+      noleap_input_policy = enabled
+   end subroutine mpas_forcing_set_input_policy
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -106,7 +114,12 @@ contains
     type(mpas_forcing_group_type), pointer :: &
          forcingGroupNew ! a local instance of the mpas_forcing_group_type object
 
-    FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_init: startTimeStr: '//trim(startTimeStr))
+   if (noleap_input_policy) then
+      call mpas_log_write('NOLEAP_INPUT: native MPAS forcing group '//trim(forcingGroupName)// &
+         ' has no calendar adapter; use compatible forcing with the policy off', MPAS_LOG_CRIT)
+   endif
+
+   FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_init: startTimeStr: '//trim(startTimeStr))
     FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_init: forcingCycleStart: '//trim(forcingCycleStart))
     FORCING_DEBUG_WRITE('-- Forcing: mpas_forcing_init: forcingCycleDuration: '//trim(forcingCycleDuration))
 

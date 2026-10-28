@@ -667,7 +667,7 @@ CONTAINS
     oDateUB = mDateUB
     oSecUB  = mSecUB
 
-    rDateM  = real(mDate  ,R8) + real(mSec  ,R8)/spd
+   rDateM  = real(shr_stream_inputDate(stream,mDate),R8) + real(mSec,R8)/spd
     rDateLB = real(mDateLB,R8) + real(mSecLB,R8)/spd
     rDateUB = real(mDateUB,R8) + real(mSecUB,R8)/spd
     call t_stopf(trim(lstr)//'_setup')

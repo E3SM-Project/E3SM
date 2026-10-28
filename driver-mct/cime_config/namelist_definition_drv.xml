@@ -592,6 +592,55 @@
     </values>
   </entry>
 
+  <entry id="fudge_noleap_for_gregorian">
+    <type>logical</type>
+    <category>seq_infodata</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Explicitly enable no-leap input compatibility in Gregorian simulations.
+      Preserve source month/day/time labels and interpolate across the leap-day
+      gap on the Gregorian timeline. Do not change the simulation calendar or
+      source calendar metadata. Annual forcing totals are not conserved.
+      Unsupported input algorithms and cross-calendar exact restarts are errors.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="fudge_gregorian_to_noleap">
+    <type>logical</type>
+    <category>seq_infodata</category>
+    <group>seq_infodata_inparm</group>
+    <desc>Enable Gregorian input interpolation with CALENDAR=NO_LEAP. Retain
+      Gregorian source dates and February 29 interpolation brackets. The model
+      never visits February 29. Do not redistribute leap-day totals or change
+      source metadata. Mutually exclusive with fudge_noleap_for_gregorian.
+      Exact continuation requires the same policy and calendar overrides.</desc>
+    <values><value>.false.</value></values>
+  </entry>
+
+  <entry id="input_calendar_override_selectors">
+    <type>char(128)</type>
+    <category>seq_infodata</category>
+    <group>seq_infodata_inparm</group>
+    <desc>Exact file:PATH or stream:STREAM_FILE identifiers for explicit legacy calendar overrides.
+      Paths match reader identifiers literally, without globs or basename guessing.
+      Pair with input_calendar_override_calendars. Requires either input calendar policy.
+      Conflicting metadata and changes on exact continuation are errors.</desc>
+    <values><value>''</value></values>
+  </entry>
+
+  <entry id="input_calendar_override_calendars">
+    <type>char(128)</type>
+    <category>seq_infodata</category>
+    <group>seq_infodata_inparm</group>
+    <desc>Source calendars paired with input_calendar_override_selectors. Supported values
+      are noleap and gregorian and their recognized aliases. An override may fill missing
+      metadata, but cannot contradict a declared calendar.</desc>
+    <values><value>''</value></values>
+  </entry>
+
   <entry id="orb_mode">
     <type>char</type>
     <category>orbital</category>

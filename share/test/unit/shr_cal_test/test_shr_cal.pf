@@ -23,6 +23,41 @@ module test_shr_cal
 contains
 
   @Test
+  subroutine input_time_methods(this)
+    class(TestShrCal), intent(inout) :: this
+
+    @assertEqual('', trim(shr_cal_inputTimeMethod('area: mean')))
+    @assertEqual('point', trim(shr_cal_inputTimeMethod('AREA: mean TIME : POINT')))
+    @assertEqual('mean', trim(shr_cal_inputTimeMethod('time: mean (interval: 1 day)')))
+    @assertEqual('sum', trim(shr_cal_inputTimeMethod('time: sum')))
+    @assertEqual('unknown', trim(shr_cal_inputTimeMethod('time:')))
+    @assertEqual('multiple', trim(shr_cal_inputTimeMethod('time: point time: mean')))
+  end subroutine input_time_methods
+
+  @Test
+  subroutine input_calendar_aliases(this)
+    class(TestShrCal), intent(inout) :: this
+
+    @assertEqual(trim(shr_cal_noleap), trim(shr_cal_calendarName('365_day')))
+    @assertEqual(trim(shr_cal_noleap), trim(shr_cal_calendarName('no_leap')))
+    @assertEqual(trim(shr_cal_gregorian), trim(shr_cal_calendarName('standard')))
+    @assertEqual(trim(shr_cal_gregorian), trim(shr_cal_calendarName('proleptic_gregorian')))
+  end subroutine input_calendar_aliases
+
+  @Test
+  subroutine gregorian_input_seconds(this)
+    class(TestShrCal), intent(inout) :: this
+
+    @assertEqual(0._r8, shr_cal_inputGregorianSeconds(20000101,0._r8))
+    @assertEqual(59._r8*86400._r8, shr_cal_inputGregorianSeconds(20000229,0._r8))
+    @assertEqual(60._r8*86400._r8, shr_cal_inputGregorianSeconds(20000301,0._r8))
+    @assertEqual(-365._r8*86400._r8, shr_cal_inputGregorianSeconds(19990101,0._r8))
+    @assertEqual(-36524._r8*86400._r8, shr_cal_inputGregorianSeconds(19000101,0._r8))
+    @assertEqual(36525._r8*86400._r8, shr_cal_inputGregorianSeconds(21000101,0._r8))
+    @assertEqual(146097._r8*86400._r8, shr_cal_inputGregorianSeconds(24000101,0._r8))
+  end subroutine gregorian_input_seconds
+
+  @Test
   subroutine fixed_year_equinox_reference(this)
     class(TestShrCal), intent(inout) :: this
     type(shr_orb_context_type) :: context
@@ -64,6 +99,44 @@ contains
       end do
     end do
   end subroutine fixed_year_equinox_reference
+
+  @Test
+  subroutine fixed_year_rollover_continuity(this)
+    class(TestShrCal), intent(inout) :: this
+    type(shr_orb_context_type) :: context
+    integer, parameter :: years(7) = [1500,1582,1900,1999,2000,2100,2400]
+    integer :: year_index, year, mode, exponent
+    real(r8) :: delta_before, delta_after, factor_before, factor_after, eot_before, eot_after, epsilon
+
+    context%fixed_year = .true.
+    context%eccen = 0.0167_r8
+    context%obliqr = 0.409_r8
+    context%lambm0 = 0._r8
+    context%mvelpp = 1.8_r8
+    do year_index = 1,size(years)
+      year = years(year_index)
+      do mode = 0,1
+        context%use_equation_of_time = mode == 1
+        do exponent = 1,4
+          epsilon = 10._r8**(-exponent)
+          call shr_cal_solarDecl(context,year*10000+1231,86400._r8-epsilon,shr_cal_gregorian, &
+               delta_before,factor_before,eot_before)
+          call shr_cal_solarDecl(context,(year+1)*10000+101,epsilon,shr_cal_gregorian, &
+               delta_after,factor_after,eot_after)
+          @assertTrue(abs(delta_after-delta_before) < 1.e-6_r8*epsilon+1.e-12_r8)
+          @assertTrue(abs(factor_after-factor_before) < 1.e-6_r8*epsilon+1.e-12_r8)
+          @assertTrue(abs(eot_after-eot_before) < 0.01_r8*epsilon+1.e-8_r8)
+        end do
+      end do
+    end do
+    context%perpetual = .true.
+    context%perpetual_ymd = 20010101
+    call shr_cal_solarDecl(context,20001231,0._r8,shr_cal_gregorian,delta_before,factor_before,eot_before)
+    call shr_cal_solarDecl(context,20010101,0._r8,shr_cal_gregorian,delta_after,factor_after,eot_after)
+    @assertEqual(delta_before,delta_after)
+    @assertEqual(factor_before,factor_after)
+    @assertEqual(eot_before,eot_after)
+  end subroutine fixed_year_rollover_continuity
 
   @Test
   subroutine continuous_equinox_reference(this)

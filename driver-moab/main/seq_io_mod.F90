@@ -1443,6 +1443,7 @@ contains
     integer(in) :: lnx
     logical :: lwhead, lwdata
     integer :: lfile_ind
+   character(max(CL,len(rdata))) :: output_text
     character(*),parameter :: subName = '(seq_io_write_char) '
 
     !-------------------------------------------------------------------------------
@@ -1466,7 +1467,7 @@ contains
 
     if (lwhead) then
        call seq_flds_lookup(trim(dname),longname=lname,stdname=sname,units=cunit)
-       lnx = len(charvar)
+      lnx = len(output_text)
        rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_len',lnx,dimid(1))
        rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_CHAR,dimid,varid)
        rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
@@ -1476,10 +1477,9 @@ contains
     endif
 
     if (lwdata) then
-       charvar = ''
-       charvar = trim(rdata)
+      output_text = trim(rdata)
        rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(dname),varid)
-       rcode = pio_put_var(cpl_io_file(lfile_ind),varid,charvar)
+      rcode = pio_put_var(cpl_io_file(lfile_ind),varid,output_text)
     endif
 
   end subroutine seq_io_write_char

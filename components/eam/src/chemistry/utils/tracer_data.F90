@@ -164,6 +164,7 @@ contains
   subroutine trcdata_init( specifier, filename, filelist, datapath, flds, file, &
                            rmv_file, data_cycle_yr, data_fixed_ymd, data_fixed_tod, data_type )
 
+      use shr_cal_mod,     only : shr_cal_useInputPolicy
     use mo_constants,    only : d2r
     use cam_control_mod, only : nsrest
     use dyn_grid,        only : get_dyn_grid_parm
@@ -210,6 +211,8 @@ contains
     if (associated(flds)) mxnflds = size( flds )
 
     if (mxnflds < 1) return
+      if (shr_cal_useInputPolicy() .and. data_type /= 'FIXED') &
+          call endrun('NOLEAP_INPUT: time-varying EAM tracer_data has no calendar adapter; file='//trim(filename))
     
     file%remove_trc_file = rmv_file
     file%pathname = trim(datapath)

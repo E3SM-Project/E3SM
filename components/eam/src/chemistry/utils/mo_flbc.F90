@@ -11,6 +11,7 @@ module mo_flbc
   use ppgrid,       only : pcols, begchunk, endchunk, pver
   use time_manager, only : get_curr_date, get_curr_calday
   use time_utils,   only : flt_date
+   use shr_cal_mod,  only : shr_cal_useInputPolicy
   use cam_logfile,  only : iulog
   use constituents,  only : pcnst
   use constituents,  only : tracnam=>cnst_name
@@ -103,6 +104,8 @@ contains
     integer :: ierr
 
     if ( len_trim( flbc_file ) == 0 ) return
+      if (shr_cal_useInputPolicy() .and. to_upper(flbc_timing_in%type) /= 'FIXED') &
+          call endrun('NOLEAP_INPUT: time-varying EAM FLBC has no calendar adapter; file='//trim(flbc_file))
 
     call get_curr_date( yr, mon, day, ncsec )
     ncdate = yr*10000 + mon*100 + day

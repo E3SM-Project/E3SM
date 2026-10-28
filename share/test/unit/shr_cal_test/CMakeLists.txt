@@ -4,6 +4,7 @@ set(pf_sources
 
 # Sources to test.
 set(sources_needed
+  shr_input_calendar_mod.F90
   shr_cal_mod.F90
   shr_orb_mod.F90
   shr_kind_mod.F90
@@ -33,3 +34,12 @@ create_pFUnit_test(shr_cal_mod shr_cal_exe "${pf_sources}"
   "${test_sources}")
 
 declare_generated_dependencies(shr_cal_exe "${share_genf90_sources}")
+
+extract_sources("shr_input_calendar_mod.F90" "${share_sources}" input_calendar_sources)
+add_executable(shr_input_calendar_exe ${input_calendar_sources} test_input_calendar.F90)
+set(input_calendar_module_dir "${CMAKE_CURRENT_BINARY_DIR}/input_calendar_modules")
+file(MAKE_DIRECTORY "${input_calendar_module_dir}")
+set_target_properties(shr_input_calendar_exe PROPERTIES
+  Fortran_MODULE_DIRECTORY "${input_calendar_module_dir}")
+target_include_directories(shr_input_calendar_exe PRIVATE "${input_calendar_module_dir}")
+add_test(NAME shr_input_calendar COMMAND shr_input_calendar_exe)

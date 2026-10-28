@@ -30,6 +30,7 @@ set(ATM_SRC
 
 set (SCREAM_LIBS
      scream_share
+  eamxx_physics_share
      scream_control
      ${dynLibName}
      p3

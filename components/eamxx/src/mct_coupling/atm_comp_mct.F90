@@ -77,9 +77,15 @@ CONTAINS
     use iso_c_binding, only: c_funloc
     use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetOrbitalContext
     use eamxx_f2c_mod, only: scream_set_solar_callback, scream_set_solar_geometry_callback
+    use eamxx_f2c_mod, only: scream_set_input_calendar_resolver
+    use eamxx_f2c_mod, only: scream_set_input_calendar_seconds
+    use shr_input_calendar_mod, only: input_calendar_resolve_c
+    use shr_cal_mod, only: shr_cal_inputGregorianSeconds
     type(seq_infodata_type), intent(in) :: infodata
 
     call seq_infodata_GetOrbitalContext(infodata, coupled_solar_context)
+    call scream_set_input_calendar_resolver(c_funloc(input_calendar_resolve_c))
+    call scream_set_input_calendar_seconds(c_funloc(shr_cal_inputGregorianSeconds))
         coupled_solar_calendar = seq_timemgr_GetCalendar()
         if (coupled_solar_calendar == 'GREGORIAN') &
           call scream_set_solar_callback(c_funloc(evaluate_coupled_solar_decl))
@@ -121,6 +127,7 @@ CONTAINS
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
     use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
+    use shr_cal_mod,        only: shr_cal_useNoleapInput, shr_cal_useGregorianInput
     use eamxx_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
     use eamxx_cpl_indices, only: scream_set_cpl_indices, &
@@ -260,7 +267,8 @@ CONTAINS
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, run_type_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
                           INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
-                          calendar_c, caseid_c, rest_caseid_c, hostname_c, username_c, versionid_c)
+                          calendar_c, caseid_c, rest_caseid_c, hostname_c, username_c, versionid_c, &
+                          logical(shr_cal_useNoleapInput(),c_bool), logical(shr_cal_useGregorianInput(),c_bool))
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)

@@ -2,6 +2,7 @@ add_library (eamxx_physics_share
   eamxx_trcmix.cpp
   physics_share.cpp
   physics_share_f2c.F90
+  ../../physics/rrtmgp/shr_orb_mod_c2f.F90
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -20,6 +21,7 @@ target_include_directories(eamxx_physics_share PUBLIC
 target_link_libraries(eamxx_physics_share PUBLIC
   eamxx_core
   eamxx_utils
+  csm_share
   ekat::Pack)
 
 if (NOT SCREAM_LIB_ONLY)

@@ -1,6 +1,11 @@
 #include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/io/eamxx_io_utils.hpp"
+#include "share/core/eamxx_config.hpp"
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <regex>
 
 namespace scream{
 namespace util {
@@ -14,6 +19,7 @@ TimeInterpolation::TimeInterpolation(
   // Given the grid initialize field managers to store interpolation data
   m_fm_time0 = std::make_shared<FieldManager>(grid,RepoState::Closed);
   m_fm_time1 = std::make_shared<FieldManager>(grid,RepoState::Closed);
+  m_log_root = grid->get_comm().am_i_root();
 }
 /*-----------------------------------------------------------------------------------------------*/
 TimeInterpolation::TimeInterpolation(
@@ -27,6 +33,15 @@ TimeInterpolation::TimeInterpolation(
 /*-----------------------------------------------------------------------------------------------*/
 void TimeInterpolation::finalize()
 {
+  if (m_uses_noleap_data and m_log_root) {
+    m_logger->warn("WARNING NOLEAP_INPUT: EAMxx interpolator summary; adapted files=" +
+        std::to_string(m_validated_input_files.size()) + " leap-day intervals in this segment=" +
+        std::to_string(m_input_gap_count));
+  }
+        if (m_uses_gregorian_data and m_log_root) {
+          m_logger->warn("WARNING GREGORIAN_INPUT: EAMxx interpolator summary; adapted files=" +
+          std::to_string(m_validated_input_files.size()) + "; Gregorian source brackets retained");
+        }
   if (m_is_data_from_file) {
     m_file_data_atm_input = nullptr;
     m_is_data_from_file = false;
@@ -56,10 +71,32 @@ void TimeInterpolation::perform_time_interpolation(const TimeStamp& time_in)
 
   // Gather weights for interpolation.  Note, timestamp differences are integers and we need a
   // real defined weight.
-  const Real w_num = m_time1 - time_in;
-  const Real w_den = m_time1 - m_time0;
+  const Real w_num = m_uses_gregorian_data ? m_source_time1 - gregorian_input_seconds(
+      time_in.get_year()*10000+time_in.get_month()*100+time_in.get_day(),time_in.sec_of_day()) : m_time1-time_in;
+  const Real w_den = m_uses_gregorian_data ? m_source_time1-m_source_time0 : m_time1-m_time0;
   const Real weight0 = w_num/w_den;
   const Real weight1 = 1.0-weight0;
+
+  if (m_uses_noleap_data) {
+    if (time_in.days_in_curr_year()==366) {
+      const TimeStamp leapday(time_in.get_year(),2,29,0,0,0);
+      if (m_time0<leapday and leapday<m_time1 and m_last_reported_upper!=m_time1) {
+        ++m_input_gap_count;
+        m_last_reported_upper = m_time1;
+        if (m_log_root) {
+          m_logger->warn("WARNING NOLEAP_INPUT: leap-day-spanning interval; lower=" +
+              m_time0.to_string() + " upper=" + m_time1.to_string() +
+              " weights=" + std::to_string(weight0) + "," + std::to_string(weight1));
+        }
+      }
+    }
+    const bool leapday_active = time_in.get_month()==2 and time_in.get_day()==29;
+    if (leapday_active!=m_input_leapday_active and m_log_root) {
+      m_logger->warn(std::string("WARNING NOLEAP_INPUT: ") +
+          (leapday_active ? "entering" : "leaving") + " February 29; model time=" + time_in.to_string());
+    }
+    m_input_leapday_active = leapday_active;
+  }
 
   // Cycle through all stored fields and conduct the time interpolation
   for (auto name : m_field_names)
@@ -109,6 +146,7 @@ void TimeInterpolation::add_field(const Field& field_in, const bool store_shallo
  */
 void TimeInterpolation::shift_data()
 {
+  if (m_uses_gregorian_data) m_source_time0 = m_source_time1;
   for (auto name : m_field_names)
   {
     auto& field0 = m_fm_time0->get_field(name);
@@ -168,7 +206,7 @@ void TimeInterpolation::initialize_data_from_files()
   // Read first snap of data and shift to time0
   read_data();
   shift_data();
-  update_timestamp(triplet_curr.timestamp);
+  if (not m_uses_gregorian_data) update_timestamp(triplet_curr.timestamp);
   // Advance the iterator and read the next set of data for time1
   ++m_triplet_idx;
   read_data();
@@ -212,8 +250,12 @@ void TimeInterpolation::update_data_from_field(const Field& field_in)
 void TimeInterpolation::print()
 {
   printf("Settings for time interpolator...\n");
-  printf("Time 0 = %s\n",m_time0.to_string().c_str());
-  printf("Time 1 = %s\n",m_time1.to_string().c_str());
+  if (m_uses_gregorian_data) {
+    printf("Gregorian seconds since 2000-01-01: %.17g, %.17g\n",m_source_time0,m_source_time1);
+  } else {
+    printf("Time 0 = %s\n",m_time0.to_string().c_str());
+    printf("Time 1 = %s\n",m_time1.to_string().c_str());
+  }
   printf("List of fields in interpolator:\n");
   for (auto name : m_field_names)
   {
@@ -239,13 +281,55 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
   vos_type               filenames_tmp;
   std::vector<TimeStamp> timestamps_tmp;
   std::vector<int>       time_idx_tmp;
-  std::map<int,int>      map_of_times_to_vector_idx;
+  std::vector<double> source_times_tmp;
+  std::map<double,int> map_of_times_to_vector_idx;
+  std::string sequence_calendar;
   int running_idx = 0;
   for (size_t ii=0; ii<list_of_files.size(); ii++) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
     scorpio::register_file(filename,scorpio::FileMode::Read);
-    auto ts_file_start = read_timestamp(filename,"case_t0");
+    TimeStamp ts_file_start;
+    bool source_noleap = false;
+    std::string source_flavor;
+    if (use_input_calendar_policy()) {
+      EKAT_REQUIRE_MSG(not use_noleap_input() or use_leap_year(),"NOLEAP_INPUT: Gregorian model calendar is required.");
+      EKAT_REQUIRE_MSG(not use_gregorian_input() or not use_leap_year(),"GREGORIAN_INPUT: no-leap model calendar is required.");
+        const bool metadata_present = scorpio::has_attribute(filename,"time","calendar");
+        const auto declared = metadata_present ? scorpio::get_attribute<std::string>(filename,"time","calendar") : "";
+        std::string provenance;
+        const auto calendar = resolve_input_calendar(filename,declared,metadata_present,provenance,source_flavor);
+        const std::string warning = use_gregorian_input() ? "WARNING GREGORIAN_INPUT: " : "WARNING NOLEAP_INPUT: ";
+        source_noleap = calendar=="NO_LEAP";
+        if (m_log_root) {
+        m_logger->warn(warning + "resolved file=" + filename + " declared=" + declared +
+          " calendar=" + calendar + " origin=" + provenance);
+        if (provenance.find("override")!=std::string::npos) {
+          m_logger->warn(warning + "explicit file calendar override; no calendar was inferred; file=" + filename);
+        }
+        }
+      if (ii==0) {
+        sequence_calendar = calendar;
+        m_uses_noleap_data = use_noleap_input() and source_noleap;
+        m_uses_gregorian_data = use_gregorian_input() and calendar=="GREGORIAN";
+      } else {
+        EKAT_REQUIRE_MSG(calendar==sequence_calendar,
+            "NOLEAP_INPUT: mixed-calendar input sequence; file=" + filename);
+      }
+      if (m_uses_noleap_data and m_log_root) {
+        m_logger->warn("WARNING NOLEAP_INPUT: file=" + filename + " source=NO_LEAP model=GREGORIAN; "
+            "retain record dates and interpolate gaps; annual integrals are NOT conserved");
+      }
+      if (m_uses_gregorian_data and m_log_root) {
+        m_logger->warn("WARNING GREGORIAN_INPUT: file=" + filename + " source=GREGORIAN model=NO_LEAP; "
+            "retain February 29 interpolation brackets; annual integrals are NOT conserved");
+      }
+    }
+    if (not use_input_calendar_policy() and scorpio::has_attribute(filename,"time","calendar")) {
+      const auto declared = scorpio::get_attribute<std::string>(filename,"time","calendar");
+      std::string provenance;
+      resolve_input_calendar(filename,declared,true,provenance,source_flavor);
+    }
     // Gather the units of time
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
     int time_mult;
@@ -260,18 +344,78 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     } else {
       EKAT_ERROR_MSG("Error!! TimeInterpolation::set_file_triplets - unsupported units of time = (" << time_units << ") in source data file " << filename << ", supported units are: seconds, minutes, hours and days");
     }
+    double source_start = 0;
+    if (m_uses_gregorian_data or source_flavor=="STANDARD") {
+      const auto epoch = scorpio::get_attribute<std::string>(filename,"GLOBAL","case_t0");
+      std::smatch parts;
+      EKAT_REQUIRE_MSG(std::regex_match(epoch,parts,std::regex(R"((\d{4})-(\d{2})-(\d{2})-(\d{5}))")),
+          "INPUT_CALENDAR: invalid case_t0 source epoch; file=" + filename);
+      const int date = std::stoi(parts[1].str())*10000+std::stoi(parts[2].str())*100+std::stoi(parts[3].str());
+      const double seconds = std::stoi(parts[4].str());
+      if (source_flavor=="STANDARD") {
+        int units_date = date;
+        double units_seconds = seconds;
+        if (time_units.find("since")!=std::string::npos) {
+          std::smatch units_parts;
+          EKAT_REQUIRE_MSG(std::regex_match(time_units,units_parts,std::regex(
+              R"((?:seconds|minutes|hours|days) since (\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2}(?:\.\d+)?))?(?:\s*(?:Z|[+]00:00))?)")),
+              "INPUT_CALENDAR: unsupported mixed Gregorian units=" + time_units + "; file=" + filename);
+          units_date = std::stoi(units_parts[1].str())*10000+std::stoi(units_parts[2].str())*100+
+              std::stoi(units_parts[3].str());
+          units_seconds = units_parts[4].matched ? std::stoi(units_parts[4].str())*3600+
+              std::stoi(units_parts[5].str())*60+std::stod(units_parts[6].str()) : 0;
+        }
+        const auto check_offset = [&](double offset) {
+          check_input_calendar_range(source_flavor,date,seconds,offset*time_mult,"case_t0; file=" + filename);
+          check_input_calendar_range(source_flavor,units_date,units_seconds,offset*time_mult,
+              "units=" + time_units + "; file=" + filename);
+        };
+        check_offset(0);
+        const auto offsets = scorpio::get_all_times(filename);
+        EKAT_REQUIRE_MSG(not offsets.empty(),"INPUT_CALENDAR: empty source time coordinate; file=" + filename);
+        for (const auto offset : offsets) check_offset(offset);
+        if (scorpio::has_attribute(filename,"time","bounds")) {
+          const auto bounds_name = scorpio::get_attribute<std::string>(filename,"time","bounds");
+          const auto& bounds = scorpio::get_var(filename,bounds_name);
+          EKAT_REQUIRE_MSG(bounds.time_dep and bounds.dims.size()==1 and
+              scorpio::get_dimlen(filename,bounds.dims.front()->name)==2 and
+              bounds.num_records==static_cast<int>(offsets.size()),
+              "INPUT_CALENDAR: invalid source bounds shape; file=" + filename);
+          for (int record=0; record<static_cast<int>(offsets.size()); ++record) {
+            double endpoints[2];
+            scorpio::read_var(filename,bounds_name,endpoints,record);
+            for (const auto endpoint : endpoints) check_offset(endpoint);
+          }
+        }
+      }
+      source_start = gregorian_input_seconds(date,seconds);
+    }
+    if (not m_uses_gregorian_data) ts_file_start = read_timestamp(filename,"case_t0");
     // Gather information about time in this file
     if (ii==0) {
       ts_ref = ts_file_start;
     }
     const int ntime = scorpio::get_dimlen(filename,"time");
+    EKAT_REQUIRE_MSG(not use_input_calendar_policy() or ntime>0,"NOLEAP_INPUT: empty time coordinate; file=" + filename);
+    double previous_time = 0;
     for (int tt=0; tt<ntime; tt++) {
       auto time_snap = scorpio::get_time(filename,tt);
+      if (use_input_calendar_policy()) {
+        EKAT_REQUIRE_MSG(std::isfinite(time_snap*time_mult),
+            "NOLEAP_INPUT: non-finite source time coordinate; file=" + filename);
+        EKAT_REQUIRE_MSG(tt==0 or time_snap>previous_time,
+            "NOLEAP_INPUT: source time coordinate must be strictly increasing; file=" + filename);
+        previous_time = time_snap;
+      }
       TimeStamp ts_snap = ts_file_start;
-      if (time_snap>0) {
+      if (source_noleap or m_uses_gregorian_data) {
+        EKAT_REQUIRE_MSG(std::isfinite(time_snap*time_mult) and time_snap>=0,
+            "NOLEAP_INPUT: expected finite nonnegative source time offset; file=" + filename);
+        if (source_noleap) ts_snap.advance_noleap(time_snap*time_mult);
+      } else if (time_snap>0) {
         ts_snap += (time_snap*time_mult);
       }
-      auto time = ts_snap.seconds_from(ts_ref);
+      const double time = m_uses_gregorian_data ? source_start+time_snap*time_mult : ts_snap.seconds_from(ts_ref);
       // Sanity check that we don't have multiples of the same timesnap
       EKAT_REQUIRE_MSG(map_of_times_to_vector_idx.count(time)==0,"Error! TimeInterpolation::set_file_data_triplets - The same time step has been encountered more than once in the data files, please check\n"  
 		      << "    TimeStamp: " << ts_snap.to_string() << "\n"  
@@ -279,6 +423,7 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
       map_of_times_to_vector_idx.emplace(time,running_idx);
       filenames_tmp.push_back(filename);
       timestamps_tmp.push_back(ts_snap);
+      source_times_tmp.push_back(time);
       time_idx_tmp.push_back(tt);
       ++running_idx;
     }
@@ -291,11 +436,15 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     DataFromFileTriplet my_trip;
     my_trip.filename  = filenames_tmp[idx];
     my_trip.timestamp = timestamps_tmp[idx];
+    my_trip.source_seconds = source_times_tmp[idx];
     my_trip.time_idx  = time_idx_tmp[idx];
     m_file_data_triplets.push_back(my_trip);
   }
   // Finally set the iterator to point to the first triplet.
   m_triplet_idx = 0;
+  if (use_input_calendar_policy()) {
+    EKAT_REQUIRE_MSG(m_file_data_triplets.size()>=2,"INPUT_CALENDAR: interpolation requires at least two records.");
+  }
 }	
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to read a new set of data from file using the current iterator pointing to the current
@@ -314,9 +463,39 @@ void TimeInterpolation::read_data()
   }
 
   m_logger->info(m_header);
-  m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
+  if ((m_uses_noleap_data or m_uses_gregorian_data) and m_validated_input_files.count(triplet_curr.filename)==0) {
+    const std::regex time_method_pattern(R"((^|\s)time\s*:\s*([^\s:()]*))");
+    for (const auto& name : m_field_names) {
+      bool declared_point = false;
+      if (scorpio::has_attribute(triplet_curr.filename,name,"cell_methods")) {
+        auto methods = scorpio::get_attribute<std::string>(triplet_curr.filename,name,"cell_methods");
+        std::transform(methods.begin(),methods.end(),methods.begin(),
+            [](unsigned char character) { return std::tolower(character); });
+        auto method = std::sregex_iterator(methods.begin(),methods.end(),time_method_pattern);
+        if (method!=std::sregex_iterator()) {
+          declared_point = (*method)[2].str()=="point";
+          ++method;
+          EKAT_REQUIRE_MSG(declared_point and method==std::sregex_iterator(),
+              "NOLEAP_INPUT: expected a single time: point method; field=" + name +
+              " file=" + triplet_curr.filename);
+        }
+      }
+      EKAT_REQUIRE_MSG(declared_point or not scorpio::has_attribute(triplet_curr.filename,"time","bounds"),
+          "NOLEAP_INPUT: time bounds without time: point field metadata are ambiguous; field=" +
+          name + " file=" + triplet_curr.filename);
+      if (m_log_root) {
+        m_logger->warn("WARNING NOLEAP_INPUT: treating field=" + name + " as point samples; file=" +
+            triplet_curr.filename);
+      }
+    }
+    m_validated_input_files.insert(triplet_curr.filename);
+  }
+  m_logger->info("[EAMxx:time_interpolation] Reading data at time " +
+      (m_uses_gregorian_data ? std::to_string(triplet_curr.source_seconds) + " Gregorian seconds since 2000-01-01" :
+                              triplet_curr.timestamp.to_string()));
   m_file_data_atm_input->read_variables(triplet_curr.time_idx);
-  m_time1 = triplet_curr.timestamp;
+  if (m_uses_gregorian_data) m_source_time1 = triplet_curr.source_seconds;
+  else m_time1 = triplet_curr.timestamp;
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function to check the current set of interpolation data against a timestamp and, if needed,
@@ -327,6 +506,24 @@ void TimeInterpolation::read_data()
  */
 void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
 {
+  if (m_uses_gregorian_data) {
+    const double query = gregorian_input_seconds(ts_in.get_year()*10000+ts_in.get_month()*100+ts_in.get_day(),
+                                                ts_in.sec_of_day());
+    EKAT_REQUIRE_MSG(query>=m_source_time0,"GREGORIAN_INPUT: query is lower than the TimeInterpolation bounds");
+    if (query<=m_source_time1) return;
+    while (m_triplet_idx+1<static_cast<int>(m_file_data_triplets.size()) and
+           m_file_data_triplets[m_triplet_idx].source_seconds<query) ++m_triplet_idx;
+    EKAT_REQUIRE_MSG(m_file_data_triplets[m_triplet_idx].source_seconds>=query,
+        "GREGORIAN_INPUT: query is outside the bounds of the set of data files");
+    --m_triplet_idx;
+    read_data();
+    shift_data();
+    ++m_triplet_idx;
+    read_data();
+    EKAT_REQUIRE_MSG(m_source_time0<=query and query<=m_source_time1 and m_source_time0<m_source_time1,
+        "GREGORIAN_INPUT: invalid Gregorian input bracket");
+    return;
+  }
   // First check if the passed timestamp is within the bounds of time0 and time1.
   EKAT_REQUIRE_MSG(ts_in.seconds_from(m_time0) >= 0, "ERROR!!! TimeInterpolation::check_and_update_data - "
 		  << "Current timestamp of " << ts_in.to_string() << " is lower than the TimeInterpolation bounds of " << m_time0.to_string());
@@ -335,7 +532,7 @@ void TimeInterpolation::check_and_update_data(const TimeStamp& ts_in)
     // First cycle through the DataFromFileTriplet's to find a timestamp that is greater than this one.
     bool found = false;
     int step_cnt = 0; // Track how many triplets we passed to find one that worked. 
-    while (m_triplet_idx < static_cast<int>(m_file_data_triplets.size())) {
+    while (m_triplet_idx+1 < static_cast<int>(m_file_data_triplets.size())) {
       ++m_triplet_idx;
       ++step_cnt;
       auto ts_tmp = m_file_data_triplets[m_triplet_idx].timestamp;

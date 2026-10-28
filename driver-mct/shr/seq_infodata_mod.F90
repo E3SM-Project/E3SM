@@ -34,9 +34,12 @@ MODULE seq_infodata_mod
    use shr_orb_mod, only: shr_orb_context_type
    use shr_cal_mod, only: shr_cal_solarDecl
    use shr_cal_mod, only: shr_cal_validDate
+   use shr_cal_mod, only: shr_cal_setInputPolicy
+      use shr_input_calendar_mod, only: input_calendar_max_overrides, input_calendar_selector_length, &
+         input_calendar_signature_length, input_calendar_set_overrides, input_calendar_signature
    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use shr_cal_mod, only: shr_cal_calendarName, shr_cal_gregorian, &
-     shr_cal_date2julian, shr_cal_gregorianElapsedDays
+     shr_cal_date2julian, shr_cal_gregorianElapsedDays, shr_cal_noleap
 
   implicit none
 
@@ -57,6 +60,8 @@ MODULE seq_infodata_mod
   public :: seq_infodata_Exchange        ! exchange data across pes
    public :: seq_infodata_SolarDecl
    public :: seq_infodata_UseEquationOfTime
+   public :: seq_infodata_UseNoleapInput
+   public :: seq_infodata_UseGregorianInput
 
   ! !PUBLIC DATA MEMBERS:
 
@@ -110,6 +115,12 @@ MODULE seq_infodata_mod
      integer(SHR_KIND_IN)    :: orb_iyear_align ! model year associated with orb year
      character(SHR_KIND_CL)  :: orb_mode        ! orbital mode
    logical                 :: orb_use_equation_of_time = .true.
+   logical                 :: fudge_noleap_for_gregorian = .false.
+   logical                 :: fudge_gregorian_to_noleap = .false.
+   character(SHR_KIND_CS)   :: input_restart_calendar = ''
+   character(input_calendar_selector_length) :: input_calendar_override_selectors(input_calendar_max_overrides) = ''
+   character(64) :: input_calendar_override_calendars(input_calendar_max_overrides) = ''
+   character(input_calendar_signature_length) :: input_restart_overrides = ''
      real(SHR_KIND_R8)       :: orb_eccen       ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_obliq       ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_mvelp       ! See shr_orb_mod
@@ -339,6 +350,16 @@ CONTAINS
       seq_infodata_UseEquationOfTime = infodata%orb_use_equation_of_time
    end function seq_infodata_UseEquationOfTime
 
+   logical function seq_infodata_UseNoleapInput(infodata) result(enabled)
+      type(seq_infodata_type), intent(in) :: infodata
+      enabled = infodata%fudge_noleap_for_gregorian
+   end function seq_infodata_UseNoleapInput
+
+   logical function seq_infodata_UseGregorianInput(infodata) result(enabled)
+      type(seq_infodata_type), intent(in) :: infodata
+      enabled = infodata%fudge_gregorian_to_noleap
+   end function seq_infodata_UseGregorianInput
+
    subroutine seq_infodata_SolarDecl(infodata, ymd, tod, calendar, delta, eccf, eot_seconds)
     type(seq_infodata_type), intent(in) :: infodata
     integer(SHR_KIND_IN), intent(in) :: ymd
@@ -427,6 +448,15 @@ CONTAINS
     integer(SHR_KIND_IN)   :: orb_iyear_align    ! model year associated with orb year
     character(SHR_KIND_CL) :: orb_mode           ! orbital mode
    logical :: orb_use_equation_of_time
+   logical :: fudge_noleap_for_gregorian
+   logical :: fudge_gregorian_to_noleap
+   integer(SHR_KIND_IN) :: restart_input_policy
+   integer(SHR_KIND_IN) :: restart_gregorian_input_policy
+   character(input_calendar_selector_length) :: input_calendar_override_selectors(input_calendar_max_overrides)
+   character(64) :: input_calendar_override_calendars(input_calendar_max_overrides)
+   character(1024) :: input_override_error
+   logical :: check_input_overrides
+   integer :: input_override_index
     real(SHR_KIND_R8)      :: orb_obliq          ! Obliquity of orbit
     real(SHR_KIND_R8)      :: orb_eccen          ! Eccentricity of orbit
     real(SHR_KIND_R8)      :: orb_mvelp          ! Location of vernal equinox
@@ -527,7 +557,9 @@ CONTAINS
          flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
-         orb_use_equation_of_time, &
+         orb_use_equation_of_time, fudge_noleap_for_gregorian, &
+         fudge_gregorian_to_noleap, &
+         input_calendar_override_selectors, input_calendar_override_calendars, &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
          constant_zenith_deg,                              &
          wv_sat_scheme, wv_sat_transition_start,           &
@@ -597,6 +629,10 @@ CONTAINS
        perpetual_ymd         = -999
        orb_mode              = seq_infodata_orb_fixed_year
       orb_use_equation_of_time = .true.
+      fudge_noleap_for_gregorian = .false.
+      fudge_gregorian_to_noleap = .false.
+      input_calendar_override_selectors = ''
+      input_calendar_override_calendars = ''
        orb_iyear             = SHR_ORB_UNDEF_INT
        orb_iyear_align       = SHR_ORB_UNDEF_INT
        orb_obliq             = SHR_ORB_UNDEF_REAL
@@ -942,7 +978,30 @@ CONTAINS
 
        infodata%orb_mode   = orb_mode
       infodata%orb_use_equation_of_time = orb_use_equation_of_time
+      infodata%fudge_noleap_for_gregorian = fudge_noleap_for_gregorian
+       infodata%fudge_gregorian_to_noleap = fudge_gregorian_to_noleap
+       if (fudge_noleap_for_gregorian .and. fudge_gregorian_to_noleap) &
+          call shr_sys_abort('INPUT_CALENDAR: input calendar policies are mutually exclusive')
+       infodata%input_calendar_override_selectors = input_calendar_override_selectors
+       infodata%input_calendar_override_calendars = input_calendar_override_calendars
+      if (.not. (fudge_noleap_for_gregorian .or. fudge_gregorian_to_noleap) .and. &
+          (any(input_calendar_override_selectors /= '') .or. any(input_calendar_override_calendars /= ''))) &
+           call shr_sys_abort('INPUT_CALENDAR: calendar overrides require an enabled input calendar policy')
+        if (fudge_gregorian_to_noleap) then
+          write(logunit,*) 'WARNING GREGORIAN_INPUT: fudge_gregorian_to_noleap is ENABLED'
+          write(logunit,*) 'WARNING GREGORIAN_INPUT: retain Gregorian interpolation and February 29 source brackets'
+          write(logunit,*) 'WARNING GREGORIAN_INPUT: model time skips February 29; annual totals are NOT conserved'
+          write(logunit,*) 'WARNING GREGORIAN_INPUT: this is not a cross-calendar restart converter'
+        endif
+      if (fudge_noleap_for_gregorian) then
+         write(logunit,*) 'WARNING NOLEAP_INPUT: fudge_noleap_for_gregorian is ENABLED'
+         write(logunit,*) 'WARNING NOLEAP_INPUT: preserve source dates; interpolate leap-day gaps'
+         write(logunit,*) 'WARNING NOLEAP_INPUT: annual forcing totals are NOT conserved'
+         write(logunit,*) 'WARNING NOLEAP_INPUT: this is not a cross-calendar restart converter'
+      endif
 #ifdef ESMF_INTERFACE
+      if (fudge_noleap_for_gregorian .or. fudge_gregorian_to_noleap) &
+           call shr_sys_abort('NOLEAP_INPUT: compatibility requires the MCT or MOAB interface')
       if (orb_use_equation_of_time) &
            call shr_sys_abort('orb_use_equation_of_time requires the MCT or MOAB solar-context interface')
 #endif
@@ -995,8 +1054,25 @@ CONTAINS
           endif
        endif
        call shr_mpi_bcast(infodata%restart_file,mpicom)
+      restart_input_policy = 0
+      restart_gregorian_input_policy = 0
        !--- NOTE: use CPLID here because seq_io is only value on CPLID
        if (seq_comm_iamin(CPLID)) then
+          if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_noleap_input')) then
+             call seq_io_read(infodata%restart_file, pioid, restart_input_policy, 'seq_infodata_noleap_input')
+          endif
+          if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_gregorian_input')) then
+             call seq_io_read(infodata%restart_file, pioid, restart_gregorian_input_policy, &
+                  'seq_infodata_gregorian_input')
+          endif
+          if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_input_calendar')) then
+             call seq_io_read(infodata%restart_file, pioid, &
+                  infodata%input_restart_calendar, 'seq_infodata_input_calendar')
+          endif
+                 if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_input_overrides')) then
+                    call seq_io_read(infodata%restart_file, pioid, &
+                    infodata%input_restart_overrides, 'seq_infodata_input_overrides')
+                 endif
           ierr = 0
           if (seq_io_hasField(infodata%restart_file, pioid, 'seq_infodata_orb_use_equation_of_time')) then
              call seq_io_read(infodata%restart_file, pioid, ierr, 'seq_infodata_orb_use_equation_of_time')
@@ -1022,6 +1098,23 @@ CONTAINS
           call seq_io_read(infodata%restart_file,pioid,infodata%rmean_rmv_ice_runoff,'seq_infodata_rmean_rmv_ice_runoff')
        endif
        !--- Send from CPLID ROOT to GLOBALID ROOT, use bcast as surrogate
+        call shr_mpi_bcast(restart_input_policy,mpicom,pebcast=seq_comm_gloroot(CPLID))
+         call shr_mpi_bcast(restart_gregorian_input_policy,mpicom,pebcast=seq_comm_gloroot(CPLID))
+         if (restart_gregorian_input_policy /= 0 .and. restart_gregorian_input_policy /= 1) &
+            call shr_sys_abort('GREGORIAN_INPUT: invalid restart policy')
+         if ((restart_gregorian_input_policy == 1) .neqv. infodata%fudge_gregorian_to_noleap) &
+            call shr_sys_abort('GREGORIAN_INPUT: restart policy differs or reverse provenance is absent')
+        if (restart_input_policy /= 0 .and. restart_input_policy /= 1) &
+           call shr_sys_abort('NOLEAP_INPUT: invalid restart policy')
+        if (seq_comm_iamroot(ID)) then
+         if ((restart_input_policy == 1) .neqv. infodata%fudge_noleap_for_gregorian) &
+            call shr_sys_abort('NOLEAP_INPUT: restart policy differs; use startup/hybrid initialization')
+        endif
+      call shr_mpi_bcast(infodata%input_restart_calendar,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%input_restart_overrides,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%solar_phase_version,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%ocean_solar_version,mpicom,pebcast=seq_comm_gloroot(CPLID))
+      call shr_mpi_bcast(infodata%restart_solar_dt_avg,mpicom,pebcast=seq_comm_gloroot(CPLID))
        call shr_mpi_bcast(infodata%nextsw_cday,mpicom,pebcast=seq_comm_gloroot(CPLID))
       call shr_mpi_bcast(infodata%nextsw_ymd,mpicom,pebcast=seq_comm_gloroot(CPLID))
       call shr_mpi_bcast(infodata%nextsw_tod,mpicom,pebcast=seq_comm_gloroot(CPLID))
@@ -1061,6 +1154,23 @@ CONTAINS
     end if
 
     call seq_infodata_bcast(infodata,mpicom)
+   call shr_cal_setInputPolicy(infodata%fudge_noleap_for_gregorian,infodata%fudge_gregorian_to_noleap)
+   call input_calendar_set_overrides(infodata%input_calendar_override_selectors, &
+        infodata%input_calendar_override_calendars,input_override_error)
+   if (input_override_error /= '') call shr_sys_abort(trim(input_override_error))
+   check_input_overrides = infodata%read_restart
+   if (check_input_overrides) then
+      if (input_calendar_signature() /= infodata%input_restart_overrides) &
+           call shr_sys_abort('NOLEAP_INPUT: restart calendar overrides differ from the current policy')
+   endif
+   if (seq_comm_iamroot(ID)) then
+      do input_override_index = 1,input_calendar_max_overrides
+         if (infodata%input_calendar_override_selectors(input_override_index) == '') cycle
+         write(logunit,*) 'WARNING NOLEAP_INPUT: explicit calendar rule=', &
+              trim(infodata%input_calendar_override_selectors(input_override_index)), &
+              ' calendar=',trim(infodata%input_calendar_override_calendars(input_override_index))
+      enddo
+   endif
 
     ! If constant_zenith_deg is positive then set the corresponding module
     ! variable in shr_orb_mod to override behavior of shr_orb_cosz()
@@ -1085,7 +1195,7 @@ CONTAINS
 
     ! !USES:
 
-    use seq_timemgr_mod, only : seq_timemgr_pause_active
+   use seq_timemgr_mod, only : seq_timemgr_pause_active, seq_timemgr_GetCalendar
 
     ! !INPUT/OUTPUT PARAMETERS:
 
@@ -1098,6 +1208,22 @@ CONTAINS
 
     call seq_comm_setptrs(ID, mpicom=mpicom)
     call seq_infodata_bcast(infodata, mpicom)
+       if (infodata%fudge_gregorian_to_noleap) then
+        if (seq_timemgr_GetCalendar() /= shr_cal_noleap) &
+           call shr_sys_abort('GREGORIAN_INPUT: fudge_gregorian_to_noleap requires CALENDAR=NO_LEAP')
+        if (infodata%read_restart .and. trim(infodata%input_restart_calendar) /= shr_cal_noleap) &
+           call shr_sys_abort('GREGORIAN_INPUT: cross-calendar or unmarked exact restart is unsupported')
+       endif
+       if (infodata%fudge_noleap_for_gregorian) then
+        if (seq_timemgr_GetCalendar() /= shr_cal_gregorian) &
+           call shr_sys_abort('NOLEAP_INPUT: fudge_noleap_for_gregorian requires CALENDAR=GREGORIAN')
+        if (infodata%read_restart) then
+         if (trim(infodata%input_restart_calendar) /= shr_cal_gregorian) &
+            call shr_sys_abort('NOLEAP_INPUT: cross-calendar or unmarked exact restart is unsupported')
+         if (seq_comm_iamroot(ID)) write(logunit,*) &
+            'WARNING NOLEAP_INPUT: Gregorian restart calendar and input policy validated'
+        endif
+       endif
 
   END SUBROUTINE seq_infodata_Init2
 
@@ -2302,6 +2428,11 @@ CONTAINS
     call shr_mpi_bcast(infodata%orb_iyear_align,         mpicom)
     call shr_mpi_bcast(infodata%orb_mode,                mpicom)
    call shr_mpi_bcast(infodata%orb_use_equation_of_time, mpicom)
+   call shr_mpi_bcast(infodata%fudge_noleap_for_gregorian, mpicom)
+   call shr_mpi_bcast(infodata%fudge_gregorian_to_noleap, mpicom)
+   call shr_mpi_bcast(infodata%input_calendar_override_selectors, mpicom)
+   call shr_mpi_bcast(infodata%input_calendar_override_calendars, mpicom)
+   call shr_mpi_bcast(infodata%input_restart_calendar, mpicom)
     call shr_mpi_bcast(infodata%orb_eccen,               mpicom)
     call shr_mpi_bcast(infodata%orb_obliq,               mpicom)
     call shr_mpi_bcast(infodata%orb_mvelp,               mpicom)

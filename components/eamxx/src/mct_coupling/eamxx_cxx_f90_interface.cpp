@@ -7,8 +7,8 @@
 #include "physics/register_physics.hpp"
 #ifdef EAMXX_HAS_RRTMGP
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
-#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #endif
+#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "control/register_surface_coupling.hpp"
 
@@ -138,7 +138,9 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const char* rest_caseid,
                                  const char* hostname,
                                  const char* username,
-                                 const char* versionid)
+                                 const char* versionid,
+                                 const bool noleap_input_policy,
+                                 const bool gregorian_input_policy)
 {
   using namespace scream;
   using namespace scream::control;
@@ -165,6 +167,11 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
           "   - input name : " + cal + "\n"
           "   - valid names: NO_LEAP, GREGORIAN\n");
     }
+
+    scream::set_use_noleap_input(false);
+    scream::set_use_gregorian_input(false);
+    scream::set_use_noleap_input(noleap_input_policy);
+    scream::set_use_gregorian_input(gregorian_input_policy);
 
     // Create a parameter list for inputs
     ekat::ParameterList scream_params("Scream Parameters");
@@ -282,17 +289,19 @@ void scream_init_atm ()
 }
 
 void scream_set_solar_callback(bool (*callback)(int, double, double*, double*)) {
-#ifdef EAMXX_HAS_RRTMGP
   shr_orb_set_decl_callback_c2f(callback);
-#endif
+}
+
+void scream_set_input_calendar_resolver(scream::input_calendar_resolver callback) {
+  scream::set_input_calendar_resolver(callback);
+}
+
+void scream_set_input_calendar_seconds(scream::input_calendar_seconds callback) {
+  scream::set_input_calendar_seconds(callback);
 }
 
 void scream_set_solar_geometry_callback(bool (*callback)(int, double, double*, double*, double*), bool enabled) {
-#ifdef EAMXX_HAS_RRTMGP
   shr_orb_set_geometry_callback_c2f(callback, enabled);
-#else
-  EKAT_REQUIRE_MSG(!enabled, "Equation of time requires the EAMxx shared solar-geometry bridge.");
-#endif
 }
 
 /*===============================================================================================*/
@@ -327,10 +336,8 @@ void scream_finalize (/* args ? */) {
     // Get the AD, and finalize it
     auto& ad = get_ad_nonconst();
     ad.finalize();
-  #ifdef EAMXX_HAS_RRTMGP
     shr_orb_set_decl_callback_c2f(nullptr);
     shr_orb_set_geometry_callback_c2f(nullptr, false);
-  #endif
 
     // Clean up the context
     // Note: doing the cleanup here via

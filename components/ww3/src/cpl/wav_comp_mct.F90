@@ -200,6 +200,7 @@
       use shr_mpi_mod      , only : shr_mpi_bcast
 
       use shr_const_mod    , only : shr_const_rhofw
+      use shr_cal_mod      , only : shr_cal_useInputPolicy
 
 !
       implicit none
@@ -311,7 +312,9 @@ CONTAINS
       ! Initialize mpi
       !--------------------------------------------------------------------
 
-      call seq_cdata_setptrs(cdata, id=compid, mpicom=mpi_comm, &
+      if (shr_cal_useInputPolicy()) &
+         call shr_sys_abort('NOLEAP_INPUT: WW3 native input has no calendar adapter; use compatible forcing with policy off')
+       call seq_cdata_setptrs(cdata, id=compid, mpicom=mpi_comm, &
            gsmap=gsmap, dom=dom, infodata=infodata)
       inst_name   = seq_comm_name(compid)
       inst_index  = seq_comm_inst(compid)

@@ -19,14 +19,16 @@ interface
                                          case_start_ymd,case_start_tod, &
                                          calendar_name, &
                                          caseid, rest_caseid, hostname, username, &
-                                         versionid) bind(c)
-    use iso_c_binding, only: c_int, c_char
+                                         versionid, noleap_input_policy, gregorian_input_policy) bind(c)
+    use iso_c_binding, only: c_int, c_char, c_bool
     !
     ! Input(s)
     !
     integer (kind=c_int), value, intent(in) :: f_comm, atm_id, run_type_c
     integer (kind=c_int),  value, intent(in) :: run_start_tod, run_start_ymd
     integer (kind=c_int),  value, intent(in) :: case_start_tod, case_start_ymd
+    logical(c_bool), value, intent(in) :: noleap_input_policy
+    logical(c_bool), value, intent(in) :: gregorian_input_policy
     character(kind=c_char), target, intent(in) :: yaml_fname(*), atm_log_fname(*), calendar_name(*), &
                                                   caseid(*), rest_caseid(*), hostname(*), username(*), &
                                                   versionid(*)
@@ -109,6 +111,16 @@ interface
     use iso_c_binding, only: c_funptr
     type(c_funptr), value :: callback
   end subroutine scream_set_solar_callback
+
+  subroutine scream_set_input_calendar_resolver(callback) bind(c)
+    use iso_c_binding, only: c_funptr
+    type(c_funptr), value :: callback
+  end subroutine scream_set_input_calendar_resolver
+
+  subroutine scream_set_input_calendar_seconds(callback) bind(c)
+    use iso_c_binding, only: c_funptr
+    type(c_funptr), value :: callback
+  end subroutine scream_set_input_calendar_seconds
 
   subroutine scream_set_solar_geometry_callback(callback, enabled) bind(c)
     use iso_c_binding, only: c_funptr, c_bool

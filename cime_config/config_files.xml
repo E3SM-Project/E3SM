@@ -328,6 +328,7 @@
     <type>char</type>
     <values>
       <value component="any">$CIMEROOT/CIME/SystemTests</value>
+      <value component="allactive">$SRCROOT/cime_config/SystemTests</value>
       <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/SystemTests</value>
       <value component="scream">$COMP_ROOT_DIR_ATM/cime_config/SystemTests</value>
     </values>

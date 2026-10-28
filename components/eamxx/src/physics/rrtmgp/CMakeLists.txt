@@ -57,7 +57,6 @@ target_include_directories(eamxx_rrtmgp_interface SYSTEM PUBLIC
 
 set(SCREAM_RRTMGP_SOURCES
   eamxx_rrtmgp_process_interface.cpp
-  shr_orb_mod_c2f.F90
 )
 
 add_library(scream_rrtmgp ${SCREAM_RRTMGP_SOURCES})

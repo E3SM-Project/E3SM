@@ -2,6 +2,7 @@ module elm_time_manager
 
    use shr_kind_mod, only: r8 => shr_kind_r8
    use shr_sys_mod , only: shr_sys_abort
+   use shr_cal_mod , only: shr_cal_useNoleapInput, shr_cal_useGregorianInput
    use spmdMod     , only: masterproc
    use elm_varctl  , only: iulog
    use elm_varcon  , only: isecspday
@@ -470,6 +471,16 @@ contains
          flag_values=(/ noleap, gregorian /), ifill_value=uninit_int, &
          interpinic_flag='skip', readvar=readvar, data=rst_caltype)
     if (flag == 'read') then
+       if (shr_cal_useGregorianInput()) then
+          if (.not. readvar .or. rst_caltype /= noleap .or. calendar /= NO_LEAP_C) &
+             call shr_sys_abort('GREGORIAN_INPUT: ELM cross-calendar or unmarked exact restart is unsupported')
+          if (masterproc) write(iulog,*) 'WARNING GREGORIAN_INPUT: ELM NO_LEAP restart calendar validated'
+       endif
+           if (shr_cal_useNoleapInput()) then
+            if (.not. readvar .or. rst_caltype /= gregorian .or. calendar /= GREGORIAN_C) &
+               call shr_sys_abort('NOLEAP_INPUT: ELM cross-calendar or unmarked exact restart is unsupported')
+            if (masterproc) write(iulog,*) 'WARNING NOLEAP_INPUT: ELM Gregorian restart calendar validated'
+           endif
        if ( rst_caltype == noleap ) then
           calendar = NO_LEAP_C
        else if ( rst_caltype == gregorian ) then

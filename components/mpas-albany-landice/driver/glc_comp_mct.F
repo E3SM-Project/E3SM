@@ -23,6 +23,8 @@ module glc_comp_mct
   use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
   use shr_file_mod
   use shr_cal_mod,       only : shr_cal_date2ymd
+   use shr_cal_mod,       only : shr_cal_useInputPolicy
+   use mpas_forcing,      only : mpas_forcing_set_input_policy
   use shr_sys_mod
   use shr_taskmap_mod,   only : shr_taskmap_write
   use shr_pio_mod
@@ -232,7 +234,8 @@ contains
 
     errorCode = 0
 
-    call seq_cdata_setptrs(cdata_g, ID=glcID, mpicom=mpicom_g, &
+   call mpas_forcing_set_input_policy(shr_cal_useInputPolicy())
+   call seq_cdata_setptrs(cdata_g, ID=glcID, mpicom=mpicom_g, &
          gsMap=gsMap_g, dom=dom_g, infodata=infodata)
 
     MALI_MCT_glcID =  glcID  ! task number

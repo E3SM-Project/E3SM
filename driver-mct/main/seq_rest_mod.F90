@@ -19,6 +19,7 @@
 ! !INTERFACE: ------------------------------------------------------------------
 
 module seq_rest_mod
+   use shr_input_calendar_mod, only: input_calendar_signature
 
   ! !USES:
 
@@ -43,9 +44,12 @@ module seq_rest_mod
   ! "infodata" gathers various control flags into one datatype
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getData
    use seq_infodata_mod, only: seq_infodata_UseEquationOfTime
+   use seq_infodata_mod, only: seq_infodata_UseNoleapInput
+   use seq_infodata_mod, only: seq_infodata_UseGregorianInput
 
   ! clock & alarm routines
   use seq_timemgr_mod, only: seq_timemgr_type, seq_timemgr_EClockGetData
+   use seq_timemgr_mod, only: seq_timemgr_GetCalendar
 
   ! lower level io routines
   use seq_io_mod, only: seq_io_read, seq_io_write, seq_io_enddef
@@ -533,6 +537,14 @@ contains
          call seq_io_write(rest_file,1,'seq_infodata_solar_time_version',whead=whead,wdata=wdata)
              call seq_io_write(rest_file,merge(1,0,seq_infodata_UseEquationOfTime(infodata)), &
                'seq_infodata_orb_use_equation_of_time',whead=whead,wdata=wdata)
+            call seq_io_write(rest_file,merge(1,0,seq_infodata_UseNoleapInput(infodata)), &
+               'seq_infodata_noleap_input',whead=whead,wdata=wdata)
+                  call seq_io_write(rest_file,merge(1,0,seq_infodata_UseGregorianInput(infodata)), &
+                         'seq_infodata_gregorian_input',whead=whead,wdata=wdata)
+            call seq_io_write(rest_file,trim(seq_timemgr_GetCalendar()), &
+               'seq_infodata_input_calendar',whead=whead,wdata=wdata)
+                  call seq_io_write(rest_file,input_calendar_signature(), &
+                         'seq_infodata_input_overrides',whead=whead,wdata=wdata)
           call seq_infodata_GetData(infodata, nextsw_ymd=ivar, nextsw_tod=rvar, nextsw_valid=solar_time_valid)
           call seq_io_write(rest_file,ivar,'seq_infodata_nextsw_ymd',whead=whead,wdata=wdata)
           call seq_io_write(rest_file,rvar,'seq_infodata_nextsw_tod',whead=whead,wdata=wdata)

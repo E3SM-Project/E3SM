@@ -31,6 +31,8 @@ module shr_stream_mod
   use shr_mpi_mod    ! shared mpi
   use shr_file_mod   ! file methods
   use shr_cal_mod    ! calendar methods
+   use shr_input_calendar_mod, only : input_calendar_check_times, input_calendar_check_date
+   use shr_input_calendar_mod, only : input_calendar_flavor, input_calendar_check_range
 
 !  use shr_log_mod, only : s_loglev   => shr_log_Level
   use shr_log_mod, only : s_logunit  => shr_log_Unit
@@ -56,6 +58,7 @@ module shr_stream_mod
   public :: shr_stream_default           ! set default values
   public :: shr_stream_parseInput        ! extract fileName,yearAlign, etc. from a string
   public :: shr_stream_findBounds        ! return lower/upper bounding date info
+   public :: shr_stream_inputDate
   public :: shr_stream_getFileFieldList  ! return input-file field name list
   public :: shr_stream_getModelFieldList ! return model      field name list
   public :: shr_stream_getFileFieldName  ! return k-th input-file field name
@@ -120,6 +123,7 @@ module shr_stream_mod
      integer  (SHR_KIND_IN)    :: nFiles         ! number of data files
      character(SHR_KIND_CS)    :: dataSource     ! meta data identifying data source
      character(SHR_KIND_CL)    :: filePath       ! remote location of data files
+   character(1024)          :: input_stream = ''
      type(shr_stream_fileType), allocatable :: file(:) ! data specific to each file
 
      !--- specifies how model dates align with data dates ---
@@ -212,6 +216,7 @@ contains
     write(s_logunit,F00) 'Reading file ',trim(infoFile)
 
     call shr_stream_default(strm)
+   strm%input_stream = infoFile
 
     strm%yearFirst        = yearFirst
     strm%yearLast         = yearLast
@@ -1088,6 +1093,7 @@ contains
     end if
 
     if (strm%found_lvd) then
+       if (shr_cal_useGregorianInput() .and. strm%calendar == shr_cal_gregorian) mYear = dYear
        k = strm%k_lvd
        n = strm%n_lvd
        rDatelvd = strm%file(k)%date(n) + strm%file(k)%secs(n)/spd ! LVD date + frac day
@@ -1180,6 +1186,7 @@ contains
           call shr_cal_date2ymd(dDateLB,yy,mm,dd)
           yy = yy + (mYear-dYear-nYears)
           call shr_cal_ymd2date(yy,mm,dd,mDateLB)
+          mDateLB = cycle_input_date(dDateLB,mDateLB,-1)
           secLB   = strm%file(k_lb)%secs(n_lb)
           fileLB  = strm%file(k_lb)%name
 
@@ -1247,6 +1254,7 @@ contains
           call shr_cal_date2ymd(dDateUB,yy,mm,dd)
           yy = yy + (mYear-dYear+nYears)
           call shr_cal_ymd2date(yy,mm,dd,mDateUB)
+          mDateUB = cycle_input_date(dDateUB,mDateUB,1)
           secUB   = strm%file(k_ub)%secs(n_ub)
           fileUB  = strm%file(k_ub)%name
           !         write(s_logunit,*)'tcx fb4 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
@@ -1353,6 +1361,7 @@ contains
                 call shr_cal_date2ymd(dDateUB,yy,mm,dd)
                 yy = yy + (mYear-dYear+nYears)
                 call shr_cal_ymd2date(yy,mm,dd,mDateUB)
+                mDateUB = cycle_input_date(dDateUB,mDateUB,1)
                 secUB   = strm%file(k_ub)%secs(n_ub)
                 fileUB  = strm%file(k_ub)%name
                 !               write(s_logunit,*)'tcx fb6 ',n_lb,mDateLB,secLB,n_ub,mDateUB,secUB
@@ -1404,7 +1413,38 @@ contains
     call shr_stream_abort(trim(subName)//' ERROR: findBounds failed')
     return
 
+   contains
+
+      integer function cycle_input_date(source_date, legacy_date, cycles) result(date)
+          integer, intent(in) :: source_date, legacy_date, cycles
+          real(SHR_KIND_R8) :: cycle_days, seconds
+          date = legacy_date
+          if (.not. shr_cal_useGregorianInput() .or. strm%calendar /= shr_cal_gregorian) return
+          cycle_days = shr_cal_gregorianElapsedDays(dDateL,0.0_SHR_KIND_R8) - &
+                              shr_cal_gregorianElapsedDays(dDateF,0.0_SHR_KIND_R8)
+          call shr_cal_advDate(real(cycles,SHR_KIND_R8)*cycle_days,'days',source_date,0.0_SHR_KIND_R8, &
+                  date,seconds,shr_cal_gregorian)
+      end function cycle_input_date
+
   end subroutine shr_stream_findBounds
+
+   integer function shr_stream_inputDate(strm,model_date) result(date)
+      type(shr_stream_streamType), intent(in) :: strm
+      integer, intent(in) :: model_date
+      integer :: source_year, years
+
+      date = model_date
+      if (.not. shr_cal_useGregorianInput() .or. strm%calendar /= shr_cal_gregorian) return
+      years = strm%yearLast-strm%yearFirst+1
+      if (years < 1) call shr_stream_abort('GREGORIAN_INPUT: invalid source-year range')
+      source_year = model_date/10000-strm%yearAlign
+      if (trim(strm%taxMode) == shr_stream_taxis_cycle) source_year = modulo(source_year,years)
+      source_year = source_year+strm%yearFirst
+      date = source_year*10000+modulo(model_date,10000)
+      if (.not. shr_cal_validDate(date,shr_cal_gregorian)) then
+          call shr_stream_abort('GREGORIAN_INPUT: invalid aligned source query date')
+      endif
+   end function shr_stream_inputDate
 
   !===============================================================================
   !BOP ===========================================================================
@@ -1443,7 +1483,12 @@ contains
     integer(SHR_KIND_IN)   :: lrc
     integer(SHR_KIND_IN)   :: fid,vid,ndims,rcode
     integer(SHR_KIND_IN),allocatable :: dids(:)
-    character(SHR_KIND_CS) :: units,calendar
+   character(SHR_KIND_CS) :: units,calendar,resolved_calendar
+   character(64) :: source_flavor
+   character(SHR_KIND_CL) :: bounds_name
+   integer :: bounds_id, bounds_dims(2), bounds_lengths(2), bounds_ndims
+   real(SHR_KIND_R8), allocatable :: bounds_values(:,:)
+   character(1024) :: input_error
     character(SHR_KIND_CS) :: bunits        ! time units (days,secs,...)
     integer(SHR_KIND_IN)   :: bdate         ! base date: calendar date
     real(SHR_KIND_R8)      :: bsec          ! base date: elapsed secs
@@ -1459,6 +1504,11 @@ contains
     lrc = 0
 
     !--- need to read in this data ---
+   if (shr_cal_useInputPolicy()) then
+      call shr_stream_getCalendar(strm,k,resolved_calendar,source_flavor)
+      if (trim(resolved_calendar) /= trim(strm%calendar)) &
+         call shr_sys_abort('NOLEAP_INPUT: mixed-calendar stream; file='//trim(strm%file(k)%name))
+   endif
     call shr_stream_getFile(strm%filePath,strm%file(k)%name,fileName)
     rCode = nf90_open(fileName,nf90_nowrite,fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
@@ -1466,6 +1516,8 @@ contains
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
     rCode = nf90_inquire_variable(fid,vid,ndims=ndims)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable1')
+      if (shr_cal_useInputPolicy() .and. ndims /= 1) &
+          call shr_sys_abort('NOLEAP_INPUT: a one-dimensional time coordinate is required; file='//trim(fileName))
     allocate(dids(ndims))
     rCode = nf90_inquire_variable(fid,vid,dimids=dids)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable2')
@@ -1480,27 +1532,72 @@ contains
     calendar = ' '
     rCode = nf90_get_att(fid, vid, 'units', units)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att units')
-    rCode = nf90_inquire_attribute(fid, vid, 'calendar')
-    if (rCode == nf90_noerr) then
-       rCode = nf90_get_att(fid, vid, 'calendar', calendar)
-       if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
+   if (shr_cal_useInputPolicy()) then
+       calendar = resolved_calendar
     else
-       calendar = trim(shr_cal_noleap)
+       rCode = nf90_inquire_attribute(fid, vid, 'calendar')
+       if (rCode == nf90_noerr) then
+          rCode = nf90_get_att(fid, vid, 'calendar', calendar)
+          if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
+       else
+          calendar = trim(shr_cal_noleap)
+       endif
     endif
     n = len_trim(units)
-    if (ichar(units(n:n)) == 0 ) units(n:n) = ' '
+    if (n > 0) then
+       if (ichar(units(n:n)) == 0) units(n:n) = ' '
+    endif
     n = len_trim(calendar)
-    if (ichar(calendar(n:n)) == 0 ) calendar(n:n) = ' '
+    if (n > 0) then
+       if (ichar(calendar(n:n)) == 0) calendar(n:n) = ' '
+    endif
     call shr_string_leftalign_and_convert_tabs(units)
     call shr_string_leftalign_and_convert_tabs(calendar)
+   if (.not. shr_cal_useInputPolicy()) source_flavor = input_calendar_flavor(calendar)
     call shr_string_parseCFtunit(units,bunits,bdate,bsec)
     strm%calendar = trim(shr_cal_calendarName(trim(calendar)))
+   if (shr_cal_useInputPolicy()) then
+       call input_calendar_check_date(bdate,bsec,calendar,input_error)
+       if (input_error /= '') call shr_sys_abort(trim(input_error)//'; file='//trim(fileName))
+    endif
 
     allocate(tvar(nt))
     rcode = nf90_get_var(fid,vid,tvar)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_var')
+    call input_calendar_check_range(source_flavor,bdate,bsec,bunits,tvar,input_error)
+    if (input_error /= '') call shr_sys_abort(trim(input_error)//'; file='//trim(fileName))
+    if (source_flavor == 'STANDARD') then
+       bounds_name = ''
+       rcode = nf90_get_att(fid,vid,'bounds',bounds_name)
+       if (rcode /= nf90_noerr .and. rcode /= nf90_enotatt) &
+            call shr_sys_abort('INPUT_CALENDAR: cannot read bounds metadata; file='//trim(fileName))
+       if (rcode == nf90_noerr) then
+          rcode = nf90_inq_varid(fid,trim(bounds_name),bounds_id)
+          if (rcode /= nf90_noerr) call shr_sys_abort('INPUT_CALENDAR: missing bounds; file='//trim(fileName))
+          rcode = nf90_inquire_variable(fid,bounds_id,ndims=bounds_ndims)
+          if (rcode /= nf90_noerr .or. bounds_ndims /= 2) &
+               call shr_sys_abort('INPUT_CALENDAR: invalid bounds dimensions; file='//trim(fileName))
+          rcode = nf90_inquire_variable(fid,bounds_id,dimids=bounds_dims)
+          if (rcode /= nf90_noerr) call shr_sys_abort('INPUT_CALENDAR: cannot inquire bounds; file='//trim(fileName))
+          do n = 1,2
+             rcode = nf90_inquire_dimension(fid,bounds_dims(n),len=bounds_lengths(n))
+             if (rcode /= nf90_noerr) call shr_sys_abort('INPUT_CALENDAR: cannot size bounds; file='//trim(fileName))
+          end do
+          allocate(bounds_values(bounds_lengths(1),bounds_lengths(2)))
+          rcode = nf90_get_var(fid,bounds_id,bounds_values)
+          if (rcode /= nf90_noerr) call shr_sys_abort('INPUT_CALENDAR: cannot read bounds; file='//trim(fileName))
+          call input_calendar_check_range(source_flavor,bdate,bsec,bunits, &
+               reshape(bounds_values,[size(bounds_values)]),input_error)
+          if (input_error /= '') call shr_sys_abort(trim(input_error)//'; bounds; file='//trim(fileName))
+          deallocate(bounds_values)
+       end if
+    end if
     rCode = nf90_close(fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
+   if (shr_cal_useInputPolicy()) then
+       call input_calendar_check_times(tvar,input_error)
+       if (input_error /= '') call shr_sys_abort(trim(input_error)//'; file='//trim(fileName))
+    endif
     do n = 1,nt
        call shr_cal_advDate(tvar(n),bunits,bdate,bsec,ndate,nsec,calendar)
        strm%file(k)%date(n) = ndate
@@ -1920,7 +2017,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine shr_stream_getCalendar(strm,k,calendar)
+   subroutine shr_stream_getCalendar(strm,k,calendar,source_flavor)
 
     use netcdf
 
@@ -1929,11 +2026,17 @@ contains
     type(shr_stream_streamType),intent(in)  :: strm     ! data stream
     integer(SHR_KIND_IN)       ,intent(in)  :: k        ! file to query
     character(*)               ,intent(out) :: calendar ! calendar name
+   character(*), optional, intent(out) :: source_flavor
 
     !EOP
 
-    integer(SHR_KIND_IN)   :: fid, vid, n
+   integer(SHR_KIND_IN)   :: fid, vid, n, field_id, field_count
     character(SHR_KIND_CL) :: fileName,strmfile,lcal
+   character(SHR_KIND_CL) :: field_name
+   character(len=2048) :: cell_methods
+   character(len=32) :: time_method
+   character(SHR_KIND_CL) :: time_bounds
+   logical :: calendar_present
     integer(SHR_KIND_IN)   :: rCode
     character(*),parameter :: subName = '(shr_stream_getCalendar) '
 
@@ -1951,16 +2054,60 @@ contains
     rCode = nf90_inq_varid(fid,trim(strm%domTvarName),vid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
     rCode = nf90_inquire_attribute(fid, vid, 'calendar')
+   calendar_present = rCode == nf90_noerr
     if (rCode == nf90_noerr) then
        rCode = nf90_get_att(fid, vid, 'calendar', lcal)
        if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_get_att calendar')
     else
-       lcal = trim(shr_cal_noleap)
+       if (rCode /= nf90_enotatt) call shr_sys_abort('NOLEAP_INPUT: cannot inquire calendar; file='//trim(fileName))
+      if (.not. shr_cal_useInputPolicy()) lcal = trim(shr_cal_noleap)
     endif
-    n = len_trim(lcal)
-    if (ichar(lcal(n:n)) == 0 ) lcal(n:n) = ' '
-    call shr_string_leftalign_and_convert_tabs(lcal)
-    calendar = trim(shr_cal_calendarName(trim(lcal)))
+   if (shr_cal_useInputPolicy()) then
+      call shr_cal_resolveInputFile(trim(fileName),trim(strm%input_stream),lcal,calendar_present,calendar,source_flavor)
+    else
+       n = len_trim(lcal)
+       if (n > 0) then
+          if (ichar(lcal(n:n)) == 0) lcal(n:n) = ' '
+       endif
+       call shr_string_leftalign_and_convert_tabs(lcal)
+       calendar = trim(shr_cal_calendarName(trim(lcal)))
+      if (present(source_flavor)) source_flavor = input_calendar_flavor(lcal)
+    endif
+       if ((shr_cal_useNoleapInput() .and. calendar == shr_cal_noleap) .or. &
+          (shr_cal_useGregorianInput() .and. calendar == shr_cal_gregorian)) then
+       if (shr_cal_useGregorianInput()) then
+          write(s_logunit,*) 'WARNING GREGORIAN_INPUT: file=',trim(fileName),' calendar=',trim(calendar)
+       else
+          write(s_logunit,*) 'WARNING NOLEAP_INPUT: file=',trim(fileName),' calendar=NO_LEAP'
+       endif
+          time_bounds = ''
+          rCode = nf90_get_att(fid,vid,'bounds',time_bounds)
+          if (rCode /= nf90_noerr .and. rCode /= nf90_enotatt) &
+          call shr_sys_abort('NOLEAP_INPUT: cannot read time bounds metadata; file='//trim(fileName))
+       rCode = nf90_inquire(fid,nVariables=field_count)
+       if (rCode /= nf90_noerr) call shr_sys_abort('NOLEAP_INPUT: cannot inquire input variables')
+       do field_id = 1,field_count
+          rCode = nf90_inquire_variable(fid,field_id,name=field_name)
+          if (rCode /= nf90_noerr) call shr_sys_abort('NOLEAP_INPUT: cannot inquire input field')
+          if (shr_string_listGetIndexF(strm%fldListFile,trim(field_name)) == 0) cycle
+          cell_methods = ''
+          rCode = nf90_get_att(fid,field_id,'cell_methods',cell_methods)
+          if (rCode == nf90_enotatt) then
+             if (len_trim(time_bounds) > 0) &
+                  call shr_sys_abort('NOLEAP_INPUT: ambiguous bounded stream data require an interval adapter; field='// &
+                     trim(field_name)//' file='//trim(fileName))
+             cycle
+          endif
+          if (rCode /= nf90_noerr) call shr_sys_abort('NOLEAP_INPUT: cannot read cell_methods; file='//trim(fileName))
+         time_method = shr_cal_inputTimeMethod(cell_methods)
+         if (time_method /= '' .and. time_method /= 'point') &
+            call shr_sys_abort('NOLEAP_INPUT: unsupported time method='//trim(time_method)//' field='// &
+               trim(field_name)//' file='//trim(fileName))
+         if (time_method /= 'point' .and. len_trim(time_bounds) > 0) &
+            call shr_sys_abort('NOLEAP_INPUT: bounded stream data require explicit time: point or an interval adapter; field='// &
+               trim(field_name)//' file='//trim(fileName))
+       enddo
+    endif
     rCode = nf90_close(fid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_close')
 
