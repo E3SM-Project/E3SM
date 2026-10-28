@@ -110,7 +110,7 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   add_interval_checks();
 
   // Populate the wet atmosphere state with views from fields
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
 
   // Constituent fluxes at the surface (gasses and aerosols) [kg/m2/s]
@@ -184,7 +184,7 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
   Kokkos::fence();
 
-  update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
+  update_gas_aerosols_using_constituents(ncol_, nlev_, dt, wet_atm_, dry_atm_,
                                          constituent_fluxes_,
                                          // output
                                          wet_aero_);

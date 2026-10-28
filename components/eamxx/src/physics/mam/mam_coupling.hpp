@@ -226,6 +226,9 @@ struct WetAtmosphere {
                      // water / kg moist air]
   const_view_2d
       ni;  // wet cloud ice water number mixing ratio [# / kg moist air]
+  view_2d z_mid;    // height at layer midpoints [m]
+  view_2d z_iface;  // height at layer interfaces [m]
+  view_2d dz;       // layer thickness [m]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
@@ -241,9 +244,6 @@ struct DryAtmosphere {
   view_2d qi;  // dry cloud ice water mass mixing ratio [kg cloud ice water / kg
                // dry air]
   view_2d ni;  // dry cloud ice water number mixing ratio [# / kg dry air]
-  view_2d z_mid;    // height at layer midpoints [m]
-  view_2d z_iface;  // height at layer interfaces [m]
-  view_2d dz;       // layer thickness [m]
   const_view_2d
       p_del;  // hydrostatic "pressure thickness" at grid interfaces [Pa]
   const_view_2d p_int;    // total pressure at grid interfaces [Pa]
@@ -457,7 +457,8 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
 // column with the given index. This object can be provided to mam4xx for the
 // column.
 KOKKOS_INLINE_FUNCTION
-mam4::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
+mam4::Atmosphere atmosphere_for_column(const WetAtmosphere &wet_atm,
+                                       const DryAtmosphere &dry_atm,
                                        const int column_index) {
   EKAT_KERNEL_ASSERT_MSG(dry_atm.T_mid.data() != nullptr,
                          "T_mid not defined for dry atmosphere state!");
@@ -473,8 +474,8 @@ mam4::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
                          "qi not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.ni.data() != nullptr,
                          "ni not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.z_mid.data() != nullptr,
-                         "z_mid not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(wet_atm.z_mid.data() != nullptr,
+                         "z_mid not defined for wet atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del.data() != nullptr,
                          "p_del not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_int.data() != nullptr,
@@ -491,7 +492,7 @@ mam4::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
                           ekat::subview(dry_atm.nc, column_index),
                           ekat::subview(dry_atm.qi, column_index),
                           ekat::subview(dry_atm.ni, column_index),
-                          ekat::subview(dry_atm.z_mid, column_index),
+                          ekat::subview(wet_atm.z_mid, column_index),
                           ekat::subview(dry_atm.p_del, column_index),
                           ekat::subview(dry_atm.p_int, column_index),
                           ekat::subview(dry_atm.cldfrac, column_index),
@@ -610,9 +611,9 @@ void compute_vertical_layer_heights(const Team &team,
       "Given column index does not correspond to given team!");
 
   // outputs
-  const auto dz      = ekat::subview(dry_atm.dz, column_index);
-  const auto z_iface = ekat::subview(dry_atm.z_iface, column_index);
-  const auto z_mid   = ekat::subview(dry_atm.z_mid, column_index);
+  const auto dz      = ekat::subview(wet_atm.dz, column_index);
+  const auto z_iface = ekat::subview(wet_atm.z_iface, column_index);
+  const auto z_mid   = ekat::subview(wet_atm.z_mid, column_index);
   // inputs
   const auto qv             = ekat::subview(wet_atm.qv, column_index);
   const auto p_mid          = ekat::subview(dry_atm.p_mid, column_index);
@@ -646,7 +647,7 @@ void compute_updraft_velocities(const Team &team, const WetAtmosphere &wet_atm,
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
     const auto rho =
-        PF::calculate_density(wet_atm.p_del(i, k), dry_atm.dz(i, k));
+        PF::calculate_density(wet_atm.p_del(i, k), wet_atm.dz(i, k));
     dry_atm.w_updraft(i, k) =
         PF::calculate_vertical_velocity(dry_atm.omega(i, k), rho);
   });

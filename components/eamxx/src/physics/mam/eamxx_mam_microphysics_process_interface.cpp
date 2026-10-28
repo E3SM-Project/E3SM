@@ -659,7 +659,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
 
   // FIXME: we are using cldfrac_tot in other mam4xx process.

@@ -48,6 +48,9 @@ TEST_CASE("mam_layer_geometry_uses_wet_atmosphere", "[mam4][geometry][kokkos]") 
   mc::WetAtmosphere wet_atm;
   wet_atm.qv = wet_qv;
   wet_atm.p_del = wet_dp;
+  wet_atm.dz = view_2d("dz", 1, nlev);
+  wet_atm.z_iface = view_2d("z_iface", 1, nlev + 1);
+  wet_atm.z_mid = view_2d("z_mid", 1, nlev);
   mc::DryAtmosphere dry_atm;
   dry_atm.z_surf = 0;
   dry_atm.qv = dry_qv;
@@ -55,9 +58,6 @@ TEST_CASE("mam_layer_geometry_uses_wet_atmosphere", "[mam4][geometry][kokkos]") 
   dry_atm.p_mid = pmid;
   dry_atm.T_mid = temp;
   dry_atm.omega = pressure_velocity;
-  dry_atm.dz = view_2d("dz", 1, nlev);
-  dry_atm.z_iface = view_2d("z_iface", 1, nlev + 1);
-  dry_atm.z_mid = view_2d("z_mid", 1, nlev);
   dry_atm.w_updraft = view_2d("w_updraft", 1, nlev);
 
   using TPF = ekat::TeamPolicyFactory<ExecSpace>;
@@ -67,14 +67,14 @@ TEST_CASE("mam_layer_geometry_uses_wet_atmosphere", "[mam4][geometry][kokkos]") 
       mc::compute_vertical_layer_heights(team, wet_atm, dry_atm, 0);
       team.team_barrier();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev),
-        [&](const int k) { dz_before(0, k) = dry_atm.dz(0, k); });
+        [&](const int k) { dz_before(0, k) = wet_atm.dz(0, k); });
       team.team_barrier();
       mc::compute_updraft_velocities(team, wet_atm, dry_atm, 0);
     });
-  const auto dz = Kokkos::create_mirror_view_and_copy(HostSpace(), dry_atm.dz);
+  const auto dz = Kokkos::create_mirror_view_and_copy(HostSpace(), wet_atm.dz);
   const auto before = Kokkos::create_mirror_view_and_copy(HostSpace(), dz_before);
-  const auto zi = Kokkos::create_mirror_view_and_copy(HostSpace(), dry_atm.z_iface);
-  const auto zm = Kokkos::create_mirror_view_and_copy(HostSpace(), dry_atm.z_mid);
+  const auto zi = Kokkos::create_mirror_view_and_copy(HostSpace(), wet_atm.z_iface);
+  const auto zm = Kokkos::create_mirror_view_and_copy(HostSpace(), wet_atm.z_mid);
   const auto w = Kokkos::create_mirror_view_and_copy(HostSpace(), dry_atm.w_updraft);
   const auto mass = Kokkos::create_mirror_view_and_copy(HostSpace(), aerosol_dp);
   const Real expected_dz =

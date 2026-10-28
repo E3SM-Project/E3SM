@@ -275,7 +275,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // interface
   add_interval_checks();
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -374,7 +374,7 @@ void MAMDryDep::run_impl(const double dt) {
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
                      aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
-                     wet_dens_, dry_atm_, dry_aero_,
+                     wet_dens_, wet_atm_, dry_atm_, dry_aero_,
                      // Inouts-outputs
                      qqcw_,
                      // Outputs
