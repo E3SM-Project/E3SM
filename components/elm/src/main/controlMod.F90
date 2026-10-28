@@ -10,6 +10,9 @@ module controlMod
   !       Display the file in a browser to see it neatly formatted in html.
   !
   ! !USES:
+  ! Note: elm_varctl is fully use-associated here. Do not also import its variables with
+  ! "use elm_varctl, only: ..." -- with gfortran 14 a doubly use-associated namelist
+  ! object cannot be matched on read ("Cannot match namelist object name").
   use elm_varctl
   use shr_kind_mod            , only: r8 => shr_kind_r8, SHR_KIND_CL
   use shr_nl_mod              , only: shr_nl_find_group_name
@@ -40,21 +43,9 @@ module controlMod
   use UrbanParamsType         , only: urban_hac, urban_traffic
   use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
-  use elm_varctl              , only: use_dynroot, use_fan, fan_mode, fan_to_bgc_veg
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
-  use elm_varctl              , only: nu_com, use_var_soil_thick
-  use elm_varctl              , only: use_lake_wat_storage
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
-  use elm_varctl              , only: forest_fert_exp
-  use elm_varctl              , only: ECA_Pconst_RGspin
-  use elm_varctl              , only: NFIX_PTASE_plant
-  use elm_varctl              , only : use_pheno_flux_limiter
-  use elm_varctl              , only: startdate_add_temperature, startdate_add_co2
-  use elm_varctl              , only: add_temperature, add_co2
-  use elm_varctl              , only: const_climate_hist
-  use elm_varctl              , only: use_top_solar_rad
-  use elm_varctl              , only: snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
 
   !
