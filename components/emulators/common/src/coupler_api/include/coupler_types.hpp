@@ -54,37 +54,6 @@ struct EmulatorGridDesc {
   const double* area;
 };
 
-/**
- * @brief Description of import and export fields to/from the coupler
- * Fields:
- *  - import_data
- *  - export_data
- *  - num_imports
- *  - num_exports
- *  - field_size
- *
- */
-struct CouplingDesc {
-  double* import_data;
-  double* export_data;
-  int num_imports;
-  int num_exports;
-  int field_size;
-};
-
-/**
- * @brief Metadata of Field that may be coupled
- * Fields:
- * - longname: long name for field
- * - stdname: standardized name for field
- * - attrname: name for lookup in attribute vector
- */
-struct FieldAttributes {
-  const char* name;
-  const char* long_name;
-  const char* standard_name;
-  const char* units;
-};
 
 /**
  * @brief Fortran/C struct to create RegisteredField entry
@@ -98,9 +67,7 @@ struct FieldAttributes {
 struct RegisteredFieldDesc {
   const char* role;
   const char* component;
-  FieldAttributes attributes;
   size_t size;
-  double* data;
 };
 
 } // extern "C"

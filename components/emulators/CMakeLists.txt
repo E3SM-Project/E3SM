@@ -155,5 +155,6 @@ endif()
 
 # Add subdirectories
 add_subdirectory(common)
+add_subdirectory(cpl7_interface)
 # add_subdirectory(emulatoratm)
 # add_subdirectory(driver)

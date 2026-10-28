@@ -1,11 +1,10 @@
 /**
  * @file emulator.hpp
- * @brief Abstract base class for all E3SM emulators.
+ * @brief Class for E3SM emulators
  */
 #ifndef E3SM_EMULATOR_HPP
 #define E3SM_EMULATOR_HPP
 
-#include "coupler_types.hpp"
 #include <coupler.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
@@ -18,6 +17,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include "grid_types.hpp"
 
 namespace e3sm::emulator {
 
@@ -41,48 +41,6 @@ struct EmulatorFieldDesc {
 
 std::string to_string(const EmulatorFieldDesc& desc);
 
-/**
- * @brief C++-version EmulatorDimensionDesc
-  -std::string name;
-  -std::size_t local_extent;
-  -std::size_t global_extent;
- */
-struct DimensionDesc {
-  std::string name;
-  std::size_t local_extent;
-  std::size_t global_extent;
-};
-std::string to_string(const DimensionDesc& desc);
-
-/**
- * @brief Struct for holding the grid info for this process
- *  and it's possible dimentions;
-   @fields:
-   - int grid_type;
-   - int nx;
-   - int ny;
-   - std::vector<DimensionDesc> dimensions;
-
-   - std::vector<int> col_gids;
-   - std::vector<double> lat;
-   - std::vector<double> lon;
-   - std::vector<double> area;
- *
- */
-struct GridDesc {
-  int grid_type;
-  int nx;
-  int ny;
-  int num_global_columns;
-  int num_local_columns;
-  MPI_Comm comm;
-
-  std::vector<DimensionDesc> dimensions;
-  std::vector<int> col_gids;
-  std::vector<double> lat;
-  std::vector<double> lon;
-  std::vector<double> area;
-};
 
 /**
  * @brief Abstract base class for all E3SM emulators.
@@ -127,7 +85,7 @@ public:
   }
 
   // TODO: Let's move this to protected after adjusting Fortran-C API??
-  void set_grid_data(const EmulatorGridDesc& grid);
+  void set_grid_data(const GridDesc& grid);
   int get_num_local_cols() const { return m_grid.num_local_columns; };
   int get_num_global_cols() const { return m_grid.num_global_columns; };
   int get_nx() const { return m_grid.nx; };

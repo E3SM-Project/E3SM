@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(EmualtorCoupler LANGUAGES CXX)
 add_library(coupler_api
-  coupler_types.F90
   field_registry.cpp
-  field_registry_c_api.cpp
   coupler.cpp
   coupler_driver.cpp
   process.cpp

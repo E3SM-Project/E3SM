@@ -1,5 +1,6 @@
 #include "emulator_config.hpp"
 #include "inference_backend.hpp"
+#include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
@@ -76,19 +77,22 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling]") {
                        forcing_backend, TestModel::Forcing);
 
   auto land_config =
-      make_test_config(TEST_DATA_DIR "/land_emulator_config.yaml",
-                       land_backend, TestModel::Land);
+      make_test_config(TEST_DATA_DIR "/land_emulator_config.yaml", land_backend,
+                       TestModel::Land);
 
   std::cout << forcing_config << "\n" << land_config << std::endl;
 
+  std::string forcing_name = forcing_config.name;
+  std::string lnd_name = land_config.name;
+
   // Illustrative API: construct using the already-parsed configuration.
-  auto forcing_emulator = Emulator{grid, forcing_config};
-  auto land_emulator = Emulator{grid, land_config};
 
   CouplerDriver driver;
-  driver.add_component(forcing_emulator);
-  driver.add_component(land_emulator);
+  driver.add_component(std::make_unique<Emulator>(grid, forcing_config));
+  driver.add_component(std::make_unique<Emulator>(grid, land_config));
   driver.initialize(TEST_DATA_DIR "/test_coupling_plan.yaml");
+  Emulator& forcing_emulator = driver.get_component_as<Emulator>(forcing_name);
+  Emulator& land_emulator = driver.get_component_as<Emulator>(lnd_name);
 
   const ProcessRunOpts opts{3600.0};
   driver.run_component(forcing_emulator.name(), opts);
