@@ -15,8 +15,8 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   )
 
   # Compare (and time) the BoundaryExchange-based and the p2p-based phys->dyn remaps
-  CreateUnitTest(homme_dg_cg_p2d
-    SOURCES homme_dg_cg_p2d_tests.cpp test_helper_mod.F90
+  CreateUnitTest(homme_unique_grid_p2d
+    SOURCES homme_unique_grid_p2d_tests.cpp test_helper_mod.F90
     LIBS ${dynLibName}
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     LABELS dynamics
