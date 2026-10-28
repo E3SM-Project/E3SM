@@ -862,7 +862,6 @@ contains
     real(R8),pointer           :: cosz(:)              ! cosz
     real(R8),pointer           :: tavCosz(:)           ! cosz, time avg over [LB,UB]
     real(R8),pointer           :: xlon(:),ylon(:)
-    real(R8),parameter         :: solZenMin = 0.001_R8 ! minimum solar zenith angle
    integer(IN) :: solar_lb_ymd, solar_lb_tod, solar_ub_ymd, solar_ub_tod
 
     type(ESMF_Time)            :: timeLB, timeUB       ! lb and ub times
@@ -1264,7 +1263,7 @@ contains
 
              !--- t-interp is LB data normalized with this factor: cosz/tavCosz ---
              do i = 1,lsizeF
-                if (cosz(i) > solZenMin .and. tavCosz(i) > 0._r8) then
+                if (cosz(i) > 0._r8 .and. tavCosz(i) > 0._r8) then
                    SDAT%avs(n)%rAttr(:,i) = SDAT%avFLB(n)%rAttr(:,i)*cosz(i)/tavCosz(i)
                 else
                    SDAT%avs(n)%rAttr(:,i) =  0._r8

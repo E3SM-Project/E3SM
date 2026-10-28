@@ -23,6 +23,7 @@ module elm_varorb
 contains
 
   subroutine elm_set_orbital_context(infodata)
+    ! Refresh before forcing import, independently of EOT, so copied orbital policy cannot become stale.
     type(seq_infodata_type), intent(in) :: infodata
     solar_context = infodata
     solar_context_initialized = .true.
@@ -64,5 +65,21 @@ contains
     end if
     call seq_infodata_SolarDecl(solar_context, ymd, tod, calendar, delta, eccf, eot_seconds)
   end subroutine elm_orbital_decl
+
+  function elm_solar_cosine(ymd, tod, calendar, latitude, longitude) result(cosine)
+    ! Instantaneous cosine: full civil date, fractional seconds, and coordinates in radians.
+    ! Requires elm_set_orbital_context; scheduled albedo and bypass sampling choose their own valid times.
+    use shr_cal_mod, only: shr_cal_date2julian
+    use shr_orb_mod, only: shr_orb_cosz
+    integer, intent(in) :: ymd
+    real(r8), intent(in) :: tod, latitude, longitude
+    character(len=*), intent(in) :: calendar
+    real(r8) :: cosine, calday, delta, eccf, eot_seconds
+
+    call elm_orbital_decl(ymd, tod, calendar, delta, eccf, eot_seconds)
+    call shr_cal_date2julian(ymd, int(tod), calday, calendar)
+    calday = calday + (tod - real(int(tod), r8)) / 86400._r8
+    cosine = shr_orb_cosz(calday, latitude, longitude, delta, eot_seconds=eot_seconds)
+  end function elm_solar_cosine
 
 end module elm_varorb

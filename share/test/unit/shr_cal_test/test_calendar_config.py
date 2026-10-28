@@ -1038,6 +1038,416 @@ end program
         first_phase = eam.split("if (nsrest == 0) then", 1)[1].split("else ! so here first_time", 1)[0]
         self.assertLess(first_phase.index("       end if"), first_phase.index("nextsw_dt_avg="))
 
+    @unittest.skipUnless(shutil.which("gfortran"), "gfortran is required for stub-backed numerical checks")
+    def test_compiled_shared_orbit_numerics(self):
+        self.compile_orbit_probe()
+        with self.subTest(geometry="forcing geometric horizon"):
+            source = (ROOT / "share/streams/shr_tInterp_mod.F90").read_text()
+            routine = re.search(r"   subroutine shr_tInterp_getCosz\(.*?  end subroutine shr_tInterp_getCosz", source, re.S)
+            averaging = re.search(r"  subroutine shr_tInterp_getAvgCosz\(.*?  end subroutine shr_tInterp_getAvgCosz", source, re.S)
+            scaling_source = (ROOT / "share/streams/shr_strdata_mod.F90").read_text()
+            scaling = re.search(
+                r"             do i = 1,lsizeF\n                if \(cosz\(i\).*?             enddo", scaling_source, re.S)
+            self.assertIsNotNone(routine)
+            self.assertIsNotNone(averaging)
+            self.assertIsNotNone(scaling)
+            elm_source = (ROOT / "components/elm/src/utils/elm_varorb.F90").read_text()
+            elm_decl = re.search(r"  subroutine elm_orbital_decl\(.*?  end subroutine elm_orbital_decl", elm_source, re.S)
+            elm_cosine = re.search(r"  function elm_solar_cosine\(.*?  end function elm_solar_cosine", elm_source, re.S)
+            self.assertIsNotNone(elm_decl)
+            self.assertIsNotNone(elm_cosine)
+            bypass_source = (ROOT / "components/elm/src/cpl/lnd_import_export.F90").read_text()
+            bypass_block = bypass_source.split("        !Shortwave radiation (cosine zenith angle interpolation)", 1)[1].split(
+                "        if (atm2lnd_vars%metsource == 5)", 1)[0]
+            bypass_cases = []
+            def arguments(values):
+                return ",".join(str(value) for value in values)
+
+            for date, tod, step, ratio, calendar in (
+                    ((2000, 1, 1), 0, 600, 6, "GREGORIAN"),
+                    ((2000, 3, 1), 0, 600, 6, "GREGORIAN"),
+                    ((2000, 3, 1), 0, 600, 6, "NO_LEAP"),
+                    ((1900, 3, 1), 0, 600, 6, "GREGORIAN"),
+                    ((2100, 3, 1), 0, 600, 6, "NO_LEAP"),
+                    ((2000, 1, 1), 0, 601, 6, "GREGORIAN"),
+                    ((2000, 3, 20), 21602, 1, 1, "NO_LEAP")):
+                midpoint = -step / 2
+                period_start = math.floor((tod + midpoint) / (step * ratio)) * step * ratio
+                offsets = [midpoint]
+                if ratio > 1:
+                    offsets += [period_start + (sample + 0.5) * step - tod for sample in range(ratio)]
+                dates = [datetime.datetime(*date) + datetime.timedelta(seconds=tod + math.floor(offset)) for offset in offsets]
+                if calendar == "NO_LEAP":
+                    dates = [date.replace(day=28) if date.month == 2 and date.day == 29 else date for date in dates]
+                bypass_cases.append(
+                    f"model_step={step}\nmodel_calendar='{calendar}'\nexpected_calls={len(offsets)}\n"
+                    "clock_calls=0\nrecord_count=0\nrecord_geometry=.true.\n"
+                    f"expected_offsets(1:expected_calls)=[{arguments(math.floor(offset) for offset in offsets)}]\n"
+                    f"expected_dates(1:expected_calls)=[{arguments(date.year*10000+date.month*100+date.day for date in dates)}]\n"
+                    f"expected_seconds(1:expected_calls)=[{arguments(date.hour*3600+date.minute*60+date.second for date in dates)}]\n"
+                    f"call bypass_weight({tod},{ratio},flux)\n"
+                    "if(clock_calls/=expected_calls.or.record_count/=expected_calls) stop 10\n"
+                    "if(any(record_dates(1:record_count)/=expected_dates(1:record_count))) stop 11\n"
+                    f"if(any(abs(record_tods(1:record_count)-real(expected_seconds(1:record_count),r8) &\n"
+                    f"     -{abs(midpoint-math.floor(midpoint))}_r8)>1.e-12_r8)) stop 12\n"
+                    "if(.not.ieee_is_finite(flux).or.flux<0._r8.or.flux>10._r8) stop 13\n"
+                    + ("if(flux/=1._r8) stop 14\n" if ratio == 1 else ""))
+            elm_probe = """module shr_cal_mod
+use forcing_probe,only:shr_cal_date2julian
+end module
+module elm_probe
+use forcing_probe,only:r8,shr_orb_context_type,seq_infodata_SolarDecl=>shr_cal_solarDecl
+use shr_sys_mod,only:shr_sys_abort
+implicit none
+type(shr_orb_context_type)::solar_context
+logical::solar_context_initialized=.true.
+contains
+""" + elm_decl.group() + "\n" + elm_cosine.group() + """
+end module
+module bypass_probe
+use elm_probe,only:elm_solar_cosine
+use forcing_probe,only:r8
+implicit none
+integer::model_step,expected_calls,clock_calls,expected_offsets(32),expected_dates(32),expected_seconds(32)
+character(16)::model_calendar
+contains
+integer function get_step_size()
+get_step_size=model_step
+end function
+function get_calendar() result(calendar)
+character(16)::calendar
+calendar=model_calendar
+end function
+subroutine get_curr_date(year,month,day,seconds,offset)
+integer,intent(out)::year,month,day,seconds
+integer,intent(in)::offset
+clock_calls=clock_calls+1
+if(clock_calls>expected_calls) stop 20
+if(offset/=expected_offsets(clock_calls)) stop 21
+year=expected_dates(clock_calls)/10000
+month=modulo(expected_dates(clock_calls)/100,100)
+day=modulo(expected_dates(clock_calls),100)
+seconds=expected_seconds(clock_calls)
+end subroutine
+subroutine bypass_weight(tod,ratio,weight)
+integer,intent(in)::tod,ratio
+real(r8),intent(out)::weight
+real(r8),parameter::SHR_CONST_PI=acos(-1._r8)
+integer,parameter::g=1
+integer::tm,swrad_period_len,swrad_period_start,solar_year,solar_month,solar_day,solar_seconds
+real(r8)::thiscosz,avgcosz,solar_offset,solar_tod,solar_latitude,solar_longitude,wt2(14)
+type forcing_type
+real(r8)::npf(14)
+end type
+type domain_type
+real(r8)::latc(1),lonc(1)
+end type
+type(forcing_type)::atm2lnd_vars
+type(domain_type)::ldomain
+atm2lnd_vars%npf=real(ratio,r8)
+ldomain%latc=0._r8
+ldomain%lonc=0._r8
+""" + bypass_block + """
+weight=wt2(4)
+end subroutine
+end module
+"""
+            program = """module forcing_probe
+use shr_kind_mod
+use shr_orb_mod,only:shr_orb_cosz,shr_orb_decl,shr_orb_params
+use shr_sys_mod,only:shr_sys_abort
+implicit none
+integer,parameter::r8=SHR_KIND_R8
+character(*),parameter::shr_cal_gregorian='GREGORIAN'
+type shr_orb_context_type
+logical::use_equation_of_time=.false.
+real(r8)::eccen,mvelpp,lambm0,obliqr,eot
+end type
+logical::record_geometry=.false.
+integer::record_count=0,record_dates(32)
+real(r8)::record_tods(32)
+type ESMF_Time
+integer(SHR_KIND_I8)::seconds
+end type
+type ESMF_TimeInterval
+integer(SHR_KIND_I8)::seconds
+end type
+interface operator(>)
+module procedure time_greater
+end interface
+interface operator(<)
+module procedure time_less
+end interface
+interface operator(-)
+module procedure time_difference
+end interface
+contains
+logical function time_greater(left,right)
+type(ESMF_Time),intent(in)::left,right
+time_greater=left%seconds>right%seconds
+end function
+logical function time_less(left,right)
+type(ESMF_Time),intent(in)::left,right
+time_less=left%seconds<right%seconds
+end function
+function time_difference(left,right) result(difference)
+type(ESMF_Time),intent(in)::left,right
+type(ESMF_TimeInterval)::difference
+difference%seconds=left%seconds-right%seconds
+end function
+subroutine ESMF_TimeIntervalGet(interval,s_i8)
+type(ESMF_TimeInterval),intent(in)::interval
+integer(SHR_KIND_I8),intent(out)::s_i8
+s_i8=interval%seconds
+end subroutine
+subroutine shr_cal_timeSet(time,ymd,tod,calendar)
+type(ESMF_Time),intent(out)::time
+integer,intent(in)::ymd,tod
+character(*),intent(in)::calendar
+time%seconds=int(tod,SHR_KIND_I8)
+end subroutine
+subroutine shr_cal_advDateInt(seconds,unit,ymd0,tod0,ymd,tod,calendar)
+integer,intent(in)::seconds,ymd0,tod0
+character(*),intent(in)::unit,calendar
+integer,intent(out)::ymd,tod
+ymd=ymd0
+tod=tod0+seconds
+end subroutine
+function shr_cal_calendarName(calendar) result(name)
+character(*),intent(in)::calendar
+character(len=len(calendar))::name
+name=calendar
+end function
+subroutine shr_cal_date2julian(ymd,tod,calday,calendar)
+integer,intent(in)::ymd,tod
+character(*),intent(in)::calendar
+real(r8),intent(out)::calday
+calday=80._r8+real(tod,r8)/86400._r8
+end subroutine
+subroutine shr_cal_solarDecl(context,ymd,tod,calendar,delta,factor,eot)
+type(shr_orb_context_type),intent(in)::context
+integer,intent(in)::ymd
+real(r8),intent(in)::tod
+character(*),intent(in)::calendar
+real(r8),intent(out)::delta,factor,eot
+if(record_geometry) then
+record_count=record_count+1
+record_dates(record_count)=ymd
+record_tods(record_count)=tod
+end if
+call shr_orb_decl(80._r8+tod/86400._r8,context%eccen,context%mvelpp,context%lambm0,context%obliqr,delta,factor)
+eot=context%eot
+end subroutine
+""" + routine.group() + "\n" + averaging.group() + """
+subroutine scale_flux(cosz,tavCosz,flux)
+real(r8),intent(in)::cosz(1),tavCosz(1)
+real(r8),intent(out)::flux
+integer,parameter::lsizeF=1,n=1
+integer::i
+real(r8),parameter::solZenMin=.001_r8
+type vector
+real(r8)::rAttr(1,1)
+end type
+type data_type
+type(vector)::avs(1),avFLB(1)
+end type
+type(data_type)::SDAT
+SDAT%avFLB(1)%rAttr=100._r8
+""" + scaling.group() + """
+flux=SDAT%avs(1)%rAttr(1,1)
+end subroutine
+end module
+""" + elm_probe + """
+program probe
+use forcing_probe
+use elm_probe,only:elm_solar_cosine,solar_context
+use bypass_probe,only:bypass_weight,model_step,model_calendar,expected_calls,clock_calls, &
+    expected_offsets,expected_dates,expected_seconds
+use,intrinsic::ieee_arithmetic,only:ieee_is_finite
+implicit none
+type(shr_orb_context_type)::context
+integer::orbital_year,calendar_index,eot_index,tod,sample,period
+real(r8)::obliq,mvelp,delta,factor,expected(7),actual(7),average,flux,latitude(1),longitude(1),cosz(1)
+real(r8)::reference_average,averaged(1)
+integer::sample_count,sample_seconds(4),sample_weights(4)
+character(16)::calendar
+orbital_year=2000
+context%eccen=-9999._r8
+obliq=-9999._r8
+mvelp=-9999._r8
+call shr_orb_params(orbital_year,context%eccen,obliq,mvelp,context%obliqr,context%lambm0,context%mvelpp,.false.)
+latitude=0._r8
+longitude=0._r8
+do calendar_index=1,2
+calendar='NO_LEAP'
+if(calendar_index==2) calendar='GREGORIAN'
+do eot_index=-1,1
+context%use_equation_of_time=eot_index/=0
+context%eot=real(eot_index,r8)*960._r8
+solar_context=context
+sample_count=3
+sample_seconds=[21601,21606,21611,0]
+sample_weights=[5,5,1,0]
+if(calendar=='NO_LEAP'.and..not.context%use_equation_of_time) then
+sample_count=4
+sample_seconds=[21601,21604,21607,21610]
+sample_weights=[3,3,3,2]
+end if
+reference_average=0._r8
+do sample=1,sample_count
+tod=sample_seconds(sample)
+call shr_orb_decl(80._r8+real(tod,r8)/86400._r8,context%eccen,context%mvelpp,context%lambm0,context%obliqr,delta,factor)
+reference_average=reference_average+real(sample_weights(sample),r8)*max(0._r8,cos(delta) &
+    *cos((real(tod,r8)/86400._r8-.5_r8)*2._r8*acos(-1._r8)+2._r8*acos(-1._r8)*context%eot/86400._r8))/11._r8
+end do
+call shr_tInterp_getAvgCosz(averaged,longitude,latitude,20000320,21601,20000320,21612, &
+    context%eccen,context%mvelpp,context%lambm0,context%obliqr,5,calendar,context)
+if(abs(averaged(1)-reference_average)>1.e-12_r8) stop 7
+call shr_tInterp_getAvgCosz(averaged,longitude,latitude,20000320,0,20000320,11, &
+    context%eccen,context%mvelpp,context%lambm0,context%obliqr,5,calendar,context)
+if(averaged(1)/=0._r8) stop 8
+do period=0,23
+do sample=1,7
+tod=period*3600+(sample-1)*600+1
+call shr_orb_decl(80._r8+real(tod,r8)/86400._r8,context%eccen,context%mvelpp,context%lambm0,context%obliqr,delta,factor)
+expected(sample)=max(0._r8,cos(delta)*cos((real(tod,r8)/86400._r8-.5_r8)*2._r8*acos(-1._r8) &
+     +2._r8*acos(-1._r8)*context%eot/86400._r8))
+call shr_tInterp_getCosz(cosz,longitude,latitude,20000320,tod,context%eccen,context%mvelpp, &
+     context%lambm0,context%obliqr,calendar,context)
+actual(sample)=cosz(1)
+if(abs(actual(sample)-expected(sample))>1.e-12_r8) stop 1
+if(abs(max(0._r8,elm_solar_cosine(20000320,real(tod,r8),calendar,latitude(1),longitude(1))) &
+    -expected(sample))>1.e-12_r8) stop 6
+end do
+average=sum(expected)/real(size(expected),r8)
+do sample=1,7
+call scale_flux([actual(sample)],[average],flux)
+if(.not.ieee_is_finite(flux)) stop 2
+if(average>0._r8) then
+if(abs(flux-100._r8*expected(sample)/average)>1.e-8_r8*max(1._r8,abs(flux))) stop 3
+else
+if(flux/=0._r8) stop 4
+end if
+end do
+end do
+end do
+end do
+call scale_flux([0._r8],[0._r8],flux)
+if(flux/=0._r8) stop 5
+context%use_equation_of_time=.false.
+context%eot=0._r8
+solar_context=context
+""" + "\n".join(bypass_cases) + """
+end program
+"""
+            self.compile_orbit_probe(program)
+            for calendar in ("NO_LEAP", "GREGORIAN"):
+                for step, end_seconds in ((0, 21612), (5, 21601)):
+                    with self.subTest(calendar=calendar, invalid_average=(step, end_seconds)):
+                        invalid = f"""calendar='{calendar}'
+call shr_tInterp_getAvgCosz(averaged,longitude,latitude,20000320,21601,20000320,{end_seconds}, &
+     context%eccen,context%mvelpp,context%lambm0,context%obliqr,{step},calendar,context)
+stop 77
+do calendar_index=1,2"""
+                        self.compile_orbit_probe(program.replace("do calendar_index=1,2", invalid, 1), expected_returncode=99)
+        with self.subTest(geometry="scheduled Icepack clock"):
+            source = (ROOT / "components/mpas-seaice/src/icepack/columnphysics/icepack_orbital.F90").read_text()
+            routine = re.search(r"      subroutine compute_coszen \(.*?      end subroutine compute_coszen", source, re.S)
+            self.assertIsNotNone(routine)
+            program = """#define CESMCOUPLED
+    module icepack_parameters
+    implicit none
+    contains
+    logical function icepack_chkoptargflag(first_call)
+    logical,intent(in)::first_call
+    icepack_chkoptargflag=first_call
+    end function
+    end module
+    module orbital_probe
+    use shr_kind_mod,only:r8=>SHR_KIND_R8
+    use shr_orb_mod,only:shr_orb_params,shr_orb_decl,shr_orb_cosz
+    implicit none
+    integer,parameter::dbl_kind=r8,int_kind=kind(1),log_kind=kind(.true.),char_len=64
+    real(r8),parameter::c0=0._r8,c2=2._r8,p5=0.5_r8,pi=acos(-1._r8),secday=86400._r8
+    real(r8)::eccen,mvelpp,lambm0,obliqr,decln,eccf
+    contains
+    subroutine icepack_warnings_add(message)
+    character(*),intent(in)::message
+    print *,message
+    end subroutine
+    subroutine icepack_warnings_setabort(value,filename,line)
+    logical,intent(in)::value
+    character(*),intent(in)::filename
+    integer,intent(in)::line
+    if(value) stop 90
+    end subroutine
+    """ + routine.group() + """
+    end module
+    program probe
+    use orbital_probe
+    implicit none
+    integer::orbital_year,calendar_index,season,tod,latitude_degrees,longitude_degrees,eot_index
+    real(r8)::obliq,mvelp,calday,latitude,longitude,delta,factor,expected,actual,eot
+    character(char_len)::calendar
+    logical::use_eot
+    orbital_year=2000
+    eccen=-9999._r8
+    obliq=-9999._r8
+    mvelp=-9999._r8
+    call shr_orb_params(orbital_year,eccen,obliq,mvelp,obliqr,lambm0,mvelpp,.false.)
+    do calendar_index=1,2
+    calendar='NO_LEAP'
+    if(calendar_index==2) calendar='GREGORIAN'
+    do season=1,365,91
+    do tod=0,86400,600
+    calday=real(season,r8)+real(tod,r8)/secday
+    call shr_orb_decl(calday,eccen,mvelpp,lambm0,obliqr,delta,factor)
+    do eot_index=-1,1
+    eot=real(eot_index,r8)*960._r8
+    use_eot=eot_index/=0
+    do latitude_degrees=-90,90,30
+    latitude=real(latitude_degrees,r8)*pi/180._r8
+    do longitude_degrees=-180,180,60
+    longitude=real(longitude_degrees,r8)*pi/180._r8
+    expected=shr_orb_cosz(calday,latitude,longitude,delta,eot_seconds=eot)
+    actual=-99._r8
+    call compute_coszen(latitude,longitude,real(season,r8),modulo(tod+1800,86400),actual, &
+        365,calday,calendar,20000320,real(modulo(tod,86400),r8),delta,.true.,eot,use_eot)
+    if(abs(actual-expected)>1.e-12_r8) stop 1
+    end do
+    end do
+    end do
+    end do
+    end do
+    end do
+    actual=0.123_r8
+    call compute_coszen(0._r8,0._r8,80._r8,21000,actual,365,-1._r8,calendar, &
+        0,-1._r8,0._r8,.false.,0._r8,.true.)
+    if(actual/=0.123_r8) stop 2
+    end program
+    """
+            self.compile_orbit_probe(program)
+
+
+    def test_runtime_context_and_restart_phase_wiring(self):
+        land = (ROOT / "components/elm/src/cpl/lnd_comp_mct.F90").read_text()
+        land_run = land.split("subroutine lnd_run_mct(", 1)[1].split("end subroutine lnd_run_mct", 1)[0]
+        self.assertEqual(land_run.count("call elm_set_orbital_context(infodata)"), 1)
+        self.assertLess(land_run.index("call elm_set_orbital_context(infodata)"), land_run.index("call lnd_import("))
+        bypass = (ROOT / "components/elm/src/cpl/lnd_import_export.F90").read_text()
+        self.assertNotIn("szenith", bypass)
+        self.assertEqual(bypass.count("offset=floor(solar_offset)"), 2)
+        source = (ROOT / "components/eam/src/cpl/atm_comp_mct.F90").read_text()
+        run = source.lower().split("subroutine atm_run_mct(", 1)[1].split("end subroutine atm_run_mct", 1)[0]
+        self.assertIn("call orbit_set_context(infodata)", run)
+        for driver, writers in (("driver-mct", 1), ("driver-moab", 2)):
+            restart = (ROOT / driver / "main/seq_rest_mod.F90").read_text()
+            self.assertEqual(restart.count("'seq_infodata_solar_phase_version'"), writers)
+            metadata = (ROOT / driver / "shr/seq_infodata_mod.F90").read_text()
+            self.assertIn("if (infodata%solar_phase_version /= 1)", metadata)
+            self.assertIn("call shr_mpi_bcast(infodata%solar_phase_version, mpicom)", metadata)
+
+
 
 
 

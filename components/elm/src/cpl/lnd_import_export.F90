@@ -35,9 +35,10 @@ contains
     use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
-    use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
+    use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date, get_calendar
+    use elm_varorb       , only: elm_solar_cosine
     use controlMod       , only: NLFilename
-    use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
+    use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL, SHR_CONST_PI
     use domainMod        , only: ldomain
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
@@ -82,8 +83,8 @@ contains
     integer  :: thisng, np, num, nu_nml, nml_error                 
     integer  :: ng_all(100000)
     real(r8) :: swndf, swndr, swvdf, swvdr, ratio_rvrf, frac, q
-    real(r8) :: thiscosz, avgcosz, szenith
-    integer  :: swrad_period_len, swrad_period_start, thishr, thismin
+    real(r8) :: thiscosz, avgcosz, solar_offset, solar_tod, solar_latitude, solar_longitude
+    integer  :: swrad_period_len, swrad_period_start, solar_year, solar_month, solar_day, solar_seconds
     real(r8) :: timetemp(2)
     real(r8) :: latixy(500000), longxy(500000)
     integer ::  ierr, varid, dimid, yr, mon, day, tod, nindex(2), caldaym(13)
@@ -630,30 +631,30 @@ contains
         end if 
 
         !Shortwave radiation (cosine zenith angle interpolation)
-        thishr = (tod-get_step_size()/2)/3600
-        if (thishr < 0) thishr=thishr+24
-        thismin = mod((tod-get_step_size()/2)/60, 60)
-        thiscosz = max(cos(szenith(ldomain%lonc(g),ldomain%latc(g),0,int(thiscalday),thishr,thismin,0)* &
-                        3.14159265358979/180.0d0), 0.001d0)
+        solar_latitude = ldomain%latc(g)*SHR_CONST_PI/180._r8
+        solar_longitude = ldomain%lonc(g)*SHR_CONST_PI/180._r8
+        solar_offset = -real(get_step_size(),r8)/2._r8
+        call get_curr_date(solar_year, solar_month, solar_day, solar_seconds, offset=floor(solar_offset))
+        solar_tod = real(solar_seconds,r8) + solar_offset - real(floor(solar_offset),r8)
+        thiscosz = max(0._r8, elm_solar_cosine(solar_year*10000+solar_month*100+solar_day, &
+             solar_tod, get_calendar(), solar_latitude, solar_longitude))
         avgcosz = 0d0
         if (atm2lnd_vars%npf(4) - 1._r8 .gt. 1e-3) then 
           swrad_period_len   = get_step_size()*nint(atm2lnd_vars%npf(4))
-          swrad_period_start = ((tod-get_step_size()/2)/swrad_period_len) * swrad_period_len
-          !set to last period if first model timestep of the day
-          if (tod-get_step_size()/2 < 0) swrad_period_start = ((86400-get_step_size()/2)/swrad_period_len) * swrad_period_len   
+          swrad_period_start = floor((real(tod,r8)+solar_offset)/real(swrad_period_len,r8))*swrad_period_len
 
           do tm=1,nint(atm2lnd_vars%npf(4))  
             !Get the average cosine zenith angle over the time resolution of the input data
-            thishr  = (swrad_period_start+(tm-1)*get_step_size()+get_step_size()/2)/3600
-            if (thishr > 23) thishr=thishr-24  
-            thismin = mod((swrad_period_start+(tm-1)*get_step_size()+get_step_size()/2)/60, 60) 
-            avgcosz  = avgcosz + max(cos(szenith(ldomain%lonc(g),ldomain%latc(g),0,int(thiscalday),thishr, thismin, 0) &
-                       *3.14159265358979/180.0d0), 0.001d0)/atm2lnd_vars%npf(4)
+            solar_offset = real(swrad_period_start+(tm-1)*get_step_size()-tod,r8) + real(get_step_size(),r8)/2._r8
+            call get_curr_date(solar_year, solar_month, solar_day, solar_seconds, offset=floor(solar_offset))
+            solar_tod = real(solar_seconds,r8) + solar_offset - real(floor(solar_offset),r8)
+            avgcosz = avgcosz + max(0._r8, elm_solar_cosine(solar_year*10000+solar_month*100+solar_day, &
+                 solar_tod, get_calendar(), solar_latitude, solar_longitude))/atm2lnd_vars%npf(4)
           end do
         else
           avgcosz = thiscosz
         end if
-        if (thiscosz > 0.001d0) then 
+        if (thiscosz > 0._r8 .and. avgcosz > 0._r8) then
           wt2(4) = min(thiscosz/avgcosz, 10.0_r8)
         else
           wt2(4) = 0d0
@@ -1556,75 +1557,3 @@ contains
   end subroutine lnd_export
 
 end module lnd_import_export
-
-
-
-double precision function szenith(xcoor, ycoor, ltm, jday, hr, min, offset)     
-  !Function to calcualte solar zenith angle
-  !Used in coupler bypass mode to compute inerpolation for incoming solar
-
-  use shr_kind_mod , only: r8 => shr_kind_r8, cl=>shr_kind_cl
-  implicit none
-  !inputs
-  real(r8) xcoor, ycoor, offset_min
-  integer jday, hr, min, ltm, offset
-  !working variables
-  real(r8) d2r, r2d, lsn, latrad, decrad, decdeg, ha
-  real(r8) hangle, harad, saltrad, saltdeg, sazirad, sazideg
-  real(r8) szendeg,szenrad
-  
-  real pi
-  parameter(pi = 3.14159265358979)
-  offset_min = offset/60d0   !note assumes 1hr or smaller timestep
-  min = min - offset_min  
-   
-  !adjust time for offsets
-  if (min < 0) then
-    hr = hr - 1
-    min = min+60
-  end if
-  if (min >= 60) then 
-    hr = hr+1
-    min = min-60
-  end if
-  if (hr < 0) then  
-    hr = hr+24
-    jday = jday-1
-  end if
-  if (hr >= 24) then
-    hr = hr-24
-    jday = jday+1
-  end if
-    
-  if (jday < 1) jday = 1
-  if (xcoor > 180d0) xcoor = xcoor-360d0
-
-  d2r     = pi/180d0
-  r2d     = 1/d2r
-  lsn     = 12.0d0+((ltm-xcoor)/15.0d0)
-  latrad  = ycoor*d2r
-  decrad  = 23.45*d2r*sin(d2r*360d0*(284d0+jday)/365d0)
-  decdeg  = decrad*r2d
-  ha      = hr+min/60.0d0 
-  hangle  = (lsn-ha)*60.0d0               
-  harad   = hangle*0.0043633d0       
-  
-  saltrad = asin((sin(latrad)*sin(decrad))+(cos(latrad)*cos(decrad) &
-       *cos(harad)))
-  saltdeg = saltrad * r2d
-  sazirad = asin(cos(decrad)*sin(harad)/cos(saltrad))
-  sazideg = sazirad * r2d
-  
-  IF (saltdeg.LT.0.0d0 .OR. saltrad.GT.180.0d0) THEN  ! sun is below horizon
-     saltdeg = 0.0d0
-     saltrad = 0.0d0
-     szendeg = 90.0d0
-     szenrad = 90.0d0*d2r
-     !mass    = 1229d0**.5d0             ! if solaralt=0 -> sin(0)=0
-  ELSE
-     szendeg = 90d0-saltdeg
-     szenrad = szendeg*d2r
-  ENDIF
-  szenith = szendeg
-  
-end function szenith

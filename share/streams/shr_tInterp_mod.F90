@@ -304,9 +304,9 @@ contains
 
     timeint = reday2-reday1
     call ESMF_TimeIntervalGet(timeint,s_i8=dtsec)
+   if (dt <= 0 .or. dtsec <= 0) call shr_sys_abort(subname//'invalid solar averaging interval')
     ldt8 = ldt
    if (gregorian_orbit) then
-       if (dt <= 0 .or. dtsec <= 0) call shr_sys_abort(subname//'invalid Gregorian solar averaging interval')
        if (.not. present(solar_context)) call shr_sys_abort(subname//'Gregorian solar context is required')
     else
        if (mod(dtsec,ldt8) /= 0) then
@@ -323,7 +323,7 @@ contains
     tod     = tod1
     do while( reday < reday2) ! mid-interval t-steps thru interval [LB,UB]
 
-      if (gregorian_orbit) ldt = int(min(int(dt,SHR_KIND_I8), dtsec-n))
+      ldt = int(min(ldt8, dtsec-n))
        !--- get next cosz value for t-avg ---
       call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar,solar_context,legacy_orbit)
        n = n + ldt
@@ -389,8 +389,6 @@ contains
    logical :: use_eot
    real(SHR_KIND_R8) :: eot_seconds
 
-    real(SHR_KIND_R8),parameter :: solZenMin = 0.001_SHR_KIND_R8 ! min solar zenith angle
-
     !----- formats -----
     character(*),parameter :: subName = "(shr_tInterp_getCosz) "
     character(*),parameter :: F00   = "('(shr_tInterp_getCosz) ',8a)"
@@ -421,14 +419,11 @@ contains
     endif
     do n = 1,lsize
        if (use_eot) then
-          cosz(n) = max(solZenMin, shr_orb_cosz(calday, latr(n), lonr(n), declin, eot_seconds=eot_seconds))
+          cosz(n) = max(0._SHR_KIND_R8, shr_orb_cosz(calday, latr(n), lonr(n), declin, eot_seconds=eot_seconds))
        else
-       cosz(n) = max(solZenMin, shr_orb_cosz( calday, latr(n), lonr(n), declin))
+       cosz(n) = max(0._SHR_KIND_R8, shr_orb_cosz( calday, latr(n), lonr(n), declin))
        end if
     end do
-   if (gregorian_orbit .or. use_eot) then
-       where (cosz <= solZenMin) cosz = 0.0_SHR_KIND_R8
-    endif
 
   end subroutine shr_tInterp_getCosz
 

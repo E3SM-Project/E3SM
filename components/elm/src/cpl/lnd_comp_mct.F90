@@ -577,6 +577,7 @@ contains
 
     ! Map to elm (only when state and/or fluxes need to be updated)
 
+    call elm_set_orbital_context(infodata)
     call t_startf ('lc_lnd_import')
 #ifdef HAVE_MOAB
     tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR
@@ -656,7 +657,6 @@ contains
        call t_startf ('shr_orb_decl')
        calday = get_curr_calday()
        if (seq_infodata_UseEquationOfTime(infodata)) then
-         call elm_set_orbital_context(infodata)
          call elm_set_nextsw_solar_time(nextsw_ymd, nextsw_tod, nextsw_valid, nextsw_cday)
        end if
        if (calendar == 'GREGORIAN' .or. seq_infodata_UseEquationOfTime(infodata)) then
