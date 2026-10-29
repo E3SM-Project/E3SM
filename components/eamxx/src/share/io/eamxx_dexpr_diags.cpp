@@ -326,6 +326,16 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"units",false}},
            .example = "p_mid.searchsorted(500,units='hPa')"});
+    r.add({.name = "aerocom",
+           .desc = "value at cloud top or bottom ('top'/'bot'), AeroCom-weighted, for a 'phase' if given",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"phase",false}},
+           .example = "T_mid.aerocom('top',phase='liq')"});
+    r.add({.name = "aerocom_weights",
+           .desc = "per level, the AeroCom weights aerocom(..) sums against",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"phase",false}},
+           .example = "cldfrac_tot.aerocom_weights('top')"});
     r.add({.name = "over_dt",
            .desc = "value divided by the time step",
            .min_positional = 0, .max_positional = 0,
@@ -553,6 +563,26 @@ void translate_call (const Call& call, const ast::Expression& self,
       params.set<std::string>("height_units",
           units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
       params.set<std::string>("surface_reference",coord=="z" ? "sealevel" : "surface");
+    }
+    return;
+  }
+
+  if (call.name=="aerocom" or call.name=="aerocom_weights") {
+    // AeroCom cloud-top/bottom sampling. aerocom(..) sums its receiver against
+    // the weights of aerocom_weights(..), which it depends on, so that fields
+    // sampled at the same position and phase share them. 'mask' as receiver
+    // stands for 1, so that mask.aerocom(..) is the cloud fraction.
+    const auto* phase = keyword(call,"phase");
+    params.set<std::string>("position",string_arg(*call.positional[0],"the position"));
+    params.set<std::string>("phase",
+        phase==nullptr ? std::string("none") : string_arg(*phase,"'phase'"));
+    if (call.name=="aerocom") {
+      diag_name = "AeroComCld";
+    } else {
+      EKAT_REQUIRE_MSG (operand=="cldfrac_tot",
+          "Error! aerocom_weights() needs cldfrac_tot as receiver.\n"
+          " - expression: " + ast::to_string(self) + "\n");
+      diag_name = "AeroComWeights";
     }
     return;
   }
