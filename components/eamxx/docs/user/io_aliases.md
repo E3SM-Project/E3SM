@@ -65,6 +65,9 @@ alias of the former.
 are preserved from the original fields, and `alias_of`
 is added to the netcdf files to document aliasing
 
+4. **Diagnostics with several outputs**: each output is aliased
+like any other field, e.g. `lnp := LiqNumberPath`.
+
 ## Intermediate-only fields (`aliases` section)
 
 Sometimes a diagnostic is only needed as a building block for another
