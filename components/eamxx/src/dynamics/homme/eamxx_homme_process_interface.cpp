@@ -548,19 +548,14 @@ void HommeDynamics::run_impl (const double dt)
     // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
     //       Now we can compute the actual nsplit, and need to update its value
     //       in Hommexx's data structures.
-    //       Also, nsplit calculation requires an integer atm timestep, so we
-    //       check to ensure that's the case
-    EKAT_REQUIRE_MSG (std::abs(dt-std::round(dt))<std::numeric_limits<double>::epsilon()*10,
-        "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
-        "  - input dt : " << dt << "\n"
-        "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
-
+    //       dt (the physics time step) may be fractional (e.g. 7.5 s) when the
+    //       dynamics+physics group is subcycled within a longer coupling step.
+    //       get_homme_nsplit_f90 accepts a real dt; HOMME integrates on the
+    //       real-valued tstep, so only nsplit depends on dt here.
     if (m_bfb_hash_nstep > 0 && start_of_step_ts().get_num_steps() % m_bfb_hash_nstep == 0)
       print_fast_global_state_hash("Hommexx",start_of_step_ts());
 
-    const int dt_int = static_cast<int>(std::round(dt));
-
-    const int nsplit = get_homme_nsplit_f90(dt_int);
+    const int nsplit = get_homme_nsplit_f90(dt);
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
