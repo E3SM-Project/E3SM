@@ -62,6 +62,9 @@ int get_convproc_scratch1d_work_len(const int nlev) {
   
   // Index 30: dlfdp - detrainment × dp
   work_len += nlev;
+
+  // Index 31: x_ratio - precipitation resuspension ratio
+  work_len += nlev;
   
   return work_len;
 }
@@ -212,6 +215,11 @@ void initialize_scratch1d_views(
   
   // Index 30: dlfdp - detrainment × dp
   scratch1Dviews[ConvProc::Col1DViewInd::dlfdp] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+
+  // Index 31: x_ratio - precipitation resuspension ratio
+  scratch1Dviews[ConvProc::Col1DViewInd::x_ratio] = 
       Kokkos::View<Real*>(work_ptr, nlev);
   work_ptr += nlev;
 }
@@ -859,30 +867,27 @@ void MAMWetscav::run_impl(const double dt) {
           eu_icol = ekat::subview(zm_entr_up, icol);
           du_icol = ekat::subview(zm_detr_up, icol);
           ed_icol = ekat::subview(zm_entr_dn, icol);
-        }
-        
-        // Get pressure thickness and remaining convproc variables
-        // These are always needed, but some are only meaningful when do_convproc is true
-        constexpr Real pa_to_mb = 0.01;
-        const auto p_del_icol = ekat::subview(dry_atm.p_del, icol);
-        auto dp_tmp_icol = ekat::subview(dp_tmp, icol);
-        
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-          dp_tmp_icol(kk) = p_del_icol(kk) * pa_to_mb;
-        });
-        team.team_barrier();
-        
-        if(do_convproc) {
-          dp_icol = dp_tmp_icol;
+
+          // Get pressure thickness and remaining convproc variables
+          // These are always needed, but some are only meaningful when do_convproc is true
+          constexpr Real pa_to_mb = 0.01;
+          const auto p_del_icol = ekat::subview(dry_atm.p_del, icol);
+          auto dp_tmp_icol = ekat::subview(dp_tmp, icol);
           auto dpdry_tmp_icol = ekat::subview(dpdry_tmp, icol);
           const auto pseudo_density_dry_icol = ekat::subview(pseudo_density_dry, icol);
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
             dpdry_tmp_icol(kk) = pseudo_density_dry_icol(kk) * pa_to_mb;
+            dp_tmp_icol(kk) = p_del_icol(kk) * pa_to_mb;
           });
           team.team_barrier();
+          dp_icol = dp_tmp_icol;
           p_del_dry_icol = dpdry_tmp_icol;
           ktop = Kokkos::round(zm_jt_in(icol));
           kbot = Kokkos::round(zm_msemax_klev_in(icol));
+          if (ktop < 0 || kbot <= ktop) {
+            ktop = 0;
+            kbot = 0;
+          }
         } 
 
         mam4::wetdep::aero_model_wetdep(
@@ -909,6 +914,7 @@ void MAMWetscav::run_impl(const double dt) {
            convproc_do_aer, convproc_do_gas,
            species_class, mmtoo_prevap_resusp,
            aero_config);
+        
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {

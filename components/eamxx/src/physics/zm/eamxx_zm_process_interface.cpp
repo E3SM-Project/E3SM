@@ -106,7 +106,7 @@ void ZMDeepConvection::create_requests ()
 
   // Fields needed by MAM wetscav for aerosol convective processing
   add_field<Computed>("zm_rain_prod",          scalar3d_mid, kg/kg/s,grid_name, pack_size);  // rain production rate (rprddp)
-  add_field<Computed>("zm_ql",                 scalar3d_mid, kg/kg,  grid_name, pack_size);  // in-cloud liquid water (icwmrdp)
+  add_field<Computed>("zm_icw_liq",            scalar3d_mid, kg/kg,  grid_name, pack_size);  // in-cloud liquid water (icwmrdp)
 
   add_field<Computed>("mcsp_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("mcsp_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -611,7 +611,7 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_dcape   (i) = loc_zm_output_dcape   (i);
     zm_activity(i) = loc_zm_output_activity(i);
     zm_jt   (i) = loc_zm_output_jt   (i);
-    zm_msemax_klev   (i) = loc_zm_output_msemax_klev(i)   (i);
+    zm_msemax_klev   (i) = loc_zm_output_msemax_klev(i);
  });
 
   // 3D mid-level output
