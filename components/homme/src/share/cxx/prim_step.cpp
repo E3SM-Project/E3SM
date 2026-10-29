@@ -167,7 +167,7 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
       }
     }
 
-    prim_advance_exp(tl, dt, compute_diagnostics);
+    prim_advance_exp(tl, dt, compute_diagnostics_it);
     tl.tevolve += dt;
 
     bool observe = false;
