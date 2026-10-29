@@ -109,6 +109,14 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## Test output of a diagnostic with several outputs
+  CreateUnitTest(io_multi_output_diags
+    SOURCES io_multi_output_diags.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   ## Test transposed output (all averaging types)
   CreateUnitTest(io_transpose
     SOURCES io_transpose.cpp
