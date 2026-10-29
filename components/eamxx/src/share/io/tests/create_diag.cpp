@@ -62,17 +62,16 @@ TEST_CASE("create_diag")
     REQUIRE (std::dynamic_pointer_cast<WaterPath>(d5)!=nullptr);
     REQUIRE (d5->get_params().get<std::string>("water_kind")=="Vap");
 
-    auto d6 = create_diagnostic("LiqNumberPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<NumberPath>(d6)!=nullptr);
-    REQUIRE (d6->get_params().get<std::string>("number_kind")=="Liq");
-
-    auto d7 = create_diagnostic("IceNumberPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<NumberPath>(d7)!=nullptr);
-    REQUIRE (d7->get_params().get<std::string>("number_kind")=="Ice");
-
-    auto d8 = create_diagnostic("RainNumberPath",grid);
-    REQUIRE (std::dynamic_pointer_cast<NumberPath>(d8)!=nullptr);
-    REQUIRE (d8->get_params().get<std::string>("number_kind")=="Rain");
+    // Each name is one of the outputs of NumberPath, which computes all three
+    for (const std::string n : {"LiqNumberPath","IceNumberPath","RainNumberPath"}) {
+      auto d = create_diagnostic(n,grid);
+      REQUIRE (std::dynamic_pointer_cast<NumberPath>(d)!=nullptr);
+      const auto& outs = d->get_outputs();
+      REQUIRE (outs.size()==3);
+      REQUIRE (outs[0].name()=="LiqNumberPath");
+      REQUIRE (outs[1].name()=="IceNumberPath");
+      REQUIRE (outs[2].name()=="RainNumberPath");
+    }
   }
 
   SECTION ("vapor_flux") {

@@ -662,4 +662,38 @@ TEST_CASE ("multi_output_sharing")
   }
 }
 
+TEST_CASE ("number_paths")
+{
+  // NumberPath computes all three number paths: requesting two gives one diag
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  register_diagnostics();
+
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ncols);
+  gm->build_grids();
+  auto grid = gm->get_grid("point_grid");
+  const auto gname = grid->name();
+
+  auto t0 = util::TimeStamp({2023,1,1},{0,0,0});
+  auto fm = std::make_shared<FieldManager>(gm);
+  for (const std::string n : {"pseudo_density","qc","nc","qi","ni","qr","nr"}) {
+    Field f(FieldIdentifier(n,grid->get_3d_scalar_layout(LEV),ekat::units::none,gname));
+    f.allocate_view();
+    f.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(f);
+  }
+
+  ekat::ParameterList params;
+  params.set<std::string>("averaging_type","average");
+  params.sublist("fields").sublist(gname).set<std::vector<std::string>>("field_names",
+      {"LiqNumberPath","RainNumberPath"});
+  OutputTester out(comm,params,fm,gname);
+
+  auto diags = out.get_diags();
+  REQUIRE (diags.size()==1);
+  REQUIRE (diags.front()->name()=="NumberPath");
+  REQUIRE (OutputTester::get_repo().at("IceNumberPath")==diags.front());
+}
+
 } // namespace scream
