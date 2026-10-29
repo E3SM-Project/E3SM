@@ -5187,7 +5187,6 @@ Use the special condition operand <code>lev</code>.</p>
 <li><code>T_mid.where(lev&gt;5)</code></li>
 <li><code>p_mid.where(lev==0)</code></li>
 <li><code>qv.where(lev&lt;=10)</code></li>
-<li><code>T_mid.where(qv.isel(lev=125)&lt;qv.isel(lev=128))</code></li>
 </ul>
 <h2 id="mask-only-calculation">Mask-only calculation</h2>
 <p>Compute a mask stating where the condition is met.
@@ -5205,9 +5204,10 @@ vertical reductions to count occurrences of specific conditions.</p>
 <li><code>mask.where(lev&gt;5)</code></li>
 </ul>
 <p><strong>A mask cannot currently be written to file as is.</strong> The mask diagnostic's
-output has <code>int</code> data type, and IO cannot write it: listing <code>mask.where(..)</code> in
-<code>field_names</code> aborts the run with a narrowing-conversion error, and reducing it
-does not help. The workaround is to promote it to <code>Real</code> by multiplying by 1.
+output has <code>int</code> data type, and IO writes only real-valued fields: listing
+<code>mask.where(..)</code> in <code>field_names</code> is rejected when the stream is set up, and
+reducing it does not help. The workaround is to promote it to <code>Real</code> by
+multiplying by 1.
 E.g., the fraction of the earth where the surface pressure is &gt; 1e5Pa:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet_frac := (mask.where(ps&gt;100000)*1.0).mean('col')</span>

@@ -5138,11 +5138,7 @@
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cold_T  := T_mid.where(T_mid&lt;273.15).mean('lev')</span>
 </code></pre></div>
 <p>Expressions are parsed by <a href="https://github.com/E3SM-Project/E3SM/tree/master/share/dexpr"><code>dexpr</code></a>,
-the expression parser shared across E3SM components. They replace the old
-underscore spellings (<code>T_mid_at_500hPa</code>, <code>qc_plus_qv</code>, ...), which are no
-longer accepted: such a name is read as a plain name, and the run aborts since
-no field or diagnostic answers to it. The table under <a href="#functions">Functions</a>
-maps each old spelling to its expression.</p>
+the expression parser shared across E3SM components.</p>
 <h2 id="expressions-must-be-given-a-name">Expressions must be given a name</h2>
 <p>An expression is not a usable NetCDF variable name, and <code>field_names</code> entries
 are written to file verbatim. So any expression you want written must be given
@@ -5200,11 +5196,10 @@ with the units of <code>p_mid</code>, which are Pa; nothing converts units for y
 Adding a number to, or subtracting it from, a field with units is rejected when
 the stream is set up, since <code>+</code> and <code>-</code> need operands with the same units:
 <code>T_mid - 273.15</code> is an error.</p>
-<p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. Note this
-differs from the old underscore spelling <code>qc_plus_qv_times_p_mid</code>, which meant
-<code>(qc+qv)*p_mid</code>. When in doubt, parenthesize. (That pair only illustrates
-grouping: <code>qc+(qv*p_mid)</code> adds a mixing ratio to a pressure, and is rejected at
-run time for incompatible units, while <code>(qc+qv)*p_mid</code> is fine.)</p>
+<p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. When in
+doubt, parenthesize. (That example only illustrates grouping: <code>qc+(qv*p_mid)</code>
+adds a mixing ratio to a pressure, and is rejected at run time for incompatible
+units, while <code>(qc+qv)*p_mid</code> is fine.)</p>
 <h2 id="functions">Functions</h2>
 <p>Functions are written as methods on the field they act on, <code>X.f(..)</code>, and are
 named after their <a href="https://docs.xarray.dev">xarray</a> counterparts wherever there
@@ -5213,85 +5208,85 @@ is an honest analogue.</p>
 <thead>
 <tr>
 <th>Expression</th>
-<th>Former underscore spelling (no longer accepted)</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>X.isel(lev=10)</code></td>
-<td><code>X_at_lev_10</code></td>
+<td><code>X</code> at level 10</td>
 </tr>
 <tr>
 <td><code>X.isel(lev=0)</code></td>
-<td><code>X_at_model_top</code></td>
+<td><code>X</code> at the model top</td>
 </tr>
 <tr>
 <td><code>X.isel(lev=-1)</code></td>
-<td><code>X_at_model_bot</code></td>
+<td><code>X</code> at the lowest level</td>
 </tr>
 <tr>
 <td><code>X.interp(p_mid=500, units='hPa')</code></td>
-<td><code>X_at_500hPa</code></td>
+<td><code>X</code> interpolated to 500 hPa</td>
 </tr>
 <tr>
 <td><code>X.interp(z_mid=10, reference='surface')</code></td>
-<td><code>X_at_10m_above_surface</code></td>
+<td><code>X</code> interpolated to 10 m above the surface</td>
 </tr>
 <tr>
 <td><code>X.interp(z_mid=1000, reference='sealevel')</code></td>
-<td><code>X_at_1000m_above_sealevel</code></td>
+<td><code>X</code> interpolated to 1000 m above sea level</td>
 </tr>
 <tr>
 <td><code>X.mean('col')</code></td>
-<td><code>X_horiz_avg</code></td>
+<td>horizontal (area-weighted) mean</td>
 </tr>
 <tr>
 <td><code>X.mean('lev')</code></td>
-<td><code>X_vert_avg</code></td>
+<td>vertical mean</td>
 </tr>
 <tr>
 <td><code>X.sum('lev')</code></td>
-<td><code>X_vert_sum</code></td>
+<td>vertical sum</td>
 </tr>
 <tr>
 <td><code>X.mean('lev', weights='dp')</code></td>
-<td><code>X_vert_avg_dp_weighted</code></td>
+<td>vertical mean weighted by <code>dp</code></td>
 </tr>
 <tr>
 <td><code>X.where(qv&gt;0.01)</code></td>
-<td><code>X_where_qv_gt_0.01</code></td>
+<td><code>X</code> where <code>qv&gt;0.01</code>, missing elsewhere</td>
 </tr>
 <tr>
 <td><code>X.derivative('p_mid')</code></td>
-<td><code>X_pvert_derivative</code></td>
+<td>vertical derivative with respect to <code>p_mid</code></td>
 </tr>
 <tr>
 <td><code>X.histogram(bins=[0,1,2])</code></td>
-<td><code>X_histogram_0_1_2</code></td>
+<td>histogram of <code>X</code> over the given bin edges</td>
 </tr>
 <tr>
 <td><code>X.zonal_mean(bins=20)</code></td>
-<td><code>X_zonal_avg_20_bins</code></td>
+<td>zonal mean in 20 latitude bins</td>
 </tr>
 <tr>
 <td><code>X.shift(time=1)</code></td>
-<td><code>X_prev</code></td>
+<td><code>X</code> at the previous step</td>
 </tr>
 <tr>
 <td><code>X.over_dt()</code></td>
-<td><code>X_over_dt</code></td>
+<td><code>X</code> divided by the timestep</td>
 </tr>
 <tr>
 <td><code>X.tend()</code></td>
-<td><code>X_atm_backtend</code></td>
+<td>tendency of <code>X</code> over the last step</td>
 </tr>
 <tr>
 <td><code>X.broadcast_like(Y)</code></td>
-<td>(none)</td>
+<td><code>X</code> broadcast to the layout of <code>Y</code></td>
 </tr>
 <tr>
 <td><code>p_mid.searchsorted(500, units='hPa')</code></td>
-<td><code>lev_at_500hPa_mid</code></td>
+<td>level indices bracketing 500 hPa</td>
 </tr>
 </tbody>
 </table>
@@ -5327,7 +5322,8 @@ is an honest analogue.</p>
   is rejected at setup, and so are the same through an alias
   (<code>l1 := X.shift(time=1)</code>, then <code>l1.shift(time=1)</code>) and
   <code>X.shift(time=1).tend()</code>. For two steps back, put an operation between
-  the shifts: <code>(X.shift(time=1)*1.0).shift(time=1)</code>. The shift of any other
+  the shifts: <code>(X.shift(time=1)*1.0).shift(time=1)</code> (on the first step of a
+  run, see <a href="../field_prev/#the-first-step">the first step</a>). The shift of any other
   expression is one step back, e.g. <code>bt1.shift(time=1)</code> with
   <code>bt1 := X - X.shift(time=1)</code>.</li>
 <li><strong><code>shift(time=1)</code> of a diagnostic needs a stream that evaluates every step.</strong>
@@ -5367,8 +5363,7 @@ is an honest analogue.</p>
   <code>mask.mean('lev')</code> and <code>lev&gt;5</code> are not: each of those leaves <code>mask</code> or <code>lev</code>
   as an operand to be resolved on its own, and the run aborts with
   <code>The key 'mask' is not associated to any registered product</code>, since it is
-  neither a field nor a diagnostic. Both names come from the former underscore
-  syntax (<code>mask_where_lev_gt_5</code>), not from xarray.</li>
+  neither a field nor a diagnostic. Neither name comes from xarray.</li>
 <li>A negative number is written as it reads, as a threshold or as a factor:
   <code>omega.where(omega&lt;=-0.1)</code>, <code>-2*T_mid</code>, <code>T_mid*(-2)</code>. In a <code>where</code>
   condition, the field goes on the left of the comparison.</li>
@@ -5386,8 +5381,8 @@ is an honest analogue.</p>
   per the bullet above cannot be multiplied.</li>
 <li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
   the <code>over_dt</code> restriction above.</li>
-<li><code>searchsorted</code> gives, per column, the level index that brackets a target
-  pressure or height. Its receiver picks the coordinate: <code>p_mid</code>/<code>p_int</code> for a
+<li><code>searchsorted</code> gives, per column, the pair of level indices that bracket a
+  target pressure or height. Its receiver picks the coordinate: <code>p_mid</code>/<code>p_int</code> for a
   pressure (<code>units</code> defaults to <code>Pa</code>), <code>z_mid</code>/<code>z_int</code> for a height above sea
   level, and <code>height_mid</code>/<code>height_int</code> for a height above the surface (<code>units</code>
   defaults to <code>m</code>). <code>interp(..)</code> is built on it, so fields interpolated to the
@@ -5400,7 +5395,7 @@ is an honest analogue.</p>
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
 and so on.</p>
 <h3 id="where-this-departs-from-xarray">Where this departs from xarray</h3>
-<p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>where</code>, <code>shift</code> and <code>searchsorted</code> mean what they mean in
+<p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>where</code> and <code>shift</code> mean what they mean in
 xarray, on the same arguments. The rest have no xarray spelling we could adopt:</p>
 <table>
 <thead>
@@ -5426,13 +5421,16 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 <td><code>mean('lev', weights=..)</code></td>
 <td>xarray would be <code>weighted(dp).mean('lev')</code>, again a chain</td>
 </tr>
+<tr>
+<td><code>searchsorted</code></td>
+<td>named after numpy's, but gives the pair of levels bracketing the target (-1 where out of range) rather than one insertion index, and takes <code>units</code></td>
+</tr>
 </tbody>
 </table>
 <p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, expressed as
 one diagnostic rather than as a graph of three.</p>
 <p>Two operand names have no xarray analogue at all, because they are not fields:
-<code>mask</code> and <code>lev</code>, both from the former underscore syntax and both legal only
-inside <code>where(..)</code>. See the note above for what they mean and where they may
+<code>mask</code> and <code>lev</code>, both legal only inside <code>where(..)</code>. See the note above for what they mean and where they may
 appear.</p>
 <h2 id="errors">Errors</h2>
 <p>An expression that does not parse, calls a function that does not exist, or
