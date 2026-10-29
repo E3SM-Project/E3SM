@@ -545,7 +545,6 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
         - `wind_speed`
         - `AerosolOpticalDepth550nm`
         - `NumberPath`
-        - `AeroComCld`
 
 - **Lower-dimensional slices of a field**
       - These are hyperslices of an existing field or of another diagnostic output.

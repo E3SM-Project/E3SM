@@ -52,6 +52,14 @@ fields:
       - T_bcast   := T_mid.mean('lev').broadcast_like(T_mid)
       # The int index pair is promoted to Real, since IO writes only Real fields.
       - p500_idx  := p_mid.searchsorted(500, units='hPa')*1.0
+      - T_cldtop    := T_mid.aerocom('top')
+      - T_cldbot    := T_mid.aerocom('bot')
+      - rel_cldtop  := eff_radius_qc.aerocom('top', phase='liq')
+      - rei_cldtop  := eff_radius_qi.aerocom('top', phase='ice')
+      - cld_cldtop  := mask.aerocom('top')
+      - liq_cldtop  := mask.aerocom('top', phase='liq')
+      - ice_cldtop  := mask.aerocom('top', phase='ice')
+      - w_cldtop    := cldfrac_tot.aerocom_weights('top')
 
       # --- Composition ------------------------------------------------------
       - cold_T    := T_mid.where(T_mid<273.15).mean('lev')
@@ -60,6 +68,8 @@ fields:
       # A negative threshold, and bin edges that are negative or have an exponent.
       - w_up      := omega.where(omega<=-0.1)
       - qv_hist   := qv.histogram(bins=[-1,0,1e-5,1e-4])
+      # Divided by the cloud fraction only where there is cloud.
+      - cdnc_cldtop := (nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).aerocom('top', phase='liq')
 
       # NOTE: 'over_dt' and 'tend' are NOT here on purpose. They divide by the
       #       time elapsed since the start of the step, and an INSTANT stream
