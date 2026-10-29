@@ -242,6 +242,11 @@ cd cime/CIME/Tools
 
 Nightly results from test suites appear on https://my.cdash.org/index.php?project=E3SM
 
+### Testing EAMxx Modifications
+
+When modifying files under `components/eamxx/**`, see `components/eamxx/AGENTS.md`
+for standalone testing instructions.
+
 ## Architecture
 
 ### Primary Languages
@@ -311,25 +316,80 @@ git submodule update --init --recursive --depth=1
 GitHub Actions workflows in `/.github/workflows/`:
 - `eamxx-sa-testing.yml` - EAMxx standalone (gcc-openmp, gcc-cuda)
 - `eamxx-v1-testing.yml` - CIME tests with EAMxx/MAM4xx
+- `e3sm-gh-testing.yml`  - CIME tests with E3SM cases
 
 Build types tested: sp (single precision), dbg (debug), fpe (floating point exceptions), opt (optimized)
 
 ## Development Workflow
 
-1. Developing E3SM requires running on supported machines.
+1. Testing changes to E3SM requires running on supported machines
 2. E3SM uses gitworkflows but without a 'seen' branch https://www.kernel.org/pub/software/scm/git/docs/gitworkflows.html
 3. Development guide: https://e3sm.org/model/running-e3sm/developing-e3sm/
 4. PR-based workflow with automated testing
 5. Feature branch names should use this pattern: ```<github username>/<source code area or component>/<feature-description>```
-6. New features should be coordinated via E3SM management and science plan
 
-## Testing EAMxx Modifications (for AI Agents)
+### Writing about code
 
-When modifying files under `components/eamxx/**`, see `components/eamxx/AGENTS.md`
-for standalone testing instructions.
+When writing about code in github issues or pull requests, use these rules.
 
-## Rules for pull request (PR) description
-1. PR description should have two parts.  The fist should be a brief description in plain
- text with no markdown or other formatting. Add a line.  The second part should be the full
-description with markdown formatting.
-2. PR description should use imperative tense and start with a verb like 'Fix' or 'Add'
+Assume that the audience or readership is an E3SM developer with
+familiarity at a high level with the overall structure and intention of the
+code base.
+
+Never repeat explanations of existing, unchanged features.
+Explanations are appropriate where there is a change, particularly one of a
+conceptual nature. Explanations are also appropriate to highlight nuance
+that informs the current discussion.
+
+Write less; do not pack the same content into denser sentences. Keep
+headings, tables and links. Colleagues mostly write unstructured prose, and
+structure is an improvement on it. The problem is length.
+
+- **Lead with the answer.** The first two sentences say what you found,
+  changed, or propose. Setup and reproduction go last.
+- **One point per paragraph, and few paragraphs.** Colleagues write one to
+  three per comment; recent AI-written ones ran to eighteen. That gap is
+  the complaint. Say each thing once.
+- **Do not narrate the mechanism.** The chain of calls, and why the fix is
+  right, go in the commit message. Here, say what broke and where to look.
+- **Cut clauses that qualify rather than inform**, and any sentence whose
+  only job is to justify the one before it. One clause per sentence where
+  one will do.
+- **Use backticks about half as often as feels natural.** They are for what
+  a reader would type or grep. Code blocks hold artifacts you did not
+  write, never authored prose.
+- **One document, one decision.** Anything still relevant after this merges
+  is an issue, not a comment.
+- **For a PR description** Should have two parts.  The fist should be a brief description in plain
+  text with no markdown or other formatting. Then add "Fixes" for any issues that are closed.
+  Then add the PR signature described below.  Then add a line.
+  After the line should be the full description with markdown formatting, tables, etc. 
+  The description should use imperative tense and start with a verb like 'Fix' or 'Add'.
+
+### PR signature
+When the PR is created by the agent, use this signature.
+```
+*Created by <agent> on @<user>'s behalf.
+```
+If the changes grew out of the user's own changes or substantial
+direction, sign it instead with:
+
+```
+*Created by @<user> and <agent> together*
+```
+## Writing rules for using collaboration or communication software (Github, Slack, etc.)
+
+When posting a comment (not a PR) on someone's behalf, preface it with this on its own line.
+
+```
+*Posted by <agent>*
+```
+
+If the post grew out of the user's own draft or substantial
+direction, preface it instead with:
+
+```
+*Drafted by @<user> and <agent> together*
+```
+
+Name the agent harness, not the vendor: `Claude Code`, `Codex`, and so on.
