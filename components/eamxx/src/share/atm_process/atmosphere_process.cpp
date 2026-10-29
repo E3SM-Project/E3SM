@@ -160,6 +160,26 @@ void AtmosphereProcess::run (const double dt) {
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
 
+  // TimeStamp snaps to the nearest second whenever its running fraction gets
+  // within 1ms of a whole second. For some (unusual) subcycle counts, a partial
+  // sum of substeps lands within 1ms of a whole second without being one, and
+  // the snapping makes our clock drift from the caller's. Catch that up front.
+  if (m_num_subcycles>1) {
+    auto ts_sub = m_end_of_step_ts;
+    auto ts_ref = m_end_of_step_ts;
+    for (int i=0; i<m_num_subcycles; ++i) {
+      ts_sub += dt_sub;
+    }
+    ts_ref += dt;
+    EKAT_REQUIRE_MSG (ts_sub==ts_ref,
+        "Error! Unsupported subcycling configuration for " + name() + ".\n"
+        "  Accumulating the substeps does not reproduce the full time step,\n"
+        "  due to TimeStamp rounding to 1ms. Choose a different number of subcycles.\n"
+        "  - dt            : " + std::to_string(dt) + "\n"
+        "  - num subcycles : " + std::to_string(m_num_subcycles) + "\n"
+        "  - dt_sub        : " + std::to_string(dt_sub) + "\n");
+  }
+
   // Init single step tendencies (if any) with current value of output field
   init_step_tendencies ();
 
