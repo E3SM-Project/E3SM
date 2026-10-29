@@ -155,6 +155,9 @@ endif()
 
 # Add subdirectories
 add_subdirectory(common)
-add_subdirectory(cpl7_interface)
-# add_subdirectory(emulatoratm)
-# add_subdirectory(driver)
+add_subdirectory(interface)
+add_subdirectory(inference)
+add_subdirectory(coupler_api)
+if(EMULATOR_ENABLE_TESTS)
+add_subdirectory(tests)
+endif()

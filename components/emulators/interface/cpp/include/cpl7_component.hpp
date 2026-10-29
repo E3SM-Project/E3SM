@@ -10,10 +10,13 @@ namespace e3sm::emulator {
 using namespace e3sm::coupler;
 
 struct ExternalField {
-  FieldRole role;
-  std::string label;
-  std::size_t extent;
-  std::size_t offset;
+  std::string name;
+  std::span<double> data;
+};
+
+struct ExternalBindings {
+  std::vector<ExternalField> to_external;
+  std::vector<ExternalField> from_external;
 };
 
 class CPL7Component {
@@ -40,16 +43,10 @@ public:
     throw std::runtime_error("DON'T CALL RUN ON CPL7Component");
   }
 
-  void attach_fields(std::span<const ExternalField> requested_fields,
-                     std::span<double> import_storage,
-                     std::span<double> export_storage);
+  void attach_fields(ExternalBindings bindings);
 
 private:
-  struct BoundField {
-    RegisteredField field;
-    std::span<double> storage;
-  };
-  std::vector<BoundField> fields_;
+  ExternalBindings bindings_;
   CouplingAdapter coupling_;
   bool initialized_ = false;
 };
