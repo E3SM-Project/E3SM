@@ -571,7 +571,8 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   dlf_ = view_2d("dlf_", ncol_, nlev_);
 
   // Temporary view for pressure thickness in mb (converted from Pa)
-  dp_tmp_ = view_2d("dp_tmp", ncol_, nlev_);
+  dp_tmp_    = view_2d("dp_tmp", ncol_, nlev_);
+  dpdry_tmp_ = view_2d("dpdry_tmp", ncol_, nlev_);
   
   calcsize_data_.initialize();
   // wetscav uses update_mmr=true;
@@ -760,6 +761,7 @@ void MAMWetscav::run_impl(const double dt) {
   const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
   const auto &aero_config = aero_config_;
   const auto &dp_tmp = dp_tmp_;
+  const auto &dpdry_tmp = dpdry_tmp_;
  
   // Check if convection processing is enabled
   const bool convproc_do_aer = convproc_do_aer_;
@@ -872,7 +874,13 @@ void MAMWetscav::run_impl(const double dt) {
         
         if(do_convproc) {
           dp_icol = dp_tmp_icol;
-          p_del_dry_icol = ekat::subview(pseudo_density_dry, icol);
+          auto dpdry_tmp_icol = ekat::subview(dpdry_tmp, icol);
+          const auto pseudo_density_dry_icol = ekat::subview(pseudo_density_dry, icol);
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+            dpdry_tmp_icol(kk) = pseudo_density_dry_icol(kk) * pa_to_mb;
+          });
+          team.team_barrier();
+          p_del_dry_icol = dpdry_tmp_icol;
           ktop = Kokkos::round(zm_jt_in(icol));
           kbot = Kokkos::round(zm_msemax_klev_in(icol));
         } 

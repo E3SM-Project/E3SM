@@ -111,6 +111,7 @@ private:
 
   // Temporary view for pressure thickness in mb (converted from Pa)
   view_2d dp_tmp_;
+  view_2d dpdry_tmp_;
 
   int num_2d_scratch_ = 39;
   //
