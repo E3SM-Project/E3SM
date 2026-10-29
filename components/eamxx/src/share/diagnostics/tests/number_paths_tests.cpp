@@ -37,24 +37,14 @@ void run()
   register_diagnostics();
   ekat::ParameterList params;
 
-  REQUIRE_THROWS(diag_factory.create("NumberPath", comm, params, grid));  // No 'number_kind'
-  params.set<std::string>("number_kind", "Foo");
-  REQUIRE_THROWS(diag_factory.create("NumberPath", comm, params, grid));  // Invalid 'number_kind'
-
-  std::map<std::string,std::shared_ptr<AbstractDiagnostic>> diags;
-
-  // Liquid
-  params.set<std::string>("number_kind", "Liq");
-  auto diag_liq = diag_factory.create("NumberPath", comm, params, grid);
-  diags.emplace("lnp", diag_liq);
-  // Ice
-  params.set<std::string>("number_kind", "Ice");
-  auto diag_ice = diag_factory.create("NumberPath", comm, params, grid);
-  diags.emplace("inp", diag_ice);
-  // Rain
-  params.set<std::string>("number_kind", "Rain");
-  auto diag_rain = diag_factory.create("NumberPath", comm, params, grid);
-  diags.emplace("rnp", diag_rain);
+  // One diag computes the three number paths
+  auto diag = diag_factory.create("NumberPath", comm, params, grid);
+  const auto& outs = diag->get_outputs();
+  REQUIRE(outs.size() == 3);
+  REQUIRE(outs[0].name() == "LiqNumberPath");
+  REQUIRE(outs[1].name() == "IceNumberPath");
+  REQUIRE(outs[2].name() == "RainNumberPath");
+  REQUIRE_THROWS(diag->get());  // Several outputs: must pick one by name
 
   // Set the required fields for the diagnostic.
   std::map<std::string, Field> input_fields;
@@ -62,21 +52,21 @@ void run()
     using namespace ShortFieldTagsNames;
     using namespace ekat::units;
     auto scalar3d = grid->get_3d_scalar_layout(LEV);
-    for(const auto &dd : diags) {
-      const auto &diag = dd.second;
-      for(const auto &fname : diag->get_input_fields_names()) {
-        if(input_fields.find(fname) == input_fields.end()) {
-          FieldIdentifier fid(fname, scalar3d, Pa, grid->name());
-          Field f(fid);
-          f.allocate_view();
-          f.get_header().get_tracking().update_time_stamp(t0);
-          input_fields.emplace(fname, f);
-        }
-        diag->set_input_field(input_fields.at(fname));
-      }
-      // Initialize the diagnostic
-      diag->initialize();
+    const std::map<std::string, ekat::units::Units> units = {
+      {"pseudo_density", Pa},
+      {"qc", kg/kg}, {"qi", kg/kg}, {"qr", kg/kg},
+      {"nc", 1/kg},  {"ni", 1/kg},  {"nr", 1/kg},
+    };
+    for(const auto &fname : diag->get_input_fields_names()) {
+      FieldIdentifier fid(fname, scalar3d, units.at(fname), grid->name());
+      Field f(fid);
+      f.allocate_view();
+      f.get_header().get_tracking().update_time_stamp(t0);
+      input_fields.emplace(fname, f);
+      diag->set_input_field(f);
     }
+    // Initialize the diagnostic
+    diag->initialize();
   }
 
   // Run tests
@@ -97,18 +87,18 @@ void run()
     randomize_uniform(nr_f,seed++,0,1e-3);
     randomize_uniform(dp_f,seed++,1,100);
 
-    // Grab views for each of the number path diagnostics
-    const auto &lnp   = diags["lnp"]->get();
-    const auto &inp   = diags["inp"]->get();
-    const auto &rnp   = diags["rnp"]->get();
-    const auto &lnp_h = lnp.get_view<const Real *, Host>();
-    const auto &inp_h = inp.get_view<const Real *, Host>();
-    const auto &rnp_h = rnp.get_view<const Real *, Host>();
+    // Grab views for each of the number paths
+    const auto lnp   = diag->get("LiqNumberPath");
+    const auto inp   = diag->get("IceNumberPath");
+    const auto rnp   = diag->get("RainNumberPath");
+    const auto lnp_h = lnp.get_view<const Real *, Host>();
+    const auto inp_h = inp.get_view<const Real *, Host>();
+    const auto rnp_h = rnp.get_view<const Real *, Host>();
 
     // Compute & sync
-    for(const auto &dd : diags) {
-      dd.second->compute(t0);
-      dd.second->get().sync_to_host();
+    diag->compute(t0);
+    for(const auto &f : diag->get_outputs()) {
+      f.sync_to_host();
     }
 
     // Test manual calculation vs one provided by diags

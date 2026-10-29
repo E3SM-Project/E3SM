@@ -14,39 +14,22 @@ NumberPath(const ekat::Comm &comm,
 {
   using namespace ekat::units;
 
-  EKAT_REQUIRE_MSG(params.isParameter("number_kind"),
-      "Error! NumberPath requires 'number_kind' in its input parameters.\n");
-
-  m_kind = m_params.get<std::string>("number_kind");
-  if(m_kind == "Liq") {
-    m_qname = "qc";
-    m_nname = "nc";
-  } else if(m_kind == "Ice") {
-    m_qname = "qi";
-    m_nname = "ni";
-  } else if(m_kind == "Rain") {
-    m_qname = "qr";
-    m_nname = "nr";
-  } else {
-    EKAT_ERROR_MSG(
-        "Error! Invalid choice for 'NumberKind' in NumberPath.\n"
-        "  - input value: " +
-        m_kind +
-        "\n"
-        "  - valid values: Liq, Ice, Rain\n");
-  }
-
   // The fields required for this diagnostic to be computed
-  m_field_in_names.push_back("pseudo_density");
-  m_field_in_names.push_back(m_qname);
-  m_field_in_names.push_back(m_nname);
+  m_field_in_names = {"pseudo_density","qc","nc","qi","ni","qr","nr"};
 
-  // Construct and allocate the diagnostic field
+  // Construct and allocate the diagnostic fields
   auto m2 = pow(m,2);
   auto diag_layout = m_grid->get_2d_scalar_layout();
-  FieldIdentifier fid(m_kind + name(), diag_layout, kg/(kg*m2), m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  auto create = [&](const std::string& kind) {
+    FieldIdentifier fid(kind + name(), diag_layout, kg/(kg*m2), m_grid->name());
+    Field f(fid);
+    f.allocate_view();
+    add_output(f);
+    return f;
+  };
+  m_liq  = create("Liq");
+  m_ice  = create("Ice");
+  m_rain = create("Rain");
 }
 
 void NumberPath::compute_impl()
@@ -58,28 +41,41 @@ void NumberPath::compute_impl()
 
   constexpr Real g = PC::gravit.value;
 
-  const auto np  = m_diagnostic_output.get_view<Real *>();
-  const auto q   = m_fields_in.at(m_qname).get_view<const Real **>();
-  const auto n   = m_fields_in.at(m_nname).get_view<const Real **>();
+  const auto lnp = m_liq.get_view<Real *>();
+  const auto inp = m_ice.get_view<Real *>();
+  const auto rnp = m_rain.get_view<Real *>();
+  const auto qc  = m_fields_in.at("qc").get_view<const Real **>();
+  const auto nc  = m_fields_in.at("nc").get_view<const Real **>();
+  const auto qi  = m_fields_in.at("qi").get_view<const Real **>();
+  const auto ni  = m_fields_in.at("ni").get_view<const Real **>();
+  const auto qr  = m_fields_in.at("qr").get_view<const Real **>();
+  const auto nr  = m_fields_in.at("nr").get_view<const Real **>();
   const auto rho = m_fields_in.at("pseudo_density").get_view<const Real **>();
 
   const auto nlevs  = m_grid->get_num_vertical_levels();
   const auto ncols  = m_grid->get_num_local_dofs();
   const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
+  // One reduction per kind, as in separate kernels, so each sum is
+  // accumulated in the same order as when each kind was computed alone
   auto lambda = KOKKOS_LAMBDA(const MT &team) {
     const int icol = team.league_rank();
-    auto q_icol    = ekat::subview(q, icol);
-    auto n_icol    = ekat::subview(n, icol);
     auto rho_icol  = ekat::subview(rho, icol);
-    Kokkos::parallel_reduce(
-        Kokkos::TeamVectorRange(team, nlevs),
-        [&](const int &ilev, Real &lsum) {
-          lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g;
-        },
-        np(icol));
+    auto path = [&](const auto& q, const auto& n, Real& np) {
+      auto q_icol = ekat::subview(q, icol);
+      auto n_icol = ekat::subview(n, icol);
+      Kokkos::parallel_reduce(
+          Kokkos::TeamVectorRange(team, nlevs),
+          [&](const int &ilev, Real &lsum) {
+            lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g;
+          },
+          np);
+    };
+    path(qc, nc, lnp(icol));
+    path(qi, ni, inp(icol));
+    path(qr, nr, rnp(icol));
   };
-  Kokkos::parallel_for("Compute " + m_kind + name(), policy, lambda);
+  Kokkos::parallel_for("Compute " + name(), policy, lambda);
 }
 
 }  // namespace scream
