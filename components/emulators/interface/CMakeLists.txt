@@ -32,6 +32,7 @@ target_include_directories(emulator_interface PUBLIC
                           ${CMAKE_CURRENT_SOURCE_DIR}
                           ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include
                           ${CMAKE_CURRENT_SOURCE_DIR}/modules
+                          ${CMAKE_CURRENT_SOURCE_DIR}/../coupler_api/include
 )
 
 target_link_libraries(emulator_interface PUBLIC E3SM::coupler_api emulator_common)

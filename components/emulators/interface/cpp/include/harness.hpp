@@ -2,13 +2,11 @@
 #define E3SM_EMULATOR_CPL7_HARNESS_HPP
 
 #include "coupler_driver.hpp"
-#include "emulator.hpp"
 #include "emulator_config.hpp"
 #include "grid_types.hpp"
 #include "process.hpp"
 #include <coupler.hpp>
 #include <cpl7_component.hpp>
-#include <map>
 
 namespace e3sm::emulator {
 
