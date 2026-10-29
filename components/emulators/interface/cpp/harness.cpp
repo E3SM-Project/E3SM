@@ -1,11 +1,8 @@
 #include "harness.hpp"
 #include "cpl7_component.hpp"
 #include "emulator.hpp"
-#include "field_registry.hpp"
 #include <cstddef>
-#include <limits>
 #include <memory>
-#include <ranges>
 #include <stdexcept>
 
 namespace e3sm::emulator {

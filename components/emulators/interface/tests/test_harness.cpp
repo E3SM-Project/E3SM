@@ -1,7 +1,4 @@
 #include "emulator_config.hpp"
-#include "inference_backend.hpp"
-#include <iostream>
-#include <memory>
 #include <string_view>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
