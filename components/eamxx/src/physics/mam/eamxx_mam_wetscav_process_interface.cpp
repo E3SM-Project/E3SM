@@ -14,219 +14,6 @@ namespace scream
 {
 
 // =========================================================================================
-// Helper function to initialize scratch arrays for convection processing
-// =========================================================================================
-namespace {
-
-// Calculate the total work length needed for scratch1Dviews arrays
-// This function computes the memory requirement for all scratch arrays used in convection processing
-KOKKOS_INLINE_FUNCTION
-int get_convproc_scratch1d_work_len(const int nlev) {
-  constexpr int pcnst = mam4::aero_model::pcnst;
-  constexpr int pcnst_extd = mam4::ConvProc::pcnst_extd;
-  
-  int work_len = 0;
-  
-  // Index 0: q - tracer mixing ratios
-  work_len += nlev * pcnst;
-  
-  // Indices 1-2: mu, md - updraft/downdraft mass fluxes
-  work_len += 2 * (nlev + 1);
-  
-  // Indices 3-6: eudp, dudp, eddp, dddp - entrainment/detrainment × dp
-  work_len += 4 * nlev;
-  
-  // Index 7: rhoair - air density
-  work_len += nlev;
-  
-  // Index 8: zmagl - height above ground level
-  work_len += nlev;
-  
-  // Indices 9-12: gath, chat, conu, cond - gathered tracers and concentrations
-  work_len += 4 * (nlev + 1) * pcnst_extd;
-  
-  // Indices 13-14: dconudt_wetdep, dconudt_activa - updraft tendencies
-  work_len += 2 * (nlev + 1) * pcnst_extd;
-  
-  // Index 15: fa_u - updraft fractional area
-  work_len += nlev;
-  
-  // Indices 16-20: dcondt arrays - downdraft tendencies
-  work_len += 5 * nlev * pcnst_extd;
-  
-  // Indices 21-27: wd_flux and sum arrays
-  work_len += 7 * pcnst_extd;
-  
-  // Indices 28-29: dqdt, qnew - tracer tendency and updated values
-  work_len += 2 * nlev * pcnst;
-  
-  // Index 30: dlfdp - detrainment × dp
-  work_len += nlev;
-
-  // Index 31: x_ratio - precipitation resuspension ratio
-  work_len += nlev;
-  
-  return work_len;
-}
-
-// Initialize scratch1Dviews array from work array for convective processing
-// This must be called for each column to set up per-column scratch workspace
-KOKKOS_INLINE_FUNCTION
-void initialize_scratch1d_views(
-    Kokkos::View<Real*> scratch1Dviews[mam4::ConvProc::Col1DViewInd::NumScratch],
-    Real* work_ptr,
-    const int nlev)
-{
-  constexpr int pcnst = mam4::aero_model::pcnst;
-  constexpr int pcnst_extd = mam4::ConvProc::pcnst_extd;
-  using ConvProc = mam4::ConvProc;
-  
-  // Allocate each scratch array from the work array
-  // Index 0: q - tracer mixing ratios
-  scratch1Dviews[ConvProc::Col1DViewInd::q] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst);
-  work_ptr += nlev * pcnst;
-  
-  // Indices 1-2: mu, md - updraft/downdraft mass fluxes
-  scratch1Dviews[ConvProc::Col1DViewInd::mu] = 
-      Kokkos::View<Real*>(work_ptr, nlev + 1);
-  work_ptr += nlev + 1;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::md] = 
-      Kokkos::View<Real*>(work_ptr, nlev + 1);
-  work_ptr += nlev + 1;
-  
-  // Indices 3-6: eudp, dudp, eddp, dddp - entrainment/detrainment × dp
-  scratch1Dviews[ConvProc::Col1DViewInd::eudp] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dudp] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::eddp] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dddp] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  // Index 7: rhoair - air density
-  scratch1Dviews[ConvProc::Col1DViewInd::rhoair] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  // Index 8: zmagl - height above ground level
-  scratch1Dviews[ConvProc::Col1DViewInd::zmagl] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  // Indices 9-12: gath, chat, conu, cond - gathered tracers and concentrations
-  scratch1Dviews[ConvProc::Col1DViewInd::gath] = 
-      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
-  work_ptr += (nlev + 1) * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::chat] = 
-      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
-  work_ptr += (nlev + 1) * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::conu] = 
-      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
-  work_ptr += (nlev + 1) * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::cond] = 
-      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
-  work_ptr += (nlev + 1) * pcnst_extd;
-  
-  // Indices 13-14: dconudt_wetdep, dconudt_activa - updraft tendencies
-  scratch1Dviews[ConvProc::Col1DViewInd::dconudt_wetdep] = 
-      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
-  work_ptr += (nlev + 1) * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dconudt_activa] = 
-      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
-  work_ptr += (nlev + 1) * pcnst_extd;
-  
-  // Index 15: fa_u - updraft fractional area
-  scratch1Dviews[ConvProc::Col1DViewInd::fa_u] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-  
-  // Indices 16-20: dcondt arrays - downdraft tendencies
-  scratch1Dviews[ConvProc::Col1DViewInd::dcondt] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
-  work_ptr += nlev * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_wetdep] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
-  work_ptr += nlev * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_prevap] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
-  work_ptr += nlev * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_prevap_hist] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
-  work_ptr += nlev * pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_resusp] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
-  work_ptr += nlev * pcnst_extd;
-  
-  // Indices 21-27: wd_flux and sum arrays
-  scratch1Dviews[ConvProc::Col1DViewInd::wd_flux] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::sumactiva] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::sumaqchem] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::sumprevap] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::sumprevap_hist] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::sumresusp] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::sumwetdep] = 
-      Kokkos::View<Real*>(work_ptr, pcnst_extd);
-  work_ptr += pcnst_extd;
-  
-  // Indices 28-29: dqdt, qnew - tracer tendency and updated values
-  scratch1Dviews[ConvProc::Col1DViewInd::dqdt] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst);
-  work_ptr += nlev * pcnst;
-  
-  scratch1Dviews[ConvProc::Col1DViewInd::qnew] = 
-      Kokkos::View<Real*>(work_ptr, nlev * pcnst);
-  work_ptr += nlev * pcnst;
-  
-  // Index 30: dlfdp - detrainment × dp
-  scratch1Dviews[ConvProc::Col1DViewInd::dlfdp] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-
-  // Index 31: x_ratio - precipitation resuspension ratio
-  scratch1Dviews[ConvProc::Col1DViewInd::x_ratio] = 
-      Kokkos::View<Real*>(work_ptr, nlev);
-  work_ptr += nlev;
-}
-
-} // anonymous namespace
-
-// =========================================================================================
 MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params)
  : MAMGenericInterface(comm, params)
 {
@@ -441,7 +228,7 @@ int MAMWetscav::get_len_temporary_views() {
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len() * ncol_;
   // Calculate work length for convection processing scratch arrays
   // Only allocate if convection processing is enabled
-  const int work_convproc_len = do_convproc_ ? get_convproc_scratch1d_work_len(nlev_) * ncol_ : 0;
+  const int work_convproc_len = do_convproc_ ? mam4::convproc::get_scratch1d_work_len(nlev_) * ncol_ : 0;
   return work_len + work_convproc_len;
 }
 
@@ -455,7 +242,7 @@ void MAMWetscav::init_temporary_views() {
   // Allocate separate work array for convection processing scratch1Dviews
   // Only allocate if convection processing is enabled
   if(do_convproc_) {
-    const int work_convproc_len = get_convproc_scratch1d_work_len(nlev_);
+    const int work_convproc_len = mam4::convproc::get_scratch1d_work_len(nlev_);
     work_convproc_ = view_2d(work_ptr, ncol_, work_convproc_len);
     work_ptr += ncol_ * work_convproc_len;
   }
@@ -859,7 +646,7 @@ void MAMWetscav::run_impl(const double dt) {
         if(do_convproc) {
           auto work_convproc_icol = ekat::subview(work_convproc, icol);
           // Initialize scratch arrays from work array for convective processing
-          initialize_scratch1d_views(scratch1Dviews, work_convproc_icol.data(), nlev);
+          mam4::convproc::init_scratch_1d_views(scratch1Dviews, work_convproc_icol.data(), nlev);
           
           // Convection mass flux fields from ZM scheme
           mu_icol = ekat::subview(zm_mflx_up, icol);
