@@ -576,8 +576,10 @@ IF (${HOMME_BUILD_EXECS})
   ADD_SUBDIRECTORY(dcmip_tests)
 ENDIF()
 
-# Create a "make clean-all" target to delete CMake cache and the cprnc build
-ADD_CUSTOM_TARGET(clean-all
-   COMMAND ${CMAKE_BUILD_TOOL} clean
-   COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
-)
+# Create a "make clean-all" target to delete CMake cache and the cprnc build.
+IF (HOMME_STANDALONE)
+  ADD_CUSTOM_TARGET(clean-all
+     COMMAND ${CMAKE_BUILD_TOOL} clean
+     COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
+  )
+ENDIF()
