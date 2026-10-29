@@ -98,7 +98,7 @@ ScalarType power_of_two (const ScalarType e) {
   constexpr int order = 10;
   for (int n=order; n>0; --n) {
     y *= l2e/n;
-    y += 1.0;
+    y += ScalarType(1.0);
   }
   return y;
 }
