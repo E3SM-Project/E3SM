@@ -15,6 +15,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace scream
 {
@@ -36,16 +37,28 @@ namespace scream
  *                retrieve and set in the diag before any attempt at computing it.
  *  - initialize: by the time this function is called, ALL input fields (if any) MUST
  *                have been set in the class (via the above method), while by the time
- *                it returns, the stored diagnostic field MUST be allocated. It calls the
+ *                it returns, the output field(s) MUST be allocated. It calls the
  *                protected 'initialize_impl', which derived classes MUST implement.
  *  - init_timestep: this is optional (the base class has an empty impl), but provides
  *                   the diag the possibility of doing some start-of-step calculations.
  *                   E.g., the FieldPrev diag, which computes the field at the previous
  *                   timestep, can use this call to copy the field before the timestep begins.
  *  - compute: this is where the calculation is (usually) performed. It calls the private
- *             method 'compute_impl', which derived classes MUST implement.
+ *             method 'compute_impl', which derived classes MUST implement. All outputs
+ *             get the time stamp of the evaluation once compute_impl returns.
  *  - get: this can be used to retrieve the diagnostic field (can be called once, as the
  *         stored field is allocated once at initialization and reused at every step).
+ *
+ * Most diags have one output, which they store in m_diagnostic_output, and which
+ * get() returns. A diag may instead compute several fields at once (e.g., NumberPath
+ * computes the liquid, ice and rain number paths in one kernel). Such a diag declares
+ * each output with add_output in its constructor, so that customers know all output
+ * names right after construction (e.g., an output stream can then share one instance
+ * among requests of different outputs). For such a diag:
+ *  - get() errors out: use get(name), or get_outputs();
+ *  - the outputs cannot be renamed via 'output_field_name' (customers can alias
+ *    the one they want instead);
+ *  - one compute call evaluates all outputs.
  */
 
 class AbstractDiagnostic
@@ -79,8 +92,16 @@ public:
   // we need to compute tendencies, or accumulated stuff)
   virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
 
-  // Returns the diagnostic output field
+  // Returns the diagnostic output field. Errors out if the diag has several outputs.
   Field get () const;
+
+  // Returns the output field with the given name (case insensitive)
+  Field get (const std::string& name) const;
+
+  // The output fields, in the order they were declared. A diag with several outputs
+  // declares them in its constructor, so this is complete right after construction.
+  // For a diag with one output, this may be empty until initialize() is called.
+  const std::vector<Field>& get_outputs () const { return m_outputs; }
 
   // Compute the diagnostic (skips if inputs have not changed since last call)
   void compute (const util::TimeStamp& ts);
@@ -93,6 +114,12 @@ protected:
   // Derived classes implement this to compute the output from the inputs.
   virtual void compute_impl () = 0;
 
+  // Declare an output field. A diag with several outputs MUST call this in its
+  // constructor, once per output. The field must be allocated, on this diag's grid,
+  // and have a name that no other output has. A diag with one output may call this
+  // (once) instead of setting m_diagnostic_output, but not in addition to it.
+  void add_output (const Field& f);
+
   // MPI communicator
   ekat::Comm              m_comm;
 
@@ -102,7 +129,8 @@ protected:
   // The grid on which this diagnostic is defined (set via set_grid())
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // Diagnostics produce a single output field
+  // The output of a diag with one output (set in the ctor or in initialize_impl).
+  // Diags with several outputs use add_output instead.
   Field m_diagnostic_output;
 
   // Timestamp of the last diag evaluation
@@ -115,6 +143,13 @@ protected:
   bfbhash::HashType             m_last_eval_ts_hash = 0;
 
   bool m_is_initialized = false;
+
+private:
+  // A string listing the outputs, for error messages
+  std::string outputs_names () const;
+
+  // All output fields, in declaration order (see get_outputs)
+  std::vector<Field> m_outputs;
 };
 
 // Factory for atmosphere diagnostics
