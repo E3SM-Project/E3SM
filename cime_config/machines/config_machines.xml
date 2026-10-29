@@ -162,7 +162,7 @@
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>32</GMAKE_J>
+    <GMAKE_J>8</GMAKE_J>
     <BATCHED_BUILD>TRUE</BATCHED_BUILD>
     <CMAKE_BACKEND>ninja</CMAKE_BACKEND>
     <TESTS>e3sm_developer</TESTS>
