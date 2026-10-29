@@ -7,13 +7,18 @@
 meshes:
   oQU240:
     inputs:
-      - file: ocean.QU.240km.151209.teos10.260807.nc
-        streams: [HorzMeshIn, InitialVertCoord, InitialState]
+      - file: ocean.QU.240km.151209.teos10.20261019.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
 
   EC30to60E2r2:
     inputs:
-      - file: ocean.EC30to60E2r2.200908.teos10.260807.nc
-        streams: [HorzMeshIn, InitialVertCoord, InitialState]
+      - file: ocean.EC30to60E2r2.200908.teos10.20261019.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+
+  u01-oi6to18:
+    inputs:
+      - file: mpaso.u01-oi6to18.20260811.teos10.261020.nc 
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
 
 # A mesh may list multiple ``inputs`` entries when its streams are split
 # across separate files:

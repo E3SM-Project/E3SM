@@ -530,6 +530,12 @@
   <lname>2010_SCREAM_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- EAMxx fully coupled with OMEGA ocean. NS = no spun-up ICs for omega and mpassi, for testing on small grids -->
+<compset>
+  <alias>WCYCLXX1850NS-OMEGA</alias>
+  <lname>1850_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI_OMEGA_MOSART_SGLC_SWAV</lname>
+</compset>
+
 
 <!-- OCN + CICE + GLC Only Compsets -->
 <compset>
