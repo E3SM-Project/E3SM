@@ -51,6 +51,7 @@ nav:
       - 'Grids and Remappers': 'developer/grid.md'
       - 'Atmosphere Processes': 'developer/processes.md'
       - 'Input/Output': 'developer/io.md'
+      - 'Diagnostics': 'developer/diagnostics.md'
       - 'Third-party Libraries': 'developer/TPLs.md'
     - 'How to':
       - 'Wrap Torch emulators': 'developer/torch_support.md'

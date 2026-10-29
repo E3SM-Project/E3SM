@@ -115,7 +115,9 @@ create_diagnostic (const std::string& diag_field_name,
 
   // A plain identifier names a diag. A few diag classes serve a family of names,
   // where the name picks a variant (e.g., LiqWaterPath and IceWaterPath are both
-  // WaterPath). Anything else is taken as the diag class name itself.
+  // WaterPath), or one of the outputs of a diag that computes them all (e.g.,
+  // LiqNumberPath and IceNumberPath are both outputs of NumberPath, which needs
+  // no param). Anything else is taken as the diag class name itself.
   struct Variant {
     std::string diag_name;
     std::string param_name;
@@ -129,7 +131,7 @@ create_diagnostic (const std::string& diag_field_name,
     named_variants[k + "WaterPath"] = {"WaterPath","water_kind",k};
   }
   for (std::string k : {"Ice","Liq","Rain"}) {
-    named_variants[k + "NumberPath"] = {"NumberPath","number_kind",k};
+    named_variants[k + "NumberPath"] = {"NumberPath","",""};
   }
   for (std::string k : {"Top","Bot"}) {
     named_variants["AeroComCld" + k] = {"AeroComCld","aero_com_cld_kind",k};
@@ -152,7 +154,9 @@ create_diagnostic (const std::string& diag_field_name,
         "      An alternative is to request variables like cdnc_at_cldtop,\n"
         "      which remain unaffected and scientifically valid.\n");
     diag_name = v.diag_name;
-    params.set<std::string>(v.param_name,v.param_value);
+    if (not v.param_name.empty()) {
+      params.set<std::string>(v.param_name,v.param_value);
+    }
   } else if (diag_field_name=="dz") {
     diag_name = "VerticalLayer";
     params.set<std::string>("diag_name","dz");
