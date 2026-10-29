@@ -24,6 +24,19 @@ include(FortranCInterface)
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
   MACRO_NAMESPACE  "FCI_")
 
+# FortranCInterface detection can fail on HPC login nodes when CMake cannot run
+# test programs (e.g. Cray-wrapped NVHPC compilers). Check whether FCI_GLOBAL
+# was actually defined in the generated header; if not, fall back to
+# FORTRANUNDERSCORE which the machine cmake_macros already define.
+file(READ "${CMAKE_CURRENT_BINARY_DIR}/cmake_fortran_c_interface.h" _FCI_HEADER_CONTENT)
+if(_FCI_HEADER_CONTENT MATCHES "define FCI_GLOBAL")
+  set(_GPTL_USE_CMAKE_FCI TRUE)
+else()
+  message(STATUS "FortranCInterface detection failed; GPTL will use FORTRANUNDERSCORE name-mangling fallback")
+  set(_GPTL_USE_CMAKE_FCI FALSE)
+endif()
+unset(_FCI_HEADER_CONTENT)
+
 # Just assume all files are free
 set(CMAKE_Fortran_FORMAT FREE)
 
@@ -45,7 +58,11 @@ set(TIMING_INCLUDE_DIRS
   ${GPTL_DIR}
   ${INSTALL_SHAREDPATH}/include)
 
-set(TIMING_CPPDEFS "-DINCLUDE_CMAKE_FCI")
+if(_GPTL_USE_CMAKE_FCI)
+  set(TIMING_CPPDEFS "-DINCLUDE_CMAKE_FCI")
+else()
+  set(TIMING_CPPDEFS "")
+endif()
 if (NOT MPILIB STREQUAL "mpi-serial")
   string(APPEND TIMING_CPPDEFS " -DHAVE_MPI")
 endif()
