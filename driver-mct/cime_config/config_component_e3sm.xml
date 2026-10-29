@@ -245,10 +245,16 @@
     <valid_values>.true.,.false.</valid_values>
     <default_value>.false.</default_value>
     <values match="last">
+      <value grid="a%ne30np4.+oi%IcoswISC30E3r5">.true.</value>
       <value grid="a%ne30np4.+oi%IcoswISC30E3r5.+w%wQU225Icos30E3r5">.true.</value>
       <value grid="a%ne30np4.+oi%SOwISC12to30E3r3">.true.</value>
       <value grid="a%ne30np4.+oi%SOwISC12to30E3r4">.true.</value>
       <value grid="a%ne120np4.+oi%RRSwISC6to18E3r5">.true.</value>
+      <value grid="a%ne32np4.+oi%RRSwISC6to18E3r5">.true.</value>
+      <value grid="a%ne64np4.+oi%RRSwISC6to18E3r5">.true.</value>
+      <value grid="a%ne128np4.+oi%RRSwISC6to18E3r5">.true.</value>
+      <value grid="a%ne256np4.+oi%RRSwISC6to18E3r5">.true.</value>
+      <value grid="a%ne1024np4.+oi%RRSwISC6to18E3r5">.true.</value>
     </values>
     <group>seq_infodata_inparm</group>
     <file>env_run.xml</file>
