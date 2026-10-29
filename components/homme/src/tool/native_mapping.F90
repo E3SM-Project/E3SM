@@ -66,7 +66,7 @@ contains
     type(var_desc_t) :: rowid, colid, sid, xca_id, yca_id, xcb_id, ycb_id, maskb_id, maska_id
     type(var_desc_t) :: areaA_id, areaB_id, dg_id, sg_id
     type(io_desc_t) :: iodesci, iodescd
-    character(len=12) :: unit_str,nestr,npstr
+    character(len=32) :: unit_str,nestr,npstr
     real(r8), allocatable :: areaA(:), areaB(:)
     integer :: cntperelem_in(nelem),  cntperelem_out(nelem)
     integer :: ithr, dg_rank, substr1, substr2

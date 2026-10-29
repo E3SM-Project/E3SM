@@ -4,6 +4,8 @@ SET(TEST_NAME thetah-sl-test11conv-r0t1-cdr30-rrm)
 SET(EXEC_NAME theta-l-nlev30)
 
 SET(NUM_CPUS 16)
+# RRM mesh mountain_10_x2.g has 690 elements; cap at authored rank count
+SET(MAX_NUM_CPUS 16)
 
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/thetah-sl-test11conv-r0t1-cdr30-rrm.nl)
 

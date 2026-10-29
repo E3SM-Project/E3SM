@@ -397,7 +397,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
         call set_tracers(q,qsize,dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo; 
      do k=1,nlevp; do j=1,np; do i=1,np
-        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_coordinates_i(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyai,hybi,u,v,w,T,phis,ps,rho,q(1))
         !let's get an analytical \phi
         he = (T0 - T)/gamma
@@ -458,7 +458,7 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
         
      enddo; enddo; enddo; 
      do k=1,nlevp; do j=1,np; do i=1,np
-        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_coordinates_i(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyai,hybi,shear,u,v,w,T,phis,ps,rho,q(1))
         call set_state_i(u,v,w,T,ps,phis,p,z,g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
@@ -523,7 +523,7 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
         
      enddo; enddo; enddo; 
      do k=1,nlevp; do j=1,np; do i=1,np
-        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_coordinates_i(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call mtest_state(lon,lat,p,z,hyai,hybi,u,v,w,T,phis,ps,rho,testid)
         call set_state_i(u,v,w,T,ps,phis,p,z,g, i,j,k,elem(ie),1,nt)
         
@@ -625,7 +625,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
         call set_tracers(q,qsize, dp,i,j,k,lat,lon,elem(ie))
      enddo; enddo; enddo; 
      do k=1,nlevp; do j=1,np; do i=1,np
-        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_coordinates_i(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyai,hybi,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
         call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
@@ -687,7 +687,7 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
     do k=1,nlevp
       pressure=hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*ps_test
       do j=1,np; do i=1,np
-        call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_coordinates_i(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
 
         !test4_baroclinic_wave(moist,X,lon,lat,p,z,zcoords,u,v,w,t,phis,ps,rho,q,q1,q2)
         !moist 0 or 1, X is Earth scale factor, zcoord=0, q is vapor, q1, q2
@@ -789,6 +789,26 @@ subroutine get_coordinates(lat,lon,hyam,hybm, i,j,k,elem,hvcoord)
   ! get hybrid coeffiecients at midpoint of vertical level k
   hyam = hvcoord%hyam(k)
   hybm = hvcoord%hybm(k)
+
+end subroutine
+
+!_____________________________________________________________________
+subroutine get_coordinates_i(lat,lon,hyai,hybi, i,j,k,elem,hvcoord)
+
+  ! get lat,lon, vertical interface coords at node(i,j,k)
+
+  real(rl),         intent(out):: lon,lat,hyai,hybi
+  integer,          intent(in) :: i,j,k
+  type(element_t),  intent(in) :: elem
+  type(hvcoord_t),  intent(in) :: hvcoord
+
+  ! get horizontal coordinates at column i,j
+  lon  = elem%spherep(i,j)%lon
+  lat  = elem%spherep(i,j)%lat
+
+  ! get hybrid coefficients at interface of vertical level k
+  hyai = hvcoord%hyai(k)
+  hybi = hvcoord%hybi(k)
 
 end subroutine
 

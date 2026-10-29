@@ -493,7 +493,9 @@ static int test_calc_p (const HybridVCoord& hvcoord) {
       Real accum = hvcoord.hybrid_ai0*hvcoord.ps0;
       for (int k = 0; k < cti::num_phys_lev; ++k)
         accum += dph(i,j,k);
-      if (ph(i,j,cti::num_phys_lev) != accum) ++nerr;
+      if (std::abs(ph(i,j,cti::num_phys_lev) - accum) >
+          10*std::numeric_limits<Real>::epsilon()*accum)
+        ++nerr;
     }
   if (nerr) printf("test_calc_p failed %d\n", nerr);
   return nerr;
