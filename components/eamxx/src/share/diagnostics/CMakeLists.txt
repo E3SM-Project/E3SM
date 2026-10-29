@@ -1,6 +1,7 @@
 add_library (eamxx_diagnostics
   abstract_diagnostic.cpp
   aerocom_cld.cpp
+  aerocom_weights.cpp
   aodvis.cpp
   field_prev.cpp
   field_broadcast.cpp
