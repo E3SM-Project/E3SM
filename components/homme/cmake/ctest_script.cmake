@@ -113,9 +113,11 @@ else()
     set(_build_target "test-execs")
   endif()
 
+  # With parallel make, --output-sync=target keeps each target's output together. Otherwise, interleaved
+  # compiler output can confuse ctest's error/warning parsing, producing bogus "errors" in the build log.
   ctest_build(
     TARGET "${_build_target}"
-    FLAGS "-j${BUILD_PARALLEL_LEVEL}"
+    FLAGS "-j${BUILD_PARALLEL_LEVEL} --output-sync=target"
     RETURN_VALUE _bld_rv
   )
   if (_bld_rv)
