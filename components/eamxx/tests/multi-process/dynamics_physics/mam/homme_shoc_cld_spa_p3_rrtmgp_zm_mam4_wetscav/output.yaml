@@ -73,7 +73,7 @@ fields:
       - zm_detr_qc
       - zm_detr_qi
       - zm_jt
-      - zm_jcbot
+      - zm_msemax_klev
       - zm_mflx_up
       - zm_mflx_dn
       - zm_entr_up
