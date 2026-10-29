@@ -125,6 +125,18 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 
   set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
+
+  // t0 counts the steps of whoever runs this process (e.g. the driver counts
+  // coupling steps). Since run() advances our time stamps once per subcycle,
+  // our step counter is m_num_subcycles times the caller's. Restore that here,
+  // so that on restart the counter (and anything keyed off of it, such as
+  // rad_frequency or cosp_frequency) picks up where it left off. For a group,
+  // the scaled counter is then passed down to the stored processes.
+  if (m_num_subcycles>1 && t0.get_num_steps()>0) {
+    const int nsteps = t0.get_num_steps()*m_num_subcycles;
+    m_start_of_step_ts.set_num_steps(nsteps);
+    m_end_of_step_ts.set_num_steps(nsteps);
+  }
   initialize_impl(run_type);
 
   log (LogLevel::info,"  Initializing " + name() + "... done!");

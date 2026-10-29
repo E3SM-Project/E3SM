@@ -842,6 +842,14 @@ be lost if SCREAM_HACK_XML is not enabled.
         <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
         <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
         <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
+        <!-- Coupling-interval radiative flux sums for sc_export (computed by rrtmgp, if present) -->
+        <sfc_flux_dir_nir_cpl_accum>0.0</sfc_flux_dir_nir_cpl_accum>
+        <sfc_flux_dir_vis_cpl_accum>0.0</sfc_flux_dir_vis_cpl_accum>
+        <sfc_flux_dif_nir_cpl_accum>0.0</sfc_flux_dif_nir_cpl_accum>
+        <sfc_flux_dif_vis_cpl_accum>0.0</sfc_flux_dif_vis_cpl_accum>
+        <sfc_flux_sw_net_cpl_accum>0.0</sfc_flux_sw_net_cpl_accum>
+        <sfc_flux_lw_dn_cpl_accum>0.0</sfc_flux_lw_dn_cpl_accum>
+        <sfc_flux_cpl_accum_count>0.0</sfc_flux_cpl_accum_count>
         <cldfrac_liq       >0.0</cldfrac_liq>
         <sgs_buoy_flux     >0.0</sgs_buoy_flux>
         <eddy_diff_mom     >0.0</eddy_diff_mom>
