@@ -1,5 +1,6 @@
 #include "emulator_config.hpp"
 #include "inference_backend.hpp"
+#include <iostream>
 #include <memory>
 #include <string_view>
 #define CATCH_CONFIG_MAIN
@@ -20,75 +21,101 @@ using namespace e3sm::emulator;
 static constexpr double sentinel = -999;
 static constexpr std::size_t ncols = 2;
 static constexpr std::size_t nlevels = 3;
+static constexpr std::size_t nfields = 3;
 static constexpr int nsteps = 3;
 
-static std::size_t input_size() { return ncols * (1 + nlevels); }
+inline GridDesc make_test_grid() {
+  return GridDesc{
+      .grid_type = 0,
+      .nx = 4,
+      .ny = 1,
+      .dimensions =
+          {
+              {
+                  .name = "column",
+                  .local_extent = ncols,
+                  .global_extent = ncols,
+              },
+              {
+                  .name = "soil_levels",
+                  .local_extent = nlevels,
+                  .global_extent = nlevels,
+              },
+          },
+      .col_gids = {0, 1, 2, 3},
+      .lat = {10.0, 20.0, 30.0, 40.0},
+      .lon = {-100.0, -99.0, -98.0, -97.0},
+      .area = {1.0, 1.0, 1.0, 1.0},
+  };
+}
 
+static constexpr std::size_t input_size() { return ncols * (1 + nlevels + 1); }
+struct FieldIndex {
+  std::size_t offset;
+  std::size_t extent;
+};
+using FieldDim = std::vector<std::size_t>;
 struct FakeExt {
-  FakeExt(Layout layout);
+  FakeExt(Layout layout, FieldDim x2l_dims, FieldDim l2x_dims)
+      : layout(layout) {
+    std::size_t offset = 0;
+
+    indices.reserve(nfields);
+    for (std::size_t d : x2l_dims) {
+      indices.push_back({offset, d});
+      offset += d;
+    }
+    x2l.resize(offset);
+
+    offset = 0;
+    for (std::size_t d : l2x_dims) {
+      indices.push_back({offset, d});
+      offset += d;
+    }
+    l2x.resize(offset);
+  };
 
   void set_forcing(std::span<const double> temperature,
-                   std::span<const double> moisture, std::size_t step);
+                   std::span<const double> moisture);
 
   void run(std::string_view);
 
-  std::vector<double> surface_flux();
+  std::span<double> surface_flux();
+  std::span<double> temperature();
+  std::span<double> moisture();
 
   Layout layout;
   std::vector<double> x2l;
   std::vector<double> l2x;
+  std::vector<FieldIndex> indices;
   Harness harness;
 
-  std::size_t temperature_index(std::size_t column) const {
-    if (layout == Layout::Contiguous) {
-      return column;
-    }
-    return column * (1 + nlevels);
-  }
-
-  std::size_t moisture_index(std::size_t column, std::size_t level) const {
-    if (layout == Layout::Contiguous) {
-      return ncols + column * nlevels + level;
-    }
-    return column * (1 + nlevels) + 1 + level;
-  }
-
-  std::size_t flux_index(std::size_t column) const {
-    if (layout == Layout::Contiguous) {
-      return column;
-    }
-    return column * 2;
-  }
-
-  std::size_t unused_index(std::size_t column) const {
-    if (layout == Layout::Contiguous) {
-      return ncols + column;
-    }
-    return column * 2 + 1;
-  }
+  FieldIndex temperature_index() const { return indices[0]; }
+  FieldIndex moisture_index() const { return indices[1]; }
+  FieldIndex flux_index() const { return indices[2]; }
 };
 void FakeExt::run(std::string_view name) { harness.run_process(name); }
 
 void FakeExt::set_forcing(std::span<const double> temperature,
-                          std::span<const double> moisture, std::size_t step) {
-  for (std::size_t column = 0; column < ncols; ++column) {
-    x2l[temperature_index(column)] = temperature[column] + double(step);
-
-    for (std::size_t level = 0; level < nlevels; ++level) {
-      x2l[moisture_index(column, level)] =
-          moisture[column * nlevels + level] - double(step) / 10.0;
-    }
+                          std::span<const double> moisture) {
+  auto t_index = temperature_index();
+  auto moist_index = moisture_index();
+  for (std::size_t column = t_index.offset; column < t_index.extent; ++column) {
+    x2l[column] = temperature[column - t_index.offset];
+  }
+  for (std::size_t i = moist_index.offset; i < moist_index.extent; ++i) {
+    x2l[i] = moisture[i - moist_index.offset];
   }
 }
 
-std::vector<double> FakeExt::surface_flux() {
-  std::vector<double> result(ncols);
-
-  for (std::size_t column = 0; column < ncols; ++column) {
-    result[column] = l2x[flux_index(column)];
-  }
-
-  return result;
+std::span<double> FakeExt::temperature() {
+  return std::span<double>{x2l.data() + indices[0].offset, indices[0].extent};
+}
+std::span<double> FakeExt::moisture() {
+  return std::span<double>{x2l.data() + indices[1].offset, indices[1].extent};
+}
+std::span<double> FakeExt::surface_flux() {
+  return std::span<double>{l2x.data() + indices[2].offset, indices[2].extent};
 }
 
 TEST_CASE("Harness preserves results across external buffer layouts",
@@ -96,46 +123,62 @@ TEST_CASE("Harness preserves results across external buffer layouts",
 
   auto land_config =
       read_emulator_config(TEST_DATA_DIR "/land_emulator_config.yaml");
+  auto plan = TEST_DATA_DIR "/test_harness_plan.yaml";
 
   auto p_name = land_config.name;
-  FakeExt direct{Layout::Contiguous};
+  FieldDim x2l_dims{ncols, ncols * nlevels};
+  FieldDim l2x_dims{ncols};
+  FakeExt direct{Layout::Contiguous, x2l_dims, l2x_dims};
   // FakeExt strided{Layout::Strided};
 
-  std::vector<double> temperature{280.0, 281.0};
-  std::vector<double> moisture{
-      0.10, 0.11, 0.12, 0.20, 0.21, 0.22,
-  };
-  auto direct_flux = direct.surface_flux();
+  REQUIRE(direct.x2l.size() == ncols * (1 + nlevels));
+  REQUIRE(direct.l2x.size() == ncols);
+
+  std::vector<double> temperature;
+  std::vector<double> moisture;
+  temperature.resize(ncols);
+  moisture.resize(ncols*nlevels);
+  for (std::size_t i = 0; i < ncols; ++i) {
+    temperature[i] = 280.0 + i;
+    for (std::size_t l = 0; l < nlevels; ++l) {
+      moisture[i * nlevels + l] = 0.10 * (i + 1) + l;
+    }
+  }
 
   ExternalBindings bindings{
-      .from_external =
-          {
-              {"temperature", std::span<double>{temperature}},
-              {"soil_moisture", std::span<double>{moisture}},
-          },
       .to_external =
           {
-              {"surface_flux", std::span<double>{direct_flux}},
+              {"surface_flux", direct.surface_flux()},
+          },
+      .from_external =
+          {
+              {"temperature", direct.temperature()},
+              {"soil_moisture", direct.moisture()},
           },
   };
 
-direct.harness.transfer_bindings(bindings)
+  direct.harness.transfer_bindings(bindings);
+  direct.harness.add_process(ProcessDescriptor{
+      .run_opts = ProcessRunOpts{.dt = 1., .coupling_interval = 1},
+      .grid = make_test_grid(),
+      .emulator_config = land_config,
+  });
+  direct.harness.initialize(plan);
+
+  Emulator& land_emu = direct.harness.get_process<Emulator>(std::string_view(p_name));
 
   for (int step = 0; step < nsteps; ++step) {
     CAPTURE(step);
 
-    direct.set_forcing(temperature, moisture, step);
-    // strided.set_forcing(temperature, moisture, step);
-
+    direct.set_forcing(temperature, moisture);
     direct.run(p_name);
-    // strided.run(p_name);
 
-    const std::vector<double> direct_flux = direct.surface_flux();
-    // const std::vector<double> staged_flux = strided.surface_flux();
+    const auto direct_flux = direct.surface_flux();
 
     REQUIRE(direct_flux.size() == ncols);
-    // REQUIRE(staged_flux.size() == ncols);
 
+      auto land_flux = land_emu.get_field("surface_flux");
+    // NOTE: This should relfect what the libtorch model actually calculates!!
     for (std::size_t column = 0; column < ncols; ++column) {
       double mean = 0.0;
       for (std::size_t level = 0; level < nlevels; ++level) {
@@ -145,12 +188,10 @@ direct.harness.transfer_bindings(bindings)
 
       const double expected = 2.0 * temperature[column] + 100.0 * mean;
 
+      REQUIRE(land_flux[column] == Approx(expected));
       REQUIRE(direct_flux[column] == Approx(expected));
-      // REQUIRE(staged_flux[column] == Approx(expected));
-
-      // REQUIRE(direct_flux[column] == staged_flux[column]);
     }
-
+    // feeback for next step
     for (std::size_t column = 0; column < ncols; ++column) {
       temperature[column] += 0.001 * direct_flux[column];
     }

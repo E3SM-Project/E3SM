@@ -15,6 +15,10 @@ struct FieldBinding {
   std::span<double> data;
 };
 
+/**
+  // float dt;
+  // int coupling_interval = 1;
+*/
 struct ProcessRunOpts {
   float dt;
   int coupling_interval = 1;
