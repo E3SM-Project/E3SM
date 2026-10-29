@@ -337,6 +337,8 @@ contains
       iMOAB_GetIntTagStorage, iMOAB_ApplyScalarProjectionWeights, &
       iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
     use seq_comm_mct, only : num_moab_exports
+    use seq_comm_mct, only : mbaxid, mboxid, mbixid, mb_scm_atm, mb_scm_ocn, mb_scm_ice
+    use shr_moab_mod, only : mbGetnCells, mbGetEntityType
 
     implicit none
     !-----------------------------------------------------
@@ -353,8 +355,9 @@ contains
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
     logical         ,intent(in),optional :: omit_nonlinear
-    logical  :: valid_moab_context
+    logical  :: valid_moab_context, scm_direct_copy
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
+    integer  :: src_ent_type, tgt_ent_type
     character(len=CXX) :: fldlist_moab
     character(len=CXX) :: fldlist_data    ! data fields only (no norm8wt) for nlmap CAAS path
     character(len=CXX) :: fldlist_caas    ! non-excluded data fields → dual-map CAAS
@@ -432,6 +435,18 @@ contains
        valid_moab_context = .TRUE.
     endif
 
+    ! SCM/DP coupler meshes are cloned from mbaxid, so they have identical
+    ! rank-local ownership and GLOBAL_ID ordering.  Sending these fields through
+    ! another iMOAB communication graph is both unnecessary and, for point
+    ! clouds, can silently leave the destination tags at their initialized zero.
+    scm_direct_copy = &
+         ((mapper%src_mbid == mbaxid .and. mb_scm_atm) .or. &
+          (mapper%src_mbid == mboxid .and. mb_scm_ocn) .or. &
+          (mapper%src_mbid == mbixid .and. mb_scm_ice)) .and. &
+         ((mapper%tgt_mbid == mbaxid .and. mb_scm_atm) .or. &
+          (mapper%tgt_mbid == mboxid .and. mb_scm_ocn) .or. &
+          (mapper%tgt_mbid == mbixid .and. mb_scm_ice))
+
     !*** MOAB: Build field list for MOAB operations
     !*** This section constructs a colon-delimited field list string that will
     !*** be passed to iMOAB functions. The list is built from either:
@@ -465,7 +480,9 @@ contains
        ! mct_sMat_avMult-mapped target norm8wt that the post-divide expects.
         fldlist_data = trim(fldlist_moab)
 
-        if (mbnorm) then
+        ! An exact copy/rearrange does not require normalization weights.  In
+        ! particular, norm8wt is only initialized in the projection path below.
+        if (mbnorm .and. .not. (mapper%copy_only .or. mapper%rearrange_only)) then
            fldlist_moab = trim(fldlist_moab)//":norm8wt"
            nfields=nfields + 1
         endif
@@ -494,7 +511,23 @@ contains
        !*** between source and target MOAB apps using iMOAB_SendElementTag
        !*** and iMOAB_ReceiveElementTag. This is analogous to MCT's copy or
        !*** rearrange but operates on MOAB mesh data structures.
-       if ( valid_moab_context ) then
+       if (valid_moab_context .and. scm_direct_copy) then
+          lsize_src = mbGetnCells(mapper%src_mbid)
+          lsize_tgt = mbGetnCells(mapper%tgt_mbid)
+          if (lsize_src /= lsize_tgt) then
+             call shr_sys_abort(subname//' SCM point-cloud local sizes do not match')
+          endif
+          src_ent_type = mbGetEntityType(mapper%src_mbid)
+          tgt_ent_type = mbGetEntityType(mapper%tgt_mbid)
+          allocate(targtags(lsize_src,nfields))
+          ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, &
+               trim(fldlist_data)//C_NULL_CHAR, lsize_src*nfields, src_ent_type, targtags)
+          if (ierr /= 0) call shr_sys_abort(subname//' cannot read SCM source tags')
+          ierr = iMOAB_SetDoubleTagStorage(mapper%tgt_mbid, &
+               trim(fldlist_data)//C_NULL_CHAR, lsize_tgt*nfields, tgt_ent_type, targtags)
+          if (ierr /= 0) call shr_sys_abort(subname//' cannot write SCM target tags')
+          deallocate(targtags)
+       else if ( valid_moab_context ) then
 #ifdef MOABDEBUG
           if (seq_comm_iamroot(CPLID)) then
              write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
