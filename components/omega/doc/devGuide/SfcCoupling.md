@@ -84,6 +84,29 @@ To keep this invariant, `OcnToCplFields`'s averaged device arrays are
 private: they can only be written via `updateAverages()` (called each
 ocean time step from `updateExportFields()`) and read via `copyToHost()`.
 
+## Frazil Sign Conventions
+
+Frazil exports follow the existing MPAS-O / E3SM convention:
+
+| Coupler field | Units | Positive direction | Description |
+| --- | --- | --- | --- |
+| `Fioo_frazilm` | $\mathrm{kg\ m^{-2}\ s^{-1}}$ | Out of ocean | Frazil mass flux |
+| `Fioo_frazils` | $\mathrm{kg\ m^{-2}\ s^{-1}}$ | Out of ocean | Frazil salt flux |
+| `Fioo_frazilh` | $\mathrm{W\ m^{-2}}$ | Into ocean | Heat flux from frazil formation |
+
+These mass and salt flux signs are an exception to the standard coupler
+convention used by other components. Omega adopts this inverse convention
+to interface with existing E3SM coupling plumbing. Standardizing this across
+E3SM is tracked in [E3SM-Project/E3SM#8928](https://github.com/E3SM-Project/E3SM/issues/8928).
+
+Because newly formed frazil has negative enthalpy, extracting frazil increases
+ocean heat energy. `Fioo_frazilh` is exported as this positive-into-ocean heat
+flux, which sea ice uses to reconstruct negative ice enthalpy.
+
+`Fioo_q` ($\mathrm{W\ m^{-2}}$) is separate, nonpositive melt potential. It is
+set to zero when frazil is exported; otherwise it represents energy available
+at the surface to melt ice.
+
 ## Removal of surface coupling objects
 
 To erase a specific named instance use `erase`:

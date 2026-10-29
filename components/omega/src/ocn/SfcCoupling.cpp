@@ -523,6 +523,13 @@ void OcnToCplFields::updateFields(const OceanState *State,
 
           // 2. Frazil fluxes and melt potential
           if (HasFrazil) {
+             // Invert FrazilMassFlux and FrazilSaltFlux to match the existing
+             // MPAS-O / E3SM export convention (positive out of the ocean).
+             // This is an exception to the standard coupler convention (see
+             // E3SM-Project/E3SM#8928). FrazilEnergyFlux is exported without
+             // inversion because frazil ice has negative enthalpy, so frazil
+             // formation adds heat energy to the ocean (positive into ocean).
+             // TODO: Drop mass/salt negation after E3SM#8928 is merged
              const Real NewAvgFrazilMassFlux =
                  updateAverage(LocAvgFrazilMassFlux(ICell),
                                -FrazilMassFlux(ICell), NAccumSteps);
