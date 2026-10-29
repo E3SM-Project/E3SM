@@ -14,6 +14,10 @@ struct ExternalField {
   std::span<double> data;
 };
 
+/**
+  std::vector<ExternalField> to_external;
+  std::vector<ExternalField> from_external;
+*/
 struct ExternalBindings {
   std::vector<ExternalField> to_external;
   std::vector<ExternalField> from_external;

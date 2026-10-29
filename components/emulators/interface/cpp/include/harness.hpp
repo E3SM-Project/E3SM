@@ -18,7 +18,7 @@ using namespace e3sm::coupler;
   // ProcessRunOpts run_opts;
   // GridDesc grid;
   // EmulatorConfig emulator_config;
-  // 
+  //
 */
 struct ProcessDescriptor {
   ProcessRunOpts run_opts;
@@ -42,6 +42,10 @@ public:
   void initialize(const std::filesystem::path& plan);
   void run_process(std::string_view name);
   void add_process(ProcessDescriptor desc);
+
+  template <CoupledProcess C> C& get_process(std::string_view name) {
+    return driver_.get_component_as<C>(name);
+  };
 
 private:
   ProcessMap processes_;

@@ -31,7 +31,7 @@ void CPL7Component::populate_registry(FieldRegistry& registry) {
         RegisteredField{.role = FieldRole::Export,
                         .component = std::string(name()),
                         .name = field.name,
-      .size=field.data.size()},
+                        .size = field.data.size()},
         field.data);
   }
 }
