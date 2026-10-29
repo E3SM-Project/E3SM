@@ -24,6 +24,7 @@ Do not try and create a case or test unless on a supported machine.
 #list supported machines
 cd cime/scripts
 ./query_config --machines
+The string "(current)" will appear next to the machine you are on if it is supported.
 ```
 
 ### Creating and Building a Case
