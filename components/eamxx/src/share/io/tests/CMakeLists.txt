@@ -51,6 +51,14 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## Sampling at cloud top/bottom, with weights shared across requests
+  CreateUnitTest(io_dexpr_aerocom
+    SOURCES io_dexpr_aerocom.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   ## Fields at the same pressure level share an avg count, unless masked differently
   CreateUnitTest(io_dexpr_plev_avg_cnt
     SOURCES io_dexpr_plev_avg_cnt.cpp
