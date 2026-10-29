@@ -1229,24 +1229,22 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // Accumulate the surface fluxes over the coupling interval. This is done every
   // step (not only when update_rad is true), since on non-radiation steps the
   // fluxes from the last radiation call are still the ones applied.
-  {
-    auto d_sfc_flux_dir_nir_accum = get_field_out("sfc_flux_dir_nir_cpl_accum").get_view<Real*>();
-    auto d_sfc_flux_dir_vis_accum = get_field_out("sfc_flux_dir_vis_cpl_accum").get_view<Real*>();
-    auto d_sfc_flux_dif_nir_accum = get_field_out("sfc_flux_dif_nir_cpl_accum").get_view<Real*>();
-    auto d_sfc_flux_dif_vis_accum = get_field_out("sfc_flux_dif_vis_cpl_accum").get_view<Real*>();
-    auto d_sfc_flux_sw_net_accum  = get_field_out("sfc_flux_sw_net_cpl_accum" ).get_view<Real*>();
-    auto d_sfc_flux_lw_dn_accum   = get_field_out("sfc_flux_lw_dn_cpl_accum"  ).get_view<Real*>();
-    auto d_sfc_flux_accum_count   = get_field_out("sfc_flux_cpl_accum_count"  ).get_view<Real*>();
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,m_ncol), KOKKOS_LAMBDA(const int icol) {
-      d_sfc_flux_dir_nir_accum(icol) += d_sfc_flux_dir_nir(icol);
-      d_sfc_flux_dir_vis_accum(icol) += d_sfc_flux_dir_vis(icol);
-      d_sfc_flux_dif_nir_accum(icol) += d_sfc_flux_dif_nir(icol);
-      d_sfc_flux_dif_vis_accum(icol) += d_sfc_flux_dif_vis(icol);
-      d_sfc_flux_sw_net_accum(icol)  += d_sfc_flux_sw_net(icol);
-      d_sfc_flux_lw_dn_accum(icol)   += d_sfc_flux_lw_dn(icol);
-      d_sfc_flux_accum_count(icol)   += 1;
-    });
-  }
+  auto d_sfc_flux_dir_nir_accum = get_field_out("sfc_flux_dir_nir_cpl_accum").get_view<Real*>();
+  auto d_sfc_flux_dir_vis_accum = get_field_out("sfc_flux_dir_vis_cpl_accum").get_view<Real*>();
+  auto d_sfc_flux_dif_nir_accum = get_field_out("sfc_flux_dif_nir_cpl_accum").get_view<Real*>();
+  auto d_sfc_flux_dif_vis_accum = get_field_out("sfc_flux_dif_vis_cpl_accum").get_view<Real*>();
+  auto d_sfc_flux_sw_net_accum  = get_field_out("sfc_flux_sw_net_cpl_accum" ).get_view<Real*>();
+  auto d_sfc_flux_lw_dn_accum   = get_field_out("sfc_flux_lw_dn_cpl_accum"  ).get_view<Real*>();
+  auto d_sfc_flux_accum_count   = get_field_out("sfc_flux_cpl_accum_count"  ).get_view<Real*>();
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,m_ncol), KOKKOS_LAMBDA(const int icol) {
+    d_sfc_flux_dir_nir_accum(icol) += d_sfc_flux_dir_nir(icol);
+    d_sfc_flux_dir_vis_accum(icol) += d_sfc_flux_dir_vis(icol);
+    d_sfc_flux_dif_nir_accum(icol) += d_sfc_flux_dif_nir(icol);
+    d_sfc_flux_dif_vis_accum(icol) += d_sfc_flux_dif_vis(icol);
+    d_sfc_flux_sw_net_accum(icol)  += d_sfc_flux_sw_net(icol);
+    d_sfc_flux_lw_dn_accum(icol)   += d_sfc_flux_lw_dn(icol);
+    d_sfc_flux_accum_count(icol)   += 1;
+  });
 }
 // =========================================================================================
 
