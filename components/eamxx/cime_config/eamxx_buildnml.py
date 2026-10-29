@@ -94,6 +94,47 @@ def do_cime_vars(entry, case, refine=False, extra=None):
     return entry
 
 ###############################################################################
+def get_total_subcycles(root, name):
+###############################################################################
+    """
+    Return the product of number_of_subcycles over the node with the given name
+    and all of its enclosing atm process groups. This is the number of times
+    that process runs (i.e., how many steps its step counter advances) per
+    atm coupling step. Returns None if the node is not found.
+
+    >>> xml_str = '''
+    ... <params>
+    ...   <atm_step>
+    ...     <number_of_subcycles>2</number_of_subcycles>
+    ...     <physics>
+    ...       <number_of_subcycles>3</number_of_subcycles>
+    ...       <rrtmgp>
+    ...         <number_of_subcycles>1</number_of_subcycles>
+    ...       </rrtmgp>
+    ...     </physics>
+    ...   </atm_step>
+    ... </params>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> get_total_subcycles(ET.fromstring(xml_str), "rrtmgp")
+    6
+    >>> get_total_subcycles(ET.fromstring(xml_str), "shoc") is None
+    True
+    """
+
+    if root.tag==name:
+        nsub = root.find("number_of_subcycles")
+        return 1 if nsub is None else int(nsub.text)
+
+    for elem in root:
+        found = get_total_subcycles(elem,name)
+        if found is not None:
+            nsub = root.find("number_of_subcycles")
+            return found if nsub is None else found*int(nsub.text)
+
+    return None
+
+###############################################################################
 def perform_consistency_checks(case, xml):
 ###############################################################################
     """
@@ -152,6 +193,29 @@ def perform_consistency_checks(case, xml):
     CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
      For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    >>> subcycled_xml_str = '''
+    ... <params>
+    ...   <atm_step>
+    ...     <number_of_subcycles>2</number_of_subcycles>
+    ...     <rrtmgp>
+    ...       <rad_frequency type="integer">2</rad_frequency>
+    ...     </rrtmgp>
+    ...   </atm_step>
+    ... </params>
+    ... '''
+    >>> subcycled_xml = ET.fromstring(subcycled_xml_str)
+    >>> case = MockCase({'ATM_NCPL':'48', 'REST_N':1, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,subcycled_xml)
+    >>> case = MockCase({'ATM_NCPL':'48', 'REST_N':1800, 'REST_OPTION':'nseconds'})
+    >>> perform_consistency_checks(case,subcycled_xml)
+    >>> case = MockCase({'ATM_NCPL':'1', 'REST_N':1, 'REST_OPTION':'ndays'})
+    >>> perform_consistency_checks(case,subcycled_xml)
+    >>> subcycled_xml = ET.fromstring(subcycled_xml_str.replace('>2</rad','>3</rad'))
+    >>> case = MockCase({'ATM_NCPL':'48', 'REST_N':1, 'REST_OPTION':'nsteps'})
+    >>> perform_consistency_checks(case,subcycled_xml)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (1 steps, with 2 rrtmgp steps per atm step).
+     Please, ensure restart happens on a step when rad is ON
     >>> turbulence_xml = ET.fromstring('''
     ... <params>
     ...   <homme><do_3d_turbulence_homme>false</do_3d_turbulence_homme></homme>
@@ -175,8 +239,11 @@ def perform_consistency_checks(case, xml):
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
         atm_ncpl = int(case.get_value("ATM_NCPL"))
+        # rad_frequency counts rrtmgp steps, and rrtmgp runs rad_nsub times per
+        # atm (coupling) step if it, or any group enclosing it, is subcycled
+        rad_nsub = get_total_subcycles(xml,"rrtmgp")
         atm_tstep = 86400 / atm_ncpl
-        rad_tstep = atm_tstep * rad_freq
+        rad_tstep = atm_tstep * rad_freq / rad_nsub
 
         # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
         # settings until RUN phase
@@ -191,9 +258,10 @@ def perform_consistency_checks(case, xml):
         if rad_freq==1 or is_test_not_yet_run:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
-            expect (rest_n % rad_freq == 0,
+            nsub_msg = "" if rad_nsub==1 else f", with {rad_nsub} rrtmgp steps per atm step"
+            expect ((rest_n*rad_nsub) % rad_freq == 0,
                     f"rrtmgp::rad_frequency ({rad_freq} steps) incompatible with "
-                    f"restart frequency ({rest_n} steps).\n"
+                    f"restart frequency ({rest_n} steps{nsub_msg}).\n"
                     " Please, ensure restart happens on a step when rad is ON")
         elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
             if rest_opt in ["nseconds", "nsecond"]:
@@ -204,7 +272,9 @@ def perform_consistency_checks(case, xml):
                 factor = 3600
 
             rest_tstep = factor*rest_n
-            expect (rest_tstep % rad_tstep == 0,
+            # Equivalent to rest_tstep % rad_tstep == 0, in integer arithmetic,
+            # since rad_tstep may not be an integer number of seconds
+            expect ((rest_tstep*atm_ncpl*rad_nsub) % (86400*rad_freq) == 0,
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
                     f"  rest_tstep: {rest_tstep}\n"
@@ -212,7 +282,7 @@ def perform_consistency_checks(case, xml):
 
         else:
             # for "very infrequent" restarts, we request rad_freq to divide atm_ncpl
-            expect (atm_ncpl % rad_freq ==0,
+            expect ((atm_ncpl*rad_nsub) % rad_freq ==0,
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
                     " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
