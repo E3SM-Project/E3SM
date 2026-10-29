@@ -400,6 +400,39 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("p_mid.searchsorted()",grid));
   }
 
+  SECTION ("dexpr_aerocom") {
+    auto d1 = create_diagnostic("T_mid.aerocom('top')",grid);
+    REQUIRE (std::dynamic_pointer_cast<AeroComCld>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("position")=="top");
+    REQUIRE (d1->get_params().get<std::string>("phase")=="none");
+
+    // 'mask' stands for 1, and is not an input
+    auto d2 = create_diagnostic("mask.aerocom('bot', phase='ice')",grid);
+    REQUIRE (d2->get_params().get<std::string>("field_name")=="mask");
+    REQUIRE (d2->get_params().get<std::string>("position")=="bot");
+    REQUIRE (d2->get_params().get<std::string>("phase")=="ice");
+    REQUIRE (d2->get_input_fields_names()==std::list<std::string>{"cldfrac_tot.aerocom_weights('bot',phase='ice')"});
+
+    // The operator asks for its weights by exactly the name that builds them
+    auto d3 = create_diagnostic("(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).aerocom('top', phase='liq')",grid);
+    REQUIRE (d3->get_params().get<std::string>("field_name")=="((((nc*pseudo_density)/dz)/gravit)/cldfrac_tot.where((cldfrac_tot>0)))");
+    const auto& d3_in = d3->get_input_fields_names();
+    const std::string w_name = "cldfrac_tot.aerocom_weights('top',phase='liq')";
+    REQUIRE (std::find(d3_in.begin(),d3_in.end(),w_name)!=d3_in.end());
+    auto w = create_diagnostic(w_name,grid);
+    REQUIRE (std::dynamic_pointer_cast<AeroComWeights>(w)!=nullptr);
+    REQUIRE (w->get_params().get<std::string>("position")=="top");
+    REQUIRE (w->get_params().get<std::string>("phase")=="liq");
+    REQUIRE (w->get_input_fields_names()==std::list<std::string>{"cldfrac_tot","qc","qi"});
+
+    REQUIRE_THROWS (create_diagnostic("T_mid.aerocom('middle')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.aerocom('top',phase='water')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.aerocom(top)",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.aerocom()",grid));
+    REQUIRE_THROWS (create_diagnostic("qc.aerocom_weights('top')",grid));
+  }
+
   SECTION ("dexpr_rejects") {
     // Unknown function: the message names what IS available
     REQUIRE_THROWS (create_diagnostic("T_mid.iselect(lev=1)",grid));

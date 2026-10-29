@@ -131,9 +131,6 @@ create_diagnostic (const std::string& diag_field_name,
   for (std::string k : {"Ice","Liq","Rain"}) {
     named_variants[k + "NumberPath"] = {"NumberPath","number_kind",k};
   }
-  for (std::string k : {"Top","Bot"}) {
-    named_variants["AeroComCld" + k] = {"AeroComCld","aero_com_cld_kind",k};
-  }
   for (std::string k : {"Meridional","Zonal"}) {
     named_variants[k + "VapFlux"] = {"VaporFlux","wind_component",k};
   }
@@ -145,12 +142,6 @@ create_diagnostic (const std::string& diag_field_name,
 
   if (auto it=named_variants.find(diag_field_name); it!=named_variants.end()) {
     const auto& v = it->second;
-    EKAT_REQUIRE_MSG (v.diag_name!="AeroComCld",
-        "Error! AeroComCld diags are disabled for now. Contact developers.\n"
-        "      Some recent development made the code produce bad values,\n"
-        "      even runtime aborts due to NaNs.\n"
-        "      An alternative is to request variables like cdnc_at_cldtop,\n"
-        "      which remain unaffected and scientifically valid.\n");
     diag_name = v.diag_name;
     params.set<std::string>(v.param_name,v.param_value);
   } else if (diag_field_name=="dz") {

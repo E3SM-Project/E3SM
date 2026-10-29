@@ -6,14 +6,23 @@
 namespace scream {
 
 /*
- * This diagnostic will compute the AeroCom diagnostics.
+ * A field X sampled at cloud top (or bottom), following the AeroCom
+ * recommendation: per column, x = sum_k X(k)*W(k), where W are the
+ * AeroComWeights for the same position and phase. With field_name='mask',
+ * X is 1, and x is the cloud fraction seen from the top (or bottom).
+ *
+ * Params:
+ *  - field_name: a Real (COL,LEV) field, or 'mask'
+ *  - position: 'top' or 'bot'
+ *  - phase: 'liq', 'ice', or 'none' (default)
+ *
+ * Levels with zero weight are skipped, so X need not be finite there.
+ * If X is masked, its invalid levels are skipped too.
  */
 
 class AeroComCld : public AbstractDiagnostic {
  public:
-  // Constructors
-  AeroComCld(const ekat::Comm &comm,
-             const ekat::ParameterList &params,
+  AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params,
              const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
@@ -25,18 +34,11 @@ class AeroComCld : public AbstractDiagnostic {
 #endif
   void compute_impl() override;
 
-  // How many diags we have
-  int m_ndiag;
+  void initialize_impl() override;
 
-  // Bot or Top
-  std::string m_topbot;
-
-  // Attribute maps for self-documentation
-  std::map<std::string, int> m_index_map;
-  std::map<std::string, std::string> m_units_map;
-
-  // Set a field for dz
-  Field m_dz;
+  std::string m_field_name;
+  std::string m_weights_name;
+  std::string m_diag_name;
 };
 
 }  // namespace scream
