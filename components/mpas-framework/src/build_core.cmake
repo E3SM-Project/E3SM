@@ -46,9 +46,16 @@ function(build_core CORE)
     file(MAKE_DIRECTORY ${INC_DIR})
   endif()
 
+  if (MPAS_BUILD_MODE STREQUAL "E3SM")
+    # These reproduce what coupled builds have always generated: the namelist
+    # suffix and executable name are empty, and the git version is the name of
+    # the undefined macro. The MCT drivers set the namelist and streams names.
+    set(PARSE_ARGS "--namelist-suffix=" "--exe-name=" "--git-version=MPAS_GIT_VERSION")
+  endif()
+
   add_custom_command(
     OUTPUT ${INC_DIR}/core_variables.inc
-    COMMAND ${CMAKE_BINARY_DIR}/mpas-framework/src/tools/parse < ${CORE_BLDDIR}/Registry_processed.xml
+    COMMAND ${CMAKE_BINARY_DIR}/mpas-framework/src/tools/parse ${PARSE_ARGS} < ${CORE_BLDDIR}/Registry_processed.xml
     DEPENDS parse ${CORE_BLDDIR}/Registry_processed.xml
     WORKING_DIRECTORY ${INC_DIR}
   )
