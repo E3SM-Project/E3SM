@@ -118,6 +118,9 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CS)  :: precip_downscaling_method !Precipitation downscaling method used
                                                           !in the land model(current possible options: ERMM (default), FNM)
      logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
+     logical                 :: use_ocn_atm_flux_reg ! regularization for ocean-atm flux
+     real(SHR_KIND_R8)       :: ocn_atm_flux_eps     ! regularization epsilon for ocean-atm flux
+     real(SHR_KIND_R8)       :: ocn_atm_flux_damping ! damping factor for ocean-atm flux iteration
      real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
      integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
      character(SHR_KIND_CL)  :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
@@ -379,6 +382,9 @@ CONTAINS
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
     integer                :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE  2: UA
     logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
+    logical                 :: use_ocn_atm_flux_reg ! regularization for ocean-atm flux
+    real(SHR_KIND_R8)       :: ocn_atm_flux_eps     ! regularization epsilon for ocean-atm flux
+    real(SHR_KIND_R8)       :: ocn_atm_flux_damping ! damping factor for ocean-atm flux iteration
     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
     character(SHR_KIND_CL) :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
@@ -459,6 +465,7 @@ CONTAINS
          scm_multcols, scm_nx, scm_ny,                     &
          ocn_surface_flux_scheme, &
          coldair_outbreak_mod, &
+         use_ocn_atm_flux_reg, ocn_atm_flux_eps, ocn_atm_flux_damping, &
          flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
@@ -546,6 +553,9 @@ CONTAINS
        flux_diurnal          = .false.
        ocn_surface_flux_scheme = 0
        coldair_outbreak_mod = .false.
+       use_ocn_atm_flux_reg = .false.
+       ocn_atm_flux_eps      = 0.05_SHR_KIND_R8
+       ocn_atm_flux_damping  = 0.08_SHR_KIND_R8
        flux_convergence      = 0.0_SHR_KIND_R8
        flux_max_iteration    = 2
        glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
@@ -683,6 +693,9 @@ CONTAINS
        infodata%ocn_surface_flux_scheme = ocn_surface_flux_scheme
        infodata%flux_convergence      = flux_convergence
        infodata%coldair_outbreak_mod      = coldair_outbreak_mod
+       infodata%use_ocn_atm_flux_reg  = use_ocn_atm_flux_reg
+       infodata%ocn_atm_flux_eps      = ocn_atm_flux_eps
+       infodata%ocn_atm_flux_damping  = ocn_atm_flux_damping
        infodata%flux_max_iteration    = flux_max_iteration
        infodata%glc_renormalize_smb   = glc_renormalize_smb
        infodata%wall_time_limit       = wall_time_limit
@@ -1040,6 +1053,7 @@ CONTAINS
        do_budgets, do_bgc_budgets, do_histinit, drv_threading,            &
        flux_diurnal, ocn_surface_flux_scheme,                             &
        coldair_outbreak_mod, &
+       use_ocn_atm_flux_reg, ocn_atm_flux_eps, ocn_atm_flux_damping, &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, wall_time_limit,          &
        budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
@@ -1118,6 +1132,9 @@ CONTAINS
     integer,                optional, intent(OUT) :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
     real(SHR_KIND_R8), optional, intent(out)      :: flux_convergence   ! atmocn flux calc convergence value
     logical, optional, intent(out) :: coldair_outbreak_mod        ! (Mahrt & Sun 1995, MWR)
+    logical, optional, intent(out) :: use_ocn_atm_flux_reg
+    real(SHR_KIND_R8), optional, intent(out)      :: ocn_atm_flux_eps
+    real(SHR_KIND_R8), optional, intent(out)      :: ocn_atm_flux_damping
     integer, optional, intent(OUT)                :: flux_max_iteration ! max number of iterations of atmocn flux loop
 
     character(len=*),       optional, intent(OUT) :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
@@ -1310,6 +1327,9 @@ CONTAINS
     if ( present(ocn_surface_flux_scheme) ) ocn_surface_flux_scheme = &
          infodata%ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)) coldair_outbreak_mod = infodata%coldair_outbreak_mod
+    if ( present(use_ocn_atm_flux_reg)) use_ocn_atm_flux_reg = infodata%use_ocn_atm_flux_reg
+    if ( present(ocn_atm_flux_eps)) ocn_atm_flux_eps = infodata%ocn_atm_flux_eps
+    if ( present(ocn_atm_flux_damping)) ocn_atm_flux_damping = infodata%ocn_atm_flux_damping
     if ( present(flux_convergence)) flux_convergence = infodata%flux_convergence
     if ( present(flux_max_iteration)) flux_max_iteration = infodata%flux_max_iteration
     if ( present(glc_renormalize_smb)) glc_renormalize_smb = infodata%glc_renormalize_smb
@@ -1608,6 +1628,7 @@ CONTAINS
        flux_diurnal, precip_downscaling_method,                           &
        ocn_surface_flux_scheme,                                           &
        coldair_outbreak_mod,                                              &
+       use_ocn_atm_flux_reg, ocn_atm_flux_eps, ocn_atm_flux_damping,      &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, force_stop_at,            &
        budget_ann, budget_ltann, budget_ltend ,                           &
@@ -1685,6 +1706,9 @@ CONTAINS
     character(len=*),       optional, intent(IN)    :: precip_downscaling_method!precip downscaling method from the land model
                                                                                 !ERMM (default) or  FNM
     logical, optional, intent(in) :: coldair_outbreak_mod
+    logical, optional, intent(in) :: use_ocn_atm_flux_reg
+    real(SHR_KIND_R8),      optional, intent(IN)    :: ocn_atm_flux_eps
+    real(SHR_KIND_R8),      optional, intent(IN)    :: ocn_atm_flux_damping
     real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
     integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
     character(len=*),       optional, intent(IN)    :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
@@ -1876,6 +1900,9 @@ CONTAINS
     if ( present(precip_downscaling_method) ) infodata%precip_downscaling_method = &
          precip_downscaling_method
     if ( present(coldair_outbreak_mod)   ) infodata%coldair_outbreak_mod  = coldair_outbreak_mod
+    if ( present(use_ocn_atm_flux_reg)   ) infodata%use_ocn_atm_flux_reg  = use_ocn_atm_flux_reg
+    if ( present(ocn_atm_flux_eps)       ) infodata%ocn_atm_flux_eps      = ocn_atm_flux_eps
+    if ( present(ocn_atm_flux_damping)   ) infodata%ocn_atm_flux_damping  = ocn_atm_flux_damping
     if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
     if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
     if ( present(glc_renormalize_smb)) infodata%glc_renormalize_smb = glc_renormalize_smb
@@ -2192,6 +2219,9 @@ CONTAINS
     call shr_mpi_bcast(infodata%ocn_surface_flux_scheme, mpicom)
     call shr_mpi_bcast(infodata%precip_downscaling_method, mpicom)
     call shr_mpi_bcast(infodata%coldair_outbreak_mod,    mpicom)
+    call shr_mpi_bcast(infodata%use_ocn_atm_flux_reg,    mpicom)
+    call shr_mpi_bcast(infodata%ocn_atm_flux_eps,        mpicom)
+    call shr_mpi_bcast(infodata%ocn_atm_flux_damping,    mpicom)
     call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
     call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
     call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
@@ -2916,6 +2946,9 @@ CONTAINS
     write(logunit,F0L) subname,'ocn_surface_flux_scheme  = ', infodata%ocn_surface_flux_scheme
     write(logunit,F0A) subname,'precip_downscaling_method = ', infodata%precip_downscaling_method
     write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
+    write(logunit,F0L) subname,'use_ocn_atm_flux_reg      = ', infodata%use_ocn_atm_flux_reg
+    write(logunit,F0R) subname,'ocn_atm_flux_eps          = ', infodata%ocn_atm_flux_eps
+    write(logunit,F0R) subname,'ocn_atm_flux_damping      = ', infodata%ocn_atm_flux_damping
     write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
     write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
     write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)

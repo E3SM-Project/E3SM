@@ -877,6 +877,42 @@
     </values>
   </entry>
 
+  <entry id="use_ocn_atm_flux_reg">
+    <type>logical</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      if true, use regularization in ocean-atmosphere surface flux calculations
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
+  <entry id="ocn_atm_flux_eps">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      epsilon used for regularization of ocean-atmosphere flux RHN
+    </desc>
+    <values>
+      <value>0.5</value>
+    </values>
+  </entry>
+
+  <entry id="ocn_atm_flux_damping">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      damping factor for ocean-atmosphere flux fixed point iteration
+    </desc>
+    <values>
+      <value>0.08</value>
+    </values>
+  </entry>
+
   <entry id="flux_diurnal">
      <type>logical</type>
      <category>control</category>

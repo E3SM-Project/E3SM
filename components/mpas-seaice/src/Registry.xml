@@ -1901,6 +1901,21 @@
 			possible_values="true or false"
 			icepack_name="highfreq"
 		/>
+		<nml_option name="config_use_ice_atm_flux_reg" type="logical" default_value="false" units="unitless"
+			description="If true, use the regularized ice-atmosphere flux iteration."
+			possible_values="true or false"
+			icepack_name="use_ice_atm_flux_reg"
+		/>
+		<nml_option name="config_ice_atm_flux_eps" type="real" default_value="0.5" units="unitless"
+			description="Width of the stability function regularization transition for ice-atmosphere fluxes."
+			possible_values="Any positive real value."
+			icepack_name="ice_atm_flux_eps"
+		/>
+		<nml_option name="config_ice_atm_flux_damping" type="real" default_value="0.08" units="unitless"
+			description="Fixed-point damping factor for the regularized ice-atmosphere flux iteration."
+			possible_values="Typically between greater than 0 and less than or equal to 1."
+			icepack_name="ice_atm_flux_damping"
+		/>
 		<nml_option name="config_boundary_layer_iteration_number" type="integer" default_value="4" units="unitless"
 			description="Number of iterations for boundary layer calculations"
 			possible_values="Any positive integer."

@@ -1550,6 +1550,9 @@ contains
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
+    logical :: use_ocn_atm_flux_reg
+    real(r8) :: ocn_atm_flux_eps
+    real(r8) :: ocn_atm_flux_damping
 
 #ifdef MOABDEBUG
     character*100 outfile, wopts, lnum
@@ -1573,6 +1576,9 @@ contains
     if (first_call) then
        call seq_infodata_getData(infodata , &
          coldair_outbreak_mod=coldair_outbreak_mod,  &
+         use_ocn_atm_flux_reg=use_ocn_atm_flux_reg, &
+         ocn_atm_flux_eps=ocn_atm_flux_eps, &
+         ocn_atm_flux_damping=ocn_atm_flux_damping, &
          flux_convergence=flux_convergence, &
          flux_max_iteration=flux_max_iteration)
 
@@ -1663,7 +1669,10 @@ contains
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
        call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
             flux_convergence_max_iteration=flux_max_iteration, &
-            coldair_outbreak_mod=coldair_outbreak_mod)
+            coldair_outbreak_mod=coldair_outbreak_mod, &
+            use_ocean_atmosphere_flux_regularization=use_ocn_atm_flux_reg, &
+            ocean_atmosphere_flux_epsilon=ocn_atm_flux_eps, &
+            ocean_atmosphere_flux_damping=ocn_atm_flux_damping)
        first_call = .false.
     end if
 
