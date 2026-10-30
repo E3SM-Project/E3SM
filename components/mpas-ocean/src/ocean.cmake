@@ -1,7 +1,10 @@
 
 # build_options.mk stuff handled here
 list(APPEND CPPDEFS "-DCORE_OCEAN")
-list(APPEND CPPDEFS "-DEXCLUDE_INIT_MODE")
+if (MPAS_BUILD_MODE STREQUAL "E3SM")
+  # Coupled builds do not include init mode
+  list(APPEND CPPDEFS "-DEXCLUDE_INIT_MODE")
+endif()
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
 list(APPEND INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/gotm/include")
 
@@ -17,12 +20,14 @@ if (USE_PETSC)
   list(APPEND LIBRARIES "${PETSC_LIBRARIES}")
 endif()
 
-# driver (files live in E3SM)
-list(APPEND RAW_SOURCES
-  ../../mpas-ocean/driver/ocn_comp_mct.F
-  ../../mpas-ocean/driver/mpaso_cpl_indices.F
-  ../../mpas-ocean/driver/mpaso_mct_vars.F
-)
+# MCT driver (files live in E3SM, coupled builds only)
+if (MPAS_BUILD_MODE STREQUAL "E3SM")
+  list(APPEND RAW_SOURCES
+    ../../mpas-ocean/driver/ocn_comp_mct.F
+    ../../mpas-ocean/driver/mpaso_cpl_indices.F
+    ../../mpas-ocean/driver/mpaso_mct_vars.F
+  )
+endif()
 
 # dycore
 list(APPEND RAW_SOURCES
