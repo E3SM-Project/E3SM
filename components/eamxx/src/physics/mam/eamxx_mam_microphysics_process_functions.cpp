@@ -58,6 +58,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
   // set invariants
   const auto& invariants = invariants_;
   const auto& dry_atm = dry_atm_;
+  const auto& wet_atm = wet_atm_;
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl::setinv", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {

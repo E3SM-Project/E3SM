@@ -457,7 +457,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   const const_view_1d soil_erodibility = this->soil_erodibility_;
 
   // Vertical layer height at midpoints
-  const const_view_2d z_mid = dry_atm_.z_mid;
+  const const_view_2d z_mid = wet_atm_.z_mid;
 
   compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind,
                                  dstflx, mpoly, mprot, mlip, soil_erodibility,

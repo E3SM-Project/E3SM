@@ -166,15 +166,15 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   auto lambda =
       KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
     const int icol = team.league_rank();      // column index
-    compute_dry_mixing_ratios(team, wet_atm,  // in
+    compute_dry_mixing_ratios(team, wet_atm_,  // in
                               dry_atm,        // out
                               icol);          // in
     team.team_barrier();
-    compute_vertical_layer_heights(team, wet_atm,  // in
+    compute_vertical_layer_heights(team, wet_atm_,  // in
                                    dry_atm,  // out
                                    icol);    // in
     team.team_barrier();
-    compute_updraft_velocities(team, wet_atm,  // in
+    compute_updraft_velocities(team, wet_atm_,  // in
                                dry_atm,        // out
                                icol);          // in
   };

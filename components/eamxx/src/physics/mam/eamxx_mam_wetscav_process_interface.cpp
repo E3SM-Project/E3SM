@@ -347,6 +347,7 @@ void MAMWetscav::run_impl(const double dt) {
   Kokkos::fence();
 
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const mam_coupling::WetAtmosphere &wet_atm = wet_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
   const auto &isprx                          = isprx_;

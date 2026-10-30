@@ -330,6 +330,7 @@ void MAMOptics::run_impl(const double dt) {
   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
   // We cannot use member of this class inside of the parallel_for
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const mam_coupling::WetAtmosphere &wet_atm = wet_atm_;
   const auto &p_del                          = p_del_;
   const auto &ssa_cmip6_sw                   = ssa_cmip6_sw_;
   const auto &af_cmip6_sw                    = af_cmip6_sw_;

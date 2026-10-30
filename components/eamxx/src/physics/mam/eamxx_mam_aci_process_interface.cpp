@@ -543,7 +543,7 @@ void MAMAci::run_impl(const double dt) {
                      // output
                      w0_, rho_);
 
-  compute_tke_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
+  compute_tke_at_interfaces(team_policy, w_sec_mid_, wet_atm_.dz, nlev_,
                             w_sec_int_,
                             // output
                             tke_);
