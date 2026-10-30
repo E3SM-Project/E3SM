@@ -23,28 +23,58 @@ the saved value is written to output. This means `X_prev` always reflects the
 state of `X` at the beginning of the current timestep (i.e., before any
 processes have modified it in the current step).
 
-### First-step initialisation for derived diagnostics
+### Instant streams and derived diagnostics
 
-When `X` is itself a computed diagnostic (rather than a raw model field) it
-may not have been evaluated yet when `init_timestep` runs at the start of the
-first step.  In that case the `init_timestep` call does nothing (the source
-has no valid timestamp, so there is nothing to capture).
+An instant stream evaluates diagnostics on output steps only. When `X` is
+itself a computed diagnostic, `X_prev` in an instant stream is therefore only
+available if the stream writes every step (`frequency_units: nsteps` with
+`frequency: 1`); otherwise the request is rejected when the stream is set up. An averaged stream evaluates its diagnostics every
+step, and a model field `X` is always available, so neither is restricted.
 
-By the time `compute_diagnostic` is called — during the output phase, after
-model physics and prerequisite diagnostics have been evaluated — `X` will have
-a valid timestamp.  The diagnostic then uses the current value of `X` as a
-stand-in for "X at t=0", producing:
+### The previous value of a previous value
 
-```none
-X_prev = X(t=0)   →   X − X_prev = 0 on the first step
-```
+`X_prev_prev` is rejected when the stream is set up, and so is any other
+previous value of a previous value, e.g. `X.shift(time=1).shift(time=1)`, the
+same through an alias, or `X.shift(time=1).tend()`. It would not be two steps
+back: `init_timestep` runs for the inner `X_prev` first, so by the time the
+outer one saves its input, that input already holds the value of the current
+step's start, and the result is one step back, like `X_prev`. Any other
+diagnostic is evaluated after `init_timestep`, so to look two steps back, put
+an operation between the two: `(X.shift(time=1)*1.0).shift(time=1)`.
 
-This conservative initialisation prevents fill-value contamination from
-propagating into downstream arithmetic (e.g. products of fill-value-sized
-numbers overflow to Inf in single precision).
+### The first step
 
-From the second step onward `X_prev` reflects the normally captured
-start-of-step value.
+`init_timestep` captures `X` as it is at the start of the step, so on the
+first step `X_prev` holds a value only if `X` had one before the run started.
+A model field always does (its initial condition). A computed diagnostic has
+one only if it was evaluated at t0, which happens when an instant stream writes
+the initial snapshot (the default; see `skip_t0_output`) and requests `X` or
+anything computed from it. Otherwise `X_prev` is invalid on the first step: it
+is written as the fill value, and so is anything computed from it, such as
+`X - X_prev`. From the second step onward `X_prev` reflects the normally
+captured start-of-step value.
+
+The t0 snapshot itself has no previous step, and there the shift of a model
+field holds the field's current value. A shift of an expression built on a
+shift carries that into the first step. So when an instant stream writes the
+t0 snapshot, on the first step `(X.shift(time=1)*1.0).shift(time=1)` holds `X`
+at t0 rather than the fill value, and with `bt := X - X_prev`,
+`bt - bt.shift(time=1)` equals `bt` rather than a second difference. Both are
+right from the second step on. If the first step matters, set
+`skip_t0_output: true` in the instant streams.
+
+### Restarts
+
+No diagnostic state is saved in a restart file, and no t0 snapshot is written
+after a restart. If `X` is a model field in the restart set, a restart gives
+it a valid value before the first step, so `X_prev` continues as if the run had
+not stopped. Otherwise (a computed diagnostic, or a model field outside the
+restart set, such as one imported from the coupler during the step), the first
+step after a restart is like the first step of a run without the t0 snapshot:
+`X_prev` is the fill value, and an averaged stream counts one sample fewer in
+that output window. A shift of an expression that contains a shift, such as
+`(X.shift(time=1)*1.0).shift(time=1)`, is the fill value for one step if `X`
+is a model field in the restart set, and for two steps otherwise.
 
 ## Example
 
