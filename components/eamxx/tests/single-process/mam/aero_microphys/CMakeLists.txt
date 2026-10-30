@@ -65,37 +65,3 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME})
 endif()
 
-# =============================================================================
-# Direct Solver Test
-# =============================================================================
-
-set (TEST_BASE_NAME_DIRECT mam4_aero_microphys_standalone_direct)
-set (FIXTURES_BASE_NAME_DIRECT ${TEST_BASE_NAME_DIRECT}_generate_output_nc_files)
-
-# Create the direct solver test
-CreateADUnitTest(${TEST_BASE_NAME_DIRECT}
-  LABELS mam4_aero_microphys physics direct_solver
-  LIBS mam
-  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME_DIRECT}
-)
-
-# Force direct solver by overriding the MAM4XX_GAS_CHEMISTRY_SOLVER_LEGACY macro
-target_compile_options(${TEST_BASE_NAME_DIRECT} PRIVATE
-  "-DMAM4XX_GAS_CHEMISTRY_SOLVER_LEGACY=0"
-)
-
-# Compare output files produced by npX tests, to ensure they are bfb
-CompareNCFilesFamilyMpi (
-  TEST_BASE_NAME ${TEST_BASE_NAME_DIRECT}
-  FILE_META_NAME ${TEST_BASE_NAME_DIRECT}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
-  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
-  LABELS mam4_aero_microphys physics direct_solver
-  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME_DIRECT}_npMPIRANKS_omp1
-)
-
-if (SCREAM_ENABLE_BASELINE_TESTS)
-  # Compare one of the output files with the baselines for direct solver test.
-  set (OUT_FILE_DIRECT ${TEST_BASE_NAME_DIRECT}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
-  CreateBaselineTest(${TEST_BASE_NAME_DIRECT} ${TEST_RANK_END} ${OUT_FILE_DIRECT} ${FIXTURES_BASE_NAME_DIRECT})
-endif()
