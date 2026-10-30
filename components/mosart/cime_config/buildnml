@@ -49,7 +49,8 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     rof_grid_supported = ("null", "r2", "r05", "r025", "r0125", "r01", "NLDAS", "ELM_USRDAT",
-                          "u01-lr6to10", "u02-lr10", "u03-lr240")
+                          "u01-lr6to10", "u02-lr10", "u03-lr240",
+                          "u04-lr12p5", "u05-lr25")
     expect(
         rof_grid in rof_grid_supported,
         "ROF_GRID '{}' is not supported in mosart. Choose from: {}".format(

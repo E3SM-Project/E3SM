@@ -50,6 +50,8 @@ for the CLM data in the CESM distribution
 <frivinp_rtm rof_grid="u01-lr6to10" >rof/mosart/MOSART_u01-oi6to18-lr6to10_20260811.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="u02-lr10"    >rof/mosart/MOSART_u02-oi30-lr10_20260811.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="u03-lr240"   >rof/mosart/MOSART_u03-oi240-lr240_20260811.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="u04-lr12p5"  >rof/mosart/MOSART_u04-oi6to18-lr12p5.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="u05-lr25"    >rof/mosart/MOSART_u05-oi6to18-lr25.nc</frivinp_rtm>
 
 <!-- River Transport Model mesh file (relative to DIN_LOC_ROOT) -->
 <frivinp_mesh rof_grid="r0125" >share/meshes/rof/MOSART_global_8th.scrip.20180211c.nc</frivinp_mesh>
@@ -59,6 +61,8 @@ for the CLM data in the CESM distribution
 <frivinp_mesh rof_grid="u01-lr6to10" >share/meshes/mpas/unified/u01/u01-oi6to18-lr6to10.land.scrip.20260811.nc</frivinp_mesh>
 <frivinp_mesh rof_grid="u02-lr10"    >share/meshes/mpas/unified/u02/u02-oi30-lr10.land.scrip.20260811.nc</frivinp_mesh>
 <frivinp_mesh rof_grid="u03-lr240"   >share/meshes/mpas/unified/u03/u03-oi240-lr240.land.scrip.20260811.nc</frivinp_mesh>
+<frivinp_mesh rof_grid="u04-lr12p5"  >share/meshes/mpas/unified/u04/u04-oi6to18-lr12p5.land.scrip.20261020.nc</frivinp_mesh>
+<frivinp_mesh rof_grid="u05-lr25"    >share/meshes/mpas/unified/u05/u05-oi6to18-lr25.land.scrip.20261020.nc</frivinp_mesh>
 
 <!-- WRM -->
 <paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS3_c20161220_updated_20170314.nc</paraFile>
