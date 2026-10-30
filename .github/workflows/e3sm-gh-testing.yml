@@ -11,7 +11,8 @@ name: e3sm-gh
 # - baselines: one entry per image, arch and test, written only by a bless (a manual run on
 #   master with bless checked). Entries cannot be overwritten, so each bless adds one and
 #   every other run restores the newest. Entries saved on master are visible to all PRs,
-#   while a PR cannot change them. With no baseline found, the test runs without comparing.
+#   while a PR cannot change them. With no baseline found, the test fails, which reminds us
+#   to bless.
 #
 # See docs/dev-guide/gh-hosted-testing.md for the rationale and the plan to move baselines
 # to a registry.
@@ -116,13 +117,17 @@ jobs:
           restore-keys: ${{ env.BASELINES_KEY }}-
       - name: Choose baseline flags
         run: |
+          # Always compare, so that a missing baseline fails the test and reminds us to bless
           if [ "$generate" = true ]; then
             flags="-o -g -b master"; baselines="generated"
-          elif [ -n "${{ steps.baselines.outputs.cache-matched-key }}" ]; then
-            flags="-c -b master"; baselines="compared with \`${{ steps.baselines.outputs.cache-matched-key }}\`"
           else
-            flags=""; baselines="none found, not compared"
-            echo "::warning::no baselines for this test; bless from master to add them"
+            flags="-c -b master"
+            if [ -n "${{ steps.baselines.outputs.cache-matched-key }}" ]; then
+              baselines="compared with \`${{ steps.baselines.outputs.cache-matched-key }}\`"
+            else
+              baselines="NONE FOUND, so this job fails until master is blessed (Actions, e3sm-gh, Run workflow on master with bless checked)"
+              echo "::error::no baselines for this test: bless from master to add them"
+            fi
           fi
           echo "CT_FLAGS=$flags" >> "$GITHUB_ENV"
           echo "BASELINES=$baselines" >> "$GITHUB_ENV"

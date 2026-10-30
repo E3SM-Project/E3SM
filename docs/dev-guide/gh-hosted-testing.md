@@ -70,8 +70,10 @@ one entry per image, arch and test. Baselines differ between compilers and betwe
 architectures, so each combination has its own entry.
 
 - **Compare (PRs, nightly).** Each run restores the newest entry for its test and passes
-  `-c -b master` to `create_test`. If there is no entry, the test runs without comparing and
-  the job shows a warning, so the first run (or one after an entry has expired) does not fail.
+  `-c -b master` to `create_test`. If there is no entry, the comparison fails, with an error in
+  the job summary telling you to bless. That is on purpose, so that nobody forgets to: it
+  happens for the first run of a test, and after an entry has expired (the nightly run keeps
+  them from expiring).
 - **Bless (by hand, master only).** Go to Actions → `e3sm-gh` → *Run workflow* on `master`
   with *bless* checked. It runs with `-o -g -b master` and saves a new entry, keyed by the
   commit and the run. The next run anywhere restores it. The workflow refuses to bless from
@@ -164,7 +166,8 @@ container, so tests would no longer download it or share the cache for it.
 
 Add the test name to `matrix.test` in the workflow. Inputdata and baseline keys include the
 test name, so a new test starts with no entries: its first runs download all its inputdata
-and skip comparison until master is blessed. Keep the cache limit in mind: the first test's
+and fail the comparison until master is blessed, which a PR cannot do, so a PR that adds a
+test stays red until it is merged and blessed. Keep the cache limit in mind: the first test's
 inputdata already takes about 4 GB of it.
 
 A test with testmods must name its machine and compiler (for example
