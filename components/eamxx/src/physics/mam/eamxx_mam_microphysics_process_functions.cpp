@@ -462,7 +462,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
         // Store the solver outcome and stats if diagnostics enabled
         // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
-        //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
+        //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted,
+        //         6=NonfiniteResult, 7=UnsafeDenominator, 8=NegativeResult
         if (collect_imp_sol_diags) {
           imp_sol_outcome_view(icol, kk) = Kokkos::round(int(result.outcome));
           imp_sol_failed_attempts_view(icol, kk) = Kokkos::round(result.failed_attempts);
@@ -472,10 +473,11 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
           imp_sol_accepted_interval_view(icol, kk) = result.accepted_interval;
         }
 
-        // Check for failure and report as warning (not error)
-        // Outcome values can be inspected in the mam4_imp_sol_outcome field
+        // Preserve legacy continuation and debug warnings. Direct failures
+        // abort inside MAM4xx in debug builds; release builds return unchanged
+        // state, retain the failure diagnostics above, and report a warning.
         if (!result.success()) {
-#ifndef NDEBUG
+#if !defined(NDEBUG) || defined(MAM4XX_GAS_CHEMISTRY_SOLVER_DIRECT)
           Kokkos::printf(
               "WARNING: imp_sol did not complete chemistry interval at "
               "icol=%d, lev=%d, outcome=%d, failed_attempts=%d, "
