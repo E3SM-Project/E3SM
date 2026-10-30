@@ -39,7 +39,15 @@ void Harness::run_process(std::string_view name) {
     throw std::runtime_error("Invalid name for BoundProcess " +
                              std::string(name));
   }
+  external_component_->print_bindings();
   driver_.run_component(name, it->second);
+}
+
+void Harness::import_to_external(std::string_view name) {
+  driver_.import_component(name);
+}
+void Harness::export_from_external(std::string_view name) {
+  driver_.export_component(name);
 }
 
 } // namespace e3sm::emulator

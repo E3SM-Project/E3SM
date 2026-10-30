@@ -22,7 +22,7 @@ void CouplerDriver::initialize(const std::string& filename) {
     component.configure_coupling(plan);
   }
 
-  // coupler_.print_coupling_plan(std::cout);
+  coupler_.print_coupling_plan(std::cout);
   initialized_ = true;
 }
 
@@ -59,10 +59,12 @@ void CouplerDriver::import_component(std::string_view name) {
   auto& comp = get_component(name);
   const auto& buffers = coupler_.import_buffers(name);
 
+  comp.import_fields(buffers);
+  std::cout << "imported to " << name << std::endl;
   for (const auto& buf : buffers) {
     coupler_.print_field_buffer(std::cout, buf.id, buf.data, 10);
   }
-  comp.import_fields(buffers);
+  std::cout << std::endl;
 }
 
 } // namespace e3sm::coupler

@@ -49,10 +49,13 @@ public:
 
   void attach_fields(ExternalBindings bindings);
 
+  void print_bindings();
+
 private:
   ExternalBindings bindings_;
   CouplingAdapter coupling_;
   bool initialized_ = false;
+  void print_binding(std::ostream& os, ExternalField field);
 };
 
 } // namespace e3sm::emulator

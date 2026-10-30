@@ -8,6 +8,7 @@ void CPL7Component::attach_fields(ExternalBindings bindings) {
     throw std::runtime_error("Re-attaching fields not allowed");
   }
   bindings_ = std::move(bindings);
+  print_bindings();
   initialized_ = true;
 }
 
@@ -35,4 +36,31 @@ void CPL7Component::populate_registry(FieldRegistry& registry) {
         field.data);
   }
 }
+
+void CPL7Component::print_binding(std::ostream& os, ExternalField field) {
+
+  os << "      " << "::" << field.name << " ["
+     << " size=" << field.data.size()
+     << ", addr=" << static_cast<const void*>(field.data.data()) << "]\n";
+
+  os << "       [ ";
+  for (std::size_t i = 0; i < field.data.size(); i++) {
+    os << field.data[i] << ", ";
+  }
+  os << "]\n";
+}
+
+void CPL7Component::print_bindings() {
+  std::cout << " ---- to_external ----- " << std::endl;
+  for (auto& binding : bindings_.to_external) {
+    print_binding(std::cout, binding);
+  }
+
+  std::cout << " ----- from_external ------ " << std::endl;
+  for (auto& binding : bindings_.from_external) {
+    print_binding(std::cout, binding);
+  }
+  std::cout << std::endl;
+}
+
 } // namespace e3sm::emulator
