@@ -145,6 +145,9 @@ jobs:
         id: run-tests
         run: |
           mkdir -p inputdata baselines scratch
+          # create_test stops at once if the baseline directory is missing, instead of
+          # running the test and failing its BASELINE phase, which an empty cache would do
+          mkdir -p "baselines/$COMPILER/master"
           find inputdata -type f | wc -l > inputdata.count
           sudo chown -R 1000:1000 E3SM inputdata baselines scratch
           rc=0
