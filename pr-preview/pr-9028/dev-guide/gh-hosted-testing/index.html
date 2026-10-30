@@ -5185,8 +5185,8 @@ CPU-dependence from a real change if the intel comparison ever fails at random.<
 <p>The CUDA images are left out: hosted runners have no GPU, so those tests could only be
 built, and there would be nothing to compare.</p>
 <p>Tests are listed without machine or compiler. Each job runs <code>create_test</code> in the image with
-<code>--machine e3sm-container --compiler &lt;compiler&gt;</code>, the compiler being set next to each image
-in the workflow's matrix. The same test runs on any machine with Docker:</p>
+the test's name completed by <code>e3sm-container_&lt;compiler&gt;</code>, the compiler being set next to each
+image in the workflow's matrix. The same test runs on any machine with Docker:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">:/projects/e3sm/work/E3SM"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-v<span class="w"> </span>/path/to/inputdata:/projects/e3sm/data/inputdata<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>ghcr.io/e3sm-project/e3sm-image:gnu13-openmpi4<span class="w"> </span>bash<span class="w"> </span>-lc<span class="w"> </span><span class="s1">'</span>
