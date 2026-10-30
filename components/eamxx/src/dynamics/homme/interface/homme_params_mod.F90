@@ -183,23 +183,42 @@ contains
   end function get_homme_bool_param_f90
 
   function get_homme_nsplit_f90 (atm_dt) result(nsplit_out) bind(c)
-    use control_mod, only: compute_nsplit=>timestep_make_eam_parameters_consistent
-    use homme_context_mod, only: par
     !
     ! Input(s)
     !
-    integer (kind=c_int) :: atm_dt
+    ! NOTE: atm_dt (the physics time step) is a real here, NOT an integer. This
+    !   lets EAMxx run sub-second/fractional physics time steps (e.g. 7.5 s) via
+    !   process-group subcycling. We deliberately do NOT call the shared HOMME
+    !   routine control_mod::timestep_make_eam_parameters_consistent, because its
+    !   dtime argument is an integer (and is shared with EAM/standalone HOMME).
+    !   EAMxx always specifies the dynamics time step (tstep/se_tstep) and passes
+    !   nsplit=-1, so only that routine's tstep>0 branch is ever exercised here;
+    !   we reproduce exactly that branch below. HOMME integrates on the
+    !   real-valued tstep, so a fractional atm_dt only affects nsplit.
+    !
+    real (kind=c_double), intent(in) :: atm_dt
     !
     ! Local(s)
     !
     integer (kind=c_int) :: nsplit_out
-    integer :: ierr, nstep_factor
+    integer :: dt_max_factor
+    real(kind=real_kind) :: nsplit_real
+    real(kind=real_kind), parameter :: divisible_tol = 1e3_real_kind*epsilon(1.0_real_kind)
 
-    nsplit_out = -1
-    ierr = compute_nsplit(par, dt_remap_factor, dt_tracer_factor, nsplit_out, nstep_factor, tstep, atm_dt)
-    if (ierr .ne. 0) then
-      call abortmp ("[get_homme_nsplit_f90] Error! Something went wrong in timestep_make_eam_parameters_consistent.")
+    if (tstep <= 0) then
+      call abortmp ("[get_homme_nsplit_f90] Error! The dynamics time step (se_tstep) must be > 0.")
     endif
+
+    dt_max_factor = max(dt_remap_factor, dt_tracer_factor)
+    nsplit_real = real(atm_dt,real_kind) / (real(dt_max_factor,real_kind)*tstep)
+    nsplit_out  = nint(nsplit_real)
+
+    if (abs(nsplit_real - nsplit_out) > divisible_tol*nsplit_real) then
+      call abortmp ("[get_homme_nsplit_f90]\n" // &
+                    "  Error! dt_max_factor*tstep must evenly divide the physics time step (atm_dt).\n" // &
+                    "  Set se_tstep, dt_remap_factor, and dt_tracer_factor accordingly.\n")
+    endif
+
     if (nsplit_inited) then
       ! For now, do not allow atm_dt to change throughout the simulation.
       ! This might actually be safe, and a potentially useful feature,

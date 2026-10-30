@@ -10,6 +10,8 @@
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
+#include <cmath>
+
 namespace scream
 {
 // =========================================================================================
@@ -209,8 +211,16 @@ void Cosp::run_impl (const double dt)
   if (m_cosp_frequency_units == "steps") {
       cosp_freq_in_steps = m_cosp_frequency;
   } else if (m_cosp_frequency_units == "hours") {
-      EKAT_REQUIRE_MSG((3600 % int(dt)) == 0, "cosp_frequency_units is hours but dt does not evenly divide 1 hour");
-      cosp_freq_in_steps = 3600.0 * m_cosp_frequency / dt;
+      // dt may be fractional (e.g. 7.5 s) or below 1 s when physics is subcycled
+      // within the coupling step, so check divisibility in floating point
+      // rather than with an integer modulo on a truncated dt.
+      const double steps_per_hour = 3600.0 / dt;
+      const int steps_per_hour_int = std::lround(steps_per_hour);
+      EKAT_REQUIRE_MSG(steps_per_hour_int>0 &&
+                       std::abs(steps_per_hour-steps_per_hour_int) <= 1e-6*steps_per_hour,
+          "cosp_frequency_units is hours but dt does not evenly divide 1 hour\n"
+          "  - dt: " + std::to_string(dt) + "\n");
+      cosp_freq_in_steps = m_cosp_frequency * steps_per_hour_int;
   } else {
       EKAT_ERROR_MSG("cosp_frequency_units " + m_cosp_frequency_units + " not supported");
   }
