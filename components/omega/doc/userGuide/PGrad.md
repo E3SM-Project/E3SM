@@ -103,14 +103,13 @@ state they both read.
 
 On terrain-following (sigma) layers over a steep seamount, the finite-volume
 scheme develops a grid-scale instability that the centered scheme does not.
-It starts in the bottom layer on the seamount's steep flank, grows by a factor
-of about 2.6 per day, and produces static instabilities after one to three
-days ({numref}`pgrad-fv-sigma-seamount`). The growth rate follows the slope of
-the seamount, not the number of layers: halving the seamount height delays the
-instability but does not remove it. The centered scheme stays stable in every
-sigma configuration tested, while on z-star layers over the same seamount the
-finite-volume scheme stays clean through 20 days and the centered scheme does
-not.
+It starts in the bottom layer on the seamount's steep flank and produces static
+instabilities after one to three days ({numref}`pgrad-fv-sigma-seamount`).
+The growth rate follows the slope of the seamount, not the number of layers:
+halving the seamount height delays the instability but does not remove it.
+The centered scheme stays stable in every sigma configuration tested, while on
+z-star layers over the same seamount the finite-volume scheme stays clean
+through 20 days and the centered scheme does not.
 
 ```{figure} images/pgrad_fv_sigma_seamount.png
 :name: pgrad-fv-sigma-seamount
@@ -119,16 +118,11 @@ not.
 Bottom-layer maximum speed, mean kinetic energy and number of statically
 unstable layer pairs over six days of the Polaris seamount test, for sigma
 layers with exponential and linear-in-pressure stratification and for z-star
-layers as a control. The two experimental curves change only the
-finite-volume treatment at the sea floor.
+layers as a control.
 ```
 
-The cause is not yet known. It is not the sea-floor anchor described under
-"Over a sloping sea floor" above: an experimental anchor that removes that
-error starts the linear-in-pressure sigma run about 700 times lower in kinetic
-energy, but the same mode then grows at the same rate to the same state.
-Turning off extrapolation below a column's floor as well makes the instability
-worse, and the runs already use the monotonic tracer limiter.
+The cause is not yet known, and the monotonic tracer limiter, which these runs
+use, does not prevent it.
 
 Omega's default p-star coordinate, like z-star, keeps its layers close to
 level rather than following the bathymetry, so the instability is not expected
