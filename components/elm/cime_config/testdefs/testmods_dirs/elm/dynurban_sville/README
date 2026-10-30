@@ -1,0 +1,14 @@
+Tests dynamic urban (do_transient_urban = .true.) at the smallvilleIA 1x1 point.
+
+The surface dataset and land-use timeseries are derived from the smallvilleIA
+mp50 datasets (which already carry valid urban parameters) by
+make_dynurban_sville.py. Natural-veg and crop compositions are fixed in time;
+only landunit areas change. Urban areas change on Jan 1 of each year.
+
+  year  TBD  HD  MD | urban crop natveg
+  1850    0   5  10 |   15    60    25   HD/MD active, TBD inactive
+  1851    0  10  20 |   30    50    20   existing urban expands
+  1852   10  15  25 |   50    35    15   TBD newly active from zero weight
+  1853    0  10  10 |   20    45    35   urban shrinks, TBD back to zero
+  1854    5   5  15 |   25    30    45   TBD re-activated, HD shrinks, MD grows
+  1855    5   5  15 |   25    30    45   no change

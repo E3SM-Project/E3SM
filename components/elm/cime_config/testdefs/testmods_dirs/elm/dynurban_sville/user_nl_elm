@@ -1,0 +1,11 @@
+! Synthetic 1850-1855 land-use timeseries in which urban (all three densities)
+! expands, shrinks, drops to zero and re-activates alongside crop/natveg changes.
+! See README for the landunit trajectory.
+flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_1x1_smallvilleIA_dynurban_mp50_hist_simyr1850-1855_c261009.nc'
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_dynurban_mp50_simyr1850_c261009.nc'
+do_transient_urban = .true.
+
+hist_mfilt = 1, 365
+hist_nhtfrq = 0, -24
+hist_dov2xy = .true., .false.
+hist_fincl2 = 'PCT_LANDUNIT', 'TOTCOLC', 'TOTCOLN', 'TOTCOLP', 'TOTECOSYSC', 'PROD10C', 'PROD100C', 'DWT_CONV_CFLUX', 'TG', 'TSOI'

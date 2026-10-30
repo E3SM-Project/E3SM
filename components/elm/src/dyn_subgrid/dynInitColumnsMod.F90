@@ -110,16 +110,22 @@ contains
        c_template = initial_template_col_crop(bounds, c_new,cactive_prior(bounds%begc:bounds%endc) )
     case(istice)
        write(iulog,*) ' ERROR: Ability to initialize a newly-active glacier column not yet implemented'
+       c_template = ispval
     case(istice_mec)
        write(iulog,*) ' ERROR: Ability to initialize a newly-active glacier mec column not yet implemented'
+       c_template = ispval
     case(istdlak)
        write(iulog,*) ' ERROR: Ability to initialize a newly-active lake column not yet implemented'
+       c_template = ispval
     case(istwet)
        write(iulog,*) ' ERROR: Ability to initialize a newly-active wetland column not yet implemented'
+       c_template = ispval
     case(isturb_MIN:isturb_MAX)
        write(iulog,*)' ERROR: Ability to initialize a newly-active urban column not yet implemented'
+       c_template = ispval
     case default
        write(iulog,*) ' ERROR: Unknown landunit type: ', ltype
+       c_template = ispval
     end select
 
   end function initial_template_col_dispatcher
