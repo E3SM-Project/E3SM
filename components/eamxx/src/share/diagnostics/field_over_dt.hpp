@@ -9,7 +9,7 @@ namespace scream {
 /*
  * This diagnostic divides any input field by the model timestep dt,
  * where dt = current_timestamp - start_of_step_timestamp.
- * Users can request X_over_dt for any field X.
+ * Users can request X.over_dt() for any field X.
  */
 
 class FieldOverDt : public AbstractDiagnostic {

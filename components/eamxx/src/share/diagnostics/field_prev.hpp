@@ -8,7 +8,7 @@ namespace scream {
 /*
  * This diagnostic stores the value of a given field at the beginning
  * of the current timestep (i.e., at the end of the previous timestep).
- * Users can request X_prev for any field X to capture the start-of-timestep
+ * Users can request X.shift(time=1) for any field X to capture the start-of-timestep
  * value before model updates occur.
  */
 

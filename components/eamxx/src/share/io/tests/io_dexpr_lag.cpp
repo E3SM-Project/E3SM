@@ -145,16 +145,15 @@ TEST_CASE ("io_dexpr_lag")
   };
 
   // The shift of a shift is rejected: directly, through an alias (also an
-  // alias of an alias, and an 'aliases' intermediate), inside tend(), and in
-  // the underscore spelling. Whatever the averaging type.
+  // alias of an alias, and an 'aliases' intermediate), and inside tend().
+  // Whatever the averaging type.
   const std::string nested_msg = "shift(time=1) of a shift(time=1) is not available";
   for (const std::string avg : {"INSTANT","AVERAGE"}) {
     for (const auto& names : std::vector<std::vector<std::string>>{
             {"s2 := T_mid.shift(time=1).shift(time=1)"},
             {"l1 := T_mid.shift(time=1)", "l2 := l1.shift(time=1)"},
             {"l1 := T_mid.shift(time=1)", "l1b := l1", "l2 := l1b.shift(time=1)"},
-            {"st := T_mid.shift(time=1).tend()"},
-            {"T_mid_prev_prev"}}) {
+            {"st := T_mid.shift(time=1).tend()"}}) {
       require_setup_throws(output_params("io_dexpr_lag_nested",gname,names,{},avg),nested_msg);
     }
     require_setup_throws(output_params("io_dexpr_lag_nested",gname,
@@ -167,7 +166,7 @@ TEST_CASE ("io_dexpr_lag")
   for (const auto& names : std::vector<std::vector<std::string>>{
           {"a := T_mid*1.0", "ap := a.shift(time=1)"},
           {"tp := T_mid.tend().shift(time=1)"},
-          {"T_mid_prev", "T_mid_atm_backtend"}}) {
+          {"T_mid_prev := T_mid.shift(time=1)", "T_mid_atm_backtend := T_mid.tend()"}}) {
     auto ok = output_params("io_dexpr_lag_ok",gname,names,{},"AVERAGE");
     OutputManager om_ok;
     om_ok.initialize(comm,ok,t0,false);

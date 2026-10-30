@@ -107,7 +107,7 @@ ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params,
   auto rhs_as_int    = str2int(m_condition_rhs);
 
   EKAT_REQUIRE_MSG (not m_lhs_is_lev or (rhs_as_int.second and rhs_as_int.first>=0),
-      "Error! Conditional sampling of the form X_where_lev_CMP_Z requires Z to be a positive integer.\n"
+      "Error! Conditional sampling of the form X.where(lev CMP Z) requires Z to be a non-negative integer.\n"
       " - X  : " + m_input_f + "\n"
       " - CMP: " + cmp + "\n"
       " - Z  : " + m_condition_rhs + "\n");

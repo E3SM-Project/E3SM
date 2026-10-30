@@ -549,18 +549,19 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
 
 - **Lower-dimensional slices of a field**
       - These are hyperslices of an existing field or of another diagnostic output.
-      - As of August 2023, given a field `X`, the available options are:
-          - `X_at_lev_N`: slice the field `X` at the `N`-th vertical level index.
-              - Recall that in EAMxx `N = 0` corresponds to the model top.
-          - `X_at_model_bot`, `X_at_model_top`:
-          special case for top and bottom of the model.
-          - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`:
+      - These are requested as [expressions](diags/expressions.md), which must be
+      named with `:=` when written, e.g. `T_500 := T_mid.interp(p_mid=500,units='hPa')`.
+      Given a field `X`, the available options are:
+          - `X.isel(lev=N)`: slice the field `X` at the `N`-th vertical level index.
+              - Recall that in EAMxx `N = 0` corresponds to the model top,
+              and `N = -1` to the model bottom.
+          - `X.interp(p_mid=Y,units='U')`:
           interpolates the field `X` at a vertical position specified by the
           given pressure `Y`.
-              - Available units are `mb` (millibar), `Pa`, and `hPa`.
-          - `X_at_Ym_above_Z`:
+              - Available units are `mb` (millibar), `Pa` (default), and `hPa`.
+          - `X.interp(z_mid=Y,reference='Z')`:
           interpolates the field `X` at a vertical height of `Y` meters above
-          `Z`, with `Z = surface` or `Z = sealevel`.
+          `Z`, with `Z = surface` or `Z = sealevel` (default).
 
 ## Remapped output
 

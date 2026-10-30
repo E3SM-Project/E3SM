@@ -321,6 +321,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 0, .max_positional = 0,
            .keywords = {{"time",true}},
            .example = "T_mid.shift(time=1)"});
+    r.add({.name = "searchsorted",
+           .desc = "per column, the level indices bracketing a target pressure or height",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"units",false}},
+           .example = "p_mid.searchsorted(500,units='hPa')"});
     r.add({.name = "over_dt",
            .desc = "value divided by the time step",
            .min_positional = 0, .max_positional = 0,
@@ -514,6 +519,41 @@ void translate_call (const Call& call, const ast::Expression& self,
         "   previous step. Negative would look ahead, which we cannot do, and\n"
         "   only one step of history is kept.\n");
     diag_name = "FieldPrev";
+    return;
+  }
+
+  if (call.name=="searchsorted") {
+    // Named after numpy/xarray's searchsorted: where a value falls in a sorted
+    // coordinate. The receiver is the coordinate: p_mid/p_int for a pressure,
+    // z_mid/z_int for a height above sea level, height_mid/height_int for a
+    // height above the surface. This is what interp(..) depends on, so that
+    // several fields interpolated to the same target share one search.
+    std::string coord, layer;
+    const auto us = operand.rfind('_');
+    if (us!=std::string::npos) {
+      coord = operand.substr(0,us);
+      layer = operand.substr(us+1);
+    }
+    EKAT_REQUIRE_MSG ((coord=="p" or coord=="z" or coord=="height") and
+                      (layer=="mid" or layer=="int"),
+        "Error! searchsorted() needs a vertical coordinate as receiver.\n"
+        " - expression: " + ast::to_string(self) + "\n"
+        " - valid receivers: p_mid, p_int, z_mid, z_int, height_mid, height_int\n");
+    const auto value = literal_str(*call.positional[0]);
+    const auto* units = keyword(call,"units");
+    params.set<std::string>("vertical_layer",layer);
+    if (coord=="p") {
+      diag_name = "PressureLevelIndex";
+      params.set<std::string>("pressure_value",value);
+      params.set<std::string>("pressure_units",
+          units==nullptr ? std::string("Pa") : string_arg(*units,"'units'"));
+    } else {
+      diag_name = "HeightLevelIndex";
+      params.set<std::string>("height_value",value);
+      params.set<std::string>("height_units",
+          units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
+      params.set<std::string>("surface_reference",coord=="z" ? "sealevel" : "surface");
+    }
     return;
   }
 

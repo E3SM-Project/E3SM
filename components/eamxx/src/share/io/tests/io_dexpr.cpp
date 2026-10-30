@@ -25,7 +25,7 @@
  * create_diag.cpp covers the translation. Only here can we check that the field
  * survives an output stream, which looks fields up by the REQUESTED name while
  * a diag derives its own from its params -- not the same thing for an
- * expression, nor for the _atm_backtend alias.
+ * expression.
  */
 
 namespace scream {
@@ -148,8 +148,7 @@ TEST_CASE ("io_with_expressions")
         // An expression must be given a name, since field names go into the
         // nc file verbatim
         "prod := qv*T_mid",
-        // Grouping is explicit, unlike in the underscore spelling, where it
-        // falls out of regex greediness
+        // Grouping is explicit
         "shifted := (qv+qv)*T_mid",
         // Built on the intermediate below, by name
         "half := qvT/2",
@@ -157,10 +156,8 @@ TEST_CASE ("io_with_expressions")
         "col_qv := qv.mean('lev')",
         // A method call on a method call, bringing the column mean back to a 3d layout
         "col_qv_3d := qv.mean('lev').broadcast_like(qv)",
-        // Regression: expands to T_mid_minus_T_mid_prev_over_dt, so the diag
-        // names its field after the expansion. Without an explicit output
-        // name the stream throws during setup.
-        "T_mid_atm_backtend",
+        // A shorthand that expands to (T_mid-T_mid.shift(time=1)).over_dt()
+        "T_mid_atm_backtend := T_mid.tend()",
         // A negative literal is a number, on either side of the operator
         "neg_l := -2*T_mid",
         "neg_r := T_mid*(-2)",
@@ -209,7 +206,6 @@ TEST_CASE ("io_with_expressions")
   REQUIRE (scorpio::has_var(filename,"half"));
   REQUIRE (scorpio::has_var(filename,"col_qv"));
   REQUIRE (scorpio::has_var(filename,"col_qv_3d"));
-  // The one that used to throw during setup
   REQUIRE (scorpio::has_var(filename,"T_mid_atm_backtend"));
   REQUIRE (scorpio::has_var(filename,"neg_l"));
   REQUIRE (scorpio::has_var(filename,"neg_r"));
@@ -307,16 +303,6 @@ TEST_CASE ("io_with_expressions")
     REQUIRE_THROWS (om_bad.setup(fm,gm->get_grid_names()));
   }
 
-  // ...so a legacy name with a '.' is still fine unaliased, which a
-  // character-based rule would have broken.
-  {
-    auto legacy = output_params("io_dexpr_legacy",gname,{"T_mid_where_qv_gt_0.01"});
-    OutputManager om_legacy;
-    om_legacy.initialize(comm,legacy,t0,false);
-    REQUIRE_NOTHROW (om_legacy.setup(fm,gm->get_grid_names()));
-    om_legacy.finalize();
-  }
-
   // A stream whose setup throws must say why, and must not leave its diags
   // in the repo shared by all streams
   auto require_setup_throws = [&](const ekat::ParameterList& params, const std::string& msg) {
@@ -332,12 +318,12 @@ TEST_CASE ("io_with_expressions")
     const std::string lag_msg = "shift(time=1) of a diagnostic is not available";
     const std::vector<std::string> lagged = {"d := (T_mid*1.0)-(T_mid*1.0).shift(time=1)"};
     require_setup_throws(output_params("io_dexpr_lag_sparse",gname,lagged,{},3),lag_msg);
-    // ...also for the shift of an alias of a diag, for tend(), and for the underscore names
+    // ...also for the shift of an alias of a diag, for tend(), and for a named diag
     for (const auto& names : std::vector<std::vector<std::string>>{
             {"a := T_mid*1.0", "d := a.shift(time=1)"},
             {"bt := (T_mid*1.0).tend()"},
-            {"VirtualTemperature_prev"},
-            {"VirtualTemperature_atm_backtend"}}) {
+            {"vp := VirtualTemperature.shift(time=1)"},
+            {"vbt := VirtualTemperature.tend()"}}) {
       require_setup_throws(output_params("io_dexpr_lag_sparse",gname,names,{},3),lag_msg);
     }
 

@@ -33,8 +33,8 @@ initialize_impl ()
       "Error! Field rank not supported by FieldAtLevel.\n"
       " - field name: " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n"
-      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
-      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
+      "NOTE: if you requested something like 'X.mean('col').isel(..)',\n"
+      "      you can avoid this error by requesting 'X.isel(..).mean('col')' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
