@@ -178,7 +178,7 @@ protected:
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const Field& f);
+  void set_valid_count_tracking(const Field& f);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
@@ -233,9 +233,9 @@ protected:
   // registered in the field manager so that other diagnostics can depend on
   // them, but they are NOT written to the NC output file.
   strvec_t m_intermediate_aliases;
-  strmap_t<Field> m_field_to_avg_count;
+  strmap_t<Field> m_field_to_valid_count;
   strmap_t<Field> m_mask_to_count;
-  std::vector<Field> m_avg_counts;
+  std::vector<Field> m_valid_counts;
   strmap_t<strvec_t> m_vars_dims;
   strmap_t<int> m_dims_len;
   std::list<diag_ptr_type> m_diagnostics;
@@ -248,7 +248,6 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt         = false;
   bool m_latlon_output = false;
   std::string m_decomp_dimname = "";
 

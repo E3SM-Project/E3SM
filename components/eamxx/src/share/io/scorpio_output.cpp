@@ -311,7 +311,7 @@ void AtmosphereOutput::restart (const std::string& filename)
   for (const auto& [name,f_ptr] : fm->get_repo()) {
     fields.push_back(*f_ptr);
   }
-  for (const auto& f : m_avg_counts) {
+  for (const auto& f : m_valid_counts) {
     fields.push_back(f.alias(f.name(),fm->get_grid()->name()));
   }
 
@@ -432,9 +432,8 @@ void AtmosphereOutput::init()
     // Fields with a valid mask need a count, to tell where the output is valid. Unmasked fields do not.
     // NOTE: f is the field after the remap, so it also covers masks created by the vertical remapper
     if (m_avg_type!=OutputAvgType::Instant and f.has_valid_mask()) {
-      // Create and store a Field to track the averaging count for this layout
-      m_track_avg_cnt = true;
-      set_avg_cnt_tracking(f);
+      // Create and store a Field to track the valid count for this layout
+      set_valid_count_tracking(f);
     }
   }
 
@@ -507,17 +506,17 @@ run (const std::string& filename, const util::TimeStamp& ts,
   auto fm_scorpio = m_field_mgrs[Scorpio];
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
-  // If tracking avg count, update the count at each field location separately.
-  // We do count++ only where the field is valid (or everywhere, if the field has no valid mask).
+  // Update the count at each field location separately (only masked fields have a count).
+  // We do count++ only where the field is valid.
   // Note, we assume that all fields that share a count are also masked in the same way.
-  if (m_track_avg_cnt) {
+  if (not m_field_to_valid_count.empty()) {
     start_timer("EAMxx::IO::avg_cnt");
-    // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
-    for (auto& [fname, count] : m_field_to_avg_count) {
+    // Since 2+ fields may have same valid count, make sure we update the counts only ONCE.
+    for (auto& [fname, count] : m_field_to_valid_count) {
       count.get_header().set_extra_data("updated",false);
     }
 
-    for (auto& [fname, count] : m_field_to_avg_count) {
+    for (auto& [fname, count] : m_field_to_valid_count) {
       if (count.get_header().get_extra_data<bool>("updated")) {
         continue;
       }
@@ -546,7 +545,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
       // Only masked fields have a count
       count.update(field.get_valid_mask(),1,1);
 
-      // Handle writing the average count variables to file
+      // Handle writing the valid count variables to file
       if (is_write_step) {
         // NOTE: nested inside EAMxx::IO::avg_cnt
         start_timer("EAMxx::IO::sync_and_write");
@@ -597,12 +596,12 @@ run (const std::string& filename, const util::TimeStamp& ts,
           auto& f_out = fm_scorpio->get_field(field_name);
 
     // Safety check: if a field is masked and we are not doing Instant output, we must have
-    // created an avg-count tracking field; otherwise we could not tell where the output is valid
+    // created an valid-count tracking field; otherwise we could not tell where the output is valid
     // (and for Average, the division by the raw number of steps would bias the result
     // wherever the field was invalid).
     if (m_avg_type!=OutputAvgType::Instant && f_in.has_valid_mask()) {
-      EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
-        "[AtmosphereOutput::run] Error! Accumulating a masked field without avg-count tracking.\n"
+      EKAT_REQUIRE_MSG(m_field_to_valid_count.count(field_name),
+        "[AtmosphereOutput::run] Error! Accumulating a masked field without valid-count tracking.\n"
         " - field name : " + field_name + "\n"
         "This indicates the field got a valid mask after output initialization or tracking logic missed it." );
     }
@@ -653,9 +652,9 @@ run (const std::string& filename, const util::TimeStamp& ts,
         // This field may not need a count (the map is empty if we don't track counts).
         // Note: a missing entry is safe ONLY for fields that cannot be invalid
         // anywhere; the has_valid_mask check above guarantees that.
-        const auto cnt_it = m_field_to_avg_count.find(field_name);
-        if (cnt_it!=m_field_to_avg_count.end()) {
-          const auto& count = cnt_it->second;
+        const auto count_it = m_field_to_valid_count.find(field_name);
+        if (count_it!=m_field_to_valid_count.end()) {
+          const auto& count = count_it->second;
 
           // The output is valid where the count is sufficient (see the count update above)
           fill_mask = &count.get_header().get_extra_data<Field>("sufficient_count_mask");
@@ -743,7 +742,7 @@ res_dep_memory_footprint () const
   return rdmf;
 }
 
-void AtmosphereOutput::set_avg_cnt_tracking(const Field& f)
+void AtmosphereOutput::set_valid_count_tracking(const Field& f)
 {
   // The count tells how many valid samples went into a masked field, so fields that share
   // a mask share the count, which is named after the mask.
@@ -757,13 +756,13 @@ void AtmosphereOutput::set_avg_cnt_tracking(const Field& f)
   if (it!=m_mask_to_count.end()) {
     const auto& count_layout = it->second.get_header().get_identifier().get_layout();
     EKAT_REQUIRE_MSG (layout==count_layout,
-        "[AtmosphereOutput::set_avg_cnt_tracking] Error! Fields with the same valid mask name have different layouts.\n"
+        "[AtmosphereOutput::set_valid_count_tracking] Error! Fields with the same valid mask name have different layouts.\n"
         " - mask name   : " + mask_name + "\n"
         " - field name  : " + name + "\n"
         " - field layout: " + layout.to_string() + "\n"
         " - other layout: " + count_layout.to_string() + "\n"
         "Masks with the same name must hold the same values, so the name must tell them apart.\n");
-    m_field_to_avg_count[name] = it->second;
+    m_field_to_valid_count[name] = it->second;
     return;
   }
 
@@ -776,27 +775,27 @@ void AtmosphereOutput::set_avg_cnt_tracking(const Field& f)
       break;
     }
   }
-  std::string avg_cnt_name = "num_valid_snapshots_" + stem;
-  for (const auto& c : m_avg_counts) {
-    if (c.name()==avg_cnt_name) {
-      avg_cnt_name = "num_valid_snapshots_" + mask_name;
+  std::string valid_count_name = "num_valid_snapshots_" + stem;
+  for (const auto& c : m_valid_counts) {
+    if (c.name()==valid_count_name) {
+      valid_count_name = "num_valid_snapshots_" + mask_name;
       break;
     }
   }
-  m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
+  m_vars_dims[valid_count_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
-  auto count_id = fid.clone(avg_cnt_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
+  auto count_id = fid.clone(valid_count_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
   Field count(count_id);
   count.allocate_view();
 
-  // Mask telling where the count is sufficient, i.e., where cnt>threshold (threshold=0 for Max/Min),
+  // Mask telling where the count is sufficient, i.e., where count>threshold (threshold=0 for Max/Min),
   // so that the output is valid there.
   // It is computed (once per count) only at output steps.
   // NOTE: this is NOT a valid mask of the count: the count is valid everywhere, and its updates must not be gated.
-  count.get_header().set_extra_data("sufficient_count_mask",count.clone(avg_cnt_name + "_sufficient"));
+  count.get_header().set_extra_data("sufficient_count_mask",count.clone(valid_count_name + "_sufficient"));
 
-  m_avg_counts.push_back(count);
-  m_field_to_avg_count[name] = count;
+  m_valid_counts.push_back(count);
+  m_field_to_valid_count[name] = count;
   m_mask_to_count[mask_name] = count;
 }
 /* ---------------------------------------------------------- */
@@ -820,7 +819,7 @@ reset_scorpio_fields()
   for (const auto& name : m_fields_names) {
     fm->get_field(name).deep_copy(value);
   }
-  for (auto& count : m_avg_counts) {
+  for (auto& count : m_valid_counts) {
     count.deep_copy(0);
   }
 }
@@ -913,9 +912,9 @@ register_variables(const std::string& filename,
         scorpio::set_attribute(filename,field_name,"sub_fields",children_list);
       }
 
-      // If tracking average count variables then add the name of the tracking variable for this variable
-      if (m_field_to_avg_count.count(field_name)) {
-        const auto& count = m_field_to_avg_count.at(field_name);
+      // If tracking valid count variables then add the name of the tracking variable for this variable
+      if (m_field_to_valid_count.count(field_name)) {
+        const auto& count = m_field_to_valid_count.at(field_name);
         scorpio::set_attribute(filename,field_name,"averaging_count_tracker",count.name());
       }
 
@@ -974,8 +973,8 @@ register_variables(const std::string& filename,
     }
   }
 
-  // Now register the average count variables (if any)
-  for (const auto& f : m_avg_counts) {
+  // Now register the valid count variables (if any)
+  for (const auto& f : m_valid_counts) {
     const auto& name = f.name();
     const auto& dimnames = m_vars_dims.at(name);
     if (mode==scorpio::FileMode::Append) {
@@ -998,7 +997,7 @@ register_variables(const std::string& filename,
           "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
     } else {
-      // Note, unlike with regular output variables, for the average counting
+      // Note, unlike with regular output variables, for the valid counting
       // variables we don't need to add all of the extra metadata.  So we simply
       // define the variable.
       scorpio::define_var(filename, name, dimnames, "int", m_add_time_dim);
@@ -1200,7 +1199,7 @@ process_requested_fields()
     diag->initialize();
   };
 
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
+  auto add_to_diag_group = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
     // Set the diag field in the FM
     auto diag_field = diag->get();
 
@@ -1295,7 +1294,7 @@ process_requested_fields()
           if (not diag->is_initialized()) {
             init_diag(diag);
           }
-          check_diag_avg_cnt (diag);
+          add_to_diag_group (diag);
           remove_these.insert(name);
           fm_model->add_field(diag->get());
           m_diagnostics.push_back(diag);
