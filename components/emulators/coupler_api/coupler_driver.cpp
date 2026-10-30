@@ -1,3 +1,4 @@
+#include "coupler.hpp"
 #include "process.hpp"
 #include <algorithm>
 #include <coupler_driver.hpp>
@@ -5,7 +6,8 @@
 #include <stdexcept>
 
 namespace e3sm::coupler {
-void CouplerDriver::initialize(const std::string& filename) {
+void CouplerDriver::initialize(const std::string& filename,
+                               RouteBufferMap external_buffers) {
   if (initialized_) {
     throw std::runtime_error("CouplerDriver: already initialized!");
   }
@@ -15,6 +17,7 @@ void CouplerDriver::initialize(const std::string& filename) {
   std::cout << coupler_.registry().to_string() << std::endl;
 
   coupler_.build_routes(filename);
+  coupler_.build_buffers(external_buffers);
 
   for (auto& component : components_) {
     const auto name = component.name();

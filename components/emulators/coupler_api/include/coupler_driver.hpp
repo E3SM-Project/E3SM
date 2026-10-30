@@ -29,7 +29,10 @@ public:
     components_.emplace_back(std::move(component));
   }
 
-  void initialize(const std::string& filename);
+  void initialize(const std::string& filename, RouteBufferMap external_buffers);
+  void initialize(const std::string& filename) {
+    initialize(filename, RouteBufferMap{});
+  }
   bool is_initialized() const { return initialized_; }
 
   void run(const ProcessRunOpts run_opts) {

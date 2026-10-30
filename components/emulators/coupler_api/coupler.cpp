@@ -107,7 +107,7 @@ void Coupler::build_routes(const std::filesystem::path& filename) {
   routes_.reserve(fields.size());
 
   for (const auto& field : fields) {
-    CouplingRoute route{.merge_type = field.merge_type};
+    CouplingRoute route{.merge_type = field.merge_type, .name = field.id};
     for (const auto& component : field.sources) {
       const auto id = registry_.get_id(component, field.id);
       route.sources.push_back(id);
@@ -120,7 +120,6 @@ void Coupler::build_routes(const std::filesystem::path& filename) {
     }
     routes_.emplace_back(std::move(route));
   }
-  build_buffers();
 }
 
 const ActiveCouplingFields&
@@ -130,11 +129,9 @@ Coupler::coupling_plan(const std::string& component_name) const {
 
 /**
  * @brief: Create the buffers to allow transfer between components.
- *
- * Currently only MergeType::Direct is supported, will implement others
- * once MOAB is better integrated
+ *  If a route has no external_buffer, internal storage is allocated and used.
  */
-void Coupler::build_buffers() {
+void Coupler::build_buffers(RouteBufferMap external_buffers) {
   buffers_.clear();
 
   for (auto& route : routes_) {
@@ -147,12 +144,22 @@ void Coupler::build_buffers() {
     }
     const auto source_id = route.sources.front();
     const auto& source_field = registry_.get(source_id);
-    route.buffer.resize(source_field.size);
+    RouteBufferMap::iterator it = external_buffers.find(route.name);
+    if (it == external_buffers.end()) {
+      route.owned_buffer.resize(source_field.size);
+      route.buffer = std::span(route.owned_buffer);
+    } else {
+      route.buffer = it->second;
+      if (route.buffer.size() != source_field.size) {
+        throw std::runtime_error("External Buffer Size MisMatch for " +
+                                 route.name);
+      }
+    }
 
     auto& source_buffers = buffers_[source_field.component];
     source_buffers.exports.push_back({
         .id = source_id,
-        .data = std::span<double>{route.buffer},
+        .data = route.buffer,
     });
 
     for (const auto dest_id : route.destinations) {
@@ -161,7 +168,7 @@ void Coupler::build_buffers() {
 
       dest_buffer.imports.push_back({
           .id = dest_id,
-          .data = std::span<double>{route.buffer},
+          .data = route.buffer,
       });
     }
   } // routes loop
