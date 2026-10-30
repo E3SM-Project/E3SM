@@ -199,6 +199,27 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
   return ret_layout;
 }
 
+bool AbstractGrid::
+has_same_gids_as (const AbstractGrid& other) const
+{
+  // The global count is the same on all ranks, so all ranks return here, or none
+  if (get_num_global_dofs()!=other.get_num_global_dofs()) {
+    return false;
+  }
+
+  const auto gids1 = get_dofs_gids();
+  const auto gids2 = other.get_dofs_gids();
+  int same_here = gids1.is_aliasing(gids2);
+  if (not same_here and get_num_local_dofs()==other.get_num_local_dofs()) {
+    const auto h1 = gids1.get_view<const gid_type*,Host>();
+    const auto h2 = gids2.get_view<const gid_type*,Host>();
+    same_here = std::equal(h1.data(),h1.data()+m_num_local_dofs,h2.data());
+  }
+  int same;
+  m_comm.all_reduce(&same_here,&same,1,MPI_PROD);
+  return same==1;
+}
+
 bool AbstractGrid::is_unique () const {
   auto compute_is_unique = [&]() {
     // Get a copy of gids on host. CAREFUL: do not use the stored dofs,

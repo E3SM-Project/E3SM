@@ -26,36 +26,6 @@ struct RealsClose {
   }
 };
 
-// Check whether two grids store the same GID values on every rank.
-// Fast path: if the dofs_gids fields alias each other (same allocation), return true immediately.
-// Fallback: compare global dof counts, then compare local GID arrays element-by-element.
-bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
-                           const std::shared_ptr<const AbstractGrid>& g2)
-{
-  using gid_type = AbstractGrid::gid_type;
-
-  const auto gids1 = g1->get_dofs_gids();
-  const auto gids2 = g2->get_dofs_gids();
-
-  // Fast path: identical backing allocation
-  if (gids1.is_aliasing(gids2)) {
-    return true;
-  }
-
-  // Different allocations: verify sizes then compare values
-  if (g1->get_num_global_dofs() != g2->get_num_global_dofs()) {
-    return false;
-  }
-  if (g1->get_num_local_dofs() != g2->get_num_local_dofs()) {
-    return false;
-  }
-
-  const auto h1 = gids1.get_view<const gid_type*, Host>();
-  const auto h2 = gids2.get_view<const gid_type*, Host>();
-  const int n = g1->get_num_local_dofs();
-  return std::equal(h1.data(), h1.data()+n, h2.data());
-}
-
 // Helper fcn to gather the union of sets across MPI ranks
 std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
 {
@@ -538,8 +508,8 @@ get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
     // are compatible with the src/tgt grids of shared_data. Two grids are
     // considered compatible if they store the same GID values on every rank
     // (they may or may not share the same backing allocation).
-    EKAT_REQUIRE_MSG (grids_have_same_gids(src_grid, shared_data->m_src_grid) and
-                      grids_have_same_gids(tgt_grid, shared_data->m_tgt_grid),
+    EKAT_REQUIRE_MSG (src_grid->has_same_gids_as(*shared_data->m_src_grid) and
+                      tgt_grid->has_same_gids_as(*shared_data->m_tgt_grid),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - src grid name: " + src_grid->name() + "\n"
@@ -569,8 +539,8 @@ get_data (const std::shared_ptr<const AbstractGrid>& grid,
     // is compatible with the src or tgt grid of shared_data. Two grids are
     // considered compatible if they store the same GID values on every rank
     // (they may or may not share the same backing allocation).
-    EKAT_REQUIRE_MSG (grids_have_same_gids(grid, shared_data->m_src_grid) or
-                      grids_have_same_gids(grid, shared_data->m_tgt_grid),
+    EKAT_REQUIRE_MSG (grid->has_same_gids_as(*shared_data->m_src_grid) or
+                      grid->has_same_gids_as(*shared_data->m_tgt_grid),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - grid name: " + grid->name() + "\n");
