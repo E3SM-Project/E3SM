@@ -10,11 +10,14 @@
 #include <any>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
 namespace scream
 {
+
+class IOPDataManager;
 
 // Handles the initialization of the fields in a FieldManager, either for an
 // initial (startup) run or for a restarted run.
@@ -32,6 +35,20 @@ namespace scream
 //    the IC file. Fields in 'defaults' are set to the given constant ONLY IF
 //    they are NOT in the IC file. If a field is in both lists, 'overrides' wins.
 //    Only used for startup runs.
+//  - topography_filename: the file to read the topography fields (phis, sgh,
+//    sgh30) from. These fields are NOT read from the IC file, nor are they
+//    affected by 'defaults' constants (but 'overrides' constants still apply).
+//    Only used for startup runs.
+//  - perturbed_fields, perturbation_limit, perturbation_minimum_pressure,
+//    perturbation_random_seed, generate_perturbation_random_seed: if
+//    perturbed_fields is not empty, a random relative perturbation is applied
+//    to those (already inited) fields, which must live on the physics_gll grid.
+//    Only used for startup runs.
+//
+// If an IOPDataManager is provided, fields are read from file so that every
+// column gets the data of the file column closest to the IOP target lat/lon,
+// and the IOP data (read at the run's t0) is used to set some of the fields on
+// the physics_gll grid (if any), before any perturbation is applied.
 //
 // For a startup run, ModelInit inits the fields in the STARTUP group (of each
 // grid); for a restart run, it inits those in the RESTART group. As in the
@@ -67,6 +84,11 @@ public:
   // The data is only loaded for restart runs.
   void set_restart_extra_data (const restart_extra_data_t& data) {
     m_restart_extra_data = data;
+  }
+
+  // Provide an IOP data manager, if running an IOP case. Only used for startup runs.
+  void set_iop_data_manager (const std::shared_ptr<IOPDataManager>& iop) {
+    m_iop_data_manager = iop;
   }
 
   // Init all the fields in the STARTUP (RunType::Initial) or RESTART
@@ -106,10 +128,46 @@ protected:
   // Does NOT update the time stamp.
   void set_constant_field (Field& f, const ekat::ParameterList& constants_pl) const;
 
-  // Read the fields from the file (on the given grid). Does NOT update the time stamps.
+  // Read the fields from the file (on the given grid). Optionally, rename some layout
+  // tags (e.g., to account for a different dimension name on file). Does NOT update
+  // the time stamps. If an IOP data manager is present (and use_iop=true), use it to
+  // read the fields (in which case tag_rename is ignored).
   void read_fields (const std::string& filename,
                     const std::vector<Field>& fields,
-                    const std::shared_ptr<const AbstractGrid>& grid) const;
+                    const std::shared_ptr<const AbstractGrid>& grid,
+                    const strmap_t<std::string>& tag_rename = {},
+                    const bool use_iop = true);
+
+  // Map from eamxx field name to the name of that field in the topography file,
+  // for the topography fields on grid_name. These are the STARTUP fields that
+  // are read from the topography file, rather than from the IC file.
+  // Virtual, since a derived class may need to change which fields are expected
+  // there (e.g., because dynamics computes some of them).
+  virtual strmap_t<std::string>
+  get_topography_file_names (const std::string& grid_name) const;
+
+  // Layout tags to rename when reading the topography fields of grid_name.
+  // By default, only the GLL grid needs a rename (the topography file always
+  // uses 'ncol_d' for the GLL 'ncol' dimension, so that a single topography
+  // file can serve both GLL and PG2 runs).
+  virtual strmap_t<std::string>
+  get_topography_tag_rename (const std::string& grid_name) const;
+
+  // If m_params has a (non-empty) 'perturbed_fields' entry, apply a random
+  // (relative) perturbation to each of those (already inited) physics_gll
+  // fields, at levels below 'perturbation_minimum_pressure'. A no-op otherwise.
+  void perturb_fields (const std::shared_ptr<FieldManager>& fm);
+
+  // The random seed to use for perturb_fields, resolved from the
+  // 'generate_perturbation_random_seed'/'perturbation_random_seed' params.
+  int get_perturbation_seed () const;
+
+  // A (LEV-layout, int) field, used by perturb_fields to decide which
+  // levels of gll_grid to perturb: level k is perturbed iff the field's
+  // value at k is nonzero. A level is included iff its reference pressure
+  // (computed from gll_grid's hyam/hybm geometry data) exceeds the
+  // 'perturbation_minimum_pressure' param.
+  Field build_perturbation_level_mask (const std::shared_ptr<const AbstractGrid>& gll_grid) const;
 
   // Set the time stamp of the fields to t0. Also set that of their children, and that
   // of their parents, if all the children of the parent have been inited.
@@ -124,6 +182,11 @@ protected:
   ekat::ParameterList   m_params;
 
   restart_extra_data_t  m_restart_extra_data;
+
+  std::shared_ptr<IOPDataManager> m_iop_data_manager;
+
+  // Grids for which the IOP data manager has already set up its io info
+  std::set<std::string> m_iop_io_grids;
 };
 
 } // namespace scream

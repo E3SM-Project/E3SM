@@ -4,6 +4,7 @@
 #include "share/data_managers/library_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_parameter_list.hpp>
@@ -27,9 +28,10 @@ Fixture make_fixture (const ekat::Comm& comm,
                       const int ncols, const int nlevs,
                       const std::vector<FieldIdentifier>& fids,
                       const std::vector<std::string>& groups,
-                      const bool add_to_groups = true)
+                      const bool add_to_groups = true,
+                      const std::string& grid_name = "point_grid")
 {
-  auto grid = create_point_grid("point_grid",ncols*comm.size(),nlevs,comm);
+  auto grid = create_point_grid(grid_name,ncols*comm.size(),nlevs,comm);
   const auto gn = grid->name();
   auto gm = std::make_shared<LibraryGridsManager>(grid);
   auto fm = std::make_shared<FieldManager>(gm);
@@ -354,6 +356,235 @@ TEST_CASE ("model_init_restart", "")
 
   REQUIRE (std::any_cast<int>(*nsteps)==42);
   REQUIRE (std::any_cast<std::string>(*label)=="restarted");
+
+  scorpio::finalize_subsystem();
+}
+
+TEST_CASE ("model_init_topography", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  const int ncols = 4;
+  const int nlevs = 3;
+  const std::string gn = "physics_gll";
+
+  FieldIdentifier phis_id ("phis", {{COL},     {ncols}},       none, gn);
+  FieldIdentifier sgh_id  ("sgh",  {{COL},     {ncols}},       none, gn);
+  FieldIdentifier t_id    ("T_mid",{{COL,LEV}, {ncols,nlevs}}, none, gn);
+
+  // The topography file uses 'ncol_d' (not 'ncol') for the GLL grid's column dimension,
+  // and PHIS_d (not phis) as the name of the surface geopotential.
+  const std::string topo_file = "model_init_topo_np" + std::to_string(comm.size()) + ".nc";
+  {
+    Field f(phis_id); f.allocate_view(); f.deep_copy(42.0); f.sync_to_host();
+
+    scorpio::register_file(topo_file,scorpio::Write);
+    scorpio::define_dim(topo_file,"ncol_d",ncols*comm.size());
+    scorpio::define_var(topo_file,"PHIS_d",{"ncol_d"},"real",false);
+    scorpio::set_dim_decomp(topo_file,"ncol_d",comm.rank()*ncols,ncols);
+    scorpio::enddef(topo_file);
+    scorpio::write_var(topo_file,"PHIS_d",f.get_internal_view_data<const Real,Host>());
+    scorpio::release_file(topo_file);
+  }
+  const std::string ic_file = "model_init_topo_ic_np" + std::to_string(comm.size()) + ".nc";
+  write_file(ic_file,{{"T_mid",300.0},{"phis",-1.0}},comm,ncols,nlevs);
+
+  util::TimeStamp t0(2000,1,1,0,0,0);
+
+  // phis is read from the topography file, NOT from the IC file (which has a decoy),
+  // and its default is not used. sgh is overridden, so there is no need to read it.
+  {
+    auto [grid,fm,_] = make_fixture(comm,ncols,nlevs,{phis_id,sgh_id,t_id},{"STARTUP"},true,gn);
+
+    ekat::ParameterList params("initial_conditions");
+    params.set<std::string>("filename",ic_file);
+    params.set<std::string>("topography_filename",topo_file);
+    params.sublist("constant_fields").sublist("defaults").set<double>("phis",10.0);
+    params.sublist("constant_fields").sublist("overrides").set<double>("sgh",2.0);
+
+    ModelInit model_init(params);
+    model_init.run(fm,t0,RunType::Initial);
+
+    for (const auto& name : {"phis","sgh","T_mid"}) {
+      REQUIRE (fm->get_field(name,gn).get_header().get_tracking().get_time_stamp()==t0);
+    }
+    check_constant(fm->get_field("phis",gn),42.0);
+    check_constant(fm->get_field("sgh",gn),2.0);
+    check_constant(fm->get_field("T_mid",gn),300.0);
+  }
+
+  // Topography is requested, but no topography file is given
+  {
+    auto [grid,fm,_] = make_fixture(comm,ncols,nlevs,{phis_id},{"STARTUP"},true,gn);
+
+    ekat::ParameterList params("initial_conditions");
+    ModelInit model_init(params);
+    REQUIRE_THROWS (model_init.run(fm,t0,RunType::Initial));
+  }
+
+  scorpio::finalize_subsystem();
+}
+
+namespace {
+
+// Create a fixture on a physics_gll grid with hyam/hybm set so that the reference pressure
+// increases with level index: with perturbation_minimum_pressure=1000mb, only the bottom
+// two (of four) levels end up perturbed.
+Fixture make_perturbation_fixture (const ekat::Comm& comm, const int ncols, const int nlevs,
+                                   const std::vector<FieldIdentifier>& fids,
+                                   const std::vector<std::string>& groups)
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  auto fix = make_fixture(comm,ncols,nlevs,fids,groups,true,"physics_gll");
+
+  constexpr auto ps0 = physics::Constants<Real>::P0.value;
+  Field hyam(FieldIdentifier("hyam",{{LEV},{nlevs}},none,fix.gn)); hyam.allocate_view();
+  Field hybm(FieldIdentifier("hybm",{{LEV},{nlevs}},none,fix.gn)); hybm.allocate_view();
+  auto hyam_h = hyam.get_view<Real*,Host>();
+  auto hybm_h = hybm.get_view<Real*,Host>();
+  for (int k=0; k<nlevs; ++k) {
+    const Real pref_mb = 500.0 + k*300.0; // 500, 800, 1100, 1400
+    hyam_h(k) = hybm_h(k) = pref_mb*100/ps0/2; // hyam*ps0 + hybm*ps0 = pref_mb*100 (Pa)
+  }
+  hyam.sync_to_dev();
+  hybm.sync_to_dev();
+  fix.grid->set_geometry_data(hyam);
+  fix.grid->set_geometry_data(hybm);
+  return fix;
+}
+
+} // anonymous namespace
+
+TEST_CASE ("model_init_perturbation", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int ncols = 4;
+  const int nlevs = 4;
+  const std::string gn = "physics_gll";
+
+  FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  FieldIdentifier q_id ("qv",    {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  auto [grid,fm,_] = make_perturbation_fixture(comm,ncols,nlevs,{t_id,q_id},{"STARTUP"});
+
+  ekat::ParameterList params("initial_conditions");
+  auto& overrides = params.sublist("constant_fields").sublist("overrides");
+  overrides.set<double>("T_mid",300.0);
+  overrides.set<double>("qv",0.01);
+  params.set<std::vector<std::string>>("perturbed_fields",{"T_mid"});
+  params.set<double>("perturbation_limit",0.05);
+  params.set<int>("perturbation_random_seed",123);
+  params.set<double>("perturbation_minimum_pressure",1000.0);
+
+  ModelInit model_init(params);
+  util::TimeStamp t0(2000,1,1,0,0,0);
+  model_init.run(fm,t0,RunType::Initial);
+
+  // Only fields in perturbed_fields are perturbed
+  check_constant(fm->get_field("qv",gn),0.01);
+
+  auto f = fm->get_field("T_mid",gn);
+  f.sync_to_host();
+  auto v = f.get_view<const Real**,Host>();
+
+  // Levels 0,1 (pref 500,800mb) are below the pressure threshold: untouched.
+  for (int i=0; i<ncols; ++i) {
+    for (int k=0; k<2; ++k) {
+      REQUIRE (v(i,k)==300.0);
+    }
+  }
+
+  // Levels 2,3 (pref 1100,1400mb) are perturbed: within [1-lim,1+lim]*300,
+  // and (with overwhelming probability) not exactly equal to the unperturbed
+  // value for at least one column/level.
+  bool any_perturbed = false;
+  for (int i=0; i<ncols; ++i) {
+    for (int k=2; k<nlevs; ++k) {
+      REQUIRE (v(i,k)>=300.0*0.95);
+      REQUIRE (v(i,k)<=300.0*1.05);
+      any_perturbed |= (v(i,k)!=300.0);
+    }
+  }
+  REQUIRE (any_perturbed);
+}
+
+TEST_CASE ("model_init_perturbation_errors", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int ncols = 4;
+  const int nlevs = 4;
+  const std::string gn = "physics_gll";
+
+  FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  FieldIdentifier q_id ("qv",    {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  util::TimeStamp t0(2000,1,1,0,0,0);
+
+  // Perturbing a field that is not inited by ModelInit
+  {
+    auto [grid,fm,_] = make_perturbation_fixture(comm,ncols,nlevs,{t_id,q_id},{"STARTUP"});
+    ekat::ParameterList params("initial_conditions");
+    params.sublist("constant_fields").sublist("overrides").set<double>("T_mid",300.0);
+    params.set<std::vector<std::string>>("perturbed_fields",{"qv"});
+    ModelInit model_init(params);
+    REQUIRE_THROWS (model_init.run(fm,t0,RunType::Initial));
+  }
+
+  // generate_perturbation_random_seed and perturbation_random_seed are mutually exclusive
+  {
+    auto [grid,fm,_] = make_perturbation_fixture(comm,ncols,nlevs,{t_id},{"STARTUP"});
+    ekat::ParameterList params("initial_conditions");
+    params.sublist("constant_fields").sublist("overrides").set<double>("T_mid",300.0);
+    params.set<std::vector<std::string>>("perturbed_fields",{"T_mid"});
+    params.set<bool>("generate_perturbation_random_seed",true);
+    params.set<int>("perturbation_random_seed",1);
+    ModelInit model_init(params);
+    REQUIRE_THROWS (model_init.run(fm,t0,RunType::Initial));
+  }
+}
+
+TEST_CASE ("model_init_no_perturbation_on_restart", "")
+{
+  // A restarted field is already whatever it was at the end of the previous
+  // run, so ModelInit must not perturb it again.
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  const int ncols = 4;
+  const int nlevs = 4;
+  const std::string gn = "physics_gll";
+
+  FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  auto [grid,fm,_] = make_perturbation_fixture(comm,ncols,nlevs,{t_id},{"RESTART"});
+
+  const std::string filename = "model_init_no_perturb_restart_np" + std::to_string(comm.size()) + ".nc";
+  write_file(filename,{{"T_mid",300.0}},comm,ncols,nlevs);
+
+  // Even though a 'perturbed_fields' entry is present, it must be ignored on a restart run.
+  ekat::ParameterList params("initial_conditions");
+  params.set<std::string>("filename",filename);
+  params.set<std::vector<std::string>>("perturbed_fields",{"T_mid"});
+  params.set<double>("perturbation_limit",0.05);
+
+  ModelInit model_init(params);
+  model_init.run(fm,util::TimeStamp(2000,1,1,0,0,0),RunType::Restart);
+
+  check_constant(fm->get_field("T_mid",gn),300.0);
 
   scorpio::finalize_subsystem();
 }
