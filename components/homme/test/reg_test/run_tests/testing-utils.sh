@@ -1,3 +1,8 @@
+# Whether the tests should skip the comparison against baselines (cmake option HOMME_SKIP_BASELINE_COMPARE)
+skipBaselineCompare() {
+  [ "${HOMME_SKIP_BASELINE_COMPARE}" = TRUE -o "${HOMME_SKIP_BASELINE_COMPARE}" = ON ]
+}
+
 parseHeader() {
   cat $1 | \
   sed -e "s/\${TEST_NAME}/${TEST_NAME}/g" \
@@ -415,6 +420,10 @@ if true; then
       ############################################################
       # load the cprnc files for this run
       FILES="${NC_OUTPUT_FILES}"
+      if skipBaselineCompare ; then
+        echo "Test ${TEST_NAME}: comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON)"
+        FILES=""
+      fi
 
       if [ -z "${FILES}" ] ; then
           echo "Test ${TEST_NAME} doesn't specify any baseline comparison tests"
@@ -582,6 +591,10 @@ createAllRunScriptsGeneric() {
       ############################################################
       # load the cprnc files for this run
       FILES="${NC_OUTPUT_FILES}"
+      if skipBaselineCompare ; then
+        echo "Test ${TEST_NAME}: comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON)"
+        FILES=""
+      fi
 
       if [ -z "${FILES}" ] ; then
           echo "Test ${TEST_NAME} doesn't specify any baseline comparison tests"
@@ -709,6 +722,13 @@ execLine() {
   NUM_MPI_PROCS=$3
   OPT="> $4.out 2> $4.err"
 
+  # The status of a run script is the one of its last command. Normally, a failure of an earlier launch of
+  # a multi-launch test is still caught when comparing the output files with the baselines. If that is
+  # disabled, make each launch stop the script (with its exit code) if it fails.
+  if skipBaselineCompare ; then
+    OPT="$OPT || exit \$?"
+  fi
+
   if [ -n "${MPI_RUN_SCRIPT}" ]; then
     echo "${MPI_RUN_SCRIPT} ${NUM_MPI_PROCS} $EXEC $OPT" >> $RUN_SCRIPT
   elif [ -n "${MPI_EXEC}" ]; then
@@ -774,6 +794,10 @@ diffCprncOutput() {
 
   # NC_OUTPUT_FILES is defined in the .sh file
   FILES="${NC_OUTPUT_FILES}"
+  if skipBaselineCompare ; then
+    echo "Test ${TEST_NAME}: comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON)"
+    FILES=""
+  fi
 
   if [ -z "${FILES}" ] ; then
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -894,6 +918,12 @@ echo "##########################################################################
 }
 
 checkBaselineResults() {
+
+  # Nothing to check if we do not compare against baselines
+  if skipBaselineCompare ; then
+    echo "Comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON): not checking baseline files"
+    return 0
+  fi
 
   filesNotFound=false
 

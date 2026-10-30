@@ -72,6 +72,12 @@ def _parse_args(argv):
         help="If true, generate baselines, otherwise compare against existing ones"
     )
     parser.add_argument(
+        "--no-baseline",
+        action="store_true",
+        help="Do not compare against baselines (e.g., for --bfb, where we only care about f90 vs cxx). "
+             "Cannot be used with --generate.",
+    )
+    parser.add_argument(
         "--baseline-root",
         default=None,
         help="Baseline root directory.",
@@ -149,6 +155,9 @@ def ensure_paths(args,machine):
     """
     Ensures the root, work, and baseline dirs exist 
     """
+    expect(not (args.no_baseline and args.generate),
+           "ERROR: --no-baseline and --generate cannot be used together")
+
     root_dir = pathlib.Path(args.root_dir).resolve()
 
     expect(root_dir.is_dir() and root_dir.name == "homme",
@@ -158,6 +167,9 @@ def ensure_paths(args,machine):
         work_dir = pathlib.Path(args.work_dir).resolve()
     else:
         work_dir = root_dir / "ctest-build"
+
+    if args.no_baseline:
+        return root_dir, work_dir, None
 
     # We may need some mach defaults here
     if args.compiler:
@@ -214,7 +226,10 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     cmd += f" -D BUILD_WORK_DIR={work_dir}"
     cmd += f" -D MACHINE_FILE={machine_file}"
     cmd += f" -D BFB_TESTING={_bool_str(args.bfb)}"
-    cmd += f" -D BASELINE_DIR={baseline_dir}"
+    if args.no_baseline:
+        cmd += " -D NO_BASELINE=TRUE"
+    else:
+        cmd += f" -D BASELINE_DIR={baseline_dir}"
     cmd += f" -D DEBUG={_bool_str(args.debug)}"
     cmd += f" -D GENERATE={args.generate}"
     cmd += f" -D BUILD_PARALLEL_LEVEL={make_j}"
@@ -263,46 +278,6 @@ def clean_work_dir(work_dir,root_dir):
     print(f"Removing previous build dir '{work_dir}'")
     shutil.rmtree(work_dir)
 
-def dump_last_ctest_log(work_dir):
-    """
-    Finds and dumps the last relevant CTest failure log from Testing/Temporary/
-    accounting for variable suffixes (e.g., LastTest_*.log).
-    """
-    temporary_dir = pathlib.Path(work_dir) / "Testing" / "Temporary"
-
-    if not temporary_dir.is_dir():
-        print("DEBUG: No CTest 'Testing/Temporary' directory found to extract logs.")
-        return
-
-    # Order of precedence for checking failures
-    stages = ["LastTest", "LastBuild", "LastConfigure"]
-
-    for stage in stages:
-        # Match files like LastTest.log, LastTest_*.log, etc.
-        matching_logs = list(temporary_dir.glob(f"{stage}*.log"))
-
-        if not matching_logs:
-            continue
-
-        # Sort by modification time to ensure we grab the file from the run that just failed
-        matching_logs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-        log_path = matching_logs[0]
-
-        if log_path.is_file() and log_path.stat().st_size > 0:
-            print("\n" + "="*80)
-            print(f" DUMPING FULL CTEST LOG: {stage} -> {log_path.name}")
-            print("="*80)
-
-            try:
-                # Read and print the entire file content at once
-                full_log_content = log_path.read_text(errors="replace")
-                print(full_log_content)
-            except (OSError, ValueError) as e:
-                print(f"ERROR: Could not read log file {log_path.name}: {e}")
-
-            print("="*80 + "\n")
-            return  # Stop after printing the latest failing stage
-
 def main(argv):
     """
     Main function
@@ -330,7 +305,7 @@ def main(argv):
 
     # 2. Check if the CTest process failed
     if res.returncode != 0:
-        dump_last_ctest_log(work_dir)
+        print(f"ERROR: ctest failed (exit code {res.returncode}). The logs are in '{work_dir / 'Testing' / 'Temporary'}'")
         return res.returncode
 
     # 3. Process succeeded! If needed, copy to baseline dir
