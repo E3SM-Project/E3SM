@@ -4,9 +4,22 @@ Tool to interpolate initial datasets to a different resolution or
 mask.
 
 
-Running gnumake in this directory will create an executable named
+Running gnumake in the src directory will create an executable named
 
    "interpinic"  
+
+interpinic can be built serially or with MPI.  The MPI build parallelizes the
+three nearest-neighbour searches (findMinDistPFTs / findMinDistCols /
+findMinDistLDUs), which dominate the run time on large meshes; netCDF reading
+and writing stays on rank 0.  Results are bit-for-bit identical to the serial
+build at any rank count.  To build with MPI, point USER_FC at the MPI wrapper
+and USER_FCTYP at the compiler underneath it:
+
+   gmake MPI=TRUE USER_FC=mpif90 USER_FCTYP=gfortran
+
+and run it as
+
+   mpirun -np <ntasks> interpinic -i <input initial data file> -o <output initial data file>
 
 Its function is to map an input clm initial file to an output clm initial file,
 where the output clm initial file is overwritten with the interpolated values.
@@ -26,11 +39,12 @@ OPTIONS:
 Options to gmake:
 
 gmake OPT=FALSE    # will compile with debug compiler options on
-gmake SMP=TRUE     # will compile with Open-MP parallelism on
+gmake MPI=TRUE     # will compile the MPI-parallel search (see above)
 
-If SMP is TRUE, then should invoke interpic as follows:
-
-env OMP_NUM_THREADS <numthreads> interpinic -i <input initial data file>  -o <output initial data file>
+Note: interpinic used to carry OpenMP directives, enabled with SMP=TRUE.  They
+have been removed in favour of MPI, and SMP=TRUE is now a hard error rather
+than silently adding OpenMP flags to a source tree with no OpenMP in it.  Use
+MPI=TRUE instead.
 
 See Also: See the models/lnd/clm/tools/README file for more notes about setting
           the path for NetCDF and running with shared-memory parallelism.
