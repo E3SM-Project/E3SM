@@ -81,6 +81,7 @@ jobs:
           - {name: gnu-cuda, runner: cuda, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
           - {name: gnu-cuda, runner: cuda, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
           - {name: gnu-cuda, runner: cuda, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+          - {name: gnu-hip, runner: hip, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
     name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
