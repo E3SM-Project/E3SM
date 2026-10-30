@@ -109,6 +109,7 @@ void update_checks (const std::string& caller,
       " - mask layout: " + m_l.to_string() + "\n");
   }
 }
+
 } // anonymous namespace
 
 
@@ -190,7 +191,7 @@ Field::clone(const std::string& name, const std::string& grid_name, const int fl
   if (flags & CloneFlags::CopyData) {
     // Deep copy the data. Notice that the clone has no valid mask, so we don't
     // use deep_copy, which would also try to copy the valid mask
-    f.update_cm<CombineMode::Replace>("Field::clone",*this,1,0,0);
+    f.update_nomask<CombineMode::Replace>("Field::clone",*this,1,0,0);
     f.sync_to_host();
   }
 
@@ -543,8 +544,9 @@ void Field::deep_copy (const Field& x) const
       " - lhs name: " + name() + "\n"
       " - rhs name: " + x.name() + "\n");
 
+  // NOTE: we copy ALL the data, regardless of the validity of this field. The mask is copied below.
   constexpr auto CM = CombineMode::Replace;
-  update_cm<CM>("Field::deep_copy",x,1,0,0);
+  update_nomask<CM>("Field::deep_copy",x,1,0,0);
 
   if (has_valid_mask()) {
     // A copy of a field is valid where the original is. If the original has no mask, it is valid everywhere.
@@ -700,32 +702,56 @@ template<CombineMode CM>
 void Field::
 update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
 {
+  // If this field is masked, we only update where it is valid.
+  // If x is masked, this field must be masked too (or we would silently lose validity info),
+  // and it can only be valid where x is valid too. Hence, we intersect the valid masks first.
+  const bool x_masked = x.has_valid_mask();
+  EKAT_REQUIRE_MSG (not x_masked or has_valid_mask(),
+      "[" + caller + "] Error! Rhs has a valid mask, but lhs does not.\n"
+      " - lhs name: " + name() + "\n"
+      " - rhs name: " + x.name() + "\n");
+
+  if (has_valid_mask()) {
+    if (x_masked) {
+      EKAT_REQUIRE_MSG (not is_read_only(),
+          "[" + caller + "] Error! Cannot modify field, as it is read-only.\n"
+          " - field name: " + name() + "\n");
+
+      // Masks are 0/1 int fields, so multiplying them is a logical and.
+      // NOTE: if the two fields share the same mask, there is nothing to do
+      const auto& y_mask = get_valid_mask();
+      const auto& x_mask = x.get_valid_mask();
+      if (not y_mask.is_aliasing(x_mask)) {
+        y_mask.scale(x_mask);
+      }
+    }
+    return update_cm<CM>(caller,x,alpha,beta,gamma,get_valid_mask());
+  }
+
+  update_nomask<CM>(caller,x,alpha,beta,gamma);
+}
+
+template<CombineMode CM>
+void Field::
+update_nomask (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
+{
   // Check consistency of inputs
   update_checks(caller,*this,x,alpha,beta,gamma);
 
-  // Determine if the RHS can contain fill_value entries
-  bool fill_aware = x.get_header().may_be_filled();
-
   if (data_type()==DataType::IntType) {
-    return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
-                      : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
+    return update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
-                        : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+      return update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
     else
-      return fill_aware ? update_fill_aware<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
-                        : update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+      return update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
   } else if (data_type()==DataType::DoubleType) {
     if (x.data_type()==DataType::DoubleType)
-      return fill_aware ? update_fill_aware<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else
-      return fill_aware ? update_fill_aware<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
   }
 }
 

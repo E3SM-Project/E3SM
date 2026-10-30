@@ -199,13 +199,6 @@ TEST_CASE ("update") {
       Field f4 = two.clone(CloneFlags::CopyData);
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
-
-      // Check that updating with rhs==fill_value ignores the rhs
-      f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1.0);
-      f2.max(f3);
-      REQUIRE (views_are_equal(f2,one));
     }
 
     SECTION ("int") {
@@ -223,13 +216,6 @@ TEST_CASE ("update") {
       Field f4 = two.clone(CloneFlags::CopyData);
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
-
-      // Check that updating with rhs==fill_value ignores the rhs
-      f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1);
-      f2.max(f3);
-      REQUIRE (views_are_equal(f2,one));
     }
   }
 
@@ -276,17 +262,9 @@ TEST_CASE ("update") {
       f3.update(f_real,2,0);
       REQUIRE (views_are_equal(f3,f2));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check handling of additive scalar
       Field one = f_real.clone();
       one.deep_copy(1.0);
-
-      f3.deep_copy(constants::fill_value<Real>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1.0);
-      f2.update(f3,1,1);
-      REQUIRE (views_are_equal(f2,one));
-
-      // Check handling of additive scalar
       f3.deep_copy(-2);
       f2.deep_copy(2);
       f3.update(f2,0,0,1);
@@ -311,21 +289,137 @@ TEST_CASE ("update") {
       f3.update(f_int,2,0);
       REQUIRE (views_are_equal(f3,f2));
 
-      // Check that updating with rhs==fill_value ignores the rhs
+      // Check handling of additive scalar
       Field one = f_int.clone();
       one.deep_copy(1);
-
-      f3.deep_copy(constants::fill_value<int>);
-      f3.get_header().set_may_be_filled(true);
-      f2.deep_copy(1);
-      f2.update(f3,1,1);
-      REQUIRE (views_are_equal(f2,one));
-
-      // Check handling of additive scalar
       f3.deep_copy(-2);
       f2.deep_copy(2);
       f3.update(f2,0,0,1);
       REQUIRE (views_are_equal(f3,one));
+    }
+  }
+  SECTION ("lhs_mask") {
+    // If y is masked, only valid entries are updated. Masks are never modified by the update.
+    // Mask out the first col of y (the first col of x too, when x is masked)
+    auto make = [&](const std::string& name) {
+      Field f = f_real.clone(name,CloneFlags::CopyData);
+      f.create_valid_mask(Field::MaskInit::Valid);
+      f.get_valid_mask().subfield(COL,0).deep_copy(0);
+      return f;
+    };
+
+    Field x = f_real.clone("x");
+    randomize_uniform(x,seed++,1,2);
+    x.sync_to_host();
+    auto xv = x.get_strided_view<const Real***,Host>();
+
+    // Checks that y has the expected values on valid cols, and that it was not changed on invalid ones
+    auto check = [&](const Field& y, const auto& expected) {
+      y.sync_to_host();
+      f_real.sync_to_host();
+      auto yv  = y.get_strided_view<const Real***,Host>();
+      auto y0v = f_real.get_strided_view<const Real***,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k) {
+            const Real e = i==0 ? y0v(i,j,k) : expected(y0v(i,j,k),xv(i,j,k));
+            REQUIRE_THAT (yv(i,j,k), Catch::Matchers::WithinRel(e,1e-12));
+          }
+    };
+
+    SECTION ("unmasked_rhs") {
+      { Field y = make("y"); y.update(x,2.0,3.0);   check(y,[](Real y,Real x){ return 2*x+3*y; }); }
+      { Field y = make("y"); y.update(x,2.0,3.0,4.0); check(y,[](Real y,Real x){ return 2*x+3*y+4; }); }
+      { Field y = make("y"); y.scale(x);            check(y,[](Real y,Real x){ return y*x; }); }
+      { Field y = make("y"); y.scale_inv(x);        check(y,[](Real y,Real x){ return y/x; }); }
+      { Field y = make("y"); y.max(x);              check(y,[](Real y,Real x){ return std::max(y,x); }); }
+      { Field y = make("y"); y.min(x);              check(y,[](Real y,Real x){ return std::min(y,x); }); }
+      { Field y = make("y"); y.scale(2.0);          check(y,[](Real y,Real){ return 2*y; }); }
+      { Field y = make("y"); y.add_scalar(3.0);     check(y,[](Real y,Real){ return y+3; }); }
+
+      // The mask is untouched
+      Field y = make("y");
+      y.update(x,1,1);
+      Field expected = y.get_valid_mask().clone();
+      expected.deep_copy(1);
+      expected.subfield(COL,0).deep_copy(0);
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+    }
+
+    SECTION ("masked_rhs") {
+      // x is masked like y: y can be updated, and its mask does not change
+      x.create_valid_mask(Field::MaskInit::Valid);
+      x.get_valid_mask().subfield(COL,0).deep_copy(0);
+
+      Field y = make("y");
+      y.update(x,2.0,3.0);
+      check(y,[](Real y,Real x){ return 2*x+3*y; });
+
+      Field expected = y.get_valid_mask().clone();
+      expected.deep_copy(1);
+      expected.subfield(COL,0).deep_copy(0);
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+      REQUIRE (views_are_equal(x.get_valid_mask(),expected));
+    }
+
+    SECTION ("masks_are_intersected") {
+      // y is invalid on the first col, x on the first component. Only the entries valid for both are
+      // updated, and y ends up invalid on both. The mask of x is not modified.
+      x.create_valid_mask(Field::MaskInit::Valid);
+      x.get_valid_mask().subfield(1,0).deep_copy(0);
+      Field x_mask = x.get_valid_mask().clone(CloneFlags::CopyData);
+
+      Field y = make("y");
+      y.update(x,2.0,3.0);
+
+      y.sync_to_host();
+      f_real.sync_to_host();
+      auto yv  = y.get_strided_view<const Real***,Host>();
+      auto y0v = f_real.get_strided_view<const Real***,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k) {
+            const Real e = (i==0 or j==0) ? y0v(i,j,k) : 2*xv(i,j,k)+3*y0v(i,j,k);
+            REQUIRE_THAT (yv(i,j,k), Catch::Matchers::WithinRel(e,1e-12));
+          }
+
+      Field expected = y.get_valid_mask().clone();
+      expected.deep_copy(1);
+      expected.subfield(COL,0).deep_copy(0);
+      expected.subfield(1,0).deep_copy(0);
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+      REQUIRE (views_are_equal(x.get_valid_mask(),x_mask));
+    }
+
+    SECTION ("shared_mask") {
+      // If x and y share the same mask, it is left as is
+      x.create_valid_mask(Field::MaskInit::Valid);
+      x.get_valid_mask().subfield(COL,0).deep_copy(0);
+      Field expected = x.get_valid_mask().clone(CloneFlags::CopyData);
+
+      Field y = f_real.clone("y",CloneFlags::CopyData);
+      y.set_valid_mask(x.get_valid_mask());
+      y.update(x,2.0,3.0);
+      check(y,[](Real y,Real x){ return 2*x+3*y; });
+      REQUIRE (views_are_equal(y.get_valid_mask(),expected));
+    }
+
+    SECTION ("unmasked_lhs") {
+      // If rhs is masked, lhs must be too, or we would lose validity info
+      x.create_valid_mask(Field::MaskInit::Valid);
+      Field y = f_real.clone("y",CloneFlags::CopyData);
+      REQUIRE_THROWS (y.update(x,1,1));
+      REQUIRE_THROWS (y.scale(x));
+      REQUIRE_THROWS (y.scale_inv(x));
+      REQUIRE_THROWS (y.max(x));
+      REQUIRE_THROWS (y.min(x));
+    }
+
+    SECTION ("read_only_lhs") {
+      // We would need to modify the mask of a read-only field
+      x.create_valid_mask(Field::MaskInit::Valid);
+      Field y = make("y");
+      REQUIRE_THROWS (y.get_const().update(x,1,1));
     }
   }
 }
