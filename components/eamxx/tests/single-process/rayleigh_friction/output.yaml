@@ -1,0 +1,11 @@
+%YAML 1.1
+---
+filename_prefix: rayleigh_friction_standalone_output
+averaging_type: instant
+field_names:
+  - horiz_winds
+  - T_mid
+output_control:
+  frequency: 1
+  frequency_units: nsteps
+...

@@ -533,9 +533,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,30000.0, 120000.0,false);
 
-  // Initialize Rayleigh friction variables
-  rayleigh_friction_init();
-
 }//initialize_impl
 
 void HommeDynamics::run_impl (const double dt)
@@ -585,7 +582,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
-    homme_post_process (dt);
+    homme_post_process ();
   } catch (std::exception& e) {
     EKAT_ERROR_MSG(e.what());
   } catch (...) {
@@ -721,7 +718,7 @@ void HommeDynamics::homme_pre_process (const double dt) {
   }
 }
 
-void HommeDynamics::homme_post_process (const double dt) {
+void HommeDynamics::homme_post_process () {
   const auto& pgn = m_phys_grid->name();
   const auto& c = Homme::Context::singleton();
   const auto& params = c.get<Homme::SimulationParams>();
@@ -741,9 +738,6 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   if (fv_phys_active()) {
     fv_phys_post_process();
-    // Apply Rayleigh friction to update temperature and horiz_winds
-    rayleigh_friction_apply(dt);
-
     return;
   }
 
@@ -825,9 +819,6 @@ void HommeDynamics::homme_post_process (const double dt) {
       T_prev(ilev) = T_val;
     });
   }); //op()
-
-  // Apply Rayleigh friction to update temperature and horiz_winds
-  rayleigh_friction_apply(dt);
 
   if (has_energy_fixer()) {
 
