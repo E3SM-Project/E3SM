@@ -9,6 +9,7 @@ on:
       - '.github/workflows/eamxx-sa-testing.yml'
       - '.github/actions/test-all-eamxx/**'
       - '.github/actions/get-cuda-arch/**'
+      - '.github/actions/get-hip-arch/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
@@ -95,6 +96,9 @@ jobs:
       - name: Get CUDA Arch
         if: ${{ matrix.runner == 'cuda' }}
         uses: ./.github/actions/get-cuda-arch
+      - name: Get HIP Arch
+        if: ${{ matrix.runner == 'hip' }}
+        uses: ./.github/actions/get-hip-arch
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
@@ -102,6 +106,6 @@ jobs:
           machine: ghci-${{ matrix.runner }}
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: ${{ matrix.cmake_configs }};${{ env.CUDA_CMAKE_CONFIGS }}
+          cmake-configs: ${{ matrix.cmake_configs }};${{ env.CUDA_CMAKE_CONFIGS }};${{ env.HIP_CMAKE_CONFIGS }}
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}

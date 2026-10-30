@@ -1,0 +1,35 @@
+name: Get HIP arch
+description: |
+  Detect the AMD GPU architecture of the runner (via rocminfo), and set the env variable
+  HIP_CMAKE_CONFIGS to the matching cmake configs, as a semicolon-separated list of
+  key=value pairs (the format expected by the 'cmake-configs' input of the test-all-eamxx action).
+  Fails if rocminfo is not available or fails, or if the GPU architecture is not supported.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get HIP Arch
+      shell: bash
+      run: |
+        # Get the gfx target from rocminfo, and set env for next steps
+        if ! gfx=$(rocminfo | grep -o -m 1 'gfx[0-9a-f]\+'); then
+            echo "rocminfo failed or could not be found. Please ensure you have ROCm installed."
+            exit 1
+        fi
+        case "$gfx" in
+            gfx942)
+                configs="Kokkos_ARCH_AMD_GFX942=ON"
+                ;;
+            gfx90a)
+                configs="Kokkos_ARCH_AMD_GFX90A=ON"
+                ;;
+            gfx908)
+                configs="Kokkos_ARCH_AMD_GFX908=ON"
+                ;;
+            *)
+                echo "Unsupported GPU architecture: $gfx"
+                exit 1
+                ;;
+        esac
+        echo "GPU architecture: $gfx"
+        echo "HIP_CMAKE_CONFIGS=$configs" >> "$GITHUB_ENV"

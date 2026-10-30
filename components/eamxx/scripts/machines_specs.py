@@ -372,6 +372,21 @@ class GHCICuda(Machine):
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
 
 ###############################################################################
+class GHCIHip(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base(name="ghci-hip")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-hip"
+        cls.gpu_arch = "hip"
+        # The MPI compiler wrappers must use hipcc as the C++ backend compiler (both when configuring and building)
+        cls.env_setup = ["export OMPI_CXX=${OMPI_CXX:-hipcc}",
+                         "export MPICH_CXX=${MPICH_CXX:-hipcc}"]
+        # NOTE: all machines are set up on every runner, so this must not fail if rocminfo is missing
+        cls.num_run_res = int(run_cmd_no_fail("rocminfo 2>/dev/null | grep -c 'Device Type: *GPU' || true"))
+
+###############################################################################
 class LLNLIntel(Machine):
 ###############################################################################
     @classmethod
