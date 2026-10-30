@@ -68,11 +68,13 @@ jobs:
           - {env: gnu13-openmpi4, arch: x86_64, compiler: gnu}
           - {env: gnu13-openmpi4, arch: aarch64, compiler: gnu}
           - {env: intel2024-openmpi4, arch: x86_64, compiler: intel}
-        test: [SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS]
+        test:
+          - SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS
+          - ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
     name: ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})
     env:
       IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.image.env }}
-      TESTS: ${{ matrix.test }}
+      TEST: ${{ matrix.test }}
       COMPILER: ${{ matrix.image.compiler }}
       BASELINES_KEY: e3sm-gh-baselines-${{ matrix.image.env }}-${{ matrix.image.arch }}-${{ matrix.test }}
       INPUTDATA_KEY: e3sm-gh-inputdata-${{ matrix.test }}
@@ -150,6 +152,9 @@ jobs:
           mkdir -p "baselines/$COMPILER/master"
           find inputdata -type f | wc -l > inputdata.count
           sudo chown -R 1000:1000 E3SM inputdata baselines scratch
+          # create_test wants the machine and compiler in the name of a test with testmods
+          # (TEST.GRID.COMPSET.MACHINE_COMPILER.TESTMODS); the list has none of them
+          export TESTS=$(awk -F. -v OFS=. -v m="e3sm-container_$COMPILER" 'NF > 3 { $3 = $3 "." m } 1' <<< "$TEST")
           rc=0
           docker run --rm -e TESTS -e CT_FLAGS -e COMPILER -e MKL_CBWR=COMPATIBLE \
             -v "$PWD/E3SM:/projects/e3sm/work/E3SM" \
@@ -194,7 +199,7 @@ jobs:
       - name: Print TestStatus.log
         if: ${{ always() && steps.run-tests.outcome == 'failure' }}
         run: |
-          cat scratch/${{ matrix.test }}*/TestStatus.log
+          cat scratch/*.gh/TestStatus.log
       - name: Save baselines
         if: env.generate == 'true'
         uses: actions/cache/save@v6

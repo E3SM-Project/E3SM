@@ -18,11 +18,16 @@ between runs has to be stored somewhere else:
 
 ## What runs
 
-To start with, one test:
-`SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
-puts every active component through the coupler. With no `_P` option, CIME gives this grid
-one node, which the image's machine defines as the container's cores: 4 ranks per component
-on a hosted runner. It runs in these images:
+Two tests so far:
+
+- `SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
+  puts every active component through the coupler.
+- `ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod`, an exact restart test of EAMxx with its
+  production settings.
+
+With no `_P` option, CIME gives these grids one node, which the image's machine defines
+as the container's cores: 4 ranks on a hosted runner (per component, for the coupled test).
+Both run in these images:
 
 | Image | Arch | Baselines |
 | --- | --- | --- |
@@ -170,6 +175,6 @@ and fail the comparison until master is blessed, which a PR cannot do, so a PR t
 test stays red until it is merged and blessed. Keep the cache limit in mind: the first test's
 inputdata already takes about 4 GB of it.
 
-A test with testmods must name its machine and compiler (for example
-`TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD`), so it goes in the matrix's `include`
-list once per compiler rather than in `matrix.test`.
+`create_test` wants a test with testmods to name its machine and compiler (for example
+`TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD`). List it without them in `matrix.test`: the
+workflow adds `e3sm-container_<compiler>` after the compset of any test that has testmods.
