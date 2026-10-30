@@ -37,7 +37,10 @@ public:
 
   void transfer_bindings(ExternalBindings bindings);
 
-  void initialize(const std::filesystem::path& plan);
+  void initialize(const std::filesystem::path& plan, RouteBufferMap external);
+  void initialize(const std::filesystem::path& plan) {
+    initialize(plan, RouteBufferMap{});
+  }
   void run_process(std::string_view name);
   void add_process(ProcessDescriptor desc);
   void import_to_external(std::string_view name);

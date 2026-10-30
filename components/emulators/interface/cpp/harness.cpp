@@ -1,4 +1,5 @@
 #include "harness.hpp"
+#include "coupler.hpp"
 #include "cpl7_component.hpp"
 #include "emulator.hpp"
 #include <cstddef>
@@ -18,11 +19,11 @@ void Harness::transfer_bindings(ExternalBindings bindings) {
   external_component_ = view;
 }
 
-void Harness::initialize(const std::filesystem::path& plan) {
+void Harness::initialize(const std::filesystem::path& plan,RouteBufferMap external) {
   if (initialized_) {
     throw std::runtime_error("Harness already initialized");
   }
-  driver_.initialize(plan);
+  driver_.initialize(plan,external);
 }
 
 void Harness::add_process(ProcessDescriptor desc) {

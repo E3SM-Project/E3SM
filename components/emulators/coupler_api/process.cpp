@@ -29,6 +29,11 @@ void CouplingAdapter::export_fields(std::span<ExportBuffer> buffers) const {
     const auto& local = active_exports_[i];
     auto& remote = buffers[i];
 
+    if(local.data.data() == remote.data.data()){
+      std::cout << "No self copy: " << local.id;
+      continue;
+    }
+
     if (local.id != remote.id) {
       throw std::runtime_error("Export field ID mismatch");
     }
@@ -37,6 +42,7 @@ void CouplingAdapter::export_fields(std::span<ExportBuffer> buffers) const {
       throw std::runtime_error("Export field size mismatch");
     }
 
+    std::cout << "copying!! " << local.id << std::endl;
     std::ranges::copy(local.data, remote.data.begin());
   }
 }
@@ -50,6 +56,11 @@ void CouplingAdapter::import_fields(std::span<const ImportBuffer> buffers) {
     auto& local = active_imports_[i];
     const auto& remote = buffers[i];
 
+    if(local.data.data() == remote.data.data()){
+      std::cout << "No self copy: " << local.id << std::endl;
+      continue;
+    }
+
     if (local.id != remote.id) {
       throw std::runtime_error("Import field ID mismatch");
     }
@@ -58,6 +69,7 @@ void CouplingAdapter::import_fields(std::span<const ImportBuffer> buffers) {
       throw std::runtime_error("Import field size mismatch");
     }
 
+    std::cout << "copying!! " << local.id << std::endl;
     std::ranges::copy(remote.data, local.data.begin());
   }
 }

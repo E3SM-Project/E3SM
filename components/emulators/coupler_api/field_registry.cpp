@@ -112,7 +112,7 @@ std::string FieldRegistry::to_string() const {
         << "    component: " << field.component << '\n'
         << "    role: " << e3sm::coupler::to_string(field.role) << '\n'
         << "    size: " << field.size << '\n'
-        << "    name: " << field.name;
+        << "    name: " << field.name << '\n';
   }
 
   return out.str();

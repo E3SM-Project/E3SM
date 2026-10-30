@@ -47,7 +47,6 @@ inline GridDesc make_test_grid() {
   };
 }
 
-static constexpr std::size_t input_size() { return ncols * (1 + nlevels + 1); }
 struct FieldIndex {
   std::size_t offset;
   std::size_t extent;
@@ -94,19 +93,17 @@ struct FakeExt {
 };
 void FakeExt::run(std::string_view name) { harness.run_process(name); }
 
-void FakeExt::set_forcing(std::span<const double> temperature,
-                          std::span<const double> moisture) {
-  auto t_index = temperature_index();
-  auto moist_index = moisture_index();
-  for (std::size_t column = t_index.offset; column < t_index.extent; ++column) {
-    x2l[column] = temperature[column - t_index.offset];
+void FakeExt::set_forcing(std::span<const double> temperatures,
+                          std::span<const double> moistures) {
+  auto temperature_view = temperature();
+  auto moisture_view = moisture();
+
+  if (temperatures.size() != temperature_view.size() ||
+      moistures.size() != moisture_view.size()) {
+    throw std::invalid_argument("Incorrect forcing sizes");
   }
-  std::size_t c,l;
-  for (std::size_t i = moist_index.offset; i <= moist_index.extent+1; ++i) {
-    c = (i-moist_index.offset)/nlevels;
-    l = (i-moist_index.offset)%nlevels;
-    x2l[i] = moisture[c*nlevels+l];
-  }
+  std::ranges::copy(temperatures, temperature_view.begin());
+  std::ranges::copy(moistures, moisture_view.begin());
 }
 
 std::span<double> FakeExt::temperature() {
@@ -164,7 +161,10 @@ TEST_CASE("Harness preserves results across external buffer layouts",
       .grid = make_test_grid(),
       .emulator_config = land_config,
   });
-  direct.harness.initialize(plan);
+  direct.harness.initialize(
+      plan, RouteBufferMap{{"surface_flux", direct.surface_flux()},
+                           {"temperature", direct.temperature()},
+                           {"soil_moisture", direct.moisture()}});
 
   Emulator& land_emu =
       direct.harness.get_process<Emulator>(std::string_view(p_name));
@@ -196,8 +196,8 @@ TEST_CASE("Harness preserves results across external buffer layouts",
 
       eflux[column] = 2.0 * temperature[column] + 100.0 * mean;
       REQUIRE(eflux[column] == land_flux[column]);
+      REQUIRE(direct_flux[column] == eflux[column]);
     }
-    // REQUIRE(direct_flux[column] == Approx(expected));
     // feeback for next step
     for (std::size_t column = 0; column < ncols; ++column) {
       temperature[column] += 0.001 * direct_flux[column];

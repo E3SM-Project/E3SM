@@ -8,7 +8,6 @@ void CPL7Component::attach_fields(ExternalBindings bindings) {
     throw std::runtime_error("Re-attaching fields not allowed");
   }
   bindings_ = std::move(bindings);
-  print_bindings();
   initialized_ = true;
 }
 
