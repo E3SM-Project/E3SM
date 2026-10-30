@@ -290,7 +290,7 @@ void QLT<ES>::runimpl () {
         for (size_t i = 0; i < lvl.me.size(); ++i) {
           const auto& mmd = lvl.me[i];
           mpi::isend(*p_, &bd_.l2r_data(mmd.offset*l2rndps), mmd.size*l2rndps,
-                     mmd.rank, mpitag);
+                     mmd.rank, mpitag, &lvl.me_send_req[i]);
         }
       }
 
@@ -354,6 +354,7 @@ void QLT<ES>::runimpl () {
                        mpitag, &lvl.me_recv_req[i]);
           }
           mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
+          mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
         }
 #if defined THREAD_QLT_RUN && defined COMPOSE_HORIZ_OPENMP
 #       pragma omp barrier
@@ -421,10 +422,26 @@ void QLT<ES>::runimpl () {
         for (size_t i = 0; i < lvl.kids.size(); ++i) {
           const auto& mmd = lvl.kids[i];
           mpi::isend(*p_, &bd_.r2l_data(mmd.offset*r2lndps), mmd.size*r2lndps,
-                     mmd.rank, mpitag);
+                     mmd.rank, mpitag, &lvl.kids_req[i]);
         }
       }
     }
+
+    // Wait for all root-to-leaf sends to complete before returning so shared
+    // buffers (e.g. edge_g%buf and edge_g%receive) can be safely reused.
+#if defined THREAD_QLT_RUN && defined COMPOSE_HORIZ_OPENMP
+#   pragma omp master
+#endif
+    {
+      for (size_t il = 0; il < ns_->levels.size(); ++il) {
+        auto& lvl = ns_->levels[il];
+        if (lvl.kids.size())
+          mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
+      }
+    }
+#if defined THREAD_QLT_RUN && defined COMPOSE_HORIZ_OPENMP
+#   pragma omp barrier
+#endif
 #if ! defined THREAD_QLT_RUN && defined COMPOSE_HORIZ_OPENMP
   }
 #endif

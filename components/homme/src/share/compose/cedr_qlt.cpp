@@ -434,7 +434,7 @@ template <typename ES> void QLT<ES>
   for (size_t i = 0; i < lvl.me.size(); ++i) {
     const auto& mmd = lvl.me[i];
     mpi::isend(*p_, o.bd_.l2r_data.data() + mmd.offset*l2rndps, mmd.size*l2rndps,
-               mmd.rank, tree::NodeSets::mpitag);
+               mmd.rank, tree::NodeSets::mpitag, &lvl.me_send_req[i]);
   }  
 }
 
@@ -484,6 +484,7 @@ template <typename ES> void QLT<ES>
   }
   Timer::start(Timer::waitall);
   mpi::waitall(lvl.me_recv_req.size(), lvl.me_recv_req.data());
+  mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
   Timer::stop(Timer::waitall);
 }
 
@@ -608,7 +609,7 @@ template <typename ES> void QLT<ES>
   for (size_t i = 0; i < lvl.kids.size(); ++i) {
     const auto& mmd = lvl.kids[i];
     mpi::isend(*p_, o.bd_.r2l_data.data() + mmd.offset*r2lndps, mmd.size*r2lndps,
-               mmd.rank, tree::NodeSets::mpitag);
+               mmd.rank, tree::NodeSets::mpitag, &lvl.kids_req[i]);
   }
 }
 
@@ -636,6 +637,13 @@ void QLT<ES>::run () {
     r2l_solve_qp(il-1, l2rndps, r2lndps);
     if (lvl.kids.size()) r2l_send_to_kids(lvl, r2lndps);
   }
+  Timer::start(Timer::waitall);
+  for (size_t il = 0; il < ns_->levels.size(); ++il) {
+    auto& lvl = ns_->levels[il];
+    if (lvl.kids.size())
+      mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
+  }
+  Timer::stop(Timer::waitall);
   Timer::stop(Timer::qltrunr2l);
 }
 
