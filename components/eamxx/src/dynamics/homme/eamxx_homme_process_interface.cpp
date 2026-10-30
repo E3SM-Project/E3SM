@@ -218,6 +218,9 @@ void HommeDynamics::create_requests ()
   create_helper_field("phis_dyn",     {EL,       GP,GP},     {nelem,      NP,NP         }, dgn);
   create_helper_field("omega_dyn",    {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
+  // Forcing (the tracers one, FQ_dyn, needs the number of tracers: see set_computed_group_impl)
+  create_helper_field("FT_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
+  create_helper_field("FM_dyn",       {EL,CMP,   GP,GP,LEV}, {nelem,    3,NP,NP,nlev_mid}, dgn);
   if (params.do_3d_turbulence) {
     create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
     create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
@@ -228,7 +231,7 @@ void HommeDynamics::create_requests ()
   }
 
   share_dyn_fields_with_instance({"v_dyn","vtheta_dp_dyn","dp3d_dyn","w_int_dyn","phi_int_dyn",
-                                  "ps_dyn","phis_dyn","omega_dyn","Qdp_dyn"});
+                                  "ps_dyn","phis_dyn","omega_dyn","Qdp_dyn","FT_dyn","FM_dyn"});
   if (params.do_3d_turbulence) {
     share_dyn_fields_with_instance({"Km_dyn","Kh_dyn","shear_strain3d_components_dyn"});
   }
@@ -389,7 +392,6 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
 
 void HommeDynamics::initialize_impl (const RunType run_type)
 {
-  const auto& dgn = m_dyn_grid->name();
   const auto& pgn = m_phys_grid->name();
 
   // Use common/shorter names for tracers.
@@ -410,7 +412,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   }
 
   // Complete Homme prim_init1_xyz sequence
-  prim_complete_init1_phase_f90 ();
+  // NOTE: for runs with the pg2 physics grid, we still do the whole Homme init here.
+  //       Otherwise, HommeModelInit has already taken care of it (init1 phase, state
+  //       and views init, prim_init_model) by the time we get here.
+  if (fv_phys_active()) {
+    prim_complete_init1_phase_f90 ();
+  }
 
   // ------ Sanity checks ------- //
 
@@ -427,21 +434,13 @@ void HommeDynamics::initialize_impl (const RunType run_type)
       "Error! Someone other than dynamics is trying to update the pseudo_density.\n");
 
   // Create remaining internal fields
-  constexpr int NGP  = HOMMEXX_NP;
-  const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int ncols = m_phys_grid->get_num_local_dofs();
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
   assert(nlevs == m_dyn_grid->get_num_vertical_levels());
   assert(nlevs == m_cgll_grid->get_num_vertical_levels());
   assert(nlevs == m_phys_grid->get_num_vertical_levels());
-  const int qsize = params.qsize;
 
   using namespace ShortFieldTagsNames;
-  create_helper_field("FQ_dyn",{EL,CMP,GP,GP,LEV},{nelem,qsize,NGP,NGP,nlevs},dgn);
-  create_helper_field("FT_dyn",{EL,    GP,GP,LEV},{nelem,      NGP,NGP,nlevs},dgn);
-  create_helper_field("FM_dyn",{EL,CMP,GP,GP,LEV},{nelem,    3,NGP,NGP,nlevs},dgn);
-  create_helper_field("Q_dyn" ,{EL,CMP,GP,GP,LEV},{nelem,qsize,NGP,NGP,nlevs},dgn);
-  share_dyn_fields_with_instance({"FQ_dyn","FT_dyn","FM_dyn","Q_dyn"});
 
   // Tendencies for temperature and momentum computed on physics grid
   create_helper_field("FT_phys",{COL,LEV},    {ncols,  nlevs},pgn);
@@ -493,8 +492,13 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->registration_ends();
   }
 
+  // Print some info about Homme setup
+  print_homme_info ();
+
   // Sets the scream views into the hommexx internal data structures
-  init_homme_views ();
+  if (fv_phys_active()) {
+    m_instance->init_views ();
+  }
 
   // Import I.C. from the ref grid to the dyn grid.
   if (run_type==RunType::Initial) {
@@ -510,7 +514,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(start_of_step_ts());
 
   // Complete homme model initialization
-  prim_init_model_f90 ();
+  if (fv_phys_active()) {
+    prim_init_model_f90 ();
+  }
 
   if (fv_phys_active()) {
     fv_phys_dyn_to_fv_phys(start_of_step_ts(),run_type == RunType::Restart);
@@ -627,6 +633,17 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
     params.qsize = qsize;           // Set in the CXX data structure
     set_homme_param("qsize",qsize); // Set in the F90 module
     tracers.init(tracers.num_elems(),qsize);
+
+    // Now that we know the number of tracers, create the dyn fields that depend on it
+    // NOTE: unlike Qdp_dyn, these are padded neither to HOMMEXX_QSIZE_D, since they are
+    //       remapped with fields that have exactly qsize components
+    constexpr int NGP = HOMMEXX_NP;
+    const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
+    const int nlevs = m_dyn_grid->get_num_vertical_levels();
+    using namespace ShortFieldTagsNames;
+    create_helper_field("FQ_dyn",{EL,CMP,GP,GP,LEV},{nelem,qsize,NGP,NGP,nlevs},m_dyn_grid->name());
+    create_helper_field("Q_dyn" ,{EL,CMP,GP,GP,LEV},{nelem,qsize,NGP,NGP,nlevs},m_dyn_grid->name());
+    share_dyn_fields_with_instance({"FQ_dyn","Q_dyn"});
   }
 }
 
@@ -882,7 +899,7 @@ share_dyn_fields_with_instance (const std::vector<std::string>& names)
   }
 }
 
-void HommeDynamics::init_homme_views () {
+void HommeDynamics::print_homme_info () {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& c = Homme::Context::singleton();
@@ -944,9 +961,6 @@ void HommeDynamics::init_homme_views () {
   //msg << "   rearth: " << params.rearth << "\n";
   msg << "\n**********************************************************\n" << "\n";
   this->log(LogLevel::info,msg.str());
-
-  // ------------ Set views in Homme ------------- //
-  m_instance->init_views();
 }
 
 void HommeDynamics::restart_homme_state () {
@@ -976,17 +990,49 @@ void HommeDynamics::restart_homme_state () {
         auto& params = c.get<Homme::SimulationParams>();
         auto& tl = c.get<Homme::TimeLevel>();
 
-  // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = std::any_cast<const int&>(*m_restart_extra_data["homme_nsteps"]);
-  tl.nstep = nstep;
-  set_homme_param("num_steps",nstep);
-
   constexpr int NGP = HOMMEXX_NP;
   const int nlevs = m_phys_grid->get_num_vertical_levels();
   const int ncols = m_phys_grid->get_num_local_dofs();
-  const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int npacks = ekat::npack<Pack>(nlevs);
-  const int qsize = params.qsize;
+
+  if (fv_phys_active()) {
+    // For runs with the pg2 physics grid, we finalize the restart of Homme's state here.
+    // Otherwise, HommeModelInit has already taken care of it.
+    const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
+    const int qsize = params.qsize;
+
+    // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
+    const auto& nstep = std::any_cast<const int&>(*m_restart_extra_data["homme_nsteps"]);
+    tl.nstep = nstep;
+    set_homme_param("num_steps",nstep);
+
+    // Copy all restarted dyn states on all timelevels.
+    m_instance->copy_dyn_states_to_all_timelevels ();
+
+    if (params.theta_hydrostatic_mode) {
+      // Nothing read from restart file for w_int, but Homme still does some global reduction on w_int when
+      // printing the state, so we need to make sure it doesn't contain NaNs
+      m_helper_fields.at("w_int_dyn").deep_copy(0);
+    }
+
+    // Restart end-of-homme-step Q as Qdp/dp. That's what Homme does at the end of the timestep,
+    // and by writing/loading only Qdp in the restart file, we save space.
+    auto Qdp_dyn_view = get_internal_field("Qdp_dyn",dgn).get_view<Pack*****>();
+    auto Q_dyn_view = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
+    auto dp_dyn_view = get_internal_field("dp3d_dyn",dgn).get_view<Pack****>();
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*qsize*NGP*NGP*npacks),
+                         KOKKOS_LAMBDA (const int idx) {
+      const int ie =  idx / (qsize*NGP*NGP*npacks);
+      const int iq = (idx / (NGP*NGP*npacks)) % qsize;
+      const int ip = (idx / (NGP*npacks)) % NGP;
+      const int jp = (idx / npacks) % NGP;
+      const int k  =  idx % npacks;
+      Q_dyn_view(ie,iq,ip,jp,k) = Qdp_dyn_view(ie,iq,ip,jp,k) / dp_dyn_view(ie,ip,jp,k);
+    });
+
+    m_ic_remapper = nullptr;
+    return;
+  }
 
   // NOTE: when restarting stuff like T_prev, and other "previous steps" quantities that HommeDynamics
   //       uses for tendencies calculation, we need to compute them in the *exact same way* as they
@@ -1000,34 +1046,6 @@ void HommeDynamics::restart_homme_state () {
   //       dp3d(ref), so the p2d-remapped value read from restart file *coincides* with the value at the end
   //       of the last Homme run. So we can safely recompute pressure using p2d(dp_dyn), with dp_dynread from restart.
 
-  // Copy all restarted dyn states on all timelevels.
-  m_instance->copy_dyn_states_to_all_timelevels ();
-
-  if (params.theta_hydrostatic_mode) {
-    // Nothing read from restart file for w_int, but Homme still does some global reduction on w_int when
-    // printing the state, so we need to make sure it doesn't contain NaNs
-    m_helper_fields.at("w_int_dyn").deep_copy(0);
-  }
-
-  // Restart end-of-homme-step Q as Qdp/dp. That's what Homme does at the end of the timestep,
-  // and by writing/loading only Qdp in the restart file, we save space.
-  auto Qdp_dyn_view = get_internal_field("Qdp_dyn",dgn).get_view<Pack*****>();
-  auto Q_dyn_view = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
-  auto dp_dyn_view = get_internal_field("dp3d_dyn",dgn).get_view<Pack****>();
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*qsize*NGP*NGP*npacks),
-                       KOKKOS_LAMBDA (const int idx) {
-    const int ie =  idx / (qsize*NGP*NGP*npacks);
-    const int iq = (idx / (NGP*NGP*npacks)) % qsize;
-    const int ip = (idx / (NGP*npacks)) % NGP;
-    const int jp = (idx / npacks) % NGP;
-    const int k  =  idx % npacks;
-    Q_dyn_view(ie,iq,ip,jp,k) = Qdp_dyn_view(ie,iq,ip,jp,k) / dp_dyn_view(ie,ip,jp,k);
-  });
-
-  if (fv_phys_active()) {
-    m_ic_remapper = nullptr;
-    return;
-  }
 
   m_ic_remapper->register_field(m_helper_fields.at("FT_phys"),get_internal_field("vtheta_dp_dyn"));
   m_ic_remapper->register_field(m_helper_fields.at("FM_phys"),get_internal_field("v_dyn"));
@@ -1099,14 +1117,17 @@ void HommeDynamics::initialize_homme_state () {
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
-  m_instance->init_dyn_state_from_gll_ic(
-      *m_ic_remapper,
-      get_field_in("horiz_winds",rgn),
-      get_field_in("T_mid",rgn),
-      get_field_in("ps",rgn),
-      get_field_in("phis",rgn),
-      get_group_in("tracers",rgn).monolithic_field(),
-      get_field_out("pseudo_density",rgn));
+  // NOTE: for runs without the pg2 physics grid, HommeModelInit has already done this.
+  if (fv_phys_active()) {
+    m_instance->init_dyn_state_from_gll_ic(
+        *m_ic_remapper,
+        get_field_in("horiz_winds",rgn),
+        get_field_in("T_mid",rgn),
+        get_field_in("ps",rgn),
+        get_field_in("phis",rgn),
+        get_group_in("tracers",rgn).monolithic_field(),
+        get_field_out("pseudo_density",rgn));
+  }
 
   std::any_cast<int&>(*m_restart_extra_data["homme_nsteps"]) = c.get<Homme::TimeLevel>().nstep;
 

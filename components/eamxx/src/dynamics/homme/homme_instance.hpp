@@ -63,6 +63,12 @@ public:
                                    const Field& tracers_gll,
                                    Field& pseudo_density_gll);
 
+  // Finalize the restart of Homme's dynamics-grid state, assuming the n0 time level of the
+  // states (and the n0_qdp one of Qdp) was read from the restart file: copy it to all the
+  // other time levels, and recompute Q (the end-of-step tracers mixing ratio) as Qdp/dp
+  // (only Qdp is in the restart file, to save space).
+  void finish_dyn_state_restart ();
+
   // Setup the remapper between the dyn (GLL) grid and the FV physics grid, with pgN x pgN
   // physics cells per element. Must be called after Homme's init1 phase has completed.
   void init_fv_phys (const int pgN);

@@ -357,6 +357,44 @@ init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
   copy_dyn_states_to_all_timelevels ();
 }
 
+void HommeInstance::finish_dyn_state_restart ()
+{
+  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+
+  const auto& c = Homme::Context::singleton();
+  const auto& params = c.get<Homme::SimulationParams>();
+  const auto& tl = c.get<Homme::TimeLevel>();
+
+  // Copy all restarted dyn states on all timelevels.
+  copy_dyn_states_to_all_timelevels ();
+
+  if (params.theta_hydrostatic_mode) {
+    // Nothing read from restart file for w_int, but Homme still does some global reduction on w_int when
+    // printing the state, so we need to make sure it doesn't contain NaNs
+    get_dyn_field("w_int_dyn").deep_copy(0);
+  }
+
+  // Restart end-of-homme-step Q as Qdp/dp. That's what Homme does at the end of the timestep,
+  // and by writing/loading only Qdp in the restart file, we save space.
+  constexpr int NGP = HOMMEXX_NP;
+  const int nelem = get_dyn_field("dp3d_dyn").get_header().get_identifier().get_layout().dim(0);
+  const int nlevs = get_dyn_field("dp3d_dyn").get_header().get_identifier().get_layout().dim(4);
+  const int npacks = ekat::npack<Pack>(nlevs);
+  const int qsize = params.qsize;
+  auto Qdp_dyn_view = get_dyn_field("Qdp_dyn").subfield(1,tl.n0_qdp).get_view<Pack*****>();
+  auto Q_dyn_view = get_dyn_field("Q_dyn").get_view<Pack*****>();
+  auto dp_dyn_view = get_dyn_field("dp3d_dyn").subfield(1,tl.n0).get_view<Pack****>();
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*qsize*NGP*NGP*npacks),
+                       KOKKOS_LAMBDA (const int idx) {
+    const int ie =  idx / (qsize*NGP*NGP*npacks);
+    const int iq = (idx / (NGP*NGP*npacks)) % qsize;
+    const int ip = (idx / (NGP*npacks)) % NGP;
+    const int jp = (idx / npacks) % NGP;
+    const int k  =  idx % npacks;
+    Q_dyn_view(ie,iq,ip,jp,k) = Qdp_dyn_view(ie,iq,ip,jp,k) / dp_dyn_view(ie,ip,jp,k);
+  });
+}
+
 void HommeInstance::init_fv_phys (const int pgN)
 {
   EKAT_REQUIRE_MSG (pgN>0, "Error! Invalid pgN value: " + std::to_string(pgN) + "\n");

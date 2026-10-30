@@ -974,13 +974,15 @@ void AtmosphereDriver::run_model_init ()
     }
   }
 
-  ModelInit model_init(params);
+  // Let the grids manager decide which ModelInit to use (e.g., if the grids come with a
+  // dynamics package that needs to be initialized too), so the driver stays agnostic of that.
+  auto model_init = m_grids_manager->create_model_init(params);
   if (restart) {
-    model_init.set_restart_extra_data(m_atm_process_group->get_restart_extra_data());
+    model_init->set_restart_extra_data(m_atm_process_group->get_restart_extra_data());
   } else if (m_iop_data_manager) {
-    model_init.set_iop_data_manager(m_iop_data_manager);
+    model_init->set_iop_data_manager(m_iop_data_manager);
   }
-  model_init.run(m_field_mgr,m_current_ts,m_run_type);
+  model_init->run(m_field_mgr,m_current_ts,m_run_type);
 
   // Keep track of the fields that were inited
   const auto group_name = restart ? "RESTART" : "STARTUP";
