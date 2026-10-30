@@ -83,7 +83,7 @@ TEST_CASE("remap", "") {
   auto phys_grid = gm.get_grid("physics_gll");
   auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("dynamics"));
   auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_type*,Host>();
-  auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
+  auto h_d_dofs = dyn_grid->get_unique_grid_gids().get_view<const gid_type*,Host>();
   auto h_d_lid2idx = dyn_grid->get_lid_to_idx_map().get_view<const int**,Host>();
 
   // Get some dimensions for Homme
@@ -621,7 +621,7 @@ TEST_CASE("combo_remap", "") {
   auto phys_grid = gm.get_grid("physics_gll");
   auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("dynamics"));
   auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_type*,Host>();
-  auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
+  auto h_d_dofs = dyn_grid->get_unique_grid_gids().get_view<const gid_type*,Host>();
   auto h_d_lid2idx = dyn_grid->get_lid_to_idx_map().get_view<const int**,Host>();
 
   // Get some dimensions for Homme

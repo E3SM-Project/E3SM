@@ -612,7 +612,7 @@ create_p2d_map () {
   EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
 
   using gid_type = AbstractGrid::gid_type;
-  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_type*>();
+  auto dyn_gids  = se_dyn->get_unique_grid_gids().get_view<const gid_type*>();
   auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_type*>();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);

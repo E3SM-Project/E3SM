@@ -114,7 +114,7 @@ OR
         "--output-data-layout",
         default=None,
         type=str,
-        help="What kind of layout to use for the saved data (e.g., whether dyn->phys_gll remap is needed)",
+        help="What kind of layout to use for the saved data: 'native' (as it is on the grid), or 'unique' (on the unique grid of the grid, e.g., dyn->phys_gll remap). The default is 'unique'",
     )
 
     parser.add_argument(

@@ -208,10 +208,31 @@ public:
   // view returned by this method.
   std::vector<gid_type> get_unique_gids() const;
 
-  // Get/set IO auxiliary grids. See comments below (for m_aux_grids) for an explanation.
-  std::shared_ptr<AbstractGrid> get_aux_grid(const std::string &data_layout) const;
-  void set_aux_grid(const std::string &data_layout, const std::shared_ptr<AbstractGrid> &aux_grid);
-  std::vector<std::string> get_aux_grids_keys() const;
+  // Some grids have distinct dofs that represent the same point (we call them 'replicated').
+  // E.g., on a SE grid, a point on the boundary of two elements is stored by both elements
+  // (with the same value of any field). The 'unique grid' of a grid is the grid where
+  // replicated dofs are collapsed, so that each point appears exactly once. For a grid that
+  // has no replicated dofs, the unique grid is the grid itself.
+  //
+  // The unique grid is set together with the gids that the dofs of this grid have on it:
+  //  - set_unique_grid: set the unique grid, as well as the gids of this grid's dofs on it
+  //    (a field with the same length as dofs_gids). The unique grid must itself be unique.
+  //    Typically called by the grids manager that builds this grid.
+  //  - get_unique_grid: the unique grid (this grid, if none was set).
+  //  - get_unique_grid_gids: for each local dof of this grid, the gid of that dof on the
+  //    unique grid. Replicated dofs have the same entry. Only valid if a unique grid was set.
+  //    Note that this is NOT the dofs_gids of the unique grid: it has the same length as
+  //    this grid's dofs_gids, and the set of its values (across all ranks) is the set of
+  //    dofs_gids of the unique grid. E.g., for a 1d SE grid with 2 elements and np=2:
+  //
+  //      this grid    dofs_gids:        [0, 1, 2, 3]   0---1==2---3
+  //      this grid    unique grid gids: [0, 1, 1, 2]
+  //      unique grid  dofs_gids:        [0, 1, 2]      0---1---2
+  void set_unique_grid(const std::shared_ptr<AbstractGrid>& unique_grid,
+                       const Field& unique_grid_gids);
+  std::shared_ptr<const AbstractGrid> get_unique_grid() const;
+  std::shared_ptr<AbstractGrid>       get_unique_grid();
+  Field get_unique_grid_gids() const;
 
   // For each entry in the input list of GIDs, retrieve the process id that owns it
   std::vector<int> get_owners(const gid_view_h &gids) const;
@@ -322,12 +343,13 @@ protected:
   mutable bool m_is_unique;
   mutable bool m_is_unique_computed = false;
 
-  // Auxiliary grids (if any). The map key is an 'output_data_layout' description.
-  // IO can use these grids to change the layout of the outputed fields on the fly.
-  // For now, the only use case is to save 'dynamics' grid fields using the 'physics_gll'
-  // grid (to save on storage). IO will rely on the grids manager to build a remapper
-  // from this grid to the requested aux grid
-  strmap_t<std::shared_ptr<AbstractGrid>> m_aux_grids;
+  // The unique grid, if different from this grid (nullptr means "this grid is unique").
+  // We store it (rather than building it on the fly) since it may carry data that
+  // only the grids manager knows how to set (e.g., geometry data).
+  std::shared_ptr<AbstractGrid> m_unique_grid;
+
+  // For each dof of this grid, its gid on the unique grid (only set together with m_unique_grid)
+  Field m_unique_grid_gids;
 
   // The map lid->idx
   Field m_lid_to_idx;

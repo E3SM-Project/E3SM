@@ -27,7 +27,7 @@ public:
 protected:
 #endif
 
-  void build_dynamics_grid ();
+  Field build_dynamics_grid ();
   void build_physics_grid  (const ci_string& type,
                             const ci_string& rebalance);
 
