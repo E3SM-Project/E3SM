@@ -78,36 +78,6 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
   }
 }
 
-// This is similar to the above one, but only does something if newVal is NOT equal to fill_value.
-// The only exception is the case CM=Replace, in which case we ALWAYS perform the copy
-template<CombineMode CM, typename ScalarIn, typename ScalarOut,
-         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
-KOKKOS_FORCEINLINE_FUNCTION
-void combine_fill_aware (const ScalarIn& newVal, ScalarOut& result,
-                         const CoeffType alpha, const CoeffType beta)
-{
-  // If CM==Replace, we don't check for FV. We ALWAYS replace
-  if constexpr (CM==CombineMode::Replace) {
-    return combine<CM>(newVal,result,alpha,beta);
-  }
-
-  // For the non-simd type case, we can avoid ekat::where, and simply check newVal against fill_value
-  if constexpr (ekat::ScalarTraits<ScalarIn>::is_simd) {
-    using inner_type = typename ekat::ScalarTraits<ScalarIn>::scalar_type;
-    constexpr auto fill_val = constants::fill_value<inner_type>;
-    auto where = ekat::where(newVal!=fill_val,result);
-    if (where.any()) {
-      auto tmp = result;
-      combine<CM>(newVal,tmp,alpha,beta);
-      where = tmp;
-    }
-  } else {
-    if (newVal!=constants::fill_value<ScalarIn>) {
-      combine<CM>(newVal,result,alpha,beta);
-    }
-  }
-}
-
 } // namespace scream
 
 #endif // SCREAM_COMBINE_OPS_HPP
