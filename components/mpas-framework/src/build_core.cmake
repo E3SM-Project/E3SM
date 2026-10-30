@@ -84,7 +84,7 @@ function(build_core CORE)
 
   add_custom_command(
     OUTPUT ${PARSE_OUTPUTS}
-    COMMAND ${CMAKE_BINARY_DIR}/mpas-framework/src/tools/parse ${PARSE_ARGS} < ${CORE_BLDDIR}/Registry_processed.xml
+    COMMAND ${MPAS_PARSE} ${PARSE_ARGS} < ${CORE_BLDDIR}/Registry_processed.xml
     DEPENDS parse ${CORE_BLDDIR}/Registry_processed.xml
     WORKING_DIRECTORY ${INC_DIR}
   )

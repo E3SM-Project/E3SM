@@ -101,7 +101,7 @@ endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_utils.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_core.cmake)
 
-# Add tools
+# Add tools, which set MPAS_PARSE, MPAS_NAMELIST_GEN and MPAS_STREAMS_GEN
 add_subdirectory(tools)
 
 # Gather sources that are needed for all cores into "common" library
