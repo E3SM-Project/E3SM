@@ -18,30 +18,39 @@ between runs has to be stored somewhere else:
 
 ## What runs
 
-To start with, one test:
-`SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
-puts every active component through the coupler. With no `_P` option, CIME gives this grid
-one node, which the image's machine defines as the container's cores: 4 ranks per component
-on a hosted runner. It runs in these images:
+Two tests so far:
+
+- `SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
+  puts every active component through the coupler.
+- `ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod`, an exact restart test of EAMxx with its
+  production settings.
+
+With no `_P` option, CIME gives these grids one node, which the image's machine defines
+as the container's cores: 4 ranks on a hosted runner (per component, for the coupled test).
+Both run in these images:
 
 | Image | Arch | Baselines |
 | --- | --- | --- |
 | `gnu13-openmpi4` | x86_64, aarch64 | compared |
-| `intel2024-openmpi4` | x86_64 | not compared: builds and runs only |
+| `intel2024-openmpi4` | x86_64 | compared |
 
 Intel's answers depend on which CPU the hosted runner has: its math libraries pick code paths
-by CPU, and GitHub's x86 runners come with different CPU models. The same commit and image
-have both matched and differed from intel baselines on different runs, so a comparison
-would fail at random. Each job summary shows the runner's CPU model. Building with
-`-fimf-arch-consistency=true` (or `-fp-model consistent`) on the `e3sm-container_intel`
-machine might make intel reproducible enough to compare, at some cost in speed.
+by CPU, and GitHub's x86 runners come with different CPU models. Without further care, the
+same commit and image both matched and differed from intel baselines on different runs. So
+for intel only, the workflow appends `-fp-model=consistent -fimf-arch-consistency=true` to
+the C, C++ and Fortran flags, in the job's copy of `e3sm-container_intel.cmake` in `~/.cime`,
+and sets `MKL_CBWR=COMPATIBLE`. This is meant to make the answers independent of the CPU, at some
+cost in speed, and it is for testing only: the image and E3SM's `intel.cmake` are unchanged, so
+users of the image do not get these flags. As a consequence, the intel job does not test
+the exact flags users get. Each job summary shows the runner's CPU model, to help tell a
+CPU-dependence from a real change if the intel comparison ever fails at random.
 
 The CUDA images are left out: hosted runners have no GPU, so those tests could only be
 built, and there would be nothing to compare.
 
 Tests are listed without machine or compiler. Each job runs `create_test` in the image with
-`--machine e3sm-container --compiler <compiler>`, the compiler being set next to each image
-in the workflow's matrix. The same test runs on any machine with Docker:
+the test's name completed by `e3sm-container_<compiler>`, the compiler being set next to each
+image in the workflow's matrix. The same test runs on any machine with Docker:
 
 ```bash
 docker run --rm -v "$PWD:/projects/e3sm/work/E3SM" \
@@ -52,8 +61,7 @@ docker run --rm -v "$PWD:/projects/e3sm/work/E3SM" \
       --machine e3sm-container --compiler gnu --wait'
 ```
 
-`enable.sh` opts into the image's CIME machine. Until #8926 is merged, the workflow also
-downloads the P3 lookup table itself, since nothing else does (#5953).
+`enable.sh` opts into the image's CIME machine.
 
 The workflow runs on PRs (all paths except docs), nightly, and by hand.
 
@@ -67,8 +75,10 @@ one entry per image, arch and test. Baselines differ between compilers and betwe
 architectures, so each combination has its own entry.
 
 - **Compare (PRs, nightly).** Each run restores the newest entry for its test and passes
-  `-c -b master` to `create_test`. If there is no entry, the test runs without comparing and
-  the job shows a warning, so the first run (or one after an entry has expired) does not fail.
+  `-c -b master` to `create_test`. If there is no entry, the comparison fails, with an error in
+  the job summary telling you to bless. That is on purpose, so that nobody forgets to: it
+  happens for the first run of a test, and after an entry has expired (the nightly run keeps
+  them from expiring).
 - **Bless (by hand, master only).** Go to Actions → `e3sm-gh` → *Run workflow* on `master`
   with *bless* checked. It runs with `-o -g -b master` and saves a new entry, keyed by the
   commit and the run. The next run anywhere restores it. The workflow refuses to bless from
@@ -161,9 +171,10 @@ container, so tests would no longer download it or share the cache for it.
 
 Add the test name to `matrix.test` in the workflow. Inputdata and baseline keys include the
 test name, so a new test starts with no entries: its first runs download all its inputdata
-and skip comparison until master is blessed. Keep the cache limit in mind: the first test's
+and fail the comparison until master is blessed, which a PR cannot do, so a PR that adds a
+test stays red until it is merged and blessed. Keep the cache limit in mind: the first test's
 inputdata already takes about 4 GB of it.
 
-A test with testmods must name its machine and compiler (for example
-`TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD`), so it goes in the matrix's `include`
-list once per compiler rather than in `matrix.test`.
+`create_test` wants a test with testmods to name its machine and compiler (for example
+`TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD`). List it without them in `matrix.test`: the
+workflow adds `e3sm-container_<compiler>` after the compset of every test.

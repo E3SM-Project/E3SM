@@ -11,7 +11,8 @@ name: e3sm-gh
 # - baselines: one entry per image, arch and test, written only by a bless (a manual run on
 #   master with bless checked). Entries cannot be overwritten, so each bless adds one and
 #   every other run restores the newest. Entries saved on master are visible to all PRs,
-#   while a PR cannot change them. With no baseline found, the test runs without comparing.
+#   while a PR cannot change them. With no baseline found, the test fails, which reminds us
+#   to bless.
 #
 # See docs/dev-guide/gh-hosted-testing.md for the rationale and the plan to move baselines
 # to a registry.
@@ -56,28 +57,26 @@ env:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.image.arch == 'aarch64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
     timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
-        env: [gnu13-openmpi4, intel2024-openmpi4]
-        arch: [x86_64, aarch64]
-        test: [SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS]
-        exclude:
-          - {env: intel2024-openmpi4, arch: aarch64}
-        # Each image's compiler, for create_test, and whether it compares baselines. Intel's
-        # answers depend on which CPU a hosted runner happens to have (its math libraries
-        # pick code paths by CPU), so intel builds and runs, but does not compare.
-        include:
-          - {env: gnu13-openmpi4, compiler: gnu, baselines: true}
-          - {env: intel2024-openmpi4, compiler: intel, baselines: false}
-    name: ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})
+        # Each image with its arch and the compiler for create_test; the Intel image only
+        # exists for x86_64. Crossed with the tests.
+        image:
+          - {env: gnu13-openmpi4, arch: x86_64, compiler: gnu}
+          - {env: gnu13-openmpi4, arch: aarch64, compiler: gnu}
+          - {env: intel2024-openmpi4, arch: x86_64, compiler: intel}
+        test:
+          - SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS
+          - ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+    name: ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})
     env:
-      IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.env }}
-      TESTS: ${{ matrix.test }}
-      COMPILER: ${{ matrix.compiler }}
-      BASELINES_KEY: e3sm-gh-baselines-${{ matrix.env }}-${{ matrix.arch }}-${{ matrix.test }}
+      IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.image.env }}
+      TEST: ${{ matrix.test }}
+      COMPILER: ${{ matrix.image.compiler }}
+      BASELINES_KEY: e3sm-gh-baselines-${{ matrix.image.env }}-${{ matrix.image.arch }}-${{ matrix.test }}
       INPUTDATA_KEY: e3sm-gh-inputdata-${{ matrix.test }}
     steps:
       - name: Refuse to bless off master
@@ -112,7 +111,7 @@ jobs:
           restore-keys: ${{ env.INPUTDATA_KEY }}-
       - name: Restore baselines
         id: baselines
-        if: env.generate != 'true' && matrix.baselines
+        if: env.generate != 'true'
         uses: actions/cache/restore@v6
         with:
           path: baselines
@@ -120,47 +119,58 @@ jobs:
           restore-keys: ${{ env.BASELINES_KEY }}-
       - name: Choose baseline flags
         run: |
-          if [ "${{ matrix.baselines }}" != true ]; then
-            flags=""; baselines="not compared for this compiler"
-          elif [ "$generate" = true ]; then
+          # Always compare, so that a missing baseline fails the test and reminds us to bless
+          if [ "$generate" = true ]; then
             flags="-o -g -b master"; baselines="generated"
-          elif [ -n "${{ steps.baselines.outputs.cache-matched-key }}" ]; then
-            flags="-c -b master"; baselines="compared with \`${{ steps.baselines.outputs.cache-matched-key }}\`"
           else
-            flags=""; baselines="none found, not compared"
-            echo "::warning::no baselines for this test; bless from master to add them"
+            flags="-c -b master"
+            if [ -n "${{ steps.baselines.outputs.cache-matched-key }}" ]; then
+              baselines="compared with \`${{ steps.baselines.outputs.cache-matched-key }}\`"
+            else
+              baselines="NONE FOUND, so this job fails until master is blessed (Actions, e3sm-gh, Run workflow on master with bless checked)"
+              echo "::error::no baselines for this test: bless from master to add them"
+            fi
           fi
           echo "CT_FLAGS=$flags" >> "$GITHUB_ENV"
           echo "BASELINES=$baselines" >> "$GITHUB_ENV"
-      # TODO: remove once #8926 is merged. Until then CIME does not know EAM's P3 opens this
-      # file, so nothing downloads it and the run dies without it (#5953).
-      - name: Fetch the P3 lookup table
-        run: |
-          f=atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
-          if [ ! -f "inputdata/$f" ]; then
-            mkdir -p "inputdata/$(dirname "$f")"
-            curl -fsSL --retry 3 -o "inputdata/$f" "https://web.lcrc.anl.gov/public/e3sm/inputdata/$f"
-          fi
       - name: Pull the image
         run: docker pull "$IMAGE"
       # As the image's default user (uid 1000), with the image's own CIME machine, which
-      # enable.sh opts into. The runner's own uid is 1001, so hand it what the test writes to,
-      # and take it back after for the caches and the log upload.
+      # enable.sh opts into. Intel's math libraries (libimf, and MKL via MKL_CBWR) pick code
+      # paths by CPU, and hosted runners have different CPUs, so for intel only, the copy of
+      # the machine's cmake file in ~/.cime (made fresh by enable.sh, not the image's) gets
+      # flags that make answers CPU-independent, at some cost in speed. This is for testing
+      # only: it is not what the image gives to its users.
+      # The runner's own uid is 1001, so hand it what the test writes to, and take it back
+      # after for the caches and the log upload.
       - name: Run the tests
         id: run-tests
         run: |
           mkdir -p inputdata baselines scratch
+          # create_test stops at once if the baseline directory is missing, instead of
+          # running the test and failing its BASELINE phase, which an empty cache would do
+          mkdir -p "baselines/$COMPILER/master"
           find inputdata -type f | wc -l > inputdata.count
           sudo chown -R 1000:1000 E3SM inputdata baselines scratch
+          # The machine and compiler go in the test name (TEST.GRID.COMPSET.MACHINE_COMPILER.TESTMODS),
+          # which a test with testmods needs; the list has none of them
+          export TESTS=$(awk -F. -v OFS=. -v m="e3sm-container_$COMPILER" '{ $3 = $3 "." m } 1' <<< "$TEST")
           rc=0
-          docker run --rm -e TESTS -e CT_FLAGS -e COMPILER \
+          docker run --rm -e TESTS -e CT_FLAGS -e COMPILER -e MKL_CBWR=COMPATIBLE \
             -v "$PWD/E3SM:/projects/e3sm/work/E3SM" \
             -v "$PWD/inputdata:/projects/e3sm/data/inputdata" \
             -v "$PWD/baselines:/projects/e3sm/data/baselines" \
             -v "$PWD/scratch:/home/e3sm/e3sm_scratch" \
             "$IMAGE" bash -lc '. /projects/e3sm/cime/enable.sh &&
+              if [ "$COMPILER" = intel ]; then
+                printf "%s\n" \
+                  "# CI only: results independent of the CPU, so baselines can be compared" \
+                  "foreach(lang C CXX Fortran)" \
+                  "  string(APPEND CMAKE_\${lang}_FLAGS \" -fp-model=consistent -fimf-arch-consistency=true\")" \
+                  "endforeach()" >> ~/.cime/e3sm-container_intel.cmake
+              fi &&
               cd /projects/e3sm/work/E3SM/cime/scripts &&
-              ./create_test $TESTS $CT_FLAGS --machine e3sm-container --compiler "$COMPILER" \
+              ./create_test $TESTS $CT_FLAGS \
                 --wait --test-id gh --parallel-jobs "$(nproc)"' || rc=$?
           sudo chown -R "$(id -u):$(id -g)" E3SM inputdata baselines scratch
           if [ "$(find inputdata -type f | wc -l)" -gt "$(cat inputdata.count)" ]; then
@@ -176,7 +186,7 @@ jobs:
             BASELINES="$BASELINES (made with \`$(cat baselines/image)\`)"
           fi
           {
-            echo "### ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})"
+            echo "### ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})"
             echo
             echo "Image \`$image\`, CPU $(lscpu | sed -n 's/^Model name: *//p'), baselines: $BASELINES"
             echo
@@ -186,8 +196,12 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           du -sh inputdata baselines
           exit "$rc"
+      - name: Print TestStatus.log
+        if: ${{ always() && steps.run-tests.outcome == 'failure' }}
+        run: |
+          cat scratch/*.gh/TestStatus.log
       - name: Save baselines
-        if: env.generate == 'true' && matrix.baselines
+        if: env.generate == 'true'
         uses: actions/cache/save@v6
         with:
           path: baselines
@@ -225,7 +239,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: logs.${{ matrix.test }}.${{ matrix.env }}.${{ matrix.arch }}
+          name: logs.${{ matrix.test }}.${{ matrix.image.env }}.${{ matrix.image.arch }}
           path: |
             scratch/*.gh/TestStatus*
             scratch/*.gh/bld/*.bldlog.*
