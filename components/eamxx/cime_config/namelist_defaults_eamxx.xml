@@ -655,13 +655,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <fixed_total_solar_irradiance>-9999.0</fixed_total_solar_irradiance>
       <fixed_total_solar_irradiance COMPSET=".*SCREAM%RCE.*">551.58</fixed_total_solar_irradiance>
 
-      <rad_frequency
-        type="integer"
-        constraints="gt 0"
-        doc="Frequency (in number of timesteps) at which to call the radiation code"
-      >
-        1
-      </rad_frequency>
+      <rad_frequency type="integer" constraints="gt 0" doc="Frequency (in number of timesteps) at which to call the radiation code">1</rad_frequency>
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne32np4">2</rad_frequency>
