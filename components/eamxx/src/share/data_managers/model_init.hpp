@@ -99,6 +99,19 @@ public:
 
 protected:
 
+  // Init the fields of the STARTUP (RunType::Initial) or RESTART (RunType::Restart) group on
+  // all grids of the field manager. For initial runs, also check that no constant is provided
+  // for fields with subfields. This is the first step of run().
+  void init_all_grids (const std::shared_ptr<FieldManager>& fm,
+                       const util::TimeStamp& t0,
+                       const RunType run_type);
+
+  // Do what is left to do after the fields of a startup run have been inited: use the IOP
+  // data (if any) to set some of the physics_gll fields, and apply the IC perturbation
+  // (if requested). This is the last step of run() for startup runs.
+  void finalize_startup (const std::shared_ptr<FieldManager>& fm,
+                         const util::TimeStamp& t0);
+
   // Init all the fields in the STARTUP group of grid_name.
   void init_startup_fields (const std::shared_ptr<FieldManager>& fm,
                             const std::string& grid_name,
@@ -116,7 +129,7 @@ protected:
   virtual std::vector<Field>
   get_fields (const std::shared_ptr<FieldManager>& fm,
               const std::string& group_name,
-              const std::string& grid_name) const;
+              const std::string& grid_name);
 
   // Set the field to the constant provided in constants_pl for it.
   // The entry can be '$name: $val', or '$name: [$val]', or '$name: [$val1,...,$valN]',

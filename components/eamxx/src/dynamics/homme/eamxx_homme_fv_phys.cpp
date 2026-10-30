@@ -55,17 +55,6 @@ void HommeDynamics::fv_phys_requested_buffer_size_in_bytes () const {
   fbm.request_size(gfr.requested_buffer_size());
 }
 
-void HommeDynamics::fv_phys_initialize_impl () {
-  if (not fv_phys_active()) return;
-  m_instance->init_fv_phys(m_phys_grid_pgN);
-}
-
-// During restart, we can't overwrite T_mid, horiz_winds, and tracers, as these
-// contain data used in homme_pre_process to compute tendencies.
-struct HommeDynamics::GllFvRemapTmp {
-  Field T_mid, horiz_winds, tracers;
-};
-
 // Copy physics T,uv state to FT,M to form tendencies in next dynamics step.
 template <typename T_t, typename uv_t, typename FT_t, typename FM_t>
 static void copy_prev (const int ncols, const int npacks,
@@ -87,7 +76,7 @@ static void copy_prev (const int ncols, const int npacks,
   Kokkos::fence();
 }
 
-void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const bool restart) {
+void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts) {
   if (not fv_phys_active()) return;
   constexpr int N = HOMMEXX_PACK_SIZE;
   using Pack = ekat::Pack<Real,N>;
@@ -97,49 +86,24 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto FT = m_helper_fields.at("FT_phys").get_view<Pack**>();
   const auto FM = m_helper_fields.at("FM_phys").get_view<Pack***>();
-  if (restart) {
-    // Temporary copies of the fields, so we do not overwrite the restarted ones
-    auto make_tmp = [](const Field& f) {
-      Field tmp(f.get_header().get_identifier());
-      tmp.get_header().get_alloc_properties().request_allocation(N);
-      tmp.allocate_view();
-      return tmp;
-    };
-    GllFvRemapTmp t;
-    t.T_mid = make_tmp(get_field_out("T_mid",pgn));
-    t.horiz_winds = make_tmp(get_field_out("horiz_winds",pgn));
-    // Really need just the first tracer.
-    t.tracers = make_tmp(get_group_out("tracers",pgn).monolithic_field());
-    remap_dyn_to_fv_phys(&t);
-    const auto T  = t.T_mid.get_view<Pack**>();
-    const auto uv = t.horiz_winds.get_view<Pack***>();
-    copy_prev(ncols, npacks, T, uv, FT, FM);
-  } else {
-    remap_dyn_to_fv_phys();
-    const auto T  = get_field_out("T_mid",pgn).get_view<const Pack**>();
-    const auto uv = get_field_out("horiz_winds",pgn).get_view<const Pack***>();
-    copy_prev(ncols, npacks, T, uv, FT, FM);
+  remap_dyn_to_fv_phys();
+  const auto T  = get_field_out("T_mid",pgn).get_view<const Pack**>();
+  const auto uv = get_field_out("horiz_winds",pgn).get_view<const Pack***>();
+  copy_prev(ncols, npacks, T, uv, FT, FM);
 
-    // In an initial run, the AD only reads IC for the physics GLL fields,
-    // and this class has just taken care of remapping them to the FV grid.
-    // Therefore, the timestamp of the FV fields has *not* been set yet,
-    // which can cause serious issues downstream. For details, see
-    //   https://github.com/E3SM-Project/scream/issues/2250
-    // To avoid any problem, we simply set the timestamp of FV state fields here.
-    // NOTE: even if the init sequence *ever* changed, and the AD *did* read
-    // IC for FV fields, this step remains safe (we're setting the same t0)
-    for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density"}) {
-      auto f = get_field_out(n,pgn);
-      f.get_header().get_tracking().update_time_stamp(ts);
-    }
-    const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
-    if (params.do_3d_turbulence) {
-      auto f = get_field_out("tke_shear_strain3d_components",pgn);
-      f.get_header().get_tracking().update_time_stamp(ts);
-    }
-    auto Q = get_group_out("tracers",pgn).monolithic_field();
-    Q.get_header().get_tracking().update_time_stamp(ts);
+  // Set the time stamp of the remapped fields. In particular, some of them are
+  // not in the output of a previous atm proc, and may never have been inited.
+  for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density"}) {
+    auto f = get_field_out(n,pgn);
+    f.get_header().get_tracking().update_time_stamp(ts);
   }
+  const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+  if (params.do_3d_turbulence) {
+    auto f = get_field_out("tke_shear_strain3d_components",pgn);
+    f.get_header().get_tracking().update_time_stamp(ts);
+  }
+  auto Q = get_group_out("tracers",pgn).monolithic_field();
+  Q.get_header().get_tracking().update_time_stamp(ts);
   update_pressure(m_phys_grid);
 }
 
@@ -158,7 +122,7 @@ void HommeDynamics::fv_phys_post_process () {
   fv_phys_dyn_to_fv_phys(end_of_step_ts());
 }
 
-void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
+void HommeDynamics::remap_dyn_to_fv_phys () const {
   if (not fv_phys_active()) return;
   const auto& gn = m_phys_grid->name();
 
@@ -171,10 +135,10 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   m_instance->remap_dyn_to_fv_phys(
     get_field_out("ps", gn),
     get_field_out("phis", gn),
-    t ? t->T_mid : get_field_out("T_mid", gn),
+    get_field_out("T_mid", gn),
     get_field_out("omega", gn),
-    t ? t->horiz_winds : get_field_out("horiz_winds", gn),
-    t ? t->tracers : get_group_out("tracers", gn).monolithic_field(),
+    get_field_out("horiz_winds", gn),
+    get_group_out("tracers", gn).monolithic_field(),
     get_field_out("pseudo_density", gn),
     strain3d_fv);
 }

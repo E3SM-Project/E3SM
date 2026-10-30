@@ -189,23 +189,11 @@ void HommeDynamics::create_requests ()
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
 
   if (fv_phys_active()) {
-    // [CGLL ICs in pg2] Read CGLL IC data even though our in/out format is
-    // pgN. I don't want to read these directly from the netcdf file because
-    // doing so may conflict with additional IC mechanisms in the AD, e.g.,
-    // init'ing a field to a constant.
-    const auto& rgn = m_cgll_grid->name();
-    auto rg_scalar2d     = m_cgll_grid->get_2d_scalar_layout();
-    auto rg_scalar3d_mid = m_cgll_grid->get_3d_scalar_layout(LEV);
-    auto rg_vector3d_mid = m_cgll_grid->get_3d_vector_layout(LEV,2);
-
-    add_field<Required>("horiz_winds",   rg_vector3d_mid,m/s,   rgn,N);
-    add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
-    add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
-    add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
-    add_group<Required>("tracers",rgn,N, MonolithicAlloc::Required);
+    // The atm input fields on the pg grid are initialized by HommeModelInit, using temporary
+    // copies on the GLL grid, so there is no need to request them here. The only exception
+    // are the trace gases (see [rrtmgp active gases] in eamxx_homme_fv_phys.cpp), which
+    // are still requested on the GLL grid.
     fv_phys_rrtmgp_active_gases_init(m_grids_manager);
-    // This is needed for the dp_ref init in initialize_homme_state.
-    add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
   }
 
   // Dynamics grid states
@@ -221,6 +209,14 @@ void HommeDynamics::create_requests ()
   // Forcing (the tracers one, FQ_dyn, needs the number of tracers: see set_computed_group_impl)
   create_helper_field("FT_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("FM_dyn",       {EL,CMP,   GP,GP,LEV}, {nelem,    3,NP,NP,nlev_mid}, dgn);
+
+  // The T and uv at the end of the last Homme step, on the physics grid. They are used to
+  // compute the T and uv tendencies, so they need to be inited by HommeModelInit too.
+  const int ncols_phys = m_phys_grid->get_num_local_dofs();
+  create_helper_field("FT_phys",{COL,LEV},    {ncols_phys,  nlev_mid},pgn);
+  create_helper_field("FM_phys",{COL,CMP,LEV},{ncols_phys,2,nlev_mid},pgn);
+  m_instance->add_phys_field("FT_phys",m_helper_fields.at("FT_phys"));
+  m_instance->add_phys_field("FM_phys",m_helper_fields.at("FM_phys"));
   if (params.do_3d_turbulence) {
     create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
     create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
@@ -273,10 +269,10 @@ void HommeDynamics::create_requests ()
     // Homme's states.
     m_p2d_remapper = m_grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
     m_d2p_remapper = m_grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
-  }
 
-  // Create separate remapper for initial_conditions
-  m_ic_remapper = m_grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
+    // Create separate remapper for restart
+    m_ic_remapper = m_grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
+  }
 
   // Layout for 2D (1d horiz X 1d vertical) variable
   const auto& grid_name = m_phys_grid->name();
@@ -402,21 +398,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const auto& c       = Homme::Context::singleton();
   const auto& params  = c.get<Homme::SimulationParams>();
 
-  // The first fv_phys D->P remap during initialization happens before the
-  // dycore has computed these diagnostic components, so start from a benign
-  // value. Homme overwrites them after each dynamics step when 3D turbulence is
-  // enabled.
-  if (params.do_3d_turbulence) {
+  // Homme overwrites these diagnostic components after each dynamics step when 3D turbulence
+  // is enabled, so start from a benign value (to avoid NaNs in an initial output).
+  // NOTE: with the pg grid, HommeModelInit has already done this, before the first D->P remap.
+  if (not fv_phys_active() and params.do_3d_turbulence) {
     m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0);
     get_field_out("tke_shear_strain3d_components").deep_copy(0);
-  }
-
-  // Complete Homme prim_init1_xyz sequence
-  // NOTE: for runs with the pg2 physics grid, we still do the whole Homme init here.
-  //       Otherwise, HommeModelInit has already taken care of it (init1 phase, state
-  //       and views init, prim_init_model) by the time we get here.
-  if (fv_phys_active()) {
-    prim_complete_init1_phase_f90 ();
   }
 
   // ------ Sanity checks ------- //
@@ -433,26 +420,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
       get_field_out("pseudo_density",pgn).get_header().get_tracking().get_providers().size()==1,
       "Error! Someone other than dynamics is trying to update the pseudo_density.\n");
 
-  // Create remaining internal fields
-  const int ncols = m_phys_grid->get_num_local_dofs();
-  const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  assert(nlevs == m_dyn_grid->get_num_vertical_levels());
-  assert(nlevs == m_cgll_grid->get_num_vertical_levels());
-  assert(nlevs == m_phys_grid->get_num_vertical_levels());
-
-  using namespace ShortFieldTagsNames;
-
-  // Tendencies for temperature and momentum computed on physics grid
-  create_helper_field("FT_phys",{COL,LEV},    {ncols,  nlevs},pgn);
-  create_helper_field("FM_phys",{COL,CMP,LEV},{ncols,2,nlevs},pgn);
-
-  // Unfortunately, Homme *does* use FM_z even in hydrostatic mode (missing ifdef).
-  // Later, it computes diags on w, so if FM_w contains NaN's, repro sum in Homme
-  // will crap out. To prevent that, set FM_z=0
-
-  if (fv_phys_active()) {
-    fv_phys_initialize_impl();
-  } else {
+  if (not fv_phys_active()) {
     // Setup the p2d and d2p remappers
 
     // ftype==FORCING_0:
@@ -495,16 +463,17 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // Print some info about Homme setup
   print_homme_info ();
 
-  // Sets the scream views into the hommexx internal data structures
-  if (fv_phys_active()) {
-    m_instance->init_views ();
-  }
-
-  // Import I.C. from the ref grid to the dyn grid.
+  // Finalize what HommeModelInit could not do (it has no access to the atm process interface)
   if (run_type==RunType::Initial) {
     initialize_homme_state ();
   } else {
     restart_homme_state ();
+  }
+
+  // With the pg grid, HommeModelInit remapped the dyn state to the physics grid, so we can now
+  // compute the pressure. For the GLL grid, this is done in initialize/restart_homme_state.
+  if (fv_phys_active()) {
+    update_pressure (m_phys_grid);
   }
 
   // Since we just inited them, ensure p_mid/p_int (dry and wet) timestamps are valid
@@ -513,25 +482,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(start_of_step_ts());
   get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(start_of_step_ts());
 
-  // Complete homme model initialization
   if (fv_phys_active()) {
-    prim_init_model_f90 ();
-  }
-
-  if (fv_phys_active()) {
-    fv_phys_dyn_to_fv_phys(start_of_step_ts(),run_type == RunType::Restart);
-    // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
-    // separate fvphyshack-based line to remove the whole CGLL FM. The intention
-    // is to clear the view memory on the device, but I don't know if these two
-    // steps are enough.
-    //   We might end up needing these fields, anyway, for dynamics
-    // output. Alternatively, it might be more efficient to make some of the
-    // dynamics helper fields Computed and output on the dynamics grid. Worse
-    // for I/O but better for device memory.
-    const auto& rgn = m_cgll_grid->name();
-    for (const auto& f : {"horiz_winds", "T_mid", "ps", "phis", "pseudo_density"})
-      remove_field(f, rgn);
-    remove_group("tracers", rgn);
     fv_phys_rrtmgp_active_gases_remap(run_type);
   }
 
@@ -978,7 +929,6 @@ void HommeDynamics::restart_homme_state () {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
-  const auto& dgn = m_dyn_grid->name();
   const auto& pgn = m_phys_grid->name();
 
   // All internal fields should have been read from restart file.
@@ -988,51 +938,16 @@ void HommeDynamics::restart_homme_state () {
   //       to remap v_dyn and w_dyn separately, then copy into v3d_prev.
   const auto& c = Homme::Context::singleton();
         auto& params = c.get<Homme::SimulationParams>();
-        auto& tl = c.get<Homme::TimeLevel>();
 
-  constexpr int NGP = HOMMEXX_NP;
+  // NOTE: HommeModelInit has already restarted Homme's state. With the pg grid, it also
+  //       already computed the T and uv at the end of the last Homme step.
+  if (fv_phys_active()) {
+    return;
+  }
+
   const int nlevs = m_phys_grid->get_num_vertical_levels();
   const int ncols = m_phys_grid->get_num_local_dofs();
   const int npacks = ekat::npack<Pack>(nlevs);
-
-  if (fv_phys_active()) {
-    // For runs with the pg2 physics grid, we finalize the restart of Homme's state here.
-    // Otherwise, HommeModelInit has already taken care of it.
-    const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
-    const int qsize = params.qsize;
-
-    // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-    const auto& nstep = std::any_cast<const int&>(*m_restart_extra_data["homme_nsteps"]);
-    tl.nstep = nstep;
-    set_homme_param("num_steps",nstep);
-
-    // Copy all restarted dyn states on all timelevels.
-    m_instance->copy_dyn_states_to_all_timelevels ();
-
-    if (params.theta_hydrostatic_mode) {
-      // Nothing read from restart file for w_int, but Homme still does some global reduction on w_int when
-      // printing the state, so we need to make sure it doesn't contain NaNs
-      m_helper_fields.at("w_int_dyn").deep_copy(0);
-    }
-
-    // Restart end-of-homme-step Q as Qdp/dp. That's what Homme does at the end of the timestep,
-    // and by writing/loading only Qdp in the restart file, we save space.
-    auto Qdp_dyn_view = get_internal_field("Qdp_dyn",dgn).get_view<Pack*****>();
-    auto Q_dyn_view = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
-    auto dp_dyn_view = get_internal_field("dp3d_dyn",dgn).get_view<Pack****>();
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*qsize*NGP*NGP*npacks),
-                         KOKKOS_LAMBDA (const int idx) {
-      const int ie =  idx / (qsize*NGP*NGP*npacks);
-      const int iq = (idx / (NGP*NGP*npacks)) % qsize;
-      const int ip = (idx / (NGP*npacks)) % NGP;
-      const int jp = (idx / npacks) % NGP;
-      const int k  =  idx % npacks;
-      Q_dyn_view(ie,iq,ip,jp,k) = Qdp_dyn_view(ie,iq,ip,jp,k) / dp_dyn_view(ie,ip,jp,k);
-    });
-
-    m_ic_remapper = nullptr;
-    return;
-  }
 
   // NOTE: when restarting stuff like T_prev, and other "previous steps" quantities that HommeDynamics
   //       uses for tendencies calculation, we need to compute them in the *exact same way* as they
@@ -1107,27 +1022,11 @@ void HommeDynamics::restart_homme_state () {
 }
 
 void HommeDynamics::initialize_homme_state () {
-  const auto& rgn = m_cgll_grid->name();
+  const auto& pgn = m_phys_grid->name();
 
   // Some Homme structures
   const auto& c = Homme::Context::singleton();
   auto& params = c.get<Homme::SimulationParams>();
-
-  // Import IC from the GLL grid to the dyn grid, and init the rest of Homme's state
-  // NOTE: if/when PD remapper supports remapping directly to/from subfields,
-  //       you can use get_internal_field (which have a single time slice) rather than
-  //       the helper fields (which have NTL time slices).
-  // NOTE: for runs without the pg2 physics grid, HommeModelInit has already done this.
-  if (fv_phys_active()) {
-    m_instance->init_dyn_state_from_gll_ic(
-        *m_ic_remapper,
-        get_field_in("horiz_winds",rgn),
-        get_field_in("T_mid",rgn),
-        get_field_in("ps",rgn),
-        get_field_in("phis",rgn),
-        get_group_in("tracers",rgn).monolithic_field(),
-        get_field_out("pseudo_density",rgn));
-  }
 
   std::any_cast<int&>(*m_restart_extra_data["homme_nsteps"]) = c.get<Homme::TimeLevel>().nstep;
 
@@ -1151,7 +1050,6 @@ void HommeDynamics::initialize_homme_state () {
     //       have different number of levels. For u,v, we could, but
     //       we cannot (11/2021) subview 2 slices of FM together, so
     //       we'd need to also subview horiz_winds. Since we
-    const auto& pgn = m_phys_grid->name();
     m_helper_fields.at("FT_phys").deep_copy(get_field_in("T_mid",pgn));
     m_helper_fields.at("FM_phys").deep_copy(get_field_out("horiz_winds",pgn));
 
@@ -1163,7 +1061,7 @@ void HommeDynamics::initialize_homme_state () {
   m_ic_remapper = nullptr;
 
   // Update the time stamp of the fields we inited in here (to avoid triggering invalid output in IO)
-  get_field_out("pseudo_density",rgn).get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("pseudo_density",pgn).get_header().get_tracking().update_time_stamp(start_of_step_ts());
   get_internal_field("v_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
   get_internal_field("dp3d_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
   get_internal_field("ps_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
