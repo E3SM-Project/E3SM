@@ -137,6 +137,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     endforeach()
   endforeach()
 
+  # Test online DG->CG remap in output
+  CreateUnitTest(io_unique_grid
+    SOURCES io_unique_grid.cpp
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   # Test output on SE grid
   CreateUnitTest(io_se_grid
     SOURCES io_se_grid.cpp
