@@ -177,4 +177,4 @@ inputdata already takes about 4 GB of it.
 
 `create_test` wants a test with testmods to name its machine and compiler (for example
 `TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD`). List it without them in `matrix.test`: the
-workflow adds `e3sm-container_<compiler>` after the compset of any test that has testmods.
+workflow adds `e3sm-container_<compiler>` after the compset of every test.

@@ -154,7 +154,7 @@ jobs:
           sudo chown -R 1000:1000 E3SM inputdata baselines scratch
           # create_test wants the machine and compiler in the name of a test with testmods
           # (TEST.GRID.COMPSET.MACHINE_COMPILER.TESTMODS); the list has none of them
-          export TESTS=$(awk -F. -v OFS=. -v m="e3sm-container_$COMPILER" 'NF > 3 { $3 = $3 "." m } 1' <<< "$TEST")
+          export TESTS=$(awk -F. -v OFS=. -v m="e3sm-container_$COMPILER" '{ $3 = $3 "." m } 1' <<< "$TEST")
           rc=0
           docker run --rm -e TESTS -e CT_FLAGS -e COMPILER -e MKL_CBWR=COMPATIBLE \
             -v "$PWD/E3SM:/projects/e3sm/work/E3SM" \
