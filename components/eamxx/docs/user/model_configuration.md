@@ -573,6 +573,20 @@ the grid where the fields are defined and a coarser grid.
       the size of the output file.
           - **Note:** with this feature, the user can only specify fields
           from a single grid.
+- **Structured target grids**: if the target grid of `horiz_remap_file` is a 2d structured grid
+(i.e., the map file has `dst_grid_rank=2`, with the grid sizes in `dst_grid_dims=[nx,ny]`),
+EAMxx figures out on its own how to write the output. No option is needed.
+      - The target points in the map file must be ordered with `x` as the fastest varying
+      index (i.e., the point `(ix,iy)` is the column number `iy*nx+ix`), and `nx*ny` must
+      match the number of columns of the target grid in the map file.
+      - If the latitude (longitude) of all the points with the same `y` (`x`) index is the same
+      (up to a small tolerance), the grid is a lat-lon grid. The output file will have
+      dimensions `(lat,lon)`, with `lat` and `lon` being 1d coordinate variables.
+      - Otherwise (e.g., a HRRR grid), the grid is a curvilinear grid: `nx` need not be the number
+      of longitudes, nor `ny` the number of latitudes. The output file will have dimensions `(lat,lon)`
+      (as for lat-lon grids, so the names are misleading: they have length `ny` and `nx`),
+      with `lat` and `lon` being 2d variables over `(lat,lon)`, which the output variables
+      reference through the `coordinates` attribute.
 - `horiz_remap_fill_threshold`: fraction (in `[0,1)`) of a target column that must
 come from valid (i.e., not fill-valued) source columns for the remapped value to be
 written out.

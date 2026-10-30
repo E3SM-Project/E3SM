@@ -198,11 +198,36 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   add_test (
     NAME io_latlon_check
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/check_latlon_output.py
-      --mask-cols 1 # Do not compare the 1x1 cols groups in the latlon grid corners
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/check_structured_output.py
+      --grid-kind latlon
       --map-file ${MAP_FILE_FULL}
       --out-file ./io_latlon.INSTANT.nsteps_x1.np${SCREAM_TEST_MAX_RANKS}.2000.nc
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties(io_latlon_check PROPERTIES FIXTURES_REQUIRED latlon_output)
+
+  ## Test output on a curvilinear grid (like HRRR), where nx!=nlon and ny!=nlat.
+  ## The tgt grid has nx*ny points that all have different lat and different lon values.
+  set(CURVILINEAR_MAP_FILE map_ne4pg2_to_10x20_hrrr_20261013.nc)
+  set(CURVILINEAR_MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${CURVILINEAR_MAP_FILE})
+
+  GetInputFile ("scream/maps/${CURVILINEAR_MAP_FILE}")
+  CreateUnitTest(io_hrrr_write
+    SOURCES io_hrrr.cpp
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS --args --map-file=${CURVILINEAR_MAP_FILE_FULL}
+    FIXTURES_SETUP hrrr_output
+  )
+
+  # Note: the output file name depends on the number of ranks of the test,
+  #       so we check the one from the run with the largest number of ranks.
+  add_test (
+    NAME io_hrrr_check
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/check_structured_output.py
+      --grid-kind curvilinear
+      --map-file ${CURVILINEAR_MAP_FILE_FULL}
+      --out-file ./io_hrrr.INSTANT.nsteps_x1.np${SCREAM_TEST_MAX_RANKS}.2000.nc
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(io_hrrr_check PROPERTIES FIXTURES_REQUIRED hrrr_output)
 
 endif()
