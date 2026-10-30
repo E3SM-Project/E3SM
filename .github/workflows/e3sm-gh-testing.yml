@@ -186,6 +186,10 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           du -sh inputdata baselines
           exit "$rc"
+      - name: Print TestStatus.log
+        if: ${{ always() && steps.run-tests.outcome == 'failure' }}
+        run: |
+          cat scratch/${{ matrix.test }}*/TestStatus.log
       - name: Save baselines
         if: env.generate == 'true' && matrix.baselines
         uses: actions/cache/save@v6
