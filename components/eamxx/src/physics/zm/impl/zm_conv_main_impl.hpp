@@ -161,7 +161,7 @@ void Functions<S,D>::zm_conv_main(
       prec(i)                = 0;
       rliq(i)                = 0;
       dsubcld(i)             = 0;
-      jctop(i)               = -1;
+      jctop(i)               = pver-1;
       jcbot(i)               = 0;
       jt(i)                  = -1;  // Initialize for inactive columns (no convection)
       cape(i)                = 0;
