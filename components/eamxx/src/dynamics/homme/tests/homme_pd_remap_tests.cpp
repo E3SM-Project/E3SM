@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "share/field/field.hpp"
 #include "share/grid/se_grid.hpp"
@@ -209,348 +210,200 @@ TEST_CASE("remap", "") {
 
   SECTION ("remap") {
 
-    for (bool fwd : {true, false}) {
-      if (comm.am_i_root()) {
-        std::cout << " -> Remap " << (fwd ? " forward\n" : " backward\n");
-      }
+    if (comm.am_i_root()) {
+      std::cout << " -> Remap phys->dyn\n";
+    }
 
-      // Note: for the dyn->phys test to run correctly, the dynamics input v must be synced,
-      //       meaning that the values at the interface between two elements must match.
-      //       To do this, we initialize each entry in the dynamic v with the id
-      //       of the corresponding physics column.
-      //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
+    // Initialize each entry in the physics fields with the gid of the corresponding column.
+    // This makes checking the answers easy: each dyn dof must contain the gid of its column.
 
-      if (fwd) {
-        auto h_s_2d_view = s_2d_field_phys.get_view<Homme::Real*,Host>();
-        auto h_v_2d_view = v_2d_field_phys.get_view<Homme::Real**,Host>();
-        auto h_s_3d_view = s_3d_field_phys.get_view<Homme::Real**,Host>();
-        auto h_v_3d_view = v_3d_field_phys.get_view<Homme::Real***,Host>();
-        auto h_ss_3d_view = ss_3d_field_phys.get_view<Homme::Real**,Host>();
-        auto h_vs_3d_view = vs_3d_field_phys.get_view<Homme::Real***,Host>();
-        auto h_tr_3d_view = tr_3d_field_phys.get_view<Homme::Real***,Host>();
+    auto h_s_2d_view = s_2d_field_phys.get_view<Homme::Real*,Host>();
+    auto h_v_2d_view = v_2d_field_phys.get_view<Homme::Real**,Host>();
+    auto h_s_3d_view = s_3d_field_phys.get_view<Homme::Real**,Host>();
+    auto h_v_3d_view = v_3d_field_phys.get_view<Homme::Real***,Host>();
+    auto h_ss_3d_view = ss_3d_field_phys.get_view<Homme::Real**,Host>();
+    auto h_vs_3d_view = vs_3d_field_phys.get_view<Homme::Real***,Host>();
+    auto h_tr_3d_view = tr_3d_field_phys.get_view<Homme::Real***,Host>();
 
-        for (int idof=0; idof<num_local_cols; ++idof) {
-          auto gid = h_p_dofs(idof);
-          h_s_2d_view(idof) = gid;
-          h_v_2d_view(idof,0) = gid;
-          h_v_2d_view(idof,1) = gid;
-          for (int il=0; il<NVL; ++ il) {
-            h_s_3d_view(idof,il) = gid;
-            h_v_3d_view(idof,0,il) = gid;
-            h_v_3d_view(idof,1,il) = gid;
+    for (int idof=0; idof<num_local_cols; ++idof) {
+      auto gid = h_p_dofs(idof);
+      h_s_2d_view(idof) = gid;
+      h_v_2d_view(idof,0) = gid;
+      h_v_2d_view(idof,1) = gid;
+      for (int il=0; il<NVL; ++ il) {
+        h_s_3d_view(idof,il) = gid;
+        h_v_3d_view(idof,0,il) = gid;
+        h_v_3d_view(idof,1,il) = gid;
 
-            h_ss_3d_view(idof,il) = gid;
-            h_vs_3d_view(idof,0,il) = gid;
-            h_vs_3d_view(idof,1,il) = gid;
-            for (int iq=0; iq<NQ; ++iq) {
-              h_tr_3d_view(idof,iq,il) = gid;
-            }
-          }
+        h_ss_3d_view(idof,il) = gid;
+        h_vs_3d_view(idof,0,il) = gid;
+        h_vs_3d_view(idof,1,il) = gid;
+        for (int iq=0; iq<NQ; ++iq) {
+          h_tr_3d_view(idof,iq,il) = gid;
         }
-        s_2d_field_phys.sync_to_dev();
-        v_2d_field_phys.sync_to_dev();
-        s_3d_field_phys.sync_to_dev();
-        v_3d_field_phys.sync_to_dev();
+      }
+    }
+    s_2d_field_phys.sync_to_dev();
+    v_2d_field_phys.sync_to_dev();
+    s_3d_field_phys.sync_to_dev();
+    v_3d_field_phys.sync_to_dev();
 
-        ss_3d_field_phys.sync_to_dev();
-        vs_3d_field_phys.sync_to_dev();
-        tr_3d_field_phys.sync_to_dev();
-      } else {
-        auto h_s_2d_view = s_2d_field_dyn.get_view<Homme::Real***,Host>();
-        auto h_v_2d_view = v_2d_field_dyn.get_view<Homme::Real****,Host>();
-        auto h_s_3d_view = s_3d_field_dyn.get_view<Homme::Real****,Host>();
-        auto h_v_3d_view = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
-        auto h_ss_3d_view = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
-        auto h_vs_3d_view = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
-        auto h_tr_3d_view = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
+    ss_3d_field_phys.sync_to_dev();
+    vs_3d_field_phys.sync_to_dev();
+    tr_3d_field_phys.sync_to_dev();
 
-        for (int ie=0; ie<num_local_elems; ++ie) {
-          for (int ip=0; ip<NP; ++ip) {
-            for (int jp=0; jp<NP; ++jp) {
-              const int idof = ie*NP*NP + ip*NP + jp;
-              auto gid = h_d_dofs(idof);
-              h_s_2d_view(ie,ip,jp) = gid;
-              h_v_2d_view(ie,0,ip,jp) = gid;
-              h_v_2d_view(ie,1,ip,jp) = gid;
-              for (int il=0; il<NVL; ++ il) {
-                h_s_3d_view(ie,ip,jp,il) = gid;
-                h_v_3d_view(ie,0,ip,jp,il) = gid;
-                h_v_3d_view(ie,1,ip,jp,il) = gid;
+    // Remap
+    remapper->remap_fwd();
 
-                for (int itl=0; itl<NTL; ++itl) {
-                  h_ss_3d_view(ie,itl,ip,jp,il) = gid;
-                  h_vs_3d_view(ie,itl,0,ip,jp,il) = gid;
-                  h_vs_3d_view(ie,itl,1,ip,jp,il) = gid;
-                }
-                for (int iq=0; iq<NQ; ++iq) {
-                  h_tr_3d_view(ie,iq,ip,jp,il) = gid;
-                }
-              }
-            }
-          }
+    // Check
+    {
+      // 2d scalar
+      s_2d_field_phys.sync_to_host();
+      s_2d_field_dyn.sync_to_host();
+      auto phys = s_2d_field_phys.get_view<Homme::Real*,Host>();
+      auto dyn  = s_2d_field_dyn.get_view<Homme::Real***,Host>();
+
+      for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+        int ie = h_d_lid2idx(idof,0);
+        int ip = h_d_lid2idx(idof,1);
+        int jp = h_d_lid2idx(idof,2);
+        if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
+            printf(" ** 2D Scalar ** \n");
+            printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
+            printf("expected: = %d\n",h_d_dofs(idof));
         }
-        s_2d_field_dyn.sync_to_dev();
-        v_2d_field_dyn.sync_to_dev();
-        s_3d_field_dyn.sync_to_dev();
-        v_3d_field_dyn.sync_to_dev();
-
-        ss_3d_field_dyn.sync_to_dev();
-        vs_3d_field_dyn.sync_to_dev();
-        tr_3d_field_dyn.sync_to_dev();
+        REQUIRE (dyn(ie,ip,jp)==h_d_dofs(idof));
       }
+    }
 
-      // Remap
-      if (fwd) {
-        remapper->remap_fwd();
-      } else {
-        remapper->remap_fwd();
+    {
+      // 2d vector
+      v_2d_field_phys.sync_to_host();
+      v_2d_field_dyn.sync_to_host();
+      auto phys = v_2d_field_phys.get_view<Homme::Real**,Host>();
+      auto dyn  = v_2d_field_dyn.get_view<Homme::Real****,Host>();
+      for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+        int ie = h_d_lid2idx(idof,0);
+        int ip = h_d_lid2idx(idof,1);
+        int jp = h_d_lid2idx(idof,2);
+        for (int icomp=0; icomp<2; ++icomp) {
+          if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
+              printf(" ** 2D Vector ** \n");
+              printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,icomp,dyn(ie,icomp,ip,jp));
+              printf("expected: = %d\n",h_d_dofs(idof));
+          }
+          REQUIRE (dyn(ie,icomp,ip,jp)==h_d_dofs(idof));
+        }
       }
+    }
 
-      // Check
-      {
-        // 2d scalar
-        s_2d_field_phys.sync_to_host();
-        s_2d_field_dyn.sync_to_host();
-        auto phys = s_2d_field_phys.get_view<Homme::Real*,Host>();
-        auto dyn  = s_2d_field_dyn.get_view<Homme::Real***,Host>();
+    {
+      // 3d scalar
+      s_3d_field_phys.sync_to_host();
+      s_3d_field_dyn.sync_to_host();
+      auto phys = s_3d_field_phys.get_view<Homme::Real**,Host>();
+      auto dyn  = s_3d_field_dyn.get_view<Homme::Real****,Host>();
+      for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+        int ie = h_d_lid2idx(idof,0);
+        int ip = h_d_lid2idx(idof,1);
+        int jp = h_d_lid2idx(idof,2);
+        for (int ilev=0; ilev<NVL; ++ilev) {
+          if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
+              printf(" ** 3D Scalar ** \n");
+              printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,ilev,dyn(ie,ip,jp,ilev));
+              printf("expected: = %d\n",h_d_dofs(idof));
+          }
+          REQUIRE (dyn(ie,ip,jp,ilev)==h_d_dofs(idof));
+        }
+      }
+    }
 
-        if (fwd) {
-          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);
-            int ip = h_d_lid2idx(idof,1);
-            int jp = h_d_lid2idx(idof,2);
-            if (dyn(ie,ip,jp)!=h_d_dofs(idof)) {
-                printf(" ** 2D Scalar ** \n");
-                printf("d_out(%d,%d,%d): %2.16f\n",ie,ip,jp,dyn(ie,ip,jp));
+    {
+      // 3d vector
+      v_3d_field_phys.sync_to_host();
+      v_3d_field_dyn.sync_to_host();
+      auto phys = v_3d_field_phys.get_view<Homme::Real***,Host>();
+      auto dyn  = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
+      for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+        int ie = h_d_lid2idx(idof,0);
+        int ip = h_d_lid2idx(idof,1);
+        int jp = h_d_lid2idx(idof,2);
+        for (int icomp=0; icomp<2; ++icomp) {
+          for (int ilev=0; ilev<NVL; ++ilev) {
+            if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
+                printf(" ** 3D Vector ** \n");
+                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,icomp,ip,jp,ilev));
                 printf("expected: = %d\n",h_d_dofs(idof));
             }
-            REQUIRE (dyn(ie,ip,jp)==h_d_dofs(idof));
-          }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            if (phys(idof)!=h_p_dofs(idof)) {
-                printf(" ** 2D Scalar ** \n");
-                printf("  p_out(%d) = %2.16f\n",idof,phys(idof));
-                printf("  expected: = %d\n",h_p_dofs(idof));
-            }
-            REQUIRE (phys(idof)==h_p_dofs(idof));
+            REQUIRE (dyn(ie,icomp,ip,jp,ilev)==h_d_dofs(idof));
           }
         }
       }
+    }
 
-      {
-        // 2d vector
-        v_2d_field_phys.sync_to_host();
-        v_2d_field_dyn.sync_to_host();
-        auto phys = v_2d_field_phys.get_view<Homme::Real**,Host>();
-        auto dyn  = v_2d_field_dyn.get_view<Homme::Real****,Host>();
-        if (fwd) {
-          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);
-            int ip = h_d_lid2idx(idof,1);
-            int jp = h_d_lid2idx(idof,2);
-            for (int icomp=0; icomp<2; ++icomp) {
-              if (dyn(ie,icomp,ip,jp)!=h_d_dofs(idof)) {
-                  printf(" ** 2D Vector ** \n");
-                  printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,icomp,dyn(ie,icomp,ip,jp));
-                  printf("expected: = %d\n",h_d_dofs(idof));
-              }
-              REQUIRE (dyn(ie,icomp,ip,jp)==h_d_dofs(idof));
-            }
+    {
+      // 3d scalar state
+      ss_3d_field_phys.sync_to_host();
+      ss_3d_field_dyn.sync_to_host();
+      auto phys = ss_3d_field_phys.get_view<Homme::Real**,Host>();
+      auto dyn  = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
+      for (int ilev=0; ilev<NVL; ++ilev) {
+        for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+          int ie = h_d_lid2idx(idof,0);
+          int ip = h_d_lid2idx(idof,1);
+          int jp = h_d_lid2idx(idof,2);
+          auto gid = h_d_dofs(idof);
+          if (dyn(ie,n0,ip,jp,ilev)!=gid) {
+              printf(" ** 3D Scalar State ** \n");
+              printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,n0,ip,jp,ilev,dyn(ie,n0,ip,jp,ilev));
+              printf("expected: = %d\n",gid);
           }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            for (int icomp=0; icomp<2; ++icomp) {
-              if (phys(idof,icomp)!=h_p_dofs(idof)) {
-                  printf(" ** 2D Vector ** \n");
-                  printf("p_out(%d, %d) = %2.16f\n",idof,icomp,phys(idof,icomp));
-                  printf("expected: = %d\n",h_p_dofs(idof));
-              }
-              REQUIRE (phys(idof,icomp)==h_p_dofs(idof));
-            }
-          }
+          REQUIRE (dyn(ie,n0,ip,jp,ilev)==gid);
         }
       }
+    }
 
-      {
-        // 3d scalar
-        s_3d_field_phys.sync_to_host();
-        s_3d_field_dyn.sync_to_host();
-        auto phys = s_3d_field_phys.get_view<Homme::Real**,Host>();
-        auto dyn  = s_3d_field_dyn.get_view<Homme::Real****,Host>();
-        if (fwd) {
-          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);
-            int ip = h_d_lid2idx(idof,1);
-            int jp = h_d_lid2idx(idof,2);
-            for (int ilev=0; ilev<NVL; ++ilev) {
-              if (dyn(ie,ip,jp,ilev)!=h_d_dofs(idof)) {
-                  printf(" ** 3D Scalar ** \n");
-                  printf("d_out(%d,%d,%d,%d): %2.16f\n",ie,ip,jp,ilev,dyn(ie,ip,jp,ilev));
-                  printf("expected: = %d\n",h_d_dofs(idof));
-              }
-              REQUIRE (dyn(ie,ip,jp,ilev)==h_d_dofs(idof));
-            }
-          }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            for (int ilev=0; ilev<NVL; ++ilev) {
-              if (phys(idof,ilev)!=h_p_dofs(idof)) {
-                  printf(" ** 3D Scalar ** \n");
-                  printf("p_out(%d,%d) = %2.16f\n",idof,ilev,phys(idof,ilev));
-                  printf("expected: = %d\n",h_p_dofs(idof));
-              }
-              REQUIRE (phys(idof,ilev)==h_p_dofs(idof));
-            }
-          }
-        }
-      }
-
-      {
-        // 3d vector
-        v_3d_field_phys.sync_to_host();
-        v_3d_field_dyn.sync_to_host();
-        auto phys = v_3d_field_phys.get_view<Homme::Real***,Host>();
-        auto dyn  = v_3d_field_dyn.get_view<Homme::Real*****,Host>();
-        if (fwd) {
-          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);
-            int ip = h_d_lid2idx(idof,1);
-            int jp = h_d_lid2idx(idof,2);
-            for (int icomp=0; icomp<2; ++icomp) {
-              for (int ilev=0; ilev<NVL; ++ilev) {
-                if (dyn(ie,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
-                    printf(" ** 3D Vector ** \n");
-                    printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,icomp,ip,jp,ilev));
-                    printf("expected: = %d\n",h_d_dofs(idof));
-                }
-                REQUIRE (dyn(ie,icomp,ip,jp,ilev)==h_d_dofs(idof));
-              }
-            }
-          }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            for (int icomp=0; icomp<2; ++icomp) {
-              for (int ilev=0; ilev<NVL; ++ilev) {
-                if (phys(idof,icomp,ilev)!=h_p_dofs(idof)) {
-                    printf(" ** 3D Vector ** \n");
-                    printf("p_out(%d,%d,%d) = %2.16f\n",idof,icomp,ilev,phys(idof,icomp,ilev));
-                    printf("expected: = %d\n",h_p_dofs(idof));
-                }
-                REQUIRE (phys(idof,icomp,ilev)==h_p_dofs(idof));
-              }
-            }
-          }
-        }
-      }
-
-      {
-        // 3d scalar state
-        ss_3d_field_phys.sync_to_host();
-        ss_3d_field_dyn.sync_to_host();
-        auto phys = ss_3d_field_phys.get_view<Homme::Real**,Host>();
-        auto dyn  = ss_3d_field_dyn.get_view<Homme::Real*****,Host>();
-        if (fwd) {
+    {
+      // 3d vector state
+      vs_3d_field_phys.sync_to_host();
+      vs_3d_field_dyn.sync_to_host();
+      auto phys = vs_3d_field_phys.get_view<Homme::Real***,Host>();
+      auto dyn  = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
+      for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+        int ie = h_d_lid2idx(idof,0);
+        int ip = h_d_lid2idx(idof,1);
+        int jp = h_d_lid2idx(idof,2);
+        for (int icomp=0; icomp<2; ++icomp) {
           for (int ilev=0; ilev<NVL; ++ilev) {
-            for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-              int ie = h_d_lid2idx(idof,0);
-              int ip = h_d_lid2idx(idof,1);
-              int jp = h_d_lid2idx(idof,2);
-              auto gid = h_d_dofs(idof);
-              if (dyn(ie,n0,ip,jp,ilev)!=gid) {
-                  printf(" ** 3D Scalar State ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,n0,ip,jp,ilev,dyn(ie,n0,ip,jp,ilev));
-                  printf("expected: = %d\n",gid);
-              }
-              REQUIRE (dyn(ie,n0,ip,jp,ilev)==gid);
+            if (dyn(ie,n0,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
+                printf(" ** 3D Vector State ** \n");
+                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,n0,icomp,ip,jp,ilev));
+                printf("expected: = %d\n",h_d_dofs(idof));
             }
-          }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            for (int ilev=0; ilev<NVL; ++ilev) {
-              if (phys(idof,ilev)!=h_p_dofs(idof)) {
-                  printf(" ** 3D Scalar State ** \n");
-                  printf("p_out(%d,%d) = %2.16f\n",idof,ilev,phys(idof,ilev));
-                  printf("expected: = %d\n",h_p_dofs(idof));
-              }
-              REQUIRE (phys(idof,ilev)==h_p_dofs(idof));
-            }
+            REQUIRE (dyn(ie,n0,icomp,ip,jp,ilev)==h_d_dofs(idof));
           }
         }
       }
+    }
 
-      {
-        // 3d vector state
-        vs_3d_field_phys.sync_to_host();
-        vs_3d_field_dyn.sync_to_host();
-        auto phys = vs_3d_field_phys.get_view<Homme::Real***,Host>();
-        auto dyn  = vs_3d_field_dyn.get_view<Homme::Real******,Host>();
-        if (fwd) {
-          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);
-            int ip = h_d_lid2idx(idof,1);
-            int jp = h_d_lid2idx(idof,2);
-            for (int icomp=0; icomp<2; ++icomp) {
-              for (int ilev=0; ilev<NVL; ++ilev) {
-                if (dyn(ie,n0,icomp,ip,jp,ilev)!=h_d_dofs(idof)) {
-                    printf(" ** 3D Vector State ** \n");
-                    printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,icomp,ip,jp,ilev,dyn(ie,n0,icomp,ip,jp,ilev));
-                    printf("expected: = %d\n",h_d_dofs(idof));
-                }
-                REQUIRE (dyn(ie,n0,icomp,ip,jp,ilev)==h_d_dofs(idof));
-              }
+    {
+      // 3d tracers
+      tr_3d_field_phys.sync_to_host();
+      tr_3d_field_dyn.sync_to_host();
+      auto phys = tr_3d_field_phys.get_view<Homme::Real***,Host>();
+      auto dyn  = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
+      for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
+        int ie = h_d_lid2idx(idof,0);
+        int ip = h_d_lid2idx(idof,1);
+        int jp = h_d_lid2idx(idof,2);
+        for (int iq=0; iq<2; ++iq) {
+          for (int ilev=0; ilev<NVL; ++ilev) {
+            if (dyn(ie,iq,ip,jp,ilev)!=h_d_dofs(idof)) {
+                printf(" ** 3D Tracer State ** \n");
+                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,iq,ip,jp,ilev,dyn(ie,iq,ip,jp,ilev));
+                printf("expected: = %d\n",h_d_dofs(idof));
             }
-          }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            for (int icomp=0; icomp<2; ++icomp) {
-              for (int ilev=0; ilev<NVL; ++ilev) {
-                if (phys(idof,icomp,ilev)!=h_p_dofs(idof)) {
-                    printf(" ** 3D Vector State ** \n");
-                    printf("p_out(%d,%d,%d) = %2.16f\n",idof,icomp,ilev,phys(idof,icomp,ilev));
-                    printf("expected: = %d\n",h_p_dofs(idof));
-                }
-                REQUIRE (phys(idof,icomp,ilev)==h_p_dofs(idof));
-              }
-            }
-          }
-        }
-      }
-
-      {
-        // 3d tracers
-        tr_3d_field_phys.sync_to_host();
-        tr_3d_field_dyn.sync_to_host();
-        auto phys = tr_3d_field_phys.get_view<Homme::Real***,Host>();
-        auto dyn  = tr_3d_field_dyn.get_view<Homme::Real*****,Host>();
-        if (fwd) {
-          for (int idof=0; idof<dyn_grid->get_num_local_dofs(); ++idof) {
-            int ie = h_d_lid2idx(idof,0);
-            int ip = h_d_lid2idx(idof,1);
-            int jp = h_d_lid2idx(idof,2);
-            for (int iq=0; iq<2; ++iq) {
-              for (int ilev=0; ilev<NVL; ++ilev) {
-                if (dyn(ie,iq,ip,jp,ilev)!=h_d_dofs(idof)) {
-                    printf(" ** 3D Tracer State ** \n");
-                    printf("d_out(%d,%d,%d,%d,%d): %2.16f\n",ie,iq,ip,jp,ilev,dyn(ie,iq,ip,jp,ilev));
-                    printf("expected: = %d\n",h_d_dofs(idof));
-                }
-                REQUIRE (dyn(ie,iq,ip,jp,ilev)==h_d_dofs(idof));
-              }
-            }
-          }
-        } else {
-          for (int idof=0; idof<phys_grid->get_num_local_dofs(); ++idof) {
-            for (int iq=0; iq<2; ++iq) {
-              for (int ilev=0; ilev<NVL; ++ilev) {
-                if (phys(idof,iq,ilev)!=h_p_dofs(idof)) {
-                    printf(" ** 3D Tracer State ** \n");
-                    printf("p_out(%d,%d,%d) = %2.16f\n",idof,iq,ilev,phys(idof,iq,ilev));
-                    printf("expected: = %d\n",h_p_dofs(idof));
-                }
-                REQUIRE (phys(idof,iq,ilev)==h_p_dofs(idof));
-              }
-            }
+            REQUIRE (dyn(ie,iq,ip,jp,ilev)==h_d_dofs(idof));
           }
         }
       }
@@ -747,6 +600,17 @@ TEST_CASE("combo_remap", "") {
   remapper->register_field(tr_3d_field_phys, tr_3d_field_dyn);
   remapper->registration_ends();
 
+  // The dyn->phys direction is handled by a different remapper
+  std::shared_ptr<AbstractRemapper> d2p_remapper(new UniqueGridRemapper(dyn_grid));
+  d2p_remapper->register_field(s_2d_field_dyn, s_2d_field_phys);
+  d2p_remapper->register_field(v_2d_field_dyn, v_2d_field_phys);
+  d2p_remapper->register_field(s_3d_field_dyn, s_3d_field_phys);
+  d2p_remapper->register_field(v_3d_field_dyn, v_3d_field_phys);
+  d2p_remapper->register_field(ss_3d_field_dyn.subfield("cmp",1,n0), ss_3d_field_phys);
+  d2p_remapper->register_field(vs_3d_field_dyn.subfield("cmp",1,n0), vs_3d_field_phys);
+  d2p_remapper->register_field(tr_3d_field_dyn, tr_3d_field_phys);
+  d2p_remapper->registration_ends();
+
   SECTION ("combo_test") {
 
     for (bool pdp : {true, false}) {
@@ -843,9 +707,9 @@ TEST_CASE("combo_remap", "") {
       if (pdp) {
         remapper->remap_fwd();
         Kokkos::fence();
-        remapper->remap_bwd();
+        d2p_remapper->remap_fwd();
       } else {
-        remapper->remap_bwd();
+        d2p_remapper->remap_fwd();
         remapper->remap_fwd();
       }
 
@@ -1102,6 +966,7 @@ TEST_CASE("combo_remap", "") {
 
   // Delete remapper before finalizing the mpi context, since the remapper has some MPI stuff in it
   remapper = nullptr;
+  d2p_remapper = nullptr;
 
   // Finalize Homme::Context
   Homme::Context::finalize_singleton();
