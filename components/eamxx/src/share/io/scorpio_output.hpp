@@ -178,7 +178,7 @@ protected:
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const FieldIdentifier& fid);
+  void set_avg_cnt_tracking(const Field& f);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
@@ -234,8 +234,8 @@ protected:
   // them, but they are NOT written to the NC output file.
   strvec_t m_intermediate_aliases;
   strmap_t<Field> m_field_to_avg_count;
+  strmap_t<Field> m_mask_to_count;
   std::vector<Field> m_avg_counts;
-  strmap_t<std::string> m_field_to_avg_cnt_suffix;
   strmap_t<strvec_t> m_vars_dims;
   strmap_t<int> m_dims_len;
   std::list<diag_ptr_type> m_diagnostics;
