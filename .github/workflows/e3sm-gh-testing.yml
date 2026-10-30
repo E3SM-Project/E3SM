@@ -56,26 +56,24 @@ env:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.image.arch == 'aarch64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
     timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
-        env: [gnu13-openmpi4, intel2024-openmpi4]
-        arch: [x86_64, aarch64]
+        # Each image with its arch and the compiler for create_test; the Intel image only
+        # exists for x86_64. Crossed with the tests.
+        image:
+          - {env: gnu13-openmpi4, arch: x86_64, compiler: gnu}
+          - {env: gnu13-openmpi4, arch: aarch64, compiler: gnu}
+          - {env: intel2024-openmpi4, arch: x86_64, compiler: intel}
         test: [SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS]
-        exclude:
-          - {env: intel2024-openmpi4, arch: aarch64}
-        # Each image's compiler, for create_test
-        include:
-          - {env: gnu13-openmpi4, compiler: gnu}
-          - {env: intel2024-openmpi4, compiler: intel}
-    name: ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})
+    name: ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})
     env:
-      IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.env }}
+      IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.image.env }}
       TESTS: ${{ matrix.test }}
-      COMPILER: ${{ matrix.compiler }}
-      BASELINES_KEY: e3sm-gh-baselines-${{ matrix.env }}-${{ matrix.arch }}-${{ matrix.test }}
+      COMPILER: ${{ matrix.image.compiler }}
+      BASELINES_KEY: e3sm-gh-baselines-${{ matrix.image.env }}-${{ matrix.image.arch }}-${{ matrix.test }}
       INPUTDATA_KEY: e3sm-gh-inputdata-${{ matrix.test }}
     steps:
       - name: Refuse to bless off master
@@ -175,7 +173,7 @@ jobs:
             BASELINES="$BASELINES (made with \`$(cat baselines/image)\`)"
           fi
           {
-            echo "### ${{ matrix.test }} (${{ matrix.env }}, ${{ matrix.arch }})"
+            echo "### ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})"
             echo
             echo "Image \`$image\`, CPU $(lscpu | sed -n 's/^Model name: *//p'), baselines: $BASELINES"
             echo
@@ -228,7 +226,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: logs.${{ matrix.test }}.${{ matrix.env }}.${{ matrix.arch }}
+          name: logs.${{ matrix.test }}.${{ matrix.image.env }}.${{ matrix.image.arch }}
           path: |
             scratch/*.gh/TestStatus*
             scratch/*.gh/bld/*.bldlog.*
