@@ -5,7 +5,7 @@
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/data_managers/IOPDataManager.hpp"
 #include "share/data_managers/SCDataManager.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/field_request.hpp"
 #include "share/property_checks/property_check.hpp"
