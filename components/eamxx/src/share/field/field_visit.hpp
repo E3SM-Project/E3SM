@@ -35,7 +35,7 @@ namespace details {
 // matching the actual fields is the only one that runs). This is also true for the
 // ranks: the runtime-rank overload instantiates func for each rank in [0,MaxRank].
 // Since this multiplies compile time and code size, func should be small: have it
-// forward to a templated helper (like cvh/cvmh) rather than hold a big body.
+// forward to a templated helper (like the update kernels) rather than hold a big body.
 //
 // How it works: a function can't return a LayoutRight view for some fields and a
 // LayoutStride view for others, depending on a runtime check. But it can return a

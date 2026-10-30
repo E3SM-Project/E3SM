@@ -44,4 +44,10 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES misc_utils_tests.cpp
     LIBS eamxx_utils
   )
+
+  # Test the tuple, bound functor and nd parallel_for utils
+  CreateUnitTest(bound_functor
+    SOURCES bound_functor_tests.cpp
+    LIBS eamxx_utils
+  )
 endif()
