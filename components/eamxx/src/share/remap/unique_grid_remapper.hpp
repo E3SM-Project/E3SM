@@ -5,7 +5,13 @@
 #include "share/remap/field_views_repo.hpp"
 #include "share/core/eamxx_config.hpp"
 
+#include "share/grid/grid_import_export.hpp"
+
 #include <ekat_pack.hpp>
+
+#include <mpi.h>
+#include <memory>
+#include <vector>
 
 namespace scream
 {
@@ -32,9 +38,17 @@ compute_unique_grid_dof_map (const AbstractGrid& grid,
  * addressed with 1 index per dof. Every column of the target grid must have a
  * replica among the source grid dofs on the same rank.
  *
- * Only the forward direction is supported, since the opposite direction would require
- * communication across ranks. Fields on the source grid can be subfields of other fields
- * (but not subfields of subfields), possibly with a dynamic subview info.
+ * The forward direction (grid->unique grid) is a local gather: each column of the unique
+ * grid must have a replica among the dofs of the source grid on the same rank.
+ *
+ * The backward direction (unique grid->grid) sets each dof of the source grid to the value
+ * of the unique grid column with the same gid. The column may be owned by another rank, so
+ * this direction involves p2p communication. The comm schedule is created at the first
+ * call of remap_bwd (it's a collective operation).
+ * Every dof of the source grid must correspond to a column of the unique grid (on some rank).
+ *
+ * Fields on the source grid can be subfields of other fields (but not subfields of
+ * subfields), possibly with a dynamic subview info.
  */
 
 class UniqueGridRemapper : public AbstractRemapper
@@ -60,8 +74,14 @@ protected:
 
   void registration_ends_impl () override;
   void remap_fwd_impl () override;
+  void remap_bwd_impl () override;
 
   void initialize_device_variables ();
+
+  // unique->grid requires communication. These methods set up/perform it.
+  void setup_bwd ();
+  void pack_and_send ();
+  void recv_and_unpack ();
 
   int m_num_unique_cols;
 
@@ -91,6 +111,62 @@ protected:
   // Note: we can't use the view extents, since the last extent may be padded
   KT::view_ND<int,1>  m_vec_dim;
 
+  // ----- unique->grid data structures ----- //
+
+  static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
+
+  template<typename T>
+  using view_1d = typename KT::template view_ND<T,1>;
+  template<typename T>
+  using hview_1d = typename view_1d<T>::host_mirror_type;
+
+  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
+  template<typename T>
+  using mpi_view_1d = std::conditional_t<MpiOnDev,view_1d<T>,hview_1d<T>>;
+
+  bool m_bwd_setup_done = false;
+
+  // For each unique local gid (the "overlap" grid), the list of local source dofs with such gid.
+  // The dofs for the u-th unique gid are m_u2src_dofs[m_u2src_offsets[u]...m_u2src_offsets[u+1]-1]
+  view_1d<int>  m_u2src_offsets;
+  view_1d<int>  m_u2src_dofs;
+
+  // The imports/exports tell us which pid we get/send unique grid columns from/to.
+  // Imports are indexed by the unique local gid. Exports by the local unique grid column.
+  // All arrays are sorted by pid, and the offsets (size nranks+1) tell us where each pid starts.
+  int m_num_imports = 0;
+  int m_num_exports = 0;
+  view_1d<int>  m_imp_pids;
+  view_1d<int>  m_imp_lids;
+  view_1d<int>  m_imp_offsets;
+  view_1d<int>  m_exp_pids;
+  view_1d<int>  m_exp_lids;
+  view_1d<int>  m_exp_offsets;
+
+  // Size of one column of each field (and of all fields together), and offset of each field in the latter.
+  int m_total_col_size = 0;
+  view_1d<int>  m_f_col_size;
+  view_1d<int>  m_f_col_offset;
+
+  // The send/recv buffers for pack/unpack operations
+  view_1d<Real> m_send_buffer;
+  view_1d<Real> m_recv_buffer;
+
+  // The send/recv buf to feed to MPI (alias the above two if MpiOnDev=true)
+  mpi_view_1d<Real> m_mpi_send_buffer;
+  mpi_view_1d<Real> m_mpi_recv_buffer;
+
+  // Send/recv persistent requests
+  // NOTE: this class is used as a functor in Kokkos kernels, so it gets copied (and destroyed) around.
+  //       Hence, the requests cannot be freed in the destructor of this class. Instead, we store them in
+  //       a struct that is shared among copies, and that frees the requests when the last copy goes away.
+  struct MpiRequests {
+    ~MpiRequests ();
+    std::vector<MPI_Request>  send;
+    std::vector<MPI_Request>  recv;
+  };
+  std::shared_ptr<MpiRequests>  m_requests;
+
   template <typename MT>
   KOKKOS_FUNCTION
   void local_remap_2d (const MT& team) const;
@@ -102,10 +178,18 @@ protected:
 public:
   // These should be morally private, but CUDA complains that they cannot be private/protected
   struct RemapTag {};
+  struct PackTag {};
+  struct UnpackTag {};
 
   template<typename MT>
   KOKKOS_INLINE_FUNCTION
   void operator()(const RemapTag&, const MT &team) const;
+  template<typename MT>
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const PackTag&, const MT &team) const;
+  template<typename MT>
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const UnpackTag&, const MT &team) const;
 };
 
 } // namespace scream
