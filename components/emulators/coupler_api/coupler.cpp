@@ -22,11 +22,6 @@ namespace e3sm::coupler {
  *     kind: state
  *     name: z
  *     merge_type: direct
- *     attributes:
- *       attname: sa_z
- *       longname: height at the lowest model level
- *       stdname: height
- *       units: m
  *     sources:
  *     - atm
  *     destinations:

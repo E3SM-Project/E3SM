@@ -40,6 +40,8 @@ public:
   void initialize(const std::filesystem::path& plan);
   void run_process(std::string_view name);
   void add_process(ProcessDescriptor desc);
+  void import_to_external(std::string_view name);
+  void export_from_external(std::string_view name);
 
   template <CoupledProcess C> C& get_process(std::string_view name) {
     return driver_.get_component_as<C>(name);
