@@ -477,6 +477,17 @@ void MAMWetscav::run_impl(const double dt) {
       });
     Kokkos::fence();
 
+    // Deep convective cloud fraction derived from ZM convective mass flux.
+    // Uses the EAM cloud_fraction.F90 formula:
+    //   dp_frac = max(0, min(dp1*log(1 + dp2*cmfmc_deep), 0.60))
+    // dp1=0.018, dp2=500.0 are E3SM v2 default tuning parameters.
+    // mass_flux is on interface levels (nlev+1); use k+1 interface
+    // (below mid-level k).  Since EAMxx has no shallow convection
+    // yet, cmfmc_deep = total convective mass flux.
+    constexpr Real dp1 = 0.018;
+    constexpr Real dp2 = 500.0;
+    constexpr Real one = 1.0;    
+
     //----------- Derive deep convective cloud fraction from ZM mass flux ---
     auto zm_mass_flux_int_in = get_field_in("zm_mass_flux_int").get_view<const Real **>();
     const Real zero=0.0;
@@ -484,20 +495,12 @@ void MAMWetscav::run_impl(const double dt) {
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-          // Deep convective cloud fraction derived from ZM convective mass flux.
-          // Uses the EAM cloud_fraction.F90 formula:
-          //   dp_frac = max(0, min(dp1*log(1 + dp2*cmfmc_deep), 0.60))
-          // dp1=0.018, dp2=500.0 are E3SM v2 default tuning parameters.
-          // mass_flux is on interface levels (nlev+1); use k+1 interface
-          // (below mid-level k).  Since EAMxx has no shallow convection
-          // yet, cmfmc_deep = total convective mass flux.
-          constexpr Real dp1 = 0.018;
-          constexpr Real dp2 = 500.0;
+
           const int kp1 = kk + 1;  // interface index below mid-level kk
           const Real cmfmc_deep =
               Kokkos::max(zero, zm_mass_flux_int_in(icol, kp1));
           dp_frac(icol, kk) = Kokkos::max(
-              zero, Kokkos::min(dp1 * Kokkos::log(1.0 + dp2 * cmfmc_deep),
+              zero, Kokkos::min(dp1 * Kokkos::log(one + dp2 * cmfmc_deep),
                                Real(0.60)));
         });
       });
