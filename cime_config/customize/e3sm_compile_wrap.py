@@ -13,6 +13,27 @@ stuff.
 import sys, subprocess, time, psutil, os
 
 ###############################################################################
+def get_process_tree_memory(process):
+###############################################################################
+    """Get total memory usage of a process and all its descendants."""
+    total_memory = 0
+    try:
+        total_memory += process.memory_info().rss
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        pass
+
+    try:
+        for child in process.children(recursive=True):
+            try:
+                total_memory += child.memory_info().rss
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        pass
+
+    return total_memory
+
+###############################################################################
 def run_cmd(args):
 ###############################################################################
     t1 = time.time()
@@ -20,22 +41,22 @@ def run_cmd(args):
     # Start the subprocess
     proc = subprocess.Popen(args)
 
-    # Monitor memory usage throughout the process
+    # Monitor memory usage throughout the process and all child processes
     peak_memory = 0  # in bytes
     try:
         process = psutil.Process(proc.pid)
         while proc.poll() is None:
             try:
-                mem_info = process.memory_info()
-                peak_memory = max(peak_memory, mem_info.rss)
+                current_memory = get_process_tree_memory(process)
+                peak_memory = max(peak_memory, current_memory)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
             time.sleep(0.1)
 
         # Get final memory info
         try:
-            mem_info = process.memory_info()
-            peak_memory = max(peak_memory, mem_info.rss)
+            current_memory = get_process_tree_memory(process)
+            peak_memory = max(peak_memory, current_memory)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
     except (psutil.NoSuchProcess, psutil.AccessDenied):
