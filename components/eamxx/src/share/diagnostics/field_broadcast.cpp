@@ -45,7 +45,6 @@ void FieldBroadcast::initialize_impl ()
   m_diagnostic_output = Field(d_fid,true);
   if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
   }
 }
 

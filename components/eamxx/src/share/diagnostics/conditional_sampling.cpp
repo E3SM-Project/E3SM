@@ -162,8 +162,6 @@ void ConditionalSampling::initialize_impl()
   } else {
     m_diagnostic_output = m_fields_in.at(m_input_f).clone(m_diag_name);
     m_diagnostic_output.create_valid_mask();
-    // Entries failing the condition hold the fill value, so averaging must skip them
-    m_diagnostic_output.get_header().set_may_be_filled(true);
   }
 
   // Comparing two fields requires same units, unless either never declared them
