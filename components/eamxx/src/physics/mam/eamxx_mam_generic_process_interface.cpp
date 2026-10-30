@@ -327,13 +327,22 @@ void MAMGenericInterface::populate_interstitial_wet_aero(
 }
 
 void MAMGenericInterface::populate_wet_atm(
-    mam_coupling::WetAtmosphere &wet_atm) {
-  // store fields only to be converted to dry mmrs in wet_atm_
+    mam_coupling::WetAtmosphere &wet_atm, mam_coupling::Buffer &buffer) {
+  wet_atm.p_del = get_field_in("pseudo_density").get_view<const Real **>();
   wet_atm.qv = get_field_in("qv").get_view<const Real **>();
   wet_atm.qc = get_field_in("qc").get_view<const Real **>();
   wet_atm.nc = get_field_in("nc").get_view<const Real **>();
   wet_atm.qi = get_field_in("qi").get_view<const Real **>();
   wet_atm.ni = get_field_in("ni").get_view<const Real **>();
+
+  // geometric thickness of layers (m)
+  wet_atm.dz = buffer.dz;
+
+  // geopotential height above surface at interface levels (m)
+  wet_atm.z_iface = get_field_out("z_mam4_int").get_view< Real **>();
+
+  // geopotential height above surface at mid levels (m)
+  wet_atm.z_mid = buffer.z_mid;
 }
 void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
                                            mam_coupling::Buffer &buffer) {
@@ -354,15 +363,6 @@ void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
 
   // pbl_height
   dry_atm.pblh = get_field_in("pbl_height").get_view<const Real *>();
-
-  // geometric thickness of layers (m)
-  dry_atm.dz = buffer.dz;
-
-  // geopotential height above surface at interface levels (m)
-  dry_atm.z_iface = get_field_out("z_mam4_int").get_view< Real **>();
-
-  // geopotential height above surface at mid levels (m)
-  dry_atm.z_mid = buffer.z_mid;
 
   // total cloud fraction
   dry_atm.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
@@ -478,9 +478,7 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
         mam_coupling::compute_dry_mixing_ratios(team, wet_atm, wet_aero,
                                                 dry_aero, i);
         team.team_barrier();
-        // vertical heights has to be computed after computing dry mixing ratios
-        // for atmosphere
-        mam_coupling::compute_vertical_layer_heights(team, dry_atm, i);
+        mam_coupling::compute_vertical_layer_heights(team, wet_atm, dry_atm, i);
         mam_coupling::compute_updraft_velocities(team, wet_atm, dry_atm, i);
         // allows kernels below to use layer heights operator()
         team.team_barrier();

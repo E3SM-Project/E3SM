@@ -355,7 +355,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   liqcldf_prev_ = get_field_in("cldfrac_liq_prev").get_view<const Real **>();
   kvh_mid_      = get_field_in("eddy_diff_heat").get_view<const Real **>();
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
 
   // ------------------------------------------------------------------------
@@ -543,7 +543,7 @@ void MAMAci::run_impl(const double dt) {
                      // output
                      w0_, rho_);
 
-  compute_tke_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
+  compute_tke_at_interfaces(team_policy, w_sec_mid_, wet_atm_.dz, nlev_,
                             w_sec_int_,
                             // output
                             tke_);
@@ -564,7 +564,7 @@ void MAMAci::run_impl(const double dt) {
   //  NOTE: The Fortran version uses "ast" for cloud fraction which is
   //  equivalent to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
   compute_nucleate_ice_tendencies(
-      nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
+      nucleate_ice_, team_policy, wet_atm_, dry_atm_, dry_aero_, wsubice_,
       aitken_dry_dia_, nlev_, dt,
       // output
       nihf_, niim_, nidep_, nimey_, naai_hom_,
@@ -589,7 +589,7 @@ void MAMAci::run_impl(const double dt) {
   //  aerosols tendencies
   Kokkos::deep_copy(ccn_, 0.0);
   call_function_dropmixnuc(
-      team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
+      team_policy, dt, wet_atm_, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
@@ -625,7 +625,7 @@ void MAMAci::run_impl(const double dt) {
 
   // Compute hetrozenous freezing
   call_hetfrz_compute_tendencies(
-      team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
+      team_policy, hetfrz_, wet_atm_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
       // ## output to be used by the other processes ##
       hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
       hetfrz_deposition_nucleation_tend_,

@@ -95,9 +95,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, icol);
       team.team_barrier();
-      // vertical heights has to be computed after computing dry mixing ratios
-      // for atmosphere
-      compute_vertical_layer_heights(team, dry_atm_pre_, icol);
+      compute_vertical_layer_heights(team, wet_atm_pre_, dry_atm_pre_, icol);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, icol);
     }  // Preprocess operator()
 

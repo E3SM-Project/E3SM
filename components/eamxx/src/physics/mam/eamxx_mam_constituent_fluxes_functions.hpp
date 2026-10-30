@@ -10,6 +10,7 @@ namespace {
 
 void update_gas_aerosols_using_constituents(
     const int ncol, const int nlev, const double dt,
+    const mam_coupling::WetAtmosphere &wet_atm,
     const mam_coupling::DryAtmosphere &dry_atm,
     const MAMConstituentFluxes::const_view_2d &constituent_fluxes,
     // output
@@ -38,7 +39,7 @@ void update_gas_aerosols_using_constituents(
                                               icol);     // input
         // Get atmospheric quantities
         const mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atm,  // output
+            atmosphere_for_column(wet_atm, dry_atm,  // output
                                   icol);    // input
 
         // Form state%q like array at surface level

@@ -201,9 +201,7 @@ class MAMAci final : public MAMGenericInterface {
       compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
                                 dry_aero_pre_, i);
       team.team_barrier();
-      // vertical heights has to be computed after computing dry mixing ratios
-      // for atmosphere
-      compute_vertical_layer_heights(team, dry_atm_pre_, i);
+      compute_vertical_layer_heights(team, wet_atm_pre_, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
       // FIXME: we only set_min_background_mmr in aci.
       set_min_background_mmr(team, dry_aero_pre_,

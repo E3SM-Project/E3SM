@@ -163,7 +163,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // the buffer
   constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
   p_del_ = get_field_in("pseudo_density").get_view<const Real **>();
 
@@ -184,9 +184,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-  // FIXME: In other MAM4xx processes,
-  // we are using pseudo_density instead of pseudo_density_dry to set
-  // dry_atm_.p_del.
+  // Optics uses dry mass; layer geometry uses total mass from wet_atm_.
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
@@ -332,6 +330,7 @@ void MAMOptics::run_impl(const double dt) {
   // NOTE! we need a const mam_coupling::DryAtmosphere dry_atm for gpu access.
   // We cannot use member of this class inside of the parallel_for
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const mam_coupling::WetAtmosphere &wet_atm = wet_atm_;
   const auto &p_del                          = p_del_;
   const auto &ssa_cmip6_sw                   = ssa_cmip6_sw_;
   const auto &af_cmip6_sw                    = af_cmip6_sw_;
@@ -346,10 +345,10 @@ void MAMOptics::run_impl(const double dt) {
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
-        const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        const auto atm     = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
 
         // FIXME: dry mass pressure interval [Pa]
-        auto zi   = ekat::subview(dry_atm.z_iface, icol);
+        auto zi   = ekat::subview(wet_atm.z_iface, icol);
         auto pdel = ekat::subview(p_del, icol);
 
         auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
@@ -386,10 +385,10 @@ void MAMOptics::run_impl(const double dt) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
         auto odap_aero_icol = ekat::subview(aero_tau_lw, icol);
-        const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        const auto atm     = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
 
         // FIXME: dry mass pressure interval [Pa]
-        auto zi   = ekat::subview(dry_atm.z_iface, icol);
+        auto zi   = ekat::subview(wet_atm.z_iface, icol);
         auto pdel = ekat::subview(p_del, icol);
         auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
