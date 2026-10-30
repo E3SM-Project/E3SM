@@ -49,8 +49,8 @@ The CUDA images are left out: hosted runners have no GPU, so those tests could o
 built, and there would be nothing to compare.
 
 Tests are listed without machine or compiler. Each job runs `create_test` in the image with
-`--machine e3sm-container --compiler <compiler>`, the compiler being set next to each image
-in the workflow's matrix. The same test runs on any machine with Docker:
+the test's name completed by `e3sm-container_<compiler>`, the compiler being set next to each
+image in the workflow's matrix. The same test runs on any machine with Docker:
 
 ```bash
 docker run --rm -v "$PWD:/projects/e3sm/work/E3SM" \

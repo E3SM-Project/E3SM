@@ -152,8 +152,8 @@ jobs:
           mkdir -p "baselines/$COMPILER/master"
           find inputdata -type f | wc -l > inputdata.count
           sudo chown -R 1000:1000 E3SM inputdata baselines scratch
-          # create_test wants the machine and compiler in the name of a test with testmods
-          # (TEST.GRID.COMPSET.MACHINE_COMPILER.TESTMODS); the list has none of them
+          # The machine and compiler go in the test name (TEST.GRID.COMPSET.MACHINE_COMPILER.TESTMODS),
+          # which a test with testmods needs; the list has none of them
           export TESTS=$(awk -F. -v OFS=. -v m="e3sm-container_$COMPILER" '{ $3 = $3 "." m } 1' <<< "$TEST")
           rc=0
           docker run --rm -e TESTS -e CT_FLAGS -e COMPILER -e MKL_CBWR=COMPATIBLE \
@@ -170,7 +170,7 @@ jobs:
                   "endforeach()" >> ~/.cime/e3sm-container_intel.cmake
               fi &&
               cd /projects/e3sm/work/E3SM/cime/scripts &&
-              ./create_test $TESTS $CT_FLAGS --machine e3sm-container --compiler "$COMPILER" \
+              ./create_test $TESTS $CT_FLAGS \
                 --wait --test-id gh --parallel-jobs "$(nproc)"' || rc=$?
           sudo chown -R "$(id -u):$(id -g)" E3SM inputdata baselines scratch
           if [ "$(find inputdata -type f | wc -l)" -gt "$(cat inputdata.count)" ]; then
