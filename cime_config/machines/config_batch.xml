@@ -499,7 +499,7 @@
     </directives>
     <directives workflow="case.build">
       <directive> --ntasks=1</directive>
-      <directive> --cpus-per-task=8</directive>
+      <directive> --cpus-per-task=16</directive>
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
