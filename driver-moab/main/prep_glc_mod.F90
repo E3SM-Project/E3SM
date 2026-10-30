@@ -3,11 +3,13 @@ module prep_glc_mod
 #include "shr_assert.h"
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cl => SHR_KIND_CL
+  use shr_kind_mod    , only: CXX => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct    , only: num_inst_glc, num_inst_lnd, num_inst_frc, &
                               num_inst_ocn
   use seq_comm_mct    , only: CPLID, GLCID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
+  use seq_comm_mct    , only: mblxid, mbgxid, mbintxlg, mbintxgl ! iMOAB app ids: lnd and glc on coupler, l2g and g2l map holders
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
   use seq_map_mod
@@ -16,10 +18,8 @@ module prep_glc_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: component_get_dom_cx
   use component_type_mod, only: glc, lnd, ocn
   use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_elevclass_as_string
-  use glc_elevclass_mod, only : glc_all_elevclass_strings, GLC_ELEVCLASS_STRLEN
 
   implicit none
   save
@@ -30,21 +30,28 @@ module prep_glc_mod
   !--------------------------------------------------------------------------
 
   public :: prep_glc_init
+  public :: prep_glc_mrg_ocn
   public :: prep_glc_mrg_lnd
 
-  public :: prep_glc_accum_lnd
   public :: prep_glc_accum_ocn
+  public :: prep_glc_accum_lnd
   public :: prep_glc_accum_avg
 
-  public :: prep_glc_calc_l2x_gx
   public :: prep_glc_calc_o2x_gx
+  public :: prep_glc_calc_l2x_gx
 
   public :: prep_glc_zero_fields
+
+  public :: prep_glc_get_l2gacc_lm
+  public :: prep_glc_get_l2gacc_lm_cnt
+  public :: prep_glc_get_l2gacc_lm_cnt_avg
+  public :: prep_glc_get_sharedFieldsLndGlc
 
   public :: prep_glc_get_l2x_gx
   public :: prep_glc_get_l2gacc_lx
   public :: prep_glc_get_l2gacc_lx_one_instance
   public :: prep_glc_get_l2gacc_lx_cnt
+  public :: prep_glc_get_l2gacc_lx_cnt_avg
 
   public :: prep_glc_get_o2x_gx
   public :: prep_glc_get_x2gacc_gx
@@ -53,8 +60,8 @@ module prep_glc_mod
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
 
-  public :: prep_glc_get_mapper_So2g
-  public :: prep_glc_get_mapper_Fo2g
+  public :: prep_glc_get_mapper_So2g_shelf
+  public :: prep_glc_get_mapper_Fo2g_shelf
 
   public :: prep_glc_calculate_subshelf_boundary_fluxes
 
@@ -63,10 +70,6 @@ module prep_glc_mod
   !--------------------------------------------------------------------------
 
   private :: prep_glc_do_renormalize_smb
-  private :: prep_glc_set_g2x_lx_fields
-  private :: prep_glc_merge_lnd_forcing
-  private :: prep_glc_map_one_state_field_lnd2glc
-  private :: prep_glc_map_qice_conservative_lnd2glc
   private :: prep_glc_renormalize_smb
 
   !--------------------------------------------------------------------------
@@ -76,8 +79,9 @@ module prep_glc_mod
   ! mappers
   type(seq_map), pointer :: mapper_Sl2g
   type(seq_map), pointer :: mapper_Fl2g
-  type(seq_map), pointer :: mapper_So2g
-  type(seq_map), pointer :: mapper_Fo2g
+  type(seq_map), pointer :: mapper_So2g_shelf
+  type(seq_map), pointer :: mapper_Fo2g_shelf
+  type(seq_map), pointer :: mapper_So2g_tf
   type(seq_map), pointer :: mapper_Fg2l
 
   ! attribute vectors
@@ -91,6 +95,7 @@ module prep_glc_mod
 
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
+  integer        , target :: l2gacc_lx_cnt_avg ! l2gacc_lx: number of time samples averaged
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -109,9 +114,6 @@ module prep_glc_mod
   character(len=*), parameter :: Sg_topo_field = 'Sg_topo'
   character(len=*), parameter :: Sg_icemask_field = 'Sg_icemask'
 
-  ! Fields needed in the g2x_lx attribute vector used as part of mapping qice from lnd to glc
-  character(len=:), allocatable :: g2x_lx_fields
-
   type(mct_aVect), pointer :: o2gacc_ox(:) ! Ocn export, lnd grid, cpl pes - allocated in driver
   integer        , target :: o2gacc_ox_cnt ! number of time samples accumulated
 
@@ -129,22 +131,40 @@ module prep_glc_mod
   real(r8), allocatable ::  outOceanHeatFlux(:)
   real(r8), allocatable ::  outIceHeatFlux(:)
 
+  ! moab support: accumulation of the per-elevation-class lnd fields on the coupler
+  ! land mesh, and bookkeeping for the lnd->glc downscaling done on moab tags
+  character(CXX)        :: sharedFieldsLndGlc      ! = seq_flds_l2x_fields_to_glc, the tag list
+  real(r8), allocatable, target :: l2gacc_lm(:,:)  ! accumulated lnd fields, (lsize_lm, nflds_lg)
+  real(r8), allocatable :: l2x_lm2(:,:)            ! scratch for reading the instantaneous lnd tags
+  integer , target      :: l2gacc_lm_cnt           ! l2gacc_lm: number of time samples accumulated
+  integer , target      :: l2gacc_lm_cnt_avg       ! l2gacc_lm: number of samples in last average
+  integer               :: lsize_lm = 0            ! number of local cells, land coupler mesh
+  integer               :: lsize_gm = 0            ! number of local cells, glc coupler mesh
+  integer               :: nflds_lg = 0            ! number of fields in sharedFieldsLndGlc
+
   !================================================================================================
 
 contains
 
   !================================================================================================
 
-  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
+  subroutine prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glctf, ocn_c2_glcshelf)
 
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and mapping variables
     !
+    use iMOAB, only : iMOAB_RegisterApplication, iMOAB_MigrateMapMesh, &
+         iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo
+    use iso_c_binding, only : C_NULL_CHAR
+    use shr_string_mod, only : shr_string_listGetNum
+    use map_glc2lnd_mod, only : map_glc2lnd_ec_init
+    !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: lnd_c2_glc ! .true.  => lnd to glc coupling on
-    logical                  , intent(in)    :: ocn_c2_glcshelf ! .true.  => ocn to glc coupling on
+    logical                  , intent(in)    :: ocn_c2_glctf ! .true.  => ocn to glc thermal forcing coupling on
+    logical                  , intent(in)    :: ocn_c2_glcshelf ! .true.  => ocn to glc shelf coupling on
     !
     ! Local Variables
     integer                          :: eli, egi, eoi
@@ -164,6 +184,15 @@ contains
     type(mct_avect), pointer         :: x2g_gx
     type(mct_avect), pointer         :: o2x_ox
 
+    ! moab locals
+    integer                          :: ierr, idintx, type_grid, arearead
+    integer                          :: tagtype, numco, tagindex
+    integer                          :: mpigrp_CPLID  ! coupler pes group
+    integer                          :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    character(CL)                    :: appname
+    character(CL)                    :: wgtIdSl2g, wgtIdFl2g, wgtIdFg2l
+    character(CXX)                   :: tagname
+
     character(*), parameter          :: subname = '(prep_glc_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -178,8 +207,9 @@ contains
 
     allocate(mapper_Sl2g)
     allocate(mapper_Fl2g)
-    allocate(mapper_So2g)
-    allocate(mapper_Fo2g)
+    allocate(mapper_So2g_shelf)
+    allocate(mapper_So2g_tf)
+    allocate(mapper_Fo2g_shelf)
     allocate(mapper_Fg2l)
 
     smb_renormalize = prep_glc_do_renormalize_smb(infodata)
@@ -195,6 +225,25 @@ contains
           call mct_aVect_zero(l2gacc_lx(eli))
        end do
        l2gacc_lx_cnt = 0
+       l2gacc_lx_cnt_avg = 0
+
+       ! moab accumulator: the per-elevation-class lnd fields are accumulated in a
+       ! plain array read from the coupler land mesh tags (prep_rof pattern)
+       if (mblxid >= 0) then
+          sharedFieldsLndGlc = trim(seq_flds_l2x_fields_to_glc)
+          nflds_lg = shr_string_listGetNum(sharedFieldsLndGlc)
+          ierr = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
+          if (ierr .ne. 0) then
+             call shr_sys_abort(subname//' ERROR getting land coupler mesh info')
+          endif
+          lsize_lm = nvise(1)
+          allocate(l2gacc_lm(lsize_lm, nflds_lg))
+          allocate(l2x_lm2(lsize_lm, nflds_lg))
+          l2gacc_lm = 0._r8
+          l2x_lm2 = 0._r8
+          l2gacc_lm_cnt = 0
+          l2gacc_lm_cnt_avg = 0
+       endif
     end if
 
     if (glc_present .and. lnd_c2_glc) then
@@ -216,41 +265,163 @@ contains
           samegrid_lg = .true.
           if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
 
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Sl2g'
-          end if
-          call seq_map_init_rcfile(mapper_Sl2g, lnd(1), glc(1), &
-               'seq_maps.rc', 'lnd2glc_smapname:', 'lnd2glc_smaptype:', samegrid_lg, &
-               'mapper_Sl2g initialization', esmf_map_flag)
-
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fl2g'
-          end if
-          call seq_map_init_rcfile(mapper_Fl2g, lnd(1), glc(1), &
-               'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
-               'mapper_Fl2g initialization', esmf_map_flag)
-
+          ! the mct sparse-matrix init (seq_map_init_rcfile) is not usable in
+          ! driver-moab (coupler-side gsmaps are not populated); the mappers get
+          ! their real (moab) context below
+          call seq_map_mapinit(mapper_Sl2g, mpicom_CPLID)
+          call seq_map_mapinit(mapper_Fl2g, mpicom_CPLID)
           ! We need to initialize our own Fg2l mapper because in some cases (particularly
           ! TG compsets - dlnd forcing CISM) the system doesn't otherwise create a Fg2l
           ! mapper.
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fg2l'
-          end if
-          call seq_map_init_rcfile(mapper_Fg2l, glc(1), lnd(1), &
-               'seq_maps.rc', 'glc2lnd_fmapname:', 'glc2lnd_fmaptype:', samegrid_lg, &
-               'mapper_Fg2l initialization', esmf_map_flag)
+          call seq_map_mapinit(mapper_Fg2l, mpicom_CPLID)
 
-          call prep_glc_set_g2x_lx_fields()
+          ! now give the mappers moab context and load the mapping weights with iMOAB
+          if ((mblxid >= 0) .and. (mbgxid >= 0)) then
+
+             if (samegrid_lg) then
+                call shr_sys_abort(subname// &
+                     ' ERROR: moab lnd->glc coupling requires distinct lnd and glc grids with map files')
+             endif
+
+             call seq_comm_getData(CPLID, mpigrp=mpigrp_CPLID)
+             type_grid = 3 ! FV-FV for both lnd and glc coupler meshes
+
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing MOAB mapper_Sl2g and mapper_Fl2g'
+             end if
+             appname = "LND_GLC_COU"//C_NULL_CHAR
+             ! unique external id for the moab app holding the lnd->glc read map
+             idintx = 100*lnd(1)%cplcompid + glc(1)%cplcompid
+             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxlg)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in registering lnd glc map app'
+                call shr_sys_abort(subname//' ERROR in registering lnd glc map app')
+             endif
+
+             ! scalar (bilinear) map, used for all the lnd->glc downscaling maps
+             mapper_Sl2g%src_mbid = mblxid
+             mapper_Sl2g%tgt_mbid = mbgxid
+             mapper_Sl2g%intx_mbid = mbintxlg
+             mapper_Sl2g%src_context = lnd(1)%cplcompid
+             mapper_Sl2g%intx_context = idintx
+             wgtIdSl2g = 'scalar_l2g'
+             mapper_Sl2g%weight_identifier = wgtIdSl2g
+             mapper_Sl2g%mbname = 'mapper_Sl2g'
+             arearead = 0 ! no need for areas
+             call moab_map_init_rcfile( mapper_Sl2g, type_grid, &
+                  'seq_maps.rc', 'lnd2glc_smapname:', 'lnd2glc_smaptype:', samegrid_lg, &
+                  arearead, wgtIdSl2g, 'mapper_Sl2g MOAB initialization', esmf_map_flag)
+
+             ! flux (conservative) map; arearead=2 loads the map file area_b into the glc
+             ! mesh aream, reproducing the mct driver's seq_map_readdata of area_b -> aream
+             mapper_Fl2g%src_mbid = mblxid
+             mapper_Fl2g%tgt_mbid = mbgxid
+             mapper_Fl2g%intx_mbid = mbintxlg
+             mapper_Fl2g%src_context = lnd(1)%cplcompid
+             mapper_Fl2g%intx_context = idintx
+             wgtIdFl2g = 'flux_l2g'
+             mapper_Fl2g%weight_identifier = wgtIdFl2g
+             mapper_Fl2g%mbname = 'mapper_Fl2g'
+             arearead = 2 ! area_b for glc aream
+             call moab_map_init_rcfile( mapper_Fl2g, type_grid, &
+                  'seq_maps.rc', 'lnd2glc_fmapname:', 'lnd2glc_fmaptype:', samegrid_lg, &
+                  arearead, wgtIdFl2g, 'mapper_Fl2g MOAB initialization', esmf_map_flag)
+
+             ! one mesh migration and one comm graph cover both maps (same coverage)
+             ierr = iMOAB_MigrateMapMesh (mblxid, mbintxlg, mpicom_CPLID, mpigrp_CPLID, &
+                  mpigrp_CPLID, type_grid, lnd(1)%cplcompid, idintx)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in migrating lnd mesh for map lnd 2 glc'
+                call shr_sys_abort(subname//' ERROR in migrating lnd mesh for map lnd 2 glc')
+             endif
+             ierr = iMOAB_ComputeCommGraph( mblxid, mbintxlg, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+                  type_grid, type_grid, lnd(1)%cplcompid, idintx)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for second hop, LND-GLC'
+                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, LND-GLC')
+             endif
+
+             ! define the per-elevation-class projection target tags on the glc mesh
+             tagtype = 1  ! dense, double
+             numco = 1
+             tagname = trim(seq_flds_l2x_fields_to_glc)//C_NULL_CHAR
+             ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco, tagindex )
+             if (ierr .ne. 0) then
+                call shr_sys_abort(subname//' ERROR defining lnd per-EC tags on the glc mesh')
+             endif
+
+             ! glc coupler mesh size, used by the downscaling
+             ierr = iMOAB_GetMeshInfo ( mbgxid, nvert, nvise, nbl, nsurf, nvisBC )
+             if (ierr .ne. 0) then
+                call shr_sys_abort(subname//' ERROR getting glc coupler mesh info')
+             endif
+             lsize_gm = nvise(1)
+
+             ! moab context for the glc->lnd conservative map (used here by the smb
+             ! renormalization). If prep_lnd has set it up already (glc_c2_lnd), just
+             ! point our mapper at the same map app and weights; otherwise (e.g. TG
+             ! compsets) register and load it ourselves.
+             wgtIdFg2l = 'flux_g2l'
+             if (mbintxgl < 0) then
+                if (iamroot_CPLID) then
+                   write(logunit,*) ' '
+                   write(logunit,F00) 'Initializing MOAB mapper_Fg2l (glc->lnd map app)'
+                end if
+                appname = "GLC_LND_COU"//C_NULL_CHAR
+                idintx = 100*glc(1)%cplcompid + lnd(1)%cplcompid
+                ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxgl)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in registering glc lnd map app'
+                   call shr_sys_abort(subname//' ERROR in registering glc lnd map app')
+                endif
+                mapper_Fg2l%src_mbid = mbgxid
+                mapper_Fg2l%tgt_mbid = mblxid
+                mapper_Fg2l%intx_mbid = mbintxgl
+                mapper_Fg2l%src_context = glc(1)%cplcompid
+                mapper_Fg2l%intx_context = idintx
+                mapper_Fg2l%weight_identifier = wgtIdFg2l
+                mapper_Fg2l%mbname = 'mapper_Fg2l'
+                arearead = 0
+                call moab_map_init_rcfile( mapper_Fg2l, type_grid, &
+                     'seq_maps.rc', 'glc2lnd_fmapname:', 'glc2lnd_fmaptype:', samegrid_lg, &
+                     arearead, wgtIdFg2l, 'mapper_Fg2l (prep_glc) MOAB initialization', esmf_map_flag)
+                ierr = iMOAB_MigrateMapMesh (mbgxid, mbintxgl, mpicom_CPLID, mpigrp_CPLID, &
+                     mpigrp_CPLID, type_grid, glc(1)%cplcompid, idintx)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in migrating glc mesh for map glc 2 lnd'
+                   call shr_sys_abort(subname//' ERROR in migrating glc mesh for map glc 2 lnd')
+                endif
+                ierr = iMOAB_ComputeCommGraph( mbgxid, mbintxgl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+                     type_grid, type_grid, glc(1)%cplcompid, idintx)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in computing comm graph for second hop, GLC-LND'
+                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, GLC-LND')
+                endif
+                ! prep_lnd_init did not run its glc branch, so the staging and scratch
+                ! tags map_glc2lnd_ec writes into do not exist yet; define them
+                ! here with the same shared routine prep_lnd_init uses
+                call map_glc2lnd_ec_init(mbgxid, mblxid)
+             else
+                ! reuse the map app and weights loaded by prep_lnd_init
+                mapper_Fg2l%src_mbid = mbgxid
+                mapper_Fg2l%tgt_mbid = mblxid
+                mapper_Fg2l%intx_mbid = mbintxgl
+                mapper_Fg2l%src_context = glc(1)%cplcompid
+                mapper_Fg2l%intx_context = 100*glc(1)%cplcompid + lnd(1)%cplcompid
+                mapper_Fg2l%weight_identifier = wgtIdFg2l
+                mapper_Fg2l%mbname = 'mapper_Fg2l'
+             endif
+
+          endif ! mblxid and mbgxid
+
        end if
        call shr_sys_flush(logunit)
 
     end if
 
-    if (glc_present .and. ocn_c2_glcshelf) then
-
+    ! setup needed for either kind of ocn2glc coupling
+    if (glc_present .and. (ocn_c2_glctf .or. ocn_c2_glcshelf)) then
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
@@ -275,21 +446,18 @@ contains
        x2gacc_gx_cnt = 0
        samegrid_go = .true.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
-       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_So2g'
-       end if
-       call seq_map_init_rcfile(mapper_So2g, ocn(1), glc(1), &
-       'seq_maps.rc','ocn2glc_smapname:','ocn2glc_smaptype:',samegrid_go, &
-       'mapper_So2g initialization',esmf_map_flag)
-       if (iamroot_CPLID) then
-          write(logunit,*) ' '
-          write(logunit,F00) 'Initializing mapper_Fo2g'
-       end if
-       call seq_map_init_rcfile(mapper_Fo2g, ocn(1), glc(1), &
-       'seq_maps.rc','ocn2glc_fmapname:','ocn2glc_fmaptype:',samegrid_go, &
-       'mapper_Fo2g initialization',esmf_map_flag)
+    end if
 
+    ! setup needed for ocn2glc TF coupling
+    ! MOABTODO: give these mappers moab context when the ocn<->glc coupling is ported
+    if (glc_present .and. ocn_c2_glctf) then
+       call seq_map_mapinit(mapper_So2g_tf, mpicom_CPLID)
+    end if
+
+    ! setup needed for ocn2glcshelf coupling
+    if (glc_present .and. ocn_c2_glcshelf) then
+       call seq_map_mapinit(mapper_So2g_shelf, mpicom_CPLID)
+       call seq_map_mapinit(mapper_Fo2g_shelf, mpicom_CPLID)
        !Initialize module-level arrays associated with compute_melt_fluxes
        allocate(oceanTemperature(lsize_g))
        allocate(oceanSalinity(lsize_g))
@@ -307,10 +475,9 @@ contains
        ! TODO: Can we allocate these only while used or are we worried about performance hit?
        ! TODO: add deallocates!
 
-       call shr_sys_flush(logunit)
-
     end if
 
+    call shr_sys_flush(logunit)
 
   end subroutine prep_glc_init
 
@@ -363,81 +530,6 @@ contains
 
   !================================================================================================
 
-  subroutine prep_glc_set_g2x_lx_fields()
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Sets the module-level g2x_lx_fields variable.
-    !
-    ! This gives the fields needed in the g2x_lx attribute vector used as part of mapping
-    ! qice from lnd to glc.
-    !
-    ! Local Variables
-    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: all_elevclass_strings(:)
-    character(len=:), allocatable :: frac_fields
-    character(len=:), allocatable :: topo_fields
-    integer :: strlen
-
-    ! 1 is probably enough, but use 10 to be safe, in case the length of the delimiter
-    ! changes
-    integer, parameter :: extra_len_for_list_merge = 10
-
-    character(len=*), parameter :: subname = '(prep_glc_set_g2x_lx_fields)'
-    !---------------------------------------------------------------
-
-    allocate(all_elevclass_strings(0:glc_get_num_elevation_classes()))
-    all_elevclass_strings = glc_all_elevclass_strings(include_zero = .true.)
-    frac_fields = shr_string_listFromSuffixes( &
-         suffixes = all_elevclass_strings, &
-         strBase  = Sg_frac_field)
-    ! Sg_topo is not actually needed on the land grid in
-    ! prep_glc_map_qice_conservative_lnd2glc, but it is required by the current interface
-    ! for map_glc2lnd_ec.
-    topo_fields = shr_string_listFromSuffixes( &
-         suffixes = all_elevclass_strings, &
-         strBase  = Sg_topo_field)
-
-    strlen = len_trim(frac_fields) + len_trim(topo_fields) + extra_len_for_list_merge
-    allocate(character(len=strlen) :: g2x_lx_fields)
-    call shr_string_listMerge(frac_fields, topo_fields, g2x_lx_fields)
-
-  end subroutine prep_glc_set_g2x_lx_fields
-
-
-  !================================================================================================
-
-  subroutine prep_glc_accum_lnd(timer)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Accumulate glc inputs from lnd
-    !
-    ! Arguments
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: eli
-    type(mct_avect), pointer :: l2x_lx
-
-    character(*), parameter :: subname = '(prep_glc_accum_lnd)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       if (l2gacc_lx_cnt == 0) then
-          call mct_avect_copy(l2x_lx, l2gacc_lx(eli))
-       else
-          call mct_avect_accum(l2x_lx, l2gacc_lx(eli))
-       endif
-    end do
-    l2gacc_lx_cnt = l2gacc_lx_cnt + 1
-    call t_drvstopf  (trim(timer))
-
-  end subroutine prep_glc_accum_lnd
-
-  !================================================================================================
-
   subroutine prep_glc_accum_ocn(timer)
 
     !---------------------------------------------------------------
@@ -471,59 +563,89 @@ contains
   !================================================================================================
 
 
+  subroutine prep_glc_accum_lnd(timer)
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Accumulate the per-elevation-class land forcing for glc, by reading the
+    ! coupler land mesh tags into a plain array (prep_rof accumulation pattern)
+    !
+    use iMOAB, only : iMOAB_GetDoubleTagStorage
+    use iso_c_binding, only : C_NULL_CHAR
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: ierr, ent_type, arrsize
+    character(CXX) :: tagname
+    character(*), parameter :: subname = '(prep_glc_accum_lnd)'
+    !---------------------------------------------------------------
+
+    if (.not. allocated(l2gacc_lm)) return ! moab accumulator not set up
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    tagname = trim(sharedFieldsLndGlc)//C_NULL_CHAR
+    arrsize = nflds_lg * lsize_lm
+    ent_type = 1 ! cells
+    ierr = iMOAB_GetDoubleTagStorage ( mblxid, tagname, arrsize, ent_type, l2x_lm2 )
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' error in getting per-EC lnd fields for glc accumulation')
+    endif
+    if (l2gacc_lm_cnt == 0) then
+       l2gacc_lm = l2x_lm2
+    else
+       l2gacc_lm = l2gacc_lm + l2x_lm2
+    endif
+    l2gacc_lm_cnt = l2gacc_lm_cnt + 1
+    call t_drvstopf (trim(timer))
+
+  end subroutine prep_glc_accum_lnd
+
+  !================================================================================================
+
   subroutine prep_glc_accum_avg(timer, lnd2glc_averaged_now)
 
     !---------------------------------------------------------------
     ! Description
-    ! Finalize accumulation of glc inputs
-    ! Note: There could be separate accum_avg routines for forcing coming
-    ! from each component (LND and OCN), but they can be combined here
-    ! by taking advantage of l2gacc_lx_cnt and x2gacc_gx_cnt variables
-    ! that will only be greater than 0 if corresponding coupling is enabled.
+    ! Finalize the accumulation of the land forcing for glc. The averaged values
+    ! stay in the l2gacc_lm array (matching the mct l2gacc_lx attribute vector);
+    ! prep_glc_calc_l2x_gx stages them into the land mesh tags only for the
+    ! duration of the horizontal map, so the l2x tags keep their instantaneous
+    ! values for the coupler history.
+    !
+    ! Note: the driver-mct version also averages the ocn accumulation (x2gacc);
+    ! that part of the moab port is deferred with the rest of the ocn<->glc
+    ! coupling, so nothing currently consumes what prep_glc_accum_ocn builds up.
     !
     ! Arguments
     character(len=*), intent(in) :: timer
     logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
     !
     ! Local Variables
-    integer :: eli, egi
-    type(mct_avect), pointer :: x2g_gx
-
+    real(r8) :: ravg ! averaging factor
     character(*), parameter :: subname = '(prep_glc_accum_avg)'
     !---------------------------------------------------------------
 
-    ! Accumulation for LND
+    if (.not. allocated(l2gacc_lm)) return ! moab accumulator not set up
+
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    if (l2gacc_lx_cnt > 0) then
+    if (l2gacc_lm_cnt > 0) then
        lnd2glc_averaged_now = .true.
     end if
-    if (l2gacc_lx_cnt > 1) then
-       do eli = 1,num_inst_lnd
-          call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)
-       end do
+    if (l2gacc_lm_cnt > 1) then
+       ravg = 1.0_r8/real(l2gacc_lm_cnt, r8)
+       l2gacc_lm = l2gacc_lm * ravg
     end if
-    l2gacc_lx_cnt = 0
-
-    ! Accumulation for OCN
-    if (x2gacc_gx_cnt > 1) then
-       do egi = 1,num_inst_glc
-          ! temporary formation of average
-          call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
-
-          ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
-          x2g_gx => component_get_x2c_cx(glc(egi))
-          call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
-       enddo
-    end if
-    x2gacc_gx_cnt = 0
-
-    call t_drvstopf  (trim(timer))
+    l2gacc_lm_cnt_avg = l2gacc_lm_cnt
+    l2gacc_lm_cnt = 0
+    call t_drvstopf (trim(timer))
 
   end subroutine prep_glc_accum_avg
 
   !================================================================================================
 
-  subroutine prep_glc_mrg_lnd(infodata, fractions_gx, timer_mrg)
+  subroutine prep_glc_mrg_ocn(infodata, fractions_gx, timer_mrg)
 
     !---------------------------------------------------------------
     ! Description
@@ -535,40 +657,40 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer :: egi, eli, efi
+    integer :: egi, eoi, efi
     type(mct_avect), pointer :: x2g_gx
-    character(*), parameter  :: subname = '(prep_glc_mrg_lnd)'
+    character(*), parameter  :: subname = '(prep_glc_mrg_ocn)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        ! Use fortran mod to address ensembles in merge
-       eli = mod((egi-1),num_inst_lnd) + 1
+       eoi = mod((egi-1),num_inst_ocn) + 1
        efi = mod((egi-1),num_inst_frc) + 1
 
        x2g_gx => component_get_x2c_cx(glc(egi))
-       call prep_glc_merge_lnd_forcing(l2x_gx(eli), fractions_gx(efi), x2g_gx)
+       call prep_glc_merge_ocn_forcing(o2x_gx(eoi), fractions_gx(efi), x2g_gx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
 
-  end subroutine prep_glc_mrg_lnd
+  end subroutine prep_glc_mrg_ocn
 
   !================================================================================================
 
-  subroutine prep_glc_merge_lnd_forcing( l2x_g, fractions_g, x2g_g )
+  subroutine prep_glc_merge_ocn_forcing( o2x_g, fractions_g, x2g_g )
 
     !-----------------------------------------------------------------------
     ! Description
-    ! "Merge" land forcing for glc input.
+    ! "Merge" ocean forcing for glc input.
     !
     ! State fields are copied directly, meaning that averages are taken just over the
-    ! land-covered portion of the glc domain.
+    ! ocean-covered portion of the glc domain.
     !
     ! Flux fields are downweighted by landfrac, which effectively sends a 0 flux from the
-    ! non-land-covered portion of the glc domain.
+    ! non-ocean-covered portion of the glc domain.
     !
     ! Arguments
-    type(mct_aVect), intent(inout)  :: l2x_g  ! input
+    type(mct_aVect), intent(inout)  :: o2x_g  ! input
     type(mct_aVect), intent(in)     :: fractions_g
     type(mct_aVect), intent(inout)  :: x2g_g  ! output
     !-----------------------------------------------------------------------
@@ -578,23 +700,24 @@ contains
     integer       :: nflds
     integer       :: i,n
     integer       :: mrgstr_index
-    integer       :: index_l2x
+    integer       :: index_o2x
     integer       :: index_x2g
-    integer       :: index_lfrac
+    integer       :: index_ofrac
     integer       :: lsize
     logical       :: iamroot
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     character(CL) :: field   ! string converted to char
-    character(*), parameter   :: subname = '(prep_glc_merge_lnd_forcing) '
+    character(*), parameter   :: subname = '(prep_glc_merge_ocn_forcing) '
 
     !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2g_g)
 
-    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_lnd))
-    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states_from_lnd))
+    !num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_ocn))
+    num_flux_fields = 0
+    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_tf_states_from_ocn))
 
     if (first_time) then
        nflds = num_flux_fields + num_state_fields
@@ -604,54 +727,54 @@ contains
     mrgstr_index = 1
 
     do i = 1, num_state_fields
-       call seq_flds_getField(field, i, seq_flds_x2g_states)
-       index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
+       call seq_flds_getField(field, i, seq_flds_x2g_tf_states_from_ocn)
+       index_o2x = mct_aVect_indexRA(o2x_g, trim(field))
        index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
 
        if (first_time) then
           mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
-               ' = l2x%'//trim(field)
+               ' = o2x%'//trim(field)
        end if
 
        do n = 1, lsize
-          x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n)
+          x2g_g%rAttr(index_x2g,n) = o2x_g%rAttr(index_o2x,n)
        end do
 
        mrgstr_index = mrgstr_index + 1
     enddo
 
-    index_lfrac = mct_aVect_indexRA(fractions_g,"lfrac")
-    do i = 1, num_flux_fields
+    !index_lfrac = mct_aVect_indexRA(fractions_g,"lfrac")
+    !do i = 1, num_flux_fields
 
-       call seq_flds_getField(field, i, seq_flds_x2g_fluxes_from_lnd)
-       index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
-       index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
+    !   call seq_flds_getField(field, i, seq_flds_x2g_fluxes_from_lnd)
+    !   index_l2x = mct_aVect_indexRA(l2x_g, trim(field))
+    !   index_x2g = mct_aVect_indexRA(x2g_g, trim(field))
 
-       if (trim(field) == qice_fieldname) then
+    !   if (trim(field) == qice_fieldname) then
 
-          if (first_time) then
-             mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
-                  ' = l2x%'//trim(field)
-          end if
+    !      if (first_time) then
+    !         mrgstr(mrgstr_index) = subname//'x2g%'//trim(field)//' =' // &
+    !              ' = l2x%'//trim(field)
+    !      end if
 
-          ! treat qice as if it were a state variable, with a simple copy.
-          do n = 1, lsize
-             x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n)
-          end do
+    !      ! treat qice as if it were a state variable, with a simple copy.
+    !      do n = 1, lsize
+    !         x2g_g%rAttr(index_x2g,n) = l2x_g%rAttr(index_l2x,n)
+    !      end do
 
-       else
-          write(logunit,*) subname,' ERROR: Flux fields other than ', &
-               qice_fieldname, ' currently are not handled in lnd2glc remapping.'
-          write(logunit,*) '(Attempt to handle flux field <', trim(field), '>.)'
-          write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
-          write(logunit,*) 'in a smooth, conservative manner.'
-          call shr_sys_abort(subname//&
-               ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
-       endif  ! qice_fieldname
+    !   else
+    !      write(logunit,*) subname,' ERROR: Flux fields other than ', &
+    !           qice_fieldname, ' currently are not handled in lnd2glc remapping.'
+    !      write(logunit,*) '(Attempt to handle flux field <', trim(field), '>.)'
+    !      write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
+    !      write(logunit,*) 'in a smooth, conservative manner.'
+    !      call shr_sys_abort(subname//&
+    !           ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
+    !   endif  ! qice_fieldname
 
-       mrgstr_index = mrgstr_index + 1
+    !   mrgstr_index = mrgstr_index + 1
 
-    end do
+    !end do
 
     if (first_time) then
        if (iamroot) then
@@ -665,16 +788,20 @@ contains
 
     first_time = .false.
 
-  end subroutine prep_glc_merge_lnd_forcing
+  end subroutine prep_glc_merge_ocn_forcing
 
 
-  subroutine prep_glc_calc_o2x_gx(timer)
+  !================================================================================================
+
+  subroutine prep_glc_calc_o2x_gx(ocn_c2_glctf, ocn_c2_glcshelf, timer)
     !---------------------------------------------------------------
     ! Description
     ! Create o2x_gx
 
     ! Arguments
     character(len=*), intent(in) :: timer
+    logical, intent(in) :: ocn_c2_glctf
+    logical, intent(in) :: ocn_c2_glcshelf
 
     character(*), parameter :: subname = '(prep_glc_calc_o2x_gx)'
     ! Local Variables
@@ -684,15 +811,14 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
       o2x_ox => component_get_c2x_cx(ocn(eoi))
-!MOABTODO:  uncomment when porting glc
-!      if (ocn_c2_glctf) then
-!         call seq_map_map(mapper_So2g_tf, o2x_ox, o2x_gx(eoi), &
-!                       fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
-!      end if
-!      if (ocn_c2_glcshelf) then
-!         call seq_map_map(mapper_So2g_shelf, o2x_ox, o2x_gx(eoi), &
-!                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
-!      end if
+      if (ocn_c2_glctf) then
+         call seq_map_map(mapper_So2g_tf, o2x_ox, o2x_gx(eoi), &
+                       fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
+      end if
+      if (ocn_c2_glcshelf) then
+         call seq_map_map(mapper_So2g_shelf, o2x_ox, o2x_gx(eoi), &
+                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
+      end if
     enddo
 
     call t_drvstopf  (trim(timer))
@@ -700,113 +826,6 @@ contains
 
   !================================================================================================
 
-
-  !================================================================================================
-
-  subroutine prep_glc_calc_l2x_gx(fractions_lx, timer)
-    !---------------------------------------------------------------
-    ! Description
-    ! Create l2x_gx (note that l2x_gx is a local module variable)
-    ! Also l2x_gx is really the accumulated l2xacc_lx mapped to l2x_gx
-    !
-    use shr_string_mod, only : shr_string_listGetNum
-    ! Arguments
-    type(mct_aVect) , intent(in) :: fractions_lx(:)
-    character(len=*), intent(in) :: timer
-    !
-    ! Local Variables
-    integer :: egi, eli, efi
-    integer :: num_flux_fields
-    integer :: num_state_fields
-    integer :: field_num
-    character(len=cl) :: fieldname
-    character(*), parameter :: subname = '(prep_glc_calc_l2x_gx)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_lnd))
-    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states_from_lnd))
-
-    do egi = 1,num_inst_glc
-       ! Use fortran mod to address ensembles in merge
-       eli = mod((egi-1),num_inst_lnd) + 1
-       efi = mod((egi-1),num_inst_frc) + 1
-
-       do field_num = 1, num_flux_fields
-          call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes_from_lnd)
-
-          if (trim(fieldname) == qice_fieldname) then
-
-             ! Use a bilinear (Sl2g) mapper, as for states.
-             ! The Fg2l mapper is needed to map some glc fields to the land grid
-             !  for purposes of conservation.
-             call prep_glc_map_qice_conservative_lnd2glc(egi=egi, eli=eli, &
-                  fractions_lx = fractions_lx(efi), &
-                  mapper_Sl2g = mapper_Sl2g, &
-                  mapper_Fg2l = mapper_Fg2l)
-
-          else
-             write(logunit,*) subname,' ERROR: Flux fields other than ', &
-                  qice_fieldname, ' currently are not handled in lnd2glc remapping.'
-             write(logunit,*) '(Attempt to handle flux field <', trim(fieldname), '>.)'
-             write(logunit,*) 'Substantial thought is needed to determine how to remap other fluxes'
-             write(logunit,*) 'in a smooth, conservative manner.'
-             call shr_sys_abort(subname//&
-                  ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
-          endif   ! qice_fieldname
-
-       end do
-
-       do field_num = 1, num_state_fields
-          call seq_flds_getField(fieldname, field_num, seq_flds_x2g_states_from_lnd)
-          call prep_glc_map_one_state_field_lnd2glc(egi=egi, eli=eli, &
-               fieldname = fieldname, &
-               fractions_lx = fractions_lx(efi), &
-               mapper = mapper_Sl2g)
-       end do
-
-    enddo   ! egi
-
-    call t_drvstopf  (trim(timer))
-
-  end subroutine prep_glc_calc_l2x_gx
-
-  !================================================================================================
-
-  subroutine prep_glc_map_one_state_field_lnd2glc(egi, eli, fieldname, fractions_lx, mapper)
-    ! Maps a single field from the land grid to the glc grid.
-    !
-    ! This mapping is not conservative, so should only be used for state fields.
-    !
-    ! NOTE(wjs, 2017-05-10) We used to map each field separately because each field needed
-    ! its own vertical gradient calculator. Now that we don't need vertical gradient
-    ! calculators, we may be able to change this to map multiple fields at once, at least
-    ! for part of map_lnd2glc.
-
-    use map_lnd2glc_mod, only : map_lnd2glc
-
-    ! Arguments
-    integer, intent(in) :: egi  ! glc instance index
-    integer, intent(in) :: eli  ! lnd instance index
-    character(len=*), intent(in) :: fieldname  ! base name of field to map (without elevation class suffix)
-    type(mct_aVect) , intent(in) :: fractions_lx  ! fractions on the land grid, for this frac instance
-    type(seq_map), intent(inout) :: mapper
-    !
-    ! Local Variables
-    type(mct_avect), pointer :: g2x_gx    ! glc export, glc grid, cpl pes - allocated in driver
-    !---------------------------------------------------------------
-
-    g2x_gx => component_get_c2x_cx(glc(egi))
-
-    call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
-         landfrac_l = fractions_lx, &
-         g2x_g = g2x_gx, &
-         fieldname = fieldname, &
-         mapper = mapper, &
-         l2x_g = l2x_gx(eli))
-
-  end subroutine prep_glc_map_one_state_field_lnd2glc
 
   !================================================================================================
 
@@ -857,7 +876,7 @@ contains
        !Done here instead of in glc-frequency mapping so it happens within ocean coupling interval.
        ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
        ! these fields on the GLC grid of the coupler history file, which helps with debugging.
-       call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
+       call seq_map_map(mapper_So2g_shelf, o2x_ox, x2g_gx, &
        fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
 
        ! inputs to melt flux calculation
@@ -944,226 +963,269 @@ contains
 
     !---------------------------------------------------------------
     ! Description
-    ! Set glc inputs to zero
+    ! Set glc input tags (x2g fields on the coupler-side glc mesh) to zero
     !
-    ! This is appropriate during time intervals when we're not sending valid data to glc.
-    ! In principle we shouldn't need to zero the fields at these times (instead, glc
-    ! should just ignore the fields at these times). However, some tests (like an ERS or
-    ! ERI test that stops the final run segment mid-year) can fail if we don't explicitly
-    ! zero the fields, because these x2g fields can then differ upon restart.
+    ! See the driver-mct version of this routine for why zeroing is needed for
+    ! exact restart tests.
+
+    use iMOAB, only : iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
+    use seq_comm_mct, only : mbgxid
+    use ISO_C_BINDING, only : C_NULL_CHAR
+    use shr_kind_mod, only : CXX => shr_kind_CXX
+    use shr_string_mod, only : shr_string_listGetNum
 
     ! Local Variables
-    integer :: egi
-    type(mct_avect), pointer :: x2g_gx
+    integer :: ierr, ent_type, arrsize, nxflds, lsize_gm
+    integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    real(r8), allocatable :: tmparray(:)
+    character(CXX) :: tagname
+    character(*), parameter :: subname = '(prep_glc_zero_fields)'
     !---------------------------------------------------------------
 
-    do egi = 1,num_inst_glc
-       x2g_gx => component_get_x2c_cx(glc(egi))
-       call mct_aVect_zero(x2g_gx)
-    end do
+    if (mbgxid < 0) return ! nothing to do if the glc coupler mesh does not exist
+
+    ierr = iMOAB_GetMeshInfo ( mbgxid, nvert, nvise, nbl, nsurf, nvisBC )
+    if (ierr .ne. 0) then
+       write(logunit,*) subname,' cant get size of glc mesh on coupler'
+       call shr_sys_abort(subname//' ERROR in getting size of glc mesh on coupler')
+    endif
+    lsize_gm = nvise(1)
+    ent_type = 1 ! cells
+
+    nxflds = shr_string_listGetNum(seq_flds_x2g_fields)
+    arrsize = nxflds * lsize_gm
+    allocate (tmparray(arrsize))
+    tmparray = 0._r8
+    tagname = trim(seq_flds_x2g_fields)//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage(mbgxid, tagname, arrsize, ent_type, tmparray)
+    if (ierr .ne. 0) then
+       write(logunit,*) subname,' cant zero out x2g tags on glc coupler mesh'
+       call shr_sys_abort(subname//' cant zero out x2g tags on glc coupler mesh')
+    endif
+    deallocate (tmparray)
+
   end subroutine prep_glc_zero_fields
 
   !================================================================================================
 
-  subroutine prep_glc_map_qice_conservative_lnd2glc(egi, eli, fractions_lx, &
-       mapper_Sl2g, mapper_Fg2l)
-
-    ! Maps the surface mass balance field (qice) from the land grid to the glc grid.
+  subroutine prep_glc_calc_l2x_gx(fractions_lx, timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Builds the glc forcing from the accumulated land fields (this also does the
+    ! merge preparation, which driver-mct splits across two routines):
+    ! - one batched horizontal map of all the per-elevation-class land fields to the
+    !   glc mesh, weighted by lfrac with normalization (the same semantics as the
+    !   per-field maps driver-mct does through map_lnd2glc)
+    ! - elevation-class vertical interpolation on arrays fetched from the glc mesh tags
+    ! - conservative correction of the qice flux (area/aream pre-adjustment and, if
+    !   enabled, global smb renormalization)
+    ! - results are written directly into the x2g tag names on the glc mesh, which
+    !   makes the merge a plain no-op, matching driver-mct's merge (plain copies)
     !
-    ! Use a smooth, non-conservative (bilinear) mapping, followed by a correction for
-    ! conservation.
+    use iMOAB, only : iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
+    use iso_c_binding, only : C_NULL_CHAR
+    use map_lnd2glc_mod, only : get_glc_elevation_classes, map_lnd2glc_vertical_interp
+    use shr_string_mod, only : shr_string_listGetNum
     !
-    ! For high-level design, see:
-    ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
-
-    use map_lnd2glc_mod, only : map_lnd2glc
-
     ! Arguments
-    integer, intent(in) :: egi  ! glc instance index
-    integer, intent(in) :: eli  ! lnd instance index
-    type(mct_aVect) , intent(in) :: fractions_lx  ! fractions on the land grid, for this frac instance
-    type(seq_map), intent(inout) :: mapper_Sl2g   ! state mapper from land to glc grid; non-conservative
-    type(seq_map), intent(inout) :: mapper_Fg2l   ! flux mapper from glc to land grid; conservative
+    type(mct_aVect) , intent(in) :: fractions_lx(:)
+    character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    type(mct_aVect), pointer :: g2x_gx   ! glc export, glc grid
-
-    logical :: iamroot
-
-    !Note: The sums in this subroutine use the coupler areas aream_l and aream_g.
-    !      The coupler areas can differ from the native areas area_l and area_g.
-    !       (For CISM with a polar stereographic projection, area_g can differ from aream_g
-    !       by up to ~10%.)
-    !      If so, then the calls to subroutine mct_avect_vecmult in component_mod.F90
-    !       (just before and after the call to comp_run) should adjust the SMB fluxes
-    !       such that in each grid cell, the native value of area*flux is equal to the
-    !       coupler value of aream*flux.  This assumes that the SMB field is contained in
-    !       seq_fields l2x_fluxes and seq_fields_x2g_fluxes.
-
-    real(r8), dimension(:), allocatable :: aream_g   ! cell areas on glc grid, for mapping
-    real(r8), dimension(:), allocatable :: area_g    ! cell areas on glc grid, according to glc model
-
-    type(mct_ggrid), pointer :: dom_g   ! glc grid info
-
-    integer :: lsize_g   ! number of points on glc grid
-
-    integer :: n
-    integer :: km, ka
-
-    real(r8), pointer :: qice_g(:)        ! qice data on glc grid
-
+    integer :: num_flux_fields
+    integer :: num_state_fields
+    integer :: field_num
+    integer :: ierr, ent_type, arrsize, n, ec, kf, nEC
+    character(len=cl) :: fieldname
+    real(r8), allocatable :: data_lg(:,:)      ! all mapped per-EC fields on the glc mesh
+    real(r8), allocatable :: glc_ice_covered(:)
+    real(r8), allocatable :: glc_topo(:)
+    real(r8), allocatable :: topo_g_EC(:,:)
+    real(r8), allocatable :: data_g_EC(:,:)
+    real(r8), allocatable :: data_g_bare(:)
+    real(r8), allocatable :: data_g(:)         ! downscaled field on the glc mesh
+    real(r8), allocatable :: area_g(:)
+    real(r8), allocatable :: aream_g(:)
+    integer , allocatable :: glc_elevclass(:)
+    character(CXX) :: tagname
+    character(*), parameter :: subname = '(prep_glc_calc_l2x_gx)'
     !---------------------------------------------------------------
 
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
+    if ((mblxid < 0) .or. (mbgxid < 0)) return
 
-    if (iamroot) then
-       write(logunit,*) ' '
-       write(logunit,*) 'In prep_glc_map_qice_conservative_lnd2glc'
-       write(logunit,*) 'smb_renormalize = ', smb_renormalize
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+
+    ent_type = 1 ! cells
+
+    ! Horizontal map of all per-EC fields at once, weighted by lfrac and normalized.
+    ! The averaged accumulation (l2gacc_lm) is staged into the land mesh tags only
+    ! for the duration of the map; the instantaneous l2x values are saved first and
+    ! restored right after, so the coupler history still shows instantaneous l2x
+    ! fields exactly like the mct driver. The attribute vector arguments are
+    ! metadata only.
+    arrsize = nflds_lg * lsize_lm
+    tagname = trim(sharedFieldsLndGlc)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mblxid, tagname, arrsize, ent_type, l2x_lm2)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR saving instantaneous per-EC lnd fields')
+    endif
+    ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize, ent_type, l2gacc_lm)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR staging averaged per-EC lnd fields')
     endif
 
-    ! Get attribute vector needed for mapping and conservation
-    g2x_gx => component_get_c2x_cx(glc(egi))
+    call seq_map_map(mapper_Sl2g, l2gacc_lx(1), l2x_gx(1), &
+         fldlist=trim(sharedFieldsLndGlc), norm=.true., &
+         avwts_s=fractions_lx(1), avwtsfld_s='lfrac')
 
-    ! get grid size
-    lsize_g = mct_aVect_lsize(l2x_gx(eli))
+    ! restore the instantaneous l2x values on the land mesh
+    ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize, ent_type, l2x_lm2)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR restoring instantaneous per-EC lnd fields')
+    endif
 
-    ! allocate and fill area arrays on the glc grid
-    ! (Note that we get domain information from instance 1, following what's done in
-    ! other parts of the coupler.)
-    dom_g => component_get_dom_cx(glc(1))
+    ! fetch the mapped per-EC fields and the glc state needed for the vertical interpolation
+    allocate(data_lg(lsize_gm, nflds_lg))
+    data_lg = 0._r8
+    tagname = trim(sharedFieldsLndGlc)//C_NULL_CHAR
+    arrsize = nflds_lg * lsize_gm
+    ierr = iMOAB_GetDoubleTagStorage(mbgxid, tagname, arrsize, ent_type, data_lg)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR getting mapped per-EC fields on the glc mesh')
+    endif
 
-    allocate(aream_g(lsize_g))
-    km = mct_aVect_indexRa(dom_g%data, "aream" )
-    aream_g(:) = dom_g%data%rAttr(km,:)
+    allocate(glc_ice_covered(lsize_gm), glc_topo(lsize_gm), glc_elevclass(lsize_gm))
+    tagname = trim(Sg_frac_field)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mbgxid, tagname, lsize_gm, ent_type, glc_ice_covered)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting '//Sg_frac_field)
+    tagname = trim(Sg_topo_field)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mbgxid, tagname, lsize_gm, ent_type, glc_topo)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting '//Sg_topo_field)
 
-    allocate(area_g(lsize_g))
-    ka = mct_aVect_indexRa(dom_g%data, "area" )
-    area_g(:) = dom_g%data%rAttr(ka,:)
+    call get_glc_elevation_classes(glc_ice_covered, glc_topo, glc_elevclass)
 
-    ! Map the SMB from the land grid to the glc grid, using a non-conservative state mapper.
-    call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
-         landfrac_l = fractions_lx, &
-         g2x_g = g2x_gx, &
-         fieldname = qice_fieldname, &
-         mapper = mapper_Sl2g, &
-         l2x_g = l2x_gx(eli))
+    nEC = glc_get_num_elevation_classes()
+    allocate(topo_g_EC(lsize_gm, nEC))
+    allocate(data_g_EC(lsize_gm, nEC))
+    allocate(data_g_bare(lsize_gm))
+    allocate(data_g(lsize_gm))
+    do ec = 1, nEC
+       kf = mct_aVect_indexRA(l2gacc_lx(1), 'Sl_topo'//glc_elevclass_as_string(ec))
+       topo_g_EC(:,ec) = data_lg(:,kf)
+    end do
 
-    ! Export the remapped SMB to a local array
-    allocate(qice_g(lsize_g))
-    call mct_aVect_exportRattr(l2x_gx(eli), trim(qice_fieldname), qice_g)
+    ! area arrays needed for the qice conservation correction
+    allocate(area_g(lsize_gm), aream_g(lsize_gm))
+    tagname = 'area'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mbgxid, tagname, lsize_gm, ent_type, area_g)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting area on the glc mesh')
+    tagname = 'aream'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mbgxid, tagname, lsize_gm, ent_type, aream_g)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting aream on the glc mesh')
 
-    ! Make a preemptive adjustment to qice_g to account for area differences between CISM and the coupler.
-    !    In component_mod.F90, there is a call to mct_avect_vecmult, which multiplies the fluxes
-    !     by aream_g/area_g for conservation purposes. Where CISM areas are larger (area_g > aream_g),
-    !     the fluxes are reduced, and where CISM areas are smaller, the fluxes are increased.
-    !    As a result, an SMB of 1 m/yr in CLM would be converted to an SMB ranging from
-    !     ~0.9 to 1.05 m/yr in CISM (with smaller values where CISM areas are larger, and larger
-    !     values where CISM areas are smaller).
-    !    Here, to keep CISM values close to the CLM values in the corresponding locations,
-    !      we anticipate the later correction and multiply qice_g by area_g/aream_g.
-    !     Then the later call to mct_avect_vecmult will bring qice back to the original values
-    !       obtained from bilinear remapping.
-    !    If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
-    !     then we could skip this adjustment.
-    !
-    ! Note that we are free to do this or any other adjustments we want to qice at this
-    ! point in the remapping, because the conservation correction will ensure that we
-    ! still conserve globally despite these adjustments (and smb_renormalize = .false.
-    ! should only be used in cases where conservation doesn't matter anyway).
+    num_flux_fields = shr_string_listGetNum(trim(seq_flds_x2g_fluxes_from_lnd))
+    num_state_fields = shr_string_listGetNum(trim(seq_flds_x2g_states_from_lnd))
 
-    do n = 1, lsize_g
-       if (aream_g(n) > 0.0_r8) then
-          qice_g(n) = qice_g(n) * area_g(n)/aream_g(n)
+    do field_num = 1, num_flux_fields
+       call seq_flds_getField(fieldname, field_num, seq_flds_x2g_fluxes_from_lnd)
+
+       if (trim(fieldname) == qice_fieldname) then
+
+          do ec = 1, nEC
+             kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(ec))
+             data_g_EC(:,ec) = data_lg(:,kf)
+          end do
+          kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(0))
+          data_g_bare(:) = data_lg(:,kf)
+
+          call map_lnd2glc_vertical_interp(glc_topo, topo_g_EC, data_g_EC, data_g_bare, &
+               glc_elevclass, data_g)
+
+          ! Preemptive adjustment for area differences between the glc model and the
+          ! coupler: the drv2mdl flux correction on the component side multiplies by
+          ! aream/area, so multiply here by area/aream (see the discussion in
+          ! prep_glc_map_qice_conservative_lnd2glc)
+          do n = 1, lsize_gm
+             if (aream_g(n) > 0.0_r8) then
+                data_g(n) = data_g(n) * area_g(n)/aream_g(n)
+             else
+                data_g(n) = 0.0_r8
+             endif
+          enddo
+
+          if (smb_renormalize) then
+             call prep_glc_renormalize_smb(fractions_lx(1), aream_g, data_g)
+          end if
+
+          tagname = trim(qice_fieldname)//C_NULL_CHAR
+          ierr = iMOAB_SetDoubleTagStorage(mbgxid, tagname, lsize_gm, ent_type, data_g)
+          if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR setting '//qice_fieldname)
+
        else
-          qice_g(n) = 0.0_r8
-       endif
-    enddo
+          write(logunit,*) subname,' ERROR: Flux fields other than ', &
+               qice_fieldname, ' currently are not handled in lnd2glc remapping.'
+          call shr_sys_abort(subname//&
+               ' ERROR: Flux fields other than qice currently are not handled in lnd2glc remapping.')
+       endif   ! qice_fieldname
+    end do
 
-    if (smb_renormalize) then
-       call prep_glc_renormalize_smb( &
-            eli = eli, &
-            fractions_lx = fractions_lx, &
-            g2x_gx = g2x_gx, &
-            mapper_Fg2l = mapper_Fg2l, &
-            aream_g = aream_g, &
-            qice_g = qice_g)
-    end if
+    do field_num = 1, num_state_fields
+       call seq_flds_getField(fieldname, field_num, seq_flds_x2g_states_from_lnd)
 
-    ! Put the adjusted SMB back into l2x_gx.
-    !
-    ! If we are doing renormalization, then this is the renormalized SMB. Whether or not
-    ! we are doing renormalization, this captures the preemptive adjustment to qice_g to
-    ! account for area differences between CISM and the coupler.
-    call mct_aVect_importRattr(l2x_gx(eli), qice_fieldname, qice_g)
+       do ec = 1, nEC
+          kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(ec))
+          data_g_EC(:,ec) = data_lg(:,kf)
+       end do
+       kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(0))
+       data_g_bare(:) = data_lg(:,kf)
 
-    ! clean up
+       call map_lnd2glc_vertical_interp(glc_topo, topo_g_EC, data_g_EC, data_g_bare, &
+            glc_elevclass, data_g)
 
-    deallocate(aream_g)
-    deallocate(area_g)
-    deallocate(qice_g)
+       tagname = trim(fieldname)//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage(mbgxid, tagname, lsize_gm, ent_type, data_g)
+       if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR setting '//trim(fieldname))
+    end do
 
-  end subroutine prep_glc_map_qice_conservative_lnd2glc
+    deallocate(data_lg, glc_ice_covered, glc_topo, glc_elevclass)
+    deallocate(topo_g_EC, data_g_EC, data_g_bare, data_g)
+    deallocate(area_g, aream_g)
+
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_glc_calc_l2x_gx
 
   !================================================================================================
 
-  subroutine prep_glc_renormalize_smb(eli, fractions_lx, g2x_gx, mapper_Fg2l, aream_g, qice_g)
+  subroutine prep_glc_renormalize_smb(fractions_lx, aream_g, qice_g)
 
-    ! Renormalizes surface mass balance (smb, here named qice_g) so that the global
-    ! integral on the glc grid is equal to the global integral on the land grid.
-    !
-    ! This is required for conservation - although conservation is only necessary if we
-    ! are running with a fully-interactive, two-way-coupled glc.
-    !
-    ! For high-level design, see:
-    ! https://docs.google.com/document/d/1H_SuK6SfCv1x6dK91q80dFInPbLYcOkUj_iAa6WRnqQ/edit
+    ! Renormalizes the surface mass balance so that the global integral on the glc
+    ! grid equals the one on the land grid. Same algorithm as the driver-mct version,
+    ! with the land- and glc-side fields fetched from the coupler mesh tags and the
+    ! per-EC land fractions recomputed through map_glc2lnd_ec.
 
+    use iMOAB, only : iMOAB_GetDoubleTagStorage
+    use iso_c_binding, only : C_NULL_CHAR
     use map_glc2lnd_mod, only : map_glc2lnd_ec
+    use shr_mpi_mod, only : shr_mpi_sum, shr_mpi_bcast
 
     ! Arguments
-    integer         , intent(in)    :: eli          ! lnd instance index
-    type(mct_aVect) , intent(in)    :: fractions_lx ! fractions on the land grid, for this frac instance
-    type(mct_aVect) , intent(in)    :: g2x_gx       ! glc export, glc grid
-    type(seq_map)   , intent(inout) :: mapper_Fg2l  ! flux mapper from glc to land grid; conservative
+    type(mct_aVect) , intent(in)    :: fractions_lx ! fractions on the land grid (metadata only)
     real(r8)        , intent(in)    :: aream_g(:)   ! cell areas on glc grid, for mapping
     real(r8)        , intent(inout) :: qice_g(:)    ! qice data on glc grid
-
     !
     ! Local Variables
-    integer :: mpicom
     logical :: iamroot
+    integer :: ierr, ent_type, n, ec, kf, nEC
 
-    type(mct_ggrid), pointer :: dom_l                ! land grid info
+    real(r8), allocatable :: aream_l(:)      ! cell areas on land grid, for mapping
+    real(r8), allocatable :: lfrac(:)        ! land fraction (lfrin) on land grid
+    real(r8), allocatable :: Sg_icemask_l(:) ! icemask on land grid
+    real(r8), allocatable :: Sg_icemask_g(:) ! icemask on glc grid
+    real(r8), allocatable :: qice_l(:,:)     ! SMB (Flgl_qice) per EC on land grid
+    real(r8), allocatable :: frac_l(:,:)     ! EC fractions (Sg_ice_covered) on land grid
 
-    integer :: lsize_l                               ! number of points on land grid
-    integer :: lsize_g                               ! number of points on glc grid
-
-    real(r8), dimension(:), allocatable :: aream_l   ! cell areas on land grid, for mapping
-
-    real(r8), pointer :: qice_l(:,:)      ! SMB (Flgl_qice) on land grid
-    real(r8), pointer :: frac_l(:,:)      ! EC fractions (Sg_ice_covered) on land grid
-    real(r8), pointer :: tmp_field_l(:)   ! temporary field on land grid
-
-    ! The following need to be pointers to satisfy the MCT interface
-    ! Note: Sg_icemask defines where the ice sheet model can receive a nonzero SMB from the land model.
-    real(r8), pointer :: Sg_icemask_g(:)  ! icemask on glc grid
-    real(r8), pointer :: Sg_icemask_l(:)  ! icemask on land grid
-    real(r8), pointer :: lfrac(:)         ! land fraction on land grid
-
-    type(mct_aVect) :: g2x_lx            ! glc export, lnd grid (not a pointer: created locally)
-    type(mct_avect) :: Sg_icemask_l_av   ! temporary attribute vector holding Sg_icemask on the land grid
-
-    integer :: nEC       ! number of elevation classes
-    integer :: n
-    integer :: ec
-    integer :: km
-
-    ! various strings for building field names
-    character(len=:), allocatable :: elevclass_as_string
-    character(len=:), allocatable :: qice_field
-    character(len=:), allocatable :: frac_field
-
-    ! local and global sums of accumulation and ablation; used to compute renormalization factors
+    type(mct_aVect) :: av_dum  ! zero-size av for the seq_map_map interface
 
     real(r8) :: local_accum_on_land_grid
     real(r8) :: global_accum_on_land_grid
@@ -1175,136 +1237,63 @@ contains
     real(r8) :: local_ablat_on_glc_grid
     real(r8) :: global_ablat_on_glc_grid
 
-    ! renormalization factors (should be close to 1, e.g. in range 0.95 to 1.05)
     real(r8) :: accum_renorm_factor   ! ratio between global accumulation on the two grids
     real(r8) :: ablat_renorm_factor   ! ratio between global ablation on the two grids
 
-    real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l).
-    ! This is the area that can contribute SMB to the ice sheet model.
+    real(r8) :: effective_area  ! grid cell area multiplied by min(lfrac,Sg_icemask_l)
 
-
+    character(CXX) :: tagname
+    character(*), parameter :: subname = '(prep_glc_renormalize_smb)'
     !---------------------------------------------------------------
 
-    lsize_g = size(qice_g)
-    SHR_ASSERT_FL((size(aream_g) == lsize_g), __FILE__, __LINE__)
-
-    call seq_comm_setptrs(CPLID, mpicom=mpicom)
     call seq_comm_getdata(CPLID, iamroot=iamroot)
-    lsize_l = mct_aVect_lsize(l2gacc_lx(eli))
+    ent_type = 1 ! cells
+    nEC = glc_get_num_elevation_classes()
 
-    ! allocate and fill area arrays on the land grid
-    ! (Note that we get domain information from instance 1, following what's done in
-    ! other parts of the coupler.)
-    dom_l => component_get_dom_cx(lnd(1))
+    ! land areas for the mapping and the land fraction basis; note that for E3SM we
+    ! are using lfrin instead of lfrac (see the driver-mct version)
+    allocate(aream_l(lsize_lm), lfrac(lsize_lm))
+    tagname = 'aream'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mblxid, tagname, lsize_lm, ent_type, aream_l)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting aream on the land mesh')
+    tagname = 'lfrin'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mblxid, tagname, lsize_lm, ent_type, lfrac)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting lfrin on the land mesh')
 
-    allocate(aream_l(lsize_l))
-    km = mct_aVect_indexRa(dom_l%data, "aream" )
-    aream_l(:) = dom_l%data%rAttr(km,:)
+    ! Map Sg_icemask from the glc mesh to the land mesh tag of the same name (see
+    ! the driver-mct version for why this mapping is redone here); the result is
+    ! identical to what prep_lnd_calc_g2x_lx produces from the same static g2x data.
+    call mct_aVect_init(av_dum, rList=Sg_icemask_field, lsize=0)
+    call seq_map_map(mapper_Fg2l, av_dum, av_dum, fldlist=Sg_icemask_field, norm=.true.)
+    call mct_aVect_clean(av_dum)
+    allocate(Sg_icemask_l(lsize_lm))
+    tagname = trim(Sg_icemask_field)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mblxid, tagname, lsize_lm, ent_type, Sg_icemask_l)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting Sg_icemask on the land mesh')
 
-    ! Export land fractions from fractions_lx to a local array
-    allocate(lfrac(lsize_l))
-    call mct_aVect_exportRattr(fractions_lx, "lfrac", lfrac)
-
-    ! Map Sg_icemask from the glc grid to the land grid.
-    ! This may not be necessary, if Sg_icemask_l has already been mapped from Sg_icemask_g.
-    ! It is done here for two reasons:
-    ! (1) The mapping will *not* have been done if we are running with dlnd (e.g., a TG case).
-    ! (2) Because of coupler lags, the current Sg_icemask_l might not be up to date with
-    !     Sg_icemask_g. This probably isn't a problem in practice, but doing the mapping
-    !     here ensures the mask is up to date.
-    !
-    ! This mapping uses the same options as the standard glc -> lnd mapping done in
-    ! prep_lnd_calc_g2x_lx. If that mapping ever changed (e.g., changing norm to
-    ! .false.), then we should change this mapping, too.
-    !
-    ! BUG(wjs, 2017-05-11, #1516) I think we actually want norm = .false. here, but this
-    ! requires some more thought
-    call mct_aVect_init(Sg_icemask_l_av, rList = Sg_icemask_field, lsize = lsize_l)
-    call seq_map_map(mapper = mapper_Fg2l, &
-         av_s = g2x_gx, &
-         av_d = Sg_icemask_l_av, &
-         fldlist = Sg_icemask_field, &
-         norm = .true.)
-
-    ! Export Sg_icemask_l from the temporary attribute vector to a local array
-    allocate(Sg_icemask_l(lsize_l))
-    call mct_aVect_exportRattr(Sg_icemask_l_av, Sg_icemask_field, Sg_icemask_l)
-
-    ! Clean the temporary attribute vector
-    call mct_aVect_clean(Sg_icemask_l_av)
-
-    ! Map Sg_ice_covered from the glc grid to the land grid.
-    ! This gives the fields Sg_ice_covered00, Sg_ice_covered01, etc. on the land grid.
-    ! These fields are needed to integrate the total SMB on the land grid, for conservation purposes.
-    ! As above, the mapping may not be necessary, because Sg_ice_covered might already have been mapped.
-    ! However, the mapping will not have been done in a TG case with dlnd, and it might not
-    ! be up to date because of coupler lags (though the latter probably isn't a problem
-    ! in practice).
-    !
-    ! Note that, for a case with full two-way coupling, we will only conserve if the
-    ! actual land cover used over the course of the year matches these currently-remapped
-    ! values. This should generally be the case with the current coupling setup.
-    !
-    ! One could argue that it would be safer (for conservation purposes) if LND sent its
-    ! grid cell average SMB values, or if it sent its own notion of the area in each
-    ! elevation class for the purpose of creating grid cell average SMB values here. But
-    ! these options cause problems if we're not doing full two-way coupling (e.g., in a TG
-    ! case with dlnd, or in the common case where GLC is a diagnostic component that
-    ! doesn't cause updates in the glacier areas in LND). In these cases without full
-    ! two-way coupling, if we use the LND's notion of the area in each elevation class,
-    ! then the conservation corrections would end up correcting for discrepancies in
-    ! elevation class areas between LND and GLC, rather than just correcting for
-    ! discrepancies arising from the remapping of SMB. (And before you get worried: It
-    ! doesn't matter that we are not conserving in these cases without full two-way
-    ! coupling, because GLC isn't connected with the rest of the system in terms of energy
-    ! and mass in these cases. So in these cases, it's okay that the LND integral computed
-    ! here differs from the integral that LND itself would compute.)
-
-    ! Create an attribute vector g2x_lx to hold the mapped fields
-    call mct_aVect_init(g2x_lx, rList=g2x_lx_fields, lsize=lsize_l)
-
-    ! Map Sg_ice_covered and Sg_topo from glc to land
-    call map_glc2lnd_ec( &
-         g2x_g = g2x_gx, &
+    ! Map Sg_ice_covered (per elevation class) from glc to land, and return the
+    ! normalized per-EC fractions (see the driver-mct version for the rationale)
+    allocate(frac_l(lsize_lm, 0:nEC))
+    call map_glc2lnd_ec(mapper_Fg2l, &
          frac_field = Sg_frac_field, &
          topo_field = Sg_topo_field, &
          icemask_field = Sg_icemask_field, &
          extra_fields = ' ', &   ! no extra fields
-         mapper = mapper_Fg2l, &
-         g2x_l = g2x_lx)
+         frac_l_out = frac_l)
 
-    ! Export qice and Sg_ice_covered in each elevation class to local arrays.
-    ! Note: qice comes from l2gacc_lx; frac comes from g2x_lx.
-
-    nEC = glc_get_num_elevation_classes()
-
-    allocate(qice_l(lsize_l,0:nEC))
-    allocate(frac_l(lsize_l,0:nEC))
-    allocate(tmp_field_l(lsize_l))
-
+    ! qice per elevation class on the land grid, from the averaged accumulator
+    allocate(qice_l(lsize_lm, 0:nEC))
     do ec = 0, nEC
-       elevclass_as_string = glc_elevclass_as_string(ec)
-
-       frac_field = Sg_frac_field // elevclass_as_string    ! Sg_ice_covered01, etc.
-       call mct_aVect_exportRattr(g2x_lx, trim(frac_field), tmp_field_l)
-       frac_l(:,ec) = tmp_field_l(:)
-
-       qice_field = qice_fieldname // elevclass_as_string    ! Flgl_qice01, etc.
-       call mct_aVect_exportRattr(l2gacc_lx(eli), trim(qice_field), tmp_field_l)
-       qice_l(:,ec) = tmp_field_l(:)
-
-    enddo
-
-    ! clean the temporary attribute vector g2x_lx
-    call mct_aVect_clean(g2x_lx)
+       kf = mct_aVect_indexRA(l2gacc_lx(1), qice_fieldname//glc_elevclass_as_string(ec))
+       qice_l(:,ec) = l2gacc_lm(:,kf)
+    end do
 
     ! Sum qice over local land grid cells
 
-    ! initialize qice sum
     local_accum_on_land_grid = 0.0_r8
     local_ablat_on_land_grid = 0.0_r8
 
-    do n = 1, lsize_l
+    do n = 1, lsize_lm
 
        effective_area = min(lfrac(n),Sg_icemask_l(n)) * aream_l(n)
 
@@ -1324,31 +1313,27 @@ contains
 
     call shr_mpi_sum(local_accum_on_land_grid, &
          global_accum_on_land_grid, &
-         mpicom, 'accum_l')
+         mpicom_CPLID, 'accum_l')
 
     call shr_mpi_sum(local_ablat_on_land_grid, &
          global_ablat_on_land_grid, &
-         mpicom, 'ablat_l')
+         mpicom_CPLID, 'ablat_l')
 
-    call shr_mpi_bcast(global_accum_on_land_grid, mpicom)
-    call shr_mpi_bcast(global_ablat_on_land_grid, mpicom)
+    call shr_mpi_bcast(global_accum_on_land_grid, mpicom_CPLID)
+    call shr_mpi_bcast(global_ablat_on_land_grid, mpicom_CPLID)
 
-    ! Sum qice_g over local glc grid cells.
-    ! Note: This sum uses the coupler areas (aream_g), which differ from the native CISM areas.
-    !       But since the original qice_g (from bilinear remapping) has been multiplied by
-    !        area_g/aream_g above, this calculation is equivalent to multiplying the original qice_g
-    !        by the native CISM areas (area_g).
-    !       If Flgl_qice were changed to a state (and not included in seq_flds_x2g_fluxes),
-    !        then it would be appropriate to use the native CISM areas in this sum.
+    ! Sum qice_g over local glc grid cells (see the driver-mct version for the
+    ! discussion of the areas used here)
 
-    ! Export Sg_icemask from g2x_gx to a local array
-    allocate(Sg_icemask_g(lsize_g))
-    call mct_aVect_exportRattr(g2x_gx, Sg_icemask_field, Sg_icemask_g)
+    allocate(Sg_icemask_g(size(qice_g)))
+    tagname = trim(Sg_icemask_field)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mbgxid, tagname, size(qice_g), ent_type, Sg_icemask_g)
+    if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR getting Sg_icemask on the glc mesh')
 
     local_accum_on_glc_grid = 0.0_r8
     local_ablat_on_glc_grid = 0.0_r8
 
-    do n = 1, lsize_g
+    do n = 1, size(qice_g)
 
        if (qice_g(n) >= 0.0_r8) then
           local_accum_on_glc_grid = local_accum_on_glc_grid &
@@ -1362,14 +1347,14 @@ contains
 
     call shr_mpi_sum(local_accum_on_glc_grid, &
          global_accum_on_glc_grid, &
-         mpicom, 'accum_g')
+         mpicom_CPLID, 'accum_g')
 
     call shr_mpi_sum(local_ablat_on_glc_grid, &
          global_ablat_on_glc_grid, &
-         mpicom, 'ablat_g')
+         mpicom_CPLID, 'ablat_g')
 
-    call shr_mpi_bcast(global_accum_on_glc_grid, mpicom)
-    call shr_mpi_bcast(global_ablat_on_glc_grid, mpicom)
+    call shr_mpi_bcast(global_accum_on_glc_grid, mpicom_CPLID)
+    call shr_mpi_bcast(global_ablat_on_glc_grid, mpicom_CPLID)
 
     ! Renormalize
 
@@ -1386,11 +1371,13 @@ contains
     endif
 
     if (iamroot) then
-       write(logunit,*) 'accum_renorm_factor = ', accum_renorm_factor
-       write(logunit,*) 'ablat_renorm_factor = ', ablat_renorm_factor
+       write(logunit,*) 'moab global_accum_on_land_grid = ', global_accum_on_land_grid
+       write(logunit,*) 'moab global_accum_on_glc_grid = ', global_accum_on_glc_grid
+       write(logunit,*) 'moab accum_renorm_factor = ', accum_renorm_factor
+       write(logunit,*) 'moab ablat_renorm_factor = ', ablat_renorm_factor
     endif
 
-    do n = 1, lsize_g
+    do n = 1, size(qice_g)
        if (qice_g(n) >= 0.0_r8) then
           qice_g(n) = qice_g(n) * accum_renorm_factor
        else
@@ -1402,11 +1389,77 @@ contains
     deallocate(lfrac)
     deallocate(Sg_icemask_l)
     deallocate(Sg_icemask_g)
-    deallocate(tmp_field_l)
     deallocate(qice_l)
     deallocate(frac_l)
 
   end subroutine prep_glc_renormalize_smb
+
+  !================================================================================================
+
+  subroutine prep_glc_mrg_lnd(infodata, timer_mrg)
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Merge the land forcing into the glc input. The driver-mct merge is a plain copy of the
+    ! mapped fields into x2g; in the moab path prep_glc_calc_l2x_gx already
+    ! writes the downscaled results directly into the x2g tag names on the glc
+    ! mesh, so there is nothing left to do here besides optional debug output.
+    !
+#ifdef MOABDEBUG
+    use iMOAB, only : iMOAB_WriteMesh
+    use seq_comm_mct, only : num_moab_exports
+    use iso_c_binding, only : C_NULL_CHAR
+#endif
+    !
+    ! Arguments
+    type(seq_infodata_type) , intent(in) :: infodata
+    character(len=*)        , intent(in) :: timer_mrg
+    !
+    ! Local Variables
+#ifdef MOABDEBUG
+    integer :: ierr
+    character*32 :: outfile, wopts, lnum
+#endif
+    character(*), parameter :: subname = '(prep_glc_mrg_lnd)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
+#ifdef MOABDEBUG
+    if (mbgxid .ge. 0 ) then !  we are on coupler pes, for sure
+       write(lnum,"(I0.2)") num_moab_exports
+       outfile = 'GlcCplAftMrg'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+       ierr = iMOAB_WriteMesh(mbgxid, trim(outfile), trim(wopts))
+       if (ierr .ne. 0) then
+          call shr_sys_abort(subname//' error in writing glc mesh after merge')
+       endif
+    endif
+#endif
+    call t_drvstopf (trim(timer_mrg))
+
+  end subroutine prep_glc_mrg_lnd
+
+  !================================================================================================
+
+  function prep_glc_get_l2gacc_lm()
+    real(r8), pointer :: prep_glc_get_l2gacc_lm(:,:)
+    prep_glc_get_l2gacc_lm => l2gacc_lm
+  end function prep_glc_get_l2gacc_lm
+
+  function prep_glc_get_l2gacc_lm_cnt()
+    integer, pointer :: prep_glc_get_l2gacc_lm_cnt
+    prep_glc_get_l2gacc_lm_cnt => l2gacc_lm_cnt
+  end function prep_glc_get_l2gacc_lm_cnt
+
+  function prep_glc_get_l2gacc_lm_cnt_avg()
+    integer, pointer :: prep_glc_get_l2gacc_lm_cnt_avg
+    prep_glc_get_l2gacc_lm_cnt_avg => l2gacc_lm_cnt_avg
+  end function prep_glc_get_l2gacc_lm_cnt_avg
+
+  function prep_glc_get_sharedFieldsLndGlc()
+    character(CXX) :: prep_glc_get_sharedFieldsLndGlc
+    prep_glc_get_sharedFieldsLndGlc = sharedFieldsLndGlc
+  end function prep_glc_get_sharedFieldsLndGlc
 
   !================================================================================================
 
@@ -1430,6 +1483,11 @@ contains
     integer, pointer :: prep_glc_get_l2gacc_lx_cnt
     prep_glc_get_l2gacc_lx_cnt => l2gacc_lx_cnt
   end function prep_glc_get_l2gacc_lx_cnt
+
+  function prep_glc_get_l2gacc_lx_cnt_avg()
+    integer, pointer :: prep_glc_get_l2gacc_lx_cnt_avg
+    prep_glc_get_l2gacc_lx_cnt_avg => l2gacc_lx_cnt_avg
+  end function prep_glc_get_l2gacc_lx_cnt_avg
 
   function prep_glc_get_o2x_gx()
     type(mct_aVect), pointer :: prep_glc_get_o2x_gx(:)
@@ -1456,15 +1514,15 @@ contains
     prep_glc_get_mapper_Fl2g => mapper_Fl2g
   end function prep_glc_get_mapper_Fl2g
 
-  function prep_glc_get_mapper_So2g()
-    type(seq_map), pointer :: prep_glc_get_mapper_So2g
-    prep_glc_get_mapper_So2g=> mapper_So2g
-  end function prep_glc_get_mapper_So2g
+  function prep_glc_get_mapper_So2g_shelf()
+    type(seq_map), pointer :: prep_glc_get_mapper_So2g_shelf
+    prep_glc_get_mapper_So2g_shelf=> mapper_So2g_shelf
+  end function prep_glc_get_mapper_So2g_shelf
 
-  function prep_glc_get_mapper_Fo2g()
-    type(seq_map), pointer :: prep_glc_get_mapper_Fo2g
-    prep_glc_get_mapper_Fo2g=> mapper_Fo2g
-  end function prep_glc_get_mapper_Fo2g
+  function prep_glc_get_mapper_Fo2g_shelf()
+    type(seq_map), pointer :: prep_glc_get_mapper_Fo2g_shelf
+    prep_glc_get_mapper_Fo2g_shelf=> mapper_Fo2g_shelf
+  end function prep_glc_get_mapper_Fo2g_shelf
 
 !***********************************************************************
 !
