@@ -52,8 +52,7 @@ docker run --rm -v "$PWD:/projects/e3sm/work/E3SM" \
       --machine e3sm-container --compiler gnu --wait'
 ```
 
-`enable.sh` opts into the image's CIME machine. Until #8926 is merged, the workflow also
-downloads the P3 lookup table itself, since nothing else does (#5953).
+`enable.sh` opts into the image's CIME machine.
 
 The workflow runs on PRs (all paths except docs), nightly, and by hand.
 

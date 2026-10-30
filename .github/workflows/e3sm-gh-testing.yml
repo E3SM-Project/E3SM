@@ -132,15 +132,6 @@ jobs:
           fi
           echo "CT_FLAGS=$flags" >> "$GITHUB_ENV"
           echo "BASELINES=$baselines" >> "$GITHUB_ENV"
-      # TODO: remove once #8926 is merged. Until then CIME does not know EAM's P3 opens this
-      # file, so nothing downloads it and the run dies without it (#5953).
-      - name: Fetch the P3 lookup table
-        run: |
-          f=atm/cam/physprops/p3_lookup_table_1.dat-v4.1.2
-          if [ ! -f "inputdata/$f" ]; then
-            mkdir -p "inputdata/$(dirname "$f")"
-            curl -fsSL --retry 3 -o "inputdata/$f" "https://web.lcrc.anl.gov/public/e3sm/inputdata/$f"
-          fi
       - name: Pull the image
         run: docker pull "$IMAGE"
       # As the image's default user (uid 1000), with the image's own CIME machine, which
