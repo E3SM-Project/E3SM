@@ -27,14 +27,18 @@ on a hosted runner. It runs in these images:
 | Image | Arch | Baselines |
 | --- | --- | --- |
 | `gnu13-openmpi4` | x86_64, aarch64 | compared |
-| `intel2024-openmpi4` | x86_64 | not compared: builds and runs only |
+| `intel2024-openmpi4` | x86_64 | compared |
 
 Intel's answers depend on which CPU the hosted runner has: its math libraries pick code paths
-by CPU, and GitHub's x86 runners come with different CPU models. The same commit and image
-have both matched and differed from intel baselines on different runs, so a comparison
-would fail at random. Each job summary shows the runner's CPU model. Building with
-`-fimf-arch-consistency=true` (or `-fp-model consistent`) on the `e3sm-container_intel`
-machine might make intel reproducible enough to compare, at some cost in speed.
+by CPU, and GitHub's x86 runners come with different CPU models. Without further care, the
+same commit and image both matched and differed from intel baselines on different runs. So
+for intel only, the workflow appends `-fp-model=consistent -fimf-arch-consistency=true` to
+the C, C++ and Fortran flags, in the job's copy of `e3sm-container_intel.cmake` in `~/.cime`,
+and sets `MKL_CBWR=COMPATIBLE`. This is meant to make the answers independent of the CPU, at some
+cost in speed, and it is for testing only: the image and E3SM's `intel.cmake` are unchanged, so
+users of the image do not get these flags. As a consequence, the intel job does not test
+the exact flags users get. Each job summary shows the runner's CPU model, to help tell a
+CPU-dependence from a real change if the intel comparison ever fails at random.
 
 The CUDA images are left out: hosted runners have no GPU, so those tests could only be
 built, and there would be nothing to compare.
