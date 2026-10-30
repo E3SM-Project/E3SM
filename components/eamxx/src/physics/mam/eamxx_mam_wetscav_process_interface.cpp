@@ -111,6 +111,7 @@ MAMWetscav::create_requests()
     // Cloud top and base indices from ZM deep convection
     add_field<Required>("zm_jt", scalar2d, none, grid_name);      // Cloud top level index
     add_field<Required>("zm_msemax_klev", scalar2d, none, grid_name);   // Cloud base level index
+    add_field<Required>("zm_activity", scalar2d, none, grid_name);      // Deep convection activity flag (1/0)
 
     //----------- Variables from ZM convection scheme -------------
     // Convective mass fluxes and entrainment/detrainment rates
@@ -568,7 +569,7 @@ void MAMWetscav::run_impl(const double dt) {
   
   // Convection processing variables - only retrieve if enabled
   // These are passed to aero_model_wetdep but only used when do_convproc is true
-  const_view_1d zm_jt_in, zm_msemax_klev_in;
+  const_view_1d zm_jt_in, zm_msemax_klev_in, zm_activity_in;
   const_view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
   const int* species_class = nullptr;
   const int* mmtoo_prevap_resusp = nullptr;
@@ -577,6 +578,9 @@ void MAMWetscav::run_impl(const double dt) {
     // Get cloud top and base indices from ZM convection scheme
     zm_jt_in = get_field_in("zm_jt").get_view<const Real *>();
     zm_msemax_klev_in = get_field_in("zm_msemax_klev").get_view<const Real *>();
+    
+    // Get convection activity flag
+    zm_activity_in = get_field_in("zm_activity").get_view<const Real *>();
     
     // Convection mass fluxes and rates from ZM scheme
     zm_mflx_up = get_field_in("zm_mflx_up").get_view<const Real **>();
@@ -645,6 +649,7 @@ void MAMWetscav::run_impl(const double dt) {
         const_view_1d dp_icol, p_del_dry_icol;
         int ktop = 0;
         int kbot = 0;
+        int zm_activity_icol = 0;  // Deep convection activity flag for this column
         
         if(do_convproc) {
           auto work_convproc_icol = ekat::subview(work_convproc, icol);
@@ -674,10 +679,8 @@ void MAMWetscav::run_impl(const double dt) {
           p_del_dry_icol = dpdry_tmp_icol;
           ktop = Kokkos::round(zm_jt_in(icol));
           kbot = Kokkos::round(zm_msemax_klev_in(icol));
-          if (ktop < 0 || kbot <= ktop) {
-            ktop = 0;
-            kbot = 0;
-          }
+          // Get deep convection activity flag (1 = active, 0 = inactive)
+          zm_activity_icol = Kokkos::round(zm_activity_in(icol));
         } 
 
         mam4::wetdep::aero_model_wetdep(
@@ -702,6 +705,7 @@ void MAMWetscav::run_impl(const double dt) {
            dp_icol, p_del_dry_icol,
            ktop, kbot,
            convproc_do_aer, convproc_do_gas,
+           zm_activity_icol,
            species_class, mmtoo_prevap_resusp,
            aero_config);
         
