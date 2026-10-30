@@ -51,18 +51,27 @@ function(genf90_targets RAW_SOURCES_ARG INCLUDES_ARG CPPDEFS_ARG NO_PREPROCESS_A
       if (NOT EXISTS ${DIR_ABSOLUTE})
         file(MAKE_DIRECTORY ${DIR_ABSOLUTE})
       endif()
+      set(GEN_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${RAW_SOURCE_FILE})
       if (CORE_INC_DIR_ARG)
+        # The core's .inc files must exist before any of its sources are preprocessed
+        list(APPEND GEN_DEPENDS ${CORE_INC_DIR_ARG}/core_variables.inc)
+      endif()
+      if (MPAS_USE_DEPFILE)
+        # The depfile makes the .f90 file depend on every file that it includes
+        get_filename_component(F90_ABSOLUTE ${CMAKE_BINARY_DIR}/${SOURCE_F90} ABSOLUTE)
         add_custom_command (
           OUTPUT ${CMAKE_BINARY_DIR}/${SOURCE_F90}
           COMMAND cpp -P -traditional ${CPPDEFS_ARG} ${INCLUDES_I} -Uvector
-          ${CMAKE_CURRENT_SOURCE_DIR}/${RAW_SOURCE_FILE} > ${CMAKE_BINARY_DIR}/${SOURCE_F90}
-          DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${RAW_SOURCE_FILE} ${CORE_INC_DIR_ARG}/core_variables.inc)
+          -MD -MF ${F90_ABSOLUTE}.d -MT ${F90_ABSOLUTE}
+          ${CMAKE_CURRENT_SOURCE_DIR}/${RAW_SOURCE_FILE} -o ${F90_ABSOLUTE}
+          DEPENDS ${GEN_DEPENDS}
+          DEPFILE ${F90_ABSOLUTE}.d)
       else()
         add_custom_command (
           OUTPUT ${CMAKE_BINARY_DIR}/${SOURCE_F90}
           COMMAND cpp -P -traditional ${CPPDEFS_ARG} ${INCLUDES_I} -Uvector
           ${CMAKE_CURRENT_SOURCE_DIR}/${RAW_SOURCE_FILE} > ${CMAKE_BINARY_DIR}/${SOURCE_F90}
-          DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${RAW_SOURCE_FILE})
+          DEPENDS ${GEN_DEPENDS})
       endif()
       list(APPEND LOCAL_SOURCES ${CMAKE_BINARY_DIR}/${SOURCE_F90})
     else()

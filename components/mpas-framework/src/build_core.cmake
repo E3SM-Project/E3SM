@@ -33,13 +33,26 @@ function(build_core CORE)
   target_link_libraries(${COMPONENT} PUBLIC ${LIBRARIES} common)
 
   # Make .inc files
-  add_custom_command (
-    OUTPUT ${CORE_BLDDIR}/Registry_processed.xml
-    COMMAND cpp -P -traditional ${CPPDEFS} -Uvector
-    ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml > Registry_processed.xml
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
-    WORKING_DIRECTORY ${CORE_BLDDIR}
-    )
+  if (MPAS_USE_DEPFILE)
+    # The depfile makes the processed registry depend on every registry file it includes
+    add_custom_command (
+      OUTPUT ${CORE_BLDDIR}/Registry_processed.xml
+      COMMAND cpp -P -traditional ${CPPDEFS} -Uvector
+      -MD -MF ${CORE_BLDDIR}/Registry_processed.xml.d -MT ${CORE_BLDDIR}/Registry_processed.xml
+      ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml -o ${CORE_BLDDIR}/Registry_processed.xml
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
+      DEPFILE ${CORE_BLDDIR}/Registry_processed.xml.d
+      WORKING_DIRECTORY ${CORE_BLDDIR}
+      )
+  else()
+    add_custom_command (
+      OUTPUT ${CORE_BLDDIR}/Registry_processed.xml
+      COMMAND cpp -P -traditional ${CPPDEFS} -Uvector
+      ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml > Registry_processed.xml
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
+      WORKING_DIRECTORY ${CORE_BLDDIR}
+      )
+  endif()
 
   set(INC_DIR ${CORE_BLDDIR}/inc)
   if (NOT EXISTS ${INC_DIR})
@@ -53,8 +66,22 @@ function(build_core CORE)
     set(PARSE_ARGS "--namelist-suffix=" "--exe-name=" "--git-version=MPAS_GIT_VERSION")
   endif()
 
+  set(PARSE_OUTPUTS
+    block_dimension_routines.inc
+    config_declare.inc
+    config_get.inc
+    core_variables.inc
+    define_packages.inc
+    domain_variables.inc
+    namelist_call.inc
+    namelist_defines.inc
+    setup_immutable_streams.inc
+    structs_and_variables.inc
+  )
+  list(TRANSFORM PARSE_OUTPUTS PREPEND ${INC_DIR}/)
+
   add_custom_command(
-    OUTPUT ${INC_DIR}/core_variables.inc
+    OUTPUT ${PARSE_OUTPUTS}
     COMMAND ${CMAKE_BINARY_DIR}/mpas-framework/src/tools/parse ${PARSE_ARGS} < ${CORE_BLDDIR}/Registry_processed.xml
     DEPENDS parse ${CORE_BLDDIR}/Registry_processed.xml
     WORKING_DIRECTORY ${INC_DIR}

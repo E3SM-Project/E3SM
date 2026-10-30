@@ -85,6 +85,18 @@ if (MPAS_BUILD_MODE STREQUAL "E3SM" AND USE_KOKKOS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${KOKKOS_CXXFLAGS_STR}")
 endif()
 
+# Track the files included by preprocessed sources and registries. DEPFILE
+# needs CMake 3.20 or later with Makefile generators. Older versions fall back
+# to depending only on the source file itself.
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.20)
+  set(MPAS_USE_DEPFILE TRUE)
+  # Avoids a policy warning with Ninja. Depfile paths are absolute, so the
+  # OLD and NEW behaviors give the same result.
+  cmake_policy(SET CMP0116 NEW)
+else()
+  set(MPAS_USE_DEPFILE FALSE)
+endif()
+
 # Include custom cmake libraries used for mpas
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_utils.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_core.cmake)
