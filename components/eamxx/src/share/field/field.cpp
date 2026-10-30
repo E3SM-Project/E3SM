@@ -188,8 +188,9 @@ Field::clone(const std::string& name, const std::string& grid_name, const int fl
   }
 
   if (flags & CloneFlags::CopyData) {
-    // Deep copy
-    f.deep_copy(*this);
+    // Deep copy the data. Notice that the clone has no valid mask, so we don't
+    // use deep_copy, which would also try to copy the valid mask
+    f.update_cm<CombineMode::Replace>("Field::clone",*this,1,0,0);
     f.sync_to_host();
   }
 
@@ -537,8 +538,24 @@ void Field::deep_copy (const Field& x) const
   if (is_aliasing(x))
     return;
 
+  EKAT_REQUIRE_MSG (not x.has_valid_mask() or has_valid_mask(),
+      "[Field::deep_copy] Error! Cannot copy a masked field into an unmasked one.\n"
+      " - lhs name: " + name() + "\n"
+      " - rhs name: " + x.name() + "\n");
+
   constexpr auto CM = CombineMode::Replace;
   update_cm<CM>("Field::deep_copy",x,1,0,0);
+
+  if (has_valid_mask()) {
+    // A copy of a field is valid where the original is. If the original has no mask, it is valid everywhere.
+    // NOTE: if the two fields share the same mask, the mask deep_copy is a no-op
+    auto& y_mask = get_valid_mask();
+    if (x.has_valid_mask()) {
+      y_mask.deep_copy(x.get_valid_mask());
+    } else {
+      y_mask.deep_copy(1);
+    }
+  }
 }
 
 void Field::deep_copy (const Field& x, const Field& mask) const

@@ -416,14 +416,8 @@ void VerticalRemapper::remap_fwd_impl ()
       extrapolate(f_src,f_tgt,x_src,x_tgt);
     } else {
       // There is nothing to do, this field does not need vertical interpolation,
-      // so just copy it over.  Note, if this field has its own mask data make
-      // sure that is copied too.
+      // so just copy it over (deep_copy also copies the mask data, if any)
       f_tgt.deep_copy(f_src);
-      if (f_tgt.has_valid_mask()) {
-        auto& f_tgt_mask = f_tgt.get_valid_mask();
-        auto& f_src_mask = f_src.get_valid_mask();
-        f_tgt_mask.deep_copy(f_src_mask);
-      }
     }
   }
 }
