@@ -19,14 +19,22 @@ if (DEFINED ENV{MPAS_TOOL_DIR})
   set(MPAS_PARSE ${CMAKE_CURRENT_BINARY_DIR}/parse PARENT_SCOPE)
 else()
   message(STATUS "*** Building MPAS tools from source ***")
-  # Make build tools, need to be compiled with serial compiler.
-  set(CMAKE_C_COMPILER ${SCC})
+  # The tools run on the build node during the build, so they are built with
+  # the serial C compiler, as in the Make build. CMake does not officially
+  # support changing CMAKE_C_COMPILER after project(), but the Makefile and
+  # Ninja generators honor it for the targets in this directory. Where tools
+  # built this way cannot run, set MPAS_TOOL_DIR to prebuilt tools instead.
+  if (SCC)
+    set(CMAKE_C_COMPILER ${SCC})
+  endif()
 
-  add_executable(streams_gen input_gen/streams_gen.c input_gen/test_functions.c ../external/ezxml/ezxml.c)
-  add_executable(namelist_gen input_gen/namelist_gen.c input_gen/test_functions.c ../external/ezxml/ezxml.c)
-  add_executable(parse registry/parse.c registry/dictionary.c registry/gen_inc.c registry/fortprintf.c registry/utility.c ../external/ezxml/ezxml.c)
+  # ezxml is compiled once for all three tools
+  add_library(ezxml_tools OBJECT ../external/ezxml/ezxml.c)
+  add_executable(streams_gen input_gen/streams_gen.c input_gen/test_functions.c $<TARGET_OBJECTS:ezxml_tools>)
+  add_executable(namelist_gen input_gen/namelist_gen.c input_gen/test_functions.c $<TARGET_OBJECTS:ezxml_tools>)
+  add_executable(parse registry/parse.c registry/dictionary.c registry/gen_inc.c registry/fortprintf.c registry/utility.c $<TARGET_OBJECTS:ezxml_tools>)
 
-  foreach(EXEITEM streams_gen namelist_gen parse)
+  foreach(EXEITEM ezxml_tools streams_gen namelist_gen parse)
     target_compile_definitions(${EXEITEM} PRIVATE ${CPPDEFS})
     target_compile_options(${EXEITEM} PRIVATE "-Uvector")
     target_include_directories(${EXEITEM} PRIVATE ${INCLUDES})
