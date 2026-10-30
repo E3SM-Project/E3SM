@@ -24,6 +24,13 @@ function(build_core CORE)
     file(MAKE_DIRECTORY ${CORE_INPUT_DIR})
   endif()
 
+  # The registry parser writes the core's .inc files here
+  set(INC_DIR ${CORE_BLDDIR}/inc)
+  if (NOT EXISTS ${INC_DIR})
+    file(MAKE_DIRECTORY ${INC_DIR})
+  endif()
+  list(APPEND INCLUDES ${INC_DIR})
+
   # Provides us RAW_SOURCES, CPPDEFS, and INCLUDES
   include(${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/${CORE}.cmake)
 
@@ -52,11 +59,6 @@ function(build_core CORE)
       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
       WORKING_DIRECTORY ${CORE_BLDDIR}
       )
-  endif()
-
-  set(INC_DIR ${CORE_BLDDIR}/inc)
-  if (NOT EXISTS ${INC_DIR})
-    file(MAKE_DIRECTORY ${INC_DIR})
   endif()
 
   if (MPAS_BUILD_MODE STREQUAL "E3SM")

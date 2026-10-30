@@ -25,7 +25,7 @@ module li_config
    public
    save
 
-#include "../inc/config_declare.inc"
+#include "config_declare.inc"
 
 !***********************************************************************
 
@@ -43,7 +43,7 @@ contains
    subroutine li_config_init(configPool)!{{{
        type (mpas_pool_type), pointer :: configPool
 
-#include "../inc/config_get.inc"
+#include "config_get.inc"
 
    end subroutine li_config_init!}}}
 

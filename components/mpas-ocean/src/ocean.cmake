@@ -5,7 +5,6 @@ if (MPAS_BUILD_MODE STREQUAL "E3SM")
   # Coupled builds do not include init mode
   list(APPEND CPPDEFS "-DEXCLUDE_INIT_MODE")
 endif()
-list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
 list(APPEND INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/gotm/include")
 
 # check if lapack is linked
