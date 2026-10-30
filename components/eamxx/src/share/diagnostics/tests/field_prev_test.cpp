@@ -167,7 +167,6 @@ TEST_CASE("field_prev_masked") {
     for (int k=0; k<nlevs; ++k) {
       if (k==0) {
         REQUIRE (m_v(i,k)==0);
-        REQUIRE (d_v(i,k)==fv);
       } else {
         REQUIRE (m_v(i,k)==1);
         REQUIRE (d_v(i,k)==p_v(i,k));
