@@ -62,7 +62,7 @@ void Functions<S,D>
     //PUSH IT BEYOND SATURATION. THUS, NOT LIMITING WITH INV_DT HERE.
     qc2qi_berg_tend.set(qi_incld_not_small && T_lt_frz, max(epsi/abi*(qv_sat_l - qv_sat_i), 0));
     if(p3_super_sat && p3_WBFoff) {
-        qc2qi_berg_tend=0;
+      qc2qi_berg_tend=0;
     }
   } //end if at least 1 qi is greater than qmall
 
