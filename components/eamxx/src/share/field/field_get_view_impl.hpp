@@ -144,11 +144,8 @@ get_strided_view_type<DT, HD> {
       // Parent field has correct layout to reinterpret the view into N+1-dim view,
       // for single-slice subfield, and N-dim view for multi-slice subfield.
       // So create the parent field on the fly, use it to get the N+{1,0}-dim view,
-      // then subview it. NOTE: we can set protected members, since f is the same
-      // type of this class.
-      Field f;
-      f.m_header = parent;
-      f.m_data = m_data;
+      // then subview it.
+      Field f(parent, m_data, m_is_read_only);
 
       // get subview info to determine whether we are single- or multi-slicing
       const auto& sv_alloc_prop = m_header->get_alloc_properties();
@@ -209,10 +206,7 @@ auto Field::get_ND_view () const
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
-    // NOTE: we can set protected members, since f is the same type of this class.
-    Field f;
-    f.m_header = parent;
-    f.m_data   = m_data;
+    Field f(parent, m_data, m_is_read_only);
 
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
 

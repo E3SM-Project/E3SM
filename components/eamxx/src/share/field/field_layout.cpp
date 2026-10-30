@@ -316,6 +316,11 @@ FieldLayout& FieldLayout::reset_dim (const FieldTag t, const int extent, const b
 }
 
 void FieldLayout::set_extents () {
+  if (m_rank == 0 or (m_rank == 1 and m_tags[0] == FieldTag::Invalid)) {
+    m_extents = decltype(m_extents)();
+    m_extents_h = decltype(m_extents_h)();
+    return;
+  }
   m_extents = decltype(m_extents)("",m_rank);
   m_extents_h = Kokkos::create_mirror_view(m_extents);
   std::copy_n(m_dims.begin(),m_rank,m_extents_h.data());
