@@ -1013,6 +1013,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
     <disable_diagnostics>false</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_remap_factor hgrid="ne30np4">1</dt_remap_factor> <!-- addresses stability issues -->
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hypervis_order>2</hypervis_order>
