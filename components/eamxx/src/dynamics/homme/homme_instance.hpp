@@ -98,6 +98,12 @@ public:
                              const Field& uv, const Field& q,
                              const Field& dp, const Field& strain3d_fv = Field());
 
+  // Remap a single 3d scalar field at the current n0 time level, from the dyn (DGLL) grid
+  // to the FV physics grid, as Homme would remap a tracer.
+  //  - f_dgll: (EL,GP,GP,LEV)
+  //  - f_phys: (COL,LEV), output
+  void remap_tracer_dyn_to_fv_phys (const Field& f_dgll, const Field& f_phys);
+
   // Remap the tendency/state fields from the FV physics grid to the dyn grid, into Homme's
   // forcing data structures, and DSS the result.
   //  - FT: (COL,LEV), the temperature to use to compute T tendencies

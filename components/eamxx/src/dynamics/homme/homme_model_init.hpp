@@ -29,6 +29,10 @@ namespace scream
 // state. The pg2 fields are then obtained from the dyn state, via Homme's own remap.
 // This way, we never go GLL->pg2->GLL, and the pg2 fields are valid once run() is over.
 //
+// The same is done for any other 3d scalar pg2 input field that is in the IC file (e.g., the
+// ozone volume mixing ratio, if it is not computed): it is read on the GLL grid, remapped to
+// the dyn grid, and then remapped to the pg2 grid as if it were a tracer.
+//
 // This class requires the HommeInstance to have been setup by the HommeDynamics atm process
 // (during its create_requests and set_computed_group_impl calls), and that the atm processes
 // buffers have been allocated.
@@ -43,8 +47,9 @@ public:
 protected:
 
   // For a pg2 run: nothing on physics_gll is part of a restart file; on the pg2 grid, the state
-  // is inited from the staging field manager. Anything else on pg2 is inited only if it has
-  // a constant, or it is a topography field (the IC file has no data on the pg2 grid).
+  // and the fields that are remapped from the GLL IC are inited by the remap. Anything else on
+  // pg2 is inited only if it has a constant, or it is a topography field (the IC file has no
+  // data on the pg2 grid).
   std::vector<Field>
   get_fields (const std::shared_ptr<FieldManager>& fm,
               const std::string& group_name,
@@ -59,11 +64,15 @@ private:
   // Create a field manager with temporary copies, on the physics_gll grid, of the state fields
   // that Homme owns on the pg2 grid.
   std::shared_ptr<FieldManager>
-  create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm) const;
+  create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm);
 
   // N in pgN, and the name of the pgN grid. N<0 if the physics grid is not a FV one.
   int         m_pgN = -1;
   std::string m_pg_grid;
+
+  // The names of the (non-state) pg fields that are read from the IC file on the GLL grid,
+  // and remapped to the pg grid.
+  std::vector<std::string> m_remapped_fields;
 };
 
 } // namespace scream
