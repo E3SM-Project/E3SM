@@ -5199,8 +5199,10 @@ one entry per image, arch and test. Baselines differ between compilers and betwe
 architectures, so each combination has its own entry.</p>
 <ul>
 <li><strong>Compare (PRs, nightly).</strong> Each run restores the newest entry for its test and passes
-  <code>-c -b master</code> to <code>create_test</code>. If there is no entry, the test runs without comparing and
-  the job shows a warning, so the first run (or one after an entry has expired) does not fail.</li>
+  <code>-c -b master</code> to <code>create_test</code>. If there is no entry, the comparison fails, with an error in
+  the job summary telling you to bless. That is on purpose, so that nobody forgets to: it
+  happens for the first run of a test, and after an entry has expired (the nightly run keeps
+  them from expiring).</li>
 <li><strong>Bless (by hand, master only).</strong> Go to Actions → <code>e3sm-gh</code> → <em>Run workflow</em> on <code>master</code>
   with <em>bless</em> checked. It runs with <code>-o -g -b master</code> and saves a new entry, keyed by the
   commit and the run. The next run anywhere restores it. The workflow refuses to bless from
@@ -5305,7 +5307,8 @@ container, so tests would no longer download it or share the cache for it.</p>
 <h2 id="adding-tests">Adding tests</h2>
 <p>Add the test name to <code>matrix.test</code> in the workflow. Inputdata and baseline keys include the
 test name, so a new test starts with no entries: its first runs download all its inputdata
-and skip comparison until master is blessed. Keep the cache limit in mind: the first test's
+and fail the comparison until master is blessed, which a PR cannot do, so a PR that adds a
+test stays red until it is merged and blessed. Keep the cache limit in mind: the first test's
 inputdata already takes about 4 GB of it.</p>
 <p>A test with testmods must name its machine and compiler (for example
 <code>TEST.GRID.COMPSET.e3sm-container_gnu.TESTMOD</code>), so it goes in the matrix's <code>include</code>
