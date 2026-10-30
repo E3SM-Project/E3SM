@@ -10,59 +10,13 @@ We want this script to be super-lean, so we do not load any of the standard CIME
 stuff.
 """
 
-import sys, subprocess, time, psutil, os
-
-###############################################################################
-def get_process_tree_memory(process):
-###############################################################################
-    """Get total memory usage of a process and all its descendants."""
-    total_memory = 0
-    try:
-        total_memory += process.memory_info().rss
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-        pass
-
-    try:
-        for child in process.children(recursive=True):
-            try:
-                total_memory += child.memory_info().rss
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-        pass
-
-    return total_memory
+import sys, subprocess, time
 
 ###############################################################################
 def run_cmd(args):
 ###############################################################################
     t1 = time.time()
-
-    # Start the subprocess
-    proc = subprocess.Popen(args)
-
-    # Monitor memory usage throughout the process and all child processes
-    peak_memory = 0  # in bytes
-    try:
-        process = psutil.Process(proc.pid)
-        while proc.poll() is None:
-            try:
-                current_memory = get_process_tree_memory(process)
-                peak_memory = max(peak_memory, current_memory)
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-            time.sleep(0.1)
-
-        # Get final memory info
-        try:
-            current_memory = get_process_tree_memory(process)
-            peak_memory = max(peak_memory, current_memory)
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    except (psutil.NoSuchProcess, psutil.AccessDenied):
-        pass
-
-    result = proc.returncode
+    result = subprocess.call(args)
     t2 = time.time()
 
     arglen = len(args)
@@ -78,13 +32,9 @@ def run_cmd(args):
     if target is None:
         target = " ".join(args)
 
-    # Convert peak_memory to MB for readability
-    peak_memory_mb = peak_memory / (1024 * 1024)
-
     # Printing the time this way ensures no mixing of output with other
     # concurrent processes
-    sys.stderr.write("Target {} built in {:f} seconds, peak memory: {:.1f} MB\n".format(
-        target, (t2 - t1), peak_memory_mb))
+    sys.stderr.write("Target {} built in {:f} seconds\n".format(target, (t2 - t1)))
 
     return result
 
