@@ -1,5 +1,7 @@
 # framework
-list(APPEND CPPDEFS "-Dcoupled")
+if (MPAS_BUILD_MODE STREQUAL "E3SM")
+  list(APPEND CPPDEFS "-Dcoupled")
+endif()
 list(APPEND COMMON_RAW_SOURCES
   framework/mpas_kind_types.F
   framework/mpas_framework.F

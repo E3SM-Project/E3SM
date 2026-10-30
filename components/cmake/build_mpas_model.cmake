@@ -30,6 +30,7 @@ function(build_mpas_models)
   endif()
 
   if (CORES)
+    set(MPAS_BUILD_MODE "E3SM")
     add_subdirectory("mpas-framework/src")
   endif()
 
