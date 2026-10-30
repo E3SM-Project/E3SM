@@ -184,6 +184,11 @@ protected:
   void initialize_time_stamps ();
   void set_initialization_groups (const Field& f);
 
+  // Allocate the memory buffer shared by all atm procs, and hand it to them.
+  // Must be called after all fields/groups are set in the atm procs, since
+  // buffer sizes may depend on them (e.g., number of tracers).
+  void allocate_buffers ();
+
   template<typename T>
   using strmap_t = std::map<std::string,T>;
   using strvec_t = std::vector<std::string>;
