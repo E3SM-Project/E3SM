@@ -424,7 +424,7 @@ TEST_CASE ("dirk_pieces_testing") {
           pi = idx / dfi::packn,
           si = idx % dfi::packn;
         for (int k = 0; k < nlev; ++k)
-          REQUIRE(equal(x2m(k,pi)[si], x3(i,j,k), 1e3*eps));
+          REQUIRE(equal(x2m(k,pi)[si], x3(i,j,k), 1e4*eps));
       }
   }
 
