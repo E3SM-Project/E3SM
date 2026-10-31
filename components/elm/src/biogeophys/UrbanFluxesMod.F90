@@ -166,6 +166,8 @@ contains
     real(r8) :: zeta                                                 ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: eflx_sh_grnd_scale(bounds%begp:bounds%endp)          ! scaled sensible heat flux from ground (W/m**2) [+ to atm]
     real(r8) :: qflx_evap_soi_scale(bounds%begp:bounds%endp)         ! scaled soil evaporation (mm H2O/s) (+ = to atm)
+    real(r8) :: dth_p                                                 ! per-patch diff of canopy air temp and ground temp (K); local to final patch loop
+    real(r8) :: dqh_p                                                 ! per-patch diff of canopy air humidity and ground humidity; local to final patch loop
     real(r8) :: eflx_wasteheat_roof(bounds%begl:bounds%endl)         ! sensible heat flux from urban heating/cooling sources of waste heat for roof (W/m**2)
     real(r8) :: eflx_wasteheat_sunwall(bounds%begl:bounds%endl)      ! sensible heat flux from urban heating/cooling sources of waste heat for sunwall (W/m**2)
     real(r8) :: eflx_wasteheat_shadewall(bounds%begl:bounds%endl)    ! sensible heat flux from urban heating/cooling sources of waste heat for shadewall (W/m**2)
@@ -817,30 +819,33 @@ contains
          end if
 
          ! Use new canopy air temperature
-         dth(l) = taf(l) - t_grnd(c)
+         ! Use a local scalar (dth_p) rather than the landunit-indexed dth(l) array to avoid
+         ! a loop-carried dependency: multiple patches share the same landunit l, so writing
+         ! dth(l) inside this patch loop creates a vectorization hazard on NVIDIA nvfortran.
+         dth_p = taf(l) - t_grnd(c)
 
          if (ctype(c) == icol_roof) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(l)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_perv) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(l)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_imperv) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(l)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_sunwall) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(l)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_shadewall) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(l)*dth_p
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
@@ -849,24 +854,24 @@ contains
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          eflx_sh_tot_u(p) = eflx_sh_tot(p)
 
-         dqh(l) = qaf(l) - qg(c)
+         dqh_p = qaf(l) - qg(c)
 
          if (ctype(c) == icol_roof) then
-            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(l)*dqh(l)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(l)*dqh_p
          else if (ctype(c) == icol_road_perv) then
             ! Evaporation assigned to soil term if dew or snow
             ! or if no liquid water available in soil column
-            if (dqh(l) > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
-               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh(l)
+            if (dqh_p > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
+               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh_p
                qflx_tran_veg(p) = 0._r8
                ! Otherwise, evaporation assigned to transpiration term
             else
                qflx_evap_soi(p) = 0._r8
-               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh(l)
+               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh_p
             end if
             qflx_evap_veg(p) = qflx_tran_veg(p)
          else if (ctype(c) == icol_road_imperv) then
-            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(l)*dqh(l)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(l)*dqh_p
          else if (ctype(c) == icol_sunwall) then
             qflx_evap_soi(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
@@ -874,8 +879,8 @@ contains
          end if
 
          ! SCALED sensible and latent heat flux for error check
-         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(c)*dth(l)
-         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(c)*dqh(l)
+         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(c)*dth_p
+         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(c)*dqh_p
 
       end do
 
