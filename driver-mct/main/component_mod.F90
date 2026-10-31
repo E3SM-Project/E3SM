@@ -517,6 +517,20 @@ contains
        endif
     end if
 
+    if (ocn_present .and. .not. atm_present .and. (glc_c2_ocn .or. glcshelf_c2_ocn) &
+        .and. .not. samegrid_og) then
+       ! Without an atm, read the ocn's aream from the glc->ocn map, as glc's is
+       ! read below, so that glc<->ocn fluxes are conservative on the map's areas
+       gsmap_d => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
+       dom_d   => component_get_dom_cx(ocn(1))   ! dom_ox
+
+       call t_startf('CPL:seq_map_readdata-glc2ocn_ocn')
+       call seq_map_readdata('seq_maps.rc','glc2ocn_fmapname:',mpicom_CPLID, CPLID, &
+            gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
+            string='glc2ocn ocn aream initialization')
+       call t_stopf('CPL:seq_map_readdata-glc2ocn_ocn')
+    end if
+
     if (ice_present .and. ocn_present) then
        dom_s  => component_get_dom_cx(ocn(1))   !dom_ox
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
