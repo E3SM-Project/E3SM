@@ -23,6 +23,25 @@ int parse_reg_xml(ezxml_t registry);
 int validate_reg_xml(ezxml_t registry);
 
 
+#define STR(s) #s
+#define MACRO_TO_STR(s) STR(s)
+
+#define NAMELIST_SUFFIX_OPT "--namelist-suffix="
+#define EXE_NAME_OPT "--exe-name="
+#define GIT_VERSION_OPT "--git-version="
+
+
+void usage(const char *prog)/*{{{*/
+{
+	fprintf(stderr, "Usage: %s [" NAMELIST_SUFFIX_OPT "<suffix>] [" EXE_NAME_OPT "<name>]\n", prog);
+	fprintf(stderr, "       [" GIT_VERSION_OPT "<version>] [<registry file>]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Reads the registry from standard input if no file is given. Values that\n");
+	fprintf(stderr, "are not given default to the MPAS_NAMELIST_SUFFIX, MPAS_EXE_NAME and\n");
+	fprintf(stderr, "MPAS_GIT_VERSION macros that parse was compiled with.\n");
+}/*}}}*/
+
+
 int main(int argc, char ** argv)/*{{{*/
 {
 	FILE * regfile;
@@ -32,15 +51,41 @@ int main(int argc, char ** argv)/*{{{*/
 	struct group_list * groups;
 	struct package * pkgs;
 	int err;
+	int i;
 
-	if (argc != 2) {
+	const char *suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
+	const char *exe_name = MACRO_TO_STR(MPAS_EXE_NAME);
+	const char *git_ver = MACRO_TO_STR(MPAS_GIT_VERSION);
+	const char *regfilename = NULL;
+
+	for (i = 1; i < argc; i++) {
+		if (strncmp(argv[i], NAMELIST_SUFFIX_OPT, strlen(NAMELIST_SUFFIX_OPT)) == 0) {
+			suffix = argv[i] + strlen(NAMELIST_SUFFIX_OPT);
+		}
+		else if (strncmp(argv[i], EXE_NAME_OPT, strlen(EXE_NAME_OPT)) == 0) {
+			exe_name = argv[i] + strlen(EXE_NAME_OPT);
+		}
+		else if (strncmp(argv[i], GIT_VERSION_OPT, strlen(GIT_VERSION_OPT)) == 0) {
+			git_ver = argv[i] + strlen(GIT_VERSION_OPT);
+		}
+		else if (strncmp(argv[i], "--", 2) == 0 || regfilename != NULL) {
+			fprintf(stderr, "\nError: Unexpected argument %s\n\n", argv[i]);
+			usage(argv[0]);
+			return 1;
+		}
+		else {
+			regfilename = argv[i];
+		}
+	}
+
+	if (regfilename == NULL) {
 		fprintf(stderr,"Reading registry file from standard input\n");
 		regfile = stdin;
 	}
-	else if (!(regfile = fopen(argv[1], "r"))) {
-		fprintf(stderr,"\nError: Could not open file %s for reading.\n\n", argv[1]);
+	else if (!(regfile = fopen(regfilename, "r"))) {
+		fprintf(stderr,"\nError: Could not open file %s for reading.\n\n", regfilename);
 		return 1;
-	}   
+	}
 
 	nls = NULL;
 	dims = NULL;
@@ -58,7 +103,7 @@ int main(int argc, char ** argv)/*{{{*/
 		return 1;
 	}
 
-	write_model_variables(registry);
+	write_model_variables(registry, suffix, exe_name, git_ver);
 
 	if (parse_reg_xml(registry)) {
 		fprintf(stderr, "Parsing failed.....\n");

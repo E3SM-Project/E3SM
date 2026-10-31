@@ -46,7 +46,7 @@ module seaice_core_interface
 
       core % Conventions = 'MPAS'
       core % source = 'MPAS'
-#include "../inc/core_variables.inc"
+#include "core_variables.inc"
 
    end subroutine seaice_setup_core!}}}
 
@@ -65,7 +65,7 @@ module seaice_core_interface
    subroutine seaice_setup_domain(domain)!{{{
       type (domain_type), pointer :: domain
 
-#include "../inc/domain_variables.inc"
+#include "domain_variables.inc"
 
    end subroutine seaice_setup_domain!}}}
 
@@ -874,10 +874,10 @@ module seaice_core_interface
       call seaice_generate_structs(block, block % structs, block % dimensions, block % packages)
    end function seaice_setup_block!}}}
 
-#include "../inc/setup_immutable_streams.inc"
+#include "setup_immutable_streams.inc"
 
-#include "../inc/block_dimension_routines.inc"
+#include "block_dimension_routines.inc"
 
-#include "../inc/define_packages.inc"
+#include "define_packages.inc"
 
 end module seaice_core_interface

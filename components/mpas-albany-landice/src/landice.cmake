@@ -33,12 +33,14 @@ if (PHG)
   list(APPEND CPPDEFS "-DUSE_EXTERNAL_STOKES" "-DMPAS_LI_BUILD_INTERFACE")
 endif()
 
-# driver (files live in E3SM)
-list(APPEND RAW_SOURCES
-  ../../mpas-albany-landice/driver/glc_comp_mct.F
-  ../../mpas-albany-landice/driver/glc_cpl_indices.F
-  ../../mpas-albany-landice/driver/glc_mct_vars.F
-)
+# MCT driver (files live in E3SM, coupled builds only)
+if (MPAS_BUILD_MODE STREQUAL "E3SM")
+  list(APPEND RAW_SOURCES
+    ../../mpas-albany-landice/driver/glc_comp_mct.F
+    ../../mpas-albany-landice/driver/glc_cpl_indices.F
+    ../../mpas-albany-landice/driver/glc_mct_vars.F
+  )
+endif()
 
 # shared
 list(APPEND RAW_SOURCES
