@@ -26,8 +26,10 @@ class MAMWetscav : public MAMGenericInterface
   using KT           = ekat::KokkosTypes<DefaultDevice>;
   using view_2d      = typename KT::template view_2d<Real>;
   using view_2d_host = typename KT::template view_2d<Real>::host_mirror_type;
+  using int_view_1d  = typename KT::template view_1d<int>;
   using int_view_2d  = typename KT::template view_2d<int>;
   using const_view_1d = typename KT::template view_1d<const Real>;
+  using const_view_1d_int = typename KT::template view_1d<const int>;
   using const_view_2d = typename KT::template view_2d<const Real>;
 
   // a thread team dispatched to a single vertical column
@@ -159,6 +161,10 @@ private:
 
   // ConvProc configuration for species classification and resuspension mapping
   mam4::ConvProc::Config convproc_config_;
+
+  // Device views for species classification and resuspension mapping (for GPU kernels)
+  int_view_1d species_class_device_;
+  int_view_1d mmtoo_prevap_resusp_device_;
 
 }; // class MAMWetscav
 
