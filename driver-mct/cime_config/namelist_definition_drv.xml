@@ -838,6 +838,21 @@
     </values>
   </entry>
 
+  <entry id="glc_runoff_to_ocn" modify_via_xml="GLC_RUNOFF_TO_OCN">
+    <type>logical</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Whether glc's liquid and solid runoff (e.g. calving and face melt) are
+      mapped to the ocean.  If false, glc's runoff reaches no component, the
+      glc-to-ocean runoff maps are not read, and ice-shelf coupling between
+      glc and the ocean is unchanged.
+    </desc>
+    <values>
+      <value>$GLC_RUNOFF_TO_OCN</value>
+    </values>
+  </entry>
+
   <entry id="wall_time_limit">
     <type>real</type>
     <category>control</category>

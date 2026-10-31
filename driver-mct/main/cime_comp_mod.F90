@@ -409,6 +409,7 @@ module cime_comp_mod
   logical  :: glclnd_present         ! .true.  => glc is computing land coupling
   logical  :: glcocn_present         ! .true.  => glc is computing ocean runoff
   logical  :: glcice_present         ! .true.  => glc is computing icebergs
+  logical  :: glc_runoff_to_ocn      ! .true.  => glc's runoff goes to the ocn
   logical  :: rofice_present         ! .true.  => rof is computing icebergs
   logical  :: rof_present            ! .true.  => rof is present
   logical  :: flood_present          ! .true.  => rof is computing flood
@@ -1703,6 +1704,7 @@ contains
          glclnd_present=glclnd_present,         &
          glcocn_present=glcocn_present,         &
          glcice_present=glcice_present,         &
+         glc_runoff_to_ocn=glc_runoff_to_ocn,   &
          rof_present=rof_present,               &
          rofice_present=rofice_present,         &
          wav_present=wav_present,               &
@@ -1844,7 +1846,8 @@ contains
     endif
     if (glc_present) then
        if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
-       if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+       ! glc's runoff can be kept out of the ocn while ice-shelf coupling continues
+       if (glcocn_present .and. ocn_prognostic .and. glc_runoff_to_ocn) glc_c2_ocn = .true.
        ! For now, glcshelf->ocn only activated if the ocean has activated ocn->glcshelf
        if (ocn_c2_glcshelf .and. glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
        ! For now, glacshelf->ice also controlled by ocean's ocn_c2_glcshelf flag
@@ -2118,7 +2121,7 @@ contains
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, samegrid_ao, samegrid_al, &
+       call component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn, samegrid_ao, samegrid_al, &
             samegrid_ro, samegrid_lg, samegrid_og, samegrid_az)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)

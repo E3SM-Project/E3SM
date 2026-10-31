@@ -427,7 +427,7 @@ contains
 
   !===============================================================================
 
-  subroutine component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, samegrid_ao, samegrid_al, &
+  subroutine component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn, samegrid_ao, samegrid_al, &
        samegrid_ro, samegrid_lg, samegrid_og, samegrid_az)
 
     !---------------------------------------------------------------
@@ -446,6 +446,7 @@ contains
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: rof_c2_ocn
     logical                  , intent(in)    :: glc_c2_ocn
+    logical                  , intent(in)    :: glcshelf_c2_ocn
     logical                  , intent(in)    :: samegrid_ao
     logical                  , intent(in)    :: samegrid_al
     logical                  , intent(in)    :: samegrid_ro
@@ -582,7 +583,7 @@ contains
           call t_stopf('CPL:seq_map_readdata-lnd2glc')
 
        endif
-    else if (glc_c2_ocn .and. .not. samegrid_og) then
+    else if ((glc_c2_ocn .or. glcshelf_c2_ocn) .and. .not. samegrid_og) then
        ! Without lnd, read glc aream from the glc->ocn map so the area
        ! corrections make glc<->ocn fluxes conservative even when glc's model
        ! areas differ from the mapping areas (e.g., a planar ice-sheet mesh)
