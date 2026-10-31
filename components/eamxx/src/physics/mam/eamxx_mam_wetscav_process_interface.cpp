@@ -394,6 +394,22 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // The default constructor initializes species_class and mmtoo_prevap_resusp arrays
   // with reference values from mam4xx/convproc.hpp
   convproc_config_ = mam4::ConvProc::Config();
+
+  // Allocate and copy species_class and mmtoo_prevap_resusp to device for GPU kernels
+  species_class_device_ = int_view_1d("species_class_device", mam4::aero_model::pcnst);
+  mmtoo_prevap_resusp_device_ = int_view_1d("mmtoo_prevap_resusp_device", mam4::aero_model::pcnst);
+  
+  // Create host mirrors and copy data
+  auto species_class_host = Kokkos::create_mirror_view(species_class_device_);
+  auto mmtoo_prevap_resusp_host = Kokkos::create_mirror_view(mmtoo_prevap_resusp_device_);
+  
+  for(int i = 0; i < mam4::aero_model::pcnst; ++i) {
+    species_class_host(i) = convproc_config_.species_class[i];
+    mmtoo_prevap_resusp_host(i) = convproc_config_.mmtoo_prevap_resusp[i];
+  }
+  
+  Kokkos::deep_copy(species_class_device_, species_class_host);
+  Kokkos::deep_copy(mmtoo_prevap_resusp_device_, mmtoo_prevap_resusp_host);
 }
 
 // ================================================================
@@ -571,8 +587,8 @@ void MAMWetscav::run_impl(const double dt) {
   // These are passed to aero_model_wetdep but only used when do_convproc is true
   const_view_1d zm_jt_in, zm_msemax_klev_in, zm_activity_in;
   const_view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
-  const int* species_class = nullptr;
-  const int* mmtoo_prevap_resusp = nullptr;
+  const_view_1d_int species_class;
+  const_view_1d_int mmtoo_prevap_resusp;
   
   if(do_convproc) {
     // Get cloud top and base indices from ZM convection scheme
@@ -591,8 +607,9 @@ void MAMWetscav::run_impl(const double dt) {
     
     // Species classification and resuspension mapping arrays
     // These were initialized in initialize_impl from mam4xx ConvProc defaults
-    species_class = convproc_config_.species_class;
-    mmtoo_prevap_resusp = convproc_config_.mmtoo_prevap_resusp;
+    // Copy from host to device for GPU kernel access
+    species_class = species_class_device_;
+    mmtoo_prevap_resusp = mmtoo_prevap_resusp_device_;
   }
   
   // Loop over atmosphere columns
@@ -706,7 +723,7 @@ void MAMWetscav::run_impl(const double dt) {
            ktop, kbot,
            convproc_do_aer, convproc_do_gas,
            zm_activity_icol,
-           species_class, mmtoo_prevap_resusp,
+           species_class.data(), mmtoo_prevap_resusp.data(),
            aero_config);
         
         team.team_barrier();
