@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_cld_p3_rrtmgp_output
+stream_id: shoc_cld_p3_rrtmgp_output
 averaging_type: instant
 field_names:
   # SHOC

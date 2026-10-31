@@ -87,7 +87,7 @@ include (CompareNCFiles)
 
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
-  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME EAMxx.eamxx.h.${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS dynamics physics tms shoc cld p3 rrtmgp pg2
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
@@ -97,7 +97,7 @@ CompareNCFilesFamilyMpi (
 # mean('col') or zonal_mean() must not depend on the rank count.
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}_diags_ins
-  FILE_META_NAME ${TEST_BASE_NAME}_diags_ins.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME EAMxx.eamxx.h.${TEST_BASE_NAME}_diags_ins.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS dynamics physics tms shoc cld p3 rrtmgp pg2 diagnostics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
@@ -105,7 +105,7 @@ CompareNCFilesFamilyMpi (
 
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}_diags_avg
-  FILE_META_NAME ${TEST_BASE_NAME}_diags_avg.AVERAGE.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME EAMxx.eamxx.h.${TEST_BASE_NAME}_diags_avg.AVERAGE.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS dynamics physics tms shoc cld p3 rrtmgp pg2 diagnostics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
@@ -114,6 +114,6 @@ CompareNCFilesFamilyMpi (
 if (SCREAM_ENABLE_BASELINE_TESTS)
   # Compare one of the output files with the baselines.
   # Note: one is enough, since we already check that np1 is BFB with npX
-  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc)
+  set (OUT_FILE EAMxx.eamxx.h.${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.${RUN_T0}.nc)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME})
 endif()

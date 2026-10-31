@@ -138,7 +138,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_basic"));
+  om_pl.set("stream_id",std::string("io_basic"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   auto& ctrl_pl = om_pl.sublist("output_control");
@@ -217,7 +217,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Create reader pl
-  std::string casename = "io_basic";
+  std::string casename = "eamxx.h.io_basic";
   auto filename = casename
     + "." + avg_type
     + "." + freq_units

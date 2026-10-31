@@ -30,7 +30,7 @@ include (CompareNCFiles)
 
 CompareNCFilesFamilyMpi (
   TEST_BASE_NAME ${TEST_BASE_NAME}
-  FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
+  FILE_META_NAME EAMxx.eamxx.h.${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS p3 physics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
@@ -39,7 +39,7 @@ CompareNCFilesFamilyMpi (
 # Check tendency calculation
 foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
-  set (fname p3_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
+  set (fname EAMxx.eamxx.h.p3_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.${RUN_T0}.nc)
   set (tname p3_tend_check_np${NRANKS})
   add_test (NAME ${tname}
     COMMAND ${script} -f ${fname} -v qc T_mid -t p3_qc_tend p3_T_mid_tend
@@ -52,7 +52,7 @@ endforeach()
 if (SCREAM_ENABLE_BASELINE_TESTS)
   # Compare one of the output files with the baselines.
   # Note: one is enough, since we already check that np1 is BFB with npX
-  set (OUT_FILE ${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
+  set (OUT_FILE EAMxx.eamxx.h.${TEST_BASE_NAME}_output.INSTANT.nsteps_x1.np${TEST_RANK_END}.${RUN_T0}.nc)
   CreateBaselineTest(${TEST_BASE_NAME} ${TEST_RANK_END} ${OUT_FILE} ${FIXTURES_BASE_NAME}) 
 
   # Grab all bfb hash lines into a text file (only np1_omp1 test)

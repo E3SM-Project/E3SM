@@ -122,7 +122,7 @@ TEST_CASE("io_with_aliases") {
   auto fm = create_test_field_manager(grid, t0);
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix", "io_alias_mixed");
+  params.set<std::string>("stream_id", "io_alias_mixed");
   params.set<std::string>("averaging_type", "INSTANT");
 
   std::vector<std::string> mixed_specs = {
@@ -175,7 +175,8 @@ TEST_CASE("io_with_aliases") {
   om.finalize();
 
   // Verify the NetCDF file was created with the expected filename
-  std::string expected_filename = "io_alias_mixed.INSTANT.nsteps_x1.np" +
+  // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+  std::string expected_filename = "eamxx.h.io_alias_mixed.INSTANT.nsteps_x1.np" +
                                   std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
 
   // First check if the file actually exists

@@ -104,7 +104,7 @@ make_om_params (const std::string& prefix,
                 const bool save_grid_data)
 {
   ekat::ParameterList pl;
-  pl.set("filename_prefix", prefix);
+  pl.set("stream_id", prefix);
   pl.set("field_names", field_names);
   pl.set("averaging_type", std::string("INSTANT"));
   auto& ctrl = pl.sublist("output_control");
@@ -154,7 +154,8 @@ TEST_CASE ("io_conditional_geo_data")
     om.finalize();
 
     // Verify: "swband" dim should NOT be in the file
-    std::string fname = "io_cond_geo_no_swband.INSTANT.nsteps_x1.np"
+    // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+    std::string fname = "eamxx.h.io_cond_geo_no_swband.INSTANT.nsteps_x1.np"
                         + std::to_string(comm.size())
                         + "." + t0.to_string() + ".nc";
     scorpio::register_file(fname, scorpio::FileMode::Read);
@@ -183,7 +184,8 @@ TEST_CASE ("io_conditional_geo_data")
     om.finalize();
 
     // Verify: "swband" dim should be in the file and both geo vars present
-    std::string fname = "io_cond_geo_with_swband.INSTANT.nsteps_x1.np"
+    // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+    std::string fname = "eamxx.h.io_cond_geo_with_swband.INSTANT.nsteps_x1.np"
                         + std::to_string(comm.size())
                         + "." + t0.to_string() + ".nc";
     scorpio::register_file(fname, scorpio::FileMode::Read);

@@ -100,11 +100,11 @@ struct IOFileSpecs {
 
   std::string suffix () const {
     if (ftype==FileType::HistoryRestart)
-      return ".rhist";
+      return ".rh";
     else if (ftype==FileType::ModelRestart)
       return ".r";
-    else
-      return "";
+    else  // ModelOutput
+      return ".h";
   }
 
   void close () {

@@ -109,7 +109,7 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_monthly"));
+  om_pl.set("stream_id",std::string("io_monthly"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("instant"));
   om_pl.set("file_max_storage_type",std::string("one_month"));
@@ -167,7 +167,7 @@ void read (const int seed, const ekat::Comm& comm)
   }
 
   // Get filename from timestamp
-  std::string casename = "io_monthly";
+  std::string casename = "eamxx.h.io_monthly";
   auto get_filename = [&](const util::TimeStamp& t) {
     auto t_str = t.to_string().substr(0,7);
     std::string fname = casename
@@ -214,7 +214,7 @@ void write_avg_type (const std::string& avg_type, const int seed, const ekat::Co
   }
 
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_monthly_avg"));
+  om_pl.set("stream_id",std::string("io_monthly_avg"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   om_pl.set("file_max_storage_type",std::string("one_month"));
@@ -266,7 +266,7 @@ void read_avg_type (const std::string& avg_type, const int seed, const ekat::Com
   // (the start of the averaging window). With freq=1 nstep, the n-th window
   // starts at t0 + n*dt and ends at t0 + (n+1)*dt.
   // So the n-th output file is named using the timestamp t0 + n*dt.
-  std::string casename = "io_monthly_avg";
+  std::string casename = "eamxx.h.io_monthly_avg";
   auto get_filename = [&](const util::TimeStamp& t) {
     auto t_str = t.to_string().substr(0,7); // YYYY-MM
     std::string fname = casename
