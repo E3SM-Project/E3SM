@@ -933,6 +933,17 @@
       compsets.</desc>
   </entry>
 
+  <entry id="GLC_RUNOFF_TO_OCN">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Whether glc's runoff (e.g. calving and face melt) goes to the ocean.
+      If FALSE, glc's runoff reaches no component and the glc-to-ocean runoff
+      maps are not needed, while ice-shelf coupling is unchanged.</desc>
+  </entry>
+
   <entry id="OCN_GLC_ISMF_COUPLING">
     <type>char</type>
     <valid_values>none,data_mpaso,data_mali,internal_mpaso,tf,coupler</valid_values>

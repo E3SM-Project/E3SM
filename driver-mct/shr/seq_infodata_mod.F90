@@ -121,6 +121,7 @@ MODULE seq_infodata_mod
      real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
      integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
      character(SHR_KIND_CL)  :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
+     logical                 :: glc_runoff_to_ocn ! Whether glc sends runoff to ocn
      real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
      character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
      character(SHR_KIND_CL)  :: atm_gnam        ! atm grid
@@ -382,6 +383,7 @@ CONTAINS
     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
     character(SHR_KIND_CL) :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
+    logical                :: glc_runoff_to_ocn  ! Whether glc sends runoff to ocn
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
     character(SHR_KIND_CS) :: force_stop_at      ! when to force a stop (month, day, etc)
     character(SHR_KIND_CL) :: atm_gnam           ! atm grid
@@ -467,6 +469,7 @@ CONTAINS
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
          tfreeze_option, glc_renormalize_smb,              &
+         glc_runoff_to_ocn,                                &
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, iac_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
@@ -549,6 +552,7 @@ CONTAINS
        flux_convergence      = 0.0_SHR_KIND_R8
        flux_max_iteration    = 2
        glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
+       glc_runoff_to_ocn     = .true.
        wall_time_limit       = -1.0
        force_stop_at         = 'month'
        atm_gnam              = 'undefined'
@@ -685,6 +689,7 @@ CONTAINS
        infodata%coldair_outbreak_mod      = coldair_outbreak_mod
        infodata%flux_max_iteration    = flux_max_iteration
        infodata%glc_renormalize_smb   = glc_renormalize_smb
+       infodata%glc_runoff_to_ocn     = glc_runoff_to_ocn
        infodata%wall_time_limit       = wall_time_limit
        infodata%force_stop_at         = force_stop_at
        infodata%atm_gnam              = atm_gnam
@@ -1051,7 +1056,7 @@ CONTAINS
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
        orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
        wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-       tfreeze_option, glc_renormalize_smb,                               &
+       tfreeze_option, glc_renormalize_smb, glc_runoff_to_ocn,            &
        glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
        wav_phase, iac_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,   &
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
@@ -1121,6 +1126,7 @@ CONTAINS
     integer, optional, intent(OUT)                :: flux_max_iteration ! max number of iterations of atmocn flux loop
 
     character(len=*),       optional, intent(OUT) :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
+    logical,                optional, intent(OUT) :: glc_runoff_to_ocn       ! Whether glc sends runoff to ocn
     real(SHR_KIND_R8),      optional, intent(OUT) :: wall_time_limit         ! force stop wall time (hours)
     character(len=*),       optional, intent(OUT) :: force_stop_at           ! force stop at next (month, day, etc)
     character(len=*),       optional, intent(OUT) :: atm_gnam                ! atm grid
@@ -1313,6 +1319,7 @@ CONTAINS
     if ( present(flux_convergence)) flux_convergence = infodata%flux_convergence
     if ( present(flux_max_iteration)) flux_max_iteration = infodata%flux_max_iteration
     if ( present(glc_renormalize_smb)) glc_renormalize_smb = infodata%glc_renormalize_smb
+    if ( present(glc_runoff_to_ocn)) glc_runoff_to_ocn = infodata%glc_runoff_to_ocn
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
     if ( present(force_stop_at)  ) force_stop_at  = infodata%force_stop_at
     if ( present(atm_gnam)       ) atm_gnam       = infodata%atm_gnam
@@ -1619,7 +1626,7 @@ CONTAINS
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
        orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
        wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
-       tfreeze_option, glc_renormalize_smb, &
+       tfreeze_option, glc_renormalize_smb, glc_runoff_to_ocn, &
        glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
        wav_phase, iac_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,   &
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
@@ -1688,6 +1695,7 @@ CONTAINS
     real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
     integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
     character(len=*),       optional, intent(IN)    :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
+    logical,                optional, intent(IN)    :: glc_runoff_to_ocn       ! Whether glc sends runoff to ocn
     real(SHR_KIND_R8),      optional, intent(IN)    :: wall_time_limit         ! force stop wall time (hours)
     character(len=*),       optional, intent(IN)    :: force_stop_at           ! force a stop at next (month, day, etc)
     character(len=*),       optional, intent(IN)    :: atm_gnam                ! atm grid
@@ -1879,6 +1887,7 @@ CONTAINS
     if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
     if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
     if ( present(glc_renormalize_smb)) infodata%glc_renormalize_smb = glc_renormalize_smb
+    if ( present(glc_runoff_to_ocn)) infodata%glc_runoff_to_ocn = glc_runoff_to_ocn
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
     if ( present(force_stop_at)  ) infodata%force_stop_at  = force_stop_at
     if ( present(atm_gnam)       ) infodata%atm_gnam       = atm_gnam
@@ -2195,6 +2204,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
     call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
     call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
+    call shr_mpi_bcast(infodata%glc_runoff_to_ocn,       mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,         mpicom)
     call shr_mpi_bcast(infodata%force_stop_at,           mpicom)
     call shr_mpi_bcast(infodata%atm_gnam,                mpicom)
@@ -2919,6 +2929,7 @@ CONTAINS
     write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
     write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
     write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)
+    write(logunit,F0L) subname,'glc_runoff_to_ocn        = ', infodata%glc_runoff_to_ocn
     write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
     write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
     write(logunit,F0A) subname,'atm_gridname             = ', trim(infodata%atm_gnam)
