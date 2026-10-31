@@ -617,6 +617,7 @@ contains
 
       ! set time steps
       dt = dtime_mod
+      nstep = get_nstep()
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
       err_found = .false.
 
@@ -738,7 +739,7 @@ contains
       if (err_found .and. nstep>1) then
 #ifndef _OPENACC
          c = err_index
-         write(iulog,*)'column pbalance error = ', col_errpb(c), c
+         write(iulog,*)'column pbalance error = ', col_errpb(c), c, get_nstep()
          write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begpb       = ',col_begpb(c)
          write(iulog,*)'endpb       = ',col_endpb(c)
