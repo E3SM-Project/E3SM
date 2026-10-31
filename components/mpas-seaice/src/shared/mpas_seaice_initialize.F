@@ -2760,6 +2760,7 @@ contains
     ! abort
     call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
     call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
+     call MPAS_pool_get_config(domain % configs, "config_ocean_surface_type", config_ocean_surface_type)
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
     call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
@@ -2780,11 +2781,19 @@ contains
            messageType=MPAS_LOG_CRIT)
     endif
 
-    if (trim(config_frazil_coupling_type) /= "external") then
+    if (trim(config_frazil_coupling_type) /= "external" .and. &
+      trim(config_frazil_coupling_type) /= "omega-fluxes") then
       call mpas_log_write(&
-           'seaice_check_configs_coupled: config_frazil_coupling_type must be external', &
+           'seaice_check_configs_coupled: config_frazil_coupling_type must be external or omega-fluxes', &
            messageType=MPAS_LOG_CRIT)
     endif
+
+         if (trim(config_frazil_coupling_type) == "omega-fluxes" .and. &
+           trim(config_ocean_surface_type) /= "free") then
+           call mpas_log_write(&
+              'seaice_check_configs_coupled: omega-fluxes requires config_ocean_surface_type = free', &
+              messageType=MPAS_LOG_CRIT)
+         endif
 
     if (trim(config_thermodynamics_type) /= "mushy") then
       call mpas_log_write(&
@@ -2867,7 +2876,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_ridging_redistribution_function", config_ridging_redistribution_function)
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
-    call MPAS_pool_get_config(domain % configs, "config_ocean_surface_type", config_ocean_surface_type)
 
     call MPAS_pool_get_config(domain % configs, "config_use_column_physics", config_use_column_physics)
     call MPAS_pool_get_config(domain % configs, "config_use_column_itd_thermodynamics", config_use_column_itd_thermodynamics)

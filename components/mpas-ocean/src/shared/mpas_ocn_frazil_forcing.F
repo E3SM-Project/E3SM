@@ -467,10 +467,10 @@ contains
 
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassOld
-      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityNew
-      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyOld
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilEnergyNew
@@ -564,6 +564,7 @@ contains
       !$omp         newThicknessWeightedSaltContent, meltedFrazilIceThickness, &
       !$omp         meltedThicknessWeightedSaltContent, newFrazilEnergy, meltedFrazilEnergy, &
       !$omp         sumNewFrazilEnergy, meltedFraction)
+
       do iCell=1,nCells
 
         underLandIce = .false.
@@ -644,12 +645,12 @@ contains
 
             ! new frazil ice formation measured in meters
             newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_ice_density)
-
             ! limit the frazil formed appropriately
             newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
 
             ! Determine new salt in frazil
-            newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity
+            newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity &
+               * config_frazil_ice_density * ppt_to_salt
 
             ! Determine new energy in frazil = latent + sensible heat
             if (config_include_sensible_heat_frazil) then
@@ -666,13 +667,12 @@ contains
             ! layer thickness decreased due to creation of frazil
             ! note: -- this has to be density (not rho_sw) to keep buoyancy equal
             frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_density / density(k,iCell) / dt
-
             ! salt is extracted with the frazil
             frazilSalinityTendency(k,iCell) = - newThicknessWeightedSaltContent / dt
 
             ! ocean fluid temperature is warmed due to creation of frazil
             frazilTemperatureTendency(k,iCell) =  newFrazilEnergy / config_specific_heat_sea_water / rho_sw / dt
-            
+
             ! keep track of sum of frazil ice
             sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
             sumNewThicknessWeightedSaltContent = sumNewThicknessWeightedSaltContent + newThicknessWeightedSaltContent
@@ -692,14 +692,17 @@ contains
               ! limit melting by fraction of layer thickness
               meltedFrazilIceThickness = min(meltedFrazilIceThickness, layerThickness(k,iCell) &
                                        * config_frazil_fractional_thickness_limit)
-                                 
+
+              ! track fraction of total frazil melted
+              meltedFraction = max(0.0_RKIND,min(1.0_RKIND,meltedFrazilIceThickness/sumNewFrazilIceThickness))
+
               ! track fraction of total frazil melted
               meltedFraction = max(0.0_RKIND,min(1.0_RKIND,meltedFrazilIceThickness/sumNewFrazilIceThickness))
 
               ! assign some salt to the melted ice
               meltedThicknessWeightedSaltContent = meltedFraction * sumNewThicknessWeightedSaltContent
 
-              ! assign energy to the melted ice              
+              ! assign energy to the melted ice
               meltedFrazilEnergy = meltedFraction * sumNewFrazilEnergy
 
               ! compute tendency to thickness, temperature and salinity
@@ -730,10 +733,10 @@ contains
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
            * config_frazil_ice_density
 
-        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
-           (1-usePorosity) * sumNewThicknessWeightedSaltContent
-
+        !frazilIceEnergy > 0
         accumulatedFrazilIceEnergyNew(iCell) = accumulatedFrazilIceEnergyOld(iCell) + sumNewFrazilEnergy
+
+        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) +  sumNewThicknessWeightedSaltContent
 
         !NJ: Assume frazil salinity is the coupling salinity
         if ( underLandIce ) then
@@ -751,9 +754,10 @@ contains
            frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
-        !Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
-        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1) then
-           newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
+        !Determine salt expelled in the upper layer to if using fixed frazil salinity sea ice coupling
+        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. config_expel_excess_frazil_salt) then
+           newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity &
+              * config_frazil_ice_density * ppt_to_salt
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
             !Warning: salt conservation error. Track with lowSalinityFrazilIce
             lowSalinityFrazilIce(iCell) = newThicknessWeightedSaltContent - sumNewThicknessWeightedSaltContent
