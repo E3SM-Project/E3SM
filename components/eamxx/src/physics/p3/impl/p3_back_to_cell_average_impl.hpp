@@ -18,7 +18,7 @@ void Functions<S,D>
   const Pack& cld_frac_l, const Pack& cld_frac_r,
   const Pack& cld_frac_i, Pack& qc2qr_accret_tend, Pack& qr2qv_evap_tend,
   Pack& qc2qr_autoconv_tend, Pack& nc_accret_tend, Pack& nc_selfcollect_tend,
-  Pack& nc2nr_autoconv_tend, Pack& nr_selfcollect_tend, Pack& nr_evap_tend,
+  Pack& nc2nr_autoconv_tend, Pack& nr_selfcollect_tend, Pack& nr_breakup_tend, Pack& nr_evap_tend,
   Pack& ncautr,
   Pack& qi2qv_sublim_tend, Pack& nr_ice_shed_tend, Pack& qc2qi_hetero_freeze_tend,
   Pack& qr2qi_collect_tend, Pack& qc2qr_ice_shed_tend, Pack& qi2qr_melt_tend,
@@ -49,6 +49,7 @@ void Functions<S,D>
   nc_selfcollect_tend.set(context, nc_selfcollect_tend * cld_frac_l);    // Self collection occurs locally in liq. cloud
   nc2nr_autoconv_tend.set(context, nc2nr_autoconv_tend * cld_frac_l);   // Impact of autoconversion on number
   nr_selfcollect_tend.set(context, nr_selfcollect_tend * cld_frac_r);    // Self collection occurs locally in rain cloud
+  nr_breakup_tend.set(context, nr_breakup_tend * cld_frac_r);    // Breakup occurs locally in rain cloud
   nr_evap_tend.set(context, nr_evap_tend * cld_frac_r);    // Change in rain number due to evaporation
   ncautr.set(context, ncautr * lr_cldm); // Autoconversion of rain drops within rain/liq cloud
 

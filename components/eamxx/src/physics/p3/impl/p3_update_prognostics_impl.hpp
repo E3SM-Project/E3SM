@@ -118,7 +118,8 @@ void Functions<S,D>
 ::update_prognostic_liquid(
   const Pack& qc2qr_accret_tend, const Pack& nc_accret_tend,
   const Pack& qc2qr_autoconv_tend,const Pack& nc2nr_autoconv_tend, const Pack& ncautr,
-  const Pack& nc_selfcollect_tend, const Pack& qr2qv_evap_tend, const Pack& nr_evap_tend, const Pack& nr_selfcollect_tend,
+//  const Pack& nc_selfcollect_tend, const Pack& qr2qv_evap_tend, const Pack& nr_evap_tend, const Pack& nr_selfcollect_tend,
+  const Pack& nc_selfcollect_tend, const Pack& qr2qv_evap_tend, const Pack& nr_evap_tend, const Pack& nr_selfcollect_tend, const Pack& nr_breakup_tend,
   const bool do_predict_nc, const bool do_prescribed_CCN, const Pack& inv_rho, const Pack& inv_exner,
   const Scalar dt, Pack& th_atm, Pack& qv, Pack& qc, Pack& nc, Pack& qr, Pack& nr,
   const Mask& context)
@@ -139,10 +140,10 @@ void Functions<S,D>
   }
 
   if (IPARAM == 1 || IPARAM == 2) {
-    nr.set(context, nr + (sp(0.5) * nc2nr_autoconv_tend - nr_selfcollect_tend - nr_evap_tend) * dt);
+        nr.set(context, nr + (sp(0.5) * nc2nr_autoconv_tend - nr_selfcollect_tend - nr_breakup_tend - nr_evap_tend) * dt);
   }
   else {
-    nr.set(context, nr + (ncautr - nr_selfcollect_tend - nr_evap_tend) * dt);
+        nr.set(context, nr + (ncautr - nr_selfcollect_tend - nr_breakup_tend - nr_evap_tend) * dt);
   }
 
   qv.set(context, qv + qr2qv_evap_tend *dt);
