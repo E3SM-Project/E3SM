@@ -373,6 +373,7 @@ subroutine diag_init()
    call addfld ('VBOT',horiz_only,    'A','m/s','Lowest model level meridional wind')
    call addfld ('QBOT',horiz_only,    'A','kg/kg','Lowest model level water vapor mixing ratio')
    call addfld ('ZBOT',horiz_only,    'A','m','Lowest model level height')
+   call addfld ('PBOT',horiz_only,    'A','Pa','Lowest model level midpoint pressure')
 
    call addfld ('ATMEINT',horiz_only, 'A','J/m2','Vertically integrated total atmospheric energy ')
 
@@ -1753,6 +1754,8 @@ end subroutine diag_conv_tend_ini
     call outfld ('VBOT    ', state%v(1,pver)  ,  pcols, lchnk)
     call outfld ('QBOT    ', state%q(1,pver,1),  pcols, lchnk)
     call outfld ('ZBOT    ', state%zm(1,pver) , pcols, lchnk)
+    ! Output-only; same value the coupler receives as Sa_pbot (cam_out%pbot in cam_export)
+    call outfld ('PBOT    ', state%pmid(1,pver), pcols, lchnk)
 
 ! Total energy of the atmospheric column for atmospheric heat storage calculations
 

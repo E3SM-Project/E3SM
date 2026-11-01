@@ -1,0 +1,8 @@
+! 0301 output spec on top of fme_output (test use; the production preset
+! WCYCL20TR-0301 in run_e3sm.fme.sh writes the same lines itself).
+! Export FME_EAM_H1_ENABLE=TRUE FME_EAM_PRES_LEVELS=FALSE before create_test:
+! those knobs are read by fme_output/shell_commands at case creation.
+restart_extra_mmdd        = 501, 1102
+cpl_fme_state_mean        = .true.
+cpl_fme_inst_enable       = .true.
+cpl_fme_window_anchor_ymd = 18500101

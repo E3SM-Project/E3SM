@@ -68,6 +68,7 @@ module ocn_fme_horiz_remap
    public :: ocn_fme_horiz_remap_field
    public :: ocn_fme_horiz_remap_active
    public :: ocn_fme_horiz_remap_get_dims
+   public :: ocn_fme_horiz_remap_get_coverage
    public :: ocn_fme_remap_file_t
    public :: ocn_fme_remap_build_filename
    public :: ocn_fme_horiz_remap_write_accum
@@ -1430,6 +1431,30 @@ contains
       nlon = remap_data%nlon
       n_b_local = remap_data%n_b_local
    end subroutine ocn_fme_horiz_remap_get_dims!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_horiz_remap_get_coverage(coverage, err)!{{{
+   !> Per-target-cell row sum of the map weights, sum_j w_ij, over this
+   !> rank's target cells (shr frac_b_local). For a map built on the
+   !> culled ocean-only mesh this is the fraction of the target cell the
+   !> mesh covers (< 1 at coastlines). Multiplying an all-valid remap of
+   !> an indicator (sum w*x / sum w) by it gives sum w*x, i.e. the
+   !> valid_frac apply_masked forms for that indicator. Read-only; no
+   !> existing remap path is changed.
+      real(r8), intent(out) :: coverage(:)
+      integer,  intent(out) :: err
+      err = 0
+      coverage(:) = 0.0_r8
+      if (.not. is_initialized) then
+         err = 1; return
+      end if
+      if (.not. allocated(remap_data%frac_b_local) .or. &
+          size(coverage) < remap_data%n_b_local) then
+         err = 2; return
+      end if
+      coverage(1:remap_data%n_b_local) = remap_data%frac_b_local(1:remap_data%n_b_local)
+   end subroutine ocn_fme_horiz_remap_get_coverage!}}}
 
 !***********************************************************************
 

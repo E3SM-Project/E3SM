@@ -1812,6 +1812,69 @@
     </values>
   </entry>
 
+  <entry id="cpl_fme_state_mean">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: when true, every field of the 1-day and 5-day
+      ocean-mesh streams (x2o, xao, x2i, o2x, i2x), the state fields (S*)
+      included, is written as a window mean (cell_methods "time: mean").  When
+      false, the state fields are the instant at the window end ("time:
+      point") and only the fluxes are means.  The 6-hourly x2a/a2x and the
+      land/river streams are not affected (their state fields stay instants).
+      Pair with cpl_fme_inst_enable to keep the window-end instants.  Do not
+      change it in the middle of a run: a restart sidecar written under one
+      setting holds the wrong kind of partial sum for the other.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_inst_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: when true, each enabled 1-day/5-day
+      ocean-mesh stream gets a companion stream named with an "inst" suffix
+      (files CASE.cpl.fme.x2o5Dinst.YYYY-MM.nc, x2o1Dinst, ...) that carries
+      only the state fields (S*), as the instant at the window end
+      (cell_methods "time: point"), on the same map, cadence, coupling phase
+      and windows as its parent.  These are the initial states of the next
+      window.  The Sf_* fractions and Sx_a* albedos exist only in x2a, whose
+      6-hourly instants already include every 5-day boundary, so no x2a
+      companion is made.  default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_window_anchor_ymd">
+    <type>integer</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: date (YYYYMMDD, 00Z, model calendar) from
+      which every stream's output windows are counted.  The first window
+      ends at the next multiple of the stream interval after this date,
+      instead of at run start + interval, so a hybrid, startup or branch run
+      that starts on a different reference date keeps the same windows.  A
+      run that starts on a window boundary (any 00Z start for 6-hour and
+      1-day windows; any Jan 1 for 5-day windows in the noleap calendar,
+      since 365 = 73*5) gets exactly the historical schedule.  A run that
+      starts inside a window writes a short first record and a WARNING to
+      the cpl log.  A value of 0 or less disables anchoring.
+      default: 18500101
+    </desc>
+    <values>
+      <value>18500101</value>
+    </values>
+  </entry>
+
   <entry id="histavg_atm">
     <type>logical</type>
     <category>history</category>
@@ -2666,6 +2729,21 @@
     <values>
       <value>.false.</value>
     </values>
+  </entry>
+
+  <entry id="restart_extra_mmdd" skip_default_entry="true">
+    <type>integer(12)</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Extra yearly restart dates in MMDD format (e.g. 501, 1102), up to 12.
+      At 00Z on each listed month/day of every year the restart alarm is
+      forced on for every component clock that lands on that time and for
+      the driver, in addition to any restart from rest_option/rest_n/rest_ymd
+      and end_restart. 0 or unset entries are ignored. Set via user_nl_cpl,
+      without leading zeros.
+      default: unset (no extra restarts)
+    </desc>
   </entry>
 
   <entry id="history_option" modify_via_xml="HIST_OPTION">

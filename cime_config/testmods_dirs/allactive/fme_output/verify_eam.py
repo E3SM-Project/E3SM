@@ -922,6 +922,376 @@ def _report(name, issues):
 
 
 # -----------------------------------------------------------------------------
+# EAM h1: 5-day window means (0301 spec, eam.h1)
+# -----------------------------------------------------------------------------
+# The h1 tape (shell_commands FME_EAM_H1_ENABLE=TRUE) averages every field
+# (avgflag_pertape='A') over 5-day windows counted from 1850-01-01 (noleap),
+# the same windows as the coupler/MPAS *5D streams. Field list = spec_0301.
+EAM_H1_FIELDS = [
+    "TAUX", "TAUY", "FSDS", "FSNS", "FLDS", "FLUS", "LHFLX", "SHFLX",
+    "PRECT", "PRECC", "PRECL", "PRECSC", "PRECSL",
+    "TS", "TREFHT", "QREFHT", "PS", "PSL", "U10",
+    "ICEFRAC", "OCNFRAC", "LANDFRAC",
+    "Tat2m", "Qat2m", "Uat10m", "Vat10m", "T_7", "Q_7", "U_7", "V_7",
+    "TBOT", "QBOT", "UBOT", "VBOT", "ZBOT", "PBOT", "VMAGGUST",
+]
+H1_WINDOW_DAYS = 5.0
+H1_ANCHOR = (1850, 1, 1)      # window origin (noleap)
+H1_TIME_TOL = 1e-6            # days (spec check 1: "equal to 1e-6 day")
+H1_MEAN_RTOL = 1e-5           # spec check 4: round-off of float32 output
+_NOLEAP_CUMDAYS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+
+
+def _get_attr(ds, var, name):
+    """Return attribute `name` of variable `var` (xarray or netCDF4), or None."""
+    try:
+        if HAS_XR and isinstance(ds, xr.Dataset):
+            if var in ds.variables:
+                return ds[var].attrs.get(name)
+            return None
+        if HAS_NC4 and isinstance(ds, NC4Dataset):
+            if var in ds.variables and name in ds.variables[var].ncattrs():
+                return ds.variables[var].getncattr(name)
+    except Exception:
+        pass
+    return None
+
+
+def _noleap_offset_from_anchor(units):
+    """Days from H1_ANCHOR to the epoch in a 'days since Y-M-D[ h:m:s]' string.
+
+    EAM counts from the case's reference date (1850-01-01 for these runs),
+    but parse it rather than assume, so a different epoch still checks
+    absolute window boundaries (spec check 1 compares absolute dates).
+    """
+    if not units or "since" not in units:
+        return None
+    try:
+        unit, ref = units.split("since", 1)
+        if unit.strip().lower() not in ("days", "day"):
+            return None
+        ref = ref.strip().replace("T", " ")
+        date_part, _, time_part = ref.partition(" ")
+        y, m, d = (int(x) for x in date_part.split("-")[:3])
+        frac = 0.0
+        if time_part.strip():
+            hms = [float(x) for x in time_part.strip().split(":")]
+            hms += [0.0] * (3 - len(hms))
+            frac = (hms[0] * 3600 + hms[1] * 60 + hms[2]) / 86400.0
+        ay, am, ad = H1_ANCHOR
+        return ((y - ay) * 365 + _NOLEAP_CUMDAYS[m - 1] - _NOLEAP_CUMDAYS[am - 1]
+                + (d - ad) + frac)
+    except Exception:
+        return None
+
+
+def _noleap_date_str(days_from_anchor):
+    """Format days since H1_ANCHOR (noleap) as YYYY-MM-DD HH:MM for messages."""
+    d = float(days_from_anchor)
+    y, rem = divmod(d, 365.0)
+    doy = int(rem)
+    m = max(i for i in range(12) if _NOLEAP_CUMDAYS[i] <= doy)
+    sec = int(round((rem - doy) * 86400))
+    return (f"{int(y) + H1_ANCHOR[0]:04d}-{m + 1:02d}-{doy - _NOLEAP_CUMDAYS[m] + 1:02d} "
+            f"{sec // 3600:02d}:{(sec % 3600) // 60:02d}")
+
+
+def _tape_records(files, label, issues):
+    """Index all records of a tape: list of (file, idx, t, tb0, tb1) in days
+    since H1_ANCHOR, sorted by time and de-duplicated (first file wins)."""
+    recs = []
+    for f in files:
+        ds = safe_open(f)
+        try:
+            if has_time_zero(ds):
+                continue
+            t = get_var(ds, "time")
+            tb = get_var(ds, "time_bnds")
+            if t is None:
+                continue
+            if tb is None:
+                issues.append(f"  {label} {os.path.basename(f)}: no time_bnds")
+                continue
+            units = _get_attr(ds, "time", "units")
+            cal = (_get_attr(ds, "time", "calendar") or "").lower()
+            if cal and cal not in ("noleap", "365_day"):
+                issues.append(f"  {label} {os.path.basename(f)}: calendar '{cal}' "
+                              "is not noleap; window arithmetic assumes noleap")
+            off = _noleap_offset_from_anchor(units)
+            if off is None:
+                issues.append(f"  {label} {os.path.basename(f)}: cannot parse "
+                              f"time units '{units}'")
+                continue
+            tb = np.asarray(tb, dtype=float).reshape(-1, 2)
+            for i in range(len(t)):
+                recs.append((f, i, float(t[i]) + off,
+                             tb[i, 0] + off, tb[i, 1] + off))
+        finally:
+            close_ds(ds)
+    recs.sort(key=lambda r: r[2])
+    out = []
+    for r in recs:
+        if out and abs(r[2] - out[-1][2]) < H1_TIME_TOL:
+            continue
+        out.append(r)
+    return out
+
+
+def _on_boundary(x):
+    r = x % H1_WINDOW_DAYS
+    return min(r, H1_WINDOW_DAYS - r) < H1_TIME_TOL
+
+
+def check_eam_h1(rundir, outdir, verbose, h1_tape=1, require_h1=False):
+    """Verify the 5-day-mean EAM tape (eam.h<h1_tape>) against the 0301 spec.
+
+    1. time_bnds present; every window is 5 days long, starts and ends on a
+       1850-01-01-anchored 5-day boundary (noleap), windows are contiguous,
+       and time == upper bound (stamped at the window end).
+    2. All EAM_H1_FIELDS present, each with cell_methods 'time: mean'.
+    3. Spec check 4: for every field present in both h1 and h0 that is a
+       mean on h0 (cell_methods 'time: mean', i.e. ':A' in fincl1), the h1
+       value equals the mean of the h0 records inside its window (20 for
+       6-hourly h0) to round-off. Exact because both are means of the same
+       per-step samples and the remap is linear; it needs each h0 window to
+       hold the same number of samples (true for radiation every 2 steps).
+       State fields (instants on h0) are reported for information only.
+    4. PBOT == hyam(pver)*P0 + hybm(pver)*PS when the hybrid coefficients
+       are on the file (pmid is linear in PS, so this holds for means too).
+    """
+    print(f"\n=== EAM h{h1_tape} (5-day means) ===")
+    issues = []
+    plots = []
+    fill_reports = []
+
+    # Files named <case>.eam.h<k>.<date>.nc. A branch run dir can also hold
+    # the parent's restart-set history files (e.g. <case>.eam.h1.1940-01-01-
+    # 00000.nc from a parent whose h1 was a different tape); those lack the
+    # FME h1 fields and are ignored below.
+    cand = find_files(rundir, f"*.eam.h{h1_tape}.*.nc")
+    h1_files = []
+    for f in cand:
+        ds = safe_open(f)
+        try:
+            names = set(get_varnames(ds))
+        finally:
+            close_ds(ds)
+        if {"PBOT", "VMAGGUST", "T_7"} & names:
+            h1_files.append(f)
+        else:
+            print(f"  ignoring {os.path.basename(f)} (no FME h1 fields)")
+    if not h1_files:
+        msg = f"no FME *.eam.h{h1_tape}.*.nc files found"
+        print(f"  SKIP: {msg}")
+        if require_h1:
+            issues.append(f"  {msg}")
+        _report(f"EAM h{h1_tape}", issues)
+        return issues, plots, fill_reports
+    print(f"  h{h1_tape}: found {len(h1_files)} file(s)")
+
+    # -- 1. windows -------------------------------------------------------
+    h1 = _tape_records(h1_files, f"h{h1_tape}", issues)
+    # A startup (cold-start) run writes a zero-length record at nstep 0 on
+    # every tape (time_bnds = [t, t]); it is not a window. Branch runs (0301)
+    # never write it.
+    n0 = sum(1 for r in h1 if r[4] - r[3] <= H1_TIME_TOL)
+    if n0:
+        print(f"  h{h1_tape}: skipping {n0} zero-length startup record(s)")
+        h1 = [r for r in h1 if r[4] - r[3] > H1_TIME_TOL]
+    if not h1:
+        issues.append(f"  h{h1_tape}: no records with time/time_bnds")
+        _report(f"EAM h{h1_tape}", issues)
+        return issues, plots, fill_reports
+    nbad = 0
+    for k, (f, i, t, t0, t1) in enumerate(h1):
+        tag = f"  h{h1_tape} window [{_noleap_date_str(t0)}, {_noleap_date_str(t1)}]"
+        bad = []
+        if abs((t1 - t0) - H1_WINDOW_DAYS) > H1_TIME_TOL:
+            bad.append(f"length {t1 - t0:.6f} d != {H1_WINDOW_DAYS:g}")
+        if not (_on_boundary(t0) and _on_boundary(t1)):
+            bad.append("not on a 1850-anchored 5-day boundary")
+        if abs(t - t1) > H1_TIME_TOL:
+            bad.append(f"time {t:.6f} != upper bound {t1:.6f}")
+        if k > 0 and abs(t0 - h1[k - 1][4]) > H1_TIME_TOL:
+            bad.append(f"gap/overlap with previous window (prev end "
+                       f"{_noleap_date_str(h1[k - 1][4])})")
+        if bad:
+            nbad += 1
+            if nbad <= 10:
+                issues.append(tag + ": " + "; ".join(bad))
+    if nbad > 10:
+        issues.append(f"  h{h1_tape}: ... {nbad - 10} more bad windows")
+    print(f"  h{h1_tape}: {len(h1)} window(s), "
+          f"{_noleap_date_str(h1[0][3])} .. {_noleap_date_str(h1[-1][4])}, "
+          f"{nbad} misaligned")
+
+    # -- 2. field list + cell_methods ---------------------------------------
+    ds = safe_open(h1_files[0])
+    try:
+        names = set(get_varnames(ds))
+        for v in EAM_H1_FIELDS:
+            if v not in names:
+                issues.append(f"  h{h1_tape} missing: {v}")
+                continue
+            cm = _get_attr(ds, v, "cell_methods") or ""
+            if "mean" not in cm:
+                issues.append(f"  h{h1_tape}/{v}: cell_methods '{cm}' is not 'time: mean'")
+            arr = get_var(ds, v)
+            vmin, vmax = RANGE_CHECKS.get(v, (None, None))
+            issues += check_range(arr, f"h{h1_tape}/{v}", vmin, vmax)
+            fill_reports.append(fill_nan_report(arr, f"h{h1_tape}/{v}"))
+            if verbose:
+                print(f"  h{h1_tape}/{v}: {summary_stats(arr)}")
+
+        # -- 4. PBOT vs hybrid coefficients -------------------------------
+        hyam, hybm = get_var(ds, "hyam"), get_var(ds, "hybm")
+        p0 = get_var(ds, "P0")
+        if "PBOT" in names and "PS" in names and hyam is not None \
+                and hybm is not None:
+            p0 = float(np.asarray(p0).ravel()[0]) if p0 is not None else 1.0e5
+            pb, ps = get_var(ds, "PBOT"), get_var(ds, "PS")
+            est = float(hyam[-1]) * p0 + float(hybm[-1]) * ps
+            ok = np.isfinite(pb) & np.isfinite(est) & (np.abs(pb) < 1e10)
+            if ok.any():
+                rel = np.max(np.abs(pb[ok] - est[ok])) / np.max(np.abs(est[ok]))
+                print(f"  h{h1_tape}/PBOT vs hyam*P0+hybm*PS: max rel diff {rel:.2e}")
+                if rel > H1_MEAN_RTOL:
+                    issues.append(f"  h{h1_tape}/PBOT != hyam(pver)*P0+hybm(pver)*PS "
+                                  f"(max rel diff {rel:.2e})")
+    finally:
+        close_ds(ds)
+
+    # -- 3. spec check 4: h1 mean == mean of h0 records in the window ----
+    # Only FME h0 files (a branch run dir can hold the parent's restart-set
+    # eam.h0.<date>-00000.nc, a different tape with other windows/fields).
+    h0_files = []
+    for f in find_files(rundir, "*.eam.h0.*.nc"):
+        ds_ = safe_open(f)
+        try:
+            if {"T_7", "STW_0", "Tat2m"} & set(get_varnames(ds_)):
+                h0_files.append(f)
+        finally:
+            close_ds(ds_)
+    if not h0_files:
+        print("  check 4 SKIP: no FME h0 files")
+        _report(f"EAM h{h1_tape}", issues)
+        return issues, plots, fill_reports
+    h0 = _tape_records(h0_files, "h0", [])  # h0 time issues belong to check_eam
+    h0 = [r for r in h0 if r[4] - r[3] > H1_TIME_TOL]  # drop nstep-0 startup records
+    if not h0:
+        print("  check 4 SKIP: no h0 records with time_bnds")
+        _report(f"EAM h{h1_tape}", issues)
+        return issues, plots, fill_reports
+    h0_t0 = np.array([r[3] for r in h0])
+    h0_t1 = np.array([r[4] for r in h0])
+    h0_dt = np.median(h0_t1 - h0_t0)
+    n_expect = int(round(H1_WINDOW_DAYS / h0_dt)) if h0_dt > 0 else 0
+
+    # Which fields are means on h0? Decide from the first h0 file's metadata.
+    ds0 = safe_open(h0[0][0])
+    try:
+        h0_names = set(get_varnames(ds0))
+        both = [v for v in EAM_H1_FIELDS if v in h0_names]
+        h0_mean = {v for v in both
+                   if "mean" in (_get_attr(ds0, v, "cell_methods") or "")}
+    finally:
+        close_ds(ds0)
+    print(f"  check 4: h0 window {h0_dt * 24:.2f} h -> {n_expect} samples per "
+          f"h{h1_tape} window; flux fields compared: {sorted(h0_mean)}")
+
+    # A window is checked only when its h0 records tile [t0, t1] with no gap
+    # (run-dir edges, or months missing from the middle of the run dir, are
+    # skipped rather than failed). A fully tiled window with the wrong count
+    # (e.g. a 6-h tape with an extra/short record) is a real failure.
+    windows = []
+    n_partial = 0
+    for (f, i, t, t0, t1) in h1:
+        sel = np.where((h0_t0 >= t0 - H1_TIME_TOL) & (h0_t1 <= t1 + H1_TIME_TOL))[0]
+        tiled = len(sel) > 0
+        if tiled:
+            lo, hi = h0_t0[sel], h0_t1[sel]          # h0 is time-sorted
+            tiled = (abs(lo[0] - t0) < H1_TIME_TOL and abs(hi[-1] - t1) < H1_TIME_TOL
+                     and np.all(np.abs(lo[1:] - hi[:-1]) < H1_TIME_TOL))
+        if not tiled:
+            n_partial += 1
+            continue
+        if len(sel) != n_expect:
+            issues.append(f"  check 4 window ending {_noleap_date_str(t1)}: "
+                          f"{len(sel)} h0 records, expected {n_expect}")
+            continue
+        windows.append((f, i, t1, sel))
+    if n_partial:
+        print(f"  check 4: {n_partial} h{h1_tape} window(s) not fully covered "
+              "by h0 records -- skipped")
+    if not windows:
+        print("  check 4 SKIP: no h1 window fully covered by h0 records")
+        _report(f"EAM h{h1_tape}", issues)
+        return issues, plots, fill_reports
+
+    def _read(path, v):
+        ds_ = safe_open(path)
+        try:
+            return get_var(ds_, v)
+        finally:
+            close_ds(ds_)
+
+    # Field-outer loop: each file's array for field v is read once and the
+    # cache is dropped before the next field (a year of 1-deg 6-hourly h0 is
+    # ~0.4 GB per field; caching every field at once would be ~15 GB).
+    for v in both:
+        cache = {}
+
+        def arr(path):
+            if path not in cache:
+                cache[path] = _read(path, v)
+            return cache[path]
+
+        worst = 0.0
+        worst_t = None
+        missing = False
+        for (f, i, t1, sel) in windows:
+            a1f = arr(f)
+            if a1f is None or any(arr(h0[j][0]) is None for j in sel):
+                missing = True
+                break
+            a1 = np.asarray(a1f[i], dtype=np.float64)
+            acc = np.zeros_like(a1)
+            for j in sel:
+                acc += np.asarray(arr(h0[j][0])[h0[j][1]], dtype=np.float64)
+            m0 = acc / len(sel)
+            ok = np.isfinite(a1) & np.isfinite(m0) & (np.abs(a1) < 1e10) & (np.abs(m0) < 1e10)
+            if not ok.any():
+                continue
+            scale = max(np.max(np.abs(a1[ok])), np.finfo(float).tiny)
+            rel = np.max(np.abs(a1[ok] - m0[ok])) / scale
+            if rel >= worst:
+                worst, worst_t = rel, t1
+        cache.clear()
+        if missing:
+            if v in h0_mean:
+                issues.append(f"  check 4 h{h1_tape}/{v}: missing from some h0/h{h1_tape} files")
+            continue
+        if worst_t is None:
+            continue
+        when = _noleap_date_str(worst_t)
+        if v in h0_mean:
+            tag = "PASS" if worst <= H1_MEAN_RTOL else "FAIL"
+            print(f"  check 4 {v:8s}: max rel diff {worst:.2e} over "
+                  f"{len(windows)} window(s) (worst ending {when}) {tag}")
+            if worst > H1_MEAN_RTOL:
+                issues.append(f"  check 4 h{h1_tape}/{v} != mean of {n_expect} h0 "
+                              f"samples: max rel diff {worst:.2e} (window ending {when})")
+        elif verbose:
+            # h0 holds instants for state fields: the mean of window-end
+            # instants is only an estimate of the h1 window mean.
+            print(f"  info     {v:8s}: h1 mean vs mean of h0 instants, max rel "
+                  f"diff {worst:.2e} (not a pass/fail check)")
+
+    _report(f"EAM h{h1_tape}", issues)
+    return issues, plots, fill_reports
+
+
+# -----------------------------------------------------------------------------
 # Timing summary
 # -----------------------------------------------------------------------------
 
@@ -2076,6 +2446,7 @@ def collect_file_inventory(rundir):
     print("\n=== File Inventory ===")
     categories = [
         ("EAM h0", "*.eam.h0.*.nc", None),
+        ("EAM h1 (5-day means, if enabled)", "*.eam.h1.*.nc", None),
     ]
     total = 0
     inventory_data = []
@@ -3337,6 +3708,11 @@ def main():
     parser.add_argument("--legacy-rundir",
                         help="CIME RUNDIR for the legacy case (fme_legacy_output testmod) "
                              "for cross-verification")
+    parser.add_argument("--h1-tape", type=int, default=1,
+                        help="history-file index of the 5-day-mean tape "
+                             "(eam.h<k>; default 1 = FME_EAM_H1_ENABLE standalone)")
+    parser.add_argument("--require-h1", action="store_true",
+                        help="fail (instead of skip) when no 5-day-mean tape is found")
     args = parser.parse_args()
 
     if not os.path.isdir(args.rundir):
@@ -3378,6 +3754,10 @@ def main():
 
     run_check("EAM", check_eam, "eam",
               args.rundir, args.verbose)
+
+    # 5-day-mean tape (0301 eam.h1): window alignment + spec check 4
+    run_check("EAM h1", check_eam_h1, "eam",
+              args.rundir, args.verbose, args.h1_tape, args.require_h1)
 
     # ACE training readiness certification
     run_check("Training Readiness", check_training_readiness, "eam",

@@ -38,6 +38,19 @@
     <hist_file_extension>fme\.o2x5D\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.i2x1D\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.i2x5D\.\d.*\.nc$</hist_file_extension>
+    <!-- Window-end instant companions (cpl_fme_inst_enable).  Listed
+         explicitly: the "\.\d" after each parent name above does not match
+         "x2o5Dinst.", and these still exclude the *.accum.nc sidecars. -->
+    <hist_file_extension>fme\.x2o1Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2o5Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.xao1Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.xao5Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2i1Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2i5Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.o2x1Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.o2x5Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.i2x1Dinst\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.i2x5Dinst\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.x2a\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.a2x\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.x2l\.\d.*\.nc$</hist_file_extension>
@@ -68,6 +81,17 @@
       <tfile disposition="move">casename.cpl.fme.o2x5D.1976-01.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.i2x1D.1976-01.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.i2x5D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2o1Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2o5Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.xao1Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.xao5Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2i1Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2i5Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.o2x1Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.o2x5Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.i2x1Dinst.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.i2x5Dinst.1976-01.nc</tfile>
+      <tfile disposition="ignore">casename.cpl.fme.x2o5Dinst.accum.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.x2a.1976-01.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.a2x.1976-01.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.x2l.1976-01.nc</tfile>

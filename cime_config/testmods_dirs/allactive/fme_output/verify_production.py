@@ -99,6 +99,30 @@ STREAMS = [
     },
 ]
 
+# Coupler-native 5-day streams (cpl_fme_mod.F90) and their window-end instant
+# companions (cpl_fme_inst_enable).  Optional: a missing stream is a NOTE, not
+# a FAIL (they can be disabled).  The full per-stream checks, including the
+# *5Dinst-vs-6h comparison (0301 spec check 5), are in verify_cpl.py; here we
+# plot them and gate the time layout (spec check 3) via cpl_layout_check.
+for _b in ("x2o", "xao", "x2i", "o2x", "i2x"):
+    STREAMS.append({
+        "key": f"cpl_{_b}5D",
+        "label": f"CPL {_b} 5-day",
+        "pattern": f"*.cpl.fme.{_b}5D.*.nc",
+        "exclude": [".accum.nc"],        # restart sidecar shares the prefix
+        "optional": True,
+        "cpl": "mean",
+    })
+    STREAMS.append({
+        "key": f"cpl_{_b}5Dinst",
+        "label": f"CPL {_b} 5-day window-end instants",
+        "pattern": f"*.cpl.fme.{_b}5Dinst.*.nc",
+        "exclude": [".accum.nc"],
+        "optional": True,
+        "cpl": "inst",
+        "inst_of": f"cpl_{_b}5D",
+    })
+
 
 YYYYMM_RE = re.compile(r"\.(\d{4})-(\d{2})\.")
 
@@ -124,6 +148,10 @@ def parse_args():
                          "well above any geophysical value (max ~6e11 J/m^2 for OHC) "
                          "and well below SHR_FILL_VALUE=1e20. Catches subtler leaks "
                          "than the original 1e18 detection threshold.")
+    ap.add_argument("--require-state-mean", action="store_true",
+                    help="FAIL any 'time: point' field in a coupler 5D mean "
+                         "stream even when the file does not declare "
+                         "fme_avg_mode='mean' (0301 spec check 3)")
     ap.add_argument("--dpi", type=int, default=85,
                     help="Figure DPI (default 85)")
     ap.add_argument("--label", default=None,
@@ -478,6 +506,42 @@ def sanity_check(ds, stream_label, n_files, n_legacy_skipped, is_mpas,
 
     # Fill-leak scan -- the headline correctness check.
     out.extend(check_fills(ds, pollution_threshold))
+    return out
+
+
+def cpl_layout_check(ds, kind, require_state_mean=False):
+    """0301 spec check 3 for the coupler streams.
+
+    kind='mean': no 'time: point' field when the file says fme_avg_mode='mean'
+    (FAIL) or --require-state-mean is given (FAIL); otherwise WARN (the 0201
+    mixed layout).  kind='inst': only S* fields, all 'time: point'.  Flux
+    fields should carry an area_basis attribute."""
+    out = []
+    tv = [v for v in ds.data_vars if {"lat", "lon", "time"} <= set(ds[v].dims)]
+    cm = {v: str(ds[v].attrs.get("cell_methods", "")).strip() for v in tv}
+    if kind == "inst":
+        bad = [v for v in tv if cm[v] != "time: point" or not v.startswith("S")]
+        if bad:
+            out.append(("FAIL", f"inst stream has non-instant or non-state "
+                                f"field(s): {', '.join(bad[:8])}"))
+        else:
+            out.append(("OK", f"inst stream: {len(tv)} state field(s), all "
+                              f"'time: point'"))
+        return out
+    points = [v for v in tv if cm[v] == "time: point"]
+    mode = str(ds.attrs.get("fme_avg_mode", ""))
+    if points:
+        msg = (f"{len(points)} field(s) are 'time: point' in a 5-day stream: "
+               f"{', '.join(points[:8])}")
+        lvl = "FAIL" if (mode == "mean" or require_state_mean) else "WARN"
+        out.append((lvl, msg + ("" if lvl == "FAIL" else
+                                " (mixed layout; set cpl_fme_state_mean)")))
+    else:
+        out.append(("OK", f"all {len(tv)} field(s) are window means"))
+    noab = [v for v in tv if v.startswith("F") and "area_basis" not in ds[v].attrs]
+    if noab:
+        out.append(("WARN", f"flux field(s) without area_basis: "
+                            f"{', '.join(noab[:6])}"))
     return out
 
 
@@ -1059,6 +1123,9 @@ def main():
         is_mpas = stream["key"].startswith("mpas")
         sanity = sanity_check(ds, stream["label"], len(files), n_legacy, is_mpas,
                               args.pollution_threshold)
+        if stream.get("cpl"):
+            sanity.extend(cpl_layout_check(ds, stream["cpl"],
+                                           args.require_state_mean))
         for lvl, msg in sanity:
             if lvl != "OK":
                 print(f"    [{lvl}] {msg}")
@@ -1134,6 +1201,20 @@ def main():
                 print(f"    [{lvl}] {msg}")
         results[stream["key"]]["sanity"].extend(cc)
 
+    # ----- Pass 2b: a coupler mean stream that names an inst companion must
+    # have one (cpl_fme_inst_enable) ------------------------------------------
+    for stream in STREAMS:
+        parent = stream.get("inst_of")
+        if not parent:
+            continue
+        dsp = results[parent]["ds"]
+        if dsp is None:
+            continue
+        named = str(dsp.attrs.get("fme_inst_companion", ""))
+        if named and results[stream["key"]]["no_files"]:
+            results[parent]["sanity"].append(
+                ("FAIL", f"names inst companion '{named}' but it has no files"))
+
     # ----- Pass 3: render ---------------------------------------------------
     sections = []
     for stream in STREAMS:
@@ -1170,9 +1251,9 @@ def main():
     for stream in STREAMS:
         res = results[stream["key"]]
         if res["no_files"]:
-            if stream.get("companion_of"):
-                print(f"  NOTE [{stream['key']}]: no files (5D companion "
-                      f"disabled?) -- not counted as a failure")
+            if stream.get("companion_of") or stream.get("optional"):
+                print(f"  NOTE [{stream['key']}]: no files (optional/5D "
+                      f"companion disabled?) -- not counted as a failure")
             else:
                 n_fail += 1
                 fail_lines.append(f"  FAIL [{stream['key']}]: no files found")

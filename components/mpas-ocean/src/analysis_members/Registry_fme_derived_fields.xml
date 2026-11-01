@@ -47,7 +47,7 @@
 			description="Sea surface salinity extracted from top-level salinity tracer"
 		/>
 		<var name="surfaceHeatFluxTotal" type="real" dimensions="nCells Time" units="W m^-2"
-			description="Total surface downward heat flux (shortwave + longwave down + latent + sensible)"
+			description="SW + LWdown + LH + SH only (not the net surface heat flux; omits LWup, sea-ice, iceberg, snow/ice-runoff melt and frazil terms -- see surfaceHeatFluxNet)"
 		/>
 		<var name="snowFluxLf" type="real" dimensions="nCells Time" units="W m^-2"
 			description="snowFlux multiplied by latent heat of fusion (kg m^-2 s^-1 * J kg^-1). Sign convention follows snowFlux."
@@ -57,6 +57,15 @@
 		/>
 		<var name="riverRunoffFluxTemperature" type="real" dimensions="nCells Time" units="kg degC m^-2 s^-1"
 			description="riverRunoffFlux multiplied by top-layer temperature. Native mass-flux units; divide by reference fresh-water density to convert to m degC s^-1."
+		/>
+		<var name="surfaceHeatFluxNet" type="real" dimensions="nCells Time" units="W m^-2"
+			description="Net surface heat flux into the ocean per unit ocean-cell area, positive down: shortWaveHeatFlux + longWaveHeatFluxDown + longWaveHeatFluxUp + latentHeatFlux + sensibleHeatFlux + seaIceHeatFlux + icebergHeatFlux - Lf*snowFlux - Lf*iceRunoffFlux + frazilHeatFlux (+ landIceHeatFlux when config_land_ice_flux_mode is standalone/coupled/data). The heat terms of conservationCheck netEnergyFlux; its rho*cp*temperature-flux terms are in massFluxHeatContent instead."
+		/>
+		<var name="frazilHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
+			description="Latent heat released into the ocean by frazil formation this time step: -config_frazil_heat_of_fusion*(accumulatedFrazilIceMass(level 2) - accumulatedFrazilIceMass(level 1))/dt evaluated after the time-level shift, as in conservationCheck. Positive into the ocean."
+		/>
+		<var name="massFluxHeatContent" type="real" dimensions="nCells Time" units="W m^-2"
+			description="rho_sw*cp_sw*(rainTemperatureFlux + evapTemperatureFlux + seaIceTemperatureFlux + icebergTemperatureFlux + river-runoff temperature surface flux): heat carried by the surface water fluxes relative to 0 degC. Needed to close the 0 degC-referenced heat content budget; not part of surfaceHeatFluxNet."
 		/>
 	</var_struct>
 	<streams>
@@ -98,6 +107,12 @@
 			<var name="snowFluxLf"/>
 			<var name="iceRunoffFluxLf"/>
 			<var name="riverRunoffFluxTemperature"/>
+			<var name="surfaceHeatFluxNet"/>
+			<var name="frazilHeatFlux"/>
+			<var name="massFluxHeatContent"/>
+			<var name="icebergFreshWaterFlux"/>
+			<var name="removedRiverRunoffFlux"/>
+			<var name="removedIceRunoffFlux"/>
 		</stream>
 		<!-- 5-day-average companion stream (output_interval emitted as
 		     "none" by buildnml; AM uses the filename template only). -->
@@ -138,5 +153,11 @@
 			<var name="snowFluxLf"/>
 			<var name="iceRunoffFluxLf"/>
 			<var name="riverRunoffFluxTemperature"/>
+			<var name="surfaceHeatFluxNet"/>
+			<var name="frazilHeatFlux"/>
+			<var name="massFluxHeatContent"/>
+			<var name="icebergFreshWaterFlux"/>
+			<var name="removedRiverRunoffFlux"/>
+			<var name="removedIceRunoffFlux"/>
 		</stream>
 	</streams>

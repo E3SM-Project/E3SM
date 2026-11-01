@@ -223,6 +223,9 @@ RANGE_CHECKS = {
     "sst": (-5, 40),
     "sss": (0, 50),
     "surfaceHeatFluxTotal": (-2000, 2000),  # spinup transients can be large
+    "surfaceHeatFluxNet": (-2000, 2000),
+    "frazilHeatFlux": (-1e-3, None),       # latent heat release, >= 0
+    "oceanWetFraction": (0, 1),
     "iceAreaTotal": (0, 1),
     "iceVolumeTotal": (0, None),
     "snowVolumeTotal": (-1e-20, None),      # allow floating-point noise near zero
@@ -2503,6 +2506,209 @@ def check_heat_flux_closure(rundir, outdir, verbose):
     return issues, plots, fill_reports
 
 
+# 0301 net-heat-flux closure (spec check 7). surfaceHeatFluxNet must equal
+# the sum of the components written next to it, with the sign of each as
+# applied in mpas_ocn_fme_derived_fields.F. snowFluxLf / iceRunoffFluxLf
+# carry the sign of the MASS flux, so they enter with -1.
+NET_HEAT_TERMS = [
+    ("shortWaveHeatFlux", +1.0),
+    ("longWaveHeatFluxDown", +1.0),
+    ("longWaveHeatFluxUp", +1.0),
+    ("latentHeatFlux", +1.0),
+    ("sensibleHeatFlux", +1.0),
+    ("seaIceHeatFlux", +1.0),
+    ("icebergHeatFlux", +1.0),
+    ("snowFluxLf", -1.0),
+    ("iceRunoffFluxLf", -1.0),
+    ("frazilHeatFlux", +1.0),
+]
+# Budget fields added for 0301 (slots 25-31 of the AM), checked only by
+# check_net_heat_flux_remapped so older tapes still pass the base checks.
+REMAPPED_DERIVED_VARS_0301 = [
+    "surfaceHeatFluxNet", "frazilHeatFlux", "massFluxHeatContent",
+    "icebergFreshWaterFlux", "frazilIceFreshwaterFlux",
+    "removedRiverRunoffFlux", "removedIceRunoffFlux",
+]
+SHFT_LABEL = "SW + LWdown + LH + SH only"
+
+
+def _get_attr(ds, name, attr):
+    """Return a variable attribute (or None) for xarray or netCDF4."""
+    if HAS_XR and isinstance(ds, xr.Dataset):
+        if name in ds:
+            return ds[name].attrs.get(attr)
+        return None
+    if HAS_NC4 and isinstance(ds, NC4Dataset):
+        if name in ds.variables and attr in ds.variables[name].ncattrs():
+            return ds.variables[name].getncattr(attr)
+        return None
+    return None
+
+
+def _var_dims(ds, name):
+    if HAS_XR and isinstance(ds, xr.Dataset):
+        return tuple(ds[name].dims) if name in ds else ()
+    if HAS_NC4 and isinstance(ds, NC4Dataset):
+        return tuple(ds.variables[name].dimensions) if name in ds.variables else ()
+    return ()
+
+
+def check_net_heat_flux_remapped(rundir, outdir, verbose):
+    """0301 spec check 7 plus the wet-fraction sanity check.
+
+    For the 1D and 5D remapped fmeDerivedFields tapes:
+      * surfaceHeatFluxNet == sum of NET_HEAT_TERMS to float32 round-off,
+        every record of every file;
+      * surfaceHeatFluxTotal long_name says it is SW + LWdown + LH + SH only;
+      * oceanWetFraction (= sum_j w_ij*wet_j, the apply_masked valid_frac of
+        the open-ocean indicator) is static, finite and in [0, 1], and is 0
+        wherever mask_2d is 0. Cells with mask_2d == 1 but
+        oceanWetFraction == 0 (ice-shelf-cavity-only 1-deg cells) and the
+        number of partial coastal cells are reported, not failed. The
+        cross-model comparison (spec check 6, vs Sf_ofrac+Sf_ifrac and
+        OCNFRAC+ICEFRAC) is not done here.
+    The closure tolerance is per cell: 8 float32 ulps of the sum of the
+    absolute terms (the file stores float32; the in-model sum is float64),
+    plus 1e-6 W/m2.
+    """
+    print("\n=== MPAS-O Net Surface Heat Flux / Wet Fraction (remapped) ===")
+    issues = []
+    plots = []
+    fill_reports = []
+    eps32 = float(np.finfo(np.float32).eps)
+
+    any_found = False
+    for label, pattern in (
+            ("1D", "*.mpaso.hist.am.fmeDerivedFields.*.remapped.nc"),
+            ("5D", "*.mpaso.hist.am.fmeDerivedFields5D.*.remapped.nc")):
+        files = find_files(rundir, pattern)
+        if not files:
+            print(f"  [{label}] SKIP: no files")
+            continue
+        any_found = True
+        worst_abs = 0.0
+        worst_rel = 0.0
+        n_cells = 0
+        n_bad = 0
+        wet_done = False
+        for path in files:
+            ds = safe_open(path)
+            try:
+                if has_time_zero(ds):
+                    continue
+                names = set(get_varnames(ds))
+                fname = os.path.basename(path)
+
+                missing = [v for v in REMAPPED_DERIVED_VARS_0301 + ["oceanWetFraction"]
+                           if v not in names]
+                if missing:
+                    issues.append(f"  [{label}] {fname}: missing {missing}")
+                    continue
+
+                # surfaceHeatFluxTotal must be labelled as the partial sum
+                ln = _get_attr(ds, "surfaceHeatFluxTotal", "long_name") or ""
+                if SHFT_LABEL not in str(ln):
+                    issues.append(f"  [{label}] {fname}: surfaceHeatFluxTotal "
+                                  f"long_name={ln!r} lacks '{SHFT_LABEL}'")
+
+                net_ln = str(_get_attr(ds, "surfaceHeatFluxNet", "long_name") or "")
+                terms = list(NET_HEAT_TERMS)
+                if "landIce" in net_ln:
+                    # landIceHeatFlux is in the net only for active land-ice
+                    # flux modes; the tape does not carry it separately.
+                    if "landIceHeatFlux" in names:
+                        terms.append(("landIceHeatFlux", +1.0))
+                    else:
+                        issues.append(f"  [{label}] {fname}: surfaceHeatFluxNet "
+                                      "includes landIce but landIceHeatFlux is "
+                                      "not on the tape; closure not checkable")
+                        continue
+                absent = [t for t, _ in terms if t not in names]
+                if absent:
+                    issues.append(f"  [{label}] {fname}: closure terms missing {absent}")
+                    continue
+
+                net = get_var(ds, "surfaceHeatFluxNet").astype(np.float64)
+                total = np.zeros_like(net)
+                abssum = np.zeros_like(net)
+                ok = np.isfinite(net) & (np.abs(net) < 1e18)
+                for tname, sign in terms:
+                    a = get_var(ds, tname).astype(np.float64)
+                    ok &= np.isfinite(a) & (np.abs(a) < 1e18)
+                    a = np.where(np.isfinite(a), a, 0.0)
+                    total += sign * a
+                    abssum += np.abs(a)
+                # The net and its terms share one source mask, so their fill
+                # patterns must coincide exactly.
+                net_valid = np.isfinite(net) & (np.abs(net) < 1e18)
+                if (net_valid != ok).any():
+                    issues.append(f"  [{label}] {fname}: surfaceHeatFluxNet fill "
+                                  "pattern differs from its components "
+                                  f"({int((net_valid != ok).sum())} cells)")
+                if ok.any():
+                    resid = np.abs(net[ok] - total[ok])
+                    tol = 8.0 * eps32 * abssum[ok] + 1e-6
+                    n_cells += int(ok.sum())
+                    n_bad += int((resid > tol).sum())
+                    worst_abs = max(worst_abs, float(resid.max()))
+                    worst_rel = max(worst_rel,
+                                    float((resid / np.maximum(abssum[ok], 1e-30)).max()))
+
+                # Static wet fraction: check once per stream.
+                if not wet_done:
+                    wet_done = True
+                    wf = get_var(ds, "oceanWetFraction").astype(np.float64)
+                    if any(d in ("time", "Time") for d in _var_dims(ds, "oceanWetFraction")):
+                        issues.append(f"  [{label}] oceanWetFraction has a time dimension "
+                                      "(expected static)")
+                    if not np.isfinite(wf).all():
+                        issues.append(f"  [{label}] oceanWetFraction has NaN/fill "
+                                      f"({int((~np.isfinite(wf)).sum())} cells)")
+                    wff = np.where(np.isfinite(wf), wf, 0.0)
+                    if wff.min() < 0.0 or wff.max() > 1.0:
+                        issues.append(f"  [{label}] oceanWetFraction outside [0,1]: "
+                                      f"min={wff.min():.6g} max={wff.max():.6g}")
+                    m2 = get_var(ds, "mask_2d")
+                    n_part = int(((wff > 0) & (wff < 1)).sum())
+                    msg = (f"  [{label}] oceanWetFraction: ==1 {int((wff == 1).sum())}, "
+                           f"partial {n_part}, ==0 {int((wff == 0).sum())}, "
+                           f"unweighted sum {wff.sum():.1f}")
+                    if m2 is not None:
+                        m2 = np.where(np.isfinite(m2), m2, 0.0).reshape(wff.shape)
+                        wet_on_land = int(((m2 == 0) & (wff > 0)).sum())
+                        dry_in_mask = int(((m2 == 1) & (wff == 0)).sum())
+                        if wet_on_land:
+                            issues.append(f"  [{label}] oceanWetFraction > 0 on "
+                                          f"{wet_on_land} cells where mask_2d == 0")
+                        msg += (f"; mask_2d==1 but wet==0 (cavity-only) "
+                                f"{dry_in_mask}")
+                    print(msg)
+                    if n_part == 0 and (wff == 1).any():
+                        # oceanWetFraction is sum(w*wet), not divided by the
+                        # row sum, so a culled-mesh map must give partial
+                        # coastal cells. None at all means the field was
+                        # normalized (coastal cells forced to 1) or the map
+                        # rows all sum to 1; either way check 6 cannot pass.
+                        print(f"  [{label}] WARN: oceanWetFraction has no "
+                              "partial (0<f<1) cells")
+            finally:
+                close_ds(ds)
+
+        if n_cells:
+            status = "PASS" if n_bad == 0 else "FAIL"
+            print(f"  [{label}] surfaceHeatFluxNet closure over {len(files)} file(s): "
+                  f"max|resid|={worst_abs:.3g} W/m2  max rel={worst_rel:.3g}  "
+                  f"cells over tol={n_bad}/{n_cells}  {status}")
+            if n_bad:
+                issues.append(f"  [{label}] surfaceHeatFluxNet != sum of components "
+                              f"in {n_bad} cell-records (max {worst_abs:.3g} W/m2)")
+
+    if not any_found:
+        print("  SKIP: no remapped fmeDerivedFields files found")
+    _report("MPAS-O net heat flux / wet fraction", issues)
+    return issues, plots, fill_reports
+
+
 def check_temporal_consistency(rundir, outdir, verbose):
     """Check global-mean SST/SSH time series for discontinuities."""
     print("\n=== Temporal Consistency ===")
@@ -4592,6 +4798,8 @@ def main():
               args.rundir, args.verbose)
     run_check("Heat Flux Closure", check_heat_flux_closure, "self_checks",
               args.rundir, args.verbose)
+    run_check("Net Heat Flux Closure (0301)", check_net_heat_flux_remapped,
+              "self_checks", args.rundir, args.verbose)
     run_check("Temporal Consistency", check_temporal_consistency, "self_checks",
               args.rundir, args.verbose)
 

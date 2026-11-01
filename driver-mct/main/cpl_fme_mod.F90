@@ -48,6 +48,7 @@ module cpl_fme_mod
   !-----------------------------------------------------------------------------
 
   use shr_kind_mod,        only: r8 => shr_kind_r8, r4 => shr_kind_r4, &
+                                 i8 => shr_kind_i8, &
                                  CL => shr_kind_cl, CS => shr_kind_cs, &
                                  CXX => shr_kind_cxx
   use shr_sys_mod,         only: shr_sys_abort, shr_sys_flush
@@ -57,14 +58,15 @@ module cpl_fme_mod
   use shr_horiz_remap_mod, only: shr_horiz_remap_t, SHR_FILL_VALUE
   use mct_mod
   use seq_comm_mct,        only: CPLID, seq_comm_setptrs, seq_comm_iamin, logunit
-  use seq_timemgr_mod,     only: seq_timemgr_EClockGetData
+  use seq_timemgr_mod,     only: seq_timemgr_EClockGetData, seq_timemgr_ETimeInit
   use seq_infodata_mod,    only: seq_infodata_type, seq_infodata_GetData
   use seq_io_mod,          only: seq_io_date2yyyymmdd, seq_io_sec2hms
   use seq_flds_mod,        only: seq_flds_lookup
   use component_type_mod,  only: component_type, component_get_gsmap_cx, &
                                  component_get_x2c_cx, component_get_c2x_cx
   use prep_ocn_mod,        only: prep_ocn_get_x2oacc_ox
-  use ESMF,                only: ESMF_Clock
+  use ESMF,                only: ESMF_Clock, ESMF_Time, ESMF_TimeInterval, &
+                                 ESMF_TimeIntervalGet, operator(-)
   use pio,                 only: file_desc_t, var_desc_t, io_desc_t, &
                                  iosystem_desc_t, &
                                  pio_createfile, pio_openfile, pio_closefile, &
@@ -126,12 +128,28 @@ module cpl_fme_mod
   integer, parameter, public :: CPL_FME_PHASE_O2X = 10 ! after the ocn runs (OCNPOSTT)
 
   !-----------------------------------------------------------------------------
-  ! Per-stream monthly lat-lon PIO output file (2D, time-averaged records).
+  ! Per-stream monthly lat-lon PIO output file (2D records).
   ! A simplified analog of ocn_fme_remap_file_t: 2D vars only, no scalars,
-  ! no static masks, no instantaneous companions (the cpl FME tape is
-  ! averaged-only by spec).
+  ! no static masks.  Window-end instants of the state fields, when wanted,
+  ! are a separate companion stream ('<stream>inst', CPL_FME_AVG_INST), not
+  ! extra variables in this file.
   !-----------------------------------------------------------------------------
   integer, parameter :: max_fme_vars = 128
+
+  !-----------------------------------------------------------------------------
+  ! Per-stream time reduction (cpl_fme_state_mean / cpl_fme_inst_enable).
+  !   MIXED : S* fields are the instant at the window end (time: point), F*
+  !           fields are window means.  The historical layout; still used for
+  !           the 6-hourly x2a/a2x streams and everything when
+  !           cpl_fme_state_mean = .false.
+  !   MEAN  : every field, S* included, is a window mean (time: mean).  The
+  !           1D/5D ocean-mesh streams when cpl_fme_state_mean = .true.
+  !   INST  : only the S* fields, as the instant at the window end (time:
+  !           point).  The '<stream>inst' companions (cpl_fme_inst_enable).
+  !-----------------------------------------------------------------------------
+  integer, parameter :: CPL_FME_AVG_MIXED = 0
+  integer, parameter :: CPL_FME_AVG_MEAN  = 1
+  integer, parameter :: CPL_FME_AVG_INST  = 2
 
   type :: cpl_fme_file_t
      type(file_desc_t)  :: pio_file
@@ -156,6 +174,8 @@ module cpl_fme_mod
      character(len=CL)  :: mapfile  = ''
      real(r8)           :: interval = 1.0_r8     ! output window, days
      integer            :: phase    = CPL_FME_PHASE_OCN  ! when to sample (gotcha #51)
+     integer            :: avg_mode = CPL_FME_AVG_MIXED  ! time reduction (see above)
+     character(len=CS)  :: inst_companion = ''   ! name of the '*inst' stream, if any
 
      ! live source bundle + its decomposition (resolved at setup)
      type(mct_aVect), pointer :: src_bundle => null()
@@ -167,7 +187,7 @@ module cpl_fme_mod
      integer            :: nflds = 0
      character(len=64)  :: fldnames(max_fme_vars) = ''
      integer            :: fld_kidx(max_fme_vars) = 0   ! index into source aVect
-     logical            :: fld_is_state(max_fme_vars) = .false.  ! S* snapshot vs F* mean
+     logical            :: fld_is_state(max_fme_vars) = .false.  ! snapshot (overwrite) vs mean (sum)
 
      ! horizontal remap (shared module) + send-side packing
      type(shr_horiz_remap_t) :: map
@@ -190,7 +210,9 @@ module cpl_fme_mod
      logical            :: reopen_pending = .true.     ! gotcha #29/#44 latch
   end type cpl_fme_stream_t
 
-  integer, parameter :: max_streams = 24
+  ! 16 base streams + up to 10 '*inst' companions (5 ocean-mesh bundles x
+  ! 1D/5D); headroom for a few more.
+  integer, parameter :: max_streams = 32
   type(cpl_fme_stream_t) :: streams(max_streams)
   integer :: nstreams = 0
 
@@ -205,6 +227,12 @@ module cpl_fme_mod
   ! restart / schedule state
   logical :: is_restart_run = .false.   ! gotcha #29
   logical :: rewind_restart = .false.   ! gotcha #45
+
+  ! 0301 output-layout switches (&cpl_fme_inparm; defaults keep the historical
+  ! layout and schedule bit-for-bit -- see cpl_fme_read_namelist)
+  logical :: state_mean        = .false.   ! cpl_fme_state_mean
+  logical :: inst_enable       = .false.   ! cpl_fme_inst_enable
+  integer :: window_anchor_ymd = 18500101  ! cpl_fme_window_anchor_ymd (<=0: off)
 
   ! CF time epoch (= case RUN_STARTDATE) and provenance
   integer           :: epoch_ymd = 0, epoch_tod = 0
@@ -599,7 +627,7 @@ CONTAINS
     ! streams (inert).  Populates streams(:) for the ocean 1D and 5D cases;
     ! xao / x2i streams are added in a later phase.
     !---------------------------------------------------------------------------
-    integer :: unitn, ios
+    integer :: unitn, ios, s, nbase
     logical :: exists
 
     ! &cpl_fme_inparm namelist variables.  ocn/ice/xao/o2x/i2x share the ocean
@@ -618,6 +646,9 @@ CONTAINS
     real(r8)          :: cpl_fme_ocn_interval, cpl_fme_ocn_5d_interval
     real(r8)          :: cpl_fme_atm_interval
     real(r8)          :: cpl_fme_lnd_interval, cpl_fme_rof_interval
+    ! 0301 layout: window-mean states, '*inst' companions, 1850-anchored windows
+    logical           :: cpl_fme_state_mean, cpl_fme_inst_enable
+    integer           :: cpl_fme_window_anchor_ymd
 
     namelist /cpl_fme_inparm/ cpl_fme_x2o_enable, cpl_fme_x2o_5d_enable, &
          cpl_fme_xao_enable, cpl_fme_xao_5d_enable, &
@@ -631,7 +662,8 @@ CONTAINS
          cpl_fme_lnd_map, cpl_fme_rof_map, &
          cpl_fme_ocn_interval, cpl_fme_ocn_5d_interval, &
          cpl_fme_atm_interval, &
-         cpl_fme_lnd_interval, cpl_fme_rof_interval
+         cpl_fme_lnd_interval, cpl_fme_rof_interval, &
+         cpl_fme_state_mean, cpl_fme_inst_enable, cpl_fme_window_anchor_ymd
 
     ! defaults: everything off
     cpl_fme_x2o_enable      = .false. ; cpl_fme_x2o_5d_enable = .false.
@@ -651,6 +683,14 @@ CONTAINS
     cpl_fme_atm_interval    = 0.25_r8   ! 6 h (atm import/export cadence)
     cpl_fme_lnd_interval    = 1.0_r8    ! daily (lnd import/export cadence)
     cpl_fme_rof_interval    = 1.0_r8    ! daily (rof import/export cadence)
+    cpl_fme_state_mean      = .false.   ! S* fields stay window-end snapshots
+    cpl_fme_inst_enable     = .false.   ! no '*inst' companion streams
+    ! Output windows are counted from this date (00Z, model calendar).  Any
+    ! run whose start is a whole number of windows from it -- every 00Z start
+    ! for the 6 h / 1 d streams, every Jan 1 for 5 d in noleap (365 = 73*5) --
+    ! gets exactly the historical curr_time+interval schedule.  <= 0 disables
+    ! anchoring (always curr_time+interval).
+    cpl_fme_window_anchor_ymd = 18500101
 
     inquire(file='drv_in', exist=exists)
     if (exists) then
@@ -660,6 +700,9 @@ CONTAINS
           close(unitn)
        end if
     end if
+    state_mean        = cpl_fme_state_mean
+    inst_enable       = cpl_fme_inst_enable
+    window_anchor_ymd = cpl_fme_window_anchor_ymd
 
     nstreams = 0
     ! ocean merged forcing x2o (the prize): 1D + 5D
@@ -694,11 +737,42 @@ CONTAINS
     call add_stream(cpl_fme_x2r_enable, 'x2r', 'x2r', cpl_fme_rof_map, cpl_fme_rof_interval)
     call add_stream(cpl_fme_r2x_enable, 'r2x', 'r2x', cpl_fme_rof_map, cpl_fme_rof_interval)
 
+    ! 1D/5D ocean-mesh streams: window-mean states and window-end instants.
+    ! The 6-hourly x2a/a2x (and the lnd/rof) streams keep the MIXED layout:
+    ! their S* fields stay instants, which is what the spec asks of them, and
+    ! x2a is the only place Sf_*frac and the Sx_a* albedos live -- so their
+    ! window-end instants at every 5-day boundary are already in x2a and no
+    ! x2a5Dinst companion is needed.
+    nbase = nstreams
+    do s = 1, nbase
+       if (.not. is_ocn_mesh_window_stream(streams(s)%bundle)) cycle
+       if (state_mean) streams(s)%avg_mode = CPL_FME_AVG_MEAN
+       if (inst_enable) then
+          ! Companion: same bundle, map, interval and phase, so it samples
+          ! the same values on the same steps and flushes on the same
+          ! boundaries; it keeps only the S* fields, overwritten each sample.
+          call add_stream(streams(s)%enabled, trim(streams(s)%name)//'inst', &
+               trim(streams(s)%bundle), trim(streams(s)%mapfile), streams(s)%interval)
+          streams(nstreams)%avg_mode = CPL_FME_AVG_INST
+          if (streams(s)%enabled) streams(s)%inst_companion = streams(nstreams)%name
+       end if
+    end do
+
   contains
+    logical function is_ocn_mesh_window_stream(bn)
+      character(len=*), intent(in) :: bn
+      select case (trim(bn))
+      case ('x2o', 'xao', 'x2i', 'o2x', 'i2x') ; is_ocn_mesh_window_stream = .true.
+      case default                             ; is_ocn_mesh_window_stream = .false.
+      end select
+    end function is_ocn_mesh_window_stream
+
     subroutine add_stream(en, nm, bn, mf, iv)
       logical,          intent(in) :: en
       character(len=*), intent(in) :: nm, bn, mf
       real(r8),         intent(in) :: iv
+      if (nstreams >= max_streams) call shr_sys_abort( &
+           'cpl_fme_read_namelist: too many streams; raise max_streams')
       nstreams = nstreams + 1
       streams(nstreams)%enabled  = en
       streams(nstreams)%name     = nm
@@ -894,15 +968,19 @@ CONTAINS
     call cpl_fme_field_list(st%bundle, flist, nfl)
     st%nflds = 0
     do i = 1, nfl
+       ! '*inst' companions carry the state fields only
+       if (st%avg_mode == CPL_FME_AVG_INST .and. flist(i)(1:1) /= 'S') cycle
        kf = mct_aVect_indexRA(st%src_bundle, trim(flist(i)), perrWith='quiet')
        if (kf > 0) then
           st%nflds = st%nflds + 1
           st%fldnames(st%nflds) = trim(flist(i))
           st%fld_kidx(st%nflds) = kf
-          ! MCT field-naming convention: 'S*' = state (instantaneous snapshot),
-          ! 'F*' = flux (time-mean over the output window).  Everything else
-          ! defaults to mean (treated as a flux) and is warned below.
-          st%fld_is_state(st%nflds) = (flist(i)(1:1) == 'S')
+          ! MCT field-naming convention: 'S*' = state, 'F*' = flux.  In the
+          ! MIXED and INST layouts a state is the instantaneous snapshot at the
+          ! window end; in the MEAN layout it is averaged like a flux.
+          ! Everything else defaults to mean (treated as a flux) and is warned.
+          st%fld_is_state(st%nflds) = (flist(i)(1:1) == 'S') .and. &
+               (st%avg_mode /= CPL_FME_AVG_MEAN)
           if (cpl_iam == 0 .and. flist(i)(1:1) /= 'S' .and. flist(i)(1:1) /= 'F') then
              write(logunit,*) subname, ': WARNING field ', trim(flist(i)), &
                   ' has no S/F prefix -- treating as flux (time: mean)'
@@ -932,13 +1010,73 @@ CONTAINS
     deallocate(idof)
     st%iodesc_valid = .true.
 
-    ! --- drift-free output schedule (gotcha #11) ----------------------------
+    ! --- drift-free output schedule (gotcha #11), anchored windows ---------
     call seq_timemgr_EClockGetData(EClock, curr_time=curr_time)
+    ! On a warm restart the sidecar (read next) restores the schedule, so a
+    ! restart that lands inside a window is not a short first record: stay
+    ! quiet here; cpl_fme_read_sidecar re-announces if there is no sidecar.
+    call cpl_fme_init_schedule(st, EClock, curr_time, quiet=is_restart_run)
+
+  end subroutine cpl_fme_stream_setup
+
+  !=============================================================================
+  subroutine cpl_fme_init_schedule(st, EClock, curr_time, quiet)
+    !---------------------------------------------------------------------------
+    ! Start a stream's output schedule at curr_time (cold start, or the reset
+    ! after a rewind restart) with an empty accumulator.
+    !
+    ! With cpl_fme_window_anchor_ymd > 0 the first boundary is the next
+    ! multiple of the interval counted from that date (00Z, in the model
+    ! calendar via the driver clock), rather than curr_time + interval.  The
+    ! two agree whenever the run starts on a boundary, and in that case the
+    ! historical expression is kept verbatim so the time / time_bnds values
+    ! (and hence the files) stay bit-for-bit.  A start inside a window gets a
+    ! short first record [curr_time, next boundary] and a loud WARNING.
+    ! Integer seconds are used for the phase so the test is exact.
+    !---------------------------------------------------------------------------
+    type(cpl_fme_stream_t), intent(inout) :: st
+    type(ESMF_Clock),       intent(in)    :: EClock
+    real(r8),               intent(in)    :: curr_time
+    logical, optional,      intent(in)    :: quiet   ! suppress the mid-window WARNING
+
+    type(ESMF_Time)         :: tcurr, tanchor
+    logical     :: lquiet
+    type(ESMF_TimeInterval) :: dt
+    integer     :: days, secs, rc, curr_ymd, curr_tod
+    integer(i8) :: dsec, isec, rem
+    character(len=*), parameter :: subname = '(cpl_fme_init_schedule)'
+
     st%last_output_time = curr_time
     st%next_output_time = curr_time + st%interval
     st%nAccum = 0
 
-  end subroutine cpl_fme_stream_setup
+    if (window_anchor_ymd <= 0) return
+    isec = nint(st%interval * 86400.0_r8, i8)
+    if (isec <= 0_i8) return
+
+    call seq_timemgr_EClockGetData(EClock, ECurrTime=tcurr, &
+         curr_ymd=curr_ymd, curr_tod=curr_tod)
+    call seq_timemgr_ETimeInit(tanchor, window_anchor_ymd, 0, 'cpl_fme window anchor')
+    dt = tcurr - tanchor
+    call ESMF_TimeIntervalGet(dt, d=days, s=secs, rc=rc)
+    dsec = int(days, i8) * 86400_i8 + int(secs, i8)
+    rem  = modulo(dsec, isec)          ! seconds since the last boundary, >= 0
+    if (rem == 0_i8) return            ! on a boundary: historical schedule
+
+    st%next_output_time = curr_time + real(isec - rem, r8) / 86400.0_r8
+    lquiet = .false.
+    if (present(quiet)) lquiet = quiet
+    if (cpl_iam == 0 .and. .not. lquiet) then
+       write(logunit,*) subname, ': WARNING *** stream ', trim(st%name), &
+            ' starts MID-WINDOW at ', curr_ymd, curr_tod, 's: ', &
+            real(rem, r8) / 86400.0_r8, ' days into a ', st%interval, &
+            '-day window anchored at ', window_anchor_ymd, &
+            '. The first record covers only the remaining ', &
+            real(isec - rem, r8) / 86400.0_r8, ' days (see time_bnds); ', &
+            'later records are on the anchored boundaries. ***'
+    end if
+
+  end subroutine cpl_fme_init_schedule
 
   !=============================================================================
   subroutine cpl_fme_build_accum_avect(st)
@@ -1074,11 +1212,15 @@ CONTAINS
        if (streams(s)%phase /= phase) cycle
 
        ! Sample the latest values (source space) for the selected fields.
-       ! State ('S*') fields are captured as an instantaneous snapshot -- the
-       ! accumulator slot just holds the most recent sample (overwrite).  Flux
-       ! ('F*') fields are summed and divided by nAccum at flush to form the
-       ! time-mean over the output window (matching the coupler's own
-       ! accumulate-then-average treatment of fluxes).
+       ! Snapshot fields (fld_is_state: S* fields in the MIXED and INST
+       ! layouts) are captured as an instantaneous snapshot -- the
+       ! accumulator slot just holds the most recent sample (overwrite), so
+       ! at the flush it is the window-end value.  Everything else (F*
+       ! fields, and S* fields in the MEAN layout) is summed and divided by
+       ! nAccum at flush to form the time-mean over the output window
+       ! (matching the coupler's own accumulate-then-average treatment of
+       ! fluxes).  An INST companion samples the same bundle at the same
+       ! phase as its parent stream, so both see identical values.
        do f = 1, streams(s)%nflds
           kf = streams(s)%fld_kidx(f)
           if (streams(s)%fld_is_state(f)) then
@@ -1133,7 +1275,7 @@ CONTAINS
     do f = 1, st%nflds
        ! Reduce in source space, pack (value, mask=1) and remap (apply_masked
        ! -> land/no-coverage target cells get SHR_FILL_VALUE; gotchas #3/#5).
-       ! State fields are the stored snapshot (no division); flux fields are
+       ! Snapshot fields are the stored value (no division); all others are
        ! divided by nAccum to form the window-mean.
        if (st%fld_is_state(f)) then
           fred = 1.0_r8        ! snapshot: accumulator already holds the value
@@ -1276,6 +1418,7 @@ CONTAINS
     integer :: rc, f
     real(r8), parameter :: fillv = SHR_FILL_VALUE
     character(len=CL) :: lname, sname, cunit
+    character(len=CXX) :: abasis
 
     fh => st%outfile
 
@@ -1307,17 +1450,50 @@ CONTAINS
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'Conventions', 'CF-1.8')
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'source', 'E3SM coupler-native FME output')
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'realm', 'cpl')
-    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'title', 'As-exchanged merged forcing ('//trim(st%bundle)//')')
+    if (st%avg_mode == CPL_FME_AVG_INST) then
+       rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'title', 'As-exchanged merged forcing ('// &
+            trim(st%bundle)//'), state fields at the window end')
+    else
+       rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'title', 'As-exchanged merged forcing ('//trim(st%bundle)//')')
+    end if
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reference_date', trim(seq_io_date2yyyymmdd(epoch_ymd)))
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'case', trim(case_name))
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'git_version', trim(model_version))
     ! document the per-field time-reduction convention so the files are
     ! self-describing (see also each var's cell_methods attribute)
-    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reduction', &
-         'State fields (name prefix "S") are instantaneous snapshots at the '// &
-         'record time (cell_methods="time: point"); flux fields (name prefix '// &
-         '"F") are means over the output window [time_bnds(1), time_bnds(2)] '// &
-         '(cell_methods="time: mean").')
+    select case (st%avg_mode)
+    case (CPL_FME_AVG_MEAN)
+       rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reduction', &
+            'Every field, state (name prefix "S") and flux (name prefix "F") '// &
+            'alike, is a mean over the output window [time_bnds(1), '// &
+            'time_bnds(2)] of the per-coupling-step samples '// &
+            '(cell_methods="time: mean").')
+    case (CPL_FME_AVG_INST)
+       rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reduction', &
+            'State fields (name prefix "S") only, as the instantaneous value at '// &
+            'the END of the output window, time = time_bnds(2) '// &
+            '(cell_methods="time: point"); time_bnds is the window whose end '// &
+            'it is.  These are the initial states of the next window.')
+    case default
+       rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reduction', &
+            'State fields (name prefix "S") are instantaneous snapshots at the '// &
+            'record time (cell_methods="time: point"); flux fields (name prefix '// &
+            '"F") are means over the output window [time_bnds(1), time_bnds(2)] '// &
+            '(cell_methods="time: mean").')
+    end select
+    ! machine-readable layout flags for the verifiers (verify_cpl.py)
+    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_stream', trim(st%name))
+    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_bundle', trim(st%bundle))
+    select case (st%avg_mode)
+    case (CPL_FME_AVG_MEAN) ; rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_avg_mode', 'mean')
+    case (CPL_FME_AVG_INST) ; rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_avg_mode', 'inst')
+    case default            ; rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_avg_mode', 'mixed')
+    end select
+    if (len_trim(st%inst_companion) > 0) &
+         rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_inst_companion', trim(st%inst_companion))
+    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_interval_days', st%interval)
+    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'fme_window_anchor_ymd', window_anchor_ymd)
+    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'remap_file', trim(st%mapfile))
 
     do f = 1, st%nflds
        ! pull long_name / standard_name / units from the coupler field registry
@@ -1330,13 +1506,18 @@ CONTAINS
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'long_name', trim(lname))
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'standard_name', trim(sname))
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'units', trim(cunit))
-       ! state ('S*') vars are instantaneous snapshots at the record time;
-       ! flux ('F*') vars are means over [time_bnds(1), time_bnds(2)]
+       ! snapshot vars are the instant at the record time (= window end);
+       ! the rest are means over [time_bnds(1), time_bnds(2)]
        if (st%fld_is_state(f)) then
           rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'cell_methods', 'time: point')
        else
           rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'cell_methods', 'time: mean')
        end if
+       ! which area a flux is per (spec 0301 "say which area each flux is
+       ! per"); states get none
+       abasis = cpl_fme_area_basis(st%bundle, st%fldnames(f))
+       if (len_trim(abasis) > 0) &
+            rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'area_basis', trim(abasis))
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), '_FillValue', real(fillv, r4))
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'missing_value', real(fillv, r4))
     end do
@@ -1349,6 +1530,119 @@ CONTAINS
     rc = pio_put_var(fh%pio_file, fh%var_lat, st%map%lat)
 
   end subroutine cpl_fme_file_define
+
+  !=============================================================================
+  function cpl_fme_area_basis(bundle, fld) result(basis)
+    !---------------------------------------------------------------------------
+    ! The area a flux field is per, as an attribute string.  Each statement was
+    ! checked against the merge code (prep_ocn_merge, prep_ice_merge,
+    ! prep_atm_merge, seq_flux_atmocn) on this branch; anything not checked is
+    ! labelled 'unverified'.  State fields (and non-'F' names) return ''.
+    ! afrac/ifrac below are the coupler's ofrac/ifrac on the ocean mesh,
+    ! renormalized to sum to 1 (so "ocean area" = ice-covered + open water,
+    ! land excluded).
+    !---------------------------------------------------------------------------
+    character(len=*), intent(in) :: bundle, fld
+    character(len=CXX) :: basis
+    character(len=*), parameter :: ocnA = 'per unit ocean (non-land) area of '// &
+         'the ocean cell, merged over sea ice and open water (prep_ocn_merge): '
+    character(len=*), parameter :: unv = 'unverified'
+
+    basis = ''
+    if (len_trim(fld) < 2) return
+    if (fld(1:1) /= 'F') return
+
+    select case (trim(bundle))
+    case ('x2o')
+       select case (trim(fld))
+       case ('Foxx_taux', 'Foxx_tauy')
+          basis = ocnA//'afrac*xao%Faox_* + ifrac*i2x%Fioi_*'
+       case ('Foxx_sen', 'Foxx_lat', 'Foxx_lwup', 'Foxx_evap')
+          basis = ocnA//'afrac*xao%Faox_* only (no ice-ocean term: the '// &
+               'ice-covered part contributes zero)'
+       case ('Foxx_swnet')
+          basis = ocnA//'afracr*(open-water absorbed a2x%Faxa_sw* with '// &
+               'xao%So_a* albedos) + ifrac*i2x%Fioi_swpen'
+       case ('Faxa_lwdn')
+          basis = ocnA//'afrac*a2x%Faxa_lwdn (ice-covered part enters via '// &
+               'the sea ice, not here)'
+       case ('Faxa_rain', 'Faxa_snow')
+          basis = ocnA//'afrac*(a2x%Faxa_*c + a2x%Faxa_*l)*flux_epbalfact '// &
+               '(ice-covered part enters via the sea ice)'
+       case ('Fioi_melth', 'Fioi_meltw', 'Fioi_salt')
+          basis = ocnA//'ifrac*i2x%Fioi_* (zero over open water)'
+       case ('Foxx_rofl', 'Foxx_rofi')
+          basis = 'per unit area of the ocean cell, NOT fraction-weighted: '// &
+               'runoff mapped to the ocean, (r2x%Forr_* [+ r2x%Flrr_flood for '// &
+               'rofl] + g2x%Fogg_*)*flux_epbalfact (prep_ocn_merge)'
+       case default
+          basis = unv
+       end select
+    case ('xao')
+       if (fld(1:5) == 'Faox_') then
+          basis = 'per unit open-water (ice-free ocean) area: bulk flux from '// &
+               'seq_flux_atmocn, not fraction-weighted; the coupler multiplies '// &
+               'by afrac (prep_ocn_merge) or ofrac (prep_atm_merge) when merging'
+          if (trim(fld) == 'Faox_swdn') basis = trim(basis)//'. Faox_swdn is '// &
+               'the incident downward shortwave'
+       else
+          basis = unv
+       end if
+    case ('x2i')
+       if (fld(1:5) == 'Faxa_') then
+          basis = 'per unit area of the ice-mesh cell, NOT fraction-weighted: '// &
+               'atm incident flux mapped atm->ice and copied (prep_ice_merge; '// &
+               'Faxa_rain/snow = (a2x%Faxa_*c + a2x%Faxa_*l)*flux_epbalfact)'
+       else if (trim(fld) == 'Fioo_q') then
+          basis = 'copy of o2x%Fioo_q on the shared ocean/ice mesh '// &
+               '(prep_ice_merge); per unit ocean-cell area as MPAS-Ocean '// &
+               'computes it (MPAS-Ocean side unverified)'
+       else
+          basis = unv
+       end if
+    case ('i2x')
+       if (fld(1:5) == 'Faii_') then
+          basis = 'per unit sea-ice area: weighted by ifrac when merged into '// &
+               'x2a (prep_atm_merge)'
+       else if (fld(1:5) == 'Fioi_') then
+          basis = 'per unit sea-ice area: weighted by ifrac when merged into '// &
+               'x2o (prep_ocn_merge)'
+       else
+          basis = unv
+       end if
+    case ('o2x')
+       if (trim(fld) == 'Fioo_q') then
+          basis = 'per unit ocean-cell area (MPAS-Ocean freeze/melt '// &
+               'potential; MPAS-Ocean side unverified)'
+       else
+          basis = unv
+       end if
+    case ('x2a')
+       if (fld(1:5) == 'Faxx_') then
+          basis = 'per unit atmosphere-cell area: lfrac*l2x%Fall_* + '// &
+               'ifrac*i2x%Faii_* + ofrac*xao%Faox_* (prep_atm_merge)'
+       else
+          basis = unv
+       end if
+    case ('a2x')
+       if (fld(1:5) == 'Faxa_') then
+          basis = 'per unit atmosphere-cell area (atm export; incident/'// &
+               'downward flux, the same over every surface type)'
+       else
+          basis = unv
+       end if
+    case ('l2x')
+       if (fld(1:5) == 'Fall_') then
+          basis = 'per unit land area: weighted by lfrac when merged into '// &
+               'x2a (prep_atm_merge)'
+       else
+          basis = unv
+       end if
+    case default
+       basis = unv
+    end select
+
+  end function cpl_fme_area_basis
 
   !=============================================================================
   subroutine cpl_fme_file_write_time(st, tlo, thi, curr_ymd, curr_tod)
@@ -1492,6 +1786,10 @@ CONTAINS
        if (cpl_iam == 0) write(logunit,*) subname, ': WARN no sidecar ', &
             trim(fname), ' on warm restart -- cold-starting accumulator for ', &
             trim(st%name)
+       ! the setup-time schedule stands (accumulator already zero); redo it
+       ! un-quietly so a mid-window cold start is announced (same values)
+       call seq_timemgr_EClockGetData(EClock, curr_time=curr_time)
+       call cpl_fme_init_schedule(st, EClock, curr_time)
        return
     end if
 
@@ -1525,9 +1823,7 @@ CONTAINS
        if (cpl_iam == 0) write(logunit,*) subname, &
             ': rewind restart detected for ', trim(st%name), &
             ' -- resetting schedule to now and clobber-creating files'
-       st%last_output_time = curr_time
-       st%next_output_time = curr_time + st%interval
-       st%nAccum = 0
+       call cpl_fme_init_schedule(st, EClock, curr_time)
        call mct_aVect_zero(st%accum)
        rewind_restart = .true.
     end if

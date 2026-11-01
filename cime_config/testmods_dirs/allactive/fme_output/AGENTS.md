@@ -2095,6 +2095,103 @@ Adding the three gotcha #62 export streams cost nothing measurable
 (17.76 -> 17.79 s/mday). When you re-measure, drop the first day and any day
 carrying a restart before averaging, or you will repeat the mistake.
 
+
+### gotcha #66 — MPAS-O fmeDerivedFields 0301 budget fields; wet fraction is sum(w*wet); sidecar slot count now fatal (ADDED 2026-11-01)
+- Slots 25-31 (N_AVG_FIELDS 24 -> 31): surfaceHeatFluxNet, frazilHeatFlux, massFluxHeatContent,
+  icebergFreshWaterFlux, frazilIceFreshwaterFlux, removedRiverRunoffFlux, removedIceRunoffFlux.
+- surfaceHeatFluxNet = SW+LWdown+LWup+LH+SH+seaIce+iceberg - Lf*snow - Lf*iceRunoff + frazil
+  (+landIceHeatFlux only for land_ice_flux_mode standalone/coupled/data; never on IcoswISC30E3r5 'pressure_only').
+  On the tape snowFluxLf/iceRunoffFluxLf keep the MASS-flux sign: closure is net - (...) + snowFluxLf + iceRunoffFluxLf.
+- massFluxHeatContent = rho_sw*cp_sw*(rain+evap+seaIce+iceberg+river) temperature fluxes, relative to 0 degC;
+  NOT in the net. The dOHC/dt check (spec #8) needs net + massFluxHeatContent.
+- frazilHeatFlux = -Lf_frazil*(accumulatedFrazilIceMass(lev2)-lev1)/dt evaluated AFTER the time-level shift
+  (lev1 = new), dt = clock time step (same as ocn_frazil_forcing). The coupler-export reset (ocn_comp_mct ~:3428)
+  runs after the AM, so the difference is always this step's formation (>= 0).
+  compute_on_startup=.true. would make the first sample garbage; keep it .false.
+- oceanWetFraction (static) = sum_j w_ij*wet_j, i.e. apply_masked's valid_frac -- NOT divided by the row sum.
+  wet = maxLevelCell>0 & landIceMask/=1 (coupler ocean-domain rule, ocn_comp_mct ocn_domain_mct).
+  The map is on the culled ocean-only mesh, so row sums < 1 at coastlines; normalizing by them forces every
+  coastal 1-deg cell to 1 (the bug the first draft had). Row sums come from ocn_fme_horiz_remap_get_coverage
+  (shr frac_b_local). mask_2d is unchanged and still counts cavities.
+- An existing sidecar with a different n_avg_fields (or unreadable) now ABORTS (MPAS_LOG_CRIT) in
+  fmeDerivedFields read_restart. Delete <am>.fme_accum_restart.nc to restart the averages on purpose.
+  A missing sidecar is still a silent fresh start.
+
+### gotcha #67 — eam.h1 5-day-mean tape (0301) and PBOT (ADDED 2026-11-01)
+- `FME_EAM_H1_ENABLE=TRUE` adds tape FME_EAM_TAPE+1: nhtfrq=-120, avgflag 'A', same
+  horiz_remap map (per-tape remap object, cam_history.F90:1011).
+- Windows come from `mod(nstep,240)==0`, nstep counted from the clock's start_date. Since
+  365 = 73*5, any Jan-1-00Z start_date (1850 parent, piControl year-1 parent, or a hybrid
+  start on 1940-01-01) lands on the 1850-anchored 5-day grid. Check this only for a parent
+  whose start_date is not Jan 1 00Z.
+- Branch first window: timemgr_restart advances the clock one step, so get_prev_time at
+  hist init (cam_history.F90:430, nsrest==3) is exactly the branch time; the first h1
+  time_bnds lower bound is correct.
+- A mid-window restart writes `eam.rh1` (native r8 hbuf + nacs, never remapped). The
+  May 1 (day 120) / Nov 2 (day 305) / Jan 1 restarts are window ends, so none is needed there.
+- Radiation fluxes are averaged over radiation steps only; h1 == mean of 20 h0 :A records
+  holds because every 6 h window holds the same number of radiation steps.
+- VMAGGUST is sampled per macmic substep (units really m/s; only nonzero with use_sgv).
+  PBOT = state%pmid(:,pver), from cam_diagnostics.F90 next to ZBOT, == Sa_pbot, and
+  == hyam(pver)*P0 + hybm(pver)*PS exactly (dp_coupling.F90:540).
+- verify_eam.py check_eam_h1: windows, field list, PBOT vs hyam/hybm, spec check 4.
+  Check 4 uses only FME h0 files (marker fields), skips windows h0 does not fully
+  cover, and holds one field at a time in memory.
+
+### gotcha #68 — 0301 run config: refcase staging, eam.r fix, alignment, layout (ADDED 2026-11-01)
+- GET_REFCASE symlinks EVERY file in RUN_REFDIR into the run dir (and copies *rpointer*).
+  Never leave backups/temporaries there; 0201's refdir still holds v3.LR.historical.pid551655.ncap2.tmp.
+- Parent eam.r needs total_water_ac=water_vap_ac (ncap2 -O --hdr_pad=10000), as on 0101/0201/piControl:
+  0301_prep/scripts/prep_parent_restarts.sh <refdir>. EAM rst_nstep is fill in these parents, so
+  alignment is checked from dates: noleap time since 18500101 (coupler/MPAS 5-day windows) AND since
+  eam.r rst_start_ymd (eam.h1 nhtfrq=-120 counts nstep from EAM's start date).
+- 0201 layout = 30 crux nodes: CPL/ATM 2816@0, LND/ROF 1024@0, ICE 1792@1024, OCN 1024@2816 (crux pesize PM);
+  preset WCYCL20TR-0301 sets it via custom-30 + PE_TASKS (ROOTPE reset to 0 first).
+- MPAS-SI's streams.seaice mesh stream is the placeholder "mesh_variables.nc"; the real mesh is the
+  input stream's file. Sort restart names by date, not by full name (<case>.aigo_cpl.* sorts before <case>.*).
+- With DOUT_S=FALSE the yearly May 1/Nov 2 sets (~27 GB each) accumulate in the run dir.
+
+### gotcha #69 — driver restart_extra_mmdd: yearly May 1 / Nov 2 restart sets (ADDED 2026-11-01)
+- restart_extra_mmdd (seq_timemgr_inparm via user_nl_cpl, e.g. "501, 1102", no leading
+  zeros): forces the restart alarm at MMDD 00Z every year on each clock that ADVANCED that
+  step onto 00Z (same rule as an ESMF alarm; a clock merely sitting at 00Z must not
+  re-ring or rpointer_manage starts a spurious .prev round). A clock that steps OVER 00Z
+  (NCPL not dividing a day, or an offset) gets no extra restart and cpl.log prints
+  "WARNING: restart_extra_mmdd: clock N crossed 00Z"; that set is then incomplete.
+  iac never gets an extra ring (its clock is advanced by the iac component). Use only
+  1850-anchored 5-day boundaries (501, 1102), never 1101.
+  A full branchable set = cpl.r, eam.r/.rs/.rh*, elm.r/.rh*, mosart.r/.rh*, mpaso.rst(+.am.*),
+  mpassi.rst(+.am.*), rpointer.* and the FME sidecars (undated, so overwritten by the next
+  restart; dated copies are needed for later branching, see gotcha #45).
+  REST_N/STOP_N count from the segment start, so after a crash resume from a May/Nov set
+  use STOP_OPTION=date to land back on Jan 1. With DOUT_S=TRUE set
+  DOUT_S_SAVE_INTERIM_RESTART_FILES=TRUE or st_archive keeps only the latest set.
+
+### gotcha #70 — coupler FME 0301 layout: state means, *Dinst companions, 1850 window anchor (ADDED 2026-11-01)
+- cpl-FME 0301 layout (cpl_fme_state_mean / cpl_fme_inst_enable / cpl_fme_window_anchor_ymd):
+  * state_mean=.true. makes EVERY field of x2o/xao/x2i/o2x/i2x 1D+5D a window mean (fme_avg_mode='mean');
+    x2a/a2x/lnd/rof keep S* as window-end instants. Never flip it mid-run: a sidecar written in the
+    other mode holds a snapshot (or a sum) in the S* slots and that window's record is wrong.
+  * inst_enable adds '<stream>inst' (x2o5Dinst, ...): S* only, 'time: point', same bundle/map/phase/
+    windows as the parent, its own .accum.nc sidecar (instants are overwritten before every flush, so
+    output does not depend on sidecar contents). Each companion reads its own copy of the ocean map.
+  * Sf_*frac / Sx_a* live only in x2a (6h; instants at every 5D boundary) -> no x2a5Dinst.
+  * Spec check 5 (5Dinst == 6h a2x/x2a) can't hold to round-off: x2i Sa_* is a2x mapped atm->ocean mesh
+    by the coupler and then remapped with the OCEAN map; a2x/x2a use the ATM map. verify_cpl.py gates
+    Sa_* on rms(inst-6h) <= 0.5*rms(5Dmean-6h) (only when the parent is fme_avg_mode='mean'); So_* pairs
+    are reported (WARN), not gated -- the coastal remap residual (x2a So_t = 0 over land) dominates.
+    In the mixed layout it instead requires inst == parent S* exactly. 5Dinst == 1Dinst must be exact.
+  * Window anchor: first boundary = next multiple of the interval from the anchor (00Z, model calendar,
+    integer seconds). On-boundary starts keep curr_time+interval verbatim (BFB). Every noleap Jan 1 is
+    a 5D boundary (365=73*5); May 1 (day 120) and Nov 2 (day 305) are, Nov 1 is not.
+    Mid-window COLD start -> short first record + WARNING. A warm restart is quiet (the sidecar restores
+    the schedule) unless the sidecar is missing. Anchor <= 0 = legacy.
+  * Coupler accumulators are empty right after the flush on any boundary, so restarts at Jan 1, May 1
+    and Nov 2 need no dated cpl sidecars; a branch under a new case name cold-starts on the anchor.
+    Same-case rewind to an older restart set triggers gotcha #45 (clobber of that month's files).
+  * verify_cpl.stream_files previously also matched <case>.cpl.fme.<s>.accum.nc (it sorts last and was
+    the file opened); it now keeps only dated .YYYY-MM.nc files.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:

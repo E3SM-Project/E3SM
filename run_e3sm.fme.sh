@@ -65,14 +65,21 @@ readonly PROJECT="${PROJECT:-E3SMinput}"
 #               pi_aerosol_user_nl()
 #   F20TR       transient atmosphere over prescribed SST / sea ice
 #   WCYCL20TR   fully coupled historical, branched from a spun-up v3 LR case
+#   WCYCL20TR-0301
+#               coupled historical member 0301 (1940-2064, SSP2-4.5 after
+#               2014), 0201's code/namelists/PE layout plus the 0301 output
+#               spec; PILOT=TRUE runs only the 1940-1941 pilot leg
 #   WCYCL1850   fully coupled piControl -- the original SamudrACE 100-yr tape
 #
 # Usage:
 #   FME_EXP=F2010-PD ./run_e3sm.fme.sh
 #   FME_EXP=WCYCL20TR ./run_e3sm.fme.sh
+#   FME_EXP=WCYCL20TR-0301 PILOT=TRUE ./run_e3sm.fme.sh       # 2-yr pilot
 #   FME_EXP=F2010-PI STOP_N=1 RESUBMIT=0 ./run_e3sm.fme.sh      # 1-yr shakeout
 #   FME_EXP=F2010-PD STOP_OPTION=ndays STOP_N=10 RESUBMIT=0 ./run_e3sm.fme.sh
 readonly FME_EXP="${FME_EXP:-F2010-PD}"
+# PILOT=TRUE shortens a preset to its pilot leg (only WCYCL20TR-0301 has one).
+readonly PILOT="${PILOT:-FALSE}"
 
 # Preset outputs. Assigned plain here and frozen with readonly below, so an
 # exported value always wins over the preset default.
@@ -82,6 +89,9 @@ exp_refdir=""
 exp_refcase=""
 exp_refdate=""
 exp_start_date=""
+exp_walltime=""        # production walltime; empty = 24:00:00
+exp_pe_tasks=""        # per-component "COMP:NTASKS:ROOTPE ..." on top of a custom-N layout
+exp_xmlchange_run=""   # extra comma-separated env_run xmlchange settings, or empty
 
 case "${FME_EXP^^}" in
 
@@ -157,6 +167,64 @@ case "${FME_EXP^^}" in
     exp_pelayout="L"
     ;;
 
+  WCYCL20TR-0301)
+    # Coupled historical member 0301 for the ACE/Samudra training set: run
+    # exactly like v3.LR.historical_0201.aigo_cpl (same code, namelists, PE
+    # layout, coupling) except for the parent state and the 0301 output spec.
+    # Any physics difference would make 0301 a different model.
+    #
+    # Parent: CMIP6 v3.LR.historical_0301 at 1940-01-01, staged by hand. Run
+    #   0301_prep/scripts/prep_parent_restarts.sh <RUN_REFDIR>
+    # on it first (total_water_ac fix applied to every earlier aigo parent,
+    # rpointer and 5-day window alignment checks).
+    #
+    # Length: 1940-01-01 .. 2064-12-31 = 125 yr = 25 legs of 5 yr
+    # (RESUBMIT=24). Legs end on Jan 1, which is always a 1850-anchored 5-day
+    # window boundary, so no leg splits a window. eam.h0 for 2065-01 needs
+    # nothing extra: the 2064-12-31 18Z..2065-01-01 00Z record is stamped at
+    # the window end and lands in the last leg.
+    exp_compset="WCYCL20TR"
+    exp_case_base="v3.LR.historical_0301.aigo_cpl"
+    exp_start_type="branch"
+    exp_refdir="/eagle/E3SMinput/mahf708/scratch/crux/E3SMv3/v3.LR.historical_0301/archive/rest/1940-01-01-00000"
+    exp_refcase="v3.LR.historical_0301"
+    exp_refdate="1940-01-01"
+    exp_stop_n="5"
+    exp_resubmit="24"
+    # 5-yearly Jan 1 sets as in 0201. The yearly May 1 / Nov 2 sets come from
+    # restart_extra_mmdd in hist0301_user_nl(), not from REST_OPTION.
+    exp_rest_n="5"
+    exp_walltime="18:00:00"       # as 0201
+    # 0201's layout, recovered from its env_mach_pes.xml: 30 full crux nodes,
+    # pure MPI. ATM/CPL share nodes 0-21, LND/ROF 0-7 under them, ICE on 8-21,
+    # OCN alone on 22-29. custom-30 gives 3840 tasks (also left on the stub
+    # GLC/WAV/IAC/ESP components); exp_pe_tasks then places the active ones.
+    # Equivalent to crux's tuned pesize="PM" entry in config_pesall.xml, but
+    # spelled out so a PELAYOUT naming change can't silently move it.
+    exp_pelayout="custom-30"
+    exp_pe_tasks="CPL:2816:0 ATM:2816:0 LND:1024:0 ROF:1024:0 ICE:1792:1024 OCN:1024:2816"
+    # 0201 coupling (30-min atm/lnd/ocn, 3-h river). These equal the defaults
+    # for this compset/grid; pinned so a default change can't drift 0301 off
+    # 0201 -- the coupler FME 6-h/1-d/5-d windows also assume them.
+    exp_xmlchange_run="ATM_NCPL=48,LND_NCPL=48,OCN_NCPL=48,ROF_NCPL=8"
+    exp_extra_user_nl="hist0301_user_nl"
+    # Testmod knobs, read by fme_output/shell_commands during create_newcase,
+    # so they must be in the environment before it runs. Still overridable.
+    #   FME_EAM_PRES_LEVELS=FALSE  eam.h0 field list identical to 0101/0201
+    #   FME_EAM_H1_ENABLE=TRUE     add the 5-day all-mean eam.h1 tape
+    export FME_EAM_PRES_LEVELS="${FME_EAM_PRES_LEVELS:-FALSE}"
+    export FME_EAM_H1_ENABLE="${FME_EAM_H1_ENABLE:-TRUE}"
+    # PILOT=TRUE: only the 1940-1941 pilot (spec "Pilot validation"). It ends
+    # 1942-01-01 (a window boundary) with an end-of-run restart set. To
+    # continue the same case afterwards, keep the 5-yearly legs on
+    # 1945/1950/...: CONTINUE_RUN=TRUE, STOP_N=3 RESUBMIT=0 for 1942-1944, then
+    # STOP_N=5 RESUBMIT=23 for 1945-2064.
+    if [ "${PILOT^^}" == "TRUE" ]; then
+        exp_stop_n="2"
+        exp_resubmit="0"
+    fi
+    ;;
+
   WCYCL1850)
     # The original SamudrACE tape: 5-yr segments x 20 = 100 yr piControl,
     # branched from a spun-up piControl restart (a cold start would discard
@@ -175,13 +243,17 @@ case "${FME_EXP^^}" in
 
   *)
     echo "ERROR: unknown FME_EXP '${FME_EXP}'."
-    echo "       Known presets: F2010-PD, F2010-PI, F20TR, WCYCL20TR, WCYCL1850"
+    echo "       Known presets: F2010-PD, F2010-PI, F20TR, WCYCL20TR, WCYCL20TR-0301, WCYCL1850"
     echo "       Add a branch to the case statement in ${0##*/} for a new one."
     exit 5
     ;;
 esac
 
 readonly FME_EXTRA_USER_NL="${exp_extra_user_nl}"
+# Per-component placement and extra env_run settings. '-' rather than ':-' so
+# an explicit empty export (PE_TASKS= ...) switches the preset value off.
+readonly PE_TASKS="${PE_TASKS-${exp_pe_tasks}}"
+readonly EXTRA_XMLCHANGE_RUN="${EXTRA_XMLCHANGE_RUN-${exp_xmlchange_run}}"
 readonly COMPSET="${COMPSET:-${exp_compset}}"
 readonly RESOLUTION="${RESOLUTION:-ne30pg2_r05_IcoswISC30E3r5}"
 # CASE_TAG is an optional dotted suffix (env-overridable) for launching
@@ -282,7 +354,7 @@ else
   # -- an F compset would otherwise fall back to a generic default. The WCYCL
   # presets keep the named 'L' layout, which does hit crux's tuned entry.
   readonly PELAYOUT=${PELAYOUT:-${exp_pelayout}}
-  readonly WALLTIME=${WALLTIME:-24:00:00}
+  readonly WALLTIME=${WALLTIME:-${exp_walltime:-24:00:00}}
   # Cadence knobs are overridable like everything else the preset supplies.
   # STOP_OPTION was previously pinned to 'nyears' while STOP_N was
   # overridable, which made short shakeout legs (STOP_OPTION=ndays STOP_N=10)
@@ -330,6 +402,18 @@ if [ "${MODEL_START_TYPE,,}" == "branch" ] || [ "${MODEL_START_TYPE,,}" == "hybr
         echo "       RUN_REFCASE, RUN_REFDATE, and CASE_NAME at the top of the"
         echo "       script before submitting."
         exit 10
+    fi
+    # A missing parent set (the 0301 parent is staged by hand) is fatal only
+    # when this invocation submits; create + build may legitimately run before
+    # staging, and the WCYCL20TR/WCYCL1850 presets keep their NERSC refdirs.
+    if [ "${GET_REFCASE^^}" == "TRUE" ] && [ ! -d "${RUN_REFDIR}" ]; then
+        if [ "${do_case_submit,,}" == "true" ]; then
+            echo "ERROR: RUN_REFDIR=${RUN_REFDIR} does not exist."
+            echo "       Stage the ${RUN_REFCASE} ${RUN_REFDATE} restart set there first."
+            exit 11
+        fi
+        echo "WARNING: RUN_REFDIR=${RUN_REFDIR} does not exist yet."
+        echo "         Stage the ${RUN_REFCASE} ${RUN_REFDATE} restart set before case.submit."
     fi
 fi
 
@@ -486,6 +570,100 @@ EOF
 
 }
 
+# ---------------------------------------------------------------------------
+# Namelist additions for WCYCL20TR-0301 (coupled historical member 0301).
+# ---------------------------------------------------------------------------
+#
+# Runs from CASE_SCRIPTS_DIR after create_newcase, i.e. AFTER the fme_output
+# testmod has written its user_nl_* blocks, so anything here is appended
+# below them. CIME's user_nl parser lets a later scalar setting win over an
+# earlier one, so a repeat of a testmod variable here overrides it, not errors.
+#
+# 1. SSP2-4.5 forcing after 2014 (EAM and ELM). Copied verbatim from the
+#    hand edits made to 0201's user_nl_eam / user_nl_elm on Aug 8, recovered
+#    in 0301_prep/recovered_0201/user_nl_{eam,elm}.ssp245 after the 0201 case
+#    directory was deleted. These are the files 0101.aigo and 0201.aigo_cpl
+#    ran with; 0301 must match them or it is a different forcing. The
+#    $DIN_LOC_ROOT / ${DIN_LOC_ROOT} tokens are left for build-namelist to
+#    expand (quoted heredocs), exactly as 0201 had them.
+#
+# 2. Coupler / driver output switches for the 0301 spec (user_nl_cpl feeds
+#    both drv_in and the cpl_fme_inparm group). Kept here rather than in the
+#    testmod so every other experiment keeps its current coupler behaviour.
+#      restart_extra_mmdd       extra full restart sets at 00Z on May 1 and
+#                               Nov 2 every year, on top of REST_OPTION's
+#                               5-yearly Jan 1 (both dates are 1850-anchored
+#                               5-day window boundaries; Nov 1 is not)
+#      cpl_fme_state_mean       1-day/5-day coupler state fields written as
+#                               window means instead of end-of-window instants
+#      cpl_fme_inst_enable      add the *5Dinst (and *1Dinst) end-of-window
+#                               state snapshot streams
+#      cpl_fme_window_anchor_ymd  count the coupler FME windows from 1850-01-01
+#                               explicitly instead of from the branch date
+hist0301_user_nl() {
+
+    cat << 'EOF' >> user_nl_eam
+
+!--- WCYCL20TR-0301: CMIP6 SSP2-4.5 forcing after 2014 (verbatim from 0201.aigo_cpl)
+  chlorine_loading_file		= '$DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_Hist_SSP245_0003-2503_c20200808.nc'
+  ext_frc_specifier		= 'NO2         -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO2_aircraft_vertical_2015-2100_1.9x2.5_c20240219.nc',
+          'SO2         -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_volc_elev_2015-2100_c240331.nc',
+          'SOAG0       -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_elev_2015-2100_1.9x2.5_c20240219.nc',
+          'bc_a4       -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_bc_a4_elev_2015-2100_c200716.nc',
+          'num_a1      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a1_elev_2015-2100_c200716.nc',
+          'num_a2      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a2_elev_2015-2100_c200716.nc',
+          'num_a4      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a4_elev_2015-2100_c200716.nc',
+          'pom_a4      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_pom_a4_elev_2015-2100_c200716.nc',
+          'so4_a1      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a1_elev_2015-2100_c200716.nc',
+          'so4_a2      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a2_elev_2015-2100_c200716.nc'
+  linoz_data_file		= 'linv3_1849-2101_CMIP6_Hist_SSP245_10deg_58km_c20230705.nc'
+  srf_emis_specifier		= 'C10H16 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_MTERP_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'C2H4      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H4_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'C2H6      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C2H6_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'C3H8      -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_C3H8_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'CH2O   -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH2O_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'CH3CHO    -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH3CHO_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'CH3COCH3  -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CH3COCH3_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'CO     -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_CO_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'DMS    -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850-2100.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160727.nc',
+          'E90       -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart/ub/emissions_E90_surface_1750-2101_1.9x2.5_c20231222.nc',
+          'ISOP   -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'ISOP_VBS -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_ISOP_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'NO     -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_NO_surface_2015-2100_1.9x2.5_c20240219.nc',
+          'SO2    -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so2_surf_2015-2100_c200716.nc',
+          'SOAG0  -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/emissions-cmip6_ssp245_e3sm_SOAG0_surf_2015-2100_1.9x2.5_c20240219.nc',
+          'bc_a4  -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_bc_a4_surf_2015-2100_c200716.nc',
+          'num_a1 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a1_surf_2015-2100_c200716.nc',
+          'num_a2 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a2_surf_2015-2100_c200716.nc',
+          'num_a4 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_num_a4_surf_2015-2100_c200716.nc',
+          'pom_a4 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_pom_a4_surf_2015-2100_c200716.nc',
+          'so4_a1 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a1_surf_2015-2100_c200716.nc',
+          'so4_a2 -> $DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/emis/CMIP6_SSP245_ne30/cmip6_ssp245_mam4_so4_a2_surf_2015-2100_c200716.nc'
+  tracer_cnst_file		= 'oxid_SSP245_1.9x2.5_L70_1849-2101_c20240228.nc'
+  bndtvghg		= '$DIN_LOC_ROOT/atm/cam/ggas/GHG_CMIP_SSP245-1-2-1_Annual_Global_2015-2500_c20200807.nc'
+EOF
+
+    cat << 'EOF' >> user_nl_elm
+
+!--- WCYCL20TR-0301: CMIP6 SSP2-4.5 land use, N deposition and population density (verbatim from 0201.aigo_cpl)
+ flanduse_timeseries = '${DIN_LOC_ROOT}/lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_ssp2_rcp45_simyr2015-2100_c240408.nc'
+ stream_fldfilename_ndep = '${DIN_LOC_ROOT}/lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp245_c240903.nc'
+ stream_year_last_ndep = 2100
+ stream_fldfilename_popdens = '${DIN_LOC_ROOT}/lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc'
+ stream_year_last_popdens = 2100
+EOF
+
+    cat << 'EOF' >> user_nl_cpl
+
+!--- WCYCL20TR-0301: yearly May 1 / Nov 2 restarts and window-mean coupler streams
+restart_extra_mmdd        = 501, 1102
+cpl_fme_state_mean        = .true.
+cpl_fme_inst_enable       = .true.
+cpl_fme_window_anchor_ymd = 18500101
+EOF
+
+}
+
 patch_mpas_streams() {
 
 echo
@@ -616,6 +794,13 @@ case_setup() {
     ./xmlchange DOUT_S=${DO_SHORT_TERM_ARCHIVING^^}
     ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR}
 
+    # Preset-pinned env_run settings (e.g. the 0301 coupling frequencies).
+    # Set before user_nl/case.setup so preview_namelists already reflects them.
+    if [ -n "${EXTRA_XMLCHANGE_RUN}" ]; then
+        echo "Applying preset env_run settings: ${EXTRA_XMLCHANGE_RUN}"
+        ./xmlchange "${EXTRA_XMLCHANGE_RUN}"
+    fi
+
     # COSP simulator intentionally NOT enabled. The FME/SamudrACE tape carries
     # no COSP fields, so '-cosp' (docosp=.true.) would run the simulator every
     # few radiation steps for 100 years and produce nothing on tape. Re-add
@@ -666,6 +851,26 @@ if [[ ${PELAYOUT} == custom-* ]]; then
     ./xmlchange NTHRDS=1
     ./xmlchange MAX_MPITASKS_PER_NODE=$nranks
     ./xmlchange MAX_TASKS_PER_NODE=$nranks
+
+    # Optional per-component placement on top of the uniform layout above,
+    # "COMP:NTASKS:ROOTPE" entries (the WCYCL20TR-0301 preset uses it to
+    # reproduce 0201). Applied only with the preset's own PELAYOUT: a list
+    # sized for 30 nodes would be wrong under any other node count.
+    if [ -n "${PE_TASKS}" ] && [ "${PELAYOUT}" == "${exp_pelayout}" ]; then
+        local entry comp ntasks rootpe
+        # The uniform block above leaves ROOTPE as --pecount M's fallback entry
+        # set it; start every component (stubs included) from 0.
+        ./xmlchange ROOTPE=0
+        for entry in ${PE_TASKS}; do
+            IFS=: read -r comp ntasks rootpe <<< "${entry}"
+            if (( rootpe + ntasks > nnodes * nranks )); then
+                echo "ERROR: PE_TASKS entry ${entry} exceeds ${nnodes}x${nranks} tasks"
+                exit 401
+            fi
+            echo "  ${comp}: ${ntasks} tasks at rootpe ${rootpe}"
+            ./xmlchange NTASKS_${comp}=${ntasks},ROOTPE_${comp}=${rootpe},NTHRDS_${comp}=1
+        done
+    fi
     popd
 
 fi

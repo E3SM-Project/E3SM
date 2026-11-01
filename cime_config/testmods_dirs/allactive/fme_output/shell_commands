@@ -32,6 +32,22 @@ FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
 # horiz remap, and the non-per-tape derived/vcoarsen/aerocom globals. The hard
 # max is ptapes=17 (cam_history_support.F90).
 FME_EAM_TAPE=${FME_EAM_TAPE:-1}
+# Fixed-pressure-level fields (Tat850hPa, Zat500hPa, ... 13 levels x T,U,V,Z,Q
+# = 65 2-d fields). Set FALSE to reproduce the 0101/0201 eam.h0 field list
+# exactly (the 0301 member does this so its h0 matches the earlier members).
+FME_EAM_PRES_LEVELS=${FME_EAM_PRES_LEVELS:-TRUE}
+# Optional 5-day-mean EAM tape (0301 eam.h1), written as tape FME_EAM_TAPE+1
+# (tape 2 in STANDALONE mode). Every field is averaged (avgflag 'A') over
+# nhtfrq=-FME_EAM_H1_HOURS windows, with the same horiz remap as the FME tape.
+# EAM writes when mod(nstep, nhtfrq)==0, with nstep counted from the clock's
+# start_date. 365 = 73*5, so any Jan-1-00Z start_date (1850 parent, or a
+# hybrid start at 1940-01-01) puts 120 h windows on the 1850-anchored 5-day
+# boundaries the coupler/MPAS *5D streams use. FALSE (the default) leaves
+# user_nl_eam byte-identical.
+FME_EAM_H1_ENABLE=${FME_EAM_H1_ENABLE:-FALSE}
+FME_EAM_H1_HOURS=${FME_EAM_H1_HOURS:-120}
+FME_EAM_H1_MFILT=${FME_EAM_H1_MFILT:-${FME_EAM_MFILT}}
+FME_EAM_H1_STORAGE=${FME_EAM_H1_STORAGE:-${FME_EAM_STORAGE}}
 # MPAS compute/output interval (MPAS time interval string)
 FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
 # Optional 5-day-mean companion stream interval. Set to 'none' (or empty)
@@ -328,7 +344,18 @@ EOF
 # MUST include a slot for the FME tape, e.g. nhtfrq(${FME_EAM_TAPE})=...), and
 # the testmod contributes only the FME field tape, its horiz remap, and the
 # (non-per-tape) derived / vcoarsen / aerocom globals below.
+FME_EAM_H1_TAPE=$((FME_EAM_TAPE + 1))
 if [ "${FME_EAM_TAPE}" = "1" ]; then
+if [ "${FME_EAM_H1_ENABLE^^}" = "TRUE" ]; then
+cat >> user_nl_eam << EOF
+empty_htapes = .true.
+avgflag_pertape = '${FME_EAM_AVGFLAG}', 'A'
+nhtfrq = -${FME_EAM_OUTPUT_HOURS}, -${FME_EAM_H1_HOURS}
+mfilt  = ${FME_EAM_MFILT}, ${FME_EAM_H1_MFILT}
+! Calendar-aligned file rotation (EAMxx-style; one_month = files named %y-%m.nc).
+hist_file_storage_type = '${FME_EAM_STORAGE}', '${FME_EAM_H1_STORAGE}'
+EOF
+else
 cat >> user_nl_eam << EOF
 empty_htapes = .true.
 avgflag_pertape = '${FME_EAM_AVGFLAG}'
@@ -337,6 +364,37 @@ mfilt  = ${FME_EAM_MFILT}
 ! Calendar-aligned file rotation (EAMxx-style; one_month = files named %y-%m.nc).
 hist_file_storage_type = '${FME_EAM_STORAGE}'
 EOF
+fi
+elif [ "${FME_EAM_H1_ENABLE^^}" = "TRUE" ]; then
+# ADDITIVE mode: the base namelist owns the per-tape arrays, so it must also
+# size them for the h1 slot (nhtfrq(N)=-120, avgflag_pertape(N)='A', ...).
+echo "NOTE: FME_EAM_H1_ENABLE with FME_EAM_TAPE=${FME_EAM_TAPE}: the base namelist must set" \
+     "nhtfrq/mfilt/avgflag_pertape/hist_file_storage_type for tape ${FME_EAM_H1_TAPE}"
+fi
+
+if [ "${FME_EAM_PRES_LEVELS^^}" = "TRUE" ]; then
+FME_EAM_PRES_NL="vcoarsen_select_pres = 50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000
+vcoarsen_select_pres_flds = 'T','U','V','Z','Q'
+"
+FME_EAM_PRES_FINCL="          'Tat50hPa','Tat100hPa','Tat150hPa','Tat200hPa','Tat250hPa',
+          'Tat300hPa','Tat400hPa','Tat500hPa','Tat600hPa','Tat700hPa',
+          'Tat850hPa','Tat925hPa','Tat1000hPa',
+          'Uat50hPa','Uat100hPa','Uat150hPa','Uat200hPa','Uat250hPa',
+          'Uat300hPa','Uat400hPa','Uat500hPa','Uat600hPa','Uat700hPa',
+          'Uat850hPa','Uat925hPa','Uat1000hPa',
+          'Vat50hPa','Vat100hPa','Vat150hPa','Vat200hPa','Vat250hPa',
+          'Vat300hPa','Vat400hPa','Vat500hPa','Vat600hPa','Vat700hPa',
+          'Vat850hPa','Vat925hPa','Vat1000hPa',
+          'Zat50hPa','Zat100hPa','Zat150hPa','Zat200hPa','Zat250hPa',
+          'Zat300hPa','Zat400hPa','Zat500hPa','Zat600hPa','Zat700hPa',
+          'Zat850hPa','Zat925hPa','Zat1000hPa',
+          'Qat50hPa','Qat100hPa','Qat150hPa','Qat200hPa','Qat250hPa',
+          'Qat300hPa','Qat400hPa','Qat500hPa','Qat600hPa','Qat700hPa',
+          'Qat850hPa','Qat925hPa','Qat1000hPa',
+"
+else
+FME_EAM_PRES_NL=""
+FME_EAM_PRES_FINCL=""
 fi
 
 cat >> user_nl_eam << EOF
@@ -370,9 +428,7 @@ vcoarsen_avg_flds = 'T','U','V','STW','Q'
 ! Output names are <FLD>at<P>hPa, e.g. Tat850hPa, Zat500hPa.
 ! 'Z' is accepted as shorthand for EAM's Z3 (geopotential height above sea
 ! level, i.e. state%zm + PHIS/g).
-vcoarsen_select_pres = 50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000
-vcoarsen_select_pres_flds = 'T','U','V','Z','Q'
-
+${FME_EAM_PRES_NL}
 ! Height-above-surface linear interpolation (m AGL) for ACE 2 m / 10 m fields.
 ! state%zm is height-above-surface at level midpoints; targets below the
 ! lowest midpoint collapse to the lowest level (no extrapolation).
@@ -393,22 +449,7 @@ fincl${FME_EAM_TAPE} = 'SOLIN:A', 'PHIS',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
           'Q_0','Q_1','Q_2','Q_3','Q_4','Q_5','Q_6','Q_7',
-          'Tat50hPa','Tat100hPa','Tat150hPa','Tat200hPa','Tat250hPa',
-          'Tat300hPa','Tat400hPa','Tat500hPa','Tat600hPa','Tat700hPa',
-          'Tat850hPa','Tat925hPa','Tat1000hPa',
-          'Uat50hPa','Uat100hPa','Uat150hPa','Uat200hPa','Uat250hPa',
-          'Uat300hPa','Uat400hPa','Uat500hPa','Uat600hPa','Uat700hPa',
-          'Uat850hPa','Uat925hPa','Uat1000hPa',
-          'Vat50hPa','Vat100hPa','Vat150hPa','Vat200hPa','Vat250hPa',
-          'Vat300hPa','Vat400hPa','Vat500hPa','Vat600hPa','Vat700hPa',
-          'Vat850hPa','Vat925hPa','Vat1000hPa',
-          'Zat50hPa','Zat100hPa','Zat150hPa','Zat200hPa','Zat250hPa',
-          'Zat300hPa','Zat400hPa','Zat500hPa','Zat600hPa','Zat700hPa',
-          'Zat850hPa','Zat925hPa','Zat1000hPa',
-          'Qat50hPa','Qat100hPa','Qat150hPa','Qat200hPa','Qat250hPa',
-          'Qat300hPa','Qat400hPa','Qat500hPa','Qat600hPa','Qat700hPa',
-          'Qat850hPa','Qat925hPa','Qat1000hPa',
-          'Tat2m', 'STWat2m','Qat2m',
+${FME_EAM_PRES_FINCL}          'Tat2m', 'STWat2m','Qat2m',
           'Uat10m', 'Vat10m',
           'TREFHT', 'QREFHT',
           'FLUT:A', 'FLNT:A', 'FSNTOA:A', 'FSUTOA:A',
@@ -430,6 +471,32 @@ cat >> user_nl_eam << EOF
 ! Buildconf/fme.input_data_list (registered earlier in this script).
 horiz_remap_file(${FME_EAM_TAPE}) = '${EAM_MAP}'
 EOF
+
+if [ "${FME_EAM_H1_ENABLE^^}" = "TRUE" ]; then
+echo "  EAM h1: tape ${FME_EAM_H1_TAPE}, ${FME_EAM_H1_HOURS}-hour means, storage=${FME_EAM_H1_STORAGE}"
+cat >> user_nl_eam << EOF
+
+! Tape ${FME_EAM_H1_TAPE}: ${FME_EAM_H1_HOURS}-hour (5-day) means of every field
+! (tape default 'A', no per-field suffixes), on the 1850-anchored 5-day
+! coupler windows: ocean-forcing fluxes, surface state, and bottom-level air
+! for an emulator-side bulk formula. PBOT = state%pmid(:,pver) (== Sa_pbot).
+! VMAGGUST is CLUBB's gust speed added to the bulk-flux wind. Its addfld
+! units say '-', but it is in m/s. It is sampled once per macmic substep, so
+! its mean is over substeps (the coupler gets the last substep's value).
+! Radiative fluxes are averaged over radiation steps only (same count in
+! every 6 h and 5 d window, so h1 == mean of the 20 h0 :A records).
+fincl${FME_EAM_H1_TAPE} = 'TAUX','TAUY','FSDS','FSNS','FLDS','FLUS',
+          'LHFLX','SHFLX',
+          'PRECT','PRECC','PRECL','PRECSC','PRECSL',
+          'TS','TREFHT','QREFHT','PS','PSL','U10',
+          'ICEFRAC','OCNFRAC','LANDFRAC',
+          'Tat2m','Qat2m','Uat10m','Vat10m',
+          'T_7','Q_7','U_7','V_7',
+          'TBOT','QBOT','UBOT','VBOT','ZBOT','PBOT',
+          'VMAGGUST'
+horiz_remap_file(${FME_EAM_H1_TAPE}) = '${EAM_MAP}'
+EOF
+fi
 
 # ---------------------------------------------------------------------------
 # Coupler (driver-mct) namelist: coupler-native FME output.

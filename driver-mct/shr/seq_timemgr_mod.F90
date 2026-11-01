@@ -249,6 +249,14 @@ module seq_timemgr_mod
   logical :: seq_timemgr_esp_run_on_pause ! Run ESP component on pause cycle
   logical :: seq_timemgr_end_restart      ! write restarts at end of run?
 
+  ! Extra yearly restart dates (restart_extra_mmdd in seq_timemgr_inparm).
+  ! In addition to restart_option/restart_n, the restart alarm is forced on
+  ! all clocks at 00Z on each listed MMDD every year. Only the non-zero
+  ! entries are kept here; n_restart_extra == 0 means the feature is off.
+  integer, parameter :: max_restart_extra = 12
+  integer :: seq_timemgr_restart_extra(max_restart_extra) = 0
+  integer :: seq_timemgr_n_restart_extra = 0
+
   !===============================================================================
 
 contains
@@ -323,6 +331,9 @@ contains
     character(SHR_KIND_CS)  :: restart_option        ! Restart option units
     integer(SHR_KIND_IN)    :: restart_n             ! Number until restart interval
     integer(SHR_KIND_IN)    :: restart_ymd           ! Restart date (YYYYMMDD)
+    integer(SHR_KIND_IN)    :: restart_extra_mmdd(max_restart_extra) ! Extra yearly restart dates (MMDD, 00Z)
+    integer(SHR_KIND_IN)    :: extra_mon, extra_day  ! month/day of one restart_extra_mmdd entry
+    logical                 :: extra_bad             ! invalid restart_extra_mmdd entry
     character(SHR_KIND_CS)  :: pause_option          ! Pause option units
     integer(SHR_KIND_IN)    :: pause_n               ! Number between pause intervals
     integer(SHR_KIND_IN)    :: RestInterval              ! Component Restart Interval
@@ -399,6 +410,7 @@ contains
     namelist /seq_timemgr_inparm/  calendar, curr_ymd, curr_tod,  &
          stop_option, stop_n, stop_ymd, stop_tod,                &
          restart_option, restart_n, restart_ymd,                 &
+         restart_extra_mmdd,                                     &
          pause_option,   &
          pause_n,           &
          pause_active_atm, &
@@ -464,6 +476,7 @@ contains
        restart_option   = seq_timemgr_optYearly
        restart_n        = -1
        restart_ymd      = -1
+       restart_extra_mmdd(:) = 0
        pause_option     = seq_timemgr_optNever
        pause_n          = -1
        pause_active_atm = .false.
@@ -630,6 +643,10 @@ contains
        write(logunit,F0I) trim(subname),' restart_n      = ',restart_n
        write(logunit,F0I) trim(subname),' restart_ymd    = ',restart_ymd
        write(logunit,F0L) trim(subname),' end_restart    = ',end_restart
+       if (any(restart_extra_mmdd /= 0)) then
+          write(logunit,'(2A,12I6)') trim(subname),' restart_extra_mmdd = ', &
+               pack(restart_extra_mmdd, restart_extra_mmdd /= 0)
+       endif
        write(logunit,F0A) trim(subname),' pause_option   = ',&
             trim(pause_option)
        write(logunit,F0I) trim(subname),' pause_n        = ',&
@@ -703,6 +720,22 @@ contains
                iac_cpl_offset
           call shr_sys_abort( subname//': ERROR coupling offsets invalid' )
        end if
+
+       ! --- Extra yearly restart dates ----------------------------------------
+       ! MMDD must be a valid month/day; year 2000 is used so that 0229 is
+       ! accepted for a gregorian calendar (it then only rings in leap years).
+       do n = 1, max_restart_extra
+          if (restart_extra_mmdd(n) == 0) cycle
+          extra_mon = restart_extra_mmdd(n)/100
+          extra_day = mod(restart_extra_mmdd(n),100)
+          ! range-check month first: shr_cal_numDaysInMonth hard-aborts on mm>12
+          extra_bad = (restart_extra_mmdd(n) < 0 .or. extra_mon < 1 .or. extra_mon > 12)
+          if (.not. extra_bad) extra_bad = .not. shr_cal_validYMD(2000, extra_mon, extra_day, calendar)
+          if (extra_bad) then
+             write(logunit,*) subname,' ERROR: illegal restart_extra_mmdd ',restart_extra_mmdd(n)
+             call shr_sys_abort( subname//': ERROR invalid restart_extra_mmdd (expect MMDD)')
+          end if
+       end do
 
        ! --- Start time date ---------------------------------------------------
        ! If we want to go beyond this date we need date vars to be i8
@@ -784,6 +817,17 @@ contains
     call shr_mpi_bcast( iac_cpl_offset,       mpicom )
     call shr_mpi_bcast( esp_run_on_pause,     mpicom )
     call shr_mpi_bcast( end_restart,          mpicom )
+    call shr_mpi_bcast( restart_extra_mmdd,   mpicom )
+
+    ! --- keep only the active extra restart dates ---
+    seq_timemgr_n_restart_extra = 0
+    seq_timemgr_restart_extra(:) = 0
+    do n = 1, max_restart_extra
+       if (restart_extra_mmdd(n) > 0) then
+          seq_timemgr_n_restart_extra = seq_timemgr_n_restart_extra + 1
+          seq_timemgr_restart_extra(seq_timemgr_n_restart_extra) = restart_extra_mmdd(n)
+       endif
+    enddo
 
     ! --- derive a couple things ---
     if     (trim(histavg_option) == trim(seq_timemgr_optNever) .or. &
@@ -1401,6 +1445,10 @@ contains
     character(len=*), parameter :: subname = '(seq_timemgr_clockAdvance) '
     integer :: n
     type(ESMF_Time) :: NextAlarm              ! Next restart alarm time
+    type(ESMF_Time) :: PrevTime(max_clocks)   ! clock times before this advance
+    type(ESMF_Time) :: ClkTime                ! clock time after this advance
+    integer :: ymd, mon, day, tod             ! clock date, month, day, time-of-day
+    integer :: pmon, pday                     ! clock month, day before this advance
     integer :: rc    ! Return code
 
     !-------------------------------------------------------------------------------
@@ -1428,6 +1476,15 @@ contains
           endif
        endif
     enddo
+
+    ! --- remember clock times so the extra-restart check below can tell
+    !     which clocks actually advanced on this step ---
+    if (seq_timemgr_n_restart_extra > 0) then
+       do n = 1,max_clocks
+          call ESMF_ClockGet(SyncClock%ECP(n)%EClock, currTime=PrevTime(n), rc=rc)
+          call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from ESMF_ClockGet")
+       enddo
+    endif
 
     ! --- advance driver clock and all driver alarms ---
 
@@ -1493,6 +1550,43 @@ contains
           if (seq_timemgr_alarmIsOn(SyncClock%ECP(n)%EClock,seq_timemgr_alarm_stop) .or. &
                seq_timemgr_alarmIsOn(SyncClock%ECP(n)%EClock,seq_timemgr_alarm_datestop)) then
              call seq_timemgr_alarmSetOn(SyncClock%ECP(n)%EClock,seq_timemgr_alarm_restart)
+          endif
+       enddo
+    endif
+
+    ! Extra yearly restart dates (restart_extra_mmdd): force the restart alarm
+    ! on each clock whose own time just landed on MMDD at 00Z. This is the same
+    ! per-clock criterion an ESMF restart alarm uses, and it is applied only on
+    ! the step a clock advanced: the alarmSetOff above clears every alarm each
+    ! driver step, and a clock that merely sits at 00Z (e.g. rof with a 3 h
+    ! coupling interval) must not re-ring, or rpointer_manage in cime_comp_mod
+    ! would start a spurious round of rpointer .prev backups. The iac clock is
+    ! advanced by the iac component, not here, so it never gets an extra ring.
+    if (seq_timemgr_n_restart_extra > 0) then
+       do n = 1,max_clocks
+          call ESMF_ClockGet(SyncClock%ECP(n)%EClock, currTime=ClkTime, rc=rc)
+          call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from ESMF_ClockGet")
+          if (ClkTime == PrevTime(n)) cycle
+          call seq_timemgr_EClockGetData(SyncClock%ECP(n)%EClock, curr_ymd=ymd, &
+               curr_mon=mon, curr_day=day, curr_tod=tod)
+          if (.not. any(seq_timemgr_restart_extra(1:seq_timemgr_n_restart_extra) == mon*100+day)) cycle
+          if (tod == 0) then
+             call seq_timemgr_alarmSetOn(SyncClock%ECP(n)%EClock,seq_timemgr_alarm_restart)
+             if (n == seq_timemgr_nclock_drv .and. seq_comm_iamroot(CPLID)) then
+                write(logunit,'(2A,I10.8,A)') subname,' restart_extra_mmdd: forcing restart at ', &
+                     ymd, ' 00Z'
+             endif
+          else
+             ! This clock stepped over 00Z of a listed date without landing on
+             ! it (coupling interval not dividing a day, or a run offset), so it
+             ! gets no extra restart and that restart set will be incomplete.
+             ! Warn rather than abort: the clock may belong to an absent stub.
+             call ESMF_TimeGet(PrevTime(n), mm=pmon, dd=pday, rc=rc)
+             call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from ESMF_TimeGet")
+             if (pmon*100+pday /= mon*100+day .and. seq_comm_iamroot(CPLID)) then
+                write(logunit,'(2A,I3,A,I10.8,A,I6)') subname,' WARNING: restart_extra_mmdd: clock ', &
+                     n,' crossed 00Z of ',ymd,' without landing on it; no extra restart, tod=',tod
+             endif
           endif
        enddo
     endif
