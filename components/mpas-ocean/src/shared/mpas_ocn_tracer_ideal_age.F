@@ -42,7 +42,8 @@ module ocn_tracer_ideal_age
    !--------------------------------------------------------------------
 
    public :: ocn_tracer_ideal_age_compute, &
-             ocn_tracer_ideal_age_init
+             ocn_tracer_ideal_age_init, &
+             ocn_tracer_ideal_age_update_mask
 
    !--------------------------------------------------------------------
    !
@@ -165,6 +166,28 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       type (mpas_pool_type), pointer :: forcingPool
+
+      err = 0
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+      call ocn_tracer_ideal_age_update_mask(forcingPool)
+
+   end subroutine ocn_tracer_ideal_age_init!}}}
+
+!***********************************************************************
+!
+!  routine ocn_tracer_ideal_age_update_mask
+!
+!> \brief   Sets the ideal-age forcing mask from the land-ice mask
+!> \details
+!>  Called at initialization and whenever the land-ice mask changes.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_tracer_ideal_age_update_mask(forcingPool)!{{{
+
+      type (mpas_pool_type), intent(in) :: forcingPool !< Input: forcing information
+
       type (mpas_pool_type), pointer :: tracersIdealAgeFieldsPool
 
       integer, dimension(:), pointer :: &
@@ -173,11 +196,9 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
          idealAgeMask
 
-      err = 0
-
       if (.not. config_use_idealAgeTracers) return
+      if (.not. config_use_idealAgeTracers_idealAge_forcing) return
 
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(forcingPool, &
                                  'tracersIdealAgeFields', &
                                   tracersIdealAgeFieldsPool)
@@ -187,16 +208,14 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
-      if (config_use_idealAgeTracers_idealAge_forcing) then
-         ! set mask = 0 for open ocean
-         ! set mask = 1 under land ice
-         idealAgeMask = 0.0_RKIND
-         if (associated(landIceMask)) then
-            where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND
-         end if
+      ! set mask = 0 for open ocean
+      ! set mask = 1 under land ice
+      idealAgeMask = 0.0_RKIND
+      if (associated(landIceMask)) then
+         where (landIceMask /= 0) idealAgeMask(1,:) = 1.0_RKIND
       end if
 
-   end subroutine ocn_tracer_ideal_age_init!}}}
+   end subroutine ocn_tracer_ideal_age_update_mask!}}}
 
 !***********************************************************************
 
