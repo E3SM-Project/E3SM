@@ -45,6 +45,7 @@ module ocn_constants
       rho_fw                ,&! density of fresh water (kg/m^3)
       rho_sw                ,&! density of salt water (kg/m^3)
       rho_ice               ,&! density of sea ice (kg/m^3)
+      cp_land_ice           ,&! specific heat of land ice (J/kg/K)
       cp_sw                 ,&! specific heat salt water (J/kg/K)
       cp_air                ,&! heat capacity of air (J/kg/K)
       sound                 ,&! speed of sound (m/s)
@@ -104,11 +105,13 @@ contains
        type (mpas_pool_type), pointer :: packagePool
 
        real (kind=RKIND), pointer :: config_density0
+       real (kind=RKIND), pointer :: config_land_ice_flux_cp_ice
 
        ocnConfigs => configPool
        ocnPackages => packagePool
 
        call mpas_pool_get_config(configPool, 'config_density0', config_density0)
+       call mpas_pool_get_config(configPool, 'config_land_ice_flux_cp_ice', config_land_ice_flux_cp_ice)
 
        !-----------------------------------------------------------------------
        !
@@ -124,6 +127,7 @@ contains
        rho_sw    = config_density0            ! density of salt water (kg/m^3)
        rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
        rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
+       cp_land_ice = config_land_ice_flux_cp_ice ! specific heat of land ice (J/kg/K)
        cp_sw     = 3.996e3_RKIND              ! specific heat salt water
        cp_air    = 1005.0_RKIND               ! heat capacity of air (J/kg/K)
        sound     = 1.5e2_RKIND                ! speed of sound (m/s)
@@ -170,6 +174,7 @@ contains
        rho_sw                 = SHR_CONST_RHOSW         ! kg/m^3
        rho_fw                 = SHR_CONST_RHOFW         ! kg/m^3
        rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
+       cp_land_ice            = SHR_CONST_CPICE         ! J/kg/K, as in MALI
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
