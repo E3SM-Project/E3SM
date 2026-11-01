@@ -54,6 +54,7 @@ module ocn_comp_mct
    use ocn_analysis_driver
    use ocn_time_integration
    use ocn_time_average_coupled
+   use ocn_tracer_ideal_age, only: ocn_tracer_ideal_age_update_mask
    use ocn_frazil_forcing
    use ocn_equation_of_state
    use ocn_surface_land_ice_fluxes
@@ -3159,6 +3160,10 @@ contains
                                   landIceGlcFloatingFractionField, &
                                   landIceConductiveHeatFluxField
 
+   type (field1DInteger), pointer :: landIceMaskField
+
+   integer, dimension(:), pointer :: landIceMask
+
    real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
                                                landIceFraction, &
                                                landIceFloatingFraction, &
@@ -3189,6 +3194,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
       call mpas_pool_get_array(forcingPool, 'landIceGlcFloatingFraction', landIceGlcFloatingFraction)
       call mpas_pool_get_array(forcingPool, 'landIceConductiveHeatFlux', landIceConductiveHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
       do i = 1, nCellsSolve
          n = n + 1
@@ -3209,6 +3215,12 @@ contains
                landIcePressure(i) = 0.0_RKIND
                landIceFloatingFraction(i) = 0.0_RKIND
                landIceFraction(i) = 0.0_RKIND
+            end if
+            ! the land-ice mask follows the ice as it advances and retreats
+            if (landIceFraction(i) > 0.0_RKIND) then
+               landIceMask(i) = 1
+            else
+               landIceMask(i) = 0
             end if
          end if
 
@@ -3242,6 +3254,15 @@ contains
       call mpas_dmpar_exch_halo_field(landIcePressureField)
       call mpas_dmpar_exch_halo_field(landIceFractionField)
       call mpas_dmpar_exch_halo_field(landIceFloatingFractionField)
+      call mpas_pool_get_field(forcingPool, 'landIceMask', landIceMaskField)
+      call mpas_dmpar_exch_halo_field(landIceMaskField)
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call ocn_tracer_ideal_age_update_mask(forcingPool)
+         block_ptr => block_ptr % next
+      end do
    end if
 
 !-----------------------------------------------------------------------

@@ -214,7 +214,7 @@ mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_framework_forcing.o:
 
-mpas_ocn_time_varying_forcing.o:  mpas_ocn_framework_forcing.o mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_time_varying_forcing.o:  mpas_ocn_framework_forcing.o mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_tracer_ideal_age.o
 
 mpas_ocn_wetting_drying.o: mpas_ocn_gm.o mpas_ocn_diagnostics_variables.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_gm.o mpas_ocn_mesh.o mpas_ocn_vel_pressure_grad.o
 
