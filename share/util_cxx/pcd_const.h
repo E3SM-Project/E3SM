@@ -13,9 +13,6 @@ namespace pcd {
 const std::string pcdversion = "0.2.0";
 const std::string pcdinstitution = "E3SM Project";
 
-// unit_conversions constants
-constexpr double seconds_per_day = 86400;                                                                                                                                                 // [s] NIST_SP330_2019
-
 // mathematical constants
 constexpr double pi = 3.141592653589793;                                                                                                                                                  // ASHandbook1964
 constexpr double e = 2.718281828459045;                                                                                                                                                   // ASHandbook1964
@@ -40,7 +37,6 @@ constexpr double molar_volume_of_ideal_gas = 0.02271095464;                     
 // chemical_molar_masses constants
 constexpr double carbon_molar_mass_reference = 0.0120107;                                                                                                                                 // [kg mol-1] IUPAC1997
 constexpr double oxygen_molar_mass_reference = 0.0159994;                                                                                                                                 // [kg mol-1] IUPAC1997
-constexpr double iron_molar_mass_reference = 0.055845;                                                                                                                                    // [kg mol-1] NIST_SRD144
 constexpr double carbon_dioxide_molar_mass_reference = (carbon_molar_mass_reference + (2.0 * oxygen_molar_mass_reference));                                                               // [kg mol-1]
 
 // earth_physical constants

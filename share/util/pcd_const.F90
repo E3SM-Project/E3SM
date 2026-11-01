@@ -12,9 +12,6 @@ module pcd
     character(len=*), parameter :: pcdversion = "0.2.0"
     character(len=*), parameter :: pcdinstitution = "E3SM Project"
 
-    !unit_conversions constants
-    real(dp), parameter :: seconds_per_day = 86400_dp                               ! [s] NIST_SP330_2019
-
     !mathematical constants
     real(dp), parameter :: pi = 3.141592653589793_dp                                ! ASHandbook1964
     real(dp), parameter :: e = 2.718281828459045_dp                                 ! ASHandbook1964
@@ -40,7 +37,6 @@ module pcd
     !chemical_molar_masses constants
     real(dp), parameter :: carbon_molar_mass_reference = 0.0120107_dp               ! [kg mol-1] IUPAC1997
     real(dp), parameter :: oxygen_molar_mass_reference = 0.0159994_dp               ! [kg mol-1] IUPAC1997
-    real(dp), parameter :: iron_molar_mass_reference = 0.055845_dp                  ! [kg mol-1] NIST_SRD144
     real(dp), parameter :: carbon_dioxide_molar_mass_reference = &
         &(carbon_molar_mass_reference + (2.0_dp * oxygen_molar_mass_reference))     ! [kg mol-1]
 

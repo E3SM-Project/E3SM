@@ -29,13 +29,6 @@ physical_constants_dictionary:
         Mohr, P.J., Newell, D.B., Taylor, B.N. and Tiesinga, E., Rev. Mod. Phys., 97,
         025002 (2025); doi: 10.1103/RevModPhys.97.025002
       "
-    NIST_SRD144:
-      description: "NIST Atomic Weights and Isotopic Compositions for All Elements"
-      citation: "
-        National Institute of Standards and Technology, Atomic Weights and Isotopic
-        Compositions for All Elements, NIST Standard Reference Database 144,
-        https://pml.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=Fe&ascii=ascii.
-      "
     GRS80:
       description: "Geodetic Reference System 1980 for Earth's physical parameters"
       citation: "
@@ -59,13 +52,6 @@ physical_constants_dictionary:
       citation: "
         Bureau International des Poids et Mesures (BIPM), The International
         System of Units (SI), 9th edition, 2019.
-      "
-    NIST_SP330_2019:
-      description: "NIST SI publication defining accepted non-SI unit conversions"
-      citation: "
-        Newell, D. B., and Tiesinga, E. (eds.), The International System of Units
-        (SI), NIST Special Publication 330, 2019 Edition, Section 4, Table 8.
-        doi:10.6028/NIST.SP.330-2019.
       "
     CGPM1948_1954:
       description: "CGPM resolutions linking the triple point and the 0.01 degree offset"
@@ -158,24 +144,6 @@ physical_constants_dictionary:
       "
 
   set:
-    - unit_conversions:
-        description: "
-          Exact conversions between SI units and accepted non-SI units.
-        "
-        entries:
-          - name: seconds_per_day
-            value: 86400
-            units: s
-            prec: double
-            type: strict
-            uncertainty: exact
-            reference: NIST_SP330_2019
-            description: "
-              Duration of the fixed day unit: 1 d = 24 h = 86400 s exactly.
-              Not a sidereal day. Historical UTC days containing leap seconds
-              differ from this duration; continuous UTC takes effect on
-              20 May 2027 under CGPM Resolution 5 (2026).
-            "
     - mathematical:
         description: "
           Common mathematical constants.
@@ -391,17 +359,6 @@ physical_constants_dictionary:
             reference: IUPAC1997
             description: "
               Reference molar mass of elemental oxygen.
-            "
-          - name: iron_molar_mass_reference
-            value: 0.055845
-            units: kg mol-1
-            prec: double
-            type: strict
-            uncertainty: 2.0E-06
-            reference: NIST_SRD144
-            description: "
-              Reference molar mass of naturally occurring elemental iron,
-              corresponding to the NIST standard atomic weight 55.845(2).
             "
           - name: carbon_dioxide_molar_mass_reference
             formula: carbon_molar_mass_reference + 2 * oxygen_molar_mass_reference

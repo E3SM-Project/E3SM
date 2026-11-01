@@ -456,8 +456,8 @@
 		/>
 	</nml_record>
 	<nml_record name="initialize" in_defaults="true">
-		<nml_option name="config_earth_radius" type="real" default_value="6371008.771366666" units="m"
-			description="Spherical mesh radius in m. E3SM spherical runs require the PCD GRS80 mean radius; standalone idealized runs may override it."
+		<nml_option name="config_earth_radius" type="real" default_value="6371229.0" units="m"
+			description="Earth radius in m"
 			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
