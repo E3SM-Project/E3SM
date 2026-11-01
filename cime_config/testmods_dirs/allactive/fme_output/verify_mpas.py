@@ -216,12 +216,12 @@ REMAPPED_VERTREDUCE_VARS = [
 # Ranges are deliberately generous to avoid false positives during spinup.
 RANGE_CHECKS = {
     "temperatureCoarsened": (-5, 40),
-    "salinityCoarsened": (0, 50),      # Red Sea/Persian Gulf can exceed 42 PSU
+    "salinityCoarsened": (0, 60),      # Gulf of Salwa/Shark Bay reach ~53 PSU in v3 LR (0301 parent: 53.4)
     "velocityZonalCoarsened": (-5, 5),
     "velocityMeridionalCoarsened": (-5, 5),
     "layerThicknessCoarsened": (0, None),
     "sst": (-5, 40),
-    "sss": (0, 50),
+    "sss": (0, 60),
     "surfaceHeatFluxTotal": (-2000, 2000),  # spinup transients can be large
     "surfaceHeatFluxNet": (-2000, 2000),
     "frazilHeatFlux": (-1e-3, None),       # latent heat release, >= 0

@@ -3449,9 +3449,20 @@ def check_training_readiness(rundir, outdir, verbose):
     fill_thresh = 1e10
 
     # -- Collect h0 files --
-    h0_files = find_files(rundir, "*.eam.h0.*.nc")
+    # FME h0 files only: a branch run dir also holds the parent's own
+    # restart-set history (e.g. <refcase>.eam.h0.1939-12.nc, linked in by
+    # GET_REFCASE), a different tape with none of the FME fields that sorts
+    # first and would be certified instead of the FME tape.
+    h0_files = []
+    for f in find_files(rundir, "*.eam.h0.*.nc"):
+        ds_ = safe_open(f)
+        try:
+            if {"T_7", "STW_0", "Tat2m"} & set(get_varnames(ds_)):
+                h0_files.append(f)
+        finally:
+            close_ds(ds_)
     if not h0_files:
-        issues.append("  FATAL: no *.eam.h0.*.nc files found")
+        issues.append("  FATAL: no FME *.eam.h0.*.nc files found")
         _report("Training readiness", issues)
         return issues, plots, fill_reports
 
