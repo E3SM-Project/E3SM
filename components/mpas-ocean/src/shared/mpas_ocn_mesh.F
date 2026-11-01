@@ -34,6 +34,9 @@ module ocn_mesh
 
    use ocn_config
    use ocn_constants
+#ifdef MPAS_ESM_SHR_CONST
+   use shr_const_mod, only : SHR_CONST_REARTH
+#endif
 
    implicit none
    private
@@ -281,6 +284,20 @@ contains
                                            on_a_sphere)
       call mpas_pool_get_config(meshPool, 'sphere_radius', &
                                            sphere_radius)
+
+#ifdef MPAS_ESM_SHR_CONST
+      ! Match Omega and coupler area conversions; standalone idealized meshes are exempt.
+      ! Reject incompatible inputs here: changing radius metadata alone cannot migrate geometry.
+      if (on_a_sphere) then
+         ! MPAS stores metadata in RKIND; allow its rounding in single precision.
+         if (.not. (abs((sphere_radius - SHR_CONST_REARTH) / SHR_CONST_REARTH) <= &
+                    max(1.0e-8_RKIND, epsilon(sphere_radius)))) then
+            call mpas_log_write(&
+               "ocn_meshCreate: input sphere_radius $r must match PCD mean radius $r; migrate the mesh geometry", &
+               MPAS_LOG_CRIT, realArgs=(/sphere_radius,real(SHR_CONST_REARTH,kind=RKIND)/))
+         endif
+      endif
+#endif
 
       ! set all mesh dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', &

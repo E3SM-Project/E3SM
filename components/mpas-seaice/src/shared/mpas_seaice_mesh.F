@@ -84,6 +84,9 @@ contains
        domain)!{{{
 
     use mpas_stream_manager
+#ifdef MPAS_ESM_SHR_CONST
+    use seaice_constants, only : seaiceEarthRadius
+#endif
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -155,6 +158,26 @@ contains
     call MPAS_pool_get_config(domain % blocklist % configs, "config_do_restart", config_do_restart)
     call MPAS_pool_get_config(domain % blocklist % configs, "config_earth_radius", earthRadius)
 
+#ifdef MPAS_ESM_SHR_CONST
+    ! Enforce the ocean/Omega radius before rescaling or accepting a restart.
+    ! Standalone idealized runs retain overrides; planar meshes are exempt.
+    block => domain % blocklist
+    do while (associated(block))
+       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+       if (on_a_sphere) then
+          ! MPAS stores metadata in RKIND; allow its rounding in single precision.
+          if (.not. (abs((earthRadius - seaiceEarthRadius) / seaiceEarthRadius) <= &
+                     max(1.0e-8_RKIND, epsilon(earthRadius)))) then
+             call mpas_log_write(&
+                  "rescale_mesh: config_earth_radius $r must match PCD mean radius $r for E3SM spherical runs", &
+                  messageType=MPAS_LOG_CRIT, realArgs=(/earthRadius,seaiceEarthRadius/))
+          endif
+       endif
+       block => block % next
+    end do
+#endif
+
     if (.not. config_do_restart) then
 
        block => domain % blocklist
@@ -168,6 +191,15 @@ contains
 
              ! get the old radius
              call mpas_pool_get_config(meshPool, 'sphere_radius', oldRadius)
+
+             if (.not. (oldRadius > 0.0_RKIND)) then
+                call mpas_log_write("rescale_mesh: input sphere_radius must be positive: $r", &
+                     messageType=MPAS_LOG_CRIT, realArgs=(/oldRadius/))
+             endif
+             if (.not. (earthRadius > 0.0_RKIND)) then
+                call mpas_log_write("rescale_mesh: config_earth_radius must be positive: $r", &
+                     messageType=MPAS_LOG_CRIT, realArgs=(/earthRadius/))
+             endif
 
              call mpas_log_write('Expanding mesh to a radius of size: $rm', realArgs=(/earthRadius/))
 
@@ -259,8 +291,9 @@ contains
 
              end do
 
-             ! reset sphere_radius
+             ! Keep mesh-pool and domain/output metadata consistent with the rescaled geometry.
              oldRadius = earthRadius
+             domain % sphere_radius = earthRadius
 
           endif
 
@@ -274,7 +307,8 @@ contains
 
           call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-          ! check with restart that file radius is equal to defined radius
+          ! Do not silently rescale restart geometry or reinterpret its conserved state.
+          ! Retain the exact stored/configured radius comparison.
           call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
           call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
 

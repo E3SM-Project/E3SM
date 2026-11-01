@@ -76,7 +76,7 @@
 <config_nSnowLayers>5</config_nSnowLayers>
 
 <!-- initialize -->
-<config_earth_radius>6371229.0</config_earth_radius>
+<config_earth_radius>6371008.771366666</config_earth_radius>
 <config_initial_condition_type>'cice_default'</config_initial_condition_type>
 <config_initial_ice_area>1.0</config_initial_ice_area>
 <config_initial_ice_volume>1.0</config_initial_ice_volume>

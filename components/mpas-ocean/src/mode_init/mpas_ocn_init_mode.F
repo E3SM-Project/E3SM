@@ -29,6 +29,9 @@ module ocn_init_mode
    use mpas_timer
    use mpas_io_units
    use mpas_constants
+#ifdef MPAS_ESM_SHR_CONST
+   use shr_const_mod, only : SHR_CONST_REARTH
+#endif
    use mpas_decomp
 
    use ocn_init_routines
@@ -174,7 +177,13 @@ module ocn_init_mode
       end do
 
       ! Expand sphere if it needs to be expanded
+#ifdef MPAS_ESM_SHR_CONST
+      ! Prepare E3SM geometry on the PCD sphere used by Omega and the coupler.
+      call ocn_init_expand_sphere(domain, domain % streamManager, real(SHR_CONST_REARTH,kind=RKIND), ierr)
+#else
+      ! Preserve the standalone initialization convention.
       call ocn_init_expand_sphere(domain, domain % streamManager, a, ierr)
+#endif
 
       ! Set the Coriolis parameter is a realist value is requested
       call ocn_init_realistic_coriolis_parameter(domain, ierr)

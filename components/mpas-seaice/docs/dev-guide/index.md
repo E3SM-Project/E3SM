@@ -54,6 +54,52 @@ Other sea-ice quantities remain at their existing model values rather than being
 
 The CIME build compiles PCD through E3SM's shared ``share/util`` sources. The separate MPAS-Seaice Make build compiles the same PCD source as a prerequisite of ``mpas_seaice_constants.F``; it should not add another PCD source to the CIME component source list.
 
+### Spherical Earth radius
+
+SeaIce's ``seaiceEarthRadius`` and the shared ``SHR_CONST_REARTH`` use PCD's
+GRS80 ``mean_radius``, approximately 6371008.771366666 m. This is the arithmetic
+mean of the reference ellipsoid's two equatorial axes and polar axis, not the
+equal-area or equal-volume sphere radius. It matches
+[Omega's Earth-radius convention](https://github.com/E3SM-Project/Omega/blob/develop/components/omega/src/ocn/GlobalConstants.h).
+Both SeaIce configuration defaults must track this PCD value.
+
+E3SM spherical SeaIce runs reject a ``config_earth_radius`` that differs from
+this reference by more than a relative tolerance of 1e-8. The tolerance is
+increased to machine epsilon in single-precision MPAS builds, because MPAS
+stores configuration and mesh metadata in its working precision. Standalone
+idealized SeaIce runs may still override the radius; planar meshes are not
+rescaled and do not undergo the spherical-radius check.
+
+On non-restart initialization, SeaIce retains its existing mesh rescaling:
+coordinates and edge lengths scale with radius, and areas scale with radius
+squared. The mesh-pool and domain radius metadata are updated consistently.
+Restart runs retain the exact comparison between the configured radius and the
+stored mesh radius. Existing restarts at the legacy 6371229 m radius are therefore
+not compatible with the new E3SM spherical convention. Restart migration is not
+implemented; do not merely edit the radius attribute.
+
+E3SM MPAS-Ocean forward and analysis runs also reject spherical input meshes
+whose radius differs from the shared PCD reference. Standalone ocean builds
+retain their existing behavior. Ocean input geometry must be generated or
+migrated consistently: coordinates, lengths, areas, and radius metadata must
+agree. When enabled, the existing MPAS-Ocean init-mode sphere expansion uses the
+PCD radius in E3SM builds; standalone init-mode expansion retains its legacy
+radius. Forward and analysis modes do not automatically migrate input geometry.
+Omega likewise checks its input mesh against PCD. Changing metadata alone
+does not migrate geometry. Ocean and SeaIce datasets and any area-dependent
+coupling inputs must be reviewed together.
+
+SeaIce and MPAS-Ocean export cell areas normalized by their mesh radius squared.
+Coupler diagnostics convert these areas back to square meters using
+``SHR_CONST_REARTH``. Mapping the shared radius to PCD aligns this convention, but
+also changes other shared-radius consumers across E3SM. This is a non-bit-for-bit
+geometry change, not just a SeaIce diagnostic change.
+
+Before production use, validate migrated ocean/ice input geometry and normalized
+coupler areas, then run existing coupled restart, conservation, MPI-layout, and
+thread-count tests on a supported machine. The earlier SeaIce restart result
+does not validate this radius change.
+
 Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice. **We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.**
 
 ## E3SM-Polar-Developer Script
