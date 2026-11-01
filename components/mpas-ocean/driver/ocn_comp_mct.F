@@ -3720,7 +3720,7 @@ contains
 
    logical, pointer :: frazilIceActive
 
-   real (kind=RKIND) :: netFlux, weight
+   real (kind=RKIND) :: netFlux, frazilFlux, weight
 
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
    call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_min_floating_fraction', &
@@ -3753,17 +3753,25 @@ contains
          ! net mass flux out of the ice shelf per unit cell area: melt minus the
          ! frazil that MPAS-Ocean passes to glc under land ice
          netFlux = avgLandIceFreshwaterFlux(i)
+         frazilFlux = 0.0_RKIND
          if ( frazilIceActive ) then
             if ( landIceMask(i) == 1 ) then
-               netFlux = netFlux - accumulatedFrazilIceMass(i) / ocn_cpl_dt
+               frazilFlux = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+               netFlux = netFlux - frazilFlux
             end if
          end if
 
          if (landIceGlcFloatingFraction(i) > config_glc_ice_shelf_coupling_min_floating_fraction) then
             o2x_o(index_o2x_Foxo_ismf, n) = netFlux / landIceGlcFloatingFraction(i)
+            if (index_o2x_Foxo_ismf_frazil > 0) then
+               o2x_o(index_o2x_Foxo_ismf_frazil, n) = frazilFlux / landIceGlcFloatingFraction(i)
+            end if
             landIceFreshwaterFluxNotSentToGlc(i) = 0.0_RKIND
          else
             o2x_o(index_o2x_Foxo_ismf, n) = 0.0_RKIND
+            if (index_o2x_Foxo_ismf_frazil > 0) then
+               o2x_o(index_o2x_Foxo_ismf_frazil, n) = 0.0_RKIND
+            end if
             landIceFreshwaterFluxNotSentToGlc(i) = netFlux
          end if
 

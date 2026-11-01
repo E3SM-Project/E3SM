@@ -37,6 +37,7 @@ module mpaso_cpl_indices
 
   ! ocn -> drv for calculation of ocean-ice sheet interactions
   integer :: index_o2x_Foxo_ismf    !net ice-shelf melt flux per unit floating area
+  integer :: index_o2x_Foxo_ismf_frazil !frazil part of Foxo_ismf, for the coupler budgets
   integer :: index_o2x_So_tfrz_isf  !ice shelf-ocean interface temperature times So_liflfrac
   integer :: index_o2x_So_liflfrac  !floating fraction weighting the interface temperature
 
@@ -231,6 +232,7 @@ contains
     index_o2x_Foxo_ismh     = mct_avect_indexra(o2x,'Foxo_ismh',perrWith='quiet')
     index_o2x_Foxo_rrofih   = mct_avect_indexra(o2x,'Foxo_rrofih',perrWith='quiet')
     index_o2x_Foxo_ismf     = mct_avect_indexra(o2x,'Foxo_ismf',perrWith='quiet')
+    index_o2x_Foxo_ismf_frazil = mct_avect_indexra(o2x,'Foxo_ismf_frazil',perrWith='quiet')
     index_o2x_So_tfrz_isf   = mct_avect_indexra(o2x,'So_tfrz_isf',perrWith='quiet')
     index_o2x_So_liflfrac   = mct_avect_indexra(o2x,'So_liflfrac',perrWith='quiet')
 

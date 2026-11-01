@@ -3338,6 +3338,19 @@ contains
        attname  = 'Foxo_ismf'
        call metadata_set(attname, longname, stdname, units)
 
+       ! the frazil part of Foxo_ismf, which glc does not import; the coupler
+       ! budgets use it to give frazil its latent heat alone
+       name = 'Foxo_ismf_frazil'
+       call seq_flds_add(o2x_fluxes,trim(name))
+       call seq_flds_add(x2g_fluxes,trim(name))
+       call seq_flds_add(x2g_shelf_fluxes_from_ocn,trim(name))
+       call seq_flds_add(x2g_shelf_fields_from_ocn,trim(name))
+       longname = 'Frazil accretion included in Foxo_ismf, per unit area of floating ice'
+       stdname  = 'iceshelf_frazil_accretion_flux_per_floating_area'
+       units    = 'kg m-2 s-1'
+       attname  = 'Foxo_ismf_frazil'
+       call metadata_set(attname, longname, stdname, units)
+
        name = 'So_tfrz_isf'
        call seq_flds_add(o2x_states,trim(name))
        call seq_flds_add(x2g_states,trim(name))
