@@ -172,8 +172,9 @@ physical_constants_dictionary:
             reference: NIST_SP330_2019
             description: "
               Duration of the fixed day unit: 1 d = 24 h = 86400 s exactly.
-              Not a sidereal day or the duration of a UTC calendar day
-              containing a leap second.
+              Not a sidereal day. Historical UTC days containing leap seconds
+              differ from this duration; continuous UTC takes effect on
+              20 May 2027 under CGPM Resolution 5 (2026).
             "
     - mathematical:
         description: "
