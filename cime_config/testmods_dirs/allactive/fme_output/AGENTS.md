@@ -2155,6 +2155,12 @@ carrying a restart before averaging, or you will repeat the mistake.
   Added as -1 (the code's init value; only used with config_scale_{dismf,dib}_by_removed_ice_runoff,
   both off): ncap2 -O --hdr_pad=10000 -s 'seq_infodata_rmean_rmv_ice_runoff=-1.0d'. prep_parent_restarts.sh
   does this. A cold-start ERS never reads a parent cpl.r, so tests do not catch it.
+- end_restart defaults to .FALSE. in drv_in (namelist_definition_drv.xml value; its desc says
+  "default=true", which is wrong). REST_N counts from each leg's start, so a leg that is not a multiple
+  of REST_N ends WITHOUT a restart set: the 0301 pilot (STOP_N=2, REST_N=5) ended at 1942-01-01 with the
+  newest set at 1941-11-02 and had to be continued from there. The preset now sets end_restart=.true.
+  Continuing a case from an older set of its own (a rewind) recomputes the later months; the ERS tests
+  show resumed monthly files stay BFB.
 - SSP2-4.5 namelists (0201's Aug 8 hand edits) can only go in at 2015-01-01: 32 of their 38 files start
   in 2015 (GHG 2015-2500), and EAM aborts at a 1940 start ("chem_surfvals_set_all: data time index is
   out of bounds"). The preset writes them only with FME_0301_SSP245=TRUE; 1940-2014 runs on the compset's

@@ -215,10 +215,13 @@ case "${FME_EXP^^}" in
     export FME_EAM_PRES_LEVELS="${FME_EAM_PRES_LEVELS:-FALSE}"
     export FME_EAM_H1_ENABLE="${FME_EAM_H1_ENABLE:-TRUE}"
     # PILOT=TRUE: only the 1940-1941 pilot (spec "Pilot validation"). It ends
-    # 1942-01-01 (a window boundary) with an end-of-run restart set. To
-    # continue the same case afterwards, keep the 5-yearly legs on
-    # 1945/1950/...: CONTINUE_RUN=TRUE, STOP_N=3 RESUBMIT=0 for 1942-1944, then
-    # STOP_N=5 RESUBMIT=23 for 1945-2064.
+    # 1942-01-01 (a window boundary) with an end-of-run restart set, written
+    # because hist0301_user_nl() sets end_restart = .true. (the E3SM default is
+    # .false.: REST_N=5 counts from the leg start, so a 2-yr leg otherwise ends
+    # with no restart). To continue the same case afterwards, keep the
+    # 5-yearly legs on 1945/1950/...: CONTINUE_RUN=TRUE, STOP_N=3 RESUBMIT=0
+    # for 1942-1944, STOP_N=5 RESUBMIT=13 for 1945-2014, then the SSP2-4.5
+    # switch (FME_0301_SSP245) and STOP_N=5 RESUBMIT=9 for 2015-2064.
     if [ "${PILOT^^}" == "TRUE" ]; then
         exp_stop_n="2"
         exp_resubmit="0"
@@ -668,6 +671,9 @@ EOF
 
 !--- WCYCL20TR-0301: yearly May 1 / Nov 2 restarts and window-mean coupler streams
 restart_extra_mmdd        = 501, 1102
+! E3SM's end_restart default is .false.; without it a leg whose length is not
+! a multiple of REST_N (the 2-yr pilot) ends with no restart set.
+end_restart               = .true.
 cpl_fme_state_mean        = .true.
 cpl_fme_inst_enable       = .true.
 cpl_fme_window_anchor_ymd = 18500101
