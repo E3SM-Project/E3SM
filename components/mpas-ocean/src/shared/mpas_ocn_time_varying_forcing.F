@@ -23,6 +23,7 @@ module ocn_time_varying_forcing
   use ocn_constants
   use ocn_config
   use ocn_diagnostics_variables
+  use ocn_tracer_ideal_age, only: ocn_tracer_ideal_age_update_mask
   use mpas_log, only: mpas_log_write
 
   implicit none
@@ -531,6 +532,9 @@ contains
          landIceDraftForcing, &
          landIceDraft
 
+    integer, dimension(:), pointer :: &
+         landIceMask
+
     integer, pointer :: &
          nCells
 
@@ -590,6 +594,7 @@ contains
        call MPAS_pool_get_array(forcingPool, "landIceFloatingFraction", landIceFloatingFraction)
        call MPAS_pool_get_array(forcingPool, "landIcePressure", landIcePressure)
        call MPAS_pool_get_array(forcingPool, "landIceDraft", landIceDraft)
+       call MPAS_pool_get_array(forcingPool, "landIceMask", landIceMask)
    
        do iCell = 1, nCells
    
@@ -597,8 +602,16 @@ contains
           landIceFloatingFraction(iCell) = landIceFloatingFractionForcing(iCell)
           landIcePressure(iCell) = landIcePressureForcing(iCell)
           landIceDraft(iCell) = landIceDraftForcing(iCell)
+          ! the land-ice mask follows the ice as it advances and retreats
+          if (landIceFraction(iCell) > 0.0_RKIND) then
+             landIceMask(iCell) = 1
+          else
+             landIceMask(iCell) = 0
+          end if
    
        enddo
+
+       call ocn_tracer_ideal_age_update_mask(forcingPool)
        block => block % next
     end do
 
