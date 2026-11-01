@@ -1195,7 +1195,7 @@
 					possible_values="Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell)."
 		/>
 		<nml_option name="config_land_ice_flux_cp_ice" type="real" default_value="2.009e3" units="J C^-1 kg^-1"
-					description="The specific heat capacity for ice."
+					description="The specific heat capacity for ice.  Not used in E3SM, where MPAS-Ocean, like MALI, uses SHR_CONST_CPICE."
 					possible_values="Any positive real number"
 		/>
 		<nml_option name="config_land_ice_flux_rho_ice" type="real" default_value="918" units="kg m^-3"

@@ -1938,14 +1938,6 @@ Valid values: Most likely a value between 0 (no smoothing) and 1 (neighbors get 
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_land_ice_flux_cp_ice" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The specific heat capacity for ice.
-
-Valid values: Any positive real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_land_ice_flux_rho_ice" type="real"
 	category="land_ice_fluxes" group="land_ice_fluxes">
 The density of land ice.

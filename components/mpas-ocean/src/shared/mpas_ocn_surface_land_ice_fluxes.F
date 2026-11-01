@@ -886,7 +886,7 @@ contains
 
       !*** Set physical values
 
-      cpLandIce    = config_land_ice_flux_cp_ice
+      cpLandIce    = cp_land_ice
       rhoLandIce   = config_land_ice_flux_rho_ice
       ISOMIPgammaT = config_land_ice_flux_ISOMIP_gammaT
 
