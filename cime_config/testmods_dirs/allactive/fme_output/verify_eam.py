@@ -1095,6 +1095,11 @@ def check_eam_h1(rundir, outdir, verbose, h1_tape=1, require_h1=False):
     # every tape (time_bnds = [t, t]); it is not a window. Branch runs (0301)
     # never write it.
     n0 = sum(1 for r in h1 if r[4] - r[3] <= H1_TIME_TOL)
+    # Start time of a cold start (the nstep-0 record), or None. Its first h1
+    # window is excluded from spec check 4: radiation steps are unevenly
+    # spread over the first 6-h h0 windows of a startup run, so the mean of
+    # the h0 means differs from the h1 mean there (~2% for SW, ~0.2% for LW).
+    startup_t = min((r[3] for r in h1 if r[4] - r[3] <= H1_TIME_TOL), default=None)
     if n0:
         print(f"  h{h1_tape}: skipping {n0} zero-length startup record(s)")
         h1 = [r for r in h1 if r[4] - r[3] > H1_TIME_TOL]
@@ -1205,7 +1210,11 @@ def check_eam_h1(rundir, outdir, verbose, h1_tape=1, require_h1=False):
     # (e.g. a 6-h tape with an extra/short record) is a real failure.
     windows = []
     n_partial = 0
+    n_startup = 0
     for (f, i, t, t0, t1) in h1:
+        if startup_t is not None and abs(t0 - startup_t) < H1_TIME_TOL:
+            n_startup += 1
+            continue
         sel = np.where((h0_t0 >= t0 - H1_TIME_TOL) & (h0_t1 <= t1 + H1_TIME_TOL))[0]
         tiled = len(sel) > 0
         if tiled:
@@ -1220,6 +1229,9 @@ def check_eam_h1(rundir, outdir, verbose, h1_tape=1, require_h1=False):
                           f"{len(sel)} h0 records, expected {n_expect}")
             continue
         windows.append((f, i, t1, sel))
+    if n_startup:
+        print(f"  check 4: skipped {n_startup} window(s) starting at the cold start "
+              f"({_noleap_date_str(startup_t)})")
     if n_partial:
         print(f"  check 4: {n_partial} h{h1_tape} window(s) not fully covered "
               "by h0 records -- skipped")

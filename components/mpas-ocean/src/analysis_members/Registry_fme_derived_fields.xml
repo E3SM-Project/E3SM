@@ -65,7 +65,7 @@
 			description="Latent heat released into the ocean by frazil formation this time step: -config_frazil_heat_of_fusion*(accumulatedFrazilIceMass(level 2) - accumulatedFrazilIceMass(level 1))/dt evaluated after the time-level shift, as in conservationCheck. Positive into the ocean."
 		/>
 		<var name="massFluxHeatContent" type="real" dimensions="nCells Time" units="W m^-2"
-			description="rho_sw*cp_sw*(rainTemperatureFlux + evapTemperatureFlux + seaIceTemperatureFlux + icebergTemperatureFlux + river-runoff temperature surface flux): heat carried by the surface water fluxes relative to 0 degC. Needed to close the 0 degC-referenced heat content budget; not part of surfaceHeatFluxNet."
+			description="rho_sw*cp_sw*(rainTemperatureFlux + evapTemperatureFlux + seaIceTemperatureFlux + icebergTemperatureFlux + river-runoff temperature surface flux): heat carried by the surface water fluxes relative to a 0 degC reference temperature (T in degC), positive into the ocean (the sign of the mass flux: rain/river/iceberg positive, evaporation negative). Needed to close the 0 degC-referenced heat content budget; not part of surfaceHeatFluxNet."
 		/>
 	</var_struct>
 	<streams>

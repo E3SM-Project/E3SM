@@ -449,7 +449,7 @@ contains
               'Frazil latent heat released into ocean: Lf_frazil*d(accumulatedFrazilIceMass)/dt', &
               ierr, cell_methods=cmeth)
          call outfile%register_var('massFluxHeatContent', 'W m^-2', &
-              'rho*cp*(rain+evap+seaIce+iceberg+river)TemperatureFlux, rel. 0 degC; not in surfaceHeatFluxNet', &
+              'rho*cp*T*(rain+evap+seaIce+iceberg+river) flux, T rel. 0 degC, positive into ocean; not in surfaceHeatFluxNet', &
               ierr, cell_methods=cmeth)
          call outfile%register_var('icebergFreshWaterFlux', 'kg m^-2 s^-1', &
               'Iceberg melt fresh water mass flux into ocean', ierr, cell_methods=cmeth)

@@ -336,11 +336,14 @@ module cpl_fme_mod
   ! downwelling/precip flux densities (Faxa_*) are written as window means --
   ! see cpl_fme_accum/flush and the per-field cell_methods.  Absent fields are
   ! skipped at setup (perrWith='quiet').
-  integer, parameter :: n_a2x_default = 18
+  ! Sa_ugust: the gust speed the coupler adds to the bulk-flux wind (EAM's
+  ! last CLUBB substep; only present when ATM_SUPPLIES_GUSTINESS).
+  integer, parameter :: n_a2x_default = 19
   character(len=16), parameter :: a2x_default(n_a2x_default) = (/ &
        'Sa_z            ', 'Sa_u            ', 'Sa_v            ', &
        'Sa_tbot         ', 'Sa_ptem         ', 'Sa_shum         ', &
        'Sa_pbot         ', 'Sa_pslv         ', 'Sa_dens         ', &
+       'Sa_ugust        ', &
        'Faxa_lwdn       ', 'Faxa_rainc      ', 'Faxa_rainl      ', &
        'Faxa_snowc      ', 'Faxa_snowl      ', 'Faxa_swndr      ', &
        'Faxa_swvdr      ', 'Faxa_swndf      ', 'Faxa_swvdf      ' /)
