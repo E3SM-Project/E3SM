@@ -552,7 +552,6 @@
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
 <config_land_ice_flux_boundaryLayerThickness>10.0</config_land_ice_flux_boundaryLayerThickness>
 <config_land_ice_flux_boundaryLayerNeighborWeight>0.0</config_land_ice_flux_boundaryLayerNeighborWeight>
-<config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_explicit_topDragCoeff>2.5e-3</config_land_ice_flux_explicit_topDragCoeff>
 <config_land_ice_flux_explicit_topDragCoeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
