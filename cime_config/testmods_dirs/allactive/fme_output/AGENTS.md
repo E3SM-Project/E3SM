@@ -2150,6 +2150,16 @@ carrying a restart before averaging, or you will repeat the mistake.
 - MPAS-SI's streams.seaice mesh stream is the placeholder "mesh_variables.nc"; the real mesh is the
   input stream's file. Sort restart names by date, not by full name (<case>.aigo_cpl.* sorts before <case>.*).
 - With DOUT_S=FALSE the yearly May 1/Nov 2 sets (~27 GB each) accumulate in the run dir.
+- Parent cpl.r also needs seq_infodata_rmean_rmv_ice_runoff (read unconditionally on branch since
+  PR #7073; seq_io_read aborts "variable=... not found"). The CMIP6 v3 historical parents lack it.
+  Added as -1 (the code's init value; only used with config_scale_{dismf,dib}_by_removed_ice_runoff,
+  both off): ncap2 -O --hdr_pad=10000 -s 'seq_infodata_rmean_rmv_ice_runoff=-1.0d'. prep_parent_restarts.sh
+  does this. A cold-start ERS never reads a parent cpl.r, so tests do not catch it.
+- SSP2-4.5 namelists (0201's Aug 8 hand edits) can only go in at 2015-01-01: 32 of their 38 files start
+  in 2015 (GHG 2015-2500), and EAM aborts at a 1940 start ("chem_surfvals_set_all: data time index is
+  out of bounds"). The preset writes them only with FME_0301_SSP245=TRUE; 1940-2014 runs on the compset's
+  historical defaults. Leg plan: pilot 1940-41, STOP_N=3 to 1945, 5-yr legs to 2015-01-01 (RESUBMIT=13),
+  append case_scripts/ssp245_from2015.user_nl_{eam,elm}, then 5-yr legs to 2065 (RESUBMIT=9).
 
 ### gotcha #69 — driver restart_extra_mmdd: yearly May 1 / Nov 2 restart sets (ADDED 2026-11-01)
 - restart_extra_mmdd (seq_timemgr_inparm via user_nl_cpl, e.g. "501, 1102", no leading

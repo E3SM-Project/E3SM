@@ -579,13 +579,18 @@ EOF
 # below them. CIME's user_nl parser lets a later scalar setting win over an
 # earlier one, so a repeat of a testmod variable here overrides it, not errors.
 #
-# 1. SSP2-4.5 forcing after 2014 (EAM and ELM). Copied verbatim from the
-#    hand edits made to 0201's user_nl_eam / user_nl_elm on Aug 8, recovered
-#    in 0301_prep/recovered_0201/user_nl_{eam,elm}.ssp245 after the 0201 case
-#    directory was deleted. These are the files 0101.aigo and 0201.aigo_cpl
-#    ran with; 0301 must match them or it is a different forcing. The
-#    $DIN_LOC_ROOT / ${DIN_LOC_ROOT} tokens are left for build-namelist to
-#    expand (quoted heredocs), exactly as 0201 had them.
+# 1. SSP2-4.5 forcing from 2015 (EAM and ELM), ONLY when FME_0301_SSP245=TRUE.
+#    Copied verbatim from the hand edits made to 0201's user_nl_eam /
+#    user_nl_elm on Aug 8 (recovered in 0301_prep/recovered_0201/), which
+#    0201 applied when its run reached 2015: 32 of the 38 files start in 2015
+#    (GHG 2015-2500, emissions 2015-2100, land use 2015-2100), so EAM aborts
+#    at a 1940 start with them ("chem_surfvals_set_all: data time index is
+#    out of bounds"). 1940-2014 therefore runs on the compset's historical
+#    defaults, and at the 2015-01-01 leg boundary the block is appended to
+#    the case's user_nl_eam / user_nl_elm. Either re-run this function with
+#    FME_0301_SSP245=TRUE from the case dir, or append the saved copies
+#    case_scripts/ssp245_from2015.user_nl_{eam,elm}. The $DIN_LOC_ROOT tokens
+#    are left for build-namelist to expand (quoted heredocs), as 0201 had them.
 #
 # 2. Coupler / driver output switches for the 0301 spec (user_nl_cpl feeds
 #    both drv_in and the cpl_fme_inparm group). Kept here rather than in the
@@ -602,6 +607,7 @@ EOF
 #                               explicitly instead of from the branch date
 hist0301_user_nl() {
 
+    if [ "${FME_0301_SSP245^^}" == "TRUE" ]; then
     cat << 'EOF' >> user_nl_eam
 
 !--- WCYCL20TR-0301: CMIP6 SSP2-4.5 forcing after 2014 (verbatim from 0201.aigo_cpl)
@@ -652,6 +658,11 @@ EOF
  stream_fldfilename_popdens = '${DIN_LOC_ROOT}/lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc'
  stream_year_last_popdens = 2100
 EOF
+
+    fi
+    if [ "${FME_0301_SSP245_ONLY^^}" == "TRUE" ]; then
+        return   # 2015 switch on an existing case: SSP block only
+    fi
 
     cat << 'EOF' >> user_nl_cpl
 
