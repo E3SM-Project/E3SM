@@ -317,10 +317,10 @@ public:
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
         tke(i,k) = tke_copy(i,k);
         if ( !runtime_opts.use_shoc_condensation ) {
-          // If SHOC does not do condensation then we need to include the effects of vertical
-          //  diffusion on qc.  Thus, do not use the qc_copy variable, which was created for the sole
-          //  purpose of NOT including the effects of vertical diffusion.  However, apply a lower bound
-          //  limiter to ensure no values went below zero.
+          // In default SHOC, qc_copy is used to exclude vertical diffusion tendencies
+          //  because qc is diagnosed from the PDF.  With prognostic supersaturation, qc
+          //  is no longer PDF-diagnosed, so vertical diffusion tendencies must be included.
+          //  Also, apply a lower-bound limiter to ensure qc remains nonnegative after transport.
           qc(i,k) = ekat::max(0, qc(i,k));
         } else {
           qc(i,k)  = qc_copy(i,k);
