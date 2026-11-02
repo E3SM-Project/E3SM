@@ -17,6 +17,8 @@
 namespace scream
 {
 
+static int stream_counter = 0;  // Counter for default stream names when not specified
+
 OutputManager::~OutputManager() { finalize(); }
 
 void
@@ -711,7 +713,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       fields_pl.sublist(gname).set("field_names",fnames);
       fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
     }
-    m_stream_name = m_params.get<std::string>("stream_name");
+    m_stream_name = m_params.get<std::string>("stream_name","stream_" + std::to_string(stream_counter++));
 
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("floating_point_precision","real");

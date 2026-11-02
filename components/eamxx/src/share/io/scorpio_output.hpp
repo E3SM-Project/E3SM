@@ -28,7 +28,7 @@
  *
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
- *  stream_name:                    STRING
+ *  stream_name:                        STRING
  *  averaging_type:                     STRING
  *  transpose:                          BOOL                  (default: false)
  *  max_snapshots_per_file:             INT                   (default: 1)
@@ -49,7 +49,7 @@
  *    skip_restart_if_rhist_not_found:  BOOL                  (default: false)
  *  -----
  *  The meaning of these parameters is the following:
- *  - stream_name: the output filename root.
+ *  - stream_name: optional, the output filename root.
  *  - averaging_type: a string that describes which type of output, current options are:
  *      instant - no averaging, output each snap as is.
  *      average - average of the field over some interval.
