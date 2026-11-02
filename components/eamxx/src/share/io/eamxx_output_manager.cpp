@@ -128,15 +128,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
   // Get the case name early, as we need it for history restart file search
   // For unit tests that don't provide provenance, use a default case name
-  if (m_params.isSublist("provenance")) {
-    auto& prov_pl = m_params.sublist("provenance");
-    m_casename = prov_pl.get<std::string>("caseid","UNSET");
-//    EKAT_REQUIRE_MSG(m_casename!="UNSET",
-//        "Error! The provenance sublist is missing 'caseid' parameter");
-  } else {
-    // Default for unit tests
-    m_casename = "UNSET";
-  }
+  m_casename = m_params.sublist("provenance").get<std::string>("caseid","EAMxxUnitTest");
 
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.

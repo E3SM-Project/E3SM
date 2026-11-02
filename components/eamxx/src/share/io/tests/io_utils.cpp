@@ -37,7 +37,8 @@ TEST_CASE ("find_filename_in_rpointer") {
   rpointer.close();
 
   // Now test find_filename_in_rpointer with different inputs
-  // Note: prefix is now "eamxx" (no case name for unit tests)
+  // Note: prefix is now "EAMxxUnitTest.eamxx" (case name for unit tests is EAMxxUnitTest)
+  REQUIRE_THROWS (find_filename_in_rpointer("bar",false,comm,t0,false,AVG)); // missing control (needed for rhist files) // AaronDonahue TO DELETE
   REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0,false,AVG)); // missing control (needed for rhist files)
   REQUIRE_THROWS (find_filename_in_rpointer("baz",false,comm,t0,false,AVG,bar_c)); // wrong prefix
   REQUIRE_THROWS (find_filename_in_rpointer("eamxx",false,comm,t1,false,AVG,bar_c)); // wrong timestamp

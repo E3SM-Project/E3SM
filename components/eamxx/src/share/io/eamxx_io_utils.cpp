@@ -96,7 +96,8 @@ std::string find_filename_in_rpointer (
           "   rpointer content:\n" + content + "\n\n"
           " Did you change output specs (avg type, freq, or freq units) across restart? If so, please, remember that it is not allowed.\n"
           " NOTE: File naming changed - old .rhist files are now .rh and include stream_name.\n"
-          " If restarting from old files, you'll need to regenerate restart files with the new naming convention.\n");
+          " If restarting from old files, you will need to rename them to match the new convention,\n"
+          " and update the file names in the rpointer.atm file.\n");
     }
   }
 

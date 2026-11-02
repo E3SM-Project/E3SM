@@ -193,8 +193,7 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
     // Figure out the name of the netcdf file containing the restart data
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    // Build prefix, skipping case name if it's "UNSET" (unit tests)
-    std::string prefix = (casename != "UNSET") ? casename + "." + eamxx_model_name() : eamxx_model_name();
+    std::string prefix = casename + "." + eamxx_model_name();
     auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
 
     // Restart the num steps counter in the atm time stamp
@@ -798,16 +797,9 @@ void AtmosphereDriver::create_output_managers () {
     checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
     // Check if the stream_name for this file has already been set.
-    // Support legacy filename_prefix parameter by using it as stream_name
     if (not params.isParameter("stream_name")) {
-      if (params.isParameter("filename_prefix")) {
-        // Use legacy filename_prefix as stream_name
-        auto prefix = params.get<std::string>("filename_prefix");
-        params.set<std::string>("stream_name",prefix);
-      } else {
-        // No stream_name or filename_prefix specified, use default
-        params.set<std::string>("stream_name","output");
-      }
+      // No stream_name or filename_prefix specified, use default
+      params.set<std::string>("stream_name","output");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);

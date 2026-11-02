@@ -155,7 +155,7 @@ TEST_CASE ("io_conditional_geo_data")
 
     // Verify: "swband" dim should NOT be in the file
     // File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
-    std::string fname = "eamxx.h.io_cond_geo_no_swband.INSTANT.nsteps_x1.np"
+    std::string fname = "EAMxxUnitTest.eamxx.h.io_cond_geo_no_swband.INSTANT.nsteps_x1.np"
                         + std::to_string(comm.size())
                         + "." + t0.to_string() + ".nc";
     scorpio::register_file(fname, scorpio::FileMode::Read);
@@ -185,7 +185,7 @@ TEST_CASE ("io_conditional_geo_data")
 
     // Verify: "swband" dim should be in the file and both geo vars present
     // File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
-    std::string fname = "eamxx.h.io_cond_geo_with_swband.INSTANT.nsteps_x1.np"
+    std::string fname = "EAMxxUnitTest.eamxx.h.io_cond_geo_with_swband.INSTANT.nsteps_x1.np"
                         + std::to_string(comm.size())
                         + "." + t0.to_string() + ".nc";
     scorpio::register_file(fname, scorpio::FileMode::Read);

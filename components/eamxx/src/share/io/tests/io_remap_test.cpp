@@ -721,8 +721,8 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 /*==========================================================================================================*/
 std::string get_filename(const std::string& name, ekat::Comm& comm, const std::string& tstamp)
 {
-  // File naming: eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
-  return "eamxx.h." + name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
+  // File naming: {casename}.eamxx.h.{stream_name}.{output_spec}.{date_spec}.nc
+  return "EAMxxUnitTest.eamxx.h." + name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
 
 }
 
