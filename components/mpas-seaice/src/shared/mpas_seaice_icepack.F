@@ -9946,6 +9946,7 @@ subroutine init_column_waves(domain)
          config_category_bounds_type, &
          config_pond_refreezing_type, &
          config_salt_flux_coupling_type, &
+         config_frazil_coupling_type, &
          config_ocean_heat_transfer_type, &
          config_sea_freezing_temperature_type, &
          config_snow_redistribution_scheme
@@ -10016,6 +10017,7 @@ subroutine init_column_waves(domain)
     call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
     call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
+    call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
@@ -10141,6 +10143,15 @@ subroutine init_column_waves(domain)
       if (.not. (trim(config_salt_flux_coupling_type) == "constant" .or. &
                          trim(config_salt_flux_coupling_type) == "prognostic")) then
            call config_error("config_salt_flux_coupling_type", config_salt_flux_coupling_type, "'constant' or 'prognostic'")
+      endif
+
+      ! check for consistency in  salt coupling and frazil coupling
+      if (trim(config_salt_flux_coupling_type) == "prognostic" .and. &
+                          .not. (trim(config_frazil_coupling_type) == "omega-fluxes")) then
+         call mpas_log_write(&
+              'check_column_package_configs: config_salt_flux_coupling_type=''prognostic'' ' // &
+              'requires config_frazil_coupling_type=''omega-fluxes''', &
+              messageType=MPAS_LOG_CRIT)
       endif
 
     ! check for consistency in snow vertical dimension
