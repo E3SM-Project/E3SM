@@ -376,6 +376,9 @@ module VegetationDataType
     real(r8), pointer :: qflx_ev_h2osfc     (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_rootsoi_frac  (:,:) => null() !
 
+    real(r8), pointer :: irrig_demand_accum(:) => null() ! surface request accumulated in current window [mm]
+    real(r8), pointer :: irrig_demand_pending(:) => null() ! request being processed by river [mm/s]
+    real(r8), pointer :: irrig_demand_lag(:) => null() ! request corresponding to current delivery [mm/s]
     real(r8), pointer :: irrig_rate               (:)   => null() ! current irrigation rate [mm/s]
     real(r8), pointer :: qflx_irrig_patch         (:)   => null()   ! patch irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_real_irrig_patch    (:)   => null()   ! patch real irrigation flux (mm H2O/s)
@@ -5478,6 +5481,9 @@ module VegetationDataType
     allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = spval
     allocate(this%qflx_rootsoi_frac      (begp:endp,1:nlevgrnd))  ; this%qflx_rootsoi_frac    (:,:) = spval
 
+    allocate(this%irrig_demand_accum(begp:endp)); this%irrig_demand_accum = 0._r8
+    allocate(this%irrig_demand_pending(begp:endp)); this%irrig_demand_pending = 0._r8
+    allocate(this%irrig_demand_lag(begp:endp)); this%irrig_demand_lag = 0._r8
     allocate(this%irrig_rate               (begp:endp))              ; this%irrig_rate               (:)   = spval
     allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = spval
     allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = spval
@@ -5689,6 +5695,57 @@ module VegetationDataType
     if (flag=='read' .and. .not. readvar) then
        this%irrig_rate = 0.0_r8
     end if
+
+    ! Older restarts have no provenance for in-flight deliveries. Start empty;
+    ! unmatched supplied water is returned as runoff, never silently discarded.
+    readvar = .false.
+    do_io = .true.
+    if (flag == 'read') then
+       dimlen = 0
+       call ncd_inqvdlen(ncid, 'irrig_demand_accum', 1, dimlen, err_code)
+       do_io = (err_code == 0 .and. dimlen == nump_global)
+    end if
+    ! restartvar aborts on a missing continuation variable; check before calling.
+    if (do_io) then
+       call restartvar(ncid=ncid, flag=flag, varname='irrig_demand_accum', xtype=ncd_double, &
+         dim1name='pft', long_name='surface irrigation request accumulated in current coupling window', units='mm', &
+         interpinic_flag='interp', readvar=readvar, data=this%irrig_demand_accum)
+    end if
+    if (flag == 'read' .and. .not. readvar) this%irrig_demand_accum = 0._r8
+
+    ! Older restarts have no provenance for in-flight deliveries. Start empty;
+    ! unmatched supplied water is returned as runoff, never silently discarded.
+    readvar = .false.
+    do_io = .true.
+    if (flag == 'read') then
+       dimlen = 0
+       call ncd_inqvdlen(ncid, 'irrig_demand_pending', 1, dimlen, err_code)
+       do_io = (err_code == 0 .and. dimlen == nump_global)
+    end if
+    ! restartvar aborts on a missing continuation variable; check before calling.
+    if (do_io) then
+       call restartvar(ncid=ncid, flag=flag, varname='irrig_demand_pending', xtype=ncd_double, &
+         dim1name='pft', long_name='surface irrigation request being processed by river', units='mm/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%irrig_demand_pending)
+    end if
+    if (flag == 'read' .and. .not. readvar) this%irrig_demand_pending = 0._r8
+
+    ! Older restarts have no provenance for in-flight deliveries. Start empty;
+    ! unmatched supplied water is returned as runoff, never silently discarded.
+    readvar = .false.
+    do_io = .true.
+    if (flag == 'read') then
+       dimlen = 0
+       call ncd_inqvdlen(ncid, 'irrig_demand_lag', 1, dimlen, err_code)
+       do_io = (err_code == 0 .and. dimlen == nump_global)
+    end if
+    ! restartvar aborts on a missing continuation variable; check before calling.
+    if (do_io) then
+       call restartvar(ncid=ncid, flag=flag, varname='irrig_demand_lag', xtype=ncd_double, &
+         dim1name='pft', long_name='surface irrigation request associated with current delivery', units='mm/s', &
+         interpinic_flag='interp', readvar=readvar, data=this%irrig_demand_lag)
+    end if
+    if (flag == 'read' .and. .not. readvar) this%irrig_demand_lag = 0._r8
 
   end subroutine veg_wf_restart
 

@@ -443,6 +443,8 @@ contains
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
     use elm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
     use elm_instMod     , only : lnd2iac_vars, iac2lnd_vars, ocn2lnd_vars
+    use CanopyHydrologyMod, only : IrrigationDemandAdvance
+    use seq_timemgr_mod, only : seq_timemgr_irr_interval, seq_timemgr_irr_phase
     use elm_driver      ,  only : elm_drv
     use elm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use elm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
@@ -472,6 +474,8 @@ contains
     type(mct_aVect)  , intent(inout) :: l2x_l     ! Export state from land model
     !
     ! !LOCAL VARIABLES:
+    real(r8) :: irrigation_driver_time
+    integer :: irrigation_land_dt
     integer      :: ymd_sync             ! Sync date (YYYYMMDD)
     integer      :: yr_sync              ! Sync current year
     integer      :: mon_sync             ! Sync current month
@@ -578,6 +582,10 @@ contains
 
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
+
+    call seq_timemgr_EClockGetData(EClock, curr_time=irrigation_driver_time, dtime=irrigation_land_dt)
+    call IrrigationDemandAdvance(bounds, irrigation_driver_time, irrigation_land_dt, &
+         seq_timemgr_irr_interval, seq_timemgr_irr_phase)
 
     ! Loop over time steps in coupling interval
 

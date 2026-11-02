@@ -333,6 +333,10 @@ contains
             endif
          endif 
 
+         ! qflx_over_supply is an incoming river delivery already accounted
+         ! for by BalanceCheck. Return it immediately without changing storage.
+         qflx_surf(c) = qflx_surf(c) + col_wf%qflx_over_supply(c)
+
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
          if ((col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. col_pp%active(c)) then

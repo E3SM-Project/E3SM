@@ -43,6 +43,10 @@ module seq_timemgr_mod
   public :: seq_timemgr_clockAdvance      ! Advance the sync clock
   public :: seq_timemgr_clockPrint        ! Print sync clock information
 
+  ! Irrigation requests must use the same averaging windows as the driver.
+  integer, public :: seq_timemgr_irr_interval = 0
+  integer, public :: seq_timemgr_irr_phase = 0
+  real(SHR_KIND_R8), private :: irrigation_clock_time
   public :: seq_timemgr_EClockGetData     ! Get data from an ESMF clock
 
   public :: seq_timemgr_EClockDateInSync  ! compare EClock to ymd/tod
@@ -1104,6 +1108,12 @@ contains
              endif
        endif
     enddo
+
+    call seq_timemgr_EClockGetData(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+         curr_time=irrigation_clock_time)
+    seq_timemgr_irr_interval = rof_cpl_dt
+    seq_timemgr_irr_phase = modulo(nint(modulo(irrigation_clock_time*86400._SHR_KIND_R8,real(rof_cpl_dt,SHR_KIND_R8))) + &
+         offset(seq_timemgr_nclock_rof), rof_cpl_dt)
 
     ! Set component run alarms on driver clock
 

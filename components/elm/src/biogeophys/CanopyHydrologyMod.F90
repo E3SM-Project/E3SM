@@ -37,6 +37,7 @@ module CanopyHydrologyMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CanopyHydrology_readnl ! Read namelist
+  public :: IrrigationDemandAdvance
   public :: CanopyHydrology        ! Run
   !
   ! !PRIVATE MEMBER FUNCTIONS:
@@ -50,6 +51,29 @@ module CanopyHydrologyMod
 contains
 
   !-----------------------------------------------------------------------
+  subroutine IrrigationDemandAdvance(bounds, driver_time, land_dt, river_dt, river_phase)
+    use IrrigationAllocationMod, only : IrrigationDemandWindow, IrrigationWindowCloses
+    use elm_time_manager, only : get_step_size
+    type(bounds_type), intent(in) :: bounds
+    real(r8), intent(in) :: driver_time
+    integer, intent(in) :: land_dt, river_dt, river_phase
+    integer :: begp, endp
+    if (.not. (irrigate .and. tw_irr)) return
+    ! The current ELM interface exports the last internal step, rather than
+    ! averaging substeps. Do not silently construct different request windows.
+    if (river_dt <= 0 .or. land_dt /= get_step_size()) &
+         call endrun('Demand irrigation requires one ELM step per land coupling interval')
+    if (mod(river_dt,land_dt) /= 0 .or. mod(river_phase,land_dt) /= 0) &
+         call endrun('Demand irrigation requires aligned land and river coupling intervals')
+    begp = bounds%begp
+    endp = bounds%endp
+    ! Land imports precede the river run at a shared driver tick. A window
+    ! closed now is delivered starting at the NEXT land import.
+    call IrrigationDemandWindow(veg_wf%irrig_demand_accum(begp:endp), &
+         veg_wf%irrig_demand_pending(begp:endp), veg_wf%irrig_demand_lag(begp:endp), &
+         IrrigationWindowCloses(driver_time,river_dt,river_phase), river_dt)
+  end subroutine IrrigationDemandAdvance
+
   subroutine CanopyHydrology_readnl( NLFilename )
     !
     ! !DESCRIPTION:
@@ -125,6 +149,7 @@ contains
      use elm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
      use elm_time_manager   , only : get_step_size, get_prev_date, get_nstep
+     use IrrigationAllocationMod, only : IrrigationDemandFlux
      use SnowHydrologyMod   , only : NewSnowBulkDensity
      !
      ! !ARGUMENTS:
@@ -176,6 +201,12 @@ contains
      real(r8) :: qflx_irrig_grid(bounds%begg:bounds%endg)      ! irrigation at grid level [mm/s] 
      integer :: irrigated_ppg(bounds%begg:bounds%endg)        ! irrigated pft per grid
      integer :: gg
+     real(r8) :: grid_request(bounds%begg:bounds%endg)
+     real(r8) :: nonlake_area(bounds%begg:bounds%endg)
+     real(r8) :: return_area(bounds%begg:bounds%endg)
+     real(r8) :: returned_supply(bounds%begg:bounds%endg)
+     real(r8) :: allocated_surface, allocated_groundwater
+
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
@@ -265,6 +296,33 @@ contains
              irrigated_ppg(g) = irrigated_ppg(g) + 1
           endif
        end do
+       grid_request = 0._r8
+       nonlake_area = 0._r8
+       return_area = 0._r8
+       do f = 1, num_nolakep
+          p = filter_nolakep(f)
+          g = pgridcell(p)
+          c = pcolumn(p)
+          if (.not. col_pp%active(c) .or. pgwgt(p) <= 0._r8) cycle
+          nonlake_area(g) = nonlake_area(g) + pgwgt(p)
+          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+             return_area(g) = return_area(g) + pgwgt(p)
+             if (irrigated(veg_pp%itype(p)) == 1) then
+                grid_request(g) = grid_request(g) + pgwgt(p)*veg_wf%irrig_demand_lag(p)
+             end if
+          end if
+       end do
+       returned_supply = 0._r8
+       if (irrigate .and. tw_irr) then
+          do g = bounds%begg, bounds%endg
+             returned_supply(g) = max(0._r8, atm2lnd_vars%supply_grc(g))*nonlake_area(g) &
+                  - min(max(0._r8, atm2lnd_vars%supply_grc(g))*nonlake_area(g), grid_request(g))
+             if (returned_supply(g) > 0._r8 .and. return_area(g) <= 0._r8) then
+                call endrun('Irrigation supply has no soil/crop area for conservative return')
+             end if
+          end do
+       end if
+
        ! Start pft loop
 
        do f = 1, num_nolakep
@@ -382,37 +440,30 @@ contains
           ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
           if(irrigate) then          
             if (tw_irr) then ! else one way  
-               if (pgwgt(p) > 0._r8) then
-                  qflx_supply(p) = atm2lnd_vars%supply_grc(g)*(1-wt_lunit(g,tpu_ind,istdlak))/pgwgt(p) ! original supply at grid level (mm/s) concentrate to pft level. Take lake fraction into consideration
-               else
-                  qflx_supply(p) = 0._r8
-               end if
-               qflx_real_irrig(p) = 0._r8 
+               qflx_supply(p) = 0._r8
+               qflx_real_irrig(p) = 0._r8
                qflx_surf_irrig(p) = 0._r8
                qflx_grnd_irrig(p) = 0._r8
                qflx_over_supply(p) = 0._r8
-               
-               if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
-                  if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
-                     qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
-                     qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
-                     
-                     if (extra_gw_irr) then ! if always met by additional extra gw pumping
-                        if (qflx_supply(p) > 0._r8) then				
-                           if (pgwgt(p) > 0._r8) then	 
-                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + f_grd(g,tpu_ind)*qflx_irrig(p)
-                              !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
-                           end if
-                        else if (qflx_irrig(p) > 0._r8) then
-                           qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p)
-                        else
-                           qflx_grnd_irrig(p) = 0._r8
-                        endif	
-                     endif			   
-                     qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
-                     qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
-                  end if		
-               end if       
+               if (col_pp%active(c) .and. pgwgt(p) > 0._r8 .and. &
+                    (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
+                  ! Return unmatched or excess river deliveries without wetting soil.
+                  if (return_area(g) > 0._r8) qflx_over_supply(p) = returned_supply(g)/return_area(g)
+                  if (irrigated(veg_pp%itype(p)) == 1) then
+                     call IrrigationDemandFlux(veg_wf%irrig_demand_lag(p), grid_request(g), &
+                          atm2lnd_vars%supply_grc(g), atm2lnd_vars%deficit_grc(g), nonlake_area(g), &
+                          extra_gw_irr, allocated_surface, allocated_groundwater)
+                     qflx_supply(p) = allocated_surface
+                     qflx_surf_irrig(p) = allocated_surface
+                     qflx_grnd_irrig(p) = allocated_groundwater + f_grd(g,tpu_ind)*qflx_irrig(p)
+                     qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
+                     qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)
+                     ! The initial nstep=0 export is overwritten before the first
+                     ! driver accumulation; all subsequent land steps are exported.
+                     if (get_nstep() > 0) veg_wf%irrig_demand_accum(p) = veg_wf%irrig_demand_accum(p) &
+                          + max(0._r8, f_surf(g,tpu_ind)*qflx_irrig(p))*dtime
+                  end if
+               end if
             else  ! one way coupling
                qflx_surf_irrig(p) = f_surf(g,tpu_ind)*qflx_irrig(p)
                qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p)
@@ -452,6 +503,24 @@ contains
           endif
 
        end do ! (end pft loop)
+
+       ! Verify the delivered volume reaches irrigation or the runoff return.
+       if (irrigate .and. tw_irr) then
+          qflx_irrig_grid = 0._r8
+          do f = 1, num_nolakep
+             p = filter_nolakep(f)
+             g = pgridcell(p)
+             if (col_pp%active(pcolumn(p)) .and. pgwgt(p) > 0._r8) &
+                  qflx_irrig_grid(g) = qflx_irrig_grid(g) + pgwgt(p)*(qflx_surf_irrig(p)+qflx_over_supply(p))
+          end do
+          do g = bounds%begg, bounds%endg
+             allocated_surface = max(0._r8,atm2lnd_vars%supply_grc(g))*nonlake_area(g)
+             if (abs(qflx_irrig_grid(g)-allocated_surface) > &
+                  1.e-12_r8*max(allocated_surface,tiny(1._r8))) &
+                  call endrun('Demand irrigation allocation does not conserve delivered surface water')
+          end do
+       end if
+
 
        ! Determine the fraction of foliage covered by water and the
        ! fraction of foliage that is dry and transpiring.
