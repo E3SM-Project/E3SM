@@ -311,7 +311,7 @@ Omega:
       Transects: []             # List of transect names for transect-based MOC
                                 # NOTE: Transect masks not yet implemented
       ReductionPeriod: [1Month] # Temporal reduction periods
-      SamplingInterval: "dt"    # Accumulation cadence of the reductions
+      SamplingInterval: dt    # Accumulation cadence of the reductions
       SnapshotPeriod: []        # Instantaneous output periods
       # TODO: NAME
       Filename: moc.$Y-$M.nc
