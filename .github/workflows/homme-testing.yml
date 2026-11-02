@@ -1,7 +1,8 @@
 name: homme
 
 # Standalone testing of Homme (components/homme), via components/homme/utils/test_homme.py, on the
-# self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change.
+# self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change,
+# and every night on master.
 #
 # Jobs (matrix): runner in {gnu, intel, cuda} x bfb in {false, true} (no cuda bfb yet).
 #  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>[-bfb].cmake
@@ -32,6 +33,11 @@ on:
       - 'externals/ekat'
       - 'externals/scorpio'
 
+  # Nightly run on master, to catch changes of results (or breakages) that come in through PRs that do not
+  # touch homme. The time is in UTC: 10 AM UTC is 3 AM MT during Standard Time (4 AM during Daylight Saving Time).
+  schedule:
+    - cron: '0 10 * * *'
+
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
@@ -43,9 +49,11 @@ on:
 concurrency:
   # Two runs are in the same group if they are testing the same git ref
   #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
-  #  - for other triggers, the ref is the branch tested
+  #  - for other triggers, the ref is the branch tested (master, for the nightly run)
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Only a new push to a PR cancels the previous run. A manual run (e.g., to bless) and the nightly run both
+  # use master, and must not cancel each other: the later one waits for the earlier one to finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
