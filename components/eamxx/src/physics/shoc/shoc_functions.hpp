@@ -597,7 +597,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                    const uview_1d<const Pack> &w_field, const uview_1d<const Pack> &thl_sec,
                    const uview_1d<const Pack> &qw_sec, const Scalar &dtime,
                    const bool &extra_diags, const bool &shoc_enable_condensation, const bool &p3_super_sat, const uview_1d<const Pack> &wthl_sec,
-		   const uview_1d<const Pack> &w_sec, const uview_1d<const Pack> &wqw_sec,
+                   const uview_1d<const Pack> &w_sec, const uview_1d<const Pack> &wqw_sec,
                    const uview_1d<const Pack> &qwthl_sec, const uview_1d<const Pack> &w3,
                    const uview_1d<const Pack> &pres, const uview_1d<const Pack> &zt_grid,
                    const uview_1d<const Pack> &zi_grid, const Workspace &workspace,

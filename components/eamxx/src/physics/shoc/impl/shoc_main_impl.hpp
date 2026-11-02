@@ -278,9 +278,9 @@ void Functions<S,D>::shoc_main_internal(
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
     shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
-                  dtime,extra_diags,shoc_enable_condensation,p3_super_sat,         //
- 		     wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
-                     zt_grid, zi_grid,                                 // Input
+                     dtime,extra_diags,shoc_enable_condensation,       // Input
+                     p3_super_sat,wthl_sec,w_sec,wqw_sec,qwthl_sec,    // Input
+                     w3,pres, zt_grid, zi_grid,                        // Input
                      workspace,                                        // Workspace
                      shoc_cond,shoc_evap,                              // Output
                      shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
@@ -731,7 +731,7 @@ Int Functions<S,D>::shoc_main(
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
                        c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke,                 // Runtime options
                        shoc_enable_condensation, p3_super_sat, do_3d_turb, extra_diags,     // Runtime options
-		       dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
+                       dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
                        wtracer_sfc_s, inv_exner_s, phis_s,                    // Input

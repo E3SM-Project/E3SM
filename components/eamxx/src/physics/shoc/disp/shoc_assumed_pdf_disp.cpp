@@ -20,7 +20,7 @@ void Functions<Real,DefaultDevice>
   const Scalar&               dtime,
   const bool&                 extra_diags,
   const bool&                 shoc_enable_condensation,
-  const bool&                p3_super_sat,
+  const bool&                 p3_super_sat,
   const view_2d<const Pack>& wthl_sec,
   const view_2d<const Pack>& w_sec,
   const view_2d<const Pack>& wqw_sec,

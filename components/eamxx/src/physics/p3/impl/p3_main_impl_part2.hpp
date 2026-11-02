@@ -225,7 +225,7 @@ void Functions<S,D>
       epsr(0),        // TODO(doc)
       epsc(0),        // TODO(doc)
       epsi_tot (0);   // inverse supersaturation relaxation timescale for combined ice categories
-    Pack factorA(0);  // Factor A in the prognostic supersautraion equation. (EQ. A11 in Morrison & Grabowski 2008)
+    Pack factorA(0);  // Factor A in the prognostic supersaturation equation. (EQ. A11 in Morrison & Grabowski 2008)
     Pack grid_w(0);   // Grid-mean vertical velocity [m/s]
     Pack ssatqv_l(0); // Supersaturaed vapor mass mixing ratio [kg/kg]
     Pack esl(0);      // Saturation vapor pressure w.r.t. liquid [Pa], from Tetens equation
@@ -393,8 +393,8 @@ void Functions<S,D>
           ssatqv_l.set(condmask, qv(k)-qv_sat_l(k));
           esl.set(condmask, 610.78 * ekat::exp(17.2694 * (T_atm(k) - T_zerodegc) / ((T_atm(k) - T_zerodegc) + 237.3)));
           factorA.set(condmask, -qv_sat_l(k)*rho(k)*9.81*grid_w/(pres(k)-esl) - dqsdt * (-grid_w * 9.81 * inv_cp));
-          qv2qc_condevap(k).set(condmask, (factorA              + (ssatqv_l - factorA * (1./epsc)) * inv_dt              * (1.0 - ekat::exp(-epsc * dt))) / ab);
-	  qv2qc_condevap(k).set(condmask, ekat::max(-qc_incld(k) / dt, qv2qc_condevap(k)));
+          qv2qc_condevap(k).set(condmask, (factorA + (ssatqv_l - factorA * (1./epsc)) * inv_dt * (1.0 - ekat::exp(-epsc * dt))) / ab);
+          qv2qc_condevap(k).set(condmask, ekat::max(-qc_incld(k) / dt, qv2qc_condevap(k)));
           qc(k).set(condmask, qc(k) + qv2qc_condevap(k) * cld_frac_l(k) * dt);
           qv(k).set(condmask, qv(k) - cld_frac_l(k) * qv2qc_condevap(k) * dt);
           th_atm(k).set(condmask, th_atm(k) + exner(k) * latvap * inv_cp * cld_frac_l(k) * qv2qc_condevap(k) * dt);
