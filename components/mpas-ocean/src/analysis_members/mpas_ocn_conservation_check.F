@@ -986,10 +986,8 @@ v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureF
 
             if (config_use_frazil_ice_formation) then
                do iCell = 1, nCellsSolve
-                  do k = minLevelCell(iCell), maxLevelCell(iCell)
                      sumArray(10) = sumArray(10) + areaCell(iCell) &
                                     * (accumulatedFrazilIceMassNew(iCell) - accumulatedFrazilIceMassOld(iCell))/dt
-                  enddo
                enddo
             end if
 
