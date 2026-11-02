@@ -667,6 +667,13 @@ EOF
         return   # 2015 switch on an existing case: SSP block only
     fi
 
+    cat << 'EOF' >> user_nl_eam
+
+!--- WCYCL20TR-0301: no yearly EAM initial-condition files (2.65 GB each);
+!    the yearly May 1 / Nov 2 restart sets cover branching
+inithist = 'NONE'
+EOF
+
     cat << 'EOF' >> user_nl_cpl
 
 !--- WCYCL20TR-0301: yearly May 1 / Nov 2 restarts and window-mean coupler streams
