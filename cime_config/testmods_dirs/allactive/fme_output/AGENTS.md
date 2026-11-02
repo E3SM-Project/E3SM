@@ -2212,6 +2212,25 @@ carrying a restart before averaging, or you will repeat the mistake.
   * verify_cpl.stream_files previously also matched <case>.cpl.fme.<s>.accum.nc (it sorts last and was
     the file opened); it now keeps only dated .YYYY-MM.nc files.
 
+### gotcha #71 — APPEND mode: adding the testmod to a production run (ADDED 2026-11-02)
+- The testmod used to own tape 1 of EAM/ELM/MOSART and empty the rest, and turned off MPAS analysis
+  members. Added to a run with its own history setup (v3.HR.FME.control-1950) that remapped the base
+  EAM h0 (COSP fields -> "PIO: Unexpected num_extra_dims" at the first month end), emptied ELM/MOSART
+  output and removed MPAS globalStats/timeSeriesStats*.
+- FME_APPEND=TRUE: each FME stream gets its own tape and ONLY that tape's elements are written
+  (nhtfrq(N)=..., mfilt(N), avgflag_pertape(N), hist_file_storage_type(N), horiz_remap_file(N),
+  fincl{N}); no *empty_htapes; MPAS analysis members left alone. CIME keeps `nhtfrq(N)` and a later
+  whole-array `nhtfrq = a,b,c` from the run script as separate entries, so order does not matter.
+- Tapes: FME_EAM_TAPE (default 10; EAM tolerates empty tapes in between; h1 goes to +1),
+  FME_LND_TAPE (default 2) and FME_ROF_TAPE (default 2) must be EXACTLY one past the base run's last
+  ELM / MOSART tape: both abort at init on a hole ("Tape N is empty"); ELM max 6, MOSART max 3.
+  For Jon's HR script: FME_APPEND=TRUE FME_EAM_TAPE=7 FME_LND_TAPE=3 FME_ROF_TAPE=2.
+- Tested 2026-11-02 on crux: his user_nl() + COSP, WCYCL20TR ne30pg2_r05_IcoswISC30E3r5 from
+  1950-01-01, 35 days: base EAM h0-h5 / ELM h0-h1 / MOSART h0 native and unchanged, FME on EAM h6,
+  ELM h2, MOSART h1 at 1 deg, all MPAS analysis output present, his streams.ocean patch applies.
+  The HR namelist composition (ne120pg2_r025_RRSwISC6to18E3r5) was checked the same way.
+- FME_APPEND=FALSE (default) is byte-identical to the previous standalone layout.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:

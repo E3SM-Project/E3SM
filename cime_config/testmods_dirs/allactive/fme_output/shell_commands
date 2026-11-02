@@ -31,7 +31,31 @@ FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
 # slot for the FME tape; the testmod contributes only the FME field list, its
 # horiz remap, and the non-per-tape derived/vcoarsen/aerocom globals. The hard
 # max is ptapes=17 (cam_history_support.F90).
+# APPEND MODE. FME_APPEND=TRUE layers the FME output on top of a run that
+# already has its own EAM/ELM/MOSART history tapes and MPAS analysis output
+# (e.g. a v3.HR production case): every FME tape goes to a slot of its own,
+# only that slot's per-tape elements are set (nhtfrq(N)=..., never the whole
+# array), no *empty_htapes is set, and the base run's MPAS analysis members are
+# left on. Order does not matter: CIME keeps nhtfrq(N) and a later
+# "nhtfrq = a,b,c" from the run script as separate entries.
+#   EAM    tape FME_EAM_TAPE (append default 10; EAM tolerates empty tapes in
+#          between) and FME_EAM_TAPE+1 for the optional 5-day h1 tape.
+#   ELM    tape FME_LND_TAPE (append default 2) -- ELM aborts at init on a
+#          hole ("Tape N is empty"), so it must be exactly one past the base
+#          run's last ELM tape (max 6).
+#   MOSART tape FME_ROF_TAPE (append default 2) -- same rule, max 3.
+# FME_APPEND=FALSE (default) is the standalone layout: the testmod owns tape 1
+# of each component and empties the rest, as before.
+FME_APPEND=${FME_APPEND:-FALSE}
+if [ "${FME_APPEND^^}" = "TRUE" ]; then
+  FME_EAM_TAPE=${FME_EAM_TAPE:-10}
+  FME_LND_TAPE=${FME_LND_TAPE:-2}
+  FME_ROF_TAPE=${FME_ROF_TAPE:-2}
+  echo "FME: APPEND mode -- EAM tape ${FME_EAM_TAPE}, ELM tape ${FME_LND_TAPE}, MOSART tape ${FME_ROF_TAPE}; base history and MPAS analysis members untouched"
+fi
 FME_EAM_TAPE=${FME_EAM_TAPE:-1}
+FME_LND_TAPE=${FME_LND_TAPE:-1}
+FME_ROF_TAPE=${FME_ROF_TAPE:-1}
 # Fixed-pressure-level fields (Tat850hPa, Zat500hPa, ... 13 levels x T,U,V,Z,Q
 # = 65 2-d fields). Set FALSE to reproduce the 0101/0201 eam.h0 field list
 # exactly (the 0301 member does this so its h0 matches the earlier members).
@@ -365,11 +389,23 @@ mfilt  = ${FME_EAM_MFILT}
 hist_file_storage_type = '${FME_EAM_STORAGE}'
 EOF
 fi
-elif [ "${FME_EAM_H1_ENABLE^^}" = "TRUE" ]; then
-# ADDITIVE mode: the base namelist owns the per-tape arrays, so it must also
-# size them for the h1 slot (nhtfrq(N)=-120, avgflag_pertape(N)='A', ...).
-echo "NOTE: FME_EAM_H1_ENABLE with FME_EAM_TAPE=${FME_EAM_TAPE}: the base namelist must set" \
-     "nhtfrq/mfilt/avgflag_pertape/hist_file_storage_type for tape ${FME_EAM_H1_TAPE}"
+else
+# ADDITIVE / APPEND mode: set only this tape's elements; the base run's tapes
+# and empty_htapes stay exactly as the run script writes them.
+cat >> user_nl_eam << EOF
+avgflag_pertape(${FME_EAM_TAPE}) = '${FME_EAM_AVGFLAG}'
+nhtfrq(${FME_EAM_TAPE}) = -${FME_EAM_OUTPUT_HOURS}
+mfilt(${FME_EAM_TAPE}) = ${FME_EAM_MFILT}
+hist_file_storage_type(${FME_EAM_TAPE}) = '${FME_EAM_STORAGE}'
+EOF
+if [ "${FME_EAM_H1_ENABLE^^}" = "TRUE" ]; then
+cat >> user_nl_eam << EOF
+avgflag_pertape(${FME_EAM_H1_TAPE}) = 'A'
+nhtfrq(${FME_EAM_H1_TAPE}) = -${FME_EAM_H1_HOURS}
+mfilt(${FME_EAM_H1_TAPE}) = ${FME_EAM_H1_MFILT}
+hist_file_storage_type(${FME_EAM_H1_TAPE}) = '${FME_EAM_H1_STORAGE}'
+EOF
+fi
 fi
 
 if [ "${FME_EAM_PRES_LEVELS^^}" = "TRUE" ]; then
@@ -621,6 +657,8 @@ case "${ELM_OPTS}" in
     echo "FME: ELM methane model is off -- omitting NEM" ;;
 esac
 
+T=${FME_LND_TAPE}
+if [ "${T}" = "1" ]; then
 cat >> user_nl_elm << EOF
 hist_empty_htapes = .true.
 hist_dov2xy  = .true.
@@ -628,6 +666,18 @@ hist_nhtfrq  = -${FME_LND_OUTPUT_HOURS}
 hist_mfilt   = 1500
 hist_avgflag_pertape = '${FME_LND_AVGFLAG}'
 hist_file_storage_type = '${FME_LND_STORAGE}'
+EOF
+else
+# APPEND: tape T only; the base ELM tapes (h0 ...) keep their settings.
+cat >> user_nl_elm << EOF
+hist_dov2xy(${T})  = .true.
+hist_nhtfrq(${T})  = -${FME_LND_OUTPUT_HOURS}
+hist_mfilt(${T})   = 1500
+hist_avgflag_pertape(${T}) = '${FME_LND_AVGFLAG}'
+hist_file_storage_type(${T}) = '${FME_LND_STORAGE}'
+EOF
+fi
+cat >> user_nl_elm << EOF
 
 ! Collapse the only multi-level fields on this tape so every variable is a
 ! plain lat-lon image. TSOI/H2OSOI become thickness-weighted means over the
@@ -636,7 +686,7 @@ vcoarsen_depth_bounds = ${FME_LND_DEPTH_BOUNDS}
 vcoarsen_soil_flds = 'TSOI', 'H2OSOI'
 vcoarsen_band_flds = 'ALBD', 'ALBI'
 
-hist_fincl1 = ${FME_ELM_FINCL}
+hist_fincl${FME_LND_TAPE} = ${FME_ELM_FINCL}
 EOF
 
 if [ "${FME_LND_ENABLE}" = "TRUE" ]; then
@@ -644,7 +694,7 @@ cat >> user_nl_elm << EOF
 ! Horizontal remapping to the shared Gaussian grid. Cells ELM does not own
 ! contribute nothing to the masked average, so a coastal target cell reports
 ! the mean over its land part; landfrac on the tape gives that land fraction.
-hist_horiz_remap_file = '${LND_MAP}'
+hist_horiz_remap_file(${FME_LND_TAPE}) = '${LND_MAP}'
 EOF
 fi
 
@@ -672,13 +722,25 @@ fi
 # explicitly rather than relying on an unmarked default. Units confirm the
 # classification: discharge/Q* fields are m3/s (rates); STORAGE fields are
 # m3 (amounts).
+T=${FME_ROF_TAPE}
+if [ "${T}" = "1" ]; then
 cat >> user_nl_mosart << EOF
 rtmhist_empty_htapes = .true.
 rtmhist_nhtfrq = -${FME_ROF_OUTPUT_HOURS}
 rtmhist_mfilt  = 1500
 rtmhist_file_storage_type = '${FME_ROF_STORAGE}'
+EOF
+else
+# APPEND: tape T only; the base MOSART tapes keep their settings.
+cat >> user_nl_mosart << EOF
+rtmhist_nhtfrq(${T}) = -${FME_ROF_OUTPUT_HOURS}
+rtmhist_mfilt(${T})  = 1500
+rtmhist_file_storage_type(${T}) = '${FME_ROF_STORAGE}'
+EOF
+fi
+cat >> user_nl_mosart << EOF
 
-rtmhist_fincl1 = 'RIVER_DISCHARGE_OVER_LAND_LIQ:A', 'RIVER_DISCHARGE_TO_OCEAN_LIQ:A',
+rtmhist_fincl${FME_ROF_TAPE} = 'RIVER_DISCHARGE_OVER_LAND_LIQ:A', 'RIVER_DISCHARGE_TO_OCEAN_LIQ:A',
                  'DIRECT_DISCHARGE_TO_OCEAN_LIQ:A', 'TOTAL_DISCHARGE_TO_OCEAN_LIQ:A',
                  'STORAGE_LIQ:${FME_ROF_AVGFLAG}', 'Main_Channel_STORAGE_LIQ:${FME_ROF_AVGFLAG}',
                  'QSUR_LIQ:A', 'QSUB_LIQ:A', 'QGWL_LIQ:A'
@@ -686,7 +748,7 @@ EOF
 
 if [ "${FME_ROF_ENABLE}" = "TRUE" ]; then
 cat >> user_nl_mosart << EOF
-rtmhist_horiz_remap_file = '${ROF_MAP}'
+rtmhist_horiz_remap_file(${FME_ROF_TAPE}) = '${ROF_MAP}'
 EOF
 fi
 
@@ -759,7 +821,12 @@ config_AM_fmeDerivedFields_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
 ! kineticEnergy are not requested by SamudrACE (Confluence p3ai/6154289880).
 config_AM_fmeVerticalReduce_enable = .false.
 
-! Disable non-FME analysis members. The SamudrACE training tape only
+EOF
+
+if [ "${FME_APPEND^^}" != "TRUE" ]; then
+cat >> user_nl_mpaso << EOF
+! Disable non-FME analysis members (standalone mode only; FME_APPEND=TRUE
+! leaves the base run's members on). The SamudrACE training tape only
 ! consumes the fmeDepthCoarsening + fmeDerivedFields remapped files;
 ! globalStats, timeSeriesStats*, highFrequencyOutput,
 ! meridionalHeatTransport, and oceanHeatContent are pure storage
@@ -774,6 +841,7 @@ config_AM_highFrequencyOutput_enable       = .false.
 config_AM_meridionalHeatTransport_enable   = .false.
 config_AM_oceanHeatContent_enable          = .false.
 EOF
+fi
 
 cat >> user_nl_mpaso << EOF
 config_AM_fmeDepthCoarsening_output_stream = 'none'
@@ -803,12 +871,17 @@ config_AM_fmeSeaiceDerivedFields_time_averaging = .true.
 config_AM_fmeSeaiceDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
 config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
 
-! Disable non-FME sea-ice analysis members (storage overhead only;
-! see comment in user_nl_mpaso block above).
+EOF
+
+if [ "${FME_APPEND^^}" != "TRUE" ]; then
+cat >> user_nl_mpassi << EOF
+! Disable non-FME sea-ice analysis members (standalone mode only; storage
+! overhead; see comment in user_nl_mpaso block above).
 config_AM_regionalStatistics_enable     = .false.
 config_AM_timeSeriesStatsDaily_enable   = .false.
 config_AM_timeSeriesStatsMonthly_enable = .false.
 EOF
+fi
 
 cat >> user_nl_mpassi << EOF
 config_AM_fmeSeaiceDerivedFields_output_stream = 'none'
