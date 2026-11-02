@@ -293,7 +293,6 @@ Omega:
       SamplingInterval: dt      # Accumulation cadence of the reductions
       SnapshotPeriod: [1Day]
                                 # Instantaneous snapshot output intervals
-      # TODO: NAME
       Filename: global.stats.$Y.nc
       Stream:
         FileFreq: 1
@@ -313,7 +312,6 @@ Omega:
       ReductionPeriod: [1Month] # Temporal reduction periods
       SamplingInterval: dt    # Accumulation cadence of the reductions
       SnapshotPeriod: []        # Instantaneous output periods
-      # TODO: NAME
       Filename: moc.$Y-$M.nc
       Stream:
         FileFreq: 1
@@ -333,7 +331,6 @@ Omega:
       ReductionPeriod: [1Month]
                                 # Optional; averaging period(s)
       SamplingInterval: dt      # Accumulation cadence of the reductions
-      # TODO: NAME
       Filename: monthly.averages.$Y-$M.nc
       Stream:
         FileFreq: 1
