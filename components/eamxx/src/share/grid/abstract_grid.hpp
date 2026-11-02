@@ -125,6 +125,11 @@ public:
   // Whether this grid contains unique dof GIDs
   bool is_unique() const;
 
+  // Whether the other grid has the same dof GIDs as this one, in the same order, on
+  // every rank. The grids need not be the same object, nor have the same nlevs.
+  // NOTE: this is a collective call, and all ranks get the same answer
+  bool has_same_gids_as (const AbstractGrid& other) const;
+
   // Check if the input layout is compatible with this grid
   bool is_valid_layout(const FieldLayout &layout) const;
 
