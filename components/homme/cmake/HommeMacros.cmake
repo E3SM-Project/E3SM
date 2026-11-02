@@ -374,7 +374,7 @@ macro (setUpTestDir TEST_DIR)
     # maximum MPI rank count for that test (e.g. for RRM meshes or
     # multi-element semi-Lagrangian halos).
     SET(_HOMME_MAX_PROCS ${MAX_NUM_PROCS})
-    IF (MAX_NUM_CPUS AND ${MAX_NUM_CPUS} LESS ${_HOMME_MAX_PROCS})
+    IF (MAX_NUM_CPUS AND MAX_NUM_CPUS LESS _HOMME_MAX_PROCS)
       SET(_HOMME_MAX_PROCS ${MAX_NUM_CPUS})
     ENDIF ()
     IF (${NUM_CPUS} GREATER ${_HOMME_MAX_PROCS})
