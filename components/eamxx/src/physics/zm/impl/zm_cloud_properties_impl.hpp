@@ -261,7 +261,9 @@ void Functions<S,D>::zm_cloud_properties(
           // unchanged, while enhancing the detrained condensate/
           // moisture tendency. This effectively separates the mixing into
           // a dynamic part tied to the mass flux gradient from the lines above,
-          // and an always-present turbulent part.
+          // and an always-present turbulent part, similar to this paper:
+          // De Rooy, W. C., & Siebesma, A. P. (2010). Analytic expressions for entrainment
+          //   and detrainment in cumulus convection. Quart. J. Roy. Meteor. Soc., 136 , 1216-1227.
           entr_up(k) += runtime_opt.frac_turb_mix * mflx_up(k);
           detr_up(k) += runtime_opt.frac_turb_mix * mflx_up(k);
         }
