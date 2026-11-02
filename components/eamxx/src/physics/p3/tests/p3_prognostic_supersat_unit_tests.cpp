@@ -27,8 +27,8 @@ namespace unit_test {
  *
  * Rather than re-deriving the (lookup-table-dependent) numeric formulas used
  * internally, these are "differential" property tests: for the same inputs,
- * we run the kernel once with the new feature switched off (p3_super_sat =
- * false, matching pre-existing behavior) and once with it switched on, and
+ * we run the kernel once with P3 condensation switched off (matching
+ * pre-existing behavior) and once with it switched on, and
  * check that:
  *   (a) the new diagnostic outputs (qv2qc_aeroact / qv2qc_condevap) are
  *       nonzero only when the feature is active and its trigger condition
@@ -72,7 +72,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
   // qv2qc_aeroact diagnostic with a non-zero value to probe whether it gets
   // properly reset when the activation branch is not taken.
   //-----------------------------------------------------------------------
-  Part1Result run_part1(bool p3_super_sat, bool shoc_enable_condensation,
+  Part1Result run_part1(bool use_p3_condensation,
                          Real T_atm_in, Real pres_in, Real qv_in, Real qc_in, Real nc_in,
                          Real nccn_prescribed_in, Real aeroact_sentinel = 0)
   {
@@ -83,8 +83,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     const Scalar dt = 1800.0;
 
     typename Functions::P3Runtime runtime_options; // value-initialized -> all new bools default false
-    runtime_options.p3_super_sat            = p3_super_sat;
-    runtime_options.shoc_enable_condensation = shoc_enable_condensation;
+    runtime_options.use_p3_condensation = use_p3_condensation;
 
     auto pres            = make_view(pres_in, nk_pack);
     auto dpres           = make_view(1000.0, nk_pack);
@@ -130,7 +129,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
 
     // do_predict_nc = false, do_prescribed_CCN = false: droplet number in the
     // (unmodified) "else" leg of p3_main_part1 comes from a fixed nccnst, so
-    // that leg's behavior is completely independent of p3_super_sat and lets
+    // that leg's behavior is independent of the condensation scheme and lets
     // us isolate the effect of the new activation block cleanly.
     const bool do_predict_nc     = false;
     const bool do_prescribed_CCN = false;
@@ -172,7 +171,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
   // state. condevap_sentinel lets us pre-seed qv2qc_condevap to probe reset
   // behavior when the condensation/evaporation branch is not taken.
   //-----------------------------------------------------------------------
-  Part2Result run_part2(bool p3_super_sat, bool shoc_enable_condensation,
+  Part2Result run_part2(bool use_p3_condensation,
                         Real T_atm_in, Real pres_in, Real qv_in, Real qc_in, Real nc_in,
                         Real omega_mp_in, Real tke_mp_in, Real condevap_sentinel = 0)
   {
@@ -185,8 +184,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     constexpr Scalar max_total_ni = 740.0e3;
 
     typename Functions::P3Runtime runtime_options;
-    runtime_options.p3_super_sat             = p3_super_sat;
-    runtime_options.shoc_enable_condensation  = shoc_enable_condensation;
+    runtime_options.use_p3_condensation       = use_p3_condensation;
     runtime_options.do_ice_production         = false; // isolate from ice-phase code paths
 
     auto hetfrz_immersion  = make_view(0.0, nk_pack);
@@ -369,27 +367,18 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
 
     // --- Feature completely off: new diagnostic must be exactly zero ---
     {
-      auto off = run_part1(/*p3_super_sat=*/false, /*shoc_enable_condensation=*/false,
+      auto off = run_part1(/*use_p3_condensation=*/false,
                             T_atm_in, pres_in, qv_supersat, qc_in, nc_in, nccn_prescribed_in);
       REQUIRE(off.qv2qc_aeroact == 0.0);
-    }
-
-    // --- Feature on, but shoc_enable_condensation=true disables it (same
-    //     gating "!shoc_enable_condensation && p3_super_sat" as the
-    //     condensation/evaporation block) ---
-    {
-      auto shoc_on = run_part1(/*p3_super_sat=*/true, /*shoc_enable_condensation=*/true,
-                                T_atm_in, pres_in, qv_supersat, qc_in, nc_in, nccn_prescribed_in);
-      REQUIRE(shoc_on.qv2qc_aeroact == 0.0);
     }
 
     // --- Feature on + sub-saturated: activation should not trigger, and
     //     the resulting state must match the "feature off" run exactly
     //     (do_predict_nc=do_prescribed_CCN=false makes the rest of
-    //     p3_main_part1 independent of p3_super_sat). ---
+    //     p3_main_part1 independent of the condensation scheme). ---
     {
-      auto off        = run_part1(false, false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, nccn_prescribed_in);
-      auto on_subsat   = run_part1(true,  false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, nccn_prescribed_in);
+      auto off        = run_part1(false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, nccn_prescribed_in);
+      auto on_subsat   = run_part1(true,  T_atm_in, pres_in, qv_subsat, qc_in, nc_in, nccn_prescribed_in);
       REQUIRE(on_subsat.qv2qc_aeroact == 0.0);
       REQUIRE(on_subsat.qc     == off.qc);
       REQUIRE(on_subsat.qv     == off.qv);
@@ -401,8 +390,8 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     //     against the "off" run (same inputs) to isolate exactly the delta
     //     introduced by the new block. ---
     {
-      auto off = run_part1(false, false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, nccn_prescribed_in);
-      auto on  = run_part1(true,  false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, nccn_prescribed_in);
+      auto off = run_part1(false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, nccn_prescribed_in);
+      auto on  = run_part1(true,  T_atm_in, pres_in, qv_supersat, qc_in, nc_in, nccn_prescribed_in);
 
       REQUIRE(off.qv2qc_aeroact == 0.0);
       REQUIRE(on.qv2qc_aeroact > 0.0); // supersaturated + nccn_prescribed >> nc => nc increases => qc gained
@@ -455,15 +444,8 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
 
     // --- Feature off: diagnostic must be exactly zero ---
     {
-      auto off = run_part2(false, false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
+      auto off = run_part2(false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
       REQUIRE(off.qv2qc_condevap == 0.0);
-    }
-
-    // --- shoc_enable_condensation=true disables the new block even with
-    //     p3_super_sat=true ---
-    {
-      auto shoc_on = run_part2(true, true, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
-      REQUIRE(shoc_on.qv2qc_condevap == 0.0);
     }
 
     // --- Supersaturated => condensation (qv2qc_condevap > 0). qv is
@@ -477,10 +459,10 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     //     We therefore only check the qv side exactly, and check qc/qr
     //     directionally. ---
     {
-      auto on = run_part2(true, false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
+      auto on = run_part2(true, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
       REQUIRE(on.qv2qc_condevap > 0.0);
 
-      auto off = run_part2(false, false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
+      auto off = run_part2(false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
       const Real delta_qv = on.qv - off.qv;
 
       // The qv decrement happens directly in the new block, unaffected by
@@ -508,10 +490,10 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     //     exactly; qc is also affected by downstream autoconversion using
     //     the post-evaporation qc, so we only check its direction. ---
     {
-      auto on = run_part2(true, false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, omega_mp_in, tke_mp_in);
+      auto on = run_part2(true, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, omega_mp_in, tke_mp_in);
       REQUIRE(on.qv2qc_condevap <= 0.0);
 
-      auto off = run_part2(false, false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, omega_mp_in, tke_mp_in);
+      auto off = run_part2(false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, omega_mp_in, tke_mp_in);
       const Real delta_qv = on.qv - off.qv;
       REQUIRE(delta_qv == Approx(-(on.qv2qc_condevap * dt)).epsilon(1e-8));
       REQUIRE(on.qc <= off.qc);
@@ -540,11 +522,11 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     Pack qsl = physics::qv_sat_dry(Pack(T_atm_in), Pack(pres_in), false, context);
     const Real qv_subsat = qsl[0] * 0.90;
 
-    // p3_super_sat = false => qv2qc_aeroact block is skipped entirely.
-    auto p1 = run_part1(false, false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, 5.0e8, sentinel);
+    // P3 condensation disabled => qv2qc_aeroact block is skipped entirely.
+    auto p1 = run_part1(false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, 5.0e8, sentinel);
     REQUIRE(p1.qv2qc_aeroact == sentinel);
 
-    auto p2 = run_part2(false, false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, 0.0, 0.0, sentinel);
+    auto p2 = run_part2(false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, 0.0, 0.0, sentinel);
     REQUIRE(p2.qv2qc_condevap == sentinel);
   }
 

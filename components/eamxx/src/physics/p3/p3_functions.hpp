@@ -133,9 +133,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_hetfrz_classnuc                    = false;
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
-    bool p3_super_sat;
-    bool p3_WBFoff;
-    bool shoc_enable_condensation;
+    bool use_p3_condensation                    = false;
+    bool p3_WBFoff                              = false;
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
     {
@@ -177,8 +176,12 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       use_separate_ice_liq_frac =
           params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
-      shoc_enable_condensation = params.get<bool>("shoc_enable_condensation",shoc_enable_condensation);
-      p3_super_sat = params.get<bool>("p3_super_sat",p3_super_sat);
+      const auto condensation_scheme =
+          params.get<std::string>("condensation_scheme", "shoc");
+      EKAT_REQUIRE_MSG(condensation_scheme == "shoc" || condensation_scheme == "p3",
+                       "Invalid condensation_scheme '" + condensation_scheme +
+                       "'. Valid options are 'shoc' and 'p3'.\n");
+      use_p3_condensation = condensation_scheme == "p3";
       p3_WBFoff = params.get<bool>("p3_WBFoff",p3_WBFoff);
     }
   };

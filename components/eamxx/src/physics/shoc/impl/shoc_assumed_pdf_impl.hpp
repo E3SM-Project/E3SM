@@ -49,8 +49,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Pack>& qw_sec,
   const Scalar&                dtime,
   const bool&                  extra_diags,
-  const bool& shoc_enable_condensation,
-  const bool& p3_super_sat,
+  const bool& use_shoc_condensation,
   const uview_1d<const Pack>& wthl_sec,
   const uview_1d<const Pack>& w_sec,
   const uview_1d<const Pack>& wqw_sec,
@@ -237,7 +236,7 @@ void Functions<S,D>::shoc_assumed_pdf(
       ql1 = ekat::min(qn1, qw1_1);
       ql2 = ekat::min(qn2, qw1_2);
       // Deactivate SHOC condensation
-      if (!shoc_enable_condensation && p3_super_sat){
+      if (!use_shoc_condensation){
         // Do NOT modify shoc_ql, allow it to persist from previous processes.
         //   Diagnose liquid cloud fraction based on an all-or-nothing approach.
         const Mask is_cloud (shoc_ql(k) > 1.e-18);

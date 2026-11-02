@@ -288,13 +288,12 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh_horiz     = m_params.get<double>("coeff_kh_horiz",0.1);
   runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz",0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
-  runtime_options.shoc_enable_condensation = m_params.get<bool>("shoc_enable_condensation");
-  runtime_options.p3_super_sat = m_params.get<bool>("p3_super_sat");
-  EKAT_REQUIRE_MSG(!runtime_options.p3_super_sat || runtime_options.shoc_1p5tke,
-                   "Invalid SHOC configuration: p3_super_sat requires shoc_1p5tke to be enabled.");
-  EKAT_REQUIRE_MSG(runtime_options.shoc_enable_condensation != runtime_options.p3_super_sat,
-                   "Invalid condensation configuration: p3_super_sat and "
-                   "shoc_enable_condensation cannot both be true or both be false.");
+  const auto condensation_scheme =
+      m_params.get<std::string>("condensation_scheme", "shoc");
+  EKAT_REQUIRE_MSG(condensation_scheme == "shoc" || condensation_scheme == "p3",
+                   "Invalid condensation_scheme '" + condensation_scheme +
+                   "'. Valid options are 'shoc' and 'p3'.\n");
+  runtime_options.use_shoc_condensation = condensation_scheme == "shoc";
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.

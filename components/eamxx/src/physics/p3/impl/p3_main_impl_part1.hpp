@@ -83,8 +83,7 @@ void Functions<S,D>
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
-  const bool p3_super_sat = runtime_options.p3_super_sat;
-  const bool shoc_enable_condensation = runtime_options.shoc_enable_condensation;
+  const bool use_p3_condensation = runtime_options.use_p3_condensation;
   Pack oldnc(0),deltaqc(0);
   nucleationPossible = false;
   hydrometeorsPresent = false;
@@ -143,7 +142,7 @@ void Functions<S,D>
         // This functional form accounts for "activation" of CCN into Nc
         // and it can be made sublinear (e.g., 2000 and 0.55).
         // First, scale by cld_frac_l to account for subgrid frac (if any)
-        if(!shoc_enable_condensation && p3_super_sat) {
+        if(use_p3_condensation) {
           oldnc=nc(k);  // With prognostic supersaturation, do nothing here.
         } else {
           // the SPA equation is of the form:
@@ -166,7 +165,7 @@ void Functions<S,D>
       }
     }
 
-    if(!shoc_enable_condensation && p3_super_sat) {
+    if(use_p3_condensation) {
       auto nccn_scaled = ekat::pow(nccn_prescribed(k) / inv_cld_frac_l(k),spa_ccn_to_nc_exponent);
       auto actmask = qv(k) > qv_sat_l(k); // use gridscale qv
       if (actmask.any()) {

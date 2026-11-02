@@ -1459,7 +1459,7 @@ Int p3_main_host(
   // omega_mp/tke_mp are diagnostic inputs consumed by the new prognostic
   // supersaturation block; qv2qc_aeroact/qv2qc_condevap are its outputs.
   // p3_main_host has no F90 baseline data for these, so they are simply
-  // zero-initialized (p3_super_sat/shoc_enable_condensation default to
+  // zero-initialized (use_p3_condensation defaults to
   // false in P3Runtime, so this block is inert for this BFB test).
   view_2d omega_mp_d("omega_mp_d",nj,nk);
   view_2d tke_mp_d("tke_mp_d",nj,nk);

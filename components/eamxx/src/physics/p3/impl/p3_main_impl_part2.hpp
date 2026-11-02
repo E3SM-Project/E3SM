@@ -126,8 +126,7 @@ void Functions<S,D>
   const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
   const bool use_separate_ice_liq_frac = runtime_options.use_separate_ice_liq_frac;
   const bool extra_p3_diags = runtime_options.extra_p3_diags;
-  const bool p3_super_sat = runtime_options.p3_super_sat;
-  const bool shoc_enable_condensation = runtime_options.shoc_enable_condensation;
+  const bool use_p3_condensation = runtime_options.use_p3_condensation;
   team.team_barrier();
   hydrometeorsPresent = false;
   team.team_barrier();
@@ -386,7 +385,7 @@ void Functions<S,D>
       calc_liq_relaxation_timescale(
         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
-      if(!shoc_enable_condensation && p3_super_sat) {
+      if(use_p3_condensation) {
         auto condmask = (qc_incld(k) >= qsmall) && not_skip_micro;
         if (condmask.any()) {
           grid_w.set(condmask, -omega_mp(k) / (rho(k) * 9.81)+ekat::sqrt(ekat::max(0.0,2.0*tke_mp(k)/3.0)));
@@ -508,7 +507,7 @@ void Functions<S,D>
     ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,qinuc_cnt,cld_frac_i(k),qv(k),qv_sat_i(k),
 			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, use_hetfrz_classnuc, not_skip_all);
     // make sure procs don't inappropriately push qv beyond liquid saturation
-    if(shoc_enable_condensation) {
+    if(!use_p3_condensation) {
       prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
 				  not_skip_all);
     }
