@@ -80,6 +80,7 @@ void Functions<S,D>
   constexpr Scalar inv_cp       = C::INV_CP.value;
   constexpr Scalar latvap       = C::LatVap.value;
   constexpr Scalar latice       = C::LatIce.value;
+  constexpr Scalar pi           = C::Pi;
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
@@ -172,7 +173,7 @@ void Functions<S,D>
         auto oldnc = nc(k);
         auto newnc = ekat::max(nc(k), spa_ccn_to_nc_factor * nccn_scaled);
         nc(k).set(actmask, newnc);
-        deltaqc.set(actmask, ekat::max(nc(k) - oldnc, 0.0) * 4./3.*3.1415*1.e-15);
+        deltaqc.set(actmask, ekat::max(nc(k) - oldnc, 0.0) * 4./3.*pi*1.e-15);
         qc(k).set(actmask, qc(k) + deltaqc);
         qv(k).set(actmask, qv(k) - deltaqc);
         th_atm(k).set(actmask, th_atm(k) + exner(k) * latvap * inv_cp * deltaqc);

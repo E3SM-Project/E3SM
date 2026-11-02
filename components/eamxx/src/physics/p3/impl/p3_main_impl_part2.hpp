@@ -121,6 +121,7 @@ void Functions<S,D>
   constexpr Scalar inv_cp       = C::INV_CP.value;
   constexpr Scalar latvap       = C::LatVap.value;
   constexpr Scalar latice       = C::LatIce.value;
+  constexpr Scalar gravit       = C::gravit.value;
 
   const bool do_ice_production   = runtime_options.do_ice_production;
   const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
@@ -388,10 +389,10 @@ void Functions<S,D>
       if(use_p3_condensation) {
         auto condmask = (qc_incld(k) >= qsmall) && not_skip_micro;
         if (condmask.any()) {
-          grid_w.set(condmask, -omega_mp(k) / (rho(k) * 9.81)+ekat::sqrt(ekat::max(0.0,2.0*tke_mp(k)/3.0)));
+          grid_w.set(condmask, -omega_mp(k) / (rho(k) * gravit)+ekat::sqrt(ekat::max(0.0,2.0*tke_mp(k)/3.0)));
           ssatqv_l.set(condmask, qv(k)-qv_sat_l(k));
           esl.set(condmask, 610.78 * ekat::exp(17.2694 * (T_atm(k) - T_zerodegc) / ((T_atm(k) - T_zerodegc) + 237.3)));
-          factorA.set(condmask, -qv_sat_l(k)*rho(k)*9.81*grid_w/(pres(k)-esl) - dqsdt * (-grid_w * 9.81 * inv_cp));
+          factorA.set(condmask, -qv_sat_l(k)*rho(k)*gravit*grid_w/(pres(k)-esl) - dqsdt * (-grid_w * gravit * inv_cp));
           qv2qc_condevap(k).set(condmask, (factorA + (ssatqv_l - factorA * (1./epsc)) * inv_dt * (1.0 - ekat::exp(-epsc * dt))) / ab);
           qv2qc_condevap(k).set(condmask, ekat::max(-qc_incld(k) / dt, qv2qc_condevap(k)));
           qc(k).set(condmask, qc(k) + qv2qc_condevap(k) * cld_frac_l(k) * dt);
