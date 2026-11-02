@@ -13,7 +13,7 @@
 
 namespace scream::mam_coupling {
 
-using KT = ekat::KokkosTypes<ekat::DefaultDevice>;
+using KT = ekat::KokkosTypes<scream::EamxxDevice>;
 
 // views for single- and multi-column data
 using view_1d       = typename KT::template view_1d<Real>;

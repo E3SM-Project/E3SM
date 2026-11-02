@@ -18,7 +18,18 @@ using Real = float;
 
 // Kokkos types
 using ekat::KokkosTypes;
-using ekat::DefaultDevice;
+// The Kokkos execution space/device used by EAMxx. These may differ from Kokkos'
+// default exec space (and from ekat::DefaultDevice) if a specific backend was
+// requested at configure time (see SCREAM_KOKKOS_BACKEND).
+#ifdef EAMXX_KOKKOS_EXEC_SPACE
+using EamxxExecSpace = EAMXX_KOKKOS_EXEC_SPACE;
+#else
+using EamxxExecSpace = Kokkos::DefaultExecutionSpace;
+#endif
+using EamxxDevice = Kokkos::Device<EamxxExecSpace,EamxxExecSpace::memory_space>;
+
+// Historical name for EamxxDevice, still used throughout eamxx
+using DefaultDevice = EamxxDevice;
 using ekat::HostDevice;
 using ekat::Unmanaged;
 

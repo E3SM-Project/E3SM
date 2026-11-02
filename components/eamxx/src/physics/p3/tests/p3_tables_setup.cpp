@@ -4,7 +4,7 @@
 #include "share/core/eamxx_session.hpp"
 
 int main(int argc, char** argv) {
-  using P3F = scream::p3::Functions<scream::Real, ekat::DefaultDevice>;
+  using P3F = scream::p3::Functions<scream::Real, scream::EamxxDevice>;
 
   MPI_Init(&argc, &argv);
   scream::initialize_eamxx_session(argc, argv);
