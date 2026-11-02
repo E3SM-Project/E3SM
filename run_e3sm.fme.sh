@@ -670,7 +670,9 @@ EOF
     cat << 'EOF' >> user_nl_eam
 
 !--- WCYCL20TR-0301: no yearly EAM initial-condition files (2.65 GB each);
-!    the yearly May 1 / Nov 2 restart sets cover branching
+!    the yearly May 1 / Nov 2 restart sets cover branching. Set at case
+!    creation ONLY: changing inithist on a continuing case aborts EAM's restart
+!    read ("Error getting ID for BVRIM&IC"), as 0301 found at 1950.
 inithist = 'NONE'
 EOF
 

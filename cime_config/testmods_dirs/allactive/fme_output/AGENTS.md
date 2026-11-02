@@ -2161,6 +2161,10 @@ carrying a restart before averaging, or you will repeat the mistake.
   newest set at 1941-11-02 and had to be continued from there. The preset now sets end_restart=.true.
   Continuing a case from an older set of its own (a rewind) recomputes the later months; the ERS tests
   show resumed monthly files stay BFB.
+- Never change EAM's inithist on a continuing case: the history-tape setup is rebuilt from the
+  restart, and switching YEARLY -> NONE at 0301's 1950 leg aborted the restart read with
+  "PIO -49 H_INQUIRE: Error getting ID for BVRIM&IC". 0301 keeps inithist=YEARLY (eam.i files are
+  deleted as they appear); the preset sets NONE only for new cases.
 - SSP2-4.5 namelists (0201's Aug 8 hand edits) can only go in at 2015-01-01: 32 of their 38 files start
   in 2015 (GHG 2015-2500), and EAM aborts at a 1940 start ("chem_surfvals_set_all: data time index is
   out of bounds"). The preset writes them only with FME_0301_SSP245=TRUE; 1940-2014 runs on the compset's
