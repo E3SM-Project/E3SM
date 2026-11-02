@@ -2,6 +2,7 @@
 #define INCLUDE_COMPOSE_TEST_HPP
 
 #include <mpi.h>
+#include "pcd_const.h"
 
 extern "C"
 void compose_repro_sum(const double* send, double* recv,
@@ -25,7 +26,7 @@ template <typename T> KOKKOS_INLINE_FUNCTION T square (const T& x) { return x*x;
 template <typename T> KOKKOS_INLINE_FUNCTION T cube (const T& x) { return x*x*x; }
 
 struct consts {
-  static constexpr Real earth_radius_m = 6.376e6;
+  static constexpr Real earth_radius_m = pcd::mean_radius;
 };
 
 template<typename T> inline T sign (const T& a) { return a >= 0 ? 1 : -1; }

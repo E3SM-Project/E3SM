@@ -8,6 +8,7 @@
 module control_mod
   use kinds, only : real_kind
   use physical_constants, only: dd_pi
+  use pcd, only: pcd_g => standard_acceleration_of_gravity
 
   implicit none
 
@@ -238,7 +239,7 @@ module control_mod
   ! kmass = level index with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
   integer, public  :: toy_chemistry = 0            !  1 = toy chemestry is turned on in 2D advection code
-  real (kind=real_kind), public :: g_sw_output = 9.80616D0          ! m s^-2
+  real (kind=real_kind), public :: g_sw_output = pcd_g                ! m s^-2
 
   ! parameters for dcmip12 test 2-0: steady state atmosphere with orography
   real(real_kind), public :: dcmip2_0_h0      = 2000.d0        ! height of mountain range        (meters)
