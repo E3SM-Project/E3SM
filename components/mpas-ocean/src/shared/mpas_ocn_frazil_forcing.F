@@ -696,9 +696,6 @@ contains
               ! track fraction of total frazil melted
               meltedFraction = max(0.0_RKIND,min(1.0_RKIND,meltedFrazilIceThickness/sumNewFrazilIceThickness))
 
-              ! track fraction of total frazil melted
-              meltedFraction = max(0.0_RKIND,min(1.0_RKIND,meltedFrazilIceThickness/sumNewFrazilIceThickness))
-
               ! assign some salt to the melted ice
               meltedThicknessWeightedSaltContent = meltedFraction * sumNewThicknessWeightedSaltContent
 
