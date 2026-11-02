@@ -293,6 +293,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   EKAT_REQUIRE_MSG(condensation_scheme == "shoc" || condensation_scheme == "p3",
                    "Invalid condensation_scheme '" + condensation_scheme +
                    "'. Valid options are 'shoc' and 'p3'.\n");
+  EKAT_REQUIRE_MSG(condensation_scheme != "p3" || runtime_options.shoc_1p5tke,
+                   "Invalid condensation configuration: condensation_scheme='p3' "
+                   "requires shoc_1p5tke=true.\n");
   runtime_options.use_shoc_condensation = condensation_scheme == "shoc";
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
