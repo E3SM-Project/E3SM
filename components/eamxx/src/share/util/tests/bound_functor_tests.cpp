@@ -115,7 +115,7 @@ struct CountVisitsKernel {
 template<int N>
 void check_parallel_for_nd (const std::vector<int>& dims)
 {
-  using exec_space = Kokkos::DefaultExecutionSpace;
+  using exec_space = scream::EamxxExecSpace;
 
   int size = 1;
   Kokkos::Array<int,7> ext;

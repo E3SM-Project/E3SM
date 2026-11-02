@@ -92,6 +92,53 @@ endif()
 # to be on. For now, simply ensure Kokkos Serial is enabled
 option (Kokkos_ENABLE_SERIAL "" ON)
 
+# Select the Kokkos backend (execution space) used by EAMxx for its main device.
+# 'default' means "use whatever Kokkos picks as its default execution space".
+# Any other value must be a backend enabled in the Kokkos configuration
+# (i.e., Kokkos_ENABLE_<BACKEND> is ON). The match is case-insensitive.
+set (SCREAM_KOKKOS_BACKEND "default" CACHE STRING
+     "Kokkos backend used by EAMxx (e.g., default, Serial, OpenMP, Cuda, HIP, SYCL, Threads)")
+string (TOLOWER "${SCREAM_KOKKOS_BACKEND}" SCREAM_KOKKOS_BACKEND_LOWER)
+string (TOUPPER "${SCREAM_KOKKOS_BACKEND}" SCREAM_KOKKOS_BACKEND_UPPER)
+set (EAMXX_KOKKOS_EXEC_SPACE "")
+set (EAMXX_BACKEND_IS_GPU FALSE)
+if (NOT SCREAM_KOKKOS_BACKEND_LOWER STREQUAL "default")
+  set (EAMXX_SUPPORTED_BACKENDS SERIAL OPENMP THREADS CUDA HIP SYCL)
+  set (EAMXX_ENABLED_BACKENDS)
+  foreach (be IN LISTS EAMXX_SUPPORTED_BACKENDS)
+    if (Kokkos_ENABLE_${be})
+      list (APPEND EAMXX_ENABLED_BACKENDS ${be})
+    endif()
+  endforeach()
+  list (FIND EAMXX_ENABLED_BACKENDS ${SCREAM_KOKKOS_BACKEND_UPPER} be_idx)
+  if (be_idx EQUAL -1)
+    string (JOIN " " EAMXX_ENABLED_BACKENDS_STR ${EAMXX_ENABLED_BACKENDS})
+    message (FATAL_ERROR
+      "Invalid SCREAM_KOKKOS_BACKEND '${SCREAM_KOKKOS_BACKEND}'.\n"
+      "  Valid values: default ${EAMXX_ENABLED_BACKENDS_STR} (the enabled Kokkos backends; case-insensitive)")
+  endif()
+  # Map the backend name to the Kokkos execution space class
+  if (SCREAM_KOKKOS_BACKEND_UPPER STREQUAL "SERIAL")
+    set (EAMXX_KOKKOS_EXEC_SPACE "Kokkos::Serial")
+  elseif (SCREAM_KOKKOS_BACKEND_UPPER STREQUAL "OPENMP")
+    set (EAMXX_KOKKOS_EXEC_SPACE "Kokkos::OpenMP")
+  elseif (SCREAM_KOKKOS_BACKEND_UPPER STREQUAL "THREADS")
+    set (EAMXX_KOKKOS_EXEC_SPACE "Kokkos::Threads")
+  elseif (SCREAM_KOKKOS_BACKEND_UPPER STREQUAL "CUDA")
+    set (EAMXX_KOKKOS_EXEC_SPACE "Kokkos::Cuda")
+    set (EAMXX_BACKEND_IS_GPU TRUE)
+  elseif (SCREAM_KOKKOS_BACKEND_UPPER STREQUAL "HIP")
+    set (EAMXX_KOKKOS_EXEC_SPACE "Kokkos::HIP")
+    set (EAMXX_BACKEND_IS_GPU TRUE)
+  elseif (SCREAM_KOKKOS_BACKEND_UPPER STREQUAL "SYCL")
+    set (EAMXX_KOKKOS_EXEC_SPACE "Kokkos::SYCL")
+    set (EAMXX_BACKEND_IS_GPU TRUE)
+  endif()
+  message (STATUS "EAMxx Kokkos backend: ${SCREAM_KOKKOS_BACKEND_UPPER}")
+else()
+  message (STATUS "EAMxx Kokkos backend: default")
+endif()
+
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 
 # Determine if this is a Cuda build.
@@ -113,6 +160,12 @@ if (Kokkos_ENABLE_SYCL)
   #enable_language(SYCL)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
 endif ()
+
+# If a non-default backend was requested, EAMXX_ENABLE_GPU must reflect it,
+# rather than which backends are enabled in Kokkos.
+if (NOT SCREAM_KOKKOS_BACKEND_LOWER STREQUAL "default")
+  set (EAMXX_ENABLE_GPU ${EAMXX_BACKEND_IS_GPU} CACHE BOOL "" FORCE)
+endif()
 
 if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
