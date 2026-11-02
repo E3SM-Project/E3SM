@@ -68,14 +68,17 @@ module li_velocity_external
          li_mask_ValueDynamicIce, li_mask_ValueIce, config_use_glp, use_ismip7_fem_extension) &
          bind(C, name="velocity_solver_set_parameters")
 
-         use iso_c_binding, only: C_INT, C_DOUBLE, C_BOOL
+         use iso_c_binding, only: C_INT, C_DOUBLE
 
-         INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
+         ! config_use_glp and use_ismip7_fem_extension are passed as 0 or 1,
+         ! not as LOGICAL(C_BOOL): some compilers (e.g. Intel's ifx) give
+         ! .true. the value -1, which is not a valid C++ bool
+         INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce, &
+                           config_use_glp, use_ismip7_fem_extension
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
                            config_flowLawExponent, config_dynamic_thickness, gravity, &
                            iceMeltingPointPressureDependence, &
                            config_thermal_thickness
-         LOGICAL(C_BOOL) :: config_use_glp, use_ismip7_fem_extension
       end subroutine velocity_solver_set_parameters
 
    end interface
@@ -225,6 +228,7 @@ contains
 
    subroutine li_velocity_external_block_init(block, err)
 
+      use iso_c_binding, only: C_INT
       use li_mask
 
       !-----------------------------------------------------------------
@@ -375,8 +379,8 @@ contains
          iceMeltingPointPressureDependence, &
          config_thermal_thickness, &
          li_mask_ValueAlbanyActive, li_mask_ValueIce, &
-         logical(config_use_glp, KIND=1), &
-         logical(use_ismip7_fem_extension, KIND=1) )
+         merge(1_C_INT, 0_C_INT, config_use_glp), &
+         merge(1_C_INT, 0_C_INT, use_ismip7_fem_extension) )
 
       call interface_reset_stdout()
 #endif
