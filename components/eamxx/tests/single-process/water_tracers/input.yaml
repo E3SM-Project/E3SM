@@ -1,0 +1,44 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+eamxx:
+  atm_procs_list: [water_tracers]
+  water_tracers:
+    water_tracers_file: ${TRACERS_FILE}
+
+grids_manager:
+  type: mesh_free
+  grids_names: [physics_gll]
+  physics_gll:
+    type: point_grid
+    aliases: [physics]
+    number_of_global_columns:   32
+    number_of_vertical_levels:  72
+
+# Constant state with qv < ocn_ssq, so the ocean evaporates (E_ocn > 0).
+# Tracers start at 0; init: ratio tracers are then set by the process.
+initial_conditions:
+  qv: 0.01
+  T_mid: 290.0
+  p_mid: 95000.0
+  pseudo_density: 1000.0
+  sst: 300.0
+  ocnfrac: 1.0
+  ocn_ssq: 0.02
+  ocn_re: 0.0015
+  ocn_ustar: 0.3
+  wtrc_bp: 0.0
+  wtrc_bf: 0.0
+  wtrc_hdo: 0.0
+  wtrc_h218o: 0.0
+
+scorpio:
+  output_yaml_files: [output_${POSTFIX}.yaml]
+...

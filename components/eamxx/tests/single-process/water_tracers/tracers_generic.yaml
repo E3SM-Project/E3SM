@@ -1,0 +1,6 @@
+%YAML 1.1
+---
+tracers:
+  wtrc_bp: {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
+  wtrc_bf: {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}
+...

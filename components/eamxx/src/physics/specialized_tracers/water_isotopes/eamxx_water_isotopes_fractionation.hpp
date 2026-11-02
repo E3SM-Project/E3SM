@@ -11,7 +11,7 @@
 #include <cmath>  // std::exp/std::pow for the plain-Real path
 
 namespace scream {
-namespace wiso {
+namespace water_isotopes {
 
 /*
  * Equilibrium isotopic fractionation factors for water isotopologues.
@@ -62,10 +62,13 @@ private:
      Tier 1 (always compiled in, including release): an implausible or NaN
      temperature ends the run.
 
-     Tier 2 (debug builds only): a plausible temperature outside the fitted
-     range means the polynomial is being extrapolated rather than evaluated.
-     This may be the best we can do in some cases. Gated on NDEBUG because
-     it fires per pack per level per step, which would swamp a production log.
+     Tier 2 (debug builds only): a plausible temperature outside
+     [Tmin_warn, Tmax] means the polynomial is being extrapolated further than
+     we accept. Tmin_warn is below the fitted Tmin for liquid, which is
+     routinely evaluated down to the sea-water freezing point (ocean
+     evaporation) and below (supercooled liquid); see TemperatureBounds.
+     Gated on NDEBUG because it fires per pack per level per step, which would
+     swamp a production log.
 
      Lanes outside range_mask are ignored by both tiers: they hold padding, not
      data. */
@@ -86,11 +89,12 @@ private:
 
 #ifndef NDEBUG
     const auto extrapolating =
-        (t < RealT(b.Tmin) || t > RealT(b.Tmax)) && range_mask;
+        (t < RealT(b.Tmin_warn) || t > RealT(b.Tmax)) && range_mask;
     if (extrapolating.any()) {
-      Kokkos::printf("WARNING: %s: T outside the fitted range [%g, %g] K;"
-                     " extrapolating\n",
-                     caller, double(b.Tmin), double(b.Tmax));
+      Kokkos::printf("WARNING: %s: T outside the accepted range [%g, %g] K"
+                     " (fitted range [%g, %g] K); extrapolating\n",
+                     caller, double(b.Tmin_warn), double(b.Tmax),
+                     double(b.Tmin), double(b.Tmax));
     }
 #endif
   }
@@ -175,7 +179,7 @@ public:
       const WisoAlphaDir dir,
       const WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params,
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true),
-      const char* caller = "wiso::alpha_equilibrium")
+      const char* caller = "water_isotopes::alpha_equilibrium")
   {
     using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
     using Params = WaterIsotopeParameters<RealT>;
@@ -210,7 +214,7 @@ public:
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
     return alpha_equilibrium(t, species, CondensedPhase::Liquid, dir, iso_params,
-                             range_mask, "wiso::alpha_liquid_vapor");
+                             range_mask, "water_isotopes::alpha_liquid_vapor");
   }
 
   template <typename ScalarT>
@@ -223,11 +227,11 @@ public:
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
     return alpha_equilibrium(t, species, CondensedPhase::Ice, dir, iso_params,
-                             range_mask, "wiso::alpha_ice_vapor");
+                             range_mask, "water_isotopes::alpha_ice_vapor");
   }
 };
 
-} // namespace wiso
+} // namespace water_isotopes
 } // namespace scream
 
 #endif // EAMXX_WATER_ISOTOPES_FRACTIONATION_HPP
