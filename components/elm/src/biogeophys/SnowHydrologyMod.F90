@@ -1388,48 +1388,48 @@ contains
 
                  call Combo (dzsno(c,2), swliq(c,2), swice(c,2), tsno(c,2), drr, &
                       zwliq, zwice, tsno(c,1))
+              end if
 
-                 ! Subdivide a new layer
-                 if (is_lake) then
-                    offset = 2._r8*lsadz
+              ! Subdivide a new layer
+              if (is_lake) then
+                 offset = 2._r8*lsadz
+              else
+                 offset = 0._r8
+              end if
+              if (msno <= 2 .and. dzsno(c,2) > 0.07_r8 + offset) then
+                 msno = 3
+                 dtdz = (tsno(c,1) - tsno(c,2))/((dzsno(c,1)+dzsno(c,2))/2._r8)
+                 dzsno(c,2) = dzsno(c,2)/2._r8
+                 swice(c,2) = swice(c,2)/2._r8
+                 swliq(c,2) = swliq(c,2)/2._r8
+                 dzsno(c,3) = dzsno(c,2)
+                 swice(c,3) = swice(c,2)
+                 swliq(c,3) = swliq(c,2)
+                 tsno(c,3) = tsno(c,2) - dtdz*dzsno(c,2)/2._r8
+                 if (tsno(c,3) >= tfrz) then
+                    tsno(c,3)  = tsno(c,2)
                  else
-                    offset = 0._r8
-                 end if
-                 if (msno <= 2 .and. dzsno(c,2) > 0.07_r8 + offset) then
-                    msno = 3
-                    dtdz = (tsno(c,1) - tsno(c,2))/((dzsno(c,1)+dzsno(c,2))/2._r8) 
-                    dzsno(c,2) = dzsno(c,2)/2._r8
-                    swice(c,2) = swice(c,2)/2._r8
-                    swliq(c,2) = swliq(c,2)/2._r8
-                    dzsno(c,3) = dzsno(c,2)
-                    swice(c,3) = swice(c,2)
-                    swliq(c,3) = swliq(c,2)
-                    tsno(c,3) = tsno(c,2) - dtdz*dzsno(c,2)/2._r8
-                    if (tsno(c,3) >= tfrz) then 
-                       tsno(c,3)  = tsno(c,2)
-                    else
-                       tsno(c,2) = tsno(c,2) + dtdz*dzsno(c,2)/2._r8 
-                    endif
+                    tsno(c,2) = tsno(c,2) + dtdz*dzsno(c,2)/2._r8
+                 endif
 
-                    mbc_phi(c,2) = mbc_phi(c,2)/2._r8
-                    mbc_phi(c,3) = mbc_phi(c,2)
-                    mbc_pho(c,2) = mbc_pho(c,2)/2._r8
-                    mbc_pho(c,3) = mbc_pho(c,2)
-                    moc_phi(c,2) = moc_phi(c,2)/2._r8
-                    moc_phi(c,3) = moc_phi(c,2)
-                    moc_pho(c,2) = moc_pho(c,2)/2._r8
-                    moc_pho(c,3) = moc_pho(c,2)
-                    mdst1(c,2) = mdst1(c,2)/2._r8
-                    mdst1(c,3) = mdst1(c,2)
-                    mdst2(c,2) = mdst2(c,2)/2._r8
-                    mdst2(c,3) = mdst2(c,2)
-                    mdst3(c,2) = mdst3(c,2)/2._r8
-                    mdst3(c,3) = mdst3(c,2)
-                    mdst4(c,2) = mdst4(c,2)/2._r8
-                    mdst4(c,3) = mdst4(c,2)
-                    rds(c,3) = rds(c,2)
+                 mbc_phi(c,2) = mbc_phi(c,2)/2._r8
+                 mbc_phi(c,3) = mbc_phi(c,2)
+                 mbc_pho(c,2) = mbc_pho(c,2)/2._r8
+                 mbc_pho(c,3) = mbc_pho(c,2)
+                 moc_phi(c,2) = moc_phi(c,2)/2._r8
+                 moc_phi(c,3) = moc_phi(c,2)
+                 moc_pho(c,2) = moc_pho(c,2)/2._r8
+                 moc_pho(c,3) = moc_pho(c,2)
+                 mdst1(c,2) = mdst1(c,2)/2._r8
+                 mdst1(c,3) = mdst1(c,2)
+                 mdst2(c,2) = mdst2(c,2)/2._r8
+                 mdst2(c,3) = mdst2(c,2)
+                 mdst3(c,2) = mdst3(c,2)/2._r8
+                 mdst3(c,3) = mdst3(c,2)
+                 mdst4(c,2) = mdst4(c,2)/2._r8
+                 mdst4(c,3) = mdst4(c,2)
+                 rds(c,3) = rds(c,2)
 
-                 end if
               end if
            end if
 
@@ -1506,48 +1506,48 @@ contains
 
                  call Combo (dzsno(c,3), swliq(c,3), swice(c,3), tsno(c,3), drr, &
                       zwliq, zwice, tsno(c,2))
+              end if
 
-                 ! Subdivided a new layer
-                 if (is_lake) then
-                    offset = 2._r8*lsadz
+              ! Subdivided a new layer
+              if (is_lake) then
+                 offset = 2._r8*lsadz
+              else
+                 offset = 0._r8
+              end if
+              if (msno <= 3 .and. dzsno(c,3) > 0.18_r8+offset) then
+                 msno =  4
+                 dtdz = (tsno(c,2) - tsno(c,3))/((dzsno(c,2)+dzsno(c,3))/2._r8)
+                 dzsno(c,3) = dzsno(c,3)/2._r8
+                 swice(c,3) = swice(c,3)/2._r8
+                 swliq(c,3) = swliq(c,3)/2._r8
+                 dzsno(c,4) = dzsno(c,3)
+                 swice(c,4) = swice(c,3)
+                 swliq(c,4) = swliq(c,3)
+                 tsno(c,4) = tsno(c,3) - dtdz*dzsno(c,3)/2._r8
+                 if (tsno(c,4) >= tfrz) then
+                    tsno(c,4)  = tsno(c,3)
                  else
-                    offset = 0._r8
-                 end if
-                 if (msno <= 3 .and. dzsno(c,3) > 0.18_r8+offset) then
-                    msno =  4
-                    dtdz = (tsno(c,2) - tsno(c,3))/((dzsno(c,2)+dzsno(c,3))/2._r8) 
-                    dzsno(c,3) = dzsno(c,3)/2._r8
-                    swice(c,3) = swice(c,3)/2._r8
-                    swliq(c,3) = swliq(c,3)/2._r8
-                    dzsno(c,4) = dzsno(c,3)
-                    swice(c,4) = swice(c,3)
-                    swliq(c,4) = swliq(c,3)
-                    tsno(c,4) = tsno(c,3) - dtdz*dzsno(c,3)/2._r8
-                    if (tsno(c,4) >= tfrz) then 
-                       tsno(c,4)  = tsno(c,3)
-                    else
-                       tsno(c,3) = tsno(c,3) + dtdz*dzsno(c,3)/2._r8 
-                    endif
+                    tsno(c,3) = tsno(c,3) + dtdz*dzsno(c,3)/2._r8
+                 endif
 
-                    mbc_phi(c,3) = mbc_phi(c,3)/2._r8
-                    mbc_phi(c,4) = mbc_phi(c,3)
-                    mbc_pho(c,3) = mbc_pho(c,3)/2._r8
-                    mbc_pho(c,4) = mbc_pho(c,3)
-                    moc_phi(c,3) = moc_phi(c,3)/2._r8
-                    moc_phi(c,4) = moc_phi(c,3)
-                    moc_pho(c,3) = moc_pho(c,3)/2._r8
-                    moc_pho(c,4) = moc_pho(c,3)
-                    mdst1(c,3) = mdst1(c,3)/2._r8
-                    mdst1(c,4) = mdst1(c,3)
-                    mdst2(c,3) = mdst2(c,3)/2._r8
-                    mdst2(c,4) = mdst2(c,3)
-                    mdst3(c,3) = mdst3(c,3)/2._r8
-                    mdst3(c,4) = mdst3(c,3)
-                    mdst4(c,3) = mdst4(c,3)/2._r8
-                    mdst4(c,4) = mdst4(c,3)
-                    rds(c,4) = rds(c,3)
+                 mbc_phi(c,3) = mbc_phi(c,3)/2._r8
+                 mbc_phi(c,4) = mbc_phi(c,3)
+                 mbc_pho(c,3) = mbc_pho(c,3)/2._r8
+                 mbc_pho(c,4) = mbc_pho(c,3)
+                 moc_phi(c,3) = moc_phi(c,3)/2._r8
+                 moc_phi(c,4) = moc_phi(c,3)
+                 moc_pho(c,3) = moc_pho(c,3)/2._r8
+                 moc_pho(c,4) = moc_pho(c,3)
+                 mdst1(c,3) = mdst1(c,3)/2._r8
+                 mdst1(c,4) = mdst1(c,3)
+                 mdst2(c,3) = mdst2(c,3)/2._r8
+                 mdst2(c,4) = mdst2(c,3)
+                 mdst3(c,3) = mdst3(c,3)/2._r8
+                 mdst3(c,4) = mdst3(c,3)
+                 mdst4(c,3) = mdst4(c,3)/2._r8
+                 mdst4(c,4) = mdst4(c,3)
+                 rds(c,4) = rds(c,3)
 
-                 end if
               end if
            end if
 
@@ -1622,48 +1622,48 @@ contains
 
                  call Combo (dzsno(c,4), swliq(c,4), swice(c,4), tsno(c,4), drr, &
                       zwliq, zwice, tsno(c,3))
+              end if
 
-                 ! Subdivided a new layer
-                 if (is_lake) then
-                    offset = 2._r8*lsadz
+              ! Subdivided a new layer
+              if (is_lake) then
+                 offset = 2._r8*lsadz
+              else
+                 offset = 0._r8
+              end if
+              if (msno <= 4 .and. dzsno(c,4) > 0.41_r8 + offset) then
+                 msno = 5
+                 dtdz = (tsno(c,3) - tsno(c,4))/((dzsno(c,3)+dzsno(c,4))/2._r8)
+                 dzsno(c,4) = dzsno(c,4)/2._r8
+                 swice(c,4) = swice(c,4)/2._r8
+                 swliq(c,4) = swliq(c,4)/2._r8
+                 dzsno(c,5) = dzsno(c,4)
+                 swice(c,5) = swice(c,4)
+                 swliq(c,5) = swliq(c,4)
+                 tsno(c,5) = tsno(c,4) - dtdz*dzsno(c,4)/2._r8
+                 if (tsno(c,5) >= tfrz) then
+                    tsno(c,5)  = tsno(c,4)
                  else
-                    offset = 0._r8
-                 end if
-                 if (msno <= 4 .and. dzsno(c,4) > 0.41_r8 + offset) then
-                    msno = 5
-                    dtdz = (tsno(c,3) - tsno(c,4))/((dzsno(c,3)+dzsno(c,4))/2._r8) 
-                    dzsno(c,4) = dzsno(c,4)/2._r8
-                    swice(c,4) = swice(c,4)/2._r8
-                    swliq(c,4) = swliq(c,4)/2._r8
-                    dzsno(c,5) = dzsno(c,4)
-                    swice(c,5) = swice(c,4)
-                    swliq(c,5) = swliq(c,4)
-                    tsno(c,5) = tsno(c,4) - dtdz*dzsno(c,4)/2._r8 
-                    if (tsno(c,5) >= tfrz) then 
-                       tsno(c,5)  = tsno(c,4)
-                    else
-                       tsno(c,4) = tsno(c,4) + dtdz*dzsno(c,4)/2._r8 
-                    endif
+                    tsno(c,4) = tsno(c,4) + dtdz*dzsno(c,4)/2._r8
+                 endif
 
-                    mbc_phi(c,4) = mbc_phi(c,4)/2._r8
-                    mbc_phi(c,5) = mbc_phi(c,4)
-                    mbc_pho(c,4) = mbc_pho(c,4)/2._r8
-                    mbc_pho(c,5) = mbc_pho(c,4)              
-                    moc_phi(c,4) = moc_phi(c,4)/2._r8
-                    moc_phi(c,5) = moc_phi(c,4)
-                    moc_pho(c,4) = moc_pho(c,4)/2._r8
-                    moc_pho(c,5) = moc_pho(c,4)
-                    mdst1(c,4) = mdst1(c,4)/2._r8
-                    mdst1(c,5) = mdst1(c,4)
-                    mdst2(c,4) = mdst2(c,4)/2._r8
-                    mdst2(c,5) = mdst2(c,4)
-                    mdst3(c,4) = mdst3(c,4)/2._r8
-                    mdst3(c,5) = mdst3(c,4)
-                    mdst4(c,4) = mdst4(c,4)/2._r8
-                    mdst4(c,5) = mdst4(c,4)
-                    rds(c,5) = rds(c,4)
+                 mbc_phi(c,4) = mbc_phi(c,4)/2._r8
+                 mbc_phi(c,5) = mbc_phi(c,4)
+                 mbc_pho(c,4) = mbc_pho(c,4)/2._r8
+                 mbc_pho(c,5) = mbc_pho(c,4)
+                 moc_phi(c,4) = moc_phi(c,4)/2._r8
+                 moc_phi(c,5) = moc_phi(c,4)
+                 moc_pho(c,4) = moc_pho(c,4)/2._r8
+                 moc_pho(c,5) = moc_pho(c,4)
+                 mdst1(c,4) = mdst1(c,4)/2._r8
+                 mdst1(c,5) = mdst1(c,4)
+                 mdst2(c,4) = mdst2(c,4)/2._r8
+                 mdst2(c,5) = mdst2(c,4)
+                 mdst3(c,4) = mdst3(c,4)/2._r8
+                 mdst3(c,5) = mdst3(c,4)
+                 mdst4(c,4) = mdst4(c,4)/2._r8
+                 mdst4(c,5) = mdst4(c,4)
+                 rds(c,5) = rds(c,4)
 
-                 end if
               end if
            end if
 
