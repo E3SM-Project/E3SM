@@ -3194,6 +3194,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fields
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -3210,6 +3228,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#looping-over-the-entries-of-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Looping over the entries of fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Looping over the entries of fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#under-the-hood" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Under the hood
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -4801,6 +4866,42 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#looping-over-the-entries-of-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Looping over the entries of fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Looping over the entries of fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#under-the-hood" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Under the hood
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4976,6 +5077,83 @@ parts:</p>
   metadata that does not fit in the above structures. This is a last resort structure,
   intended to accommodate the most peculiar corner cases, and should be used sparingly.</li>
 </ul>
+<h2 id="looping-over-the-entries-of-fields">Looping over the entries of fields</h2>
+<p>Writing a kernel that touches the data of a field is less straightforward than it
+looks. The <code>Kokkos::View</code> that <code>get_view</code> returns has a type that depends on the
+field's rank, on its scalar type, and on its layout (a <code>LayoutRight</code> view if the field
+is contiguous in memory, a <code>LayoutStride</code> one if it is, for instance, a slice of a
+larger field). These are runtime properties of a field, but a kernel needs the
+view type at compile time. To bridge the two, EAMxx has <code>field_pfor</code>, which turns
+a field into a view of the right type and runs a <code>Kokkos::parallel_for</code> over all
+its entries, for any rank in <code>[0,6]</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"share/field/field_pfor.hpp"</span>
+
+<span class="c1">// A kernel is a functor with a templated operator(). It receives the views first,</span>
+<span class="c1">// then one index per dimension of the fields</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">AddKernel</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">YView</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">XView</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">Idx</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="n">KOKKOS_INLINE_FUNCTION</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="k">operator</span><span class="p">()</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">YView</span><span class="o">&amp;</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">XView</span><span class="o">&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Idx</span><span class="o">&amp;</span><span class="p">...</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">y</span><span class="p">(</span><span class="n">i</span><span class="p">...)</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">x</span><span class="p">(</span><span class="n">i</span><span class="p">...);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// y += x, whatever the rank and layout of the two fields</span>
+<span class="k">using</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">view_as</span><span class="p">;</span>
+<span class="n">details</span><span class="o">::</span><span class="n">field_pfor</span><span class="p">(</span><span class="n">AddKernel</span><span class="p">(),</span><span class="w"> </span><span class="n">view_as</span><span class="o">&lt;</span><span class="n">Real</span><span class="o">&gt;</span><span class="p">(</span><span class="n">y_field</span><span class="p">),</span><span class="w"> </span><span class="n">view_as</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">Real</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x_field</span><span class="p">));</span>
+</code></pre></div>
+<p><code>view_as&lt;T&gt;(field)</code> says which scalar type to use for that field. It must match the
+field's data type, and it can be <code>const</code>-qualified for fields that the kernel only
+reads. The kernel is called as <code>func(v_1,...,v_K,i_0,...,i_{N-1})</code>, with <code>v_k</code> the view of
+the <code>k</code>-th field, and <code>N</code> the rank of the fields. Because the same kernel
+runs for any rank, write the indexing as <code>y(i...)</code>: for a rank-0 field, the pack <code>i...</code>
+is empty. The members of the kernel struct are how you pass parameters (e.g., scalars
+or other views), and they are copied to device. A kernel can still branch on the
+number of indices with <code>if constexpr (sizeof...(i)==2)</code>.</p>
+<p>Some things to keep in mind:</p>
+<ul>
+<li>All fields must have the same rank and extents (the tags are not compared), and
+  at most three fields can be passed.</li>
+<li>Like <code>Kokkos::parallel_for</code>, the call is asynchronous: it does not fence. Kernels launched on
+  the same execution space run in order, so consecutive calls can be chained without fencing.
+  Fence (e.g., with <code>Kokkos::fence()</code>, or by calling <code>sync_to_host()</code>) before using the results on host.</li>
+<li>The kernel must be a <strong>functor struct, not a <code>KOKKOS_LAMBDA</code></strong>. nvcc does not allow
+  generic extended <code>__host__ __device__</code> lambdas (needed here, since the view types are
+  not known when the lambda is written), nor extended lambdas whose captures are first used inside an
+  <code>if constexpr</code>. A struct with a templated <code>operator()</code> has neither restriction. Two more
+  nvcc restrictions on extended lambdas are easy to run into: they cannot be defined inside
+  a generic lambda, nor inside a private or protected member function. (In unit tests, we also
+  define lambdas before, and not inside, the argument of a <code>REQUIRE</code>, since Catch may evaluate that
+  argument in an unevaluated context, where nvcc does not accept them.)</li>
+<li>The kernel is instantiated for every rank in <code>[0,6]</code> and for every combination of
+  contiguous/strided views of the fields. With <code>K</code> fields, that is <code>7 * 2^K</code> instantiations
+  for each call site, so keep the kernel small (if needed, have it forward to a templated
+  helper). The <code>Field</code> update methods that use <code>field_pfor</code> are explicitly instantiated in the
+  ETI files (<code>share/field/eti/</code>), so that this cost is paid once, rather than in every file
+  that includes the header.</li>
+</ul>
+<p>For examples, see the update kernels in <code>share/field/field_update_impl.hpp</code> (<code>UpdateKernel</code>),
+<code>field_update_masked.hpp</code>, and <code>field_update_fill_aware.hpp</code>, and the unit test
+<code>share/field/tests/field_pfor_tests.cpp</code>.</p>
+<h3 id="under-the-hood">Under the hood</h3>
+<p>Kokkos calls the functor of a <code>parallel_for</code> with the indices only, so the views cannot be
+passed directly to the kernel. <code>field_pfor</code> uses a few generic utilities (in <code>share/util</code>,
+none of which depends on fields) to bridge the gap:</p>
+<ul>
+<li><code>BoundFunctor</code> (<code>eamxx_bound_functor.hpp</code>): a device-friendly version of <code>std::bind_front</code>.
+  <code>bind_functor(func,a,b)</code> stores <code>func</code> and <code>(a,b)</code>, and when called with <code>(i,j)</code>
+  it calls <code>func(a,b,i,j)</code>. The call arguments are perfectly forwarded, so it also works
+  with <code>parallel_reduce</code>, where Kokkos passes the reduction result after the indices.
+  <code>field_pfor</code> binds the visited views to the kernel.</li>
+<li><code>Tuple</code> (<code>eamxx_tuple.hpp</code>, in <code>scream::details</code>): a minimal tuple which can be used
+  in device code (<code>std::tuple</code> and <code>std::apply</code> are not guaranteed to work in kernels),
+  where <code>BoundFunctor</code> keeps the bound arguments.</li>
+<li><code>parallel_for_nd</code> (<code>eamxx_parallel_for_nd.hpp</code>): launches the right Kokkos policy
+  (a <code>RangePolicy</code> for rank 0 and 1, an <code>MDRangePolicy</code> otherwise) for the extents of the fields.
+  For rank 0, where Kokkos has no 0-dimensional policy, it drops the dummy index.</li>
+</ul>
+<p><code>field_pfor</code> is for elementwise kernels. There is no equivalent yet for reductions or for
+kernels that use hierarchical parallelism.</p>
 
 
 
