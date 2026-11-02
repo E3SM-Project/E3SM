@@ -255,6 +255,15 @@ void Functions<S,D>::zm_cloud_properties(
           mflx_up(k) = (1/lambda_max) * (std::exp(lambda(k)*zuef) - 1) / zuef;
           entr_up(k) = (rmue - mflx_up(k+1)) / dz(k);
           detr_up(k) = (rmue - mflx_up(k))   / dz(k);
+          // Add an equal "turbulent" fractional mixing offset [1/m]
+          // to both the entrainment and detrainment rates.
+          // Adding the same amount to both leaves the net mass flux
+          // unchanged, while enhancing the detrained condensate/
+          // moisture tendency. This effectively separates the mixing into
+          // a dynamic part tied to the mass flux gradient from the lines above,
+          // and an always-present turbulent part.
+          entr_up(k) += runtime_opt.frac_turb_mix * mflx_up(k);
+          detr_up(k) += runtime_opt.frac_turb_mix * mflx_up(k);
         }
       }
     }
