@@ -88,9 +88,10 @@ def build_runtime_overrides(
     continue_run: bool,
     case_name: str,
     streams_files: dict[str, str],
+    defaults: YamlMapping,
 ) -> YamlMapping:
     """
-    Build the runtime override dictionary from the CIME case configuration.
+    Build overrides from CIME case config vars only available after case.setup
 
     Parameters:
     -----------
@@ -102,6 +103,9 @@ def build_runtime_overrides(
         CIME case name.
     streams_files : dict[str, str]
         Resolved input filenames keyed by Omega IOStream name.
+    defaults : dict[str, Any]
+        Default configuration values, loaded from configs/Default.yml.
+        Needed to automatically prepend case_name to analysis files
 
     Returns:
     --------
@@ -124,10 +128,34 @@ def build_runtime_overrides(
         "Filename": f"{case_name}.omega.r.$Y-$M-$D_$h.$m.$s"
     }
 
-    return {
+    analysis_overrides = {}
+    for analysis_member, config in defaults.get("Analysis", {}).items():
+        if not isinstance(config, Mapping):
+            err_msg = (
+                f"Invalid entry for analysis member '{analysis_member}': "
+                f"expected a mapping, got {type(config).__name__}"
+            )
+            raise ValueError(err_msg)
+
+        if "Filename" not in config:
+            err_msg = (
+                f"Missing 'Filename' for analysis member '{analysis_member}' "
+            )
+            raise ValueError(err_msg)
+
+        analysis_overrides[analysis_member] = {
+            "Filename": f"{case_name}.omega.{config['Filename']}"
+        }
+
+    overrides = {
         "TimeIntegration": {"CalendarType": _to_omega_calendar(calendar)},
         "IOStreams": io_overrides,
     }
+
+    if analysis_overrides:
+        overrides["Analysis"] = analysis_overrides
+
+    return overrides
 
 
 def _deep_merge(

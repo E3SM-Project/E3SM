@@ -58,16 +58,17 @@ def buildnml(case, caseroot, compname):
         input_files=input_files, mesh_name=mesh_name, din_loc_root=din_loc_root
     )
 
+    # read Omega's Defaults.yml, which serve as base configuration
+    defaults = read_default_config(omega_root / "configs/Default.yml")
+
     # convert CIME case configuration options to Omega config snippets
     runtime_overrides = build_runtime_overrides(
         calendar=calendar,
         continue_run=continue_run,
         case_name=case_name,
         streams_files=streams_files,
+        defaults=defaults,
     )
-
-    # read Omega's Defaults.yml, which serve as base configuration
-    defaults = read_default_config(omega_root / "configs/Default.yml")
 
     # read coupled simulation and mesh-specific Omega config snippets
     config_overrides = read_config_overrides(mesh_name=mesh_name)
