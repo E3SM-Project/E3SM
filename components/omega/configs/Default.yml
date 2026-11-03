@@ -87,7 +87,7 @@ Omega:
     VelocityVertAdvTendencyEnable: true
     TracerVertAdvTendencyEnable: true
     PressureGradTendencyEnable: true
-    FrazilTendencyEnable: false
+    FrazilTendencyEnable: true
     VelVertMixTendencyEnable: true
     TracerVertMixTendencyEnable: true
     KPPNonLocalTracerFluxTendencyEnable: true
@@ -112,7 +112,7 @@ Omega:
     LayerMassFracMax: 0.1
     Phi: 0.75
     DepthLimit: -1.0
-    ConservationCheck: true
+    ConservationCheck: false
   Submeso:
     Enable: false
     Tau: 172800.0
@@ -242,6 +242,9 @@ Omega:
         - Tracers
         - State
         - SshCell
+        - GeomZMid
+        - GeomZInterface
+        - Frazil
     FrazilOutput:
       UsePointerFile: false
       Filename: ocn.frazil.$Y-$M-$D_$h.$m.$s
@@ -262,7 +265,7 @@ Omega:
       IfExists: append
       Precision: single
       Freq: 10
-      FreqUnits: days
+      FreqUnits: Never
       FileFreq: 1
       FileFreqUnits: months
       UseStartEnd: true
@@ -326,7 +329,8 @@ Omega:
       # Output is written to the stream MonthlyAverages_<Period>TimeStats
       # (e.g., MonthlyAverages_1MonthTimeStats).
       Fields: [Temperature, Salinity, PseudoThickness, SpecVol, GeomZMid,
-          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell]
+          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell,
+          FrazilMassFlux, FrazilSaltFlux, FrazilEnergyFlux]
                                 # List of global fields to average
       ReductionPeriod: [1Month]
                                 # Optional; averaging period(s)
