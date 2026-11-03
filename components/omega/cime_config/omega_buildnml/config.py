@@ -137,7 +137,7 @@ def build_runtime_overrides(
     )
 
     io_overrides["RestartWrite"] = {
-        "Filename": f"{case_name}.omega.r.$Y-$M-$D_$h.$m.$s"
+        "Filename": f"{case_name}.omega.r.$Y-$M-$D_$h.$m.$s.nc"
     }
 
     overrides = {
