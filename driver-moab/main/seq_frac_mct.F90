@@ -172,6 +172,7 @@ module seq_frac_mct
   ! for tri grid, sameg_al would be false
 
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes
+  use seq_comm_mct, only : mbgxid   !          iMOAB id of moab glc migrated to coupler pes
 
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
         iMOAB_WriteMesh, iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
@@ -408,11 +409,32 @@ contains
 
     ! Initialize fractions on glc grid decomp, just an initial "guess", updated later
 
-    ! MOABTODO: add capabiility for MOAB
     if (glc_present) then
        call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=0)
        call mct_aVect_zero(fractions_g)
+       if (mbgxid .ge. 0  ) then
+         arrSize = mbGetnCells(mbgxid)
+         tagname = trim(fraclist_g)//C_NULL_CHAR ! 'gfrac:lfrac'
+         tagtype = 1  ! dense, double
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining fraction tags on glc mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining fraction tags on glc mesh on cpl')
+         endif
 
+         ! zero the fractions on glc
+         allocate(tagValues(arrSize*2) )
+         tagValues = 0.0_r8
+         call mbSetCellTagVals(mbgxid, fraclist_g,tagValues,arrSize*2)
+         deallocate(tagValues)
+
+         ! set gfrac to the domain frac
+         allocate(tagValues(arrSize))
+         call mbGetCellTagVals(mbgxid, 'frac',tagValues,arrSize)
+         call mbSetCellTagVals(mbgxid, 'gfrac',tagValues,arrSize)
+         deallocate(tagValues)
+       endif
     end if
 
     ! Initialize fractions on land grid decomp, just an initial "guess", updated later
@@ -765,7 +787,7 @@ contains
 
 
     if (lnd_present) call seq_frac_check(fractions_l,mblxid,'lnd init')
-    if (glc_present) call seq_frac_check(fractions_g,-1,'glc init')
+    if (glc_present) call seq_frac_check(fractions_g,mbgxid,'glc init')
     if (rof_present) call seq_frac_check(fractions_r,mbrxid,'rof init')
     if (wav_present) call seq_frac_check(fractions_w,-1,'wav init')
     if (iac_present) call seq_frac_check(fractions_z,-1,'iac init')
