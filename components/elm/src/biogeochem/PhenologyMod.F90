@@ -2351,10 +2351,10 @@ contains
       ! snow depth in centimeters
 
       if (t_ref2m(p) < tfrz) then !slevis: t_ref2m inst of td=daily avg (K)
-         tcrown = 2._r8 + (t_ref2m(p) - tfrz) * (0.4_r8 + 0.0018_r8 * &
+         tcrown(p) = 2._r8 + (t_ref2m(p) - tfrz) * (0.4_r8 + 0.0018_r8 * &
               (min(snow_depth(c)*100._r8, 15._r8) - 15._r8)**2)
       else !slevis: snow_depth inst of adsnod=daily average (m)
-         tcrown = t_ref2m(p) - tfrz
+         tcrown(p) = t_ref2m(p) - tfrz
       end if
 
       ! vernalization factor calculation
@@ -2465,10 +2465,10 @@ contains
       ! snow depth in centimeters
 
       if (t_ref2m(p) < tfrz) then !slevis: t_ref2m inst of td=daily avg (K)
-         tcrown = 2._r8 + (t_ref2m(p) - tfrz) * (0.4_r8 + 0.0018_r8 * &
+         tcrown(p) = 2._r8 + (t_ref2m(p) - tfrz) * (0.4_r8 + 0.0018_r8 * &
               (min(snow_depth(c)*100._r8, 15._r8) - 15._r8)**2)
       else !slevis: snow_depth inst of adsnod=daily average (m)
-         tcrown = t_ref2m(p) - tfrz
+         tcrown(p) = t_ref2m(p) - tfrz
       end if
 
       ! frost tolerance and survival rate calculation

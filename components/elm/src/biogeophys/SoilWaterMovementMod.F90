@@ -407,7 +407,7 @@ contains
       do fc=1, num_hydrologyc
          c = filter_hydrologyc(fc)
          j = nlev2bed(c)
-         if(jwt(c) == nlevbed) then
+         if(jwt(c) == j) then
             tempi = 1._r8
             temp0 = (((sucsat(c,j)+zwtmm(c)-zimm(c,j))/sucsat(c,j)))**(1._r8-1._r8/bsw(c,j))
             delta_z_zwt = zwtmm(c) - zimm(c,j)

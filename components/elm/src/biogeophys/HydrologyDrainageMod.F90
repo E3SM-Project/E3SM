@@ -211,6 +211,7 @@ contains
       do c = bounds%begc,bounds%endc
          qflx_glcice_frz(c) = 0._r8
          qflx_glcice_frz_diag(c) = 0._r8
+         l = col_pp%landunit(c)
 
          if (lun_pp%itype(l) == istice .and. qflx_snwcp_ice(c) > 0.0_r8) then
                qflx_glcice_frz_diag(c) = qflx_snwcp_ice(c)

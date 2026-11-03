@@ -242,9 +242,9 @@ contains
          ! fragmented litter) and wood product pools, match the fluxes in and out of fates
          if(use_fates) then
 
-            col_cinputs  = litfall(c) + hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
+            col_cinputs(c)  = litfall(c) + hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
 
-            col_coutputs = er(c)
+            col_coutputs(c) = er(c)
 
          else
 

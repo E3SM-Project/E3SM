@@ -708,6 +708,7 @@ contains
     else if (dimname == 'gridcell') then
        call ncd_io(ncid=ncid, varname='grid1d_lon'    , flag='read', data=subgrid%lon  )
        call ncd_io(ncid=ncid, varname='grid1d_lat'    , flag='read', data=subgrid%lat  )
+       itemp(:) = 1
     end if
 
     do n = beg,end
