@@ -989,7 +989,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<Pack> &ntend_ignore, const uview_2d<Pack> &mu_c, const uview_2d<Pack> &lamc,
       const uview_2d<Pack> &rho_qi, const uview_2d<Pack> &qv2qi_depos_tend,
       const uview_2d<Pack> &precip_total_tend, const uview_2d<Pack> &nevapr,
-      const uview_2d<Pack> &precip_liq_flux, const uview_2d<Pack> &precip_ice_flux);
+      const uview_2d<Pack> &precip_liq_flux, const uview_2d<Pack> &precip_ice_flux,
+      const uview_2d<Pack> &qv2qc_aeroact, const uview_2d<Pack> &qv2qc_condevap);
 #endif
 
   KOKKOS_FUNCTION
