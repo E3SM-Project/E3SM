@@ -229,9 +229,9 @@
   </batch_system>
 
   <batch_system type="flux" >
-    <batch_query>flux job info</batch_query>
-    <batch_submit>flux batch</batch_submit>
-    <batch_cancel>flux job cancel</batch_cancel>
+    <batch_query>flux --parent job info</batch_query>
+    <batch_submit>flux --parent batch</batch_submit>
+    <batch_cancel>flux --parent job cancel</batch_cancel>
     <batch_directive># flux:</batch_directive>
     <jobid_pattern>(\w+)$</jobid_pattern>
     <depend_string>--dependency=afterok:jobid</depend_string>
@@ -245,8 +245,8 @@
     </submit_args>
     <directives>
       <directive> --job-name={{ job_id }}</directive>
-      <directive> --output={{ job_id }}.{{jobid}}</directive>
-      <directive> --error={{ job_id }}.{{jobid}}</directive>
+      <directive> --output={{ job_id }}.{{jobid}}.out</directive>
+      <directive> --error={{ job_id }}.{{jobid}}.err</directive>
       <directive> -N{{ num_nodes }}</directive>
       <directive> -n{{ total_tasks }}</directive>
       <directive> --exclusive</directive>
