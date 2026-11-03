@@ -1172,7 +1172,7 @@ contains
     call mpi_barrier(DRIVER_COMM,ierr)
     if (mype == 0) then
        do n = 1,ncomps
-          write(logunit,'(a,4i6,2x,3a)') trim(subName),n, &
+          write(logunit,'(a,i4,2(1x,i9),1x,i5,2x,3a)') trim(subName),n, &
                seq_comms(n)%gloroot,seq_comms(n)%npes,seq_comms(n)%nthreads, &
                trim(seq_comms(n)%name),':',trim(seq_comms(n)%suffix)
        enddo
