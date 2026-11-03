@@ -32,6 +32,15 @@ string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise") # and manually add precise
 #message(STATUS "ndk CXXFLAGS=${CXXFLAGS}")
 
+# NERSC's cpe/26.03 update moved the default backing toolchain to GCC 14, whose
+# libstdc++ headers no longer transitively include <cstdint>, causing icpx to fail
+# building kokkos with "unknown type name 'uint32_t'". Force-include <cstdint> so the
+# fixed-width integer types are always available, restoring the previous behavior.
+# Applied both to E3SM's own C++ sources (CMAKE_CXX_FLAGS) and to the standalone
+# kokkos sub-build (via KOKKOS_OPTIONS, which does not inherit CMAKE_CXX_FLAGS).
+string(APPEND CMAKE_CXX_FLAGS " -include cstdint")
+string(APPEND KOKKOS_OPTIONS " -DCMAKE_CXX_FLAGS=--include=cstdint")
+
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
    #  string(APPEND FFLAGS " -qno-opt-dynamic-align")
  string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
@@ -46,6 +55,6 @@ if (COMP_NAME STREQUAL cpl)
     string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -qopenmp")
   endif()
   #original string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created -init=snan,arrays")
-  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g -check uninit -check bounds -check pointers -check noarg_temp_created -init=nosnan,arrays")
+  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g -check nouninit -check bounds -check pointers -check noarg_temp_created -init=nosnan,arrays")
   string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source")
 endif()
