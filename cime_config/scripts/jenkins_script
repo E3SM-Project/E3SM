@@ -18,7 +18,7 @@ nohup $SCRIPT_DIR/../../cime/CIME/Tools/jenkins_generic_job --submit-to-cdash --
 JOB_PID=$!
 
 # Stream the log file in real-time, exiting automatically when the job ends
-tail -f --pid=$JOB_PID JENKINS_${DATE_STAMP}
+tail -n +1 -F --pid=$JOB_PID JENKINS_${DATE_STAMP}
 
 # Wait for the job to reap its exit status and respect 'pipefail'
 wait $JOB_PID
