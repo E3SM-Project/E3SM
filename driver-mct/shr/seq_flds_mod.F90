@@ -3060,7 +3060,7 @@ contains
        call seq_flds_add(x2a_fluxes,  "Fall_fco2_lnd")
        longname = 'Surface flux of CO2 from land'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
-       units    = 'moles m-2 s-1'
+       units    = 'kgCO2 m-2 s-1'
        attname  = 'Fall_fco2_lnd'
        call metadata_set(attname, longname, stdname, units)
 !LXu@06/26
@@ -3068,7 +3068,7 @@ contains
        call seq_flds_add(x2a_fluxes,  "Fall_fco2_fire")
        longname = 'Surface flux of CO2 from land fire'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_from_fire'
-       units    = 'moles m-2 s-1'
+       units    = 'kgCO2 m-2 s-1'
        attname  = 'Fall_fco2_fire'
        call metadata_set(attname, longname, stdname, units)
     else if (flds_co2c) then
@@ -3095,7 +3095,7 @@ contains
        call seq_flds_add(x2a_fluxes, "Fall_fco2_lnd")
        longname = 'Surface flux of CO2 from land'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
-       units    = 'moles m-2 s-1'
+       units    = 'kgCO2 m-2 s-1'
        attname  = 'Fall_fco2_lnd'
        call metadata_set(attname, longname, stdname, units)
 !LXu@06/26
@@ -3103,7 +3103,7 @@ contains
        call seq_flds_add(x2a_fluxes, "Fall_fco2_fire")
        longname = 'Surface flux of CO2 from land fire'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_from_fire'
-       units    = 'moles m-2 s-1'
+       units    = 'kgCO2 m-2 s-1'
        attname  = 'Fall_fco2_fire'
        call metadata_set(attname, longname, stdname, units)
 
@@ -3145,7 +3145,7 @@ contains
        call seq_flds_add(x2a_fluxes, "Fall_fco2_lnd")
        longname = 'Surface flux of CO2 from land'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
-       units    = 'moles m-2 s-1'
+       units    = 'kgCO2 m-2 s-1'
        attname  = 'Fall_fco2_lnd'
        call metadata_set(attname, longname, stdname, units)
 
@@ -3154,7 +3154,7 @@ contains
        call seq_flds_add(x2a_fluxes, "Fall_fco2_fire")
        longname = 'Surface flux of CO2 from land fire'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_from_fire'
-       units    = 'moles m-2 s-1'
+       units    = 'kgCO2 m-2 s-1'
        attname  = 'Fall_fco2_fire'
        call metadata_set(attname, longname, stdname, units)
               

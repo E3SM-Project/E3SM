@@ -1034,7 +1034,7 @@ end subroutine diag_conv_tend_ini
     end do
 
     if (co2_transport()) then
-       do m = 1,4
+       do m = 1,size(c_i)
           call outfld(trim(cnst_name(c_i(m)))//'_BOT', state%q(1,pver,c_i(m)), pcols, lchnk)
        end do
     end if

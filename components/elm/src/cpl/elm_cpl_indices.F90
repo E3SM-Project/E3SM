@@ -66,7 +66,7 @@ module elm_cpl_indices
 !LXu@01/20++++++
   integer, public ::index_l2x_Fall_flxfire    ! Fire fluxes
   integer, public ::index_l2x_Sl_ztopfire     ! Top of fire emissions (m)
-  integer, public ::index_l2x_Fall_fco2_fire  ! fire co2 flux from land
+  integer, public ::index_l2x_Fall_fco2_fire = 0 ! fire co2 flux from land
 !LXu@01/20------
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
@@ -236,6 +236,7 @@ contains
     index_l2x_Fall_flxdst4  = mct_avect_indexra(l2x,'Fall_flxdst4')
 
     index_l2x_Fall_fco2_lnd = mct_avect_indexra(l2x,'Fall_fco2_lnd',perrwith='quiet')
+    index_l2x_Fall_fco2_fire = mct_avect_indexra(l2x,'Fall_fco2_fire',perrwith='quiet')
 
     index_l2x_Fall_methane  = mct_avect_indexra(l2x,'Fall_methane',perrWith='quiet')
 

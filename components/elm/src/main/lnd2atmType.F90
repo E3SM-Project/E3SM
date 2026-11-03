@@ -240,6 +240,11 @@ contains
             ptr_lnd=this%nem_grc)
     end if
 
+    this%nee_grc(begg:endg) = 0._r8
+    call hist_addfld1d (fname='FCO2_NEE', units='kgCO2/m2/s', &
+         avgflag='A', long_name='Gridcell fire-free CO2 flux after methane adjustment (+ to atm)', &
+         ptr_lnd=this%nee_grc)
+
 !LXu@06/26
        this%fire_co2_grc(begg:endg) = 0.0_r8
        call hist_addfld1d (fname='FCO2_FRE', units='kgCO2/m2/s', &

@@ -386,7 +386,7 @@ module CNCarbonFluxType
      real(r8), pointer :: totfire_col                               (:)     ! (gC/m2/s) total ecosystem fire losses
      real(r8), pointer :: nep_col                                   (:)     ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
      real(r8), pointer :: nbp_col                                   (:)     ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
-     real(r8), pointer :: nee_col                                   (:)     ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
+     real(r8), pointer :: nee_col                                   (:)     ! (gC/m2/s) fire-free NEE, includes landuse, harvest, and hrv_xsmrpool flux, positive for source
 
      ! CN CLAMP summary (diagnostic) flux variables, not involved in mass balance
      real(r8), pointer :: cwdc_hr_col                               (:)     ! (gC/m2/s) col-level coarse woody debris C heterotrophic respiration
@@ -2175,17 +2175,6 @@ contains
             this%dwt_closs_col(c)  - &
             this%product_closs_col(c)
 
-!original
-       ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
-       ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
-!       this%nee_col(c) =                &
-!            -this%nep_col(c)           + &
-!            this%fire_closs_col(c)    + &
-!            this%dwt_closs_col(c)     + &
-!            this%product_closs_col(c) + &
-!            this%hrv_xsmrpool_to_atm_col(c)
-
-!LXu!@06/26
         ! net ecosystem exchange of carbon, excludes fire emissions by convention,
         ! but includes landcover change, wood product loss, and hrv_xsmrpool flux,
         ! positive for source (NEE)

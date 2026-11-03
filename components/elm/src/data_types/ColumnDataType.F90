@@ -623,7 +623,7 @@ module ColumnDataType
     real(r8), pointer :: totfire                               (:)     => null() ! (gC/m2/s) total ecosystem fire losses
     real(r8), pointer :: nep                                   (:)     => null() ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nbp                                   (:)     => null() ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
-    real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
+    real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) fire-free NEE, includes landuse, harvest, and hrv_xsmrpool flux, positive for source
     real(r8), pointer :: cinputs                               (:)     => null() ! column-level C inputs (gC/m2/s)
     real(r8), pointer :: coutputs                              (:)     => null() ! column-level C outputs (gC/m2/s)
     ! CLAMP summary (diagnostic) flux variables, not involved in mass balance
@@ -6166,7 +6166,7 @@ contains
  
           this%nee(begc:endc) = spval
           call hist_addfld1d (fname='NEE', units='gC/m^2/s', &
-               avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
+               avgflag='A', long_name='net ecosystem exchange of carbon, excludes fire, includes landuse,'&
                //' harvest, and hrv_xsmrpool flux, positive for source', &
                 ptr_col=this%nee)
 
@@ -6490,7 +6490,7 @@ contains
 
        this%nee(begc:endc) = spval
         call hist_addfld1d (fname='NEE', units='gC/m^2/s', &
-             avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
+             avgflag='A', long_name='net ecosystem exchange of carbon, excludes fire, includes landuse,'&
              //' harvest, and hrv_xsmrpool flux, positive for source', &
               ptr_col=this%nee)
 
@@ -6727,7 +6727,7 @@ contains
 
        this%nee(begc:endc) = spval
         call hist_addfld1d (fname='C13_NEE', units='gC13/m^2/s', &
-             avgflag='A', long_name='C13 net ecosystem exchange of carbon, includes fire flux, positive for source', &
+             avgflag='A', long_name='C13 net ecosystem exchange of carbon, excludes fire flux, positive for source', &
               ptr_col=this%nee)
 
        this%fire_closs(begc:endc) = spval
@@ -6928,7 +6928,7 @@ contains
 
        this%nee(begc:endc) = spval
         call hist_addfld1d (fname='C14_NEE', units='gC14/m^2/s', &
-             avgflag='A', long_name='C14 net ecosystem exchange of carbon, includes fire flux, positive for source', &
+             avgflag='A', long_name='C14 net ecosystem exchange of carbon, excludes fire flux, positive for source', &
               ptr_col=this%nee)
 
        this%fire_closs(begc:endc) = spval
@@ -7423,11 +7423,10 @@ contains
             this%dwt_closs(c)  - &
             this%product_closs(c)
 
-       ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
+       ! Fire is exported separately; NEE includes landcover change flux, loss
        ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
        this%nee(c) =                &
             -this%nep(c)           + &
-            this%fire_closs(c)    + &
             this%dwt_closs(c)     + &
             this%product_closs(c) + &
             this%hrv_xsmrpool_to_atm(c)

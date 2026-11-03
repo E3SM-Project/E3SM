@@ -307,9 +307,9 @@ subroutine co2_init
 
     ! Options to output both 3D and 2D aircraft emissions (2D is column-integrated 3D field)
     ! Default is only to output the 2D field. -BEH
-    call addfld('AF'//trim(cnst_name(c_i(4))), (/ 'lev' /), 'A', 'kg/m2/s', trim(cnst_longname(co2_glo_ind))//' column aircraft flux')
-    call addfld('TAF'//trim(cnst_name(c_i(4))), horiz_only, 'A', 'kg/m2/s', trim(cnst_longname(co2_glo_ind))//' column-integrated aircraft flux')
-    call add_default('TAF'//trim(cnst_name(c_i(4))), 1, ' ')
+    call addfld('AFCO2', (/ 'lev' /), 'A', 'kg/m2/s', 'CO2 aircraft flux per layer')
+    call addfld('TAFCO2', horiz_only, 'A', 'kg/m2/s', 'CO2 column-integrated aircraft flux')
+    call add_default('TAFCO2', 1, ' ')
 
  
     ! Read flux data

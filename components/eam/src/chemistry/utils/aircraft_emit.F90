@@ -782,8 +782,6 @@ contains
     use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
     use ppgrid,         only: pver, pcols
     use cam_history,    only: outfld
-    use constituents,   only: cnst_name
-    use co2_cycle,      only: c_i
 
 
     !args
@@ -827,13 +825,13 @@ contains
        end do
 
        lchnk = state(ic)%lchnk
-       call outfld('AF'//trim(cnst_name(c_i(4))), vrt_interp_field(:ncol,:,ic), ncol, lchnk)
+       call outfld('AFCO2', vrt_interp_field(:ncol,:,ic), ncol, lchnk)
        ! AF is given in kg/m2/s already, so no pdel*rga scaling necessary to column integrate
        ftem(:ncol, ic) = vrt_interp_field(:ncol, 1, ic)
        do k = 2, pver
           ftem(:ncol, ic) = ftem(:ncol, ic) + vrt_interp_field(:ncol, k, ic)
        end do
-       call outfld('TAF'//trim(cnst_name(c_i(4))), ftem(:ncol, ic), ncol, lchnk)
+       call outfld('TAFCO2', ftem(:ncol, ic), ncol, lchnk)
 
     enddo
 

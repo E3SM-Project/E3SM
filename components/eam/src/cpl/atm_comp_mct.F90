@@ -1809,6 +1809,9 @@ subroutine atm_import_moab(Eclock, cam_in, restart_init )
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a_am(ig,index_x2a_Fall_fco2_lnd)
           end if
+          if (index_x2a_Fall_fco2_fire /= 0) then
+             cam_in(c)%fco2_fire(i) = -x2a_am(ig,index_x2a_Fall_fco2_fire)
+          end if
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a_am(ig,index_x2a_Faoo_fco2_ocn)
           end if
