@@ -94,6 +94,9 @@ meshes:
       TimeStep: "0000_00:30:00"
       ModeSplitShare:
         BtrTimeStep: 0000_00:01:15
+    Tendencies:
+      ViscDel2: 1197.0
+      ViscDel4: 2.06e11
 
   u01-oi6to18:
     TimeIntegration:
