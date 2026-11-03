@@ -62,7 +62,6 @@ module SnowSnicarMod
   !$acc declare copyin(idx_rhos_max  )
   !$acc declare copyin(idx_rhos_min  )
 
-#ifdef MODAL_AER
   !mgf++
   integer,  parameter :: idx_bc_nclrds_min      = 1      ! minimum index for BC particle size in optics lookup table
   integer,  parameter :: idx_bc_nclrds_max      = 10     ! maximum index for BC particle size in optics lookup table
@@ -73,7 +72,6 @@ module SnowSnicarMod
   !$acc declare copyin(idx_bc_nclrds_max)
   !$acc declare copyin(idx_bcint_icerds_min)
   !$acc declare copyin(idx_bcint_icerds_max)
-#endif
 
 
 
@@ -151,7 +149,6 @@ module SnowSnicarMod
   !$acc declare create(flx_wgt_dir        )
   !$acc declare create(flx_wgt_dif        )
   
-#ifdef MODAL_AER
   !mgf++
   ! Size-dependent BC optical properties. Currently a fixed BC size is
   ! assumed, but this framework enables optical properties to be
@@ -174,25 +171,6 @@ module SnowSnicarMod
   !$acc declare create(asm_prm_bc2    )
   !$acc declare create(ext_cff_mss_bc2)
   !mgf--
-#else
-  ! hydrophiliic BC
-  real(r8) :: ss_alb_bc1     (numrad_snw);
-  real(r8) :: asm_prm_bc1    (numrad_snw);
-  real(r8) :: ext_cff_mss_bc1(numrad_snw);
-  !$acc declare create(ss_alb_bc1     )
-  !$acc declare create(asm_prm_bc1    )
-  !$acc declare create(ext_cff_mss_bc1)
-
-  ! hydrophobic BC
-  real(r8) :: ss_alb_bc2     (numrad_snw);
-  real(r8) :: asm_prm_bc2    (numrad_snw);
-  real(r8) :: ext_cff_mss_bc2(numrad_snw);
-  !$acc declare create(ss_alb_bc2     )
-  !$acc declare create(asm_prm_bc2    )
-  !$acc declare create(ext_cff_mss_bc2)
-
-
-#endif
 
 !  ! hydrophiliic BC
 !  real(r8) :: ss_alb_bc1(numrad_snw)
@@ -253,13 +231,11 @@ module SnowSnicarMod
   !$acc declare create(ext_cff_mss_dst4)
 
 
-#ifdef MODAL_AER
   !mgf++
   ! Absorption enhancement factors for within-ice BC
   real(r8) :: bcenh(numrad_snw,idx_bc_nclrds_max,idx_bcint_icerds_max);
   !$acc declare create(bcenh)
   !mgf--
-#endif
 
   ! best-fit parameters for snow aging defined over:
   !  11 temperatures from 225 to 273 K
@@ -342,12 +318,10 @@ contains
     real(r8):: asm_prm_aer_lcl(sno_nbr_aer)       ! asymmetry parameter of aerosol species (aer_nbr) [frc]
     real(r8):: ext_cff_mss_aer_lcl(sno_nbr_aer)   ! mass extinction coefficient of aerosol species (aer_nbr) [m2/kg]
 
-#ifdef MODAL_AER
     !mgf++
     real(r8) :: rds_bcint_lcl(-nlevsno+1:0)       ! effective radius of within-ice BC [nm]
     real(r8) :: rds_bcext_lcl(-nlevsno+1:0)       ! effective radius of external BC [nm]
     !mgf--
-#endif
 
 
     ! Other local variables
@@ -443,7 +417,6 @@ contains
     real(r8):: X(-2*nlevsno+1:0)                  ! tri-diag intermediate variable from Toon et al. (2*lyr)
     real(r8):: Y(-2*nlevsno+1:0)                  ! tri-diag intermediate variable from Toon et al. (2*lyr)
     !-----------------------------------------------------------------------
-#ifdef MODAL_AER
     !mgf++
     integer :: idx_bcint_icerds                  ! index of ice effective radius for optical properties lookup table
     integer :: idx_bcint_nclrds                  ! index of within-ice BC effective radius for optical properties lookup table
@@ -451,7 +424,6 @@ contains
     real(r8):: enh_fct                           ! extinction/absorption enhancement factor for within-ice BC
     real(r8):: tmp1                              ! temporary variable
     !mgf--
-#endif
 
     ! Enforce expected array sizes
 
@@ -541,7 +513,6 @@ contains
                lon_coord         = 0
             endif
 
-#ifdef MODAL_AER
           !mgf++
           !
           ! Assume fixed BC effective radii of 100nm. This is close to
@@ -552,7 +523,6 @@ contains
           rds_bcint_lcl(:)  =  100._r8
           rds_bcext_lcl(:)  =  100._r8
           !mgf--
-#endif
 
             ! Set local aerosol array
             do j=1,sno_nbr_aer
@@ -775,7 +745,6 @@ contains
 
                   ! Weighted Mie parameters of each layer
                   do i=snl_top,snl_btm,1
-#ifdef MODAL_AER
                    !mgf++ within-ice and external BC optical properties
                    !
                    ! Lookup table indices for BC optical properties,
@@ -822,19 +791,6 @@ contains
                    asm_prm_aer_lcl(2)       = asm_prm_bc2(bnd_idx,idx_bcext_nclrds)
                    ext_cff_mss_aer_lcl(2)   = ext_cff_mss_bc2(bnd_idx,idx_bcext_nclrds)
 
-#else
-                   ! bulk aerosol treatment (BC optical properties independent
-                   ! of BC and ice grain size)
-                   ! aerosol species 1 optical properties (within-ice BC)
-                   ss_alb_aer_lcl(1)        = ss_alb_bc1(bnd_idx)
-                   asm_prm_aer_lcl(1)       = asm_prm_bc1(bnd_idx)
-                   ext_cff_mss_aer_lcl(1)   = ext_cff_mss_bc1(bnd_idx)
-
-                   ! aerosol species 2 optical properties
-                   ss_alb_aer_lcl(2)        = ss_alb_bc2(bnd_idx)
-                   asm_prm_aer_lcl(2)       = asm_prm_bc2(bnd_idx)
-                   ext_cff_mss_aer_lcl(2)   = ext_cff_mss_bc2(bnd_idx)
-#endif
                    !mgf--
 
 
@@ -1388,7 +1344,6 @@ contains
             ! added checks suggested by mgf. --HW 10/15/2015
             dr_fresh = snw_rds(c_idx,i)-snw_rds_min
 
-#ifdef MODAL_AER
             if (      abs(dr_fresh) < 1.0e-8_r8 ) then
                dr_fresh = 0.0_r8
             else if ( dr_fresh < 0.0_r8 ) then
@@ -1397,9 +1352,6 @@ contains
             end if
 
             dr = (bst_drdt0*(bst_tau/(dr_fresh+bst_tau))**(1._r8/bst_kappa)) * (dtime/3600._r8)
-#else
-            dr = (bst_drdt0*(bst_tau/(dr_fresh+bst_tau))**(1/bst_kappa)) * (dtime/3600)
-#endif
             !
             !**********  2. WET SNOW AGING  ***********
             !
@@ -1578,7 +1530,6 @@ contains
       !$acc ext_cff_mss_snw_dfs &
       !$acc )
       !
-#ifdef MODAL_AER
      !mgf++
      ! size-dependent BC parameters and BC enhancement factors
      if (masterproc) write(iulog,*) 'Attempting to read optical properties for within-ice BC (modal aerosol treatment) ...'
@@ -1604,20 +1555,6 @@ contains
      if (.not. readvar) call endrun()
      !$acc update device(bcenh)
      !
-#else
-     ! bulk aerosol treatment
-      ! BC species 1 Mie parameters
-      call ncd_io( 'ss_alb_bcphil', ss_alb_bc1,           'read', ncid, posNOTonfile=.true.)
-      call ncd_io( 'asm_prm_bcphil', asm_prm_bc1,         'read', ncid, posNOTonfile=.true.)
-      call ncd_io( 'ext_cff_mss_bcphil', ext_cff_mss_bc1, 'read', ncid, posNOTonfile=.true.)
-      !
-      ! BC species 2 Mie parameters
-      call ncd_io( 'ss_alb_bcphob', ss_alb_bc2,           'read', ncid, posNOTonfile=.true.)
-      call ncd_io( 'asm_prm_bcphob', asm_prm_bc2,         'read', ncid, posNOTonfile=.true.)
-      call ncd_io( 'ext_cff_mss_bcphob', ext_cff_mss_bc2, 'read', ncid, posNOTonfile=.true.)
-      !
-     !mgf--
-#endif
     !$acc update device( &
     !$acc ss_alb_bc1     , &
     !$acc asm_prm_bc1    , &
@@ -1695,7 +1632,6 @@ contains
             write (iulog,*) 'SNICAR: Excluding OC aerosols from snow radiative transfer calculations'
          endif
          !
-#ifdef MODAL_AER
         !mgf++
         ! unique dimensionality for modal aerosol optical properties
         write (iulog,*) 'SNICAR: Subset of Mie single scatter albedos for BC: ', &
@@ -1709,12 +1645,6 @@ contains
              bcenh(1,1,1), bcenh(1,2,1), bcenh(1,1,2), bcenh(2,1,1), bcenh(5,10,1), bcenh(5,1,8), bcenh(5,10,8)
         ! test comparison: ncks -H -C -F -d wvl,5 -d ncl_rds,1 -d ice_rds,8 -v ss_alb_bc_mam,asm_prm_bc_mam,ext_cff_mss_bc_mam,bcint_enh_mam snicar_optics_5bnd_mam_c160322.nc
         !mgf--
-#else
-         write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophillic BC: ', &
-              ss_alb_bc1(1), ss_alb_bc1(2), ss_alb_bc1(3), ss_alb_bc1(4), ss_alb_bc1(5)
-         write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophobic BC: ', &
-              ss_alb_bc2(1), ss_alb_bc2(2), ss_alb_bc2(3), ss_alb_bc2(4), ss_alb_bc2(5)
-#endif
         !
          if (DO_SNO_OC) then
             write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophillic OC: ', &
@@ -1847,12 +1777,10 @@ contains
      real(r8):: asm_prm_aer_lcl(sno_nbr_aer)       ! asymmetry parameter of aerosol species (aer_nbr) [frc]
      real(r8):: ext_cff_mss_aer_lcl(sno_nbr_aer)   ! mass extinction coefficient of aerosol species (aer_nbr) [m2/kg]
 
-#ifdef MODAL_AER
      !mgf++
      real(r8) :: rds_bcint_lcl(-nlevsno+1:0)       ! effective radius of within-ice BC [nm]
      real(r8) :: rds_bcext_lcl(-nlevsno+1:0)       ! effective radius of external BC [nm]
      !mgf--
-#endif
 
 
      ! Other local variables
@@ -2079,7 +2007,6 @@ contains
      ! el(w,gg)         = sqrt(c3*(c1-w)*(c1 - w*gg))
 
      !-----------------------------------------------------------------------
-#ifdef MODAL_AER
          !mgf++
          integer :: idx_bcint_icerds                  ! index of ice effective radius for optical properties lookup table
          integer :: idx_bcint_nclrds                  ! index of within-ice BC effective radius for optical properties lookup table
@@ -2087,7 +2014,6 @@ contains
          real(r8):: enh_fct                           ! extinction/absorption enhancement factor for within-ice BC
          real(r8):: tmp1                              ! temporary variable
          !mgf--
-#endif
 
       ! Constants for non-spherical ice particles and dust-snow internal mixing
       real(r8) :: g_b2(7)
@@ -2279,7 +2205,6 @@ contains
                 h2osno_lcl = h2osno_lcl * cos(slope_rad)
              endif
 
-#ifdef MODAL_AER
            !mgf++
            !
            ! Assume fixed BC effective radii of 100nm. This is close to
@@ -2290,7 +2215,6 @@ contains
            rds_bcint_lcl(:)  =  100._r8
            rds_bcext_lcl(:)  =  100._r8
            !mgf--
-#endif
 
              ! Set local aerosol array
              do j=1,sno_nbr_aer
@@ -2566,7 +2490,6 @@ contains
 
                    ! Weighted Mie parameters of each layer
                    do i=snl_top,snl_btm,1
-#ifdef MODAL_AER
                     !mgf++ within-ice and external BC optical properties
                     !
                     ! Lookup table indices for BC optical properties,
@@ -2613,19 +2536,6 @@ contains
                     asm_prm_aer_lcl(2)       = asm_prm_bc2(bnd_idx,idx_bcext_nclrds)
                     ext_cff_mss_aer_lcl(2)   = ext_cff_mss_bc2(bnd_idx,idx_bcext_nclrds)
 
-#else
-                    ! bulk aerosol treatment (BC optical properties independent
-                    ! of BC and ice grain size)
-                    ! aerosol species 1 optical properties (within-ice BC)
-                    ss_alb_aer_lcl(1)        = ss_alb_bc1(bnd_idx)
-                    asm_prm_aer_lcl(1)       = asm_prm_bc1(bnd_idx)
-                    ext_cff_mss_aer_lcl(1)   = ext_cff_mss_bc1(bnd_idx)
-
-                    ! aerosol species 2 optical properties
-                    ss_alb_aer_lcl(2)        = ss_alb_bc2(bnd_idx)
-                    asm_prm_aer_lcl(2)       = asm_prm_bc2(bnd_idx)
-                    ext_cff_mss_aer_lcl(2)   = ext_cff_mss_bc2(bnd_idx)
-#endif
 
                     ! Calculate single-scattering albedo for internal mixing of dust-snow
                     if (use_dust_snow_internal_mixing) then

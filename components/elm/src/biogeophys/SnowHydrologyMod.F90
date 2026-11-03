@@ -469,7 +469,6 @@ contains
          if (h2osno(c) <= 0) frac_sno(c) = 0.
       end do
 
-#ifdef MODAL_AER
     !mgf++
     !
     ! Transfer BC and OC from the within-ice state to the external
@@ -528,7 +527,6 @@ contains
        end do
     end do
     !mgf--
-#endif
 
     end associate
 
@@ -1369,7 +1367,6 @@ contains
                  mdst2(c,2) = mdst2(c,2)+zmdst2  ! (combo)
                  mdst3(c,2) = mdst3(c,2)+zmdst3  ! (combo)
                  mdst4(c,2) = mdst4(c,2)+zmdst4  ! (combo)
-#ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,2) = (rds(c,2)*(swliq(c,2)+swice(c,2)) + rds(c,1)*(zwliq+zwice))/(swliq(c,2)+swice(c,2)+zwliq+zwice)
                 if ((rds(c,2) < 30.) .or. (rds(c,2) > 1500.)) then
@@ -1378,9 +1375,6 @@ contains
                    write (iulog,*) "layers ", msno
                 endif
               !mgf--
-#else
-              rds(c,2) = rds(c,1) ! (combo)
-#endif
 
                  call Combo (dzsno(c,2), swliq(c,2), swice(c,2), tsno(c,2), drr, &
                       zwliq, zwice, tsno(c,1))
@@ -1485,7 +1479,6 @@ contains
                  mdst2(c,3) = mdst2(c,3)+zmdst2  ! (combo)
                  mdst3(c,3) = mdst3(c,3)+zmdst3  ! (combo)
                  mdst4(c,3) = mdst4(c,3)+zmdst4  ! (combo)
-#ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,3) = (rds(c,3)*(swliq(c,3)+swice(c,3)) + rds(c,2)*(zwliq+zwice))/(swliq(c,3)+swice(c,3)+zwliq+zwice)
                 if ((rds(c,3) < 30.) .or. (rds(c,3) > 1500.)) then
@@ -1496,9 +1489,6 @@ contains
 #endif
                 endif
               !mgf--
-#else
-              rds(c,3) = rds(c,2) ! (combo)
-#endif
 
                  call Combo (dzsno(c,3), swliq(c,3), swice(c,3), tsno(c,3), drr, &
                       zwliq, zwice, tsno(c,2))
@@ -1603,7 +1593,6 @@ contains
                  mdst2(c,4) = mdst2(c,4)+zmdst2  ! (combo)
                  mdst3(c,4) = mdst3(c,4)+zmdst3  ! (combo)
                  mdst4(c,4) = mdst4(c,4)+zmdst4  ! (combo)
-#ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,4) = (rds(c,4)*(swliq(c,4)+swice(c,4)) + rds(c,3)*(zwliq+zwice))/(swliq(c,4)+swice(c,4)+zwliq+zwice)
                 if ((rds(c,4) < 30.) .or. (rds(c,4) > 1500.)) then
@@ -1612,9 +1601,6 @@ contains
                    write (iulog,*) "layers ", msno
                 endif
               !mgf--
-#else
-              rds(c,4) = rds(c,3) ! (combo)
-#endif
 
                  call Combo (dzsno(c,4), swliq(c,4), swice(c,4), tsno(c,4), drr, &
                       zwliq, zwice, tsno(c,3))
@@ -1719,7 +1705,6 @@ contains
                  mdst2(c,5) = mdst2(c,5)+zmdst2  ! (combo)
                  mdst3(c,5) = mdst3(c,5)+zmdst3  ! (combo)
                  mdst4(c,5) = mdst4(c,5)+zmdst4  ! (combo)
-#ifdef MODAL_AER
               !mgf++ bugfix
               rds(c,5) = (rds(c,5)*(swliq(c,5)+swice(c,5)) + rds(c,4)*(zwliq+zwice))/(swliq(c,5)+swice(c,5)+zwliq+zwice)
                 if ((rds(c,5) < 30.) .or. (rds(c,5) > 1500.)) then
@@ -1728,9 +1713,6 @@ contains
                    write (iulog,*) "layers ", msno
                 endif
               !mgf--
-#else
-              rds(c,5) = rds(c,4) ! (combo)
-#endif
 
                  call Combo (dzsno(c,5), swliq(c,5), swice(c,5), tsno(c,5), drr, &
                       zwliq, zwice, tsno(c,4))
