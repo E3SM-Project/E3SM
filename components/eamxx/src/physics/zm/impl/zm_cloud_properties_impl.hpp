@@ -264,8 +264,18 @@ void Functions<S,D>::zm_cloud_properties(
           // and an always-present turbulent part, similar to this paper:
           // De Rooy, W. C., & Siebesma, A. P. (2010). Analytic expressions for entrainment
           //   and detrainment in cumulus convection. Quart. J. Roy. Meteor. Soc., 136 , 1216-1227.
-          entr_up(k) += runtime_opt.frac_turb_mix * mflx_up(k);
-          detr_up(k) += runtime_opt.frac_turb_mix * mflx_up(k);
+          // Cap the added exchange so the total detrainment over the layer
+          // cannot exceed the mass flux entering from below (mflx_up(k+1)).
+          // Without this bound the explicit liquid-water detrainment term in
+          // the condensate budget (step 6j: dz*detr_up*ql) could remove more
+          // liquid than the layer receives and drive condensate and rain
+          // production negative. The same capped amount is added to both rates
+          // so the net mass flux (entr_up-detr_up) is still preserved exactly.
+          const Real frac_turb_add = Kokkos::max(Real(0), runtime_opt.frac_turb_mix * mflx_up(k));
+          const Real frac_turb_lim = Kokkos::max(Real(0), mflx_up(k+1)/dz(k) - detr_up(k));
+          const Real frac_turb = Kokkos::min(frac_turb_add, frac_turb_lim);
+          entr_up(k) += frac_turb;
+          detr_up(k) += frac_turb;
         }
       }
     }
