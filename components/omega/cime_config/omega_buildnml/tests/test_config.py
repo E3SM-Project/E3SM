@@ -197,3 +197,26 @@ def test_runtime_overrides_raises_non_mapping_member(runtime_args):
     defaults = {"Analysis": {"GlobalStats": "not_a_mapping"}}
     with pytest.raises(ValueError, match="expected a mapping"):
         build_runtime_overrides(**runtime_args, defaults=defaults)
+
+
+def test_runtime_overrides_prefixes_write_iostreams_filenames(runtime_args):
+    defaults = {
+        "IOStreams": {
+            "History": {"Mode": "write", "Filename": "history.$Y-$M"},
+            "HorzMeshIn": {"Mode": "read", "Filename": "mesh.nc"},
+        }
+    }
+    overrides = build_runtime_overrides(**runtime_args, defaults=defaults)
+    assert (
+        overrides["IOStreams"]["History"]["Filename"]
+        == "test_case.omega.history.$Y-$M"
+    )
+    assert "HorzMeshIn" not in overrides["IOStreams"]
+
+
+def test_runtime_overrides_raises_missing_filename_for_write_stream(
+    runtime_args,
+):
+    defaults = {"IOStreams": {"History": {"Mode": "write"}}}
+    with pytest.raises(ValueError, match="Missing 'Filename'"):
+        build_runtime_overrides(**runtime_args, defaults=defaults)
