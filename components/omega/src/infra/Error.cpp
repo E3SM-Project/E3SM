@@ -14,6 +14,9 @@
 #include "Logging.h"
 #include "mpi.h"
 #include <cpptrace/cpptrace.hpp>
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
 
@@ -41,8 +44,25 @@ void Error::reset() {
 // Aborts the simulation by calling the MPI abort command
 void Error::abort() {
    LOG_CRITICAL("Omega aborting");
+   spdlog::apply_all([](std::shared_ptr<spdlog::logger> L) { L->flush(); });
    int ErrCode = static_cast<int>(ErrorCode::Critical);
-   int Err     = MPI_Abort(MPI_COMM_WORLD, ErrCode);
+
+   // With a single task, Cray MPICH's MPI_Abort calls exit(), which runs the
+   // destructors of static objects (e.g. the VertCoord registry). Those free
+   // Kokkos Views after Kokkos is no longer usable, which crashes or spins
+   // forever and leaves the job step hung. Exit without running them instead.
+   int MPIInitialized = 0;
+   int MPIFinalized   = 0;
+   MPI_Initialized(&MPIInitialized);
+   MPI_Finalized(&MPIFinalized);
+   int NTasks = 1;
+   if (MPIInitialized && !MPIFinalized)
+      MPI_Comm_size(MPI_COMM_WORLD, &NTasks);
+   if (NTasks > 1)
+      MPI_Abort(MPI_COMM_WORLD, ErrCode);
+
+   std::fflush(nullptr);
+   std::_Exit(ErrCode);
 }
 
 //------------------------------------------------------------------------------

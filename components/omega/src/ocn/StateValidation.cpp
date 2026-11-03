@@ -4,8 +4,8 @@
 // out-of-bounds conditions. Abort behaviour is controlled at runtime via the
 // YAML options Omega::State::Validation::AbortOnNan (default true) and
 // Omega::State::Validation::AbortOnOOB (default false). When an abort flag is
-// set a critical error log with backtrace is emitted and MPI_Abort is called;
-// otherwise a CRITICAL log message is written and execution continues.
+// set a critical error log with backtrace is emitted and Error::abort is
+// called; otherwise a CRITICAL log message is written and execution continues.
 //
 //===----------------------------------------------------------------------===//
 
@@ -62,12 +62,12 @@ static ValidationAbortConfig getValidationAbortConfig() {
 }
 
 //------------------------------------------------------------------------------
-// Helper: abort on the local Omega communicator with a message and backtrace
+// Helper: abort with a message and backtrace. Error::abort is used rather
+// than MPI_Abort so that a single-task run exits instead of hanging.
 static void abortWithMessage(const std::string &Msg) {
    LOG_CRITICAL("{}", Msg);
    cpptrace::generate_trace().print();
-   MPI_Comm Comm = MachEnv::getDefault()->getComm();
-   MPI_Abort(Comm, static_cast<int>(ErrorCode::Critical));
+   Error::abort();
 }
 
 //------------------------------------------------------------------------------
@@ -269,7 +269,7 @@ std::pair<I4, I4> checkOceanState(const OceanState *State,
 //------------------------------------------------------------------------------
 /// Validate ocean state fields for NaN and out-of-bounds conditions.
 /// Only active cells (where CellMask > 0) are checked.
-/// Aborts via MPI_Abort on failure.
+/// Aborts via Error::abort on failure.
 void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
                         const VertCoord *VCoord, I4 TimeLevel) {
 
