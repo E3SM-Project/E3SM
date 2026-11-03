@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: mam_optics_rrtmgp_output
+stream_name: mam_optics_rrtmgp_output
 averaging_type: instant
 field_names:
    # MAM_OPTICS 

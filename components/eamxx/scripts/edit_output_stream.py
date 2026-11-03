@@ -19,7 +19,7 @@ def generate_empty_yaml(filename,overwrite):
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
     >>> len(data)
     4
-    >>> data["filename_prefix"]
+    >>> data["stream_name"]
     'UNSET'
     >>> data["averaging_type"]
     'INVALID'
@@ -44,7 +44,7 @@ def generate_empty_yaml(filename,overwrite):
         file.unlink()
 
     data = {}
-    data["filename_prefix"] = "UNSET"
+    data["stream_name"] = "UNSET"
     data["averaging_type"] = "INVALID"
     data["fields"] = {}
     data["output_control"] = {}
@@ -69,7 +69,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> # Set some basic options, and then check
     >>> edit_output_stream_impl(fname,avg_type='max',freq_units='ndays',freq=10)
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
-    >>> data['filename_prefix']
+    >>> data['stream_name']
     'foo'
     >>> data['averaging_type']
     'max'
@@ -124,7 +124,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
             elif s=="skip_t0_output":
                 data["skip_t0_output"] = "false"
             elif s=="preifx":
-                data["filename_prefix"] = "UNSET"
+                data["stream_name"] = "UNSET"
             elif s=="freq":
                 data["output_control"]["frequency"] = -1
             elif s=="freq_units":
@@ -154,7 +154,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                         del data["fields"][grid]
 
     if prefix is not None:
-        data["filename_prefix"] = prefix
+        data["stream_name"] = prefix
 
     if avg_type is not None:
         data["averaging_type"] = avg_type

@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_p3_tend_${POSTFIX}
+stream_name: shoc_p3_tend_${POSTFIX}
 averaging_type: instant
 field_names:
   - tke

@@ -798,7 +798,7 @@ void AtmosphereDriver::create_output_managers () {
 
     // Check if the stream_name for this file has already been set.
     if (not params.isParameter("stream_name")) {
-      // No stream_name or filename_prefix specified, use default
+      // No stream_name specified, use default
       params.set<std::string>("stream_name","output");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");

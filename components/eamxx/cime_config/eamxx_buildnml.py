@@ -1430,7 +1430,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                    f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
 
         # Check for duplicate output file signatures
-        prefix = content['filename_prefix']
+        prefix = content['stream_name']
         avg_type = content['averaging_type'].upper()
         freq = content['output_control']['frequency']
         units = content['output_control']['frequency_units']
@@ -1444,7 +1444,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                 f"    - averaging_type: {avg_type}\n"
                 f"    - frequency: {freq}\n"
                 f"    - frequency_units: {units}\n"
-                f"    - filename_prefix: {prefix}\n"
+                f"    - stream_name: {prefix}\n"
                 f"  This would cause both outputs to write to the same NetCDF file.\n"
                 f"  Please modify one of the YAML files to use a different prefix or output frequency.")
         file_signatures.append((fn, signature))

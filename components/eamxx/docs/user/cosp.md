@@ -56,7 +56,7 @@ fields:
     - modis_ctptau
     - misr_cthtau
 max_snapshots_per_file: 1
-filename_prefix: eamxx
+stream_name: eamxx
 output_control:
   frequency: 1
   frequency_units: ndays

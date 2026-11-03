@@ -98,7 +98,7 @@ of the bins. For example, the histogram specified by
 ```yaml
 %YAML 1.1
 ---
-filename_prefix: monthly.outputs
+stream_name: monthly.outputs
 averaging_type: average
 max_snapshots_per_file: 1
 fields:
