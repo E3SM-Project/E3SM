@@ -79,9 +79,9 @@ module shr_flux_mod
 
    !--- cold air outbreak parameters  (Mahrt & Sun 1995,MWR) -------------
    logical :: use_coldair_outbreak_mod = .false.
-   logical :: use_ocn_atm_flux_reg = .true.
-   real(R8) :: ocn_atm_flux_eps = 0.01_R8
-   real(R8) :: ocn_atm_flux_damping = 1.0_R8
+   logical :: use_ocn_atm_flux_reg = .false.
+   real(R8) :: ocn_atm_flux_eps = 0.1_R8
+   real(R8) :: ocn_atm_flux_damping = 0.016_R8
    real(R8),parameter    :: alpha = 1.4_R8
    real(R8),parameter    :: maxscl =2._R8  ! maximum wind scaling for flux
    real(R8),parameter    :: td0 = -10._R8   ! start t-ts for scaling

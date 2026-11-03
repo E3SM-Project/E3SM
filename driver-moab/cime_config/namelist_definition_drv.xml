@@ -885,7 +885,7 @@
       if true, use regularization in ocean-atmosphere surface flux calculations
     </desc>
     <values>
-      <value>.true.</value>
+      <value>.false.</value>
     </values>
   </entry>
 
@@ -897,7 +897,7 @@
       epsilon used for regularization of ocean-atmosphere flux RHN
     </desc>
     <values>
-      <value>0.5</value>
+      <value>0.1</value>
     </values>
   </entry>
 
@@ -909,7 +909,7 @@
       damping factor for ocean-atmosphere flux fixed point iteration
     </desc>
     <values>
-      <value>0.08</value>
+      <value>0.016</value>
     </values>
   </entry>
 

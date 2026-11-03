@@ -566,8 +566,8 @@ CONTAINS
        ocn_surface_flux_scheme = 0
        coldair_outbreak_mod  = .false.
        use_ocn_atm_flux_reg  = .false.
-       ocn_atm_flux_eps      = 0.05_SHR_KIND_R8
-       ocn_atm_flux_damping  = 0.08_SHR_KIND_R8
+       ocn_atm_flux_eps      = 0.1_SHR_KIND_R8
+       ocn_atm_flux_damping  = 0.016_SHR_KIND_R8
        flux_convergence      = 0.0_SHR_KIND_R8
        flux_max_iteration    = 2
        glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
