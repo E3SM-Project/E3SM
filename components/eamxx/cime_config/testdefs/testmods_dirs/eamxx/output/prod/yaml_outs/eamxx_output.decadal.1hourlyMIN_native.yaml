@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: eamxx_output.decadal.1hourlyMIN_native.h
+stream_name: eamxx_output.decadal.1hourlyMIN_native.h
 iotype: pnetcdf
 max_snapshots_per_file: 1 # only one snapshot per file
 averaging_type: min

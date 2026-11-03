@@ -6,8 +6,8 @@
 # stream writes a snapshot at t0, before any step has run, where that time is
 # zero and the diagnostic aborts with "dt must be positive" -- so these have to
 # go in an averaged stream. 'tend' is built on 'over_dt' and inherits the
-# restriction.
-filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_diags_avg
+# restriction, as do the legacy underscore spellings of both.
+stream_name: homme_shoc_cld_p3_rrtmgp_pg2_diags_avg
 averaging_type: average
 fields:
   physics_pg2:

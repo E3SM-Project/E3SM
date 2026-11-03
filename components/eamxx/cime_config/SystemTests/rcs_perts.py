@@ -70,7 +70,7 @@ def update_yaml_file(yaml_file, seed, pert_out):
         new_lines = []
         # Process each line
         for line in lines:
-            if line.strip().startswith("filename_prefix:"):
+            if line.strip().startswith("stream_name:"):
                 # replace ".scream" with ".scream_{seed:04d}"
                 new_lines.append(line.replace(
                     ".scream", f".scream_{seed:04d}"))
@@ -79,7 +79,7 @@ def update_yaml_file(yaml_file, seed, pert_out):
                 new_lines.append(line)
 
         if not found_prefix:
-            raise ValueError(f"Couldn't find 'filename_prefix' in {yaml_file}")
+            raise ValueError(f"Couldn't find 'stream_name' in {yaml_file}")
 
         # Write the new lines back to file
         with open(yaml_file, "w", encoding="utf-8") as file:

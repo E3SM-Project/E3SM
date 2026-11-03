@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: shoc_mam4_aci_output
+stream_name: shoc_mam4_aci_output
 averaging_type: instant
 field_names:
   # SHOC

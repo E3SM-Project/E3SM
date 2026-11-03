@@ -241,7 +241,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     ```yaml
     %YAML 1.1
     ---
-    filename_prefix: mam4_inject_ash_standalone_output
+    stream_name: mam4_inject_ash_standalone_output
     averaging_type: instant
     fields:
       physics:

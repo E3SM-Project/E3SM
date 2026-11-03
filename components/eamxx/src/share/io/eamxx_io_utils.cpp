@@ -15,7 +15,7 @@
 namespace scream {
 
 std::string find_filename_in_rpointer (
-    const std::string& filename_prefix,
+    const std::string& stream_name,
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0,
@@ -27,7 +27,7 @@ std::string find_filename_in_rpointer (
   bool found = false;
   std::string content;
   std::string suffix = model_restart ? ".r." : ".rh.";
-  std::string pattern_str = filename_prefix + suffix;
+  std::string pattern_str = stream_name + suffix;
 
   // The AD will pass a default constructed control, since it doesn't know the values
   // of REST_N/REST_OPTION used in the previous run. Also, model restart is *always* INSTANT.
@@ -39,7 +39,7 @@ std::string find_filename_in_rpointer (
   } else {
     EKAT_REQUIRE_MSG (control.output_enabled(),
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
-        " - restart file prefix: " + filename_prefix + "\n");
+        " - restart file prefix: " + stream_name + "\n");
     // For history restart, need wildcard for stream_name
     pattern_str += R"([^.]+\.)";  // Match stream_name
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
@@ -80,14 +80,14 @@ std::string find_filename_in_rpointer (
     if (model_restart) {
       EKAT_ERROR_MSG (
           "Error! Restart requested, but no model restart file found in 'rpointer.atm'.\n"
-          "   restart file prefix: " + filename_prefix + "\n"
+          "   restart file prefix: " + stream_name + "\n"
           "   restart file pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   rpointer content:\n" + content + "\n\n");
     } else {
       EKAT_ERROR_MSG (
           "Error! Restart requested, but no history restart file found in 'rpointer.atm'.\n"
-          "   restart file prefix: " + filename_prefix + "\n"
+          "   restart file prefix: " + stream_name + "\n"
           "   restart file pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   avg_type         : " + e2str(avg_type) + "\n"
