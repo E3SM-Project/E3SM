@@ -64,7 +64,7 @@ void propagate_condensation_scheme (ekat::ParameterList& params)
       auto& p3_params = params.sublist("p3");
       p3_params.set<std::string>("condensation_scheme", scheme);
       if (scheme == "p3") {
-        p3_params.set<bool>("p3_WBFoff", true);
+        p3_params.set<bool>("p3_WBF_process", false);
       }
     }
   }

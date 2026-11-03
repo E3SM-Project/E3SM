@@ -134,7 +134,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
     bool use_p3_condensation                    = false;
-    bool p3_WBFoff                              = false;
+    bool p3_WBF_process                         = true;
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
     {
@@ -182,7 +182,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                        "Invalid condensation_scheme '" + condensation_scheme +
                        "'. Valid options are 'shoc' and 'p3'.\n");
       use_p3_condensation = condensation_scheme == "p3";
-      p3_WBFoff = params.get<bool>("p3_WBFoff",p3_WBFoff);
+      p3_WBF_process = params.get<bool>("p3_WBF_process", p3_WBF_process);
     }
   };
 

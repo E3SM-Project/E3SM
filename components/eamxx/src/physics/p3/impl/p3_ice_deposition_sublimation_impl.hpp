@@ -19,7 +19,7 @@ void Functions<S,D>
 {
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar T_zerodegc = C::T_zerodegc.value;
-  const bool p3_WBFoff = runtime_options.p3_WBFoff;
+  const bool p3_WBF_process = runtime_options.p3_WBF_process;
   const bool use_p3_condensation = runtime_options.use_p3_condensation;
   Pack qi_tend;   //temporary var for mass tend before splitting into sublim or depos
 
@@ -61,7 +61,7 @@ void Functions<S,D>
     //BERGERON: NOTE THAT AS FORMULATED, BERG DOESN'T HAVE ANYTHING TO DO WITH QV, SO CAN'T
     //PUSH IT BEYOND SATURATION. THUS, NOT LIMITING WITH INV_DT HERE.
     qc2qi_berg_tend.set(qi_incld_not_small && T_lt_frz, max(epsi/abi*(qv_sat_l - qv_sat_i), 0));
-    if(use_p3_condensation && p3_WBFoff) {
+    if(use_p3_condensation && !p3_WBF_process) {
       qc2qi_berg_tend=0;
     }
   } //end if at least 1 qi is greater than qmall
