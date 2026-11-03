@@ -7,11 +7,6 @@ module FanMod
   ! Agricultural Nitrogen version 2) process model, and includes the numerical routines
   ! for handling age-seggregated N pools. The model evaluates nitrogen losses due to
   ! volatilization and leaching from livestock manure and mineral fertilizers.
-  ! 
-  ! The public subroutines are designed to be callable from python code using f2py. In
-  ! this case the _PYMOD_ flag needs to be set. While the non-public subroutines are
-  ! exported to the python module, they might not work correctly due to the assumed-shape
-  ! arrays.
   !
   ! The main driver of FAN (fan_eval) is in FanUpdateMod, but most of the supporting 
   ! functions and subroutines called are found here. The calling tree is too long to
@@ -24,38 +19,18 @@ module FanMod
   ! partitioning of ammonia in the pools. See FanUpdatMod for a more detailed
   ! description of FAN.
 
-#ifdef _PYMOD_
-  ! This cpp flag is inteded for compiling FAN into a python module with f2py. 
-  use qsatmod
-#else
   use elm_varcon                      , only : tfrz, mwdair, denh2o, oneatm, rair
   use shr_kind_mod                    , only : r8 => shr_kind_r8
   use QSatMod                         , only : QSat
   use shr_infnan_mod                  , only : isnan => shr_infnan_isnan
-#endif
   implicit none
   
-#ifdef _PYMOD_
-  public
-  ! Define physical constants here to avoid dependency on CESM. Names and values
-  ! match those in elm_varcon (which gets them from shr_const_mod).
-  integer, parameter :: r8 = 8
-  real(r8), parameter :: boltz  = 1.38065e-23_r8   ! Boltzmann's constant ~ J/K/molecule
-  real(r8), parameter :: avogad = 6.02214e26_r8    ! molecules per kmole
-  real(r8), parameter :: rgas   = avogad*boltz     ! universal gas constant in J kmole-1 K-1
-  real(r8), parameter :: mwdair = 28.966_r8        ! molecular weight dry air ~ kg/kmole
-  real(r8), parameter :: rair   = rgas/mwdair      ! dry air gas constant ~ J/K/kg
-  real(r8), parameter :: denh2o = 1.000e3_r8       ! density of fresh water ~ kg/m^3
-  real(r8), parameter :: oneatm = 101325.0_r8      ! standard pressure ~ pascals
-  real(r8), parameter :: tfrz   = 273.15_r8        ! freezing T of fresh water ~ K
-#else
   private
   public update_org_n ! evaluate decomposition/mineralization N fluxes; update organic N pools and flux into soil
   public eval_fluxes_storage ! Evaluate nitrogen volatization fluxes in animal housings and storage
   public update_npool ! evaluate fluxes and update states of TAN in n-pool model
   public update_4pool ! evaluate fluxes and update states of the 4 slurry pools
   public update_urea ! similar as update_npool for urea except no NO3 and volatization occur
-#endif
   
   ! Indices in flux arrays, soil:
   integer, parameter, public :: iflx_air = 1, & ! flux to air
