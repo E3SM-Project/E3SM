@@ -832,10 +832,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
       ! iterate to converge on Z/L, ustar, tstar and qstar
       !------------------------------------------------------------
       iter = 0
-      do while( sqrt(((ustar_next - ustar_prev)/(ustar_prev + 1.e-3_R8))**2 + &
-                     ((tstar_next - tstar_prev)/(tstar_prev + 1.e-5_R8))**2 + &
-                     ((qstar_next - qstar_prev)/(qstar_prev + 1.e-8_R8))**2 + &
-                     ((u10n_next - u10n_prev)/(u10n_prev + 1.e-3_R8))**2) > flux_con_tol )
+      do while( sqrt(((ustar_next - ustar_prev)/(abs(ustar_prev) + 1.e-3_R8))**2 + &
+                     ((tstar_next - tstar_prev)/(abs(tstar_prev) + 1.e-5_R8))**2 + &
+                     ((qstar_next - qstar_prev)/(abs(qstar_prev) + 1.e-8_R8))**2 + &
+                     ((u10n_next - u10n_prev)/(abs(u10n_prev) + 1.e-3_R8))**2) > flux_con_tol )
          if (iter > flux_con_max_iter) then
             write(s_logunit,*) vmag,thbot(n),ts(n),zbot(n),qbot(n),ssq,ustar,ustar_prev,tstar,tstar_prev,qstar,qstar_prev,flux_con_tol,flux_con_max_iter
             call shr_sys_abort('MAX ITERS REACHED WITHOUT OCN-ATM ITERATION CONVERGING ' // errMsg(sourcefile, __LINE__))
