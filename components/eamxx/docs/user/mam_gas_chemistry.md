@@ -22,8 +22,9 @@ build cache retains its previous selection when the option is omitted.
 ## Solver failures
 
 The `legacy` solver continues after failure, preserving any accepted internal
-substeps. The `direct` solver aborts in debug builds; in release builds it
-reports failure, leaves the input state unchanged, and continues the run.
+substeps. The `direct` solver prints a warning naming the failure reason,
+leaves the input state unchanged, and continues the run, in both debug and
+release builds.
 
 The existing `mam4_imp_sol_*` output fields record solver status and integration
 progress when extra MAM4 microphysics diagnostics are enabled. Outcome codes
