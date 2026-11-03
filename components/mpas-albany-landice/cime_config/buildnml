@@ -49,6 +49,7 @@ def buildnml(case, caseroot, compname):
     ic_file           = case.get_value("MALI_IC_FILE")
     decomp_file_prefix = case.get_value("MALI_DECOMP_FILE_PREFIX")
     datamode_file     = case.get_value("MALI_DATAMODE_FILE")
+    datamode_reference_time = case.get_value("MALI_DATAMODE_REFERENCE_TIME")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -71,6 +72,7 @@ def buildnml(case, caseroot, compname):
     decomp_date = ''
     decomp_prefix = ''
     datamode_date = ''
+    datamode_start = ''
     region_mask_date = ''
     tf_params_date = ''
 
@@ -88,6 +90,7 @@ def buildnml(case, caseroot, compname):
         grid_date += '20250625'
         grid_prefix += 'ais_8to30km'
         datamode_date += '20250121'
+        datamode_start += '2000-01-01_00:00:00'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
         region_mask_date += '20231222'
@@ -163,10 +166,19 @@ def buildnml(case, caseroot, compname):
         tf_params_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_tf_params.{tf_params_date}.nc"
 
     #------------------------
-    # Set the datamode file if needed
+    # Set the datamode file and the time of its first record if needed
     #------------------------
-    if mali_prognostic_mode == 'DATA' and not datamode_file:
-        datamode_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.{datamode_date}.nc"
+    if mali_prognostic_mode == 'DATA':
+        if datamode_file:
+            # a file named by the case may start at any time
+            expect(datamode_reference_time,
+                   "ERROR: mali buildnml: MALI_DATAMODE_FILE is set, so "
+                   "MALI_DATAMODE_REFERENCE_TIME must be set to the time of "
+                   "its first record (YYYY-MM-DD_hh:mm:ss)")
+        else:
+            datamode_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.{datamode_date}.nc"
+            if not datamode_reference_time:
+                datamode_reference_time = datamode_start
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -393,7 +405,7 @@ def buildnml(case, caseroot, compname):
             lines.append('            type="input"')
             lines.append('            io_type="{}"'.format(io_type_str))
             lines.append(f'            filename_template="{datamode_file}"')
-            lines.append('            reference_time="2000-01-01_00:00:00"')
+            lines.append(f'            reference_time="{datamode_reference_time}"')
             lines.append('            input_interval="0000-01-00_00:00:00">')
             lines.append('')
             lines.append('    <var name="thickness"/>')

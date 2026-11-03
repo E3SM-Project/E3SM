@@ -90,6 +90,17 @@
       buildnml does not list.</desc>
   </entry>
 
+  <entry id="MALI_DATAMODE_REFERENCE_TIME">
+    <type>char</type>
+    <default_value></default_value>
+    <group>run_component_mali</group>
+    <file>env_run.xml</file>
+    <desc>Time of the first record in the data-mode file
+      (YYYY-MM-DD_hh:mm:ss), from which MALI's monthly reads of that file
+      are counted.  If empty, the time for GLC_GRID's file in MALI's
+      buildnml is used.  Required when MALI_DATAMODE_FILE is set.</desc>
+  </entry>
+
   <entry id="GLC_SMB">
     <type>logical</type>
     <valid_values>true,false</valid_values>
