@@ -1265,12 +1265,17 @@ HostArray2DReal copyToHost(const Array2DReal &Arr) {
 }
 
 /// Run the implicit velocity vertical mixing solve with the given options
-/// and return a host copy of the resulting normal velocity
+/// and return a host copy of the resulting normal velocity. A host copy of
+/// the initial normal velocity is returned in InitVel. The initial velocity
+/// is computed on the device and may differ in the last bit from the same
+/// expression evaluated on the host (e.g. from FMA contraction), so it must
+/// be copied, not recomputed, for exact comparisons.
 HostArray2DReal runImplicitVelVertMix(bool UseVisc, bool BottomDragEnabled,
-                                      bool RayleighEnabled,
-                                      Real RayleighCoeff) {
+                                      bool RayleighEnabled, Real RayleighCoeff,
+                                      HostArray2DReal &InitVel) {
    VertMix *VMix = VertMix::getInstance();
    auto *State   = initImplicitTestState(UseVisc);
+   InitVel       = copyToHost(State->getNormalVelocity(0));
 
    VMix->VelVertMixSetup.Enabled                   = true;
    VMix->VelVertMixSetup.ImplicitBottomDragEnabled = BottomDragEnabled;
@@ -1291,9 +1296,10 @@ HostArray2DReal runImplicitVelVertMix(bool UseVisc, bool BottomDragEnabled,
 
 /// Independently assemble the tridiagonal system for the implicit velocity
 /// solve on the host and solve it with the Thomas algorithm, starting from
-/// the initial normal velocity. Assumes that initImplicitTestState has been
-/// called with the same UseVisc.
-HostArray2DReal computeReferenceVel(bool BottomDragEnabled, R8 RayleighCoeff) {
+/// the initial normal velocity InitVel. Assumes that initImplicitTestState
+/// has been called with the same UseVisc.
+HostArray2DReal computeReferenceVel(const HostArray2DReal &InitVel,
+                                    bool BottomDragEnabled, R8 RayleighCoeff) {
    const auto Mesh   = HorzMesh::getDefault();
    const auto VCoord = VertCoord::getDefault();
    const I4 NLayers  = VCoord->NVertLayers;
@@ -1310,11 +1316,11 @@ HostArray2DReal computeReferenceVel(bool BottomDragEnabled, R8 RayleighCoeff) {
    const auto KMaxH        = createHostMirrorCopy(VCoord->MaxLayerEdgeTop);
 
    // The state's normal velocity has already been updated by the implicit
-   // solve, so the initial velocity is recomputed here instead
+   // solve, so the initial velocity InitVel is used instead
    HostArray2DReal RefVel("RefVel", Mesh->NEdgesSize, NLayers);
    for (I4 IEdge = 0; IEdge < Mesh->NEdgesOwned; ++IEdge) {
       for (I4 K = 0; K < NLayers; ++K) {
-         RefVel(IEdge, K) = initNormalVel(IEdge, K);
+         RefVel(IEdge, K) = InitVel(IEdge, K);
       }
    }
 
@@ -1360,7 +1366,7 @@ HostArray2DReal computeReferenceVel(bool BottomDragEnabled, R8 RayleighCoeff) {
          Lower[K]        = -GAbove;
          Upper[K]        = -GBelow;
          Diag[K]         = GAbove + GBelow + DiagOnly;
-         Rhs[K]          = HK * R8(initNormalVel(IEdge, K));
+         Rhs[K]          = HK * R8(InitVel(IEdge, K));
       }
 
       // Thomas algorithm: forward elimination and back substitution
@@ -1382,9 +1388,10 @@ HostArray2DReal computeReferenceVel(bool BottomDragEnabled, R8 RayleighCoeff) {
 
 /// Count mismatches between the implicit solve result and the expected
 /// velocity on owned edges. Active layers must match to within SolveRTol,
-/// and inactive layers must be unchanged from the initial velocity.
+/// and inactive layers must be unchanged from the initial velocity InitVel.
 int countImplicitMismatches(const HostArray2DReal &Vel,
-                            const HostArray2DReal &ExpectedVel) {
+                            const HostArray2DReal &ExpectedVel,
+                            const HostArray2DReal &InitVel) {
    const auto Mesh   = HorzMesh::getDefault();
    const auto VCoord = VertCoord::getDefault();
    const auto KMinH  = createHostMirrorCopy(VCoord->MinLayerEdgeBot);
@@ -1394,7 +1401,7 @@ int countImplicitMismatches(const HostArray2DReal &Vel,
    for (I4 IEdge = 0; IEdge < Mesh->NEdgesOwned; ++IEdge) {
       for (I4 K = 0; K < VCoord->NVertLayers; ++K) {
          if (K < KMinH(IEdge) || K > KMaxH(IEdge)) {
-            if (Vel(IEdge, K) != initNormalVel(IEdge, K))
+            if (Vel(IEdge, K) != InitVel(IEdge, K))
                NumMismatches++;
          } else if (!std::isfinite(Vel(IEdge, K)) ||
                     !isApprox(Vel(IEdge, K), ExpectedVel(IEdge, K),
@@ -1418,13 +1425,15 @@ void testRayleighDampingDecay(const std::string &TestName, Real Coeff) {
    const R8 DT       = getImplicitTimeStep();
    const R8 Factor   = 1.0 / (1.0 + DT * Coeff);
 
-   HostArray2DReal Vel = runImplicitVelVertMix(false, false, true, Coeff);
+   HostArray2DReal InitVel;
+   HostArray2DReal Vel =
+       runImplicitVelVertMix(false, false, true, Coeff, InitVel);
 
    HostArray2DReal ExpectedVel("ExpectedVel", Vel.extent(0), Vel.extent(1));
    int NumSignErrors = 0;
    for (I4 IEdge = 0; IEdge < Mesh->NEdgesOwned; ++IEdge) {
       for (I4 K = 0; K < VCoord->NVertLayers; ++K) {
-         const Real U0         = initNormalVel(IEdge, K);
+         const Real U0         = InitVel(IEdge, K);
          ExpectedVel(IEdge, K) = Factor * U0;
          if (Vel(IEdge, K) * U0 <= 0.0_Real ||
              std::abs(Vel(IEdge, K)) > std::abs(U0))
@@ -1432,7 +1441,7 @@ void testRayleighDampingDecay(const std::string &TestName, Real Coeff) {
       }
    }
 
-   const int NumMismatches = countImplicitMismatches(Vel, ExpectedVel);
+   const int NumMismatches = countImplicitMismatches(Vel, ExpectedVel, InitVel);
 
    if (NumMismatches != 0 || NumSignErrors != 0) {
       ABORT_ERROR("TestVertMixRayleigh: {} FAIL with DT * Coeff = {}, "
@@ -1450,11 +1459,13 @@ void testRayleighDampingNeutral() {
    const auto Mesh   = HorzMesh::getDefault();
    const auto VCoord = VertCoord::getDefault();
 
+   HostArray2DReal InitVel;
    HostArray2DReal DisabledVel =
-       runImplicitVelVertMix(true, true, false, 1.0e-4_Real);
-   HostArray2DReal RefVel = computeReferenceVel(true, 0.0);
+       runImplicitVelVertMix(true, true, false, 1.0e-4_Real, InitVel);
+   HostArray2DReal RefVel = computeReferenceVel(InitVel, true, 0.0);
+   HostArray2DReal ZeroCoeffInitVel;
    HostArray2DReal ZeroCoeffVel =
-       runImplicitVelVertMix(true, true, true, 0.0_Real);
+       runImplicitVelVertMix(true, true, true, 0.0_Real, ZeroCoeffInitVel);
 
    int NumDiffs = 0;
    for (I4 IEdge = 0; IEdge < Mesh->NEdgesOwned; ++IEdge) {
@@ -1464,7 +1475,8 @@ void testRayleighDampingNeutral() {
       }
    }
 
-   const int NumMismatches = countImplicitMismatches(DisabledVel, RefVel);
+   const int NumMismatches =
+       countImplicitMismatches(DisabledVel, RefVel, InitVel);
 
    if (NumDiffs != 0 || NumMismatches != 0) {
       ABORT_ERROR("TestVertMixRayleigh: Neutral FAIL with {} differences "
@@ -1480,12 +1492,15 @@ void testRayleighDampingNeutral() {
 void testRayleighDampingCombined() {
    const Real Coeff = 1.0e-3_Real;
 
-   HostArray2DReal Vel    = runImplicitVelVertMix(true, true, true, Coeff);
-   HostArray2DReal RefVel = computeReferenceVel(true, Coeff);
+   HostArray2DReal InitVel;
+   HostArray2DReal Vel =
+       runImplicitVelVertMix(true, true, true, Coeff, InitVel);
+   HostArray2DReal RefVel = computeReferenceVel(InitVel, true, Coeff);
 
    // Also make sure the damping changed the result
+   HostArray2DReal UndampedInitVel;
    HostArray2DReal UndampedVel =
-       runImplicitVelVertMix(true, true, false, Coeff);
+       runImplicitVelVertMix(true, true, false, Coeff, UndampedInitVel);
 
    const auto Mesh   = HorzMesh::getDefault();
    const auto VCoord = VertCoord::getDefault();
@@ -1499,7 +1514,7 @@ void testRayleighDampingCombined() {
       }
    }
 
-   const int NumMismatches = countImplicitMismatches(Vel, RefVel);
+   const int NumMismatches = countImplicitMismatches(Vel, RefVel, InitVel);
 
    if (NumMismatches != 0 || NumUnchanged != 0) {
       ABORT_ERROR("TestVertMixRayleigh: Combined FAIL with {} mismatches "
