@@ -243,6 +243,10 @@ module seq_comm_mct
   integer, public :: mbintxlr ! iMOAB id for intersection mesh between land and river
   integer, public :: mbintxrl ! iMOAB id for intersection mesh between river and land
   integer, public :: mbintxri ! iMOAB id for intersection mesh between river and ice
+  integer, public :: mbglid   ! iMOAB id for glc (MALI land ice), on glc component pes
+  integer, public :: mbgxid   ! iMOAB id for glc migrated mesh to coupler pes
+  integer, public :: mbintxlg ! iMOAB id for read map between land and glc
+  integer, public :: mbintxgl ! iMOAB id for read map between glc and land
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
@@ -695,6 +699,11 @@ contains
     mbintxar = -1 ! iMOAB id for intx mesh between atm and river
     mbintxlr = -1 ! iMOAB id for intx mesh between land and river
     mbintxrl = -1 ! iMOAB id for intx mesh between river and land
+    mbintxri = -1 ! iMOAB id for intx mesh between river and ice
+    mbglid = -1   ! iMOAB id for glc (MALI land ice) on component pes
+    mbgxid = -1   ! iMOAB id for glc migrated to coupler pes
+    mbintxlg = -1 ! iMOAB id of moab instance of map read from lnd2glc map file
+    mbintxgl = -1 ! iMOAB id of moab instance of map read from glc2lnd map file
     num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
