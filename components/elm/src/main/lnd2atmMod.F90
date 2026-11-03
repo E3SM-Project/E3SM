@@ -11,7 +11,7 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use shr_fan_mod          , only : shr_fan_to_atm
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
-  use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval, namec, nameg
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit, use_fan
   use elm_varctl           , only : use_lnd_rof_two_way
   use tracer_varcon        , only : is_active_betr_bgc
@@ -30,7 +30,7 @@ module lnd2atmMod
   use SurfaceAlbedoType    , only : surfalb_type
   use GridcellType         , only : grc_pp
   use TopounitDataType     , only : top_es, top_af                 ! To calculate t_rad at topounit level needed in downscaling
-  use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
+  use GridcellDataType     , only : grc_ef, grc_ws, grc_wf, grc_cf
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es, col_nf
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
@@ -179,7 +179,8 @@ contains
 !LXu@02/20------
     !
     ! !LOCAL VARIABLES:
-    integer :: g, lvl             ! index
+    integer :: c, g, lvl             ! index
+    real(r8) :: nee_without_conversion(bounds%begc:bounds%endc)
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
@@ -330,10 +331,36 @@ contains
          p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
 
     if (use_cn .or. use_fates) then
-       call c2g(bounds, &
-            nee    (bounds%begc:bounds%endc)   , &
-            nee_grc(bounds%begg:bounds%endg)   , &
-            c2l_scale_type= unity, l2g_scale_type=unity)
+       if (use_cn .and. .not. use_fates) then
+          ! Patch conversion is already per gridcell area; column averaging
+          ! would weight it again. Preserve NEE's valid-column support.
+          nee_without_conversion = nee(bounds%begc:bounds%endc)
+          do c = bounds%begc,bounds%endc
+             if (nee(c) /= spval) then
+                if (col_cf%dwt_closs(c) == spval) then
+                   call endrun(msg='lnd2atm: missing column conversion flux', &
+                        decomp_index=c, elmlevel=namec)
+                end if
+                nee_without_conversion(c) = nee(c) - col_cf%dwt_closs(c)
+             end if
+          end do
+          call c2g(bounds, &
+               nee_without_conversion(bounds%begc:bounds%endc), &
+               nee_grc(bounds%begg:bounds%endg), &
+               c2l_scale_type=unity, l2g_scale_type=unity)
+          do g = bounds%begg,bounds%endg
+             if (nee_grc(g) == spval .or. grc_cf%dwt_conv_cflux(g) == spval) then
+                call endrun(msg='lnd2atm: missing gridcell NEE or conversion flux', &
+                     decomp_index=g, elmlevel=nameg)
+             end if
+             nee_grc(g) = nee_grc(g) + grc_cf%dwt_conv_cflux(g)
+          end do
+       else
+          call c2g(bounds, &
+               nee    (bounds%begc:bounds%endc), &
+               nee_grc(bounds%begg:bounds%endg), &
+               c2l_scale_type=unity, l2g_scale_type=unity)
+       end if
 !LXu@06/26
        call c2g(bounds, &
             fire_closs  (bounds%begc:bounds%endc)   , &
