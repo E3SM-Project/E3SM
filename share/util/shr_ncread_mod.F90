@@ -538,6 +538,9 @@ contains
     integer(SHR_KIND_IN)          :: ndim,nd1,nd2  ! dims and size of 2 dims for cdf field
     integer(SHR_KIND_IN)          ::      pd1,pd2  ! size of 2 dims for P2d
     integer(SHR_KIND_IN)          :: rCode         ! error code
+    integer(SHR_KIND_IN)          :: fid           ! file id (opened once for all reads)
+    integer(SHR_KIND_IN)          :: vid           ! var id
+    integer(SHR_KIND_IN),allocatable :: dids(:)    ! dim ids for var
 
     !----- formats -----
     character(*),parameter :: subName = "(shr_ncread_domain)"
@@ -555,6 +558,13 @@ contains
     !-------------------------------------------------------------------------------
 
     rCode = 0
+
+    !--- open the file once and reuse the same fid for all metadata/data reads.
+    !--- previously each helper (varExists/varDimNum/varDimSize/field4dG) opened
+    !--- and closed the file independently; that rapid serial open/inquire/close
+    !--- churn against the Cray parallel netCDF-fortran library segfaulted inside
+    !--- nf90_inquire_variable for mask-less streams (e.g. fire popdens/hdm).
+    call shr_ncread_open(fn,fid,rCode)
 
     nflds = 2 ! manditory fields
 
@@ -610,15 +620,18 @@ contains
           endif
        end if
 
-       if (.not.shr_ncread_varExists(fn,varName)) &
+       !--- verify the variable exists (using the already-open fid) ---
+       rCode = nf90_inq_varid(fid,trim(varName),vid)
+       if (rCode /= nf90_noerr) &
             call shr_ncread_abort(subName//' ERROR var does not exist '//trim(varName))
 
        !--- get size of input array ---
        pd1 = size(P2d,1)
        pd2 = size(P2d,2)
 
-       !--- get var dims and check ---
-       call shr_ncread_varDimNum(fn,varName,ndim)
+       !--- get var dims and check (using the already-open fid) ---
+       rCode = nf90_inquire_variable(fid,vid,ndims=ndim)
+       call shr_ncread_handleErr(rCode,subName//' ERROR inquire variable ndims: '//trim(varName))
        if (n > 2 .and. ndim /= 2) then
           write(s_logunit,F02) 'ERROR '//trim(varName)//' ndim = ',ndim
           call shr_ncread_abort(subName//' ERROR ndim must be 2 for '//trim(varName))
@@ -628,8 +641,19 @@ contains
        endif
        nd1 = 1
        nd2 = 1
-       if (ndim > 0)  call shr_ncread_varDimSize(fn,varName,1,nd1)
-       if (ndim > 1)  call shr_ncread_varDimSize(fn,varName,2,nd2)
+       allocate(dids(ndim))
+       rCode = nf90_inquire_variable(fid,vid,dimids=dids)
+       call shr_ncread_handleErr(rCode,subName//' ERROR inquire variable dimids: '//trim(varName))
+       if (ndim > 0) then
+          rCode = nf90_inquire_dimension(fid,dids(1),len=nd1)
+          call shr_ncread_handleErr(rCode,subName//' ERROR inquire dimension 1: '//trim(varName))
+       endif
+       if (ndim > 1) then
+          rCode = nf90_inquire_dimension(fid,dids(2),len=nd2)
+          call shr_ncread_handleErr(rCode,subName//' ERROR inquire dimension 2: '//trim(varName))
+       endif
+       deallocate(dids)
+
 
        !--- error check dimensions, special case for 1d lat  ---
        if (n == 2 .and. ndim == 1) then
@@ -649,7 +673,7 @@ contains
        !--- allocate A4d and read ---
        allocate(A4d(nd1,nd2,1,1))
        A4d = 0.0_SHR_KIND_R8
-       call shr_ncread_field4dG(fn,varName,rfld=A4d)
+       call shr_ncread_field4dG(fn,varName,rfld=A4d,fidi=fid)
 
        !--- copy into P2d as appropriate ---
        do j = 1,pd2
@@ -683,6 +707,9 @@ contains
        !     nullify(P2d)
 
     enddo
+
+    !--- close the file opened once at the top ---
+    call shr_ncread_close(fid,rCode)
 
     if (debug > 1 .and. s_loglev > 0) then
        write(s_logunit,F04) 'min/max lon  ',minval(lon),maxval(lon)

@@ -82,7 +82,6 @@ subroutine cloud_rad_props_init()
    character(len=256) :: locfn
 
    integer :: ncid, dimid, f_nlwbands, f_nswbands, ierr
-   integer :: vdimids(NF90_MAX_VAR_DIMS), ndims, templen
    ! liquid clouds
    integer :: mudimid, lambdadimid
    integer :: mu_id, lambda_id, ext_sw_liq_id, ssa_sw_liq_id, asm_sw_liq_id, abs_lw_liq_id
@@ -234,14 +233,6 @@ subroutine cloud_rad_props_init()
 
    call handle_ncerr( nf90_inq_varid(ncid, 'sw_ext', ext_sw_ice_id),&
       'cloud optics ext_sw_ice get')
-   call handle_ncerr(nf90_inquire_variable ( ncid, ext_sw_ice_id, ndims=ndims, dimids=vdimids),&
-       'checking dimensions of ext_sw_ice')
-   call handle_ncerr(nf90_inquire_dimension( ncid, vdimids(1), len=templen),&
-       'getting first dimension sw_ext')
-   !write(iulog,*) 'expected length',n_g_d,'actual len',templen
-   call handle_ncerr(nf90_inquire_dimension( ncid, vdimids(2), len=templen),&
-       'getting first dimension sw_ext')
-   !write(iulog,*) 'expected length',nswbands,'actual len',templen
    call handle_ncerr( nf90_get_var(ncid, ext_sw_ice_id, ext_sw_ice),&
       'read cloud optics ext_sw_ice values')
 

@@ -367,7 +367,8 @@ contains
                      fileName, compid, mpicom, &
                      decomp=decomp, lonName=lonName, latName=latName, hgtName=hgtName, &
                      maskName=maskName, areaName=areaName, &
-                     fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac)
+                     fracname=dmodel_domain_fracname_from_stream, readfrac=readfrac, &
+                     pio_subsystem=SDAT%pio_subsystem, pio_iotype=SDAT%io_type)
              endif
           endif
 
@@ -391,7 +392,8 @@ contains
           else
              call shr_dmodel_readgrid(SDAT%grid, SDAT%gsmap, SDAT%nxg, SDAT%nyg, SDAT%nzg, &
                   SDAT%domainfile, compid, mpicom, &
-                  decomp=decomp, readfrac=.true.)
+                  decomp=decomp, readfrac=.true., &
+                  pio_subsystem=SDAT%pio_subsystem, pio_iotype=SDAT%io_type)
           endif
 
        endif
@@ -496,7 +498,8 @@ contains
 
        call shr_dmodel_readgrid(&
             SDAT%gridR(n),SDAT%gsmapR(n),SDAT%strnxg(n),SDAT%strnyg(n),SDAT%strnzg(n), &
-            fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName)
+            fileName, compid, mpicom, '2d1d', lonName, latName, hgtName, maskName, areaName, &
+            pio_subsystem=SDAT%pio_subsystem, pio_iotype=SDAT%io_type)
 
        SDAT%lsizeR(n) = mct_gsmap_lsize(SDAT%gsmapR(n),mpicom)
 

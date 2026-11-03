@@ -192,13 +192,12 @@ CONTAINS
 
   subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid, mpicom, &
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
-       scmmode, scm_multcols, scmlon, scmlat, scm_nx, scm_ny)
+       scmmode, scm_multcols, scmlon, scmlat, scm_nx, scm_ny, pio_subsystem, pio_iotype)
 
     use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
-    use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes
-    use shr_ncread_mod, only : shr_ncread_varexists, shr_ncread_vardimnum,  shr_ncread_field4dG
-
+    use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_dimSize, shr_ncread_tField, shr_ncread_vardimnum, &
+         shr_ncread_vardimsizes, shr_ncread_varexists, shr_ncread_field4dG
     !----- arguments -----
     type(mct_gGrid)  ,          intent(inout) :: gGrid
     type(mct_gsMap)  ,          intent(inout) :: gsMap
@@ -222,6 +221,8 @@ CONTAINS
     real(R8)         ,optional, intent(in)    :: scmlat   ! single column lat
     integer(IN)      ,optional, intent(in)    :: scm_nx   ! points in x direction for SCM functionality
     integer(IN)      ,optional, intent(in)    :: scm_ny   ! points in y direction for SCM functionality
+    type(iosystem_desc_t),optional,intent(inout),target :: pio_subsystem ! pio subsystem (enables PIO read path)
+    integer(IN)      ,optional, intent(in)    :: pio_iotype ! pio io type (enables PIO read path)
 
     !----- local -----
     integer(IN)   :: n,k,j,i     ! indices
@@ -244,6 +245,7 @@ CONTAINS
     logical       :: lreadfrac   ! read fraction
     logical       :: maskexists  ! is mask on dataset
     integer(IN)   :: nxg,nyg,nzg ! size of input fields
+    integer(IN)   :: gridDims(3)
     integer(IN)   :: ndims       ! number of dims
     integer(IN)   :: nlon,nlat,narea,nmask,nfrac,nhgt
     logical       :: lscmmode    ! local scm mode
@@ -265,6 +267,14 @@ CONTAINS
     integer(IN), pointer :: idata(:)   ! temporary
     type(mct_ggrid)      :: gGridRoot       ! global mct ggrid
 
+    !----- PIO read path locals -----
+    logical            :: use_pio          ! use PIO read path (pio_subsystem+pio_iotype present)
+    type(file_desc_t)  :: pioid            ! pio file handle
+    type(var_desc_t)   :: pvarid           ! pio var handle
+    real(R8),allocatable :: rd1d(:)        ! 1d read buffer
+    real(R8),allocatable :: rd2d(:,:)      ! 2d read buffer
+
+
     character(*), parameter :: subname = '(shr_dmodel_readgrid) '
     character(*), parameter :: F00   = "('(shr_dmodel_readgrid) ',8a)"
     character(*), parameter :: F01   = "('(shr_dmodel_readgrid) ',a,5i8)"
@@ -283,6 +293,12 @@ CONTAINS
 
     call MPI_COMM_RANK(mpicom,my_task,ierr)
     master_task = 0
+
+    !--- Use the collective PIO read path when the caller supplies a pio
+    !--- subsystem + iotype.  This avoids the serial nf90_* calls in
+    !--- shr_ncread_domain that segfault inside the Cray parallel
+    !--- netcdf-fortran library for mask-less streams (e.g. fire hdm/lnfm).
+    use_pio = present(pio_subsystem) .and. present(pio_iotype)
 
     lscmmode = .false.
     lscm_multcols = .false.
@@ -328,6 +344,12 @@ CONTAINS
        end if
     endif
 
+    !--- broadcast the resolved local filename so the collective PIO open below
+    !--- (in the use_pio path) sees an identical filename on every task; without
+    !--- this, non-master tasks pass an uninitialized string and pio_openfile's
+    !--- internal MPI_Bcast aborts with a message-truncation/type mismatch.
+    if (use_pio) call shr_mpi_bcast(localFn, mpicom)
+
     lreadfrac = .false.
     ldecomp   = "2d1d"
     llonname  = "xc"  ! default values / standard data model domain file format
@@ -348,7 +370,42 @@ CONTAINS
     ! Initialize mct domain type
     ! lat/lon in degrees,  area in radians^2, mask is 1 (ocean), 0 (non-ocean)
 
-    if (my_task == master_task) then
+    nxg = 0
+    nyg = 0
+    nzg = -1
+    if (use_pio) then
+       !--- collective PIO metadata read on all tasks: open the file once and
+       !--- reuse pioid for the data reads below (closed after the reads).
+       rCode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(localFn), pio_nowrite)
+       call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+       ndims = 0
+       rCode = pio_inq_varid(pioid, trim(lmaskname), pvarid)
+       if (rCode == PIO_NOERR) then
+          maskexists = .true.
+          call readgrid_pio_varsize(pioid, lmaskname, nxg, nyg)
+       else
+          maskexists = .false.
+          rCode = pio_inq_varid(pioid, trim(llonName), pvarid)
+          rCode = pio_inq_varndims(pioid, pvarid, ndims)
+          if (ndims == 1) then
+             call readgrid_pio_varsize(pioid, llonName, nxg)
+             call readgrid_pio_varsize(pioid, llatName, nyg)
+          else
+             call readgrid_pio_varsize(pioid, llonName, nxg, nyg)
+          endif
+       endif
+       rCode = pio_inq_varid(pioid, trim(lhgtName), pvarid)
+       if (rCode == PIO_NOERR) then
+          call readgrid_pio_varsize(pioid, lhgtname, nzg)
+       else
+          nzg = -1
+       endif
+       call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+       if (my_task == master_task) then
+          write(logunit,*) trim(subname), ' grid dimensions before broadcast (pio): ', nxg, nyg, nzg, ndims
+          call shr_sys_flush(logunit)
+       endif
+    else if (my_task == master_task) then
        if (shr_ncread_varexists(localFn,lmaskname)) then
           maskexists = .true.
           call shr_ncread_varDimSizes(localFn,lmaskname,nxg,nyg)
@@ -356,8 +413,8 @@ CONTAINS
           maskexists = .false.
           call shr_ncread_varDimNum(localFn,llonName,ndims)
           if (ndims == 1) then
-             call shr_ncread_varDimSizes(localFn,llonName,nxg)
-             call shr_ncread_varDimSizes(localFn,llatName,nyg)
+             call shr_ncread_dimSize(localFn,llonName,nxg)
+             call shr_ncread_dimSize(localFn,llatName,nyg)
           else
              call shr_ncread_varDimSizes(localFn,llonName,nxg,nyg)
           endif
@@ -367,10 +424,16 @@ CONTAINS
        else
           nzg = -1
        endif
+       write(logunit,*) trim(subname), ' grid dimensions before broadcast: ', nxg, nyg, nzg, ndims
+       call shr_sys_flush(logunit)
     endif
-    call shr_mpi_bcast(nxg,mpicom)
-    call shr_mpi_bcast(nyg,mpicom)
-    call shr_mpi_bcast(nzg,mpicom)
+    gridDims = 0
+    if (my_task == master_task) gridDims = (/nxg,nyg,nzg/)
+    call shr_mpi_bcast(gridDims,mpicom)
+    nxg = gridDims(1)
+    nyg = gridDims(2)
+    nzg = gridDims(3)
+    if (nzg == 1) nzg = -1
     if (lscmmode .and. .not. lscm_multcols) then
        ! Standard SCM mode
        nxgo = 1
@@ -390,7 +453,10 @@ CONTAINS
          nzgo = nzg
          gsize = abs(nxg*nyg*nzg)
        endif
-       if (gsize < 1) return
+       if (gsize < 1) then
+          if (use_pio) call pio_closefile(pioid)
+          return
+       endif
     endif
 
     ! Create gsmap if input gsmap is not given
@@ -420,7 +486,57 @@ CONTAINS
 
     ! Load file data into domG then scatter to ggrid
 
-    if (my_task == master_task) then
+    if (use_pio) then
+       !--- collective PIO reads: full coordinate arrays are read (broadcast) to
+       !--- every task; only master uses them to build gGridRoot below.  Buffers
+       !--- are therefore allocated on all tasks in this branch.
+       allocate(lon(nxg,nyg))
+       allocate(lat(nxg,nyg))
+       allocate(area(nxg,nyg))
+       allocate(mask(nxg,nyg))
+       allocate(frac(nxg,nyg))
+       allocate(hgt(abs(nzg)))
+
+       call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+
+       !--- lon/lat: handle 1d or 2d coordinate variables ---
+       call readgrid_pio_getcoord(pioid, llonName, nxg, nyg, lon)
+       call readgrid_pio_getcoord(pioid, llatName, nxg, nyg, lat, is_lat=.true.)
+
+       if (.not.maskexists) then
+          mask = 1
+          frac = 1.0_R8
+          area = 1.0e36_R8
+       else
+          allocate(rd2d(nxg,nyg))
+          call readgrid_pio_getcoord(pioid, lmaskName, nxg, nyg, rd2d)
+          mask = nint(rd2d)
+          deallocate(rd2d)
+          call readgrid_pio_getcoord(pioid, lareaName, nxg, nyg, area)
+          if (lreadfrac) then
+             call readgrid_pio_getcoord(pioid, lfracName, nxg, nyg, frac)
+          else
+             where (mask == 0)
+                frac = 0.0_R8
+             elsewhere
+                frac = 1.0_R8
+             end where
+          endif
+       endif
+
+       if (nzg > 1) then
+          allocate(rd1d(nzg))
+          rCode = pio_inq_varid(pioid, trim(lhgtName), pvarid)
+          rCode = pio_get_var(pioid, pvarid, rd1d)
+          hgt(:) = rd1d(:)
+          deallocate(rd1d)
+       else
+          hgt = 1
+       endif
+
+       call pio_closefile(pioid)
+
+    else if (my_task == master_task) then
 
        allocate(lon(nxg,nyg))
        allocate(lat(nxg,nyg))
@@ -430,6 +546,12 @@ CONTAINS
        allocate(hgt(abs(nzg)))
 
        if (.not.maskexists) then
+          ! shr_ncread_domain natively handles both 1d and 2d lat/lon
+          ! coordinate variables (see its header note and 1d handling), so a
+          ! single call works whether ndims==1 or ndims==2.  The previous
+          ! ndims==1 branch used shr_ncread_tField (a time-sliced field reader
+          ! that injects a spurious time index for coordinate variables with no
+          ! time dimension), which segfaulted inside netcdf during grid init.
           call shr_ncread_domain(localFn,llonName,lon,llatName,lat)
           mask = 1
           frac = 1.0_R8
@@ -457,6 +579,10 @@ CONTAINS
        else
           hgt = 1
        endif
+
+    endif
+
+    if (my_task == master_task) then
 
        call mct_gGrid_init(gGridRoot,gGrid,gsize)
 
@@ -579,7 +705,7 @@ CONTAINS
        endif
     endif
 
-    if (my_task == master_task) then
+    if (use_pio .or. my_task == master_task) then
        deallocate(lon)
        deallocate(lat)
        deallocate(area)
@@ -590,6 +716,74 @@ CONTAINS
 
     call mct_gGrid_scatter(gGridRoot, gGrid, gsMap, master_task, mpicom)
     if (my_task == master_task) call mct_gGrid_clean(gGridRoot)
+
+  contains
+
+    !---------------------------------------------------------------------------
+    ! Collectively read the dim sizes of a variable via PIO.  Returns up to two
+    ! leading dim lengths (nd1[,nd2]) on all tasks.
+    !---------------------------------------------------------------------------
+    subroutine readgrid_pio_varsize(fid, vname, nd1, nd2)
+      type(file_desc_t), intent(inout) :: fid
+      character(len=*),  intent(in)    :: vname
+      integer(IN),       intent(out)   :: nd1
+      integer(IN),optional,intent(out) :: nd2
+      type(var_desc_t) :: lvid
+      integer(IN)      :: lndims, lrc
+      integer(IN),allocatable :: ldimid(:)
+      nd1 = 0
+      if (present(nd2)) nd2 = 0
+      lrc = pio_inq_varid(fid, trim(vname), lvid)
+      lrc = pio_inq_varndims(fid, lvid, lndims)
+      allocate(ldimid(max(lndims,1)))
+      lrc = pio_inq_vardimid(fid, lvid, ldimid(1:lndims))
+      if (lndims >= 1) lrc = pio_inq_dimlen(fid, ldimid(1), nd1)
+      if (present(nd2) .and. lndims >= 2) lrc = pio_inq_dimlen(fid, ldimid(2), nd2)
+      deallocate(ldimid)
+    end subroutine readgrid_pio_varsize
+
+    !---------------------------------------------------------------------------
+    ! Collectively read a 1d or 2d coordinate/domain variable via PIO into a
+    ! (nx,ny) array on all tasks.  Mirrors shr_ncread_domain's 1d/2d handling:
+    ! a 1d lon fills along i; a 1d lat (is_lat=.true.) fills along j.
+    !---------------------------------------------------------------------------
+    subroutine readgrid_pio_getcoord(fid, vname, nx, ny, outfld, is_lat)
+      type(file_desc_t), intent(inout) :: fid
+      character(len=*),  intent(in)    :: vname
+      integer(IN),       intent(in)    :: nx, ny
+      real(R8),          intent(out)   :: outfld(nx,ny)
+      logical, optional, intent(in)    :: is_lat
+      type(var_desc_t) :: lvid
+      integer(IN)      :: lndims, lrc, ii, jj
+      logical          :: llat
+      real(R8),allocatable :: tmp1d(:)
+      llat = .false.
+      if (present(is_lat)) llat = is_lat
+      lrc = pio_inq_varid(fid, trim(vname), lvid)
+      lrc = pio_inq_varndims(fid, lvid, lndims)
+      if (lndims == 1) then
+         if (llat) then
+            allocate(tmp1d(ny))
+            lrc = pio_get_var(fid, lvid, tmp1d)
+            do jj = 1,ny
+               do ii = 1,nx
+                  outfld(ii,jj) = tmp1d(jj)
+               enddo
+            enddo
+         else
+            allocate(tmp1d(nx))
+            lrc = pio_get_var(fid, lvid, tmp1d)
+            do jj = 1,ny
+               do ii = 1,nx
+                  outfld(ii,jj) = tmp1d(ii)
+               enddo
+            enddo
+         endif
+         deallocate(tmp1d)
+      else
+         lrc = pio_get_var(fid, lvid, outfld)
+      endif
+    end subroutine readgrid_pio_getcoord
 
   end subroutine shr_dmodel_readgrid
 
@@ -828,6 +1022,7 @@ CONTAINS
     integer :: vtype
     integer(in) :: ndims
     integer(in),pointer :: dimid(:)
+    logical :: leadingTime
     type(file_desc_t) :: pioid
     type(var_desc_t) :: varid
     integer(kind=pio_offset_kind) :: frame
@@ -963,11 +1158,34 @@ CONTAINS
        if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
        if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
        deallocate(dimid)
-       if (gsize /= nx*ny .and. gsize /= nx*ny*nz) then
+       leadingTime = ndims == 3 .and. gsize == ny*nz
+       if (.not.leadingTime .and. gsize /= nx*ny .and. gsize /= nx*ny*nz) then
           write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
           call shr_sys_abort(subname//"ERROR in data sizes")
        endif
 
+       if (leadingTime) then
+          if (my_task == master_task) then
+             allocate(data2d(nz,ny))
+             call mct_aVect_init(avG,av,gsize)
+             call shr_ncread_open(trim(fileName),fid,rCode)
+             do k = 1,mct_aVect_nRAttr(av)
+                call shr_stream_getFileFieldName(stream,k,sfldName)
+                call shr_ncread_tField(trim(fileName),nt,trim(sfldName),data2d, &
+                     dim1='lon',dim2='lat',tName='time',fidi=fid,rc=rCode)
+                avG%rAttr(k,:) = reshape(data2d, (/gsize/))
+             enddo
+             call shr_ncread_close(fid,rCode)
+             deallocate(data2d)
+          endif
+          call t_barrierf(trim(lstr)//'_scatter'//'_BARRIER',mpicom)
+          call t_startf(trim(lstr)//'_scatter')
+          call mct_aVect_scatter(avG,avtmp,gsMap,master_task,mpicom)
+          call mct_aVect_copy(avtmp,av)
+          if (my_task == master_task) call mct_aVect_clean(avG)
+          call mct_aVect_clean(avtmp)
+          call t_stopf(trim(lstr)//'_scatter')
+       else
        do k = 1,mct_aVect_nRAttr(av)
           if (my_task == master_task) then
              call shr_stream_getFileFieldName(stream,k,sfldName)
@@ -990,7 +1208,8 @@ CONTAINS
              av%rattr(k,:) = real(idata, kind=r8)
              deallocate(idata)
           endif
-       enddo
+      enddo
+      endif
 
        call t_stopf(trim(lstr)//'_readpio')
 

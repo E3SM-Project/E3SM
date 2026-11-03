@@ -31,6 +31,7 @@ module shr_stream_mod
   use shr_mpi_mod    ! shared mpi
   use shr_file_mod   ! file methods
   use shr_cal_mod    ! calendar methods
+   use shr_ncread_mod, only : shr_ncread_dimSize
 
 !  use shr_log_mod, only : s_loglev   => shr_log_Level
   use shr_log_mod, only : s_logunit  => shr_log_Unit
@@ -1441,8 +1442,7 @@ contains
     integer(SHR_KIND_IN)   :: din,dout
     integer(SHR_KIND_IN)   :: sin,sout,offin
     integer(SHR_KIND_IN)   :: lrc
-    integer(SHR_KIND_IN)   :: fid,vid,ndims,rcode
-    integer(SHR_KIND_IN),allocatable :: dids(:)
+   integer(SHR_KIND_IN)   :: fid,vid,rcode
     character(SHR_KIND_CS) :: units,calendar
     character(SHR_KIND_CS) :: bunits        ! time units (days,secs,...)
     integer(SHR_KIND_IN)   :: bdate         ! base date: calendar date
@@ -1464,14 +1464,8 @@ contains
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_open file '//trim(filename))
     rCode = nf90_inq_varid(fid,trim(strm%domTvarName),vid)
     if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inq_varid')
-    rCode = nf90_inquire_variable(fid,vid,ndims=ndims)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable1')
-    allocate(dids(ndims))
-    rCode = nf90_inquire_variable(fid,vid,dimids=dids)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_variable2')
-    rCode = nf90_inquire_dimension(fid,dids(1),len=nt)
-    if (rcode /= nf90_noerr) call shr_sys_abort(subname//' ERROR: nf90_inquire_dimension')
-    deallocate(dids)
+   call shr_ncread_dimSize(fileName,trim(strm%domTvarName),nt,rCode)
+   if (rcode /= 0) call shr_sys_abort(subname//' ERROR: shr_ncread_dimSize')
 
     allocate(strm%file(k)%date(nt),strm%file(k)%secs(nt))
     strm%file(k)%nt = nt
