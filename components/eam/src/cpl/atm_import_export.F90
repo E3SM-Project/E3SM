@@ -166,8 +166,8 @@ contains
        end do
     end do
 
-    ! Get total co2 flux from components,
-    ! Note - co2_transport determines if cam_in(c)%cflx(i,c_i(1:4)) is allocated
+   ! Get total co2 flux from components.
+   ! co2_transport determines if cam_in(c)%cflx for all CO2 tracers is allocated.
 
     if (co2_transport().and.overwrite_flds) then
 
@@ -227,20 +227,17 @@ contains
                 cam_in(c)%cflx(i,c_i(3)) = 0._r8
              end if
 
-!LXu@6/26   ! co2 flux from land fire
+             ! co2 flux from land fire
              if (index_x2a_Fall_fco2_fire /= 0) then
                 cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%fco2_fire(i)
              else
                 cam_in(c)%cflx(i,c_i(4)) = 0._r8
-             end if             
-!original             ! merged co2 flux
-!             cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
-!                                        cam_in(c)%cflx(i,c_i(2)) + &
-!                                        cam_in(c)%cflx(i,c_i(3))
+             end if
+
              ! merged co2 flux
-             cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
+             cam_in(c)%cflx(i,c_i(5)) = cam_in(c)%cflx(i,c_i(1)) + &
                                         cam_in(c)%cflx(i,c_i(2)) + &
-                                        cam_in(c)%cflx(i,c_i(3))+ &
+                                        cam_in(c)%cflx(i,c_i(3)) + &
                                         cam_in(c)%cflx(i,c_i(4))
           end do
        end do

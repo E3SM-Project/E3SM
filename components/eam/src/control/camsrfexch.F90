@@ -832,7 +832,7 @@ subroutine cam_export(state,cam_out,pbuf)
    cam_out%co2diag(:ncol) = chem_surfvals_get('CO2VMR') * 1.0e+6_r8 
    if (co2_transport()) then
       do i=1,ncol
-         cam_out%co2prog(i) = state%q(i,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
+         cam_out%co2prog(i) = state%q(i,pver,c_i(5)) * 1.0e+6_r8 *mwdry/mwco2
       end do
    end if
    !

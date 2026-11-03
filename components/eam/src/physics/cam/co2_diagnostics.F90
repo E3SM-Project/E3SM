@@ -91,6 +91,9 @@ contains
             ! carbon emissions and fluxes at current timestep
             state(lchnk)%c_flux_sfc(i) = 0._r8
             state(lchnk)%c_flux_air(i) = 0._r8
+            state(lchnk)%c_flux_sff(i) = 0._r8
+            state(lchnk)%c_flux_lnd(i) = 0._r8
+            state(lchnk)%c_flux_ocn(i) = 0._r8
             ! monthly accumulated carbon emissions and fluxes
             state(lchnk)%c_mflx_sfc(i) = 0._r8
             state(lchnk)%c_mflx_air(i) = 0._r8
@@ -257,13 +260,16 @@ contains
          sfc_flux(i)     = sfc_flux(i)     + cam_in%cflx(i,co2_glo_ind)
          sfc_flux_ocn(i) = sfc_flux_ocn(i) + cam_in%cflx(i,co2_ocn_glo_ind)
          sfc_flux_fff(i) = sfc_flux_fff(i) + cam_in%cflx(i,co2_fff_glo_ind)
-!         sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_lnd_glo_ind)
          sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_nee_glo_ind)
+         sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_fre_glo_ind)
       end do
 
       ! put in state
       do i = 1, ncol
          state%c_flux_sfc(i) = sfc_flux(i)
+         state%c_flux_sff(i) = sfc_flux_fff(i)
+         state%c_flux_lnd(i) = sfc_flux_lnd(i)
+         state%c_flux_ocn(i) = sfc_flux_ocn(i)
       end do
 
       ! zero out monthly fluxes at start of each month
@@ -380,7 +386,7 @@ contains
       integer :: ierr
       integer :: cdate, year, mon, day, sec
       integer, parameter :: c_num_var     = 4
-      integer, parameter :: f_ts_num_var  = 2
+      integer, parameter :: f_ts_num_var  = 5
       integer, parameter :: f_mon_num_var = 5
       integer, parameter :: f_run_num_var = 5
       character(len=*), parameter :: sub_name='print_global_carbon_diags: '
@@ -423,6 +429,9 @@ contains
             ! carbon emissions and fluxes at current time step
             flux_ts(i,lchnk,1) = state(lchnk)%c_flux_sfc(i)
             flux_ts(i,lchnk,2) = state(lchnk)%c_flux_air(i)
+            flux_ts(i,lchnk,3) = state(lchnk)%c_flux_sff(i)
+            flux_ts(i,lchnk,4) = state(lchnk)%c_flux_lnd(i)
+            flux_ts(i,lchnk,5) = state(lchnk)%c_flux_ocn(i)
             ! monthly accumulated carbon emissions and fluxes
             flux_mon(i,lchnk,1) = state(lchnk)%c_mflx_sfc(i)
             flux_mon(i,lchnk,2) = state(lchnk)%c_mflx_air(i)

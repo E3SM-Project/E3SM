@@ -2191,7 +2191,7 @@ subroutine diag_surf (cam_in, cam_out, ps, trefmxav, trefmnav )
     call outfld('SST',      cam_in%sst,       pcols, lchnk)
 
     if (co2_transport()) then
-       do m = 1,4
+       do m = 1,size(c_i)
           call outfld(sflxnam(c_i(m)), cam_in%cflx(:,c_i(m)), pcols, lchnk)
        end do
     end if
