@@ -220,7 +220,7 @@ Omega:
     RestartWrite:
       UsePointerFile: true
       PointerFilename: ocn.pointer
-      Filename: ocn.restart.$Y-$M-$D_$h.$m.$s
+      Filename: restart.$Y-$M-$D_$h.$m.$s
       Mode: write
       IfExists: replace
       Precision: double
@@ -231,7 +231,7 @@ Omega:
         - Restart
     History:
       UsePointerFile: false
-      Filename: ocn.hist.$Y-$M-$D_$h.$m.$s
+      Filename: history.$Y-$M
       Mode: write
       IfExists: replace
       Precision: double
@@ -247,7 +247,7 @@ Omega:
         - Frazil
     FrazilOutput:
       UsePointerFile: false
-      Filename: ocn.frazil.$Y-$M-$D_$h.$m.$s
+      Filename: frazil.$Y-$M-$D_$h.$m.$s
       Mode: write
       IfExists: append
       Precision: double
@@ -260,7 +260,7 @@ Omega:
         - Frazil
     Highfreq:
       UsePointerFile: false
-      Filename: ocn.hifreq.$Y-$M
+      Filename: highfreq.$Y-$M
       Mode: write
       IfExists: append
       Precision: single
