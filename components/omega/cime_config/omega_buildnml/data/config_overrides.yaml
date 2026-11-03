@@ -21,6 +21,9 @@ coupled:
     MonthlyAverages:
       Enable: true
 
+  # buildnml will also prepend '${CASE}.omega.' to the default filename of
+  # 'write' mode IOStreams, except RestartRead which get special handling to
+  # ensure it's formatted as the coupled driver expects
   IOStreams:
     Forcing:
       FreqUnits: Never
