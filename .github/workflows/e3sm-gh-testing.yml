@@ -57,6 +57,7 @@ env:
 
 jobs:
   tests:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ${{ matrix.image.arch == 'aarch64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
     timeout-minutes: 240
     strategy:
