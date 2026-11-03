@@ -76,7 +76,6 @@ contains
 
 
   pure logical function is_carbon(species)
-    !$acc routine seq
     ! Whether species is one of the carbon isotopes
     integer, intent(in) :: species
     is_carbon = species == CN_SPECIES_C12 .or. species == CN_SPECIES_C13 .or. species == CN_SPECIES_C14

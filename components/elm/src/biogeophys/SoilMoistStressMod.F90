@@ -61,7 +61,6 @@ contains
     !read in as namelist
     !
     ! !ARGUMENTS:
-    !$acc routine seq
     implicit none
     logical, intent(in) :: perchroot_global
     logical, intent(in) :: perchroot_alt_global
@@ -81,7 +80,6 @@ contains
     ! compute the effective soil porosity
     !
     ! !USES
-      !$acc routine seq
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use decompMod      , only : bounds_type
     use ColumnType     , only : col_pp
@@ -176,7 +174,6 @@ contains
     !
     !
     ! !USES
-      !$acc routine seq
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use decompMod      , only : bounds_type
     use ColumnType     , only : col_pp
@@ -220,7 +217,6 @@ contains
     ! normalize root fraction for total unfrozen depth
     !
     ! !USES
-      !$acc routine seq
     use shr_kind_mod    , only: r8 => shr_kind_r8
     use elm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use decompMod       , only : bounds_type
@@ -311,7 +307,6 @@ contains
     ! compute the root water stress using the default clm45 approach
     !
     ! USES
-      !$acc routine seq
     use shr_kind_mod         , only : r8 => shr_kind_r8
     use decompMod            , only : bounds_type
     use elm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
@@ -428,7 +423,6 @@ contains
     ! compute the root water stress using different approaches
     !
     ! USES
-      !$acc routine seq
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use elm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use decompMod       , only : bounds_type

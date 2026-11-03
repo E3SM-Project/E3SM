@@ -113,7 +113,6 @@ contains
     !  calculate nitrification and denitrification rates
     !
     ! !USES:
-      !$acc routine seq
     use SharedParamsMod , only : anoxia_wtsat,ParamsShareInst
     !
     ! !ARGUMENTS:

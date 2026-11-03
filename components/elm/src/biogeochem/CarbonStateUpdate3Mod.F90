@@ -36,7 +36,6 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by fire fluxes and also erosion flux
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

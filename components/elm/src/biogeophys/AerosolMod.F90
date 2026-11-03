@@ -38,7 +38,6 @@ contains
     ! (based on new snow level state, after SnowFilter is rebuilt.
     ! NEEDS TO BE AFTER SnowFiler is rebuilt in Hydrology2, otherwise there
     ! can be zero snow layers but an active column in filter)
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)     , intent(in )   :: bounds
     integer               , intent(in)    :: num_on         ! number of column filter-ON points
@@ -230,7 +229,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Compute aerosol fluxes through snowpack and aerosol deposition fluxes into top layere
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)  , intent(in)    :: bounds
     integer            , intent(in)    :: num_snowc       ! number of snow points in column filter

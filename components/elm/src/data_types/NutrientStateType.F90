@@ -431,7 +431,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine column_nutrient_state_setvalues(this, num_column, filter_column, value_column)
-    !$acc routine seq
     !
     ! !ARGUMENTS:
     type(column_nutrient_state), intent(inout) :: this

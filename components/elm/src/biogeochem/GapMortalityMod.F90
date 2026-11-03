@@ -85,7 +85,6 @@ contains
     ! Gap-phase mortality routine for coupled carbon-nitrogen code (CN)
     !
     ! !USES:
-    !$acc routine seq
     use elm_varcon       , only: secspday
     use pftvarcon        , only: iscft
     use elm_varctl       , only: spinup_state, spinup_mortality_factor
@@ -278,7 +277,6 @@ contains
   subroutine CNGapPftToColumn ( &
        num_soilc, filter_soilc, &
        cnstate_vars)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! called in the middle of CNGapMoratlity to gather all pft-level gap mortality fluxes
     ! to the column level and assign them to the three litter pools
@@ -562,7 +560,6 @@ contains
     ! !this surroutine is to calculate mortality rate based on soil order
 
     ! USES
-      !$acc routine seq
     use pftvarcon       , only: woody, needleleaf, climatezone
     use soilorder_varcon, only: r_mort_soilorder
 

@@ -46,7 +46,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
@@ -146,7 +145,6 @@ contains
     !
 
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(vegetation_carbon_state),intent(inout) :: veg_cs
@@ -178,7 +176,6 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-      !$acc routine seq
     use decompMod           , only : bounds_type
     ! !ARGUMENTS:
     type(bounds_type)            , intent(in)    :: bounds

@@ -45,7 +45,6 @@ contains
     ! no science equatiops. This increases readability and maintainability.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columps in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columps

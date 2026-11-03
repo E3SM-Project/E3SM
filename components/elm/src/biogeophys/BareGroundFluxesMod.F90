@@ -41,7 +41,6 @@ contains
     ! to ground temperature using ground temperatures from previous time step.
     !
     ! !USES:
-      !$acc routine seq
     use shr_const_mod        , only : SHR_CONST_RGAS
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varpar           , only : nlevgrnd

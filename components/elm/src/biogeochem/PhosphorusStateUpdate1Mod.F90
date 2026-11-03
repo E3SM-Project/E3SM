@@ -45,7 +45,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Update phosphorus states based on fluxes from dyn_cnbal_patch
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
     integer                    , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
@@ -103,7 +102,6 @@ contains
     ! variables (except for gap-phase mortality and fire fluxes)
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter

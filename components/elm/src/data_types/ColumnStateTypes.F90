@@ -3792,7 +3792,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Set phosphorus state variables, column-level
-    !$acc routine seq
     ! !ARGUMENTS:
     class (column_phosphorus_state) :: this
     integer , intent(in)            :: num_column

@@ -47,7 +47,6 @@ contains
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
     !
     ! !USES:
-      !$acc routine seq
     use shr_flux_mod        , only : shr_flux_update_stress
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair

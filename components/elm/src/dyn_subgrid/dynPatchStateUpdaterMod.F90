@@ -181,7 +181,6 @@ contains
     ! Set subgrid weights after dyn subgrid updates
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     class(patch_state_updater_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
@@ -226,7 +225,6 @@ contains
     ! inactive.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: this
     integer , value  , intent(in) :: p, c
@@ -260,11 +258,13 @@ contains
     character(len=*), parameter :: subname = 'update_patch_state'
     !-----------------------------------------------------------------------
 
+#ifndef _OPENACC
     if (present(seed_addition)) then
        if (.not. present(seed)) then
           call endrun(subname//' ERROR: seed_addition can only be provided if seed is provided')
        end if
     end if
+#endif
 
     if (this%dwt(p) > 0._r8) then
       var = var * this%growing_old_fraction(p)
@@ -301,7 +301,6 @@ contains
     ! based on pft type.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: this
     integer   , value, intent(in) :: p,c

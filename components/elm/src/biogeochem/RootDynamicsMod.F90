@@ -48,7 +48,6 @@ contains
 
 
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds             ! bounds
     integer                  , intent(in)    :: num_soilc
     integer                  , intent(in)    :: filter_soilc(:)

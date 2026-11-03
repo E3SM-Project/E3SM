@@ -36,7 +36,6 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -113,7 +112,6 @@ contains
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

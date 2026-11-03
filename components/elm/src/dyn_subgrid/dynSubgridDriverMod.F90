@@ -366,7 +366,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Reconcile various variables after subgrid weights change
-    !$acc routine seq
     ! !USES:
     use decompMod         , only : bounds_type
     use subgridWeightsMod , only : compute_higher_order_weights

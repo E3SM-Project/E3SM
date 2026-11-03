@@ -39,7 +39,6 @@ contains
        displa, z0m, z0h, z0q, &
        obu, iter, ur, um, ugust, ustar, &
        temp1, temp2, temp12m, temp22m, fm,frictionvel_vars,landunit_index)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Calculation of the friction velocity, relation for potential
     ! temperature and humidity profiles of surface boundary layer.
@@ -397,7 +396,6 @@ contains
 
   !------------------------------------------------------------------------------
   real(r8) function StabilityFunc1(zeta)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Stability function for rib < 0.
     !
@@ -421,7 +419,6 @@ contains
 
   !------------------------------------------------------------------------------
   real(r8) function StabilityFunc2(zeta)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Stability function for rib < 0.
     !
@@ -443,7 +440,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine MoninObukIni (ur, thv, dthv, zldis, z0m, um, obu)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Initialization of the Obukhov length scale.
     ! The scheme is based on the work of Zeng et al. (1998):

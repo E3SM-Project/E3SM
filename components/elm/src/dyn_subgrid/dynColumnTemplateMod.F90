@@ -73,7 +73,6 @@ contains
     ! first time in this time step.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     integer :: c_template  ! function return value
 
@@ -139,7 +138,6 @@ contains
     ! should not be used.
     !
     ! See also the notes about cactive under 'template_col_from_landunit'.
-    !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istsoil
     !
