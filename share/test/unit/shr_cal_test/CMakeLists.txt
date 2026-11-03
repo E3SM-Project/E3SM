@@ -6,6 +6,7 @@ set(pf_sources
 set(sources_needed
   shr_cal_mod.F90
   shr_kind_mod.F90
+  pcd_const.F90
   shr_const_mod.F90
   shr_sys_mod.nompi_abortthrows.F90
   shr_abort_mod.abortthrows.F90
