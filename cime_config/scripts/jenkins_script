@@ -13,5 +13,12 @@ export JENKINS_START_TIME=$(date "+%s")
 
 umask 002
 
-set -o pipefail
-$SCRIPT_DIR/../../cime/CIME/Tools/jenkins_generic_job --submit-to-cdash --update-success "$@" 2>&1 | tee JENKINS_${DATE_STAMP}
+# Run the jenkins job in a robust way (network drops won't stop it)
+nohup $SCRIPT_DIR/../../cime/CIME/Tools/jenkins_generic_job --submit-to-cdash --update-success "$@" < /dev/null >& JENKINS_${DATE_STAMP} &
+JOB_PID=$!
+
+# Stream the log file in real-time, exiting automatically when the job ends
+tail -f --pid=$JOB_PID JENKINS_${DATE_STAMP}
+
+# Wait for the job to reap its exit status and respect 'pipefail'
+wait $JOB_PID
