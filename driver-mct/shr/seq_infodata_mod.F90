@@ -556,8 +556,8 @@ CONTAINS
        use_ocn_atm_flux_reg = .false.
        ocn_atm_flux_eps      = 0.1_SHR_KIND_R8
        ocn_atm_flux_damping  = 0.016_SHR_KIND_R8
-       flux_convergence      = 0.0_SHR_KIND_R8
-       flux_max_iteration    = 2
+       flux_convergence      = -1.0_SHR_KIND_R8
+       flux_max_iteration    = -1
        glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
        wall_time_limit       = -1.0
        force_stop_at         = 'month'

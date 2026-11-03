@@ -1582,15 +1582,25 @@ contains
          flux_convergence=flux_convergence, &
          flux_max_iteration=flux_max_iteration)
 
-       ! If flux_max_iteration is not set, choose a value based on
-       ! atm_flux_method.
+       ! Resolve automatic flux iteration settings. If not set via namelist,
+       ! set default values based on whether regularization and/or implicit
+       ! stress method are active.
+       if (flux_convergence == -1.0_r8) then
+          flux_convergence = 0.0_r8
+          if (use_ocn_atm_flux_reg) flux_convergence = 3.0e-3_r8
+       end if
+
        if (flux_max_iteration == -1) then
-          select case(atm_flux_method)
-          case('implicit_stress')
-             flux_max_iteration = 30
-          case default
-             flux_max_iteration = 2
-          end select
+          if (use_ocn_atm_flux_reg) then
+             flux_max_iteration = 20000000
+          else
+             select case (atm_flux_method)
+             case ('implicit_stress')
+                flux_max_iteration = 30
+             case default
+                flux_max_iteration = 2
+             end select
+          end if
        end if
 
        if (.not.read_restart) cold_start = .true.
