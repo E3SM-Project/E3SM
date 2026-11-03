@@ -381,6 +381,9 @@ module elm_varctl
   logical, public :: use_vichydro        = .false.
   logical, public :: use_century_decomp  = .false.
   logical, public :: use_cn              = .false.
+  ! Set once the device data layer holds the model state: until then OpenACC compute
+  ! constructs (if(elm_device_ready)) run on the host, e.g. during the instance initialization
+  logical, public :: elm_device_ready = .false.
   logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
