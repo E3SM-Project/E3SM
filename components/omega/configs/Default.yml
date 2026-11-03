@@ -291,11 +291,9 @@ Omega:
                                 # List of field names to compute statistics for
       SpatialStats: [Max, Min, Mean, StdDev]
                                 # Spatial statistics to compute (one per field)
-      ReductionPeriod: []
-                                # Temporal reduction periods
+      ReductionPeriod: []       # Temporal reduction periods
       SamplingInterval: dt      # Accumulation cadence of the reductions
-      SnapshotPeriod: [1Day]
-                                # Instantaneous snapshot output intervals
+      SnapshotPeriod: [1Day]    # Instantaneous snapshot output intervals
       Filename: global.stats.$Y.nc
       Stream:
         FileFreq: 1
@@ -313,7 +311,7 @@ Omega:
       Transects: []             # List of transect names for transect-based MOC
                                 # NOTE: Transect masks not yet implemented
       ReductionPeriod: [1Month] # Temporal reduction periods
-      SamplingInterval: dt    # Accumulation cadence of the reductions
+      SamplingInterval: dt      # Accumulation cadence of the reductions
       SnapshotPeriod: []        # Instantaneous output periods
       Filename: moc.$Y-$M.nc
       Stream:
@@ -332,8 +330,7 @@ Omega:
           GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell,
           FrazilMassFlux, FrazilSaltFlux, FrazilEnergyFlux]
                                 # List of global fields to average
-      ReductionPeriod: [1Month]
-                                # Optional; averaging period(s)
+      ReductionPeriod: [1Month] # Optional; averaging period(s)
       SamplingInterval: dt      # Accumulation cadence of the reductions
       Filename: monthly.averages.$Y-$M.nc
       Stream:
