@@ -824,14 +824,14 @@ contains
          else ! not use_fates
 
             if ( use_hydrstress ) then
-               !$acc data copy(bsha, bsun) if(elm_device_ready)
-               call PhotosynthesisHydraulicStress (bounds, fn, iter_filterp, &
-                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
-                    bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
-                    qsatl(begp:endp), qaf(begp:endp),     &
+               ! Host only: elm_driver rejects use_hydrstress with the GPU enabled
+               call PhotosynthesisHydraulicStress (bounds, fn, iter_filterp, iter_filter_map, num_nolu_vegp, &
+                    svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp), o2(1:num_nolu_vegp), &
+                    co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), bsun(begp:endp), &
+                    bsha(begp:endp), btran(begp:endp), dayl_factor(1:num_nolu_vegp), &
+                    qsatl(1:num_nolu_vegp), qaf(1:num_nolu_vegp),     &
                      soilstate_vars, surfalb_vars, solarabs_vars,    &
                     canopystate_vars, photosyns_vars)
-               !$acc end data
             else
               call Photosynthesis(bounds, fn, iter_filterp, iter_filter_map, num_nolu_vegp, &
                    svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp), o2(1:num_nolu_vegp), &
