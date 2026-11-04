@@ -49,6 +49,13 @@ add_library(eamxx_field
   utils/views_are_equal.cpp
 )
 
+# Use precompiled headers to reduce build time for ETI files.
+# The field library includes many template-heavy headers that are
+# independently parsed by each of the 36 ETI .cpp files. Precompiling
+# them allows all ETI files to reuse the parsed content, significantly
+# reducing compilation time and memory usage.
+target_precompile_headers(eamxx_field PRIVATE field_pch.hpp)
+
 if (EAMXX_ENABLE_GPU)
   # The HostOrDevice::Device is different from HostOrDevice::Host,
   # so we need to ETI also these fcns for HostOrDevice::Host
