@@ -6,6 +6,7 @@ module LakeFluxesMod
   ! Created by Zack Subin, 2009
   !
   ! !USES
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type
@@ -84,8 +85,9 @@ contains
     real(r8), parameter :: zii = 1000._r8          ! convective boundary height [m]
     integer  :: i,fc,fp,g,t,c,p                    ! do loop or array index
     integer  :: fncopy                             ! number of values in pft filter copy
-    integer  :: fnold                              ! previous number of pft filter values
+    integer  :: fa, n_keep, i_next, k_next         ! compaction of the pft filter copy
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
+    integer  :: next_fpcopy(num_lakep), next_fpmap(num_lakep) ! the compacted copy, built in parallel
     integer  :: fpmap(num_lakep)                   ! index of fpcopy entries into the begp:endp arrays passed to FrictionVelocity
     integer  :: iter                               ! iteration index
     integer  :: iter_final                         ! number of iterations used
@@ -139,6 +141,7 @@ contains
     real(r8) :: qflx_evap_cap                      ! water-availability cap on qflx_evap_soi (kg/m2/s)
     logical  :: evap_water_limited                 ! true if qflx_evap_soi(p) was capped by water availability this iteration
     real(r8) :: dtime                               ! land model time step (sec)
+    logical  :: cap_evap, cap_evap_h2osno           ! lake_evap_cap_method tests (no string compares in kernels)
     real(r8) :: evap_coef                          ! forc_rho/raw: evaporation per unit humidity difference (kg/m2/s per kg/kg)
     real(r8) :: dqdT_coef                          ! evap_coef * d(qsatg)/dT
     real(r8) :: betaprime(bounds%begc:bounds%endc) ! Effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
@@ -166,6 +169,14 @@ contains
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     !-----------------------------------------------------------------------
 
+    ! spel acc-locals: device storage of the local work arrays
+    integer :: spel_dc_1  ! spel defer-checks: elements recorded by deferred checks
+    logical :: check_stress  ! get_nstep() > 0: the stress convergence check applies
+    integer :: p0            ! bounds%begp, for the device code (bounds is not on the device)
+    !$acc enter data create(nmozsgn, jtop, dqh, dth, dzsur, htvp, obu, obuold, qsatg, qsatgdT, ram, rah, raw, &
+    !$acc&   stftg3, temp1, temp12m, temp2, temp22m, tgbef, thm, thv, tksur, tsur, um, ur, ustar, &
+    !$acc&   ugust_total, zldis, displa, z0mg, z0hg, z0qg, fm, fetch, wind_speed0, wind_speed_adj, tau, &
+    !$acc&   tau_diff, prev_tau, prev_tau_diff, fpcopy, fpmap, next_fpcopy, next_fpmap)
     associate(                                                           & 
          snl              =>    col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                              
          dz               =>    col_pp%dz                                 , & ! Input:  [real(r8) (:,:) ]  layer thickness for soil or snow (m)            
@@ -254,7 +265,11 @@ contains
 
       kva0temp = 20._r8 + tfrz
       dtime = dtime_mod
+      cap_evap_h2osno = trim(lake_evap_cap_method) == 'rain_snow_h2osno'
+      cap_evap = trim(lake_evap_cap_method) == 'rain_snow' .or. cap_evap_h2osno
 
+      ! Lake columns have one patch, so these patch loops write each column once
+      !$acc parallel loop gang vector default(present) private(p, c, t, g, kva, sqre0, sabg_nir, eg, degdT) if(elm_device_ready)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
@@ -283,7 +298,7 @@ contains
          ! Initialize roughness lengths
 
          if (t_grnd(c) > tfrz) then   ! for unfrozen lake
-            z0mg(p) = z0mg_col(c)
+            z0mg(p) = frictionvel_vars%z0mg_col(c)
             kva = kva0 * (t_grnd(c)/kva0temp)**1.5_r8 * kva0pres/forc_pbot(t) ! kinematic viscosity of air
             sqre0 = (max(z0mg(p)*ust_lake(c)/kva,0.1_r8))**0.5_r8   ! Square root of roughness Reynolds number
             z0hg(p) = z0mg(p) * exp( -vkc/prn*( 4._r8*sqre0 - 3.2_r8) ) ! SH roughness length
@@ -339,6 +354,7 @@ contains
 
 
 
+      !$acc parallel loop gang vector default(present) private(p, c, t, g, dthv) if(elm_device_ready)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
@@ -385,8 +401,12 @@ contains
 
       iter = 1
       fncopy = num_lakep
-      fpcopy(1:num_lakep) = filter_lakep(1:num_lakep)
-      fpmap(1:num_lakep) = filter_lakep(1:num_lakep) - begp + 1
+      p0 = begp
+      !$acc parallel loop gang vector default(present) if(elm_device_ready)
+      do fp = 1, num_lakep
+         fpcopy(fp) = filter_lakep(fp)
+         fpmap(fp) = filter_lakep(fp) - p0 + 1
+      end do
 
       ! Begin stability iteration
       if (implicit_stress) then
@@ -407,6 +427,8 @@ contains
               temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), &
               fm(begp:endp), frictionvel_vars)
 
+         !$acc parallel loop gang vector default(present) private(p, c, t, g, bw, ax, bx, eg, degdT, &
+         !$acc&   tstar, qstar, thvstar, zeta, wc, cur, kva, sqre0, qflx_evap_cap, evap_water_limited, evap_coef, dqdT_coef) if(elm_device_ready)
          do fp = 1, fncopy
             p = fpcopy(fp)
             c = veg_pp%column(p)
@@ -481,9 +503,9 @@ contains
             ! this iteration: dth/dqh/zeta/obu/roughness lengths below) stays self-consistent
             ! with the capped evaporation instead of the discarded unconstrained value.
             evap_water_limited = .false.
-            if (trim(lake_evap_cap_method) == 'rain_snow' .or. trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
+            if (cap_evap) then
                qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
-               if (trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
+               if (cap_evap_h2osno) then
                   qflx_evap_cap = qflx_evap_cap + h2osno(c)/dtime
                end if
                if (forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p) > qflx_evap_cap) then
@@ -593,23 +615,47 @@ contains
 
          iter_final = iter
          iter = iter + 1
-         if (iter <= itmax ) then
+         ! With explicit stress no patch can leave: nmozsgn stays below 3 at every test here (it can't
+         ! count on the first pass and itmax_expl = 4), and tau_diff is only tested with implicit stress.
+         if (implicit_stress .and. iter <= itmax) then
             ! Rebuild copy of pft filter for next pass through the ITERATION loop
 
-            fnold = fncopy
-            fncopy = 0
-            do fp = 1, fnold
-               p = fpcopy(fp)
-               if (nmozsgn(p) < 3 .or. (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
-                  fncopy = fncopy + 1
-                  fpcopy(fncopy) = p
-                  fpmap(fncopy) = p - begp + 1
-               end if
-            end do   ! end of filtered pft loop
+            ! Parallel: the order of the list doesn't matter. Most passes nobody leaves, so count first.
+            n_keep = 0
+            !$acc parallel loop gang vector default(present) private(p) reduction(+:n_keep) if(elm_device_ready)
+            do fa = 1, fncopy
+               p = fpcopy(fa)
+               if (nmozsgn(p) < 3 .or. abs(tau_diff(p)) >= dtaumin) n_keep = n_keep + 1
+            end do
+            if (n_keep < fncopy) then
+               i_next = 0
+               !$acc parallel loop gang vector default(present) private(p, k_next) copy(i_next) if(elm_device_ready)
+               do fa = 1, fncopy
+                  p = fpcopy(fa)
+                  if (nmozsgn(p) < 3 .or. abs(tau_diff(p)) >= dtaumin) then
+                     !$acc atomic capture
+                     i_next = i_next + 1
+                     k_next = i_next
+                     !$acc end atomic
+                     next_fpcopy(k_next) = fpcopy(fa)
+                     next_fpmap(k_next) = fpmap(fa)
+                  end if
+               end do
+               !$acc parallel loop gang vector default(present) if(elm_device_ready)
+               do fa = 1, n_keep
+                  fpcopy(fa) = next_fpcopy(fa)
+                  fpmap(fa)  = next_fpmap(fa)
+               end do
+               fncopy = n_keep
+            end if
          end if
 
       end do ITERATION   ! end of stability iteration
 
+      spel_dc_1 = 0  ! spel defer-checks
+      check_stress = get_nstep() > 0
+      !$acc parallel loop gang vector default(present) private(p, c, t, g, t_grnd_temp, e_ref2m, de2mdT, &
+      !$acc&   qsat_ref2m, dqsat2mdT, u2m, qflx_evap_cap) reduction(max:spel_dc_1) if(elm_device_ready)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
@@ -656,9 +702,9 @@ contains
          ! the lake/ground via eflx_gnet instead. Never clamps condensation (qflx_evap_soi < 0).
          ! In practice this only binds for the convective-mixing branch (t_grnd forced warmer);
          ! the freezing-point branch only forces t_grnd colder than an already-capped value.
-         if (trim(lake_evap_cap_method) == 'rain_snow' .or. trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
+         if (cap_evap) then
             qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
-            if (trim(lake_evap_cap_method) == 'rain_snow_h2osno') then
+            if (cap_evap_h2osno) then
                qflx_evap_cap = qflx_evap_cap + h2osno(c)/dtime
             end if
             qflx_evap_soi(p) = min(qflx_evap_soi(p), qflx_evap_cap)
@@ -723,25 +769,32 @@ contains
          ks(c) = 6.6_r8*sqrt(abs(sin(grc_pp%lat(g))))*(u2m**(-1.84_r8))
 
          ! Update column roughness lengths and friction velocity
-         z0mg_col(c) = z0mg(p)
-         z0hg_col(c) = z0hg(p)
-         z0qg_col(c) = z0qg(p)
+         frictionvel_vars%z0mg_col(c) = z0mg(p)
+         frictionvel_vars%z0hg_col(c) = z0hg(p)
+         frictionvel_vars%z0qg_col(c) = z0qg(p)
          ust_lake(c) = ustar(p)
 
          ! Check for convergence of stress.
          if (implicit_stress .and. abs(tau_diff(p)) > dtaumin) then
-            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
+            if (check_stress) spel_dc_1 = max(spel_dc_1, fp - (1) + 1)  ! spel defer-checks
+         end if
+
+      end do
+      if (spel_dc_1 > 0) then  ! spel defer-checks: the last element where the check held
+         ! spel acc-sync: device data this host code uses
+         !$acc update self(prev_tau_diff, tau, tau_diff, wind_speed_adj) if_present if(elm_device_ready)
+         fp = 1 + spel_dc_1 - 1
+         p = filter_lakep(fp)
+         !$acc update self(prev_tau_diff, tau_diff, tau, wind_speed_adj) if(elm_device_ready)
                write(iulog,*)'WARNING: Stress did not converge for lake ',&
                     ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
                     ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
                     ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
-            end if
-         end if
-
-      end do
+      end if
 
       ! The following are needed for global average on history tape.
 
+      !$acc parallel loop gang vector default(present) private(p, c, t) if(elm_device_ready)
       do fp = 1, num_lakep
          p = filter_lakep(fp)
          c = veg_pp%column(p)
@@ -764,6 +817,10 @@ contains
 
     end associate
 
+    !$acc exit data delete(nmozsgn, jtop, dqh, dth, dzsur, htvp, obu, obuold, qsatg, qsatgdT, ram, rah, raw, &
+    !$acc&   stftg3, temp1, temp12m, temp2, temp22m, tgbef, thm, thv, tksur, tsur, um, ur, ustar, &
+    !$acc&   ugust_total, zldis, displa, z0mg, z0hg, z0qg, fm, fetch, wind_speed0, wind_speed_adj, tau, &
+    !$acc&   tau_diff, prev_tau, prev_tau_diff, fpcopy, fpmap, next_fpcopy, next_fpmap)
   end subroutine LakeFluxes
 
 end module LakeFluxesMod

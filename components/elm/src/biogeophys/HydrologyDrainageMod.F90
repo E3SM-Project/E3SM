@@ -4,6 +4,7 @@ module HydrologyDrainageMod
   ! !DESCRIPTION:
   ! Calculates soil/snow hydrology with drainage (subsurface runoff)
   !
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
@@ -43,7 +44,6 @@ contains
        soilhydrology_vars, soilstate_vars )
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
-    !
     ! !USES:
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop, istice
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
@@ -80,6 +80,7 @@ contains
     real(r8) :: dtime
     real(r8) :: temp_to_downhill, temp_mass
     integer  :: g,t,l,c,j,fc,tpu_ind, downhill_t              ! indices
+    real(r8) :: sumtot, sumice, sumliq 
     !-----------------------------------------------------------------------
 
     associate(                                                                  &
@@ -133,21 +134,18 @@ contains
 
       dtime = dtime_mod
 
+      !$acc enter data create(sumtot,sumice,sumliq)
       if (use_vichydro) then
          call ELMVICMap(bounds, num_hydrologyc, filter_hydrologyc, &
               soilhydrology_vars)
       endif
 
-#ifndef _OPENACC
-#endif
-
       call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
            num_urbanc, filter_urbanc,&
            soilhydrology_vars, soilstate_vars, ocn2lnd_vars, dtime)
 
-#ifndef _OPENACC
-#endif
 
+      !$acc parallel loop independent gang vector default(present) collapse(2) if(elm_device_ready)
       do j = 1, nlevgrnd
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
@@ -159,6 +157,7 @@ contains
          end do
       end do
 
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -173,18 +172,26 @@ contains
          end if
       end do
 
-      do j = 1, nlevgrnd
-         do fc = 1, num_nolakec
-            c = filter_nolakec(fc)
+      !$acc parallel loop independent gang worker default(present) private(sumtot,sumliq,sumice) if(elm_device_ready)
+      do fc = 1, num_nolakec
+         c = filter_nolakec(fc)
+         ! start from the running totals to keep the reference's summation order
+         sumtot = endwb(c)
+         sumliq = h2osoi_liq_depth_intg(c)
+         sumice = h2osoi_ice_depth_intg(c)
+         !$acc loop vector reduction(+:sumtot,sumliq,sumice)
+         do j = 1, nlevgrnd
             if ((ctype(c) == icol_sunwall .or. ctype(c) == icol_shadewall &
-                 .or. ctype(c) == icol_roof) .and. j > nlevurb) then
-
+               .or. ctype(c) == icol_roof) .and. j > nlevurb ) then
             else
-               endwb(c) = endwb(c) + h2osoi_ice(c,j) + h2osoi_liq(c,j)
-               h2osoi_liq_depth_intg(c) = h2osoi_liq_depth_intg(c) + h2osoi_liq(c,j)
-               h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
+              sumtot = sumtot + h2osoi_ice(c,j) + h2osoi_liq(c,j)
+              sumliq = sumliq + h2osoi_liq(c,j)
+              sumice = sumice + h2osoi_ice(c,j)
             end if
-         end do
+          end do
+          endwb(c) = sumtot
+          h2osoi_liq_depth_intg(c) = sumliq
+          h2osoi_ice_depth_intg(c) = sumice
       end do
 
       ! ---------------------------------------------------------------------------------
@@ -193,6 +200,7 @@ contains
       ! Other orthogonal modules should not need to worry about this term,
       ! and it should be zero in all other cases and all other columns.
       ! ---------------------------------------------------------------------------------
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
          endwb(c) = endwb(c) + total_plant_stored_h2o(c)
@@ -206,8 +214,9 @@ contains
       ! 2) If using glc_dyn_runoff_routing=T, zero qflx_snwcp_ice: qflx_snwcp_ice is the flux
       !    sent to ice runoff, but for glc_dyn_runoff_routing=T, we do NOT want this to be
       !    sent to ice runoff (instead it is sent to CISM).
-
+      !$acc parallel loop independent gang vector default(present) private(l) if(elm_device_ready)
       do c = bounds%begc,bounds%endc
+         l = col_pp%landunit(c)
          qflx_glcice_frz(c) = 0._r8
          qflx_glcice_frz_diag(c) = 0._r8
 
@@ -216,6 +225,8 @@ contains
                qflx_glcice_diag(c) = qflx_glcice_diag(c) + qflx_glcice_frz_diag(c)
          endif
       end do
+
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fc = 1,num_do_smb_c
          c = filter_do_smb_c(fc)
          l = col_pp%landunit(c)
@@ -237,10 +248,12 @@ contains
 
       ! Determine wetland and land ice hydrology (must be placed here
       ! since need snow updated from CombineSnowLayers)
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do c = bounds%begc,bounds%endc
          qflx_irr_demand(c) = 0._r8
       end do
-
+      
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready) no_create(top_ws)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -258,7 +271,7 @@ contains
             qflx_infl(c)          = 0._r8
             qflx_lnd2ocn(c)       = 0._r8
             qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) + qflx_floodg(g) - qflx_evap_tot(c) - qflx_snwcp_ice(c) - &
-                 (endwb(c)-begwb(c))/dtime
+                 (endwb(c)-begwb(c))/dtime_mod
 
             ! With glc_dyn_runoff_routing = false (the less realistic way, typically used
             ! when NOT coupling to CISM), excess snow immediately runs off, whereas melting
@@ -334,6 +347,7 @@ contains
 
       end do
 
+      !$acc exit data delete(sumtot,sumice,sumliq)
     end associate
 
   end subroutine HydrologyDrainage

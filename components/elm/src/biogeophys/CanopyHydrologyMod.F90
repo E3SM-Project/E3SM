@@ -10,6 +10,7 @@ module CanopyHydrologyMod
   ! (4) snow layer initialization if the snow accumulation exceeds 10 mm.
   !
   ! !USES:
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use shr_infnan_mod    , only : isnan => shr_infnan_isnan                                                        
@@ -29,7 +30,7 @@ module CanopyHydrologyMod
   use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
-  use timeinfoMod       , only : dtime_mod
+  use timeinfoMod, only : dtime_mod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -45,6 +46,7 @@ module CanopyHydrologyMod
   !
   ! !PRIVATE DATA MEMBERS:
   integer :: oldfflag=0  ! use old fsno parameterization (N&Y07) 
+  !$acc declare create(oldfflag)
   !-----------------------------------------------------------------------
 
 contains
@@ -93,6 +95,7 @@ contains
     end if
     ! Broadcast namelist variables read in
     call shr_mpi_bcast(oldfflag, mpicom)
+    !$acc update device(oldfflag)
 
    end subroutine CanopyHydrology_readnl
 
@@ -122,10 +125,9 @@ contains
      use atm2lndType        , only : atm2lnd_type
      !use domainMod          , only : ldomain
      use TopounitType       , only : top_pp
-     use elm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
-     use elm_time_manager   , only : get_step_size, get_prev_date, get_nstep
      use SnowHydrologyMod   , only : NewSnowBulkDensity
+     use AerosolType        , only : aerosol_reset_column
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds     
@@ -178,6 +180,9 @@ contains
      integer :: gg
      !-----------------------------------------------------------------------
 
+     ! spel acc-locals: device storage of the local work arrays
+     !$acc enter data create(fracsnow, fracrain, qflx_candrip, qflx_through_rain, &
+     !$acc&   qflx_through_snow, qflx_prec_grnd_snow, qflx_prec_grnd_rain)
      associate(                                                     & 
           pgridcell            => veg_pp%gridcell                             , & ! Input:  [integer  (:)   ]  pft's gridcell
           ptopounit            => veg_pp%topounit                             , & ! Input:  [integer  (:)   ]  pft's topounit
@@ -252,21 +257,27 @@ contains
 
        ! Compute time step
        
-       dtime = get_step_size()
+       dtime = dtime_mod
 
+       !$acc enter data create(irrigated_ppg, bifall, newsnow, snowmelt)
+       !$acc parallel loop gang vector default(present) if(elm_device_ready)
        do gg = bounds%begg,bounds%endg
           irrigated_ppg(gg) = 0
        end do
          
+       !$acc parallel loop gang vector default(present) private(p, g) if(elm_device_ready)
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
           if (irrigated(veg_pp%itype(p)) == 1) then
+             !$acc atomic update
              irrigated_ppg(g) = irrigated_ppg(g) + 1
           endif
        end do
        ! Start pft loop
 
+       !$acc parallel loop gang vector default(present) &
+       !$acc   private(p, g, t, tpu_ind, l, c, h2ocanmx, fpi, xrun) if(elm_device_ready)
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
@@ -362,8 +373,8 @@ contains
              end if
              ! Urban sunwall and shadewall have no intercepted precipitation
           else
-             qflx_prec_grnd_snow(p) = 0.
-             qflx_prec_grnd_rain(p) = 0.
+             qflx_prec_grnd_snow(p) = 0._r8
+             qflx_prec_grnd_rain(p) = 0._r8
              qflx_dirct_rain(p) = 0._r8
              qflx_leafdrip(p) = 0._r8
           end if
@@ -375,7 +386,6 @@ contains
              n_irrig_steps_left(p) = n_irrig_steps_left(p) - 1
           else
              qflx_irrig(p) = 0._r8
-             qflx_irrig_grid(g) = 0._r8
           end if
 
           ! Add irrigation water directly onto ground (bypassing canopy interception)
@@ -479,6 +489,7 @@ contains
             qflx_grnd_irrig_col(bounds%begc:bounds%endc))
 
        ! apply gridcell flood water flux to non-lake columns
+       !$acc parallel loop gang vector default(present) private(c, g) if(elm_device_ready)
        do f = 1, num_nolakec
           c = filter_nolakec(f)
           g = cgridcell(c)
@@ -492,10 +503,14 @@ contains
        ! Determine snow height and snow water
        
        if (use_firn_percolation_and_compaction) then
+          !$acc data copy(bifall) if(elm_device_ready)
           call NewSnowBulkDensity(bounds, num_nolakec, filter_nolakec, &
                                   top_as, bifall(bounds%begc:bounds%endc))
+          !$acc end data
        end if
 
+       !$acc parallel loop gang vector default(present) private(c, l, t, g, j, temp_snow_depth, &
+       !$acc&   dz_snowf, smr, fsno_new, temp_intsnow, z_avg, fmelt, accum_factor, newnode) if(elm_device_ready)
        do f = 1, num_nolakec
           c = filter_nolakec(f)
           l = clandunit(c)
@@ -510,9 +525,11 @@ contains
           ! set temporary variables prior to updating
           temp_snow_depth=snow_depth(c)
           ! save initial snow content
+          !$acc loop seq
           do j= -nlevsno+1,snl(c)
              swe_old(c,j) = 0.0_r8
           end do
+          !$acc loop seq
           do j= snl(c)+1,0
              swe_old(c,j)=h2osoi_liq(c,j)+h2osoi_ice(c,j)
           enddo
@@ -676,7 +693,7 @@ contains
                 frac_iceold(c,0) = 1._r8
 
                 ! intitialize SNICAR variables for fresh snow:
-                call aerosol_vars%Reset(column=c)
+                call aerosol_reset_column(aerosol_vars, c)
                 ! call waterstate_vars%Reset(column=c)
                 col_ws%snw_rds(c,0) = snw_rds_min
              end if
@@ -693,7 +710,7 @@ contains
                 frac_iceold(c,0) = 1._r8
 
                 ! intitialize SNICAR variables for fresh snow:
-                call aerosol_vars%Reset(column=c)
+                call aerosol_reset_column(aerosol_vars, c)
                 ! call waterstate_vars%Reset(column=c)
                 col_ws%snw_rds(c,0) = snw_rds_min
              end if             
@@ -714,8 +731,12 @@ contains
        call FracH2oSfc(bounds, num_nolakec, filter_nolakec, &
              col_wf%qflx_h2osfc2topsoi, dtime)
 
+       !$acc exit data delete(irrigated_ppg, bifall, newsnow, snowmelt)
+
      end associate
 
+     !$acc exit data delete(fracsnow, fracrain, qflx_candrip, qflx_through_rain, qflx_through_snow, &
+     !$acc&   qflx_prec_grnd_snow, qflx_prec_grnd_rain)
    end subroutine CanopyHydrology
 
    !-----------------------------------------------------------------------
@@ -752,6 +773,7 @@ contains
           fdry           => veg_ws%fdry              & ! Output: [real(r8) (:) ]  fraction of foliage that is green and dry [-] (new)
           )
 
+       !$acc parallel loop gang vector default(present) private(p, vegt, dewmxi) if(elm_device_ready)
        do fp = 1,numf
           p = filter(fp)
           if (frac_veg_nosno(p) == 1) then
@@ -800,6 +822,8 @@ contains
      real(r8):: sigma            ! microtopography pdf sigma in mm
      real(r8):: swc              ! surface water content in m
      real(r8):: min_h2osfc
+     logical :: update_fracs     ! .not. present(no_update)
+     integer :: nclose           ! Newton steps with dfdd close to 0 (polygonal columns)
      !-----------------------------------------------------------------------
 
      associate(                                 &
@@ -821,7 +845,11 @@ contains
 
        ! arbitrary lower limit on h2osfc for safer numerics...
        min_h2osfc=1.e-8_r8
+       update_fracs = .not. present(no_update)
+       nclose = 0
 
+       !$acc parallel loop gang vector default(present) private(c, l, k, d, fd, dfdd, sigma, swc) &
+       !$acc&   reduction(+:nclose) if(elm_device_ready)
        do f = 1, num_h2osfc
           c = filter_h2osfc(f)
           l = col_pp%landunit(c)
@@ -853,7 +881,7 @@ contains
                             dfdd = (3_r8/iwp_microrel(c)) * (2_r8*iwp_exclvol(c) - iwp_microrel(c)) * (d/iwp_microrel(c))**2_r8 &
                                    + (2_r8/iwp_microrel(c)) * (2_r8*iwp_microrel(c) - 3_r8*iwp_exclvol(c)) * (d/iwp_microrel(c))
                             if (dfdd < 1.0e-12_r8) then
-                              write(iulog,*) "careful! getting close to dividing by 0..."
+                              nclose = nclose + 1  ! reported after the loop
                             end if
                             d = d - fd/dfdd
                         enddo
@@ -886,7 +914,7 @@ contains
              
              frac_h2osfc_act(c) = frac_h2osfc(c)
 
-             if (.not. present(no_update)) then
+             if (update_fracs) then
 
                 ! adjust fh2o, fsno when sum is greater than zero
                 if (frac_sno(c) > (1._r8 - frac_h2osfc(c)) .and. h2osno(c) > 0) then
@@ -910,6 +938,9 @@ contains
           endif
 
        end do
+       if (nclose > 0) then
+          write(iulog,*) "careful! getting close to dividing by 0...", nclose, " times"
+       end if
 
      end associate
 

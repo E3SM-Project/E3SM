@@ -6,6 +6,7 @@ module SedYieldMod
   ! Tan, Z., et al. (2022), Representing global soil erosion and sediment 
   ! flux in Earth System Models, J. Adv. Model. Earth Sy., 14, e2021MS002756. 
   !
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_const_mod     , only : T0 => SHR_CONST_TKFRZ
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
@@ -97,6 +98,12 @@ contains
     character(len=32) :: subname = 'SoilErosion'           ! subroutine name
     !-----------------------------------------------------------------------
 
+    ! spel acc-sync: device data this host code uses
+    !$acc update self(canopystate_vars%hbot_patch, canopystate_vars%htop_patch, canopystate_vars%tlai_patch, &
+    !$acc&   cnstate_vars%croot_prof_patch, cnstate_vars%froot_prof_patch, col_cs%decomp_cpools_vr, &
+    !$acc&   col_wf%qflx_qrgwl, col_wf%qflx_surf, col_ws%frac_sno, veg_cs%deadcrootc, veg_cs%frootc, &
+    !$acc&   veg_cs%livecrootc, veg_wf%qflx_dirct_rain, veg_wf%qflx_leafdrip, &
+    !$acc&   veg_wf%qflx_real_irrig_patch) if_present if(elm_device_ready)
     associate(                                                        &
          forc_rain        =>    top_af%rain                         , & ! Input: [real(r8) (:) ] rain rate [mm/s]
          forc_t           =>    top_as%tbot                         , & ! Input: [real(r8) (:) ] atmospheric temperature (Kelvin)
@@ -299,6 +306,8 @@ contains
          end do
 
     end associate
+    !$acc update device(sedflux_vars%sed_crop_ero_col, sedflux_vars%sed_ero_col, sedflux_vars%sed_p_ero_col, &
+    !$acc&   sedflux_vars%sed_q_ero_col, sedflux_vars%sed_yld_col, stxt) if_present
 
   end subroutine SoilErosion
 

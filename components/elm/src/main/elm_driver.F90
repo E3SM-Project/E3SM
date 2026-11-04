@@ -338,7 +338,7 @@ contains
 
        call t_startf("decomp_vert")
        call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, &
-            temperature_vars, canopystate_vars)
+            canopystate_vars)
 
        !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
        !  (it is called very early in each timestep, before weights are adjusted and
@@ -848,7 +848,7 @@ contains
             filter(nc)%num_lakec, filter(nc)%lakec,   &
             filter(nc)%num_lakep, filter(nc)%lakep,   &
             solarabs_vars, soilstate_vars,  ch4_vars, &
-            energyflux_vars, lakestate_vars)
+            lakestate_vars)
        call t_stopf('bgplake')
 
        ! Set soil/snow temperatures including ground temperature
@@ -857,8 +857,8 @@ contains
        call SoilTemperature(bounds_clump,                     &
             filter(nc)%num_urbanl  , filter(nc)%urbanl,       &
             filter(nc)%num_nolakec , filter(nc)%nolakec,      &
-            atm2lnd_vars, urbanparams_vars, canopystate_vars, &
-            solarabs_vars, soilstate_vars, energyflux_vars )
+            urbanparams_vars, canopystate_vars, &
+            solarabs_vars, soilstate_vars )
        call t_stopf('soiltemperature')
 
 
@@ -899,8 +899,8 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
-            atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, soilstate_vars,        &
-            energyflux_vars, soilhydrology_vars, aerosol_vars )
+            atm2lnd_vars, ocn2lnd_vars, soilstate_vars,                      &
+            soilhydrology_vars, aerosol_vars )
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -929,7 +929,7 @@ contains
             filter(nc)%num_lakesnowc, filter(nc)%lakesnowc,                                  &
             filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc,                              &
             atm2lnd_vars, soilstate_vars,  &
-            energyflux_vars, aerosol_vars, lakestate_vars)
+            aerosol_vars, lakestate_vars)
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
