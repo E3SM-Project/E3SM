@@ -329,17 +329,23 @@ contains
          end do
 
          ! Test for convergence.
-         ! Compact iter_filterp/iter_filter_map in place, keeping only the patches that
-         ! have NOT yet converged. Sequential write-index dependency on fn.
          iter_final = iter
          if (iter >= itmin) then
+            !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
+            do fa = 1, fn
+               num_iter(iter_filterp(fa)) = real(iter,r8)
+            end do
+         end if
+         ! Only implicit stress can converge early: with explicit stress tau_diff never changes.
+         ! Compact iter_filterp/iter_filter_map in place, keeping only the patches that
+         ! have NOT yet converged. Sequential write-index dependency on fn.
+         if (implicit_stress .and. iter >= itmin) then
             fnold = fn
             fn = 0
             !$acc parallel loop seq default(present) private(p,f) copy(fn) if(elm_device_ready)
             do fa = 1, fnold
                p = iter_filterp(fa)
                f = iter_filter_map(fa)
-               num_iter(p) = real(iter,r8)
                if (.not. (abs(tau_diff(f)) < dtaumin)) then
                   fn = fn + 1
                   iter_filterp(fn)    = p
@@ -432,7 +438,6 @@ contains
          end if
       end do
 
-#ifndef _OPENACC
       ! Check for convergence of stress.
       if (implicit_stress .and. get_nstep() > 0) then ! Suppress common warnings on the first time step.
          spel_dc_1 = 0  ! spel defer-checks
@@ -454,7 +459,6 @@ contains
                     ' wind_speed_adj= ',wind_speed_adj(f),' iter_final= ',iter_final
          end if
       end if
-#endif
 
       !$acc exit data delete(displa(:), z0mg_patch(:), z0hg_patch(:), z0qg_patch(:), &
       !$acc    zldis(:), dth(:), dqh(:), obu(:), ur(:), um(:), temp1(:), temp12m(:), &
