@@ -260,6 +260,7 @@ class IOStream {
    ///    $h = hour    part of simulation time stamp
    ///    $m = minute  part of simulation time stamp
    ///    $s = seconds part of simulation time stamp
+   ///    $S = seconds since start of day (0-86399); not a part of time stamp
    static std::string buildFilename(
        const std::string &FilenameTemplate, ///< [in] template string for name
        const TimeInstant &FileTime          ///< [in] time to use in filename

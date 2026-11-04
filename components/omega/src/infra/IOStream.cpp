@@ -2886,6 +2886,7 @@ IO::IODataType IOStream::getFieldIOType(
 //    $h = hour    part of simulation time stamp
 //    $m = minute  part of simulation time stamp
 //    $s = seconds part of simulation time stamp
+//    $S = seconds since start of day (0-86399); not a part of time stamp
 std::string IOStream::buildFilename(
     const std::string &FilenameTemplate, // [in] template string for name
     const TimeInstant &FileTime          // [in] sim time to use for filename
@@ -2929,13 +2930,16 @@ std::string IOStream::buildFilename(
    I8 ISecD;
    FileTime.get(IYear, IMonth, IDay, IHour, IMin, ISecW, ISecN, ISecD);
 
+   I8 ISecDay = IHour * SECONDS_PER_HOUR + IMin * SECONDS_PER_MINUTE + ISecW;
+
    // Convert these to strings (will pad with zeros if needed later)
-   std::string SYear  = std::to_string(IYear);
-   std::string SMonth = std::to_string(IMonth);
-   std::string SDay   = std::to_string(IDay);
-   std::string SHour  = std::to_string(IHour);
-   std::string SMin   = std::to_string(IMin);
-   std::string SSec   = std::to_string(ISecW);
+   std::string SYear   = std::to_string(IYear);
+   std::string SMonth  = std::to_string(IMonth);
+   std::string SDay    = std::to_string(IDay);
+   std::string SHour   = std::to_string(IHour);
+   std::string SMin    = std::to_string(IMin);
+   std::string SSec    = std::to_string(ISecW);
+   std::string SSecDay = std::to_string(ISecDay);
 
    // Now check for the $SimTime token and replace with a sim time string
    Pos = Outfile.find("$SimTime");
@@ -3021,6 +3025,15 @@ std::string IOStream::buildFilename(
       Outfile.replace(Pos, 2, SSec);
    }
 
+   // Seconds of day is requested, pad to 5 digits and insert into filename
+   if ((Pos = Outfile.find("$S")) != std::string::npos) {
+      SLength = SSecDay.length();
+      if (SLength < 5) {
+         NPad = 5 - SLength;
+         SSecDay.insert(0, NPad, '0');
+      }
+      Outfile.replace(Pos, 2, SSecDay);
+   }
    // Suffix should be added by PIO
 
    return Outfile;

@@ -136,8 +136,9 @@ def build_runtime_overrides(
         )
     )
 
+    # restart filename format is dictated by CIME's case_st_archive script
     io_overrides["RestartWrite"] = {
-        "Filename": f"{case_name}.omega.r.$Y-$M-$D_$h.$m.$s.nc"
+        "Filename": f"{case_name}.omega.r.$Y-$M-$D-$S.nc"
     }
 
     overrides = {

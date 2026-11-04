@@ -86,6 +86,7 @@ a template can be:
   - $h for the current simulation hour
   - $m for the current simulation minute
   - $s for the current simulation second
+  - $S for the current simulation seconds since start of day (00000-86399)
   - $WallTime for the time IRL for use when you might need the actual time for
     a debug time stamp
 - **Mode:** A required field that is either read or write. There is no
