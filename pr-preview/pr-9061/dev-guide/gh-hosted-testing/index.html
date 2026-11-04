@@ -5177,8 +5177,10 @@ by CPU, and GitHub's x86 runners come with different CPU models. Without further
 same commit and image both matched and differed from intel baselines on different runs. So
 for intel only, the workflow appends <code>-fp-model=consistent -fimf-arch-consistency=true</code> to
 the C, C++ and Fortran flags, in the job's copy of <code>e3sm-container_intel.cmake</code> in <code>~/.cime</code>,
-and sets <code>MKL_CBWR=COMPATIBLE</code> and <code>MKL_NUM_THREADS=1</code>. It also masks the AVX-512, AVX2 and FMA
-features in <code>GLIBC_TUNABLES</code>, so that glibc's libm picks the same code on every CPU. This is meant to make the answers independent of the CPU, at some
+and sets <code>MKL_CBWR=COMPATIBLE</code>. These are not enough: Intel's <code>libimf</code> still gives different
+results for scalar math functions on Intel and AMD CPUs, so the job also sets
+<code>LD_PRELOAD=/lib64/libm.so.6</code>, which makes glibc's libm take their place. Together, they are
+meant to make the answers independent of the CPU, at some
 cost in speed, and it is for testing only: the image and E3SM's <code>intel.cmake</code> are unchanged, so
 users of the image do not get these flags. As a consequence, the intel job does not test
 the exact flags users get. Each job summary shows the runner's CPU model, to help tell a
