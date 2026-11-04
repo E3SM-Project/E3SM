@@ -1,6 +1,9 @@
 import pytest
 
-from omega_buildnml.config import build_omega_config
+from omega_buildnml.config import (
+    build_omega_config,
+    build_runtime_overrides,
+)
 from omega_buildnml.read_write import DEFAULT_CONFIG_PATH, read_default_config
 from omega_buildnml.validate import BLOCKED_OPTIONS, validate_user_overrides
 
@@ -156,3 +159,64 @@ def test_blocked_options_are_defined_in_the_defaults(
     for key in blocked_option.split("."):
         assert key in option, f"{blocked_option} is not in the defaults"
         option = option[key]
+
+
+@pytest.fixture
+def runtime_args():
+    return {
+        "calendar": "NO_LEAP",
+        "continue_run": False,
+        "case_name": "test_case",
+        "streams_files": {"InitialState": "init.nc"},
+    }
+
+
+def test_runtime_overrides_prefixes_analysis_filenames(runtime_args):
+    defaults = {
+        "Analysis": {"GlobalStats": {"Filename": "global.stats.$Y.nc"}}
+    }
+    overrides = build_runtime_overrides(**runtime_args, defaults=defaults)
+    assert (
+        overrides["Analysis"]["GlobalStats"]["Filename"]
+        == "test_case.omega.global.stats.$Y.nc"
+    )
+
+
+def test_runtime_overrides_omits_analysis_when_missing(runtime_args):
+    overrides = build_runtime_overrides(**runtime_args, defaults={})
+    assert "Analysis" not in overrides
+
+
+def test_runtime_overrides_raises_missing_filename(runtime_args):
+    defaults = {"Analysis": {"GlobalStats": {"Enable": True}}}
+    with pytest.raises(ValueError, match="Missing 'Filename'"):
+        build_runtime_overrides(**runtime_args, defaults=defaults)
+
+
+def test_runtime_overrides_raises_non_mapping_member(runtime_args):
+    defaults = {"Analysis": {"GlobalStats": "not_a_mapping"}}
+    with pytest.raises(ValueError, match="expected a mapping"):
+        build_runtime_overrides(**runtime_args, defaults=defaults)
+
+
+def test_runtime_overrides_prefixes_write_iostreams_filenames(runtime_args):
+    defaults = {
+        "IOStreams": {
+            "History": {"Mode": "write", "Filename": "history.$Y-$M"},
+            "HorzMeshIn": {"Mode": "read", "Filename": "mesh.nc"},
+        }
+    }
+    overrides = build_runtime_overrides(**runtime_args, defaults=defaults)
+    assert (
+        overrides["IOStreams"]["History"]["Filename"]
+        == "test_case.omega.history.$Y-$M"
+    )
+    assert "HorzMeshIn" not in overrides["IOStreams"]
+
+
+def test_runtime_overrides_raises_missing_filename_for_write_stream(
+    runtime_args,
+):
+    defaults = {"IOStreams": {"History": {"Mode": "write"}}}
+    with pytest.raises(ValueError, match="Missing 'Filename'"):
+        build_runtime_overrides(**runtime_args, defaults=defaults)

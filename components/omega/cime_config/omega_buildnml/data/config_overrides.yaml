@@ -11,6 +11,19 @@ coupled:
     SfcThicknessForcingTendencyEnable: true
     SfcTracerForcingTendencyEnable: true
 
+  # buildnml will read the "Filename" entries in Default.yml under the Analysis
+  # section and prepend '${CASE}.omega.' to the default filename
+  Analysis:
+    GlobalStats:
+      Enable: true
+    MOC:
+      Enable: true
+    MonthlyAverages:
+      Enable: true
+
+  # buildnml will also prepend '${CASE}.omega.' to the default filename of
+  # 'write' mode IOStreams, except RestartRead which get special handling to
+  # ensure it's formatted as the coupled driver expects
   IOStreams:
     Forcing:
       FreqUnits: Never
@@ -43,6 +56,10 @@ meshes:
       ViscDel4: 2.0e14
     HorzMesh:
       MeshScalingEnable: false
+
+    Analysis:
+      MOC:
+        NumBins: 60
 
   EC30to60E2r2:
     TimeIntegration:

@@ -14,7 +14,8 @@ validated, and how to add support for a new mesh.
 validation logic used by `buildnml`:
 
 - `read_write.py` reads/writes YAML config files and packaged data.
-- `config.py` merges the configuration layers and resolves mesh input files.
+- `config.py` merges the configuration layers, resolves mesh input files, and
+  prefixes analysis filenames with the case name.
 - `validate.py` validates overrides and `IOStreams` against `Default.yml`.
 - `data/input_files.yaml` maps each supported mesh to its input file(s).
 - `data/config_overrides.yaml` holds the coupled and mesh-specific overrides.
