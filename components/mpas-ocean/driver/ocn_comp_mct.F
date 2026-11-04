@@ -3174,7 +3174,8 @@ contains
 
    logical, pointer :: config_glc_ice_shelf_coupling_import_geometry
 
-   real (kind=RKIND) :: belowSeaLevelFraction, glcFloatingFraction, floatingFraction
+   real (kind=RKIND) :: belowSeaLevelFraction, glcFloatingFraction, floatingFraction, &
+                        importedFloatingFraction
 
    call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_min_floating_fraction', &
                              config_glc_ice_shelf_coupling_min_floating_fraction)
@@ -3200,7 +3201,10 @@ contains
          n = n + 1
 
          belowSeaLevelFraction = x2o_o(index_x2o_Sg_below_sea_level_mask, n)
-         glcFloatingFraction = x2o_o(index_x2o_Sg_icemask_floating, n)
+         ! glc's floating mask as the coupler maps the geometry, which may be
+         ! smoothed, and as it maps fluxes, which is conservative
+         importedFloatingFraction = x2o_o(index_x2o_Sg_icemask_floating, n)
+         glcFloatingFraction = x2o_o(index_x2o_Sg_icemask_floating_fluxes, n)
 
          ! used to normalize the ice-shelf mass fluxes sent back to glc
          landIceGlcFloatingFraction(i) = glcFloatingFraction
@@ -3208,8 +3212,8 @@ contains
          if (config_glc_ice_shelf_coupling_import_geometry) then
             if (belowSeaLevelFraction > 0.0_RKIND) then
                landIcePressure(i) = x2o_o(index_x2o_Sg_lithop, n) / belowSeaLevelFraction
-               landIceFloatingFraction(i) = min(glcFloatingFraction / belowSeaLevelFraction, 1.0_RKIND)
-               landIceFraction(i) = min((glcFloatingFraction + x2o_o(index_x2o_Sg_icemask_grounded, n)) &
+               landIceFloatingFraction(i) = min(importedFloatingFraction / belowSeaLevelFraction, 1.0_RKIND)
+               landIceFraction(i) = min((importedFloatingFraction + x2o_o(index_x2o_Sg_icemask_grounded, n)) &
                                         / belowSeaLevelFraction, 1.0_RKIND)
             else
                landIcePressure(i) = 0.0_RKIND
@@ -3224,11 +3228,17 @@ contains
             end if
          end if
 
-         ! spread glc's conductive heat over the larger of the two floating areas.  This
-         ! conserves heat whenever the ocean's floating area is at least glc's (always
-         ! the case when the geometry is imported) and otherwise never exceeds glc's
-         ! own flux per unit floating area.
-         floatingFraction = max(landIceFloatingFraction(i), glcFloatingFraction)
+         ! spread glc's conductive heat over the ocean's floating area when the
+         ! geometry is imported, which conserves heat wherever the ocean has floating
+         ! ice, even where a smoothed geometry gives it less than glc.  Otherwise,
+         ! spread it over the larger of the two floating areas, which conserves heat
+         ! whenever the ocean's floating area is at least glc's and otherwise never
+         ! exceeds glc's own flux per unit floating area.
+         if (config_glc_ice_shelf_coupling_import_geometry) then
+            floatingFraction = landIceFloatingFraction(i)
+         else
+            floatingFraction = max(landIceFloatingFraction(i), glcFloatingFraction)
+         end if
          if (floatingFraction > config_glc_ice_shelf_coupling_min_floating_fraction) then
             landIceConductiveHeatFlux(i) = x2o_o(index_x2o_Fogg_hcond, n) / floatingFraction
          else

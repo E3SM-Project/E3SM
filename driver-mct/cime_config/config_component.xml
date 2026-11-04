@@ -2031,6 +2031,25 @@
     <desc>ocn2glc shelf state mapping file decomp type</desc>
   </entry>
 
+  <entry id="GLC2OCN_SHELF_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn shelf state mapping file, for the ice-shelf geometry the ocean
+    imports, which may smooth it - the default value idmap_ignore maps the
+    geometry with GLC2OCN_FMAPNAME, as the ice-shelf fluxes are</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SHELF_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn shelf state mapping file decomp type</desc>
+  </entry>
+
   <entry id="OCN2GLC_TF_SMAPNAME">
     <type>char</type>
     <default_value>idmap_ignore</default_value>

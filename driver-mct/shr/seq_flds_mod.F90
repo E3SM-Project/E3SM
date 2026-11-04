@@ -223,7 +223,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_x2g_shelf_states_from_ocn
   character(CXX) :: seq_flds_x2g_shelf_fluxes_from_ocn
   character(CXX) :: seq_flds_x2g_shelf_fields_from_ocn
-  character(CXX) :: seq_flds_g2o_shelf_fields
+  character(CXX) :: seq_flds_g2o_shelf_states
+  character(CXX) :: seq_flds_g2o_shelf_fluxes
   character(CXX) :: seq_flds_x2g_tf_states_from_ocn
   character(CXX) :: seq_flds_x2g_fluxes
   character(CXX) :: seq_flds_x2g_fluxes_from_lnd
@@ -369,7 +370,8 @@ contains
     character(CXX) :: x2g_shelf_states_from_ocn = ''
     character(CXX) :: x2g_shelf_fluxes_from_ocn = ''
     character(CXX) :: x2g_shelf_fields_from_ocn = ''
-    character(CXX) :: g2o_shelf_fields = ''
+    character(CXX) :: g2o_shelf_states = ''
+    character(CXX) :: g2o_shelf_fluxes = ''
     character(CXX) :: x2g_tf_states_from_ocn = ''
     character(CXX) :: x2g_fluxes = ''
     character(CXX) :: x2g_fluxes_from_lnd = ''
@@ -3375,12 +3377,15 @@ contains
     end if
 
     ! glc->ocn ice-shelf coupling: masked by where the bed is below sea level so
-    ! the ocean can renormalize by the remapped Sg_below_sea_level_mask
+    ! the ocean can renormalize by the remapped Sg_below_sea_level_mask.  The
+    ! geometry states are mapped with the glc2ocn state map, which may smooth
+    ! them; the fluxes and a copy of the floating mask that the ocean uses to
+    ! conserve them are mapped with the conservative glc2ocn flux map.
 
     name = 'Sg_lithop'
     call seq_flds_add(g2x_states,trim(name))
     call seq_flds_add(x2o_states,trim(name))
-    call seq_flds_add(g2o_shelf_fields,trim(name))
+    call seq_flds_add(g2o_shelf_states,trim(name))
     longname = 'Ice sheet lithostatic pressure where the bed is below sea level'
     stdname  = 'Ice_sheet_lithostatic_pressure'
     units    = 'Pa'
@@ -3390,7 +3395,7 @@ contains
     name = 'Sg_icemask_grounded'
     call seq_flds_add(g2x_states,trim(name))
     call seq_flds_add(x2o_states,trim(name))
-    call seq_flds_add(g2o_shelf_fields,trim(name))
+    call seq_flds_add(g2o_shelf_states,trim(name))
     longname = 'Grounded ice mask where the bed is below sea level'
     stdname  = 'Grounded_ice_mask'
     units    = 'unitless'
@@ -3400,17 +3405,29 @@ contains
     name = 'Sg_icemask_floating'
     call seq_flds_add(g2x_states,trim(name))
     call seq_flds_add(x2o_states,trim(name))
-    call seq_flds_add(g2o_shelf_fields,trim(name))
+    call seq_flds_add(g2o_shelf_states,trim(name))
+    call seq_flds_add(g2o_shelf_fluxes,trim(name))
     longname = 'Floating ice mask'
     stdname  = 'Floating_ice_mask'
     units    = 'unitless'
     attname  = 'Sg_icemask_floating'
     call metadata_set(attname, longname, stdname, units)
 
+    ! filled by the coupler, not glc: Sg_icemask_floating mapped with the
+    ! conservative glc2ocn flux map
+    name = 'Sg_icemask_floating_fluxes'
+    call seq_flds_add(g2x_states,trim(name))
+    call seq_flds_add(x2o_states,trim(name))
+    longname = 'Floating ice mask mapped conservatively, for ice-shelf fluxes'
+    stdname  = 'Floating_ice_mask_for_fluxes'
+    units    = 'unitless'
+    attname  = 'Sg_icemask_floating_fluxes'
+    call metadata_set(attname, longname, stdname, units)
+
     name = 'Sg_below_sea_level_mask'
     call seq_flds_add(g2x_states,trim(name))
     call seq_flds_add(x2o_states,trim(name))
-    call seq_flds_add(g2o_shelf_fields,trim(name))
+    call seq_flds_add(g2o_shelf_states,trim(name))
     longname = 'Mask of where the bed is below sea level'
     stdname  = 'below_sea_level_mask'
     units    = 'unitless'
@@ -3420,7 +3437,7 @@ contains
     name = 'Fogg_hcond'
     call seq_flds_add(g2x_fluxes,trim(name))
     call seq_flds_add(x2o_fluxes,trim(name))
-    call seq_flds_add(g2o_shelf_fields,trim(name))
+    call seq_flds_add(g2o_shelf_fluxes,trim(name))
     longname = 'Conductive heat flux into the ocean at the base of floating ice'
     stdname  = 'iceshelf_basal_conductive_heat_flux'
     units    = 'W m-2'
@@ -4283,7 +4300,8 @@ contains
     seq_flds_x2g_shelf_states_from_ocn = trim(x2g_shelf_states_from_ocn)
     seq_flds_x2g_shelf_fluxes_from_ocn = trim(x2g_shelf_fluxes_from_ocn)
     seq_flds_x2g_shelf_fields_from_ocn = trim(x2g_shelf_fields_from_ocn)
-    seq_flds_g2o_shelf_fields = trim(g2o_shelf_fields)
+    seq_flds_g2o_shelf_states = trim(g2o_shelf_states)
+    seq_flds_g2o_shelf_fluxes = trim(g2o_shelf_fluxes)
     seq_flds_x2g_tf_states_from_ocn = trim(x2g_tf_states_from_ocn)
     seq_flds_xao_states = trim(xao_states)
     seq_flds_xao_albedo = trim(xao_albedo)
@@ -4359,7 +4377,8 @@ contains
        write(logunit,*) subname//': seq_flds_l2x_states_to_glc= ',trim(seq_flds_l2x_states_to_glc)
        write(logunit,*) subname//': seq_flds_x2g_shelf_states_from_ocn= ',trim(seq_flds_x2g_shelf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_shelf_fluxes_from_ocn= ',trim(seq_flds_x2g_shelf_fluxes_from_ocn)
-       write(logunit,*) subname//': seq_flds_g2o_shelf_fields= ',trim(seq_flds_g2o_shelf_fields)
+       write(logunit,*) subname//': seq_flds_g2o_shelf_states= ',trim(seq_flds_g2o_shelf_states)
+       write(logunit,*) subname//': seq_flds_g2o_shelf_fluxes= ',trim(seq_flds_g2o_shelf_fluxes)
        write(logunit,*) subname//': seq_flds_x2g_tf_states_from_ocn= ',trim(seq_flds_x2g_tf_states_from_ocn)
        write(logunit,*) subname//': seq_flds_x2g_fluxes= ',trim(seq_flds_x2g_fluxes)
        write(logunit,*) subname//': seq_flds_x2g_fluxes_from_lnd= ',trim(seq_flds_x2g_fluxes_from_lnd)
