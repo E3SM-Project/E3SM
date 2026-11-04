@@ -50,7 +50,11 @@ module elm_driver
   use LakeHydrologyMod       , only : LakeHydrology
   !
   use AerosolMod             , only : AerosolMasses
+#ifdef MODAL_AER
   use SnowSnicarMod          , only : SnowAge_grain
+#else
+  use SnowSnicarNonModalMod  , only : SnowAge_grain => SnowAge_grain_nonmodal
+#endif
   use SurfaceAlbedoMod       , only : SurfaceAlbedo
   use UrbanAlbedoMod         , only : UrbanAlbedo
   !
