@@ -65,9 +65,9 @@ jobs:
           - {runner: gnu, name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97}
           - {runner: gnu, name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-small_kernels--eamxx-output-preset-5}
           - {runner: gnu, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72}
-          - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-prod}
-          - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-prod}
-          - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnugpu.eamxx-prod}
+          - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-output-prod}
+          - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-output-prod}
+          - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnugpu.eamxx-output-prod}
     name: ${{ matrix.name }}
     steps:
       - name: Check out the repository

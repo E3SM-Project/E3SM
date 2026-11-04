@@ -3,7 +3,10 @@ of output to request to eamxx. All the presets create a single
 output file, all with a different name, which means one can
 use 2+ presets at the same time.
 
-
 Each preset does basically two things:
  1. create a yaml file in the case folder
  2. add the yaml file to the yaml_output_files xml setting of eamxx
+
+The "prod" testmod was originally created to mimic the 2025 SCREAM decadal run.
+Later it was modified to remove case-specific configuration settings, but the
+output stream configurations were kept as a test of "production scale" output.
