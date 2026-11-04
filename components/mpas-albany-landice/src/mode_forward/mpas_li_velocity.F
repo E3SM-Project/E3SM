@@ -269,6 +269,7 @@ contains
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_print_velocity_cleanup_details
       real (kind=RKIND), pointer :: config_dynamic_thickness
+      logical, pointer :: config_always_compute_fem_grid
       logical, pointer :: config_adaptive_timestep_include_DCFL
       integer, pointer :: nEdgesSolve
       integer, pointer :: nEdges
@@ -317,6 +318,7 @@ contains
          config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       uphillMarginEdgesFixed = 0
@@ -411,7 +413,11 @@ contains
             ! (FEM triangles) and cells (ice-margin edges), so both count as a vertex mask change.
             call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
             call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=1)
-            if (.not. allocated(femVertexDynamicMask)) then
+            if (config_always_compute_fem_grid) then
+                ! The FEM grid is generated for every solve, so no masks are kept to compare with
+                blockDynamicVertexMaskChanged = 1
+                blockDirichletMaskChanged = 1
+            elseif (.not. allocated(femVertexDynamicMask)) then
                 blockDynamicVertexMaskChanged = 1
                 blockDirichletMaskChanged = 1
             else
@@ -457,7 +463,8 @@ contains
 
          ! A new FEM grid will be generated from the current masks, so remember them.  No grid is
          ! generated when there is too little ice to solve for velocity, so keep the old copies then.
-         if ((maxThicknessAllProcs >= config_dynamic_thickness) .and. &
+         if ((.not. config_always_compute_fem_grid) .and. &
+             (maxThicknessAllProcs >= config_dynamic_thickness) .and. &
              ((anyDynamicVertexMaskChanged == 1) .or. (dirichletMaskChanged == 1))) then
             call save_fem_grid_masks(vertexMask, cellMask, dirichletVelocityMask)
          endif
