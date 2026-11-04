@@ -87,7 +87,7 @@ module elm_driver
   use VOCEmissionMod         , only : VOCEmission
 
   !
-  use filterMod              , only : setFilters
+  use filterMod              , only : setFilters, setExposedvegpFilters
   !
   use atm2lndMod             , only : downscale_forcings, topographic_effects_on_radiation
   use lnd2atmMod             , only : lnd2atm
@@ -776,10 +776,11 @@ contains
 
        ! Bareground fluxes for all patches except lakes and urban landunits
 
-       call BareGroundFluxes(bounds_clump,                                 &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,          &
-            atm2lnd_vars, canopystate_vars, soilstate_vars,                &
-            frictionvel_vars, ch4_vars  )
+       call setExposedvegpFilters(bounds_clump, filter, &
+            canopystate_vars%frac_veg_nosno_patch(bounds_clump%begp:bounds_clump%endp))
+
+       call BareGroundFluxes(bounds_clump, filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep, &
+            canopystate_vars, soilstate_vars, frictionvel_vars, ch4_vars )
        call t_stopf('bgflux')
 
        ! non-bareground fluxes for all patches except lakes and urban landunits
@@ -787,23 +788,20 @@ contains
        ! and leaf water change by evapotranspiration
 
        call t_startf('canflux')
-       call CanopyFluxes(bounds_clump,                                                   &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
-            atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
-            frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
+       call CanopyFluxes(bounds_clump, &
+            filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep, &
+            filter(nc)%num_nolakeurban_vegp,  filter(nc)%nolakeurban_vegp, &
+            canopystate_vars, cnstate_vars, energyflux_vars, &
+            frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
             ch4_vars, photosyns_vars )
        call t_stopf('canflux')
 
        ! Fluxes for all urban landunits
 
        call t_startf('uflux')
-       call UrbanFluxes(bounds_clump,                        &
-            filter(nc)%num_nourbanl, filter(nc)%nourbanl,    &
-            filter(nc)%num_urbanl, filter(nc)%urbanl,        &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,        &
-            filter(nc)%num_urbanp, filter(nc)%urbanp,        &
-            atm2lnd_vars, urbanparams_vars, soilstate_vars,  &
-            frictionvel_vars, energyflux_vars)
+       call UrbanFluxes(bounds_clump, filter(nc)%num_urbanl, filter(nc)%urbanl, &
+            filter(nc)%num_urbanc, filter(nc)%urbanc, filter(nc)%num_urbanp, filter(nc)%urbanp, &
+            urbanparams_vars, soilstate_vars, frictionvel_vars)
        call t_stopf('uflux')
 
        ! Fluxes for all lake landunits
