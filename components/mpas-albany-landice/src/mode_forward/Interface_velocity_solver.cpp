@@ -121,16 +121,16 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                          double const* clausius_clapeyron_coeff,
                          double const* thermal_thickness_limit_F,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
-                         bool const* use_GLP_F, bool const* use_ISMIP7_extension_F) {
+                         int const* use_GLP_F, int const* use_ISMIP7_extension_F) {
   // This function sets parameter values used by MPAS on the C/C++ side
   rho_ice = *ice_density_F;
   rho_ocean = *ocean_density_F;
   thermal_thickness_limit = *thermal_thickness_limit_F / unit_length; // Import with Albany scaling
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
-  useISMIP7Extension = *use_ISMIP7_extension_F;
+  useISMIP7Extension = (*use_ISMIP7_extension_F != 0);
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
-                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
+                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, (*use_GLP_F != 0), *clausius_clapeyron_coeff);
 }
 
 
