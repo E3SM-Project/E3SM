@@ -245,19 +245,6 @@ Omega:
         - GeomZMid
         - GeomZInterface
         - Frazil
-    FrazilOutput:
-      UsePointerFile: false
-      Filename: frazil.$Y-$M-$D_$h.$m.$s.nc
-      Mode: write
-      IfExists: append
-      Precision: double
-      Freq: 600
-      FreqUnits: Never
-      FileFreq: 1
-      FileFreqUnits: days
-      UseStartEnd: false
-      Contents:
-        - Frazil
     Highfreq:
       UsePointerFile: false
       Filename: highfreq.$Y-$M.nc
