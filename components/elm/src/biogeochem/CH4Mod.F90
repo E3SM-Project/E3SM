@@ -1310,7 +1310,6 @@ contains
     ! Driver for the methane emissions model
     !
     ! !USES:
-      !$acc routine seq
     use subgridAveMod      , only : p2c, c2g
     use elm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
@@ -1928,7 +1927,6 @@ contains
     ! pH (optional), & redox lag factor.
     !
     ! !USES:
-      !$acc routine seq
     use CH4varcon          , only: usephfact, anoxicmicrosites, ch4rmcnlim
     use elm_varctl         , only: anoxia
     use elm_varpar         , only: nlevdecomp, nlevdecomp_full
@@ -2275,7 +2273,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)      , intent(in) :: bounds
     integer                , intent(in) :: num_methc           ! number of column soil points in column filter
     integer                , intent(in) :: filter_methc(:)     ! column filter for soil points
@@ -2424,7 +2421,6 @@ contains
     ! By default upland veg. has small 5% porosity but this can be switched to be equal to inundated porosity.
 
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : rpi
     use pftvarcon        , only : graminoid, crop, noveg
     use CH4varcon        , only : transpirationloss, usefrootc, use_aereoxid_prog
@@ -2805,7 +2801,6 @@ contains
     ! Bubbles are released to the water table surface in ch4_tran.
 
     ! !USES:
-      !$acc routine seq
     use LakeCon
     !
     ! !ARGUMENTS:
@@ -2942,7 +2937,6 @@ contains
     ! Then CH4 diffusive flux is calculated and consistency is checked.
 
     ! !USES:
-      !$acc routine seq
     use TridiagonalMod     , only : Tridiagonal
     use CH4varcon          , only : ch4frzout, use_aereoxid_prog
     !
@@ -3723,7 +3717,6 @@ contains
     ! Finds the first unsaturated layer going up. Also allows a perched water table over ice.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)      , intent(in)  :: bounds
     integer                , intent(in)  :: num_methc           ! number of column soil points in column filter
     integer                , intent(in)  :: filter_methc(:)     ! column filter for soil points
@@ -3786,7 +3779,6 @@ contains
     ! !DESCRIPTION: Annual mean fields.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:

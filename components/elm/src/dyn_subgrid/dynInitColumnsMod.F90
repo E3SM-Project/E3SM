@@ -49,7 +49,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds                        ! bounds
     logical                  , intent(in)    :: cactive_prior( bounds%begc: ) ! column-level active flags from prior time step
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
@@ -84,7 +83,6 @@ contains
     ! this is a dispatcher that calls the appropriate routine based on the landunit type of c_new.
     !
     ! Returns ispval if there is no column to use for initialization
-    !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, isturb_MIN, isturb_MAX
     !
@@ -135,7 +133,6 @@ contains
     ! ones with 0 weight on the grid cell (i.e., virtual columns). For these, we simply
     ! keep the state at the current value (likely arbitrary initial conditions), and so
     ! return ispval from this function. Within this function, we check this assumption.
-    !$acc routine seq
     ! !USES:
     use elm_varcon, only : ispval
     !
@@ -146,12 +143,14 @@ contains
     ! !LOCAL VARIABLES:
     !-----------------------------------------------------------------------
 
+#ifndef _OPENACC
     if (col_pp%wtgcell(c_new) > 0._r8) then
 
        write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
        write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'
        call endrun()
     end if
+#endif
 
     c_template = ispval
 
@@ -164,7 +163,6 @@ contains
     ! Find column to use as a template for a crop column that has newly become active
     !
     ! Returns ispval if there is no column to use for initialization
-    !$acc routine seq
     ! !USES:
     use elm_varcon     , only : ispval
     use landunit_varcon, only : istsoil, istcrop
@@ -206,7 +204,6 @@ contains
     ! Note that, in checking 'active', we use the active flags from the prior time step,
     ! so that we don't identify a point that just became active for the first time in this
     ! time step.
-    !$acc routine seq
     ! !USES:
     use elm_varcon, only : ispval
     !
@@ -262,7 +259,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: c_new      ! index of newly-active column
     integer                  , intent(in)    :: c_template ! index of column to use as a template
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars

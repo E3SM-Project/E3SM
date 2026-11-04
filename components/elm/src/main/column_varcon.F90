@@ -108,6 +108,7 @@ contains
     use landunit_varcon, only : istice_mec
     !
     ! !ARGUMENTS:
+    !$acc routine seq
     integer :: icemec_class          ! function result
     integer, intent(in) :: col_itype ! col_pp%itype value for an icemec landunit
     !
@@ -120,7 +121,9 @@ contains
 
     ! The following assertion is here to ensure that col_itype is really from an
     ! istice_mec landunit
+#ifndef _OPENACC
     SHR_ASSERT((1 <= icemec_class .and. icemec_class <= maxpatch_glcmec), errMsg(__FILE__, __LINE__))
+#endif
 
   end function col_itype_to_icemec_class
 

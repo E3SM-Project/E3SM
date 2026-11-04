@@ -633,7 +633,6 @@ contains
      ! written by C. Koven based on original CLM4 decomposition cascade by P. Thornton
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon      , only : secspday
      use elm_varpar      , only : i_cwd
      !

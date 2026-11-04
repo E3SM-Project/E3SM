@@ -107,7 +107,6 @@ contains
 
     ! !USES:
 !    use AllocationMod , only: CNAllocation
-      !$acc routine seq
     use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
     ! !ARGUMENT:

@@ -636,7 +636,6 @@ contains
     !  written by C. Koven based on original CLM4 decomposition cascade
     !
     ! !USES:
-      !$acc routine seq
     use shr_const_mod    , only : SHR_CONST_PI
     use elm_varcon       , only : secspday
     !

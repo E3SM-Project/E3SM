@@ -107,7 +107,6 @@ contains
     !      and dump small imbalance into sensible heat, or pass large errors to BalanceCheckMod for abort.
     !
     ! !USES:
-      !$acc routine seq
     use LakeCon            , only : betavis, za_lake, n2min, tdmax, pudz, depthcrit, mixfact
     use LakeCon            , only : lakepuddling, lake_no_ed
     use QSatMod            , only : QSat
@@ -1073,7 +1072,6 @@ contains
      ! For lakes, the proper soil layers (not snow) should always be saturated.
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon  , only : denh2o, denice, tfrz, tkwat, tkice, tkair
      use elm_varcon  , only : cpice,  cpliq, thk_bedrock
      use elm_varpar  , only : nlevsno, nlevsoi, nlevgrnd
@@ -1249,7 +1247,6 @@ contains
      ! Errors will be trapped at the end of LakeTemperature.
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon       , only : tfrz, hfus, denh2o, denice, cpliq, cpice
      use elm_varpar       , only : nlevsno, nlevgrnd, nlevlak
      !

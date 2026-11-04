@@ -62,7 +62,6 @@ contains
     ! run started.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon, only : sb
 
     !
@@ -232,7 +231,6 @@ contains
     ! Compute lnd2atm_vars component of gridcell derived type
     !
     ! !USES:
-      !$acc routine seq
     use CH4varcon  , only : ch4offline
     !
     ! !ARGUMENTS:
@@ -583,7 +581,6 @@ contains
 
 
     function avg_tsoil_surf(Tsoil_) result(avgT_)
-      !$acc routine seq
     ! Function for estimating average soil temperature within the top few layers (which closely interacts with surface runoff)
         implicit none
         real(r8), intent(in) :: Tsoil_(-nlevsno+1:nlevgrnd)       ! water table depth, soil temperature
@@ -614,7 +611,6 @@ contains
     end function avg_tsoil_surf
 
     function avg_tsoil(zwt_, Tsoil_) result(avgT_)
-      !$acc routine seq
     ! Function for estimating average soil temperature within the saturated soil zone (which produces subsurface runoff)
         implicit none
         real(r8), intent(in) :: zwt_, Tsoil_(-nlevsno+1:nlevgrnd)       ! water table depth, soil temperature

@@ -92,7 +92,6 @@ contains
     !     less than 0.1 W/m2; or the iterative steps over 40.
     !
     ! !USES:
-      !$acc routine seq
     use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
     use shr_flux_mod       , only : shr_flux_update_stress
     use elm_varcon         , only : sb, cpair, hvap, vkc, grav, denice

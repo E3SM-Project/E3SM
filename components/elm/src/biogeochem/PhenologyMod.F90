@@ -85,12 +85,6 @@ module PhenologyMod
   real(r8) :: soilpsi_off                   ! water potential for offset trigger (MPa)
   real(r8) :: lwtop                         ! live wood turnover proportion (annual fraction)
   !$acc declare create(fracday         )
-  !$acc declare create(crit_dayl       )
-  !$acc declare create(crit_dayl_stress)
-  !$acc declare create(cumprec_onset   )
-  !$acc declare create(ndays_on        )
-  !$acc declare create(ndays_off       )
-  !$acc declare create(fstor2tran      )
   !$acc declare create(crit_onset_fdd  )
   !$acc declare create(crit_onset_swi  )
   !$acc declare create(soilpsi_on      )
@@ -268,7 +262,6 @@ contains
     ! 1. grass phenology
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -406,28 +399,8 @@ contains
 
     if ( crop_prog ) call CropPhenologyInit(bounds)
 
-    !$acc update device(&
-    !$acc   fracday         &
-    !$acc  , crit_dayl       &
-    !$acc  , crit_dayl_stress&
-    !$acc  , cumprec_onset   &
-    !$acc  , ndays_on        &
-    !$acc  , ndays_off       &
-    !$acc  , fstor2tran      &
-    !$acc  , crit_onset_fdd  &
-    !$acc  , crit_onset_swi  &
-    !$acc  , soilpsi_on      &
-    !$acc  , crit_offset_fdd &
-    !$acc  , crit_offset_swi &
-    !$acc  , soilpsi_off     &
-    !$acc  , lwtop           &
-    !$acc  , p1d, p1v       &
-    !$acc  , hti   &
-    !$acc  , tbase &
-    !$acc  , inhemi       &
-    !$acc  , minplantjday &
-    !$acc  , maxplantjday &
-    !$acc  , jdayyrstart )
+    !$acc update &
+    !$acc   device(fracday, crit_onset_fdd, crit_onset_swi, soilpsi_on, crit_offset_fdd, crit_offset_swi, soilpsi_off, lwtop, p1d, p1v, hti, tbase, inhemi, minplantjday, maxplantjday, jdayyrstart)
 
   end subroutine PhenologyInit
 
@@ -442,7 +415,6 @@ contains
     use timeinfoMod
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
     integer                , intent(in)    :: num_pcropp      ! number of prognostic crops in filter
@@ -531,7 +503,6 @@ contains
     ! For coupled carbon-nitrogen code (CN).
     !
     ! !USES:
-    !$acc routine seq
     use elm_varcon       , only : secspday
     !
     ! !ARGUMENTS:
@@ -582,7 +553,6 @@ contains
     ! deciduous vegetation that has only one growing season per year).
     !
     ! !USES:
-      !$acc routine seq
     use shr_const_mod   , only: SHR_CONST_TKFRZ, SHR_CONST_PI
     use elm_varcon      , only: secspday
     !
@@ -924,7 +894,6 @@ contains
     ! per year.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : secspday
     use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
     !
@@ -1404,7 +1373,6 @@ contains
     ! handle CN fluxes during the phenological onset                       & offset periods.
 
     ! !USES:
-      !$acc routine seq
     use pftvarcon        , only : ncorn, nscereal, nwcereal, nsoybean, gddmin, hybgdd
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
@@ -2321,7 +2289,6 @@ contains
     ! drastic effect on plant development.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                , intent(in)    :: p    ! PATCH index running over
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
@@ -2526,7 +2493,6 @@ contains
     ! CropPhenologyMod
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : secspday
     use elm_varpar       , only : numpft
     use pftvarcon        , only : planttemp
@@ -2733,7 +2699,6 @@ contains
     use elm_varctl           , only : use_crop
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
@@ -2884,7 +2849,6 @@ contains
    ! determined based on the LPJ model.
    !
    ! !ARGUMENTS:
-      !$acc routine seq
    integer, intent(in) :: num_pcropp       ! number of prog crop pfts in filter
    integer, intent(in) :: filter_pcropp(:) ! filter for prognostic crop pfts
    integer, intent(in) :: num_soilc        ! number of soil columns in filter
@@ -3111,7 +3075,6 @@ contains
     ! pools during the phenological offset period.
     !
     ! !USES:
-      !$acc routine seq
     use pftvarcon , only : iscft
     !
     ! !ARGUMENTS:
@@ -3313,7 +3276,6 @@ contains
     ! pools as the result of background litter fall.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                 , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                 , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)      , intent(in)    :: cnstate_vars
@@ -3413,7 +3375,6 @@ contains
     ! add phosphorus flux - X.YANG
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     !
@@ -3532,7 +3493,6 @@ contains
     ! to the column level and assign them to the three litter pools
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar , only : max_patch_per_col, nlevdecomp
     use pftvarcon  , only : iscft
     !
@@ -3687,7 +3647,6 @@ contains
    ! to the column level and assign them to a product pools
    !
    ! !USES:
-      !$acc routine seq
    use elm_varpar, only : maxpatch_pft
    type(cnstate_type)       , intent(in)    :: cnstate_vars
    !
