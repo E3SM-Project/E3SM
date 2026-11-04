@@ -347,7 +347,6 @@ void MAMOptics::run_impl(const double dt) {
         // absorption optical depth, per layer [unitless]
         const auto atm     = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
 
-        // FIXME: dry mass pressure interval [Pa]
         auto zi   = ekat::subview(wet_atm.z_iface, icol);
         auto pdel = ekat::subview(p_del, icol);
 
@@ -387,7 +386,6 @@ void MAMOptics::run_impl(const double dt) {
         auto odap_aero_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
 
-        // FIXME: dry mass pressure interval [Pa]
         auto zi   = ekat::subview(wet_atm.z_iface, icol);
         auto pdel = ekat::subview(p_del, icol);
         auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
