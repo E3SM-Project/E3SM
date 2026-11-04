@@ -626,6 +626,19 @@ void ZMDeepConvection::finalize_impl ()
 }
 
 /*------------------------------------------------------------------------------------------------*/
+namespace {
+// Round a byte count up to the alignment required by the Real/Scalar views carved from the buffer
+using ZMScalar = typename zm::Functions<Real, DefaultDevice>::Scalar;
+static_assert(sizeof(ZMScalar) == sizeof(Real),
+              "ZM buffer layout assumes Scalar and Real have the same size");
+constexpr size_t pad_to_buffer_alignment (const size_t nbytes)
+{
+  constexpr size_t align = alignof(Real) > alignof(ZMScalar) ? alignof(Real) : alignof(ZMScalar);
+  return ((nbytes + align - 1) / align) * align;
+}
+} // anonymous namespace
+
+/*------------------------------------------------------------------------------------------------*/
 size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
 {
   const int nlev_mid = m_nlev;
@@ -643,9 +656,7 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
   const size_t num_1d_intgr = ZMF::ZmInputState::num_1d_intgr + ZMF::ZmOutputTend::num_1d_intgr;
-  const size_t int_bytes = num_1d_intgr * sizeof(Int) * m_ncol;
-  const size_t int_bytes_padded = ((int_bytes + sizeof(Real) - 1) / sizeof(Real)) * sizeof(Real);
-  zm_buffer_size+= int_bytes_padded;
+  zm_buffer_size+= pad_to_buffer_alignment(num_1d_intgr * sizeof(Int) * m_ncol);
 
   return zm_buffer_size;
 }
@@ -754,9 +765,9 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   }
   //----------------------------------------------------------------------------
   const size_t real_bytes = (r_mem - buffer_manager.get_memory()) * sizeof(Real);
-  const size_t int_bytes  = num_1d_intgr * sizeof(Int) * m_ncol;
-  const size_t int_bytes_padded = ((int_bytes + sizeof(Real) - 1) / sizeof(Real)) * sizeof(Real);
-  size_t used_mem = real_bytes + int_bytes_padded;
+  // Measure the integer block from the pointer so the check validates the actual carving
+  const size_t int_bytes  = (i_mem - reinterpret_cast<Int*>(r_mem)) * sizeof(Int);
+  size_t used_mem = real_bytes + pad_to_buffer_alignment(int_bytes);
   auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for ZMDeepConvection.");
   //----------------------------------------------------------------------------
