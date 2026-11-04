@@ -23,8 +23,9 @@ coupled:
     FrazilTendencyEnable: true
     PenetratingShortwaveTendency:
       Enable: true
-    Frazil:
-      ConservationCheck: false
+
+  Frazil:
+    ConservationCheck: false
 
   Submeso:
     Enable: true
