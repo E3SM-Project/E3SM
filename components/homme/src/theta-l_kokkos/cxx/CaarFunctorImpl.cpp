@@ -1,4 +1,4 @@
-#include "Hommexx_config.h"
+#include "Config.hpp"
 
 #ifdef HOMMEXX_ENABLE_CAAR_OPT
 

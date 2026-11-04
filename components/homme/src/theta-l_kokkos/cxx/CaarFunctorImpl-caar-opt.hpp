@@ -19,7 +19,7 @@
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
-#include "SphereOperators.hpp"
+#include "SphereOperators-caar-opt.hpp"
 #include "kokkos_utils.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
