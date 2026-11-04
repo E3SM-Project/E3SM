@@ -5188,13 +5188,22 @@ diagnostics use but that are not written), need no name of their own.</p>
 </tbody>
 </table>
 <p>Operands may be fields, other expressions, named physical constants (<code>Rgas</code>,
-<code>P0</code>, ...), or numeric literals:</p>
+<code>P0</code>, ...), or numeric literals. Constant names are not case sensitive. An
+operand that names both a constant and a field (including a name introduced
+with <code>:=</code>) is rejected. Earth's rotation rate is <code>omega_earth</code>; <code>omega</code> is the
+vertical pressure velocity field.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_hPa      := p_mid/100</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_scaled   := p_mid/100</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_scaled   := T_mid*0.5</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dry_air    := p_mid - qv*p_mid</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_ratio    := p_mid / P0</span>
 </code></pre></div>
+<p>A numeric literal has no units. Multiplying or dividing by one keeps the
+units of the field, so <code>p_mid/100</code> holds the pressure in hPa, but is written
+with the units of <code>p_mid</code>, which are Pa; nothing converts units for you.
+Adding a number to, or subtracting it from, a field with units is rejected when
+the stream is set up, since <code>+</code> and <code>-</code> need operands with the same units:
+<code>T_mid - 273.15</code> is an error.</p>
 <p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. Note this
 differs from the underscore spelling <code>qc_plus_qv_times_p_mid</code>, which means
 <code>(qc+qv)*p_mid</code>. When in doubt, parenthesize. (That pair only illustrates
@@ -5312,6 +5321,23 @@ is an honest analogue.</p>
   model cannot know, and is rejected -- do not read it as "one step back" by
   analogy with <code>isel(lev=-1)</code>. Only <code>time=1</code> is available, since only one step
   of history is kept.</li>
+<li><strong>A shift of a shift is rejected.</strong> <code>X.shift(time=1).shift(time=1)</code> would be
+  one step back, not two: a shift copies its operand at the start of each step,
+  and an operand that is itself a shift has already been updated by then. So it
+  is rejected at setup, and so are the same through an alias
+  (<code>l1 := X.shift(time=1)</code>, then <code>l1.shift(time=1)</code>), <code>X.shift(time=1).tend()</code>,
+  and the underscore <code>X_prev_prev</code>. For two steps back, put an operation between
+  the shifts: <code>(X.shift(time=1)*1.0).shift(time=1)</code>. The shift of any other
+  expression is one step back, e.g. <code>bt1.shift(time=1)</code> with
+  <code>bt1 := X - X.shift(time=1)</code>.</li>
+<li><strong><code>shift(time=1)</code> of a diagnostic needs a stream that evaluates every step.</strong>
+  An instant stream evaluates diagnostics on output steps only, so the value
+  one <em>model step</em> back does not exist there unless the stream writes every
+  step (<code>frequency_units: nsteps</code> with <code>frequency: 1</code>). In any other instant
+  stream, <code>(qv*T_mid).shift(time=1)</code> is rejected at setup, and so are
+  <code>(qv*T_mid).tend()</code> and the underscore <code>X_prev</code> and <code>X_atm_backtend</code> of a
+  diagnostic <code>X</code>; use an averaged stream. The shift of a model field
+  (<code>T_mid.shift(time=1)</code>) is one model step in any stream.</li>
 <li><code>mean('col')</code> is always area weighted, so <code>weights</code> does not apply to it.
   <code>weights</code> for <code>'lev'</code> is <code>'dp'</code> or <code>'dz'</code>.</li>
 <li><code>broadcast_like</code> repeats <code>X</code> along the dimensions of <code>Y</code> that <code>X</code> lacks, so that
@@ -5344,25 +5370,26 @@ is an honest analogue.</p>
   <code>The key 'mask' is not associated to any registered product</code>, since it is
   neither a field nor a diagnostic. Both names are inherited from the underscore
   syntax (<code>mask_where_lev_gt_5</code>), not from xarray.</li>
+<li>A negative number is written as it reads, as a threshold or as a factor:
+  <code>omega.where(omega&lt;=-0.1)</code>, <code>-2*T_mid</code>, <code>T_mid*(-2)</code>. In a <code>where</code>
+  condition, the field goes on the left of the comparison.</li>
 <li><strong><code>over_dt</code> and <code>tend</code> cannot go in an <code>instant</code> stream.</strong> An instant stream
   takes a snapshot at <code>t0</code>, before any step has run, and <code>dt</code> is zero there, so
   the diagnostic aborts with "dt must be positive". Write them to an averaged
   stream (<code>averaging_type: average</code>, <code>max</code>, <code>min</code>) instead. This is a property
   of the diagnostic, not of the syntax: the underscore spellings <code>X_over_dt</code> and
   <code>X_atm_backtend</code> behave the same way.</li>
-<li><strong>A <code>mask.where(..)</code> result cannot currently be written to file as is.</strong> The
-  diagnostic is built, but its output has <code>int</code> data type, which IO cannot
-  handle: listing <code>mask.where(..)</code> (or the underscore <code>mask_where_..</code>) in
-  <code>field_names</code> fails with a narrowing conversion error, and reducing it first
-  does not help. Multiplying by 1 promotes it to <code>Real</code>, and
-  <code>mask.where(ps&gt;100000)*1.0</code> writes fine. Note the <code>*1.0</code> applies to the field
-  that <code>where</code> produced, which is a perfectly ordinary field; it is not an
+<li><strong>A <code>mask.where(..)</code> result cannot be written to file as is.</strong> Its output
+  has <code>int</code> data type and every variable is written as a real, so listing
+  <code>mask.where(..)</code> (or the underscore <code>mask_where_..</code>) in <code>field_names</code> is
+  rejected when the stream is set up. Multiplying by 1 promotes it to <code>Real</code>,
+  and <code>mask.where(ps&gt;100000)*1.0</code> writes fine. Note the <code>*1.0</code> applies to the
+  field that <code>where</code> produced, which is a perfectly ordinary field; it is not an
   operation on <code>mask</code>, which per the bullet above cannot be multiplied.</li>
 <li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
   the <code>over_dt</code> restriction above.</li>
-<li>Histogram bin edges must be non-negative, and must be writable without an
-  exponent: the diagnostic joins them with <code>_</code> and splits them back apart, so
-  <code>1e3</code> is fine (it is written <code>1000.0</code>) but <code>1e30</code> is not.</li>
+<li>Histogram bin edges are numbers in increasing order. They may be negative,
+  and may be written with an exponent (<code>bins=[-1,0,1e-5,1e-4]</code>).</li>
 </ul>
 <p>Named quantities are not operations, and stay plain names in an expression:
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
