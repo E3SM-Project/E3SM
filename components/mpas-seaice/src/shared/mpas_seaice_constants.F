@@ -13,93 +13,81 @@ module seaice_constants
 
   use mpas_derived_types
 #ifdef CCSMCOUPLED
-  use shr_const_mod
+     use shr_const_mod, only : SHR_CONST_G
 #endif
+  ! Map shared physical references from PCD here; SeaIce-specific settings and
+  ! quantities not yet represented in PCD remain defined locally below.
+  use pcd, only : pcd_pi => pi, &
+       pcd_seconds_per_day => seconds_per_day, &
+       pcd_gravity => standard_acceleration_of_gravity, &
+       pcd_ice_density => sea_ice_density_reference, &
+       pcd_seawater_density => seawater_density_reference, &
+       pcd_freshwater_density => pure_water_density_reference, &
+       pcd_stefan_boltzmann => stefan_boltzmann_constant, &
+       pcd_freezing_temperature => pure_water_freezing_temperature_reference, &
+       pcd_ice_specific_heat => sea_ice_specific_heat_capacity_reference, &
+       pcd_ice_thermal_conductivity => sea_ice_thermal_conductivity_reference, &
+       pcd_air_specific_heat => dry_air_specific_heat_capacity_reference, &
+       pcd_vapor_specific_heat => water_vapor_specific_heat_capacity_reference, &
+       pcd_rwv => water_vapor_specific_gas_constant_reference, &
+       pcd_rair => dry_air_specific_gas_constant_reference, &
+       pcd_latent_heat_sublimation => latent_heat_of_sublimation_reference, &
+       pcd_seawater_specific_heat => seawater_specific_heat_capacity_reference, &
+       pcd_latent_heat_vaporization => latent_heat_of_vaporization_reference, &
+       pcd_latent_heat_fusion => latent_heat_of_fusion_reference, &
+       pcd_ice_reference_salinity => sea_ice_reference_salinity, &
+       pcd_angular_velocity => angular_velocity, &
+       pcd_carbon_molar_mass => carbon_molar_mass_reference, &
+       pcd_iron_molar_mass => iron_molar_mass_reference
 
   private
   save
 
-#ifdef CCSMCOUPLED
-      real (kind=RKIND), parameter, public :: &
+  real (kind=RKIND), parameter, public :: &
   ! fundamental constants
-       pi                              = SHR_CONST_PI     ,&! pi
-       seaiceSecondsPerDay             = SHR_CONST_CDAY     ! seconds in calendar day
+       pi                              = pcd_pi           ,&! pi
+       seaiceSecondsPerDay             = pcd_seconds_per_day ! fixed day unit (s), NIST SP 330
 
-      real (kind=RKIND), public :: &
-       seaiceGravity                   = SHR_CONST_G      ,&! gravitational acceleration (m/s^2)
+  real (kind=RKIND), public :: &
+#ifdef CCSMCOUPLED
+     seaiceGravity                   = SHR_CONST_G
+#else
+     seaiceGravity                   = pcd_gravity
+#endif
 
   ! physical constants
-       seaiceDensityIce                = SHR_CONST_RHOICE ,&! density of ice (kg/m^3)
-       seaiceDensitySeaWater           = SHR_CONST_RHOSW  ,&! density of seawater (kg/m^3)
-       seaiceDensityFreshwater         = SHR_CONST_RHOFW  ,&! density of fresh water (kg/m^3)
+  real (kind=RKIND), public :: &
+       seaiceDensityIce                = pcd_ice_density  ,&! density of ice (kg/m^3)
+       seaiceDensitySeaWater           = pcd_seawater_density,&! density of seawater (kg/m^3)
+       seaiceDensityFreshwater         = pcd_freshwater_density,&! density of fresh water (kg/m^3)
 
   ! thermodynamic constants
-       seaiceStefanBoltzmann           = SHR_CONST_STEBOL ,&!  W/m^2/K^4
+       seaiceStefanBoltzmann           = pcd_stefan_boltzmann,&! W/m^2/K^4
        seaiceIceSnowEmissivity         = 1.0_RKIND        ,&! emissivity of snow and ice
-       seaiceFreshWaterFreezingPoint   = SHR_CONST_TKFRZ  ,&! freezing temp of fresh ice (K)
-       seaiceFreshIceSpecificHeat      = SHR_CONST_CPICE  ,&! specific heat of fresh ice (J/kg/K)
-       seaiceAirSpecificHeat           = SHR_CONST_CPDAIR ,&! specific heat of air (J/kg/K)
-       seaiceWaterVaporSpecificHeat    = SHR_CONST_CPWV   ,&! specific heat of water vapor (J/kg/K)
-       seaiceZvir                      = SHR_CONST_ZVIR   ,&! rh2o/rair - 1.0
-       seaiceLatentHeatSublimation     = SHR_CONST_LATSUB ,&! latent heat, sublimation freshwater (J/kg)
-       seaiceIceSurfaceMeltingTemperature= SHR_CONST_TKFRZ-SHR_CONST_TKFRZ ,&! melting temp. ice top surface  (C)
-       seaiceSnowSurfaceMeltingTemperature= SHR_CONST_TKFRZ-SHR_CONST_TKFRZ ,&! melting temp. snow top surface (C)
-       seaiceVonKarmanConstant         = SHR_CONST_KARMAN ,&! von Karman constant
-       seaiceSeaWaterSpecificHeat      = SHR_CONST_CPSW   ,&! specific heat of ocn    (J/kg/K)
+       seaiceFreshWaterFreezingPoint   = pcd_freezing_temperature,&! freezing temp of fresh ice (K)
+       seaiceFreshIceSpecificHeat      = pcd_ice_specific_heat,&! specific heat of fresh ice (J/kg/K)
+       seaiceAirSpecificHeat           = pcd_air_specific_heat,&! specific heat of air (J/kg/K)
+       seaiceWaterVaporSpecificHeat    = pcd_vapor_specific_heat,&! specific heat of water vapor (J/kg/K)
+       seaiceZvir                      = (pcd_rwv / pcd_rair) - 1.0_RKIND,&! rh2o/rair - 1.0
+       seaiceLatentHeatSublimation     = pcd_latent_heat_sublimation,&! latent heat, sublimation freshwater (J/kg)
+       seaiceIceSurfaceMeltingTemperature= pcd_freezing_temperature-pcd_freezing_temperature,&! melting temp. ice top surface  (C)
+       seaiceSnowSurfaceMeltingTemperature= pcd_freezing_temperature-pcd_freezing_temperature,&! melting temp. snow top surface (C)
+       seaiceVonKarmanConstant         = 0.4_RKIND        ,&! von Karman constant (not yet in PCD)
+       seaiceSeaWaterSpecificHeat      = pcd_seawater_specific_heat,&! specific heat of ocn (J/kg/K)
                                                             ! freshwater value needed for enthalpy
-       seaiceLatentHeatVaporization    = SHR_CONST_LATVAP ,&! latent heat, vaporization freshwater (J/kg)
-       seaiceLatentHeatMelting         = SHR_CONST_LATICE ,&! latent heat of melting of fresh ice (J/kg)
-       seaiceReferenceSalinity         = SHR_CONST_ICE_REF_SAL,&! ice reference salinity (ppt)
+       seaiceLatentHeatVaporization    = pcd_latent_heat_vaporization,&! latent heat, vaporization freshwater (J/kg)
+       seaiceLatentHeatMelting         = pcd_latent_heat_fusion,&! latent heat of melting of fresh ice (J/kg)
+       seaiceReferenceSalinity         = pcd_ice_reference_salinity,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.005_RKIND      ,&! parameter for fractional snow area (m)
 
-       gramsIronPerMolIron             = SHR_CONST_MWFE     ! molecular weight of Iron
-!         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
-
-#else
-      real (kind=RKIND), parameter, public :: &
-  ! fundamental constants
-       pi                              = 3.14159265358979323846_RKIND, &
-       seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND
- 
-      real (kind=RKIND), public :: &
-       seaiceGravity                   = 9.80616_RKIND ,&! gravitational acceleration (m/s^2)
-
-  ! physical constants
-       seaiceDensityIce                = 917.0_RKIND   ,&! density of ice (kg/m^3)
-       seaiceDensitySeaWater           = 1026.0_RKIND  ,&! density of seawater (kg/m^3)
-       seaiceDensityFreshwater         = 1000.0_RKIND  ,&! density of fresh water (kg/m^3)
-
-  ! thermodynamic constants
-       seaiceStefanBoltzmann           = 5.670374419e-8_RKIND,&! W/m^2/K^4
-       seaiceIceSnowEmissivity         = 0.95_RKIND    ,&! emissivity of snow and ice ! 0.985_RKIND in Icepack
-       seaiceFreshWaterFreezingPoint   = 273.15_RKIND  ,&! freezing temp of fresh ice (K)
-       seaiceFreshIceSpecificHeat      = 2106._RKIND   ,&! specific heat of fresh ice (J/kg/K)
-       seaiceAirSpecificHeat           = 1005.0_RKIND  ,&! specific heat of air (J/kg/K)
-       seaiceWaterVaporSpecificHeat    = 1.81e3_RKIND  ,&! specific heat of water vapor (J/kg/K)
-       seaiceZvir                      = 0.606_RKIND   ,&! rh2o/rair - 1.0
-       seaiceLatentHeatSublimation     = 2.835e6_RKIND ,&! latent heat, sublimation freshwater (J/kg)
-       seaiceIceSurfaceMeltingTemperature  = 0.0_RKIND ,&! melting temperature, ice top surface  (C)
-       seaiceSnowSurfaceMeltingTemperature = 0.0_RKIND ,&! melting temperature, snow top surface  (C)
-       seaiceVonKarmanConstant         = 0.4_RKIND     ,&! von Karman constant
-       seaiceSeaWaterSpecificHeat      = 4218._RKIND   ,&! specific heat of ocn    (J/kg/K)
-                                                         ! freshwater value needed for enthalpy
-       seaiceLatentHeatVaporization    = 2.501e6_RKIND ,&! latent heat, vaporization freshwater (J/kg)
-!       seaiceLatentHeatMelting         = seaiceLatentHeatSublimation & ! latent heat of melting of fresh ice (J/kg)
-!                                       - seaiceLatentHeatVaporization, &
-       seaiceLatentHeatMelting         = 3.34e5_RKIND  ,&! latent heat of melting of fresh ice (J/kg)
-       seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
-       seaiceSnowPatchiness            = 0.02_RKIND    ,&! parameter for fractional snow area (m)
-
-       gramsIronPerMolIron             = 55.845_RKIND    ! molecular weight of Iron
-!         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
-#endif
+       gramsIronPerMolIron             = pcd_iron_molar_mass * 1.0e3_RKIND ! g iron per mol iron
 
   ! fundamental constants
   real (kind=RKIND), parameter, public :: &
        pii                                = pi, &    ! replace pii with seaicePi elsewhere (might need to be parameter)
        seaiceDegreesToRadians             = pi / 180.0_RKIND, &
        seaiceRadiansToDegrees             = 180.0_RKIND / pi, &
-       seaiceSecondsPerYear               = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & ! incorrect for leap years
+       seaiceSecondsPerYear               = seaiceSecondsPerDay * 365.0_RKIND, & ! fixed 365-day year; not calendar-aware
        seaiceDaysPerSecond                = 1.0_RKIND/seaiceSecondsPerDay
 
   real (kind=RKIND), public :: &
@@ -113,7 +101,7 @@ module seaice_constants
 
   ! physical constants
   real (kind=RKIND), parameter, public :: &
-       omega                              = 7.29212e-5_RKIND ! angular rotation rate of the Earth [s-1]
+       omega                              = pcd_angular_velocity ! angular rotation rate of Earth [s-1]
 
   real(kind=RKIND), public :: &
        seaiceDensitySnow                  = 330.0_RKIND     ! density of snow (kg/m^3)
@@ -150,7 +138,7 @@ module seaice_constants
                                                             ! as Tsfcn for open water only when 
                                                             ! tfrz_option is 'minus1p8' or null
        seaiceExtinctionCoef              = 1.4_RKIND    , & ! vis extnctn coef in ice, wvlngth<700nm (1/m)
-       seaiceFreshIceConductivity        = 2.03_RKIND   , & ! thermal conductivity of fresh ice(W/m/deg)
+       seaiceFreshIceConductivity        = pcd_ice_thermal_conductivity, & ! thermal conductivity of fresh ice(W/m/deg)
                                                             ! (kice) is not used for mushy thermo
        seaiceSnowMinimumThickness        = 1.e-4_RKIND  , & ! min snow thickness for computing zTsn (m)
        ! weights for albedos for history and diagnostics
@@ -185,7 +173,7 @@ module seaice_constants
   ! biogeochemistry constants
   real(kind=RKIND), public :: &
        skeletalLayerThickness             = 0.03_RKIND    , & ! (m) skeletal layer thickness
-       gramsCarbonPerMolCarbon            = 12.0107_RKIND , & ! g carbon per mol carbon
+       gramsCarbonPerMolCarbon            = pcd_carbon_molar_mass * 1.0e3_RKIND, & ! g carbon per mol carbon
        microgramsPerKilograms             = 1.0e9_RKIND       ! kg to ug conversion
 
   ! ocean biogeochemistry ISPOL values

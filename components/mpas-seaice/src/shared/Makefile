@@ -1,6 +1,7 @@
 .SUFFIXES: .F .o
 
-OBJS = 	mpas_seaice_time_integration.o \
+OBJS = 	pcd_const.o \
+	mpas_seaice_time_integration.o \
 	mpas_seaice_advection_incremental_remap_tracers.o \
 	mpas_seaice_advection_incremental_remap.o \
 	mpas_seaice_advection_upwind.o \
@@ -30,7 +31,11 @@ OBJS = 	mpas_seaice_time_integration.o \
 
 all: $(OBJS)
 
-mpas_seaice_constants.o: 
+mpas_seaice_constants.o: pcd_const.o
+
+# Standalone Make builds compile PCD here; CIME gets it from share/util.
+pcd_const.o: ../../../../share/util/pcd_const.F90
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $< $(CPPINCLUDES) $(FCINCLUDES)
 
 mpas_seaice_error.o:
 

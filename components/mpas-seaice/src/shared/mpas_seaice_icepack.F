@@ -11332,7 +11332,8 @@ subroutine init_column_waves(domain)
 !    call icepack_query_parameters(sk_l_out=rtmp2)
 !    if (rtmp1 /= rtmp2) call mpas_log_write('sk_l differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
-    ! commented-out arguments take the default values from icepack_parameters.F90
+    ! Pass shared physical references through Icepack's public initialization
+    ! interface; omitted arguments retain Icepack's own defaults.
     call icepack_init_parameters(&
          !argcheck_in             = , &               ! may not be needed in the driver
          puny_in                 = seaicePuny, &
@@ -11367,6 +11368,8 @@ subroutine init_column_waves(domain)
          Tffresh_in              = seaiceFreshWaterFreezingPoint, &
          Lsub_in                 = seaiceLatentHeatSublimation, & !
          Lvap_in                 = seaiceLatentHeatVaporization, & !
+         ! PCD supplies fusion heat directly; Icepack otherwise derives it as Lsub - Lvap.
+         Lfresh_in               = seaiceLatentHeatMelting, &
          Timelt_in               = seaiceIceSurfaceMeltingTemperature, & !
          Tsmelt_in               = seaiceSnowSurfaceMeltingTemperature, & !
          iceruf_in               = seaiceIceSurfaceRoughness, & !
@@ -11514,7 +11517,7 @@ subroutine init_column_waves(domain)
 
     call mpas_log_write(" ----- compare values after icepack init -----")
 
-    ! Lfresh is derived in Icepack, not sent in from driver
+    ! Check the latent heat of fusion passed from the driver
     rtmp1 = seaiceLatentHeatMelting
     call icepack_query_parameters(Lfresh_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('Lfresh differs $r $r',realArgs=(/rtmp1,rtmp2/))
@@ -11543,6 +11546,10 @@ subroutine init_column_waves(domain)
     rtmp1 = seaiceLatentHeatSublimation
     call icepack_query_parameters(Lsub_out=rtmp2)
     if (rtmp1 /= rtmp2) call mpas_log_write('Lsub differs $r $r',realArgs=(/rtmp1,rtmp2/))
+
+    rtmp1 = seaiceFreshIceConductivity
+    call icepack_query_parameters(kice_out=rtmp2)
+    if (rtmp1 /= rtmp2) call mpas_log_write('kice differs $r $r',realArgs=(/rtmp1,rtmp2/))
 
     rtmp1 = seaiceSnowPatchiness
     call icepack_query_parameters(snowpatch_out=rtmp2)
