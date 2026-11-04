@@ -22,39 +22,33 @@ module li_constants
    use mpas_derived_types
    use mpas_kind_types
 
-#ifdef MPAS_ESM_SHR_CONST
+   ! Shared physical constants come from shr_const_mod in all builds, so E3SM and
+   ! standalone runs use the same values. shr_const_mod takes its values from the
+   ! E3SM Physical Constants Dictionary (share/util/pcd_const.F90). Standalone
+   ! builds compile both from share/util (see shared/Makefile).
    use shr_const_mod, only: &
-          cp_ice => SHR_CONST_CPICE,&
-          latent_heat_ice => SHR_CONST_LATICE,&
-          triple_point => SHR_CONST_TKTRIP,&
-          rho_water => SHR_CONST_RHOFW, &
-          cp_freshwater => SHR_CONST_CPFW, &
-          cp_seawater => SHR_CONST_CPSW, &
-          pii => SHR_CONST_PI, &
-          gravity => SHR_CONST_G
+          cp_ice => SHR_CONST_CPICE, &            !< heat capacity of ice (J/kg/K)
+          latent_heat_ice => SHR_CONST_LATICE, &  !< latent heat of melting of ice (J/kg)
+          rho_water => SHR_CONST_RHOFW, &         !< density of fresh water (kg m^-3)
+          cp_freshwater => SHR_CONST_CPFW, &      !< heat capacity of freshwater (J/kg/K)
+          cp_seawater => SHR_CONST_CPSW, &        !< heat capacity of seawater (J/kg/K)
+          pii => SHR_CONST_PI, &                  !< pi
+          gravity => SHR_CONST_G, &               !< acceleration due to gravity (m s^-2)
+          iceConductivity => SHR_CONST_CONDICE, & !< thermal conductivity of ice (W m^-1 K^-1)
+          kelvin_to_celsius => SHR_CONST_TKFRZ, & !< offset to convert Kelvin to Celsius (K)
+          seconds_per_day => SHR_CONST_CDAY, &    !< seconds in a calendar day (s)
+          shr_gas_constant => SHR_CONST_RGAS      !< universal gas constant (J kmol^-1 K^-1)
+
    implicit none
    save
 
-#else
+   private :: shr_gas_constant
 
-   implicit none
-   save
+   real (kind=RKIND), parameter, public :: idealGasConstant = shr_gas_constant * 1.0e-3_RKIND
+      !< ideal gas constant (J mol^-1 K^-1), converted from the per-kmol SHR_CONST_RGAS
 
-   ! physical constants
-   real (kind=RKIND), parameter, public :: cp_ice = 2009.0_RKIND        !< heat capacity of ice (J/kg/K)
-   real (kind=RKIND), parameter, public :: latent_heat_ice = 335.0e3_RKIND !< Latent heat of melting of ice (J/kg)
-   real (kind=RKIND), parameter, public :: triple_point = 273.16_RKIND  !< Triple point of water (K)
-   real (kind=RKIND), parameter, public :: rho_water = 1000.0_RKIND     !< Density of fresh water (kg m^-3)
-   real (kind=RKIND), parameter, public :: cp_freshwater = 4.188e3_RKIND        !< heat capacity of freshwater (J/kg/K)
-   real (kind=RKIND), parameter, public :: cp_seawater = 3.974e3_RKIND        !< heat capacity of seawater (J/kg/K)
-   real (kind=RKIND), parameter, public :: pii = 3.141592653589793_RKIND !< Constant: Pi
-   real (kind=RKIND), parameter, public :: gravity = 9.80616_RKIND       !< Constant: Acceleration due to gravity [m s-2]
-
-#endif
-
+   ! The constants below are empirical or specific to MALI's formulations and stay local.
    real (kind=RKIND), parameter, public :: kin_visc_water = 1.793e-6_RKIND  !< kinematic viscosity of freshwater at 0 deg C (m^2 s^-1)
-   real (kind=RKIND), parameter, public :: idealGasConstant = 8.314_RKIND  !< ideal gas constant (J mol^-1 K^-1)
-   real (kind=RKIND), parameter, public :: iceConductivity = 2.1_RKIND  !< thermal conductivity of ice (W m^-1 K^-1)
    !> haline contraction coefficient of seawater near the freezing point (PSU^-1),
    !> used by the ISMIP7 local quadratic ice-shelf melt parameterization
    !> (Burgard et al. 2022, following Lazeroms et al. 2019)
@@ -72,9 +66,7 @@ module li_constants
       !< Clausius-Clapeyron constant: Dependence of ice melting point on pressure (K Pa^-1)
 
    !  conversion factors
-   real (kind=RKIND), parameter, public :: kelvin_to_celsius = 273.15_RKIND    !< factor to convert Kelvin to Celsius
-   real (kind=RKIND), parameter, public :: scyr = 31536000.0_RKIND       !< seconds in a 365-day year; used for diagnostics
-   real (kind=RKIND), parameter, public :: seconds_per_day = 86400.0_RKIND  !< Conversion from days to seconds
+   real (kind=RKIND), parameter, public :: scyr = 365.0_RKIND * seconds_per_day  !< seconds in a 365-day year
 
 !***********************************************************************
 
