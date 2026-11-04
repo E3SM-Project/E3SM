@@ -20,7 +20,7 @@ module restFileMod
   use elm_varctl           , only : create_glacier_mec_landunit, iulog 
   use elm_varcon           , only : c13ratio, c14ratio
   use elm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
-  use CH4Mod               , only : ch4_type
+  use Ch4TypeMod               , only : ch4_type
   use CNStateType          , only : cnstate_type
   
 

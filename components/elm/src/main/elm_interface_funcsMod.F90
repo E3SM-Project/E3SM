@@ -48,7 +48,7 @@ module elm_interface_funcsMod
 
   use CNStateType           , only : cnstate_type
 
-  use CH4Mod                , only : ch4_type
+  use Ch4TypeMod                , only : ch4_type
 
   use PhotosynthesisType    , only : photosyns_type
   use cropType              , only : crop_type

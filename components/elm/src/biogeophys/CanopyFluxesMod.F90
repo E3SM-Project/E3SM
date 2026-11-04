@@ -34,7 +34,7 @@ module CanopyFluxesMod
   use SoilStateType         , only : soilstate_type
   use SolarAbsorbedType     , only : solarabs_type
   use SurfaceAlbedoType     , only : surfalb_type
-  use CH4Mod                , only : ch4_type
+  use Ch4TypeMod                , only : ch4_type
   use PhotosynthesisType    , only : photosyns_type
   use GridcellType          , only : grc_pp
   use TopounitDataType      , only : top_as, top_af
