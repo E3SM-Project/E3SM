@@ -1380,7 +1380,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_always_compute_fem_grid" type="logical"
 	category="debug" group="debug">
-Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.  As of June 2019 (and earlier) there is a bug which requires this to be set to true if there are ice shelves in the model domain.
+Always compute finite-element grid information for external dycores rather than only doing so when the masks it is computed from change.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
