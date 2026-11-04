@@ -455,8 +455,10 @@ contains
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
 
-         ! A new FEM grid will be generated from the current masks, so remember them
-         if ((anyDynamicVertexMaskChanged == 1) .or. (dirichletMaskChanged == 1)) then
+         ! A new FEM grid will be generated from the current masks, so remember them.  No grid is
+         ! generated when there is too little ice to solve for velocity, so keep the old copies then.
+         if ((maxThicknessAllProcs >= config_dynamic_thickness) .and. &
+             ((anyDynamicVertexMaskChanged == 1) .or. (dirichletMaskChanged == 1))) then
             call save_fem_grid_masks(vertexMask, cellMask, dirichletVelocityMask)
          endif
 
