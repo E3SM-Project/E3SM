@@ -519,7 +519,11 @@ add_default($nl, 'config_calving_specified_source');
 add_default($nl, 'config_calving_velocity_const');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
-add_default($nl, 'config_restore_calving_front');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_restore_calving_front');
+} else {
+    add_default($nl, 'config_restore_calving_front', 'val'=>".false.");
+}
 add_default($nl, 'config_restore_calving_front_prevent_retreat');
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_remove_icebergs');

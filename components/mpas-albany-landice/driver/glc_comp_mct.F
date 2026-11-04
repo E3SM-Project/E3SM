@@ -88,6 +88,7 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
+  character (len=*), parameter :: dataModeStreamName = 'data-mode-input'  ! the thickness stream buildnml writes in data mode
 
 !=======================================================================
 
@@ -828,7 +829,7 @@ contains
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
       integer :: err, err_tmp, globalErr, streamDirection, iam
-      logical :: solveVelo, streamActive
+      logical :: solveVelo, streamActive, readDataMode
 
       iam = domain % dminfo % my_proc_id
 
@@ -915,12 +916,27 @@ contains
          ! Could add, e.g., linear interpolation later.
 
          ! NOTE: If any input ("forcing") files here contain fields that the coupler also passes, 
-         ! the input file versions here will clobber the fields passed from the coupler. 
-         
+         ! the input file versions here will clobber the fields passed from the coupler.
+
+         ! In data mode, a new thickness record replaces the thickness after li_timestep has
+         ! computed the masks and surfaces from it, so these need updating before they are
+         ! written or exported.
+         readDataMode = .false.
+         if (mpas_stream_mgr_stream_exists(domain % streamManager, dataModeStreamName)) then
+            readDataMode = mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID=dataModeStreamName, &
+                                                          direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+            err = ior(err, err_tmp)
+         end if
+
          call mpas_stream_mgr_read(domain % streamManager, whence=MPAS_STREAM_LATEST_BEFORE, saveActualWhen = .true., ierr=err_tmp)
          err = ior(err, err_tmp)
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
+
+         if (readDataMode) then
+            call update_masks_and_geometry(err_tmp)
+            err = ior(err, err_tmp)
+         end if
 
          ! call analysis driver compute, restart, write subroutines
          ! (note: alarms and timers are handled by the analysis member code)
@@ -1801,6 +1817,55 @@ contains
        ctime(7:8) = time(5:6)
 
     end subroutine datetime!}}}
+
+   !-----------------------------------------------------------------------
+   !  routine update_masks_and_geometry
+   !
+   !> \brief   Recompute masks and surfaces from the current thickness
+   !> \details
+   !>  Called after data mode reads a new thickness record, so that the masks
+   !>  and surfaces written to history files and exported to the coupler
+   !>  agree with the new thickness.
+   !-----------------------------------------------------------------------
+   subroutine update_masks_and_geometry(err)!{{{
+
+      use li_mask, only: li_calculate_mask
+      use li_advection, only: li_update_geometry
+
+      integer, intent(out) :: err
+
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool, velocityPool, geometryPool
+      integer :: err_tmp
+
+      err = 0
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
+
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+
+         call li_update_geometry(geometryPool)
+
+         block => block % next
+      end do
+
+   end subroutine update_masks_and_geometry!}}}
 
     subroutine init_ocean_z_levels(domain, err)
        use glc_zocnclass_mod
