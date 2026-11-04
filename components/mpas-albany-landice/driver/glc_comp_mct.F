@@ -1433,8 +1433,15 @@ contains
    real(kind=RKIND), pointer :: config_invalid_value_TF
    character(len=StrKIND), pointer :: config_smb_source
    real(kind=RKIND) :: fractionalMaskVal
+   logical, pointer :: ismip6ShelfMeltActive, extrapOceanDataActive
+   logical :: importTF, importTFMask
 
     errorCode = 0
+
+    ! the 3-D thermal forcing and its mask are fields of packages that are
+    ! inactive when no option uses them, even if the coupler sends them
+    call mpas_pool_get_package(domain % packages, 'ismip6ShelfMeltActive', ismip6ShelfMeltActive)
+    call mpas_pool_get_package(domain % packages, 'extrapOceanDataActive', extrapOceanDataActive)
 
     call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
     call mpas_pool_get_config(domain % configs, 'config_smb_source', config_smb_source)
@@ -1461,10 +1468,10 @@ contains
 !         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
-         if (nISMIP6OceanLayers > 0) then
-            orig3dOceanMask(:,:) = 0
-            ismip6shelfMelt_3dThermalForcing(:,:) = 0.0_RKIND
-         endif
+         importTF = (nISMIP6OceanLayers > 0) .and. ismip6ShelfMeltActive
+         importTFMask = (nISMIP6OceanLayers > 0) .and. extrapOceanDataActive
+         if (importTFMask) orig3dOceanMask(:,:) = 0
+         if (importTF) ismip6shelfMelt_3dThermalForcing(:,:) = 0.0_RKIND
          do i = 1, nCellsSolve
             n = n + 1
             if (trim(config_smb_source) == 'coupler') then
@@ -1476,18 +1483,19 @@ contains
                errorCode = ior(errorCode, 1)
             endif
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            if (nISMIP6OceanLayers > 0) then
+            if (importTF .or. importTFMask) then
                do iLev = 1, nISMIP6OceanLayers
                   fractionalMaskVal = x2g_g % rAttr(index_x2g_So_tf3d_mask(iLev), n)
                   if (fractionalMaskVal > 0.5_RKIND) then
                      ! Only use MALI grid cells that have at least 50% overlap with MPAS-Ocean cells
                      ! if valid, mark our integer mask as 1 and scale the TF value by the fractional mask
-                     orig3dOceanMask(iLev,i) = 1
-                     ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n) / fractionalMaskVal
+                     if (importTFMask) orig3dOceanMask(iLev,i) = 1
+                     if (importTF) ismip6shelfMelt_3dThermalForcing(iLev, i) = &
+                        x2g_g % rAttr(index_x2g_So_tf3d(iLev), n) / fractionalMaskVal
                   else
                      ! if not using, insert 0 in mask and bad val in TF field
-                     orig3dOceanMask(iLev,i) = 0
-                     ismip6shelfMelt_3dThermalForcing(iLev, i) = config_invalid_value_TF
+                     if (importTFMask) orig3dOceanMask(iLev,i) = 0
+                     if (importTF) ismip6shelfMelt_3dThermalForcing(iLev, i) = config_invalid_value_TF
                   endif
                enddo
             endif
@@ -1880,6 +1888,7 @@ contains
        integer, pointer :: nISMIP6OceanLayers
        real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
        real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_zBndsOcean
+       logical, pointer :: ismip6ShelfMeltActive
        integer :: cpl_num_zocn, iLev
 
        err = 0
@@ -1898,6 +1907,15 @@ contains
           return
        endif
        call seq_infodata_PutData(infodata, glc_nzoc=cpl_num_zocn)
+
+       ! the z-levels are stored in fields of the ismip6ShelfMelt package, which is
+       ! inactive when no option uses 3-D ocean thermal forcing
+       call mpas_pool_get_package(domain % packages, 'ismip6ShelfMeltActive', ismip6ShelfMeltActive)
+       if ((nISMIP6OceanLayers > 0) .and. (.not. ismip6ShelfMeltActive)) then
+          call mpas_log_write("Not storing the coupler's $i ocean z-levels: no option uses " // &
+                              "3-D ocean thermal forcing", intArgs=(/nISMIP6OceanLayers/))
+          return
+       endif
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
