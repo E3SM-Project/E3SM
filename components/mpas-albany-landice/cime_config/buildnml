@@ -46,6 +46,9 @@ def buildnml(case, caseroot, compname):
     glc_nzoc          = case.get_value("GLC_NZOC")
     ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
     glc_two_way_coupling = case.get_value("GLC_TWO_WAY_COUPLING")
+    ic_file           = case.get_value("MALI_IC_FILE")
+    decomp_file_prefix = case.get_value("MALI_DECOMP_FILE_PREFIX")
+    datamode_file     = case.get_value("MALI_DATAMODE_FILE")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -114,14 +117,24 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpasli.graph.info.'
         region_mask_date += '20230202'
     else:
-        expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
+        # MALI_IC_FILE, MALI_DECOMP_FILE_PREFIX and MALI_DATAMODE_FILE name the
+        # files for a grid not listed above (build-namelist reads the partitions)
+        expect(ic_file and decomp_file_prefix,
+               "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid +
+               ", so MALI_IC_FILE and MALI_DECOMP_FILE_PREFIX must be set")
+        expect(mali_prognostic_mode != 'DATA' or datamode_file,
+               "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid +
+               ", so MALI_DATAMODE_FILE must be set in DATA mode")
 
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs
     # Note: this is not setup for multiple instances
     #--------------------------------------------------------------------
 
-    input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
+    if ic_file:
+        input_file = ic_file
+    else:
+        input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
     if run_type == 'hybrid' or run_type == 'branch':
         input_file = "{}/{}.mali.rst.{}_{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
         expect(os.path.exists(input_file), " ERROR mali buildnml: missing specified restart file for branch or hybrid run: " + input_file)
@@ -152,7 +165,7 @@ def buildnml(case, caseroot, compname):
     #------------------------
     # Set the datamode file if needed
     #------------------------
-    if mali_prognostic_mode == 'DATA':
+    if mali_prognostic_mode == 'DATA' and not datamode_file:
         datamode_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_datamode.{datamode_date}.nc"
 
     #--------------------------------------------------------------------
@@ -406,6 +419,9 @@ def buildnml(case, caseroot, compname):
         if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
             safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
         else:
+            expect(grid_prefix != '',
+                   f"ERROR: mali buildnml has no Albany input for GLC_GRID {glc_grid}, so "
+                   f"SourceMods/src.mali/{albany_input_name} must be provided")
             # Each supported grid should have a corresponding albany_input.yaml file in
             # components/mpas-albany-landice/bld/namelist_files/
             # Naming convention is albany_input.GRID_PREFIX.yaml

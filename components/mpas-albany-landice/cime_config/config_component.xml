@@ -58,6 +58,38 @@
       DATA updates ice thickness from an input file at a specified frequency.</desc>
   </entry>
 
+  <entry id="MALI_IC_FILE">
+    <type>char</type>
+    <default_value></default_value>
+    <group>run_component_mali</group>
+    <file>env_run.xml</file>
+    <desc>Full path of the MALI mesh and initial condition.  If empty, the
+      file for GLC_GRID in MALI's buildnml is used.  Required for a glc grid
+      that buildnml does not list.</desc>
+  </entry>
+
+  <entry id="MALI_DECOMP_FILE_PREFIX">
+    <type>char</type>
+    <default_value></default_value>
+    <group>run_component_mali</group>
+    <file>env_run.xml</file>
+    <desc>Full path of the MALI graph partition files, up to the task count
+      that ends each file name (e.g. /path/mpasli.graph.info.part.).  If
+      empty, the partitions for GLC_GRID in MALI's buildnml are used.
+      Required for a glc grid that buildnml does not list.</desc>
+  </entry>
+
+  <entry id="MALI_DATAMODE_FILE">
+    <type>char</type>
+    <default_value></default_value>
+    <group>run_component_mali</group>
+    <file>env_run.xml</file>
+    <desc>Full path of the ice thickness that MALI reads when
+      MALI_PROGNOSTIC_MODE is DATA.  If empty, the file for GLC_GRID in
+      MALI's buildnml is used.  Required in DATA mode for a glc grid that
+      buildnml does not list.</desc>
+  </entry>
+
   <entry id="GLC_SMB">
     <type>logical</type>
     <valid_values>true,false</valid_values>
