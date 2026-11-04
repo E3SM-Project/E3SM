@@ -155,6 +155,7 @@ module mpaso_cpl_indices
   integer :: index_x2o_Sg_icemask
   integer :: index_x2o_Sg_icemask_grounded
   integer :: index_x2o_Sg_icemask_floating
+  integer :: index_x2o_Sg_icemask_floating_fluxes
   integer :: index_x2o_Sg_below_sea_level_mask
   integer :: index_x2o_Fogg_hcond
 
@@ -349,6 +350,8 @@ contains
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask')
     index_x2o_Sg_icemask_grounded = mct_avect_indexra(x2o,'Sg_icemask_grounded')
     index_x2o_Sg_icemask_floating = mct_avect_indexra(x2o,'Sg_icemask_floating')
+    ! only driver-mct, which supports ice-shelf coupling, provides this field
+    index_x2o_Sg_icemask_floating_fluxes = mct_avect_indexra(x2o,'Sg_icemask_floating_fluxes',perrWith='quiet')
     index_x2o_Sg_below_sea_level_mask = mct_avect_indexra(x2o,'Sg_below_sea_level_mask')
     index_x2o_Fogg_hcond = mct_avect_indexra(x2o,'Fogg_hcond')
 

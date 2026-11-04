@@ -4753,6 +4753,36 @@
     </values>
   </entry>
 
+  <entry id="glc2ocn_shelf_smapname"    modify_via_xml="GLC2OCN_SHELF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn shelf mapping file for the ice-shelf geometry states
+    </desc>
+    <values>
+      <value>$GLC2OCN_SHELF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_shelf_smaptype"    modify_via_xml="GLC2OCN_SHELF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_SHELF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="ocn2glc_tf_smapname"    modify_via_xml="OCN2GLC_TF_SMAPNAME">
     <type>char</type>
     <category>mapping</category>

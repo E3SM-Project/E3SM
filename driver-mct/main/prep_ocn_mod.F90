@@ -16,6 +16,7 @@ module prep_ocn_mod
   use seq_flds_mod
   use t_drv_timers_mod
   use mct_mod
+  use shr_mct_mod,      only: shr_mct_queryConfigFile
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
@@ -90,6 +91,7 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_Rg2o_ice
   type(seq_map), pointer :: mapper_Fg2o
   type(seq_map), pointer :: mapper_Sg2o
+  type(seq_map), pointer :: mapper_Sshelf_g2o ! glc ice-shelf geometry states
   type(seq_map), pointer :: mapper_Sw2o
   type(seq_map), pointer :: mapper_Fw2o
 
@@ -158,6 +160,8 @@ contains
     character(CL)            :: rof_gnam       ! rof grid
     character(CL)            :: wav_gnam       ! wav grid
     character(CL)            :: glc_gnam       ! glc grid
+    character(CL)            :: shelf_smapname ! glc2ocn shelf state map
+    logical                  :: shelf_smap_found
     type(mct_avect), pointer :: o2x_ox
     type(mct_avect), pointer :: x2o_ox
     character(*), parameter  :: subname = '(prep_ocn_init)'
@@ -387,6 +391,24 @@ contains
           call seq_map_init_rcfile(mapper_Fg2o, glc(1), ocn(1), &
                'seq_maps.rc', 'glc2ocn_fmapname:', 'glc2ocn_fmaptype:',samegrid_og, &
                'mapper_Fg2o initialization',esmf_map_flag)
+
+          ! the ice-shelf geometry states use their own map if the case names one
+          ! and otherwise the conservative flux map
+          call shr_mct_queryConfigFile(mpicom_CPLID, 'seq_maps.rc', &
+               'glc2ocn_shelf_smapname:', shelf_smapname, Label1Found=shelf_smap_found)
+          if (shelf_smap_found) shelf_smap_found = (trim(shelf_smapname) /= 'idmap_ignore')
+          if (shelf_smap_found) then
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing mapper_Sshelf_g2o'
+             end if
+             allocate(mapper_Sshelf_g2o)
+             call seq_map_init_rcfile(mapper_Sshelf_g2o, glc(1), ocn(1), &
+                  'seq_maps.rc', 'glc2ocn_shelf_smapname:', 'glc2ocn_shelf_smaptype:', &
+                  samegrid_og, 'mapper_Sshelf_g2o initialization', esmf_map_flag)
+          else
+             mapper_Sshelf_g2o => mapper_Fg2o
+          end if
        endif
        call shr_sys_flush(logunit)
 
@@ -1427,17 +1449,21 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! Map glc ice-shelf fields to g2x_ox (note that g2x_ox is a local module
-    ! variable).  The ice-shelf states are areal fractions and area-weighted
-    ! averages, so all of these fields use the conservative mapper.  They are
-    ! not normalized so the remapped floating-ice mask is the fraction of each
-    ! ocean cell covered by floating ice, which the ocean uses to conserve the
-    ! ice-shelf fluxes it sends to glc.
+    ! variable).  The ice-shelf fields are areal fractions and area-weighted
+    ! averages, and are not normalized, so the remapped floating-ice mask is
+    ! the fraction of each ocean cell covered by floating ice.  The fluxes and
+    ! the floating-ice mask are mapped with the conservative flux mapper, and
+    ! that mask is kept as Sg_icemask_floating_fluxes, which the ocean uses to
+    ! conserve the ice-shelf fluxes it sends to glc.  The geometry states are
+    ! then mapped with the ice-shelf state mapper (glc2ocn_shelf_smapname),
+    ! which may smooth them, or with the flux mapper if no such map is given.
     !
     ! Arguments
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
     integer :: egi
+    integer :: index_floating, index_floating_fluxes
     type(mct_avect), pointer :: g2x_gx
     character(*),  parameter :: subname = '(prep_ocn_shelf_calc_g2x_ox)'
     !---------------------------------------------------------------
@@ -1447,7 +1473,14 @@ contains
        g2x_gx => component_get_c2x_cx(glc(egi))
 
        call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi), &
-            fldlist=seq_flds_g2o_shelf_fields, norm=.false.)
+            fldlist=seq_flds_g2o_shelf_fluxes, norm=.false.)
+
+       index_floating = mct_aVect_indexRA(g2x_ox(egi), 'Sg_icemask_floating')
+       index_floating_fluxes = mct_aVect_indexRA(g2x_ox(egi), 'Sg_icemask_floating_fluxes')
+       g2x_ox(egi)%rAttr(index_floating_fluxes,:) = g2x_ox(egi)%rAttr(index_floating,:)
+
+       call seq_map_map(mapper_Sshelf_g2o, g2x_gx, g2x_ox(egi), &
+            fldlist=seq_flds_g2o_shelf_states, norm=.false.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_shelf_calc_g2x_ox
