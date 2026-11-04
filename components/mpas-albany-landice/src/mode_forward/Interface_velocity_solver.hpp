@@ -76,7 +76,9 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                         double const* clausius_clapeyron_coeff,
                         double const* thermal_thickness_limit_F,
                         int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
-                        int const* use_GLP_F, int const* use_ISMIP7_extension_F);
+                        int const* use_GLP_F, int const* use_ISMIP7_extension_F,
+                        double const* melting_temperature_F, double const* seconds_per_year_F,
+                        double const* gas_constant_F);
 
 void velocity_solver_init_l1l2(double const* levelsRatio);
 
@@ -149,6 +151,13 @@ extern void velocity_solver_finalize__();
 
 extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
                         double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff); 
+
+#ifdef MPAS_LI_ALBANY_ADDITIONAL_PHYS_PARAMS
+// Overload added in sandialabs/Albany#1241
+extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA,
+                        double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff,
+                        double const& meltingTemperature, double const& secondsPerYear, double const& gasConstant);
+#endif
 
 extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     int nGlobalTriangles, bool ordering, bool first_time_step,

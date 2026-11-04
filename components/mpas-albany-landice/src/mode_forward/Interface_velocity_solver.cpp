@@ -44,8 +44,9 @@ int nLayers;
 double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, *areaTriangle_F;
 std::vector<double> xCellProjected, yCellProjected, zCellProjected;
 const double unit_length = 1000;
-const double T0 = 273.15;
-const double secondsInAYear = 31536000.0;  // This may vary slightly in MPAS, but this should be close enough for how this is used.
+// Set from MPAS li_constants via velocity_solver_set_parameters(); defaults match those values.
+double T0 = 273.15;                // melting temperature of ice at atmospheric pressure [K]
+double secondsInAYear = 31536000.0; // seconds in a 365-day year [s]
 double minThickness = 1e-3; //[km]
 double thermal_thickness_limit; //[km]
 const double minBeta = 1e-5;
@@ -121,16 +122,31 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                          double const* clausius_clapeyron_coeff,
                          double const* thermal_thickness_limit_F,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
-                         int const* use_GLP_F, int const* use_ISMIP7_extension_F) {
+                         int const* use_GLP_F, int const* use_ISMIP7_extension_F,
+                         double const* melting_temperature_F, double const* seconds_per_year_F,
+                         double const* gas_constant_F) {
   // This function sets parameter values used by MPAS on the C/C++ side
+  T0 = *melting_temperature_F;
+  secondsInAYear = *seconds_per_year_F; // must be set before scaling flowParamA below
   rho_ice = *ice_density_F;
   rho_ocean = *ocean_density_F;
   thermal_thickness_limit = *thermal_thickness_limit_F / unit_length; // Import with Albany scaling
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
   useISMIP7Extension = (*use_ISMIP7_extension_F != 0);
+#ifdef MPAS_LI_ALBANY_ADDITIONAL_PHYS_PARAMS
+  // Requires Albany with sandialabs/Albany#1241, which also takes the melting
+  // temperature, seconds per year and gas constant.
+  velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear,
+                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, (*use_GLP_F != 0), *clausius_clapeyron_coeff,
+                                            T0, secondsInAYear, *gas_constant_F);
+#else
+  // Older Albany keeps its own defaults (273.15 K, 3.1536e7 s, 8.314 J mol^-1 K^-1),
+  // so its gas constant can differ slightly from MALI's.
+  (void) gas_constant_F;
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
                                             *flowLawExponent_F, *dynamic_thickness_F/unit_length, (*use_GLP_F != 0), *clausius_clapeyron_coeff);
+#endif
 }
 
 
