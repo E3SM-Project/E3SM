@@ -97,42 +97,55 @@ def do_cime_vars(entry, case, refine=False, extra=None):
 def get_total_subcycles(root, name):
 ###############################################################################
     """
-    Return the product of number_of_subcycles over the node with the given name
-    and all of its enclosing atm process groups. This is the number of times
-    that process runs (i.e., how many steps its step counter advances) per
-    atm coupling step. Returns None if the node is not found.
+    Return the product of number_of_subcycles over the atm process with the
+    given name and all of the atm process groups enclosing it, starting from
+    the atm process node root. This is the number of times that process runs
+    (i.e., how many steps its step counter advances) per atm coupling step.
+    Only recurses through the processes listed in each group's atm_procs_list.
 
     >>> xml_str = '''
-    ... <params>
+    ... <eamxx>
+    ...   <number_of_subcycles>1</number_of_subcycles>
+    ...   <atm_procs_list>sc_import,atm_step</atm_procs_list>
+    ...   <sc_import>
+    ...     <number_of_subcycles>1</number_of_subcycles>
+    ...   </sc_import>
     ...   <atm_step>
     ...     <number_of_subcycles>2</number_of_subcycles>
+    ...     <atm_procs_list>physics</atm_procs_list>
     ...     <physics>
     ...       <number_of_subcycles>3</number_of_subcycles>
+    ...       <atm_procs_list>rrtmgp</atm_procs_list>
     ...       <rrtmgp>
     ...         <number_of_subcycles>1</number_of_subcycles>
     ...       </rrtmgp>
     ...     </physics>
     ...   </atm_step>
-    ... </params>
+    ... </eamxx>
     ... '''
     >>> import xml.etree.ElementTree as ET
     >>> get_total_subcycles(ET.fromstring(xml_str), "rrtmgp")
     6
-    >>> get_total_subcycles(ET.fromstring(xml_str), "shoc") is None
-    True
+    >>> get_total_subcycles(ET.fromstring(xml_str), "shoc")
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Atm process 'shoc' not found inside 'eamxx'
     """
 
+    nsub_node = get_child(root,"number_of_subcycles",must_exist=False)
+    expect (nsub_node is not None,
+            f"Node '{root.tag}' does not look like an atm process (no number_of_subcycles)")
+    nsub = int(nsub_node.text)
+
     if root.tag==name:
-        nsub = root.find("number_of_subcycles")
-        return 1 if nsub is None else int(nsub.text)
+        return nsub
 
-    for elem in root:
-        found = get_total_subcycles(elem,name)
-        if found is not None:
-            nsub = root.find("number_of_subcycles")
-            return found if nsub is None else found*int(nsub.text)
+    apl = get_child(root,"atm_procs_list",must_exist=False)
+    children = [] if apl is None or not apl.text else apl.text.split(',')
+    for child in [get_child(root,c.strip()) for c in children]:
+        if find_node(child,name) is not None:
+            return nsub * get_total_subcycles(child,name)
 
-    return None
+    expect (False, f"Atm process '{name}' not found inside '{root.tag}'")
 
 ###############################################################################
 def perform_consistency_checks(case, xml):
@@ -144,9 +157,14 @@ def perform_consistency_checks(case, xml):
     >>> from eamxx_buildnml_impl import MockCase
     >>> xml_str = '''
     ... <params>
-    ...   <rrtmgp>
-    ...     <rad_frequency type="integer">3</rad_frequency>
-    ...   </rrtmgp>
+    ...   <eamxx>
+    ...     <number_of_subcycles>1</number_of_subcycles>
+    ...     <atm_procs_list>rrtmgp</atm_procs_list>
+    ...     <rrtmgp>
+    ...       <number_of_subcycles>1</number_of_subcycles>
+    ...       <rad_frequency type="integer">3</rad_frequency>
+    ...     </rrtmgp>
+    ...   </eamxx>
     ... </params>
     ... '''
     >>> import xml.etree.ElementTree as ET
@@ -195,12 +213,18 @@ def perform_consistency_checks(case, xml):
      For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
     >>> subcycled_xml_str = '''
     ... <params>
-    ...   <atm_step>
-    ...     <number_of_subcycles>2</number_of_subcycles>
-    ...     <rrtmgp>
-    ...       <rad_frequency type="integer">2</rad_frequency>
-    ...     </rrtmgp>
-    ...   </atm_step>
+    ...   <eamxx>
+    ...     <number_of_subcycles>1</number_of_subcycles>
+    ...     <atm_procs_list>atm_step</atm_procs_list>
+    ...     <atm_step>
+    ...       <number_of_subcycles>2</number_of_subcycles>
+    ...       <atm_procs_list>rrtmgp</atm_procs_list>
+    ...       <rrtmgp>
+    ...         <number_of_subcycles>1</number_of_subcycles>
+    ...         <rad_frequency type="integer">2</rad_frequency>
+    ...       </rrtmgp>
+    ...     </atm_step>
+    ...   </eamxx>
     ... </params>
     ... '''
     >>> subcycled_xml = ET.fromstring(subcycled_xml_str)
@@ -241,7 +265,7 @@ def perform_consistency_checks(case, xml):
         atm_ncpl = int(case.get_value("ATM_NCPL"))
         # rad_frequency counts rrtmgp steps, and rrtmgp runs rad_nsub times per
         # atm (coupling) step if it, or any group enclosing it, is subcycled
-        rad_nsub = get_total_subcycles(xml,"rrtmgp")
+        rad_nsub = get_total_subcycles(get_child(xml,"eamxx"),"rrtmgp")
         atm_tstep = 86400 / atm_ncpl
         rad_tstep = atm_tstep * rad_freq / rad_nsub
 
