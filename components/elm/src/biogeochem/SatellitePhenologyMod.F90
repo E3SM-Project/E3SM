@@ -481,6 +481,8 @@ contains
     type(file_desc_t) :: ncid             ! netcdf id
     real(r8), pointer :: annlai(:,:)      ! 12 months of monthly lai from input data set 
     real(r8), pointer :: mlai(:,:,:)        ! lai read from input files
+    real(r8), pointer :: mlai_2d(:,:)       ! lai read from input files (no PFT dimension)
+    integer , pointer :: pft_type(:)        ! PFT of the gridcell for inputs without PFT dimension
     real(r8):: closelat,closelon          ! single column vars
     integer :: ier                        ! error code
     integer :: g,k,l,m,n,p,t,ti,topi                ! indices
@@ -492,6 +494,9 @@ contains
     integer :: npft_i                     ! number of input data pft types
     integer :: closelatidx,closelonidx    ! single column vars
     logical :: isgrid2d                   ! true => file is 2d
+    logical :: readvar                    ! true => variable is on the dataset
+    integer :: num_dims                   ! number of dimensions of MONTHLY_LAI
+    type(Var_desc_t) :: var_desc          ! variable descriptor
     character(len=256) :: locfn           ! local file name
     character(len=32) :: subname = 'readAnnualVegetation'
     !-----------------------------------------------------------------------
@@ -500,7 +505,9 @@ contains
 
     ! Determine necessary indices
 
-    allocate(mlai(bounds%begg:bounds%endg,1:max_topounits, 0:numpft), stat=ier)
+    allocate(mlai(bounds%begg:bounds%endg,1:max_topounits, 0:numpft), &
+             mlai_2d(bounds%begg:bounds%endg,1:max_topounits), &
+             pft_type(bounds%begg:bounds%endg), stat=ier)
     if (ier /= 0) then
        write(iulog,*)subname, 'allocation error '
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -528,10 +535,26 @@ contains
             closelat, closelon, closelatidx, closelonidx)
     endif
 
+    ! MONTHLY_LAI is either (time, pft, gridcell) or, for datasets with a single PFT
+    ! per gridcell, (time, gridcell); in the latter case PFT_TYPE gives the PFT
+    call check_var(ncid, 'MONTHLY_LAI', var_desc, readvar)
+    if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_LAI NOT on fsurdat file'//errMsg(__FILE__, __LINE__))
+    call ncd_inqvdims(ncid, num_dims, var_desc)
+    if (num_dims == 2) then
+       call ncd_io(ncid=ncid, varname='PFT_TYPE', flag='read', data=pft_type, dim1name=grlnd, &
+            readvar=readvar)
+       if (.not. readvar) call endrun(msg=' ERROR: PFT_TYPE NOT on fsurdat file'//errMsg(__FILE__, __LINE__))
+    end if
+
     do k=1,12   !! loop over months and read vegetated data
 
-       call ncd_io(ncid=ncid, varname='MONTHLY_LAI', flag='read', data=mlai, &
-            dim1name=grlnd, nt=k)
+       if (num_dims == 2) then
+          call ncd_io(ncid=ncid, varname='MONTHLY_LAI', flag='read', data=mlai_2d, &
+               dim1name=grlnd, nt=k)
+       else
+          call ncd_io(ncid=ncid, varname='MONTHLY_LAI', flag='read', data=mlai, &
+               dim1name=grlnd, nt=k)
+       end if
 
        !! only vegetated patches have nonzero values
        !! Assign lai/sai/hgtt/hgtb to the top [maxpatch_pft] patches
@@ -543,11 +566,16 @@ contains
           topi = grc_pp%topi(g)
           ti = t - topi + 1
           if (veg_pp%itype(p) /= noveg) then     !! vegetated pft
-             do l = 0, numpft
-                if (l == veg_pp%itype(p)) then
-                   annlai(k,p) = mlai(g,ti,l)
-                end if
-             end do
+             if (num_dims == 2) then
+                annlai(k,p) = 0._r8
+                if (veg_pp%itype(p) == pft_type(g)) annlai(k,p) = mlai_2d(g,1)
+             else
+                do l = 0, numpft
+                   if (l == veg_pp%itype(p)) then
+                      annlai(k,p) = mlai(g,ti,l)
+                   end if
+                end do
+             end if
           else                       !! non-vegetated pft
              annlai(k,p) = 0._r8
           end if
@@ -557,7 +585,7 @@ contains
 
     call ncd_pio_closefile(ncid)
 
-    deallocate(mlai)
+    deallocate(mlai, mlai_2d, pft_type)
 
   endsubroutine readAnnualVegetation
 
