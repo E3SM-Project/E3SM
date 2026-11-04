@@ -240,7 +240,22 @@ module elm_varcon
   real(r8), public, parameter :: frac_to_downhill = 1.0_r8  ! (fraction, valid values from 0.0 to 1.0)
   ! fraction of from_uphill water state that get transferred to columns on the topounit in each timestep
   real(r8), public, parameter :: frac_from_uphill = 0.5_r8  ! (fraction, valid values from 0.0 to 1.0)
+  ! constants read inside acc routines must have a device copy (initialized at load)
+  !$acc declare copyin(grav, sb, vkc, cpliq, cpice, cpair, hvap, hsub, hfus, rgas, rwat, rair, roverg, &
+  !$acc   denh2o, denice, tkair, tkice, tkwat, o2_molar_const, bdsno, alpha_aero, tlsai_crit, re, rpi, &
+  !$acc   zlnd, zsno, csoilc, capr, cnfac, ssi, wimp, pondmx, pondmx_urban, thk_bedrock, c13ratio, c14ratio)
 
+
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(d_con_g, d_con_w, dzsoi_decomp, zisoi, zsoi)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(betads, betais, omegas)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(dzsoi, h2osno_max, kh_theta, watmin)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(c_h_inv, kh_tbase, nlvic)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(ac_wasteheat_factor, ht_wasteheat_factor, wasteheat_limit)
 contains
 
   !------------------------------------------------------------------------------

@@ -19,7 +19,7 @@ module lnd2atmMod
   use subgridAveMod        , only : p2g, c2g, p2t  
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
-  use CH4Mod               , only : ch4_type
+  use Ch4TypeMod               , only : ch4_type
   use DUSTMod              , only : dust_type
   use DryDepVelocity       , only : drydepvel_type
   use VocEmissionMod       , only : vocemis_type

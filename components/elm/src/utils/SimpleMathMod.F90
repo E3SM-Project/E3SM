@@ -1,4 +1,5 @@
 module SimpleMathMod
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
 
 #include "shr_assert.h"
   !------------------------------------------------------------------------------
@@ -19,7 +20,6 @@ implicit none
 contains
 !--------------------------------------------------------------------------------
   subroutine array_normalization_2d(which_dim, arr2d_inout)
-  !$acc routine seq
   !DESCRIPTIONS
   !do normalization for the input array along dimension which_dim
   !
@@ -128,7 +128,6 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
 
   subroutine array_div_vector_filter(lbj1, ubj1, lbj2, ubj2, &
        arr1d_in, fn, filter,  arr2d_inout)
-  !$acc routine seq
   !DESCRIPTIONS
   !array divided by a vector, arr2d_in is divided by one
   !element in arr1d_in
@@ -169,7 +168,6 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
 !--------------------------------------------------------------------------------
 
   subroutine array_div_vector_nofilter(arr1d_in, which_dim, arr2d_inout)
-  !$acc routine seq
   !DESCRIPTIONS
   !array divided by a vector, each row in arr2d_in is divided by one
   !element in arr1d_in
@@ -235,7 +233,7 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
       !As of Cuda 10.1 calling cuBlas functions from device code
       !is not supported.  So must create any blas routines with
       !acc routine seq manually.  This is for square matrices Matrix Vector Multiplication
-      !used only in PhotosynthesisMod::calcstressroot so far
+      !used only in PhotosynthesisHydraulicStressMod::calcstress so far
 
       use shr_kind_mod , only : r8 => shr_kind_r8
       INTEGER, INTENT(IN) :: START, END_ !section of matrices/vector to multiply
@@ -246,12 +244,16 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
       INTEGER :: COL, ROW
 
       transA = transpose(A)
+      !$acc update device(transa) if_present
 
+      !$acc data copy(transa) if(elm_device_ready)
+      !$acc parallel loop gang vector default(present) if(elm_device_ready)
       DO COL = START, END_
 
         RES(COL) = DOT_PRODUCT(transA(start:end_,col),X(start:end_))
 
       END DO
+      !$acc end data
 
     end subroutine matvec_acc
 
