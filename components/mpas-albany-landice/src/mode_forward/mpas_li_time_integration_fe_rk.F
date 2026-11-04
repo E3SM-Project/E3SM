@@ -1426,10 +1426,10 @@ module li_time_integration_fe_rk
       endif
 
       call mpas_log_write("CFL dt adjusted for fractions (days): advective=$r, diffusive=$r, calving=$r, face-melting=$r", &
-         realArgs=(/allowableAdvecDt*config_adaptive_timestep_CFL_fraction/86400.0_RKIND, &
-                    allowableDiffDt/86400.0_RKIND, &
-                    calvingCFLdt*config_adaptive_timestep_calvingCFL_fraction/86400.0_RKIND, &
-                    faceMeltingCFLdt*config_adaptive_timestep_faceMeltingCFL_fraction/86400.0_RKIND/) )
+         realArgs=(/allowableAdvecDt*config_adaptive_timestep_CFL_fraction/seconds_per_day, &
+                    allowableDiffDt/seconds_per_day, &
+                    calvingCFLdt*config_adaptive_timestep_calvingCFL_fraction/seconds_per_day, &
+                    faceMeltingCFLdt*config_adaptive_timestep_faceMeltingCFL_fraction/seconds_per_day/) )
       if (CFLprocess == 1) then
          call mpas_log_write("Timestep limited by advective CFL condition.")
       elseif (CFLprocess == 2) then
@@ -1490,7 +1490,7 @@ module li_time_integration_fe_rk
       ! --- Actually set the dt here ---
       dtSeconds = min(proposedDt, secondsToNextForceTime)
 
-      call mpas_log_write('  Setting time step (days) to: $r', realArgs=(/dtSeconds / (86400.0_RKIND)/))
+      call mpas_log_write('  Setting time step (days) to: $r', realArgs=(/dtSeconds / seconds_per_day/))
 
    !--------------------------------------------------------------------
    end subroutine set_timestep

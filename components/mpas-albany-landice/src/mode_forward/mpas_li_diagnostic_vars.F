@@ -476,7 +476,7 @@ contains
             if (thickness(iCell) > 0.0_RKIND) then
               do iLevel = 1, nVertLevels
                 ! Calculate the pressure-corrected temperature
-                temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
+                temperatureCorrected = min(kelvin_to_celsius, temperature(iLevel,iCell) + pressureMeltPointSlope * &
                          thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel) )
                 temperatureCorrected = max(223.15_RKIND, temperatureCorrected)
                 ! Calculate flow A
@@ -501,7 +501,7 @@ contains
               ! if doing 2nd order averaging of flwa onto edges (otherwise this could be the dynamic thickness limit)
               do iLevel = 1, nVertLevels
                 ! Calculate the pressure-corrected temperature
-                temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
+                temperatureCorrected = min(kelvin_to_celsius, temperature(iLevel,iCell) + pressureMeltPointSlope * &
                          thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel) )
                 temperatureCorrected = max(223.15_RKIND, temperatureCorrected)
                 transitionTemperatureCorrected = 263.15_RKIND + pressureMeltPointSlope * &
@@ -531,7 +531,7 @@ contains
             if (thickness(iCell) > 0.0_RKIND) then
               do iLevel = 1, nVertLevels
                 ! Calculate the pressure-corrected temperature
-                temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
+                temperatureCorrected = min(kelvin_to_celsius, temperature(iLevel,iCell) + pressureMeltPointSlope * &
                          thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel) )
                 temperatureCorrected = max(223.15_RKIND, temperatureCorrected)
                 ! Calculate flow A for n=4

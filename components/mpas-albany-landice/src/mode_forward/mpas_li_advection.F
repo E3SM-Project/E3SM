@@ -640,8 +640,10 @@ module li_advection
                   call mpas_log_write('cellMask=$i, is ice=$l, is grounded=$l, is floating=$l', &
                        intArgs=(/cellMask(iCell)/), logicArgs=(/li_mask_is_ice(cellMask(iCell)), &
                        li_mask_is_grounded_ice(cellMask(iCell)), li_mask_is_floating_ice(cellMask(iCell)) /) )
-                  call mpas_log_write('basalMassBalApplied=$r, grounded=$r, floating=$r', realArgs=(/ basalMassBalApplied(iCell)*31536000./917.,&
-                          groundedBasalMassBalApplied(iCell)*31536000./917., floatingBasalMassBalApplied(iCell)*31536000./917. /) )
+                  call mpas_log_write('basalMassBalApplied=$r, grounded=$r, floating=$r', &
+                          realArgs=(/ basalMassBalApplied(iCell)*scyr/config_ice_density, &
+                                      groundedBasalMassBalApplied(iCell)*scyr/config_ice_density, &
+                                      floatingBasalMassBalApplied(iCell)*scyr/config_ice_density /) )
                endif
             enddo
          endif

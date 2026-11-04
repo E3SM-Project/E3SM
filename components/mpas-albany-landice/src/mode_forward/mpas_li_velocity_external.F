@@ -491,7 +491,7 @@ contains
       integer :: iEdge
       integer :: iCell
       integer :: albanyVelocityErrorTmp
-      real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
+      real(kind=RKIND), parameter :: secondsInYear = scyr
          !< The value of seconds in a year assumed by external dycores
       integer, pointer :: albanyVelocityError
 
@@ -671,7 +671,7 @@ contains
           call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
-          uReconstructZ = uReconstructZ / (365.0_RKIND * 24.0_RKIND * 3600.0_RKIND)  ! convert from m/yr to m/s
+          uReconstructZ = uReconstructZ / secondsInYear  ! convert from m/yr to m/s
           call mpas_timer_stop("velocity_solver_solve_stokes")
 #else
           call mpas_log_write("External Stokes library needed to run stokes dycore.", MPAS_LOG_ERR)

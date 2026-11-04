@@ -5092,7 +5092,7 @@ module li_calving
          ! facemelting does not actually occur.  Use faceMeltingThickness as a mask to identify where the strain rate
          ! enhancement should be applied.
          where (faceMeltingThickness(:) > 0.0_RKIND)
-            strainRateEnhancementForCalving(:) = 1.0_RKIND + faceMeltSpeed(:) * 86400.0_RKIND * calvingStrainRateScaling(:)
+            strainRateEnhancementForCalving(:) = 1.0_RKIND + faceMeltSpeed(:) * seconds_per_day * calvingStrainRateScaling(:)
          elsewhere
             strainRateEnhancementForCalving(:) = 1.0_RKIND
          end where

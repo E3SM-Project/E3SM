@@ -1761,8 +1761,8 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: config_uniform_face_melt_rate
       character(len=StrKIND), pointer :: config_front_mass_bal_grounded
       logical, pointer :: config_use_3d_thermal_forcing_for_face_melt
-      real (kind=RKIND), parameter :: secPerDay = 86400.0_RKIND
-      real (kind=RKIND), parameter :: rhow = 1000.0_RKIND ! subglacial runoff density
+      real (kind=RKIND), parameter :: secPerDay = seconds_per_day
+      real (kind=RKIND), parameter :: rhow = rho_water ! subglacial runoff density
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
       real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
