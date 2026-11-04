@@ -53,10 +53,10 @@ void Functions<S,D>::zm_opts_init()
   // shear scaling parameters (disabled to match the legacy baselines)
   s_zm_opts.use_shear_scaling_mcsp = false;
   s_zm_opts.use_shear_scaling_evap = false;
-  s_zm_opts.mcsp_shear_min         = ZMC::mcsp_shear_min_default;
-  s_zm_opts.mcsp_shear_optimal_min = ZMC::mcsp_shear_optimal_min_default;
-  s_zm_opts.mcsp_shear_optimal_max = ZMC::mcsp_shear_optimal_max_default;
-  s_zm_opts.mcsp_shear_max         = ZMC::mcsp_shear_max_default;
+  s_zm_opts.mcsp_shear_min         = ZMC::MCSP_shear_min_default;
+  s_zm_opts.mcsp_shear_optimal_min = ZMC::MCSP_shear_optimal_min_default;
+  s_zm_opts.mcsp_shear_optimal_max = ZMC::MCSP_shear_optimal_max_default;
+  s_zm_opts.mcsp_shear_max         = ZMC::MCSP_shear_max_default;
   s_zm_opts.evap_shear_min         = ZMC::evap_shear_min_default;
   s_zm_opts.evap_shear_max         = ZMC::evap_shear_max_default;
 

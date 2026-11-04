@@ -342,6 +342,12 @@ void ZMDeepConvection::run_impl (const double dt)
         mcsp_shear_mask(i) = (loc_zm_output_mcsp_shear(i) == constants::fill_value<Real>) ? 0 : 1;
       });
     });
+  } else {
+    // keep the shear buffers and output defined (and masked) when nothing uses them
+    Kokkos::deep_copy(zm_output.shear_u, 0);
+    Kokkos::deep_copy(zm_output.shear_v, 0);
+    Kokkos::deep_copy(zm_output.mcsp_shear, constants::fill_value<Real>);
+    Kokkos::deep_copy(mcsp_shear_mask, 0);
   }
 
   //--------------------------------------------------------------------------

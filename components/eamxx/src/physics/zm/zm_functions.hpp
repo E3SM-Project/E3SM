@@ -124,10 +124,10 @@ struct Functions {
     static inline constexpr Real MCSP_mom_tau              = 3600.0;   // MCSP momentum tendency timescale [s]
     static inline constexpr Real MCSP_shear_undefined      = -999;     // shear component sentinel when the surface is above MCSP_storm_speed_pref
     // shear scaling parameters (trapezoid function of low-level shear magnitude [m/s])
-    static inline constexpr Real mcsp_shear_min_default         = 3.0;   // below this MCSP is inactive / the MCSP shear scaling is zero
-    static inline constexpr Real mcsp_shear_optimal_min_default = 20.0;  // ramp-up ends, full strength begins
-    static inline constexpr Real mcsp_shear_optimal_max_default = 60.0;  // full strength ends, ramp-down begins
-    static inline constexpr Real mcsp_shear_max_default         = 200.0; // above this MCSP is inactive / the MCSP shear scaling is zero
+    static inline constexpr Real MCSP_shear_min_default         = 3.0;   // below this MCSP is inactive / the MCSP shear scaling is zero
+    static inline constexpr Real MCSP_shear_optimal_min_default = 20.0;  // ramp-up ends, full strength begins
+    static inline constexpr Real MCSP_shear_optimal_max_default = 60.0;  // full strength ends, ramp-down begins
+    static inline constexpr Real MCSP_shear_max_default         = 200.0; // above this MCSP is inactive / the MCSP shear scaling is zero
     // evaporation shear scaling parameters (linear ramp of low-level shear magnitude [m/s])
     static inline constexpr Real evap_shear_min_default         = 5.0;   // at or below this evap_efficiency_min is used
     static inline constexpr Real evap_shear_max_default         = 20.0;  // at or above this evap_efficiency_max is used
@@ -162,6 +162,9 @@ struct Functions {
       upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
       alfa                = params.get<Real>("alfa",                ZMC::alfa);
+      EKAT_REQUIRE_MSG(not params.isParameter("ke"),
+        "Error! ZmRuntimeOpt: the ZM parameter 'ke' has been replaced by 'evap_efficiency_max' "
+        "(and 'evap_efficiency_min' for use_shear_scaling_evap). Please rename it.\n");
       evap_efficiency_min = params.get<Real>("evap_efficiency_min", ZMC::evap_efficiency_min);
       evap_efficiency_max = params.get<Real>("evap_efficiency_max", ZMC::evap_efficiency_max);
       dmpdz               = params.get<Real>("dmpdz",               ZMC::dmpdz);
@@ -190,10 +193,10 @@ struct Functions {
       // shear scaling parameters
       use_shear_scaling_mcsp = params.get<bool>("use_shear_scaling_mcsp", false);
       use_shear_scaling_evap = params.get<bool>("use_shear_scaling_evap", false);
-      mcsp_shear_min         = params.get<Real>("mcsp_shear_min",         ZMC::mcsp_shear_min_default);
-      mcsp_shear_optimal_min = params.get<Real>("mcsp_shear_optimal_min", ZMC::mcsp_shear_optimal_min_default);
-      mcsp_shear_optimal_max = params.get<Real>("mcsp_shear_optimal_max", ZMC::mcsp_shear_optimal_max_default);
-      mcsp_shear_max         = params.get<Real>("mcsp_shear_max",         ZMC::mcsp_shear_max_default);
+      mcsp_shear_min         = params.get<Real>("mcsp_shear_min",         ZMC::MCSP_shear_min_default);
+      mcsp_shear_optimal_min = params.get<Real>("mcsp_shear_optimal_min", ZMC::MCSP_shear_optimal_min_default);
+      mcsp_shear_optimal_max = params.get<Real>("mcsp_shear_optimal_max", ZMC::MCSP_shear_optimal_max_default);
+      mcsp_shear_max         = params.get<Real>("mcsp_shear_max",         ZMC::MCSP_shear_max_default);
       evap_shear_min         = params.get<Real>("evap_shear_min",         ZMC::evap_shear_min_default);
       evap_shear_max         = params.get<Real>("evap_shear_max",         ZMC::evap_shear_max_default);
       if (use_shear_scaling_evap) {
@@ -202,6 +205,11 @@ struct Functions {
           "0 <= evap_shear_min < evap_shear_max, but got ("
           << evap_shear_min << ", " << evap_shear_max << ")\n");
       }
+      // mcsp_shear_min/max are always used, either as the legacy gate or the trapezoid end points
+      EKAT_REQUIRE_MSG(0 <= mcsp_shear_min && mcsp_shear_min < mcsp_shear_max,
+        "Error! ZmRuntimeOpt: MCSP shear parameters must satisfy "
+        "0 <= mcsp_shear_min < mcsp_shear_max, but got ("
+        << mcsp_shear_min << ", " << mcsp_shear_max << ")\n");
       if (use_shear_scaling_mcsp) {
         EKAT_REQUIRE_MSG(0 <= mcsp_shear_min && mcsp_shear_min < mcsp_shear_optimal_min &&
                          mcsp_shear_optimal_min <= mcsp_shear_optimal_max &&
@@ -311,7 +319,7 @@ struct Functions {
     KOKKOS_INLINE_FUNCTION
     Real calc_shear_metric(const Real& shear_u, const Real& shear_v) const {
       if (shear_u == ZMC::MCSP_shear_undefined) return constants::fill_value<Real>;
-      return mcsp_use_full_shear ? std::sqrt(shear_u * shear_u + shear_v * shear_v) : shear_u;
+      return mcsp_use_full_shear ? Kokkos::sqrt(shear_u * shear_u + shear_v * shear_v) : shear_u;
     }
 
     // -------------------------------------------------------------------------
@@ -320,7 +328,7 @@ struct Functions {
     // mcsp_shear_optimal_max, with linear ramps in between
     KOKKOS_INLINE_FUNCTION
     Real calc_mcsp_shear_scaling(const Real& shear) const {
-      const Real shear_mag = std::abs(shear);
+      const Real shear_mag = Kokkos::abs(shear);
       if (shear_mag <= mcsp_shear_min || shear_mag >= mcsp_shear_max) return 0;
       if (shear_mag < mcsp_shear_optimal_min) return (shear_mag - mcsp_shear_min) / (mcsp_shear_optimal_min - mcsp_shear_min);
       if (shear_mag > mcsp_shear_optimal_max) return (mcsp_shear_max - shear_mag) / (mcsp_shear_max - mcsp_shear_optimal_max);
@@ -332,7 +340,7 @@ struct Functions {
     // evap_shear_min, one at or above evap_shear_max, linear in between
     KOKKOS_INLINE_FUNCTION
     Real calc_evap_shear_scaling(const Real& shear) const {
-      const Real shear_mag = std::abs(shear);
+      const Real shear_mag = Kokkos::abs(shear);
       if (shear_mag <= evap_shear_min) return 0;
       if (shear_mag >= evap_shear_max) return 1;
       return (shear_mag - evap_shear_min) / (evap_shear_max - evap_shear_min);
