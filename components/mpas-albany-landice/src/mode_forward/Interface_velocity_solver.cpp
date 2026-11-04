@@ -1540,7 +1540,7 @@ void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   }
 
   MPI_Comm_group(comm, &world_group_id);
-  MPI_Group_incl(world_group_id, ranks.size(), &ranks[0], &reduced_group_id);
+  MPI_Group_incl(world_group_id, ranks.size(), ranks.data(), &reduced_group_id);
   MPI_Comm_create(comm, reduced_group_id, &reduced_comm_id);
   MPI_Group_free(&reduced_group_id);
   MPI_Group_free(&world_group_id);
