@@ -59,6 +59,19 @@ Export fields are accumulated (running average) each ocean time step with:
 SfcCoupling.updateExportFields(State, TracerArray);
 ```
 
+## Coupled energy/heat correction (aka energy fixer)
+
+The export field `Faoo_h2otemp` carries the extra energy flux associated with
+freshwater mass exchange, in W m$^{-2}$. It communicates the energy already
+included in the ocean's surface heat budget so that the coupled system can
+account for the corresponding energy as an atmospheric adjustment. It is not an
+additional ocean temperature tendency or a total heat-flux export.
+
+The instantaneous field is owned by
+`Forcing::TracerForcing.ExtraEnergyCell`. Its calculation, physical assumptions,
+and reset behavior are described in the
+[forcing guide](#omega-dev-forcing-extra-energy).
+
 ## Units
 
 `OcnToCplFields`'s averaged temperature is Conservative Temperature (deg C)

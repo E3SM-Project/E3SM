@@ -1335,9 +1335,11 @@ void Tendencies::computeTracerTendenciesOnly(
 
    // compute tracer forcing tendency; this also fills SurfaceTracerFlux,
    // which the KPP non-local flux term below depends on
+   const auto *ForcingState = Forcing::getDefault();
+   OMEGA_SCOPE(LocExtraEnergy, ForcingState->TracerForcing.ExtraEnergyCell);
+   deepCopy(LocExtraEnergy, 0.0_Real);
    if (LocSfcTracerForcing.Enabled) {
       Pacer::start("Tend:sfcTracerForcing", 2);
-      const auto *ForcingState = Forcing::getDefault();
       const auto &LatentHeatFluxEvap =
           ForcingState->TracerForcing.LatentHeatFluxEvapCell;
       const auto &SensibleHeatFlux =
@@ -1366,11 +1368,11 @@ void Tendencies::computeTracerTendenciesOnly(
       parallelFor(
           {Mesh->NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
              LocSfcTracerForcing(
-                 LocTracerTend, SurfaceTracerFlux, ICell, TracerArray,
-                 LatentHeatFluxEvap, SensibleHeatFlux, LongWaveHeatFluxUp,
-                 LongWaveHeatFluxDown, SeaIceHeatFlux, ShortWaveHeatFlux,
-                 SnowFlux, RainFlux, IceRunoffFlux, RiverRunoffFlux,
-                 EvaporationFlux, SeaIceSaltFlux);
+                 LocTracerTend, SurfaceTracerFlux, LocExtraEnergy, ICell,
+                 TracerArray, LatentHeatFluxEvap, SensibleHeatFlux,
+                 LongWaveHeatFluxUp, LongWaveHeatFluxDown, SeaIceHeatFlux,
+                 ShortWaveHeatFlux, SnowFlux, RainFlux, IceRunoffFlux,
+                 RiverRunoffFlux, EvaporationFlux, SeaIceSaltFlux);
           });
       Pacer::stop("Tend:sfcTracerForcing", 2);
    }

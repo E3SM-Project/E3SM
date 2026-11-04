@@ -30,6 +30,7 @@ class TracerForcingVars {
    Array1DReal ShortWaveHeatFluxCell;
 
    Array1DReal SeaIceSaltFluxCell;
+   Array1DReal ExtraEnergyCell;
 
    /// KPP non-local surface tracer fluxes [NTracers, NCellsSize]. External
    /// forcing supplies non-temperature/salinity tracers; KPP derives and

@@ -25,6 +25,7 @@ TracerForcingVars::TracerForcingVars(const std::string &Suffix,
       SeaIceHeatFluxCell("SeaIceHeatFlux" + Suffix, Mesh->NCellsSize),
       ShortWaveHeatFluxCell("ShortWaveHeatFlux" + Suffix, Mesh->NCellsSize),
       SeaIceSaltFluxCell("SeaIceSaltFlux" + Suffix, Mesh->NCellsSize),
+      ExtraEnergyCell("ExtraEnergy" + Suffix, Mesh->NCellsSize),
       SurfaceTracerFluxCell("SurfaceTracerFlux" + Suffix,
                             Tracers::getNumTracers(), Mesh->NCellsSize) {
    deepCopy(SnowFluxCell, 0.0_Real);
@@ -40,6 +41,7 @@ TracerForcingVars::TracerForcingVars(const std::string &Suffix,
    deepCopy(SeaIceHeatFluxCell, 0.0_Real);
    deepCopy(ShortWaveHeatFluxCell, 0.0_Real);
    deepCopy(SeaIceSaltFluxCell, 0.0_Real);
+   deepCopy(ExtraEnergyCell, 0.0_Real);
 }
 
 void TracerForcingVars::registerFields(const std::string &MeshName) const {

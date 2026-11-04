@@ -102,6 +102,44 @@ the surface layer pseudo-thickness.
   - gates execution of coupled flux tracer kernel
   - controls direct heat flux forcing on temperature and salt flux forcing on salinity
 
+(omega-dev-forcing-extra-energy)=
+
+### Coupled energy/heat correction (aka energy fixer)
+
+The extra energy flux associated with freshwater mass exchange is included
+in the ocean's surface heat budget. The coupled system accounts for the
+corresponding energy as an atmospheric adjustment. This correction is not an
+additional ocean temperature tendency or a total heat flux.
+
+The instantaneous field, in W m$^{-2}$, is owned by
+`Forcing::TracerForcing.ExtraEnergyCell`. `SfcTracerForcingOnCell` computes it
+alongside the surface tracer tendency:
+
+$$
+Q_{\mathrm{extra}} =
+(F_{\mathrm{rain}} + F_{\mathrm{river}}) h_{\mathrm{fw,in}}
++ F_{\mathrm{evap}} h_{\mathrm{fw,out}}
++ (F_{\mathrm{snow}} + F_{\mathrm{iceRunoff}})
+  (h_{\mathrm{ice}} + L_{\mathrm{ice}}).
+$$
+
+Here the mass fluxes retain their forcing-array signs, and the specific
+potential enthalpies are in J kg$^{-1}$:
+
+- $h_{\mathrm{fw,in}} = c^0_{p,sw}\max(C_{T,\mathrm{lim}}, C_{T,\mathrm{top}})$,
+  with `Ct0Fw` as the limit for TEOS-10 and zero otherwise.
+- $h_{\mathrm{fw,out}} = c^0_{p,sw} C_{T,\mathrm{top}}$.
+- $h_{\mathrm{ice}} = -L_{\mathrm{ice}}$ in the current approximation, so the
+  snow and ice-runoff contribution to this correction is currently zero.
+
+Direct heat fluxes and sea-ice meltwater enthalpy are explicitly accounted for
+in the coupling fluxes and are not added to this correction.
+`ExtraEnergyCell` is reset to zero on every tracer-tendency evaluation,
+including when surface tracer forcing is disabled.
+
+The correction is exported as `Faoo_h2otemp`; see
+[surface coupling](#omega-dev-sfc-coupling) for averaging and export details.
+
 ## Notes
 
 - Currently all forcing is applied to the surface layer only. In the future, vertical spreading of river runoff contributions will be needed.

@@ -211,6 +211,7 @@ int initTimeStepperTest(const std::string &mesh) {
    Eos::init();
    PressureGrad::init();
    VertMix::init();
+   Forcing::init();
    Tendencies::init();
 
    // finish initializing default time stepper

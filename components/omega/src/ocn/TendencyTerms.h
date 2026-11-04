@@ -549,8 +549,9 @@ class SfcTracerForcingOnCell {
                           const Eos *EosInst);
 
    KOKKOS_FUNCTION void operator()(
-       const Array3DReal &Tend, const Array2DReal &SurfaceTracerFlux, I4 ICell,
-       const Array3DReal &TracerCell, const Array1DReal &LatentHeatFluxEvap,
+       const Array3DReal &Tend, const Array2DReal &SurfaceTracerFlux,
+       const Array1DReal &ExtraEnergy, I4 ICell, const Array3DReal &TracerCell,
+       const Array1DReal &LatentHeatFluxEvap,
        const Array1DReal &SensibleHeatFlux,
        const Array1DReal &LongWaveHeatFluxUp,
        const Array1DReal &LongWaveHeatFluxDown,
@@ -602,6 +603,17 @@ class SfcTracerForcingOnCell {
          const Real TempFlux = HeatFlux * HFluxFac;
          Tend(TempIndex, ICell, KTop) += TempFlux;
          SurfaceTracerFlux(TempIndex, ICell) = TempFlux;
+         // Accounting for extra energy/enthalpy (to be taken from atm)
+         // - All direct heat fluxes are accounted for (via coupler)
+         // - SeaIceHeatFlux comes entirely from the sea ice
+         // - Phase Change for evaporation and frozen should be taken out of
+         // ocean Extra terms are the enthalpy of liq water wrt. mass fluxes
+         // Formulation allows for non-zero term if PotEnthalpyIce is updated
+         ExtraEnergy(ICell) =
+             (RainFlux(ICell) + RiverRunoffFlux(ICell)) * PotEnthalpyFwIn +
+             EvaporationFlux(ICell) * PotEnthalpyFwOut +
+             (SnowFlux(ICell) + IceRunoffFlux(ICell)) *
+                 (PotEnthalpyIce + LatIce);
       }
 
       if (SaltIndex >= 0) {

@@ -284,13 +284,14 @@ void SfcCoupling::exportToCoupler() {
    // Copy the OcnToCpl fields to their host mirrors
    OcnToCpl.copyToHost();
 
-   int TempIdx  = ExportIdxMap.at("So_t");
-   int SalinIdx = ExportIdxMap.at("So_s");
-   int VelUIdx  = ExportIdxMap.at("So_u");
-   int VelVIdx  = ExportIdxMap.at("So_v");
-   int SshIdx   = ExportIdxMap.at("So_ssh");
-   int DhdxIdx  = ExportIdxMap.at("So_dhdx");
-   int DhdyIdx  = ExportIdxMap.at("So_dhdy");
+   int TempIdx        = ExportIdxMap.at("So_t");
+   int SalinIdx       = ExportIdxMap.at("So_s");
+   int VelUIdx        = ExportIdxMap.at("So_u");
+   int VelVIdx        = ExportIdxMap.at("So_v");
+   int SshIdx         = ExportIdxMap.at("So_ssh");
+   int DhdxIdx        = ExportIdxMap.at("So_dhdx");
+   int DhdyIdx        = ExportIdxMap.at("So_dhdy");
+   int ExtraEnergyIdx = ExportIdxMap.at("Faoo_h2otemp");
 
    // Copy Kokkos view handles
    auto OcnToCplView_        = OcnToCplView;
@@ -301,6 +302,7 @@ void SfcCoupling::exportToCoupler() {
    auto AvgSfcSshGradZonal_  = OcnToCpl.AvgSfcSshGradZonalH;
    auto AvgSfcSshGradMerid_  = OcnToCpl.AvgSfcSshGradMeridH;
    auto InstSshCellH_        = OcnToCpl.InstSshCellH;
+   auto AvgExtraEnergy_      = OcnToCpl.AvgExtraEnergyH;
 
    // Initalize all o2x fields to 0.0 for next coupling interval
    deepCopy(OcnToCplView_, 0.0_Real);
@@ -309,13 +311,14 @@ void SfcCoupling::exportToCoupler() {
    auto Policy = Kokkos::RangePolicy<HostExecSpace, Kokkos::IndexType<int>>(
        0, NCellsOwned);
    Kokkos::parallel_for("exportToCoupler", Policy, [=](int Idx) {
-      OcnToCplView_(TempIdx, Idx)  = AvgSfcTemperature_(Idx);
-      OcnToCplView_(SalinIdx, Idx) = AvgSfcSalinity_(Idx);
-      OcnToCplView_(VelUIdx, Idx)  = AvgSfcVelocityZonal_(Idx);
-      OcnToCplView_(VelVIdx, Idx)  = AvgSfcVelocityMerid_(Idx);
-      OcnToCplView_(DhdxIdx, Idx)  = AvgSfcSshGradZonal_(Idx);
-      OcnToCplView_(DhdyIdx, Idx)  = AvgSfcSshGradMerid_(Idx);
-      OcnToCplView_(SshIdx, Idx)   = InstSshCellH_(Idx);
+      OcnToCplView_(TempIdx, Idx)        = AvgSfcTemperature_(Idx);
+      OcnToCplView_(SalinIdx, Idx)       = AvgSfcSalinity_(Idx);
+      OcnToCplView_(VelUIdx, Idx)        = AvgSfcVelocityZonal_(Idx);
+      OcnToCplView_(VelVIdx, Idx)        = AvgSfcVelocityMerid_(Idx);
+      OcnToCplView_(DhdxIdx, Idx)        = AvgSfcSshGradZonal_(Idx);
+      OcnToCplView_(DhdyIdx, Idx)        = AvgSfcSshGradMerid_(Idx);
+      OcnToCplView_(SshIdx, Idx)         = InstSshCellH_(Idx);
+      OcnToCplView_(ExtraEnergyIdx, Idx) = AvgExtraEnergy_(Idx);
    });
 
    OcnToCpl.resetFields(); // Reset fields to 0 for the next coupling interval
@@ -385,8 +388,10 @@ void SfcCoupling::updateExportFields(const OceanState *State,
    //       gradient, this will only need to be done once per coupling interval
    AuxiliaryState::getDefault()->computeMomVertAux(State, TracerArray, 0);
 
-   OcnToCpl.updateFields(State, TracerArray, NAccumSteps, NCellsOwned,
-                         NEdgesAll);
+   const auto &ExtraEnergy =
+       Forcing::getDefault()->TracerForcing.ExtraEnergyCell;
+   OcnToCpl.updateFields(State, TracerArray, ExtraEnergy, NAccumSteps,
+                         NCellsOwned, NEdgesAll);
 
    NAccumSteps++;
 }
@@ -420,6 +425,7 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
       AvgSfcSshGradZonalH("AvgSfcSshGradZonal" + Suffix, Mesh->NCellsOwned),
       AvgSfcSshGradMeridH("AvgSfcSshGradMeridional" + Suffix,
                           Mesh->NCellsOwned),
+      AvgExtraEnergy("AvgExtraEnergy" + Suffix, Mesh->NCellsOwned),
       InstSshCellH("InstSshCellH" + Suffix, Mesh->NCellsOwned),
       InSituTempScratch("InSituTempScratch" + Suffix, Mesh->NCellsOwned),
       PracSalinityScratch("PracSalinityScratch" + Suffix, Mesh->NCellsOwned),
@@ -433,10 +439,12 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
 
    AvgSfcTemperatureH = createHostMirrorCopy(AvgSfcTemperature);
    AvgSfcSalinityH    = createHostMirrorCopy(AvgSfcSalinity);
+   AvgExtraEnergyH    = createHostMirrorCopy(AvgExtraEnergy);
 }
 
 void OcnToCplFields::updateFields(const OceanState *State,
                                   const Array3DReal &TracerArray,
+                                  const Array1DReal &ExtraEnergy,
                                   const I4 NAccumSteps, const I4 NCellsOwned,
                                   const I4 NEdgesAll) {
 
@@ -457,6 +465,7 @@ void OcnToCplFields::updateFields(const OceanState *State,
    OMEGA_SCOPE(LocMinLayerCell, DefVertCoord->MinLayerCell);
    OMEGA_SCOPE(LocAvgSfcSalinity, AvgSfcSalinity);
    OMEGA_SCOPE(LocAvgSfcTemp, AvgSfcTemperature);
+   OMEGA_SCOPE(LocAvgExtraEnergy, AvgExtraEnergy);
 
    parallelFor(
        {NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
@@ -468,6 +477,9 @@ void OcnToCplFields::updateFields(const OceanState *State,
 
           LocAvgSfcSalinity(ICell) = updateAverage(
               LocAvgSfcSalinity(ICell), Salinity(ICell, KSfc), NAccumSteps);
+
+          LocAvgExtraEnergy(ICell) = updateAverage(
+              LocAvgExtraEnergy(ICell), ExtraEnergy(ICell), NAccumSteps);
        });
 
    OMEGA_SCOPE(LocCellsOnEdge, DefHorzMesh->CellsOnEdge);
@@ -548,6 +560,7 @@ void OcnToCplFields::copyToHost() {
 
    deepCopy(AvgSfcTemperatureH, InSituTempScratch);
    deepCopy(AvgSfcSalinityH, PracSalinityScratch);
+   deepCopy(AvgExtraEnergyH, AvgExtraEnergy);
 
    // Retrieve the default horizontal mesh
    HorzMesh *DefHorzMesh = HorzMesh::getDefault();
@@ -592,5 +605,6 @@ void OcnToCplFields::resetFields() {
    deepCopy(AvgSfcSalinity, 0.0_Real);
    deepCopy(AvgSfcNormalVelocity, 0.0_Real);
    deepCopy(AvgSfcSshGrad, 0.0_Real);
+   deepCopy(AvgExtraEnergy, 0.0_Real);
 }
 } // namespace OMEGA
