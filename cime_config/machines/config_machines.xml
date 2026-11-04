@@ -5779,6 +5779,72 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="cech">
+    <DESC>cech machine</DESC>
+    <NODENAME_REGEX>cech</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>nvidiagpu,nvidia</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>e3sm</PROJECT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/e3sm_scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{HOME}/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>128</GMAKE_J>
+    <BATCHED_BUILD>TRUE</BATCHED_BUILD>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>144</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{expr 144 / `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="binding"> --cpu-bind=cores</arg>
+        <arg name="placement"> -m block:block</arg>
+        <arg name="affinity"> $SHELL{echo $CIMEROOT/../cime_config/machines/scripts/cech_set_affinity.sh}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+    <environment_variables>
+      <env name="PATH">$SHELL{if [ "$(uname -m)" = "aarch64" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/bin:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/bin:/software/hpc_sdk/Linux_aarch64/25.11/compilers/bin; else echo /global/homes/n/ndk/e3sm/3rdparty/login/bin; fi}:$ENV{PATH}</env>
+      <env name="NETCDF_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
+      <env name="PNETCDF_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf</env>
+      <env name="NETCDF_C_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
+      <env name="NETCDF_FORTRAN_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
+      <env name="HDF5_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5</env>
+      <env name="HDF5_ROOT">/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="OPAL_PREFIX">/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi</env>
+      <env name="LD_LIBRARY_PATH">$SHELL{lp=/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/nccl_rdma_sharp_plugin/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/sharp/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib/ucc:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib/ucx:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/hcoll/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/lib:/software/hpc_sdk/Linux_aarch64/25.11/compilers/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
+      <env name="UCX_TLS">rc,cuda_copy,cuda_ipc,sm,self</env>
+      <env name="UCX_MEMTYPE_CACHE">y</env>
+      <env name="CUDA_DEVICE_MAX_CONNECTIONS">1</env>
+      <!-- <env name="UCX_MAX_RNDV_RAILS">1</env> -->
+      <!-- <env name="OMPI_MCA_coll_ucc_enable">0</env> -->
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_WAIT_POLICY">PASSIVE</env> <!-- note this is attempt to reduce impact of STALLS on cech and may be able to remove once resolved -->
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_MEMLOCK">-1</resource>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
