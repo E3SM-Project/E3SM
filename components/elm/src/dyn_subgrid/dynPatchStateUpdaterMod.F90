@@ -258,13 +258,11 @@ contains
     character(len=*), parameter :: subname = 'update_patch_state'
     !-----------------------------------------------------------------------
 
-#ifndef _OPENACC
     if (present(seed_addition)) then
        if (.not. present(seed)) then
           call endrun(subname//' ERROR: seed_addition can only be provided if seed is provided')
        end if
     end if
-#endif
 
     if (this%dwt(p) > 0._r8) then
       var = var * this%growing_old_fraction(p)

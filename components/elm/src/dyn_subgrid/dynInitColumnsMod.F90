@@ -143,14 +143,12 @@ contains
     ! !LOCAL VARIABLES:
     !-----------------------------------------------------------------------
 
-#ifndef _OPENACC
     if (col_pp%wtgcell(c_new) > 0._r8) then
 
        write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
        write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'
        call endrun()
     end if
-#endif
 
     c_template = ispval
 

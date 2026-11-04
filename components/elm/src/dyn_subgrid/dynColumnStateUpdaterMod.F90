@@ -311,9 +311,7 @@ contains
     logical  :: vals_input_valid(bounds%begc:bounds%endc)
     logical  :: has_prognostic_state(bounds%begc:bounds%endc)
     real(r8) :: non_conserved_mass(bounds%begg:bounds%endg)
-#ifndef _OPENACC
     character(len=:), allocatable :: err_msg
-#endif
     real(r8), parameter :: conservation_tolerance = 1.e-12_r8
 
     character(len=*), parameter :: subname = 'update_column_state_no_special_handling'
@@ -350,10 +348,8 @@ contains
        ! Since there is no special handling in this routine, the non_conserved_mass variable
        ! should not have any accumulation. We allow for roundoff-level accumulation in case
        ! non-conserved mass is determined in a way that is prone to roundoff-level errors.
-#ifndef _OPENACC
        err_msg = subname//': ERROR: failure to conserve mass when using no special handling'
        SHR_ASSERT_ALL(abs(non_conserved_mass(bounds%begg:bounds%endg)) < conservation_tolerance, err_msg)
-#endif
 
     end if
 
@@ -737,15 +733,11 @@ contains
     !-----------------------------------------------------------------------
 
     if (present(fractional_area_old) .and. .not. present(fractional_area_new)) then
-#ifndef _OPENACC
        call endrun(subname//' ERROR: If fractional_area_old is provided, then fractional_area_new must be provided, too')
-#endif
     end if
 
     if (present(fractional_area_new) .and. .not. present(fractional_area_old)) then
-#ifndef _OPENACC
        call endrun(subname//' ERROR: If fractional_area_new is provided, then fractional_area_old must be provided, too')
-#endif
     end if
 
     if (present(fractional_area_old)) then
@@ -870,10 +862,8 @@ contains
        g = col_pp%gridcell(c)
        if (this%area_gained_col(c) < 0._r8) then
           if (.not. vals_input_valid(c)) then
-#ifndef _OPENACC
              write(iulog,*) ' ERROR: shrinking column without valid input value'
              call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
-#endif
           end if
           area_lost = -1._r8 * this%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost

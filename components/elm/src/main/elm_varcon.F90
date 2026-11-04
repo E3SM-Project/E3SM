@@ -134,7 +134,6 @@ module elm_varcon
   
   !!! C14
   real(r8) :: c14ratio = 1.e-12_r8
-  ! real(r8) :: c14ratio = 1._r8  ! debug lets set to 1 to try to avoid numerical errors
 
   ! Note that the wasteheat factors are currently set to zero until a better parameterization can be developed
   ! The prior parameterization appeared to be significantly overestimating wasteheat
@@ -149,7 +148,6 @@ module elm_varcon
 
   integer, private :: i  ! loop index
 
- !real(r8), parameter :: nitrif_n2o_loss_frac = 0.02_r8  ! fraction of N lost as N2O in nitrification (Parton et al., 2001)
   real(r8), parameter :: nitrif_n2o_loss_frac = 6.e-4_r8 ! fraction of N lost as N2O in nitrification (Li et al., 2000)
   real(r8), parameter :: frac_minrlztn_to_no3 = 0.2_r8   ! fraction of N mineralized that is dieverted to the nitrification stream (Parton et al., 2001)
 
@@ -240,6 +238,7 @@ module elm_varcon
   real(r8), public, parameter :: frac_to_downhill = 1.0_r8  ! (fraction, valid values from 0.0 to 1.0)
   ! fraction of from_uphill water state that get transferred to columns on the topounit in each timestep
   real(r8), public, parameter :: frac_from_uphill = 0.5_r8  ! (fraction, valid values from 0.0 to 1.0)
+
   ! constants read inside acc routines must have a device copy (initialized at load)
   !$acc declare copyin(grav, sb, vkc, cpliq, cpice, cpair, hvap, hsub, hfus, rgas, rwat, rair, roverg, &
   !$acc   denh2o, denice, tkair, tkice, tkwat, o2_molar_const, bdsno, alpha_aero, tlsai_crit, re, rpi, &
@@ -248,13 +247,9 @@ module elm_varcon
 
   ! spel acc-apply: module data read in device code (updated by the device data layer)
   !$acc declare create(d_con_g, d_con_w, dzsoi_decomp, zisoi, zsoi)
-  ! spel acc-apply: module data read in device code (updated by the device data layer)
   !$acc declare create(betads, betais, omegas)
-  ! spel acc-apply: module data read in device code (updated by the device data layer)
   !$acc declare create(dzsoi, h2osno_max, kh_theta, watmin)
-  ! spel acc-apply: module data read in device code (updated by the device data layer)
   !$acc declare create(c_h_inv, kh_tbase, nlvic)
-  ! spel acc-apply: module data read in device code (updated by the device data layer)
   !$acc declare create(ac_wasteheat_factor, ht_wasteheat_factor, wasteheat_limit)
 contains
 
