@@ -132,7 +132,7 @@
 <config_weight_value_cell>0.9</config_weight_value_cell>
 
 <!-- physical_parameters -->
-<config_ice_density>910.0</config_ice_density>
+<config_ice_density>-1.0</config_ice_density>
 <config_ocean_density>1028.0</config_ocean_density>
 <config_sea_level>0.0</config_sea_level>
 <config_default_flowParamA>3.1709792e-24</config_default_flowParamA>

@@ -136,6 +136,9 @@ module li_core
       call li_config_init(domain % configs)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
+      ! A negative density in the namelist means: use the shared (E3SM) value
+      call resolve_shared_density(domain, 'config_ice_density', rho_ice)
+
       !
       ! Initialize config option settings as needed
       !
@@ -1350,6 +1353,46 @@ module li_core
 
    !--------------------------------------------------------------------
    end subroutine li_simulation_clock_init
+
+
+!***********************************************************************
+!
+!  routine resolve_shared_density
+!
+!> \brief   Replace a negative density namelist option with a shared value
+!> \details
+!>  A negative value of the namelist option configName means "use
+!>  sharedValue"; a positive value is kept. The option is updated in the
+!>  configs pool and in the stream attributes: add_stream_attributes
+!>  copied the namelist values into them before core init, so output
+!>  files would otherwise record the negative value.
+!
+!-----------------------------------------------------------------------
+   subroutine resolve_shared_density(domain, configName, sharedValue)
+
+      use mpas_derived_types
+      use mpas_pool_routines
+      use mpas_stream_manager, only: MPAS_stream_mgr_add_att
+
+      type (domain_type), intent(inout) :: domain
+      character (len=*), intent(in) :: configName
+      real (kind=RKIND), intent(in) :: sharedValue
+
+      real (kind=RKIND), pointer :: configValue
+      integer :: attErr
+
+      call mpas_pool_get_config(domain % configs, configName, configValue)
+      if (configValue >= 0.0_RKIND) return
+
+      configValue = sharedValue
+      call mpas_log_write(trim(configName) // ' < 0: using the shared value, $r kg m^-3', &
+           realArgs=(/ configValue /))
+
+      ! Default attributes (for streams created later), then every existing stream
+      call MPAS_stream_mgr_add_att(domain % streamManager, configName, configValue, ierr=attErr)
+      call MPAS_stream_mgr_add_att(domain % streamManager, configName, configValue, streamID='.*', ierr=attErr)
+
+   end subroutine resolve_shared_density
 
 
 

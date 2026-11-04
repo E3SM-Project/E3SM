@@ -1008,7 +1008,7 @@ Default: Defined in namelist_defaults.xml
 	category="physical_parameters" group="physical_parameters">
 ice density to use (assumed constant and uniform)
 
-Valid values: Any positive real value
+Valid values: Any positive real value, or a negative value to use the shared ice density
 Default: Defined in namelist_defaults.xml
 </entry>
 

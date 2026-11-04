@@ -37,6 +37,7 @@ module li_constants
           iceConductivity => SHR_CONST_CONDICE, & !< thermal conductivity of ice (W m^-1 K^-1)
           kelvin_to_celsius => SHR_CONST_TKFRZ, & !< offset to convert Kelvin to Celsius (K)
           seconds_per_day => SHR_CONST_CDAY, &    !< seconds in a calendar day (s)
+          rho_ice => SHR_CONST_RHOICE, &          !< default density of ice (kg m^-3)
           shr_gas_constant => SHR_CONST_RGAS      !< universal gas constant (J kmol^-1 K^-1)
 
    implicit none
