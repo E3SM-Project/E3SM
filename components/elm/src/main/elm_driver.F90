@@ -738,26 +738,18 @@ contains
           call alm_fates%wrap_sunfrac(bounds_clump, top_af, canopystate_vars)
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
-                                       atm2lnd_vars, surfalb_vars, canopystate_vars,    &
+                                       surfalb_vars, canopystate_vars,                  &
                                        solarabs_vars)
        end if
 
-       call SurfaceRadiation(bounds_clump,                                 &
-            filter(nc)%num_nourbanp, filter(nc)%nourbanp,                  &
-            filter(nc)%num_urbanp, filter(nc)%urbanp    ,                  &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,                      &
-            atm2lnd_vars, canopystate_vars, surfalb_vars, &
-            solarabs_vars, surfrad_vars)
+       call SurfaceRadiation(bounds_clump, filter(nc)%num_nourbanp, filter(nc)%nourbanp, &
+            filter(nc)%num_urbanp, filter(nc)%urbanp, filter(nc)%num_urbanc, filter(nc)%urbanc, &
+            canopystate_vars, surfalb_vars, solarabs_vars, surfrad_vars)
 
        ! Surface Radiation for only urban columns
 
-       call UrbanRadiation(bounds_clump,                                       &
-            filter(nc)%num_nourbanl, filter(nc)%nourbanl,                      &
-            filter(nc)%num_urbanl, filter(nc)%urbanl,                          &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,                          &
-            filter(nc)%num_urbanp, filter(nc)%urbanp,                          &
-            atm2lnd_vars, urbanparams_vars, &
-            solarabs_vars, surfalb_vars, energyflux_vars)
+       call UrbanRadiation(filter(nc)%num_nourbanl, filter(nc)%nourbanl, &
+            filter(nc)%num_urbanl, filter(nc)%urbanl, urbanparams_vars, solarabs_vars, surfalb_vars)
 
        call t_stopf('surfrad')
 
