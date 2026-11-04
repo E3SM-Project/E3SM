@@ -497,6 +497,7 @@ void OcnToCplFields::updateFields(const OceanState *State,
    const EosType EosChoice = Eos::getInstance()->EosChoice;
 
    OMEGA_SCOPE(LocMinLayerCell, DefVertCoord->MinLayerCell);
+   OMEGA_SCOPE(LocSurfacePressure, DefVertCoord->SurfacePressure);
    OMEGA_SCOPE(LocAvgSfcSalinity, AvgSfcSalinity);
    OMEGA_SCOPE(LocAvgSfcTemp, AvgSfcTemperature);
    OMEGA_SCOPE(LocAvgExtraEnergy, AvgExtraEnergy);
@@ -541,11 +542,12 @@ void OcnToCplFields::updateFields(const OceanState *State,
                  updateAverage(LocAvgFrazilEnergyFlux(ICell),
                                FrazilEnergyFlux(ICell), NAccumSteps);
 
+             // Cells with frazil formation can not drive sea ice melting
              if (NewAvgFrazilMassFlux > Real(0.0)) {
                 LocMeltPotentialFlux(ICell) = Real(0.0);
              } else {
-                const Real CtFreezing =
-                    Eos::calcCtFreezing(EosChoice, NewAvgSfcSal, 0.0, 0.0);
+                const Real CtFreezing = Eos::calcCtFreezing(
+                    EosChoice, NewAvgSfcSal, LocSurfacePressure(ICell), 0.0);
                 const Real MeltEnergy = RhoSw * Cp0Sw *
                                         PseudoThick(ICell, KSfc) *
                                         (CtFreezing - NewAvgSfcTemp);
@@ -560,7 +562,6 @@ void OcnToCplFields::updateFields(const OceanState *State,
    OMEGA_SCOPE(LocCellsOnEdge, DefHorzMesh->CellsOnEdge);
    OMEGA_SCOPE(LocDcEdge, DefHorzMesh->DcEdge);
    OMEGA_SCOPE(LocSshCell, DefVertCoord->SshCell);
-   OMEGA_SCOPE(LocSurfacePressure, DefVertCoord->SurfacePressure);
    OMEGA_SCOPE(LocMinLayerEdgeBot, DefVertCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(LocMaxLayerEdgeTop, DefVertCoord->MaxLayerEdgeTop);
    OMEGA_SCOPE(LocAvgSfcSshGrad, AvgSfcSshGrad);
