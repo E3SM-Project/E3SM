@@ -4,6 +4,7 @@
 #include "share/physics/physics_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/core/eamxx_types.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 #include <ekat_pack_kokkos.hpp>
@@ -121,6 +122,7 @@ struct Functions {
     static inline constexpr Real MCSP_q_coeff_default      = 0.0;      // default MCSP sp. humidity coefficient
     static inline constexpr Real MCSP_mom_coeff_default    = 0.0;      // default MCSP momentum coefficient (fraction of shear)
     static inline constexpr Real MCSP_mom_tau              = 3600.0;   // MCSP momentum tendency timescale [s]
+    static inline constexpr Real MCSP_shear_undefined      = -999;     // shear component sentinel when the surface is above MCSP_storm_speed_pref
     // shear scaling parameters (trapezoid function of low-level shear magnitude [m/s])
     static inline constexpr Real mcsp_shear_min_default         = 3.0;   // below this MCSP is inactive / the MCSP shear scaling is zero
     static inline constexpr Real mcsp_shear_optimal_min_default = 20.0;  // ramp-up ends, full strength begins
@@ -303,9 +305,12 @@ struct Functions {
 
     // -------------------------------------------------------------------------
     // scalar shear metric used for MCSP gating/scaling and evaporation scaling:
-    // full shear magnitude, or the legacy signed zonal shear
+    // full shear magnitude, or the legacy signed zonal shear. Where the shear is
+    // undefined the fill value is returned, which exceeds any shear threshold,
+    // so MCSP is inactive and the evap scaling uses evap_efficiency_max there
     KOKKOS_INLINE_FUNCTION
     Real calc_shear_metric(const Real& shear_u, const Real& shear_v) const {
+      if (shear_u == ZMC::MCSP_shear_undefined) return constants::fill_value<Real>;
       return mcsp_use_full_shear ? std::sqrt(shear_u * shear_u + shear_v * shear_v) : shear_u;
     }
 

@@ -133,6 +133,14 @@ void ZMDeepConvection::initialize_impl (const RunType)
   //----------------------------------------------------------------------------
   ZMF::s_zm_opts.set_limcnv(m_grid);
   if (this->get_comm().am_i_root()) ZMF::s_zm_opts.print();
+
+  //----------------------------------------------------------------------------
+  // mcsp_shear is undefined where the surface is above the storm reference level
+  // (e.g. Tibetan Plateau, Antarctica), so mask those columns for output. The
+  // mask starts invalid so the field stays masked if the shear is never computed.
+  auto& mcsp_shear_f = get_field_out("mcsp_shear");
+  mcsp_shear_f.create_valid_mask(Field::MaskInit::Invalid);
+  mcsp_shear_f.get_header().set_may_be_filled(true);
 } // ZMDeepConvection::initialize_impl
 
 /*------------------------------------------------------------------------------------------------*/
@@ -200,6 +208,7 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_output.mcsp_dv_out = get_field_out("mcsp_dv_out").get_view<Real**>();
   zm_output.mcsp_freq   = get_field_out("mcsp_freq")  .get_view<Real*>();
   zm_output.mcsp_shear  = get_field_out("mcsp_shear") .get_view<Real*>();
+  const auto mcsp_shear_mask = get_field_out("mcsp_shear").get_valid_mask().get_view<int*>();
   zm_output.zm_depth    = get_field_out("zm_depth")   .get_view<Real*>();
 
   zm_output.evap_ds_out = get_field_out("evap_ds_out").get_view<Real**>();
@@ -330,6 +339,7 @@ void ZMDeepConvection::run_impl (const double dt)
         loc_zm_output_shear_u(i)    = shear_u_i;
         loc_zm_output_shear_v(i)    = shear_v_i;
         loc_zm_output_mcsp_shear(i) = zm_opts.calc_shear_metric(shear_u_i, shear_v_i);
+        mcsp_shear_mask(i) = (loc_zm_output_mcsp_shear(i) == constants::fill_value<Real>) ? 0 : 1;
       });
     });
   }
