@@ -70,10 +70,12 @@ contains
     integer  :: pu, c0, p0                                ! first patch and first column of a landunit
     integer  :: begl, endl
     integer  :: iter, iter_final, loopmax                 ! iteration index, iterations used, bound of the iteration loop
-    integer  :: fnl, fnl_old                              ! number of active landunits
+    integer  :: fnl                                       ! number of active landunits
+    integer  :: n_keep, i_next, k_next                    ! compaction of the active list
     ! iter_filterl(1:fnl) holds the landunits still iterating, iter_mapl their position in filter_urbanl,
     ! which is how the work arrays below are addressed.
     integer  :: iter_filterl(1:num_urbanl), iter_mapl(1:num_urbanl)
+    integer  :: next_filterl(1:num_urbanl), next_mapl(1:num_urbanl)
 
     ! The work arrays are only what crosses a kernel boundary. Arguments of FrictionVelocity:
     real(r8) :: obu(1:num_urbanl)                         ! Monin-Obukhov length (m)
@@ -210,6 +212,8 @@ contains
     !$acc enter data create(&
     !$acc iter_filterl(:), &
     !$acc iter_mapl(:), &
+    !$acc next_filterl(:), &
+    !$acc next_mapl(:), &
     !$acc obu(:), &
     !$acc ur(:), &
     !$acc um(:), &
@@ -394,19 +398,35 @@ contains
          ! tau_diff never changes. Keep only the landunits that have NOT converged.
          iter_final = iter
          if (implicit_stress .and. iter >= itmin) then
-            fnl_old = fnl
-            fnl = 0
-            !$acc parallel loop seq default(present) private(l,fl) copy(fnl) if(elm_device_ready)
-            do fa = 1, fnl_old
-               l  = iter_filterl(fa)
+            ! Parallel: the order of the list doesn't matter. Most passes nobody leaves, so count first.
+            n_keep = 0
+            !$acc parallel loop gang vector default(present) private(fl) reduction(+:n_keep) if(elm_device_ready)
+            do fa = 1, fnl
                fl = iter_mapl(fa)
-               if (.not. (abs(tau_diff(fl)) < dtaumin)) then
-                  fnl = fnl + 1
-                  iter_filterl(fnl) = l
-                  iter_mapl(fnl)    = fl
-               end if
+               if (.not. (abs(tau_diff(fl)) < dtaumin)) n_keep = n_keep + 1
             end do
-            if (fnl == 0) exit ITERATION
+            if (n_keep < fnl) then
+               i_next = 0
+               !$acc parallel loop gang vector default(present) private(fl, k_next) copy(i_next) if(elm_device_ready)
+               do fa = 1, fnl
+                  fl = iter_mapl(fa)
+                  if (.not. (abs(tau_diff(fl)) < dtaumin)) then
+                     !$acc atomic capture
+                     i_next = i_next + 1
+                     k_next = i_next
+                     !$acc end atomic
+                     next_filterl(k_next) = iter_filterl(fa)
+                     next_mapl(k_next) = iter_mapl(fa)
+                  end if
+               end do
+               !$acc parallel loop gang vector default(present) if(elm_device_ready)
+               do fa = 1, n_keep
+                  iter_filterl(fa) = next_filterl(fa)
+                  iter_mapl(fa)  = next_mapl(fa)
+               end do
+               fnl = n_keep
+            end if
+            if (n_keep == 0) exit ITERATION
          end if
 
       end do ITERATION ! end iteration
@@ -612,6 +632,8 @@ contains
     !$acc exit data delete(&
     !$acc iter_filterl(:), &
     !$acc iter_mapl(:), &
+    !$acc next_filterl(:), &
+    !$acc next_mapl(:), &
     !$acc obu(:), &
     !$acc ur(:), &
     !$acc um(:), &

@@ -70,7 +70,7 @@ contains
     integer  :: f                                ! filter pft index
     integer  :: fa                               ! active (unconverged) filter index
     integer  :: fn                               ! number of active (unconverged) patches
-    integer  :: fnold                            ! previous number of active patches
+    integer  :: n_keep, i_next, k_next           ! compaction of the active list
     integer  :: begp, endp                       ! patch bounds
     integer  :: iter                             ! iteration index
     integer  :: iter_final                       ! number of iterations used
@@ -102,6 +102,7 @@ contains
     ! iter_filter_map(1:fn) holds their position in filter_nolu_barep, which is
     ! how the num_nolu_barep-sized work arrays above are addressed.
     integer  :: iter_filterp(num_nolu_barep), iter_filter_map(num_nolu_barep)
+    integer  :: next_filterp(num_nolu_barep), next_filter_map(num_nolu_barep)
     real(r8) :: zeta   ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: wc     ! convective velocity [m/s]
     real(r8) :: dthv   ! diff of vir. poten. temp. between ref. height and surface
@@ -221,7 +222,7 @@ contains
       !$acc    zldis(:), dth(:), dqh(:), obu(:), ur(:), um(:), temp1(:), temp12m(:), &
       !$acc    temp2(:), temp22m(:), ustar(:), fm(:), ugust_total(:), wind_speed0(:), &
       !$acc    wind_speed_adj(:), tau(:), tau_diff(:), prev_tau(:), prev_tau_diff(:), &
-      !$acc    iter_filterp(:), iter_filter_map(:))
+      !$acc    iter_filterp(:), iter_filter_map(:), next_filterp(:), next_filter_map(:))
 
       ! Compute sensible and latent fluxes and their derivatives with respect
       ! to ground temperature using ground temperatures from previous time step
@@ -337,22 +338,37 @@ contains
             end do
          end if
          ! Only implicit stress can converge early: with explicit stress tau_diff never changes.
-         ! Compact iter_filterp/iter_filter_map in place, keeping only the patches that
-         ! have NOT yet converged. Sequential write-index dependency on fn.
+         ! Keep only the patches that have NOT yet converged.
          if (implicit_stress .and. iter >= itmin) then
-            fnold = fn
-            fn = 0
-            !$acc parallel loop seq default(present) private(p,f) copy(fn) if(elm_device_ready)
-            do fa = 1, fnold
-               p = iter_filterp(fa)
+            ! Parallel: the order of the list doesn't matter. Most passes nobody leaves, so count first.
+            n_keep = 0
+            !$acc parallel loop gang vector default(present) private(f) reduction(+:n_keep) if(elm_device_ready)
+            do fa = 1, fn
                f = iter_filter_map(fa)
-               if (.not. (abs(tau_diff(f)) < dtaumin)) then
-                  fn = fn + 1
-                  iter_filterp(fn)    = p
-                  iter_filter_map(fn) = f
-               end if
+               if (.not. (abs(tau_diff(f)) < dtaumin)) n_keep = n_keep + 1
             end do
-            if (fn == 0) exit ITERATION
+            if (n_keep < fn) then
+               i_next = 0
+               !$acc parallel loop gang vector default(present) private(f, k_next) copy(i_next) if(elm_device_ready)
+               do fa = 1, fn
+                  f = iter_filter_map(fa)
+                  if (.not. (abs(tau_diff(f)) < dtaumin)) then
+                     !$acc atomic capture
+                     i_next = i_next + 1
+                     k_next = i_next
+                     !$acc end atomic
+                     next_filterp(k_next) = iter_filterp(fa)
+                     next_filter_map(k_next) = iter_filter_map(fa)
+                  end if
+               end do
+               !$acc parallel loop gang vector default(present) if(elm_device_ready)
+               do fa = 1, n_keep
+                  iter_filterp(fa) = next_filterp(fa)
+                  iter_filter_map(fa)  = next_filter_map(fa)
+               end do
+               fn = n_keep
+            end if
+            if (n_keep == 0) exit ITERATION
          end if
 
       end do ITERATION ! end stability iteration
@@ -464,7 +480,7 @@ contains
       !$acc    zldis(:), dth(:), dqh(:), obu(:), ur(:), um(:), temp1(:), temp12m(:), &
       !$acc    temp2(:), temp22m(:), ustar(:), fm(:), ugust_total(:), wind_speed0(:), &
       !$acc    wind_speed_adj(:), tau(:), tau_diff(:), prev_tau(:), prev_tau_diff(:), &
-      !$acc    iter_filterp(:), iter_filter_map(:))
+      !$acc    iter_filterp(:), iter_filter_map(:), next_filterp(:), next_filter_map(:))
 
     end associate
 
