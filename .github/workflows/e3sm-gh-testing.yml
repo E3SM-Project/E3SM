@@ -140,8 +140,10 @@ jobs:
       # enable.sh opts into. Intel's math libraries (libimf, and MKL via MKL_CBWR) pick code
       # paths by CPU, and hosted runners have different CPUs, so for intel only, the copy of
       # the machine's cmake file in ~/.cime (made fresh by enable.sh, not the image's) gets
-      # flags that make answers CPU-independent, at some cost in speed. This is for testing
-      # only: it is not what the image gives to its users.
+      # flags that make answers CPU-independent, at some cost in speed. Those flags are not
+      # enough: libimf's scalar math functions still give different results on Intel and AMD
+      # CPUs, so for intel only, glibc's libm is preloaded to take their place. This is for
+      # testing only: it is not what the image gives to its users.
       # The runner's own uid is 1001, so hand it what the test writes to, and take it back
       # after for the caches and the log upload.
       - name: Run the tests
@@ -157,7 +159,11 @@ jobs:
           # which a test with testmods needs; the list has none of them
           export TESTS=$(awk -F. -v OFS=. -v m="e3sm-container_$COMPILER" '{ $3 = $3 "." m } 1' <<< "$TEST")
           rc=0
-          docker run --rm -e TESTS -e CT_FLAGS -e COMPILER -e MKL_CBWR=COMPATIBLE \
+          extra_env=()
+          if [ "$COMPILER" = intel ]; then
+            extra_env=(-e LD_PRELOAD=/lib64/libm.so.6)
+          fi
+          docker run --rm -e TESTS -e CT_FLAGS -e COMPILER -e MKL_CBWR=COMPATIBLE "${extra_env[@]}" \
             -v "$PWD/E3SM:/projects/e3sm/work/E3SM" \
             -v "$PWD/inputdata:/projects/e3sm/data/inputdata" \
             -v "$PWD/baselines:/projects/e3sm/data/baselines" \
