@@ -1184,7 +1184,7 @@ contains
         use VegetationType   , only : veg_pp
         use ColumnType       , only : col_pp
         use elm_varctl       , only : iulog
-        use PhotosynthesisMod, only : plc, params_inst
+        use PhotosynthesisHydraulicStressMod, only : plc, params_inst
         use column_varcon    , only : icol_road_perv
         use shr_infnan_mod   , only : isnan => shr_infnan_isnan
         use EnergyFluxType   , only : energyflux_type

@@ -1,6 +1,7 @@
 module PhotosynthesisType
 
   ! !USES:
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
@@ -81,8 +82,10 @@ module PhotosynthesisType
      real(r8) , pointer :: rssun_patch      (:)   => null()! patch sunlit stomatal resistance (s/m)
      real(r8) , pointer :: rssha_patch      (:)   => null()! patch shaded stomatal resistance (s/m)
 
+     real(r8) , pointer :: psncanopy_patch  (:)   => null()! patch sunlit leaf photosynthesis (umol CO2 /m**2/ s) (ED specific)
 
      ! ED specific variables
+     real(r8), pointer :: lmrcanopy_patch   (:)   => null()! sunlit leaf maintenance respiration rate (umol CO2/m**2/s) (ED specific)
      ! Plant hydraulic stress specific variables
      real(r8), pointer, public :: ac_phs_patch      (:,:,:) => null()! patch Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
      real(r8), pointer, public :: aj_phs_patch      (:,:,:) => null()! patch RuBP-limited gross photosynthesis (umol CO2/m**2/s)
@@ -196,7 +199,9 @@ contains
     allocate(this%rssun_patch       (begp:endp))           ; this%rssun_patch       (:)   = spval
     allocate(this%rssha_patch       (begp:endp))           ; this%rssha_patch       (:)   = spval
 
+    allocate(this%psncanopy_patch   (begp:endp))           ; this%psncanopy_patch   (:)   = spval
 
+    allocate(this%lmrcanopy_patch   (begp:endp))           ; this%lmrcanopy_patch   (:)   = spval
 ! plant hydraulics
     allocate(this%ac_phs_patch      (begp:endp,2,1:nlevcan)) ; this%ac_phs_patch (:,:,:) = spval
     allocate(this%aj_phs_patch      (begp:endp,2,1:nlevcan)) ; this%aj_phs_patch (:,:,:) = spval
@@ -351,6 +356,7 @@ contains
     do p = bounds%begp,bounds%endp
        l = veg_pp%landunit(p)
 
+       this%lmrcanopy_patch(p) =  0.0_r8
 
        this%alphapsnsun_patch(p) = spval
        this%alphapsnsha_patch(p) = spval
@@ -478,6 +484,7 @@ contains
     integer :: p,c,l ! indices
     !-----------------------------------------------------------------------
 
+    !$acc parallel loop independent gang vector default(present) private(p,l) if(elm_device_ready)
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
        if (.not. lun_pp%lakpoi(l)) then
