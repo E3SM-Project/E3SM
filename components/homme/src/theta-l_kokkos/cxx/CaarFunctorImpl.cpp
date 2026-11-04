@@ -1,8 +1,12 @@
+#include "Hommexx_config.h"
+
+#ifdef HOMMEXX_ENABLE_CAAR_OPT
+
 #include "CaarFunctorImpl-caar-opt.hpp"
 
 namespace Homme {
 
-template <bool HYDROSTATIC, bool CONSERVATIVE>
+template <bool HYDROSTATIC, AdvectionForm ADV_FORM>
 void CaarFunctorImpl::epoch1_blockOps(const SphereOuter::Team &team)
 {
   auto buffers_dp_tens = m_buffers.dp_tens;
@@ -25,21 +29,27 @@ void CaarFunctorImpl::epoch1_blockOps(const SphereOuter::Team &team)
   auto state_vtheta_dp= m_state.m_vtheta_dp;
 
   SphereBlockOps::parallel_for(
-    team, 4,
+    team, 5,
     KOKKOS_LAMBDA(const SphereBlockOps::Team &team) {
       SphereBlockOps b(sg, team);
-      SphereBlockScratch ttmp0(b), ttmp1(b), ttmp2(b), ttmp3(b);
+      SphereBlockScratch ttmp0(b), ttmp1(b), ttmp2(b), ttmp3(b), ttmp4(b);
 
       SPHERE_BLOCK_START3(b, v0, v1, vtheta);
 
       if (!HYDROSTATIC) {
 
-        const Scalar dphi = b.zabove(&state_phinh_i(b.e,data_n0,b.x,b.y,b.z), &state_phinh_i(b.e,data_n0,b.x,b.y,b.z+1)) - state_phinh_i(b.e,data_n0,b.x,b.y,b.z);
+        const Scalar *const phinh_above = (b.z < NUM_LEV_P-1) ? &state_phinh_i(b.e,data_n0,b.x,b.y,b.z+1) : nullptr;
+        Scalar dphi = b.zabove(&state_phinh_i(b.e,data_n0,b.x,b.y,b.z), phinh_above) - state_phinh_i(b.e,data_n0,b.x,b.y,b.z);
         const Scalar vtheta_dp = state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z);
         for (int i = 0; i < VECTOR_SIZE; i++) {
           if ((vtheta_dp[i] < 0) || (dphi[i] > 0)) {
             if (b.z * VECTOR_SIZE + i < NUM_PHYSICAL_LEV) abort();
           }
+        }
+
+        // Sanitize dphi in padding slots before compute_pnh_and_exner so we never divide 0/0.
+        if (NUM_PHYSICAL_LEV % VECTOR_SIZE != 0 && b.z == NUM_LEV-1) {
+          for (int i = NUM_PHYSICAL_LEV % VECTOR_SIZE; i < VECTOR_SIZE; i++) dphi[i] = -1.0;
         }
 
         EquationOfState::compute_pnh_and_exner(vtheta_dp, dphi, buffers_pnh(b.e,b.x,b.y,b.z), buffers_exner(b.e,b.x,b.y,b.z));
@@ -55,11 +65,15 @@ void CaarFunctorImpl::epoch1_blockOps(const SphereOuter::Team &team)
           }
         }
 
-        buffers_phi(b.e,b.x,b.y,b.z) = 0.5 * (state_phinh_i(b.e,data_n0,b.x,b.y,b.z) + b.zabove(&state_phinh_i(b.e,data_n0,b.x,b.y,b.z), &state_phinh_i(b.e,data_n0,b.x,b.y,b.z+1)));
+        buffers_phi(b.e,b.x,b.y,b.z) = 0.5 * (state_phinh_i(b.e,data_n0,b.x,b.y,b.z) + b.zabove(&state_phinh_i(b.e,data_n0,b.x,b.y,b.z), phinh_above));
       }
 
-      v0 = state_v(b.e,data_n0,0,b.x,b.y,b.z) * state_dp3d(b.e,data_n0,b.x,b.y,b.z);
-      v1 = state_v(b.e,data_n0,1,b.x,b.y,b.z) * state_dp3d(b.e,data_n0,b.x,b.y,b.z);
+      Scalar dp = state_dp3d(b.e,data_n0,b.x,b.y,b.z);
+      v0 = state_v(b.e,data_n0,0,b.x,b.y,b.z) * dp;
+      v1 = state_v(b.e,data_n0,1,b.x,b.y,b.z) * dp;
+      if (NUM_PHYSICAL_LEV % VECTOR_SIZE != 0 && b.z == NUM_LEV-1) {
+        for (int i = NUM_PHYSICAL_LEV % VECTOR_SIZE; i < VECTOR_SIZE; i++) dp[i] = 1.0;
+      }
       b.divInit(ttmp0, ttmp1, v0, v1);
       buffers_vdp(b.e,0,b.x,b.y,b.z) = v0;
       buffers_vdp(b.e,1,b.x,b.y,b.z) = v1;
@@ -68,13 +82,19 @@ void CaarFunctorImpl::epoch1_blockOps(const SphereOuter::Team &team)
 
       vtheta = 0;
 
-      if (CONSERVATIVE) {
+      if (ADV_FORM == AdvectionForm::Conservative) {
         const Scalar sv0 = state_v(b.e,data_n0,0,b.x,b.y,b.z) * state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z);
         const Scalar sv1 = state_v(b.e,data_n0,1,b.x,b.y,b.z) * state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z);
         b.divInit(ttmp2, ttmp3, sv0, sv1);
-      } else {
-        vtheta = state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z) / state_dp3d(b.e,data_n0,b.x,b.y,b.z);
+      } else if (ADV_FORM == AdvectionForm::NonConservative) {
+        vtheta = state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z) / dp;
         b.gradInit(ttmp2, vtheta);
+      } else { // AdvectionForm::Split
+        const Scalar sv0 = state_v(b.e,data_n0,0,b.x,b.y,b.z) * state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z);
+        const Scalar sv1 = state_v(b.e,data_n0,1,b.x,b.y,b.z) * state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z);
+        b.divInit(ttmp2, ttmp3, sv0, sv1);
+        vtheta = state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z) / dp;
+        b.gradInit(ttmp4, vtheta);
       }
 
       SPHERE_BLOCK_MIDDLE3(b, v0, v1, vtheta);
@@ -82,15 +102,21 @@ void CaarFunctorImpl::epoch1_blockOps(const SphereOuter::Team &team)
       const Scalar dvdp = b.div(ttmp0, ttmp1);
       buffers_dp_tens(b.e,b.x,b.y,b.z) = dvdp;
 
-      if (CONSERVATIVE) {
+      if (ADV_FORM == AdvectionForm::Conservative) {
         buffers_theta_tens(b.e,b.x,b.y,b.z) = b.div(ttmp2, ttmp3);
-      } else {
+      } else if (ADV_FORM == AdvectionForm::NonConservative) {
         Scalar grad0, grad1;
         b.grad(grad0, grad1, ttmp2);
         Scalar theta_tens = dvdp * vtheta;
         theta_tens += grad0 * v0;
         theta_tens += grad1 * v1;
         buffers_theta_tens(b.e,b.x,b.y,b.z) = theta_tens;
+      } else { // AdvectionForm::Split
+        const Scalar cons_tens = b.div(ttmp2, ttmp3);
+        Scalar grad0, grad1;
+        b.grad(grad0, grad1, ttmp4);
+        const Scalar noncons_tens = dvdp * vtheta + grad0 * v0 + grad1 * v1;
+        buffers_theta_tens(b.e,b.x,b.y,b.z) = 0.5 * (cons_tens + noncons_tens);
       }
 
       SPHERE_BLOCK_END();
@@ -175,14 +201,19 @@ void CaarFunctorImpl::epoch3_blockOps(const SphereOuter::Team &team)
 
       SPHERE_BLOCK_START0(b);
 
-      const Scalar pi = 0.5 * (buffers_dp_i(b.e,b.x,b.y,b.z) + b.zabove(&buffers_dp_i(b.e,b.x,b.y,b.z), &buffers_dp_i(b.e,b.x,b.y,b.z+1)));
+      const Scalar *const dp_i_above = (b.z < NUM_LEV_P-1) ? &buffers_dp_i(b.e,b.x,b.y,b.z+1) : nullptr;
+      const Scalar pi = 0.5 * (buffers_dp_i(b.e,b.x,b.y,b.z) + b.zabove(&buffers_dp_i(b.e,b.x,b.y,b.z), dp_i_above));
       b.gradInit(ttmp0, pi);
 
       if (HYDROSTATIC) {
-        Scalar exner = pi;
+        Scalar p = pi;
+        if (NUM_PHYSICAL_LEV % VECTOR_SIZE != 0 && b.z == NUM_LEV-1) {
+          for (int i = NUM_PHYSICAL_LEV % VECTOR_SIZE; i < VECTOR_SIZE; i++) p[i] = PhysicalConstants::p0;
+        }
+        Scalar exner = p;
         EquationOfState::pressure_to_exner(exner);
         buffers_exner(b.e,b.x,b.y,b.z) = exner;
-        buffers_pnh(b.e,b.x,b.y,b.z) = EquationOfState::compute_dphi(state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z), exner, pi);
+        buffers_pnh(b.e,b.x,b.y,b.z) = EquationOfState::compute_dphi(state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z), exner, p);
       }
 
       SPHERE_BLOCK_MIDDLE0(b);
@@ -190,7 +221,8 @@ void CaarFunctorImpl::epoch3_blockOps(const SphereOuter::Team &team)
       Scalar grad0, grad1;
       b.grad(grad0, grad1, ttmp0);
 
-      Scalar omega = -0.5 * (buffers_w_tens(b.e,b.x,b.y,b.z) + b.zabove(&buffers_w_tens(b.e,b.x,b.y,b.z), &buffers_w_tens(b.e,b.x,b.y,b.z+1)));
+      const Scalar *const w_tens_above = (b.z < NUM_LEV_P-1) ? &buffers_w_tens(b.e,b.x,b.y,b.z+1) : nullptr;
+      Scalar omega = -0.5 * (buffers_w_tens(b.e,b.x,b.y,b.z) + b.zabove(&buffers_w_tens(b.e,b.x,b.y,b.z), w_tens_above));
       const Scalar uz = state_v(b.e,data_n0,0,b.x,b.y,b.z);
       const Scalar vz = state_v(b.e,data_n0,1,b.x,b.y,b.z);
       omega += uz * grad0 + vz * grad1;
@@ -200,8 +232,12 @@ void CaarFunctorImpl::epoch3_blockOps(const SphereOuter::Team &team)
 
       if (RSPLIT_ZERO) {
 
-        const Scalar dp = state_dp3d(b.e,data_n0,b.x,b.y,b.z);
-        const Scalar etap = b.zabove(&buffers_eta_dot_dpdn(b.e,b.x,b.y,b.z), &buffers_eta_dot_dpdn(b.e,b.x,b.y,b.z+1));
+        Scalar dp = state_dp3d(b.e,data_n0,b.x,b.y,b.z);
+        if (NUM_PHYSICAL_LEV % VECTOR_SIZE != 0 && b.z == NUM_LEV-1) {
+          for (int i = NUM_PHYSICAL_LEV % VECTOR_SIZE; i < VECTOR_SIZE; i++) dp[i] = 1.0;
+        }
+        const Scalar *const eta_above = (b.z < NUM_LEV_P-1) ? &buffers_eta_dot_dpdn(b.e,b.x,b.y,b.z+1) : nullptr;
+        const Scalar etap = b.zabove(&buffers_eta_dot_dpdn(b.e,b.x,b.y,b.z), eta_above);
         const Scalar etaz = buffers_eta_dot_dpdn(b.e,b.x,b.y,b.z);
 
         buffers_dp_tens(b.e,b.x,b.y,b.z) += etap - etaz;
@@ -209,18 +245,24 @@ void CaarFunctorImpl::epoch3_blockOps(const SphereOuter::Team &team)
         derived_eta_dot_dpdn(b.e,b.x,b.y,b.z) += data_eta_ave_w * etaz;
 
         if (!HYDROSTATIC) {
-          const Scalar dw = b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), &state_w_i(b.e,data_n0,b.x,b.y,b.z+1)) - state_w_i(b.e,data_n0,b.x,b.y,b.z);
+          const Scalar *const w_i_above = (b.z < NUM_LEV_P-1) ? &state_w_i(b.e,data_n0,b.x,b.y,b.z+1) : nullptr;
+          const Scalar dw = b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), w_i_above) - state_w_i(b.e,data_n0,b.x,b.y,b.z);
           const Scalar eta = 0.5 * (etaz + etap);
           buffers_temp(b.e,b.x,b.y,b.z) = dw * eta;
         }
 
+        const Scalar *const v0_above = (b.z < NUM_LEV-1) ? &state_v(b.e,data_n0,0,b.x,b.y,b.z+1) : nullptr;
+        const Scalar *const v1_above = (b.z < NUM_LEV-1) ? &state_v(b.e,data_n0,1,b.x,b.y,b.z+1) : nullptr;
+        const Scalar *const v0_below = (b.z > 0) ? &state_v(b.e,data_n0,0,b.x,b.y,b.z-1) : nullptr;
+        const Scalar *const v1_below = (b.z > 0) ? &state_v(b.e,data_n0,1,b.x,b.y,b.z-1) : nullptr;
+
         const Scalar facp = 0.5 * etap / dp;
-        Scalar u = facp * (b.zabove(uz, &state_v(b.e,data_n0,0,b.x,b.y,b.z), &state_v(b.e,data_n0,0,b.x,b.y,b.z+1)) - uz);
-        Scalar v = facp * (b.zabove(vz, &state_v(b.e,data_n0,1,b.x,b.y,b.z), &state_v(b.e,data_n0,1,b.x,b.y,b.z+1)) - vz);
+        Scalar u = facp * (b.zabove(uz, &state_v(b.e,data_n0,0,b.x,b.y,b.z), v0_above) - uz);
+        Scalar v = facp * (b.zabove(vz, &state_v(b.e,data_n0,1,b.x,b.y,b.z), v1_above) - vz);
 
         const Scalar facm = 0.5 * etaz / dp;
-        u += facm * (uz - b.zbelow(uz, &state_v(b.e,data_n0,0,b.x,b.y,b.z-1), &state_v(b.e,data_n0,0,b.x,b.y,b.z)));
-        v += facm * (vz - b.zbelow(uz, &state_v(b.e,data_n0,1,b.x,b.y,b.z-1), &state_v(b.e,data_n0,1,b.x,b.y,b.z)));
+        u += facm * (uz - b.zbelow(uz, v0_below, &state_v(b.e,data_n0,0,b.x,b.y,b.z)));
+        v += facm * (vz - b.zbelow(vz, v1_below, &state_v(b.e,data_n0,1,b.x,b.y,b.z)));
         buffers_v_tens(b.e,0,b.x,b.y,b.z) = u;
         buffers_v_tens(b.e,1,b.x,b.y,b.z) = v;
       }
@@ -297,32 +339,48 @@ void CaarFunctorImpl::epoch5_colOps(const SphereOuter::Team &team)
       c.grad(buffers_grad_phinh_i, state_phinh_i, data_n0);
       if (!HYDROSTATIC) c.grad(buffers_grad_w_i, state_w_i, data_n0);
 
-      const Scalar dm = c.zbelow(0, &state_dp3d(c.e,data_n0,c.x,c.y,c.z-1), &state_dp3d(c.e,data_n0,c.x,c.y,c.z));;
-      const Scalar dz = c.zabove(0, &state_dp3d(c.e,data_n0,c.x,c.y,c.z));
+      const Scalar *const dp3d_below = (c.z == 0) ? nullptr : &state_dp3d(c.e,data_n0,c.x,c.y,c.z-1);
+      const Scalar *const dp3d_here  = (c.z == NUM_LEV) ? nullptr : &state_dp3d(c.e,data_n0,c.x,c.y,c.z);
+      Scalar dm = c.zbelow(0, dp3d_below, dp3d_here);
+      Scalar dz = c.zabove(0, dp3d_here);
+      if (c.z == NUM_LEV_P-1) {
+        for (int i = (NUM_PHYSICAL_LEV % VECTOR_SIZE) + 1; i < VECTOR_SIZE; i++) {
+          dm[i] = 1.0;
+          dz[i] = 1.0;
+        }
+      }
       const Scalar dp_i = c.ztrim(dz, dm, 0.5 * (dz + dm));
       buffers_dp_i(c.e,c.x,c.y,c.z) = dp_i;
 
       if (!HYDROSTATIC) {
 
-        const Scalar v0m = c.zbelow(0, &state_v(c.e,data_n0,0,c.x,c.y,c.z-1), &state_v(c.e,data_n0,0,c.x,c.y,c.z));;
-        const Scalar v0z = c.zabove(0, &state_v(c.e,data_n0,0,c.x,c.y,c.z));
+        const Scalar *const v0_below = (c.z == 0) ? nullptr : &state_v(c.e,data_n0,0,c.x,c.y,c.z-1);
+        const Scalar *const v0_here  = (c.z == NUM_LEV) ? nullptr : &state_v(c.e,data_n0,0,c.x,c.y,c.z);
+        const Scalar v0m = c.zbelow(0, v0_below, v0_here);
+        const Scalar v0z = c.zabove(0, v0_here);
         const Scalar v_i0 = c.ztrim(v0z, v0m, (dz * v0z + dm * v0m) / (dm + dz));
         buffers_v_i(c.e,0,c.x,c.y,c.z) = v_i0;
 
-        const Scalar v1m = c.zbelow(0, &state_v(c.e,data_n0,1,c.x,c.y,c.z-1), &state_v(c.e,data_n0,1,c.x,c.y,c.z));;
-        const Scalar v1z = c.zabove(0, &state_v(c.e,data_n0,1,c.x,c.y,c.z));
+        const Scalar *const v1_below = (c.z == 0) ? nullptr : &state_v(c.e,data_n0,1,c.x,c.y,c.z-1);
+        const Scalar *const v1_here  = (c.z == NUM_LEV) ? nullptr : &state_v(c.e,data_n0,1,c.x,c.y,c.z);
+        const Scalar v1m = c.zbelow(0, v1_below, v1_here);
+        const Scalar v1z = c.zabove(0, v1_here);
         const Scalar v_i1 = c.ztrim(v1z, v1m, (dz * v1z + dm * v1m) / (dm + dz));
         buffers_v_i(c.e,1,c.x,c.y,c.z) = v_i1;
 
-        const Scalar pm = c.zbelow(pi_i00, &buffers_pnh(c.e,c.x,c.y,c.z-1), &buffers_pnh(c.e,c.x,c.y,c.z));;
-        const Scalar pz = c.zabove(pm + 0.5 * dm, &buffers_pnh(c.e,c.x,c.y,c.z));
+        const Scalar *const pnh_below = (c.z == 0) ? nullptr : &buffers_pnh(c.e,c.x,c.y,c.z-1);
+        const Scalar *const pnh_here  = (c.z == NUM_LEV) ? nullptr : &buffers_pnh(c.e,c.x,c.y,c.z);
+        const Scalar pm = c.zbelow(pi_i00, pnh_below, pnh_here);
+        const Scalar pz = c.zabove(pm + 0.5 * dm, pnh_here);
         buffers_dpnh_dp_i(c.e,c.x,c.y,c.z) = 2.0 * (pz - pm) / (dm + dz);
       }
 
       if (RSPLIT_ZERO) {
 
-        const Scalar phim = c.zbelow(0, &buffers_phi(c.e,c.x,c.y,c.z-1), &buffers_phi(c.e,c.x,c.y,c.z));;
-        const Scalar phiz = c.zabove(0, &buffers_phi(c.e,c.x,c.y,c.z));
+        const Scalar *const phi_below = (c.z == 0) ? nullptr : &buffers_phi(c.e,c.x,c.y,c.z-1);
+        const Scalar *const phi_here  = (c.z == NUM_LEV) ? nullptr : &buffers_phi(c.e,c.x,c.y,c.z);
+        const Scalar phim = c.zbelow(0, phi_below, phi_here);
+        const Scalar phiz = c.zabove(0, phi_here);
 
         if (!HYDROSTATIC) {
           const Scalar phi_vadv = c.ztrim(0, 0, (phiz - phim) * buffers_eta_dot_dpdn(c.e,c.x,c.y,c.z) / dp_i);
@@ -331,9 +389,14 @@ void CaarFunctorImpl::epoch5_colOps(const SphereOuter::Team &team)
 
         Scalar vtheta_i = phiz - phim;
 
-        const Scalar exnerm = c.zbelow(0, &buffers_exner(c.e,c.x,c.y,c.z-1), &buffers_exner(c.e,c.x,c.y,c.z));;
-        const Scalar exnerz = c.zabove(0, &buffers_exner(c.e,c.x,c.y,c.z));
-        const Scalar dexner = c.ztrim(1, 1, exnerz - exnerm);
+        const Scalar *const exner_below = (c.z == 0) ? nullptr : &buffers_exner(c.e,c.x,c.y,c.z-1);
+        const Scalar *const exner_here  = (c.z == NUM_LEV) ? nullptr : &buffers_exner(c.e,c.x,c.y,c.z);
+        const Scalar exnerm = c.zbelow(0, exner_below, exner_here);
+        const Scalar exnerz = c.zabove(0, exner_here);
+        Scalar dexner = c.ztrim(1, 1, exnerz - exnerm);
+        if (c.z == NUM_LEV_P-1) {
+          for (int i = (NUM_PHYSICAL_LEV % VECTOR_SIZE) + 1; i < VECTOR_SIZE; i++) dexner[i] = 1.0;
+        }
         vtheta_i /= dexner;
 
         vtheta_i /= -PhysicalConstants::cp; // separate for BFB equality with original Fortran
@@ -346,8 +409,10 @@ void CaarFunctorImpl::epoch5_colOps(const SphereOuter::Team &team)
 
         Scalar w_tens = 0;
         if (RSPLIT_ZERO) {
-          const Scalar tempm = c.zbelow(0, &buffers_temp(c.e,c.x,c.y,c.z-1), &buffers_temp(c.e,c.x,c.y,c.z));;
-          const Scalar tempz = c.zabove(0, &buffers_temp(c.e,c.x,c.y,c.z));
+          const Scalar *const temp_below = (c.z == 0) ? nullptr : &buffers_temp(c.e,c.x,c.y,c.z-1);
+          const Scalar *const temp_here  = (c.z == NUM_LEV) ? nullptr : &buffers_temp(c.e,c.x,c.y,c.z);
+          const Scalar tempm = c.zbelow(0, temp_below, temp_here);
+          const Scalar tempz = c.zabove(0, temp_here);
           const Scalar dw = c.ztrim(tempz, tempm, 0.5 * (tempz + tempm));
           w_tens = dw / dp_i;
         }
@@ -369,7 +434,7 @@ void CaarFunctorImpl::epoch5_colOps(const SphereOuter::Team &team)
     });
 }
 
-template <bool HYDROSTATIC, bool RSPLIT_ZERO, bool PGRAD_CORRECTION>
+template <bool HYDROSTATIC, bool RSPLIT_ZERO, bool PGRAD_CORRECTION, bool SPLIT_FORM>
 void CaarFunctorImpl::epoch6_blockOps(const SphereOuter::Team &team)
 {
   auto buffers_dpnh_dp_i = m_buffers.dpnh_dp_i;
@@ -390,15 +455,16 @@ void CaarFunctorImpl::epoch6_blockOps(const SphereOuter::Team &team)
   auto state_w_i = m_state.m_w_i;
 
   SphereBlockOps::parallel_for(
-    team, 6,
+    team, 8,
     KOKKOS_LAMBDA(const SphereBlockOps::Team &team) {
       SphereBlockOps b(sg, team);
-      SphereBlockScratch ttmp0(b), ttmp1(b), ttmp2(b), ttmp3(b), ttmp4(b), ttmp5(b);
+      SphereBlockScratch ttmp0(b), ttmp1(b), ttmp2(b), ttmp3(b), ttmp4(b), ttmp5(b), ttmp6(b), ttmp7(b);
 
       SPHERE_BLOCK_START3(b, exneriz, v0, v1);
 
       if (!HYDROSTATIC) {
-        const Scalar wz = b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), &state_w_i(b.e,data_n0,b.x,b.y,b.z+1));
+        const Scalar *const w_i_above = (b.z < NUM_LEV_P-1) ? &state_w_i(b.e,data_n0,b.x,b.y,b.z+1) : nullptr;
+        const Scalar wz = b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), w_i_above);
         const Scalar w2 = 0.25 * (state_w_i(b.e,data_n0,b.x,b.y,b.z) * state_w_i(b.e,data_n0,b.x,b.y,b.z) + wz * wz);
         b.gradInit(ttmp0, w2);
       }
@@ -415,6 +481,16 @@ void CaarFunctorImpl::epoch6_blockOps(const SphereOuter::Team &team)
       b.vortInit(ttmp3, ttmp4, v0, v1);
       b.gradInit(ttmp5, 0.5 * (v0 * v0 + v1 * v1));
 
+      if (SPLIT_FORM) {
+        Scalar dp = state_dp3d(b.e,data_n0,b.x,b.y,b.z);
+        if (NUM_PHYSICAL_LEV % VECTOR_SIZE != 0 && b.z == NUM_LEV-1) {
+          for (int i = NUM_PHYSICAL_LEV % VECTOR_SIZE; i < VECTOR_SIZE; i++) dp[i] = 1.0;
+        }
+        const Scalar vtheta = state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z) / dp;
+        b.gradInit(ttmp6, vtheta);
+        b.gradInit(ttmp7, vtheta * exneriz);
+      }
+
       SPHERE_BLOCK_MIDDLE3(b, exneriz, v0, v1);
 
       Scalar grad_v0, grad_v1;
@@ -425,24 +501,42 @@ void CaarFunctorImpl::epoch6_blockOps(const SphereOuter::Team &team)
       u_tens += grad_v0;
       v_tens += grad_v1;
 
-      const Scalar cp_vtheta = PhysicalConstants::cp * (state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z) / state_dp3d(b.e,data_n0,b.x,b.y,b.z));
+      Scalar dp = state_dp3d(b.e,data_n0,b.x,b.y,b.z);
+      if (NUM_PHYSICAL_LEV % VECTOR_SIZE != 0 && b.z == NUM_LEV-1) {
+        for (int i = NUM_PHYSICAL_LEV % VECTOR_SIZE; i < VECTOR_SIZE; i++) dp[i] = 1.0;
+      }
+      const Scalar cp_vtheta = PhysicalConstants::cp * (state_vtheta_dp(b.e,data_n0,b.x,b.y,b.z) / dp);
 
       Scalar grad_exner0, grad_exner1;
       b.grad(grad_exner0, grad_exner1, ttmp1);
 
-      u_tens += cp_vtheta * grad_exner0;
-      v_tens += cp_vtheta * grad_exner1;
+      if (SPLIT_FORM) {
+        Scalar grad_vtheta0, grad_vtheta1;
+        b.grad(grad_vtheta0, grad_vtheta1, ttmp6);
+
+        Scalar grad_vtheta_exner0, grad_vtheta_exner1;
+        b.grad(grad_vtheta_exner0, grad_vtheta_exner1, ttmp7);
+
+        u_tens += 0.5 * (cp_vtheta * grad_exner0 + PhysicalConstants::cp * (grad_vtheta_exner0 - exneriz * grad_vtheta0));
+        v_tens += 0.5 * (cp_vtheta * grad_exner1 + PhysicalConstants::cp * (grad_vtheta_exner1 - exneriz * grad_vtheta1));
+      } else {
+        u_tens += cp_vtheta * grad_exner0;
+        v_tens += cp_vtheta * grad_exner1;
+      }
 
       Scalar mgrad_x, mgrad_y;
+      const Scalar *const grad_phinh_i0_above = (b.z < NUM_LEV_P-1) ? &buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z+1) : nullptr;
+      const Scalar *const grad_phinh_i1_above = (b.z < NUM_LEV_P-1) ? &buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z+1) : nullptr;
       if (HYDROSTATIC) {
 
-        mgrad_x = 0.5 * (buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z), &buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z+1)));
-        mgrad_y = 0.5 * (buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z), &buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z+1)));
+        mgrad_x = 0.5 * (buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z), grad_phinh_i0_above));
+        mgrad_y = 0.5 * (buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z), grad_phinh_i1_above));
 
       } else {
 
-        mgrad_x = 0.5 * (buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z) * buffers_dpnh_dp_i(b.e,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z), &buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z+1)) * b.zabove(&buffers_dpnh_dp_i(b.e,b.x,b.y,b.z), &buffers_dpnh_dp_i(b.e,b.x,b.y,b.z+1)));
-        mgrad_y = 0.5 * (buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z) * buffers_dpnh_dp_i(b.e,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z), &buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z+1)) * b.zabove(&buffers_dpnh_dp_i(b.e,b.x,b.y,b.z), &buffers_dpnh_dp_i(b.e,b.x,b.y,b.z+1)));
+        const Scalar *const dpnh_dp_i_above = (b.z < NUM_LEV_P-1) ? &buffers_dpnh_dp_i(b.e,b.x,b.y,b.z+1) : nullptr;
+        mgrad_x = 0.5 * (buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z) * buffers_dpnh_dp_i(b.e,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,0,b.x,b.y,b.z), grad_phinh_i0_above) * b.zabove(&buffers_dpnh_dp_i(b.e,b.x,b.y,b.z), dpnh_dp_i_above));
+        mgrad_y = 0.5 * (buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z) * buffers_dpnh_dp_i(b.e,b.x,b.y,b.z) + b.zabove(&buffers_grad_phinh_i(b.e,1,b.x,b.y,b.z), grad_phinh_i1_above) * b.zabove(&buffers_dpnh_dp_i(b.e,b.x,b.y,b.z), dpnh_dp_i_above));
 
       }
 
@@ -461,8 +555,11 @@ void CaarFunctorImpl::epoch6_blockOps(const SphereOuter::Team &team)
       Scalar wvor_y = 0;
       if (!HYDROSTATIC) {
         b.grad(wvor_x, wvor_y, ttmp0);
-        wvor_x -= 0.5 * (buffers_grad_w_i(b.e,0,b.x,b.y,b.z) * state_w_i(b.e,data_n0,b.x,b.y,b.z) + b.zabove(&buffers_grad_w_i(b.e,0,b.x,b.y,b.z), &buffers_grad_w_i(b.e,0,b.x,b.y,b.z+1)) * b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), &state_w_i(b.e,data_n0,b.x,b.y,b.z+1)));
-        wvor_y -= 0.5 * (buffers_grad_w_i(b.e,1,b.x,b.y,b.z) * state_w_i(b.e,data_n0,b.x,b.y,b.z) + b.zabove(&buffers_grad_w_i(b.e,1,b.x,b.y,b.z), &buffers_grad_w_i(b.e,1,b.x,b.y,b.z+1)) * b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), &state_w_i(b.e,data_n0,b.x,b.y,b.z+1)));
+        const Scalar *const grad_w_i0_above = (b.z < NUM_LEV_P-1) ? &buffers_grad_w_i(b.e,0,b.x,b.y,b.z+1) : nullptr;
+        const Scalar *const grad_w_i1_above = (b.z < NUM_LEV_P-1) ? &buffers_grad_w_i(b.e,1,b.x,b.y,b.z+1) : nullptr;
+        const Scalar *const w_i_above = (b.z < NUM_LEV_P-1) ? &state_w_i(b.e,data_n0,b.x,b.y,b.z+1) : nullptr;
+        wvor_x -= 0.5 * (buffers_grad_w_i(b.e,0,b.x,b.y,b.z) * state_w_i(b.e,data_n0,b.x,b.y,b.z) + b.zabove(&buffers_grad_w_i(b.e,0,b.x,b.y,b.z), grad_w_i0_above) * b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), w_i_above));
+        wvor_y -= 0.5 * (buffers_grad_w_i(b.e,1,b.x,b.y,b.z) * state_w_i(b.e,data_n0,b.x,b.y,b.z) + b.zabove(&buffers_grad_w_i(b.e,1,b.x,b.y,b.z), grad_w_i1_above) * b.zabove(&state_w_i(b.e,data_n0,b.x,b.y,b.z), w_i_above));
       }
 
       u_tens += mgrad_x + wvor_x;
@@ -495,6 +592,7 @@ void CaarFunctorImpl::epoch7_col(const SphereOuter::Team &team)
   const int data_np1 = m_data.np1;
   const Real data_scale3 = m_data.scale3;
 
+  auto &geometry_phis = m_geometry.m_phis;
   auto &geometry_spheremp = m_geometry.m_spheremp;
 
   const Real scale1_dt = m_data.scale1 * m_data.dt;
@@ -522,9 +620,11 @@ void CaarFunctorImpl::epoch7_col(const SphereOuter::Team &team)
 
       Scalar theta_tens = buffers_theta_tens(c.e,c.x,c.y,c.z);
       if (RSPLIT_ZERO) {
-        const Scalar etap = c.zplus(&buffers_eta_dot_dpdn(c.e,c.x,c.y,c.z), &buffers_eta_dot_dpdn(c.e,c.x,c.y,c.z+1));
+        const Scalar *const eta_above = (c.z < NUM_LEV_P-1) ? &buffers_eta_dot_dpdn(c.e,c.x,c.y,c.z+1) : nullptr;
+        const Scalar *const vtheta_above = (c.z < NUM_LEV_P-1) ? &buffers_vtheta_i(c.e,c.x,c.y,c.z+1) : nullptr;
+        const Scalar etap = c.zplus(&buffers_eta_dot_dpdn(c.e,c.x,c.y,c.z), eta_above);
         const Scalar etaz = buffers_eta_dot_dpdn(c.e,c.x,c.y,c.z);
-        const Scalar thetap = etap * c.zplus(&buffers_vtheta_i(c.e,c.x,c.y,c.z), &buffers_vtheta_i(c.e,c.x,c.y,c.z+1));
+        const Scalar thetap = etap * c.zplus(&buffers_vtheta_i(c.e,c.x,c.y,c.z), vtheta_above);
         const Scalar thetaz = etaz * buffers_vtheta_i(c.e,c.x,c.y,c.z);
         theta_tens += thetap - thetaz;
       }
@@ -569,13 +669,17 @@ void CaarFunctorImpl::epoch7_col(const SphereOuter::Team &team)
         if (c.z == NUM_LEV-1) {
           constexpr int z = NUM_LEV_P-1;
           constexpr int dz = NUM_PHYSICAL_LEV%VECTOR_SIZE;
-          Real w_tens = buffers_w_tens(c.e,c.x,c.y,z)[dz];
-          w_tens *= dt_spheremp;
-          buffers_w_tens(c.e,c.x,c.y,z)[dz] = w_tens;
-          Real w_np1 = state_w_i(c.e,data_nm1,c.x,c.y,z)[dz];
-          w_np1 *= scale3_spheremp;
-          w_np1 += w_tens;
-          state_w_i(c.e,data_np1,c.x,c.y,z)[dz] = w_np1;
+          if (NUM_LEV == NUM_LEV_P) {
+            state_phinh_i(c.e,data_np1,c.x,c.y,z)[dz] = geometry_phis(c.e,c.x,c.y);
+          } else {
+            Real w_tens = buffers_w_tens(c.e,c.x,c.y,z)[dz];
+            w_tens *= dt_spheremp;
+            buffers_w_tens(c.e,c.x,c.y,z)[dz] = w_tens;
+            Real w_np1 = state_w_i(c.e,data_nm1,c.x,c.y,z)[dz];
+            w_np1 *= scale3_spheremp;
+            w_np1 += w_tens;
+            state_w_i(c.e,data_np1,c.x,c.y,z)[dz] = w_np1;
+          }
         }
       }
     });
@@ -588,11 +692,13 @@ void CaarFunctorImpl::caar_compute()
     KOKKOS_LAMBDA(const SphereOuter::Team &team) {
 
       if (m_theta_hydrostatic_mode) {
-        if (m_theta_advection_form == AdvectionForm::Conservative) epoch1_blockOps<true,true>(team);
-        else epoch1_blockOps<true,false>(team);
+        if (m_theta_advection_form == AdvectionForm::Conservative) epoch1_blockOps<true, AdvectionForm::Conservative>(team);
+        else if (m_theta_advection_form == AdvectionForm::NonConservative) epoch1_blockOps<true, AdvectionForm::NonConservative>(team);
+        else epoch1_blockOps<true, AdvectionForm::Split>(team);
       } else {
-        if (m_theta_advection_form == AdvectionForm::Conservative) epoch1_blockOps<false,true>(team);
-        else epoch1_blockOps<false,false>(team);
+        if (m_theta_advection_form == AdvectionForm::Conservative) epoch1_blockOps<false, AdvectionForm::Conservative>(team);
+        else if (m_theta_advection_form == AdvectionForm::NonConservative) epoch1_blockOps<false, AdvectionForm::NonConservative>(team);
+        else epoch1_blockOps<false, AdvectionForm::Split>(team);
       }
 
       if (m_rsplit == 0) epoch2_scanOps<true>(team);
@@ -616,21 +722,42 @@ void CaarFunctorImpl::caar_compute()
         else epoch5_colOps<false,false>(team);
       }
 
+      const bool is_split = (m_theta_advection_form == AdvectionForm::Split);
       if (m_theta_hydrostatic_mode) {
         if (m_rsplit == 0) {
-          if (m_pgrad_correction) epoch6_blockOps<true,true,true>(team);
-          else epoch6_blockOps<true,true,false>(team);
+          if (m_pgrad_correction) {
+            if (is_split) epoch6_blockOps<true,true,true,true>(team);
+            else epoch6_blockOps<true,true,true,false>(team);
+          } else {
+            if (is_split) epoch6_blockOps<true,true,false,true>(team);
+            else epoch6_blockOps<true,true,false,false>(team);
+          }
         } else {
-          if (m_pgrad_correction) epoch6_blockOps<true,false,true>(team);
-          else epoch6_blockOps<true,false,false>(team);
+          if (m_pgrad_correction) {
+            if (is_split) epoch6_blockOps<true,false,true,true>(team);
+            else epoch6_blockOps<true,false,true,false>(team);
+          } else {
+            if (is_split) epoch6_blockOps<true,false,false,true>(team);
+            else epoch6_blockOps<true,false,false,false>(team);
+          }
         }
       } else {
         if (m_rsplit == 0) {
-          if (m_pgrad_correction) epoch6_blockOps<false,true,true>(team);
-          else epoch6_blockOps<false,true,false>(team);
+          if (m_pgrad_correction) {
+            if (is_split) epoch6_blockOps<false,true,true,true>(team);
+            else epoch6_blockOps<false,true,true,false>(team);
+          } else {
+            if (is_split) epoch6_blockOps<false,true,false,true>(team);
+            else epoch6_blockOps<false,true,false,false>(team);
+          }
         } else {
-          if (m_pgrad_correction) epoch6_blockOps<false,false,true>(team);
-          else epoch6_blockOps<false,false,false>(team);
+          if (m_pgrad_correction) {
+            if (is_split) epoch6_blockOps<false,false,true,true>(team);
+            else epoch6_blockOps<false,false,true,false>(team);
+          } else {
+            if (is_split) epoch6_blockOps<false,false,false,true>(team);
+            else epoch6_blockOps<false,false,false,false>(team);
+          }
         }
       }
 
@@ -644,5 +771,7 @@ void CaarFunctorImpl::caar_compute()
     });
 }
 
-}
+} // namespace Homme
+
+#endif // HOMMEXX_ENABLE_CAAR_OPT
 

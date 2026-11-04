@@ -1478,7 +1478,7 @@ struct SphereBlockOps {
     if (VECTOR_SIZE == 1) return above[0];
     Scalar out;
     for (int i = 0; i < VECTOR_END; i++) out[i] = here[0][i+1];
-    if (z < NUM_LEV_P-1) out[VECTOR_END] = above[0][0];
+    out[VECTOR_END] = (z < NUM_LEV_P-1) ? above[0][0] : 0;
     return out;
   }
 
@@ -1487,8 +1487,11 @@ struct SphereBlockOps {
     if (VECTOR_SIZE == 1) return (z < NUM_LEV-1) ? above[0] : top;
     Scalar out;
     for (int i = 0; i < VECTOR_END; i++) out[i] = here[0][i+1];
-    if (z < NUM_LEV-1) out[VECTOR_END] = above[0][0];
-    else out[NUM_PHYSICAL_LEV%VECTOR_SIZE] = top[NUM_PHYSICAL_LEV%VECTOR_SIZE];
+    if (z < NUM_LEV-1) {
+      out[VECTOR_END] = above[0][0];
+    } else {
+      for (int i = (NUM_PHYSICAL_LEV-1)%VECTOR_SIZE; i < VECTOR_SIZE; i++) out[i] = top[i];
+    }
     return out;
   }
 
@@ -1590,9 +1593,10 @@ struct SphereCol {
 
   KOKKOS_INLINE_FUNCTION Scalar zplus(const Scalar *const here, const Scalar *const above) const
   {
+    if (VECTOR_SIZE == 1) return above[0];
     Scalar out;
     for (int i = 0; i < VECTOR_END; i++) out[i] = here[0][i+1];
-    out[VECTOR_END] = above[0][0];
+    out[VECTOR_END] = (z < NUM_LEV_P-1) ? above[0][0] : 0;
     return out;
   }
 };
@@ -1631,18 +1635,22 @@ struct SphereColOps: SphereCol {
 
   KOKKOS_INLINE_FUNCTION Scalar zabove(const Scalar top, const Scalar *const in) const
   {
-    // When z == NUM_LEV_P-1, `in` would point one pack past a NUM_LEV-sized
-    // midpoint view (out-of-bounds).  Return `top` immediately so we never
-    // dereference that pointer.
-    if (z == NUM_LEV_P-1) return top;
-    return *in;
+    // When z == NUM_LEV (only possible when NUM_LEV_P > NUM_LEV), `in` is nullptr
+    // because z is one pack past a NUM_LEV-sized midpoint view.
+    // When NUM_LEV == NUM_LEV_P and z == NUM_LEV_P-1, `in` points to the last
+    // midpoint pack (valid for slots 0..NUM_PHYSICAL_LEV%VECTOR_SIZE-1), while
+    // slot NUM_PHYSICAL_LEV%VECTOR_SIZE is the surface interface and takes `top`.
+    if (z == NUM_LEV) return top;
+    Scalar out = *in;
+    if (z == NUM_LEV_P-1) out[NUM_PHYSICAL_LEV%VECTOR_SIZE] = top[NUM_PHYSICAL_LEV%VECTOR_SIZE];
+    return out;
   }
 
   KOKKOS_INLINE_FUNCTION Scalar zbelow(const Real bottom, const Scalar *const below, const Scalar *const here) const
   {
     Scalar out;
     out[0] = (z == 0) ? bottom : below[0][VECTOR_END];
-    for (int i = 1; i < VECTOR_SIZE; i++) out[i] = here[0][i-1];
+    for (int i = 1; i < VECTOR_SIZE; i++) out[i] = here ? here[0][i-1] : 0;
     return out;
   }
 

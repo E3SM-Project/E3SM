@@ -6,7 +6,7 @@
 
 #include "CaarFunctor.hpp"
 #include "Hommexx_config.h"
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
+#if defined(HOMMEXX_ENABLE_CAAR_OPT) && defined(MODEL_THETA_L)
 #include "CaarFunctorImpl-caar-opt.hpp"
 #else
 #include "CaarFunctorImpl.hpp"

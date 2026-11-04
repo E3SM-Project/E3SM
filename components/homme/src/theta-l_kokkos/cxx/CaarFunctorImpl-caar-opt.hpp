@@ -19,7 +19,7 @@
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
-#include "SphereOperators-caar-opt.hpp"
+#include "SphereOperators.hpp"
 #include "kokkos_utils.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
@@ -124,12 +124,12 @@ struct CaarFunctorImpl {
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
-  template <bool HYDROSTATIC, bool CONSERVATIVE> void epoch1_blockOps(const SphereOuter::Team &);
+  template <bool HYDROSTATIC, AdvectionForm ADV_FORM> void epoch1_blockOps(const SphereOuter::Team &);
   template <bool RSPLIT_ZERO> void epoch2_scanOps(const SphereOuter::Team &);
   template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch3_blockOps(const SphereOuter::Team &);
   void epoch4_scanOps(const SphereOuter::Team &);
   template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch5_colOps(const SphereOuter::Team &);
-  template <bool HYDROSTATIC, bool RSPLIT_ZERO, bool PGRAD_CORRECTION> void epoch6_blockOps(const SphereOuter::Team &);
+  template <bool HYDROSTATIC, bool RSPLIT_ZERO, bool PGRAD_CORRECTION, bool SPLIT_FORM> void epoch6_blockOps(const SphereOuter::Team &);
   template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch7_col(const SphereOuter::Team &);
   void caar_compute();
 
