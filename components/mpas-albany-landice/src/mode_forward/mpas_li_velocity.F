@@ -59,7 +59,9 @@ module li_velocity
    !
    !--------------------------------------------------------------------
 
-   ! Masks that the external dycore's FEM grid was last generated from
+   ! Masks that the external dycore's FEM grid was last generated from.  These hold a single
+   ! block's masks: external dycores support one block per task, which
+   ! li_velocity_external_init enforces by requiring config_number_of_blocks = 0.
    integer, dimension(:), allocatable :: femVertexDynamicMask, femCellDynamicMask
    integer, dimension(:,:), allocatable :: femDirichletMask
 
