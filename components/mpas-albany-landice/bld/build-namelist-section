@@ -98,7 +98,6 @@ add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
 add_default($nl, 'config_surface_air_temperature_source');
 add_default($nl, 'config_surface_air_temperature_value');
-add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_temp_diffusive_factor');

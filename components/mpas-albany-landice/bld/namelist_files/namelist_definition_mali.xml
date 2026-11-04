@@ -656,9 +656,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_surface_air_temperature_source" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate.
+Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler.
 
-Valid values: 'constant', 'file', 'lapse'
+Valid values: 'constant', 'file'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -667,14 +667,6 @@ Default: Defined in namelist_defaults.xml
 Constant value of the surface air temperature.
 
 Valid values: Any positive real value
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_surface_air_temperature_lapse_rate" type="real"
-	category="thermal_solver" group="thermal_solver">
-Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations.
-
-Valid values: Any real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
