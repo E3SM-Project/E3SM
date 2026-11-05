@@ -47,6 +47,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/control_mod.F90
     ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
     ${SRC_SHARE_DIR}/cube_mod.F90
+    ${SRC_SHARE_DIR}/metric_mod.F90
     ${SRC_SHARE_DIR}/derivative_mod.F90
     ${SRC_SHARE_DIR}/dimensions_mod.F90
     ${SRC_SHARE_DIR}/dof_mod.F90
