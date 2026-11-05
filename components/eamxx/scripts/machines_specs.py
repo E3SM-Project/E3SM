@@ -372,6 +372,17 @@ class GHCICuda(Machine):
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
 
 ###############################################################################
+class GHCIHip(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base(name="ghci-hip")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-hip"
+        cls.gpu_arch = "hip"
+        cls.num_run_res = int(run_cmd_no_fail("rocminfo | grep -c 'Device Type: *GPU'"))
+
+###############################################################################
 class LLNLIntel(Machine):
 ###############################################################################
     @classmethod

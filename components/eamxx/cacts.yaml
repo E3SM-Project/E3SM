@@ -128,6 +128,11 @@ machines:
     gpu_arch: "cuda"
     num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
 
+  ghci-hip:
+    baselines_dir: "/projects/e3sm/baselines/scream/ghci-hip"
+    gpu_arch: "hip"
+    num_run_res: "$(rocminfo | grep -c 'Device Type: *GPU')"
+
   ruby-intel:
     env_setup:
       - "module --force purge"

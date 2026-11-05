@@ -80,6 +80,9 @@ jobs:
           - {name: gnu-cuda, runner: cuda, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
           - {name: gnu-cuda, runner: cuda, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
           - {name: gnu-cuda, runner: cuda, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+          - {name: gnu-hip, runner: hip, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+          - {name: gnu-hip, runner: hip, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+          - {name: gnu-hip, runner: hip, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
     name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
@@ -90,9 +93,9 @@ jobs:
           submodules: recursive
       - name: Show action trigger
         uses: e3sm-project/automation/show-trigger@v1
-      - name: Get CUDA Arch
+      - name: Get GPU Arch
         id: gpu
-        if: ${{ matrix.runner == 'cuda' }}
+        if: ${{ matrix.runner == 'cuda' || matrix.runner == 'hip' }}
         uses: e3sm-project/automation/gpu-arch@v1
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
