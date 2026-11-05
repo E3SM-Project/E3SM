@@ -16,12 +16,10 @@ module VegetationPropertiesType
   !
   ! !PUBLIC TYPES:
   type, public :: vegetation_properties_type
-     integer , pointer :: noveg         (:)   => null() ! value for not vegetated
      !integer , pointer :: tree          (:)   => null() ! tree or not?
      real(r8), pointer :: smpso         (:)   => null() ! soil water potential at full stomatal opening (mm)
      real(r8), pointer :: smpsc         (:)   => null() ! soil water potential at full stomatal closure (mm)
      real(r8), pointer :: fnitr         (:)   => null() ! foliage nitrogen limitation factor (-)
-     real(r8), pointer :: foln          (:)   => null() ! foliage nitrogen (%)
      real(r8), pointer :: dleaf         (:)   => null() ! characteristic leaf dimension (m)
      real(r8), pointer :: c3psn         (:)   => null() ! photosynthetic pathway: 0. = c4, 1. = c3
      real(r8), pointer :: xl            (:)   => null() ! leaf/stem orientation index
@@ -31,9 +29,6 @@ module VegetationPropertiesType
      real(r8), pointer :: taus          (:,:) => null() ! stem transmittance: 1=vis, 2=nir (numrad)
      real(r8), pointer :: z0mr          (:)   => null() ! ratio of momentum roughness length to canopy top height (-)
      real(r8), pointer :: displar       (:)   => null() ! ratio of displacement height to canopy top height (-)
-     real(r8), pointer :: roota_par     (:)   => null() ! rooting distribution parameter [1/m]
-     real(r8), pointer :: rootb_par     (:)   => null() ! rooting distribution parameter [1/m]
-     real(r8), pointer :: rootprof_beta (:)   => null() ! rooting distribution parameter for C and N inputs [unitless]
      real(r8), pointer :: dwood         (:)   => null() ! wood density (gC/m3)
      real(r8), pointer :: slatop        (:)   => null() ! specific leaf area at top of canopy, projected area basis [m^2/gC]
 ! for plant hydraulics
@@ -67,17 +62,6 @@ module VegetationPropertiesType
      real(r8), pointer :: evergreen     (:) => null()  ! binary flag for evergreen leaf habit (0 or 1)
      real(r8), pointer :: stress_decid  (:) => null()  ! binary flag for stress-deciduous leaf habit (0 or 1)
      real(r8), pointer :: season_decid  (:) => null()  ! binary flag for seasonal-deciduous leaf habit (0 or 1)
-     real(r8), pointer :: cc_leaf       (:) => null()  ! combustion completeness factor for leaf (0 to 1)
-     real(r8), pointer :: cc_lstem      (:) => null()  ! combustion completeness factor for live stem (0 to 1)
-     real(r8), pointer :: cc_dstem      (:) => null()  ! combustion completeness factor for dead stem (0 to 1)
-     real(r8), pointer :: cc_other      (:) => null()  ! combustion completeness factor for other plant tissues (0 to 1)
-     real(r8), pointer :: fm_leaf       (:) => null()  ! fire-related mortality factor for leaf (0 to 1)
-     real(r8), pointer :: fm_lstem      (:) => null()  ! fire-related mortality factor for live stem (0 to 1)
-     real(r8), pointer :: fm_dstem      (:) => null()  ! fire-related mortality factor for dead stem (0 to 1)
-     real(r8), pointer :: fm_other      (:) => null()  ! fire-related mortality factor for other plant tissues (0 to 1)
-     real(r8), pointer :: fm_root       (:) => null()  ! fire-related mortality factor for fine roots (0 to 1)
-     real(r8), pointer :: fm_lroot      (:) => null()  ! fire-related mortality factor for live roots (0 to 1)
-     real(r8), pointer :: fm_droot      (:) => null()  ! fire-related mortality factor for dead roots (0 to 1)
      real(r8), pointer :: manunitro     (:) => null()  ! manure nitrogen applied (crop)
      real(r8), pointer :: fleafcn       (:) => null()  ! C:N during grain fill; leaf (crop)
      real(r8), pointer :: ffrootcn      (:) => null()  ! C:N during grain fill; froot (crop)
@@ -205,12 +189,10 @@ contains
     integer :: m, ib, j
     !------------------------------------------------------------------------
 
-    allocate(this%noveg         (0:numpft))        ; this%noveg        (:)   =huge(1)
     !allocate(this%tree          (0:numpft))        ; this%tree         (:)   =huge(1)
     allocate(this%smpso         (0:numpft))        ; this%smpso        (:)   =spval
     allocate(this%smpsc         (0:numpft))        ; this%smpsc        (:)   =spval
     allocate(this%fnitr         (0:numpft))        ; this%fnitr        (:)   =spval
-    allocate(this%foln          (0:numpft))        ; this%foln         (:)   =spval
     allocate(this%dleaf         (0:numpft))        ; this%dleaf        (:)   =spval
     allocate(this%c3psn         (0:numpft))        ; this%c3psn        (:)   =spval
     allocate(this%xl            (0:numpft))        ; this%xl           (:)   =spval
@@ -220,8 +202,6 @@ contains
     allocate(this%taus          (0:numpft,numrad)) ; this%taus         (:,:) =spval
     allocate(this%z0mr          (0:numpft))        ; this%z0mr         (:)   =spval
     allocate(this%displar       (0:numpft))        ; this%displar      (:)   =spval
-    allocate(this%roota_par     (0:numpft))        ; this%roota_par    (:)   =spval
-    allocate(this%rootb_par     (0:numpft))        ; this%rootb_par    (:)   =spval
     allocate(this%slatop        (0:numpft))        ; this%slatop       (:)   =spval
     allocate(this%dsladlai      (0:numpft))        ; this%dsladlai     (:)   =spval
     allocate(this%leafcn        (0:numpft))        ; this%leafcn       (:)   =spval
@@ -251,7 +231,6 @@ contains
     allocate(this%dwood         (0:numpft))        ; this%dwood        (:)   =spval
     allocate(this%root_radius   (0:numpft))        ; this%root_radius  (:)   =spval
     allocate(this%root_density  (0:numpft))        ; this%root_density (:)   =spval
-    allocate(this%rootprof_beta (0:numpft))        ; this%rootprof_beta(:)   =spval
     allocate(this%manunitro     (0:numpft))        ; this%manunitro    (:)   =spval
     allocate(this%fleafcn       (0:numpft))        ; this%fleafcn      (:)   =spval
     allocate(this%ffrootcn      (0:numpft))        ; this%ffrootcn     (:)   =spval

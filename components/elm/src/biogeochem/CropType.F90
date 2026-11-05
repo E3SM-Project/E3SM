@@ -57,10 +57,6 @@ module CropType
 
      real(r8), pointer :: vf_patch                (:)   ! patch vernalization factor for cereal
      real(r8), pointer :: cphase_patch            (:)   ! phenology phase
-     real(r8), pointer :: latbaset_patch          (:)   ! Latitude vary baset for gddplant (degree C)
-     character(len=20) :: baset_mapping
-     real(r8)          :: baset_latvary_intercept
-     real(r8)          :: baset_latvary_slope
 
      real(r8), pointer :: cvt_patch               (:)   ! patch temperture coefficient of variance
      real(r8), pointer :: cvp_patch               (:)   ! patch precipitation coefficient of variance
@@ -156,7 +152,6 @@ contains
     allocate(this%dmyield_patch          (begp:endp)) ; this%dmyield_patch          (:) = spval
     allocate(this%vf_patch               (begp:endp)) ; this%vf_patch               (:) = 0.0_r8
     allocate(this%cphase_patch           (begp:endp)) ; this%cphase_patch           (:) = 0.0_r8
-    allocate(this%latbaset_patch         (begp:endp)) ; this%latbaset_patch         (:) = spval
     allocate(this%cvt_patch              (begp:endp)) ; this%cvt_patch(:) = spval
     allocate(this%cvp_patch              (begp:endp)) ; this%cvp_patch(:) = spval
     allocate(this%plantmonth_patch       (begp:endp)) ; this%plantmonth_patch(:) = spval

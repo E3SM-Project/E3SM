@@ -98,8 +98,7 @@ program demo
           waterflux_vars    = waterflux_vars                        , &
           energyflux_vars   = energyflux_vars                       , &
           soilstate_vars    = soilstate_vars                        , &
-          temperature_vars  = temperature_vars                      , &
-          carbonstate_vars  = carbonstate_vars)
+          temperature_vars  = temperature_vars)
   enddo
   !$OMP END PARALLEL DO
 

@@ -16,7 +16,6 @@ module elm_interface_bgcType
   type, public :: elm_interface_bgc_datatype
 
      ! elm_varpar
-     integer                    :: nlevdecomp_full                          ! num of CLM soil layers that are mapped to/from PFLOTRAN
      integer                    :: ndecomp_pools                            ! num of decomposition pools
 
      ! decomp_cascade_con
@@ -124,10 +123,6 @@ module elm_interface_bgcType
      real(r8), pointer :: sminn_to_denit_excess_vr_col              (:,:)   ! col vertically-resolved denitrification from excess mineral N pool (gN/m3/s)
 
      ! inorganic P transformation
-     real(r8), pointer :: primp_to_labilep_vr_col                   (:,:)   ! col (gP/m3/s) flux of P from primary mineral to labile
-     real(r8), pointer :: labilep_to_secondp_vr_col                 (:,:)   ! col (gP/m3/s) flux of labile P to secondary mineral P
-     real(r8), pointer :: secondp_to_labilep_vr_col                 (:,:)   ! col (gP/m3/s) flux of the desorption of secondary mineral P to labile P
-     real(r8), pointer :: secondp_to_occlp_vr_col                   (:,:)   ! col (gP/m3/s) flux of the occlusion of secondary P to occluded P
 
      ! gases
      real(r8), pointer :: hr_vr_col                                 (:,:)   ! total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -162,15 +157,11 @@ module elm_interface_bgcType
      ! bgc rates/fluxes (previous time-step) to nh4 / no3
      real(r8), pointer :: externaln_to_nh4_col                      (:,:)   ! col (gN/m3/s) net N fluxes to nh4 pool: deposition + fertilization + supplement + nfix + soyfixn
      real(r8), pointer :: externaln_to_no3_col                      (:,:)   ! col (gN/m3/s) net N fluxes to no3 pool: deposition + fertilization + supplement
-     real(r8), pointer :: externaln_to_sminn_col                    (:,:)   ! col (gN/m3/s) net N fluxes to sminn pool: deposition + fertilization + supplement + nfix + soyfixn
-     real(r8), pointer :: smin_no3_leached_vr_col                   (:,:)   ! col vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
-     real(r8), pointer :: smin_no3_runoff_vr_col                    (:,:)   ! col vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
 
      ! bgc rates/fluxes (previous time-step) to mineral P
      real(r8), pointer :: externalp_to_primp_col                    (:,:)   ! pdep_to_sminp_col                         (:)     ! col atmospheric P deposition to soil mineral P (gP/m2/s)
      real(r8), pointer :: externalp_to_labilep_col                  (:,:)   ! fert_p_to_sminp_col                       (:)     ! col fertilizer P to soil mineral P (gP/m2/s)
      real(r8), pointer :: externalp_to_solutionp_col                (:,:)   ! supplement_to_sminp_vr_col                (:,:)   ! col vertically-resolved supplemental P supply (gP/m3/s)
-     real(r8), pointer :: sminp_leached_vr_col                      (:,:)   ! col vertically-resolved soil mineral P pool loss to leaching (gP/m3/s)
      real(r8), pointer :: sminp_net_transport_vr_col                (:,:)   ! sminp_leached_vr_col                      (:,:) col net sminp transport associated with runoff/leaching (gN/m3/s)
 
      ! gases:
@@ -362,10 +353,6 @@ contains
     allocate(this%sminn_to_denit_excess_vr_col(begc:endc,1:nlevdecomp_full)); this%sminn_to_denit_excess_vr_col (:,:)   = ival
 
     ! inorganic P transformation
-    allocate(this%primp_to_labilep_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%primp_to_labilep_vr_col      (:,:) = ival
-    allocate(this%labilep_to_secondp_vr_col (begc:endc,1:nlevdecomp_full))  ; this%labilep_to_secondp_vr_col    (:,:) = ival
-    allocate(this%secondp_to_labilep_vr_col (begc:endc,1:nlevdecomp_full))  ; this%secondp_to_labilep_vr_col    (:,:) = ival
-    allocate(this%secondp_to_occlp_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%secondp_to_occlp_vr_col      (:,:) = ival
 
     ! gases
     allocate(this%hr_vr_col                 (begc:endc,1:nlevdecomp_full))  ; this%hr_vr_col                    (:,:) = ival
@@ -405,9 +392,6 @@ contains
     ! bgc rates/fluxes to nh4 / no3
     allocate(this%externaln_to_nh4_col      (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_nh4_col         (:,:) = spval
     allocate(this%externaln_to_no3_col      (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_no3_col         (:,:) = spval
-    allocate(this%externaln_to_sminn_col    (begc:endc,1:nlevdecomp_full))  ; this%externaln_to_sminn_col       (:,:) = spval
-    allocate(this%smin_no3_leached_vr_col   (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_leached_vr_col      (:,:) = ival
-    allocate(this%smin_no3_runoff_vr_col    (begc:endc,1:nlevdecomp_full))  ; this%smin_no3_runoff_vr_col       (:,:) = ival
     allocate(this%no3_net_transport_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%no3_net_transport_vr_col     (:,:) = spval
     allocate(this%nh4_net_transport_vr_col  (begc:endc,1:nlevdecomp_full))  ; this%nh4_net_transport_vr_col     (:,:) = spval
 
@@ -415,7 +399,6 @@ contains
     allocate(this%externalp_to_primp_col    (begc:endc,1:nlevdecomp_full))  ; this%externalp_to_primp_col       (:,:) = spval
     allocate(this%externalp_to_labilep_col  (begc:endc,1:nlevdecomp_full))  ; this%externalp_to_labilep_col     (:,:) = spval
     allocate(this%externalp_to_solutionp_col(begc:endc,1:nlevdecomp_full))  ; this%externalp_to_solutionp_col   (:,:) = spval
-    allocate(this%sminp_leached_vr_col      (begc:endc,1:nlevdecomp_full))  ; this%sminp_leached_vr_col         (:,:) = ival
     allocate(this%sminp_net_transport_vr_col(begc:endc, 1:nlevdecomp_full)) ; this%sminp_net_transport_vr_col   (:,:) = spval
 
     ! gases:

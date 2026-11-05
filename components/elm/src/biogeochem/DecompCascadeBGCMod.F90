@@ -54,9 +54,6 @@ module DecompCascadeBGCMod
      real(r8), pointer:: np_s2_new_bgc => null() !C:P for SOM 2
      real(r8), pointer:: np_s3_new_bgc => null() !C:P for SOM 3
 
-     real(r8), pointer:: cp_s1_new_bgc => null()       !C:P for SOM 1
-     real(r8), pointer:: cp_s2_new_bgc => null()       !C:P for SOM 2
-     real(r8), pointer:: cp_s3_new_bgc => null()       !C:P for SOM 3
 
 
 
@@ -70,18 +67,10 @@ module DecompCascadeBGCMod
      real(r8), pointer:: rf_cwdl2_bgc => null()
      real(r8), pointer:: rf_cwdl3_bgc => null()
 
-     real(r8), pointer:: tau_l1_bgc    => null()! turnover time of  litter 1 (yr)
-     real(r8), pointer:: tau_l2_l3_bgc => null()! turnover time of  litter 2 and litter 3 (yr)
-     real(r8), pointer:: tau_s1_bgc    => null()! turnover time of  SOM 1 (yr)
-     real(r8), pointer:: tau_s2_bgc    => null()! turnover time of  SOM 2 (yr)
-     real(r8), pointer:: tau_s3_bgc    => null()! turnover time of  SOM 3 (yr)
-     real(r8), pointer:: tau_cwd_bgc   => null()! corrected fragmentation rate constant CWD
 
      real(r8), pointer :: cwd_fcel_bgc => null()!cellulose fraction for CWD
      real(r8), pointer :: cwd_flig_bgc => null()!
 
-     real(r8), pointer :: k_frag_bgc  => null() !fragmentation rate for CWD
-     real(r8), pointer :: minpsi_bgc  => null() !minimum soil water potential for heterotrophic resp
 
      integer , pointer :: nsompools   => null()!= 3
      real(r8), pointer  :: spinup_vector(:) => null() ! multipliers for soil decomp during accelerated spinup
@@ -119,9 +108,6 @@ contains
      allocate(DecompBGCParamsInst%np_s1_new_bgc)
      allocate(DecompBGCParamsInst%np_s2_new_bgc)
      allocate(DecompBGCParamsInst%np_s3_new_bgc)
-     allocate(DecompBGCParamsInst%cp_s1_new_bgc)
-     allocate(DecompBGCParamsInst%cp_s2_new_bgc)
-     allocate(DecompBGCParamsInst%cp_s3_new_bgc)
      allocate(DecompBGCParamsInst%rf_l1s1_bgc )
      allocate(DecompBGCParamsInst%rf_l2s1_bgc )
      allocate(DecompBGCParamsInst%rf_l3s2_bgc )
@@ -130,16 +116,8 @@ contains
      allocate(DecompBGCParamsInst%rf_s3s1_bgc )
      allocate(DecompBGCParamsInst%rf_cwdl2_bgc)
      allocate(DecompBGCParamsInst%rf_cwdl3_bgc)
-     allocate(DecompBGCParamsInst%tau_l1_bgc  )
-     allocate(DecompBGCParamsInst%tau_l2_l3_bgc)
-     allocate(DecompBGCParamsInst%tau_s1_bgc  )
-     allocate(DecompBGCParamsInst%tau_s2_bgc  )
-     allocate(DecompBGCParamsInst%tau_s3_bgc  )
-     allocate(DecompBGCParamsInst%tau_cwd_bgc )
      allocate(DecompBGCParamsInst%cwd_fcel_bgc)
      allocate(DecompBGCParamsInst%cwd_flig_bgc)
-     allocate(DecompBGCParamsInst%k_frag_bgc  )
-     allocate(DecompBGCParamsInst%minpsi_bgc  )
 
      ! These are not read off of netcdf file
      allocate(DecompBGCParamsInst%nsompools); DecompBGCParamsInst%nsompools = 3
@@ -150,32 +128,26 @@ contains
      tString='tau_l1'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%tau_l1_bgc=tempr
 
      tString='tau_l2_l3'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%tau_l2_l3_bgc=tempr
 
      tString='tau_s1'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%tau_s1_bgc=tempr
 
      tString='tau_s2'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%tau_s2_bgc=tempr
 
      tString='tau_s3'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%tau_s3_bgc=tempr
 
      tString='tau_cwd'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%tau_cwd_bgc=tempr
 
      tString='cn_s1_bgc'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
@@ -258,12 +230,10 @@ contains
      tString='k_frag'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%k_frag_bgc=tempr
 
      tString='minpsi_hr'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     DecompBGCParamsInst%minpsi_bgc=tempr
 
      tString='cwd_flig'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)

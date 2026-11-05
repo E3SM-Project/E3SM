@@ -18,7 +18,7 @@ module NitrogenDynamicsMod
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_wf, col_cf, col_ns, col_nf
-  use ColumnDataType      , only : nfix_timeconst
+  use ColumnFluxTypes      , only : nfix_timeconst
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf
   use VegetationPropertiesType  , only : veg_vp
@@ -47,7 +47,6 @@ module NitrogenDynamicsMod
   !
   ! !PRIVATE DATA:
   type, public :: CNNDynamicsParamsType
-     real(r8) :: sf      ! soluble fraction of mineral N (unitless)
      real(r8) :: sf_no3  ! soluble fraction of NO3 (unitless)
   end type CNNDynamicsParamsType
 
@@ -104,7 +103,6 @@ contains
     tString='sf_minn'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    CNNDynamicsParamsInst%sf=tempr
 
     tString='sf_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
@@ -134,7 +132,7 @@ contains
 
     associate(&
          forc_ndep     =>  atm2lnd_vars%forc_ndep_grc           , & ! Input:  [real(r8) (:)]  nitrogen deposition rate (gN/m2/s)
-         ndep_to_sminn =>  col_nf%ndep_to_sminn   & ! Output: [real(r8) (:)]
+         ndep_to_sminn =>  col_nf%mineral%dep_to_smin   & ! Output: [real(r8) (:)]
          )
       begc = bounds%begc
       endc = bounds%endc
@@ -501,8 +499,8 @@ contains
          gddmaturity      =>  cnstate_vars%gddmaturity_patch         , & ! Input:  [real(r8) (:) ]  gdd needed to harvest
          croplive         =>  crop_vars%croplive_patch            , & ! Input:  [logical  (:) ]  true if planted and not harvested
 
-         sminn            =>  col_ns%sminn           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
-         plant_ndemand    =>  veg_nf%plant_ndemand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
+         sminn            =>  col_ns%mineral%smin           , & ! Input:  [real(r8) (:) ]  (kgN/m2) soil mineral N
+         plant_ndemand    =>  veg_nf%uptake%plant_demand  , & ! Input:  [real(r8) (:) ]  N flux required to support initial GPP (gN/m2/s)
 
          soyfixn          =>  veg_nf%soyfixn        , & ! Output: [real(r8) (:) ]  nitrogen fixed to each soybean crop
          soyfixn_to_sminn =>  col_nf%soyfixn_to_sminn   & ! Output: [real(r8) (:) ]
@@ -627,7 +625,7 @@ contains
          cp_scalar             => cnstate_vars%cp_scalar               , &
          vmax_nfix             => veg_vp%vmax_nfix                 , &
          km_nfix               => veg_vp%km_nfix                   , &
-         frootc                => veg_cs%frootc        , &
+         frootc                => veg_cs%core%froot        , &
          nfix_to_sminn         => col_nf%nfix_to_sminn  , & ! output: [real(r8) (:)]  symbiotic/asymbiotic n fixation to soil mineral n (gn/m2/s)
          nfix_to_plantn        => veg_nf%nfix_to_plantn , &
          nfix_to_ecosysn       => col_nf%nfix_to_ecosysn, &

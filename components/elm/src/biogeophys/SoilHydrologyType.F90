@@ -33,7 +33,6 @@ Module SoilHydrologyType
      ! NON-VIC
      real(r8), pointer :: frost_table_col   (:)    => null() ! col frost table depth
      real(r8), pointer :: zwt_col           (:)    => null() ! col water table depth
-     real(r8), pointer :: zwts_col          (:)    => null() ! col water table depth, the shallower of the two water depths
      real(r8), pointer :: zwt_perched_col   (:)    => null() ! col perched water table depth
      real(r8), pointer :: wa_col            (:)    => null() ! col water in the unconfined aquifer (mm)
      real(r8), pointer :: beg_wa_grc        (:)    => null() ! grid-level water in the unconfined aquifer at beginning of the time step (mm)
@@ -68,7 +67,6 @@ Module SoilHydrologyType
      real(r8), pointer :: fover             (:)     => null()! decay factor for surface runoff
      real(r8), pointer :: pc                (:)     => null()! surface water threshold probability
 
-     real(r8), pointer :: ar_col            (:,:)   => null()! col anisotropic ratio
 
    contains
 
@@ -128,7 +126,6 @@ contains
     allocate(this%zwt_col           (begc:endc))                 ; this%zwt_col           (:)     = spval
     allocate(this%qflx_bot_col      (begc:endc))                 ; this%qflx_bot_col      (:)     = spval
     allocate(this%zwt_perched_col   (begc:endc))                 ; this%zwt_perched_col   (:)     = spval
-    allocate(this%zwts_col          (begc:endc))                 ; this%zwts_col          (:)     = spval
 
     allocate(this%wa_col            (begc:endc))                 ; this%wa_col            (:)     = spval
     allocate(this%beg_wa_grc        (begg:endg))                 ; this%beg_wa_grc        (:)     = spval
@@ -162,7 +159,6 @@ contains
     allocate(this%fover             (begg:endg))                 ; this%fover             (:)     = spval
     allocate(this%pc                (begg:endg))                 ; this%pc                (:)     = spval
 
-    allocate(this%ar_col            (begc:endc,nlevgrnd))        ; this%ar_col            (:,:)   = 25.0_r8
 
   end subroutine InitAllocate
 
@@ -509,7 +505,6 @@ contains
                    sandcol(c,lev)    = sand
                    om_fraccol(c,lev) = om_frac
 
-                   this%ar_col(c,lev)= clay
                 end do
              end if
           end if ! end of if not lake

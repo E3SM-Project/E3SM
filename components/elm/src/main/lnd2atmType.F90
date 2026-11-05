@@ -70,10 +70,6 @@ module lnd2atmType
      real(r8), pointer :: qflx_irr_demand_grc  (:) => null() ! rof liq -- demand term
      real(r8), pointer :: qflx_rofice_grc      (:) => null() ! rof ice forcing
 
-     real(r8), pointer :: qflx_rofliq_qsur_doc_grc(:) => null()
-     real(r8), pointer :: qflx_rofliq_qsur_dic_grc(:) => null()
-     real(r8), pointer :: qflx_rofliq_qsub_doc_grc(:) => null()
-     real(r8), pointer :: qflx_rofliq_qsub_dic_grc(:) => null()     
      
      real(r8), pointer :: t_grnd_grc(:) => null()            ! grc ground temperature (Kelvin)
      real(r8), pointer :: zwt_grc(:) => null()               ! grc water table depth
@@ -162,10 +158,6 @@ contains
     allocate(this%qflx_irr_demand_grc  (begg:endg))            ; this%qflx_irr_demand_grc  (:) =ival
     allocate(this%qflx_rofice_grc      (begg:endg))            ; this%qflx_rofice_grc      (:) =ival
 
-    allocate(this%qflx_rofliq_qsur_doc_grc(begg:endg))          ; this%qflx_rofliq_qsur_doc_grc(:) = ival
-    allocate(this%qflx_rofliq_qsur_dic_grc(begg:endg))          ; this%qflx_rofliq_qsur_dic_grc(:) = ival
-    allocate(this%qflx_rofliq_qsub_doc_grc(begg:endg))          ; this%qflx_rofliq_qsub_doc_grc(:) = ival
-    allocate(this%qflx_rofliq_qsub_dic_grc(begg:endg))          ; this%qflx_rofliq_qsub_dic_grc(:) = ival 
 
     allocate(this%zwt_grc              (begg:endg))            ; this%zwt_grc              (:) =ival
     allocate(this%t_grnd_grc           (begg:endg))            ; this%t_grnd_grc           (:) =ival
