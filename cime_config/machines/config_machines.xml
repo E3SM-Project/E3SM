@@ -3668,6 +3668,7 @@
     </environment_variables>
     <environment_variables compiler="gnu.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then echo /soft/spack/hpc/0.6.2/install/gnu/linux-sles15-zen3/gcc-12.3.0/boost-1.83.0-mfxtdavi43qxnr5yp5xsvxvqt5iaamvp; else echo "$Boost_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
@@ -3855,6 +3856,7 @@
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
         <env name="RLIMITS"> </env>
+        <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then echo /opt/aurora/26.181.0/spack/unified/1.1.1/install/linux-x86_64/boost-1.88.0-p2oqv56; else echo "$Boost_ROOT"; fi}</env>
      </environment_variables>
      <environment_variables compiler="intelgpu">
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
