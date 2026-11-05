@@ -10,8 +10,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build"
 
 # Source utilities
-source "${SCRIPT_DIR}/scripts/colors.sh"
-source "${SCRIPT_DIR}/scripts/parse_args.sh"
+source "${SCRIPT_DIR}/scripts/shell/colors.sh"
+source "${SCRIPT_DIR}/scripts/shell/parse_args.sh"
 
 # Parse command line arguments
 parse_test_args "$@"
