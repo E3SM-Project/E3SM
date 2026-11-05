@@ -62,7 +62,7 @@ def run_cmd(args):
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         pass
 
-    result = proc.returncode
+    result = proc.wait()
     t2 = time.time()
 
     arglen = len(args)

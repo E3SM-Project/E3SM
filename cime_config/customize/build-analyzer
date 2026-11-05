@@ -78,7 +78,10 @@ def compare_logs(logfile1, logfile2, sort_by="time"):
         mem_delta = (m2 if m2 is not None else 0.0) - (m1 if m1 is not None else 0.0)
         diffs.append((target, t1, t2, delta, m1, m2, mem_delta))
 
-    diffs.sort(key=lambda item: (item[2] if item[2] is not None else item[1]))
+    if sort_by == "time":
+        diffs.sort(key=lambda item: (item[2] if item[2] is not None else item[1]))
+    else:
+        diffs.sort(key=lambda item: (item[5] if item[5] is not None else item[4]))
 
     for target, t1, t2, delta, m1, m2, mem_delta in diffs:
         t1_str = f"{t1:f}" if t1 is not None else "MISSING"
@@ -107,8 +110,8 @@ def compare_logs(logfile1, logfile2, sort_by="time"):
         )
         print(colorize(line, pct))
 
-    total1 = sum(item[1 if sort_by == "time" else 2] for item in entries1_list)
-    total2 = sum(item[1 if sort_by == "time" else 2] for item in entries2_list)
+    total1 = sum(item[1] for item in entries1_list)
+    total2 = sum(item[1] for item in entries2_list)
     total_delta = total2 - total1
     if total1 > 0.0:
         total_pct = (total_delta / total1) * 100.0
