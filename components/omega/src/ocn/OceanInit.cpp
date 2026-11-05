@@ -244,7 +244,8 @@ int ocnInit1(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
              const TimeStepperStartType StartType, ///< [in] sim start type
              const TimeInstant &StartTime, ///< [in] simulation start time
              const CouplingInitParams &CouplingParams, ///< [in] coupler info
-             const IO::IOInitParams &IOParams ///< [in] driver-owned IO params
+             const int IOSysID, ///< [in] driver-owned IO system id
+             const int IOType   ///< [in] driver-owned IO type
 ) {
 
    I4 Err = 0; // return error code
@@ -263,7 +264,8 @@ int ocnInit1(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
    readTimingConfig(OmegaConfig);
 
    // initialize remaining Omega modules
-   Err = initOmegaModules(Comm, StartType, StartTime, CouplingParams, IOParams);
+   Err = initOmegaModules(Comm, StartType, StartTime, CouplingParams, IOSysID,
+                          IOType);
    if (Err != 0)
       ABORT_ERROR("ocnInit: Error initializing Omega modules");
 
@@ -455,13 +457,13 @@ int initOmegaModules(MPI_Comm Comm) {
 // Initializes time stepper and other modules using coupler provided inputs
 int initOmegaModules(MPI_Comm Comm, TimeStepperStartType StartType,
                      const TimeInstant &StartTime,
-                     const CouplingInitParams &CParams,
-                     const IO::IOInitParams &IOParams) {
+                     const CouplingInitParams &CParams, int IOSysID,
+                     int IOType) {
    int Err = 0;
    // Initialize time stepper (phase 1) using coupler provided time parameters
    // Calendar should have already been initalized
    TimeStepper::init1(StartType, StartTime);
-   IO::init(Comm, IOParams);
+   IO::init(IOSysID, IOType);
    Err = initOmegaModulesImpl();
    SfcCoupling::init(CParams);
 

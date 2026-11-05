@@ -163,30 +163,19 @@ IfExists IfExistsFromString(
     const std::string &IfExists ///< [in] choice of behavior on file existence
 );
 
-/// Parameters for initializing the IO subsystem that are owned by the
-/// driver/coupler rather than by the Omega component config. In a coupled
-/// run the coupler (via CIME/shr_pio) chooses the base IO task and the
-/// rearranger so that Omega's parallel IO layout is consistent with the
-/// rest of the E3SM case.
-struct IOInitParams {
-   int IOBaseTask;          ///< base (root) MPI task for IO
-   Rearranger IORearranger; ///< parallel IO rearranger algorithm
-};
-
 // Methods
 
 /// Initializes the IO system based on configuration inputs and
-/// default MPI communicator
+/// default MPI communicator. Creates a new SCORPIO iosystem using the IO
+/// settings in the Omega config (standalone runs and unit tests).
 void init(const MPI_Comm &InComm ///< [in] MPI communicator to use
 );
 
-/// Initializes the IO system using driver-owned IO parameters for the base
-/// task and rearranger. The number of IO tasks and the IO stride are still
-/// read from the Omega config; only the base task and rearranger are taken
-/// from the supplied parameters. Used in coupled runs where the coupler owns
-/// these settings.
-void init(const MPI_Comm &InComm,      ///< [in] MPI communicator to use
-          const IOInitParams &IOParams ///< [in] driver-owned IO parameters
+/// Initializes the IO system using a SCORPIO iosystem created and owned by
+/// the coupled driver. The IO task layout, base task and rearranger are those
+/// of the driver iosystem; the Omega IO config options are unused.
+void init(int IOSysID, ///< [in] driver-owned SCORPIO iosystem id
+          int IOType   ///< [in] driver-owned SCORPIO iotype
 );
 
 /// This routine opens a file for reading. The filename with full path must be

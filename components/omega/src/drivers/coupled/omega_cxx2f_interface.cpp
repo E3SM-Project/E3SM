@@ -95,8 +95,8 @@ void omega_ocn_init1(
     const char *ExportFieldNames,  // [in] array of export field names
     const int *ImportFieldIndices, // [in] array of import field indices
     const int *ExportFieldIndices, // [in] array of export field indices
-    const int IOBaseTask,          // [in] driver-owned base (root) IO task
-    const int IORearranger,        // [in] driver-owned PIO rearranger (int)
+    const int IOSysID,             // [in] driver-owned SCORPIO iosystem id
+    const int IOType,              // [in] driver-owned SCORPIO iotype
     const char *Cpl2OcnFieldNames, // [in] full CIME x2o field list (MOAB)
     const char *Ocn2CplFieldNames  // [in] full CIME o2x field list (MOAB)
 ) {
@@ -156,14 +156,10 @@ void omega_ocn_init1(
                                             OMEGA::CouplingLayout::MCT};
 #endif
 
-   // The base IO task and rearranger are owned by the driver/coupler (via
-   // CIME/shr_pio). The rearranger int uses the same PIO_REARR_* values as
-   // Omega's IO::Rearranger enum (box = 1, subset = 2).
-   OMEGA::IO::IOInitParams IOParams{
-       IOBaseTask, static_cast<OMEGA::IO::Rearranger>(IORearranger)};
-
+   // The SCORPIO iosystem and iotype are owned by the driver/coupler (via
+   // CIME/shr_pio) and reused by Omega.
    OMEGA::ocnInit1(Comm, OcnID, YamlConfigFile, OcnLogFile, StartTypeEnum,
-                   StartTime, CouplingParams, IOParams);
+                   StartTime, CouplingParams, IOSysID, IOType);
 
    Pacer::stop("Init1", 0);
 

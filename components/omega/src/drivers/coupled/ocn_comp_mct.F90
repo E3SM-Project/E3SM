@@ -74,7 +74,8 @@ contains
       use shr_sys_mod, only: shr_sys_flush
       use shr_cal_mod, only: shr_cal_noleap, shr_cal_gregorian
       use shr_file_mod, only: shr_file_getunit, shr_file_setIO
-      use shr_pio_mod, only: shr_pio_getioroot, shr_pio_getrearranger
+      use pio, only: iosystem_desc_t
+      use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype
 
       ! !INPUT/OUTPUT PARAMETERS:
       type(ESMF_Clock), intent(inout) :: EClock
@@ -103,8 +104,9 @@ contains
          coupling_time_step, case_start_tod, case_start_ymd, cur_tod, cur_ymd
       integer(kind=c_int) :: start_type_c
       integer(kind=c_int) :: layout
-      integer(kind=c_int) :: io_base_task  ! driver-owned base (root) IO task
-      integer(kind=c_int) :: io_rearranger ! driver-owned PIO rearranger
+      type(iosystem_desc_t), pointer :: io_system ! driver-owned PIO system
+      integer(kind=c_int) :: io_sys_id ! driver-owned PIO iosystem id
+      integer(kind=c_int) :: io_type   ! driver-owned PIO iotype
       character(kind=c_char, len=CL), target :: calendar_c
       character(kind=c_char, len=CL), target :: ocn_log_fname_c
 
@@ -194,11 +196,12 @@ contains
       ! populate the import/export field name and index arrays
       call omega_set_cpl_indices()
 
-      ! The base IO task and rearranger are owned by the driver/coupler (set
-      ! by CIME via shr_pio) so they stay consistent with the rest of the
-      ! case; they are passed to Omega rather than read from omega.yml.
-      io_base_task = shr_pio_getioroot(OCN_ID)
-      io_rearranger = shr_pio_getrearranger(OCN_ID)
+      ! The PIO iosystem is created and owned by the driver (CIME via
+      ! shr_pio), so the IO task layout, rearranger and iotype follow the
+      ! PIO_*_OCN case settings; Omega reuses it rather than reading omega.yml.
+      io_system => shr_pio_getiosys(OCN_ID)
+      io_sys_id = io_system%iosysid
+      io_type = shr_pio_getiotype(OCN_ID)
 
       call omega_ocn_init1( &
          mpicom_ocn, &
@@ -218,8 +221,8 @@ contains
          c_loc(export_field_names), &
          c_loc(import_field_indices), &
          c_loc(export_field_indices), &
-         io_base_task, &
-         io_rearranger, &
+         io_sys_id, &
+         io_type, &
          c_loc(cpl_x2o_field_names), &
          c_loc(cpl_o2x_field_names) &
          )
