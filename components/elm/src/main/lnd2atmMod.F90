@@ -470,7 +470,7 @@ contains
          c2l_scale_type= urbanf, l2g_scale_type=unity )
 
     do g = bounds%begg, bounds%endg
-       qflx_rofliq_grc(g) = qflx_rofliq_grc(g) - grc_wf%qflx_liq_dynbal(g)
+       qflx_rofliq_grc(g) = qflx_rofliq_grc(g) - grc_wf%qflx_liq_dynbal(g) + grc_wf%qflx_irr_return(g)
     enddo
 
     call c2g( bounds, &
@@ -502,6 +502,12 @@ contains
          qflx_qrgwl          (bounds%begc:bounds%endc)         , &
          qflx_rofliq_qgwl_grc(bounds%begg:bounds%endg)    , &
          c2l_scale_type= urbanf, l2g_scale_type=unity )
+
+    ! Unapplied river irrigation supply goes back to the main channel. It is
+    ! never part of column storage or column runoff.
+    do g = bounds%begg, bounds%endg
+       qflx_rofliq_qgwl_grc(g) = qflx_rofliq_qgwl_grc(g) + grc_wf%qflx_irr_return(g)
+    enddo
     
     qflx_snwcp_ice(bounds%begc:bounds%endc) = qflx_snwcp_ice(bounds%begc:bounds%endc) + qflx_ice_runoff_xs(bounds%begc:bounds%endc) 
     call c2g( bounds, &

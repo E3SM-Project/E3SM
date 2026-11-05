@@ -89,6 +89,7 @@ module GridcellDataType
     ! Dynamic land cover change
     real(r8), pointer :: qflx_liq_dynbal      (:)   ! liq dynamic land cover change conversion runoff flux
     real(r8), pointer :: qflx_ice_dynbal      (:)   ! ice dynamic land cover change conversion runoff flux
+    real(r8), pointer :: qflx_irr_return      (:)   ! river irrigation supply not applied, returned to the river (mm/s)
 
     ! Objects that help convert once-per-year dynamic land cover changes into fluxes
     ! that are dribbled throughout the year
@@ -484,6 +485,7 @@ contains
     !-----------------------------------------------------------------------
     allocate(this%qflx_liq_dynbal      (begg:endg))              ; this%qflx_liq_dynbal      (:)   = spval
     allocate(this%qflx_ice_dynbal      (begg:endg))              ; this%qflx_ice_dynbal      (:)   = spval
+    allocate(this%qflx_irr_return      (begg:endg))              ; this%qflx_irr_return      (:)   = 0._r8
 
     this%qflx_liq_dynbal_dribbler = annual_flux_dribbler_gridcell( &
          bounds = bounds, &
@@ -507,7 +509,11 @@ contains
     call hist_addfld1d (fname='QFLX_ICE_DYNBAL',  units='mm/s',  &
          avgflag='A', long_name='ice dynamic land cover change conversion runoff flux', &                                   
          ptr_lnd=this%qflx_ice_dynbal)
-  
+
+    call hist_addfld1d (fname='QIRRIG_RETURN',  units='mm/s',  &
+         avgflag='A', long_name='river irrigation supply returned to the river without being applied', &
+         ptr_lnd=this%qflx_irr_return, default='inactive')
+
   end subroutine grc_wf_init
 
   !------------------------------------------------------------------------
@@ -539,6 +545,7 @@ contains
     !------------------------------------------------------------------------
     deallocate(this%qflx_liq_dynbal)
     deallocate(this%qflx_ice_dynbal)
+    deallocate(this%qflx_irr_return)
 
   end subroutine grc_wf_clean
 

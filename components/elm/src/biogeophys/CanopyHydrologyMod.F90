@@ -29,6 +29,7 @@ module CanopyHydrologyMod
   use elm_varcon        , only : snw_rds_min
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
+  use GridcellDataType  , only : grc_wf
   use timeinfoMod       , only : dtime_mod
   !
   ! !PUBLIC TYPES:
@@ -219,8 +220,6 @@ contains
      integer :: gg
      real(r8) :: grid_request(bounds%begg:bounds%endg)
      real(r8) :: nonlake_area(bounds%begg:bounds%endg)
-     real(r8) :: return_area(bounds%begg:bounds%endg)
-     real(r8) :: returned_supply(bounds%begg:bounds%endg)
      real(r8) :: allocated_surface, allocated_groundwater
 
      !-----------------------------------------------------------------------
@@ -314,28 +313,23 @@ contains
        end do
        grid_request = 0._r8
        nonlake_area = 0._r8
-       return_area = 0._r8
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
           c = pcolumn(p)
           if (.not. col_pp%active(c) .or. pgwgt(p) <= 0._r8) cycle
           nonlake_area(g) = nonlake_area(g) + pgwgt(p)
-          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
-             return_area(g) = return_area(g) + pgwgt(p)
-             if (irrigated(veg_pp%itype(p)) == 1) then
-                grid_request(g) = grid_request(g) + pgwgt(p)*veg_wf%irrig_demand_lag(p)
-             end if
+          if ((col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. irrigated(veg_pp%itype(p)) == 1) then
+             grid_request(g) = grid_request(g) + pgwgt(p)*veg_wf%irrig_demand_lag(p)
           end if
        end do
-       returned_supply = 0._r8
+       ! River supply not applied as irrigation, including the lake share, goes
+       ! straight back to the river through lnd2atm. It never enters column storage.
+       grc_wf%qflx_irr_return(bounds%begg:bounds%endg) = 0._r8
        if (irrigate .and. tw_irr) then
           do g = bounds%begg, bounds%endg
-             returned_supply(g) = max(0._r8, atm2lnd_vars%supply_grc(g))*nonlake_area(g) &
+             grc_wf%qflx_irr_return(g) = max(0._r8, atm2lnd_vars%supply_grc(g)) &
                   - min(max(0._r8, atm2lnd_vars%supply_grc(g))*nonlake_area(g), grid_request(g))
-             if (returned_supply(g) > 0._r8 .and. return_area(g) <= 0._r8) then
-                call endrun('Irrigation supply has no soil/crop area for conservative return')
-             end if
           end do
        end if
 
@@ -463,9 +457,6 @@ contains
                qflx_over_supply(p) = 0._r8
                if (col_pp%active(c) .and. pgwgt(p) > 0._r8 .and. &
                     (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
-                  ! Return unmatched or excess river deliveries without wetting soil.
-                  if (return_area(g) > 0._r8) qflx_over_supply(p) = returned_supply(g)/return_area(g)
-
                   if (irrigated(veg_pp%itype(p)) == 1) then
                      !distribute irrigation by relative demand
                      call IrrigationDemandFlux(veg_wf%irrig_demand_lag(p), grid_request(g), &
@@ -522,17 +513,17 @@ contains
 
        end do ! (end pft loop)
 
-       ! Verify the delivered volume reaches irrigation or the runoff return.
+       ! Verify the delivered volume reaches irrigation or the river return.
        if (irrigate .and. tw_irr) then
-          qflx_irrig_grid = 0._r8
+          qflx_irrig_grid = grc_wf%qflx_irr_return(bounds%begg:bounds%endg)
           do f = 1, num_nolakep
              p = filter_nolakep(f)
              g = pgridcell(p)
              if (col_pp%active(pcolumn(p)) .and. pgwgt(p) > 0._r8) &
-                  qflx_irrig_grid(g) = qflx_irrig_grid(g) + pgwgt(p)*(qflx_surf_irrig(p)+qflx_over_supply(p))
+                  qflx_irrig_grid(g) = qflx_irrig_grid(g) + pgwgt(p)*qflx_surf_irrig(p)
           end do
           do g = bounds%begg, bounds%endg
-             allocated_surface = max(0._r8,atm2lnd_vars%supply_grc(g))*nonlake_area(g)
+             allocated_surface = max(0._r8,atm2lnd_vars%supply_grc(g))
              if (abs(qflx_irrig_grid(g)-allocated_surface) > &
                   1.e-12_r8*max(allocated_surface,tiny(1._r8))) &
                   call endrun('Demand irrigation allocation does not conserve delivered surface water')
