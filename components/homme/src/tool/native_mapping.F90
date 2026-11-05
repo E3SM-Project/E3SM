@@ -25,7 +25,7 @@ contains
     use global_norms_mod, only: wrap_repro_sum
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t, hybrid_create
-    use pio, only : pio_noerr, pio_openfile, pio_createfile, pio_closefile, &
+    use pio, only : pio_noerr, pio_openfile, pio_createfile, pio_closefile, pio_freedecomp, &
          pio_get_var, pio_put_var, pio_write_darray,pio_int, pio_double, &
          pio_def_var, pio_put_att, pio_global, file_desc_t, var_desc_t, &
          io_desc_t, pio_internal_error,pio_inq_dimlen, pio_inq_varid, &
@@ -415,6 +415,10 @@ contains
        ierr = pio_put_var(ogfile, maska_id, grid_imask)
 
        call pio_closefile(ogfile)
+
+       ! Free the decomps after closing the file (which flushes pending writes)
+       call pio_freedecomp(PIOFS, iodesci)
+       call pio_freedecomp(PIOFS, iodescd)
 
        deallocate(grid_imask, lat,lon, clat, clon, h1d, col, row, dg_dims, ldof)
        do ii=1,nelemd
