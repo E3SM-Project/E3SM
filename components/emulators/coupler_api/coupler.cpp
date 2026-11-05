@@ -4,6 +4,7 @@
 #include <field_registry.hpp>
 #include <filesystem>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 namespace e3sm::coupler {
@@ -22,8 +23,8 @@ void require_unique_components(const CoupledFieldEntry& field,
                                const std::string& label) {
   for (auto it = components.begin(); it != components.end(); ++it) {
     if (std::find(components.begin(), it, *it) != it) {
-      throw std::runtime_error("Coupled field '" + field.id + "': component '" +
-                               *it + "' is listed more than once in " + label);
+      throw std::runtime_error("Route '" + field.id + "': component '" + *it +
+                               "' is listed more than once in " + label);
     }
   }
 }
@@ -32,10 +33,12 @@ void require_unique_components(const CoupledFieldEntry& field,
 /**
  * @brief Parse a YAML file containing the coupling field configuration.
  *
- * The YAML file must contain a top-level `fields` mapping. Each field is a
- * named sublist describing its coupling kind, merge type, sources,
- * destinations, and metadata. The file is parsed using ekat::YAMLParser
- * into an ekat::ParameterList.
+ * The YAML file must contain a top-level `fields` mapping. Each key is a route
+ * ID, and its sublist names the field the route carries and describes its
+ * coupling kind, merge type, sources, and destinations. Several routes can
+ * carry the same field, such as a prognostic field leaving and returning to a
+ * component. The file is parsed using ekat::YAMLParser into an
+ * ekat::ParameterList.
  *
  * Expected YAML format:
  * fields:
@@ -67,15 +70,16 @@ Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
     const ekat::ParameterList params = ekat::parse_yaml_file(filename.string());
     // fields are the named coupling fields
     const auto& fields = params.sublist("fields");
-    const auto& field_names = fields.sublist_names();
+    const auto& route_ids = fields.sublist_names();
 
     std::vector<CoupledFieldEntry> entries;
-    entries.reserve(field_names.size());
+    entries.reserve(route_ids.size());
 
-    for (const auto& field_name : field_names) {
-      // get the sub list for the field
-      const auto& field = fields.sublist(field_name);
+    for (const auto& route_id : route_ids) {
+      // get the sub list for the route
+      const auto& field = fields.sublist(route_id);
       const auto kind = field.get<std::string>("kind");
+      auto field_name = field.get<std::string>("name");
 
       const auto merge_type_str = field.get<std::string>("merge_type");
       MergeType merge_type;
@@ -84,7 +88,7 @@ Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
       } else if (merge_type_str == "scale") {
         merge_type = MergeType::ScaledByFraction;
       } else {
-        throw std::runtime_error("Unknown merge type specified for " + field_name +
+        throw std::runtime_error("Unknown merge type specified for " + route_id +
                                  ": '" + merge_type_str +
                                  "' (expected 'direct' or 'scale')");
       }
@@ -94,7 +98,8 @@ Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
           field.get<std::vector<std::string>>("destinations");
 
       entries.emplace_back(CoupledFieldEntry{
-          .id = field_name,
+          .id = route_id,
+          .field_name = std::move(field_name),
           .merge_type = merge_type,
           .sources = std::move(sources),
           .destinations = std::move(destinations),
@@ -111,6 +116,7 @@ std::string to_string(const CoupledFieldEntry& entry) {
   std::ostringstream out;
 
   out << entry.id << ":\n";
+  out << "  name: " << entry.field_name << '\n';
   out << "  merge_type: " << to_string(entry.merge_type) << '\n';
 
   out << "  sources:";
@@ -133,34 +139,49 @@ void Coupler::build_routes(const std::filesystem::path& filename) {
   routes_.clear();
   routes_.reserve(fields.size());
 
+  // A second route into the same input would silently overwrite the first
+  std::unordered_map<FieldID, std::string> delivered_by;
+
   for (const auto& field : fields) {
     if (field.destinations.empty()) {
-      throw std::runtime_error("Coupled field '" + field.id +
-                               "' has no destinations");
+      throw std::runtime_error("Route '" + field.id + "' has no destinations");
     }
     require_unique_components(field, field.sources, "sources");
     require_unique_components(field, field.destinations, "destinations");
 
-    CouplingRoute route{.merge_type = field.merge_type, .name = field.id};
+    CouplingRoute route{.merge_type = field.merge_type,
+                        .name = field.id,
+                        .field_name = field.field_name};
     for (const auto& component : field.sources) {
-      const auto id = registry_.get_id(component, field.id);
-      if (registry_.get(id).role == FieldRole::Import) {
-        throw std::runtime_error("Coupled field '" + field.id + "': '" +
-                                 component +
-                                 "' is listed as a source, but it imports this "
-                                 "field. Sources must export the field.");
+      if (!registry_.contains(component, field.field_name, FieldRole::Export) &&
+          registry_.contains(component, field.field_name, FieldRole::Import)) {
+        throw std::runtime_error("Route '" + field.id + "': '" + component +
+                                 "' is listed as a source of '" +
+                                 field.field_name +
+                                 "', but it only imports this field. Sources "
+                                 "must export the field.");
       }
+      const auto id =
+          registry_.get_id(component, field.field_name, FieldRole::Export);
       route.sources.push_back(id);
       coupling_plans_[component].export_ids.push_back(id);
     }
     for (const auto& component : field.destinations) {
-      const auto id = registry_.get_id(component, field.id);
-      if (registry_.get(id).role == FieldRole::Export) {
-        throw std::runtime_error("Coupled field '" + field.id + "': '" +
-                                 component +
-                                 "' is listed as a destination, but it exports "
-                                 "this field. Destinations must import the "
-                                 "field.");
+      if (!registry_.contains(component, field.field_name, FieldRole::Import) &&
+          registry_.contains(component, field.field_name, FieldRole::Export)) {
+        throw std::runtime_error("Route '" + field.id + "': '" + component +
+                                 "' is listed as a destination of '" +
+                                 field.field_name +
+                                 "', but it only exports this field. "
+                                 "Destinations must import the field.");
+      }
+      const auto id =
+          registry_.get_id(component, field.field_name, FieldRole::Import);
+      const auto [delivered, is_new] = delivered_by.try_emplace(id, field.id);
+      if (!is_new) {
+        throw std::runtime_error("Routes '" + delivered->second + "' and '" +
+                                 field.id + "' both deliver '" +
+                                 field.field_name + "' to '" + component + "'");
       }
       route.destinations.push_back(id);
       coupling_plans_[component].import_ids.push_back(id);
@@ -201,13 +222,13 @@ void Coupler::build_buffers(RouteBufferMap external_buffers) {
 
   for (auto& route : routes_) {
     if (route.merge_type != MergeType::Direct) {
-      throw std::runtime_error("Coupled field '" + route.name + "': merge type " +
+      throw std::runtime_error("Route '" + route.name + "': merge type " +
                                to_string(route.merge_type) +
                                " is not supported yet; use 'direct'");
     }
 
     if (route.sources.size() != 1) {
-      throw std::runtime_error("Coupled field '" + route.name +
+      throw std::runtime_error("Route '" + route.name +
                                "': a direct merge requires exactly 1 source, "
                                "but " +
                                std::to_string(route.sources.size()) +
@@ -223,7 +244,7 @@ void Coupler::build_buffers(RouteBufferMap external_buffers) {
       route.buffer = it->second;
       if (route.buffer.size() != source_field.size) {
         throw std::runtime_error(
-            "Coupled field '" + route.name + "': the external buffer has " +
+            "Route '" + route.name + "': the external buffer has " +
             std::to_string(route.buffer.size()) + " value(s), but source '" +
             source_field.component + "' has " +
             std::to_string(source_field.size));
@@ -240,7 +261,7 @@ void Coupler::build_buffers(RouteBufferMap external_buffers) {
       const auto& dest_field = registry_.get(dest_id);
       if (dest_field.size != route.buffer.size()) {
         throw std::runtime_error(
-            "Coupled field '" + route.name + "': destination '" +
+            "Route '" + route.name + "': destination '" +
             dest_field.component + "' has " + std::to_string(dest_field.size) +
             " value(s), but source '" + source_field.component + "' has " +
             std::to_string(route.buffer.size()));

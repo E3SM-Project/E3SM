@@ -92,8 +92,13 @@ public:
 
   // diagnostics and lookups
   std::span<const EmulatorFieldDesc> field_descriptors() const;
+  // These throw if the name is both an input and an output; pass a role instead.
   const EmulatorFieldDesc& get_field_descriptor(std::string_view name) const;
   std::span<const double> get_field(std::string_view name);
+
+  const EmulatorFieldDesc& get_field_descriptor(std::string_view name,
+                                                ModelFieldRole role) const;
+  std::span<const double> get_field(std::string_view name, ModelFieldRole role);
   std::span<double> input_fields() { return std::span<double>{input_fields_}; };
   std::span<double> output_fields() {
     return std::span<double>{output_fields_};

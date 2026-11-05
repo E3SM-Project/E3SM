@@ -11,7 +11,6 @@ namespace e3sm::coupler {
 enum class FieldRole {
   Import,
   Export,
-  ImportExport,
 };
 
 enum class MergeType {
@@ -76,14 +75,15 @@ public:
 
   FieldID register_field(RegisteredField field);
   const RegisteredField& get(const std::string& component,
-                             const std::string& field_name) const;
+                             const std::string& field_name,
+                             FieldRole role) const;
   const RegisteredField& get(FieldID id) const;
 
-  FieldID get_id(const std::string& component,
-                 const std::string& field_name) const;
+  FieldID get_id(const std::string& component, const std::string& field_name,
+                 FieldRole role) const;
 
-  bool contains(const std::string& component,
-                const std::string& field_name) const;
+  bool contains(const std::string& component, const std::string& field_name,
+                FieldRole role) const;
 
   std::string to_string() const;
 
@@ -91,9 +91,11 @@ private:
   struct RegistryKey {
     std::string component;
     std::string field_name;
+    FieldRole role;
 
     bool operator==(const RegistryKey& other) const {
-      return component == other.component && field_name == other.field_name;
+      return component == other.component && field_name == other.field_name &&
+             role == other.role;
     }
   };
   // taken from cpp reference
@@ -101,7 +103,8 @@ private:
     std::size_t operator()(const RegistryKey& key) const noexcept {
       std::size_t h1 = std::hash<std::string>{}(key.component);
       std::size_t h2 = std::hash<std::string>{}(key.field_name);
-      return h1 ^ (h2 << 1); // or use boost::hash_combine
+      const auto h3 = static_cast<std::size_t>(key.role);
+      return h1 ^ (h2 << 1) ^ (h3 << 2); // or use boost::hash_combine
     }
   };
 

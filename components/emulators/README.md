@@ -80,6 +80,47 @@ CouplingPlan(
 
 To regenerate the test configurations, run `python scripts/create_coupling_test_files.py`. The files are written to the current directory.
 
+A field that an emulator both reads and writes needs a `PrognosticField`, which creates the plan entries described in [Prognostic fields](#prognostic-fields). `prognostic_fields` finds those fields in a config. The `cpl7` config must list each one in both its inputs and outputs:
+
+```python
+from create_emulator_config_files import PrognosticField, prognostic_fields
+
+plan = CouplingPlan(
+    fields=[
+        *(
+            PrognosticField(field=field, component=atmosphere, external=cpl7)
+            for field in prognostic_fields(atmosphere)
+        ),
+        CoupledField(field=sst, kind="state", sources=[cpl7], destinations=[atmosphere]),
+    ]
+)
+```
+
+### Getting the fields from an `fme` checkpoint
+
+For a coupled `fme` model such as SamudrACE, `scripts/extract_fme_fields.py` writes the model's inputs and outputs, in order, to a YAML field list. It also records each component's timestep and forcing fields, and the fields the components exchange. It must run in an environment with `fme` installed:
+
+```bash
+python scripts/extract_fme_fields.py checkpoints/C1A0.tar -o fields.yaml
+```
+
+`emulator_config_from_field_list` then creates a config from that list, without needing `fme` or torch:
+
+```python
+from create_emulator_config_files import Model, emulator_config_from_field_list
+
+atmosphere = emulator_config_from_field_list(
+    "fields.yaml",
+    "atmosphere",
+    name="atm-emulator",
+    model=Model(backend="python", options={"python_module": "my_model"}),
+    dimensions=["lat", "lon"],
+)
+atmosphere.write("atm_emulator_config.yaml")
+```
+
+Use the `field_dimensions` argument for any field whose dimensions differ from `dimensions`.
+
 ### `emulator_config.yaml`
 
 ```yaml
@@ -156,8 +197,11 @@ fields:
     - cpl7
 ```
 
+Each key under `fields` is a route ID, which must be unique in the plan. `RouteBufferMap` also uses it.
+
 | Key | Description |
 | --- | --- |
+| `name` | Name of the field the route carries. Several routes can carry the same field. |
 | `kind` | Type of coupling, such as `state` or `flux`. Required, but doesn't affect the coupling yet. |
 | `merge_type` | How sources are merged. Only `direct` is currently supported, which requires exactly one source. |
 | `sources` | Component that exports the field. |
@@ -165,8 +209,9 @@ fields:
 
 The rules below apply when the coupler is initialized:
 
-- Each key under `fields` must match a field name registered by every component listed for it.
-- Sources must export the field and destinations must import it. A field needs at least one destination, and a component can only be listed once in `sources` or `destinations`.
+- Every component listed for a route must have registered its `name` field: as an export if it's a source, or as an import if it's a destination.
+- A route needs at least one destination, and a component can only be listed once in a route's `sources` or `destinations`.
+- Two routes can't deliver the same field to the same component.
 - Every component added to the driver must appear in the plan.
 - The name of the `CPL7` component is always `cpl7`.
 
@@ -258,6 +303,47 @@ Destroying the `Harness` finalizes its emulators, including calling the Python m
 To couple emulators without `CPL7`, or to add another kind of component, use `CouplerDriver` directly.
 Any class that satisfies the `CoupledProcess` concept in `coupler_api/include/process.hpp` can be added with `add_component`.
 `coupler_api/tests/test_coupler_driver.cpp` shows this with fake components.
+
+### Prognostic fields
+
+A prognostic field is both an input and an output of an emulator, such as an atmosphere's `T_0`. Nothing copies an output back to its input automatically, so the field leaves through `cpl7` and returns on the next step, using two routes:
+
+```yaml
+fields:
+  T_0_out:
+    kind: state
+    name: T_0
+    merge_type: direct
+    sources:
+    - atm-emulator
+    destinations:
+    - cpl7
+  T_0_in:
+    kind: state
+    name: T_0
+    merge_type: direct
+    sources:
+    - cpl7
+    destinations:
+    - atm-emulator
+```
+
+The caller owns the field's storage. Bind the same span in both directions, and fill it with the initial state before the first step:
+
+```cpp
+std::vector<double> t_0 = initial_t_0();
+
+harness.transfer_bindings(ExternalBindings{
+    .to_external = {{"T_0", t_0}},
+    .from_external = {{"T_0", t_0}},
+});
+```
+
+The usual coupling step then advances the field: `export_from_external` passes the span's values to the emulator's input, `run_process` writes the new output, and `import_to_external` copies that output back to the span.
+
+These fields don't need to exist in the real `CPL7` coupler, because the span is only storage on the caller's side.
+
+A name that is both an input and an output is ambiguous in `Emulator::get_field(name)`, which throws. Use `get_field(name, ModelFieldRole::Input)` or `ModelFieldRole::Output`. `use_moab` doesn't support these fields yet, because a MOAB tag name can only be defined once.
 
 ## Building and testing
 
