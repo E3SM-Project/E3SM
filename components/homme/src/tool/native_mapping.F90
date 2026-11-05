@@ -25,7 +25,7 @@ contains
     use global_norms_mod, only: wrap_repro_sum
     use element_mod, only : element_t
     use hybrid_mod, only : hybrid_t, hybrid_create
-    use pio, only : pio_noerr, pio_openfile, pio_createfile, pio_closefile, &
+    use pio, only : pio_noerr, pio_openfile, pio_createfile, pio_closefile, pio_freedecomp, &
          pio_get_var, pio_put_var, pio_write_darray,pio_int, pio_double, &
          pio_def_var, pio_put_att, pio_global, file_desc_t, var_desc_t, &
          io_desc_t, pio_internal_error,pio_inq_dimlen, pio_inq_varid, &
@@ -391,6 +391,9 @@ contains
        call pio_write_darray(ogfile, colid, iodesci, col, ierr)
        call pio_write_darray(ogfile, rowid, iodesci, row, ierr)
        call pio_write_darray(ogfile, sid, iodescd, h1d, ierr)
+
+       call pio_freedecomp(ogfile, iodesci)
+       call pio_freedecomp(ogfile, iodescd)
 
        lon=lon*rad2deg
        lat=lat*rad2deg

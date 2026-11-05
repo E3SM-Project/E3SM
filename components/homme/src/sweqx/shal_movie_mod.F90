@@ -476,8 +476,15 @@ endif
   end subroutine shal_movie_output
 
   subroutine shal_movie_finish
+    use pio, only : pio_freedecomp
+    use common_io_mod, only : PIOFS
     integer :: istat(4)
 
+    ! Free the io decomps before nf_close_all finalizes the iosystem. Otherwise
+    ! they would be released after MPI_Finalize, freeing their MPI datatypes too late.
+    call pio_freedecomp(PIOFS, iodesc2d)
+    call pio_freedecomp(PIOFS, iodesc3d)
+    call pio_freedecomp(PIOFS, iodescT)
     call nf_close_all(ncdf)
     istat=0
   end subroutine shal_movie_finish

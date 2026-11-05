@@ -98,7 +98,7 @@ contains
   subroutine prim_movie_init(elem, par, hvcoord,tl)
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
-    use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
+    use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile, pio_freedecomp !_EXTERNAL
     use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
@@ -427,12 +427,27 @@ contains
        end if
     end do
     deallocate(latp,lonp)
+
+    ! These decomps were only needed to write the coordinate variables above
+    call pio_freedecomp(PIOFS, iodescv)
+    call pio_freedecomp(PIOFS, iodescvp1)
+
   end subroutine prim_movie_init
 
 
 
   subroutine prim_movie_finish
+    use pio, only : pio_freedecomp
+    use common_io_mod, only : PIOFS
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1
 ! ncdf is a module global
+  ! Free the io decomps before nf_close_all finalizes the iosystem. Otherwise
+  ! they would be released after MPI_Finalize, freeing their MPI datatypes too late.
+  call pio_freedecomp(PIOFS, iodesc2d)
+  call pio_freedecomp(PIOFS, iodesc3d)
+  call pio_freedecomp(PIOFS, iodesc3dp1)
+  call pio_freedecomp(PIOFS, iodesct)
+  call pio_freedecomp(PIOFS, iodesc3d_subelem)
   call nf_close_all(ncdf)
   end subroutine prim_movie_finish
 
