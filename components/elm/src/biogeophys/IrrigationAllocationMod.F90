@@ -66,19 +66,20 @@ contains
     end if
   end subroutine IrrigationDemandWindow
   !-----------------------------------------------------------------------
-  pure subroutine IrrigationDemandFlux(request, grid_request, supply, deficit, nonlake, extra_gw, surface, groundwater)
+  pure subroutine IrrigationDemandFlux(request, grid_request, supply, deficit, extra_gw, surface, groundwater)
     !
     ! !DESCRIPTION:
     ! Allocate the gridcell river supply, and optionally extra groundwater for
     ! the unmet deficit, to one patch in proportion to its share of the gridcell
-    ! request. The allocation never exceeds the patch request.
+    ! request. The allocation never exceeds the patch request. Supply is not
+    ! scaled by the non-lake fraction: it is already a gridcell mean, and lakes
+    ! receive none of it because they have no request.
     !
     ! !ARGUMENTS:
     real(r8), intent(in)  :: request       ! lagged surface request of this patch [mm/s per patch area]
     real(r8), intent(in)  :: grid_request  ! patch-weighted sum of request over the gridcell [mm/s per gridcell area]
     real(r8), intent(in)  :: supply        ! surface water supplied by the river [mm/s per gridcell area]
     real(r8), intent(in)  :: deficit       ! request unmet by the river supply [mm/s per gridcell area]
-    real(r8), intent(in)  :: nonlake       ! summed gridcell weight of non-lake patches [-]
     logical,  intent(in)  :: extra_gw      ! true to meet the deficit with extra groundwater pumping
     real(r8), intent(out) :: surface       ! surface water irrigation applied to this patch [mm/s per patch area]
     real(r8), intent(out) :: groundwater   ! extra groundwater irrigation applied to this patch [mm/s per patch area]
@@ -92,12 +93,12 @@ contains
     groundwater = 0._r8
     if (request <= 0._r8 .or. grid_request <= 0._r8) return
 
-    surface_volume = min(max(0._r8, supply)*nonlake, grid_request)
+    surface_volume = min(max(0._r8, supply), grid_request)
     
     ! Divide volumes before multiplying by patch demand. No inverse patch area.
     surface = (surface_volume/grid_request)*request
     if (extra_gw) then
-      groundwater_volume = min(max(0._r8, deficit)*nonlake, max(0._r8, grid_request-surface_volume))
+      groundwater_volume = min(max(0._r8, deficit), max(0._r8, grid_request-surface_volume))
       groundwater = (groundwater_volume/grid_request)*request
     end if
   end subroutine IrrigationDemandFlux

@@ -219,7 +219,6 @@ contains
      integer :: irrigated_ppg(bounds%begg:bounds%endg)        ! irrigated pft per grid
      integer :: gg
      real(r8) :: grid_request(bounds%begg:bounds%endg)
-     real(r8) :: nonlake_area(bounds%begg:bounds%endg)
      real(r8) :: allocated_surface, allocated_groundwater
 
      !-----------------------------------------------------------------------
@@ -312,24 +311,22 @@ contains
           endif
        end do
        grid_request = 0._r8
-       nonlake_area = 0._r8
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
           c = pcolumn(p)
           if (.not. col_pp%active(c) .or. pgwgt(p) <= 0._r8) cycle
-          nonlake_area(g) = nonlake_area(g) + pgwgt(p)
           if ((col_pp%is_soil(c) .or. col_pp%is_crop(c)) .and. irrigated(veg_pp%itype(p)) == 1) then
              grid_request(g) = grid_request(g) + pgwgt(p)*veg_wf%irrig_demand_lag(p)
           end if
        end do
-       ! River supply not applied as irrigation, including the lake share, goes
-       ! straight back to the river through lnd2atm. It never enters column storage.
+       ! River supply not applied as irrigation goes straight back to the river
+       ! through lnd2atm. It never enters column storage.
        grc_wf%qflx_irr_return(bounds%begg:bounds%endg) = 0._r8
        if (irrigate .and. tw_irr) then
           do g = bounds%begg, bounds%endg
              grc_wf%qflx_irr_return(g) = max(0._r8, atm2lnd_vars%supply_grc(g)) &
-                  - min(max(0._r8, atm2lnd_vars%supply_grc(g))*nonlake_area(g), grid_request(g))
+                  - min(max(0._r8, atm2lnd_vars%supply_grc(g)), grid_request(g))
           end do
        end if
 
@@ -460,7 +457,7 @@ contains
                   if (irrigated(veg_pp%itype(p)) == 1) then
                      !distribute irrigation by relative demand
                      call IrrigationDemandFlux(veg_wf%irrig_demand_lag(p), grid_request(g), &
-                          atm2lnd_vars%supply_grc(g), atm2lnd_vars%deficit_grc(g), nonlake_area(g), &
+                          atm2lnd_vars%supply_grc(g), atm2lnd_vars%deficit_grc(g), &
                           extra_gw_irr, allocated_surface, allocated_groundwater)
                      qflx_supply(p) = allocated_surface
                      qflx_surf_irrig(p) = allocated_surface
