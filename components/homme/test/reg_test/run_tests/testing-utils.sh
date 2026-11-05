@@ -722,12 +722,11 @@ execLine() {
   NUM_MPI_PROCS=$3
   OPT="> $4.out 2> $4.err"
 
-  # The status of a run script is the one of its last command. Normally, a failure of an earlier launch of
-  # a multi-launch test is still caught when comparing the output files with the baselines. If that is
-  # disabled, make each launch stop the script (with its exit code) if it fails.
-  if skipBaselineCompare ; then
-    OPT="$OPT || exit \$?"
-  fi
+  # The status of a run script is the one of its last command, so a failing launch could otherwise go unnoticed
+  # (e.g., a crash at exit, after all output was written, still matches the baselines, and a failure of
+  # an earlier launch of a multi-launch test would be hidden by later commands). Hence, always make each launch
+  # stop the script (with its exit code) if it fails, regardless of whether we compare against baselines.
+  OPT="$OPT || exit \$?"
 
   if [ -n "${MPI_RUN_SCRIPT}" ]; then
     echo "${MPI_RUN_SCRIPT} ${NUM_MPI_PROCS} $EXEC $OPT" >> $RUN_SCRIPT
