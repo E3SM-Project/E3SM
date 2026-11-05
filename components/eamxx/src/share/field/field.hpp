@@ -494,11 +494,18 @@ extern template Field::get_strided_view_type<T****,S> Field::get_strided_view<T*
 extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T*****,S> () const; \
 extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
 
+#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(T) \
+extern template void Field::deep_copy_impl<T> (const T) const
+
+#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CT,ST,XST) \
+extern template void Field::update_impl<CT,ST,XST> (const Field&, const ST, const ST, const ST) const
+
 #define EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
-EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T);
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T);    \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(T)
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But
@@ -506,6 +513,65 @@ EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T);
 EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(double);
 EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(float);
 EAMXX_FIELD_ETI_DECL_FOR_SCALAR_TYPE(int);
+
+// ETI for update_impl: all combinations of ST (value type) and XST (source type)
+// with all CombineMode values. These are used by all ETI files in eti/ dir.
+#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(ST,XST) \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Replace,  ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Update,   ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Multiply, ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Divide,   ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Max,      ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Min,      ST, XST)
+
+// All combinations of (double, float, int) x (double, float, int)
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(double, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(double, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(double, int);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(float, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(float, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(float, int);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(int, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(int, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL_ALL_COMBINE_MODES(int, int);
+
+// ETI for update_masked: same pattern as update_impl
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(ST,XST) \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Replace,  ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Update,   ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Multiply, ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Divide,   ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Max,      ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Min,      ST, XST)
+
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(double, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(double, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(double, int);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(float, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(float, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(float, int);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(int, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(int, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_MASKED_ALL_COMBINE_MODES(int, int);
+
+// ETI for update_fill_aware: same pattern as update_impl
+#define EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(ST,XST) \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Replace,  ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Update,   ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Multiply, ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Divide,   ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Max,      ST, XST); \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(CombineMode::Min,      ST, XST)
+
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(double, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(double, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(double, int);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(float, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(float, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(float, int);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(int, double);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(int, float);
+EAMXX_FIELD_ETI_DECL_UPDATE_FILL_AWARE_ALL_COMBINE_MODES(int, int);
 
 } // namespace scream
 
