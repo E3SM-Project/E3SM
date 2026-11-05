@@ -95,7 +95,7 @@ Omega:
     VelocityVertAdvTendencyEnable: true
     TracerVertAdvTendencyEnable: true
     PressureGradTendencyEnable: true
-    FrazilTendencyEnable: true
+    FrazilTendencyEnable: false
     VelVertMixTendencyEnable: true
     TracerVertMixTendencyEnable: true
     KPPNonLocalTracerFluxTendencyEnable: true
@@ -255,7 +255,6 @@ Omega:
         - SshCell
         - GeomZMid
         - GeomZInterface
-        - Frazil
     Highfreq:
       UsePointerFile: false
       Filename: highfreq.$Y-$M.nc
@@ -325,8 +324,7 @@ Omega:
       # Output is written to the stream MonthlyAverages_<Period>TimeStats
       # (e.g., MonthlyAverages_1MonthTimeStats).
       Fields: [Temperature, Salinity, PseudoThickness, SpecVol, GeomZMid,
-          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell,
-          FrazilMassFlux, FrazilSaltFlux, FrazilEnergyFlux]
+          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell]
                                 # List of global fields to average
       ReductionPeriod: [1Month] # Optional; averaging period(s)
       SamplingInterval: dt      # Accumulation cadence of the reductions

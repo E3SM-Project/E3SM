@@ -10,6 +10,7 @@ coupled:
     SfcStressForcingTendencyEnable: true
     SfcThicknessForcingTendencyEnable: true
     SfcTracerForcingTendencyEnable: true
+    FrazilTendencyEnable: true
 
   # buildnml will read the "Filename" entries in Default.yml under the Analysis
   # section and prepend '${CASE}.omega.' to the default filename
@@ -20,6 +21,9 @@ coupled:
       Enable: true
     MonthlyAverages:
       Enable: true
+      Fields: [Temperature, Salinity, PseudoThickness, SpecVol, GeomZMid,
+          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell,
+          FrazilMassFlux, FrazilSaltFlux, FrazilEnergyFlux]
 
   # buildnml will also prepend '${CASE}.omega.' to the default filename of
   # 'write' mode IOStreams, except RestartRead which get special handling to
@@ -27,6 +31,15 @@ coupled:
   IOStreams:
     Forcing:
       FreqUnits: Never
+
+    History:
+      Contents:
+        - Tracers
+        - State
+        - SshCell
+        - GeomZMid
+        - GeomZInterface
+        - Frazil
 
     RestartRead:
       UsePointerFile: true
