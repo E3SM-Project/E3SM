@@ -1129,7 +1129,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                 const uview_1d<Pack> &diag_eff_radius_qi, const uview_1d<Pack> &diag_diam_qi,
                 const uview_1d<Pack> &rho_qi, const uview_1d<Pack> &diag_equiv_reflectivity,
                 const uview_1d<Pack> &diag_eff_radius_qc,
-                const uview_1d<Pack> &diag_eff_radius_qr, const P3Runtime &runtime_options);
+                const uview_1d<Pack> &diag_eff_radius_qr, const Scalar &inv_dt, const P3Runtime &runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part3_disp(
@@ -1148,7 +1148,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<Pack> &diag_eff_radius_qi, const uview_2d<Pack> &diag_diam_qi,
       const uview_2d<Pack> &rho_qi, const uview_2d<Pack> &diag_equiv_reflectivity,
       const uview_2d<Pack> &diag_eff_radius_qc, const uview_2d<Pack> &diag_eff_radius_qr,
-      const uview_1d<bool> &is_nucleat_possible, const uview_1d<bool> &is_hydromet_present,
+      const uview_1d<bool> &is_nucleat_possible, const uview_1d<bool> &is_hydromet_present, const Scalar &inv_dt,
       const P3Runtime &runtime_options);
 #endif
 

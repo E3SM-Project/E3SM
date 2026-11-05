@@ -56,6 +56,7 @@ void Functions<S,D>
   const uview_1d<Pack>& diag_equiv_reflectivity,
   const uview_1d<Pack>& diag_eff_radius_qc,
   const uview_1d<Pack>& diag_eff_radius_qr,
+  const Scalar& inv_dt,
   const P3Runtime& runtime_options)
 {
   constexpr Scalar qsmall       = C::QSMALL;
@@ -94,8 +95,8 @@ void Functions<S,D>
       if (qc_small.any()) {
         qv(k)                .set(qc_small, qv(k)+qc(k));
         th_atm(k)            .set(qc_small, th_atm(k)-inv_exner(k)*qc(k)*latvap*inv_cp);
-        vap_liq_exchange(k)  .set(qc_small, vap_liq_exchange(k) - qc(k));
-        qc(k)                .set(qc_small, 0);
+        vap_liq_exchange(k)  .set(qc_small, vap_liq_exchange(k) - qc(k)*inv_dt);
+	qc(k)                .set(qc_small, 0);
         nc(k)                .set(qc_small, 0);
       }
     }
@@ -124,7 +125,7 @@ void Functions<S,D>
       if (qr_small.any()) {
         qv(k)              .set(qr_small, qv(k) + qr(k));
         th_atm(k)          .set(qr_small, th_atm(k) - inv_exner(k)*qr(k)*latvap*inv_cp);
-        vap_liq_exchange(k).set(qr_small, vap_liq_exchange(k) - qr(k));
+        vap_liq_exchange(k).set(qr_small, vap_liq_exchange(k) - qr(k)*inv_dt);
         qr(k)              .set(qr_small, 0);
         nr(k)              .set(qr_small, 0);
       }
