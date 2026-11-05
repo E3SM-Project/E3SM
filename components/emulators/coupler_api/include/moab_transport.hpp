@@ -28,7 +28,7 @@ struct ComponentInfo {
   int id = -1;
   std::vector<int> ranks;
 };
-  using ComponentMap = std::map<std::string, ComponentInfo>;
+using ComponentMap = std::map<std::string, ComponentInfo>;
 class Transport {
   using AdapterMap = std::map<std::string, MoabAdapter*>;
 

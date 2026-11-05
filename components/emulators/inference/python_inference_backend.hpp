@@ -50,6 +50,7 @@ class PythonBackend : public InferenceBackend {
 public:
   /// @throws InferenceError if the module or its factory fails
   explicit PythonBackend(const InferenceConfig &config);
+  /// Calls finalize() if it hasn't been called. A failure is logged to stderr.
   ~PythonBackend() override;
 
   using InferenceBackend::infer;

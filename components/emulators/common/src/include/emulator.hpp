@@ -36,7 +36,16 @@ using namespace e3sm::coupler;
 class Emulator {
 public:
   Emulator(const GridDesc grid, const EmulatorConfig emu_config);
+  /// The backend and MOAB adapter clean up after themselves. Call finalize()
+  /// to see a failure in the model's finalize(), which the destructor can only
+  /// log. With MOAB, destroy the emulator before iMOAB_Finalize and MPI_Finalize.
   ~Emulator() = default;
+
+  // Coupled spans point into this object's field buffers
+  Emulator(const Emulator&) = delete;
+  Emulator& operator=(const Emulator&) = delete;
+  Emulator(Emulator&&) = delete;
+  Emulator& operator=(Emulator&&) = delete;
 
   // Lifecycle methods
   void initialize();
@@ -129,6 +138,7 @@ private:
   std::optional<MoabAdapter> m_moab;
 
   bool m_initialized = false;
+  bool m_finalized = false;
   int m_step_count = 0;
 
   // dimensions_ holds the domain info over which the emulator needs to be

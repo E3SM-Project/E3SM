@@ -21,7 +21,7 @@ public:
   template <CoupledProcess C> void add_component(std::unique_ptr<C> component) {
     if (initialized_) {
       throw std::runtime_error(
-          "CouplerDriver: Can't add component after initialization!");
+          "CouplerDriver: cannot add a component after initialize()");
     }
     if (!component) {
       throw std::invalid_argument("CouplerDriver: Null component");
@@ -55,6 +55,9 @@ public:
   Coupler& coupler() noexcept { return coupler_; }
 
 private:
+  void require_initialized(std::string_view action,
+                           std::string_view name) const;
+
   std::vector<AnyComponent> components_;
   Coupler coupler_;
   bool initialized_ = false;

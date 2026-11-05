@@ -6,6 +6,7 @@
 #include "create_inference_backend.hpp"
 #include "inference_error.hpp"
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -158,6 +159,38 @@ TEST_CASE("PythonBackend reports Python errors with a traceback", "[python]") {
 
     REQUIRE_THROWS_WITH(backend->infer(inputs, outputs),
                         Catch::Contains("deliberate failure in infer"));
+  }
+}
+
+TEST_CASE("PythonBackend finalizes the model when destroyed", "[python]") {
+  const auto marker = std::filesystem::temp_directory_path() /
+                      "emulator_python_backend_finalize_marker";
+  std::filesystem::remove(marker);
+
+  auto config = fixture();
+  config.set("finalize_marker", marker.string());
+
+  auto backend = create(config);
+  REQUIRE_FALSE(std::filesystem::exists(marker));
+  backend.reset();
+  REQUIRE(std::filesystem::exists(marker));
+
+  std::filesystem::remove(marker);
+}
+
+TEST_CASE("A failing model finalize", "[python]") {
+  auto config = fixture();
+  config.set("fail_finalize", "true");
+
+  SECTION("is reported by finalize()") {
+    auto backend = create(config);
+    REQUIRE_THROWS_WITH(backend->finalize(),
+                        Catch::Contains("deliberate failure in finalize"));
+  }
+
+  SECTION("does not escape the destructor") {
+    auto backend = create(config);
+    REQUIRE_NOTHROW(backend.reset());
   }
 }
 

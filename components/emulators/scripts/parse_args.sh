@@ -4,7 +4,7 @@
 #
 # Usage: source this file, then call parse_test_args "$@"
 # After calling, the following variables will be set:
-#   CLEAN_ONLY, BUILD_ONLY, VERBOSE, CMAKE_ARGS
+#   CLEAN_ONLY, BUILD_ONLY, VERBOSE, CMAKE_ARGS, TEST_REGEX
 #
 
 # Default values
@@ -12,6 +12,7 @@ CLEAN_ONLY=false
 BUILD_ONLY=false
 VERBOSE=false
 CMAKE_ARGS=()
+TEST_REGEX=""
 
 parse_test_args() {
     while [[ $# -gt 0 ]]; do
@@ -33,7 +34,9 @@ parse_test_args() {
                 shift
                 ;;
             --help|-h)
-                echo "Usage: $0 [OPTIONS]"
+                echo "Usage: $0 [OPTIONS] [TEST_REGEX]"
+                echo ""
+                echo "Runs all tests, or those with names matching TEST_REGEX."
                 echo ""
                 echo "Options:"
                 echo "  --clean-only  Remove build directory and exit"
@@ -44,9 +47,17 @@ parse_test_args() {
                 echo "  --help        Show this help message"
                 exit 0
                 ;;
-            *)
+            -*)
                 echo "ERROR: Unknown option: $1" >&2
                 exit 1
+                ;;
+            *)
+                if [[ -n "$TEST_REGEX" ]]; then
+                    echo "ERROR: Only one test regex allowed: $1" >&2
+                    exit 1
+                fi
+                TEST_REGEX="$1"
+                shift
                 ;;
         esac
     done

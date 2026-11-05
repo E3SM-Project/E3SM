@@ -46,6 +46,10 @@ public:
   void import_to_external(std::string_view name);
   void export_from_external(std::string_view name);
 
+  /// Diagnostic: writes every value of every external binding to os.
+  /// @throws std::runtime_error if transfer_bindings() hasn't been called
+  void print_bindings(std::ostream& os) const;
+
   template <CoupledProcess C> C& get_process(std::string_view name) {
     return driver_.get_component_as<C>(name);
   };

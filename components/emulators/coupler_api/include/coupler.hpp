@@ -106,12 +106,12 @@ public:
 
   const std::span<ExportBuffer>
   export_buffers(std::string_view component_name) {
-    return buffers_.at(std::string(component_name)).exports;
+    return component_buffers(component_name).exports;
   }
 
   const std::span<ImportBuffer>
   import_buffers(std::string_view component_name) {
-    return buffers_.at(std::string(component_name)).imports;
+    return component_buffers(component_name).imports;
   }
 
   void print_coupling_plan(std::ostream& os) const;
@@ -124,6 +124,8 @@ private:
   std::vector<CouplingRoute> routes_;
   std::unordered_map<std::string, ActiveCouplingFields> coupling_plans_;
   std::unordered_map<std::string, ComponentBuffers> buffers_;
+
+  ComponentBuffers& component_buffers(std::string_view component_name);
 
   std::vector<CoupledFieldEntry>
   read_coupling_fields_from_yaml(const std::filesystem::path& filename);

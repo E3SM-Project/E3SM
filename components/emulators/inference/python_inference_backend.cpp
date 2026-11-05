@@ -11,6 +11,7 @@
 #include "fpe_guard.hpp"
 #include "inference_error.hpp"
 
+#include <iostream>
 #include <sstream>
 #include <vector>
 
@@ -239,7 +240,18 @@ PythonBackend::PythonBackend(const InferenceConfig &config)
       "calling " + module_name + "." + factory_name + "(config)");
 }
 
-PythonBackend::~PythonBackend() = default;
+PythonBackend::~PythonBackend() {
+  // A host that shut the interpreter down has already released the model
+  if (Py_IsInitialized() == 0) {
+    return;
+  }
+  try {
+    finalize();
+  } catch (const std::exception &e) {
+    // Destructors must not throw, and this can run during stack unwinding
+    std::cerr << e.what() << std::endl;
+  }
+}
 
 bool PythonBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
   EMULATOR_INFER_REQUIRE(m_impl, "The Python backend was finalized.");

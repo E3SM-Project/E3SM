@@ -1,6 +1,7 @@
 #include "moab_adapter.hpp"
 #include "mpi.h"
 #include <cmath>
+#include <iostream>
 #include <limits>
 
 #include <moab/Types.hpp>
@@ -18,7 +19,7 @@ int checked_size_to_int(std::size_t size) {
 
 void checkMoabErr(ErrCode Err, const std::string& msg, MPI_Comm comm) {
   if (Err != moab::MB_SUCCESS) {
-    std::cout << msg << std::endl;
+    std::cerr << msg << std::endl;
     MPI_Abort(comm, Err);
   }
 }
@@ -167,12 +168,6 @@ void MoabAdapter::register_application(const MoabPartition& partition) {
 
   if (err) {
     MPI_Abort(comm(), err);
-  }
-  int my_rank;
-  MPI_Comm_rank(comm(), &my_rank);
-  if (my_rank == 0) {
-    printf("Registered MOAB app %d (component ID %d).\n", app_id_,
-           component_id_);
   }
   create_vertices(partition);
   checkMoabErr(iMOAB_UpdateMeshInfo(&app_id_), "updating mesh information",

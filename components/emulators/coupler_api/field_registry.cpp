@@ -11,18 +11,20 @@ namespace e3sm::coupler {
 FieldID FieldRegistry::register_field(RegisteredField field) {
 
   if (field.component.empty()) {
-    throw std::invalid_argument(
-        "Attempting to register field with no Component");
+    throw std::invalid_argument("Cannot register field '" + field.name +
+                                "' without a component name");
   }
 
   if (field.name.empty()) {
-    throw std::invalid_argument("Attempting to register field with no name");
+    throw std::invalid_argument("Component '" + field.component +
+                                "' tried to register a field without a name");
   }
 
   const auto id = static_cast<FieldID>(fields_.size());
   RegistryKey key{field.component, field.name};
   if (lookup_.contains(key)) {
-    throw std::runtime_error("Attempted to register field twice");
+    throw std::runtime_error("Component '" + field.component +
+                             "' registered field '" + field.name + "' twice");
   }
 
   lookup_.emplace(std::move(key), id);
@@ -34,13 +36,16 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
 
 const RegisteredField& FieldRegistry::get(const std::string& component,
                                           const std::string& field_name) const {
-  RegistryKey key{component, field_name};
-  auto id = lookup_.find(key)->second;
-  return fields_.at(id);
+  return fields_[get_id(component, field_name)];
 }
 
 const RegisteredField& FieldRegistry::get(FieldID id) const {
-  return fields_.at(id);
+  if (id >= fields_.size()) {
+    throw std::out_of_range("Unknown field ID " + std::to_string(id) + "; " +
+                            std::to_string(fields_.size()) +
+                            " field(s) are registered");
+  }
+  return fields_[id];
 }
 
 FieldID FieldRegistry::get_id(const std::string& component,
@@ -48,8 +53,21 @@ FieldID FieldRegistry::get_id(const std::string& component,
 
   const auto pair = lookup_.find(RegistryKey{component, field_name});
   if (pair == lookup_.end()) {
-    throw std::runtime_error("Couldn't find " + field_name +
-                             " in registry for " + component);
+    std::string registered;
+    for (const auto& field : fields_) {
+      if (field.component == component) {
+        registered += (registered.empty() ? "" : ", ") + field.name;
+      }
+    }
+    if (registered.empty()) {
+      throw std::runtime_error("Field '" + field_name +
+                               "' references component '" + component +
+                               "', which has registered no fields. Was it "
+                               "added to the driver?");
+    }
+    throw std::runtime_error("Component '" + component +
+                             "' has not registered field '" + field_name +
+                             "'. Registered fields: " + registered);
   }
   return pair->second;
 }

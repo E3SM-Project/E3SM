@@ -14,7 +14,7 @@ source "${SCRIPT_DIR}/scripts/colors.sh"
 source "${SCRIPT_DIR}/scripts/parse_args.sh"
 
 # Parse command line arguments
-test_name="$@"
+parse_test_args "$@"
 
 # Clean only mode
 if [ "$CLEAN_ONLY" = true ]; then
@@ -27,8 +27,8 @@ fi
 # Create build directory
 mkdir -p "${BUILD_DIR}"
 
-# Configure (only if needed)
-if [ ! -f "CMakeCache.txt" ]; then
+# Configure (only if needed, or to apply new -D options to an existing build)
+if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
     print_status "Configuring CMake..."
     cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Debug  \
     -DEMULATOR_ENABLE_TESTS=ON \
@@ -37,10 +37,14 @@ if [ ! -f "CMakeCache.txt" ]; then
     -DFETCHCONTENT_BASE_DIR="$SCRIPT_DIR/downloads" \
     -DEMULATOR_ENABLE_LIBTORCH=ON \
     -DEMULATOR_ENABLE_PYTHON=ON \
-    "${CMAKE_ARGS[@]}" || { 
-    rm -rf build/
+    "${CMAKE_ARGS[@]}" || {
+    # Remove the partial cache so that the next run configures again
+    rm -f "${BUILD_DIR}/CMakeCache.txt"
     exit 1
     }
+elif [ "${#CMAKE_ARGS[@]}" -gt 0 ]; then
+    print_status "Reconfiguring CMake..."
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" "${CMAKE_ARGS[@]}"
 fi
 
 # Build
@@ -55,10 +59,13 @@ fi
 
 # Run tests
 print_status "Running tests..."
+ctest_args=(--test-dir "${BUILD_DIR}" --output-on-failure)
 if [ "$VERBOSE" = true ]; then
-    ctest --test-dir "${BUILD_DIR}" --output-on-failure --verbose -R $test_name
-else
-    ctest --test-dir "${BUILD_DIR}" --output-on-failure -R $test_name
+    ctest_args+=(--verbose)
 fi
+if [ -n "$TEST_REGEX" ]; then
+    ctest_args+=(-R "$TEST_REGEX")
+fi
+ctest "${ctest_args[@]}"
 
 print_status "All tests passed!"
