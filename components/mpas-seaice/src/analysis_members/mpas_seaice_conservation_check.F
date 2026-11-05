@@ -1512,10 +1512,6 @@ contains
 
    subroutine salt_conservation(domain, err)
 
-      use seaice_constants, only: &
-           seaiceDensityIce, &
-           seaiceReferenceSalinity
-
       type (domain_type), intent(inout) :: &
            domain
 
@@ -1557,7 +1553,7 @@ contains
       real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
            oceanSaltFluxArea, &
-           frazilFormation
+           frazilSalt
 
       real(kind=RKIND) :: &
            frazilCell, &
@@ -1571,12 +1567,8 @@ contains
            earthArea
 
       logical, pointer :: &
-           config_update_ocean_fluxes, &
            config_AM_conservationCheck_write_to_logfile, &
            config_AM_conservationCheck_include_ocean
-
-      character(len=strKIND), pointer :: &
-           config_thermodynamics_type
 
       integer, pointer :: &
            nCellsSolve, &
@@ -1620,9 +1612,6 @@ contains
       blockPtr => domain % blocklist
       do while (associated(blockPtr))
 
-         call MPAS_pool_get_config(blockPtr % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
-         call MPAS_pool_get_config(blockPtr % configs, "config_thermodynamics_type", config_thermodynamics_type)
-
          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
@@ -1632,7 +1621,7 @@ contains
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(oceanFluxesPool, "oceanSaltFluxArea", oceanSaltFluxArea)
-         call MPAS_pool_get_array(meltGrowthRatesPool, "frazilFormation", frazilFormation)
+         call MPAS_pool_get_array(meltGrowthRatesPool, "frazilSalt", frazilSalt)
          call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
 
          do iCell = 1, nCellsSolve
@@ -1648,22 +1637,19 @@ contains
 
          enddo ! iCell
 
-         ! frazil
-         if (config_update_ocean_fluxes .and. trim(config_thermodynamics_type) == "mushy") then
+         ! frazil: salt in all new ice (kg m-2 per step), using the new ice
+         ! salinity for mushy thermodynamics and the reference salinity otherwise
+         do iCell = 1, nCellsSolve
 
-            do iCell = 1, nCellsSolve
+            frazilCell = (frazilSalt(iCell) * areaCell(iCell)) / dt
+            do iHemisphere = 1, nHemispheres
+               iSumPrev = (iHemisphere-1) * nVars
+               if (cellInHemisphere(iHemisphere,iCell) == 1) then
+                  sumArray(iSumPrev+2) = sumArray(iSumPrev+2) + frazilCell
+               endif
+            enddo ! iHemisphere
 
-               frazilCell = (frazilFormation(iCell) * areaCell(iCell) * seaiceDensityIce * seaiceReferenceSalinity * 0.001_RKIND) / dt
-               do iHemisphere = 1, nHemispheres
-                  iSumPrev = (iHemisphere-1) * nVars
-                  if (cellInHemisphere(iHemisphere,iCell) == 1) then
-                     sumArray(iSumPrev+2) = sumArray(iSumPrev+2) + frazilCell
-                  endif
-               enddo ! iHemisphere
-
-            enddo ! iCell
-
-         endif
+         enddo ! iCell
 
          blockPtr => blockPtr % next
       enddo

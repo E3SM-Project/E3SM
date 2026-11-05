@@ -2549,7 +2549,6 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
-       call MPAS_pool_get_array(ocean_coupling, "frazilSalt", frazilSalt)
 
        call MPAS_pool_get_array(wave_coupling, "significantWaveHeight", significantWaveHeight)
        call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
@@ -2571,6 +2570,7 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
+       call MPAS_pool_get_array(melt_growth_rates, "frazilSalt", frazilSalt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilGrowthDiagnostic", frazilGrowthDiagnostic)
 
        call MPAS_pool_get_array(ponds, "pondFreshWaterFlux", pondFreshWaterFlux)
@@ -15140,8 +15140,7 @@ subroutine init_column_waves(domain)
          pondsPool, &
          shortwavePool, &
          dragPool, &
-         snowPool, &
-         oceanCouplingPool
+         snowPool
 
     ! atmospheric fluxes
     real(kind=RKIND), dimension(:), pointer :: &
@@ -15163,10 +15162,7 @@ subroutine init_column_waves(domain)
          surfaceIceMelt, &
          snowMelt, &
          basalIceMelt, &
-         lateralIceMelt
-
-    ! ocean coupling
-    real(kind=RKIND), dimension(:), pointer :: &
+         lateralIceMelt, &
          frazilSalt
 
     ! snow model
@@ -15265,6 +15261,7 @@ subroutine init_column_waves(domain)
           call MPAS_pool_get_array(meltGrowthRatesPool, "snowMelt", snowMelt)
           call MPAS_pool_get_array(meltGrowthRatesPool, "basalIceMelt", basalIceMelt)
           call MPAS_pool_get_array(meltGrowthRatesPool, "lateralIceMelt", lateralIceMelt)
+          call MPAS_pool_get_array(meltGrowthRatesPool, "frazilSalt", frazilSalt)
 
           congelation         = 0.0_RKIND
           frazilFormation     = 0.0_RKIND
@@ -15274,11 +15271,6 @@ subroutine init_column_waves(domain)
           snowMelt            = 0.0_RKIND
           basalIceMelt        = 0.0_RKIND
           lateralIceMelt      = 0.0_RKIND
-
-          ! ocean coupling
-          call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
-          call MPAS_pool_get_array(oceanCouplingPool, "frazilSalt", frazilSalt)
-
           frazilSalt          = 0.0_RKIND
 
           ! tendancies
