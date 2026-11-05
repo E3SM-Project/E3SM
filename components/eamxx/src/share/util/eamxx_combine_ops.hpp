@@ -78,6 +78,26 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
   }
 }
 
+// Runtime-CM versions of the above. The switch is on a value that is uniform across
+// the whole kernel, so the cost is negligible for memory-bound kernels, while it
+// avoids instantiating the (expensive) kernel launch machinery once per CM.
+template<typename ScalarIn, typename ScalarOut, typename CoeffType>
+KOKKOS_FORCEINLINE_FUNCTION
+void combine (const CombineMode cm, const ScalarIn& newVal, ScalarOut& result,
+              const CoeffType alpha, const CoeffType beta)
+{
+  switch (cm) {
+    case CombineMode::Replace:  combine<CombineMode::Replace> (newVal,result,alpha,beta); break;
+    case CombineMode::Update:   combine<CombineMode::Update>  (newVal,result,alpha,beta); break;
+    case CombineMode::Multiply: combine<CombineMode::Multiply>(newVal,result,alpha,beta); break;
+    case CombineMode::Divide:   combine<CombineMode::Divide>  (newVal,result,alpha,beta); break;
+    case CombineMode::Max:      combine<CombineMode::Max>     (newVal,result,alpha,beta); break;
+    case CombineMode::Min:      combine<CombineMode::Min>     (newVal,result,alpha,beta); break;
+    default:
+      EKAT_KERNEL_ASSERT ("Unsupported/unexpected combine mode.\n");
+  }
+}
+
 // This is similar to the above one, but only does something if newVal is NOT equal to fill_value.
 // The only exception is the case CM=Replace, in which case we ALWAYS perform the copy
 template<CombineMode CM, typename ScalarIn, typename ScalarOut,
@@ -105,6 +125,24 @@ void combine_fill_aware (const ScalarIn& newVal, ScalarOut& result,
     if (newVal!=constants::fill_value<ScalarIn>) {
       combine<CM>(newVal,result,alpha,beta);
     }
+  }
+}
+
+template<typename ScalarIn, typename ScalarOut,
+         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
+KOKKOS_FORCEINLINE_FUNCTION
+void combine_fill_aware (const CombineMode cm, const ScalarIn& newVal, ScalarOut& result,
+                         const CoeffType alpha, const CoeffType beta)
+{
+  switch (cm) {
+    case CombineMode::Replace:  combine_fill_aware<CombineMode::Replace> (newVal,result,alpha,beta); break;
+    case CombineMode::Update:   combine_fill_aware<CombineMode::Update>  (newVal,result,alpha,beta); break;
+    case CombineMode::Multiply: combine_fill_aware<CombineMode::Multiply>(newVal,result,alpha,beta); break;
+    case CombineMode::Divide:   combine_fill_aware<CombineMode::Divide>  (newVal,result,alpha,beta); break;
+    case CombineMode::Max:      combine_fill_aware<CombineMode::Max>     (newVal,result,alpha,beta); break;
+    case CombineMode::Min:      combine_fill_aware<CombineMode::Min>     (newVal,result,alpha,beta); break;
+    default:
+      EKAT_KERNEL_ASSERT ("Unsupported/unexpected combine mode.\n");
   }
 }
 

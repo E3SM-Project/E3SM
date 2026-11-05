@@ -11,8 +11,9 @@ namespace details {
 
 // NOTE: kernels that go through field_pfor must be functors with a templated operator()
 //       (not generic lambdas), since extended lambdas cannot be generic.
-template<CombineMode CM, typename ST>
+template<typename ST>
 struct UpdateKernel {
+  CombineMode cm;
   ST alpha;
   ST beta;
   ST gamma;
@@ -21,20 +22,20 @@ struct UpdateKernel {
   KOKKOS_INLINE_FUNCTION
   void operator() (const YView& y, const XView& x, const Idx&... i) const {
     auto& y_val = y(i...);
-    combine<CM>(x(i...),y_val,alpha,beta);
-    if constexpr (CM==CombineMode::Update)
+    combine(cm,x(i...),y_val,alpha,beta);
+    if (cm==CombineMode::Update)
       y_val += gamma;
   }
 };
 
 } // namespace details
 
-template<CombineMode CM, typename ST, typename XST>
+template<typename ST, typename XST>
 void Field::
-update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) const
+update_impl (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const
 {
   // Must handle the case where one of the two views is strided (or both)
-  details::field_pfor(details::UpdateKernel<CM,ST>{alpha,beta,gamma},
+  details::field_pfor(details::UpdateKernel<ST>{cm,alpha,beta,gamma},
                       details::view_as<ST>(*this), details::view_as<const XST>(x));
 
   // field_pfor is asynchronous, but the Field update methods are blocking
