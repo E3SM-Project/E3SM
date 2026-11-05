@@ -236,6 +236,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),parameter :: zpbl =700.0_R8 ! PBL depth [m] for gustiness parametriz.
 
    real(R8),parameter :: tiny = 1.0e-12_R8 
+   real(R8),parameter :: ustar_tiny = 1.0e-3_R8
+   real(R8),parameter :: tstar_tiny = 1.0e-5_R8
+   real(R8),parameter :: qstar_tiny = 1.0e-8_R8
+   real(R8),parameter :: u10n_tiny  = 1.0e-3_R8
    !--- local variables --------------------------------
    integer(IN) :: n      ! vector loop index
    integer(IN) :: iter
@@ -487,11 +491,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
             enddo ! end original flux scheme
          else ! flux scheme with regularization and adjusted stability limiter
-            ! sanity check to enforce that regularization parameter is positive
-            if (ocn_atm_flux_eps <= 0.0_R8) then
-               call shr_sys_abort('ocean_atmosphere_flux_epsilon must be positive ' // errMsg(sourcefile, __LINE__))
-            end if
-
             ! first pass of the iteration WITHOUT stability limiter
             ! This is sufficient for almost all cases to converge to a non-trivial flux.
             !------------------------------------------------------------
@@ -508,8 +507,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
             !
             ! Note: if implicit stress modification is used, may need to preserve original value of vmag for use in this step.
             ! check if computed scaling parameters are close to 0
-            if (abs(ustar) < 1.e-12_R8 .or. abs(tstar) < 1.e-12_R8 .or. &
-                abs(qstar) < 1.e-12_R8 .or. abs(u10n) < 1.e-12_R8) then
+            if (abs(ustar) < ustar_tiny .or. abs(tstar) < tstar_tiny .or. &
+                abs(qstar) < qstar_tiny .or. abs(u10n) < u10n_tiny) then
                ! second pass WITH stability limiter
                !------------------------------------------------------------
                call flux_iteration_with_stability_atmocn(.true., &
@@ -834,10 +833,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
       ! iterate to converge on Z/L, ustar, tstar and qstar
       !------------------------------------------------------------
       iter = 0
-      do while( sqrt(((ustar_next - ustar_prev)/(abs(ustar_prev) + 1.e-3_R8))**2 + &
-                     ((tstar_next - tstar_prev)/(abs(tstar_prev) + 1.e-5_R8))**2 + &
-                     ((qstar_next - qstar_prev)/(abs(qstar_prev) + 1.e-8_R8))**2 + &
-                     ((u10n_next - u10n_prev)/(abs(u10n_prev) + 1.e-3_R8))**2) > flux_con_tol )
+      do while( sqrt(((ustar_next - ustar_prev)/(abs(ustar_prev) + ustar_tiny))**2 + &
+                     ((tstar_next - tstar_prev)/(abs(tstar_prev) + tstar_tiny))**2 + &
+                     ((qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny))**2 + &
+                     ((u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny))**2) > flux_con_tol )
          if (iter > flux_con_max_iter) then
             write(s_logunit,*) vmag,thbot(n),ts(n),zbot(n),qbot(n),ssq,ustar,ustar_prev,tstar,tstar_prev,qstar,qstar_prev,flux_con_tol,flux_con_max_iter
             call shr_sys_abort('MAX ITERS REACHED WITHOUT OCN-ATM ITERATION CONVERGING ' // errMsg(sourcefile, __LINE__))
