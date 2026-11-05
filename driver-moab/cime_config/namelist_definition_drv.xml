@@ -894,7 +894,8 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      epsilon used for regularization of ocean-atmosphere flux RHN
+      epsilon used for regularization of ocean-atmosphere flux RHN.
+      Must be positive when regularization is enabled.
     </desc>
     <values>
       <value>0.1</value>
@@ -906,7 +907,8 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      damping factor for ocean-atmosphere flux fixed point iteration
+      damping factor for ocean-atmosphere flux fixed point iteration.
+      Must be greater than 0 and at most 1 when regularization is enabled.
     </desc>
     <values>
       <value>0.016</value>
@@ -948,7 +950,7 @@
     <desc>
       Iterate atmocn flux calculation to this relative difference.
       Set to -1 to choose 0.0 without ocean-atmosphere flux regularization
-      or 3.0e-3 with regularization.
+      or 3.0e-3 with regularization. An explicit value must be nonnegative.
     </desc>
     <values>
       <value>-1.0</value>
@@ -963,6 +965,7 @@
       Maximum number of iterations in atmosphere-ocean flux calculation.
       Set to -1 to choose 20000000 with ocean-atmosphere flux regularization,
       30 with implicit_stress (without regularization), or 2 otherwise.
+      An explicit value must be positive.
     </desc>
     <values>
       <value>-1</value>

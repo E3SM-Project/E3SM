@@ -2,6 +2,7 @@ module seq_flux_mct
 
   use shr_kind_mod,      only: r8 => shr_kind_r8, in=>shr_kind_in
   use shr_sys_mod,       only: shr_sys_abort
+  use shr_infnan_mod,    only: shr_infnan_isnan, shr_infnan_isinf
   use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_ua, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
@@ -1394,15 +1395,39 @@ contains
        end if
 
        if (flux_max_iteration == -1) then
-          if (use_ocn_atm_flux_reg) then
-             flux_max_iteration = 20000000
-          else
-             select case (atm_flux_method)
-             case ('implicit_stress')
-                flux_max_iteration = 30
-             case default
-                flux_max_iteration = 2
-             end select
+         if (use_ocn_atm_flux_reg) then
+            flux_max_iteration = 20000000
+         else
+            select case (atm_flux_method)
+            case ('implicit_stress')
+               flux_max_iteration = 30
+            case default
+               flux_max_iteration = 2
+            end select
+         end if
+       end if
+
+       if (shr_infnan_isnan(flux_convergence) .or. shr_infnan_isinf(flux_convergence)) then
+          call shr_sys_abort(subname//' flux_convergence must be finite')
+       end if
+       if (flux_convergence < 0.0_r8) then
+          call shr_sys_abort(subname//' flux_convergence must be nonnegative')
+       end if
+       if (flux_max_iteration <= 0) then
+          call shr_sys_abort(subname//' flux_max_iteration must be positive')
+       end if
+       if (use_ocn_atm_flux_reg) then
+          if (shr_infnan_isnan(ocn_atm_flux_eps) .or. shr_infnan_isinf(ocn_atm_flux_eps)) then
+             call shr_sys_abort(subname//' ocn_atm_flux_eps must be finite')
+          end if
+          if (ocn_atm_flux_eps <= 0.0_r8) then
+             call shr_sys_abort(subname//' ocn_atm_flux_eps must be positive')
+          end if
+          if (shr_infnan_isnan(ocn_atm_flux_damping) .or. shr_infnan_isinf(ocn_atm_flux_damping)) then
+             call shr_sys_abort(subname//' ocn_atm_flux_damping must be finite')
+          end if
+          if (ocn_atm_flux_damping <= 0.0_r8 .or. ocn_atm_flux_damping > 1.0_r8) then
+             call shr_sys_abort(subname//' ocn_atm_flux_damping must be greater than 0 and at most 1')
           end if
        end if
 

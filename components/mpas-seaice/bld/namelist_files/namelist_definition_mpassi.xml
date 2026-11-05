@@ -2744,9 +2744,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_boundary_layer_iteration_number" type="integer"
 	category="atmosphere" group="atmosphere">
-Number of iterations for boundary layer calculations
+Maximum number of iterations for atmosphere boundary layer calculations.
 
-Valid values: Any positive integer.
+Valid values: -1 to select a default based on regularization, or any positive integer.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_boundary_layer_iteration_tolerance" type="real"
+	category="atmosphere" group="atmosphere">
+Convergence tolerance for atmosphere boundary layer calculations.
+
+Valid values: -1 to select a default based on regularization, or any nonnegative real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
