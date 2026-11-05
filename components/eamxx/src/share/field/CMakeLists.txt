@@ -8,6 +8,12 @@ add_library(eamxx_field
   field_group.cpp
   field_sync.cpp
   field_reader.cpp
+  eti/field_deep_copy_impl_double.cpp
+  eti/field_deep_copy_impl_float.cpp
+  eti/field_deep_copy_impl_int.cpp
+  eti/field_deep_copy_masked_double.cpp
+  eti/field_deep_copy_masked_float.cpp
+  eti/field_deep_copy_masked_int.cpp
   eti/field_get_strided_view_double_device.cpp
   eti/field_get_strided_view_float_device.cpp
   eti/field_get_strided_view_int_device.cpp
