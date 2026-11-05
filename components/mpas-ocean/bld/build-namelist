@@ -436,6 +436,7 @@ my $CASE                   = "$xmlvars{'CASE'}";
 my $CALENDAR               = "$xmlvars{'CALENDAR'}";
 my $NCPL_BASE_PERIOD       = "$xmlvars{'NCPL_BASE_PERIOD'}";
 my $OCN_NCPL               = "$xmlvars{'OCN_NCPL'}";
+my $GLC_NCPL               = "$xmlvars{'GLC_NCPL'}";
 my $OCN_COUPLING           = "$xmlvars{'OCN_COUPLING'}";
 my $OCN_ICE_FORCING        = "$xmlvars{'OCN_ICE_FORCING'}";
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
@@ -804,6 +805,26 @@ if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
     add_default($nl, 'config_glc_ice_shelf_coupling');
 }
 add_default($nl, 'config_glc_ice_shelf_coupling_import_geometry');
+if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
+    # the glc coupling interval in seconds, as the driver sets it
+    my $base_period_seconds;
+    if ($NCPL_BASE_PERIOD eq 'hour') {
+        $base_period_seconds = 3600;
+    } elsif ($NCPL_BASE_PERIOD eq 'day') {
+        $base_period_seconds = 86400;
+    } elsif ($NCPL_BASE_PERIOD eq 'year') {
+        $base_period_seconds = 31536000;
+    } elsif ($NCPL_BASE_PERIOD eq 'decade') {
+        $base_period_seconds = 315360000;
+    } else {
+        die "ERROR: build-namelist: unknown NCPL_BASE_PERIOD $NCPL_BASE_PERIOD\n";
+    }
+    my $glc_cpl_dt = int($base_period_seconds / $GLC_NCPL);
+    add_default($nl, 'config_glc_ice_shelf_coupling_interval', 'val'=>"$glc_cpl_dt");
+} else {
+    add_default($nl, 'config_glc_ice_shelf_coupling_interval');
+}
+add_default($nl, 'config_glc_ice_shelf_coupling_ramp_land_ice_pressure');
 add_default($nl, 'config_glc_ice_shelf_coupling_min_floating_fraction');
 
 ######################################

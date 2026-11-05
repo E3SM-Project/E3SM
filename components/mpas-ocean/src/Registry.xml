@@ -940,6 +940,14 @@
 					description="If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Only set this to .true. when the ocean's ice-shelf cavities were built to match GLC's ice geometry; otherwise, abrupt changes in pressure and draft make the ocean unstable.  If .false., MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_glc_ice_shelf_coupling_ramp_land_ice_pressure" type="logical" default_value=".false."
+					description="If .true. and land-ice geometry is imported from GLC (config_glc_ice_shelf_coupling_import_geometry), the land-ice pressure ramps linearly from its value when a new GLC geometry arrives to GLC's over the following GLC coupling interval (config_glc_ice_shelf_coupling_interval).  Land-ice fractions and the land-ice mask follow GLC at once, so the fluxes exchanged with GLC are unchanged.  If .false., the land-ice pressure follows GLC at once."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_glc_ice_shelf_coupling_interval" type="integer" default_value="0"
+					description="The GLC coupling interval in seconds, which E3SM sets from GLC_NCPL and NCPL_BASE_PERIOD when MPAS-Ocean exchanges ice-shelf fluxes and geometry with GLC.  Used to ramp the land-ice pressure if config_glc_ice_shelf_coupling_ramp_land_ice_pressure is .true."
+					possible_values="Any positive integer, or 0 if not coupled to GLC"
+		/>
 		<nml_option name="config_glc_ice_shelf_coupling_min_floating_fraction" type="real" default_value="1.0e-3"
 					description="The minimum floating-ice fraction of a cell for ice-shelf fluxes in that cell to be sent to GLC (using GLC's floating fraction) or for GLC's conductive heat flux to be applied (using the larger of the ocean's and GLC's floating fractions).  Fluxes in cells below this fraction are not sent to GLC and are saved in landIceFreshwaterFluxNotSentToGlc."
 					possible_values="Any real number between 0 and 1"
@@ -2304,6 +2312,7 @@
 			<var name="landIceMask"/>
 			<var name="landIceFloatingMask"/>
 			<var name="landIceFloatingFraction"/>
+			<var name="landIcePressureRampStart"/>
 			<var name="seaIcePressure"/>
 			<var name="atmosphericPressure"/>
 			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
@@ -4451,6 +4460,10 @@
 		/>
 		<var name="landIceGlcFloatingFraction" type="real" dimensions="nCells Time" units="1"
 			description="The fraction of each cell covered by floating ice according to glc, without renormalizing by the fraction of the cell where glc's bed is below sea level.  Used to normalize ice-shelf mass fluxes sent to glc so they are conserved."
+			packages="landIceGlcCouplingPKG"
+		/>
+		<var name="landIcePressureRampStart" type="real" dimensions="nCells Time" units="Pa"
+			description="The land-ice pressure when the latest GLC geometry arrived, from which the pressure ramps to GLC's over a GLC coupling interval if config_glc_ice_shelf_coupling_ramp_land_ice_pressure is .true."
 			packages="landIceGlcCouplingPKG"
 		/>
 		<var name="landIceFreshwaterFluxNotSentToGlc" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
