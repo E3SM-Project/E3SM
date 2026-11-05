@@ -168,3 +168,8 @@ add_subdirectory(coupler_api)
 if(EMULATOR_ENABLE_TESTS)
 add_subdirectory(tests)
 endif()
+
+option(EMULATOR_ENABLE_DEMOS "Build the emulator demos" OFF)
+if(EMULATOR_ENABLE_DEMOS)
+  add_subdirectory(demos)
+endif()

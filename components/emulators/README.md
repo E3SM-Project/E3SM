@@ -2,8 +2,8 @@
 
 This package provides the infrastructure needed to couple an emulator with E3SM.
 The emulators are fully configurable via `yaml` configuration files that can be generated
-using the python script in `./scripts/create_emulator_config_files.py`.
-See example in `./scripts/create_coupling_test_files.py` that is used to generate config files for tests.
+using the python script in `./scripts/config/create_emulator_config_files.py`.
+See example in `./scripts/config/create_coupling_test_files.py` that is used to generate config files for tests.
 
 The required files for running an emulator are:
 
@@ -23,7 +23,8 @@ These names are a convention. The code takes the paths as arguments, so the file
 - `inference/`: implementation of available inference backends (`LIBTORCH` and `PYTHON`, plus a `STUB` for testing) for invoking an emulator.
 - `coupler_api/`: API layer for emulators to exchange data with other emulators.
 - `interface/`: implementation of the `Harness` to allow emulators to exchange with `CPL7`.
-- `scripts/`: python helpers for generating configuration files.
+- `scripts/`: python helpers for generating configuration files, along with other tools. See `scripts/README.md`.
+- `demos/`: examples that run real models through the package. Use `./run_demos` to run them, and see `demos/SamudrACE/README.md`.
 - `tests/`: tests for the emulator and inference layers, along with their fixtures. `coupler_api/` and `interface/` have their own `tests/` directories.
 
 ## Configuration
@@ -78,7 +79,7 @@ CouplingPlan(
 ).write("coupling_plan.yaml")
 ```
 
-To regenerate the test configurations, run `python scripts/create_coupling_test_files.py`. The files are written to the current directory.
+To regenerate the test configurations, run `python scripts/config/create_coupling_test_files.py`. The files are written to the current directory.
 
 A field that an emulator both reads and writes needs a `PrognosticField`, which creates the plan entries described in [Prognostic fields](#prognostic-fields). `prognostic_fields` finds those fields in a config. The `cpl7` config must list each one in both its inputs and outputs:
 
@@ -98,10 +99,10 @@ plan = CouplingPlan(
 
 ### Getting the fields from an `fme` checkpoint
 
-For a coupled `fme` model such as SamudrACE, `scripts/extract_fme_fields.py` writes the model's inputs and outputs, in order, to a YAML field list. It also records each component's timestep and forcing fields, and the fields the components exchange. It must run in an environment with `fme` installed:
+For a coupled `fme` model such as SamudrACE, `scripts/config/extract_fme_fields.py` writes the model's inputs and outputs, in order, to a YAML field list. It also records each component's timestep and forcing fields, and the fields the components exchange. It must run in an environment with `fme` installed:
 
 ```bash
-python scripts/extract_fme_fields.py checkpoints/C1A0.tar -o fields.yaml
+python scripts/config/extract_fme_fields.py checkpoints/C1A0.tar -o fields.yaml
 ```
 
 `emulator_config_from_field_list` then creates a config from that list, without needing `fme` or torch:
@@ -377,6 +378,7 @@ ctest --test-dir build --output-on-failure
 | `EMULATOR_ENABLE_TESTS` | `ON` | Build the tests. |
 | `EMULATOR_ENABLE_LIBTORCH` | `OFF` | Build the LibTorch backend. |
 | `EMULATOR_ENABLE_PYTHON` | `OFF` | Build the Python backend. Requires the Python development files. |
+| `EMULATOR_ENABLE_DEMOS` | `OFF` | Build the programs in `demos/`. |
 | `EMULATOR_TORCH_PYTHON` | `python3` | Interpreter used to locate LibTorch and write the test fixtures. |
 | `EMULATOR_LIBTORCH_VERSION` | `2.5.1` | LibTorch version to download. |
 | `EMULATOR_LIBTORCH_VARIANT` | `auto` | LibTorch build to download: `auto`, `cpu`, `cu118`, `cu121`, `cu124`, or `rocm6.2`. |
