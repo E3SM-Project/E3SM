@@ -314,14 +314,14 @@ add_omega_test(
     "-n;8"
 )
 
-##############################
-# Driver-owned IO params test
-##############################
+###############################
+# Coupled (driver-owned) IO init test
+###############################
 
 add_omega_test(
-    IO_INIT_PARAMS_TEST
-    testIOInitParams.exe
-    base/IOInitParamsTest.cpp
+    IO_COUPLED_INIT_TEST
+    testIOCoupledInit.exe
+    base/IOCoupledInitTest.cpp
     "-n;8"
 )
 
