@@ -130,6 +130,12 @@ module ocn_comp_mct
 
    real (kind=RKIND) :: precFactor
 
+   ! ramping the land-ice pressure imported from glc over a glc coupling interval
+   logical, private :: rampLandIcePressure = .false.
+   integer, private :: glc_cpl_dt = 0       ! glc coupling interval (s), from GLC_NCPL
+   type (MPAS_Time_type), private :: glcCouplingRefTime  ! the start of this run segment's first glc interval
+   integer (kind=I8KIND), private :: lastLandIcePressureRamp = -huge(1_I8KIND)  ! the last ramp begun
+
 !=======================================================================
 
 contains
@@ -948,6 +954,7 @@ contains
                               "config_land_ice_flux_mode = 'active' and config_use_land_ice_pressure = .true.", &
                               MPAS_LOG_CRIT)
        end if
+       call ocn_init_land_ice_pressure_ramp(EClock)
     end if
     call seq_infodata_PutData(infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                               ocn_c2_glcshelf=ocn_c2_glcshelf)
@@ -3177,10 +3184,31 @@ contains
    real (kind=RKIND) :: belowSeaLevelFraction, glcFloatingFraction, floatingFraction, &
                         importedFloatingFraction
 
+   real (kind=RKIND), dimension(:), pointer :: landIcePressureRampStart
+
+   logical :: newRamp
+   real (kind=RKIND) :: rampWeight
+
    call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_min_floating_fraction', &
                              config_glc_ice_shelf_coupling_min_floating_fraction)
    call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_import_geometry', &
                              config_glc_ice_shelf_coupling_import_geometry)
+
+   if (rampLandIcePressure) then
+      ! where the ramp stands in the current glc coupling interval and, if this is the
+      ! interval's first import, start a new ramp from the pressure the ocean has now
+      call ocn_land_ice_pressure_ramp_position(newRamp, rampWeight)
+      if (newRamp) then
+         block_ptr => domain % blocklist
+         do while(associated(block_ptr))
+            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+            call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+            call mpas_pool_get_array(forcingPool, 'landIcePressureRampStart', landIcePressureRampStart)
+            landIcePressureRampStart(:) = landIcePressure(:)
+            block_ptr => block_ptr % next
+         end do
+      end if
+   end if
 
    n = 0
    block_ptr => domain % blocklist
@@ -3196,6 +3224,9 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceGlcFloatingFraction', landIceGlcFloatingFraction)
       call mpas_pool_get_array(forcingPool, 'landIceConductiveHeatFlux', landIceConductiveHeatFlux)
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      if (rampLandIcePressure) then
+         call mpas_pool_get_array(forcingPool, 'landIcePressureRampStart', landIcePressureRampStart)
+      end if
 
       do i = 1, nCellsSolve
          n = n + 1
@@ -3226,6 +3257,13 @@ contains
             else
                landIceMask(i) = 0
             end if
+         end if
+
+         ! ramp the pressure from where it was when glc's geometry arrived to glc's
+         ! over the glc coupling interval.  The fractions and mask follow glc at once.
+         if (rampLandIcePressure) then
+            landIcePressure(i) = landIcePressureRampStart(i) &
+                                 + rampWeight * (landIcePressure(i) - landIcePressureRampStart(i))
          end if
 
          ! spread glc's conductive heat over the ocean's floating area when the
@@ -3279,6 +3317,120 @@ contains
 !EOC
 
  end subroutine ocn_import_glc_shelf_mct!}}}
+!***********************************************************************
+!BOP
+! !IROUTINE: ocn_init_land_ice_pressure_ramp
+! !INTERFACE:
+
+ subroutine ocn_init_land_ice_pressure_ramp(EClock)!{{{
+
+! !DESCRIPTION:
+!  If config_glc_ice_shelf_coupling_ramp_land_ice_pressure is .true. and the
+!  land-ice geometry is imported from glc, get glc's coupling interval, which
+!  E3SM sets from GLC_NCPL, and set the start of the first glc coupling
+!  interval to the driver's current time, as the driver sets glc's run alarm
+!  from the time it starts or restarts.  (In an initial run, the ocean's own
+!  clock is already one coupling interval ahead.)  The driver adds
+!  glc_cpl_offset to that time, but no E3SM configuration sets it from its
+!  default of 0, so the offset is taken to be 0.
+!
+! !INPUT PARAMETERS:
+
+   type(ESMF_Clock), intent(in) :: EClock
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   logical, pointer :: config_glc_ice_shelf_coupling_ramp_land_ice_pressure, &
+                       config_glc_ice_shelf_coupling_import_geometry
+
+   integer, pointer :: config_glc_ice_shelf_coupling_interval
+
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_ramp_land_ice_pressure', &
+                             config_glc_ice_shelf_coupling_ramp_land_ice_pressure)
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_import_geometry', &
+                             config_glc_ice_shelf_coupling_import_geometry)
+   rampLandIcePressure = config_glc_ice_shelf_coupling_ramp_land_ice_pressure .and. &
+                         config_glc_ice_shelf_coupling_import_geometry
+   if (.not. rampLandIcePressure) return
+
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_interval', &
+                             config_glc_ice_shelf_coupling_interval)
+   glc_cpl_dt = config_glc_ice_shelf_coupling_interval
+   if (glc_cpl_dt <= 0) then
+      call mpas_log_write('config_glc_ice_shelf_coupling_ramp_land_ice_pressure = .true. requires ' // &
+                          'a positive config_glc_ice_shelf_coupling_interval', MPAS_LOG_CRIT)
+   end if
+
+   call seq_timemgr_EClockGetData(EClock, ECurrTime=glcCouplingRefTime % t)
+
+   call mpas_log_write('Ramping land-ice pressure from glc over glc coupling intervals of $i s', &
+                       intArgs=(/glc_cpl_dt/))
+
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ocn_init_land_ice_pressure_ramp!}}}
+
+!***********************************************************************
+!BOP
+! !IROUTINE: ocn_land_ice_pressure_ramp_position
+! !INTERFACE:
+
+ subroutine ocn_land_ice_pressure_ramp_position(newRamp, rampWeight)!{{{
+
+! !DESCRIPTION:
+!  From the ocean's clock, find whether this import is the first of a new
+!  glc coupling interval, so a new ramp starts, and the weight of glc's
+!  pressure, which reaches 1 at the end of the interval's last ocean coupling
+!  interval.  An import repeated in the same interval, as at a restart, does
+!  not start the ramp again.  Restarts fall on glc coupling intervals, since
+!  glc writes restarts only at the end of one.
+!
+! !OUTPUT PARAMETERS:
+
+   logical, intent(out) :: newRamp
+   real (kind=RKIND), intent(out) :: rampWeight
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   type (MPAS_Time_type) :: currTime
+   type (MPAS_TimeInterval_type) :: elapsed
+   integer :: days, ierr
+   integer (kind=I8KIND) :: seconds, interval, timeInInterval
+
+   currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+   elapsed = currTime - glcCouplingRefTime
+   call mpas_get_timeInterval(elapsed, DD=days, S_i8=seconds, ierr=ierr)
+   seconds = int(days, I8KIND) * 86400_I8KIND + seconds
+
+   ! floor division, so times before the first interval belong to interval -1
+   interval = seconds / int(glc_cpl_dt, I8KIND)
+   if (seconds < 0 .and. mod(seconds, int(glc_cpl_dt, I8KIND)) /= 0) interval = interval - 1
+   timeInInterval = seconds - interval * int(glc_cpl_dt, I8KIND)
+
+   newRamp = (interval /= lastLandIcePressureRamp)
+   if (newRamp) lastLandIcePressureRamp = interval
+
+   rampWeight = min(1.0_RKIND, real(timeInInterval + int(ocn_cpl_dt, I8KIND), RKIND) &
+                               / real(glc_cpl_dt, RKIND))
+
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ocn_land_ice_pressure_ramp_position!}}}
+
 !***********************************************************************
 !BOP
 ! !IROUTINE: ocn_export_mct
