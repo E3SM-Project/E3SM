@@ -52,28 +52,44 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine IrrigationDemandAdvance(bounds, driver_time, land_dt, river_dt, river_phase)
+    !
+    ! !DESCRIPTION:
+    ! Advance the patch surface-water irrigation request pipeline 
+    !
+    ! !USES:
     use IrrigationAllocationMod, only : IrrigationDemandWindow, IrrigationWindowCloses
     use elm_time_manager, only : get_step_size
-    type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in) :: driver_time
-    integer, intent(in) :: land_dt, river_dt, river_phase
-    integer :: begp, endp
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds      ! processor bounds
+    real(r8), intent(in) :: driver_time          ! current driver clock time [days]
+    integer, intent(in) :: land_dt               ! land coupling interval [s]; must equal the ELM step size
+    integer, intent(in) :: river_dt              ! river coupling interval, i.e. length of the irrigation request window [s]
+    integer, intent(in) :: river_phase           ! offset of the river run within river_dt, from the driver clock [s]
+    !
+    ! !LOCAL VARIABLES:
+    integer :: begp, endp                        ! patch bounds
+
     if (.not. (irrigate .and. tw_irr)) return
+
     ! The current ELM interface exports the last internal step, rather than
     ! averaging substeps. Do not silently construct different request windows.
     if (river_dt <= 0 .or. land_dt /= get_step_size()) &
          call endrun('Demand irrigation requires one ELM step per land coupling interval')
+
     if (mod(river_dt,land_dt) /= 0 .or. mod(river_phase,land_dt) /= 0) &
          call endrun('Demand irrigation requires aligned land and river coupling intervals')
+
     begp = bounds%begp
     endp = bounds%endp
+    
     ! Land imports precede the river run at a shared driver tick. A window
     ! closed now is delivered starting at the NEXT land import.
     call IrrigationDemandWindow(veg_wf%irrig_demand_accum(begp:endp), &
          veg_wf%irrig_demand_pending(begp:endp), veg_wf%irrig_demand_lag(begp:endp), &
          IrrigationWindowCloses(driver_time,river_dt,river_phase), river_dt)
   end subroutine IrrigationDemandAdvance
-
+  !-----------------------------------------------------------------------
   subroutine CanopyHydrology_readnl( NLFilename )
     !
     ! !DESCRIPTION:
@@ -449,7 +465,9 @@ contains
                     (col_pp%is_soil(c) .or. col_pp%is_crop(c))) then
                   ! Return unmatched or excess river deliveries without wetting soil.
                   if (return_area(g) > 0._r8) qflx_over_supply(p) = returned_supply(g)/return_area(g)
+
                   if (irrigated(veg_pp%itype(p)) == 1) then
+                     !distribute irrigation by relative demand
                      call IrrigationDemandFlux(veg_wf%irrig_demand_lag(p), grid_request(g), &
                           atm2lnd_vars%supply_grc(g), atm2lnd_vars%deficit_grc(g), nonlake_area(g), &
                           extra_gw_irr, allocated_surface, allocated_groundwater)
