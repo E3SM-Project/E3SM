@@ -10,7 +10,7 @@
 #
 
 physical_constants_dictionary:
-  version_number: 0.2.0
+  version_number: 0.3.0
   institution: E3SM Project
   description: Community-based dictionary for consistent physical constant sets
   contact: E3SM Project
@@ -219,6 +219,22 @@ physical_constants_dictionary:
             description: "
               Square root of 3.
             "
+    - unit_conversions:
+        description: "
+          Exact conversions between SI units and accepted non-SI units.
+        "
+        entries:
+          - name: seconds_per_day
+            value: 86400
+            units: s
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: SI2019
+            description: "
+              Duration of the day unit: 1 d = 24 h = 86400 s exactly.
+              Not a sidereal day or a UTC day containing a leap second.
+            "
     - universal_physical:
         description: "
           Fundamental Physical Constants
@@ -359,6 +375,17 @@ physical_constants_dictionary:
             reference: IUPAC1997
             description: "
               Reference molar mass of elemental oxygen.
+            "
+          - name: iron_molar_mass_reference
+            value: 0.055845
+            units: kg mol-1
+            prec: double
+            type: strict
+            uncertainty: 2.0E-06
+            reference: IUPAC1997
+            description: "
+              Reference molar mass of naturally occurring elemental iron,
+              corresponding to the IUPAC standard atomic weight 55.845(2).
             "
           - name: carbon_dioxide_molar_mass_reference
             formula: carbon_molar_mass_reference + 2 * oxygen_molar_mass_reference
