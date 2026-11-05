@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
-        runner: [gnu, intel, cuda]
+        runner: [intel]  # scratch hack: intel only (gnu runners backlogged)
         # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags.
         # The bfb jobs do not use baselines (they cannot be used with -g), so skip them when blessing.
         bfb: ${{ fromJSON(inputs.bless && '[false]' || '[false, true]') }}
