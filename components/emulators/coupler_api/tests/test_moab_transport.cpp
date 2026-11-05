@@ -141,7 +141,7 @@ TEST_CASE("Transport redistributes fields between component rank groups",
 
   // Explicitly initialize destination tags too, so stale/default values
   // cannot accidentally satisfy the checks.
-  // adapter.write_tag("temperature", temperature);
+  adapter.write_tag("temperature", temperature);
   adapter.write_tag("soil_moisture", moisture);
 
   // SANITY CHECK
@@ -155,7 +155,7 @@ TEST_CASE("Transport redistributes fields between component rank groups",
   } else {
     transport.receive_imports("land");
   }
-  // adapter.read_tag("temperature", temperature);
+  adapter.read_tag("temperature", temperature);
   adapter.read_tag("soil_moisture", moisture);
 
   // Finish communication on every rank before any value assertions.

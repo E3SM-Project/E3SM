@@ -9,6 +9,7 @@
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <filesystem>
+#include <sstream>
 #include <process.hpp>
 
 enum class Layout {
@@ -114,6 +115,43 @@ std::span<double> FakeExt::moisture() {
 }
 std::span<double> FakeExt::surface_flux() {
   return std::span<double>{l2x.data() + indices[2].offset, indices[2].extent};
+}
+
+TEST_CASE("Harness reports misuse clearly", "[harness]") {
+  using Catch::Contains;
+  Harness harness;
+
+  REQUIRE_THROWS_WITH(harness.run_process("lnd-emulator"),
+                      Contains("'lnd-emulator'") &&
+                          Contains("before initialize()"));
+
+  std::ostringstream out;
+  REQUIRE_THROWS_WITH(harness.print_bindings(out),
+                      Contains("transfer_bindings()"));
+
+  harness.transfer_bindings(ExternalBindings{});
+  REQUIRE_THROWS_WITH(harness.transfer_bindings(ExternalBindings{}),
+                      Contains("already set"));
+}
+
+TEST_CASE("Harness prints its external bindings on request", "[harness]") {
+  using Catch::Contains;
+  std::vector<double> to_external{1.5, 2.5};
+  std::vector<double> from_external{3.5};
+
+  Harness harness;
+  harness.transfer_bindings(ExternalBindings{
+      .to_external = {{"surface_flux", to_external}},
+      .from_external = {{"temperature", from_external}},
+  });
+
+  std::ostringstream out;
+  harness.print_bindings(out);
+
+  REQUIRE_THAT(out.str(), Contains("to_external") &&
+                              Contains("surface_flux") && Contains("1.5") &&
+                              Contains("2.5") && Contains("from_external") &&
+                              Contains("temperature") && Contains("3.5"));
 }
 
 TEST_CASE("Harness preserves results across external buffer layouts",

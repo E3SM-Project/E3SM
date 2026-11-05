@@ -11,21 +11,34 @@ namespace e3sm::emulator {
 static_assert(CoupledProcess<CPL7Component>);
 
 void Harness::transfer_bindings(ExternalBindings bindings) {
+  if (external_component_ != nullptr) {
+    throw std::runtime_error(
+        "Harness::transfer_bindings: bindings were already set");
+  }
 
   auto external = std::make_unique<CPL7Component>();
   CPL7Component* view = external.get();
 
-  external->attach_fields(bindings);
+  external->attach_fields(std::move(bindings));
   driver_.add_component(std::move(external));
 
   external_component_ = view;
 }
 
+void Harness::print_bindings(std::ostream& os) const {
+  if (external_component_ == nullptr) {
+    throw std::runtime_error(
+        "Harness::print_bindings: call transfer_bindings() first");
+  }
+  external_component_->print_bindings(os);
+}
+
 void Harness::initialize(const std::filesystem::path& plan,RouteBufferMap external) {
   if (initialized_) {
-    throw std::runtime_error("Harness already initialized");
+    throw std::runtime_error("Harness::initialize: already initialized");
   }
   driver_.initialize(plan,external);
+  initialized_ = true;
 }
 
 void Harness::add_process(ProcessDescriptor desc) {
@@ -36,13 +49,22 @@ void Harness::add_process(ProcessDescriptor desc) {
 }
 
 void Harness::run_process(std::string_view name) {
+  if (!initialized_) {
+    throw std::runtime_error("Harness: cannot run process '" +
+                             std::string(name) + "' before initialize()");
+  }
+
   ProcessMap::iterator it = processes_.find(std::string(name));
 
   if (it == processes_.end()) {
-    throw std::runtime_error("Invalid name for BoundProcess " +
-                             std::string(name));
+    std::string known;
+    for (const auto& [process, opts] : processes_) {
+      known += (known.empty() ? "" : ", ") + process;
+    }
+    throw std::runtime_error("Harness: no process named '" + std::string(name) +
+                             "'. Processes added: " +
+                             (known.empty() ? "none" : known));
   }
-  external_component_->print_bindings();
   driver_.run_component(name, it->second);
 }
 

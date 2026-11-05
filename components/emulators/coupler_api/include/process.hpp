@@ -4,6 +4,8 @@
 #include <field_registry.hpp>
 #include <memory>
 #include <span>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <typeindex>
 #include <vector>
@@ -84,7 +86,8 @@ public:
 
   template <typename C> C& as() {
     if (type_ != std::type_index(typeid(C))) {
-      throw std::bad_cast{};
+      throw std::runtime_error("Component '" + std::string(name()) +
+                               "' is not of the requested type");
     }
     return *static_cast<C*>(object_.get());
   }

@@ -28,7 +28,8 @@ TensorLayout get_layout_from_string(std::string layout) {
   } else if (layout == "FeatureMajor") {
     return TensorLayout::FeatureMajor;
   }
-  throw std::runtime_error("Unknown Layout requested: " + layout);
+  throw std::runtime_error("Unknown tensor layout '" + layout +
+                           "' (expected 'FeatureMajor' or 'SampleMajor')");
 }
 
 inference::BackendType get_backend_type_from_string(std::string type) {
@@ -42,8 +43,8 @@ inference::BackendType get_backend_type_from_string(std::string type) {
   } else if (type == "stub") {
     return inference::BackendType::STUB;
   }
-  throw std::runtime_error("Unrecognized BackendType requested! " +
-                           std::string(type));
+  throw std::runtime_error("Unknown inference backend '" + type +
+                           "' (expected 'libtorch', 'python', or 'stub')");
 }
 
 std::string to_string(TensorLayout layout) {
@@ -90,56 +91,61 @@ std::string filepath_to_absolute(const std::filesystem::path& parent_dir,
  */
 EmulatorConfig read_emulator_config(const std::filesystem::path& filename) {
   if (!std::filesystem::exists(filename)) {
-    throw std::runtime_error("Coupling configuration file not found: " +
+    throw std::runtime_error("Emulator configuration file not found: " +
                              filename.string());
   }
 
-  const ekat::ParameterList params = ekat::parse_yaml_file(filename.string());
-  EmulatorConfig cfg;
+  try {
+    const ekat::ParameterList params = ekat::parse_yaml_file(filename.string());
+    EmulatorConfig cfg;
 
-  const auto& attrs = params.sublist("emulator");
-  cfg.name = attrs.get<std::string>("name");
-  cfg.type = attrs.get<std::string>("type");
+    const auto& attrs = params.sublist("emulator");
+    cfg.name = attrs.get<std::string>("name");
+    cfg.type = attrs.get<std::string>("type");
 
-  // Get Model network configuration
-  const auto config_dir = std::filesystem::absolute(filename).parent_path();
+    // Get Model network configuration
+    const auto config_dir = std::filesystem::absolute(filename).parent_path();
 
-  const auto& model_attrs = attrs.sublist("model");
+    const auto& model_attrs = attrs.sublist("model");
 
-  // get model path and convert to absolute
-  cfg.model.path =
-      filepath_to_absolute(config_dir, model_attrs.get<std::string>("path"));
+    // get model path and convert to absolute
+    cfg.model.path =
+        filepath_to_absolute(config_dir, model_attrs.get<std::string>("path"));
 
-  cfg.model.output_layout =
-      get_layout_from_string(model_attrs.get<std::string>("output_layout"));
-  cfg.model.input_layout =
-      get_layout_from_string(model_attrs.get<std::string>("input_layout"));
-  cfg.model.backend_type =
-      get_backend_type_from_string(model_attrs.get<std::string>("backend"));
+    cfg.model.output_layout =
+        get_layout_from_string(model_attrs.get<std::string>("output_layout"));
+    cfg.model.input_layout =
+        get_layout_from_string(model_attrs.get<std::string>("input_layout"));
+    cfg.model.backend_type =
+        get_backend_type_from_string(model_attrs.get<std::string>("backend"));
 
-  const auto& backend_options = model_attrs.sublist("options");
-  const auto& labels = backend_options.param_names();
-  for (const auto& label : labels) {
-    cfg.model.options[label] = backend_options.get<std::string>(label);
+    const auto& backend_options = model_attrs.sublist("options");
+    const auto& labels = backend_options.param_names();
+    for (const auto& label : labels) {
+      cfg.model.options[label] = backend_options.get<std::string>(label);
+    }
+    // Check that the python module name is specified
+    if (!cfg.model.options.contains("python_module") and
+        cfg.model.backend_type == inference::BackendType::PYTHON) {
+      throw std::runtime_error(
+          "the python backend requires the 'python_module' option");
+    }
+
+    // Get Sample Space Information
+    const auto& sample_info = params.sublist("sample_space");
+    cfg.dimensions = sample_info.get<std::vector<std::string>>("dimensions");
+
+    cfg.input_order = params.get<std::vector<std::string>>("input_order");
+    cfg.output_order = params.get<std::vector<std::string>>("output_order");
+    // Get inputs
+    cfg.inputs = read_fields(params, "inputs");
+    // Get outputs
+    cfg.outputs = read_fields(params, "outputs");
+    return cfg;
+  } catch (const std::exception& e) {
+    throw std::runtime_error("Failed to read emulator configuration '" +
+                             filename.string() + "': " + e.what());
   }
-  // Check that the python module name is specified
-  if (!cfg.model.options.contains("python_module") and
-      cfg.model.backend_type == inference::BackendType::PYTHON) {
-    throw std::runtime_error(
-        "PythonBackend REQUIRES 'python_module' option to be specified");
-  }
-
-  // Get Sample Space Information
-  const auto& sample_info = params.sublist("sample_space");
-  cfg.dimensions = sample_info.get<std::vector<std::string>>("dimensions");
-
-  cfg.input_order = params.get<std::vector<std::string>>("input_order");
-  cfg.output_order = params.get<std::vector<std::string>>("output_order");
-  // Get inputs
-  cfg.inputs = read_fields(params, "inputs");
-  // Get outputs
-  cfg.outputs = read_fields(params, "outputs");
-  return cfg;
 }
 
 std::string to_string(const ModelConfig& cfg) {

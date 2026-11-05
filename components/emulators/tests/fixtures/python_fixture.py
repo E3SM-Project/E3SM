@@ -19,6 +19,8 @@ class Model:
         self.scale = float(config["scale"])
         self.steps = 0
         self.finalized = False
+        self.finalize_marker = config.get("finalize_marker")
+        self.fail_finalize = config.get("fail_finalize") == "true"
 
     def infer(self, inputs, outputs):
         x = inputs["x"]
@@ -37,3 +39,8 @@ class Model:
         if self.finalized:
             raise AssertionError("finalize() was called twice")
         self.finalized = True
+        if self.finalize_marker:
+            with open(self.finalize_marker, "w") as marker:
+                marker.write("finalized")
+        if self.fail_finalize:
+            raise RuntimeError("deliberate failure in finalize")

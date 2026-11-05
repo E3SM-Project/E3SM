@@ -2,19 +2,18 @@
 #include "process.hpp"
 #include <algorithm>
 #include <coupler_driver.hpp>
-#include <iostream>
 #include <stdexcept>
+#include <string>
 
 namespace e3sm::coupler {
 void CouplerDriver::initialize(const std::string& filename,
                                RouteBufferMap external_buffers) {
   if (initialized_) {
-    throw std::runtime_error("CouplerDriver: already initialized!");
+    throw std::runtime_error("CouplerDriver::initialize: already initialized");
   }
   for (auto& component : components_) {
     component.populate_registry(coupler_.registry());
   }
-  std::cout << coupler_.registry().to_string() << std::endl;
 
   coupler_.build_routes(filename);
   coupler_.build_buffers(external_buffers);
@@ -25,7 +24,6 @@ void CouplerDriver::initialize(const std::string& filename,
     component.configure_coupling(plan);
   }
 
-  coupler_.print_coupling_plan(std::cout);
   initialized_ = true;
 }
 
@@ -35,8 +33,15 @@ AnyComponent& CouplerDriver::get_component(std::string_view name) {
           [name](AnyComponent& comp) { return name == comp.name(); });
       result != components_.end())
     return *result;
-  else
-    throw std::runtime_error("Invalid component requested" + std::string(name));
+  else {
+    std::string known;
+    for (const auto& component : components_) {
+      known += (known.empty() ? "" : ", ") + std::string(component.name());
+    }
+    throw std::runtime_error("CouplerDriver: no component named '" +
+                             std::string(name) + "'. Components added: " +
+                             (known.empty() ? "none" : known));
+  }
 }
 
 void CouplerDriver::run_component(std::string_view name,
@@ -48,26 +53,24 @@ void CouplerDriver::run_component(std::string_view name,
 }
 
 void CouplerDriver::export_component(std::string_view name) {
+  require_initialized("export", name);
   auto& comp = get_component(name);
-  const auto& buffers = coupler_.export_buffers(name);
-  comp.export_fields(buffers);
-
-  std::cout << "Export buffers for " << name << " after export\n";
-  for (const auto& buf : buffers) {
-    coupler_.print_field_buffer(std::cout, buf.id, buf.data, 10);
-  }
-  std::cout << std::endl;
+  comp.export_fields(coupler_.export_buffers(name));
 }
-void CouplerDriver::import_component(std::string_view name) {
-  auto& comp = get_component(name);
-  const auto& buffers = coupler_.import_buffers(name);
 
-  comp.import_fields(buffers);
-  std::cout << "imported to " << name << std::endl;
-  for (const auto& buf : buffers) {
-    coupler_.print_field_buffer(std::cout, buf.id, buf.data, 10);
+void CouplerDriver::import_component(std::string_view name) {
+  require_initialized("import", name);
+  auto& comp = get_component(name);
+  comp.import_fields(coupler_.import_buffers(name));
+}
+
+void CouplerDriver::require_initialized(std::string_view action,
+                                        std::string_view name) const {
+  if (!initialized_) {
+    throw std::runtime_error("CouplerDriver: cannot " + std::string(action) +
+                             " '" + std::string(name) +
+                             "' before initialize()");
   }
-  std::cout << std::endl;
 }
 
 } // namespace e3sm::coupler

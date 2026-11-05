@@ -53,8 +53,15 @@ const DimensionDesc& Emulator::dimension(std::string_view name) const {
   const auto it =
       std::ranges::find(m_grid.dimensions, name, &DimensionDesc::name);
   if (it == m_grid.dimensions.end()) {
-    throw std::runtime_error("Requested invalid dimension name: " +
-                             std::string(name));
+    std::string known;
+    for (const auto& dim : m_grid.dimensions) {
+      known += (known.empty() ? "" : ", ") + dim.name;
+    }
+    throw std::runtime_error("Emulator '" + m_name + "': dimension '" +
+                             std::string(name) +
+                             "' is not defined by its GridDesc. Defined "
+                             "dimensions: " +
+                             (known.empty() ? "none" : known));
   }
   return *it;
 }
@@ -67,7 +74,8 @@ Emulator::get_field_descriptor(std::string_view name) const {
                           return field.config.name;
                         });
   if (it == field_descriptors_.end()) {
-    throw std::runtime_error("Requested field not found: " + std::string(name));
+    throw std::runtime_error("Emulator '" + m_name + "': no field named '" +
+                             std::string(name) + "'");
   }
   return *it;
 }
@@ -85,7 +93,7 @@ std::size_t Emulator::local_field_size(const FieldConfig& field) const {
   std::size_t size = 1;
 
   if (field.dimensions.empty()) {
-    throw std::runtime_error("Field '" + field.name +
+    throw std::runtime_error("Emulator '" + m_name + "': field '" + field.name +
                              "' does not declare any dimensions");
   }
 
@@ -93,8 +101,8 @@ std::size_t Emulator::local_field_size(const FieldConfig& field) const {
     const auto& desc = dimension(dim_name);
     if (desc.local_extent == 0) {
       throw std::runtime_error(
-          "Dimension '" + dim_name +
-          "' has zero local extent for field: " + field.name);
+          "Emulator '" + m_name + "': dimension '" + dim_name +
+          "' of field '" + field.name + "' has zero local extent");
     }
     if (size > std::numeric_limits<std::size_t>::max() / desc.local_extent) {
       throw std::runtime_error("Inappropriate dimensions for field:\n" +
@@ -114,7 +122,10 @@ std::size_t Emulator::append_fields(std::span<const std::string> order,
   for (const std::string& field_name : order) {
     auto field = std::ranges::find(fields, field_name, &FieldConfig::name);
     if (field == fields.end()) {
-      throw std::runtime_error("Field " + field_name + " Not in fields");
+      const auto* order_key = role == ModelFieldRole::Input ? "input" : "output";
+      throw std::runtime_error("Emulator '" + m_name + "': field '" + field_name +
+                               "' is listed in " + order_key +
+                               "_order but not defined in " + order_key + "s");
     }
     const auto field_size = local_field_size(*field);
 
@@ -178,9 +189,6 @@ void Emulator::apply_config(const EmulatorConfig& config) {
   const auto output_size = append_fields(config.output_order, config.outputs,
                                          ModelFieldRole::Output);
 
-  // for (const auto& field : field_descriptors()) {
-  //   std::cout << to_string(field) << std::endl;
-  // }
   input_fields_.resize(input_size);
   output_fields_.resize(output_size);
 
@@ -190,13 +198,23 @@ void Emulator::apply_config(const EmulatorConfig& config) {
   infer_config.input_channels = config.inputs.size();
   infer_config.output_channels = config.outputs.size();
 
-  backend_ = inference::create_backend(m_emulator_config.model.backend_type,
-                                       infer_config);
+  try {
+    backend_ = inference::create_backend(m_emulator_config.model.backend_type,
+                                         infer_config);
+  } catch (const std::exception& e) {
+    throw std::runtime_error("Emulator '" + m_name +
+                             "': failed to create the inference backend: " +
+                             e.what());
+  }
 }
 
 void Emulator::initialize() {
+  if (m_finalized) {
+    throw std::runtime_error("Emulator '" + m_name +
+                             "': cannot initialize after finalize()");
+  }
   if (m_initialized) {
-    throw std::runtime_error("Emulator already initialized");
+    throw std::runtime_error("Emulator '" + m_name + "': already initialized");
   }
   apply_config(m_emulator_config);
   m_coupling.set_local_gids(m_grid.col_gids);
@@ -209,8 +227,8 @@ void Emulator::initialize() {
 void Emulator::populate_registry(FieldRegistry& registry) {
 
   if (!m_initialized) {
-    throw std::logic_error(
-        "Cannot populate registry before emulator initialization");
+    throw std::logic_error("Emulator '" + m_name +
+                           "': cannot populate the registry after finalize()");
   }
 
   for (const auto& field : field_descriptors_) {
@@ -221,7 +239,8 @@ void Emulator::populate_registry(FieldRegistry& registry) {
 
 void Emulator::run(const ProcessRunOpts opts) {
   if (!m_initialized) {
-    throw std::runtime_error("Emulator::run() called before initialize()");
+    throw std::runtime_error("Emulator '" + m_name +
+                             "': run() called after finalize()");
   }
 
   // wrap input/output fields in tensor maps
@@ -240,29 +259,39 @@ void Emulator::run(const ProcessRunOpts opts) {
       outputs.wrap(field.config.name, values.data(), dims);
     }
   }
-  backend_->infer(inputs, outputs);
+  try {
+    if (!backend_->infer(inputs, outputs)) {
+      throw std::runtime_error("the backend reported a failure");
+    }
+  } catch (const std::exception& e) {
+    throw std::runtime_error("Emulator '" + m_name + "': inference failed at step " +
+                             std::to_string(m_step_count) + ": " + e.what());
+  }
 
   m_step_count++;
 }
 
 void Emulator::finalize() {
   if (!m_initialized) {
-    return; // Already finalized or never initialized
+    return; // Already finalized
   }
+  m_initialized = false;
+  m_finalized = true;
   backend_->finalize();
 
   if (m_moab) {
     m_moab.reset();
   }
-  m_initialized = false;
 }
 
 MoabTagDescriptor Emulator::make_moab_tag(const EmulatorFieldDesc& desc) const {
   if (desc.config.dimensions.empty()) {
-    throw std::runtime_error("No dimensions for field " + desc.config.name);
+    throw std::runtime_error("Emulator '" + m_name + "': field '" +
+                             desc.config.name + "' has no dimensions");
   }
   if (m_grid.num_local_columns == 0) {
-    throw std::runtime_error("No Local columns for this emulator!!");
+    throw std::runtime_error("Emulator '" + m_name +
+                             "': GridDesc has no local columns");
   }
   return MoabTagDescriptor{
       .name = desc.config.name,

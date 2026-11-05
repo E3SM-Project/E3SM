@@ -4,6 +4,7 @@
 #include "field_registry.hpp"
 #include "process.hpp"
 #include <coupler.hpp>
+#include <ostream>
 #include <stdexcept>
 #include <string_view>
 namespace e3sm::emulator {
@@ -44,19 +45,22 @@ public:
   }
 
   void run(const ProcessRunOpts opts) {
-    throw std::runtime_error("DON'T CALL RUN ON CPL7Component");
+    throw std::runtime_error(
+        "CPL7Component::run: cpl7 only exchanges external buffers and cannot "
+        "be run");
   }
   std::span<const int> get_local_gids() { return coupling_.get_local_gids(); }
 
   void attach_fields(ExternalBindings bindings);
 
-  void print_bindings();
+  /// Diagnostic: writes every value of every bound field to os.
+  void print_bindings(std::ostream& os) const;
 
 private:
   ExternalBindings bindings_;
   CouplingAdapter coupling_;
   bool initialized_ = false;
-  void print_binding(std::ostream& os, ExternalField field);
+  void print_binding(std::ostream& os, const ExternalField& field) const;
 };
 
 } // namespace e3sm::emulator

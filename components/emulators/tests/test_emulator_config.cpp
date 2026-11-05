@@ -7,6 +7,30 @@
 #include <string>
 #include <vector>
 
+TEST_CASE("Emulator config errors name the problem and the file") {
+  using Catch::Contains;
+  using e3sm::emulator::read_emulator_config;
+
+  SECTION("missing file") {
+    REQUIRE_THROWS_WITH(read_emulator_config("no_such_config.yaml"),
+                        Contains("Emulator configuration file not found") &&
+                            Contains("no_such_config.yaml"));
+  }
+
+  SECTION("unknown backend") {
+    REQUIRE_THROWS_WITH(
+        read_emulator_config(TEST_DATA_DIR "/invalid_backend_config.yaml"),
+        Contains("invalid_backend_config.yaml") &&
+            Contains("not_a_backend") && Contains("libtorch"));
+  }
+
+  SECTION("missing key") {
+    REQUIRE_THROWS_WITH(
+        read_emulator_config(TEST_DATA_DIR "/missing_key_config.yaml"),
+        Contains("missing_key_config.yaml") && Contains("output_order"));
+  }
+}
+
 TEST_CASE("Parse sample emulator config") {
   const std::filesystem::path config_file =
       TEST_DATA_DIR "/land_emulator_config.yaml";

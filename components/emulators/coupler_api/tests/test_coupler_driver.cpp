@@ -12,6 +12,135 @@ using namespace e3sm::coupler::test;
 static_assert(CoupledProcess<FakeAtmosphere>);
 static_assert(CoupledProcess<FakeLand>);
 
+namespace {
+// Registers nothing, so it can be added to a driver without being in the plan
+class UnplannedComponent {
+public:
+  static constexpr std::string_view name() { return "unplanned"; }
+  void populate_registry(FieldRegistry&) {}
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) {}
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+
+private:
+  CouplingAdapter coupling_;
+};
+static_assert(CoupledProcess<UnplannedComponent>);
+} // namespace
+
+TEST_CASE("CouplerDriver rejects an unknown merge type") {
+  constexpr std::size_t ncols = 4;
+
+  CouplerDriver driver{};
+
+  driver.add_component(std::make_unique<FakeAtmosphere>(ncols));
+  driver.add_component(std::make_unique<FakeLand>(ncols));
+
+  const std::string config = TEST_DATA_DIR "/invalid_merge_type.yaml";
+
+  REQUIRE_THROWS_WITH(driver.initialize(config),
+                      Catch::Matchers::Contains("Unknown merge type"));
+}
+
+TEST_CASE("CouplerDriver errors name the problem") {
+  using Catch::Matchers::Contains;
+  constexpr std::size_t ncols = 4;
+
+  CouplerDriver driver{};
+  driver.add_component(std::make_unique<FakeAtmosphere>(ncols));
+  driver.add_component(std::make_unique<FakeLand>(ncols));
+
+  SECTION("component in the driver but not the plan") {
+    driver.add_component(std::make_unique<UnplannedComponent>());
+    REQUIRE_THROWS_WITH(driver.initialize(TEST_DATA_DIR "/fake_coupling.yaml"),
+                        Contains("'unplanned'") &&
+                            Contains("not in the coupling plan") &&
+                            Contains("atm"));
+  }
+
+  SECTION("source that imports the field") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/source_imports_plan.yaml"),
+        Contains("'surface_flux'") && Contains("'atm'") &&
+            Contains("Sources must export"));
+  }
+
+  SECTION("destination that exports the field") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/destination_exports_plan.yaml"),
+        Contains("'temperature'") && Contains("'atm'") &&
+            Contains("Destinations must import"));
+  }
+
+  SECTION("component listed twice for a field") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/duplicate_destination_plan.yaml"),
+        Contains("'temperature'") && Contains("'lnd'") &&
+            Contains("more than once"));
+  }
+
+  SECTION("field with no destinations") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/no_destinations_plan.yaml"),
+        Contains("'temperature'") && Contains("no destinations"));
+  }
+
+  SECTION("field the component did not register") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/unknown_field_plan.yaml"),
+        Contains("'not_a_field'") && Contains("'atm'") &&
+            Contains("temperature"));
+  }
+
+  SECTION("component that was never added") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/unknown_component_plan.yaml"),
+        Contains("'ocn'") && Contains("added to the driver"));
+  }
+
+  SECTION("missing plan file") {
+    REQUIRE_THROWS_WITH(driver.initialize("no_such_plan.yaml"),
+                        Contains("Coupling plan file not found") &&
+                            Contains("no_such_plan.yaml"));
+  }
+
+  SECTION("exchange before initialize") {
+    REQUIRE_THROWS_WITH(driver.export_component("atm"),
+                        Contains("before initialize()"));
+    REQUIRE_THROWS_WITH(driver.import_component("atm"),
+                        Contains("before initialize()"));
+  }
+
+  SECTION("unknown component name") {
+    driver.initialize(TEST_DATA_DIR "/fake_coupling.yaml");
+    REQUIRE_THROWS_WITH(driver.get_component("ocn"),
+                        Contains("'ocn'") && Contains("atm") &&
+                            Contains("lnd"));
+  }
+}
+
+TEST_CASE("CouplerDriver rejects destinations of a different size") {
+  using Catch::Matchers::Contains;
+
+  CouplerDriver driver{};
+  driver.add_component(std::make_unique<FakeAtmosphere>(4));
+  driver.add_component(std::make_unique<FakeLand>(5));
+
+  REQUIRE_THROWS_WITH(driver.initialize(TEST_DATA_DIR "/fake_coupling.yaml"),
+                      Contains("value(s)") && Contains("'atm'") &&
+                          Contains("'lnd'"));
+}
+
 TEST_CASE("CouplerDriver registers and couples fake components") {
   constexpr std::size_t ncols = 4;
 
