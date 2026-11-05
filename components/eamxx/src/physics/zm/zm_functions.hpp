@@ -315,7 +315,7 @@ struct Functions {
     // scalar shear metric used for MCSP gating/scaling and evaporation scaling:
     // full shear magnitude, or the legacy signed zonal shear. Where the shear is
     // undefined the fill value is returned, which exceeds any shear threshold,
-    // so MCSP is inactive and the evap scaling uses evap_efficiency_max there
+    // so MCSP is inactive and the evap scaling uses evap_efficiency_min there
     KOKKOS_INLINE_FUNCTION
     Real calc_shear_metric(const Real& shear_u, const Real& shear_v) const {
       if (shear_u == ZMC::MCSP_shear_undefined) return constants::fill_value<Real>;
@@ -348,10 +348,13 @@ struct Functions {
 
     // -------------------------------------------------------------------------
     // evaporation efficiency, optionally interpolated between evap_efficiency_min
-    // and evap_efficiency_max by the evaporation shear scaling function
+    // and evap_efficiency_max by the evaporation shear scaling function. Where the
+    // shear is undefined (fill value) there is no evidence of organization, so
+    // evap_efficiency_min is used
     KOKKOS_INLINE_FUNCTION
     Real calc_evap_efficiency(const Real& shear) const {
       if (!use_shear_scaling_evap) return evap_efficiency_max;
+      if (shear == constants::fill_value<Real>) return evap_efficiency_min;
       return evap_efficiency_min + calc_evap_shear_scaling(shear) * (evap_efficiency_max - evap_efficiency_min);
     }
 

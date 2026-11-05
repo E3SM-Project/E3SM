@@ -120,7 +120,7 @@ TEST_CASE("zm_shear_scaling", "[zm]")
   REQUIRE(opt.calc_shear_metric(ZMF::ZMC::MCSP_shear_undefined, ZMF::ZMC::MCSP_shear_undefined)
           == scream::constants::fill_value<Real>);
   REQUIRE(opt.calc_mcsp_shear_scaling(scream::constants::fill_value<Real>) == 0);
-  REQUIRE(opt.calc_evap_efficiency(scream::constants::fill_value<Real>) == Approx(3.0e-6));
+  REQUIRE(opt.calc_evap_efficiency(scream::constants::fill_value<Real>) == Approx(1.0e-6));
 
   // trapezoid shape - zero outside, one on the plateau, linear ramps
   REQUIRE(opt.calc_mcsp_shear_scaling(0)    == 0);
