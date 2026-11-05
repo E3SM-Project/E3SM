@@ -9,3 +9,7 @@
 ./xmlchange ATM_DOMAIN_FILE="MOF21_domain.lnd.Daymet_NA.1km.1d.c240524.nc"
 ./xmlchange LND_DOMAIN_FILE="MOF21_domain.lnd.Daymet_NA.1km.1d.c240524.nc"
 ./xmlchange NTASKS=1
+
+# Memory grows ~13-15% during the first few months
+# and then stays flat for the rest of the year; not a real leak.
+if [[ `./xmlquery --value MACH` =~ ^polaris$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.2; fi
