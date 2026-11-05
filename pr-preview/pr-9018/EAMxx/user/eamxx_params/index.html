@@ -5597,14 +5597,14 @@
 <li>type: real</li>
 </ul>
 </li>
-<li>zm::mcsp_u_coeff:<ul>
-<li>description: MCSP U-wind coefficient</li>
+<li>zm::mcsp_mom_coeff:<ul>
+<li>description: MCSP momentum coefficient</li>
 <li>type: real</li>
 </ul>
 </li>
-<li>zm::mcsp_v_coeff:<ul>
-<li>description: MCSP V-wind coefficient</li>
-<li>type: real</li>
+<li>zm::mcsp_use_full_shear:<ul>
+<li>description: MCSP flag to use full shear vector instead of zonal-only</li>
+<li>type: logical</li>
 </ul>
 </li>
 <li>zm::number_of_subcycles:<ul>
@@ -7000,8 +7000,9 @@
 </ul>
 </li>
 <li>rrtmgp::rad_frequency:<ul>
-<li>description: <strong>MISSING</strong></li>
-<li>type: <strong>MISSING</strong></li>
+<li>description: Frequency (in number of timesteps) at which to call the radiation code</li>
+<li>type: integer</li>
+<li>constraints: gt 0</li>
 </ul>
 </li>
 <li>rrtmgp::do_aerosol_rad:<ul>
