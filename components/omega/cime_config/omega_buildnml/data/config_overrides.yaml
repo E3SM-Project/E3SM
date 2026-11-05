@@ -6,6 +6,16 @@ coupled:
     StopType: Coupled
     StopCriterion: 9999-12-31_00:00:00
 
+  # Coupled driver owns the SCORPIO IO system, so these options are never read.
+  # They are set to a sentinel so omega.yml doesn't suggest they are in use.
+  # To change them, set the case variable listed next to each option instead.
+  IO:
+    IOTasks: -9999 # PIO_NUMTASKS_OCN
+    IOStride: -9999 # PIO_STRIDE_OCN
+    IOBaseTask: -9999 # PIO_ROOT_OCN
+    IORearranger: -9999 # PIO_REARRANGER_OCN
+    IODefaultFormat: -9999 # PIO_TYPENAME_OCN
+
   Tendencies:
     SfcStressForcingTendencyEnable: true
     SfcThicknessForcingTendencyEnable: true
