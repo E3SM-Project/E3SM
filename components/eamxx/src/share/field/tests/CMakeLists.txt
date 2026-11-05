@@ -20,6 +20,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_field
   )
 
+  # Clock field update methods (not a correctness test)
+  CreateUnitTest(field_update_timing
+    SOURCES field_update_timing.cpp
+    LIBS eamxx_field
+  )
+
   # Test field view visitors
   CreateUnitTest(field_visit
     SOURCES field_visit_tests.cpp
