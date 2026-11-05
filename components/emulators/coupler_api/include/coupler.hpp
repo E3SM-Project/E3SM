@@ -17,13 +17,15 @@ using CouplingBuffer = FieldBuffer<double>;
 /**
  * @brief Holds yaml entries for active coupled fields
  * Fields:
- * - string id: unique label for coupled field
+ * - string id: unique label for the route
+ * - string field_name: name of the field the route carries
  * - MergeType merge_type
  * - vector<string> sources: list of component sources
  * - vector<string> destinations: list of component destinations
  */
 struct CoupledFieldEntry {
   std::string id;
+  std::string field_name;
   MergeType merge_type;
   std::vector<std::string> sources;
   std::vector<std::string> destinations;
@@ -40,7 +42,8 @@ inline std::ostream& operator<<(std::ostream& os,
  * @brief Description of how a variable is coupled between components
  * Fields:
  *  - merge_type:  Enum for how multiple sources are merged
- *  - std::string name;
+ *  - std::string name: unique label for the route
+ *  - std::string field_name: name of the field the route carries
  *  - sources: fields that contribute to the same coupled state/flux
  *  - destinations: fields that consume the coupled state/flux
  *  - owned_buffer: Optional Owned data buffer that components copy to/from
@@ -49,6 +52,7 @@ inline std::ostream& operator<<(std::ostream& os,
 struct CouplingRoute {
   MergeType merge_type;
   std::string name;
+  std::string field_name;
   std::vector<FieldID> sources;
   std::vector<FieldID> destinations;
   std::vector<double> owned_buffer;
