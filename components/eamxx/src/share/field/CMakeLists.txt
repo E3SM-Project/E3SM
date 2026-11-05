@@ -11,9 +11,12 @@ add_library(eamxx_field
   eti/field_deep_copy_impl_double.cpp
   eti/field_deep_copy_impl_float.cpp
   eti/field_deep_copy_impl_int.cpp
-  eti/field_deep_copy_masked_double.cpp
-  eti/field_deep_copy_masked_float.cpp
-  eti/field_deep_copy_masked_int.cpp
+  eti/field_deep_copy_masked_double_false.cpp
+  eti/field_deep_copy_masked_double_true.cpp
+  eti/field_deep_copy_masked_float_false.cpp
+  eti/field_deep_copy_masked_float_true.cpp
+  eti/field_deep_copy_masked_int_false.cpp
+  eti/field_deep_copy_masked_int_true.cpp
   eti/field_get_strided_view_double_device.cpp
   eti/field_get_strided_view_float_device.cpp
   eti/field_get_strided_view_int_device.cpp
