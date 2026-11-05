@@ -94,6 +94,25 @@ inline std::ostream& operator<<(std::ostream& os, const EmulatorConfig& cfg) {
   return os << to_string(cfg) << '\n';
 }
 
+/**
+ * @brief: Struct that describes how fields is stored in emulator and its
+ purpose
+ * @fields:
+    - ModelFieldKind role;
+    - FieldConfig config;
+    - std::size_t offset;
+    - std::size_t size;
+ */
+struct EmulatorFieldDesc {
+  ModelFieldRole role;
+  FieldConfig config;
+  std::size_t offset;
+  std::size_t size;
+};
+
+std::string to_string(const EmulatorFieldDesc& desc);
+
+
 } // namespace emulator
 
 #endif

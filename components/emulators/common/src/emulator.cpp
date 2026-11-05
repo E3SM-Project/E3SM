@@ -6,6 +6,7 @@
 #include "create_inference_backend.hpp"
 #include "inference_backend.hpp"
 #include "inference_config.hpp"
+#include "moab_adapter.hpp"
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <emulator_config.hpp>
@@ -45,15 +46,6 @@ std::string to_string(const DimensionDesc& desc) {
   out << "Dimension: " << desc.name
       << " Local/Global sizes: " << desc.local_extent << ", "
       << desc.global_extent << "\n";
-  return out.str();
-}
-
-std::string to_string(const EmulatorFieldDesc& desc) {
-  std::ostringstream out;
-  auto role = (desc.role == ModelFieldRole::Input) ? "input" : "output";
-  out << "Field: \n"
-      << to_string(desc.config) << "\n role: " << role
-      << "\n Offset/size: " << desc.offset << " / " << desc.size;
   return out.str();
 }
 
@@ -104,7 +96,6 @@ std::size_t Emulator::local_field_size(const FieldConfig& field) const {
           "Dimension '" + dim_name +
           "' has zero local extent for field: " + field.name);
     }
-    // check that size*desc.local_exten < maximum value of size_t
     if (size > std::numeric_limits<std::size_t>::max() / desc.local_extent) {
       throw std::runtime_error("Inappropriate dimensions for field:\n" +
                                to_string(field) + to_string(desc));
@@ -159,8 +150,18 @@ std::span<double> Emulator::field_view(std::string_view name) {
 
 Emulator::Emulator(const GridDesc grid, const EmulatorConfig emu_cfg)
     : m_config_path("temp"), m_grid(grid), m_emulator_config(emu_cfg),
-      m_component_id(-1), m_moab_app_id(-1), m_initialized(false),
+      m_component_id(grid.id), m_moab_app_id(-1), m_initialized(false),
       m_step_count(0) {
+
+  if (grid.use_moab) {
+    m_moab.emplace(emu_cfg.name, m_component_id,
+                   MoabPartition{
+                       .comm = m_grid.comm,
+                       .global_ids = std::span<int>{m_grid.col_gids},
+                       .latitudes = std::span<double>{m_grid.lat},
+                       .longitudes = std::span<double>{m_grid.lon},
+                   });
+  }
   initialize();
 }
 
@@ -185,7 +186,7 @@ void Emulator::apply_config(const EmulatorConfig& config) {
 
   inference::InferenceConfig infer_config;
   infer_config.model_path = config.model.path;
-  infer_config.options = std::move(config.model.options);
+  infer_config.options = config.model.options;
   infer_config.input_channels = config.inputs.size();
   infer_config.output_channels = config.outputs.size();
 
@@ -198,6 +199,10 @@ void Emulator::initialize() {
     throw std::runtime_error("Emulator already initialized");
   }
   apply_config(m_emulator_config);
+  m_coupling.set_local_gids(m_grid.col_gids);
+  if (m_moab) {
+    register_with_moab();
+  }
   m_initialized = true;
 }
 
@@ -226,7 +231,7 @@ void Emulator::run(const ProcessRunOpts opts) {
     std::vector<std::int64_t> dims;
     for (const auto& dim_name : field.config.dimensions) {
       const DimensionDesc& dim_desc = dimension(dim_name);
-      dims.push_back(static_cast<std::int64_t>(dim_desc.global_extent));
+      dims.push_back(static_cast<std::int64_t>(dim_desc.local_extent));
     }
     if (field.role == ModelFieldRole::Input) {
       const double* data = values.data();
@@ -245,7 +250,26 @@ void Emulator::finalize() {
     return; // Already finalized or never initialized
   }
   backend_->finalize();
+
+  if (m_moab) {
+    m_moab.reset();
+  }
   m_initialized = false;
+}
+
+MoabTagDescriptor Emulator::make_moab_tag(const EmulatorFieldDesc& desc) const {
+  if (desc.config.dimensions.empty()) {
+    throw std::runtime_error("No dimensions for field " + desc.config.name);
+  }
+  if (m_grid.num_local_columns == 0) {
+    throw std::runtime_error("No Local columns for this emulator!!");
+  }
+  return MoabTagDescriptor{
+      .name = desc.config.name,
+      .role = (desc.role == ModelFieldRole::Input) ? FieldRole::Import
+                                                   : FieldRole::Export,
+      .values_per_vertex = desc.size / m_grid.num_local_columns,
+  };
 }
 
 static std::string to_string(EmulatorType t) {
@@ -279,213 +303,10 @@ void Emulator::print_info(std::ostream& os) const {
   os << "  grid          : nx=" << nx << " ny=" << ny
      << " num_local_cols=" << nloc << " num_global_cols=" << nglob << "\n";
 }
-
-namespace { // stuff for registering with MOAB
-
-// TODO: replace error checking with e.g. EKAT_REQUIRE (throws exception)
-
-void create_global_id_tag(const Emulator& e) {
-  int num_local_cols = e.get_num_local_cols();
-
-  int type = 0; // dense, integer
-  int stride = 1;
-  int index;
-
-  int app_id = e.moab_app_id();
-  ErrCode err =
-      iMOAB_DefineTagStorage(&app_id, "GLOBAL_ID", &type, &stride, &index);
-  if (err) {
-    std::cerr << "Error: failed to define GLOBAL_ID tag in " << e.name()
-              << " model\n";
-    MPI_Abort(e.comm(), err);
-  }
-
-  auto temp = e.get_local_col_gids();
-  auto gids = std::vector<int>{temp.begin(), temp.end()};
-  int ent_type = 0; // entity type (vertex)
-  err = iMOAB_SetIntTagStorage(&app_id, "GLOBAL_ID", &num_local_cols, &ent_type,
-                               gids.data());
-  if (err) {
-    std::cerr << "Error: failed to define GLOBAL_ID tag in " << e.name()
-              << " model\n";
-    MPI_Abort(e.comm(), err);
-  }
-
-  err = iMOAB_ResolveSharedEntities(&app_id, &num_local_cols, gids.data());
-  if (err) {
-    std::cerr << "Error: failed to define GLOBAL_ID tag in " << e.name()
-              << " model\n";
-    MPI_Abort(e.comm(), err);
-  }
-  err = iMOAB_UpdateMeshInfo(&app_id);
-  if (err) {
-    std::cerr << "Error: failed to define GLOBAL_ID tag in " << e.name()
-              << " model\n";
-    MPI_Abort(e.comm(), err);
-  }
-}
-
-void create_seq_flds_dom_fields_tag(const Emulator& e) {
-  /* FIXME: currently, components create tags from seq_flds_dom_fields, which we
-  don't have! :-( int type = 1; // dense, double int size = 1; int app_id =
-  e.moab_app_id(); err = iMOAB_DefineTagStorage(&app_id, "seq_flds_dom_fields",
-  &type, &size, tag_index); if (err) { fprintf(stderr, "Error: failed to create
-  tags from seq_flds_dom_fields\n"); MPI_Abort(e.comm(), err);
-  }
-  */
-}
-
-//----------------------------- pardon the mess!
-//-------------------------------------
-template <typename T>
-ErrCode set_tag_storage(const Emulator& e, const std::string& name,
-                        int ent_type, std::span<T> data) {
-  return moab::ErrorCode::MB_SUCCESS;
-}
-template <>
-ErrCode set_tag_storage<int>(const Emulator& e, const std::string& name,
-                             int ent_type, std::span<int> data) {
-  int len = data.size();
-  int app_id = e.moab_app_id();
-  return iMOAB_SetIntTagStorage(&app_id, name.c_str(), &len, &ent_type,
-                                data.data());
-}
-template <>
-ErrCode set_tag_storage<double>(const Emulator& e, const std::string& name,
-                                int ent_type, std::span<double> data) {
-  int len = data.size();
-  int app_id = e.moab_app_id();
-  return iMOAB_SetDoubleTagStorage(&app_id, name.c_str(), &len, &ent_type,
-                                   data.data());
-}
-//----------------------------- ////////////////
-//-------------------------------------
-
-template <typename T>
-void create_tag(const Emulator& e, const std::string& name, int type,
-                std::span<T>& data) {
-  ErrCode err = set_tag_storage(e, name, type, data); // ^^^^
-  if (err) {
-    fprintf(stderr, "Error: failed to create %s tag\n", name.c_str());
-    MPI_Abort(e.comm(), err);
-  }
-}
-
-void create_seq_flds_a2x_fields(const Emulator& e) {
-  int type = 1;   // dense, double
-  int stride = 1; // one value per vertex / entity
-  int index;
-  int app_id = e.moab_app_id();
-  // FIXME: remove quotes around name when we have this data
-  ErrCode err = iMOAB_DefineTagStorage(&app_id, "seq_flds_a2x_fields", &type,
-                                       &stride, &index);
-  if (err) {
-    fprintf(stderr, "Error: failed to define seq_flds_a2x_fields\n");
-    MPI_Abort(e.comm(), err);
-  }
-
-  // make sure this is defined too; it could have the same fields, but in
-  // different order, or really different fields; need to make sure we have them
-  // FIXME: remove quotes around name when we have this data
-  err = iMOAB_DefineTagStorage(&app_id, "seq_flds_x2a_fields", &type, &stride,
-                               &index);
-  if (err) {
-    fprintf(stderr, "Error: failed to define seq_flds_x2a_fields\n");
-    MPI_Abort(e.comm(), err);
-  }
-}
-
-void create_moab_vertices(const Emulator& e, std::span<const double> lat,
-                          std::span<const double> lon) {
-
-  int num_local_cols = e.get_num_local_cols();
-  std::vector<double> moab_vertex_coords(3 * num_local_cols);
-  for (size_t i = 0; i < num_local_cols; ++i) {
-    double lat_v = lat[i] * M_PI / 180.0;
-    double lon_v = lon[i] * M_PI / 180.0;
-    moab_vertex_coords[3 * i] = std::cos(lat_v) * std::cos(lon_v);
-    moab_vertex_coords[3 * i + 1] = std::cos(lat_v) * std::sin(lon_v);
-    moab_vertex_coords[3 * i + 2] = std::sin(lat_v);
-  }
-
-  int dimension = 3;
-  int num_coords = dimension * num_local_cols;
-  int app_id = e.moab_app_id();
-  ;
-  ErrCode err = iMOAB_CreateVertices(&app_id, &num_coords, &dimension,
-                                     moab_vertex_coords.data());
-  if (err) {
-    std::cerr << "Error: failed to define GLOBAL_ID tag in " << e.name()
-              << " model\n";
-    MPI_Abort(e.comm(), err);
-  }
-}
-
-#ifdef MOABDEBUG
-void write_mesh(const Emulator& e) {
-  std::string filename = e.name() + ".h5m";
-  std::string options = "PARALLEL=WRITE_PART";
-  ErrCode err =
-      iMOAB_WriteMesh(e.moab_app_id(), filename.c_str(), options.c_str());
-  if (err) {
-    fpritnf(stderr, "Error: fail to write mesh file %s\n", filename.c_str());
-    MPI_Abort(e.comm(), err);
-  }
-}
-#endif
-
-} // anonymous namespace
-
 void Emulator::register_with_moab() {
-  ErrCode err;
-
-  err = iMOAB_RegisterApplication(m_name.c_str(), &m_grid.comm, &m_component_id,
-                                  &m_moab_app_id);
-  if (err) {
-    MPI_Abort(comm(), err);
+  for (const auto& field : field_descriptors()) {
+    m_moab->define_tag(make_moab_tag(field));
   }
-  int my_rank;
-  MPI_Comm_rank(comm(), &my_rank);
-  if (my_rank == 0) {
-    printf("Registered MOAB app %d (component ID %d).\n", m_moab_app_id,
-           m_component_id);
-  }
-
-  int num_local_cols = get_num_local_cols();
-  // std::vector<double> data1(num_local_cols), data2(num_local_cols);
-  auto data1 = get_latitudes();
-  auto data2 = get_longitudes();
-
-  create_global_id_tag(*this); // "GLOBAL_ID"
-  create_seq_flds_dom_fields_tag(*this);
-
-  create_tag(*this, "lat", 0, data1);
-  create_tag(*this, "lon", 0, data2);
-
-  // pause here to create MOAB's vertices
-  create_moab_vertices(*this, data1, data2);
-
-  auto areas = get_areas();
-  create_tag(*this, "area", 0, areas);
-
-  // Mask and frac are both exactly 1
-  // fill(data1.begin(), data1.end(), 1.0);
-  // create_tag(*this, "mask", 0, data1);
-  // create_tag(*this, "frac", 0, data1);
-
-  //! call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize)
-  //! call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize)
-
-  // Aream is computed by mct, so give invalid initial value
-  // fill(data1.begin(), data1.end(), -9999.0);
-  create_tag(*this, "aream", 0, data1);
-
-#ifdef MOABDEBUG
-  write_mesh(e);
-#endif
-
-  // FIXME: uncomment this line when we have this data
-  // create_seq_flds_a2x_fields(e);
 }
 
 } // namespace e3sm::emulator

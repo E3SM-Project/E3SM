@@ -195,4 +195,13 @@ std::string to_string(const EmulatorConfig& cfg) {
 
   return out_string.str();
 }
+
+std::string to_string(const EmulatorFieldDesc& desc) {
+  std::ostringstream out;
+  auto role = (desc.role == ModelFieldRole::Input) ? "input" : "output";
+  out << "Field: \n"
+      << to_string(desc.config) << "\n role: " << role
+      << "\n Offset/size: " << desc.offset << " / " << desc.size;
+  return out.str();
+}
 } // namespace e3sm::emulator

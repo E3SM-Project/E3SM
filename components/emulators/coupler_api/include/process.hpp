@@ -25,13 +25,15 @@ concept CoupledProcess =
     requires(T& component, std::string_view name, FieldRegistry& registry,
              const ActiveCouplingFields& plan, const ProcessRunOpts run_opts,
              std::span<ExportBuffer> export_buffers,
-             std::span<const ImportBuffer> import_buffers) {
+             std::span<const ImportBuffer> import_buffers,
+             std::span<int> local_gids) {
       { component.name() } -> std::convertible_to<std::string_view>;
       { component.populate_registry(registry) } -> std::same_as<void>;
       { component.configure_coupling(plan) } -> std::same_as<void>;
       { component.run(run_opts) } -> std::same_as<void>;
       { component.export_fields(export_buffers) } -> std::same_as<void>;
       { component.import_fields(import_buffers) } -> std::same_as<void>;
+      { component.get_local_gids() } -> std::same_as<std::span<const int>>;
     };
 
 /**
@@ -60,7 +62,9 @@ public:
         }),
         import_fields_([](void* obj, std::span<ImportBuffer> buf) {
           static_cast<C*>(obj)->import_fields(buf);
-        }) {}
+        }),
+        local_gids_(
+            [](void* obj) { return static_cast<C*>(obj)->get_local_gids(); }) {}
 
   std::string_view name() const { return name_(object_.get()); }
   void populate_registry(FieldRegistry& registry) {
@@ -76,6 +80,7 @@ public:
   void import_fields(std::span<ImportBuffer> buf) {
     import_fields_(object_.get(), buf);
   }
+  std::span<const int> local_gids() { return local_gids_(object_.get()); }
 
   template <typename C> C& as() {
     if (type_ != std::type_index(typeid(C))) {
@@ -91,6 +96,7 @@ private:
   using RunFn = void (*)(void*, const ProcessRunOpts);
   using ExportFn = void (*)(void*, std::span<ExportBuffer>);
   using ImportFn = void (*)(void*, std::span<ImportBuffer>);
+  using GidFn = std::span<const int> (*)(void*);
 
   using DeleteFn = void (*)(void*);
   std::unique_ptr<void, DeleteFn> object_;
@@ -101,6 +107,7 @@ private:
   RunFn run_;
   ExportFn export_fields_;
   ImportFn import_fields_;
+  GidFn local_gids_;
 };
 
 // helper class for implementing processes / components
@@ -114,12 +121,15 @@ public:
   void export_fields(std::span<ExportBuffer> buffers) const;
 
   void import_fields(std::span<const ImportBuffer> buffers);
+  std::span<const int> get_local_gids() const;
+  void set_local_gids(std::vector<int> gids);
 
   std::vector<FieldBinding> resolve(std::span<const FieldID> ids) const;
 
   std::vector<FieldBinding> fields_;
   std::vector<FieldBinding> active_exports_;
   std::vector<FieldBinding> active_imports_;
+  std::vector<int> local_gids_;
 };
 } // namespace e3sm::coupler
 #endif

@@ -5,42 +5,26 @@
 #ifndef E3SM_EMULATOR_HPP
 #define E3SM_EMULATOR_HPP
 
+#include "moab_adapter.hpp"
+#include "moab_transport.hpp"
 #include <coupler.hpp>
 #include <emulator_config.hpp>
 #include <field_registry.hpp>
 #include <inference_backend.hpp>
 #include <memory>
 #include <mpi.h>
+#include <optional>
 #include <process.hpp>
 
+#include "grid_types.hpp"
 #include <cstddef>
 #include <span>
 #include <string>
 #include <vector>
-#include "grid_types.hpp"
 
 namespace e3sm::emulator {
 
 using namespace e3sm::coupler;
-
-/**
- * @brief: Struct that describes how fields is stored in emulator and its
- purpose
- * @fields:
-    - ModelFieldKind role;
-    - FieldConfig config;
-    - std::size_t offset;
-    - std::size_t size;
- */
-struct EmulatorFieldDesc {
-  ModelFieldRole role;
-  FieldConfig config;
-  std::size_t offset;
-  std::size_t size;
-};
-
-std::string to_string(const EmulatorFieldDesc& desc);
-
 
 /**
  * @brief Abstract base class for all E3SM emulators.
@@ -83,6 +67,9 @@ public:
   void import_fields(std::span<const ImportBuffer> buffers) {
     m_coupling.import_fields(buffers);
   }
+  std::span<const int> get_local_gids() const {
+    return m_coupling.get_local_gids();
+  };
 
   // TODO: Let's move this to protected after adjusting Fortran-C API??
   void set_grid_data(const GridDesc& grid);
@@ -90,7 +77,6 @@ public:
   int get_num_global_cols() const { return m_grid.num_global_columns; };
   int get_nx() const { return m_grid.nx; };
   int get_ny() const { return m_grid.ny; };
-  std::span<const int> get_local_col_gids() const { return m_grid.col_gids; };
   std::span<const double> get_latitudes() const { return m_grid.lat; };
   std::span<const double> get_longitudes() const { return m_grid.lon; };
   std::span<const double> get_areas() const { return m_grid.area; };
@@ -140,6 +126,7 @@ private:
   int m_component_id;
   std::string m_name;
   int m_moab_app_id;
+  std::optional<MoabAdapter> m_moab;
 
   bool m_initialized = false;
   int m_step_count = 0;
@@ -153,8 +140,10 @@ private:
   std::vector<EmulatorFieldDesc> field_descriptors_;
   std::size_t local_field_size(const FieldConfig& field) const;
   RegisteredField make_registered_field(const EmulatorFieldDesc& field);
-  std::size_t append_fields(std::span<const std::string> order, std::span<const FieldConfig>, ModelFieldRole kind);
+  std::size_t append_fields(std::span<const std::string> order,
+                            std::span<const FieldConfig>, ModelFieldRole kind);
 
+  MoabTagDescriptor make_moab_tag(const EmulatorFieldDesc& desc) const;
   // Flat Buffers for inputs and outputs
   std::vector<double> input_fields_;
   std::vector<double> output_fields_;

@@ -66,6 +66,9 @@ public:
       precipitation_[i] = 0.1 * static_cast<double>(i);
     }
   }
+  std::span<const int> get_local_gids(){
+    return coupling_.get_local_gids();
+  }
 
   const std::vector<double>& temperature() const noexcept {
     return temperature_;
@@ -140,6 +143,9 @@ public:
   void import_fields(std::span<const ImportBuffer> buffers) {
     coupling_.import_fields(buffers);
   }
+  std::span<const int> get_local_gids(){
+    return coupling_.get_local_gids();
+  }
 
   const std::vector<double>& temperature() const noexcept {
     return temperature_;
@@ -152,6 +158,7 @@ public:
   const std::vector<double>& surface_flux() const noexcept {
     return surface_flux_;
   }
+
 
 private:
   std::vector<double> temperature_;

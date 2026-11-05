@@ -46,6 +46,7 @@ public:
   void run(const ProcessRunOpts opts) {
     throw std::runtime_error("DON'T CALL RUN ON CPL7Component");
   }
+  std::span<const int> get_local_gids() { return coupling_.get_local_gids(); }
 
   void attach_fields(ExternalBindings bindings);
 
