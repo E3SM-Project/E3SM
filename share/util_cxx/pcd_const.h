@@ -10,7 +10,7 @@
 namespace pcd {
 
 // pcd.yaml version and institution information
-const std::string pcdversion = "0.2.0";
+const std::string pcdversion = "0.3.0";
 const std::string pcdinstitution = "E3SM Project";
 
 // mathematical constants
@@ -21,6 +21,9 @@ constexpr double radian = 57.29577951308232;                                    
 constexpr double degree = 0.017453292519943295;                                                                                                                                           // [rad] ASHandbook1964
 constexpr double square_root_of_2 = 1.4142135623730951;                                                                                                                                   // [rad] ASHandbook1964
 constexpr double square_root_of_3 = 1.7320508075688772;                                                                                                                                   // [rad] ASHandbook1964
+
+// unit_conversions constants
+constexpr double seconds_per_day = 86400;                                                                                                                                                 // [s] SI2019
 
 // universal_physical constants
 constexpr double speed_of_light_in_vacuum = 299792458;                                                                                                                                    // [m s-1] NIST_CODATA2022
@@ -37,6 +40,7 @@ constexpr double molar_volume_of_ideal_gas = 0.02271095464;                     
 // chemical_molar_masses constants
 constexpr double carbon_molar_mass_reference = 0.0120107;                                                                                                                                 // [kg mol-1] IUPAC1997
 constexpr double oxygen_molar_mass_reference = 0.0159994;                                                                                                                                 // [kg mol-1] IUPAC1997
+constexpr double iron_molar_mass_reference = 0.055845;                                                                                                                                    // [kg mol-1] IUPAC1997
 constexpr double carbon_dioxide_molar_mass_reference = (carbon_molar_mass_reference + (2.0 * oxygen_molar_mass_reference));                                                               // [kg mol-1]
 
 // earth_physical constants
