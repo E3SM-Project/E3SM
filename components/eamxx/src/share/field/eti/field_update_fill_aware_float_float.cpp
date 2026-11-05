@@ -3,11 +3,6 @@
 
 namespace scream {
 
-template void Field::update_fill_aware<CombineMode::Replace,  float, float>(const Field&, const float, const float, const float) const;
-template void Field::update_fill_aware<CombineMode::Update,   float, float>(const Field&, const float, const float, const float) const;
-template void Field::update_fill_aware<CombineMode::Multiply, float, float>(const Field&, const float, const float, const float) const;
-template void Field::update_fill_aware<CombineMode::Divide,   float, float>(const Field&, const float, const float, const float) const;
-template void Field::update_fill_aware<CombineMode::Max,      float, float>(const Field&, const float, const float, const float) const;
-template void Field::update_fill_aware<CombineMode::Min,      float, float>(const Field&, const float, const float, const float) const;
+template void Field::update_fill_aware<float, float>(const CombineMode, const Field&, const float, const float, const float) const;
 
 } // namespace scream
