@@ -52,7 +52,7 @@ module CanopyHydrologyMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine IrrigationDemandAdvance(bounds, driver_time, land_dt, river_dt, river_phase)
+  subroutine IrrigationDemandAdvance(bounds, land_time, land_dt, river_dt, river_phase)
     !
     ! !DESCRIPTION:
     ! Advance the patch surface-water irrigation request pipeline 
@@ -62,11 +62,11 @@ contains
     use elm_time_manager, only : get_step_size
     !
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds      ! processor bounds
-    real(r8), intent(in) :: driver_time          ! current driver clock time [days]
+    type(bounds_type), intent(in) :: bounds ! processor patch bounds [-]
+    real(r8), intent(in) :: land_time            ! current land component clock time since reference date [days]
     integer, intent(in) :: land_dt               ! land coupling interval [s]; must equal the ELM step size
     integer, intent(in) :: river_dt              ! river coupling interval, i.e. length of the irrigation request window [s]
-    integer, intent(in) :: river_phase           ! offset of the river run within river_dt, from the driver clock [s]
+    integer, intent(in) :: river_phase           ! river-run phase within river_dt on the land component clock [s]
     !
     ! !LOCAL VARIABLES:
     integer :: begp, endp                        ! patch bounds
@@ -78,8 +78,12 @@ contains
     if (river_dt <= 0 .or. land_dt /= get_step_size()) &
          call endrun('Demand irrigation requires one ELM step per land coupling interval')
 
-    if (mod(river_dt,land_dt) /= 0 .or. mod(river_phase,land_dt) /= 0) &
-         call endrun('Demand irrigation requires aligned land and river coupling intervals')
+    if (mod(river_dt,land_dt) /= 0) &
+         call endrun('Demand irrigation requires the river coupling interval to be a multiple of the land coupling interval')
+    ! Compare to the current land clock, not an absolute phase of zero: the
+    ! reference date and the start/restart time need not be land-step aligned.
+    if (.not. IrrigationWindowCloses(land_time,land_dt,river_phase)) &
+         call endrun('Demand irrigation requires the river run phase to fall on a land coupling step')
 
     begp = bounds%begp
     endp = bounds%endp
@@ -88,7 +92,7 @@ contains
     ! closed now is delivered starting at the NEXT land import.
     call IrrigationDemandWindow(veg_wf%irrig_demand_accum(begp:endp), &
          veg_wf%irrig_demand_pending(begp:endp), veg_wf%irrig_demand_lag(begp:endp), &
-         IrrigationWindowCloses(driver_time,river_dt,river_phase), river_dt)
+         IrrigationWindowCloses(land_time,river_dt,river_phase), river_dt)
   end subroutine IrrigationDemandAdvance
   !-----------------------------------------------------------------------
   subroutine CanopyHydrology_readnl( NLFilename )
@@ -320,8 +324,9 @@ contains
              grid_request(g) = grid_request(g) + pgwgt(p)*veg_wf%irrig_demand_lag(p)
           end if
        end do
-       ! River supply not applied as irrigation goes straight back to the river
-       ! through lnd2atm. It never enters column storage.
+       ! River supply not applied as irrigation goes straight back to the MOSART
+       ! main channel through the Flrl_irr_return coupler field. It never enters
+       ! column storage.
        grc_wf%qflx_irr_return(bounds%begg:bounds%endg) = 0._r8
        if (irrigate .and. tw_irr) then
           do g = bounds%begg, bounds%endg

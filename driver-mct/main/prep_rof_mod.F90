@@ -498,17 +498,18 @@ contains
     ! Merge land rof and ice forcing for rof input
     !
     ! Arguments
-    type(mct_aVect),intent(in)    :: l2x_r
-    type(mct_aVect),intent(in)    :: a2x_r
-    type(mct_aVect),intent(in)    :: fractions_r
-    type(mct_aVect),intent(inout) :: x2r_r
-    character(len=*)        , intent(in)    :: cime_model
-    type(mct_aVect),intent(in),optional  :: o2x_r
+    type(mct_aVect),intent(in)    :: l2x_r ! mapped land export fields on the river grid [units per field]
+    type(mct_aVect),intent(in)    :: a2x_r ! mapped atmosphere export fields on the river grid [units per field]
+    type(mct_aVect),intent(in)    :: fractions_r ! component area fractions on the river grid [-]
+    type(mct_aVect),intent(inout) :: x2r_r ! merged driver-to-river fields [units per field]
+    character(len=*)        , intent(in)    :: cime_model ! model configuration name [-]
+    type(mct_aVect),intent(in),optional  :: o2x_r ! mapped ocean export fields on the river grid [units per field]
     !
     ! Local variables
     integer       :: i
     integer, save :: index_l2x_Flrl_rofsur
     integer, save :: index_l2x_Flrl_rofgwl
+    integer, save :: index_l2x_Flrl_irr_return
     integer, save :: index_l2x_Flrl_rofsub
     integer, save :: index_l2x_Flrl_rofdto
     integer, save :: index_l2x_Flrl_rofi
@@ -517,6 +518,7 @@ contains
     integer, save :: index_l2x_Flrl_rofmud
     integer, save :: index_x2r_Flrl_rofsur
     integer, save :: index_x2r_Flrl_rofgwl
+    integer, save :: index_x2r_Flrl_irr_return
     integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofdto
     integer, save :: index_x2r_Flrl_rofi
@@ -596,6 +598,7 @@ contains
 
        index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_r,'Flrl_rofsur' )
        index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
+       index_l2x_Flrl_irr_return = mct_aVect_indexRA(l2x_r,'Flrl_irr_return' )
        index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
        index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_r,'Flrl_rofdto' )
        if (have_irrig_field) then
@@ -608,6 +611,7 @@ contains
        endif
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
+       index_x2r_Flrl_irr_return = mct_aVect_indexRA(x2r_r,'Flrl_irr_return' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
@@ -656,6 +660,8 @@ contains
             trim(fracstr)//'*l2x%Flrl_rofsur'
        mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofgwl'
+       mrgstr(index_x2r_Flrl_irr_return) = trim(mrgstr(index_x2r_Flrl_irr_return))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_irr_return'
        mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
@@ -747,6 +753,7 @@ contains
        frac = fractions_r%rAttr(index_frac,i)
        x2r_r%rAttr(index_x2r_Flrl_rofsur,i) = l2x_r%rAttr(index_l2x_Flrl_rofsur,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofgwl,i) = l2x_r%rAttr(index_l2x_Flrl_rofgwl,i) * frac
+       x2r_r%rAttr(index_x2r_Flrl_irr_return,i) = l2x_r%rAttr(index_l2x_Flrl_irr_return,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * frac

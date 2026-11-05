@@ -10,7 +10,7 @@ module WaterBudgetMod
   use lnd2atmType       , only : lnd2atm_type
   use spmdMod           , only : masterproc
   use SoilHydrologyType , only : soilhydrology_type
-  use GridcellDataType  , only : grc_ws
+  use GridcellDataType  , only : grc_ws, grc_wf
   use ColumnDataType    , only : col_ws
   use timeinfoMod
 
@@ -282,10 +282,10 @@ contains
     !
     implicit none
 
-    type(bounds_type)        , intent(in) :: bounds
-    type(atm2lnd_type)       , intent(in) :: atm2lnd_vars
-    type(lnd2atm_type)       , intent(in) :: lnd2atm_vars
-    type(soilhydrology_type) , intent(in) :: soilhydrology_vars
+    type(bounds_type)        , intent(in) :: bounds ! processor gridcell bounds [-]
+    type(atm2lnd_type)       , intent(in) :: atm2lnd_vars ! precipitation and irrigation supply inputs [mm/s per gridcell area]
+    type(lnd2atm_type)       , intent(in) :: lnd2atm_vars ! gridcell evaporation and runoff outputs [mm/s per gridcell area]
+    type(soilhydrology_type) , intent(in) :: soilhydrology_vars ! soil water budget state fields [mm]
 
     integer  :: g, nf, ip
     real(r8) :: af, one_over_re2
@@ -334,7 +334,7 @@ contains
          nf = f_roff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) &
               - qflx_rofliq_qsur(g)*af - qflx_rofliq_qsurp(g)*af &
               - qflx_rofliq_qsub(g)*af - qflx_rofliq_qsubp(g)*af &
-              - qflx_rofliq_qgwl(g)*af
+              - qflx_rofliq_qgwl(g)*af - grc_wf%qflx_irr_return(g)*af
          nf = f_ioff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_rofice(g)*af
          nf = f_irri; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + qflx_irrig_supply(g)*af
 

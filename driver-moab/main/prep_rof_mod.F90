@@ -1105,8 +1105,8 @@ subroutine prep_rof_accum_ocn_moab(timer)
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
      use seq_comm_mct, only : num_moab_exports ! for debug
 
-    type(seq_infodata_type) , intent(in)    :: infodata
-    character(len=*)        , intent(in)    :: timer_mrg
+    type(seq_infodata_type) , intent(in)    :: infodata ! driver component configuration metadata [-]
+    character(len=*)        , intent(in)    :: timer_mrg ! merge timer name [-]
 
     ! type(mct_aVect)         , intent(in)    :: fractions_rx(:) they should have been saved as tags on rof coupler component
     !-----------------------------------------------------------------------
@@ -1124,6 +1124,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
     integer       :: i
     integer, save :: index_l2x_Flrl_rofsur
     integer, save :: index_l2x_Flrl_rofgwl
+    integer, save :: index_l2x_Flrl_irr_return
     integer, save :: index_l2x_Flrl_rofsub
     integer, save :: index_l2x_Flrl_rofdto
     integer, save :: index_l2x_Flrl_rofi
@@ -1131,6 +1132,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
     integer, save :: index_l2x_Flrl_irrig
     integer, save :: index_x2r_Flrl_rofsur
     integer, save :: index_x2r_Flrl_rofgwl
+    integer, save :: index_x2r_Flrl_irr_return
     integer, save :: index_x2r_Flrl_rofsub
     integer, save :: index_x2r_Flrl_rofdto
     integer, save :: index_x2r_Flrl_rofi
@@ -1252,6 +1254,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
 
        index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_r,'Flrl_rofsur' )
        index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
+       index_l2x_Flrl_irr_return = mct_aVect_indexRA(l2x_r,'Flrl_irr_return' )
        index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
        index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_r,'Flrl_rofdto' )
        if (have_irrig_field) then
@@ -1264,6 +1267,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
        index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
+       index_x2r_Flrl_irr_return = mct_aVect_indexRA(x2r_r,'Flrl_irr_return' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
@@ -1307,6 +1311,8 @@ subroutine prep_rof_accum_ocn_moab(timer)
             trim(fracstr)//'*l2x%Flrl_rofsur'
        mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofgwl'
+       mrgstr(index_x2r_Flrl_irr_return) = trim(mrgstr(index_x2r_Flrl_irr_return))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_irr_return'
        mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofsub'
        mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
@@ -1439,6 +1445,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
        frac = fractions_rm(i,index_frac)
        x2r_rm(i,index_x2r_Flrl_rofsur) = l2x_rm(i,index_l2x_Flrl_rofsur) * frac
        x2r_rm(i,index_x2r_Flrl_rofgwl) = l2x_rm(i,index_l2x_Flrl_rofgwl) * frac
+       x2r_rm(i,index_x2r_Flrl_irr_return) = l2x_rm(i,index_l2x_Flrl_irr_return) * frac
        x2r_rm(i,index_x2r_Flrl_rofsub) = l2x_rm(i,index_l2x_Flrl_rofsub) * frac
        x2r_rm(i,index_x2r_Flrl_rofdto) = l2x_rm(i,index_l2x_Flrl_rofdto) * frac
        x2r_rm(i,index_x2r_Flrl_rofi) = l2x_rm(i,index_l2x_Flrl_rofi) * frac

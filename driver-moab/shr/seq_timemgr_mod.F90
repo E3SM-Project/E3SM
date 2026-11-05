@@ -45,7 +45,7 @@ module seq_timemgr_mod
 
   ! Irrigation requests must use the same averaging windows as the driver.
   integer, public :: seq_timemgr_irr_interval = 0
-  integer, public :: seq_timemgr_irr_phase = 0
+  integer, public :: seq_timemgr_irr_phase = 0 ! river-run phase on the land component clock [s]
   real(SHR_KIND_R8), private :: irrigation_clock_time
   public :: seq_timemgr_EClockGetData     ! Get data from an ESMF clock
 
@@ -275,25 +275,26 @@ contains
 
     ! !INPUT/OUTPUT PARAMETERS:
 
-    type(seq_timemgr_type),  intent(INOUT) :: SyncClock    ! sync clock
-    character(len=*),        intent(IN)    :: nmlfile      ! namelist file
-    integer,                 intent(IN)    :: mpicom       ! MPI communicator
-    logical,                 intent(IN)    :: restart      ! restart logical
-    character(len=*),        intent(IN)    :: restart_file
-    type(ESMF_clock),target, intent(IN)    :: EClock_drv   ! drv clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_atm   ! atm clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_lnd   ! lnd clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_ocn   ! ocn clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_ice   ! ice clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_glc   ! glc clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_rof   ! rof clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_wav   ! wav clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_iac   ! iac clock
-    type(ESMF_clock),target, intent(IN)    :: EClock_esp   ! esp clock
-    type(file_desc_t)                      :: pioid
+    type(seq_timemgr_type),  intent(INOUT) :: SyncClock ! driver and component synchronization clocks [-]
+    character(len=*),        intent(IN)    :: nmlfile ! driver namelist file path [-]
+    integer,                 intent(IN)    :: mpicom ! MPI communicator [-]
+    logical,                 intent(IN)    :: restart ! true when initializing from a restart [-]
+    character(len=*),        intent(IN)    :: restart_file ! driver restart file path [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_drv ! drv component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_atm ! atm component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_lnd ! lnd component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_ocn ! ocn component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_ice ! ice component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_glc ! glc component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_rof ! rof component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_wav ! wav component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_iac ! iac component clock [-]
+    type(ESMF_clock),target, intent(IN)    :: EClock_esp ! esp component clock [-]
+    type(file_desc_t)                      :: pioid ! PIO restart file descriptor [-]
 
     !----- local -----
     character(len=*), parameter :: subname = '(seq_timemgr_clockInit) '
+    integer :: irrigation_land_offset ! first land run after initialization on the driver clock [s]
     type(ESMF_Time)             :: StartTime          ! Start time
     type(ESMF_Time)             :: RefTime            ! Reference time
     type(ESMF_Time)             :: CurrTime           ! Current time
@@ -1112,8 +1113,14 @@ contains
     call seq_timemgr_EClockGetData(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
          curr_time=irrigation_clock_time)
     seq_timemgr_irr_interval = rof_cpl_dt
-    seq_timemgr_irr_phase = modulo(nint(modulo(irrigation_clock_time*86400._SHR_KIND_R8,real(rof_cpl_dt,SHR_KIND_R8))) + &
-         offset(seq_timemgr_nclock_rof), rof_cpl_dt)
+    ! Land's first call is at CurrTime+lnd_cpl_dt on its component clock.
+    ! Its first driver alarm is the first strictly positive offset modulo
+    ! lnd_cpl_dt, including for zero, negative, or full-period user offsets.
+    ! Translate the river-run phase into that land-clock coordinate.
+    irrigation_land_offset = modulo(offset(seq_timemgr_nclock_lnd)-1,lnd_cpl_dt) + 1
+    seq_timemgr_irr_phase = modulo(nint(modulo(irrigation_clock_time*86400._SHR_KIND_R8, &
+         real(rof_cpl_dt,SHR_KIND_R8))) + lnd_cpl_dt + &
+         offset(seq_timemgr_nclock_rof) - irrigation_land_offset, rof_cpl_dt)
 
     ! Set component run alarms on driver clock
 

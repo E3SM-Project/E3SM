@@ -320,9 +320,9 @@ contains
     use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
 
     ! !INPUT/OUTPUT PARAMETERS:
-    character(len=*), intent(in) :: nmlfile   ! Name-list filename
-    integer         , intent(in) :: ID        ! seq_comm ID
-    type(seq_infodata_type), intent(in) :: infodata
+    character(len=*), intent(in) :: nmlfile ! driver namelist file path [-]
+    integer         , intent(in) :: ID ! component communicator identifier [-]
+    type(seq_infodata_type), intent(in) :: infodata ! driver component configuration metadata [-]
 
     ! !LOCAL VARIABLES:
     integer :: mpicom             ! MPI communicator
@@ -2329,6 +2329,16 @@ contains
     stdname  = 'water_flux_into_runoff_from_gwl'
     units    = 'kg m-2 s-1'
     attname  = 'Flrl_rofgwl'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! Unused irrigation supply is returned to river channels, not basin outlets.
+    call seq_flds_add(l2x_fluxes,'Flrl_irr_return')
+    call seq_flds_add(l2x_fluxes_to_rof,'Flrl_irr_return')
+    call seq_flds_add(x2r_fluxes,'Flrl_irr_return')
+    longname = 'Unused irrigation supply returned from land to river channels'
+    stdname  = 'water_flux_into_runoff_from_irrigation_return'
+    units    = 'kg m-2 s-1'
+    attname  = 'Flrl_irr_return'
     call metadata_set(attname, longname, stdname, units)
 
     call seq_flds_add(l2x_fluxes,'Flrl_rofsub')

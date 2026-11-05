@@ -4,7 +4,7 @@ module IrrigationAllocationMod
   ! !DESCRIPTION:
   ! Pure helper routines for two-way (tw_irr) irrigation coupling with MOSART:
   ! (1) IrrigationWindowCloses: whether the river request window, of length
-  !     river_dt [s], closes at the current driver time.
+  !     river_dt [s], closes at the current land component clock time.
   ! (2) IrrigationDemandWindow: advance the patch request pipeline. The
   !     accumulated request [mm] becomes a pending mean rate [mm/s] when the
   !     window closes; the lagged request is the one the current supply answers.
@@ -25,21 +25,21 @@ module IrrigationAllocationMod
   !-----------------------------------------------------------------------  
 contains
   !-----------------------------------------------------------------------
-  pure logical function IrrigationWindowCloses(driver_days, river_dt, river_phase)
+  pure logical function IrrigationWindowCloses(land_days, river_dt, river_phase)
     !
     ! !DESCRIPTION:
     ! Return true if the irrigation request window, which is aligned with the
-    ! river coupling interval, closes at the current driver time.
+    ! river coupling interval, closes at the current land component clock time.
     !
     ! !ARGUMENTS:
-    real(r8), intent(in) :: driver_days   ! current driver clock time [days]
+    real(r8), intent(in) :: land_days   ! current land component clock time since reference date [days]
     integer, intent(in) :: river_dt       ! river coupling interval, i.e. request window length [s]
-    integer, intent(in) :: river_phase    ! offset of the river run within river_dt [s]
+    integer, intent(in) :: river_phase    ! river-run phase within river_dt on the land component clock [s]
     !-----------------------------------------------------------------------
 
     ! seq_timemgr_EClockGetData(curr_time=...) returns DAYS, not seconds.
     ! Reduce before converting to integer so century-scale runs do not overflow.
-    IrrigationWindowCloses = modulo(nint(modulo(driver_days*86400._r8, &
+    IrrigationWindowCloses = modulo(nint(modulo(land_days*86400._r8, &
          real(river_dt,r8)))-river_phase,river_dt) == 0
   end function IrrigationWindowCloses
   !-----------------------------------------------------------------------

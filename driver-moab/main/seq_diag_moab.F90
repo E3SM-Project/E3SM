@@ -737,10 +737,10 @@ contains
 
   subroutine seq_diag_lnd_moab( lnd, infodata, do_l2x, do_x2l)
 
-    type(component_type)    , intent(in)           :: lnd    ! component type for instance1
-    type(seq_infodata_type) , intent(in)           :: infodata
-    logical                 , intent(in), optional :: do_l2x
-    logical                 , intent(in), optional :: do_x2l
+    type(component_type)    , intent(in)           :: lnd ! lnd component instance [-]
+    type(seq_infodata_type) , intent(in)           :: infodata ! driver configuration metadata [-]
+    logical                 , intent(in), optional :: do_l2x ! diagnose land exports when present [-]
+    logical                 , intent(in), optional :: do_x2l ! diagnose land imports when present [-]
 
     !EOP
 
@@ -758,6 +758,7 @@ contains
     real(r8), allocatable    :: fld_evap(:)
     real(r8), allocatable    :: fld_rofsur(:)
     real(r8), allocatable    :: fld_rofgwl(:)
+    real(r8), allocatable    :: fld_irr_return(:)
     real(r8), allocatable    :: fld_rofsub(:)
     real(r8), allocatable    :: fld_rofdto(:)
     real(r8), allocatable    :: fld_wslake(:)
@@ -834,6 +835,7 @@ contains
     if (present(do_l2x)) then
        allocate(fld_swnet(lSize), fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize))
        allocate(fld_rofsur(lSize), fld_rofgwl(lSize), fld_rofsub(lSize), fld_rofdto(lSize), fld_wslake(lSize))
+       allocate(fld_irr_return(lSize))
        allocate(fld_rofi(lSize))
 
        call mbGetCellTagVals(mblxid, 'Fall_swnet',  fld_swnet,  lSize)
@@ -846,12 +848,14 @@ contains
        if (lnd_prognostic) then
           call mbGetCellTagVals(mblxid, 'Flrl_rofsur', fld_rofsur, lSize)
           call mbGetCellTagVals(mblxid, 'Flrl_rofgwl', fld_rofgwl, lSize)
+          call mbGetCellTagVals(mblxid, 'Flrl_irr_return', fld_irr_return, lSize)
           call mbGetCellTagVals(mblxid, 'Flrl_rofsub', fld_rofsub, lSize)
           call mbGetCellTagVals(mblxid, 'Flrl_rofdto', fld_rofdto, lSize)
           call mbGetCellTagVals(mblxid, 'Flrl_wslake', fld_wslake, lSize)
        else
           fld_rofsur(:) = 0.0_r8
           fld_rofgwl(:) = 0.0_r8
+          fld_irr_return(:) = 0.0_r8
           fld_rofsub(:) = 0.0_r8
           fld_rofdto(:) = 0.0_r8
           fld_wslake(:) = 0.0_r8
@@ -888,6 +892,7 @@ contains
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l*fld_evap(n)
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*fld_rofsur(n) &
                - ca_l*fld_rofgwl(n) &
+               - ca_l*fld_irr_return(n) &
                - ca_l*fld_rofsub(n) &
                - ca_l*fld_rofdto(n) &
                - ca_l*fld_wslake(n)
@@ -923,6 +928,7 @@ contains
 
        deallocate(fld_swnet, fld_lwup, fld_lat, fld_sen, fld_evap)
        deallocate(fld_rofsur, fld_rofgwl, fld_rofsub, fld_rofdto, fld_wslake)
+       deallocate(fld_irr_return)
        deallocate(fld_rofi)
        if (index_l2x_Flrl_irrig /= 0) deallocate(fld_irrig)
        if (flds_wiso_lnd) then
@@ -1048,8 +1054,8 @@ contains
 
   subroutine seq_diag_rof_moab( rof, infodata)
 
-    type(component_type)    , intent(in) :: rof    ! component type for instance1
-    type(seq_infodata_type) , intent(in) :: infodata
+    type(component_type)    , intent(in) :: rof ! rof component instance [-]
+    type(seq_infodata_type) , intent(in) :: infodata ! driver configuration metadata [-]
 
     !EOP
 
@@ -1060,6 +1066,7 @@ contains
     real(r8)                 :: ca_r          ! area of a grid cell
     real(r8), allocatable    :: area_data(:)
     real(r8), allocatable    :: fld_rofsur(:), fld_rofgwl(:), fld_rofsub(:), fld_rofdto(:), fld_rofi(:)
+    real(r8), allocatable :: fld_irr_return(:)
     real(r8), allocatable    :: fld_irrig(:)
     real(r8), allocatable    :: fld_rofl_16O(:), fld_rofl_18O(:), fld_rofl_HDO(:)
     real(r8), allocatable    :: fld_x2r_rofi_16O(:), fld_x2r_rofi_18O(:), fld_x2r_rofi_HDO(:)
@@ -1106,16 +1113,19 @@ contains
     ! x2r block (c_rof_rr)
     ic = c_rof_rr
     allocate(fld_rofsur(lSize), fld_rofgwl(lSize), fld_rofsub(lSize), fld_rofdto(lSize), fld_rofi(lSize))
+    allocate(fld_irr_return(lSize))
     ! if model is not prognostic, need to make sure these fields are zero
     if(rof_prognostic) then
        call mbGetCellTagVals(mbrxid, 'Flrl_rofsur', fld_rofsur, lSize)
        call mbGetCellTagVals(mbrxid, 'Flrl_rofgwl', fld_rofgwl, lSize)
+       call mbGetCellTagVals(mbrxid, 'Flrl_irr_return', fld_irr_return, lSize)
        call mbGetCellTagVals(mbrxid, 'Flrl_rofsub', fld_rofsub, lSize)
        call mbGetCellTagVals(mbrxid, 'Flrl_rofdto', fld_rofdto, lSize)
        call mbGetCellTagVals(mbrxid, 'Flrl_rofi',   fld_rofi,   lSize)
     else
        fld_rofsur(:) = 0.0_r8
        fld_rofgwl(:) = 0.0_r8
+       fld_irr_return(:) = 0.0_r8
        fld_rofsub(:) = 0.0_r8
        fld_rofdto(:) = 0.0_r8
        fld_rofi(:) = 0.0_r8
@@ -1139,6 +1149,7 @@ contains
        ca_r = area_data(n)
        nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*fld_rofsur(n) &
             + ca_r*fld_rofgwl(n) &
+            + ca_r*fld_irr_return(n) &
             + ca_r*fld_rofsub(n) &
             + ca_r*fld_rofdto(n)
        if (index_x2r_Flrl_irrig /= 0) then
@@ -1156,6 +1167,7 @@ contains
     end do
     budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
     deallocate(fld_rofsur, fld_rofgwl, fld_rofsub, fld_rofdto, fld_rofi)
+    deallocate(fld_irr_return)
     if (index_x2r_Flrl_irrig /= 0) deallocate(fld_irrig)
     if ( flds_wiso_rof ) then
        deallocate(fld_rofl_16O, fld_rofl_18O, fld_rofl_HDO)

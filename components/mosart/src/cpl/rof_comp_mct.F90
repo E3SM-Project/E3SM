@@ -38,6 +38,7 @@ module rof_comp_mct
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
+                                index_x2r_Flrl_irr_return, &
                                 index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
                                 index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
                                 index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
@@ -715,7 +716,7 @@ contains
     !
     ! ARGUMENTS:
     implicit none
-    real(r8), intent(in) :: x2r_r(:,:)
+    real(r8), intent(in) :: x2r_r(:,:) ! coupler imports [water: kg/m2/s per river cell area; other units per field]
     !
     ! LOCAL VARIABLES
     integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
@@ -769,6 +770,7 @@ contains
        rtmCTL%qsur(n,nliq) = x2r_r(index_x2r_Flrl_rofsur,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nliq) = x2r_r(index_x2r_Flrl_rofsub,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qgwl(n,nliq) = x2r_r(index_x2r_Flrl_rofgwl,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qirr_return(n) = x2r_r(index_x2r_Flrl_irr_return,n2) * (rtmCTL%area(n)*0.001_r8)
        if (index_x2r_Flrl_rofdto > 0) then
           rtmCTL%qdto(n,nliq) = x2r_r(index_x2r_Flrl_rofdto,n2) * (rtmCTL%area(n)*0.001_r8)
        else

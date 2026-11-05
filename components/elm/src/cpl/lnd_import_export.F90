@@ -1418,14 +1418,15 @@ contains
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     use FireMod            , only : forc_hdm
+    use GridcellDataType   , only : grc_wf
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type) , intent(in)    :: bounds  ! bounds
-    type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! elm land to atmosphere exchange data type
-    type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! elm land to atmosphere exchange data type
-    type(lnd2iac_type), intent(inout) :: lnd2iac_vars ! elm lnd to gcam exchange vars
-    real(r8)          , intent(out)   :: l2x(:,:)! land to coupler export state on land grid
+    type(bounds_type) , intent(in)    :: bounds ! processor gridcell bounds [-]
+    type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! land-to-atmosphere and river exchange fields [units per field]
+    type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! land-to-glacier exchange fields [units per field]
+    type(lnd2iac_type), intent(inout) :: lnd2iac_vars ! land-to-IAC exchange fields [units per field]
+    real(r8)          , intent(out)   :: l2x(:,:) ! land-to-driver export fields on the land grid [units per field]
     !
     ! !LOCAL VARIABLES:
     integer  :: g,i,p ! indices
@@ -1515,6 +1516,7 @@ contains
        l2x(index_l2x_Flrl_rofsub,i) = lnd2atm_vars%qflx_rofliq_qsub_grc(g) &
                                     + lnd2atm_vars%qflx_rofliq_qsubp_grc(g)   !  perched drainiage
        l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
+       l2x(index_l2x_Flrl_irr_return,i) = grc_wf%qflx_irr_return(g)
   
        l2x(index_l2x_Flrl_demand,i) =  lnd2atm_vars%qflx_irr_demand_grc(g)   ! needs to be filled in
        if (l2x(index_l2x_Flrl_demand,i) > 0.0_r8) then

@@ -237,19 +237,19 @@ contains
     use CH4varcon  , only : ch4offline
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)     :: bounds
-    type(atm2lnd_type)     , intent(in)     :: atm2lnd_vars
-    type(surfalb_type)     , intent(in)     :: surfalb_vars
-    type(frictionvel_type) , intent(in)     :: frictionvel_vars
-    type(energyflux_type)  , intent(in)     :: energyflux_vars
-    type(solarabs_type)    , intent(in)     :: solarabs_vars
-    type(drydepvel_type)   , intent(in)     :: drydepvel_vars
-    type(vocemis_type)     , intent(in)     :: vocemis_vars
-    type(dust_type)        , intent(in)     :: dust_vars
-    type(ch4_type)         , intent(in)     :: ch4_vars
-    type(soilhydrology_type), intent(in)    :: soilhydrology_vars
-    type(sedflux_type)     , intent(in)     :: sedflux_vars
-    type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars
+    type(bounds_type)      , intent(in)     :: bounds ! processor gridcell bounds [-]
+    type(atm2lnd_type)     , intent(in)     :: atm2lnd_vars ! atmospheric input fields [units per field]
+    type(surfalb_type)     , intent(in)     :: surfalb_vars ! surface albedo fields [-]
+    type(frictionvel_type) , intent(in)     :: frictionvel_vars ! friction velocity and reference wind fields [m/s]
+    type(energyflux_type)  , intent(in)     :: energyflux_vars ! surface energy flux fields [units per field]
+    type(solarabs_type)    , intent(in)     :: solarabs_vars ! absorbed solar radiation fields [W/m2]
+    type(drydepvel_type)   , intent(in)     :: drydepvel_vars ! dry deposition velocity fields [m/s]
+    type(vocemis_type)     , intent(in)     :: vocemis_vars ! volatile organic compound emission fields [units per field]
+    type(dust_type)        , intent(in)     :: dust_vars ! dust emission fields [units per field]
+    type(ch4_type)         , intent(in)     :: ch4_vars ! methane state and flux fields [units per field]
+    type(soilhydrology_type), intent(in)    :: soilhydrology_vars ! soil hydrology state and flux fields [units per field]
+    type(sedflux_type)     , intent(in)     :: sedflux_vars ! sediment flux fields [units per field]
+    type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars ! gridcell exchange fields for atmosphere and river [units per field]
     !
     ! !LOCAL VARIABLES:
     integer :: g, lvl             ! index
@@ -503,11 +503,8 @@ contains
          qflx_rofliq_qgwl_grc(bounds%begg:bounds%endg)    , &
          c2l_scale_type= urbanf, l2g_scale_type=unity )
 
-    ! Unapplied river irrigation supply goes back to the main channel. It is
-    ! never part of column storage or column runoff.
-    do g = bounds%begg, bounds%endg
-       qflx_rofliq_qgwl_grc(g) = qflx_rofliq_qgwl_grc(g) + grc_wf%qflx_irr_return(g)
-    enddo
+    ! Irrigation returns are exported separately as Flrl_irr_return. The gwl
+    ! flux is routed directly to basin outlets by MOSART, bypassing channels.
     
     qflx_snwcp_ice(bounds%begc:bounds%endc) = qflx_snwcp_ice(bounds%begc:bounds%endc) + qflx_ice_runoff_xs(bounds%begc:bounds%endc) 
     call c2g( bounds, &

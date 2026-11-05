@@ -111,6 +111,7 @@ module RunoffMod
      real(r8), pointer :: qsur(:,:)        ! coupler surface forcing [m3/s]
      real(r8), pointer :: qsub(:,:)        ! coupler subsurface forcing [m3/s]
      real(r8), pointer :: qgwl(:,:)        ! coupler glacier/wetland/lake forcing [m3/s]
+     real(r8), pointer :: qirr_return(:)   ! unused liquid irrigation supply returned to channels [m3/s]
      real(r8), pointer :: qdto(:,:)        ! coupler diret-to-ocean forcing [m3/s]
      real(r8), pointer :: qdem(:,:)        ! coupler total demand diagnostic [m3/s]
 
@@ -548,7 +549,9 @@ contains
 
   subroutine RunoffInit(begr, endr, numr)
 
-    integer, intent(in) :: begr, endr, numr
+    integer, intent(in) :: begr ! first local river gridcell index [-]
+    integer, intent(in) :: endr ! last local river gridcell index [-]
+    integer, intent(in) :: numr ! global number of river gridcells [-]
 
     integer :: ier
 
@@ -626,6 +629,7 @@ contains
              rtmCTL%qsur(begr:endr,nt_rtm),       & 
              rtmCTL%qsub(begr:endr,nt_rtm),       &
              rtmCTL%qgwl(begr:endr,nt_rtm),       &
+             rtmCTL%qirr_return(begr:endr),       &
              rtmCTL%qdto(begr:endr,nt_rtm),       &
              rtmCTL%qdem(begr:endr,nt_rtm),       & 
              rtmCTL%yr_nt1(begr:endr),            &
@@ -681,6 +685,7 @@ contains
     rtmCTL%qsur(:,:)       = 0._r8
     rtmCTL%qsub(:,:)       = 0._r8
     rtmCTL%qgwl(:,:)       = 0._r8
+    rtmCTL%qirr_return(:)  = 0._r8
     rtmCTL%qdto(:,:)       = 0._r8
     rtmCTL%qdem(:,:)       = 0._r8
     if (data_bgc_fluxes_to_ocean_flag) then

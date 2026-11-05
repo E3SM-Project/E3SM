@@ -29,6 +29,7 @@ module elm_cpl_indices
 
   integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input liquid surface fluxes
   integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input liquid gwl fluxes
+  integer, public ::index_l2x_Flrl_irr_return ! lnd->rtm unused irrigation supply returned to channels [-]
   integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input liquid subsurface fluxes
   integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
   integer, public ::index_l2x_Flrl_demand     ! lnd->rtm input total fluxes (<= 0)
@@ -202,6 +203,7 @@ contains
 
     index_l2x_Flrl_rofsur   = mct_avect_indexra(l2x,'Flrl_rofsur')
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
+    index_l2x_Flrl_irr_return = mct_avect_indexra(l2x,'Flrl_irr_return')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
     index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')

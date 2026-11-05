@@ -468,14 +468,14 @@ contains
 #endif
     !
     ! !ARGUMENTS:
-    type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
-    type(seq_cdata)  , intent(inout) :: cdata_l   ! Input driver data for land model
-    type(mct_aVect)  , intent(inout) :: x2l_l     ! Import state to land model
-    type(mct_aVect)  , intent(inout) :: l2x_l     ! Export state from land model
+    type(ESMF_Clock) , intent(inout) :: EClock ! land component synchronization clock [-]
+    type(seq_cdata)  , intent(inout) :: cdata_l ! driver metadata for the land component [-]
+    type(mct_aVect)  , intent(inout) :: x2l_l ! driver-to-land import fields [units per field]
+    type(mct_aVect)  , intent(inout) :: l2x_l ! land-to-driver export fields [units per field]
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: irrigation_driver_time
-    integer :: irrigation_land_dt
+    real(r8) :: irrigation_land_time ! land component clock time since reference date [days]
+    integer :: irrigation_land_dt   ! land coupling interval [s]
     integer      :: ymd_sync             ! Sync date (YYYYMMDD)
     integer      :: yr_sync              ! Sync current year
     integer      :: mon_sync             ! Sync current month
@@ -583,8 +583,8 @@ contains
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
 
-    call seq_timemgr_EClockGetData(EClock, curr_time=irrigation_driver_time, dtime=irrigation_land_dt)
-    call IrrigationDemandAdvance(bounds, irrigation_driver_time, irrigation_land_dt, &
+    call seq_timemgr_EClockGetData(EClock, curr_time=irrigation_land_time, dtime=irrigation_land_dt)
+    call IrrigationDemandAdvance(bounds, irrigation_land_time, irrigation_land_dt, &
          seq_timemgr_irr_interval, seq_timemgr_irr_phase)
 
     ! Loop over time steps in coupling interval

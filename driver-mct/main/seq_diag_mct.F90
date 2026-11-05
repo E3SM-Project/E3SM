@@ -265,6 +265,7 @@ module seq_diag_mct
   integer :: index_l2x_Fall_evap
   integer :: index_l2x_Flrl_rofsur
   integer :: index_l2x_Flrl_rofgwl
+  integer :: index_l2x_Flrl_irr_return
   integer :: index_l2x_Flrl_rofsub
   integer :: index_l2x_Flrl_rofdto
   integer :: index_l2x_Flrl_rofi
@@ -291,6 +292,7 @@ module seq_diag_mct
 
   integer :: index_x2r_Flrl_rofsur
   integer :: index_x2r_Flrl_rofgwl
+  integer :: index_x2r_Flrl_irr_return
   integer :: index_x2r_Flrl_rofsub
   integer :: index_x2r_Flrl_rofdto
   integer :: index_x2r_Flrl_rofi
@@ -872,11 +874,11 @@ contains
 
   subroutine seq_diag_lnd_mct( lnd, frac_l, infodata, do_l2x, do_x2l)
 
-    type(component_type)    , intent(in)           :: lnd    ! component type for instance1
-    type(mct_aVect)         , intent(in)           :: frac_l ! frac bundle
-    type(seq_infodata_type) , intent(in)           :: infodata
-    logical                 , intent(in), optional :: do_l2x
-    logical                 , intent(in), optional :: do_x2l
+    type(component_type)    , intent(in)           :: lnd ! lnd component instance [-]
+    type(mct_aVect)         , intent(in)           :: frac_l ! component area fractions [-]
+    type(seq_infodata_type) , intent(in)           :: infodata ! driver configuration metadata [-]
+    logical                 , intent(in), optional :: do_l2x ! diagnose land exports when present [-]
+    logical                 , intent(in), optional :: do_x2l ! diagnose land imports when present [-]
 
     !EOP
 
@@ -937,6 +939,7 @@ contains
           index_l2x_Fall_evap   = mct_aVect_indexRA(l2x_l,'Fall_evap')
           index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_l,'Flrl_rofsur')
           index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_l,'Flrl_rofgwl')
+          index_l2x_Flrl_irr_return = mct_aVect_indexRA(l2x_l,'Flrl_irr_return')
           index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_l,'Flrl_rofsub')
           index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_l,'Flrl_rofdto')
           index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_l,'Flrl_rofi')
@@ -981,6 +984,7 @@ contains
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_evap,n)
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsur,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofgwl,n) &
+               - ca_l*l2x_l%rAttr(index_l2x_Flrl_irr_return,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofsub,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_rofdto,n) &
                - ca_l*l2x_l%rAttr(index_l2x_Flrl_wslake,n)
@@ -1145,9 +1149,9 @@ contains
 
   subroutine seq_diag_rof_mct( rof, frac_r, infodata)
 
-    type(component_type)    , intent(in) :: rof    ! component type for instance1
-    type(mct_aVect)         , intent(in) :: frac_r ! frac bundle
-    type(seq_infodata_type) , intent(in) :: infodata
+    type(component_type)    , intent(in) :: rof ! rof component instance [-]
+    type(mct_aVect)         , intent(in) :: frac_r ! component area fractions [-]
+    type(seq_infodata_type) , intent(in) :: infodata ! driver configuration metadata [-]
 
     !EOP
 
@@ -1180,6 +1184,7 @@ contains
     if (first_time) then
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur')
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl')
+       index_x2r_Flrl_irr_return = mct_aVect_indexRA(x2r_r,'Flrl_irr_return')
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub')
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto')
        index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig', perrWith='quiet')
@@ -1205,6 +1210,7 @@ contains
        ca_r =  dom_r%data%rAttr(kArea,n)
        nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofsur,n) &
             + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
+            + ca_r*x2r_r%rAttr(index_x2r_Flrl_irr_return,n) &
             + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
             + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
        if (index_x2r_Flrl_irrig /= 0) then

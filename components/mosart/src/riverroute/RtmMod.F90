@@ -2076,9 +2076,9 @@ contains
 !
 ! !ARGUMENTS:
     implicit none
-    logical ,         intent(in) :: rstwr          ! true => write restart file this step)
-    logical ,         intent(in) :: nlend          ! true => end of run on this step
-    character(len=*), intent(in) :: rdate          ! restart file time stamp for name
+    logical ,         intent(in) :: rstwr ! true to write a restart this step [-]
+    logical ,         intent(in) :: nlend ! true at the end of the run [-]
+    character(len=*), intent(in) :: rdate ! restart timestamp used in file names [-]
 !
 ! !CALLED FROM:
 ! subroutine RtmMap in this module
@@ -2157,7 +2157,7 @@ contains
     ! Input TERMS (rates, m3/s)
     integer,parameter :: br_qsur   = 20 ! input qsur
     integer,parameter :: br_qsub   = 21 ! input qsub
-    integer,parameter :: br_qgwl   = 22 ! input qgwl
+    integer,parameter :: br_qgwl   = 22 ! input gwl and irrigation return
     integer,parameter :: br_qdto   = 23 ! input qdto
     integer,parameter :: br_qdem   = 24 ! input qdem
 
@@ -2324,6 +2324,9 @@ contains
           budget_terms(br_qsur,nt) = budget_terms(br_qsur,nt) + rtmCTL%qsur(nr,nt)*delt_coupling     ! (rtmCTL%qsur 's unit is m^3/s. --Inund.)
           budget_terms(br_qsub,nt) = budget_terms(br_qsub,nt) + rtmCTL%qsub(nr,nt)*delt_coupling
           budget_terms(br_qgwl,nt) = budget_terms(br_qgwl,nt) + rtmCTL%qgwl(nr,nt)*delt_coupling
+          ! Include channel returns once in the existing non-soil runoff budget.
+          if (nt == nt_nliq) budget_terms(br_qgwl,nt) = budget_terms(br_qgwl,nt) &
+               + rtmCTL%qirr_return(nr)*delt_coupling
           budget_terms(br_qdto,nt) = budget_terms(br_qdto,nt) + rtmCTL%qdto(nr,nt)*delt_coupling
           budget_terms(br_qdem,nt) = budget_terms(br_qdem,nt) + rtmCTL%qdem(nr,nt)*delt_coupling
           budget_terms(br_ehexch,nt) = budget_terms(br_ehexch,nt) + ehexch_avg(nr,nt)*delt_coupling
@@ -2591,6 +2594,12 @@ contains
           !---- all gwl water, remove from TRunoff ---
           avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + TRunoff%qgwl(nr,nt)
           TRunoff%qgwl(nr,nt) = 0._r8
+
+          ! Add irrigation returns after the direct gwl transfer and negative
+          ! gwl redistribution. They enter the main channel through temp_gwl
+          ! in MOSART_physics_mod, without entering hillslope or tributary flow.
+          ! The basin-mask handling below still sends non-routing cells out.
+          if (nt == nt_nliq) TRunoff%qgwl(nr,nt) = rtmCTL%qirr_return(nr)
 
           !---- negative qsub water, remove from TRunoff ---
           if (TRunoff%qsub(nr,nt) < 0._r8) then
@@ -3472,7 +3481,7 @@ contains
             write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input surface = ',nt,budget_global(br_qsur,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
-            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl+irr = ',nt,budget_global(br_qgwl,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input demand -not included-  = ',nt,budget_global(br_qdem,nt)
             write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input hillslope erosion = ',nt,budget_global(br_ehexch,nt)
@@ -3596,7 +3605,7 @@ contains
              budget_glb_inund(bv_r_al_i, 1) = budget_global(bv_r_al_f, 1) / 1000._r8   ! Final storage in the active layer of main channels.
              budget_glb_inund(br_qsur, 1) = budget_global(br_qsur, 1) / 1000._r8       ! Input surface runoff.
              budget_glb_inund(br_qsub, 1) = budget_global(br_qsub, 1) / 1000._r8       ! Input sub-surface runoff.
-             budget_glb_inund(br_qgwl, 1) = budget_global(br_qgwl, 1) / 1000._r8       ! Input from glacier, wetland or lake.
+             budget_glb_inund(br_qgwl, 1) = budget_global(br_qgwl, 1) / 1000._r8       ! Input gwl and irrigation returns.
              budget_glb_inund(br_qdto, 1) = budget_global(br_qdto, 1) / 1000._r8       ! Input direct-to-ocean runoff.
              budget_glb_inund(br_ehexch, 1) = budget_global(br_ehexch, 1) / 1000._r8   ! Input hillslope erosion.
              budget_glb_inund(br_etexch, 1) = budget_global(br_etexch, 1) / 1000._r8   ! Input subntework channel bank erosion.
@@ -3690,7 +3699,8 @@ contains
                 write(iulog,'(a, f22.6)') trim(tracerID)//' * Total input minus output to oceans (km^3)  =', budget_input - budget_output + budget_other
                 write(iulog,'(a, f22.6)') trim(tracerID)//'   Input surface runoff (km^3)                =', budget_glb_inund(br_qsur, nt)
                 write(iulog,'(a, f22.6)') trim(tracerID)//'   Input sub-surface runoff (km^3)            =', budget_glb_inund(br_qsub, nt)
-                write(iulog,'(a, f22.6)') trim(tracerID)//'   Input from glacier, wetland or lake (km^3) =', budget_glb_inund(br_qgwl, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)// &
+                     '   Input from glacier, wetland, lake or irrigation return (km^3) =', budget_glb_inund(br_qgwl, nt)
                 write(iulog,'(a, f22.6)') trim(tracerID)//'   Input direct-to-ocean runoff (km^3)        =', budget_glb_inund(br_qdto, nt)
                 write(iulog,'(a, f22.6)') trim(tracerID)//'   Input hillslope erosion (1e9kg)            =', budget_glb_inund(br_ehexch, nt)
                 write(iulog,'(a, f22.6)') trim(tracerID)//'   Input subnetwork channel bank erosion (1e9kg)  =', budget_glb_inund(br_etexch, nt)

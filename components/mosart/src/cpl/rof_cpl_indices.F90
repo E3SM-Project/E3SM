@@ -25,6 +25,7 @@ module rof_cpl_indices
 !
   integer, public :: index_x2r_Flrl_rofsur = 0  ! lnd->rof liquid surface runoff forcing from land
   integer, public :: index_x2r_Flrl_rofgwl = 0  ! lnd->rof liquid gwl runoff from land
+  integer, public :: index_x2r_Flrl_irr_return = 0 ! lnd->rof unused irrigation supply returned to channels [-]
   integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rof liquid subsurface runoff from land
   integer, public :: index_x2r_Flrl_rofdto = 0  ! lnd->rof liquid direct to ocean runoff
   integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
@@ -122,6 +123,7 @@ contains
 
     index_x2r_Flrl_rofsur = mct_avect_indexra(avtmp,'Flrl_rofsur') !'Flrl_rofsur')
     index_x2r_Flrl_rofgwl = mct_avect_indexra(avtmp,'Flrl_rofgwl')
+    index_x2r_Flrl_irr_return = mct_avect_indexra(avtmp,'Flrl_irr_return')
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
     index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
