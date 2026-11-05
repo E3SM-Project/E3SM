@@ -92,7 +92,7 @@ subroutine phys_debug_shallow1(state, ptend, nstep, prec_cmf, rliq2, ztodt, kmx)
          endif
       end do
       k = kmx
-66    format ('tphysbc, aft shallow:', 4i5, 6f9.4) 
+66    format ('tphysbc, aft shallow:', i10, 3i5, 6f9.4) 
       call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
       write (iulog,66)  nstep, icol, &
            kmx, kmn, &
@@ -126,7 +126,7 @@ subroutine phys_debug_strat1(state, ptend, nstep, prec_str, rliq, ztodt, kmx)
    if (icol > 0) then
 
       k = kmx
-67    format ('tphysbc, aft strat:', i5, 6f9.4) 
+67    format ('tphysbc, aft strat:', i10, 6f9.4) 
       call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
       write (iulog,67)  nstep, prec_str(icol)*8.64e7_r8, rliq(icol)*8.64e7_r8,  &
            (ptend%q(icol,k,1)*ztodt)*1.e3_r8, &
