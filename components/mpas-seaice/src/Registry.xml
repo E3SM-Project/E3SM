@@ -4396,6 +4396,12 @@
 		     dimensions="nCells Time"
 		     units="W m-2"
 		/>
+		<var name="frazilSalt"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2"
+		     description="Actual salt of new frazil ice"
+		/>
 		<var name="uOceanVelocity"
 		     type="real"
 		     dimensions="nCells Time"

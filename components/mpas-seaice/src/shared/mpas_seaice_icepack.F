@@ -2422,6 +2422,7 @@ subroutine init_column_waves(domain)
          frazilSaltFlux, &
          frazilHeatFlux, &
          frazilFormation, &
+         frazilSalt, &
          rainfallRate, &
          pondFreshWaterFlux, &
          oceanFreshWaterFlux, &
@@ -2548,6 +2549,7 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
+       call MPAS_pool_get_array(ocean_coupling, "frazilSalt", frazilSalt)
 
        call MPAS_pool_get_array(wave_coupling, "significantWaveHeight", significantWaveHeight)
        call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
@@ -2670,7 +2672,8 @@ subroutine init_column_waves(domain)
                d_afsd_weld=dFloeSizeWeld(:,iCell), &
                frazilm=frazilMassFlux(iCell), &
                frazils=frazilSaltFlux(iCell), &
-               frazilh=frazilHeatFlux(iCell))
+               frazilh=frazilHeatFlux(iCell), &
+               frazilSalt=frazilSalt(iCell))
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)
@@ -15137,7 +15140,8 @@ subroutine init_column_waves(domain)
          pondsPool, &
          shortwavePool, &
          dragPool, &
-         snowPool
+         snowPool, &
+         oceanCouplingPool
 
     ! atmospheric fluxes
     real(kind=RKIND), dimension(:), pointer :: &
@@ -15160,6 +15164,10 @@ subroutine init_column_waves(domain)
          snowMelt, &
          basalIceMelt, &
          lateralIceMelt
+
+    ! ocean coupling
+    real(kind=RKIND), dimension(:), pointer :: &
+         frazilSalt
 
     ! snow model
     real(kind=RKIND), dimension(:), pointer :: &
@@ -15266,6 +15274,12 @@ subroutine init_column_waves(domain)
           snowMelt            = 0.0_RKIND
           basalIceMelt        = 0.0_RKIND
           lateralIceMelt      = 0.0_RKIND
+
+          ! ocean coupling
+          call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+          call MPAS_pool_get_array(oceanCouplingPool, "frazilSalt", frazilSalt)
+
+          frazilSalt          = 0.0_RKIND
 
           ! tendancies
           call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
