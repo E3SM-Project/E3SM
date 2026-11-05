@@ -22,7 +22,7 @@ Two tests so far:
 
 - `SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
   puts every active component through the coupler.
-- `ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod`, an exact restart test of EAMxx with its
+- `ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod`, an exact restart test of EAMxx with its
   production settings.
 
 With no `_P` option, CIME gives these grids one node, which the image's machine defines
