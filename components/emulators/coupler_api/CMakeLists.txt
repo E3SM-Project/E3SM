@@ -4,6 +4,8 @@ add_library(coupler_api
   field_registry.cpp
   coupler.cpp
   coupler_driver.cpp
+  moab_adapter.cpp
+  moab_transport.cpp
   process.cpp
 )
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -48,7 +50,7 @@ target_include_directories(coupler_api
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(coupler_api PUBLIC ekat::YamlParser)
+target_link_libraries(coupler_api PUBLIC ekat::YamlParser MOAB)
 
 target_compile_features(coupler_api PUBLIC cxx_std_20)
 

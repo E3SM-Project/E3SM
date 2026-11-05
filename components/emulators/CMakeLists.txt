@@ -124,6 +124,9 @@ if (STANDALONE_MODE)
   # Fetch MOAB so we don't have to have it preinstalled
   add_library(MOAB STATIC IMPORTED GLOBAL)
   set_target_properties(MOAB PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libMOAB.a)
+  # Pinned upstream revision containing vector-valued ID-transfer handling.
+  set(MOAB_REVISION a6114fdc973a08fe1fe700f69fe561dbe04722a4)
+
   include(ExternalProject)
   set(MOAB_OPTIONS -G ${CMAKE_GENERATOR})
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR})
@@ -132,20 +135,24 @@ if (STANDALONE_MODE)
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_FORTRAN=OFF)
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_PYMOAB=OFF)
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_TESTING=OFF)
+
   ExternalProject_Add(MOAB_proj
-    URL https://bitbucket.org/fathomteam/moab/get/3fa8ae9e8025e0c1349792dee1f39b82ad8c1a33.tar.gz # 5.6.0
-    URL_MD5 640aced62afe329596ca5953df57e79c
-    DOWNLOAD_NAME moab.tar.gz
-    DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/downloads
+    URL
+      "https://bitbucket.org/fathomteam/moab/get/${MOAB_REVISION}.tar.gz"
+    URL_HASH
+      SHA256=68f07ce7740e619f8d9123be1ae10b893f9b71cde6049b83b11671773f931492
+    DOWNLOAD_NAME "moab-${MOAB_REVISION}.tar.gz"
+    DOWNLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/downloads"
     DOWNLOAD_EXTRACT_TIMESTAMP OFF
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/moab
+    PREFIX "${CMAKE_CURRENT_BINARY_DIR}/moab"
     CMAKE_ARGS ${MOAB_OPTIONS}
     LOG_CONFIGURE TRUE
     LOG_BUILD TRUE
     LOG_INSTALL TRUE
-    BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/lib/libMOAB.a
+    BUILD_BYPRODUCTS "${PROJECT_BINARY_DIR}/lib/libMOAB.a"
   )
   target_include_directories(MOAB INTERFACE ${PROJECT_BINARY_DIR}/include)
+  target_link_libraries(MOAB INTERFACE MPI::MPI_C)
   add_dependencies(MOAB MOAB_proj)
 
   include_directories(${PROJECT_BINARY_DIR}/include)

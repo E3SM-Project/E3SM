@@ -1,13 +1,16 @@
-#include "emulator_config.hpp"
-#include "inference_backend.hpp"
-#include <memory>
+#ifndef EMULATOR_TEST_MPI
 #define CATCH_CONFIG_MAIN
+#endif
 #include <catch2/catch.hpp>
 
+#include "emulator_config.hpp"
+#include "inference_backend.hpp"
+#include "mpi.h"
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <filesystem>
+#include <memory>
 #include <process.hpp>
 
 using namespace e3sm::coupler;
@@ -19,22 +22,42 @@ namespace e3sm::emulator::tests {
 const std::string kPythonPath =
     std::string(EMULATOR_TEST_FIXTURE_DIR) + ":" + EMULATOR_TEST_SITE_PACKAGES;
 
+static constexpr int GLOBAL_COLS = 4;
+constexpr std::vector<int> gids(int size) {
+  std::vector<int> result;
+  result.reserve(size);
+  for (int i = 0; i < size; ++i) {
+    result[i] = i;
+  }
+  return result;
+}
+
 enum class TestModel {
   Forcing = 0,
   Land = 1,
 };
 
-inline GridDesc make_test_grid() {
+inline GridDesc make_test_grid(MPI_Comm comm) {
+  int comm_size;
+  MPI_Comm_size(comm, &comm_size);
+  std::vector<int> local_col_extents;
+  local_col_extents.resize(comm_size);
+  // round robin decomp
+  // for(int i=0;i<GLOBAL_COLS;)
+
   return GridDesc{
       .grid_type = 0,
-      .nx = 4,
+      .nx = GLOBAL_COLS,
       .ny = 1,
+      .num_global_columns = GLOBAL_COLS,
+      .num_local_columns = -1,
+      .comm = comm,
       .dimensions =
           {
               {
                   .name = "column",
                   .local_extent = 4,
-                  .global_extent = 4,
+                  .global_extent = GLOBAL_COLS,
               },
               {
                   .name = "soil_levels",
@@ -42,7 +65,7 @@ inline GridDesc make_test_grid() {
                   .global_extent = 3,
               },
           },
-      .col_gids = {0, 1, 2, 3},
+      .col_gids = gids(GLOBAL_COLS),
       .lat = {10.0, 20.0, 30.0, 40.0},
       .lon = {-100.0, -99.0, -98.0, -97.0},
       .area = {1.0, 1.0, 1.0, 1.0},
@@ -64,13 +87,26 @@ inline EmulatorConfig make_test_config(std::string_view config_path,
   return cfg;
 }
 
-TEST_CASE("Emulator coupling across inference backends", "[coupling]") {
+TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
+
+  int mpi_initialized = 0;
+  MPI_Initialized(&mpi_initialized);
+  REQUIRE(mpi_initialized != 0);
+
+  int rank, comm_size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+
+  MPI_Comm emu_comm = MPI_COMM_SELF;
+
+  // MPI_Comm_split(emu_comm, (rank < 2) ? 0 : 1, rank, &emu_comm);
+
   const auto forcing_backend = GENERATE(EMULATOR_TEST_BACKENDS);
   const auto land_backend = GENERATE(EMULATOR_TEST_BACKENDS);
 
   CAPTURE(forcing_backend, land_backend);
 
-  const auto grid = make_test_grid();
+  const auto grid = make_test_grid(emu_comm);
 
   auto forcing_config =
       make_test_config(TEST_DATA_DIR "/forcing_emulator_config.yaml",

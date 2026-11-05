@@ -4,14 +4,46 @@ enable_testing()
 # emulator_add_test(<target> <source> <test name> [LIBS <libs>...] [WITH_DATA_DIR])
 #   Builds a Catch2 test executable and registers it with ctest.
 function(emulator_add_test target source test_name)
-  cmake_parse_arguments(ARG "WITH_DATA_DIR" "" "LIBS" ${ARGN})
+
+  cmake_parse_arguments(ARG 
+                    "WITH_DATA_DIR" 
+                    "MPI_RANKS" 
+                    "LIBS" 
+                    ${ARGN})
+
   add_executable(${target} ${source})
   target_link_libraries(${target} PRIVATE ${ARG_LIBS} Catch2)
   if(ARG_WITH_DATA_DIR)
     target_compile_definitions(${target} PRIVATE
       TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
   endif()
-  add_test(NAME ${test_name} COMMAND ${target})
+
+  if(DEFINED ARG_MPI_RANKS)
+    if(NOT ARG_MPI_RANKS MATCHES "^[1-9][0-9]*$")
+      message(FATAL_ERROR "MPI_RANKS must be a positive integer")
+  endif()
+
+    find_package(MPI REQUIRED COMPONENTS C)
+    target_sources(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/mpi_tests_main.cpp")
+    target_link_libraries(${target} PRIVATE MPI::MPI_C)
+    target_compile_definitions(${target} PRIVATE EMULATOR_TEST_MPI)
+
+    add_test(NAME ${test_name}
+      COMMAND ${MPIEXEC_EXECUTABLE}
+              ${MPIEXEC_NUMPROC_FLAG} ${ARG_MPI_RANKS}
+              ${MPIEXEC_PREFLAGS}
+              $<TARGET_FILE:${target}>
+              ${MPIEXEC_POSTFLAGS}
+    )
+
+    set_tests_properties(${test_name} PROPERTIES
+      PROCESSORS ${ARG_MPI_RANKS}
+      TIMEOUT 120
+    )
+  else()
+    add_test(NAME ${test_name} COMMAND ${target})
+  endif()
+
 endfunction()
 
 emulator_add_test(test_inference_config test_inference_config.cpp inference_config_tests
@@ -132,6 +164,7 @@ if(EMULATOR_TEST_BACKENDS)
     emulator_coupling
     LIBS emulator_common emulator_inference
     WITH_DATA_DIR
+    MPI_RANKS 1
   )
 
   target_compile_definitions(test_emulator_coupling PRIVATE
@@ -158,4 +191,6 @@ if(EMULATOR_TEST_BACKENDS)
       EMULATOR_TEST_TORCH_FIXTURE_DIR="${EMULATOR_TORCH_FIXTURE_DIR}"
     )
   endif()
+
+
 endif()

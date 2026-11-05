@@ -20,6 +20,13 @@ void CouplingAdapter::configure(const ActiveCouplingFields& plan) {
   active_imports_ = resolve(plan.import_ids);
 }
 
+std::span<const int> CouplingAdapter::get_local_gids() const {
+  return std::span<const int>{local_gids_};
+}
+void CouplingAdapter::set_local_gids(std::vector<int> gids) {
+  local_gids_ = std::move(gids);
+}
+
 void CouplingAdapter::export_fields(std::span<ExportBuffer> buffers) const {
   if (buffers.size() != active_exports_.size()) {
     throw std::runtime_error("Incorrect number of export buffers");
@@ -29,7 +36,7 @@ void CouplingAdapter::export_fields(std::span<ExportBuffer> buffers) const {
     const auto& local = active_exports_[i];
     auto& remote = buffers[i];
 
-    if(local.data.data() == remote.data.data()){
+    if (local.data.data() == remote.data.data()) {
       std::cout << "No self copy: " << local.id;
       continue;
     }
@@ -56,7 +63,7 @@ void CouplingAdapter::import_fields(std::span<const ImportBuffer> buffers) {
     auto& local = active_imports_[i];
     const auto& remote = buffers[i];
 
-    if(local.data.data() == remote.data.data()){
+    if (local.data.data() == remote.data.data()) {
       std::cout << "No self copy: " << local.id << std::endl;
       continue;
     }

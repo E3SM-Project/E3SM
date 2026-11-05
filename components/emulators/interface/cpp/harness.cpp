@@ -2,11 +2,13 @@
 #include "coupler.hpp"
 #include "cpl7_component.hpp"
 #include "emulator.hpp"
+#include "process.hpp"
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
 
 namespace e3sm::emulator {
+static_assert(CoupledProcess<CPL7Component>);
 
 void Harness::transfer_bindings(ExternalBindings bindings) {
 

@@ -36,11 +36,13 @@ std::string to_string(const DimensionDesc& desc);
  */
 struct GridDesc {
   int grid_type;
+  bool use_moab=false;
   int nx;
   int ny;
   int num_global_columns;
   int num_local_columns;
   MPI_Comm comm;
+  int id;
 
   std::vector<DimensionDesc> dimensions;
   std::vector<int> col_gids;
