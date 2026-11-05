@@ -8,36 +8,17 @@ add_library(eamxx_field
   field_group.cpp
   field_sync.cpp
   field_reader.cpp
-  eti/field_get_strided_view_double_device.cpp
-  eti/field_get_strided_view_float_device.cpp
-  eti/field_get_strided_view_int_device.cpp
-  eti/field_get_view_double_device.cpp
-  eti/field_get_view_float_device.cpp
-  eti/field_get_view_int_device.cpp
-  eti/field_deep_copy_impl_double.cpp
-  eti/field_deep_copy_impl_float.cpp
-  eti/field_deep_copy_impl_int.cpp
-  eti/field_deep_copy_masked_double.cpp
-  eti/field_deep_copy_masked_float.cpp
-  eti/field_deep_copy_masked_int.cpp
-  eti/field_update_impl_double_double.cpp
-  eti/field_update_impl_double_float.cpp
-  eti/field_update_impl_double_int.cpp
-  eti/field_update_impl_float_float.cpp
-  eti/field_update_impl_float_int.cpp
-  eti/field_update_impl_int_int.cpp
-  eti/field_update_fill_aware_double_double.cpp
-  eti/field_update_fill_aware_double_float.cpp
-  eti/field_update_fill_aware_double_int.cpp
-  eti/field_update_fill_aware_float_float.cpp
-  eti/field_update_fill_aware_float_int.cpp
-  eti/field_update_fill_aware_int_int.cpp
-  eti/field_update_masked_double_double.cpp
-  eti/field_update_masked_double_float.cpp
-  eti/field_update_masked_double_int.cpp
-  eti/field_update_masked_float_float.cpp
-  eti/field_update_masked_float_int.cpp
-  eti/field_update_masked_int_int.cpp
+  # Unity build files combine multiple ETI instantiations into single translation units.
+  # This reduces header parsing overhead (headers parsed once per unity file instead of
+  # once per individual ETI file) while keeping template instantiation distributed.
+  # See eti/field_*_device_unity.cpp files which each #include their respective ETI sources.
+  eti/field_get_strided_view_device_unity.cpp
+  eti/field_get_view_device_unity.cpp
+  eti/field_deep_copy_impl_device_unity.cpp
+  eti/field_deep_copy_masked_device_unity.cpp
+  eti/field_update_impl_device_unity.cpp
+  eti/field_update_fill_aware_device_unity.cpp
+  eti/field_update_masked_device_unity.cpp
   utils/compute_mask.cpp
   utils/horiz_contraction.cpp
   utils/perturb.cpp
@@ -49,13 +30,6 @@ add_library(eamxx_field
   utils/views_are_equal.cpp
 )
 
-# Use precompiled headers to reduce build time for ETI files.
-# The field library includes many template-heavy headers that are
-# independently parsed by each of the 36 ETI .cpp files. Precompiling
-# them allows all ETI files to reuse the parsed content, significantly
-# reducing compilation time and memory usage.
-target_precompile_headers(eamxx_field PRIVATE field_pch.hpp)
-
 if (EAMXX_ENABLE_GPU)
   # The HostOrDevice::Device is different from HostOrDevice::Host,
   # so we need to ETI also these fcns for HostOrDevice::Host
@@ -63,12 +37,8 @@ if (EAMXX_ENABLE_GPU)
   #       only used on device (at least for now). OTOH, the methods
   #       to extract views are used in a few places
   target_sources (eamxx_field PRIVATE
-    eti/field_get_strided_view_double_host.cpp
-    eti/field_get_strided_view_float_host.cpp
-    eti/field_get_strided_view_int_host.cpp
-    eti/field_get_view_double_host.cpp
-    eti/field_get_view_float_host.cpp
-    eti/field_get_view_int_host.cpp
+    eti/field_get_strided_view_host_unity.cpp
+    eti/field_get_view_host_unity.cpp
   )
 endif()
 
