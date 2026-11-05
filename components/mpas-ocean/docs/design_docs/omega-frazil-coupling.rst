@@ -1,7 +1,7 @@
 Omega-type frazil coupling with variable salinity between MPAS-Ocean and MPAS-Seaice
 ====================================================================================
 
-date: 2026/11/04
+date: 2026/11/05
 
 Contributors: Nicole Jeffery, Andrew Roberts, Darin Comeau, Erin Thomas,
 Kara Peterson, Jon Wolfe
@@ -53,8 +53,9 @@ budget diagnostics can track the frazil adjustment returned by the sea ice.
 The capability is a stealth feature in MPAS-Ocean. It is off by default.
 Success is defined as:
 
-1. Default runs reproduce the original answers apart from the additional
-   coupler fields.
+1. Default runs keep the original fixed-salinity frazil coupling. Answers
+   differ from the previous code only at roundoff level, from the new frazil
+   salt unit conversion.
 2. Coupled runs with ``omega-fluxes`` run stably.
 3. Frazil mass, salt and heat are conserved across the ocean, coupler and
    sea ice, as reported by the coupler budget tables and the MPAS-Ocean
@@ -67,10 +68,6 @@ Requirements
 Requirement: Ocean is the single source of frazil mass, salt and energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 The ocean must provide the mass, salt mass and energy of frazil ice formed
 during each coupling interval as independent quantities. The sea ice must be
 able to form new ice that has exactly this mass, salt and energy, without
@@ -79,21 +76,12 @@ recomputing them under different assumptions.
 Requirement: Variable frazil salinity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 The salinity of new frazil ice must be allowed to vary in space and time
 according to the ocean's frazil formulation (for example, with fixed frazil reference salinity or the porosity-based
-frazil salinity enabled by ``config_use_frazil_ice_porosity``). It must not be
-constrained to a fixed reference salinity at the coupling interface.
+frazil salinity enabled by ``config_use_frazil_ice_porosity``).
 
 Requirement: Prognostic salt flux from sea ice melt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 When frazil enters the sea ice with a variable salinity, the salt flux
 returned to the ocean as the ice melts must reflect the salt actually stored
@@ -103,20 +91,12 @@ between the ocean and the sea ice over a freeze-melt cycle.
 Requirement: Distinct coupling fields for melt potential and frazil energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 The ocean freezing energy and the ocean melt potential must be passed in
 separate coupler fields, so that each field has a single physical meaning
 and sign convention.
 
 Requirement: Conservation and diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 Frazil mass, salt and heat must be conserved across components. The coupler
 budget diagnostics (MCT and MOAB drivers) and the MPAS-Ocean conservation
@@ -126,13 +106,11 @@ and the ice-to-ocean exchanges.
 Requirement: Backward compatibility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 The default configuration must keep the original fixed-salinity frazil
-coupling and give answers that are bit-for-bit with the previous code. The
-only expected baseline differences come from the added coupler fields.
+coupling. Answers are not required to be bit-for-bit with the previous code:
+roundoff-level differences from the frazil salt unit conversion are
+acceptable, in addition to the baseline differences from the added coupler
+fields.
 
 
 Algorithm Design
@@ -140,10 +118,6 @@ Algorithm Design
 
 Algorithm Design: Ocean is the single source of frazil mass, salt and energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 In each ocean time step, frazil forms in layer :math:`k` when the layer
 temperature falls below the freezing point. The thickness of new frazil ice is
@@ -164,7 +138,10 @@ per unit area carried by the new frazil is
    \Delta s_k = \Delta h_k \, S_{f,k} \, \rho_i \, c_{ppt},
 
 where :math:`S_{f,k}` is the frazil salinity (ppt) and :math:`c_{ppt}`
-(``ppt_to_salt``) converts ppt to kg of salt per kg. Summing over the
+(``ppt_to_salt``, 10\ :sup:`-3`) converts ppt to kg of salt per kg. This is
+the salt mass in kg m\ :sup:`-2`. It is also used directly as the
+thickness-weighted salinity tendency (m ppt), because MPAS-Ocean treats
+1 kg m\ :sup:`-2` of salt as 1 m ppt (``sflux_factor = 1``). Summing over the
 column, the ocean accumulates three quantities over the coupling interval:
 
 .. math::
@@ -175,7 +152,7 @@ column, the ocean accumulates three quantities over the coupling interval:
 
 where :math:`\Delta e_k` is the frazil energy (latent heat, plus sensible
 heat when ``config_include_sensible_heat_frazil`` is true). At the coupling
-time these are divided by the coupling interval :math:`\Delta t_c` to form
+time, these are divided by the coupling interval :math:`\Delta t_c` to form
 fluxes (:math:`M_f/\Delta t_c`, :math:`S_f/\Delta t_c` and
 :math:`Q_f/\Delta t_c`).
 
@@ -198,22 +175,27 @@ mass, the frazil mass adjustment returned to the ocean is zero in this mode.
 Algorithm Design: Variable frazil salinity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 With frazil porosity enabled (``config_use_frazil_ice_porosity = .true.``),
 the frazil salinity in each layer is
 
 .. math::
 
-   S_{f,k} = \min\left( \phi \, S_k,\; S_k \right),
+   S_{f,k} = \phi \, S_k,
 
-where :math:`\phi` is ``config_frazil_ice_porosity`` and :math:`S_k` is the
-ocean salinity in layer :math:`k`. In the original fixed-salinity coupling,
-the sea ice assumes that new ice has salinity :math:`S_{ref}`
-(``config_frazil_sea_ice_reference_salinity``). To stay consistent, the
-ocean returns salt in excess of :math:`S_{ref}` to the top ocean layer:
+where :math:`\phi` (``config_frazil_ice_porosity``, between 0 and 1) is the
+frazil porosity and :math:`S_k` is the ocean salinity in layer :math:`k`.
+With porosity disabled, the frazil salinity is the fixed reference salinity
+:math:`S_{ref}` (``config_frazil_sea_ice_reference_salinity``), limited so
+that frazil does not take more salt than the layer contains:
+
+.. math::
+
+   S_{f,k} = \min\left( S_{ref},\; S_k \right).
+
+In the original fixed-salinity coupling, the sea ice assumes that new ice
+has salinity :math:`S_{ref}`. With porosity enabled, the ocean therefore
+returns salt in excess of :math:`S_{ref}` to the top ocean layer, to stay
+consistent:
 
 .. math::
 
@@ -227,10 +209,33 @@ step must be turned off. Setting ``config_expel_excess_frazil_salt = .false.``
 skips the expulsion. All of the frazil salt is then passed to the sea ice
 through ``Fioo_frazils``.
 
+The combination of porosity on (``config_use_frazil_ice_porosity = .true.``)
+and expulsion off (``config_expel_excess_frazil_salt = .false.``) conserves
+salt in the coupled system only when it is used with
+``config_frazil_coupling_type = 'omega-fluxes'`` and
+``config_salt_flux_coupling_type = 'prognostic'`` in MPAS-Seaice. With any
+other sea ice settings, the sea ice assumes a fixed frazil salinity (or
+recomputes the frazil salinity itself). The salt the ocean passes in
+``Fioo_frazils`` is then not the salt the ice stores, nor the salt it returns
+on melt, so salt is not conserved.
+
+Land-ice exception: frazil that forms under land ice (ice-shelf cavities) is
+not passed to the sea ice, and its salinity is assumed to be 0. With porosity
+on, however, the layer loop still removes salt :math:`\phi S_k` from the
+ocean as this frazil forms. To keep salt in the ocean, the expulsion step is
+always applied under land ice, regardless of
+``config_expel_excess_frazil_salt``. Because the target salinity is 0 under
+land ice, all of the extracted salt is returned to the top ocean layer of the
+cavity column, and none is added to ``accumulatedFrazilIceSalinity``.
+
 As part of this change, the salt content in the frazil routine was made
 dimensionally consistent: salt mass is now computed as thickness times
 salinity times ice density times ``ppt_to_salt`` (kg m\ :sup:`-2`), in both
-the formation step and the expulsion step.
+the formation step and the expulsion step. The previous code used thickness
+times salinity. With the default ice density of 1000 kg m\ :sup:`-3` the two
+are mathematically equal, but multiplying by 1000 and then by 0.001 rounds
+twice in floating point. Results are therefore not bit-for-bit with the
+previous code; the differences are at roundoff level.
 
 For the non-omega (default) sea ice path, MPAS-Seaice adds a spatially
 varying forcing field ``oceanFrazilSalinityReduction`` (default 3 ppt). It is
@@ -239,10 +244,6 @@ new frazil relative to the sea surface salinity.
 
 Algorithm Design: Prognostic salt flux from sea ice melt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 This capability uses an option that already exists in Icepack,
 ``saltflux_option``. MPAS-Seaice previously allowed only ``'constant'``.
@@ -274,10 +275,6 @@ used with ``omega-fluxes``.
 Algorithm Design: Distinct coupling fields for melt potential and frazil energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 Previously, ``Fioo_q`` was positive when frazil formed (frazil energy) and
 negative when the ocean was above freezing (melt potential). The new scheme
 splits these roles:
@@ -297,10 +294,6 @@ and a frazil salt flux ``Fioo_frazils`` is added.
 
 Algorithm Design: Conservation and diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 Three ice-to-ocean fields are added: ``Fioi_frazilm``, ``Fioi_frazils`` and
 ``Fioi_frazilh``. They carry the frazil mass adjustment the sea ice returns
@@ -322,10 +315,6 @@ Implementation
 
 Implementation: Ocean is the single source of frazil mass, salt and energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 MPAS-Ocean:
 
@@ -368,10 +357,6 @@ MPAS-Seaice:
 Implementation: Variable frazil salinity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 * New MPAS-Ocean namelist option in the ``frazil_ice`` group (added to
   ``Registry.xml``, ``namelist_definition_mpaso.xml``,
   ``namelist_defaults_mpaso.xml``, ``build-namelist`` and
@@ -382,17 +367,23 @@ Contributors: Nicole Jeffery
      config_expel_excess_frazil_salt = .true.   ! default
 
   If true, the ocean releases frazil salt in the upper ocean layer in excess
-  of the fixed salinity coupling assumption. Set it to false when using
-  variable sea ice salinity coupling.
+  of the fixed salinity coupling assumption. Set it to false only together
+  with ``config_frazil_coupling_type = 'omega-fluxes'`` and
+  ``config_salt_flux_coupling_type = 'prognostic'`` in MPAS-Seaice;
+  otherwise the coupled system does not conserve salt.
+* In ``src/shared/mpas_ocn_frazil_forcing.F``, the expulsion step runs when
+
+  .. code-block:: fortran
+
+     if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. &
+         (config_expel_excess_frazil_salt .or. underLandIce)) then
+
+  so that frazil salt under land ice is always returned to the ocean.
 * The MPAS-Seaice forcing field ``oceanFrazilSalinityReduction`` is added to
   the ``ocean_coupling`` pool and to the monthly and initial forcing groups.
 
 Implementation: Prognostic salt flux from sea ice melt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 * MPAS-Seaice namelist option (``Registry.xml``):
 
@@ -413,10 +404,6 @@ Contributors: Nicole Jeffery
 Implementation: Distinct coupling fields for melt potential and frazil energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 * ``driver-mct/shr/seq_flds_mod.F90`` and ``driver-moab/shr/seq_flds_mod.F90``:
   rename ``Fioo_frazil`` to ``Fioo_frazilm`` and add ``Fioo_frazils``
   (kg m\ :sup:`-2` s\ :sup:`-1`) and ``Fioo_frazilh`` (W m\ :sup:`-2`) to the
@@ -426,10 +413,6 @@ Contributors: Nicole Jeffery
 
 Implementation: Conservation and diagnostics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
 
 * ``seq_flds_mod.F90`` (MCT and MOAB): add ``Fioi_frazilm``,
   ``Fioi_frazils`` and ``Fioi_frazilh`` to the ice-to-ocean field lists.
@@ -445,13 +428,10 @@ Contributors: Nicole Jeffery
 Implementation: Backward compatibility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
 The defaults (``config_frazil_coupling_type = 'external'``,
 ``config_expel_excess_frazil_salt = .true.``,
-``config_salt_flux_coupling_type = 'constant'``) keep the original behavior.
+``config_salt_flux_coupling_type = 'constant'``) keep the original behavior,
+with roundoff-level differences from the frazil salt unit conversion.
 To enable the omega-type coupling, set the following in ``user_nl_mpassi``:
 
 .. code-block:: fortran
@@ -463,6 +443,18 @@ To enable the omega-type coupling, set the following in ``user_nl_mpassi``:
 All three settings are required. ``omega-fluxes`` is checked against
 ``config_ocean_surface_type = 'free'`` at initialization in coupled runs.
 
+To use variable (porosity-based) frazil salinity in the coupled system, also
+set the following in ``user_nl_mpaso``:
+
+.. code-block:: fortran
+
+   config_use_frazil_ice_porosity = .true.
+   config_expel_excess_frazil_salt = .false.
+
+These ocean settings must only be used with the three MPAS-Seaice settings
+above. The ocean does not check the sea ice configuration, so this is the
+user's responsibility.
+
 
 Testing
 -------
@@ -470,32 +462,53 @@ Testing
 Testing and Validation: Backward compatibility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
-Existing E3SM developer tests are expected to be bit-for-bit in model state.
-They show baseline differences only because new coupler fields were added
-and ``Fioo_q`` was split into two fields.
+Existing E3SM tests that use frazil are not bit-for-bit with the previous
+code. The frazil salt unit conversion introduces roundoff-level differences
+in the ocean salinity, which grow over the run. Baseline comparisons also
+show differences because new coupler fields were added and ``Fioo_q`` was
+split into two fields. Tests are expected to run to completion, and the
+default configuration should remain climatologically unchanged.
 
 Testing and Validation: Omega-type coupling and conservation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Date last modified: 2026/11/04
-
-Contributors: Nicole Jeffery
-
-A new test is added to the ``e3sm_integration`` suite in
-``cime_config/tests.py``:
+Two tests are in the ``e3sm_ocnice_stealth_features`` suite in
+``cime_config/tests.py`` (also inherited by ``e3sm_ocnice_extra_coverage``):
 
 .. code-block:: none
 
    SMS_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.mpassi-frazil_omega_coupling
+   SMS_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850.mpaso-frazil_porosity_omega_coupling
 
 The ``mpassi/frazil_omega_coupling`` testmod sets the three MPAS-Seaice
 namelist options listed above, including
 ``config_salt_flux_coupling_type = 'prognostic'``, so the prognostic salt
-melt flux is exercised together with the omega-type frazil coupling. Conservation is checked with the coupler
-budget tables, which now list frazil heat, water and salt separately for the
-ocean and ice, and with the MPAS-Ocean conservation check analysis member
-(``mpaso-conservation_check`` testmod).
+melt flux is exercised together with the omega-type frazil coupling. It does
+not change the MPAS-Ocean frazil options.
+
+The ``mpaso/frazil_porosity_omega_coupling`` testmod tests the full
+variable frazil salinity configuration. It sets the same three MPAS-Seaice
+options, plus the following in ``user_nl_mpaso``:
+
+.. code-block:: fortran
+
+   config_use_frazil_ice_porosity = .true.
+   config_frazil_ice_porosity = 0.85
+   config_expel_excess_frazil_salt = .false.
+
+A porosity below 1 is used so that the frazil salinity, :math:`0.85 \, S_k`,
+is lower than the ocean salinity. This exercises a variable frazil salinity
+that differs from both the ocean salinity and the fixed reference salinity.
+
+The test uses the CRYO1850 compset, which has ice-shelf cavities with frazil
+under land ice, so the land-ice exception is also exercised. The testmod
+turns on
+the conservation check analysis members in both MPAS-Ocean and MPAS-Seaice
+(``config_AM_conservationCheck_enable = .true.``). Their energy, mass and
+salt budgets are written to the component log files. Neither check stops the
+run on a salt imbalance, so the logs must be inspected to confirm
+conservation.
+
+Conservation across components is also checked with the coupler budget
+tables, which now list frazil heat, water and salt separately for the ocean
+and ice.
