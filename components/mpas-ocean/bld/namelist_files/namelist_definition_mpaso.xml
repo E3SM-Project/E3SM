@@ -399,6 +399,14 @@ Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_Leith_dx" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Characteristic length scale, usually the smallest dx in the mesh
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_Leith_visc2_max" type="real"
 	category="hmix_Leith" group="hmix_Leith">
 Upper bound on the allowable value of Leith-computed viscosity
@@ -562,6 +570,22 @@ Default: Defined in namelist_defaults.xml
 maximum grid scale to scale up buoyancy gradient
 
 Valid values: around 1 degree
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ice_aware" type="logical"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+flag to enable the ice-aware MLE for submesoscale eddies
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ice_aware_crit_conc" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+Critical sea-ice concentration (fraction) for the ice-aware MLE. Where the sea-ice concentration averaged to an edge is at or below this value, the MLE efficiency decreases smoothly as concentration increases. Above this value, the efficiency is held at its fully ice-covered value of about 0.26.
+
+Valid values: between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1777,6 +1801,22 @@ Default: Defined in namelist_defaults.xml
 maximum fraction of layer thickness than can be used or created at an instant by frazil.
 
 Valid values: Any positive real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_include_sensible_heat_frazil" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_expel_excess_frazil_salt" type="logical"
+	category="frazil_ice" group="frazil_ice">
+If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

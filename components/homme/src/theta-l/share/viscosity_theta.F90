@@ -53,10 +53,9 @@ type (EdgeBuffer_t)  , intent(inout) :: edgebuf  ! initialized for 5 vars
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
-integer :: i,j,k,kptr,ie,nlyr_tot,ssize
+integer :: k,kptr,ie,nlyr_tot,ssize
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
-real (kind=real_kind), dimension(np,np) :: tmp2
 real (kind=real_kind), dimension(np,np,nlevp) :: p_i
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2

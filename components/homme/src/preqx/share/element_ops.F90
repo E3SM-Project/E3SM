@@ -321,7 +321,6 @@ contains
     integer,          intent(in)    :: n0,n1,ntQ
     type(element_t),  intent(inout) :: elem
     integer :: n
-    real(real_kind), dimension(np,np,nlev) :: cp_star,kappa_star
 
     do n=n0,n1
       ! set prognostic state variables at level midpoints
@@ -349,7 +348,7 @@ contains
     type(element_t), intent(inout) :: elem
     type (hvcoord_t),intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
 
-    real(real_kind) , dimension(np,np,nlev) :: phi,p,kappa_star, Rstar
+    real(real_kind) , dimension(np,np,nlev) :: phi,p, Rstar
 
     integer :: k
     call  get_phi(elem,phi,hvcoord,nt,ntQ)

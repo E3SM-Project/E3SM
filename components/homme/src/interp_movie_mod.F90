@@ -457,9 +457,9 @@ contains
 
   subroutine interp_movie_output(elem, tl, par, phimean, hvcoord)
 
-    use kinds, only : int_kind, real_kind
+    use kinds, only : real_kind
     use element_mod, only : element_t
-    use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
+    use time_mod, only : Timelevel_t, time_at, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
     use element_ops, only : get_field, get_field_i

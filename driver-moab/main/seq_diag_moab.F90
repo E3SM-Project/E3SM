@@ -40,6 +40,7 @@ module seq_diag_moab
        mct_string_tochar, mct_gsmap, mct_aVect_indexRA, MCT_AVECT_NRATTR, &
        mct_string_clean, mct_avect_getrlist
   use esmf, only : esmf_clock
+  use glc_elevclass_mod, only: glc_get_num_elevation_classes, glc_elevclass_as_string
   use shr_log_mod, only: s_logunit=>shr_log_unit
   use seq_comm_mct, only: logunit, cplid, seq_comm_setptrs, seq_comm_clean, &
        mbaxid, mblxid, mboxid, mbixid, mbrxid, mbofxid
@@ -143,47 +144,53 @@ module seq_diag_moab
   integer(in),parameter :: f_hsen      =10     ! heat : sensible
   integer(in),parameter :: f_hpolar    =11     ! heat : AIS imbalance
   integer(in),parameter :: f_hh2ot     =12     ! heat : water temperature
+  integer(in),parameter :: f_hgsmb     =13     ! heat : Greenland ice sheet surface mass balance
 
-  integer(in),parameter :: f_wfrz      =13     ! water: freezing
-  integer(in),parameter :: f_wmelt     =14     ! water: melting
-  integer(in),parameter :: f_wrain     =15     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow     =16     ! water: precip, frozen
-  integer(in),parameter :: f_wpolar    =17     ! water: AIS imbalance
-  integer(in),parameter :: f_wevap     =18     ! water: evaporation
-  integer(in),parameter :: f_wroff     =19     ! water: runoff/flood
-  integer(in),parameter :: f_wioff     =20     ! water: frozen runoff
-  integer(in),parameter :: f_wirrig    =21     ! water: irrigation
+  integer(in),parameter :: f_hfrazi    =14     ! heat : frazil from ice
+  integer(in),parameter :: f_wfrz      =15     ! water: freezing
+  integer(in),parameter :: f_wfrzi     =16     ! water: freezing frazil from ice
+  integer(in),parameter :: f_wmelt     =17     ! water: melting
+  integer(in),parameter :: f_wrain     =18     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow     =19     ! water: precip, frozen
+  integer(in),parameter :: f_wpolar    =20     ! water: AIS imbalance
+  integer(in),parameter :: f_wgsmb     =21     ! water: Greenland ice sheet surface mass balance
+  integer(in),parameter :: f_wevap     =22     ! water: evaporation
+  integer(in),parameter :: f_wroff     =23     ! water: runoff/flood
+  integer(in),parameter :: f_wioff     =24     ! water: frozen runoff
+  integer(in),parameter :: f_wirrig    =25     ! water: irrigation
 
-  integer(in),parameter :: f_wfrz_16O  =22     ! water: freezing
-  integer(in),parameter :: f_wmelt_16O =23     ! water: melting
-  integer(in),parameter :: f_wrain_16O =24     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_16O =25     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_16O =26     ! water: evaporation
-  integer(in),parameter :: f_wroff_16O =27     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_16O =28     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_16O  =26     ! water: freezing
+  integer(in),parameter :: f_wmelt_16O =27     ! water: melting
+  integer(in),parameter :: f_wrain_16O =28     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_16O =29     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_16O =30     ! water: evaporation
+  integer(in),parameter :: f_wroff_16O =31     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_16O =32     ! water: frozen runoff
 
-  integer(in),parameter :: f_wfrz_18O  =29     ! water: freezing
-  integer(in),parameter :: f_wmelt_18O =30     ! water: melting
-  integer(in),parameter :: f_wrain_18O =31     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_18O =32     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_18O =33     ! water: evaporation
-  integer(in),parameter :: f_wroff_18O =34     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_18O =35     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_18O  =33     ! water: freezing
+  integer(in),parameter :: f_wmelt_18O =34     ! water: melting
+  integer(in),parameter :: f_wrain_18O =35     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_18O =36     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_18O =37     ! water: evaporation
+  integer(in),parameter :: f_wroff_18O =38     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_18O =39     ! water: frozen runoff
 
-  integer(in),parameter :: f_wfrz_HDO  =36     ! water: freezing
-  integer(in),parameter :: f_wmelt_HDO =37     ! water: melting
-  integer(in),parameter :: f_wrain_HDO =38     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_HDO =39     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_HDO =40     ! water: evaporation
-  integer(in),parameter :: f_wroff_HDO =41     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_HDO =42     ! water: frozen runoff
-  integer(in),parameter :: f_salt      =43     ! salt: salinity flux
+  integer(in),parameter :: f_wfrz_HDO  =40     ! water: freezing
+  integer(in),parameter :: f_wmelt_HDO =41     ! water: melting
+  integer(in),parameter :: f_wrain_HDO =42     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_HDO =43     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_HDO =44     ! water: evaporation
+  integer(in),parameter :: f_wroff_HDO =45     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_HDO =46     ! water: frozen runoff
+  integer(in),parameter :: f_salt      =47     ! salt: salinity flux
+  integer(in),parameter :: f_sfrazo    =48     ! salt: salinity flux frazil from ocean
+  integer(in),parameter :: f_sfrazi    =49     ! salt: salinity flux frazil from ice
 
-  integer(in),parameter :: f_size     = f_salt        ! Total array size of all elements
+  integer(in),parameter :: f_size     = f_sfrazi      ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_h        = f_hfrz        ! 1st index for heat
-  integer(in),parameter :: f_h_end    = f_hh2ot       ! Last index for heat
+  integer(in),parameter :: f_h_end    = f_hgsmb       ! Last index for heat
   integer(in),parameter :: f_w        = f_wfrz        ! 1st index for water
   integer(in),parameter :: f_w_end    = f_wirrig      ! Last index for water
   integer(in),parameter :: f_16O      = f_wfrz_16O    ! 1st index for 16O water isotope
@@ -193,21 +200,23 @@ module seq_diag_moab
   integer(in),parameter :: f_18O_end  = f_wioff_18O   ! Last index for 18O water isotope
   integer(in),parameter :: f_HDO_end  = f_wioff_HDO   ! Last index for HDO water isotope
   integer(in),parameter :: f_s        = f_salt        ! 1st index for salt
-  integer(in),parameter :: f_s_end    = f_salt        ! last index for salt
+  integer(in),parameter :: f_s_end    = f_sfrazi      ! last index for salt
 
   character(len=12),parameter :: fname(f_size) = &
 
-       (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
+     (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-       '      hpolar','    hh2otemp','     wfreeze','       wmelt','       wrain', &
-       '       wsnow','      wpolar','       wevap','     wrunoff','     wfrzrof', &
+       '      hpolar','    hh2otemp','       hgsmb','      hfrazi', &
+       '     wfreeze','    wfreezei','   wmeltbase','       wrain','       wsnow', &
+       '      wpolar','       wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
        '   wevap_16O',' wrunoff_16O',' wfrzrof_16O',                               &
        ' wfreeze_18O','   wmelt_18O','   wrain_18O','   wsnow_18O',                &
        '   wevap_18O',' wrunoff_18O',' wfrzrof_18O',                               &
        ' wfreeze_HDO','   wmelt_HDO','   wrain_HDO','   wsnow_HDO',                &
-       '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO','        salt'/)
+       '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO',                               &
+       '    saltbase','      sfrazo','      sfrazi'/)
 
   !--- P for period ---
 
@@ -794,6 +803,13 @@ contains
     real(r8), allocatable    :: fld_flood_16O(:)
     real(r8), allocatable    :: fld_flood_18O(:)
     real(r8), allocatable    :: fld_flood_HDO(:)
+    real(r8), allocatable    :: fld_qice(:,:)       ! per-EC Flgl_qice on the land mesh
+    real(r8), allocatable    :: fld_frac(:,:)       ! per-EC Sg_ice_covered on the land mesh
+    real(r8), allocatable    :: fld_icemask(:)      ! Sg_icemask on the land mesh
+    real(r8)                 :: effective_area      ! area weighted by min(lfrin, icemask)
+    real(r8)                 :: qice_col_sum        ! SMB summed over elevation classes
+    integer(in)              :: num                 ! elevation class index
+    integer(in),save         :: glc_nec = 0         ! number of elevation classes
     logical,save             :: lnd_prognostic
     logical,save             :: rof_prognostic
     logical,save             :: first_time    = .true.
@@ -827,6 +843,7 @@ contains
           flds_wiso     = .true.
        end if
        index_l2x_Flrl_irrig = mct_aVect_indexRA(av_tmp,'Flrl_irrig',perrWith='quiet')
+       glc_nec = glc_get_num_elevation_classes()
     end if
 
     ip = p_inst
@@ -877,6 +894,19 @@ contains
           call mbGetCellTagVals(mblxid, 'Flrl_rofi_HDO', fld_rofi_HDO, lSize)
        end if
 
+       ! per-elevation-class SMB sent to the ice sheet, and the glc fields it is
+       ! weighted by; mirrors the f_wgsmb term of seq_diag_lnd_mct
+       if (glc_nec >= 1) then
+          allocate(fld_qice(lSize,0:glc_nec), fld_frac(lSize,0:glc_nec), fld_icemask(lSize))
+          call mbGetCellTagVals(mblxid, 'Sg_icemask', fld_icemask, lSize)
+          do num = 0,glc_nec
+             call mbGetCellTagVals(mblxid, 'Flgl_qice'//glc_elevclass_as_string(num), &
+                  fld_qice(:,num), lSize)
+             call mbGetCellTagVals(mblxid, 'Sg_ice_covered'//glc_elevclass_as_string(num), &
+                  fld_frac(:,num), lSize)
+          end do
+       end if
+
        ic = c_lnd_lr
        do n=1,lSize
           ca_l = area_data(n) * lfrin_data(n)
@@ -895,6 +925,16 @@ contains
              nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*fld_irrig(n)
           end if
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*fld_rofi(n)
+
+          qice_col_sum = 0.0_r8
+          if (glc_nec >= 1) then
+             effective_area = min(lfrin_data(n),fld_icemask(n)) * area_data(n)
+             do num = 0,glc_nec
+                ! flux times the area fraction in this elevation class times cell area
+                qice_col_sum = qice_col_sum + fld_qice(n,num)*fld_frac(n,num)*effective_area
+             end do
+          end if
+          nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - qice_col_sum
 
           if (flds_wiso_lnd) then
              nf = f_wevap_16O;
@@ -920,10 +960,12 @@ contains
           end if
        end do
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice
 
        deallocate(fld_swnet, fld_lwup, fld_lat, fld_sen, fld_evap)
        deallocate(fld_rofsur, fld_rofgwl, fld_rofsub, fld_rofdto, fld_wslake)
        deallocate(fld_rofi)
+       if (glc_nec >= 1) deallocate(fld_qice, fld_frac, fld_icemask)
        if (index_l2x_Flrl_irrig /= 0) deallocate(fld_irrig)
        if (flds_wiso_lnd) then
           deallocate(fld_evap_16O, fld_evap_18O, fld_evap_HDO)
@@ -1232,21 +1274,26 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_diag_glc_moab( glc, infodata)
+  subroutine seq_diag_glc_moab( glc, infodata, do_x2g, do_g2x)
 
-    type(component_type)    , intent(in) :: glc    ! component type for instance1
-    type(seq_infodata_type) , intent(in) :: infodata
+    use seq_comm_mct, only : mbgxid
+    use prep_glc_mod, only : prep_glc_get_l2gacc_lm_cnt_avg
+
+    type(component_type)    , intent(in)           :: glc    ! component type for instance1
+    type(seq_infodata_type) , intent(in)           :: infodata
+    logical                 , intent(in), optional :: do_x2g
+    logical                 , intent(in), optional :: do_g2x
 
     !EOP
 
     !----- local -----
-    !TODO  change this to seq_comm_mct when GLC is ported
-    integer(in)             :: mbgxid
     integer(in)              :: n,ic,nf,ip    ! generic index
     integer(in)              :: lSize         ! size of mesh
     real(r8)                 :: ca_g          ! area of a grid cell
     real(r8), allocatable    :: area_data(:)
     real(r8), allocatable    :: fld_rofl(:), fld_rofi(:), fld_irrofi(:)
+    real(r8), allocatable    :: fld_qice(:), fld_icemask(:)
+    integer, pointer         :: l2gacc_lm_cnt_avg ! lnd samples in the last average
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_glc_moab) '
@@ -1255,27 +1302,58 @@ contains
     !
     !-------------------------------------------------------------------------------
 
+    if (.not. present(do_x2g) .and. .not. present(do_g2x)) then
+       call shr_sys_abort(subName//"ERROR: must input a bundle")
+    end if
+
     !---------------------------------------------------------------------------
     ! add values found in this bundle to the budget table
     !---------------------------------------------------------------------------
 
     ip = p_inst
-    ic = c_glc_gs
-
     lSize = mbGetnCells(mbgxid)
-    allocate(area_data(lSize), fld_rofl(lSize), fld_rofi(lSize), fld_irrofi(lSize))
-    call mbGetCellTagVals(mbgxid, afldname,    area_data, lSize)
-    call mbGetCellTagVals(mbgxid, 'Fogg_rofl', fld_rofl,  lSize)
-    call mbGetCellTagVals(mbgxid, 'Fogg_rofi', fld_rofi,  lSize)
-    call mbGetCellTagVals(mbgxid, 'Figg_rofi', fld_irrofi,lSize)
-    do n=1,lSize
-       ca_g = area_data(n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofl(n)
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofi(n) &
-            - ca_g*fld_irrofi(n)
-    end do
-    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-    deallocate(area_data, fld_rofl, fld_rofi, fld_irrofi)
+    allocate(area_data(lSize))
+    call mbGetCellTagVals(mbgxid, afldname, area_data, lSize)
+
+    if (present(do_g2x)) then  ! fields from glc to coupler (g2x_)
+
+       ic = c_glc_gr
+       allocate(fld_rofl(lSize), fld_rofi(lSize), fld_irrofi(lSize))
+       call mbGetCellTagVals(mbgxid, 'Fogg_rofl', fld_rofl,  lSize)
+       call mbGetCellTagVals(mbgxid, 'Fogg_rofi', fld_rofi,  lSize)
+       call mbGetCellTagVals(mbgxid, 'Figg_rofi', fld_irrofi,lSize)
+       do n=1,lSize
+          ca_g = area_data(n)
+          nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofl(n)
+          nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofi(n) &
+               - ca_g*fld_irrofi(n)
+       end do
+       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+       deallocate(fld_rofl, fld_rofi, fld_irrofi)
+
+    end if ! end do fields from glc to coupler (g2x_)
+
+    if (present(do_x2g)) then  ! fields from coupler to glc (x2g_)
+
+       ! Flgl_qice on the glc mesh is the average over the land accumulation
+       ! interval, so scale by the number of samples in it, as the mct driver does
+       l2gacc_lm_cnt_avg => prep_glc_get_l2gacc_lm_cnt_avg()
+       ic = c_glc_gs
+       allocate(fld_qice(lSize), fld_icemask(lSize))
+       call mbGetCellTagVals(mbgxid, 'Flgl_qice',  fld_qice,    lSize)
+       call mbGetCellTagVals(mbgxid, 'Sg_icemask', fld_icemask, lSize)
+       nf = f_wgsmb
+       do n=1,lSize
+          ca_g = area_data(n) * fld_icemask(n)
+          budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*fld_qice(n)
+       end do
+       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * l2gacc_lm_cnt_avg
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice
+       deallocate(fld_qice, fld_icemask)
+
+    end if ! end do fields from coupler to glc (x2g_)
+
+    deallocate(area_data)
 
   end subroutine seq_diag_glc_moab
 
@@ -1307,7 +1385,8 @@ contains
     integer(in)              :: lSize         ! size of mesh
     real(r8)                 :: ca_i,ca_o,ca_c  ! area of a grid cell
     real(r8), allocatable    :: area_data(:), ofrac_data(:), ifrac_data(:)
-    real(r8), allocatable    :: fld_frazil(:), fld_q(:), fld_h2otemp(:)
+    real(r8), allocatable    :: fld_frazilm(:), fld_h2otemp(:)
+    real(r8), allocatable    :: fld_frazils(:), fld_frazilh(:)
     real(r8), allocatable    :: fld_frazil_li(:), fld_q_li(:)
     real(r8), allocatable    :: fld_ismw(:), fld_rrofl(:), fld_rrofi(:), fld_ismh(:), fld_rrofih(:)
     real(r8), allocatable    :: fld_lwup(:), fld_lat(:), fld_sen(:), fld_evap(:)
@@ -1315,6 +1394,7 @@ contains
     real(r8), allocatable    :: fld_melth(:), fld_meltw(:), fld_bergh(:), fld_bergw(:)
     real(r8), allocatable    :: fld_swnet(:), fld_lwdn(:), fld_rain(:), fld_snow(:)
     real(r8), allocatable    :: fld_rofl(:), fld_rofi(:), fld_salt(:)
+    real(r8), allocatable    :: fld_frazilmi(:), fld_frazilsi(:), fld_frazilhi(:)
     real(r8), allocatable    :: fld_meltw_16O(:), fld_meltw_18O(:), fld_meltw_HDO(:)
     real(r8), allocatable    :: fld_rain_16O(:),  fld_rain_18O(:),  fld_rain_HDO(:)
     real(r8), allocatable    :: fld_snow_16O(:),  fld_snow_18O(:),  fld_snow_HDO(:)
@@ -1366,9 +1446,11 @@ contains
     end if
 
     if (present(do_o2x)) then
-       allocate(fld_frazil(lSize), fld_q(lSize), fld_h2otemp(lSize))
-       call mbGetCellTagVals(mboxid, 'Fioo_frazil',  fld_frazil,  lSize)
-       call mbGetCellTagVals(mboxid, 'Fioo_q',       fld_q,       lSize)
+       allocate(fld_frazilm(lSize), fld_h2otemp(lSize))
+       allocate(fld_frazilh(lSize), fld_frazils(lSize))
+       call mbGetCellTagVals(mboxid, 'Fioo_frazilm',  fld_frazilm,  lSize)
+       call mbGetCellTagVals(mboxid, 'Fioo_frazils', fld_frazils, lSize)
+       call mbGetCellTagVals(mboxid, 'Fioo_frazilh', fld_frazilh, lSize)
        call mbGetCellTagVals(mboxid, 'Faoo_h2otemp', fld_h2otemp, lSize)
        if (flds_polar) then
           allocate(fld_frazil_li(lSize), fld_q_li(lSize))
@@ -1387,8 +1469,9 @@ contains
           ca_i =  area_data(n) * ifrac_data(n)
           ca_c =  area_data(n)
           nf = f_area;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
-          nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,fld_frazil(n))
-          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,fld_q(n))
+          nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,fld_frazilm(n))
+          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,fld_frazilh(n))
+          nf = f_sfrazo; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,fld_frazils(n))
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_h2otemp(n)
           if (flds_polar) then
              nf = f_wpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_c*fld_frazil_li(n)
@@ -1400,7 +1483,7 @@ contains
              nf = f_hpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*fld_rrofih(n)
           end if
        end do
-       deallocate(fld_frazil, fld_q, fld_h2otemp)
+       deallocate(fld_frazilm, fld_h2otemp, fld_frazilh, fld_frazils)
        if (flds_polar) deallocate(fld_frazil_li, fld_q_li, fld_ismw, fld_rrofl, fld_rrofi, fld_ismh, fld_rrofih)
     end if
 
@@ -1460,18 +1543,22 @@ contains
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_bergh(lSize), fld_bergw(lSize))
        allocate(fld_swnet(lSize), fld_lwdn(lSize), fld_rain(lSize), fld_snow(lSize))
        allocate(fld_rofl(lSize), fld_rofi(lSize), fld_salt(lSize))
+       allocate(fld_frazilmi(lSize), fld_frazilhi(lSize), fld_frazilsi(lSize))
     ! if model is not prognostic, need to make sure these fields are zero
        if(ocn_prognostic) then
-         call mbGetCellTagVals(mboxid, 'Fioi_melth',  fld_melth,  lSize)
-         call mbGetCellTagVals(mboxid, 'Fioi_meltw',  fld_meltw,  lSize)
-         call mbGetCellTagVals(mboxid, 'Foxx_swnet',  fld_swnet,  lSize)
-         call mbGetCellTagVals(mboxid, 'Faxa_snow',   fld_snow,   lSize)
-         call mbGetCellTagVals(mboxid, 'Faxa_rain',   fld_rain,   lSize)
-         call mbGetCellTagVals(mboxid, 'Foxx_rofi',   fld_rofi,   lSize)
-         call mbGetCellTagVals(mboxid, 'Foxx_rofl',   fld_rofl,   lSize)
-         call mbGetCellTagVals(mboxid, 'PFioi_bergh', fld_bergh,  lSize)
-         call mbGetCellTagVals(mboxid, 'PFioi_bergw', fld_bergw,  lSize)
-         call mbGetCellTagVals(mboxid, 'Fioi_salt',   fld_salt,   lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_melth',  fld_melth,   lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_meltw',  fld_meltw,   lSize)
+         call mbGetCellTagVals(mboxid, 'Foxx_swnet',  fld_swnet,   lSize)
+         call mbGetCellTagVals(mboxid, 'Faxa_snow',   fld_snow,    lSize)
+         call mbGetCellTagVals(mboxid, 'Faxa_rain',   fld_rain,    lSize)
+         call mbGetCellTagVals(mboxid, 'Foxx_rofi',   fld_rofi,    lSize)
+         call mbGetCellTagVals(mboxid, 'Foxx_rofl',   fld_rofl,    lSize)
+         call mbGetCellTagVals(mboxid, 'PFioi_bergh', fld_bergh,   lSize)
+         call mbGetCellTagVals(mboxid, 'PFioi_bergw', fld_bergw,   lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_salt',   fld_salt,    lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_frazilm',fld_frazilmi,lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_frazilh',fld_frazilhi,lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_frazils',fld_frazilsi,lSize)
        else
          fld_melth(:)=0.0_r8
          fld_meltw(:)=0.0_r8
@@ -1483,6 +1570,9 @@ contains
          fld_bergh(:) = 0.0_r8
          fld_bergw(:) = 0.0_r8
          fld_salt(:) = 0.0_r8
+         fld_frazilmi(:) = 0.0_r8
+         fld_frazilhi(:) = 0.0_r8
+         fld_frazilsi(:) = 0.0_r8
        endif
        call mbGetCellTagVals(mboxid, 'Faxa_lwdn',   fld_lwdn,   lSize)
        if ( flds_wiso_ocn ) then
@@ -1517,13 +1607,18 @@ contains
           nf = f_hswnet; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_swnet(n)
           nf = f_hlwdn ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_lwdn(n)
           nf = f_hpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_bergh(n)
-          nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_meltw(n)
+          nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i) * &
+            (fld_meltw(n) - fld_frazilmi(n))
           nf = f_wrain ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rain(n)
           nf = f_wsnow ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_snow(n)
           nf = f_wpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_bergw(n)
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rofl(n)
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rofi(n)
-          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_salt(n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i) * &
+            (fld_salt(n) - fld_frazilsi(n))
+          nf = f_wfrzi ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazilmi(n)
+          nf = f_hfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazilhi(n)
+          nf = f_sfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazilsi(n)
           if ( flds_wiso_ocn ) then
              nf = f_wmelt_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_meltw_16O(n)
@@ -1562,6 +1657,7 @@ contains
        deallocate(fld_melth, fld_meltw, fld_bergh, fld_bergw)
        deallocate(fld_swnet, fld_lwdn, fld_rain, fld_snow)
        deallocate(fld_rofl, fld_rofi, fld_salt)
+       deallocate(fld_frazilmi, fld_frazilhi, fld_frazilsi)
        if (flds_wiso_ocn) then
           deallocate(fld_meltw_16O, fld_meltw_18O, fld_meltw_HDO)
           deallocate(fld_rain_16O,  fld_rain_18O,  fld_rain_HDO)
@@ -1612,9 +1708,11 @@ contains
     real(r8), allocatable    :: fld_lwup(:), fld_lat(:), fld_sen(:), fld_evap(:)
     real(r8), allocatable    :: fld_meltw_16O(:), fld_meltw_18O(:), fld_meltw_HDO(:)
     real(r8), allocatable    :: fld_evap_16O(:),  fld_evap_18O(:),  fld_evap_HDO(:)
-    real(r8), allocatable    :: fld_lwdn(:), fld_rain(:), fld_snow(:), fld_frazil(:), fld_q(:), fld_rofi(:)
+    real(r8), allocatable    :: fld_lwdn(:), fld_rain(:), fld_snow(:), fld_frazilm(:), fld_rofi(:)
     real(r8), allocatable    :: fld_rain_16O(:), fld_rain_18O(:), fld_rain_HDO(:)
     real(r8), allocatable    :: fld_snow_16O(:), fld_snow_18O(:), fld_snow_HDO(:), fld_salt(:)
+    real(r8), allocatable    :: fld_frazilh(:), fld_frazils(:)
+    real(r8), allocatable    :: fld_frazilmi(:), fld_frazilhi(:), fld_frazilsi(:)
     logical,save             :: first_time        = .true.
     logical,save             :: flds_wiso_ice     = .false.
     logical,save             :: flds_wiso_ice_x2i = .false.
@@ -1654,16 +1752,20 @@ contains
 
     if (present(do_i2x)) then
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_swpen(lSize), fld_swnet(lSize))
+       allocate(fld_frazilmi(lSize), fld_frazilhi(lSize), fld_frazilsi(lSize))
        allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize), fld_salt(lSize))
-       call mbGetCellTagVals(mbixid, 'Fioi_melth', fld_melth, lSize)
-       call mbGetCellTagVals(mbixid, 'Fioi_meltw', fld_meltw, lSize)
-       call mbGetCellTagVals(mbixid, 'Fioi_swpen', fld_swpen, lSize)
-       call mbGetCellTagVals(mbixid, 'Faii_swnet', fld_swnet, lSize)
-       call mbGetCellTagVals(mbixid, 'Faii_lwup',  fld_lwup,  lSize)
-       call mbGetCellTagVals(mbixid, 'Faii_lat',   fld_lat,   lSize)
-       call mbGetCellTagVals(mbixid, 'Faii_sen',   fld_sen,   lSize)
-       call mbGetCellTagVals(mbixid, 'Faii_evap',  fld_evap,  lSize)
-       call mbGetCellTagVals(mbixid, 'Fioi_salt',  fld_salt,  lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_melth',  fld_melth,   lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_meltw',  fld_meltw,   lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_swpen',  fld_swpen,   lSize)
+       call mbGetCellTagVals(mbixid, 'Faii_swnet',  fld_swnet,   lSize)
+       call mbGetCellTagVals(mbixid, 'Faii_lwup',   fld_lwup,    lSize)
+       call mbGetCellTagVals(mbixid, 'Faii_lat',    fld_lat,     lSize)
+       call mbGetCellTagVals(mbixid, 'Faii_sen',    fld_sen,     lSize)
+       call mbGetCellTagVals(mbixid, 'Faii_evap',   fld_evap,    lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_salt',   fld_salt,    lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_frazilm', fld_frazilmi,lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_frazilh',fld_frazilhi,lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_frazils',fld_frazilsi,lSize)
        if ( flds_wiso_ice ) then
           allocate(fld_meltw_16O(lSize), fld_meltw_18O(lSize), fld_meltw_HDO(lSize))
           allocate(fld_evap_16O(lSize),  fld_evap_18O(lSize),  fld_evap_HDO(lSize))
@@ -1688,9 +1790,14 @@ contains
           nf = f_hlwup ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_lwup(n)
           nf = f_hlatv ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_lat(n)
           nf = f_hsen  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_sen(n)
-          nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw(n)
+          nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i * &
+            (fld_meltw(n) - fld_frazilmi(n))
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_evap(n)
-          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_salt(n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i * &
+            (fld_salt(n) - fld_frazilsi(n))
+          nf = f_wfrzi ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_frazilmi(n)
+          nf = f_sfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_frazilsi(n)
+          nf = f_hfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_frazilhi(n)
           if ( flds_wiso_ice ) then
              nf = f_wmelt_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw_16O(n)
@@ -1708,6 +1815,7 @@ contains
        end do
        deallocate(fld_melth, fld_meltw, fld_swpen, fld_swnet)
        deallocate(fld_lwup, fld_lat, fld_sen, fld_evap, fld_salt)
+       deallocate(fld_frazilmi, fld_frazilsi, fld_frazilhi)
        if (flds_wiso_ice) then
           deallocate(fld_meltw_16O, fld_meltw_18O, fld_meltw_HDO)
           deallocate(fld_evap_16O,  fld_evap_18O,  fld_evap_HDO)
@@ -1716,12 +1824,14 @@ contains
 
     if (present(do_x2i)) then
        allocate(fld_lwdn(lSize), fld_rain(lSize), fld_snow(lSize))
-       allocate(fld_frazil(lSize), fld_q(lSize), fld_rofi(lSize))
+       allocate(fld_frazilm(lSize), fld_rofi(lSize))
+       allocate(fld_frazilh(lSize), fld_frazils(lSize))
        call mbGetCellTagVals(mbixid, 'Faxa_lwdn',   fld_lwdn,   lSize)
        call mbGetCellTagVals(mbixid, 'Faxa_rain',   fld_rain,   lSize)
        call mbGetCellTagVals(mbixid, 'Faxa_snow',   fld_snow,   lSize)
-       call mbGetCellTagVals(mbixid, 'Fioo_frazil', fld_frazil, lSize)
-       call mbGetCellTagVals(mbixid, 'Fioo_q',      fld_q,      lSize)
+       call mbGetCellTagVals(mbixid, 'Fioo_frazilm',fld_frazilm,lSize)
+       call mbGetCellTagVals(mbixid, 'Fioo_frazilh',fld_frazilh,lSize)
+       call mbGetCellTagVals(mbixid, 'Fioo_frazils',fld_frazils,lSize)
        call mbGetCellTagVals(mbixid, 'Fixx_rofi',   fld_rofi,   lSize)
        if ( flds_wiso_ice_x2i ) then
           allocate(fld_rain_16O(lSize), fld_rain_18O(lSize), fld_rain_HDO(lSize))
@@ -1747,9 +1857,11 @@ contains
           nf = f_wsnow; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_snow(n)
           nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_rofi(n)
           nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-               (ca_o+ca_i)*max(0.0_r8,fld_frazil(n))
-          nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-               (ca_o+ca_i)*max(0.0_r8,fld_q(n))
+               (ca_o+ca_i)*max(0.0_r8,fld_frazilm(n))
+          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
+               (ca_o+ca_i)*max(0.0_r8,fld_frazilh(n))
+          nf = f_sfrazo; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
+               (ca_o+ca_i)*max(0.0_r8,fld_frazils(n))
           if ( flds_wiso_ice_x2i ) then
              nf = f_wrain_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_rain_16O(n)
@@ -1773,7 +1885,8 @@ contains
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
-       deallocate(fld_lwdn, fld_rain, fld_snow, fld_frazil, fld_q, fld_rofi)
+       deallocate(fld_lwdn, fld_rain, fld_snow, fld_frazilm, fld_rofi)
+       deallocate(fld_frazils, fld_frazilh)
        if (flds_wiso_ice_x2i) then
           deallocate(fld_rain_16O, fld_rain_18O, fld_rain_HDO)
           deallocate(fld_snow_16O, fld_snow_18O, fld_snow_HDO)

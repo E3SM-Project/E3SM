@@ -63,6 +63,9 @@ TEST_CASE("aodvis") {
     diag->set_input_field(sunlit);
     diag->initialize();
 
+    // Night columns hold the fill value
+    REQUIRE(diag->get().get_header().may_be_filled());
+
     // Run diag
     diag->compute(t0);
 

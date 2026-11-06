@@ -1564,7 +1564,7 @@ contains
     integer, intent(in)  :: intervals
 
 
-    real(kind=real_kind), parameter :: zero = 0.0D0, one=1.0D0, two=2.0D0
+    real(kind=real_kind), parameter :: one=1.0D0, two=2.0D0
 
 
     real (kind=real_kind) :: sub_gll        (intervals,np)

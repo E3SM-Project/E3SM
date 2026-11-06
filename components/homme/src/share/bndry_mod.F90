@@ -298,7 +298,6 @@ contains
 
     logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
-    integer        :: i,j
 
     pSchedule => Schedule(1)
     nlyr = buffer%nlyr       
@@ -364,15 +363,12 @@ contains
     type (EdgeBuffer_t)            :: buffer
 
     type (Schedule_t),pointer                     :: pSchedule
-    type (Cycle_t),pointer                        :: pCycle
-    integer                                       :: dest,length,tag
-    integer                                       :: icycle,ierr
-    integer                                       :: iptr,source,nlyr
+    integer                                       :: length
+    integer                                       :: ierr
+    integer                                       :: iptr,nlyr
     integer                                       :: nSendCycles,nRecvCycles
-    integer                                       :: errorcode,errorlen
     character*(80) errorstring
 
-    logical(kind=log_kind),parameter              :: Debug=.FALSE.
     logical :: singlethread_copy
     integer        :: i,j
 
@@ -390,7 +386,7 @@ contains
           singlethread_copy=.true.
        else
           call abortmp('edgebuffer threads does not match number of active threads')
-       endif			   
+       endif
     endif
 
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
@@ -441,14 +437,13 @@ contains
     integer                                       :: errorcode,errorlen
     character*(80) errorstring
 
-    logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
     integer        :: i
 
 #ifdef _MPI
     if(omp_in_parallel()) then
        print *,'bndry_exchangeV: Warning you are calling a non-thread safe'
-       print *,'		 routine inside a threaded region....     '
+       print *,'                 routine inside a threaded region....     '
        print *,'                Results are not predictable!!            '
     endif
 
@@ -710,7 +705,6 @@ contains
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use dimensions_mod, only: nelemd
 #ifdef _MPI
     use parallel_mod, only : status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
@@ -731,8 +725,7 @@ contains
     integer                                       :: errorcode,errorlen
     character*(80) errorstring
 
-    integer        :: i,i1,i2
-    logical(kind=log_kind),parameter      :: Debug = .FALSE.
+    integer        :: i
 
 
 #if (defined HORIZ_OPENMP)
@@ -819,12 +812,12 @@ contains
 !  will have its on ghostbuffer.   initghostbufer3D() should detect this and abort.
 !
   use kinds, only : real_kind
-  use dimensions_mod, only: nelemd, np
+  use dimensions_mod, only: np
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
        initghostbuffer3D,freeghostbuffer3D
-  use control_mod, only : north,south,east,west,neast, nwest, seast, swest
+  use control_mod, only : neast, nwest, seast, swest
 
   implicit none
 
@@ -835,8 +828,8 @@ contains
 
   real (kind=real_kind) :: cin(2,2,1,nets:nete)  !CE: fvm tracer
   real (kind=real_kind) :: cout(-1:4,-1:4,1,nets:nete)  !CE: fvm tracer
-  integer :: i,j,ie,kptr,np1,np2,nc,nc1,nc2,k,nlev
-  logical :: fail,fail1,fail2
+  integer :: ie,kptr,nc,nc1,nc2,nlev
+  logical :: fail1,fail2
   real (kind=real_kind) :: tol=.1
   call syncmp(hybrid%par)
 !   if (hybrid%par%masterproc) print *,'computing ghost cell corner orientations'
@@ -964,11 +957,10 @@ contains
 #endif
 
   use kinds, only : real_kind, iulog
-  use dimensions_mod, only: nelemd, np, max_neigh_edges
+  use dimensions_mod, only: max_neigh_edges
   use element_mod, only : element_t
   use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
        initghostbuffer3D,freeghostbuffer3D
-  use control_mod, only : north,south,east,west,neast, nwest, seast, swest
   use coordinate_systems_mod, only: cartesian3D_t
   implicit none
 
@@ -979,10 +971,7 @@ contains
 
   real (kind=real_kind) :: cin(2,2,4)                      ! 1x1 element input data
   real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1)   ! 1x1 element output data
-  real (kind=real_kind) :: u   (2,2,4)   
-  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,patch_size,l,l2,sum1,sum2,m
-  logical :: fail,fail1,fail2
-  real (kind=real_kind) :: tol=.1
+  integer :: i,j,ie,kptr,nc,k,nlev,patch_size,l,sum1,sum2
     
   if (par%masterproc) write(iulog,*) 'creating sorted ghost cell neigbor map...' 
   if (par%masterproc) write(iulog,*) 'checking ghost cell neighbor buffer sorting...' 

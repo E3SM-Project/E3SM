@@ -1,4 +1,5 @@
 #include "physics/p3/eamxx_p3_process_interface.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
@@ -16,12 +17,14 @@ void P3Microphysics::run_impl (const double dt)
   const auto policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
+  start_timer("EAMxx::P3::pre_process");
   Kokkos::parallel_for(
     "p3_pre_process",
     policy,
     p3_preproc
   );
   Kokkos::fence();
+  stop_timer("EAMxx::P3::pre_process");
 
   // Update the variables in the p3 input structures with local values.
 
@@ -55,20 +58,24 @@ void P3Microphysics::run_impl (const double dt)
     get_field_out("qi_sed").deep_copy(0.0);
   }
 
+  start_timer("EAMxx::P3::p3_main");
   P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                history_only, lookup_tables,
 #ifdef SCREAM_P3_SMALL_KERNELS
                temporaries,
 #endif
                workspace_mgr, m_num_cols, m_num_levs);
+  stop_timer("EAMxx::P3::p3_main");
 
   // Conduct the post-processing of the p3_main output.
+  start_timer("EAMxx::P3::post_process");
   Kokkos::parallel_for(
     "p3_post_process",
     policy,
     p3_postproc
   );
   Kokkos::fence();
+  stop_timer("EAMxx::P3::post_process");
 }
 
 } // namespace scream

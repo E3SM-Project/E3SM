@@ -20,11 +20,11 @@ module dry_planar_tests
 
 !OG take from physical const mod instead
 
-  real(rl), parameter :: Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				                        g	= 9.80616d0,	&	! Gravity (m s^2)
-				                        cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
-                                p0	= 100000.d0, &! reference pressure (Pa)
-                                kappa   = Rd/cp
+  real(rl), parameter :: Rd    = 287.0d0,   & ! Ideal gas const dry air (J kg^-1 K^1)
+                         g     = 9.80616d0, & ! Gravity (m s^2)
+                         cp    = 1004.5d0,  & ! Specific heat capacity (J kg^-1 K^1)
+                         p0    = 100000.d0, & ! reference pressure (Pa)
+                         kappa = Rd/cp
 
 !consts for kessler-defined qsat
   real(rl), parameter :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
@@ -80,14 +80,14 @@ subroutine general_gravity_wave_init(elem,hybrid,hvcoord,nets,nete,d,f)
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
 
   real(rl), parameter ::    &                                           ! parameters needed to get eta from z
-    T0      = 300.d0,       &	! temperature (k)
+    T0      = 300.d0,       & ! temperature (k)
     ztop    = 10000.d0,     & ! model top (m)
     N       = 0.01d0,       & ! Brunt-Vaisala frequency
     bigG    = (g*g)/(N*N*Cp)  ! temperature, isothermal
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,T_mean,ps,rho,rho_mean,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing planar gravity wave'
 
@@ -107,7 +107,7 @@ subroutine general_gravity_wave_init(elem,hybrid,hvcoord,nets,nete,d,f)
         call set_tracers(q,qsize, dp,i,j,k,y,x,elem(ie))
      enddo; enddo; enddo;
      do k=1,nlevp; do j=1,np; do i=1,np
-        call get_xycoordinates(x,y,hyai,hybi, i,j,k,elem(ie),hvcoord)
+        call get_xycoordinates_i(x,y,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call gravity_wave(x,y,p,z,zcoords,use_eta,hyai,hybi,d,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
         call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo;
@@ -580,6 +580,25 @@ subroutine get_xycoordinates(x,y,hyam,hybm, i,j,k,elem,hvcoord)
   ! get hybrid coeffiecients at midpoint of vertical level k
   hyam = hvcoord%hyam(k)
   hybm = hvcoord%hybm(k)
+
+end subroutine
+
+subroutine get_xycoordinates_i(x,y,hyai,hybi, i,j,k,elem,hvcoord)
+
+  ! get x,y, vertical interface coords at node(i,j,k)
+
+  real(rl),         intent(out):: x,y,hyai,hybi
+  integer,          intent(in) :: i,j,k
+  type(element_t),  intent(in) :: elem
+  type(hvcoord_t),  intent(in) :: hvcoord
+
+  ! get horizontal coordinates at column i,j
+  x  = elem%spherep(i,j)%lon
+  y  = elem%spherep(i,j)%lat
+
+  ! get hybrid coefficients at interface of vertical level k
+  hyai = hvcoord%hyai(k)
+  hybi = hvcoord%hybi(k)
 
 end subroutine
 

@@ -22,7 +22,7 @@ Module HydrologyNoDrainageMod
   use ColumnDataType    , only : col_es, col_ws, col_wf
   use VegetationType    , only : veg_pp
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
-  use elm_instMod       , only : alm_fates , ep_betr
+  use elm_instMod       , only : alm_fates
 
 
   use timeinfoMod
@@ -68,7 +68,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use elm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode, use_fan
+    use elm_varctl           , only : use_cn, use_fates, use_pflotran, pf_hmode, use_fan
     use elm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
@@ -212,10 +212,6 @@ contains
 
       !!TODO:  need to fix the waterstate_vars dependence here.
 #ifndef _OPENACC
-      if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
-        call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
-      endif
 #endif
 
       call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
@@ -254,14 +250,6 @@ contains
       end if
  
 #ifndef _OPENACC
-       if (use_betr) then
-          call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
-             waterflux_vars=col_wf, soilhydrology_vars = soilhydrology_vars)
-
-          call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
-
-          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
-       endif
 #endif
 
       if (use_vichydro) then
@@ -289,11 +277,6 @@ contains
 
 
 #ifndef _OPENACC
-      if (use_betr) then
-         !apply dew and sublimation fluxes, this is a temporary work aroud for tracking water isotope
-         !Jinyun Tang, Feb 4, 2015
-         call ep_betr%CalcDewSubFlux(bounds, col_pp, num_hydrologyc, filter_hydrologyc)
-      endif           
 #endif
       
       if (use_firn_percolation_and_compaction) then

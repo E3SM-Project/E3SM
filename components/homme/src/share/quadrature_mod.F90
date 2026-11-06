@@ -934,7 +934,6 @@ contains
   function gaussian_int(f,a,b,gs) result(Integral)
     use kinds, only : real_kind
 
-    integer, parameter :: Nmax = 10  ! At most 2^Nmax + 1 points in integral
 
     INTERFACE
        FUNCTION f(x) RESULT(f_x)   ! Function to be integrated

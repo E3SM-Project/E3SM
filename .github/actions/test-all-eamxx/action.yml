@@ -95,9 +95,12 @@ runs:
         fi
 
         # If cmake-configs is non-empty, add tokens to test-all-eamxx via "-c key=val"
+        # (empty tokens, e.g., from joining a possibly empty string, are ignored)
         IFS=';' read -ra configs <<< "${{ inputs.cmake-configs }}"
         for config in "${configs[@]}"; do
-          cmd+=" -c $config"
+          if [ -n "$config" ]; then
+            cmd+=" -c $config"
+          fi
         done
 
         # Add suffix for CDASH build name, and necessary cmake vars if this is a kokkos-develop test

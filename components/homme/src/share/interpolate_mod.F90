@@ -265,7 +265,6 @@ contains
 
 
   subroutine interpolate_tracers_init()
-    use kinds,          only : longdouble_kind
     use dimensions_mod, only : np
     use quadrature_mod, only : quadrature_t, gausslobatto
 
@@ -300,7 +299,6 @@ contains
   end subroutine interpolate_tracers_init
 
   subroutine interpolate_tracers(r, tracers, f)
-    use kinds,          only : longdouble_kind
     use dimensions_mod, only : np, qsize
 
 

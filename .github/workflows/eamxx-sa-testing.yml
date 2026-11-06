@@ -1,14 +1,14 @@
 name: eamxx-sa
 
 on:
-  # Runs on PRs against master
+  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
   pull_request:
-    branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
     paths:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
       - '.github/actions/test-all-eamxx/**'
+      - '.github/actions/get-cuda-arch/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
@@ -27,15 +27,6 @@ on:
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
-      job_to_run:
-        description: 'Job to run'
-        required: true
-        type: choice
-        options:
-          - gnu-openmp
-          - gnu-cuda
-          - intel-openmp
-          - all
       bless:
         description: 'Generate baselines'
         required: true
@@ -75,95 +66,22 @@ defaults:
     shell: bash -leo pipefail {0}
 
 jobs:
-  gnu-openmp:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnu-openmp' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, e3sm, gnu]
+  tests:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
       fail-fast: false
       matrix:
-        build_type: [sp, dbg, fpe, opt]
-    name: gnu-openmp / ${{ matrix.build_type }}
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Run tests
-        uses: ./.github/actions/test-all-eamxx
-        with:
-          build_type: ${{ matrix.build_type }}
-          machine: ghci-gnu
-          generate: ${{ env.generate }}
-          submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ENABLE_OPENMP=ON
-          ekat: ${{ env.ekat }}
-          kokkos_develop: ${{ env.kokkos_dev_test }}
-  intel-openmp:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'intel-openmp' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, e3sm, intel]
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [opt]
-    name: intel-openmp / ${{ matrix.build_type }}
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Run tests
-        uses: ./.github/actions/test-all-eamxx
-        with:
-          build_type: ${{ matrix.build_type }}
-          machine: ghci-intel
-          generate: ${{ env.generate }}
-          submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ENABLE_OPENMP=ON
-          ekat: ${{ env.ekat }}
-          kokkos_develop: ${{ env.kokkos_dev_test }}
-  gnu-cuda:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnu-cuda' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, e3sm, cuda]
-    strategy:
-      fail-fast: false
-      matrix:
-        test:
-          - build_type: sp
-            SK: OFF
-          - build_type: dbg
-            SK: ON
-          - build_type: opt
-            SK: OFF
-    name: gnu-cuda / ${{ matrix.test.build_type }}
+        include:
+          - {name: gnu-openmp, runner: gnu, build_type: sp, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: gnu-openmp, runner: gnu, build_type: dbg, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: gnu-openmp, runner: gnu, build_type: fpe, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: gnu-openmp, runner: gnu, build_type: opt, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: intel-openmp, runner: intel, build_type: opt, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+          - {name: gnu-cuda, runner: cuda, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+    name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -174,41 +92,15 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Get CUDA Arch
-        run: |
-          # Ensure nvidia-smi is available
-          if ! command -v nvidia-smi &> /dev/null; then
-              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
-              exit 1
-          fi
-
-          # Get the GPU model from nvidia-smi, and set env for next step
-          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
-          case "$gpu_model" in
-              *"H100"*)
-                  echo "Hopper=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
-                  ARCH=90
-                  ;;
-              *"A100"*)
-                  echo "Ampere=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
-                  ;;
-              *"V100"*)
-                  echo "Volta=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
-                  ;;
-              *)
-                  echo "Unsupported GPU model: $gpu_model"
-                  exit 1
-                  ;;
-          esac
+        if: ${{ matrix.runner == 'cuda' }}
+        uses: ./.github/actions/get-cuda-arch
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
-          build_type: ${{ matrix.test.build_type }}
-          machine: ghci-cuda
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-${{ matrix.runner }}
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
+          cmake-configs: ${{ matrix.cmake_configs }};${{ env.CUDA_CMAKE_CONFIGS }}
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}

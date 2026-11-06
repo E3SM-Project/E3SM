@@ -84,15 +84,10 @@ contains
     !
     !USES
       !$acc routine seq
-    use elm_varctl                 , only : use_betr
-    use elm_varctl                 , only : use_var_soil_thick
     use shr_kind_mod               , only : r8 => shr_kind_r8
-    use elm_varpar                 , only : nlevsoi
     use decompMod                  , only : bounds_type
     use SoilHydrologyType          , only : soilhydrology_type
     use SoilStateType              , only : soilstate_type
-    use elm_varcon                 , only : denh2o, denice, watmin
-    use ColumnType                 , only : col_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -107,22 +102,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     !character(len=32)                        :: subname = 'SoilWater'       ! subroutine name
-    real(r8)                                 :: xs(bounds%begc:bounds%endc) !excess soil water above urban ponding limit
-    integer                                  :: nlevbed                     ! number of layers to bedrock
-
-    integer  :: fc, c, j
-
 
     !------------------------------------------------------------------------------
-    associate(                                                         &
-      wa                 =>    soilhydrology_vars%wa_col             , & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
-      dz                 =>    col_pp%dz                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
-      zwt                =>    soilhydrology_vars%zwt_col            , & ! Input:  [real(r8) (:)   ]  water table depth (m)
-      nlev2bed           =>    col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock
-      h2osoi_ice         =>    col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-      h2osoi_vol         =>    col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-      h2osoi_liq         =>    col_ws%h2osoi_liq          & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
-    )
 
     select case(soilroot_water_method)
 
@@ -138,47 +119,6 @@ contains
 #endif
     end select
 
-    if(use_betr)then
-    !a work around of the negative liquid water embarrassment, which is
-    !critical for a meaningufl tracer transport in betr. Jinyun Tang, Jan 14, 2015
-
-    do fc = 1, num_hydrologyc
-       c = filter_hydrologyc(fc)
-       nlevbed = nlev2bed(c)
-       do j = 1, nlevbed-1
-          if (h2osoi_liq(c,j) < 0._r8) then
-             xs(c) = watmin - h2osoi_liq(c,j)
-          else
-             xs(c) = 0._r8
-          end if
-          h2osoi_liq(c,j  ) = h2osoi_liq(c,j  ) + xs(c)
-          h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) - xs(c)
-       end do
-    end do
-
-    do fc = 1, num_hydrologyc
-       c = filter_hydrologyc(fc)
-       j = nlev2bed(c)
-       if (h2osoi_liq(c,j) < watmin) then
-          xs(c) = watmin-h2osoi_liq(c,j)
-        else
-          xs(c) = 0._r8
-       end if
-       h2osoi_liq(c,j) = h2osoi_liq(c,j) + xs(c)
-       wa(c) = wa(c) - xs(c)
-    end do
-
-    !update volumetric soil moisture for bgc calculation
-    do fc = 1, num_hydrologyc
-       c = filter_hydrologyc(fc)
-       nlevbed = nlev2bed(c)
-       do j = 1, nlevbed
-          h2osoi_vol(c,j) = h2osoi_liq(c,j)/(dz(c,j)*denh2o) &
-                            + h2osoi_ice(c,j)/(dz(c,j)*denice)
-       enddo
-    enddo
-    endif
-  end associate
 
   end subroutine SoilWater
 

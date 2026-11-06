@@ -1,8 +1,9 @@
-#ifndef SCREAM_WATER_ISOTOPES_HPP
-#define SCREAM_WATER_ISOTOPES_HPP
+#ifndef EAMXX_WATER_ISOTOPES_HPP
+#define EAMXX_WATER_ISOTOPES_HPP
 
 #include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include "eamxx_water_isotopes_parameters.hpp"
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -17,8 +18,6 @@ namespace scream
  * By inheriting from WaterTracers, this class reuses all tracer field handling
  * and only needs to override specific fractionation hooks.
  *
- * Note: This is a stub implementation that registers the process. Fractionation
- * physics will be added later.
 */
 
 class WaterIsotopes : public WaterTracers
@@ -39,8 +38,13 @@ protected:
   // TODO: Add virtual hooks for fractionation processes
   // e.g., apply_equilibrium_fractionation(), apply_kinetic_fractionation()
 
+private:
+
+  // Runtime configuration options for isotope formulations
+  wiso::WaterIsotopeRuntimeOptions m_runtime_options;
+
 }; // class WaterIsotopes
 
 } // namespace scream
 
-#endif // SCREAM_WATER_ISOTOPES_HPP
+#endif // EAMXX_WATER_ISOTOPES_HPP

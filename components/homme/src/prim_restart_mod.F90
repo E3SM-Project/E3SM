@@ -22,8 +22,7 @@ private
    ! =========================================
    !  Some variables used by all MPI routines
    ! =========================================
-   integer                         :: errorcode,errorlen,ierr
-   character(len=80)               :: errorstring
+   integer                         :: ierr
    ! ====================================================
    !  Routines for Restart files
    ! ====================================================
@@ -40,15 +39,12 @@ contains
     type (parallel_t),intent(in)    :: par
     type (File_elem_t),intent(out) :: File
 
-    integer                      :: ie,ig,ierr
+    integer                      :: ierr
 
-    integer                      :: count
-    integer,allocatable          :: blklen(:),disp(:),oldtype(:)
     integer                      :: len
     type (StateDesc_t)           :: RestDesc
     integer                      :: NumComponents
     integer                      :: type
-    integer                      :: i
     logical,parameter            :: Debug = .FALSE.
 
     !=========================================

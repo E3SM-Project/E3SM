@@ -22,9 +22,7 @@ inline auto get_common_init_data(Engine& engine)
   std::array<GwCommonInit, 4> rv = {
     // gw_ediff::vd_lu_decomp breaks if kbot==pver
 
-    // NOTE: All integer data is assumed to be 0-based (C style)! The
-    // unit-test -> F90 GW layer needs to adjust these in d.transition if
-    // it represents an index
+    // NOTE: All integer data is assumed to be 0-based (C style)!
 
     //           pver, pgwv,   dc, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
     GwCommonInit(  72,   20, 2.5,      false,     false,         16,   8,     66,    .67, 6.28e-5),

@@ -4,6 +4,7 @@
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
+#include "share/util/eamxx_alltoallv.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 #include "share/core/eamxx_types.hpp"
 
@@ -65,8 +66,9 @@ TEST_CASE ("grid_import_export") {
     printf(" -> Testing import views ......\n");
   }
   ok = true;
-  auto imp_pids = imp_exp.import_pids_h();
-  auto imp_lids = imp_exp.import_lids_h();
+  auto to_host = [](const auto& v) { return Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),v); };
+  auto imp_pids = to_host(imp_exp.import_pids());
+  auto imp_lids = to_host(imp_exp.import_lids());
   std::set<int> all_imp_lids;
   for (size_t i=0; i<imp_pids.size(); ++i) {
     auto lid = imp_lids[i];
@@ -87,7 +89,7 @@ TEST_CASE ("grid_import_export") {
     printf(" -> Testing export views ......\n");
   }
   ok = true;
-  auto exp_pids = imp_exp.export_pids_h();
+  auto exp_pids = to_host(imp_exp.export_pids());
   auto exp_lids = imp_exp.export_lids_h();
   std::map<int,std::vector<int>> pid2lid;
   auto gid2lid = grid->get_gid2lid_map();
@@ -124,99 +126,37 @@ TEST_CASE ("grid_import_export") {
     printf(" -> Testing export views ...... %s\n",ok ? "PASS" : "FAIL");
   }
 
-  // Test gather
+  // Test that the p2p messages are consistent: the gids that a rank imports from another rank
+  // must be, in the same order, the ones that the other rank exports to it.
   if (comm.am_i_root()) {
-    printf(" -> Testing gather routine ....\n");
-  }
-  ok  = true;
-
-  // We design the tests in such a way that, serially, the data stored for
-  // gid N is [0,...,N]. We want this to also be the case in parallel, but the
-  // same GID may be owned by 2+ processors in the ov grid. This would cause duplicate
-  // entries upon gather completion, making checking the results harder.
-  // To avoid this, we store a map gid->pids so that all ranks know how many ranks
-  // have a give gid in the ov grid. When filling up the ov_data for gather,
-  // rank P will only fill data for gid N if it is the smallest gid owning it.
-  std::map<gid_type,std::vector<int>> gid2pids;
-  for (int pid=0; pid<comm.size(); ++pid) {
-    std::vector<gid_type> pid_gids;
-    int n = ov_gids.size();
-    comm.broadcast(&n,1,pid);
-    pid_gids.resize(n);
-    if (pid==comm.rank()) {
-      for (int i=0; i<n; ++i) {
-        pid_gids[i] = ov_gids[i];
-      }
-    }
-    comm.broadcast(pid_gids.data(),n,pid);
-
-    for (auto g : pid_gids) {
-      gid2pids[g].push_back(pid);
-    }
-  }
-  for (auto& [gid,pids] : gid2pids) {
-    std::sort(pids.begin(),pids.end());
-  }
-
-  std::map<int,std::vector<Real>> ov_data;
-  for (int i=0; i<ov_grid->get_num_local_dofs(); ++i) {
-    auto& v = ov_data[i];
-    auto gid = ov_gids[i];
-    if (comm.rank()==gid2pids[gid][0]) {
-      for (int k=0; k<=gid; ++k) {
-        v.push_back(k);
-      }
-    }
-  }
-
-  std::map<int,std::vector<Real>> data;
-  imp_exp.gather(ekat::get_mpi_type<Real>(),ov_data,data);
-
-  for (auto [lid,v] : data) {
-    auto gid = gids[lid];
-    CHECK (static_cast<int>(v.size())==(gid+1));
-    ok &= catch_capture.lastAssertionPassed();
-
-    std::vector<Real> expected(gid+1);
-    std::iota(expected.begin(),expected.end(),0);
-
-    // Values may be gathered in a way that is just a permutation
-    // of what we'd get serially, which is [0,...,gid-1]
-    std::sort(v.begin(),v.end());
-    CHECK (std::equal(expected.begin(),expected.end(),v.begin()));
-    ok &= catch_capture.lastAssertionPassed();
-  }
-  if (comm.am_i_root()) {
-    printf(" -> Testing gather routine .... %s\n",ok ? "PASS" : "FAIL");
-  }
-
-  // Test scatter
-  if (comm.am_i_root()) {
-    printf(" -> Testing scatter routine ...\n");
+    printf(" -> Testing import/export consistency ......\n");
   }
   ok = true;
-  data.clear();
-  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
-    auto& v = data[i];
-    auto gid = gids[i];
-    v.resize(gid+1);
-    std::iota(v.begin(),v.end(),0);
-  }
-  ov_data.clear();
-  imp_exp.scatter(ekat::get_mpi_type<Real>(),data,ov_data);
+  {
+    const int nranks = comm.size();
+    auto imp_offsets = imp_exp.import_pid_offsets_h();
+    auto exp_offsets = imp_exp.export_pid_offsets_h();
+    std::vector<int> send_counts(nranks), recv_counts(nranks);
+    for (int p=0; p<nranks; ++p) {
+      send_counts[p] = imp_offsets[p+1]-imp_offsets[p];
+      recv_counts[p] = exp_offsets[p+1]-exp_offsets[p];
+    }
+    std::vector<gid_type> send_gids (imp_lids.size()), recv_gids;
+    for (size_t k=0; k<imp_lids.size(); ++k) {
+      send_gids[k] = ov_gids[imp_lids[k]];
+    }
+    std::vector<int> recv_counts_out = recv_counts;
+    alltoallv(comm,send_gids,send_counts,recv_gids,recv_counts_out,true);
 
-  for (const auto& [lid,v] : ov_data) {
-    auto gid = ov_gids[lid];
-    CHECK (static_cast<int>(v.size())==(gid+1));
+    CHECK (recv_gids.size()==exp_lids.size());
     ok &= catch_capture.lastAssertionPassed();
-
-    std::vector<Real> expected(gid+1);
-    std::iota(expected.begin(),expected.end(),0);
-    CHECK (std::equal(expected.begin(),expected.end(),v.begin()));
-    ok &= catch_capture.lastAssertionPassed();
+    for (size_t k=0; k<exp_lids.size() && k<recv_gids.size(); ++k) {
+      CHECK (recv_gids[k]==gids[exp_lids[k]]);
+      ok &= catch_capture.lastAssertionPassed();
+    }
   }
   if (comm.am_i_root()) {
-    printf(" -> Testing scatter routine ... %s\n",ok ? "PASS" : "FAIL");
+    printf(" -> Testing import/export consistency ...... %s\n",ok ? "PASS" : "FAIL");
   }
 }
 

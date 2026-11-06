@@ -1234,7 +1234,7 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq
+    use dimensions_mod, only: nelemd, np, npsq
     use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dof_mod, only: putuniquepoints
@@ -1310,7 +1310,7 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use common_io_mod, only: varname_len, io_stride, num_io_procs, num_agg
+    use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use control_mod, only: max_string_len
@@ -1397,7 +1397,7 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+    use dimensions_mod, only: nelemd, np
     use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
@@ -1482,7 +1482,7 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+    use dimensions_mod, only: nelemd
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use common_io_mod, only: varname_len
     use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio

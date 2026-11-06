@@ -275,7 +275,6 @@ contains
     ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
-    use physical_constants, only : dd_pi
     ! --------------------------------
 
     implicit none
@@ -740,13 +739,13 @@ contains
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2
-    use time_mod,             only: timelevel_t, tstep, timelevel_init, nendstep, TimeLevel_Qdp
+    use time_mod,             only: timelevel_t, timelevel_init, nendstep, TimeLevel_Qdp
 #ifdef CAM
-    use time_mod,             only: nsplit
+    use time_mod,             only: nsplit, tstep
 #endif
 
 #ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
+    use prim_derived_type_mod ,only : derived_type, initialize, tstep
     use, intrinsic :: iso_c_binding
 #endif
 
@@ -1004,7 +1003,7 @@ contains
     use prim_state_mod,     only: prim_printstate
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
-    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit, tstep
+    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
@@ -1511,7 +1510,7 @@ contains
   use control_mod,        only : use_moisture, dt_remap_factor
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
-  use physical_constants, only : cp, g, kappa, Rgas, p0
+  use physical_constants, only : cp, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
 #ifdef HOMMEXX_BFB_TESTING

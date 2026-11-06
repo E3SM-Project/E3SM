@@ -95,6 +95,23 @@ std::string name_of (const ast::Expression& e) {
   return ast::to_string(e);
 }
 
+// A numeric literal, possibly negated (dexpr parses -2 as a unary minus applied to 2)
+bool is_number (const ast::Expression& e) {
+  const auto* u = as<ast::UnaryExpression>(e);
+  const auto& n = (u!=nullptr and u->op==TokenTypes::Minus) ? *u->right : e;
+  return as<ast::IntegerLiteral>(n)!=nullptr or as<ast::FloatLiteral>(n)!=nullptr;
+}
+
+// The name of an operand. Same as name_of(), except that a negated numeric literal,
+// which dexpr renders as "(-2)", is returned as "-2", so that diags read it as a number
+std::string operand_name (const ast::Expression& e) {
+  const auto* u = as<ast::UnaryExpression>(e);
+  if (u!=nullptr and is_number(e)) {
+    return "-" + ast::to_string(*u->right);
+  }
+  return name_of(e);
+}
+
 // dexpr renders literals: a FloatLiteral keeps a double, not its lexeme, and
 // dexpr prints the shortest form that reads back.
 std::string literal_str (const ast::Expression& e)
@@ -112,8 +129,7 @@ int int_arg (const ast::Expression& e, const std::string& ctx)
 {
   const auto* i = as<ast::IntegerLiteral>(e);
   if (i==nullptr) {
-    // A negative index parses as unary minus; the only place we accept one,
-    // since no diagnostic negates a field.
+    // A negative index parses as unary minus
     const auto* u = as<ast::UnaryExpression>(e);
     if (u!=nullptr and u->op==TokenTypes::Minus) {
       const auto* inner = as<ast::IntegerLiteral>(*u->right);
@@ -185,7 +201,7 @@ void translate_unary (const ast::UnaryExpression& e, const ast::Expression& self
 
   diag_name = "BinaryOp";
   params.set<std::string>("arg1","-1");
-  params.set<std::string>("arg2",name_of(*e.right));
+  params.set<std::string>("arg2",operand_name(*e.right));
   params.set<std::string>("binary_op","times");
 }
 
@@ -221,8 +237,8 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
   }
 
   diag_name = "BinaryOp";
-  params.set<std::string>("arg1",name_of(*e.left));
-  params.set<std::string>("arg2",name_of(*e.right));
+  params.set<std::string>("arg1",operand_name(*e.left));
+  params.set<std::string>("arg2",operand_name(*e.right));
   params.set<std::string>("binary_op",op);
 }
 
@@ -275,6 +291,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
            .example = "T_mid.sum('lev',weights='dz')"});
+    r.add({.name = "broadcast_like",
+           .desc = "value repeated along the dims of another field that it lacks",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {},
+           .example = "dp.broadcast_like(T_mid)"});
     r.add({.name = "where",
            .desc = "keep values where a condition holds",
            .min_positional = 1, .max_positional = 1,
@@ -300,6 +321,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 0, .max_positional = 0,
            .keywords = {{"time",true}},
            .example = "T_mid.shift(time=1)"});
+    r.add({.name = "searchsorted",
+           .desc = "per column, the level indices bracketing a target pressure or height",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"units",false}},
+           .example = "p_mid.searchsorted(500,units='hPa')"});
     r.add({.name = "over_dt",
            .desc = "value divided by the time step",
            .min_positional = 0, .max_positional = 0,
@@ -404,6 +430,13 @@ void translate_call (const Call& call, const ast::Expression& self,
     return;
   }
 
+  if (call.name=="broadcast_like") {
+    // The target is only used for its layout. Like the receiver, it goes down by name.
+    diag_name = "FieldBroadcast";
+    params.set<std::string>("target_name",name_of(*call.positional[0]));
+    return;
+  }
+
   if (call.name=="where") {
     const auto& cond = *call.positional[0];
     const auto* cmp = as<ast::BinaryExpression>(cond);
@@ -414,10 +447,16 @@ void translate_call (const Call& call, const ast::Expression& self,
         " - valid comparisons: >, >=, <, <=, ==, !=\n"
         " - note: 'and'/'or' are not supported; chain where(..) calls instead.\n");
 
+    // ConditionalSampling compares a field (lhs) with a field or a number (rhs)
+    EKAT_REQUIRE_MSG (not is_number(*cmp->left),
+        "Error! In where(), the lhs of the comparison must be a field.\n"
+        " - expression: " + ast::to_string(self) + "\n"
+        " - condition: " + ast::to_string(cond) + "\n");
+
     diag_name = "ConditionalSampling";
     params.set<std::string>("condition_lhs",name_of(*cmp->left));
     params.set<std::string>("condition_cmp",comparison_to_cmp(cmp->op));
-    params.set<std::string>("condition_rhs",name_of(*cmp->right));
+    params.set<std::string>("condition_rhs",operand_name(*cmp->right));
     return;
   }
 
@@ -438,15 +477,16 @@ void translate_call (const Call& call, const ast::Expression& self,
     EKAT_REQUIRE_MSG (bins!=nullptr and bins->elements.size()>=2,
         "Error! histogram() takes 'bins', an array of at least two edges.\n"
         " - expression: " + ast::to_string(self) + "\n");
-    // The diag re-splits on '_', so edges must survive: no exponents or signs.
+    // The diag splits the edges on '_' and reads each one as a number, so
+    // signs and exponents are fine as dexpr renders them (e.g., -2, 1e-05)
     std::string config;
     for (size_t i=0; i<bins->elements.size(); ++i) {
-      const auto edge = literal_str(*bins->elements[i]);
-      EKAT_REQUIRE_MSG (edge.find_first_not_of("0123456789.")==std::string::npos,
-          "Error! Histogram bin edges must be non-negative decimals.\n"
+      const auto& edge = *bins->elements[i];
+      EKAT_REQUIRE_MSG (is_number(edge),
+          "Error! Histogram bin edges must be numbers.\n"
           " - expression: " + ast::to_string(self) + "\n"
-          " - edge: " + edge + "\n");
-      config += (i==0 ? "" : "_") + edge;
+          " - edge: " + ast::to_string(edge) + "\n");
+      config += (i==0 ? "" : "_") + operand_name(edge);
     }
     diag_name = "Histogram";
     params.set<std::string>("bin_configuration",config);
@@ -479,6 +519,41 @@ void translate_call (const Call& call, const ast::Expression& self,
         "   previous step. Negative would look ahead, which we cannot do, and\n"
         "   only one step of history is kept.\n");
     diag_name = "FieldPrev";
+    return;
+  }
+
+  if (call.name=="searchsorted") {
+    // Named after numpy/xarray's searchsorted: where a value falls in a sorted
+    // coordinate. The receiver is the coordinate: p_mid/p_int for a pressure,
+    // z_mid/z_int for a height above sea level, height_mid/height_int for a
+    // height above the surface. This is what interp(..) depends on, so that
+    // several fields interpolated to the same target share one search.
+    std::string coord, layer;
+    const auto us = operand.rfind('_');
+    if (us!=std::string::npos) {
+      coord = operand.substr(0,us);
+      layer = operand.substr(us+1);
+    }
+    EKAT_REQUIRE_MSG ((coord=="p" or coord=="z" or coord=="height") and
+                      (layer=="mid" or layer=="int"),
+        "Error! searchsorted() needs a vertical coordinate as receiver.\n"
+        " - expression: " + ast::to_string(self) + "\n"
+        " - valid receivers: p_mid, p_int, z_mid, z_int, height_mid, height_int\n");
+    const auto value = literal_str(*call.positional[0]);
+    const auto* units = keyword(call,"units");
+    params.set<std::string>("vertical_layer",layer);
+    if (coord=="p") {
+      diag_name = "PressureLevelIndex";
+      params.set<std::string>("pressure_value",value);
+      params.set<std::string>("pressure_units",
+          units==nullptr ? std::string("Pa") : string_arg(*units,"'units'"));
+    } else {
+      diag_name = "HeightLevelIndex";
+      params.set<std::string>("height_value",value);
+      params.set<std::string>("height_units",
+          units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
+      params.set<std::string>("surface_reference",coord=="z" ? "sealevel" : "surface");
+    }
     return;
   }
 

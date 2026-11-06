@@ -1,5 +1,7 @@
 #include <catch2/catch.hpp>
 
+#include <algorithm>
+
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
@@ -120,6 +122,36 @@ TEST_CASE("binary_ops") {
 
   // constant*constant diag
   REQUIRE (rgas_diag_f.get_view<Real,Host>()()==physics::Constants<Real>::dictionary().at("Rgas").value);
+
+  // Two fields on different grids are an error
+  Field qv_other(FieldIdentifier("qv", scalar2d_layout, kg / kg, "other_grid"), true);
+  auto plus_other = diag_factory.create("BinaryOp", comm, params_plus, grid);
+  plus_other->set_input_field(qc);
+  plus_other->set_input_field(qv_other);
+  REQUIRE_THROWS(plus_other->initialize());
+}
+
+TEST_CASE("binary_op_constants_do_not_shadow_fields")
+{
+  // No constant has the name of a field: omega is the vertical velocity
+  const auto& dict = physics::Constants<Real>::dictionary();
+  REQUIRE (dict.find("omega")==dict.end());
+  REQUIRE (dict.find("omega_earth")!=dict.end());
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  auto grid = create_point_grid("physics",16,8,comm);
+  auto &diag_factory = DiagnosticFactory::instance();
+  register_diagnostics();
+
+  ekat::ParameterList p;
+  p.set("grid_name", grid->name());
+  p.set<std::string>("arg1","omega");
+  p.set<std::string>("arg2","qv");
+  p.set<std::string>("binary_op","times");
+  auto diag = diag_factory.create("BinaryOp",comm,p,grid);
+  const auto& inputs = diag->get_input_fields_names();
+  REQUIRE (std::find(inputs.begin(),inputs.end(),"omega")!=inputs.end());
+  REQUIRE (std::find(inputs.begin(),inputs.end(),"qv")!=inputs.end());
 }
 
 }  // namespace scream

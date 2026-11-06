@@ -14,7 +14,6 @@ module PhosphorusStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use VegetationType              , only : veg_pp
-  use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use elm_varctl             , only : use_pflotran, pf_cmode
   use elm_varctl             , only : nu_com
@@ -141,7 +140,6 @@ contains
       ! if coupled with pflotran, the following updates are NOT needed
       ! if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
-      if((.not.is_active_betr_bgc) )then
 
          if(.not.use_fates)then
             do j = 1, nlevdecomp
@@ -213,7 +211,6 @@ contains
             end do
          end if
       end do
-      endif ! if (.not. is_active_betr_bgc))
       !------------------------------------------------------------------
 
       ! forest fertilization

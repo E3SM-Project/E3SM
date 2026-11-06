@@ -159,11 +159,10 @@ contains
      integer           :: amode, info
 #if defined(_MPI) && defined(_PRESTART)
 
-     integer (kind=int_kind)	:: type_ablock, type_fview
+     integer (kind=int_kind)    :: type_ablock, type_fview
      integer                    :: array_disp(nelemd)
      integer                    :: array_blen(nelemd)
      integer                    :: isiz
-     integer*4			:: acount
      integer(kind=MPI_OFFSET_KIND) :: disp, iext,lb
 #endif
      call t_startf('WriteState')
@@ -254,7 +253,7 @@ endif
 #endif
      do ie=1,nelemd
        ig = Schedule(1)%Local2Global(ie)
-!	print *, __FILE__,__LINE__,ie,ig,sizeof(variable(ie))
+!       print *, __FILE__,__LINE__,ie,ig,sizeof(variable(ie))
         write(56,rec=ig) variable(ie)%buffer
      enddo
      close(56)
@@ -282,7 +281,7 @@ endif
      integer (kind=int_kind)    :: type_ablock, type_fview
      integer                    :: array_disp(nelemd)
      integer                    :: array_blen(nelemd)
-     integer*4                  :: acount, isiz
+     integer*4                  :: isiz
      integer (kind=mpi_offset_kind) :: disp, iext,lb
 #endif
 
@@ -467,7 +466,7 @@ endif
         errorcode=ierr
         call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
         print *,__FILE__,__LINE__,errorstring(1:errorlen)
-	call abortmp(headername)
+        call abortmp(headername)
      endif
 
      info  = MPI_INFO_NULL
@@ -604,7 +603,6 @@ endif
     character(len=9)                       :: charnum
     type (RestartHeader_t)                 :: RestartHeader
  
-    logical, parameter                     :: Debug = .FALSE.
 
 
     do ie=nets,nete
@@ -694,7 +692,7 @@ endif
 
     integer,allocatable          :: elem_blklengths(:), &
                                     elem_buftype(:), &
-				    elem_filetype(:)
+                                    elem_filetype(:)
     integer(kind=MPI_ADDRESS_KIND),allocatable          :: elem_disp(:)
     integer (kind=int_kind)      :: ie,ig
  
@@ -710,7 +708,7 @@ endif
 
     call mpi_type_contiguous( descriptor%nwords*real_kind, MPI_BYTE, File%ElemState, ierr )
 !    call MPI_type_create_Struct(descriptor%NumComponents,descriptor%blklen, &
-!	 descriptor%disp,descriptor%type,File%ElemState,ierr)
+!        descriptor%disp,descriptor%type,File%ElemState,ierr)
     if(ierr .ne. MPI_SUCCESS) then
         errorcode=ierr
         call MPI_Error_String(errorcode,errorstring,errorlen,ierr)
@@ -834,7 +832,7 @@ endif
     integer  :: i
     
     i = desc%ptr
-	
+
     desc%blklen(i)=len
     desc%type(i)=type
 
@@ -891,7 +889,7 @@ endif
 !     Prints out the state descriptor
 !=========================================================================
     subroutine PrintStateDescriptor(desc)
-	type (StateDesc_t), intent(in) :: desc
+        type (StateDesc_t), intent(in) :: desc
      integer (kind=int_kind) :: numComp 
      integer (kind=int_kind) :: i
 
@@ -899,7 +897,7 @@ endif
        print *,'PrintStateDescriptor:' 
        numComp = desc%NumComponents
        do i=1,numComp
-	  print 100,i,desc%blklen(i),desc%disp(i)
+          print 100,i,desc%blklen(i),desc%disp(i)
 ! ,desc%type(i)
        enddo
     endif 
@@ -915,7 +913,7 @@ endif
     type (StateDesc_t) :: desc
   
     integer (kind=int_kind) :: len
-	
+
     len = numComp
     allocate(desc%blklen(len))
     allocate(desc%disp(len))

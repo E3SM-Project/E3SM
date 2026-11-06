@@ -407,7 +407,7 @@ contains
     call slmm_csl(nets, nete, dep_points_all, dep_points_ndim, minq, maxq, info)
     ! No barrier needed: slmm_csl has a horiz thread barrier at the end.
     if (info /= 0) then
-       call write_velocity_data(elem, nets, nete, hybrid, dt, tl)
+       call write_velocity_data(elem, nets, nete, hybrid, tl)
        call abortmp('slmm_csl returned -1; see output above for more information.')
     end if
     if (barrier) call perf_barrier(hybrid)
@@ -523,7 +523,7 @@ contains
        call t_stopf('SLMM_reconstruct')
     end if
 
-    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, tl, independent_time_steps)
+    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, independent_time_steps)
 
     if (barrier) call perf_barrier(hybrid)
     call t_startf('SLMM_v2x')
@@ -553,7 +553,7 @@ contains
 
   ! this will calculate the velocity at time t+1/2  along the trajectory s(t) given the velocities
   ! at the GLL points at time t and t+1 using a second order time accurate formulation.
-  subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl, independent_time_steps)
+  subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, independent_time_steps)
     use edgetype_mod,    only : EdgeBuffer_t
     use bndry_mod,       only : bndry_exchangev
     use kinds,           only : real_kind
@@ -569,7 +569,6 @@ contains
     type (hybrid_t)      , intent(in)                :: hy ! distributed parallel structure (shared)
     type (derivative_t)  , intent(in)                :: deriv ! derivative struct
     real (kind=real_kind), intent(in)                :: dt ! timestep
-    type (TimeLevel_t)   , intent(in)                :: tl
     logical              , intent(in)                :: independent_time_steps
 
     integer                                          :: ie, k
@@ -639,7 +638,7 @@ contains
 #endif
   end subroutine ALE_RKdss
 
-  subroutine write_velocity_data(elem, nets, nete, hy, dt, tl)
+  subroutine write_velocity_data(elem, nets, nete, hy, tl)
     use edgetype_mod,    only : EdgeBuffer_t
     use bndry_mod,       only : bndry_exchangev
     use kinds,           only : real_kind
@@ -652,7 +651,6 @@ contains
     integer              , intent(in)    :: nets
     integer              , intent(in)    :: nete
     type (hybrid_t)      , intent(in)    :: hy
-    real (kind=real_kind), intent(in)    :: dt
     type (TimeLevel_t)   , intent(in)    :: tl
 
     integer :: ie, i, j, k, np1
@@ -907,7 +905,6 @@ contains
     ! local
     integer :: k,ie,q
     real (kind=real_kind), dimension(np,np) :: lap_p
-    logical var_coef1
 
     !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
     !so tensor is only used on second call to laplace_sphere_wk
@@ -1351,9 +1348,8 @@ contains
     logical, intent(in) :: independent_time_steps
 
 #ifdef HOMME_ENABLE_COMPOSE
-    integer :: step, ie, info, limiter_active_count, k, i, j
-    real(real_kind) :: alpha(2), dtsub, a, p(3)
-    real(real_kind), allocatable :: ptmp(:,:,:,:,:), vtmp(:,:,:,:,:)
+    integer :: step, ie, info, limiter_active_count, k
+    real(real_kind) :: alpha(2), dtsub, a
 
     call t_startf('SLMM_trajectory')
 
@@ -1538,7 +1534,7 @@ contains
     integer :: t
 
     if (independent_time_steps) then
-       call calc_eta_dot_ref(elem, deriv, tl, hvcoord, alpha, &
+       call calc_eta_dot_ref(elem, deriv, hvcoord, alpha, &
             &                v1, dp1, v2, dp2, eta_dot)
     else
        eta_dot = zero
@@ -1561,10 +1557,9 @@ contains
     end if
   end subroutine calc_nodal_velocities
 
-  subroutine calc_eta_dot_ref(elem, deriv, tl, hvcoord, alpha, v1, dp1, v2, dp2, eta_dot)
+  subroutine calc_eta_dot_ref(elem, deriv, hvcoord, alpha, v1, dp1, v2, dp2, eta_dot)
     type (element_t), intent(in) :: elem
     type (derivative_t), intent(in) :: deriv
-    type (TimeLevel_t), intent(in) :: tl
     type (hvcoord_t), intent(in) :: hvcoord
     real(real_kind), intent(in) :: alpha(2)
     real(real_kind), dimension(np,np,2,nlev), intent(in) :: v1, v2
@@ -1697,7 +1692,7 @@ contains
     integer, intent(in) :: nets, nete
     real(real_kind), intent(in) :: vdep(:,:,:,:,:)
 
-    real(real_kind) :: norm, p(3), eta_dot_kp1
+    real(real_kind) :: norm, p(3)
     integer :: ie, k, j, i
 
     do ie = nets, nete

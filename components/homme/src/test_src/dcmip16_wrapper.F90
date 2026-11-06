@@ -199,8 +199,8 @@ subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
   type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
-  integer :: i,j,k,ie , ierr                                                  ! loop indices
-  real(rl):: lon,lat,ntop                                               ! pointwise coordiantes
+  integer :: i,j,k,ie ! loop indices
+  real(rl):: lon,lat! pointwise coordiantes
   real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,rho,dp                     ! pointwise field values
   real(rl), dimension(np,np):: ps,phis
   real(rl), dimension(np,np,nlevp):: w_i,z_i,p_i
@@ -280,7 +280,7 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
 
   real(rl), dimension(np,np,nlev,3) :: q
-  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
+  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho
   real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i
   real(rl), dimension(np,np) :: phis, ps
 
@@ -450,11 +450,11 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,cl,cl2,ddt_cl,ddt_cl2
-  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np,nlev) :: rho_dry
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl), dimension(np,np)      :: delta_ps(np,np)
   real(rl) :: max_w, max_precl, min_ps
-  real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
+  real(rl) :: lat, lon, zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
   integer :: pbl_type, prec_type, qi
   integer, parameter :: test = 1
@@ -635,7 +635,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   use element_ops, only: get_field
   use gllfvremap_mod
   use perf_mod, only: t_startf, t_stopf
-  use control_mod, only: ftype
 
   ! to DSS precl
   use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
@@ -665,7 +664,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   real(rl), dimension(np,np,nlevp) :: phi_i, zi_fv
   real(rl), dimension(np,np) :: zs_fv, ps_fv, delta_ps
   real(rl) :: precl_fv(np,np,1), rcd(6)
-  real(rl), allocatable :: qmin(:,:,:), qmax(:,:,:)
   integer :: pbl_type, prec_type
   logical :: toy_chemistry_on
 
@@ -890,11 +888,11 @@ subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, t
   integer :: i,j,k,ie                                                     ! loop indices
   real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0
-  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np,nlev) :: rho_dry
   real(rl), dimension(np,np)      :: delta_ps(np,np)
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
-  real(rl) :: lat, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
+  real(rl) :: lat, zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
 
   integer :: pbl_type, prec_type
 
@@ -1016,10 +1014,9 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
 
   integer :: i,j,k,ie                                                     ! loop indices
-  real(rl):: lat
   real(rl), dimension(np,np,nlev) :: u,v,w,T,theta_kess,exner_kess,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
-  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
+  real(rl), dimension(np,np,nlev) :: rho_dry
   real(rl), dimension(np,np,nlev) :: theta_inv,qv_inv,qc_inv,qr_inv,rho_inv,exner_inv,z_inv ! inverted columns
   real(rl), dimension(np,np,nlevp):: zi
   real(rl), dimension(np,np)      :: ps,delta_ps(np,np)

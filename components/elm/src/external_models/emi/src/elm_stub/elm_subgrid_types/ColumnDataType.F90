@@ -163,7 +163,6 @@ module ColumnDataType
     real(r8), pointer :: totecosysc           (:)    => null() ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
     real(r8), pointer :: totcolc              (:)    => null() ! (gC/m2) total column carbon, incl veg and cpool
     real(r8), pointer :: totabgc              (:)    => null() ! (gC/m2) total column above ground carbon, excluding som 
-    real(r8), pointer :: totblgc              (:)    => null() ! (gc/m2) total column non veg carbon
     real(r8), pointer :: totvegc_abg          (:)    => null() ! (gC/m2) total above vegetation carbon, excluding cpool averaged to column (p2c)
     real(r8), pointer :: begcb                (:)    => null() ! (gC/m2) carbon mass, beginning of time step 
     real(r8), pointer :: endcb                (:)    => null() ! (gc/m2) carbon mass, end of time step 
@@ -213,7 +212,6 @@ module ColumnDataType
     real(r8), pointer :: totvegn                  (:)     => null() ! (gN/m2) total vegetation nitrogen (p2c)
     real(r8), pointer :: totpftn                  (:)     => null() ! (gN/m2) total pft-level nitrogen (p2c)
     real(r8), pointer :: plant_n_buffer           (:)     => null() ! (gN/m2) col-level abstract N storage
-    real(r8), pointer :: plant_nbuffer            (:)     => null() ! (gN/m2) plant nitrogen buffer, (gN/m2), used to exchange info with betr 
     real(r8), pointer :: seedn                    (:)     => null() ! (gN/m2) column-level pool for seeding new Patches
     real(r8), pointer :: cropseedn_deficit        (:)     => null() ! (gN/m2) column-level pool for seed N deficit (negative pool)
     real(r8), pointer :: prod1n                   (:)     => null() ! (gN/m2) crop product N pool, 1-year lifespan
@@ -1040,7 +1038,6 @@ contains
     allocate(this%totecosysc           (begc:endc))     ; this%totecosysc           (:)     = nan
     allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = nan
     allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
-    allocate(this%totblgc              (begc:endc))     ; this%totblgc              (:)     = nan
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = nan
     allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = nan
     allocate(this%endcb                (begc:endc))     ; this%endcb                (:)     = nan
@@ -1123,7 +1120,6 @@ contains
     allocate(this%totvegn               (begc:endc))                     ; this%totvegn               (:)   = nan
     allocate(this%totpftn               (begc:endc))                     ; this%totpftn               (:)   = nan
     allocate(this%plant_n_buffer        (begc:endc))                     ; this%plant_n_buffer        (:)   = nan
-    allocate(this%plant_nbuffer         (begc:endc))                     ; this%plant_nbuffer         (:)   = nan
     allocate(this%seedn                 (begc:endc))                     ; this%seedn                 (:)   = nan
     allocate(this%cropseedn_deficit     (begc:endc))                     ; this%cropseedn_deficit     (:)   = nan
     allocate(this%prod1n                (begc:endc))                     ; this%prod1n                (:)   = nan

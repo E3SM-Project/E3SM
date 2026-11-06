@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
@@ -154,6 +155,53 @@ TEST_CASE("vert_contract") {
     vert_contraction(ref, fin, ones_lev);
 
     REQUIRE(views_are_equal(diag_f, ref));
+  }
+
+  SECTION("masked_sum") {
+    // Column 0 has no valid level, column 1 has its first three levels invalid
+    Field fin(FieldIdentifier("qc", scalar2d_layout, kg/kg, grid->name()), true);
+    fin.get_header().get_tracking().update_time_stamp(t0);
+    randomize_uniform(fin, seed++, 1, 200);
+    auto& fmask = fin.create_valid_mask(Field::MaskInit::Valid);
+    fmask.sync_to_host();
+    auto fm_h = fmask.get_view<int**,Host>();
+    for (int k=0; k<nlevs; ++k) fm_h(0,k) = 0;
+    for (int k=0; k<3; ++k)     fm_h(1,k) = 0;
+    fmask.sync_to_dev();
+
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", "qc");
+    params.set<std::string>("contract_method", "sum");
+    params.set<std::string>("weighting_method", "none");
+    auto diag = diag_factory.create("VertContract", comm, params, grid);
+    diag->set_input_field(fin);
+    diag->initialize();
+    diag->compute(t0);
+    auto diag_f = diag->get();
+
+    // The sum of a masked field is masked where no level is valid
+    REQUIRE(diag_f.has_valid_mask());
+    REQUIRE(diag_f.get_header().may_be_filled());
+
+    diag_f.sync_to_host();
+    diag_f.get_valid_mask().sync_to_host();
+    fin.sync_to_host();
+    auto d_h = diag_f.get_view<const Real*,Host>();
+    auto m_h = diag_f.get_valid_mask().get_view<const int*,Host>();
+    auto f_h = fin.get_view<const Real**,Host>();
+    const int nlocal = grid->get_num_local_dofs();
+    for (int i=0; i<nlocal; ++i) {
+      if (i==0) {
+        REQUIRE(m_h(i)==0);
+        REQUIRE(d_h(i)==constants::fill_value<Real>);
+      } else {
+        Real ref = 0;
+        for (int k=(i==1 ? 3 : 0); k<nlevs; ++k) ref += f_h(i,k);
+        REQUIRE(m_h(i)==1);
+        REQUIRE(d_h(i)==Approx(ref).epsilon(100*std::numeric_limits<Real>::epsilon()));
+      }
+    }
   }
 
   SECTION("unweighted_avg") {

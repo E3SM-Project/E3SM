@@ -1,0 +1,35 @@
+name: Get CUDA arch
+description: |
+  Detect the Nvidia GPU model of the runner (via nvidia-smi), and set the env variable
+  CUDA_CMAKE_CONFIGS to the matching cmake configs, as a semicolon-separated list of
+  key=value pairs (the format expected by the 'cmake-configs' input of the test-all-eamxx action).
+  Fails if nvidia-smi is not available or fails, or if the GPU model is not supported.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get CUDA Arch
+      shell: bash
+      run: |
+        # Get the GPU model from nvidia-smi, and set env for next steps
+        if ! gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1); then
+            echo "nvidia-smi failed or could not be found. Please ensure you have Nvidia drivers installed."
+            exit 1
+        fi
+        case "$gpu_model" in
+            *"H100"*)
+                configs="Kokkos_ARCH_HOPPER90=ON;CMAKE_CUDA_ARCHITECTURES=90"
+                ;;
+            *"A100"*)
+                configs="Kokkos_ARCH_AMPERE80=ON;CMAKE_CUDA_ARCHITECTURES=80"
+                ;;
+            *"V100"*)
+                configs="Kokkos_ARCH_VOLTA70=ON;CMAKE_CUDA_ARCHITECTURES=70"
+                ;;
+            *)
+                echo "Unsupported GPU model: $gpu_model"
+                exit 1
+                ;;
+        esac
+        echo "GPU model: $gpu_model"
+        echo "CUDA_CMAKE_CONFIGS=$configs" >> "$GITHUB_ENV"

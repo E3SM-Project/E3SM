@@ -1,5 +1,7 @@
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
+#include "share/util/eamxx_timing.hpp"
+
 #include <ekat_std_utils.hpp>
 
 namespace scream
@@ -22,8 +24,8 @@ void AbstractDiagnostic::initialize ()
 
   // A diag names its output field from its params, e.g. BinaryOp builds
   // "<arg1>_<op>_<arg2>". That is not always what the customer asked for, and
-  // customers look the field up by name: 'X_atm_backtend' is an alias for
-  // 'X_minus_X_prev_over_dt'. So honor an explicit name when given one.
+  // customers look the field up by name: an expression diag is looked up by its
+  // expression. So honor an explicit name when given one.
   // NOTE: an alias shares tracking, alloc props and extra data, so masks,
   //       timestamps and avg-cnt bookkeeping carry over.
   if (m_params.isParameter("output_field_name")) {
@@ -71,7 +73,11 @@ void AbstractDiagnostic::compute (const util::TimeStamp& ts)
     return;
   }
 
+  // One timer per diagnostic class (not per instance)
+  const std::string timer_name = "EAMxx::diag::" + name();
+  start_timer(timer_name);
   compute_impl ();
+  stop_timer(timer_name);
 
   // Update timestamp info
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);

@@ -5,19 +5,19 @@ MODULE dcmip2012_test5
   !  Function for setting up idealized tropical cyclone initial conditions
   !
   !  Given a point specified by: 
-  !  	longitude (radians) 
-  ! 	latitude (radians) 
-  ! 	pressure/height
+  !     longitude (radians) 
+  !     latitude (radians) 
+  !     pressure/height
   !  the functions will return:
-  !	u	zonal wind (m s^-1)
-  !	v	meridional wind (m s^-1)
-  !	w	vertical velocity (m s^-1)
-  !	t	temperature (K)
-  !	phis	surface geopotential (m^2 s^-2)
-  !	ps	surface pressure (Pa)
-  !	rho	density (kj m^-3)
-  !	q	specific humidity (kg/kg)
-  !	qi	tracers (kg/kg)
+  !     u       zonal wind (m s^-1)
+  !     v       meridional wind (m s^-1)
+  !     w       vertical velocity (m s^-1)
+  !     t       temperature (K)
+  !     phis    surface geopotential (m^2 s^-2)
+  !     ps      surface pressure (Pa)
+  !     rho     density (kj m^-3)
+  !     q       specific humidity (kg/kg)
+  !     qi      tracers (kg/kg)
   !     p       pressure if height based (Pa)  
   !
   !  Initial data are currently identical to:
@@ -38,16 +38,16 @@ MODULE dcmip2012_test5
 !     Physical Parameters (or use a module?)
 !-----------------------------------------------------------------------
 
-	real(8), parameter ::	a	= 6371220.d0,	&	! Earth's Radius (m)
-				Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				g	= 9.80616d0,	&	! Gravity (m s^2)
+        real(8), parameter ::   a       = 6371220.d0,   &       ! Earth's Radius (m)
+                                Rd      = 287.0d0,      &       ! Ideal gas const dry air (J kg^-1 K^1)
+                                g       = 9.80616d0,    &       ! Gravity (m s^2)
                                 omega   = 7.292115d-5,  &       ! angular velocity 1/s
                                 pi      = 4.d0*atan(1.d0)       ! pi
 
 !-----------------------------------------------------------------------
 !     Additional constants
 !-----------------------------------------------------------------------
-	real(8), parameter ::	convert = 180.d0/pi             ! conversion factor: radians to degrees
+        real(8), parameter ::   convert = 180.d0/pi             ! conversion factor: radians to degrees
 
 !-----------------------------------------------------------------------
 !     Tropical Cyclone Test Case Tuning Parameters
@@ -92,21 +92,21 @@ IMPLICIT NONE
 !     input/output params parameters at given location
 !-----------------------------------------------------------------------
 
-	real(8), intent(in)  :: lon, &		! Longitude (radians)
-				lat, &		! Latitude (radians)
-				z		! Height (m)
+        real(8), intent(in)  :: lon, &          ! Longitude (radians)
+                                lat, &          ! Latitude (radians)
+                                z               ! Height (m)
 
-	real(8), intent(inout) :: p		! Pressure  (Pa)
+        real(8), intent(inout) :: p             ! Pressure  (Pa)
 
-	integer,  intent(in) :: zcoords 	! 0 or 1 see below
-	real(8), intent(out) :: u, & 		! Zonal wind (m s^-1)
-				v, &		! Meridional wind (m s^-1)
-				w, &		! Vertical velocity (m s^-1)
-				t, & 		! Temperature (K)
-				phis, & 	! Surface Geopotential (m^2 s^-2)
-				ps, & 		! Surface Pressure (Pa)
-				rho, & 		! density (kg m^-3)
-				q  		! Specific Humidity (kg/kg)
+        integer,  intent(in) :: zcoords         ! 0 or 1 see below
+        real(8), intent(out) :: u, &            ! Zonal wind (m s^-1)
+                                v, &            ! Meridional wind (m s^-1)
+                                w, &            ! Vertical velocity (m s^-1)
+                                t, &            ! Temperature (K)
+                                phis, &         ! Surface Geopotential (m^2 s^-2)
+                                ps, &           ! Surface Pressure (Pa)
+                                rho, &          ! density (kg m^-3)
+                                q               ! Specific Humidity (kg/kg)
 
 	! if zcoords = 1, then we use z and output p
 	! if zcoords = 0, then we use p

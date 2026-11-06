@@ -290,12 +290,6 @@ This downscaling is conservative.
 <default>Default: .true.</default>
 </entry>
 
-<entry id="use_betr" type="logical" category="physics"
-        group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on the BeTR
-(BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
-</entry>
-
 <entry id="use_fates" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the FATES
@@ -1837,38 +1831,6 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- namelist elements associated with the betr_initializeMod                                  -->
-<!-- ========================================================================================  -->
-<entry id="reaction_method" type="char*256" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Specify what reaction module will be used within the betr framework.
-</entry>
-
-<entry id="AppParNLFile" type="char*256" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Specify file to input parameters that will be used within the betr framework.
-</entry>
-
-<entry id="advection_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on advection in betr if it is true.
-</entry>
-
-<entry id="diffusion_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on diffusion in betr if it is true.
-</entry>
-
-<entry id="ebullition_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on ebullition in betr if it is true.
-</entry>
-
-<entry id="reaction_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on reaction in betr if it is true.
-</entry>
-<!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->
 
@@ -2104,6 +2066,17 @@ Runtime flag to turn on/off variable soil thickness.
 <entry id="use_lake_wat_storage" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 Runtime flag to turn on/off lake water storage.
+</entry>
+
+<entry id="lake_evap_cap_method"
+       type="char*32"
+       category="default_settings"
+       group="elm_inparm"
+       valid_values="none,rain_snow,rain_snow_h2osno"
+       value="none" >
+Method used to cap lake evaporation by available water. 'none' applies no cap. 'rain_snow' caps
+evaporation at this timestep's rain+snow forcing (forc_rain+forc_snow). 'rain_snow_h2osno'
+additionally includes the lake column's persistent snowpack (h2osno).
 </entry>
 
 <!-- ========================================================================================  -->

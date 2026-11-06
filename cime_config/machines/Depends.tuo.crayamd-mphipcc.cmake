@@ -7,8 +7,7 @@ set(REDOPT_O0
 	../driver-mct/main/prep_rof_mod.F90)
 
 set(REDOPT_O1
-	elm/src/biogeochem/FATESFireFactoryMod.F90
-	elm/src/external_models/sbetr/src/driver/shared/BeTRSimulation.F90)
+	elm/src/biogeochem/FATESFireFactoryMod.F90)
 
 # Speed-oriented debug-symbols configuration.
 # - DEBUG=TRUE in CIME implies very conservative compilation (`-O0 -g`) which can

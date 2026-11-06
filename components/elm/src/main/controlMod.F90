@@ -41,6 +41,7 @@ module controlMod
   use elm_varcon              , only: h2osno_max
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
+  use elm_varctl              , only: use_lake_wat_storage, lake_evap_cap_method
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
   use elm_varpar              , only: elmfates_carbon_only
@@ -64,7 +65,7 @@ module controlMod
                         subgridflag, irrigate, tw_irr, extra_gw_irr, &
                         firrig_data, all_active, mpi_sync_nstep_freq, &
                         use_c13, use_c14, fates_paramfile, use_fates, &
-                        use_betr, use_lai_streams, metdata_type, metdata_bypass, &
+                        use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
                         use_elm_interface, use_elm_bgc, use_pflotran, &
                         use_hydrstress, domain_decomp_type, &
@@ -163,7 +164,6 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use elm_interface_pflotranMod , only : elm_pf_readnl
-    use ELMBeTRNLMod              , only : betr_readNL
     
     implicit none
     
@@ -331,8 +331,6 @@ contains
           fates_lu_transition_logic,                    &
           fates_history_dimlevel
 
-    namelist /elm_inparm / use_betr
-
     namelist /elm_inparm / use_lai_streams
 
     namelist /elm_inparm/  &
@@ -358,7 +356,7 @@ contains
 
     namelist /elm_inparm/ use_dynroot
 
-    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
+    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage, lake_evap_cap_method
 
     namelist /elm_inparm/ use_hydrstress
 
@@ -611,11 +609,6 @@ contains
           end if
        end if
 
-       if (use_betr .and. use_var_soil_thick ) then
-          call endrun(msg=' ERROR: use_var_soil_thick and use_betr cannot both be set to true.'//&
-                   errMsg(__FILE__, __LINE__))
-       end if
-
        if (use_lnd_rof_two_way) then
           if (lnd_rof_coupling_nstep < 1) then
           call endrun(msg=' ERROR: lnd_rof_coupling_nstep cannot be smaller than 1.'//&
@@ -644,10 +637,6 @@ contains
     if (use_pflotran) then
        call elm_pf_readnl(NLFilename)
     end if
-
-    if (use_betr) then
-       call betr_readNL( NLFilename, use_c13, use_c14, nsoilorder)
-    endif
 
     ! ----------------------------------------------------------------------
     ! consistency checks
@@ -703,6 +692,15 @@ contains
         fan_mode /= 'fan_full' ) then
        write(iulog,*)'fan_mode = ',trim(fan_mode), ' is not supported'
        call endrun(msg=' ERROR:: choices are none fan_offline, fan_soil, fan_atm, or fan_full ' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Lake evaporation cap method
+    if (trim(lake_evap_cap_method) /= 'none' .and. &
+        trim(lake_evap_cap_method) /= 'rain_snow' .and. &
+        trim(lake_evap_cap_method) /= 'rain_snow_h2osno' ) then
+       write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
+       call endrun(msg=' ERROR:: choices are none, rain_snow, or rain_snow_h2osno' // &
             errMsg(__FILE__, __LINE__))
     endif
 
@@ -866,13 +864,13 @@ contains
     call mpi_bcast (fates_history_dimlevel, 2, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (fates_lu_transition_logic, 1, MPI_INTEGER, 0, mpicom, ier)
     
-    call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
-
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_lake_wat_storage, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (lake_evap_cap_method, len(lake_evap_cap_method), MPI_CHARACTER, 0, mpicom, ier)
 
     if ((use_cn .or. use_fates) .and. use_vertsoilc) then
        ! vertical soil mixing variables
@@ -1061,6 +1059,7 @@ contains
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_lake_wat_storage = ', use_lake_wat_storage
+    write(iulog,*) '    lake_evap_cap_method = ', lake_evap_cap_method
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
     write(iulog,*) '    use_firn_percolation_and_compaction = ', use_firn_percolation_and_compaction
@@ -1079,7 +1078,6 @@ contains
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
-    write(iulog,*) '    use_betr = ', use_betr
     write(iulog,*) '    use_IM2_hillslope_hydrology = ', use_IM2_hillslope_hydrology
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method

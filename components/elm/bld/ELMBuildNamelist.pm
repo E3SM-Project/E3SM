@@ -242,7 +242,6 @@ OPTIONS
      -version                 Echo the SVN tag name used to check out this ELM distribution.
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
-     -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
      -solar_rad_scheme "value"  Type of solar radiation scheme
                                 pp = Plane-Parallel
                                 top = Subgrid topographic parameterization
@@ -313,7 +312,6 @@ sub process_commandline {
                envxml_dir            => ".",
                vichydro              => 0,
                maxpft                => "default",
-               betr_mode             => "default",
                methane               => 0,
                nutrient              => "default",
                nutrient_comp_pathway => "default",
@@ -368,7 +366,6 @@ sub process_commandline {
              "maxpft=i"                  => \$opts{'maxpft'},
              "v|verbose"                 => \$opts{'verbose'},
              "version"                   => \$opts{'version'},
-             "betr_mode=s"               => \$opts{'betr_mode'},
              "methane"                   => \$opts{'methane'},
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
@@ -701,7 +698,6 @@ sub process_namelist_commandline_options {
   setup_cmdl_fates_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_solar_rad_scheme($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
 }
 
@@ -936,49 +932,6 @@ sub setup_cmdl_fates_mode {
     }
   }
 }
-
-#-------------------------------------------------------------------------------
-sub setup_cmdl_betr_mode {
-  #
-  # call this at least after crop check is called
-  #
-  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-
-  my $val;
-  my $var = "betr_mode";
-
-  $val = $opts->{$var};
-  $nl_flags->{'betr_mode'} = $val;
-
-  if ( $nl_flags->{'crop'} eq "on" ) {
-      if ( $nl_flags->{$var} == 1 ) {
-	  # BeTR should not be used with crop
-	  fatal_error("** Cannot turn betr mode on with crop \n" );
-      }
-  } else {
-
-    $var = "use_betr";
-    $nl_flags->{$var} = ".false.";
-    if ($nl_flags->{'betr_mode'} eq "on") {
-      message("Using BETR (Reactive Transport).");
-      $val = ".true.";
-      $nl_flags->{$var} = $val;
-    }
-    if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
-      fatal_error("$var is inconsistent with the commandline setting of -betr_mode");
-    }
-    if ( $nl_flags->{$var} eq ".true." ) {
-      my $group = $definition->get_group_name($var);
-      $nl->set_variable_value($group, $var, $val);
-      if (  ! $definition->is_valid_value( $var, $val ) ) {
-        my @valid_values   = $definition->get_valid_values( $var );
-        fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
-      }
-
-    }
-  }
-}
-
 
 #-------------------------------------------------------------------------------
 sub setup_cmdl_check_bgc {
@@ -3648,7 +3601,7 @@ sub write_output_files {
   {
     @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm
                  elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks
-                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm elm_mosart);
+                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm elm_mosart);
     #@groups = qw(elm_inparm elm_canopyhydrology_inparm elm_soilhydrology_inparm
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on

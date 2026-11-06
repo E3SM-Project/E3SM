@@ -20,3 +20,7 @@ E3SM's public input data directory contains initial and boundary conditions for 
 Creating new initial or boundary conditions typically starts with creating a new grid.
 
 + [Adding Support for New Grids](adding-grid-support/index.md)
+
+## Testing
+
++ [Testing on GitHub-hosted runners](gh-hosted-testing.md)

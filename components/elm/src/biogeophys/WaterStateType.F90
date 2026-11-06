@@ -33,7 +33,7 @@ module WaterstateType
      real(r8), pointer :: int_snow_col           (:)   ! col integrated snowfall (mm H2O)
      real(r8), pointer :: snow_layer_unity_col   (:,:) ! value 1 for each snow layer, used for history diagnostics
      real(r8), pointer :: bw_col                 (:,:) ! col partial density of water in the snow pack (ice + liquid) [kg/m3] 
-     real(r8), pointer :: finundated_col         (:)   ! fraction of column that is inundated, this is for bgc caclulation in betr
+     real(r8), pointer :: finundated_col         (:)   ! fraction of column that is inundated
      real(r8), pointer :: h2osoi_tend_tsl_col    (:)   ! col moisture tendency due to vertical movement at topmost layer (m3/m3/s)
 
      real(r8), pointer :: rhvap_soi_col          (:,:)

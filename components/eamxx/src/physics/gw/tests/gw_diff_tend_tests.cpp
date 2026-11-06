@@ -57,12 +57,7 @@ struct UnitWrap::UnitTest<D>::TestGwDiffTend : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_diff_tend_f(d);
-      }
-      else {
-        gw_diff_tend(d);
-      }
+      gw_diff_tend(d);
     }
 
     // Verify BFB results, all data should be in C layout

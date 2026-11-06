@@ -3,6 +3,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -15,7 +16,7 @@
 
 namespace
 {
-// Helper lambda, to copy extra data (io string attributes plus filled settings).
+// Helper function, to copy extra data (io string attributes).
 // This will be used if any remapper is created, to ensure atts set by atm_procs are not lost
 void
 transfer_extra_data(const scream::Field &src, scream::Field &tgt)
@@ -28,12 +29,6 @@ transfer_extra_data(const scream::Field &src, scream::Field &tgt)
   auto &dst_atts       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
   for (const auto &[name, val] : src_atts) {
     dst_atts[name] = val;
-  }
-
-  // Transfer whether or not this field MAY contain fill_value (to trigger usage of the
-  // proper implementation of Field update methods
-  if (src.get_header().may_be_filled()) {
-    tgt.get_header().set_may_be_filled(true);
   }
 };
 
@@ -121,6 +116,16 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
 
+  // Needed to validate FieldPrev diags (see process_requested_fields)
+  if (params.isSublist("output_control")) {
+    const auto& oc = params.sublist("output_control");
+    if (oc.isParameter("frequency_units") and oc.isParameter("frequency")) {
+      IOControl ctrl;
+      ctrl.set_frequency_units(oc.get<std::string>("frequency_units"));
+      m_output_every_step = ctrl.frequency_units=="nsteps" and oc.get<int>("frequency")==1;
+    }
+  }
+
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
 
@@ -197,7 +202,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   }
 
   // Then we 1) create aliases, and b) create diagnostics, adding alias/diag fields to fm_model
+  start_timer("EAMxx::IO::setup_fields");
   process_requested_fields ();
+  stop_timer("EAMxx::IO::setup_fields");
 
   // Avg count only makes sense if we have
   //  - non-instant output
@@ -358,16 +365,21 @@ void AtmosphereOutput::init()
     const auto& fid = fh.get_identifier();
 
     // Check if the field for scorpio can alias the field after hremap.
-    // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded
-    // Also, if we track avg cnt, we MUST add the fill_value extra data, to trigger fill-value logic
-    // when calling Field's update methods
+    // It can do so only for Instant output, and if the field is NOT a subfield ant NOT padded.
+    // Masked fields never alias, since we write fill_value where the field is invalid,
+    // and we must not alter the data of a field we don't own.
     if (m_avg_type!=OutputAvgType::Instant or
         fh.get_alloc_properties().get_padding()>0 or
         not fh.get_alloc_properties().contiguous()>0 or
-        fh.get_parent()!=nullptr) {
+        fh.get_parent()!=nullptr or
+        f.has_valid_mask()) {
       Field copy(fid);
       copy.allocate_view();
       transfer_extra_data (f,copy);
+      if (f.has_valid_mask()) {
+        // The scorpio field has its own mask, which tracks the validity of the data we write
+        copy.create_valid_mask(Field::MaskInit::Valid);
+      }
       fm_scorpio->add_field(copy);
     } else {
       fm_scorpio->add_field(f);
@@ -482,7 +494,9 @@ run (const std::string& filename, const util::TimeStamp& ts,
 
   // Update all diagnostics, we need to do this before applying the remapper
   // to make sure that the remapped fields are the most up to date.
+  start_timer("EAMxx::IO::diagnostics");
   computes(ts,allow_invalid_fields);
+  stop_timer("EAMxx::IO::diagnostics");
 
   auto apply_remap = [&](AbstractRemapper& remapper)
   {
@@ -516,9 +530,10 @@ run (const std::string& filename, const util::TimeStamp& ts,
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
   // If tracking avg count, update the count at each field location separately.
-  // We do count++ only where the fields are NOT equal to the fill value.
-  // Note, we assume that all fields that share a layout are also masked/filled in the same way.
+  // We do count++ only where the field is valid (or everywhere, if the field has no valid mask).
+  // Note, we assume that all fields that share a count are also masked in the same way.
   if (m_track_avg_cnt) {
+    start_timer("EAMxx::IO::avg_cnt");
     // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
     for (auto& [fname, count] : m_field_to_avg_count) {
       count.get_header().set_extra_data("updated",false);
@@ -549,16 +564,17 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
-      auto mask  = count.get_valid_mask();
 
-      // Find where the field is NOT equal to fill_value
-      compute_mask(field,constants::fill_value<Real>,Comparison::NE,mask);
-
-      // mask=1 for "good" entries, and mask=0 otherwise.
-      count.update(mask,1,1);
+      if (field.has_valid_mask()) {
+        count.update(field.get_valid_mask(),1,1);
+      } else {
+        count.add_scalar(1);
+      }
 
       // Handle writing the average count variables to file
       if (is_write_step) {
+        // NOTE: nested inside EAMxx::IO::avg_cnt
+        start_timer("EAMxx::IO::sync_and_write");
         // Bring data to host
         count.sync_to_host();
 
@@ -578,25 +594,19 @@ run (const std::string& filename, const util::TimeStamp& ts,
         auto func_finish = std::chrono::steady_clock::now();
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
+        stop_timer("EAMxx::IO::sync_and_write");
 
-        // If it's an output step, for Avg we need to ensure count>threshold.
-        // If count<=threshold, we set count=fill_value, so that fill_val propagates
-        // to the output fields when we divide by count later
+        // If it's an output step, for Avg we need to ensure count>threshold. Where it is not,
+        // the average is invalid: this mask tells us where, so that later we only divide
+        // fields by count where it is valid (and fill the rest with fill_value)
         if (output_step and m_avg_type==OutputAvgType::Average) {
           int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
-
-          // Recycle mask to find where count<thresh
-          compute_mask(count,min_count,Comparison::LE,mask);
-
-          // Later, we divide fields by count. By setting count=1 where count<thresholt,
-          // we can later do
-          //   f.scale_inv(count); // Requires count!=0 anywhere
-          //   f.deep_copy(fill_val,mask)
-          count.deep_copy(1,mask);
+          compute_mask(count,min_count,Comparison::GT,count.get_header().get_extra_data<Field>("sufficient_count_mask"));
         }
       }
       count.get_header().set_extra_data("updated",true);
     }
+    stop_timer("EAMxx::IO::avg_cnt");
   }
 
   // Take care of updating and possibly writing fields.
@@ -607,50 +617,98 @@ run (const std::string& filename, const util::TimeStamp& ts,
     const auto& f_in  = fm_after_hr->get_field(field_name);
           auto& f_out = fm_scorpio->get_field(field_name);
 
-    // Safety check: if a field may contain fill values and we are computing an Average,
-    // we must have created an avg-count tracking field; otherwise division by the raw
-    // number of steps would bias the result wherever fill values occurred.
-    if (m_avg_type==OutputAvgType::Average && f_in.get_header().may_be_filled()) {
+    // Safety check: if a field is masked and we are not doing Instant output, we must have
+    // created an avg-count tracking field; otherwise we could not tell where the output is valid
+    // (and for Average, the division by the raw number of steps would bias the result
+    // wherever the field was invalid).
+    if (m_avg_type!=OutputAvgType::Instant && f_in.has_valid_mask()) {
       EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
-        "[AtmosphereOutput::run] Error! Averaging a fill-aware field without avg-count tracking.\n"
+        "[AtmosphereOutput::run] Error! Accumulating a masked field without avg-count tracking.\n"
         " - field name : " + field_name + "\n"
-        "This indicates the field was marked may_be_filled after output initialization or tracking logic missed it." );
+        "This indicates the field got a valid mask after output initialization or tracking logic missed it." );
     }
 
+    // NOTE: if f_in is masked, we only accumulate where it is valid. The scorpio field
+    //       is just an accumulator, so we do not update its mask while accumulating.
+    const bool masked = f_in.has_valid_mask();
+    EKAT_REQUIRE_MSG (not masked or f_out.has_valid_mask(),
+        "[AtmosphereOutput::run] Error! The field has a valid mask, but the scorpio field does not.\n"
+        " - field name: " + field_name + "\n"
+        "This indicates the field got a valid mask after output initialization.\n");
+    start_timer("EAMxx::IO::accumulate");
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op
+        f_out.deep_copy(f_in);  // Note: if f_in aliases f_out, this is a no-op
+        if (masked) {
+          f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
+        }
+        break;
       case OutputAvgType::Max:
-        f_out.max(f_in);        break;
+        masked ? f_out.max(f_in,f_in.get_valid_mask())
+               : f_out.max(f_in);
+        break;
       case OutputAvgType::Min:
-        f_out.min(f_in);        break;
+        masked ? f_out.min(f_in,f_in.get_valid_mask())
+               : f_out.min(f_in);
+        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        masked ? f_out.update(f_in,1,1,f_in.get_valid_mask())
+               : f_out.update(f_in,1,1);
+        break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
+    stop_timer("EAMxx::IO::accumulate");
 
-    if (is_write_step) {
-      // NOTE: we don't divide by the avg cnt for checkpoint output
-      if (output_step and m_avg_type==OutputAvgType::Average) {
-        // Even if m_track_avg_cnt=true, this field may not need it.
-        // Note: a missing entry is safe ONLY for fields that cannot contain
-        // fill values; the may_be_filled check above guarantees that.
-        auto avg_count_it = m_field_to_avg_count.find(field_name);
-        if (m_track_avg_cnt and avg_count_it!=m_field_to_avg_count.end()) {
-          auto avg_count = avg_count_it->second;
+    // At output steps, complete the accumulation and fill the entries of f_out that are invalid.
+    // NOTE: not for checkpoint output, where we write the raw accumulation (which restart needs as is)
+    if (output_step) {
+      // Mask telling where f_out is valid (nullptr if it's valid everywhere)
+      const Field* fill_mask = nullptr;
+      if (m_avg_type==OutputAvgType::Instant) {
+        // f_out holds a copy of f_in, mask included
+        if (f_out.has_valid_mask()) {
+          fill_mask = &f_out.get_valid_mask();
+        }
+      } else {
+        // This field may not need a count (the map is empty if we don't track counts).
+        // Note: a missing entry is safe ONLY for fields that cannot be invalid
+        // anywhere; the has_valid_mask check above guarantees that.
+        const auto cnt_it = m_field_to_avg_count.find(field_name);
+        if (cnt_it!=m_field_to_avg_count.end()) {
+          auto count = cnt_it->second;
+          auto& mask = count.get_header().get_extra_data<Field>("sufficient_count_mask");
 
-          f_out.scale_inv(avg_count);
-
-          const auto& mask = avg_count.get_valid_mask();
-          f_out.deep_copy(constants::fill_value<Real>,mask);
-        } else {
+          if (m_avg_type==OutputAvgType::Average) {
+            // The average is valid where the count is above the threshold (see the count update above).
+            // Divide by the count only there
+            fill_mask = &mask;
+            f_out.scale_inv(count,mask);
+          } else {
+            // Max/Min: entries that were never valid still hold the initial -/+inf, and are invalid.
+            // NOTE: we must look at f_out itself, since the count may be shared with a field that
+            //       is masked differently (e.g., after a vertical remap). Hence we cannot use the count,
+            //       and use its mask as scratch, since it is not needed for Max/Min.
+            const Real init_val = m_avg_type==OutputAvgType::Max ? -std::numeric_limits<Real>::infinity()
+                                                                 :  std::numeric_limits<Real>::infinity();
+            compute_mask(f_out,init_val,Comparison::NE,mask);
+            fill_mask = &mask;
+          }
+        } else if (m_avg_type==OutputAvgType::Average) {
           // Divide by steps count only when the summation is complete
           f_out.scale(Real(1.0) / nsteps_since_last_output);
         }
       }
 
+      // The data of an invalid entry is garbage, so we write fill_value there
+      if (fill_mask) {
+        f_out.deep_copy(constants::fill_value<Real>,*fill_mask,true);
+      }
+    }
+
+    if (is_write_step) {
       // Write to file
+      start_timer("EAMxx::IO::sync_and_write");
       auto func_start = std::chrono::steady_clock::now();
 
       if (m_transpose) {
@@ -670,6 +728,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
+      stop_timer("EAMxx::IO::sync_and_write");
     }
   }
 
@@ -752,8 +811,10 @@ void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
   Field count(count_id);
   count.allocate_view();
 
-  // We will use a mask field for updating cnt (to check where cnt>threshold)
-  count.create_valid_mask();
+  // Mask telling where the count is sufficient, i.e., where cnt>threshold, so that the average is valid there.
+  // It is computed (once per count) only at output steps. For Max/Min it is just scratch space.
+  // NOTE: this is NOT a valid mask of the count: the count is valid everywhere, and its updates must not be gated.
+  count.get_header().set_extra_data("sufficient_count_mask",count.clone(avg_cnt_name + "_sufficient"));
 
   m_avg_counts.push_back(count);
   m_field_to_avg_count[name] = count;
@@ -841,8 +902,8 @@ register_variables(const std::string& filename,
 
       // CF compliance: Only add _FillValue for fields that may actually contain fill values
       // (e.g., pressure-interpolated fields). Coordinate variables and regular fields
-      // without missing values should not have _FillValue (may_be_filled() should return false).
-      if (f.get_header().may_be_filled()) {
+      // without missing values should not have _FillValue (has_valid_mask() should return false).
+      if (f.has_valid_mask()) {
         if (fp_precision=="double" or
             (fp_precision=="real" and std::is_same<Real,double>::value)) {
           scorpio::set_attribute(filename, field_name, "_FillValue",constants::fill_value<double>);
@@ -1059,7 +1120,12 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
       // The diag was either not computable or it may have failed to compute
       // (e.g., t=0 output with a flux-like diag).
       // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+      // (of the right type, since the diag may be an int mask)
+      if (d.data_type()==DataType::IntType) {
+        d.deep_copy(constants::fill_value<int>);
+      } else {
+        d.deep_copy(constants::fill_value<float>);
+      }
     }
   }
 }
@@ -1139,16 +1205,8 @@ process_requested_fields()
     name = tokens[0];
   }
 
-  // In case someone has an alias of an alias, we need to resolve the TRUE orig names.
-  bool has_multiple_aliasing_layers = false;
-  do {
-    for (auto it : m_alias_to_orig) {
-      if (m_alias_to_orig.count(it.second)>0) {
-        it.second = m_alias_to_orig[it.second];
-        has_multiple_aliasing_layers = true;
-      }
-    }
-  } while (has_multiple_aliasing_layers);
+  // NOTE: an alias of an alias needs no special handling: the loop below defers
+  //       an alias until its target is in the FM, and errors out if it gets stuck.
 
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "Error! The list of requested output fields contains duplicates.\n"
@@ -1156,20 +1214,45 @@ process_requested_fields()
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
   // Helper lambda to check if this fm_model field should trigger avg count
-  auto check_for_avg_cnt = [&](const Field& f) {
-    // We need avg-count tracking for any averaged (non-instant) field that:
-    //  - supplies explicit mask info ("mask_data" extra data, or mask field)
-    //  - is marked as potentially containing fill values (may_be_filled()).
-    // Without this, fill-aware updates skip fill_value during accumulation (good)
+  auto check_for_avg_cnt = [&](const Field& f, const bool count_by_mask = false) {
+    // We need avg-count tracking for any averaged (non-instant) field that has a valid mask.
+    // Without this, masked updates skip invalid entries during accumulation (good)
     // but we would still divide by the raw nsteps, biasing the result low.
+    // A count is named after its field, unless the field is a diag whose mask has
+    // a name other than the default <name>_valid_mask (see Field::create_valid_mask).
+    // Such a name says where a condition holds (e.g., FieldAtPressureLevel names its
+    // mask after the level), and all diags with a mask of that name share a count.
+    // NOTE: model fields get a count of their own: they may be refreshed at different
+    //       times, even if they share a mask.
     if (m_avg_type!=OutputAvgType::Instant) {
-      const bool has_mask_data = f.get_header().has_extra_data("mask_data");
-      const bool may_be_filled = f.get_header().may_be_filled();
-      if (f.has_valid_mask() or has_mask_data or may_be_filled) {
+      if (f.has_valid_mask()) {
         m_track_avg_cnt = true;
-        // Avoid duplicate insertion if already present (e.g., mask + filled both true)
+        std::string suffix = "_" + f.name();
+        if (count_by_mask and f.has_valid_mask()) {
+          auto ends_with = [](const std::string& s, const std::string& end) {
+            return s.size()>end.size() and s.compare(s.size()-end.size(),end.size(),end)==0;
+          };
+          const auto& mask_name = f.get_valid_mask().name();
+          if (not ends_with(mask_name,"_valid_mask")) {
+            // E.g., 500hPa_mask gives avg_count_500hPa_<layout>
+            const std::string end = "_mask";
+            suffix = "_" + (ends_with(mask_name,end) ? mask_name.substr(0,mask_name.size()-end.size())
+                                                     : mask_name);
+            // The name may carry the non-column dims of the layout, to tell apart masks of
+            // different layouts (e.g., 500hPa_dim2_mask). The count name adds them anyway.
+            const auto& lt = f.get_header().get_identifier().get_layout();
+            std::string dims;
+            for (int i=1; i<lt.rank(); ++i) {
+              dims += "_" + lt.names()[i] + std::to_string(lt.dim(i));
+            }
+            if (dims!="" and ends_with(suffix,dims)) {
+              suffix.erase(suffix.size()-dims.size());
+            }
+          }
+        }
+        // Avoid duplicate insertion if already present
         if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
-          m_field_to_avg_cnt_suffix.emplace(f.name(), "_" + f.name());
+          m_field_to_avg_cnt_suffix.emplace(f.name(), suffix);
         }
       }
     }
@@ -1194,33 +1277,12 @@ process_requested_fields()
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
 
-    // Some diags need some extra setup or trigger extra behaviors
-    std::string diag_avg_cnt_name = "";
-    auto& params = diag->get_params();
-    if (diag->name()=="FieldAtPressureLevel") {
-      diag_avg_cnt_name = "_"
-                        + params.get<std::string>("pressure_value")
-                        + params.get<std::string>("pressure_units");
-      m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
-    } else if (diag->name()=="FieldAtHeight") {
-      if (params.get<std::string>("surface_reference")=="sealevel") {
-        diag_avg_cnt_name = "_"
-                          + params.get<std::string>("height_value")
-                          + params.get<std::string>("height_units") + "_above_sealevel";
-        m_track_avg_cnt |= m_avg_type!=OutputAvgType::Instant;
-      }
-    } else if (diag->name()=="AerosolOpticalDepth550nm") {
-      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-      diag_avg_cnt_name = "_" + diag->name();
-    }
-    else if (diag_field.get_header().has_extra_data("mask_data")) {
-      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
-      diag_avg_cnt_name = "_" + diag_field.name();
-    }
+    // A diag gets an avg count like any field: by its mask, if it has one
+    check_for_avg_cnt(diag_field,true);
 
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
-      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
+      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),"");
     }
   };
 
@@ -1231,14 +1293,24 @@ process_requested_fields()
   // We keep scanning the fields names and process a field, removing it from the list.
   // There MUST be at least ONE field we can process at every iteration, but
   // some field MAY have to wait until another is processed. E.g., if we have
-  // 'foo_at_900hPa' and 'foo:=horiz_winds', the latter (an alias) must be
+  // 'foo.interp(p_mid=900,units="hPa")' and 'foo:=horiz_winds', the latter (an alias) must be
   // processed first, as it adds the 'foo' alias field to the fm, which the
-  // diag 'foo_at_900hPa' needs to be correctly initialized.
+  // diag needs to be correctly initialized.
   // Notice that, thanks to how we create and add diags to m_diagnostics,
   // the order in which diags appear in m_diagnostics follows the evaluation
   // order, meaning that if diag A depends on diag B, then B appears *before* A.
   // This ensures we can evaluate diags in order at runtime
   bool done = false;
+
+  // If a check below throws, remove the diags this stream added to the (static) repo,
+  // so that they are not left there for other streams
+  struct RepoGuard {
+    strmap_t<diag_ptr_type>& repo;
+    std::vector<std::string> added;
+    bool armed = true;
+    ~RepoGuard () { if (armed) for (const auto& n : added) repo.erase(n); }
+  } repo_guard{m_diag_repo,{}};
+
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   // m_fields_names now holds exactly the variables that reach the nc file:
   // alias targets live in m_alias_to_orig, 'aliases' entries are intermediates.
@@ -1271,12 +1343,20 @@ process_requested_fields()
           const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
           auto alias = orig.alias(name);
           fm_model->add_field(alias);
+          // An alias is masked like its target: use the same avg count, or one
+          // named after the alias if the target has a count of its own
+          // NOTE: the target may be a model field that this loop has yet to visit
+          check_for_avg_cnt(orig);
+          auto cnt_it = m_field_to_avg_cnt_suffix.find(orig.name());
+          if (cnt_it!=m_field_to_avg_cnt_suffix.end()) {
+            const bool own_cnt = cnt_it->second=="_"+orig.name();
+            m_field_to_avg_cnt_suffix.emplace(name, own_cnt ? "_"+name : cnt_it->second);
+          }
           remove_these.insert(name);
         }
       } else {
         // Reuse the diag if another stream built it, else create it.
-        // NOTE: cache it only after the check below, or a stream that fails to
-        //       build leaves it in the shared static repo for everyone else.
+        // NOTE: cache it only after the checks below
         auto it = m_diag_repo.find(name);
         auto diag = it==m_diag_repo.end()
                   ? create_diagnostic(name,fm_model->get_grid())
@@ -1297,6 +1377,29 @@ process_requested_fields()
             "   write\n"
             "     - <name> := " + name + "\n");
 
+        // An instant stream evaluates its diags on output steps only, so the previous
+        // value of a diag would be one output interval old, rather than one step old.
+        // Hence, only allow FieldPrev of a diag if we write every step.
+        if (m_avg_type==OutputAvgType::Instant and not m_output_every_step and
+            diag->name()=="FieldPrev") {
+          auto src = diag->get_params().get<std::string>("field_name");
+          while (m_alias_to_orig.count(src)==1) {
+            src = m_alias_to_orig.at(src);
+          }
+          EKAT_REQUIRE_MSG (fm_model->has_field(src) and m_diag_repo.count(src)==0,
+              "Error! shift(time=1) of a diagnostic is not available in an instant stream\n"
+              "       that does not write every step.\n"
+              " - stream name: " + m_stream_name + "\n"
+              " - request: " + name + "\n"
+              " - shifted operand: " + src + "\n"
+              "An instant stream evaluates diagnostics on output steps only, so the\n"
+              "shifted value would lag by one output interval, not one model step.\n"
+              "Use an averaged stream, which evaluates every step, or write every step.\n");
+        }
+
+        if (m_diag_repo.count(name)==0) {
+          repo_guard.added.push_back(name);
+        }
         m_diag_repo[name] = diag;
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
@@ -1336,6 +1439,72 @@ process_requested_fields()
 
     done = remaining.size()==0;
   }
+
+  // FieldPrev copies its input in init_timestep, which the stream calls in evaluation
+  // order. If the input is another FieldPrev (directly or via an alias), that one has
+  // already copied ITS input for this step, so we would copy the same value: the shift
+  // of a shift lags one step, not two. Any other diag computes later, during run, so
+  // its shift is one step old, as expected. Hence, (X.shift(time=1)*1.0).shift(time=1)
+  // works, while X.shift(time=1).shift(time=1) and X.shift(time=1).tend() do not.
+  // NOTE: FieldPrev is the only diag that writes its output in init_timestep
+  //       (FieldOverDt's only records the time stamp)
+  for (const auto& diag : m_diagnostics) {
+    if (diag->name()!="FieldPrev") {
+      continue;
+    }
+    const auto& operand = diag->get_params().get<std::string>("field_name");
+    auto src = operand;
+    while (m_alias_to_orig.count(src)==1) {
+      src = m_alias_to_orig.at(src);
+    }
+    auto it = m_diag_repo.find(src);
+    EKAT_REQUIRE_MSG (it==m_diag_repo.end() or it->second->name()!="FieldPrev",
+        "Error! shift(time=1) of a shift(time=1) is not available.\n"
+        " - stream name: " + m_stream_name + "\n"
+        " - request: " + diag->get().name() + "\n"
+        " - shifted operand: " + operand +
+        (src!=operand ? " (an alias of " + src + ")" : "") + "\n"
+        "A shift copies its operand at the start of the step, and a shifted operand has\n"
+        "already been updated by then, so the result would lag one step, not two.\n"
+        "This includes X.shift(time=1).tend(), which contains a shift of X.shift(time=1).\n"
+        "For a two-step lag, put an operation between the shifts:\n"
+        "  (X.shift(time=1)*1.0).shift(time=1)\n");
+  }
+
+  // BinaryOp resolves a name as a constant before looking for a field: error out
+  // if an operand is both, since the constant would silently win.
+  // NOTE: check now that all fields (and aliases) are in the FM
+  const auto& constants = physics::Constants<Real>::dictionary();
+  for (const auto& diag : m_diagnostics) {
+    if (diag->name()!="BinaryOp") {
+      continue;
+    }
+    for (const auto& arg : {"arg1","arg2"}) {
+      const auto& c = diag->get_params().get<std::string>(arg);
+      EKAT_REQUIRE_MSG (constants.find(c)==constants.end() or not fm_model->has_field(c),
+          "Error! An operand names both a physical constant and a field.\n"
+          " - stream name: " + m_stream_name + "\n"
+          " - request: " + diag->get().name() + "\n"
+          " - ambiguous operand: " + c + "\n"
+          "The constant would be used, silently, and the field ignored.\n"
+          "To use the field, give it another name (<name> := " + c + ").\n"
+          "To use the constant, write its value as a literal.\n");
+    }
+  }
+
+  // IO only writes real-valued fields: catch int fields (e.g., mask.where(..)) here
+  for (const auto& name : written_names) {
+    const auto& f = fm_model->get_field(name);
+    EKAT_REQUIRE_MSG (f.data_type()==DataType::RealType,
+        "Error! Output fields must be real-valued.\n"
+        " - stream name: " + m_stream_name + "\n"
+        " - field name: " + name + "\n"
+        " - data type: " + e2str(f.data_type()) + "\n"
+        "To write an integer mask, convert it in the request: <name> := (" +
+        (m_alias_to_orig.count(name)==1 ? m_alias_to_orig.at(name) : name) + ")*1.0\n");
+  }
+
+  repo_guard.armed = false;
 }
 
 std::vector<std::string> AtmosphereOutput::

@@ -237,6 +237,10 @@ public:
   // valid (mask!=0) or invalid/garbage (mask==0).
   // When this mask is present, certain users of this field may decide to
   // perform masked manipulations.
+  // The default mask name, <field name>_valid_mask, says the mask is this field's
+  // own. Any other name says where a condition holds, and masks with the same
+  // name must hold the same values: e.g., IO gives one avg count to the diags
+  // whose masks share a name, and the horizontal remapper remaps such masks once.
 
   enum class MaskInit { Valid, Invalid, None };
 
@@ -376,6 +380,11 @@ public:
   }
 
 protected:
+
+  Field (const std::shared_ptr<header_type>& header,
+         const std::shared_ptr<dual_view_t<char*>>& data,
+         const bool is_read_only = false)
+    : m_header(header), m_data(data), m_is_read_only(is_read_only) {}
 
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;

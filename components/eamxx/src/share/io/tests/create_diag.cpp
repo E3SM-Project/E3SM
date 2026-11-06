@@ -6,6 +6,10 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/grid/point_grid.hpp"
 
+#include <ekat_string_utils.hpp>
+
+#include <algorithm>
+
 namespace scream {
 
 TEST_CASE("create_diag")
@@ -22,38 +26,6 @@ TEST_CASE("create_diag")
   // Some diags look up geometry data as they are constructed
   grid->create_geometry_data("area",grid->get_2d_scalar_layout()).deep_copy(1.0);
   grid->create_geometry_data("lat", grid->get_2d_scalar_layout()).deep_copy(0.0);
-
-  SECTION ("field_at") {
-    // FieldAtLevel
-    auto d1 = create_diagnostic("BlaH_123_at_model_top",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtLevel>(d1)!=nullptr);
-    auto d2 = create_diagnostic("BlaH_123_at_model_bot",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtLevel>(d2)!=nullptr);
-    auto d3 = create_diagnostic("BlaH_123_at_lev_10",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtLevel>(d3)!=nullptr);
-
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_modeltop",grid)); // misspelled
-
-    // FieldAtPressureLevel
-    auto d4 = create_diagnostic("BlaH_123_at_10mb",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(d4)!=nullptr);
-    auto d5 = create_diagnostic("BlaH_123_at_10hPa",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(d5)!=nullptr);
-    auto d6 = create_diagnostic("BlaH_123_at_10Pa",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(d6)!=nullptr);
-
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_400KPa",grid)); // invalid units
-
-    // FieldAtHeight
-    auto d7 = create_diagnostic("BlaH_123_at_10m_above_sealevel",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtHeight>(d7)!=nullptr);
-    auto d8 = create_diagnostic("BlaH_123_at_10m_above_surface",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtHeight>(d8)!=nullptr);
-
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_10.5m",grid)); // missing _above_X
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1km_above_sealevel",grid)); // invalid units
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1m_above_the_surface",grid)); // invalid reference
-  }
 
   SECTION ("precip_mass_flux") {
     auto d1 = create_diagnostic("precip_liq_surf_mass_flux",grid);
@@ -113,29 +85,6 @@ TEST_CASE("create_diag")
     REQUIRE (d2->get_params().get<std::string>("wind_component")=="Zonal");
   }
 
-  SECTION ("atm_backtend") {
-    // _atm_backtend is a built-in alias: X_atm_backtend → X_minus_X_prev_over_dt
-    // The returned diagnostic is FieldOverDt with field_name = "BlaH_123_minus_BlaH_123_prev"
-    auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123_minus_BlaH_123_prev");
-    // The diag would name its field after the expansion, but the customer
-    // asked for the alias. Without this, an output stream throws.
-    REQUIRE (d1->get_params().get<std::string>("output_field_name")=="BlaH_123_atm_backtend");
-  }
-
-  SECTION ("field_prev") {
-    auto d1 = create_diagnostic("BlaH_123_prev",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldPrev>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
-  }
-
-  SECTION ("field_over_dt") {
-    auto d1 = create_diagnostic("BlaH_123_over_dt",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123");
-  }
-
   SECTION ("pot_temp") {
     auto d1 = create_diagnostic("LiqPotentialTemperature",grid);
     REQUIRE (std::dynamic_pointer_cast<PotentialTemperature>(d1)!=nullptr);
@@ -176,8 +125,8 @@ TEST_CASE("create_diag")
   // ==========================================================================
   //  Expression syntax
   // ==========================================================================
-  // Names no pattern above claims go to the dexpr front end, which drives the
-  // same factory from the parsed expression. Operands go down by canonical
+  // Anything but a plain name goes to the dexpr front end, which drives the
+  // factory from the parsed expression. Operands go down by canonical
   // expression string and come back through create_diagnostic one at a time.
 
   SECTION ("dexpr_operators") {
@@ -225,21 +174,15 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("dexpr_operator_precedence") {
-    // 'qc_plus_qv_times_p_mid' groups by regex greediness: (qc+qv)*p_mid. As
-    // an expression, '*' binds tighter.
+    // '*' binds tighter than '+'.
     auto d1 = create_diagnostic("qc+qv*p_mid",grid);
     REQUIRE (d1->get_params().get<std::string>("binary_op")=="plus");
     REQUIRE (d1->get_params().get<std::string>("arg1")=="qc");
     REQUIRE (d1->get_params().get<std::string>("arg2")=="(qv*p_mid)");
-
-    auto legacy = create_diagnostic("qc_plus_qv_times_p_mid",grid);
-    REQUIRE (legacy->get_params().get<std::string>("binary_op")=="times");
-    REQUIRE (legacy->get_params().get<std::string>("arg1")=="qc_plus_qv");
   }
 
   SECTION ("dexpr_numeric_literals") {
-    // The underscore syntax cannot write a literal, so BinaryOp only ever saw
-    // named constants. p_mid/100 must not look for a field called "100".
+    // p_mid/100 must not look for a field called "100".
     auto d1 = create_diagnostic("p_mid/100",grid);
     REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("arg2")=="100");
@@ -253,11 +196,8 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("dexpr_composition_is_unambiguous") {
-    // 'qc.where(p_mid>100) + qv' has no unambiguous underscore spelling:
-    // 'qc_where_p_mid_gt_100_plus_qv' hits the conditional-sampling pattern
-    // first with a greedy field name, silently giving
-    // ConditionalSampling(qc, p_mid, gt, 100_plus_qv). Canonical expression
-    // strings cannot be mis-bound: no legacy pattern matches parentheses.
+    // Operands go down as canonical expression strings, parenthesized, so a
+    // nested operand cannot be mis-bound when it comes back around.
     auto d1 = create_diagnostic("qc.where(p_mid>100) + qv",grid);
     REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("arg1")=="qc.where((p_mid>100))");
@@ -292,6 +232,23 @@ TEST_CASE("create_diag")
     auto d3 = create_diagnostic("T_mid.isel(lev=0)",grid);
     REQUIRE (d3->get_params().get<std::string>("vertical_location")=="lev_0");
     REQUIRE_THROWS (create_diagnostic("T_mid.isel(lev='model_top')",grid));
+  }
+
+  SECTION ("dexpr_broadcast") {
+    auto d1 = create_diagnostic("T_mid.broadcast_like(qv)",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldBroadcast>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("target_name")=="qv");
+
+    // Both the receiver and the target can be expressions
+    auto d2 = create_diagnostic("(qc+qv).broadcast_like(T_mid*2)",grid);
+    REQUIRE (d2->get_params().get<std::string>("field_name")=="(qc+qv)");
+    REQUIRE (d2->get_params().get<std::string>("target_name")=="(T_mid*2)");
+
+    // Exactly one positional arg, no keywords
+    REQUIRE_THROWS (create_diagnostic("T_mid.broadcast_like()",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.broadcast_like(qv,qc)",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.broadcast_like(input=qv)",grid));
   }
 
   SECTION ("dexpr_interp") {
@@ -330,9 +287,6 @@ TEST_CASE("create_diag")
 
     auto d4 = create_diagnostic("T_mid.mean('lev',weights='dp')",grid);
     REQUIRE (d4->get_params().get<std::string>("weighting_method")=="dp");
-    // ...same as the legacy spelling
-    auto legacy = create_diagnostic("T_mid_vert_avg_dp_weighted",grid);
-    REQUIRE (legacy->get_params().get<std::string>("weighting_method")=="dp");
 
     REQUIRE_THROWS (create_diagnostic("T_mid.mean('time')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.sum('col')",grid));
@@ -345,7 +299,7 @@ TEST_CASE("create_diag")
     REQUIRE (d1->get_params().get<std::string>("condition_rhs")=="0.01");
     REQUIRE (d1->get_params().get<std::string>("condition_cmp")=="gt");
 
-    // The special operand names carry over from the legacy spelling
+    // The special operand names: 'mask' (the 0/1 indicator) and 'lev'
     auto d2 = create_diagnostic("mask.where(lev>5)",grid);
     REQUIRE (d2->get_params().get<std::string>("field_name")=="mask");
     REQUIRE (d2->get_params().get<std::string>("condition_lhs")=="lev");
@@ -373,13 +327,9 @@ TEST_CASE("create_diag")
     auto d2 = create_diagnostic("T_mid.histogram(bins=[0,1.5,2])",grid);
     REQUIRE (std::dynamic_pointer_cast<Histogram>(d2)!=nullptr);
     REQUIRE (d2->get_params().get<std::string>("bin_configuration")=="0_1.5_2");
-    // Edges render in the shortest form that reads back, so an exponent in
-    // the request need not survive into the configuration...
+    // Edges are passed down as dexpr renders them
     auto d2b = create_diagnostic("T_mid.histogram(bins=[0,1e3])",grid);
     REQUIRE (d2b->get_params().get<std::string>("bin_configuration")=="0_1000.0");
-    // ...but one that cannot be written without an exponent must be rejected,
-    // since the diag re-splits the configuration on '_' and parses each piece.
-    REQUIRE_THROWS (create_diagnostic("T_mid.histogram(bins=[0,1e30])",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.histogram(bins=[0])",grid));
 
     auto d3 = create_diagnostic("T_mid.zonal_mean(bins=20)",grid);
@@ -403,7 +353,7 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("dexpr_tend") {
-    // Shorthand for (X-X.shift(time=1)).over_dt(): the _atm_backtend tree.
+    // Shorthand for (X-X.shift(time=1)).over_dt().
     auto d1 = create_diagnostic("T_mid.tend()",grid);
     REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("field_name")=="(T_mid-T_mid.shift((time=1)))");
@@ -417,6 +367,37 @@ TEST_CASE("create_diag")
 
     auto prev = create_diagnostic("T_mid.shift(time=1)",grid);
     REQUIRE (std::dynamic_pointer_cast<FieldPrev>(prev)!=nullptr);
+  }
+
+  SECTION ("dexpr_searchsorted") {
+    // The level index interp(..) depends on; the receiver picks the coordinate
+    auto d1 = create_diagnostic("p_mid.searchsorted(500,units='hPa')",grid);
+    REQUIRE (std::dynamic_pointer_cast<PressureLevelIndex>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("pressure_value")=="500");
+    REQUIRE (d1->get_params().get<std::string>("pressure_units")=="hPa");
+    REQUIRE (d1->get_params().get<std::string>("vertical_layer")=="mid");
+
+    auto d2 = create_diagnostic("p_int.searchsorted(50000)",grid);
+    REQUIRE (d2->get_params().get<std::string>("pressure_units")=="Pa");
+    REQUIRE (d2->get_params().get<std::string>("vertical_layer")=="int");
+
+    auto d3 = create_diagnostic("z_mid.searchsorted(1000)",grid);
+    REQUIRE (std::dynamic_pointer_cast<HeightLevelIndex>(d3)!=nullptr);
+    REQUIRE (d3->get_params().get<std::string>("surface_reference")=="sealevel");
+    auto d4 = create_diagnostic("height_int.searchsorted(10,units='m')",grid);
+    REQUIRE (d4->get_params().get<std::string>("surface_reference")=="surface");
+    REQUIRE (d4->get_params().get<std::string>("vertical_layer")=="int");
+
+    // interp(..) asks for exactly these names
+    auto fp = create_diagnostic("T_mid.interp(p_mid=500,units='hPa')",grid);
+    const auto& fp_in = fp->get_input_fields_names();
+    REQUIRE (std::find(fp_in.begin(),fp_in.end(),"p_mid.searchsorted(500,units='hPa')")!=fp_in.end());
+    auto fz = create_diagnostic("T_mid.interp(z_mid=10,reference='surface')",grid);
+    const auto& fz_in = fz->get_input_fields_names();
+    REQUIRE (std::find(fz_in.begin(),fz_in.end(),"height_int.searchsorted(10,units='m')")!=fz_in.end());
+
+    REQUIRE_THROWS (create_diagnostic("T_mid.searchsorted(500)",grid));
+    REQUIRE_THROWS (create_diagnostic("p_mid.searchsorted()",grid));
   }
 
   SECTION ("dexpr_rejects") {
@@ -438,6 +419,54 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("T_mid.isel(1=2)",grid));
   }
 
+  SECTION ("dexpr_negative_literals") {
+    // A negated numeric literal is passed down as a number, not as "(-2)"
+    auto d1 = create_diagnostic("T_mid*(-2)",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("arg2")=="-2");
+    REQUIRE (d1->get_input_fields_names().size()==1);
+    REQUIRE (d1->get_input_fields_names().front()=="T_mid");
+
+    auto d2 = create_diagnostic("-2*T_mid",grid);
+    REQUIRE (d2->get_params().get<std::string>("arg1")=="-2");
+    REQUIRE (d2->get_params().get<std::string>("arg2")=="T_mid");
+    REQUIRE (d2->get_input_fields_names().size()==1);
+
+    auto d3 = create_diagnostic("T_mid.where(qv>-1)",grid);
+    REQUIRE (std::dynamic_pointer_cast<ConditionalSampling>(d3)!=nullptr);
+    REQUIRE (d3->get_params().get<std::string>("condition_rhs")=="-1");
+    auto d4 = create_diagnostic("T_mid.where(qv<=-0.5)",grid);
+    REQUIRE (d4->get_params().get<std::string>("condition_rhs")=="-0.5");
+    // The lhs of a where() condition must be a field
+    REQUIRE_THROWS (create_diagnostic("qc.where(-1<qv)",grid));
+    REQUIRE_THROWS (create_diagnostic("qc.where(0.5>qv)",grid));
+
+    // A negated field is still an operand by name
+    auto d5 = create_diagnostic("T_mid*(-qv)",grid);
+    REQUIRE (d5->get_params().get<std::string>("arg2")=="(-qv)");
+  }
+
+  SECTION ("dexpr_histogram_edges") {
+    // The edges, as the Histogram diag reads them back from its configuration
+    auto edges = [&](const std::string& expr) {
+      auto h = create_diagnostic(expr,grid);
+      std::vector<double> vals;
+      for (const auto& s : ekat::split(h->get_params().get<std::string>("bin_configuration"),"_")) {
+        vals.push_back(std::stod(s));
+      }
+      return vals;
+    };
+    // Small edges, large ones, and negative ones
+    REQUIRE (edges("qc.histogram(bins=[0,1e-5,1e-4])")==std::vector<double>{0,1e-5,1e-4});
+    REQUIRE (edges("qc.histogram(bins=[0.5,1e15,1e30])")==std::vector<double>{0.5,1e15,1e30});
+    REQUIRE (edges("qc.histogram(bins=[-1.5,-1e-3,0,2])")==std::vector<double>{-1.5,-1e-3,0,2});
+
+    // Edges must be numbers, in increasing order
+    REQUIRE_THROWS (create_diagnostic("qc.histogram(bins=[qv,1])",grid));
+    REQUIRE_THROWS (create_diagnostic("qc.histogram(bins=['0','1'])",grid));
+    REQUIRE_THROWS (create_diagnostic("qc.histogram(bins=[1,-1])",grid));
+  }
+
   SECTION ("dexpr_leaves_plain_names_alone") {
     // A bare identifier is a diag class name or a typo; the factory decides.
     auto d1 = create_diagnostic("AtmosphereDensity",grid);
@@ -445,11 +474,6 @@ TEST_CASE("create_diag")
     REQUIRE_FALSE (d1->get_params().isParameter("from_expression"));
 
     REQUIRE_THROWS (create_diagnostic("NotADiagnostic",grid));
-
-    // Legacy names matched a pattern long before the expression front end.
-    auto d2 = create_diagnostic("BlaH_123_where_qv_gt_0.01",grid);
-    REQUIRE (std::dynamic_pointer_cast<ConditionalSampling>(d2)!=nullptr);
-    REQUIRE_FALSE (d2->get_params().isParameter("from_expression"));
   }
 
   SECTION ("dexpr_marks_what_it_built") {

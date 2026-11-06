@@ -35,3 +35,4 @@ driver_default = "moab"
 driver_choices = ("mct", "moab")
 mct_path = "{srcroot}/externals/mct"
 additional_archive_components = ("drv",)
+standalone_compset_lacks_cpl_log = False

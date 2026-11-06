@@ -50,7 +50,7 @@ contains
     ! ---------------------
     use physical_constants, only : scale_factor
     ! ---------------------
-    use dimensions_mod, only : np, nlev
+    use dimensions_mod, only : np
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
@@ -77,7 +77,7 @@ contains
     ! Local
     ! =================
     ! pointer ...
-    real (kind=real_kind), dimension(:,:), pointer :: rspheremv,spheremv
+    real (kind=real_kind), dimension(:,:), pointer :: spheremv
 
     ! Thread private working set ...
 
@@ -92,18 +92,13 @@ contains
     real (kind=real_kind), dimension(np,np,2,nets:nete)    :: gradbig
 
     real (kind=real_kind), dimension(np,np,2)      :: grade
-    real (kind=real_kind), dimension(np,np,2)      :: grade2
     real (kind=real_kind), dimension(np,np)      :: vor
     real (kind=real_kind), dimension(np,np)      :: div  
     real (kind=real_kind), dimension(np,np)      :: wdiv  
 
     real (kind=real_kind) ::  v1,v2,v3,mx
 
-    real*8                :: st,et, time_adv
-    integer    :: i,j,k,ie
-    integer    :: kptr
-    integer    :: nm1,n0,np1
-    integer    :: nstep
+    integer    :: i,j,ie
     type (cartesian3D_t)             :: cart
     type (derivative_t)          :: deriv
     call derivinit(deriv)
@@ -356,7 +351,6 @@ contains
     real (kind=real_kind)              :: test(intervals,intervals)
     real (kind=real_kind)              :: p,t
 
-    type(spherical_polar_t)            :: s
     integer                            :: ie,i,j
     logical                            :: success
     success = .true.
@@ -702,12 +696,10 @@ contains
 
     real (kind=real_kind)              :: laplace(np,np)
     real (kind=real_kind)              :: fluxes(intervals,intervals,4)
-    real (kind=real_kind)              :: t
 
     type (quadrature_t)                :: gll
     integer                            :: ie,i,j
     logical                            :: success
-    real (kind=real_kind),   parameter :: EPS=.0000001
     success = .true.
 
     gll = gausslobatto(np)
@@ -789,7 +781,6 @@ contains
     real (kind=real_kind)              :: laplace_test(intervals,intervals)
     real (kind=real_kind)              :: p,t
 
-    type(spherical_polar_t)            :: s
     integer                            :: ie,i,j
     logical                            :: success
     success = .true.
@@ -858,7 +849,7 @@ contains
     real (kind=real_kind)              :: values(intervals,intervals)
     real (kind=real_kind)              :: V(np,np)
     real (kind=real_kind)              :: t, p
-    integer                            :: ie,i,j
+    integer                            :: ie,i
     logical                            :: success
 
     V = 0
@@ -972,7 +963,7 @@ contains
 !    B1 = boundary_integral[ PHIcov_1 p] 
 !    B2 = boundary_integral[ PHIcov_2 p]
 !
-  use dimensions_mod, only : np, np, nlev
+  use dimensions_mod, only : np, np
   use element_mod, only    : element_t
   use derivative_mod, only  : derivative_t, divergence_sphere, divergence_sphere_wk, &
                              element_boundary_integral, gradient_sphere, &

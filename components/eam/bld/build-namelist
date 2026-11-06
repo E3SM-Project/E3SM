@@ -4051,8 +4051,8 @@ add_default($nl, 'zmconv_accr_fac');
 add_default($nl, 'zmconv_micro_dcs');
 add_default($nl, 'zmconv_MCSP_heat_coeff');
 add_default($nl, 'zmconv_MCSP_moisture_coeff');
-add_default($nl, 'zmconv_MCSP_uwind_coeff');
-add_default($nl, 'zmconv_MCSP_vwind_coeff');
+add_default($nl, 'zmconv_MCSP_mom_coeff');
+add_default($nl, 'zmconv_MCSP_use_full_shear');
 #
 # moist convection rainwater coefficients
 # These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
@@ -4799,6 +4799,17 @@ if ($opts{'test'}) {
 # Write the input dataset filepaths to the file specified by $opts{'inputdata'}.
 if ($opts{'inputdata'}) {
     check_input_files($nl, $inputdata_rootdir, $opts{'inputdata'});
+
+    # P3 opens <micro_p3_lookup_dir>/p3_lookup_table_1.dat-v<micro_p3_tableversion>
+    # (micro_p3.F90). Neither namelist variable is that file, so list it for CIME to fetch.
+    my $p3_dir = $nl->get_value('micro_p3_lookup_dir');
+    my $p3_ver = $nl->get_value('micro_p3_tableversion');
+    if (defined $p3_dir and defined $p3_ver) {
+        s/['"]//g, s/^\s+|\s+$//g for ($p3_dir, $p3_ver);
+        open my $fh, '>>', $opts{'inputdata'} or die "error opening $opts{'inputdata'}: $!";
+        print $fh "micro_p3_lookup_table = $p3_dir/p3_lookup_table_1.dat-v$p3_ver\n";
+        close $fh;
+    }
 }
 
 # END OF MAIN SCRIPT

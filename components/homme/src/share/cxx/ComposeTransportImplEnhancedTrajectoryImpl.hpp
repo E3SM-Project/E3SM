@@ -374,7 +374,7 @@ linterp (const Range& range,
   }
 #endif
   assert(range.start ==  0);
-  assert(range.end   == ni);
+  assert(range.end   == static_cast<decltype(range.end)>(ni));
   const auto f = [&] (const int k) {
     yi[k] = linterp(n, x, y, k + x_idx_offset, xi[k]);
   };

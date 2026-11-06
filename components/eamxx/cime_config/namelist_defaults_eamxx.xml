@@ -132,6 +132,18 @@ be lost if SCREAM_HACK_XML is not enabled.
              - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
              - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
              - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
+
+       13) The attribute 'action' modifies the value selected so far for a parameter, rather than
+           replacing it. Parameter elements are processed in order, so the action applies to what
+           was selected by the previous matched elements (and it is an error if there is nothing).
+           Valid values are:
+             - action="append": (arrays only) append the entries in the element text to the array.
+             - action="remove": (arrays only) remove the entries in the element text from the array.
+             - action="delete": (only for leaves of 'open' nodes, i.e., nodes with open="true") remove
+               the whole parameter. The element must have selectors and no text. A later matched
+               element for the same parameter selects a new value, as if it were the first.
+           Example: <my_param grid="ne4np4" COMPSET=".*AQUA.*" action="delete"/> removes my_param only
+           if both selectors match.
   -->
 
   <atmosphere_processes_defaults>
@@ -219,6 +231,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       </tables>
       <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
       <autoconversion_prefactor hgrid="ne256np4.pg2">2700.0</autoconversion_prefactor>
+      <autoconversion_prefactor hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">2127.0</autoconversion_prefactor>
       <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>
       <autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent">1.79</autoconversion_nc_exponent>
       <autoconversion_radius type="real" doc="Autoconversion droplet radius in meter">25.0e-6</autoconversion_radius>
@@ -231,6 +244,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
       <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">2000.0</spa_ccn_to_nc_factor>
       <spa_ccn_to_nc_factor hgrid="ne256np4.pg2">1000.0</spa_ccn_to_nc_factor>
+      <spa_ccn_to_nc_factor hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">500.0</spa_ccn_to_nc_factor>
       <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">0.55</spa_ccn_to_nc_exponent>
       <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
       <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
@@ -294,11 +308,11 @@ be lost if SCREAM_HACK_XML is not enabled.
                                               w/ trig_dcape, or 70 otherwise)"           >0.</cape_threshold>
       <dcape_threshold    type="real"    doc="ZM DCAPE threshold [J/kg/s]"               >0.</dcape_threshold>
       <!-- MCSP -->
-      <mcsp_enabled type="logical" doc="ZM flag to enable MCSP in ZM" >true</mcsp_enabled>
-      <mcsp_t_coeff type="real" doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
-      <mcsp_q_coeff type="real" doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
-      <mcsp_u_coeff type="real" doc="MCSP U-wind coefficient"         >0.0</mcsp_u_coeff>
-      <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
+      <mcsp_enabled        type="logical" doc="ZM flag to enable MCSP in ZM"    >true</mcsp_enabled>
+      <mcsp_t_coeff        type="real"    doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
+      <mcsp_q_coeff        type="real"    doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
+      <mcsp_mom_coeff      type="real"    doc="MCSP momentum coefficient"       >0.0</mcsp_mom_coeff>
+      <mcsp_use_full_shear type="logical" doc="MCSP flag to use full shear vector instead of zonal-only" >false</mcsp_use_full_shear>
     </zm>
 
     <!-- Water tracers -->
@@ -309,6 +323,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Water isotopes (subclass of water tracers with fractionation physics) -->
     <water_isotopes inherit="atm_proc_base">
       <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+      <liquid_vapor_formulation type="string" doc="Source for liquid/vapor fractionation parameters">horita_wesolowski_1994</liquid_vapor_formulation>
+      <ice_vapor_formulation type="string" doc="Source for ice/vapor fractionation parameters">merlivat_nief_1967</ice_vapor_formulation>
+      <standard_ratio_formulation type="string" doc="Normalize isotope ratios or use actual abundances">normalized</standard_ratio_formulation>
+      <ocean_enrichment_formulation type="string" doc="Ocean isotopic enrichment/depletion relative to VSMOW">modern</ocean_enrichment_formulation>
     </water_isotopes>
     
     <!-- Gravity Wave Drag -->
@@ -535,6 +553,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <my_param vgrid="L128" action="append">3,4</my_param>
       <my_param vgrid="L72"  action="append">3,4</my_param>
       <my_param vgrid="L72"  action="remove">3</my_param>
+      <!-- Open nodes: atmchange can add/remove leaves to/from them. All leaves must be arrays of reals -->
+      <open_params open="true" leaf_type="array(real)" leaf_doc="Test leaf of an open node">
+        <p1>1.0</p1>
+        <p2>2.0,3.0</p2>
+      </open_params>
+      <empty_open_params open="true" leaf_type="array(real)"/>
     </test_only>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
@@ -552,10 +576,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file COMPSET=".*DP-EAMxx">none</spa_remap_file>
 
       <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one">none</spa_data_file>
-      <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
-      <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30pg2_20240111.nc</spa_data_file>
-      <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_20220428.nc</spa_data_file>
-      <spa_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4pg2_20231222.nc</spa_data_file>
+      <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne30_c20260930.nc</spa_data_file>
+      <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne30pg2_c20260928.nc</spa_data_file>
+      <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne4_c20260930.nc</spa_data_file>
+      <spa_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne4pg2_c20260930.nc</spa_data_file>
+      <spa_data_file hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">${DIN_LOC_ROOT}/atm/scream/init/spa_from_v3LRamip_CMIP6_1850_clim_ne30pg2_c20261015.nc</spa_data_file>
 
       <time_interpolation_method type="string" doc="Method for interpolating SPA data in time">yearly_periodic</time_interpolation_method>
     </spa>
@@ -574,6 +599,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
       <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
       <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
+      <spc_data_file hgrid="ne256np4.pg2" COMPSET="1850.*_SCREAM%BETA.*">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRhistorical_CMIP6_1850_clim_ne30pg2_c20261015.nc</spc_data_file>
 
       <gas_species type="array(string)" doc="List of gas species to read in and prescribe">o3</gas_species>
 
@@ -629,6 +655,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <fixed_total_solar_irradiance>-9999.0</fixed_total_solar_irradiance>
       <fixed_total_solar_irradiance COMPSET=".*SCREAM%RCE.*">551.58</fixed_total_solar_irradiance>
 
+      <rad_frequency type="integer" constraints="gt 0" doc="Frequency (in number of timesteps) at which to call the radiation code">1</rad_frequency>
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne32np4">2</rad_frequency>
@@ -694,11 +721,18 @@ be lost if SCREAM_HACK_XML is not enabled.
     </cosp>
 
     <!-- Turbulent Mountain Stress -->
-    <tms inherit="atm_proc_base"/>
+    <tms inherit="atm_proc_base">
+      <obstacle_height_factor  type="real" doc="Factor to convert SGH to characteristic obstacle height">1.0</obstacle_height_factor>
+      <obstacle_height_min     type="real" doc="Minimum characteristic obstacle height">1.0</obstacle_height_min>
+      <roughness_length_factor type="real" doc="Factor to convert obstacle height to eff roughness length">0.075</roughness_length_factor>
+      <roughness_length_max    type="real" doc="Maximum effective roughness length">100.0</roughness_length_max>
+      <ri_shear_sqr_min        type="real" doc="Minimum squared wind shear between the lowest two levels for TMS Richardson number [m2/s2]">0.01</ri_shear_sqr_min>
+      <drag_scaling_factor     type="real" doc="Scaling factor for TMS drag coefficient and stress">1.0</drag_scaling_factor>
+    </tms>
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp,cosp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
@@ -774,100 +808,116 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
-    <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
+    <!-- For aquaplanet run, unset the topography_filename (phis=0 is set in the constant_fields) -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
-    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
-    <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
-    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
-    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
-    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
-    <cldfrac_liq       >0.0</cldfrac_liq>
-    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
-    <eddy_diff_mom     >0.0</eddy_diff_mom>
-    <eddy_diff_heat    >0.0</eddy_diff_heat>
-    <eddy_diff_mom_horiz>0.0</eddy_diff_mom_horiz>
-    <eddy_diff_heat_horiz>0.0</eddy_diff_heat_horiz>
-    <T_prev_micro_step >0.0</T_prev_micro_step>
-    <qv_prev_micro_step>0.0</qv_prev_micro_step>
-    <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
-    <qr                >0.0</qr>
-    <nr                >0.0</nr>
-    <qm                >0.0</qm>
-    <bm                >0.0</bm>
-    <ni_activated      >0.0</ni_activated>
-    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
-    <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
-    <tke               >0.0</tke>
-    <!-- ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized -->
-    <pbl_height        >2000.0</pbl_height>
-    <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
-    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
-    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
-    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
-    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
-    <surf_sens_flux    >0.0</surf_sens_flux>
-    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
-    <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
-    <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
-    <wetdens type="array(real)" doc="Wet density of interstitial aerosol [kg/m3]">5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22</wetdens>
-    <constituent_fluxes type="real">0.0</constituent_fluxes>
-    <bc_c1 type="real">0.0</bc_c1>
-    <bc_c3 type="real">0.0</bc_c3>
-    <bc_c4 type="real">0.0</bc_c4>
-    <dst_c1 type="real">0.0</dst_c1>
-    <dst_c3 type="real">0.0</dst_c3>
-    <so4_c1 type="real">0.0</so4_c1>
-    <so4_c2 type="real">0.0</so4_c2>
-    <so4_c3 type="real">0.0</so4_c3>
-    <pom_c1 type="real">0.0</pom_c1>
-    <pom_c3 type="real">0.0</pom_c3>
-    <pom_c4 type="real">0.0</pom_c4>
-    <soa_c1 type="real">0.0</soa_c1>
-    <soa_c2 type="real">0.0</soa_c2>
-    <soa_c3 type="real">0.0</soa_c3>
-    <nacl_c1 type="real">0.0</nacl_c1>
-    <nacl_c2 type="real">0.0</nacl_c2>
-    <nacl_c3 type="real">0.0</nacl_c3>
-    <mom_c1 type="real">0.0</mom_c1>
-    <mom_c2 type="real">0.0</mom_c2>
-    <mom_c3 type="real">0.0</mom_c3>
-    <mom_c4 type="real">0.0</mom_c4>
-    <num_c1 type="real">0.0</num_c1>
-    <num_c2 type="real">0.0</num_c2>
-    <num_c3 type="real">0.0</num_c3>
-    <num_c4 type="real">0.0</num_c4>
-    <z_mam4_int type="real">0.0</z_mam4_int>
-    <!-- Surface fluxes for the land model from MAM4xx wet scavenging-->
-    <wetdep_hydrophilic_bc type="real">1e-5</wetdep_hydrophilic_bc>
-    <drydep_hydrophilic_bc type="real">1e-5</drydep_hydrophilic_bc>
-    <wetdep_hydrophilic_oc type="real">1e-5</wetdep_hydrophilic_oc>
-    <drydep_hydrophilic_oc type="real">1e-5</drydep_hydrophilic_oc>
-    <wetdep_dust_bin1 type="real">1e-5</wetdep_dust_bin1>
-    <wetdep_dust_bin2 type="real">1e-5</wetdep_dust_bin2>
-    <wetdep_dust_bin3 type="real">1e-5</wetdep_dust_bin3>
-    <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
+    <!-- Constants used to initialize fields. Fields can be inited to a constant in two ways (both are optional):
+           - overrides: the field is ALWAYS set to the constant, even if it is in the IC file
+           - defaults:  the field is set to the constant ONLY IF it is not in the IC file (if it is, it is read from file)
+         (Priority: defaults < IC file < overrides. Note that 'defaults' refers to the fields in the IC file, and
+         it is not related to this defaults file.) If a field is in both lists, overrides wins. All entries are arrays of reals: a single value means all the entries
+         of the field are set to that value, while an array of N values (N>1) is only valid for vector fields with N
+         components. Entries for fields that do not need initialization are ignored.
+         Note: default constants are not used for phis, sgh30, and sgh, since they are read from the topography file
+         (overrides works for them).
+         Fields can be added/removed with the 'add' and 'rm' options of atmchange (see atmchange help) -->
+    <constant_fields>
+      <overrides open="true" leaf_type="array(real)" leaf_doc="Constant used to initialize a field (always)">
+        <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
+        <!-- For aquaplanet run, set phis=0 (there is no topography file) -->
+        <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
+        <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
+        <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
+        <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
+        <cldfrac_liq       >0.0</cldfrac_liq>
+        <sgs_buoy_flux     >0.0</sgs_buoy_flux>
+        <eddy_diff_mom     >0.0</eddy_diff_mom>
+        <eddy_diff_heat    >0.0</eddy_diff_heat>
+        <eddy_diff_mom_horiz>0.0</eddy_diff_mom_horiz>
+        <eddy_diff_heat_horiz>0.0</eddy_diff_heat_horiz>
+        <T_prev_micro_step >0.0</T_prev_micro_step>
+        <qv_prev_micro_step>0.0</qv_prev_micro_step>
+        <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
+        <qr                >0.0</qr>
+        <nr                >0.0</nr>
+        <qm                >0.0</qm>
+        <bm                >0.0</bm>
+        <ni_activated      >0.0</ni_activated>
+        <nc_nuceat_tend    >0.0</nc_nuceat_tend>
+        <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
+        <tke               >0.0</tke>
+        <!-- ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized -->
+        <pbl_height        >2000.0</pbl_height>
+        <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
+        <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
+        <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
+        <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
+        <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
+        <surf_sens_flux    >0.0</surf_sens_flux>
+        <surf_lw_flux_up   >0.0</surf_lw_flux_up>
+        <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
+        <dgnum doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
+        <dgnumwet doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
+        <wetdens doc="Wet density of interstitial aerosol [kg/m3]">5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22</wetdens>
+        <constituent_fluxes>0.0</constituent_fluxes>
+        <bc_c1>0.0</bc_c1>
+        <bc_c3>0.0</bc_c3>
+        <bc_c4>0.0</bc_c4>
+        <dst_c1>0.0</dst_c1>
+        <dst_c3>0.0</dst_c3>
+        <so4_c1>0.0</so4_c1>
+        <so4_c2>0.0</so4_c2>
+        <so4_c3>0.0</so4_c3>
+        <pom_c1>0.0</pom_c1>
+        <pom_c3>0.0</pom_c3>
+        <pom_c4>0.0</pom_c4>
+        <soa_c1>0.0</soa_c1>
+        <soa_c2>0.0</soa_c2>
+        <soa_c3>0.0</soa_c3>
+        <nacl_c1>0.0</nacl_c1>
+        <nacl_c2>0.0</nacl_c2>
+        <nacl_c3>0.0</nacl_c3>
+        <mom_c1>0.0</mom_c1>
+        <mom_c2>0.0</mom_c2>
+        <mom_c3>0.0</mom_c3>
+        <mom_c4>0.0</mom_c4>
+        <num_c1>0.0</num_c1>
+        <num_c2>0.0</num_c2>
+        <num_c3>0.0</num_c3>
+        <num_c4>0.0</num_c4>
+        <z_mam4_int>0.0</z_mam4_int>
+        <!-- Surface fluxes for the land model from MAM4xx wet scavenging-->
+        <wetdep_hydrophilic_bc>1e-5</wetdep_hydrophilic_bc>
+        <drydep_hydrophilic_bc>1e-5</drydep_hydrophilic_bc>
+        <wetdep_hydrophilic_oc>1e-5</wetdep_hydrophilic_oc>
+        <drydep_hydrophilic_oc>1e-5</drydep_hydrophilic_oc>
+        <wetdep_dust_bin1>1e-5</wetdep_dust_bin1>
+        <wetdep_dust_bin2>1e-5</wetdep_dust_bin2>
+        <wetdep_dust_bin3>1e-5</wetdep_dust_bin3>
+        <wetdep_dust_bin4>1e-5</wetdep_dust_bin4>
 
-    <fraction_landuse type="real" doc="Fractional land use for drydeposition of gasses and aerosols [fraction]">0.0</fraction_landuse>
+        <fraction_landuse doc="Fractional land use for drydeposition of gasses and aerosols [fraction]">0.0</fraction_landuse>
 
-    <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
-    <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
-    <qc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
-    <nc vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
-    <ni vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
+        <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
+        <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
+        <qc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
+        <qi vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
+        <nc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
+        <ni vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+        <nc vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
+        <ni vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
 
-    <!-- new default initial conditions for L128v4 do not have nc/ni fieds, so initialize to zero -->
-    <nc vgrid="L128v4" type="real">0.0</nc>
-    <ni vgrid="L128v4" type="real">0.0</ni>
+        <!-- new default initial conditions for L128v4 do not have nc/ni fieds, so initialize to zero -->
+        <nc vgrid="L128v4">0.0</nc>
+        <ni vgrid="L128v4">0.0</ni>
 
-    <!-- only certain grids are missing the ozone field - so initialize to zero -->
-    <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+        <!-- only certain grids are missing the ozone field - so initialize to zero -->
+        <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+      </overrides>
+      <defaults open="true" leaf_type="array(real)" leaf_doc="Constant used to initialize a field (if not in the IC file)"/>
+    </constant_fields>
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>
@@ -938,7 +988,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- Default settings for DP-EAMxx -->
   <iop_options>
     <doubly_periodic_mode type="logical" doc="Type of intensive observation period. Currently only DP is supported.">true</doubly_periodic_mode>
-    <iop_file type="file" doc="File containing DP level data">UNSET</iop_file>
+    <iop_file type="file" optional="true" doc="File containing DP level data">UNSET</iop_file>
     <target_latitude type="real" doc="Latitude to initialize IC columns.">-999</target_latitude>
     <target_longitude type="real" doc="Longitude to initialize IC columns.">-999</target_longitude>
     <iop_dosubsidence type="logical" doc="Whether or not to compute Eulerian LS vertical advection.">false</iop_dosubsidence>
@@ -964,6 +1014,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
     <disable_diagnostics>false</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_remap_factor hgrid="ne30np4">1</dt_remap_factor> <!-- addresses stability issues -->
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hypervis_order>2</hypervis_order>

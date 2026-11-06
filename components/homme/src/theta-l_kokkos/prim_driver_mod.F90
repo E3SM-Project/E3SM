@@ -46,7 +46,6 @@ contains
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
-    use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
     use control_mod,      only : prescribed_wind
     !
     ! Inputs
@@ -73,14 +72,12 @@ contains
     !Init the kokkos functors (and their boundary exchanges)
     call prim_init_kokkos_functors ()
 
-    ! Init the kokkos views
+    ! Init the kokkos views (copies dp3d and ps_v from Fortran elem%state,
+    ! which prim_init2_base has already initialized for both CAM and standalone)
     call prim_init_elements_views (elem)
 
-    ! Initialize dp3d from ps_v
-    call initialize_dp3d_from_ps_c ()
-
     if (prescribed_wind == 1) then
-       call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
+       call init_standalone_test(elem,deriv1,hybrid,hvcoord,nets,nete)
     end if
   end subroutine prim_init2
 
@@ -726,7 +723,7 @@ contains
 
   end function is_push_to_f_required
 
-  subroutine init_standalone_test(elem,deriv,hybrid,hvcoord,tl,nets,nete)
+  subroutine init_standalone_test(elem,deriv,hybrid,hvcoord,nets,nete)
     ! set_prescribed_wind takes hvcoord as intent(inout) because it modifies it
     ! in the first call. In the C++ dycore init, we need hvcoord already
     ! established. This routine and set_prescribed_wind_f takes care of this
@@ -744,7 +741,6 @@ contains
     type (derivative_t),   intent(in)             :: deriv
     type (hybrid_t),       intent(in)             :: hybrid
     type (hvcoord_t),      intent(inout)          :: hvcoord
-    type (TimeLevel_t)   , intent(in)             :: tl
     integer              , intent(in)             :: nets
     integer              , intent(in)             :: nete
 
@@ -795,7 +791,7 @@ contains
                               elem_derived_eta_dot_dpdn, elem_derived_vn0
 
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
-    type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
+    type (c_ptr) :: elem_state_dp3d_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr
 
     call t_startf('push_to_cxx')

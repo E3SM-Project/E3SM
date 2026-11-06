@@ -193,6 +193,7 @@
 <config_Leith_del4_parameter>2.2</config_Leith_del4_parameter>
 <config_Leith_del2_div_scaler>1.0</config_Leith_del2_div_scaler>
 <config_Leith_del4_div_scaler>1.0</config_Leith_del4_div_scaler>
+<config_Leith_dx>30000.0</config_Leith_dx>
 <config_Leith_visc2_max>1000.0</config_Leith_visc2_max>
 <config_Leith_visc4_max>1.2e11</config_Leith_visc4_max>
 
@@ -238,6 +239,8 @@
 <config_submesoscale_Ce>0.08</config_submesoscale_Ce>
 <config_submesoscale_Lfmin>1000.0</config_submesoscale_Lfmin>
 <config_submesoscale_ds_max>100000.0</config_submesoscale_ds_max>
+<config_submesoscale_ice_aware>.false.</config_submesoscale_ice_aware>
+<config_submesoscale_ice_aware_crit_conc>0.5</config_submesoscale_ice_aware_crit_conc>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
@@ -482,6 +485,8 @@
 <config_frazil_ice_density>1000.0</config_frazil_ice_density>
 <config_frazil_ice_porosity>1.0</config_frazil_ice_porosity>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
+<config_include_sensible_heat_frazil>.true.</config_include_sensible_heat_frazil>
+<config_expel_excess_frazil_salt>.true.</config_expel_excess_frazil_salt>
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
 <config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>

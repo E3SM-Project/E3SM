@@ -237,7 +237,7 @@ contains
     use parallel_mod, only: global_shared_buf, global_shared_sum
     use global_norms_mod, only: wrap_repro_sum
     use reduction_mod, only: ParallelMin, ParallelMax
-    use physical_constants, only: g, p0, kappa
+    use physical_constants, only: p0, kappa
     use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use bndry_mod, only: bndry_exchangev
     use control_mod, only: ftype

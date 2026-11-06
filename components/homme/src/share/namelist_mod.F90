@@ -222,7 +222,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: se_ftype, se_limiter_option
     integer :: se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype
-    integer :: i, ii
+    integer :: i
 #if !defined(CAM) && !defined(SCREAM)
 #if !defined(HOMME_WITHOUT_PIOLIBRARY)
     integer :: j
@@ -230,7 +230,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: interp_type
 #endif
     integer  :: ierr
-    character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
 #if defined(CAM) || defined(SCREAM)
     character(len=MAX_STRING_LEN) :: se_topology, se_geometry

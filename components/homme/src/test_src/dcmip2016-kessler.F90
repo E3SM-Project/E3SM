@@ -62,7 +62,6 @@
 
 SUBROUTINE KESSLER(theta, qv, qc, qr, rho, pk, dt, z, nz, precl)
 
-use physical_constants,   only:  kappa
 
   IMPLICIT NONE
 

@@ -4,8 +4,8 @@ module SurfaceResistanceMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Module holding routines for calculation of surface resistances of the different tracers
-  ! transported with BeTR. The surface here refers to water and soil, not including canopy
+  ! Module holding routines for calculation of surface resistances of the different tracers.
+  ! The surface here refers to water and soil, not including canopy
   !
   ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8

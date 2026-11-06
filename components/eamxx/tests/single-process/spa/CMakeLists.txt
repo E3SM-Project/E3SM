@@ -26,7 +26,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
 set (TEST_INPUT_FILES
   scream/init/${EAMxx_tests_IC_FILE_72lev}
   scream/maps/map_ne4np4_to_ne2np4_mono.nc
-  scream/init/spa_file_unified_and_complete_ne4_20220428.nc
+  scream/init/spa_from_v3LRamip_CMIP6_2010_clim_ne2_c20260930.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})

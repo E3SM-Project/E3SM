@@ -26,29 +26,15 @@ defaults:
     shell: bash -leo pipefail {0}
 
 jobs:
-  gnu-openmp:
-    runs-on:  [self-hosted, e3sm, gnu]
-    name: gnu-openmp / cov
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Run tests
-        uses: ./.github/actions/test-all-eamxx
-        with:
-          build_type: cov
-          machine: ghci-gnu
-          generate: false
-          submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  gnu-cuda:
-    runs-on:  [self-hosted, e3sm, cuda]
-    name: gnu-cuda / cov
+  coverage:
+    runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: gnu-openmp, runner: gnu, build_type: cov, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: cov, cmake_configs: ''}
+    name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -59,39 +45,13 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Get CUDA Arch
-        run: |
-          # Ensure nvidia-smi is available
-          if ! command -v nvidia-smi &> /dev/null; then
-              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
-              exit 1
-          fi
-
-          # Get the GPU model from nvidia-smi, and set env for next step
-          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
-          case "$gpu_model" in
-              *"H100"*)
-                  echo "Hopper=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
-                  ARCH=90
-                  ;;
-              *"A100"*)
-                  echo "Ampere=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
-                  ;;
-              *"V100"*)
-                  echo "Volta=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
-                  ;;
-              *)
-                  echo "Unsupported GPU model: $gpu_model"
-                  exit 1
-                  ;;
-          esac
+        if: ${{ matrix.runner == 'cuda' }}
+        uses: ./.github/actions/get-cuda-arch
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
-          build_type: cov
-          machine: ghci-cuda
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-${{ matrix.runner }}
           generate: false
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
+          cmake-configs: ${{ matrix.cmake_configs }};${{ env.CUDA_CMAKE_CONFIGS }}

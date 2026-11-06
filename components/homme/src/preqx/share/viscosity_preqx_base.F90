@@ -52,7 +52,7 @@ type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
-integer :: i,j,k,kptr,ie
+integer :: k,kptr,ie
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np) :: tmp2

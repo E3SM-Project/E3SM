@@ -256,7 +256,7 @@ void BinaryOp::initialize_impl()
       " - field 1 data type: " + e2str(fid1.data_type()) + "\n"
       " - field 2 name: " + fid2.name() + "\n"
       " - field 2 data type: " + e2str(fid2.data_type()) + "\n");
-    EKAT_REQUIRE_MSG (fid1.get_grid_name() == fid1.get_grid_name(),
+    EKAT_REQUIRE_MSG (fid1.get_grid_name() == fid2.get_grid_name(),
       "Error! BinaryOp requires both input fields to be on the same grid.\n"
       " - field 1 name: " + fid1.name() + "\n"
       " - field 1 grid name: " + fid1.get_grid_name() + "\n"

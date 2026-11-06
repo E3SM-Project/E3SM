@@ -51,7 +51,6 @@ contains
     ! On the radiation time step, set the carbon isotopic flux
     ! variables (except for gap-phase mortality and fire fluxes)
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -379,42 +378,40 @@ contains
 
       call CNCIsoLitterToColumn(num_soilc, filter_soilc, cnstate_vars, isocol_cf, isoveg_cf)
 
-      if (.not. is_active_betr_bgc) then
 
-         ! column-level non-mortality fluxes
+      ! column-level non-mortality fluxes
 
-         do fc = 1,num_soilc
-            cc = filter_soilc(fc)
-            do j = 1, nlevdecomp
-               do l = 1, ndecomp_cascade_transitions
-                  if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
-                     isocol_cf%decomp_cascade_hr_vr(cc,j,l)  =  &
-                          col_cf%decomp_cascade_hr_vr(cc,j,l) * &
-                          (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
-                         / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
-                  else
-                     isocol_cf%decomp_cascade_hr_vr(cc,j,l) = 0._r8
-                  end if
-               end do
+      do fc = 1,num_soilc
+         cc = filter_soilc(fc)
+         do j = 1, nlevdecomp
+            do l = 1, ndecomp_cascade_transitions
+               if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
+                  isocol_cf%decomp_cascade_hr_vr(cc,j,l)  =  &
+                       col_cf%decomp_cascade_hr_vr(cc,j,l) * &
+                       (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
+                      / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
+               else
+                  isocol_cf%decomp_cascade_hr_vr(cc,j,l) = 0._r8
+               end if
             end do
          end do
+      end do
 
-         do fc = 1,num_soilc
-            cc = filter_soilc(fc)
-            do j = 1, nlevdecomp
-               do l = 1, ndecomp_cascade_transitions
-                  if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
-                     isocol_cf%decomp_cascade_ctransfer_vr(cc,j,l)  =  &
-                          col_cf%decomp_cascade_ctransfer_vr(cc,j,l) * &
-                          (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
-                          / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
-                  else
-                     isocol_cf%decomp_cascade_ctransfer_vr(cc,j,l) = 0._r8
-                  end if
-               end do
+      do fc = 1,num_soilc
+         cc = filter_soilc(fc)
+         do j = 1, nlevdecomp
+            do l = 1, ndecomp_cascade_transitions
+               if ( col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) /= 0._r8) then
+                  isocol_cf%decomp_cascade_ctransfer_vr(cc,j,l)  =  &
+                       col_cf%decomp_cascade_ctransfer_vr(cc,j,l) * &
+                       (isocol_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l)) &
+                       / col_cs%decomp_cpools_vr(cc,j,cascade_donor_pool(l))) * 1._r8
+               else
+                  isocol_cf%decomp_cascade_ctransfer_vr(cc,j,l) = 0._r8
+               end if
             end do
          end do
-    endif
+      end do
     end associate
 
   end subroutine CarbonIsoFlux1
@@ -427,7 +424,6 @@ contains
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -711,7 +707,6 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -858,49 +853,47 @@ contains
            num_soilp                                           , filter_soilp, 1._r8, 0, isotope)
 
 
-      if (.not. is_active_betr_bgc) then
 
-         ! calculate the column-level flux of deadstem and deadcrootc to cwdc as the result of fire mortality.
+      ! calculate the column-level flux of deadstem and deadcrootc to cwdc as the result of fire mortality.
 
-         do pi = 1,max_patch_per_col
-            do fc = 1,num_soilc
-               cc = filter_soilc(fc)
-               if ( pi <=  col_pp%npfts(cc) ) then
-                  pp = col_pp%pfti(cc) + pi - 1
-                  if (veg_pp%active(pp)) then
-                     do j = 1, nlevdecomp
-                        isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
-                             isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
-                             isoveg_cf%m_deadstemc_to_litter_fire(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
-                        isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
-                             isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
-                             isoveg_cf%m_deadcrootc_to_litter_fire(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
-                        isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
-                             isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
-                             isoveg_cf%m_cpool_to_litter_fire(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
+      do pi = 1,max_patch_per_col
+         do fc = 1,num_soilc
+            cc = filter_soilc(fc)
+            if ( pi <=  col_pp%npfts(cc) ) then
+               pp = col_pp%pfti(cc) + pi - 1
+               if (veg_pp%active(pp)) then
+                  do j = 1, nlevdecomp
+                     isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
+                          isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
+                          isoveg_cf%m_deadstemc_to_litter_fire(pp) * veg_pp%wtcol(pp) * stem_prof(pp,j)
+                     isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
+                          isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
+                          isoveg_cf%m_deadcrootc_to_litter_fire(pp) * veg_pp%wtcol(pp) * croot_prof(pp,j)
+                     isocol_cf%fire_mortality_c_to_cwdc(cc,j) = &
+                          isocol_cf%fire_mortality_c_to_cwdc(cc,j) + &
+                          isoveg_cf%m_cpool_to_litter_fire(pp) * veg_pp%wtcol(pp) * leaf_prof(pp,j)
 
-                     end do
-                  end if
+                  end do
+               end if
+            end if
+         end do
+      end do
+
+
+      do fc = 1,num_soilc
+         cc = filter_soilc(fc)
+         do j = 1, nlevdecomp
+            do l = 1, ndecomp_pools
+               if ( col_cs%decomp_cpools_vr(cc,j,l) /= 0._r8) then
+                  isocol_cf%m_decomp_cpools_to_fire_vr(cc,j,l)  =  &
+                       col_cf%m_decomp_cpools_to_fire_vr(cc,j,l) * &
+                       (isocol_cs%decomp_cpools_vr(cc,j,l) / col_cs%decomp_cpools_vr(cc,j,l)) * 1._r8
+               else
+                  isocol_cf%m_decomp_cpools_to_fire_vr(cc,j,l) = 0._r8
                end if
             end do
          end do
-
-
-         do fc = 1,num_soilc
-            cc = filter_soilc(fc)
-            do j = 1, nlevdecomp
-               do l = 1, ndecomp_pools
-                  if ( col_cs%decomp_cpools_vr(cc,j,l) /= 0._r8) then
-                     isocol_cf%m_decomp_cpools_to_fire_vr(cc,j,l)  =  &
-                          col_cf%m_decomp_cpools_to_fire_vr(cc,j,l) * &
-                          (isocol_cs%decomp_cpools_vr(cc,j,l) / col_cs%decomp_cpools_vr(cc,j,l)) * 1._r8
-                  else
-                     isocol_cf%m_decomp_cpools_to_fire_vr(cc,j,l) = 0._r8
-                  end if
-               end do
-            end do
-         end do
-    endif
+      end do
     end associate
   end subroutine CarbonIsoFlux3
 

@@ -345,7 +345,7 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
   Real *state_pmid, *state_u, *state_v;
 
   // Outputs
-  Real *mcsp_shear;
+  Real *shear_u, *shear_v;
 
   ZmConvMcspCalculateShearData(Int pcols_, Int ncol_, Int pver_) :
     PhysicsTestData({
@@ -354,7 +354,7 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
     },
     {
       {&state_pmid, &state_u, &state_v},
-      {&mcsp_shear}
+      {&shear_u, &shear_v}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_)
   {}

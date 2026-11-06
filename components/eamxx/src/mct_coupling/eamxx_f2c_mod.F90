@@ -76,11 +76,6 @@ interface
     integer(kind=c_int), intent(in) :: import_field_size, export_field_size
   end subroutine scream_setup_surface_coupling
 
-#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
-  subroutine scream_init_hip_atm () bind(c)
-  end subroutine scream_init_hip_atm
-#endif
-
   ! This subroutine performs completes the initialization of the atm instance.
   ! In particular, this routine must be called *after* scream_create_atm_instance,
   ! and *after* scream_setup_surface_coupling.
