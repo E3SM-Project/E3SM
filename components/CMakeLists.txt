@@ -15,10 +15,10 @@ cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0079 NEW) # Remove once scorpio in a better state
 set(CMAKE_CXX_STANDARD 17)
 
-# Turn on wrapper. You can change this to e3sm_compile_wrap_mem.py to measure
+# Turn on wrapper. You can change this to e3sm_compile_wrap_mem to measure
 # memory in addition to time.
-set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
-set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm_compile_wrap ")
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake

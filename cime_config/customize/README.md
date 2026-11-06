@@ -2,19 +2,22 @@
 # CIME customization
 
 This directory contains the code for customizing CIME's runtime and provenance collection.
-
-## flags.py
-
-Contains the flags that alter CIME's runtime behavior.
+NOTE: All .py files in this directory will be imported by CIME!
 
 ## provenance.py
 
 Contains the code for capturing build and pre/post run provenance.
 
-## e3sm_compile_wrap.py
+## e3sm_compile_wrap
 
 The default compile/link wrapper for E3SM builds. Will add timing data
 for all targets in the build log.
+
+## e3sm_compile_wrap_mem
+
+An expanded compile/link wrapper for E3SM builds. Will add timing data
+and memory data for all targets in the build log, but requires more
+dependencies and is much more complicated, so this is not the default.
 
 ## build-analyzer
 
