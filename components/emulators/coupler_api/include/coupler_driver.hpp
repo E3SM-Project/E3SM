@@ -29,7 +29,8 @@ public:
     components_.emplace_back(std::move(component));
   }
 
-  void initialize(const std::string& filename, RouteBufferMap external_buffers);
+  void initialize(const std::string& filename, RouteBufferMap external_buffers,
+                  const ComponentIntervals& intervals = {});
   void initialize(const std::string& filename) {
     initialize(filename, RouteBufferMap{});
   }

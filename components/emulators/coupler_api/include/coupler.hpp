@@ -48,6 +48,10 @@ inline std::ostream& operator<<(std::ostream& os,
  *  - destinations: fields that consume the coupled state/flux
  *  - owned_buffer: Optional Owned data buffer that components copy to/from
  *  - buffer: span pointing to the buffer to be used by the route
+ *  - source_component, destination_components: names of the components involved
+ *  - averages: destinations run less often than the source, so they import the
+ *    mean of the source's exports since they last ran, rather than the latest
+ *  - accumulator, n_samples, mean: storage for that mean
  */
 struct CouplingRoute {
   MergeType merge_type;
@@ -57,6 +61,12 @@ struct CouplingRoute {
   std::vector<FieldID> destinations;
   std::vector<double> owned_buffer;
   std::span<double> buffer;
+  std::string source_component;
+  std::vector<std::string> destination_components;
+  bool averages = false;
+  std::vector<double> accumulator;
+  std::size_t n_samples = 0;
+  std::vector<double> mean;
 };
 
 /**
@@ -78,7 +88,7 @@ struct ComponentBuffers {
 };
 
 /**
- * @brief Coupler handles the exchange of variables between E3SMComponents
+ * @brief Coupler handles the exchange of variables between CoupledProcesses
  * Fields:
  * - registry_: main registry of fields that each component exposes for import
  * or export
@@ -90,6 +100,11 @@ struct ComponentBuffers {
  */
 using RouteBufferMap =
     std::unordered_map<std::string, std::span<double>>;
+
+/// How many base steps pass between runs of each component. A component that
+/// isn't listed, such as an external one, doesn't take part in averaging.
+using ComponentIntervals = std::unordered_map<std::string, int>;
+
 class Coupler {
 public:
   Coupler() = default;
@@ -102,8 +117,18 @@ public:
 
   FieldRegistry& registry() noexcept { return registry_; }
   const FieldRegistry& registry() const noexcept { return registry_; }
+
+  // methods to construct routes and attach buffers used for import/export
   void build_routes(const std::filesystem::path& filename);
-  void build_buffers(RouteBufferMap external_buffers);
+  void build_buffers(RouteBufferMap external_buffers,
+                     const ComponentIntervals& intervals = {});
+
+  /// Adds the component's latest exports to the means of its averaging routes.
+  void accumulate_exports(std::string_view component_name);
+
+  /// Computes the means that the component is about to import, and resets them.
+  /// @throws std::runtime_error if nothing was exported since the last import
+  void prepare_imports(std::string_view component_name);
 
   const ActiveCouplingFields&
   coupling_plan(const std::string& component_name) const;
