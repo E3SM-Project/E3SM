@@ -253,23 +253,29 @@ TEST_CASE("create_diag")
 
   SECTION ("dexpr_interp") {
     auto d1 = create_diagnostic("T_mid.interp(p_mid=500,units='hPa')",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("pressure_value")=="500");
-    REQUIRE (d1->get_params().get<std::string>("pressure_units")=="hPa");
+    REQUIRE (std::dynamic_pointer_cast<FieldVerticalInterp>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("vertical_coordinate")=="p");
+    REQUIRE (d1->get_params().get<std::string>("value")=="500");
+    REQUIRE (d1->get_params().get<std::string>("units")=="hPa");
 
     // Pa is the default, matching the units everything else in EAMxx uses
     auto d2 = create_diagnostic("T_mid.interp(p_mid=50000)",grid);
-    REQUIRE (d2->get_params().get<std::string>("pressure_units")=="Pa");
+    REQUIRE (d2->get_params().get<std::string>("units")=="Pa");
 
     auto d3 = create_diagnostic("T_mid.interp(z_mid=10,reference='surface')",grid);
-    REQUIRE (std::dynamic_pointer_cast<FieldAtHeight>(d3)!=nullptr);
-    REQUIRE (d3->get_params().get<std::string>("height_value")=="10");
-    REQUIRE (d3->get_params().get<std::string>("height_units")=="m");
-    REQUIRE (d3->get_params().get<std::string>("surface_reference")=="surface");
+    REQUIRE (std::dynamic_pointer_cast<FieldVerticalInterp>(d3)!=nullptr);
+    REQUIRE (d3->get_params().get<std::string>("vertical_coordinate")=="height");
+    REQUIRE (d3->get_params().get<std::string>("value")=="10");
+    REQUIRE (d3->get_params().get<std::string>("units")=="m");
+
+    // The default reference is the sea level
+    auto d4 = create_diagnostic("T_mid.interp(z_mid=10)",grid);
+    REQUIRE (d4->get_params().get<std::string>("vertical_coordinate")=="z");
 
     REQUIRE_THROWS (create_diagnostic("T_mid.interp(p_mid=500,z_mid=10)",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.interp()",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.interp(p_mid=500,reference='surface')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.interp(z_mid=10,reference='ground')",grid));
   }
 
   SECTION ("dexpr_reductions") {
@@ -372,20 +378,22 @@ TEST_CASE("create_diag")
   SECTION ("dexpr_searchsorted") {
     // The level index interp(..) depends on; the receiver picks the coordinate
     auto d1 = create_diagnostic("p_mid.searchsorted(500,units='hPa')",grid);
-    REQUIRE (std::dynamic_pointer_cast<PressureLevelIndex>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("pressure_value")=="500");
-    REQUIRE (d1->get_params().get<std::string>("pressure_units")=="hPa");
+    REQUIRE (std::dynamic_pointer_cast<VerticalLevelIndex>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("vertical_coordinate")=="p");
+    REQUIRE (d1->get_params().get<std::string>("value")=="500");
+    REQUIRE (d1->get_params().get<std::string>("units")=="hPa");
     REQUIRE (d1->get_params().get<std::string>("vertical_layer")=="mid");
 
     auto d2 = create_diagnostic("p_int.searchsorted(50000)",grid);
-    REQUIRE (d2->get_params().get<std::string>("pressure_units")=="Pa");
+    REQUIRE (d2->get_params().get<std::string>("units")=="Pa");
     REQUIRE (d2->get_params().get<std::string>("vertical_layer")=="int");
 
     auto d3 = create_diagnostic("z_mid.searchsorted(1000)",grid);
-    REQUIRE (std::dynamic_pointer_cast<HeightLevelIndex>(d3)!=nullptr);
-    REQUIRE (d3->get_params().get<std::string>("surface_reference")=="sealevel");
+    REQUIRE (std::dynamic_pointer_cast<VerticalLevelIndex>(d3)!=nullptr);
+    REQUIRE (d3->get_params().get<std::string>("vertical_coordinate")=="z");
+    REQUIRE (d3->get_params().get<std::string>("units")=="m");
     auto d4 = create_diagnostic("height_int.searchsorted(10,units='m')",grid);
-    REQUIRE (d4->get_params().get<std::string>("surface_reference")=="surface");
+    REQUIRE (d4->get_params().get<std::string>("vertical_coordinate")=="height");
     REQUIRE (d4->get_params().get<std::string>("vertical_layer")=="int");
 
     // interp(..) asks for exactly these names

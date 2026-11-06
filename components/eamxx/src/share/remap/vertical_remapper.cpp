@@ -228,7 +228,7 @@ registration_ends_impl ()
     } else {
       // If a field does not have any vertical tag (LEV, ILEV, or LEVP) it may still have
       // a mask assigned from somewhere else.
-      // For instance, this could be a 2d field computed by FieldAtPressureLevel diagnostic.
+      // For instance, this could be a 2d field computed by FieldVerticalInterp diagnostic.
       // In those cases we want to copy that mask to the target field.
       if (src.has_valid_mask()) {
         EKAT_REQUIRE_MSG(not tgt.has_valid_mask(),

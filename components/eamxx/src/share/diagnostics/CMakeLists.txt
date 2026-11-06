@@ -9,17 +9,14 @@ add_library (eamxx_diagnostics
   binary_op.cpp
   dry_static_energy.cpp
   exner.cpp
-  field_at_height.cpp
   field_at_level.cpp
-  field_at_pressure_level.cpp
-  height_level_index.cpp
+  field_vertical_interp.cpp
   histogram.cpp
   horiz_avg.cpp
   longwave_cloud_forcing.cpp
   number_path.cpp
   potential_temperature.cpp
   precip_surf_mass_flux.cpp
-  pressure_level_index.cpp
   relative_humidity.cpp
   sea_level_pressure.cpp
   shortwave_cloud_forcing.cpp
