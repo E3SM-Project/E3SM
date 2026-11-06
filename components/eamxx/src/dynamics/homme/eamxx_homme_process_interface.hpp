@@ -60,7 +60,7 @@ public:
 protected:
 #endif
   void homme_pre_process (const double dt);
-  void homme_post_process (const double dt);
+  void homme_post_process ();
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -104,10 +104,6 @@ protected:
   // See [rrtmgp active gases] in eamxx_homme_fv_phys.cpp.
   void fv_phys_rrtmgp_active_gases_init(const std::shared_ptr<const GridsManager>& gm);
   void fv_phys_rrtmgp_active_gases_remap (const RunType run_type);
-
-  // Rayleigh friction functions
-  void rayleigh_friction_init ();
-  void rayleigh_friction_apply (const Real dt) const;
 
 public:
   // Fast boolean function returning whether physics PGN is being used.
@@ -153,15 +149,6 @@ protected:
   std::shared_ptr<const AbstractGrid> m_dyn_grid;  // Dynamics DGLL
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
-
-  // Rayleigh friction decay rate profile
-  view_1d<Pack> m_otau;
-
-  // Rayleigh friction paramaters
-  int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
-  Real m_raykrange; // Range of rayleigh friction profile.
-  Real m_raytau0;   // Approximate value of decay time at model top (days)
-                    // if set to 0, no rayleigh friction is applied
 
   // Scratch reused by the 3D turbulence strain kernels when that feature is active.
   fixed_view_2d_phys m_w_mid_row_all;
