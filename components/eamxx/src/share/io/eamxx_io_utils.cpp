@@ -6,6 +6,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
 
+#include <ekat_assert.hpp>
 #include <ekat_string_utils.hpp>
 
 #include <fstream>
@@ -173,6 +174,25 @@ create_diagnostic (const std::string& diag_field_name,
   auto diag = DiagnosticFactory::instance().create(diag_name,comm,params,grid);
 
   return diag;
+}
+
+OutputDataLayout str2output_layout (const std::string& s)
+{
+  using ODL = OutputDataLayout;
+  std::string valid_choices;
+  for (auto l : {ODL::Native, ODL::Unique}) {
+    if (s==e2str(l)) {
+      return l;
+    }
+    valid_choices += (valid_choices.empty() ? "" : ", ") + e2str(l);
+  }
+
+  EKAT_ERROR_MSG (
+      "Error! Invalid output_data_layout.\n"
+      " - output_data_layout: " + s + "\n"
+      " - valid choices: " + valid_choices + "\n");
+
+  return ODL::Native;   // Not reachable, but the compiler does not know that
 }
 
 } // namespace scream

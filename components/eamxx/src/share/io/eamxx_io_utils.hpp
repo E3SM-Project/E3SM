@@ -64,6 +64,27 @@ inline OutputAvgType str2avg (const std::string& s) {
   return OAT::Invalid;
 }
 
+// How the fields of a grid are written (see the 'output_data_layout' option of an output stream)
+//  - Native: fields are written as they appear on their grid
+//  - Unique: fields are written on the unique grid of their grid (see AbstractGrid::get_unique_grid),
+//    which is the grid itself if it is already unique. E.g., the dynamics grid is written on the
+//    physics_gll grid. This is the default.
+enum class OutputDataLayout {
+  Native,
+  Unique
+};
+
+inline std::string e2str(const OutputDataLayout l) {
+  switch (l) {
+    case OutputDataLayout::Native:  return "native";
+    case OutputDataLayout::Unique:  return "unique";
+  }
+  return "INVALID";   // Not reachable, but some compilers warn about reaching the end of the function
+}
+
+// Parse the 'output_data_layout' option of an output stream. Throws if the string is not valid.
+OutputDataLayout str2output_layout (const std::string& s);
+
 // The AD will pass a default constructed control, since it doesn't know the values
 // of REST_N/REST_OPTION used in the previous run
 // Output streams MUST pass a valid control structure, cause we need to differentiate
