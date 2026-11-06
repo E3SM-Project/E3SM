@@ -597,21 +597,21 @@ void ZMDeepConvection::run_impl (const double dt)
   // Update output fields
 
   // 2D diagnostic output (no vertical dimension)
-  const auto& zm_prec       = get_field_out("zm_prec")    .get_view<Real*>();
-  const auto& zm_snow       = get_field_out("zm_snow")    .get_view<Real*>();
-  const auto& zm_cape       = get_field_out("zm_cape")    .get_view<Real*>();
-  const auto& zm_dcape      = get_field_out("zm_dcape")   .get_view<Real*>();
-  const auto& zm_activity   = get_field_out("zm_activity").get_view<Real*>();
-  const auto& zm_jt         = get_field_out("zm_jt")      .get_view<Real*>();
-  const auto& zm_msemax_klev      = get_field_out("zm_msemax_klev")   .get_view<Real*>();
+  const auto& zm_prec        = get_field_out("zm_prec")    .get_view<Real*>();
+  const auto& zm_snow        = get_field_out("zm_snow")    .get_view<Real*>();
+  const auto& zm_cape        = get_field_out("zm_cape")    .get_view<Real*>();
+  const auto& zm_dcape       = get_field_out("zm_dcape")   .get_view<Real*>();
+  const auto& zm_activity    = get_field_out("zm_activity").get_view<Real*>();
+  const auto& zm_jt          = get_field_out("zm_jt")      .get_view<Real*>();
+  const auto& zm_msemax_klev = get_field_out("zm_msemax_klev")   .get_view<Real*>();
   Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
-    zm_prec    (i) = loc_zm_output_prec    (i);
-    zm_snow    (i) = loc_zm_output_snow    (i);
-    zm_cape    (i) = loc_zm_output_cape    (i);
-    zm_dcape   (i) = loc_zm_output_dcape   (i);
-    zm_activity(i) = loc_zm_output_activity(i);
-    zm_jt   (i) = loc_zm_output_jt   (i);
-    zm_msemax_klev   (i) = loc_zm_output_msemax_klev(i);
+    zm_prec       (i) = loc_zm_output_prec    (i);
+    zm_snow       (i) = loc_zm_output_snow    (i);
+    zm_cape       (i) = loc_zm_output_cape    (i);
+    zm_dcape      (i) = loc_zm_output_dcape   (i);
+    zm_activity   (i) = loc_zm_output_activity(i);
+    zm_jt         (i) = loc_zm_output_jt   (i);
+    zm_msemax_klev(i) = loc_zm_output_msemax_klev(i);
  });
 
   // 3D mid-level output
@@ -632,7 +632,7 @@ void ZMDeepConvection::run_impl (const double dt)
   });
 
   // 3D mid-level output for MAM wetscav coupling
-  const auto& zm_rain_prod_out = get_field_out("zm_rain_prod").get_view<Real**>();
+  const auto& zm_rain_prod_out  = get_field_out("zm_rain_prod").get_view<Real**>();
   const auto& zm_icw_liq        = get_field_out("zm_icw_liq").get_view<Real**>();
   Kokkos::parallel_for("zm_aerosol_coupling_outputs",
     KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
