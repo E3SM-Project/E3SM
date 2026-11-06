@@ -46,6 +46,7 @@ The following SHOC parameters remain user-configurable and are relevant when
 - `shoc::coeff_km_horiz`: horizontal eddy-diffusivity coefficient for momentum.
 - `shoc::coeff_kh`: vertical eddy-diffusivity coefficient for heat.
 - `shoc::coeff_km`: vertical eddy-diffusivity coefficient for momentum.
+- `shoc::coeff_k_sh`: shear-production scaling coefficient.
 
 For example:
 

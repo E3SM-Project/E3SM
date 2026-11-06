@@ -30,6 +30,7 @@ void Functions<S,D>::shoc_tke(
   const Scalar&                lambda_thresh,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
+  const Scalar&                Ck_sh,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const uview_1d<const Pack>& wthv_sec,
@@ -67,7 +68,7 @@ void Functions<S,D>::shoc_tke(
   if (!do_3d_turb){
     // Compute shear production term, which is on interface levels
     // This follows the methods of Bretheron and Park (2010)
-    compute_shr_prod(team,nlevi,nlev,dz_zi,u_wind,v_wind,sterm);
+    compute_shr_prod(team,nlevi,nlev,Ck_sh,dz_zi,u_wind,v_wind,sterm);
 
     // Interpolate shear term from interface to thermo grid
     team.team_barrier();
@@ -95,7 +96,6 @@ void Functions<S,D>::shoc_tke(
     // eddy_diffusivities still needs a midpoint shear magnitude for the
     // cold-surface fallback path. In 3D mode, use the SHOC-grid strain term
     // instead of leaving the old 1D shear workspace uninitialized.
-    static constexpr Scalar Ck_sh = 0.1;
     const Int nlev_pack = ekat::npack<Pack>(nlev);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
       sterm_zt(k) = Ck_sh*ekat::max(Pack(0),shear_strain3d(k));
@@ -104,7 +104,7 @@ void Functions<S,D>::shoc_tke(
   }
 
   // Advance sgs TKE
-  adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,do_3d_turb,shoc_mix,wthv_sec,sterm_zt,tk,brunt,shear_strain3d,tke,a_diss);
+  adv_sgs_tke(team,nlev,dtime,Ck_sh,shoc_1p5tke,do_3d_turb,shoc_mix,wthv_sec,sterm_zt,tk,brunt,shear_strain3d,tke,a_diss);
 
   // Compute isotropic time scale [s]
   isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy);

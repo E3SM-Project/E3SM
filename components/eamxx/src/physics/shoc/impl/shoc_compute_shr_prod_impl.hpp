@@ -18,14 +18,12 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlevi,
   const Int&                   nlev,
+  const Scalar&                Ck_sh,
   const uview_1d<const Pack>& dz_zi,
   const uview_1d<const Pack>& u_wind,
   const uview_1d<const Pack>& v_wind,
   const uview_1d<Pack>&       sterm)
 {
-  // Turbulent coefficient
-  const Scalar Ck_sh = 0.1;
-
   const Int nlev_pack = ekat::npack<Pack>(nlev);
 
   //scalarize so that we can use shift to compute the differece  ( x(k-1) - x )

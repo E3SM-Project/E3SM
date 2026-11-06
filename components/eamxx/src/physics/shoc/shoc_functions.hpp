@@ -78,6 +78,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     Scalar c_diag_3rd_mom;
     Scalar Ckh;
     Scalar Ckm;
+    Scalar Ck_sh;
     Scalar Ckh_horiz;
     Scalar Ckm_horiz;
     bool shoc_1p5tke;
@@ -546,7 +547,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void adv_sgs_tke(const MemberType &team, const Int &nlev, const Real &dtime,
-                          const bool &shoc_1p5tke, const bool &do_3d_turb,
+                          const Scalar &Ck_sh, const bool &shoc_1p5tke, const bool &do_3d_turb,
                           const uview_1d<const Pack> &shoc_mix, const uview_1d<const Pack> &wthv_sec,
                           const uview_1d<const Pack> &sterm_zt, const uview_1d<const Pack> &tk,
                           const uview_1d<const Pack> &brunt, const uview_1d<const Pack> &shear_strain3d,
@@ -691,6 +692,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void compute_shr_prod(const MemberType &team, const Int &nlevi, const Int &nlev,
+                               const Scalar &Ck_sh,
                                const uview_1d<const Pack> &dz_zi,
                                const uview_1d<const Pack> &u_wind,
                                const uview_1d<const Pack> &v_wind, const uview_1d<Pack> &sterm);
@@ -735,7 +737,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_low, const Scalar &lambda_high, const Scalar &lambda_slope,
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
-      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
+      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const Scalar &Ck_sh,
+      const bool &shoc_1p5tke,
       const bool &do_3d_turb, const bool &extra_diags,
       // Input Variables
       const Scalar &host_dx, const Scalar &host_dy, const uview_1d<const Pack> &zt_grid,
@@ -781,7 +784,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_low, const Scalar &lambda_high, const Scalar &lambda_slope,
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
-      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
+      const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const Scalar &Ck_sh,
+      const bool &shoc_1p5tke,
       const bool &do_3d_turb, const bool &extra_diags,
       // Input Variables
       const view_1d<const Scalar> &host_dx, const view_1d<const Scalar> &host_dy,
@@ -924,7 +928,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   static void shoc_tke(const MemberType &team, const Int &nlev, const Int &nlevi,
                        const Scalar &dtime, const Scalar &lambda_low, const Scalar &lambda_high,
                        const Scalar &lambda_slope, const Scalar &lambda_thresh, const Scalar &Ckh,
-                       const Scalar &Ckm, const bool &shoc_1p5tke, const bool &do_3d_turb,
+                       const Scalar &Ckm, const Scalar &Ck_sh, const bool &shoc_1p5tke, const bool &do_3d_turb,
                        const uview_1d<const Pack> &wthv_sec,
                        const uview_2d<const Pack> &shear_strain3d_components,
                        const uview_1d<Pack> &shear_strain3d,
@@ -943,7 +947,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                             const Scalar &dtime, const Scalar &lambda_low,
                             const Scalar &lambda_high, const Scalar &lambda_slope,
                             const Scalar &lambda_thresh, const Scalar &Ckh, const Scalar &Ckm,
-                            const bool &shoc_1p5tke, const bool &do_3d_turb,
+                            const Scalar &Ck_sh, const bool &shoc_1p5tke, const bool &do_3d_turb,
                             const view_2d<const Pack> &wthv_sec,
                             const view_3d<const Pack> &shear_strain3d_components,
                             const view_2d<Pack> &shear_strain3d,
