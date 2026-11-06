@@ -205,6 +205,24 @@ interface is shifted to the common pressure by integrating its own reconstructio
 over half the cross-edge pressure difference, and both short integrals vanish
 where the two columns' interface pressures agree.
 
+Those short integrals use one first-order expansion of the equation of state,
+shared by the two bottom layers, so they are only accurate across a pressure
+difference of about a layer. That covers a flat floor, and most of a sloping
+one cut by partial bottom cells beneath level interior layers. The floors are
+just over a layer apart wherever a thin bottom cell lies entirely above the
+deeper column's layer of the same index, and terrain-following layers over a
+steep slope put one floor several layers deeper than the other. An expansion
+stretched across that whole offset leaves an error that grows with the cube of
+the offset and is the same at every depth. So where the floors are more than a
+layer apart, the shallower floor is compared instead with the deeper column's own
+interface just below its pressure, taking the deeper column's height there from
+`VertCoord` and sharing the expansion between the two layers that meet there.
+The anchor is then carried down to the edge's deepest interface with the
+matched-pressure integrand, which vanishes on the exact set like every other
+increment of the scan. Where the floors are within one layer of each other the
+deeper column's interface is the shared one, and the anchor reduces exactly to
+the comparison above.
+
 The scheme has a known instability on terrain-following (sigma) layers over a
 steep seamount that the centered scheme does not share. It is described, with
 the tests that rule out the anchor, extrapolation below the floor and the tracer

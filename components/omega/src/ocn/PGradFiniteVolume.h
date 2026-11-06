@@ -57,12 +57,12 @@ struct PGradEdgeEos {
    Real Press;       ///< shared expansion state, pressure
 };
 
-/// Build the shared expansion for one edge layer by averaging the two
-/// adjacent cells' coefficients and reference states. The pressure of the
-/// shared state is the edge average of the two columns' mid-layer pressures,
-/// which is exactly the mid-layer pressure of the edge control volume when
-/// that volume is taken as the average of the two columns' interface
-/// pressures.
+/// Build a shared expansion by averaging the coefficients and reference states
+/// of layer K0 of the first cell and layer K1 of the second. Within an edge
+/// layer the two are the same index, through the overload below. The sea-floor
+/// anchor pairs the two layers that meet where the columns' floor heights are
+/// compared, which need not share an index once the floors are more than a
+/// layer apart.
 ///
 /// Templated on the array type so that the same code is exercised by the
 /// device kernels and by the host-side reference that tests them.
@@ -76,20 +76,46 @@ buildEdgeEos(const ArrayType &SpecVol,     ///< [in] specific volume
              const ArrayType &AbsSalinity, ///< [in] layer-mean salinity
              const ArrayType &PressureMid, ///< [in] mid-layer pressure
              const I4 ICell0,              ///< [in] first cell on the edge
+             const I4 K0,                  ///< [in] layer of the first cell
+             const I4 ICell1,              ///< [in] second cell on the edge
+             const I4 K1                   ///< [in] layer of the second cell
+) {
+   PGradEdgeEos Eos;
+   Eos.SpecVol0 = 0.5_Real * (SpecVol(ICell0, K0) + SpecVol(ICell1, K1));
+   Eos.SpecVolDCt =
+       0.5_Real * (SpecVolDCt(ICell0, K0) + SpecVolDCt(ICell1, K1));
+   Eos.SpecVolDSa =
+       0.5_Real * (SpecVolDSa(ICell0, K0) + SpecVolDSa(ICell1, K1));
+   Eos.SpecVolDP = 0.5_Real * (SpecVolDP(ICell0, K0) + SpecVolDP(ICell1, K1));
+   Eos.ConservTemp =
+       0.5_Real * (ConservTemp(ICell0, K0) + ConservTemp(ICell1, K1));
+   Eos.AbsSalinity =
+       0.5_Real * (AbsSalinity(ICell0, K0) + AbsSalinity(ICell1, K1));
+   Eos.Press = 0.5_Real * (PressureMid(ICell0, K0) + PressureMid(ICell1, K1));
+   return Eos;
+}
+
+/// Build the shared expansion for one edge layer by averaging the two
+/// adjacent cells' coefficients and reference states. The pressure of the
+/// shared state is the edge average of the two columns' mid-layer pressures,
+/// which is exactly the mid-layer pressure of the edge control volume when
+/// that volume is taken as the average of the two columns' interface
+/// pressures.
+template <class ArrayType>
+KOKKOS_INLINE_FUNCTION PGradEdgeEos
+buildEdgeEos(const ArrayType &SpecVol,     ///< [in] specific volume
+             const ArrayType &SpecVolDCt,  ///< [in] d(alpha)/d(ConservTemp)
+             const ArrayType &SpecVolDSa,  ///< [in] d(alpha)/d(AbsSalinity)
+             const ArrayType &SpecVolDP,   ///< [in] d(alpha)/d(Pressure)
+             const ArrayType &ConservTemp, ///< [in] layer-mean temperature
+             const ArrayType &AbsSalinity, ///< [in] layer-mean salinity
+             const ArrayType &PressureMid, ///< [in] mid-layer pressure
+             const I4 ICell0,              ///< [in] first cell on the edge
              const I4 ICell1,              ///< [in] second cell on the edge
              const I4 K                    ///< [in] edge layer
 ) {
-   PGradEdgeEos Eos;
-   Eos.SpecVol0   = 0.5_Real * (SpecVol(ICell0, K) + SpecVol(ICell1, K));
-   Eos.SpecVolDCt = 0.5_Real * (SpecVolDCt(ICell0, K) + SpecVolDCt(ICell1, K));
-   Eos.SpecVolDSa = 0.5_Real * (SpecVolDSa(ICell0, K) + SpecVolDSa(ICell1, K));
-   Eos.SpecVolDP  = 0.5_Real * (SpecVolDP(ICell0, K) + SpecVolDP(ICell1, K));
-   Eos.ConservTemp =
-       0.5_Real * (ConservTemp(ICell0, K) + ConservTemp(ICell1, K));
-   Eos.AbsSalinity =
-       0.5_Real * (AbsSalinity(ICell0, K) + AbsSalinity(ICell1, K));
-   Eos.Press = 0.5_Real * (PressureMid(ICell0, K) + PressureMid(ICell1, K));
-   return Eos;
+   return buildEdgeEos(SpecVol, SpecVolDCt, SpecVolDSa, SpecVolDP, ConservTemp,
+                       AbsSalinity, PressureMid, ICell0, K, ICell1, K);
 }
 
 /// One column's expanded specific volume at a pressure, using the edge-shared

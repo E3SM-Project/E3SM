@@ -894,8 +894,109 @@ Real setupProfileState(HorzMesh *Mesh,    ///< [in] Horizontal mesh
 
 } // end setupProfileState
 
-// Which of the scheme's three rules the reference assembly below applies.
-// Turning one off is how the guards of design section 5.2 are made to fire.
+// Build a two-column resting state on terrain-following layers over a sloping
+// floor. Both columns hold the same prescribed profile in the same number of
+// layers, each spanning its whole column, and the second column's floor is
+// FloorPressDiff deeper in pressure. Each column's bathymetry is the height its
+// own layers stack to under VertCoord's rule, so the sea surface VertCoord
+// derives is flat and the state is at rest.
+//
+// Where FloorPressDiff exceeds a layer thickness the two floors are more than a
+// layer apart in pressure, which is what terrain-following layers over a steep
+// slope produce and what the anchor's comparison against the deeper column's
+// own interface is for.
+void setupSlopingFloorState(HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                            VertCoord *VCoord, ///< [inout] Vertical coord
+                            OceanState *State, ///< [inout] Ocean state
+                            Eos *EqState,      ///< [inout] Equation of state
+                            I4 NVertLayers,    ///< [in] Number of layers
+                            Real DC,           ///< [in] Distance between cells
+                            Real FloorPressDiff, ///< [in] floor offset, in Pa
+                            PGradProfile Prof    ///< [in] prescribed profile
+) {
+
+   const I4 NCellsAll = Mesh->NCellsAll;
+   const I4 NEdgesAll = Mesh->NEdgesAll;
+
+   VCoord->NVertLayers   = NVertLayers;
+   VCoord->NVertLayersP1 = NVertLayers + 1;
+
+   const Real PressBot = 4.0e7_Real;
+
+   auto &MinLayerCell = VCoord->MinLayerCell;
+   auto &MaxLayerCell = VCoord->MaxLayerCell;
+   parallelFor(
+       {NCellsAll}, KOKKOS_LAMBDA(int i) {
+          MinLayerCell(i) = 0;
+          MaxLayerCell(i) = NVertLayers - 1;
+       });
+
+   auto &MinLayerEdgeBot = VCoord->MinLayerEdgeBot;
+   auto &MaxLayerEdgeTop = VCoord->MaxLayerEdgeTop;
+   parallelFor(
+       {NEdgesAll}, KOKKOS_LAMBDA(int i) {
+          MinLayerEdgeBot(i) = 0;
+          MaxLayerEdgeTop(i) = NVertLayers - 1;
+       });
+
+   auto &CellsOnEdge = Mesh->CellsOnEdge;
+   auto &DcEdge      = Mesh->DcEdge;
+   parallelFor(
+       {NEdgesAll}, KOKKOS_LAMBDA(int i) {
+          CellsOnEdge(i, 0) = 0;
+          CellsOnEdge(i, 1) = 1;
+          DcEdge(i)         = DC;
+       });
+
+   Array1DReal SurfacePressure("SurfacePressure", Mesh->NCellsSize);
+   Array2DReal PseudoThick = State->getPseudoThickness(0);
+   Array2DReal Temp        = Tracers::getByName(0, "Temperature");
+   Array2DReal Salinity    = Tracers::getByName(0, "Salinity");
+
+   // equal layers spanning each column, the second column's deeper
+   parallelFor(
+       {NCellsAll}, KOKKOS_LAMBDA(int i) {
+          SurfacePressure(i) = 0.0_Real;
+          const Real ColPress =
+              PressBot + ((i == 1) ? FloorPressDiff : 0.0_Real);
+          for (int k = 0; k < NVertLayers; ++k)
+             PseudoThick(i, k) = ColPress / NVertLayers / (Gravity * RhoSw);
+       });
+
+   VCoord->computePressure(PseudoThick, SurfacePressure);
+
+   const auto &PressureInterface = VCoord->PressureInterface;
+   parallelFor(
+       {NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int i, int k) {
+          Temp(i, k)     = exactLayerAvg(Prof.Temp0, Prof.Temp1, Prof.Temp2,
+                                         Prof.Temp3, PressureInterface(i, k),
+                                         PressureInterface(i, k + 1));
+          Salinity(i, k) = exactLayerAvg(Prof.Salt0, Prof.Salt1, Prof.Salt2,
+                                         Prof.Salt3, PressureInterface(i, k),
+                                         PressureInterface(i, k + 1));
+       });
+
+   EqState->computeSpecVolAndDerivs(Temp, Salinity, VCoord->PressureMid);
+
+   // the bathymetry each column's own layers stack to, so that the sea surface
+   // VertCoord derives from it is flat
+   auto &BottomGeomDepth = VCoord->BottomGeomDepth;
+   const auto &SpecVol   = EqState->SpecVol;
+   parallelFor(
+       {NCellsAll}, KOKKOS_LAMBDA(int i) {
+          Real Depth = 0.0_Real;
+          for (int k = NVertLayers - 1; k >= 0; --k)
+             Depth += RhoSw * SpecVol(i, k) * PseudoThick(i, k);
+          BottomGeomDepth(i) = Depth;
+       });
+
+   VCoord->computeGeomZHeight(PseudoThick, EqState->SpecVol);
+
+} // end setupSlopingFloorState
+
+// Which of the scheme's rules the reference assembly below applies. Turning
+// one off is how the guards of design section 5.2, and the sloping-floor
+// guard, are made to fire.
 struct PGradGuardRules {
    bool SharedExpansion = true; ///< one EOS expansion per edge layer, shared
                                 ///< by both columns, rather than one per cell
@@ -903,6 +1004,10 @@ struct PGradGuardRules {
                                 ///< containing the pressure, not from layer K
    bool ShiftedAnchor = true;   ///< the anchor shifted to a common pressure,
                                 ///< rather than the raw height difference
+   bool AnchorWithinOneLayer = true; ///< the shallower floor compared with the
+                                     ///< deeper column's own interface just
+                                     ///< below it, rather than both floors
+                                     ///< shifted to their mean pressure
 };
 
 // Assemble the column scan and the tendency on the host for the single edge
@@ -1026,25 +1131,35 @@ void referenceScan(const HostArray2DReal &PressInterface, ///< [in]
       Moment[K] *= InvGravity;
    }
 
-   // the anchor, at the sea floor
-   Real Anchor = GeomZ(1, KMax + 1) - GeomZ(0, KMax + 1);
+   // the anchor, at the sea floor: the shallower floor against the deeper
+   // column's own interface at or just below that floor's pressure
+   const Real FloorPress0 = PressInterface(0, KMax + 1);
+   const Real FloorPress1 = PressInterface(1, KMax + 1);
+   const bool Shallow0    = FloorPress0 <= FloorPress1;
+   I4 KAnchor[2]          = {KMax, KMax};
+   if (Rules.AnchorWithinOneLayer)
+      KAnchor[Shallow0 ? 1 : 0] =
+          findLayerForPress(PressInterface, Shallow0 ? 1 : 0, KMin, KMax,
+                            Shallow0 ? FloorPress0 : FloorPress1, KMax);
+
+   Real Anchor = GeomZ(1, KAnchor[1] + 1) - GeomZ(0, KAnchor[0] + 1);
    if (Rules.ShiftedAnchor) {
-      const Real AnchorPress = 0.5_Real * (PressInterface(0, KMax + 1) +
-                                           PressInterface(1, KMax + 1));
+      const Real AnchorPress = 0.5_Real * (PressInterface(0, KAnchor[0] + 1) +
+                                           PressInterface(1, KAnchor[1] + 1));
       const PGradEdgeEos AnchorEos =
           buildEdgeEos(SpecVol, SpecVolDCt, SpecVolDSa, SpecVolDP, Temp, Salt,
-                       PressMid, 0, 1, KMax);
+                       PressMid, 0, KAnchor[0], 1, KAnchor[1]);
       for (int ISide = 0; ISide < 2; ++ISide) {
          const int ICell     = ISide;
          const Real Sign     = (ISide == 0) ? -1.0_Real : 1.0_Real;
-         const Real ColPress = PressInterface(ICell, KMax + 1);
+         const Real ColPress = PressInterface(ICell, KAnchor[ICell] + 1);
          const Real Mid      = 0.5_Real * (AnchorPress + ColPress);
          const Real Half     = 0.5_Real * (ColPress - AnchorPress);
          Real Integral       = 0.0_Real;
          for (int IQuad = 0; IQuad < NQuad; ++IQuad) {
             const Real Press  = Mid + Half * Nodes[IQuad];
             const Real Weight = Half * Weights[IQuad];
-            const I4 KF       = lookup(ICell, Press, KMax);
+            const I4 KF       = lookup(ICell, Press, KAnchor[ICell]);
             const Real T = linearReconEval(Temp(ICell, KF), SlopeCt[ICell][KF],
                                            PressMid(ICell, KF), Press);
             const Real S = linearReconEval(Salt(ICell, KF), SlopeSa[ICell][KF],
@@ -1052,6 +1167,34 @@ void referenceScan(const HostArray2DReal &PressInterface, ///< [in]
             Integral += Weight * edgeSpecVol(AnchorEos, T, S, Press);
          }
          Anchor += Sign * InvGravity * Integral;
+      }
+
+      // carried down to the edge's deepest interface where it sits above it
+      if (KAnchor[0] != KMax || KAnchor[1] != KMax) {
+         const PGradEdgeEos FloorEos =
+             buildEdgeEos(SpecVol, SpecVolDCt, SpecVolDSa, SpecVolDP, Temp,
+                          Salt, PressMid, 0, 1, KMax);
+         const Real FloorPress = 0.5_Real * (FloorPress0 + FloorPress1);
+         const Real Mid        = 0.5_Real * (AnchorPress + FloorPress);
+         const Real Half       = 0.5_Real * (FloorPress - AnchorPress);
+         Real Integral         = 0.0_Real;
+         for (int IQuad = 0; IQuad < NQuad; ++IQuad) {
+            const Real Press  = Mid + Half * Nodes[IQuad];
+            const Real Weight = Half * Weights[IQuad];
+            const I4 KF0      = lookup(0, Press, KMax);
+            const I4 KF1      = lookup(1, Press, KMax);
+            const Real T0     = linearReconEval(Temp(0, KF0), SlopeCt[0][KF0],
+                                                PressMid(0, KF0), Press);
+            const Real S0     = linearReconEval(Salt(0, KF0), SlopeSa[0][KF0],
+                                                PressMid(0, KF0), Press);
+            const Real T1     = linearReconEval(Temp(1, KF1), SlopeCt[1][KF1],
+                                                PressMid(1, KF1), Press);
+            const Real S1     = linearReconEval(Salt(1, KF1), SlopeSa[1][KF1],
+                                                PressMid(1, KF1), Press);
+            Integral +=
+                Weight * matchedPressSpecVolDiff(FloorEos, T0, S0, T1, S1);
+         }
+         Anchor -= InvGravity * Integral;
       }
    }
 
@@ -1563,6 +1706,120 @@ int testExactnessAndGuards(HorzMesh *Mesh,    ///< [in] Horizontal mesh
 
 } // end testExactnessAndGuards
 
+// The anchor where the two columns' floors are more than a layer apart in
+// pressure.
+//
+// Terrain-following layers over a steep slope put one column's floor several
+// layers deeper than its neighbour's. Shifting both floors to their mean
+// pressure with one first-order expansion leaves an error that grows with the
+// cube of the offset and is the same at every depth; comparing the shallower
+// floor with the deeper column's own interface just below it keeps every
+// shift within one layer. The state is at rest and linear in pressure, so
+// what remains is the difference between the two columns' VertCoord heights,
+// which converges with layer thickness rather than growing with the slope.
+int testSlopingFloorAnchor(HorzMesh *Mesh,    ///< [in] Horizontal mesh
+                           VertCoord *VCoord, ///< [inout] Vertical coordinate
+                           OceanState *State, ///< [inout] Ocean state
+                           Eos *EqState       ///< [inout] Equation of state
+) {
+
+   int Err = 0;
+
+   const Real Eps        = std::numeric_limits<Real>::epsilon();
+   const bool DoublePrec = Eps < 1.0e-10_Real;
+   const Real DC         = 4000.0_Real;
+   const I4 NLayers      = 32;
+   const I4 NQuad        = 2;
+   // 800 dbar, or 6.4 layers: a floor sloping at 200 m/km at this spacing
+   const Real FloorPressDiff = 8.0e6_Real;
+
+   const PGradProfile Linear = {12.0_Real, -2.0e-7_Real, 0.0_Real, 0.0_Real,
+                                34.0_Real, 2.5e-8_Real,  0.0_Real, 0.0_Real};
+
+   setupSlopingFloorState(Mesh, VCoord, State, EqState, NLayers, DC,
+                          FloorPressDiff, Linear);
+
+   Real MaxDeltaZ, MaxUpper, MaxLower, RmsFV;
+   const Real MaxFV = runFiniteVolume(Mesh, VCoord, State, EqState, NLayers,
+                                      MaxDeltaZ, MaxUpper, MaxLower, RmsFV);
+   const Real MaxCentered = runCentered(Mesh, VCoord, State, EqState, NLayers);
+
+   // the same assembly on the host, and again with both floors shifted to
+   // their mean pressure
+   PGradHostState H = copyStateToHost(VCoord, EqState);
+   std::vector<Real> RefDeltaZ, RefTend, MeanDeltaZ, MeanTend;
+   PGradGuardRules Rules;
+   referenceScan(H.PressInterface, H.PressMid, H.Temp, H.Salt, H.SpecVol,
+                 H.SpecVolDCt, H.SpecVolDSa, H.SpecVolDP, H.GeomZ, NLayers, DC,
+                 NQuad, Rules, RefDeltaZ, RefTend);
+   Rules.AnchorWithinOneLayer = false;
+   referenceScan(H.PressInterface, H.PressMid, H.Temp, H.Salt, H.SpecVol,
+                 H.SpecVolDCt, H.SpecVolDSa, H.SpecVolDP, H.GeomZ, NLayers, DC,
+                 NQuad, Rules, MeanDeltaZ, MeanTend);
+
+   Real RefMax  = 0.0_Real;
+   Real MeanMax = 0.0_Real;
+   for (int K = 0; K < NLayers; ++K) {
+      RefMax  = std::max(RefMax, std::abs(RefTend[K]));
+      MeanMax = std::max(MeanMax, std::abs(MeanTend[K]));
+   }
+
+   const Real Ratio     = MaxFV / MaxCentered;
+   const Real MeanRatio = MeanMax / MaxCentered;
+   LOG_INFO("PGradTest: sloping floor, {} Pa offset: FiniteVolume max |Tend| "
+            "= {} m/s2, {} of Centered's {} m/s2; with both floors shifted to "
+            "their mean pressure {} m/s2, {} of Centered's",
+            FloorPressDiff, MaxFV, Ratio, MaxCentered, MeanMax, MeanRatio);
+
+   // The anchor forms and cancels the height difference between the two
+   // floors, so that is the scale of the round-off the kernel and the host
+   // reference may differ by.
+   const Real FloorStep   = std::abs(H.GeomZ(1, NLayers) - H.GeomZ(0, NLayers));
+   const Real FidelityTol = 64.0_Real * Eps * Gravity * FloorStep / DC;
+   if (std::abs(RefMax - MaxFV) <= FidelityTol) {
+      LOG_INFO("PGradTest: sloping-floor harness fidelity PASS: reference {} "
+               "m/s2 against kernel {} m/s2",
+               RefMax, MaxFV);
+   } else {
+      LOG_ERROR("PGradTest: sloping-floor harness fidelity FAIL: reference {} "
+                "m/s2 against kernel {} m/s2, tolerance {}",
+                RefMax, MaxFV, FidelityTol);
+      ++Err;
+   }
+
+   // Gate set from the measured 0.014 of Centered in double precision. In
+   // single precision the floor heights near 4000 m carry round-off of order
+   // 1e-4 m, a tendency of order 1e-7 m/s2 at this spacing, so the gate is
+   // loosened to match while staying well below the mean-pressure anchor.
+   const Real RatioTol = DoublePrec ? 0.05_Real : 0.15_Real;
+   if (Ratio <= RatioTol) {
+      LOG_INFO("PGradTest: sloping-floor anchor PASS");
+   } else {
+      LOG_ERROR("PGradTest: sloping-floor anchor FAIL: {} of Centered against "
+                "{}",
+                Ratio, RatioTol);
+      ++Err;
+   }
+
+   // The gate is only worth having if the anchor it protects is what decides
+   // it: shifting both floors to their mean pressure, measured at 0.45 of
+   // Centered, must fail it by a wide margin.
+   if (MeanRatio >= 0.25_Real) {
+      LOG_INFO("PGradTest: sloping-floor anchor guard PASS: the mean-pressure "
+               "anchor gives {} of Centered",
+               MeanRatio);
+   } else {
+      LOG_ERROR("PGradTest: sloping-floor anchor guard FAIL: the mean-pressure "
+                "anchor gives only {} of Centered, so the gate cannot tell the "
+                "two anchors apart",
+                MeanRatio);
+      ++Err;
+   }
+
+   return Err;
+
+} // end testSlopingFloorAnchor
+
 // Assert the identity of design section 3.9 (test section 5.5): with the tidal
 // and self-attraction-and-loading potentials zero, PressureGradCentered is
 // exactly
@@ -2011,6 +2268,9 @@ int main(int argc, char *argv[]) {
       // residual off it, and the guards.
       int ScanErr = testExactnessAndGuards(DefMesh, VCoord, DefState, DefEos);
 
+      // The anchor where the two floors are more than a layer apart.
+      int SlopeErr = testSlopingFloorAnchor(DefMesh, VCoord, DefState, DefEos);
+
       // The centered identity of design section 3.9 across a sweep of tilts.
       // This resets the two-column state, so it runs after the others.
       int IdentityErr = testCenteredIdentity(DefMesh, VCoord, DefState, DefEos);
@@ -2048,8 +2308,8 @@ int main(int argc, char *argv[]) {
                   Rmse(0));
       }
 
-      RetVal += ReconErr + LookupErr + IntegrandErr + ScanErr + IdentityErr +
-                ConfigErr;
+      RetVal += ReconErr + LookupErr + IntegrandErr + ScanErr + SlopeErr +
+                IdentityErr + ConfigErr;
 
       // Flush before teardown. Omega logs at info level but only flushes at
       // warn and above, so a run that aborts during cleanup loses every
