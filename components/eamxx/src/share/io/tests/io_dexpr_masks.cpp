@@ -102,7 +102,7 @@ void run_and_check (const std::string& avg_type,
   const int dt = 1;
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix",prefix);
+  params.set<std::string>("stream_name",prefix);
   params.set<std::string>("averaging_type",avg_type);
   params.set<std::string>("floating_point_precision","real");
   auto& f_pl = params.sublist("fields").sublist(gname);
@@ -260,7 +260,7 @@ TEST_CASE ("masked_conditional_sampling")
     auto fm = create_test_fm(gm,grid,t0);
 
     ekat::ParameterList params;
-    params.set<std::string>("filename_prefix","io_dexpr_masks_cycle");
+    params.set<std::string>("stream_name","io_dexpr_masks_cycle");
     params.set<std::string>("averaging_type","AVERAGE");
     params.sublist("fields").sublist(grid->name()).set<std::vector<std::string>>("field_names",{
         "u := v",

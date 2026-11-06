@@ -1382,6 +1382,8 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     if '.pg' in atm_grid:
         pgt = 'pg' + atm_grid[-1]
 
+    # Counter for auto-generating stream names when not provided in YAML
+    stream_counter = 0
     for fn in out_files:
         # Get full name
         src_yaml = os.path.expanduser(os.path.join(fn.strip()))
@@ -1428,6 +1430,11 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
                    f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
+
+        # Provide default stream_name if not present in YAML
+        if 'stream_name' not in content:
+            content['stream_name'] = f"stream_{stream_counter}"
+            stream_counter += 1
 
         # Check for duplicate output file signatures
         prefix = content['stream_name']
