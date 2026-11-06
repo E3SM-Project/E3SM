@@ -163,7 +163,8 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                    ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
 
-    # Ensure test input files are present in the data dir
+    # Register test input files. They are NOT downloaded at configure time:
+    # running 'make' in this folder fetches them.
     set (TEST_INPUT_FILES
       eamxx/init/${inject_ash_IC_file}
       eamxx/mam4xx/.../inject_ash_input_data_file_ABC.nc
