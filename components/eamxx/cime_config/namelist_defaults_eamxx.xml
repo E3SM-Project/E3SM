@@ -719,6 +719,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <cosp_frequency>1</cosp_frequency>
       <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
       <cosp_impl valid_values="fortran,cxx" doc="COSP implementation: original Fortran library, or the C++/Kokkos port (in progress)">fortran</cosp_impl>
+      <cosp_impl COMPSET=".*SCREAM%BETA.*">cxx</cosp_impl>
     </cosp>
 
     <!-- Turbulent Mountain Stress -->
