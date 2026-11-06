@@ -178,6 +178,7 @@ endfunction(CreateUnitTest)
 ###############################################################################
 function(GetInputFile src_path)
 ###############################################################################
+  cmake_parse_arguments(gif "" "" "TARGETS" ${ARGN})
   # Input files are NOT downloaded at configure time (a network hiccup would
   # leave us without a build tree). Instead, we register a custom target that
   # fetches the file at build time:
@@ -185,6 +186,9 @@ function(GetInputFile src_path)
   #  - get_input_dir_<dir>: one target per calling directory, part of ALL, that
   #    depends on the files registered in that directory. This way, running
   #    'make' inside a test folder fetches the data that folder needs.
+  # If the file is needed by a library (e.g., a lookup table consumed at runtime
+  # by anything linking to it), pass TARGETS <lib> [<lib>...]: building those
+  # libraries (also indirectly, via linking) will fetch the file too.
   # We rely on CIME to download for us if this is a CIME case.
   if (SCREAM_CIME_BUILD)
     return()
@@ -213,4 +217,7 @@ function(GetInputFile src_path)
     add_custom_target(${dir_tgt} ALL)
   endif()
   add_dependencies(${dir_tgt} ${file_tgt})
+  foreach (tgt IN LISTS gif_TARGETS)
+    add_dependencies(${tgt} ${file_tgt})
+  endforeach()
 endfunction(GetInputFile)
