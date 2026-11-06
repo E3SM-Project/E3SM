@@ -11,8 +11,9 @@ namespace details {
 
 // NOTE: kernels that go through field_pfor must be functors with a templated operator()
 //       (not generic lambdas), since extended lambdas cannot be generic.
-template<CombineMode CM, typename ST>
+template<typename ST>
 struct UpdateMaskedKernel {
+  CombineMode cm;
   ST alpha;
   ST beta;
   ST gamma;
@@ -22,9 +23,7 @@ struct UpdateMaskedKernel {
   void operator() (const YView& y, const XView& x, const MaskView& mask, const Idx&... i) const {
     if (mask(i...)) {
       auto& y_val = y(i...);
-      combine<CM>(x(i...),y_val,alpha,beta);
-      if constexpr (CM==CombineMode::Update)
-        y_val += gamma;
+      combine(cm,x(i...),y_val,alpha,beta,gamma);
     }
   }
 };
@@ -45,12 +44,12 @@ struct SetValueMaskedKernel {
 
 } // namespace details
 
-template<CombineMode CM, typename ST, typename XST>
+template<typename ST, typename XST>
 void Field::
-update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const
+update_masked (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const
 {
   // Must handle the case where any of the views is strided
-  details::field_pfor(details::UpdateMaskedKernel<CM,ST>{alpha,beta,gamma},
+  details::field_pfor(details::UpdateMaskedKernel<ST>{cm,alpha,beta,gamma},
                       details::view_as<ST>(*this), details::view_as<const XST>(x),
                       details::view_as<const int>(mask));
 
