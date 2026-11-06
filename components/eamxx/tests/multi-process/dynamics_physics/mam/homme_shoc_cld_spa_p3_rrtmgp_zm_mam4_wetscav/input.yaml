@@ -53,7 +53,7 @@ eamxx:
     type: group
     zm:
       # ZM deep convection scheme - runs first to provide convective tendencies
-      # Outputs used by wetscav: zm_detr_qc, zm_detr_qi, zm_jt, zm_jcbot,
+      # Outputs used by wetscav: zm_detr_qc, zm_detr_qi, zm_cldtop_klev, zm_msemax_klev,
       # zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn
     mac_aero_mic:
       atm_procs_list: [shoc,cld_fraction,spa,p3]

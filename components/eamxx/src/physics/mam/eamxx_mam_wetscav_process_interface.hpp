@@ -115,6 +115,11 @@ private:
   view_2d dp_tmp_;
   view_2d dpdry_tmp_;
 
+  // Temporary views for ZM up/downdraft mass flux in mb/s (converted from the
+  // kg/m2/s fields produced by ZM) as expected by mam4 convproc
+  view_2d mflx_up_tmp_;
+  view_2d mflx_dn_tmp_;
+
   int num_2d_scratch_ = 39;
   //
   view_2d scavimptblnum_;

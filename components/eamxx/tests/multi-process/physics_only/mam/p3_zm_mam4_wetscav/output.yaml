@@ -71,7 +71,7 @@ field_names:
   # ZM convection outputs
   - zm_detr_qc
   - zm_detr_qi
-  - zm_jt
+  - zm_cldtop_klev
   - zm_msemax_klev
   - zm_mflx_up
   - zm_mflx_dn

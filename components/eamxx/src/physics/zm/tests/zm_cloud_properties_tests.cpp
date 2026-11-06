@@ -99,12 +99,12 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
         for (Int k = 0; k < d_baseline.total(d_baseline.pflx); ++k) {
           REQUIRE(d_baseline.pflx[k] == Approx(d_test.pflx[k]).margin(margin));
         }
-        REQUIRE(d_baseline.total(d_baseline.jt) == d_test.total(d_test.jt));
-        REQUIRE(d_baseline.total(d_baseline.jt) == d_test.total(d_test.jlcl));
-        REQUIRE(d_baseline.total(d_baseline.jt) == d_test.total(d_test.j0));
-        REQUIRE(d_baseline.total(d_baseline.jt) == d_test.total(d_test.jd));
-        for (Int k = 0; k < d_baseline.total(d_baseline.jt); ++k) {
-          REQUIRE(d_baseline.jt[k] == d_test.jt[k]);
+        REQUIRE(d_baseline.total(d_baseline.cldtop_klev) == d_test.total(d_test.cldtop_klev));
+        REQUIRE(d_baseline.total(d_baseline.cldtop_klev) == d_test.total(d_test.jlcl));
+        REQUIRE(d_baseline.total(d_baseline.cldtop_klev) == d_test.total(d_test.j0));
+        REQUIRE(d_baseline.total(d_baseline.cldtop_klev) == d_test.total(d_test.jd));
+        for (Int k = 0; k < d_baseline.total(d_baseline.cldtop_klev); ++k) {
+          REQUIRE(d_baseline.cldtop_klev[k] == d_test.cldtop_klev[k]);
           REQUIRE(d_baseline.jlcl[k] == d_test.jlcl[k]);
           REQUIRE(d_baseline.j0[k] == d_test.j0[k]);
           REQUIRE(d_baseline.jd[k] == d_test.jd[k]);

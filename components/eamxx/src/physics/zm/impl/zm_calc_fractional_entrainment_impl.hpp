@@ -21,7 +21,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   const Int& pverp, // number of interface vertical levels
   const Int& msg, // number of levels to ignore at model top
   const Int& jb, // updraft base level
-  const Int& jt, // updraft top level
+  const Int& cldtop_klev, // updraft top level
   // Inputs/Outputs
   Int& j0, // level where updraft begins detraining
   // Inputs
@@ -90,7 +90,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // compute taylor series for approximate lambda(z) below
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     for (Int k = pver-2; k >= msg; --k) {
-      if (k < jb && k >= jt) {
+      if (k < jb && k >= cldtop_klev) {
         k1(k) = k1(k+1) + (h_env(jb)-h_env(k))*dz(k);
         const Real ihat = ZMC::half* (k1(k+1)+k1(k));
         i2(k) = i2(k+1) + ihat*dz(k);
@@ -109,7 +109,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
     for (Int k = msg+1; k < pver; ++k) {
       // --- lambda computation (Fortran: k from msg+2 to pver 1-based = k>=msg+1 0-based) ---
       Real expnum = 0;  // term for Taylor series
-      if (k < jt || k >= jb) {
+      if (k < cldtop_klev || k >= jb) {
         expnum = 0;
       } else {
         expnum = h_env(jb) - (h_env_sat(k-1)*(z_int(k) - z_mid(k)) +
@@ -145,7 +145,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   // ensure that entrainment does not increase above the level that detrainment starts
   Kokkos::single(Kokkos::PerTeam(team), [&] {
     for (Int k = msg+1; k < pver; ++k) {
-      if (k >= jt && k <= j0) {
+      if (k >= cldtop_klev && k <= j0) {
         lambda_tmp(k) = Kokkos::max(lambda_tmp(k), lambda_tmp(k-1));
       }
     }
@@ -166,7 +166,7 @@ void Functions<S,D>::zm_calc_fractional_entrainment(
   //   using diagnosed and predicted condensate parameterizations, J. Clim., 1997.
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&](const Int& k) {
     if (k >= j0 && k <= jb) lambda(k) = lambda_tmp(j0);
-    if (k < j0 && k >= jt)  lambda(k) = lambda_tmp(k);
+    if (k < j0 && k >= cldtop_klev)  lambda(k) = lambda_tmp(k);
   });
   team.team_barrier();
 

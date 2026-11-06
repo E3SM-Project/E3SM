@@ -44,9 +44,7 @@ void Functions<S,D>::zm_conv_main(
   const uview_2d<const Real>& q_star,
   // Outputs
   const uview_1d<Int>& msemax_klev,
-  const uview_1d<Int>& jctop,
-  const uview_1d<Int>& jcbot,
-  const uview_1d<Int>& jt,
+  const uview_1d<Int>& cldtop_klev,
   const uview_1d<Int>& active,
   const uview_1d<Real>& prec,
   const uview_2d<Real>& heat,
@@ -161,9 +159,7 @@ void Functions<S,D>::zm_conv_main(
       prec(i)                = 0;
       rliq(i)                = 0;
       dsubcld(i)             = 0;
-      jctop(i)               = pver-1;
-      jcbot(i)               = 0;
-      jt(i)                  = -1;  // Initialize for inactive columns (no convection)
+      cldtop_klev(i)         = -1;  // Initialize for inactive columns (no convection)
       cape(i)                = 0;
       dcape(i)               = 0;
       msemax_klev(i)         = 0;
@@ -374,7 +370,7 @@ void Functions<S,D>::zm_conv_main(
                         ekat::subview(s_int, i), ekat::subview(q_mid, i),
                         landfrac(i), tpert(i),
                         msemax_klev(i), lel(i),
-                        jt(i), jlcl(i), j0(i), jd(i),
+                        cldtop_klev(i), jlcl(i), j0(i), jd(i),
                         ekat::subview(mflx_up, i), ekat::subview(entr_up, i),
                         ekat::subview(detr_up, i), ekat::subview(mflx_dn, i),
                         ekat::subview(entr_dn, i), ekat::subview(mflx_net, i),
@@ -413,7 +409,7 @@ void Functions<S,D>::zm_conv_main(
     auto ws = wsm.get_workspace(team);
     zm_closure(team, ws, runtime_opt,
                pver, pverp, msg, cape_threshold_loc,
-               lcl(i), lel(i), jt(i), msemax_klev(i), dsubcld(i),
+               lcl(i), lel(i), cldtop_klev(i), msemax_klev(i), dsubcld(i),
                ekat::subview(z_mid, i), ekat::subview(z_int, i),
                ekat::subview(p_mid, i), ekat::subview(p_del, i),
                ekat::subview(t_mid, i),
@@ -462,7 +458,7 @@ void Functions<S,D>::zm_conv_main(
                                                    1 / (time_step * mflx_up_max_val));
         }
       }
-      if (runtime_opt.no_deep_pbl && z_mid_in(i, jt(i)) < pbl_hgt(i)) {
+      if (runtime_opt.no_deep_pbl && z_mid_in(i, cldtop_klev(i)) < pbl_hgt(i)) {
         cld_base_mass_flux(i) = 0;
       }
     });
@@ -485,14 +481,14 @@ void Functions<S,D>::zm_conv_main(
   Kokkos::fence();
 
   //============================================================================
-  // Host: Compute ktm = min(jt) and ktb = min(msemax_klev) across active columns.
+  // Host: Compute ktm = min(cldtop_klev) and ktb = min(msemax_klev) across active columns.
   // These are used in zm_calc_output_tend to set the loop bounds consistently.
   //============================================================================
   Int ktm_val = pver - 1, ktb_val = pver - 1;
   Kokkos::parallel_reduce("zm_conv_main_ktm",
     RangePolicy(0, ncol),
     KOKKOS_LAMBDA(const Int i, Int& mn) {
-      if (active(i)) mn = Kokkos::min(mn, jt(i));
+      if (active(i)) mn = Kokkos::min(mn, cldtop_klev(i));
     }, Kokkos::Min<Int>(ktm_val));
   Kokkos::parallel_reduce("zm_conv_main_ktb",
     RangePolicy(0, ncol),
@@ -513,7 +509,7 @@ void Functions<S,D>::zm_conv_main(
     if (!active(i)) return;
     zm_calc_output_tend(team,
                         pver, pverp, msg,
-                        jt(i), msemax_klev(i), ktm_val, ktb_val, dsubcld(i),
+                        cldtop_klev(i), msemax_klev(i), ktm_val, ktb_val, dsubcld(i),
                         ekat::subview(p_del, i),
                         ekat::subview(s_int, i), ekat::subview(q_int, i),
                         ekat::subview(s_upd, i), ekat::subview(q_upd, i),
@@ -542,12 +538,6 @@ void Functions<S,D>::zm_conv_main(
       mcon(i,k)  = mflx_net(i,k);
       heat(i,k)  = dsdt(i,k) * cpair;
       dlf(i,k)   = dl(i,k);
-    });
-    team.team_barrier();
-
-    Kokkos::single(Kokkos::PerTeam(team), [&]() {
-      jctop(i) = jt(i);
-      jcbot(i) = msemax_klev(i);
     });
     team.team_barrier();
 
