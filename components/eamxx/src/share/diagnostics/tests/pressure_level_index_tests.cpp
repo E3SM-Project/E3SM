@@ -43,6 +43,34 @@ TEST_CASE("pressure_level_in_Pa")
   REQUIRE_THROWS (pressure_in_Pa("900","bar"));
 }
 
+TEST_CASE("vertical_target_names")
+{
+  using level_index_utils::VerticalTarget;
+
+  // The mask is named after the level: equivalent requests share it...
+  const auto p_hPa = VerticalTarget("p","900","hPa");
+  const auto p_mb  = VerticalTarget("p","900","mb");
+  const auto p_Pa  = VerticalTarget("p","90000","Pa");
+  REQUIRE (p_hPa.mask_name("mid")=="900hPa_mask");
+  REQUIRE (p_mb.mask_name("mid")==p_hPa.mask_name("mid"));
+  REQUIRE (p_Pa.mask_name("mid")==p_hPa.mask_name("mid"));
+  REQUIRE (p_Pa.mask_name("int")=="900hPa_int_mask");
+  // ...while the index diag keeps the name of the request
+  REQUIRE (p_hPa.index_name("mid")=="p_mid.searchsorted(900,units='hPa')");
+  REQUIRE (p_Pa.index_name("mid")=="p_mid.searchsorted(90000,units='Pa')");
+
+  // Conversion rounding error and trailing zeros do not leak into the name
+  REQUIRE (VerticalTarget("p","850.3","hPa").mask_name("mid")=="850.3hPa_mask");
+  REQUIRE (VerticalTarget("p","85030","Pa").mask_name("mid")=="850.3hPa_mask");
+  REQUIRE (VerticalTarget("p","500.0","hPa").mask_name("mid")=="500hPa_mask");
+  // No exponent in the name
+  REQUIRE (VerticalTarget("p","0.00001","hPa").mask_name("mid")=="0.00001hPa_mask");
+
+  // Heights
+  REQUIRE (VerticalTarget("z","10","m").mask_name("mid")=="10m_above_sealevel_mask");
+  REQUIRE (VerticalTarget("height","10.0","m").mask_name("int")=="10m_above_surface_int_mask");
+}
+
 TEST_CASE("pressure_level_index")
 {
   using namespace ShortFieldTagsNames;
