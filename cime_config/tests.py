@@ -1014,6 +1014,7 @@ _TESTS = {
         "time"  : "2:00:00",
         "tests" : (
             "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZUSA_BGC",
             )
     },
     "e3sm_test_bless" : {
