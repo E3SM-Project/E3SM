@@ -78,12 +78,16 @@ FileFmtFromString(const std::string &Format // [in] choice of IO file format
    // case when no explicit format is supplied by an IOStream and the default
    // is desired
    if (Format.empty())
-      return FmtDefault;
+      return DefaultFileFmt;
 
    // Convert input string to lowercase for easier comparison
    std::string FmtCompare = Format;
    std::transform(FmtCompare.begin(), FmtCompare.end(), FmtCompare.begin(),
                   [](unsigned char c) { return std::tolower(c); });
+
+   // "default" means the format set on initialization, not the built-in one
+   if (FmtCompare == "default")
+      return DefaultFileFmt;
 
    // Find the map entry corresponding to the string choice
    auto FmtFound = FmtMap.find(FmtCompare);
@@ -92,7 +96,7 @@ FileFmtFromString(const std::string &Format // [in] choice of IO file format
    // try to use the default anyway after printing a warning
    if (FmtFound == FmtMap.end()) {
       LOG_WARN("IO: Unknown file format {}; using default instead", FmtCompare);
-      return FmtDefault;
+      return DefaultFileFmt;
    }
 
    // Extract and return enum corresponding to string

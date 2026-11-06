@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
       const I4 DriverStride     = NumTasks / DriverNumIOTasks;
       const I4 DriverBaseTask   = 0;
       const I4 DriverRearr      = PIO_REARR_SUBSET;
-      const I4 DriverIOType     = PIO_IOTYPE_PNETCDF;
+      const I4 DriverIOType     = PIO_IOTYPE_NETCDF; // not IO::FmtDefault
 
       int DriverSysID = -1;
       int PIOErr =
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
                      "supplied {}",
                      IO::SysID, DriverSysID);
 
-      if (IO::DefaultFileFmt != IO::FmtPnetCDF)
+      if (IO::DefaultFileFmt != IO::FmtNetCDF3)
          ABORT_ERROR("IOCoupledInitTest: FAIL default file format is {} but "
                      "the driver supplied iotype {}",
                      static_cast<int>(IO::DefaultFileFmt), DriverIOType);

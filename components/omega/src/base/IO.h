@@ -92,7 +92,7 @@ static const std::map<std::string, FileFmt> FmtMap = {
     {"netcdf4c", FmtNetCDF4c}, {"netcdf4p", FmtNetCDF4p},
     {"netcdf4z", FmtNetCDF4z}, {"adios", FmtADIOS},
     {"adiosc", FmtADIOSC},     {"hdf5", FmtHDF5},
-    {"hdf5c", FmtHDF5C},       {"default", FmtDefault}};
+    {"hdf5c", FmtHDF5C}};
 
 /// File operations
 enum Mode {
@@ -183,9 +183,9 @@ void init(int IOSysID, ///< [in] driver-owned SCORPIO iosystem id
 /// The format of the file is assumed to be the default defined on init
 /// but can be optionally changed through this open function.
 void openFileRead(
-    int &FileID,                 ///< [out] returned fileID for this file
-    const std::string &Filename, ///< [in] name (incl path) of file to open
-    FileFmt Format = FmtDefault  ///< [in] (optional) file format
+    int &FileID,                    ///< [out] returned fileID for this file
+    const std::string &Filename,    ///< [in] name (incl path) of file to open
+    FileFmt Format = DefaultFileFmt ///< [in] (optional) file format
 );
 
 /// This routine opens a file for writing. The filename with full path must be
@@ -199,7 +199,7 @@ void openFileWrite(
     const std::string &Filename, ///< [in] name (incl path) of file to open
     bool &NewFile,               ///< [out] true if new file created
     IfExists InIfExists = IfExists::Fail, ///< [in] behavior if file exists
-    FileFmt Format      = FmtDefault      ///< [in] (optional) file format
+    FileFmt Format      = DefaultFileFmt  ///< [in] (optional) file format
 );
 
 /// Closes an open file using the fileID, returns an error code
