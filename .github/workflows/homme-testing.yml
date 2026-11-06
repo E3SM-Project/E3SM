@@ -27,7 +27,6 @@ on:
     types: [opened, synchronize, ready_for_review, reopened]
     paths:
       - '.github/workflows/homme-testing.yml'
-      - '.github/actions/get-cuda-arch/**'
       - 'cime_config/machines/config_machines.xml'
       - 'components/homme/**'
       - 'externals/ekat'
@@ -93,18 +92,21 @@ jobs:
               submodule update --init --recursive --depth=1 \
               cime externals/ekat externals/scorpio
       - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
+        uses: e3sm-project/automation/show-trigger@main
       - name: Get CUDA Arch
+        id: gpu
         if: ${{ matrix.runner == 'cuda' }}
-        uses: ./.github/actions/get-cuda-arch
+        uses: e3sm-project/automation/gpu-arch@main
       - name: Set test resources
+        env:
+          CUDA_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
           # Homme tests do not reserve cpus/gpus, so we must make sure to not oversubscribe the node.
           # Here we figure out the compiler (as CIME calls it), and how to split the node between ranks
           # per test, threads per rank, and number of tests running at the same time.
           # The results are set in the env, for the next steps.
           if [ -n "${CUDA_CMAKE_CONFIGS:-}" ]; then
-            # GPU runner (get-cuda-arch has set the cuda arch)
+            # GPU runner (the gpu-arch step detected the cuda arch)
             compiler=gnugpu
             ranks=2    # one rank per GPU (2 GPUs per node)
             threads=1
@@ -158,6 +160,8 @@ jobs:
           echo "HOMME_RANKS=$ranks" >> "$GITHUB_ENV"
       - name: Run test_homme.py
         working-directory: components/homme
+        env:
+          CUDA_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
           # BFB jobs use the machine file ghci-<runner>-bfb.cmake (via --bfb), and only care about cxx vs f90
           # comparisons within the same build, so they do not compare against baselines.
@@ -166,7 +170,7 @@ jobs:
             bfb_flag=(--bfb --no-baseline)
           fi
 
-          # CUDA_CMAKE_CONFIGS (set by get-cuda-arch) is a semicolon-separated list of key=val
+          # CUDA_CMAKE_CONFIGS (from the gpu-arch step outputs) is a semicolon-separated list of key=val
           # (empty tokens are ignored, so this is a no-op for non-cuda runners)
           cuda_flags=()
           IFS=';' read -ra configs <<< "${CUDA_CMAKE_CONFIGS:-}"

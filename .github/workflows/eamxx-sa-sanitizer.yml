@@ -46,10 +46,11 @@ jobs:
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
+        uses: e3sm-project/automation/show-trigger@main
       - name: Get CUDA Arch
+        id: gpu
         if: ${{ matrix.runner == 'cuda' }}
-        uses: ./.github/actions/get-cuda-arch
+        uses: e3sm-project/automation/gpu-arch@main
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
@@ -57,4 +58,4 @@ jobs:
           machine: ghci-${{ matrix.runner }}
           generate: false
           submit: ${{ env.submit }}
-          cmake-configs: ${{ matrix.cmake_configs }};${{ env.CUDA_CMAKE_CONFIGS }}
+          cmake-configs: ${{ matrix.cmake_configs }};${{ steps.gpu.outputs.cmake-configs }}
