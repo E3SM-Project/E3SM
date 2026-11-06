@@ -6,7 +6,7 @@ name: homme
 #
 # Jobs (matrix): runner in {gnu, intel, cuda, hip} x bfb in {false, true} (no gpu bfb yet).
 #  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>[-bfb].cmake
-#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnugpu,
+#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnu-cuda,
 #    and for the hip runner is gnu-hip.
 #  - bfb jobs set HOMMEXX_BFB_TESTING=ON (with strict fp flags), to compare the cxx and f90 builds
 #    against each other within the same build. They do not compare against baselines (--no-baseline).
@@ -110,7 +110,7 @@ jobs:
           # The results are set in the env, for the next steps.
           if [ "${{ matrix.runner }}" = "cuda" ]; then
             # GPU runner (the gpu-arch step detected the cuda arch)
-            compiler=gnugpu
+            compiler=gnu-cuda
             ranks=2    # one rank per GPU (2 GPUs per node)
             threads=1
 

@@ -67,7 +67,7 @@ jobs:
           - {runner: gnu, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72}
           - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-output-prod}
           - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-output-prod}
-          - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnugpu.eamxx-output-prod}
+          - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-cuda.eamxx-output-prod}
           - {runner: hip, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-hip.eamxx-output-prod}
     name: ${{ matrix.name }}
     steps:
