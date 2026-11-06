@@ -15,6 +15,14 @@
 namespace scream
 {
 
+namespace {
+// If a mask is a broadcast of another mask, return the original mask
+const Field& root_mask (const Field& m)
+{
+  return m.get_header().is_broadcast() ? m.get_header().get_extra_data<Field>("bcast_src") : m;
+}
+} // anonymous namespace
+
 HorizontalRemapper::
 HorizontalRemapper (const grid_ptr_type& src_grid,
                     const grid_ptr_type& tgt_grid,
@@ -129,6 +137,9 @@ registration_ends_impl ()
 {
   using namespace ShortFieldTagsNames;
 
+  // Tgt fields whose src mask is a broadcast. Their mask can only be set once the tgt mask is allocated
+  std::vector<std::pair<int,std::string>> bcast_tgt_masks;
+
   if (m_track_mask) {
     // NOTE: there are quite a few "mask" fields here, so let's recap:
     //  - src/tgt_mask: these are the int-valued fields attached to src/tgt field
@@ -144,13 +155,21 @@ registration_ends_impl ()
 
       const auto& f_name = src_hdr.get_identifier().name();
 
-      const auto& src_mask = m_src_fields[i].get_valid_mask();
+      const auto& f_src_mask = m_src_fields[i].get_valid_mask();
+
+      // If the mask is a broadcast of another (smaller) mask, we remap the original mask,
+      // and let the tgt field see the remapped mask as a broadcast too.
+      const bool bcast = f_src_mask.get_header().is_broadcast();
+      const auto& src_mask = bcast
+                           ? f_src_mask.get_header().get_extra_data<Field>("bcast_src")
+                           : f_src_mask;
       const auto& mask_name = src_mask.name();
-      const auto ps = src_hdr.get_alloc_properties().get_largest_pack_size();
+      // The original mask is not packed (it's missing the dims the field is broadcast along)
+      const auto ps = bcast ? 1 : src_hdr.get_alloc_properties().get_largest_pack_size();
 
       // Check that the mask field has the correct layout
       const auto& f_lt = src_hdr.get_identifier().get_layout();
-      const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
+      const auto& m_lt = f_src_mask.get_header().get_identifier().get_layout();
       EKAT_REQUIRE_MSG(f_lt == m_lt,
           "Error! Incompatible field and mask layouts.\n"
           "  - field name: " + f_name + "\n"
@@ -158,14 +177,14 @@ registration_ends_impl ()
           "  - mask layout: " + m_lt.to_string() + "\n");
 
       // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE_MSG(not src_mask.has_valid_mask(),
+      EKAT_REQUIRE_MSG(not f_src_mask.has_valid_mask(),
           "Error! A mask field cannot be itself masked.\n"
           "  - field name: " + f_name + "\n"
           "  - mask field name: " + mask_name + "\n");
 
       if (not m_lt.has_tag(COL)) {
         // This field doesn't really need to be remapped, so tgt can use the same mask field as src
-        m_tgt_fields[i].set_valid_mask(src_mask.alias(mask_name,get_tgt_grid()->name()));
+        m_tgt_fields[i].set_valid_mask(f_src_mask.alias(f_src_mask.name(),get_tgt_grid()->name()));
         continue;
       }
 
@@ -176,7 +195,11 @@ registration_ends_impl ()
         tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
         m_name_to_src_real_mask[mask_name].get_header().get_alloc_properties().request_allocation(ps);
         m_name_to_tgt_real_mask[mask_name].get_header().get_alloc_properties().request_allocation(ps);
-        m_tgt_fields[i].set_valid_mask(tgt_mask);
+        if (bcast) {
+          bcast_tgt_masks.emplace_back(i,mask_name);
+        } else {
+          m_tgt_fields[i].set_valid_mask(tgt_mask);
+        }
         continue;
       }
 
@@ -196,7 +219,11 @@ registration_ends_impl ()
       auto tgt_fid = create_tgt_fid(src_fid);
       tgt_mask = Field(tgt_fid);
       tgt_mask.get_header().get_alloc_properties().request_allocation(ps);
-      m_tgt_fields[i].set_valid_mask(tgt_mask);
+      if (bcast) {
+        bcast_tgt_masks.emplace_back(i,mask_name);
+      } else {
+        m_tgt_fields[i].set_valid_mask(tgt_mask);
+      }
       m_name_to_tgt_int_mask[mask_name] = tgt_mask;
     }
   }
@@ -216,6 +243,12 @@ registration_ends_impl ()
     src_real_mask.allocate_view();
     tgt_real_mask.allocate_view();
     tgt_int_mask.allocate_view();
+  }
+
+  // The tgt masks of fields with a broadcast src mask are broadcasts of the remapped (original) mask
+  for (const auto& [i,name] : bcast_tgt_masks) {
+    const auto& tgt_layout = m_tgt_fields[i].get_header().get_identifier().get_layout();
+    m_tgt_fields[i].set_valid_mask(m_name_to_tgt_int_mask.at(name).broadcast_to(tgt_layout));
   }
 
   m_needs_remap.resize(m_num_fields,1);
@@ -359,7 +392,7 @@ void HorizontalRemapper::remap_fwd_impl ()
     for (int i=0; i<m_num_fields; ++i) {
       auto& f_tgt = m_tgt_fields[i];
       if (f_tgt.has_valid_mask()) {
-        const auto& mask_name = f_tgt.get_valid_mask().name();
+        const auto& mask_name = root_mask(f_tgt.get_valid_mask()).name();
         const auto& real_mask = m_name_to_tgt_real_mask.at(mask_name);
         // TODO:
         //  1. compute mask=real_mask>thresh via compute_mask
@@ -523,6 +556,83 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
   const Real mask_threshold = m_mask_threshold;
 
   Pack fv_pack(fill_val);
+
+  if (x.get_valid_mask().get_header().is_broadcast()) {
+    // The mask of x is a broadcast of an (ncol) mask. Compute the original mask, and rescale
+    // all the entries of x along the broadcast dims with the same real mask value
+    EKAT_REQUIRE_MSG (rank>1,
+        "[HorizontalRemapper::rescale_masked_fields] Error! Broadcast mask for a rank-1 field.\n");
+    auto mr_view = real_mask.get_view<const Real*>();
+    auto m_view = root_mask(x.get_valid_mask()).get_view<int*>();
+    switch (rank) {
+      case 2:
+      {
+        auto x_view = x.get_view<Pack**>();
+        const int dim1 = PackInfo::num_packs(layout.dim(1));
+        auto policy = TPF::get_default_team_policy(ncols,dim1);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team) {
+          const auto icol = team.league_rank();
+          const Real mr = mr_view(icol);
+          const bool valid = mr>mask_threshold;
+          Kokkos::single(Kokkos::PerTeam(team),[&](){ m_view(icol) = valid; });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
+                              [&](const int j){
+            x_view(icol,j) = valid ? Pack(x_view(icol,j)/mr) : fv_pack;
+          });
+        });
+        break;
+      }
+      case 3:
+      {
+        auto x_view = x.get_view<Pack***>();
+        const int dim1 = layout.dim(1);
+        const int dim2 = PackInfo::num_packs(layout.dim(2));
+        auto policy = TPF::get_default_team_policy(ncols,dim1*dim2);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team) {
+          const auto icol = team.league_rank();
+          const Real mr = mr_view(icol);
+          const bool valid = mr>mask_threshold;
+          Kokkos::single(Kokkos::PerTeam(team),[&](){ m_view(icol) = valid; });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
+                              [&](const int idx){
+            const int j = idx / dim2;
+            const int k = idx % dim2;
+            x_view(icol,j,k) = valid ? Pack(x_view(icol,j,k)/mr) : fv_pack;
+          });
+        });
+        break;
+      }
+      case 4:
+      {
+        auto x_view = x.get_view<Pack****>();
+        const int dim1 = layout.dim(1);
+        const int dim2 = layout.dim(2);
+        const int dim3 = PackInfo::num_packs(layout.dim(3));
+        auto policy = TPF::get_default_team_policy(ncols,dim1*dim2*dim3);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team) {
+          const auto icol = team.league_rank();
+          const Real mr = mr_view(icol);
+          const bool valid = mr>mask_threshold;
+          Kokkos::single(Kokkos::PerTeam(team),[&](){ m_view(icol) = valid; });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                              [&](const int idx){
+            const int j = (idx / dim3) / dim2;
+            const int k = (idx / dim3) % dim2;
+            const int l =  idx % dim3;
+            x_view(icol,j,k,l) = valid ? Pack(x_view(icol,j,k,l)/mr) : fv_pack;
+          });
+        });
+        break;
+      }
+    }
+    if (m_timers_enabled)
+      stop_timer(name()+" rescale");
+    return;
+  }
+
   auto& mask = x.get_valid_mask();
   switch (rank) {
     case 1:
@@ -646,13 +756,17 @@ local_mat_vec_masked (const Field& x, const Field& y) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
-  const auto& mask_name = x.get_valid_mask().name();
+  const auto& mask_name = root_mask(x.get_valid_mask()).name();
   const auto& mask = m_name_to_src_real_mask.at(mask_name);
+  const bool bcast_mask = x.get_valid_mask().get_header().is_broadcast();
   const int rank = src_layout.rank();
   const int nrows  = m_remap_data->m_overlap_grid->get_num_local_dofs();
   auto row_offsets = m_remap_data->m_row_offsets;
   auto col_lids    = m_remap_data->m_col_lids;
   auto weights     = m_remap_data->m_weights;
+  // If the mask is a broadcast, the (original) mask has only the COL dim: mask(icol) applies to all x(icol,...) entries
+  EKAT_REQUIRE_MSG (not bcast_mask or rank>1,
+      "[HorizontalRemapper::local_mat_vec_masked] Error! Broadcast mask for a rank-1 field.\n");
   switch (rank) {
     // Note: we ASSUME mask fields are ALWAYS contiguous (they are not subfields)
     case 1:
@@ -682,9 +796,31 @@ local_mat_vec_masked (const Field& x, const Field& y) const
     {
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
-      auto m_view = mask.get_view<const Pack**>();
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
       auto policy = TPF::get_default_team_policy(nrows,dim1);
+      if (bcast_mask) {
+        auto mb_view = mask.get_view<const Real*>();
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team) {
+          const auto row = team.league_rank();
+          const auto beg = row_offsets(row);
+          const auto end = row_offsets(row+1);
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
+                              [&](const int j){
+            Pack accum = 0;
+            for (int icol=beg; icol<end; ++icol) {
+              // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+              const auto m = mb_view(col_lids(icol));
+              if (m!=0) {
+                accum += weights(icol)*x_view(col_lids(icol),j)*m;
+              }
+            }
+            y_view(row,j) = accum;
+          });
+        });
+        break;
+      }
+      auto m_view = mask.get_view<const Pack**>();
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -707,10 +843,34 @@ local_mat_vec_masked (const Field& x, const Field& y) const
     {
       auto x_view = x.get_view<const Pack***>();
       auto y_view = y.get_view<      Pack***>();
-      auto m_view = mask.get_view<const Pack***>();
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
       auto policy = TPF::get_default_team_policy(nrows,dim1*dim2);
+      if (bcast_mask) {
+        auto mb_view = mask.get_view<const Real*>();
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team) {
+          const auto row = team.league_rank();
+          const auto beg = row_offsets(row);
+          const auto end = row_offsets(row+1);
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
+                              [&](const int idx){
+            const int j = idx / dim2;
+            const int k = idx % dim2;
+            Pack accum = 0;
+            for (int icol=beg; icol<end; ++icol) {
+              // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+              const auto m = mb_view(col_lids(icol));
+              if (m!=0) {
+                accum += weights(icol)*x_view(col_lids(icol),j,k)*m;
+              }
+            }
+            y_view(row,j,k) = accum;
+          });
+        });
+        break;
+      }
+      auto m_view = mask.get_view<const Pack***>();
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -735,11 +895,36 @@ local_mat_vec_masked (const Field& x, const Field& y) const
     {
       auto x_view = x.get_view<const Pack****>();
       auto y_view = y.get_view<      Pack****>();
-      auto m_view = mask.get_view<const Pack****>();
       const int dim1 = src_layout.dim(1);
       const int dim2 = src_layout.dim(2);
       const int dim3 = PackInfo::num_packs(src_layout.dim(3));
       auto policy = TPF::get_default_team_policy(nrows,dim1*dim2*dim3);
+      if (bcast_mask) {
+        auto mb_view = mask.get_view<const Real*>();
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team) {
+          const auto row = team.league_rank();
+          const auto beg = row_offsets(row);
+          const auto end = row_offsets(row+1);
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2*dim3),
+                              [&](const int idx){
+            const int j = (idx / dim3) / dim2;
+            const int k = (idx / dim3) % dim2;
+            const int l =  idx % dim3;
+            Pack accum = 0;
+            for (int icol=beg; icol<end; ++icol) {
+              // Entries of x with mask=0 are unspecified: skip them (they could be NaN)
+              const auto m = mb_view(col_lids(icol));
+              if (m!=0) {
+                accum += weights(icol)*x_view(col_lids(icol),j,k,l)*m;
+              }
+            }
+            y_view(row,j,k,l) = accum;
+          });
+        });
+        break;
+      }
+      auto m_view = mask.get_view<const Pack****>();
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
