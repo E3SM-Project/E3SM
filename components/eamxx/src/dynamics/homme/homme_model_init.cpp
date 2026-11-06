@@ -2,6 +2,7 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_instance.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 // HOMMEXX Includes
 #include "Context.hpp"
@@ -10,6 +11,8 @@
 
 #include <ekat_assert.hpp>
 #include <ekat_std_utils.hpp>
+
+#include <set>
 
 namespace scream
 {
@@ -51,6 +54,7 @@ run (const std::shared_ptr<FieldManager>& fm,
   // Is the physics grid a FV one?
   m_pgN = -1;
   m_pg_grid = "";
+  m_remapped_fields.clear();
   for (const auto& gn : gm->get_grid_names()) {
     const int N = get_phys_grid_fv_param(gn);
     if (N>0) {
@@ -149,6 +153,36 @@ run (const std::shared_ptr<FieldManager>& fm,
   // 5) Complete homme model initialization
   prim_init_model_f90 ();
 
+  // 5b) Remap to the pg grid the fields that were read on the GLL grid (they are not restarted)
+  if (pg and not restart and m_remapped_fields.size()>0) {
+    constexpr int NGP = HOMMEXX_NP;
+    const int nelem = instance->get_dyn_field("v_dyn").get_header().get_identifier().get_layout().dim(0);
+    const int nlev = gm->get_grid("dynamics")->get_num_vertical_levels();
+
+    using namespace ShortFieldTagsNames;
+    auto gll2dyn = gm->create_remapper(gll,"dynamics");
+    std::vector<Field> dgll_fields;
+    for (const auto& name : m_remapped_fields) {
+      FieldIdentifier fid(name,FieldLayout({EL,GP,GP,LEV},{nelem,NGP,NGP,nlev}),
+                          ekat::units::none,"dynamics");
+      Field f_dgll(fid);
+      f_dgll.get_header().get_alloc_properties().request_allocation(HOMMEXX_PACK_SIZE);
+      f_dgll.allocate_view();
+      gll2dyn->register_field(gll_ic_fm->get_field(name,gll),f_dgll);
+      dgll_fields.push_back(f_dgll);
+    }
+    gll2dyn->registration_ends();
+    gll2dyn->remap_fwd();
+
+    std::vector<Field> remapped;
+    for (size_t i=0; i<m_remapped_fields.size(); ++i) {
+      auto f_phys = fm->get_field(m_remapped_fields[i],m_pg_grid);
+      instance->remap_tracer_dyn_to_fv_phys(dgll_fields[i],f_phys);
+      remapped.push_back(f_phys);
+    }
+    update_time_stamps(remapped,t0);
+  }
+
   // 6) For FV physics grids, remap the dyn state to the physics grid
   if (pg) {
     const auto& pgn = m_pg_grid;
@@ -212,18 +246,26 @@ get_fields (const std::shared_ptr<FieldManager>& fm,
   }
 
   if (grid_name=="physics_gll" and group_name=="RESTART") {
-    // physics_gll only has the trace gases ICs (see eamxx_homme_fv_phys.cpp), which are
-    // not part of a restart file (the pg grid ones are).
+    // Nothing on physics_gll is part of a restart file: the fields there are only used to
+    // init the state (the pg grid fields are what is restarted).
     return {};
   }
 
   if (grid_name==m_pg_grid and group_name=="STARTUP") {
-    // The IC file only has data on the GLL grid. The state fields are inited by remapping
-    // the dyn state, so skip them. In fact, skip anything that is not constant or topography.
+    // The IC file only has data on the GLL grid. The state fields, and the fields in the IC file
+    // that we remap, are inited by remapping the dyn state, so skip them. In fact, skip anything
+    // that is not constant (override, or default if not in the IC file) or topography.
     const auto& overrides = m_params.sublist("constant_fields").sublist("overrides");
+    const auto& defaults  = m_params.sublist("constant_fields").sublist("defaults");
     const auto topo_names = get_topography_file_names(grid_name);
+    const bool has_ic_file = m_params.isParameter("filename");
+    const auto ic_file = has_ic_file ? m_params.get<std::string>("filename") : std::string("");
     std::erase_if(fields,[&](const Field& f) {
-      return not (overrides.isParameter(f.name()) or topo_names.count(f.name())>0);
+      const auto& n = f.name();
+      if (overrides.isParameter(n) or topo_names.count(n)>0) {
+        return false;
+      }
+      return not (defaults.isParameter(n) and not (has_ic_file and scorpio::has_var(ic_file,n)));
     });
   }
   return fields;
@@ -240,7 +282,7 @@ get_topography_file_names (const std::string& grid_name) const
 }
 
 std::shared_ptr<FieldManager> HommeModelInit::
-create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm) const
+create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm)
 {
   using namespace ShortFieldTagsNames;
   constexpr int N = HOMMEXX_PACK_SIZE;
@@ -275,6 +317,33 @@ create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm) const
   }
   ic_fm->register_group(GroupRequest("tracers",gln,N,MonolithicAlloc::Required));
   ic_fm->register_group(GroupRequest("STARTUP",gln));
+
+  // Other pg fields that are in the IC file. The IC file only has data on the GLL grid, so we read
+  // them there. We only do this for 3d scalar fields at midpoints, which Homme can remap as tracers.
+  // Fields that have a constant (override), or that are read from the topography file, are not.
+  std::set<std::string> state_names = {"horiz_winds","U","V","T_mid","ps","phis"};
+  for (const auto& n : tracers_names) {
+    state_names.insert(n);
+  }
+  m_remapped_fields.clear();
+  const bool has_ic_file = m_params.isParameter("filename");
+  const auto ic_file = has_ic_file ? m_params.get<std::string>("filename") : std::string("");
+  const auto& overrides = m_params.sublist("constant_fields").sublist("overrides");
+  const auto topo_names = get_topography_file_names(pgn);
+  for (const auto& f : ModelInit::get_fields(fm,"STARTUP",pgn)) {
+    const auto& name = f.name();
+    const auto& fid = f.get_header().get_identifier();
+    const auto& layout = fid.get_layout();
+    const bool is_3d_mid = layout.rank()==2 and layout.tags()[0]==COL and layout.tags()[1]==LEV;
+    if (state_names.count(name)>0 or overrides.isParameter(name) or
+        topo_names.count(name)>0 or not is_3d_mid) {
+      continue;
+    }
+    if (has_ic_file and scorpio::has_var(ic_file,name)) {
+      m_remapped_fields.push_back(name);
+      ic_fm->register_field(FieldRequest(FieldIdentifier(name,gll->get_3d_scalar_layout(LEV),fid.get_units(),gln),N));
+    }
+  }
   ic_fm->registration_ends();
 
   // As the driver does, add U/V subfields of horiz_winds
@@ -287,6 +356,9 @@ create_gll_ic_field_manager (const std::shared_ptr<FieldManager>& fm) const
     ic_fm->add_to_group(name,gln,"STARTUP");
   }
   for (const auto& name : tracers_names) {
+    ic_fm->add_to_group(name,gln,"STARTUP");
+  }
+  for (const auto& name : m_remapped_fields) {
     ic_fm->add_to_group(name,gln,"STARTUP");
   }
 
