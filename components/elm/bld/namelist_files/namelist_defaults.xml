@@ -268,7 +268,6 @@ lnd/clm2/surfdata_map/surfdata_u03-oi240-lr240_simyr1850_c260829.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_u03-oi240-lr240_simyr1950_c260829.nc</fsurdat>
  <fsurdat hgrid="u03-lr240"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_u03-oi240-lr240_simyr2010_c260829.nc</fsurdat>
-
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_simyr2010_c220621.nc</fsurdat>
@@ -689,6 +688,7 @@ this mask will have smb calculated over the entire global land surface
 <!--  ***********  Resolution dependent:   *********** -->
 <!--ftopdat>same as fsurfdat </ftopdat-->
 <use_top_solar_rad>.false.</use_top_solar_rad>
+<use_gcam_landuse>.true.</use_gcam_landuse>
 
 <!-- Use the radiation parameterization for fine-scale topographic effects -->
 <use_finetop_rad>.false.</use_finetop_rad>

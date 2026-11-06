@@ -433,6 +433,7 @@ add_default($nl, 'num_periods');
 
 # gcam config and init files, relative to inputdata
 add_default($nl, 'gcam_config');
+add_default($nl, 'use_gcam_usa');
 add_default($nl, 'base_gcam_co2_file');
 add_default($nl, 'base_gcam_lu_wh_file');
 add_default($nl, 'base_co2_surface_file');

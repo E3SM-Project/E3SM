@@ -137,7 +137,7 @@ contains
     end if
 
     if (iac_present) then
-       allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
+       allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell_iac (:) = nan
     end if
 	end subroutine veg_pp_init
 
