@@ -3,12 +3,12 @@
 /// \file
 /// \brief Test driver for OMEGA coupled IO initialization
 ///
-/// This driver tests the IO::init overload that takes a SCORPIO iosystem id
-/// and iotype. In a coupled run the iosystem is created by the driver
-/// (CIME/shr_pio), so Omega must reuse it instead of creating its own. This
-/// test creates an iosystem the way a driver would, using IO settings that
-/// differ from the Omega config, and checks that IO::init adopts that
-/// iosystem and its iotype.
+/// This driver tests the IO::init overload that takes a SCORPIO iosystem id,
+/// iotype and netCDF format. In a coupled run the iosystem is created by the
+/// driver (CIME/shr_pio), so Omega must reuse it instead of creating its own.
+/// This test creates an iosystem the way a driver would, using IO settings
+/// that differ from the Omega config, and checks that IO::init adopts that
+/// iosystem, its iotype and its netCDF format.
 ///
 //
 //===-----------------------------------------------------------------------===/
@@ -60,11 +60,12 @@ int main(int argc, char *argv[]) {
       // different from the Omega default of a single IO task, so adopting the
       // driver iosystem can be told apart from creating a new one with
       // config values.
-      const I4 DriverNumIOTasks = 2;
-      const I4 DriverStride     = NumTasks / DriverNumIOTasks;
-      const I4 DriverBaseTask   = 0;
-      const I4 DriverRearr      = PIO_REARR_SUBSET;
-      const I4 DriverIOType     = PIO_IOTYPE_NETCDF; // not IO::FmtDefault
+      const I4 DriverNumIOTasks   = 2;
+      const I4 DriverStride       = NumTasks / DriverNumIOTasks;
+      const I4 DriverBaseTask     = 0;
+      const I4 DriverRearr        = PIO_REARR_SUBSET;
+      const I4 DriverIOType       = PIO_IOTYPE_NETCDF; // not IO::FmtDefault
+      const I4 DriverNetCDFFormat = PIO_64BIT_OFFSET;  // not IO default
 
       int DriverSysID = -1;
       int PIOErr =
@@ -75,7 +76,7 @@ int main(int argc, char *argv[]) {
                      "iosystem");
 
       // Initialize IO with the driver-owned iosystem
-      IO::init(DriverSysID, DriverIOType);
+      IO::init(DriverSysID, DriverIOType, DriverNetCDFFormat);
 
       if (IO::SysID != DriverSysID)
          ABORT_ERROR("IOCoupledInitTest: FAIL SysID is {} but the driver "
@@ -86,6 +87,11 @@ int main(int argc, char *argv[]) {
          ABORT_ERROR("IOCoupledInitTest: FAIL default file format is {} but "
                      "the driver supplied iotype {}",
                      static_cast<int>(IO::DefaultFileFmt), DriverIOType);
+
+      if (IO::DefaultNetCDFMode != DriverNetCDFFormat)
+         ABORT_ERROR("IOCoupledInitTest: FAIL netCDF mode is {} but the "
+                     "driver supplied {}",
+                     IO::DefaultNetCDFMode, DriverNetCDFFormat);
 
       // A rearranger of 0 defers to the driver iosystem's rearranger
       if (static_cast<int>(IO::DefaultRearr) != 0)

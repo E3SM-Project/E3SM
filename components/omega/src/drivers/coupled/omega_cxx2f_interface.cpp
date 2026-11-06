@@ -97,6 +97,7 @@ void omega_ocn_init1(
     const int *ExportFieldIndices, // [in] array of export field indices
     const int IOSysID,             // [in] driver-owned SCORPIO iosystem id
     const int IOType,              // [in] driver-owned SCORPIO iotype
+    const int IONetCDFFormat,      // [in] driver-owned netCDF file format
     const char *Cpl2OcnFieldNames, // [in] full CIME x2o field list (MOAB)
     const char *Ocn2CplFieldNames  // [in] full CIME o2x field list (MOAB)
 ) {
@@ -156,10 +157,10 @@ void omega_ocn_init1(
                                             OMEGA::CouplingLayout::MCT};
 #endif
 
-   // The SCORPIO iosystem and iotype are owned by the driver/coupler (via
-   // CIME/shr_pio) and reused by Omega.
+   // The SCORPIO iosystem, iotype and netCDF format are owned by the
+   // driver/coupler (via CIME/shr_pio) and reused by Omega.
    OMEGA::ocnInit1(Comm, OcnID, YamlConfigFile, OcnLogFile, StartTypeEnum,
-                   StartTime, CouplingParams, IOSysID, IOType);
+                   StartTime, CouplingParams, IOSysID, IOType, IONetCDFFormat);
 
    Pacer::stop("Init1", 0);
 

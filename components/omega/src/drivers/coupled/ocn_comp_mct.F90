@@ -75,7 +75,8 @@ contains
       use shr_cal_mod, only: shr_cal_noleap, shr_cal_gregorian
       use shr_file_mod, only: shr_file_getunit, shr_file_setIO
       use pio, only: iosystem_desc_t
-      use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype
+      use shr_pio_mod, only: shr_pio_getiosys, shr_pio_getiotype, &
+                             shr_pio_getioformat
 
       ! !INPUT/OUTPUT PARAMETERS:
       type(ESMF_Clock), intent(inout) :: EClock
@@ -107,6 +108,7 @@ contains
       type(iosystem_desc_t), pointer :: io_system ! driver-owned PIO system
       integer(kind=c_int) :: io_sys_id ! driver-owned PIO iosystem id
       integer(kind=c_int) :: io_type   ! driver-owned PIO iotype
+      integer(kind=c_int) :: io_netcdf_format ! driver-owned netCDF format
       character(kind=c_char, len=CL), target :: calendar_c
       character(kind=c_char, len=CL), target :: ocn_log_fname_c
 
@@ -197,11 +199,13 @@ contains
       call omega_set_cpl_indices()
 
       ! The PIO iosystem is created and owned by the driver (CIME via
-      ! shr_pio), so the IO task layout, rearranger and iotype follow the
-      ! PIO_*_OCN case settings; Omega reuses it rather than reading omega.yml.
+      ! shr_pio), so the IO task layout, rearranger, iotype and netCDF format
+      ! follow the PIO_*_OCN case settings; Omega reuses it rather than
+      ! reading omega.yml.
       io_system => shr_pio_getiosys(OCN_ID)
       io_sys_id = io_system%iosysid
       io_type = shr_pio_getiotype(OCN_ID)
+      io_netcdf_format = shr_pio_getioformat(OCN_ID)
 
       call omega_ocn_init1( &
          mpicom_ocn, &
@@ -223,6 +227,7 @@ contains
          c_loc(export_field_indices), &
          io_sys_id, &
          io_type, &
+         io_netcdf_format, &
          c_loc(cpl_x2o_field_names), &
          c_loc(cpl_o2x_field_names) &
          )

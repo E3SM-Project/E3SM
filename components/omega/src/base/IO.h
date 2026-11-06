@@ -144,6 +144,12 @@ extern FileFmt DefaultFileFmt;
 /// be assumed if not overridden during file open.
 extern Rearranger DefaultRearr;
 
+/// The netCDF file version flag (PIO_64BIT_DATA, PIO_64BIT_OFFSET or 0 for
+/// classic) used when creating files with the classic or parallel netCDF
+/// iotypes. It is only set by the coupled init and is -1 (unset) otherwise,
+/// in which case pnetcdf files are CDF5 and netcdf files are classic.
+extern int DefaultNetCDFMode;
+
 // Utilities
 
 /// Converts string choice for PIO rearranger to an enum
@@ -174,8 +180,9 @@ void init(const MPI_Comm &InComm ///< [in] MPI communicator to use
 /// Initializes the IO system using a SCORPIO iosystem created and owned by
 /// the coupled driver. The IO task layout, base task and rearranger are those
 /// of the driver iosystem; the Omega IO config options are unused.
-void init(int IOSysID, ///< [in] driver-owned SCORPIO iosystem id
-          int IOType   ///< [in] driver-owned SCORPIO iotype
+void init(int IOSysID,       ///< [in] driver-owned SCORPIO iosystem id
+          int IOType,        ///< [in] driver-owned SCORPIO iotype
+          int IONetCDFFormat ///< [in] driver-owned netCDF file format flag
 );
 
 /// This routine opens a file for reading. The filename with full path must be

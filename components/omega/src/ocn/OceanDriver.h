@@ -38,8 +38,9 @@ int ocnInit1(
     const TimeStepperStartType StartType,     ///< [in] simulation start type
     const TimeInstant &StartTime,             ///< [in] simulation start time
     const CouplingInitParams &CouplingParams, ///< [in] coupling parameters
-    const int IOSysID, ///< [in] driver-owned IO system id
-    const int IOType   ///< [in] driver-owned IO type
+    const int IOSysID,       ///< [in] driver-owned IO system id
+    const int IOType,        ///< [in] driver-owned IO type
+    const int IONetCDFFormat ///< [in] driver-owned netCDF file format
 );
 
 /// Coupled init phase 2: runs once the coupler has allocated its MCT buffers;
@@ -67,7 +68,8 @@ int initOmegaModules(
     const TimeInstant &StartTime,      ///< [in] start time for full simulation
     const CouplingInitParams &CParams, ///< [in] struct with coupling params
     int IOSysID,                       ///< [in] driver-owned IO system id
-    int IOType                         ///< [in] driver-owned IO type
+    int IOType,                        ///< [in] driver-owned IO type
+    int IONetCDFFormat                 ///< [in] driver-owned netCDF file format
 );
 
 /// Update Halo/Host arrays with new state, auxiliary state, and tracer fields

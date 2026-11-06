@@ -29,6 +29,7 @@ namespace IO {
 int SysID               = 0;
 FileFmt DefaultFileFmt  = FmtDefault;
 Rearranger DefaultRearr = RearrDefault;
+int DefaultNetCDFMode   = -1;
 
 // Utilities
 //------------------------------------------------------------------------------
@@ -209,17 +210,23 @@ void init(const MPI_Comm &InComm // [in] MPI communicator to use
 
 //------------------------------------------------------------------------------
 // Initializes the IO system using a SCORPIO iosystem created and owned by the
-// driver (share/util/shr_pio_mod.F90). The IO task layout, base task and
-// rearranger are therefore set by the case (PIO_NUMTASKS_OCN, PIO_STRIDE_OCN,
-// PIO_ROOT_OCN, PIO_REARRANGER_OCN) and not by the Omega configuration.
-void init(int IOSysID, // [in] driver-owned SCORPIO iosystem id
-          int IOType   // [in] driver-owned SCORPIO iotype (PIO_TYPENAME_OCN)
+// driver (share/util/shr_pio_mod.F90). The IO task layout, base task,
+// rearranger, iotype and netCDF format are therefore set by the case
+// (PIO_NUMTASKS_OCN, PIO_STRIDE_OCN, PIO_ROOT_OCN, PIO_REARRANGER_OCN,
+// PIO_TYPENAME_OCN, PIO_NETCDF_FORMAT_OCN) and not by the Omega configuration.
+void init(int IOSysID,       // [in] driver-owned SCORPIO iosystem id
+          int IOType,        // [in] driver-owned SCORPIO iotype
+          int IONetCDFFormat // [in] driver-owned netCDF file format
 ) {
 
    SysID = IOSysID;
 
    // The FileFmt values are the SCORPIO iotype values
    DefaultFileFmt = static_cast<FileFmt>(IOType);
+
+   // Creation mode flag selecting the netCDF file version (classic, 64-bit
+   // offset or 64-bit data) for files written with a netCDF iotype
+   DefaultNetCDFMode = IONetCDFFormat;
 
    // Value of 0 tells PIOc_init_decomp to use the default rearranger
    // of the driver-created iosystem
@@ -231,8 +238,8 @@ void init(int IOSysID, // [in] driver-owned SCORPIO iosystem id
       ABORT_ERROR("IO::init: Error querying driver-owned SCORPIO iosystem");
 
    LOG_INFO("IO::init: using driver-owned SCORPIO iosystem {} with {} IO "
-            "tasks and iotype {}",
-            SysID, NumIOTasks, IOType);
+            "tasks, iotype {} and netCDF format {}",
+            SysID, NumIOTasks, IOType, IONetCDFFormat);
    // Driver logs PIO settings for each component to the cpl log at startup
    LOG_INFO("IO::init: To see the rest of the OCN IO settings (stride, root, "
             "rearranger) see the pio_* entries in the coupler log (cpl.log.*)");
@@ -279,17 +286,26 @@ void openFileWrite(
     FileFmt InFormat             // [in] (optional) file format
 ) {
 
-   int PIOErr     = 0;                  // internal SCORPIO/PIO return call
-   int Format     = InFormat;           // coerce to integer for PIO calls
-   int TmpPnetcdf = PIO_IOTYPE_PNETCDF; // coerce to int for comparison
-   int IsCDF5     = (Format == TmpPnetcdf) ? PIO_64BIT_DATA : 0;
+   int PIOErr = 0;        // internal SCORPIO/PIO return call
+   int Format = InFormat; // coerce to integer for PIO calls
+
+   // The netCDF file version flag only applies to the classic and parallel
+   // netCDF iotypes. The HDF5-based netCDF4 iotypes must not be given one.
+   // Without a driver-supplied format, only pnetcdf files are written as CDF5.
+   int NetCDFMode = 0;
+   if (Format == PIO_IOTYPE_PNETCDF || Format == PIO_IOTYPE_NETCDF) {
+      if (DefaultNetCDFMode >= 0)
+         NetCDFMode = DefaultNetCDFMode;
+      else if (Format == PIO_IOTYPE_PNETCDF)
+         NetCDFMode = PIO_64BIT_DATA;
+   }
 
    switch (InIfExists) {
    // If the write should be a new file and fail if the
    // file exists, we use create and fail with an error
    case IfExists::Fail:
       PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
-                               NC_NOCLOBBER | IsCDF5 | ModeWrite);
+                               NC_NOCLOBBER | NetCDFMode | ModeWrite);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
                      " file already exists and fail mode requested",
@@ -301,7 +317,7 @@ void openFileWrite(
    // we use create with the CLOBBER option
    case IfExists::Replace:
       PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
-                               NC_CLOBBER | IsCDF5 | ModeWrite);
+                               NC_CLOBBER | NetCDFMode | ModeWrite);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
                      " in replace mode",
@@ -324,7 +340,7 @@ void openFileWrite(
 
       if (FileExists) {
          PIOErr = PIOc_openfile(SysID, &FileID, &Format, &Filename[0],
-                                IsCDF5 | ModeWrite);
+                                NetCDFMode | ModeWrite);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFileWrite: PIO error opening existing file"
                         " {} in append mode",
@@ -332,7 +348,7 @@ void openFileWrite(
          NewFile = false;
       } else {
          PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
-                                  IsCDF5 | ModeWrite);
+                                  NetCDFMode | ModeWrite);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
                         " in append mode",
