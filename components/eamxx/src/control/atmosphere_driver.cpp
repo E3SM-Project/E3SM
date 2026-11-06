@@ -732,6 +732,12 @@ void AtmosphereDriver::create_fields()
     ekat::write_yaml_file("eamxx_field_manager_content.yaml",pl_out);
   }
 
+  // All fields (and groups) are now set in the atm procs, which is all that buffer
+  // sizes depend on, so we can allocate the shared memory buffer now. This way,
+  // anything that needs a process' scratch memory before initialize_atm_procs
+  // (e.g., a model-specific field initializer) can rely on it.
+  allocate_buffers ();
+
   stop_timer("EAMxx::create_fields");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_fields ... done!");
@@ -1474,6 +1480,15 @@ initialize_constant_field(const FieldIdentifier& fid,
   }
 }
 
+void AtmosphereDriver::allocate_buffers ()
+{
+  // Initialize memory buffer for all atm processes
+  m_memory_buffer = std::make_shared<ATMBufferManager>();
+  m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
+  m_memory_buffer->allocate();
+  m_atm_process_group->init_buffers(*m_memory_buffer);
+}
+
 void AtmosphereDriver::initialize_atm_procs ()
 {
   m_atm_logger->info("[EAMxx] initialize_atm_procs ...");
@@ -1481,12 +1496,6 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_atm_procs");
-
-  // Initialize memory buffer for all atm processes
-  m_memory_buffer = std::make_shared<ATMBufferManager>();
-  m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
-  m_memory_buffer->allocate();
-  m_atm_process_group->init_buffers(*m_memory_buffer);
 
   // Setup SurfaceCoupling import and export (if they exist)
   if (m_surface_coupling_import_data_manager || m_surface_coupling_export_data_manager) {
