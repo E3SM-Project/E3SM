@@ -10,53 +10,53 @@ fields:
     field_names:
     # 2D vars for storm analysis
     - SeaLevelPressure
-    - U_at_model_bot
-    - V_at_model_bot
+    - U_at_model_bot := U.isel(lev=-1)
+    - V_at_model_bot := V.isel(lev=-1)
     - wind_speed_10m
-    - U_at_925hPa
-    - V_at_925hPa
-    - U_at_850hPa
-    - V_at_850hPa
-    - U_at_700hPa
-    - V_at_700hPa
-    - U_at_500hPa
-    - V_at_500hPa
-    - U_at_300hPa
-    - V_at_300hPa
+    - U_at_925hPa := U.interp(p_mid=925,units='hPa')
+    - V_at_925hPa := V.interp(p_mid=925,units='hPa')
+    - U_at_850hPa := U.interp(p_mid=850,units='hPa')
+    - V_at_850hPa := V.interp(p_mid=850,units='hPa')
+    - U_at_700hPa := U.interp(p_mid=700,units='hPa')
+    - V_at_700hPa := V.interp(p_mid=700,units='hPa')
+    - U_at_500hPa := U.interp(p_mid=500,units='hPa')
+    - V_at_500hPa := V.interp(p_mid=500,units='hPa')
+    - U_at_300hPa := U.interp(p_mid=300,units='hPa')
+    - V_at_300hPa := V.interp(p_mid=300,units='hPa')
     - ZonalVapFlux
     - MeridionalVapFlux
     - T_2m
     - qv_2m
-    - T_mid_at_925hPa
-    - T_mid_at_850hPa
-    - T_mid_at_700hPa
-    - T_mid_at_500hPa
-    - T_mid_at_300hPa
-    - RelativeHumidity_at_925hPa
-    - RelativeHumidity_at_850hPa
-    - RelativeHumidity_at_700hPa
-    - RelativeHumidity_at_500hPa
-    - RelativeHumidity_at_300hPa
-    - z_mid_at_925hPa
-    - z_mid_at_850hPa
-    - z_mid_at_700hPa
-    - z_mid_at_500hPa
-    - z_mid_at_300hPa
+    - T_mid_at_925hPa := T_mid.interp(p_mid=925,units='hPa')
+    - T_mid_at_850hPa := T_mid.interp(p_mid=850,units='hPa')
+    - T_mid_at_700hPa := T_mid.interp(p_mid=700,units='hPa')
+    - T_mid_at_500hPa := T_mid.interp(p_mid=500,units='hPa')
+    - T_mid_at_300hPa := T_mid.interp(p_mid=300,units='hPa')
+    - RelativeHumidity_at_925hPa := RelativeHumidity.interp(p_mid=925,units='hPa')
+    - RelativeHumidity_at_850hPa := RelativeHumidity.interp(p_mid=850,units='hPa')
+    - RelativeHumidity_at_700hPa := RelativeHumidity.interp(p_mid=700,units='hPa')
+    - RelativeHumidity_at_500hPa := RelativeHumidity.interp(p_mid=500,units='hPa')
+    - RelativeHumidity_at_300hPa := RelativeHumidity.interp(p_mid=300,units='hPa')
+    - z_mid_at_925hPa := z_mid.interp(p_mid=925,units='hPa')
+    - z_mid_at_850hPa := z_mid.interp(p_mid=850,units='hPa')
+    - z_mid_at_700hPa := z_mid.interp(p_mid=700,units='hPa')
+    - z_mid_at_500hPa := z_mid.interp(p_mid=500,units='hPa')
+    - z_mid_at_300hPa := z_mid.interp(p_mid=300,units='hPa')
     # 2D vars For ACI diagnostics
-    - SW_clrsky_flux_up_at_model_top
-    - SW_flux_up_at_model_top
-    - SW_flux_dn_at_model_top
+    - SW_clrsky_flux_up_at_model_top := SW_clrsky_flux_up.isel(lev=0)
+    - SW_flux_up_at_model_top := SW_flux_up.isel(lev=0)
+    - SW_flux_dn_at_model_top := SW_flux_dn.isel(lev=0)
     - LiqWaterPath
     - precip_liq_surf_mass_flux
     - precip_ice_surf_mass_flux
     - IceWaterPath
     - cldfrac_tot_for_analysis
     - cldfrac_liq
-    - omega_at_500hPa
-    - omega_at_700hPa
-    - omega_at_850hPa
-    - PotentialTemperature_at_700hPa
-    - PotentialTemperature_at_1000hPa
+    - omega_at_500hPa := omega.interp(p_mid=500,units='hPa')
+    - omega_at_700hPa := omega.interp(p_mid=700,units='hPa')
+    - omega_at_850hPa := omega.interp(p_mid=850,units='hPa')
+    - PotentialTemperature_at_700hPa := PotentialTemperature.interp(p_mid=700,units='hPa')
+    - PotentialTemperature_at_1000hPa := PotentialTemperature.interp(p_mid=1000,units='hPa')
     # 3D vars for nudging
     - U
     - V

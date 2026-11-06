@@ -24,7 +24,7 @@ namespace scream
  *     - "above surface" heights are always well defined (every column
  *       has a surface), so we extrapolate using the closest (bottom)
  *       level, and both indices are set equal to nlevs-1. This is what
- *       makes something like wind_speed_at_2m_above_surface
+ *       makes something like wind_speed.interp(z_mid=2,reference='surface')
  *       well-defined even when the lowest model level is well above 2m.
  *     - "above sealevel" heights are NOT always well defined (e.g. a
  *       target elevation below a mountain's surface), so in that case
