@@ -185,7 +185,6 @@ function(GetInputFile src_path)
   #  - get_input_dir_<dir>: one target per calling directory, part of ALL, that
   #    depends on the files registered in that directory. This way, running
   #    'make' inside a test folder fetches the data that folder needs.
-  #  - eamxx_input_data: umbrella target fetching every registered file.
   # We rely on CIME to download for us if this is a CIME case.
   if (SCREAM_CIME_BUILD)
     return()
@@ -205,7 +204,6 @@ function(GetInputFile src_path)
         -P ${SCREAM_SRC_DIR}/../cmake/DownloadInputFile.cmake
       COMMENT "Checking input file ${src_path}"
       VERBATIM)
-    add_dependencies(eamxx_input_data ${file_tgt})
   endif()
 
   file(RELATIVE_PATH rel_dir ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
