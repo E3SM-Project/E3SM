@@ -7,10 +7,10 @@ See example in `./scripts/config/create_coupling_test_files.py` that is used to 
 
 The required files for running an emulator are:
 
-1. `emulator_config.yaml`: 
-  - describes one emulator: its model, inference backend, and input and output fields. Each emulator has its own file.
-2. `coupling_plan.yaml`
-  - describes which component exports each coupled field and which components import it. A coupled configuration has one plan.
+1. `emulator_config.yaml`:
+   - describes one emulator: its model, inference backend, and input and output fields. Each emulator has its own file.
+2. `coupling_plan.yaml`:
+   - describes which component exports each coupled field and which components import it. A coupled configuration has one plan.
 
 These names are a convention. The code takes the paths as arguments, so the files can be named anything.
 
