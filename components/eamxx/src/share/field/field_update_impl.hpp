@@ -22,9 +22,7 @@ struct UpdateKernel {
   KOKKOS_INLINE_FUNCTION
   void operator() (const YView& y, const XView& x, const Idx&... i) const {
     auto& y_val = y(i...);
-    combine(cm,x(i...),y_val,alpha,beta);
-    if (cm==CombineMode::Update)
-      y_val += gamma;
+    combine(cm,x(i...),y_val,alpha,beta,gamma);
   }
 };
 

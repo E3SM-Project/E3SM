@@ -23,10 +23,7 @@ struct UpdateFillAwareKernel {
   KOKKOS_INLINE_FUNCTION
   void operator() (const YView& y, const XView& x, const Idx&... i) const {
     auto& y_val = y(i...);
-    combine_fill_aware(cm,x(i...),y_val,alpha,beta);
-    if (cm==CombineMode::Update)
-      if (gamma!=constants::fill_value<ST>)
-        y_val += gamma;
+    combine_fill_aware(cm,x(i...),y_val,alpha,beta,gamma);
   }
 };
 
