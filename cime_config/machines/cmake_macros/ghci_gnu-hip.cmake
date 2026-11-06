@@ -1,5 +1,5 @@
 # Detect the AMD GPU architecture of the runner (via rocminfo), and enable HIP in kokkos
-# NOTE: the MPI wrapper (mpicxx) must use hipcc as backend compiler (OMPI_CXX/MPICH_CXX), hence 'mphipcc'
+# NOTE: the MPI wrapper (mpicxx) must use hipcc as backend compiler (set OMPI_CXX/MPICH_CXX before configuring/building)
 find_program (ROCMINFO_EXE rocminfo REQUIRED)
 execute_process (COMMAND ${ROCMINFO_EXE} OUTPUT_VARIABLE ROCMINFO_OUT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
 if (ROCMINFO_OUT MATCHES "gfx942")

@@ -1866,7 +1866,7 @@
     <DESC>Frontier. AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs.</DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>craygnu-mphipcc,craygnu,craycray-mphipcc,craycray</COMPILERS>
+    <COMPILERS>craygnu-hip,craygnu,craycray-mphipcc,craycray</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <SAVE_TIMING_DIR>/lustre/orion/proj-shared/cli115</SAVE_TIMING_DIR>
@@ -1921,7 +1921,7 @@
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="unload">darshan-runtime</command>
       </modules>
-      <modules compiler="craygnu-mphipcc">
+      <modules compiler="craygnu-hip">
         <command name="load">craype-accel-amd-gfx90a</command>
         <command name="load">rocm/6.2.4</command>
       </modules>
@@ -2301,7 +2301,7 @@
     <DESC>RHEL9 image(s), used for GitHub CI</DESC>
     <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>gnu,intel,gnugpu,gnu-mphipcc</COMPILERS>
+    <COMPILERS>gnu,intel,gnugpu,gnu-hip</COMPILERS>
     <MPILIBS>openmpi,mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/tmp</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/e3sm/data/inputdata</DIN_LOC_ROOT>
@@ -2316,7 +2316,7 @@
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">2</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnu-mphipcc">2</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu-hip">2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -2344,7 +2344,7 @@
     <environment_variables compiler="gnugpu">
       <env name="BLA_VENDOR">OpenBLAS</env>
     </environment_variables>
-    <environment_variables compiler="gnu-mphipcc">
+    <environment_variables compiler="gnu-hip">
       <env name="BLA_VENDOR">OpenBLAS</env>
     </environment_variables>
     <environment_variables compiler="intel">
