@@ -1679,14 +1679,19 @@ contains
                                                OceanDensity
    real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
    integer, dimension(:,:), pointer :: orig3dOceanMask
+   real (kind=RKIND), dimension(:), pointer :: iceOceanInterfaceTemperature
    real(kind=RKIND), pointer :: config_invalid_value_TF
+   real(kind=RKIND), pointer :: config_min_floating_frac, config_invalid_value_ocn_intr_temp
    character(len=StrKIND), pointer :: config_smb_source
-   real(kind=RKIND) :: fractionalMaskVal
+   real(kind=RKIND) :: fractionalMaskVal, floatingFraction
 
     errorCode = 0
 
     call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
     call mpas_pool_get_config(domain % configs, 'config_smb_source', config_smb_source)
+    call mpas_pool_get_config(domain % configs, 'config_min_floating_frac', config_min_floating_frac)
+    call mpas_pool_get_config(domain % configs, 'config_invalid_value_ocn_intr_temp', &
+                              config_invalid_value_ocn_intr_temp)
 
     n = 0
     block => domain % blocklist
@@ -1705,6 +1710,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'iceOceanInterfaceTemperature', iceOceanInterfaceTemperature)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
          call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
 !         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
@@ -1724,7 +1730,25 @@ contains
                call mpas_log_write("Unknown value for 'config_smb_source'", MPAS_LOG_ERR)
                errorCode = ior(errorCode, 1)
             endif
-            floatingBasalMassBal(i) = x2g_g(index_x2g_Fogx_qiceli, n)
+            ! net ice-shelf melt from the ocean, already normalized by the floating
+            ! fraction; floatingBasalMassBal is positive for accretion
+            if (index_x2g_Foxo_ismf > 0) then
+               floatingBasalMassBal(i) = -x2g_g(index_x2g_Foxo_ismf, n)
+            else
+               floatingBasalMassBal(i) = 0.0_RKIND
+            endif
+
+            ! ice-ocean interface temperature from the ocean, weighted by the ocean
+            ! floating fraction; invalid where too little floating ice contributes
+            floatingFraction = 0.0_RKIND
+            if ((index_x2g_So_liflfrac > 0) .and. (index_x2g_So_tfrz_isf > 0)) then
+               floatingFraction = x2g_g(index_x2g_So_liflfrac, n)
+            endif
+            if (floatingFraction > config_min_floating_frac) then
+               iceOceanInterfaceTemperature(i) = x2g_g(index_x2g_So_tfrz_isf, n) / floatingFraction
+            else
+               iceOceanInterfaceTemperature(i) = config_invalid_value_ocn_intr_temp
+            endif
             if (nISMIP6OceanLayers > 0) then
                do iLev = 1, nISMIP6OceanLayers
                   fractionalMaskVal = x2g_g(index_x2g_So_tf3d_mask(iLev), n)
@@ -1742,7 +1766,6 @@ contains
             endif
 !            surfaceTemperature(i) = x2g_g(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g(index_x2g_Fogo_qiceh, n)
-!            basalOceanHeatflx(i) = x2g_g(index_x2g_Fogx_qicehi, n)
             !OceanDensity (i) = x2g_g(, n)
          end do
 
@@ -1774,7 +1797,9 @@ contains
    type (block_type), pointer :: block
 
    real (kind=RKIND), pointer :: config_sea_level
+   real (kind=RKIND), pointer :: config_ice_density
    character(len=StrKIND), pointer :: config_basal_mass_bal_float
+   character(len=StrKIND), pointer :: config_thermal_solver
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
@@ -1784,14 +1809,15 @@ contains
    integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface
-   real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
    real (kind=RKIND), dimension(:), pointer :: thickness
    real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied
    real (kind=RKIND), dimension(:), pointer :: avgCalvingFlux
    real (kind=RKIND), dimension(:), pointer :: avgFaceMeltFlux
    real (kind=RKIND), dimension(:), pointer :: avgFloatingBMBFlux
-   real (kind=RKIND), dimension(:,:), pointer :: temperature
+   real (kind=RKIND), dimension(:), pointer :: bedTopography
+   real (kind=RKIND), dimension(:), pointer :: basalConductiveFlux
    integer, dimension(:), pointer :: cellMask
+   real (kind=RKIND) :: belowSeaLevelMask
    !-------------------------------------------------------------------
 
     errorCode = 0
@@ -1801,6 +1827,8 @@ contains
 
     call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
     call mpas_pool_get_config(domain % configs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+    call mpas_pool_get_config(domain % configs, 'config_ice_density', config_ice_density)
+    call mpas_pool_get_config(domain % configs, 'config_thermal_solver', config_thermal_solver)
 
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1813,9 +1841,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-         call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
-         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
          call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
          call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
@@ -1823,6 +1849,8 @@ contains
          call mpas_pool_get_array(timeAveragingPool, 'avgFloatingBMBFlux', avgFloatingBMBFlux)
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(thermalPool, 'basalConductiveFlux', basalConductiveFlux)
 
          do i = 1, nCellsSolve
             n = n + 1
@@ -1842,10 +1870,6 @@ contains
             endif
 
             g2x_g(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
-            g2x_g(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
-            ! layerThickness is not populated on init, so calculating like this instead:
-            g2x_g(index_g2x_Sg_dztbot, n) = layerThicknessFractions(nVertLevels) * thickness(i) / 2.0
-            g2x_g(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
 
             !!!Mask configurations
             g2x_g(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
@@ -1864,9 +1888,29 @@ contains
             ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
             g2x_g(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g(index_g2x_Sg_icemask, n)
 
-            ! Add masks used for ice shelf basal melt calculation
-            g2x_g(index_g2x_Sg_icemask_floating, n) = li_mask_is_floating_ice_int(cellMask(i))
-            g2x_g(index_g2x_Sg_icemask_grounded, n) = li_mask_is_grounded_ice_int(cellMask(i))
+            ! Fields for ice-shelf coupling with the ocean.  They are masked by
+            ! where the bed is below sea level (where ocean can be present) so the
+            ! ocean can renormalize them by the remapped mask.
+            if (bedTopography(i) <= config_sea_level) then
+               belowSeaLevelMask = 1.0_RKIND
+            else
+               belowSeaLevelMask = 0.0_RKIND
+            endif
+            g2x_g(index_g2x_Sg_below_sea_level_mask, n) = belowSeaLevelMask
+            g2x_g(index_g2x_Sg_lithop, n) = belowSeaLevelMask * thickness(i) * config_ice_density * SHR_CONST_G
+            g2x_g(index_g2x_Sg_icemask_floating, n) = belowSeaLevelMask * li_mask_is_floating_ice_int(cellMask(i))
+            g2x_g(index_g2x_Sg_icemask_grounded, n) = belowSeaLevelMask * li_mask_is_grounded_ice_int(cellMask(i))
+
+            ! conductive heat flux at the base of floating ice (positive down, into
+            ! the ocean); zero if the thermal solver is not computing it and for ice
+            ! too thin to be dynamically active, where the temperature gradient over
+            ! the bottom half-layer is too poorly resolved to be meaningful
+            if ((trim(config_thermal_solver) /= 'none') .and. li_mask_is_floating_ice(cellMask(i)) &
+                .and. li_mask_is_dynamic_ice(cellMask(i))) then
+               g2x_g(index_g2x_Fogg_hcond, n) = basalConductiveFlux(i)
+            else
+               g2x_g(index_g2x_Fogg_hcond, n) = 0.0_RKIND
+            endif
 
          end do
 
