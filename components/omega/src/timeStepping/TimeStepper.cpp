@@ -1074,8 +1074,6 @@ void TimeStepper::applyImplicitVerticalMixing(
     int VelTimeLevel, const std::string &TimerPrefix) const {
 
    Array3DReal CurTracerArray = Tracers::getAll(TracerTimeLevel);
-   AuxState->computeAll(State, CurTracerArray, ThickTimeLevel, VelTimeLevel,
-                        TimeStep);
 
    VertMix *VMix = VertMix::getInstance();
    if (!VMix)
