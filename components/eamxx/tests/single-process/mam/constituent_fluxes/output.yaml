@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: mam4_constituent_fluxes_standalone_output
+stream_name: mam4_constituent_fluxes_standalone_output
 averaging_type: instant
 fields:
   physics:

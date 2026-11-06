@@ -52,8 +52,8 @@ TEST_CASE("nudging_tests") {
 
   // Files names
   auto postfix = ".INSTANT.nsteps_x1.np*." + get_t0().to_string() + ".nc";
-  auto nudging_data        = "nudging_data" + postfix;
-  auto nudging_data_filled = "nudging_data_filled" + postfix;
+  auto nudging_data        = "eamxx.h.nudging_data" + postfix;
+  auto nudging_data_filled = "eamxx.h.nudging_data_filled" + postfix;
   auto map_file = "map_ncol" + std::to_string(ngcols_data)
                 + "_to_"     + std::to_string(ngcols_fine) + ".nc";
 

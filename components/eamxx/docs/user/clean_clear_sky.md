@@ -20,7 +20,7 @@ Below is an example output file to output the extra (clean and clean-clear-sky) 
 ```yaml
 %YAML 1.1
 ---
-filename_prefix: monthly.outputs
+stream_name: monthly.outputs
 averaging_type: average
 max_snapshots_per_file: 1
 fields:

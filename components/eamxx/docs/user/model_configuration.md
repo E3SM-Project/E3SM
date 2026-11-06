@@ -451,7 +451,7 @@ The following is a basic example of an output request.
 ```yaml
 %YAML 1.1
 ---
-filename_prefix: my_output
+stream_name: my_output
 averaging_type: average
 max_snapshots_per_file: 10
 fields:
@@ -484,7 +484,7 @@ Valid options are:
       `output_control` section).
       In the case above, each snapshot saved to file corresponds to an average
       of the output fields over 6h windows.
-- `filename_prefix`: the prefix of the output file, which will be created
+- `stream_name`: the unique string assigned to the output file, which will be created
 in the run directory.
       - The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
       where `$timestamp` corresponds to the first snapshot saved in the file for
@@ -693,9 +693,9 @@ of the parameter value).
                   scratch. If ALL streams should be started anew, you should
                   set RUN_TYPE=branch in the case XML settings instead.
             scratch, as if this was an initial run.
-          - `filename_prefix` (`restart` sub-list, `string`):
+          - `stream_name` (`restart` sub-list, `string`):
               - By default, this parameter is set to match the value of
-              `filename_prefix` from the top-level list.
+              `stream_name` from the top-level list.
               - This can be set to a different value in case we want to restart
               a previous simulation that was using a different filename prefix.
           - `force_new_file` (`restart` sub-list, `boolean`):
