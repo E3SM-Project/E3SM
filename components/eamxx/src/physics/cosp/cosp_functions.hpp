@@ -1,6 +1,7 @@
 #ifndef SCREAM_COSP_FUNCTIONS_HPP
 #define SCREAM_COSP_FUNCTIONS_HPP
 #include "share/core/eamxx_types.hpp"
+#include "share/util/eamxx_timing.hpp"
 using scream::Real;
 extern "C" void cosp_c2f_init(int ncol, int nsubcol, int nlay);
 extern "C" void cosp_c2f_final();
@@ -56,6 +57,7 @@ namespace scream {
             lview_host_3d misr_cthtau_h("misr_cthtau_h", ncol, ntau, ncth);
 
             // Copy to layoutLeft host views
+            start_timer("EAMxx::cosp::main::transpose_in");
             for (int i = 0; i < ncol; i++) {
                 for (int j = 0; j < nlay; j++) {
                     T_mid_h(i,j) = T_mid(i,j);
@@ -77,16 +79,19 @@ namespace scream {
                 }
             }
 
-            // Subsample here?
+            stop_timer("EAMxx::cosp::main::transpose_in");
 
             // Call COSP wrapper
+            start_timer("EAMxx::cosp::main::fortran");
             cosp_c2f_run(ncol, nsubcol, nlay, ntau, nctp, ncth,
                     emsfc_lw, sunlit.data(), skt.data(), T_mid_h.data(), p_mid_h.data(), p_int_h.data(),
                     z_mid_h.data(), qv_h.data(), qc_h.data(), qi_h.data(),
                     cldfrac_h.data(), reff_qc_h.data(), reff_qi_h.data(), dtau067_h.data(), dtau105_h.data(),
                     isccp_cldtot.data(), isccp_ctptau_h.data(), modis_ctptau_h.data(), misr_cthtau_h.data());
+            stop_timer("EAMxx::cosp::main::fortran");
 
             // Copy outputs back to layoutRight views
+            start_timer("EAMxx::cosp::main::transpose_out");
             for (int i = 0; i < ncol; i++) {
                 for (int j = 0; j < ntau; j++) {
                     for (int k = 0; k < nctp; k++) {
@@ -98,6 +103,7 @@ namespace scream {
                     }
                 }
             }
+            stop_timer("EAMxx::cosp::main::transpose_out");
         }
     }
 }
