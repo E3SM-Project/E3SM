@@ -17,7 +17,6 @@
 namespace scream
 {
 
-static int stream_counter = 0;  // Counter for default stream names when not specified
 
 OutputManager::~OutputManager() { finalize(); }
 
@@ -179,9 +178,9 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     // Skip case name if it's "UNSET" (unit tests)
     std::string hist_restart_prefix;
     if (m_casename != "UNSET") {
-      hist_restart_prefix = m_casename + "." + eamxx_model_name();
+      hist_restart_prefix = m_casename + "." + eamxx_model_name() + "." + hist_restart_stream_name;
     } else {
-      hist_restart_prefix = eamxx_model_name();
+      hist_restart_prefix = eamxx_model_name() + "." + hist_restart_stream_name;
     }
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
@@ -713,7 +712,12 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       fields_pl.sublist(gname).set("field_names",fnames);
       fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
     }
-    m_stream_name = m_params.get<std::string>("stream_name","stream_" + std::to_string(stream_counter++));
+    EKAT_REQUIRE_MSG(m_params.isParameter("stream_name"),
+        "Error! 'stream_name' is required in output configuration.\n"
+        "  For CIME cases, this is auto-generated during buildnml if not provided.\n"
+        "  For standalone tests, you must explicitly set it in the ParameterList.\n"
+        "  Example: params.set<std::string>(\"stream_name\", \"my_stream\");\n");
+    m_stream_name = m_params.get<std::string>("stream_name");
 
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("floating_point_precision","real");
@@ -742,6 +746,11 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
+    EKAT_REQUIRE_MSG(m_params.isParameter("stream_name"),
+        "Error! 'stream_name' is required in output configuration.\n"
+        "  For CIME cases, this is auto-generated during buildnml if not provided.\n"
+        "  For standalone tests, you must explicitly set it in the ParameterList.\n"
+        "  Example: params.set<std::string>(\"stream_name\", \"my_stream\");\n");
     m_stream_name = m_params.get<std::string>("stream_name");
     m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
 
