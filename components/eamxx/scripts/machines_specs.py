@@ -380,7 +380,7 @@ class GHCIHip(Machine):
         super().setup_base(name="ghci-hip")
         cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-hip"
         cls.gpu_arch = "hip"
-        cls.num_run_res = int(run_cmd_no_fail("rocminfo | grep -c 'Device Type: *GPU'"))
+        cls.num_run_res = int(run_cmd_no_fail("rocminfo 2>/dev/null | grep 'Device Type: *GPU' | wc -l"))
 
 ###############################################################################
 class LLNLIntel(Machine):
