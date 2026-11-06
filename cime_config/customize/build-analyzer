@@ -3,7 +3,7 @@
 """
 A script to parse an e3sm build log and report per-target build times and memory usage.
 
-This scans the provided log file for lines emitted by e3sm_compile_wrap.py
+This scans the provided log file for lines emitted by e3sm_compile_wrap
 of the form:
 
     Target XXX built in Y.Z seconds, peak memory: M.N MB
