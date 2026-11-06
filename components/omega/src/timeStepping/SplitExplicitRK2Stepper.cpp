@@ -623,19 +623,7 @@ void SplitExplicitRK2Stepper::doStep(OceanState *State,
    Tracers::updateTimeLevels();
    Pacer::stop("SE-RK2:haloExch", 3);
 
-   // Apply implicit vertical mixing
-   CurTracerArray = Tracers::getAll(CurLevel);
-   if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
-      VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
-                            CurLevel);
-
-      // Re-exchange halos after vertical mixing
-      Pacer::timingBarrier("SE-RK2:vMixHaloExchBarrier", 3, Comm);
-      Pacer::start("SE-RK2:vMixHaloExch", 3);
-      State->exchangeHalo(CurLevel);
-      Tracers::exchangeHalo(CurLevel);
-      Pacer::stop("SE-RK2:vMixHaloExch", 3);
-   }
+   applyImplicitVerticalMixing(State, CurLevel, CurLevel, CurLevel, "SE-RK2");
 
    // Advance the clock and update the simulation time
    StepClock->advance();
