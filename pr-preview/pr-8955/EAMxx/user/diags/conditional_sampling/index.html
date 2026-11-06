@@ -5135,44 +5135,37 @@ via <em>other</em> reductions, such as horizontal and vertical reductions
 <li>Fill values (default: large number) are used
   where the condition is <strong>false</strong></li>
 </ul>
-<p>The general syntax is: <code>&lt;input&gt;_where_&lt;condition&gt;_&lt;operator&gt;_&lt;value&gt;</code></p>
+<p>The general syntax is the <a href="../expressions/">expression</a> <code>X.where(&lt;lhs&gt; &lt;op&gt; &lt;rhs&gt;)</code>.</p>
 <h2 id="supported-operators">Supported operators</h2>
 <table>
 <thead>
 <tr>
 <th>Operator</th>
-<th>Aliases</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>eq</code></td>
 <td><code>==</code></td>
 <td>Equal to</td>
 </tr>
 <tr>
-<td><code>ne</code></td>
 <td><code>!=</code></td>
 <td>Not equal to</td>
 </tr>
 <tr>
-<td><code>gt</code></td>
 <td><code>&gt;</code></td>
 <td>Greater than</td>
 </tr>
 <tr>
-<td><code>ge</code></td>
 <td><code>&gt;=</code></td>
 <td>Greater than or equal to</td>
 </tr>
 <tr>
-<td><code>lt</code></td>
 <td><code>&lt;</code></td>
 <td>Less than</td>
 </tr>
 <tr>
-<td><code>le</code></td>
 <td><code>&lt;=</code></td>
 <td>Less than or equal to</td>
 </tr>
@@ -5182,47 +5175,42 @@ via <em>other</em> reductions, such as horizontal and vertical reductions
 <p>Compare the input field against another field at each grid point.</p>
 <p><strong>Examples</strong>:</p>
 <ul>
-<li><code>T_mid_where_qv_gt_0.01</code></li>
-<li><code>p_mid_where_T_mid_le_273.15</code></li>
-<li><code>qv_where_p_mid_lt_50000</code></li>
+<li><code>T_mid.where(qv&gt;0.01)</code></li>
+<li><code>p_mid.where(T_mid&lt;=273.15)</code></li>
+<li><code>qv.where(p_mid&lt;50000)</code></li>
 </ul>
 <h2 id="level-based-conditional-sampling">Level-based conditional sampling</h2>
 <p>Compare against the vertical level index (0-based indexing).
-Use the special condition field name <code>lev</code>.</p>
+Use the special condition operand <code>lev</code>.</p>
 <p><strong>Examples</strong>:</p>
 <ul>
-<li><code>T_mid_where_lev_gt_5</code></li>
-<li><code>p_mid_where_lev_eq_0</code></li>
-<li><code>qv_where_lev_le_10</code></li>
-<li><code>T_mid_where_qv_at_lev_125_lt_qv_at_lev_128</code></li>
+<li><code>T_mid.where(lev&gt;5)</code></li>
+<li><code>p_mid.where(lev==0)</code></li>
+<li><code>qv.where(lev&lt;=10)</code></li>
 </ul>
 <h2 id="mask-only-calculation">Mask-only calculation</h2>
 <p>Compute a mask stating where the condition is met.
-Put <code>mask</code> where the sampled field name goes. It is a placeholder, not a field:
-nothing named <code>mask</code> exists in the field manager, and it is recognized only in
-that one position, so it cannot be requested or operated on by itself. The
-output will be <code>1</code> where the condition is satisfied and <code>0</code> elsewhere.
-This is particularly useful when combined with horizontal or vertical
-reductions to count occurrences of specific conditions.</p>
+Put <code>mask</code> where the sampled field goes. It is a placeholder, not a field:
+nothing named <code>mask</code> exists in the field manager, and it is recognized only as
+the receiver of <code>.where(..)</code>, so it cannot be requested or operated on by
+itself. The output will be <code>1</code> where the condition is satisfied and <code>0</code>
+elsewhere. This is particularly useful when combined with horizontal or
+vertical reductions to count occurrences of specific conditions.</p>
 <p><strong>Examples</strong>:</p>
 <ul>
-<li><code>mask_where_qv_gt_0.01</code></li>
-<li><code>mask_where_T_mid_le_273.15</code></li>
-<li><code>mask_where_p_mid_lt_50000</code></li>
-<li><code>mask_where_lev_gt_5</code></li>
+<li><code>mask.where(qv&gt;0.01)</code></li>
+<li><code>mask.where(T_mid&lt;=273.15)</code></li>
+<li><code>mask.where(p_mid&lt;50000)</code></li>
+<li><code>mask.where(lev&gt;5)</code></li>
 </ul>
-<p>To count the percentage of earth where the surface pressure is &gt; 1e5Pa:</p>
-<ul>
-<li><code>mask_where_ps_gt_100000_horiz_avg</code></li>
-</ul>
-<p><strong>A mask cannot currently be written to file.</strong> The mask diagnostic's output has
-<code>int</code> data type, and IO cannot write it: listing a <code>mask_where_..</code> name in
-<code>field_names</code> aborts the run with a narrowing-conversion error. Reducing it does
-not help: <code>mask_where_ps_gt_100000_horiz_avg</code> is still an <code>int</code>. The workaround
-is to promote it to <code>Real</code> by multiplying by 1, which is easiest to write as an
-<a href="../expressions/">expression</a>:</p>
+<p><strong>A mask cannot currently be written to file as is.</strong> The mask diagnostic's
+output has <code>int</code> data type, and IO writes only real-valued fields: listing
+<code>mask.where(..)</code> in <code>field_names</code> is rejected when the stream is set up, and
+reducing it does not help. The workaround is to promote it to <code>Real</code> by
+multiplying by 1.
+E.g., the fraction of the earth where the surface pressure is &gt; 1e5Pa:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet_frac := mask.where(ps&gt;100000)*1.0</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet_frac := (mask.where(ps&gt;100000)*1.0).mean('col')</span>
 </code></pre></div>
 <h2 id="caveats">Caveats</h2>
 <ul>
@@ -5234,11 +5222,11 @@ is to promote it to <code>Real</code> by multiplying by 1, which is easiest to w
 <li>The condition and input fields must have the same layout
   (except for level-based sampling). In level-based sampling,
   the level index must be present in the field.</li>
-<li>The condition is provided as a triplet of information string
-  (<code>&lt;condition_lhs&gt;_&lt;operator&gt;_&lt;condition_rhs&gt;</code>). We assume the user knows
-  the standard unit of the lhs/rhs that are used internally
-  in EAMxx field manager (there is no way to specify it).</li>
-<li>The RHS in the condition can be a scalar value or another field/diag name</li>
+<li>We assume the user knows the standard unit of the lhs/rhs that are used
+  internally in EAMxx field manager (there is no way to specify it).</li>
+<li>The RHS in the condition can be a scalar value or another field/diag</li>
+<li><code>where</code> takes a single comparison. <code>and</code>/<code>or</code> are not supported; chain
+  <code>where(..)</code> calls instead.</li>
 </ul>
 <h2 id="example-configuration">Example configuration</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
@@ -5249,17 +5237,17 @@ is to promote it to <code>Real</code> by multiplying by 1, which is easiest to w
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># Field-based conditional sampling</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_where_qv_gt_0.01</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_mid_where_T_mid_le_273.15</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_where_p_mid_lt_50000</span>
-<span class="w">      </span><span class="c1"># Level-based conditional sampling  </span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_where_lev_gt_5</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_mid_where_lev_eq_0</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_where_lev_le_10</span>
-<span class="w">      </span><span class="c1"># Mask-based conditional sampling</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mask_where_qv_gt_0.01</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mask_where_T_mid_le_273.15</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mask_where_lev_gt_5</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_wet   := T_mid.where(qv&gt;0.01)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_cold  := p_mid.where(T_mid&lt;=273.15)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_high := qv.where(p_mid&lt;50000)</span>
+<span class="w">      </span><span class="c1"># Level-based conditional sampling</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_low   := T_mid.where(lev&gt;5)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_top   := p_mid.where(lev==0)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_top  := qv.where(lev&lt;=10)</span>
+<span class="w">      </span><span class="c1"># Mask-based conditional sampling (promoted to Real, see above)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet     := mask.where(qv&gt;0.01)*1.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cold    := mask.where(T_mid&lt;=273.15)*1.0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">low     := mask.where(lev&gt;5)*1.0</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nhours</span>
