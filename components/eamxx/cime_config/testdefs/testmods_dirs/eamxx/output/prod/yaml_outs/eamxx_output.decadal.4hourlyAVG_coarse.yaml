@@ -32,15 +32,15 @@ fields:
     - surf_radiative_T
     - T_2m
     # Lowest Level
-    - U_at_model_bot
-    - V_at_model_bot
-    - SW_flux_dn_at_model_bot
-    - SW_flux_up_at_model_bot
-    - LW_flux_dn_at_model_bot
-    - LW_flux_up_at_model_bot
-    - SW_flux_up_at_model_top
-    - SW_flux_dn_at_model_top
-    - LW_flux_up_at_model_top
+    - U_at_model_bot := U.isel(lev=-1)
+    - V_at_model_bot := V.isel(lev=-1)
+    - SW_flux_dn_at_model_bot := SW_flux_dn.isel(lev=-1)
+    - SW_flux_up_at_model_bot := SW_flux_up.isel(lev=-1)
+    - LW_flux_dn_at_model_bot := LW_flux_dn.isel(lev=-1)
+    - LW_flux_up_at_model_bot := LW_flux_up.isel(lev=-1)
+    - SW_flux_up_at_model_top := SW_flux_up.isel(lev=0)
+    - SW_flux_dn_at_model_top := SW_flux_dn.isel(lev=0)
+    - LW_flux_up_at_model_top := LW_flux_up.isel(lev=0)
 output_control:
   frequency: 4
   frequency_units: nhours

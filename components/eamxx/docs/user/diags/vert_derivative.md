@@ -4,8 +4,8 @@ We can automatically calculate the vertical derivative of a given field
 with respect to a vertical coordinate (pressure or height).
 In other words, the vertical derivative is the derivative of the field
 along a vertical coordinate.
-To automatically get the derivative of a field X, we can request
-`X_pvert_derivative` or `X_zvert_derivative`
+To automatically get the derivative of a field X, we can request the
+[expression](expressions.md) `X.derivative('p_mid')` or `X.derivative('z_mid')`
 in the output yaml files.
 
 *WARNING: support for the dz-based derivative is experimental!*
@@ -67,8 +67,8 @@ fields:
   physics_pg2:
     field_names:
       # in this example, we use T_mid in units of K
-      - T_mid_pvert_derivative  # K / Pa
-      - T_mid_zvert_derivative  # K / m
+      - dTdp := T_mid.derivative('p_mid')  # K / Pa
+      - dTdz := T_mid.derivative('z_mid')  # K / m
 output_control:
   frequency: 1
   frequency_units: nmonths

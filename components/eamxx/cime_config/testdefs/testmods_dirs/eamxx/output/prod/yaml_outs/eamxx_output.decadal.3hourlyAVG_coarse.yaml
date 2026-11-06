@@ -38,27 +38,27 @@ fields:
     - sfc_flux_sw_net
     - sfc_flux_lw_dn
     # Lowest Level
-    - U_at_model_bot
-    - V_at_model_bot
-    - T_mid_at_model_bot
-    - qv_at_model_bot
-    - qc_at_model_bot
-    - qi_at_model_bot
-    - qr_at_model_bot
-    - qm_at_model_bot
-    - bm_at_model_bot
-    - SW_flux_up_at_model_top
-    - SW_flux_dn_at_model_top
-    - LW_flux_up_at_model_top
-    - SW_clrsky_flux_up_at_model_top
-    - LW_clrsky_flux_up_at_model_top
-    - SW_flux_dn_at_model_bot
-    - SW_clrsky_flux_dn_at_model_bot
-    - SW_flux_up_at_model_bot
-    - SW_clrsky_flux_up_at_model_bot
-    - LW_flux_dn_at_model_bot
-    - LW_clrsky_flux_dn_at_model_bot
-    - LW_flux_up_at_model_bot
+    - U_at_model_bot := U.isel(lev=-1)
+    - V_at_model_bot := V.isel(lev=-1)
+    - T_mid_at_model_bot := T_mid.isel(lev=-1)
+    - qv_at_model_bot := qv.isel(lev=-1)
+    - qc_at_model_bot := qc.isel(lev=-1)
+    - qi_at_model_bot := qi.isel(lev=-1)
+    - qr_at_model_bot := qr.isel(lev=-1)
+    - qm_at_model_bot := qm.isel(lev=-1)
+    - bm_at_model_bot := bm.isel(lev=-1)
+    - SW_flux_up_at_model_top := SW_flux_up.isel(lev=0)
+    - SW_flux_dn_at_model_top := SW_flux_dn.isel(lev=0)
+    - LW_flux_up_at_model_top := LW_flux_up.isel(lev=0)
+    - SW_clrsky_flux_up_at_model_top := SW_clrsky_flux_up.isel(lev=0)
+    - LW_clrsky_flux_up_at_model_top := LW_clrsky_flux_up.isel(lev=0)
+    - SW_flux_dn_at_model_bot := SW_flux_dn.isel(lev=-1)
+    - SW_clrsky_flux_dn_at_model_bot := SW_clrsky_flux_dn.isel(lev=-1)
+    - SW_flux_up_at_model_bot := SW_flux_up.isel(lev=-1)
+    - SW_clrsky_flux_up_at_model_bot := SW_clrsky_flux_up.isel(lev=-1)
+    - LW_flux_dn_at_model_bot := LW_flux_dn.isel(lev=-1)
+    - LW_clrsky_flux_dn_at_model_bot := LW_clrsky_flux_dn.isel(lev=-1)
+    - LW_flux_up_at_model_bot := LW_flux_up.isel(lev=-1)
     - LongwaveCloudForcing
     - ShortwaveCloudForcing
 output_control:

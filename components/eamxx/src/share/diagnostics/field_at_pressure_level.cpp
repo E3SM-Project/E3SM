@@ -43,8 +43,8 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params,
   // for the level indices bracketing this pressure level is only done once,
   // even if multiple fields are requested at this same pressure level.
   // We don't know yet which one (mid/int) we need.
-  m_index_name_mid = "lev_at_" + p_value + units + "_mid";
-  m_index_name_int = "lev_at_" + p_value + units + "_int";
+  m_index_name_mid = "p_mid.searchsorted(" + p_value + ",units='" + units + "')";
+  m_index_name_int = "p_int.searchsorted(" + p_value + ",units='" + units + "')";
   m_field_in_names.push_back(m_index_name_mid);
   m_field_in_names.push_back(m_index_name_int);
 }
@@ -62,8 +62,8 @@ initialize_impl ()
       "Error! Field rank not supported by FieldAtPressureLevel.\n"
       " - field name: " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n"
-      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
-      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
+      "NOTE: if you requested something like 'X.mean('col').interp(..)',\n"
+      "      you can avoid this error by requesting 'X.interp(..).mean('col')' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
