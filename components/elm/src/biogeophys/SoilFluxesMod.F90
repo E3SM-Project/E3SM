@@ -4,6 +4,7 @@ module SoilFluxesMod
   ! Updates surface fluxes based on the new ground temperature.
   !
   ! !USES:
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod	, only : r8 => shr_kind_r8
   use shr_log_mod	, only : errMsg => shr_log_errMsg
   use decompMod		, only : bounds_type
@@ -85,6 +86,8 @@ contains
 
     !-----------------------------------------------------------------------
 
+    ! spel acc-locals: device storage of the local work arrays
+    !$acc enter data create(egsmax, egirat, tinc, sumwt, topsoil_evap_tot, eflx_lwrad_del, t_grnd0)
     associate(                                                                &
          eflx_h2osfc_to_snow_col => col_ef%eflx_h2osfc_to_snow , & ! Input:  [real(r8) (:)   ]  col snow melt to h2osfc heat flux (W/m**2)
          forc_lwrad              => top_af%lwrad                            , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)
@@ -166,12 +169,13 @@ contains
 
       deg2rad = SHR_CONST_PI/180._r8
 
-         dtime = dtime_mod
+      dtime = dtime_mod
       call t_startf('bgp2_loop_1')
+      !$acc parallel loop gang vector default(present) private(c, j) if(elm_device_ready)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          j = col_pp%snl(c)+1
-
+         
          ! Calculate difference in soil temperature from last time step, for
          ! flux corrections
 
@@ -204,6 +208,7 @@ contains
       ! greater than availability, or 1.0 otherwise.
       ! Correct fluxes to present soil temperature
 
+      !$acc parallel loop gang vector default(present) private(p, c, l) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
@@ -226,14 +231,17 @@ contains
       ! Set the column-average qflx_evap_soi as the weighted average over all patches
       ! but only count the patches that are evaporating
 
+      !$acc parallel loop gang vector default(present) private(c) if(elm_device_ready)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          topsoil_evap_tot(c) = 0._r8
          sumwt(c) = 0._r8
       end do
 
-      do pi = 1,max_patch_per_col
-         do fc = 1,num_nolakec
+      !$acc parallel loop gang vector default(present) private(fc, c, p) if(elm_device_ready)
+      do fc = 1,num_nolakec
+         !$acc loop seq
+         do pi = 1,max_patch_per_col
             c = filter_nolakec(fc)
             if ( pi <= col_pp%npfts(c) ) then
                p = col_pp%pfti(c) + pi - 1
@@ -248,6 +256,7 @@ contains
       call t_startf('bgp2_loop_2')
       ! Calculate ratio for rescaling pft-level fluxes to meet availability
 
+      !$acc parallel loop gang vector default(present) private(c) if(elm_device_ready)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          if (topsoil_evap_tot(c) > egsmax(c)) then
@@ -257,6 +266,8 @@ contains
          end if
       end do
 
+      !$acc parallel loop gang vector default(present) &
+      !$acc   private(p, c, l, t, g, j, save_qflx_evap_soi, lw_grnd, slope_rad) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
@@ -296,6 +307,11 @@ contains
                     - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
                     - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
             endif
+
+            eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
+                 + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                 - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
+                 - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
             if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
@@ -376,6 +392,7 @@ contains
       call t_startf('bgp2_loop_3')
       ! Soil Energy balance check
 
+      !$acc parallel loop gang vector default(present) private(p, c) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
@@ -389,8 +406,10 @@ contains
             errsoi_patch(p) = errsoi_patch(p) + eflx_building_heat(c)
          end if
       end do
-      do j = -nlevsno+1,nlevgrnd
-         do fp = 1,num_nolakep
+      !$acc parallel loop gang vector default(present) private(fp, p, c, temp) if(elm_device_ready)
+      do fp = 1,num_nolakep
+         !$acc loop seq
+         do j = -nlevsno+1,nlevgrnd
             p = filter_nolakep(fp)
             c = veg_pp%column(p)
 
@@ -420,6 +439,7 @@ contains
       ! are calculated in UrbanRadiation. The increase of ground longwave is added directly
       ! to the outgoing longwave and the net longwave.
 
+      !$acc parallel loop gang vector default(present) private(p, c, l, t, g, j, lw_grnd, slope_rad) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
@@ -469,6 +489,7 @@ contains
 
     end associate
 
+    !$acc exit data delete(egsmax, egirat, tinc, sumwt, topsoil_evap_tot, eflx_lwrad_del, t_grnd0)
   end subroutine SoilFluxes
 
 end module SoilFluxesMod

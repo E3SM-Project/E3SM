@@ -50,7 +50,11 @@ module elm_driver
   use LakeHydrologyMod       , only : LakeHydrology
   !
   use AerosolMod             , only : AerosolMasses
+#ifdef MODAL_AER
   use SnowSnicarMod          , only : SnowAge_grain
+#else
+  use SnowSnicarNonModalMod  , only : SnowAge_grain => SnowAge_grain_nonmodal
+#endif
   use SurfaceAlbedoMod       , only : SurfaceAlbedo
   use UrbanAlbedoMod         , only : UrbanAlbedo
   !
@@ -83,7 +87,7 @@ module elm_driver
   use VOCEmissionMod         , only : VOCEmission
 
   !
-  use filterMod              , only : setFilters
+  use filterMod              , only : setFilters, setExposedvegpFilters
   !
   use atm2lndMod             , only : downscale_forcings, topographic_effects_on_radiation
   use lnd2atmMod             , only : lnd2atm
@@ -334,7 +338,7 @@ contains
 
        call t_startf("decomp_vert")
        call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, &
-            temperature_vars, canopystate_vars)
+            canopystate_vars)
 
        !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
        !  (it is called very early in each timestep, before weights are adjusted and
@@ -734,26 +738,18 @@ contains
           call alm_fates%wrap_sunfrac(bounds_clump, top_af, canopystate_vars)
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
-                                       atm2lnd_vars, surfalb_vars, canopystate_vars,    &
+                                       surfalb_vars, canopystate_vars,                  &
                                        solarabs_vars)
        end if
 
-       call SurfaceRadiation(bounds_clump,                                 &
-            filter(nc)%num_nourbanp, filter(nc)%nourbanp,                  &
-            filter(nc)%num_urbanp, filter(nc)%urbanp    ,                  &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,                      &
-            atm2lnd_vars, canopystate_vars, surfalb_vars, &
-            solarabs_vars, surfrad_vars)
+       call SurfaceRadiation(bounds_clump, filter(nc)%num_nourbanp, filter(nc)%nourbanp, &
+            filter(nc)%num_urbanp, filter(nc)%urbanp, filter(nc)%num_urbanc, filter(nc)%urbanc, &
+            canopystate_vars, surfalb_vars, solarabs_vars, surfrad_vars)
 
        ! Surface Radiation for only urban columns
 
-       call UrbanRadiation(bounds_clump,                                       &
-            filter(nc)%num_nourbanl, filter(nc)%nourbanl,                      &
-            filter(nc)%num_urbanl, filter(nc)%urbanl,                          &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,                          &
-            filter(nc)%num_urbanp, filter(nc)%urbanp,                          &
-            atm2lnd_vars, urbanparams_vars, &
-            solarabs_vars, surfalb_vars, energyflux_vars)
+       call UrbanRadiation(filter(nc)%num_nourbanl, filter(nc)%nourbanl, &
+            filter(nc)%num_urbanl, filter(nc)%urbanl, urbanparams_vars, solarabs_vars, surfalb_vars)
 
        call t_stopf('surfrad')
 
@@ -780,10 +776,11 @@ contains
 
        ! Bareground fluxes for all patches except lakes and urban landunits
 
-       call BareGroundFluxes(bounds_clump,                                 &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,          &
-            atm2lnd_vars, canopystate_vars, soilstate_vars,                &
-            frictionvel_vars, ch4_vars  )
+       call setExposedvegpFilters(bounds_clump, filter, &
+            canopystate_vars%frac_veg_nosno_patch(bounds_clump%begp:bounds_clump%endp))
+
+       call BareGroundFluxes(bounds_clump, filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep, &
+            canopystate_vars, soilstate_vars, frictionvel_vars, ch4_vars )
        call t_stopf('bgflux')
 
        ! non-bareground fluxes for all patches except lakes and urban landunits
@@ -791,23 +788,20 @@ contains
        ! and leaf water change by evapotranspiration
 
        call t_startf('canflux')
-       call CanopyFluxes(bounds_clump,                                                   &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
-            atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
-            frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
+       call CanopyFluxes(bounds_clump, &
+            filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep, &
+            filter(nc)%num_nolakeurban_vegp,  filter(nc)%nolakeurban_vegp, &
+            canopystate_vars, cnstate_vars, energyflux_vars, &
+            frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars, &
             ch4_vars, photosyns_vars )
        call t_stopf('canflux')
 
        ! Fluxes for all urban landunits
 
        call t_startf('uflux')
-       call UrbanFluxes(bounds_clump,                        &
-            filter(nc)%num_nourbanl, filter(nc)%nourbanl,    &
-            filter(nc)%num_urbanl, filter(nc)%urbanl,        &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,        &
-            filter(nc)%num_urbanp, filter(nc)%urbanp,        &
-            atm2lnd_vars, urbanparams_vars, soilstate_vars,  &
-            frictionvel_vars, energyflux_vars)
+       call UrbanFluxes(bounds_clump, filter(nc)%num_urbanl, filter(nc)%urbanl, &
+            filter(nc)%num_urbanc, filter(nc)%urbanc, filter(nc)%num_urbanp, filter(nc)%urbanp, &
+            urbanparams_vars, soilstate_vars, frictionvel_vars)
        call t_stopf('uflux')
 
        ! Fluxes for all lake landunits
@@ -854,7 +848,7 @@ contains
             filter(nc)%num_lakec, filter(nc)%lakec,   &
             filter(nc)%num_lakep, filter(nc)%lakep,   &
             solarabs_vars, soilstate_vars,  ch4_vars, &
-            energyflux_vars, lakestate_vars)
+            lakestate_vars)
        call t_stopf('bgplake')
 
        ! Set soil/snow temperatures including ground temperature
@@ -863,8 +857,8 @@ contains
        call SoilTemperature(bounds_clump,                     &
             filter(nc)%num_urbanl  , filter(nc)%urbanl,       &
             filter(nc)%num_nolakec , filter(nc)%nolakec,      &
-            atm2lnd_vars, urbanparams_vars, canopystate_vars, &
-            solarabs_vars, soilstate_vars, energyflux_vars )
+            urbanparams_vars, canopystate_vars, &
+            solarabs_vars, soilstate_vars )
        call t_stopf('soiltemperature')
 
 
@@ -905,8 +899,8 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
-            atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, soilstate_vars,        &
-            energyflux_vars, soilhydrology_vars, aerosol_vars )
+            atm2lnd_vars, ocn2lnd_vars, soilstate_vars,                      &
+            soilhydrology_vars, aerosol_vars )
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -935,7 +929,7 @@ contains
             filter(nc)%num_lakesnowc, filter(nc)%lakesnowc,                                  &
             filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc,                              &
             atm2lnd_vars, soilstate_vars,  &
-            energyflux_vars, aerosol_vars, lakestate_vars)
+            aerosol_vars, lakestate_vars)
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output

@@ -13,6 +13,7 @@ module SoilMoistStressMod
   ! during the long-term maintenance
   ! Created by Jinyun Tang, Feb., 2014
   !
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use ColumnDataType   , only : col_es, col_ws
   !
   implicit none
@@ -26,20 +27,66 @@ module SoilMoistStressMod
   public :: calc_volumetric_h2oliq
   public :: set_perchroot_opt
   public :: init_root_moist_stress
+  private :: normalize_test
   !
   ! !PRIVATE DATA MEMBERS:
-  integer ::   root_moist_stress_method
+  integer,public ::   root_moist_stress_method
   integer, parameter :: moist_stress_clm_default  = 0  !default method for calculating root moisture stress
-  logical,  private :: perchroot     = .false.  ! true => btran is based only on unfrozen soil levels
-  logical,  private :: perchroot_alt = .false.  ! true => btran is based on active layer (defined over two years);
-  !$acc declare create(root_moist_stress_method)
-  !$acc declare copyin(moist_stress_clm_default)
+  logical,  public :: perchroot     = .false.  ! true => btran is based only on unfrozen soil levels
+  logical,  public :: perchroot_alt = .false.  ! true => btran is based on active layer (defined over two years);
   !$acc declare create(perchroot)
   !$acc declare create(perchroot_alt)
 
   !--------------------------------------------------------------------------------
 
 contains
+
+subroutine normalize_test( lbj2, ubj2, numf, filter, arr2d_inout)
+   !DESCRIPTIONS
+   !do normalization with filter for the input array along dimension 2
+   !
+   !USES
+   use shr_kind_mod, only: r8 => shr_kind_r8
+   implicit none
+
+   integer,  intent(in) :: lbj2         !right bound of dim 1
+   integer,  intent(in) :: ubj2         !right bound of dim 2
+   integer,  intent(in) :: numf         !filter size
+   integer,  intent(in) :: filter(:)    !filter
+   real(r8), intent(inout) :: arr2d_inout(: , : )   !input 2d array
+
+   !local variables
+   integer  :: sz1, sz2     !array size
+   integer  :: j2           !indices
+   integer  :: f, p         !indices
+   real(r8) :: arr_sum(numf), sum1
+
+   !$acc enter data create(arr_sum(1:numf))
+   !$acc parallel loop independent gang worker default(present) private(sum1) if(elm_device_ready)
+   do f = 1, numf
+     sum1 = 0._r8
+     !$acc loop vector reduction(+:sum1)
+     do j2 = lbj2, ubj2
+         !obtain the total
+         sum1=sum1+arr2d_inout(f,j2)
+     enddo
+     arr_sum(f) = sum1
+   enddo
+
+     !normalize with the total if arr_sum is non-zero
+   !$acc parallel loop independent gang default(present) if(elm_device_ready)
+   do j2 = lbj2, ubj2
+     !$acc loop vector independent
+     do f = 1, numf
+      !I found I have to ensure >0._r8 because of some unknown reason, jyt May 23, 2014
+      !I will test this later with arr_sum(p)/=0._r8
+      if(arr_sum(f)>0._r8 .or. arr_sum(f)<0._r8)then
+         arr2d_inout(f,j2) = arr2d_inout(f,j2)/arr_sum(f)
+      endif
+     enddo
+   enddo
+   !$acc exit data delete(arr_sum(:))
+end subroutine normalize_test
 
   !--------------------------------------------------------------------------------
   subroutine init_root_moist_stress()
@@ -50,7 +97,6 @@ contains
     implicit none
 
     root_moist_stress_method = moist_stress_clm_default
-    !$acc update device(root_moist_stress_method)
   end subroutine init_root_moist_stress
 
   !--------------------------------------------------------------------------------
@@ -83,6 +129,7 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use decompMod      , only : bounds_type
     use ColumnType     , only : col_pp
+    use VegetationType , only : veg_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -96,23 +143,24 @@ contains
     real(r8)          , intent(inout) :: eff_por( bounds%begc: ,1: )     ! effective porosity
     !
     ! !LOCAL VARIABLES:
-    integer :: c, j, fc                                             !indices
+    integer :: c, j, fp,p      !indices
     real(r8):: vol_ice    !volumetric ice
     !------------------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-
     !main calculation loop
     !it assumes the soil layers start from 1
-    do j = 1, ubj
-       do fc = 1, numf
-          c = filter(fc)
+    !$acc parallel loop independent gang vector default(present) private(p,c,j,vol_ice) if(elm_device_ready)
+    do fp = 1, numf
+       p = filter(fp)
+       c = veg_pp%column(p)
+       !$acc loop seq
+       do j = 1, ubj
           !compute the volumetric ice content
           vol_ice=min(watsat(c,j), h2osoi_ice(c,j)/(denice*col_pp%dz(c,j)))
           !compute the maximum soil space to fill liquid water and air
           eff_por(c,j) = watsat(c,j) - vol_ice
        enddo
     enddo
+
   end subroutine calc_effective_soilporosity
 
   !--------------------------------------------------------------------------------
@@ -146,7 +194,6 @@ contains
 
     ubj = 0
 
-    ! Enforce expected array sizes
     !main calculation loop
 
     !it assumes snow layer ends at 0
@@ -166,7 +213,7 @@ contains
   end subroutine calc_effective_snowporosity
 
   !--------------------------------------------------------------------------------
-  subroutine calc_volumetric_h2oliq(bounds, jtop, lbj, ubj, numf, filter,&
+  subroutine calc_volumetric_h2oliq(bounds, lbj, ubj, numf, filter,&
        eff_porosity, h2osoi_liq, denh2o, vol_liq)
     !
     ! !DESCRIPTIONS
@@ -177,11 +224,11 @@ contains
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use decompMod      , only : bounds_type
     use ColumnType     , only : col_pp
+    use VegetationType  , only : veg_pp
     !
     ! !ARGUMENTS:
     implicit none
     type(bounds_type) , intent(in)    :: bounds                             ! bounds
-    integer           , intent(in)    :: jtop( bounds%begc: )               ! top level for each column [col]
     integer           , intent(in)    :: lbj, ubj                           ! lbinning and ubing level indices
     integer           , intent(in)    :: numf                               ! filter dimension
     integer           , intent(in)    :: filter(:)                          ! filter
@@ -191,16 +238,17 @@ contains
     real(r8)          , intent(inout) :: vol_liq(bounds%begc: , lbj: )      ! volumetric liquid water content
     !
     ! !LOCAL VARIABLES:
-    integer :: c, j, fc  ! indices
+    integer :: p, c, j, fp ! indices
+    integer, parameter :: jtop = 1
     !------------------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-
     !main calculation loop
-    do j = lbj, ubj
-       do fc = 1, numf
-          c = filter(fc)
-          if(j>=jtop(c))then
+    !$acc parallel loop independent gang vector default(present) private(p,c,j) if(elm_device_ready)
+    do fp = 1, numf
+       p = filter(fp)
+       c = veg_pp%column(p)
+       !$acc loop seq
+       do j = lbj, ubj
+          if(j>=jtop)then
              !volume of liquid is no greater than effective void space
              vol_liq(c,j) = min(eff_porosity(c,j), h2osoi_liq(c,j)/(col_pp%dz(c,j)*denh2o))
           endif
@@ -224,7 +272,7 @@ contains
     use EnergyFluxType  , only : energyflux_type
     use SoilStateType   , only : soilstate_type
     use SimpleMathMod   , only : array_normalization
-    use VegetationType       , only : veg_pp
+    use VegetationType  , only : veg_pp
     !
     ! !ARGUMENTS:
     implicit none
@@ -234,16 +282,15 @@ contains
     integer                , intent(in)    :: filterp(:)                                 !filter
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    real(r8)               , intent(inout) :: rootfr_unf(bounds%begp:bounds%endp, 1:ubj) !normalized root fraction in unfrozen layers
+    real(r8)               , intent(inout) :: rootfr_unf(:,:) !normalized root fraction in unfrozen layers
     !
     ! !LOCAL VARIABLES:
-    !real(r8) :: rootsum(bounds%begp:bounds%endp)
     integer :: p, c, j, f  !indices
+    real(r8) :: sum1
     !------------------------------------------------------------------------------
 
-    associate(                                                               &
-         rootfr               => soilstate_vars%rootfr_patch               , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer
-
+    associate(     &
+         rootfr               => soilstate_vars%rootfr_patch , & ! Input:  [real(r8)  (:,:) ]  fraction of roots in each soil layer
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
          altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [real(r8) (:)   ]  prior year maximum annual depth of thaw
@@ -258,57 +305,61 @@ contains
       ! to zero within similar coding style. Jinyun Tang, May 23, 2014.
 
       ! Define rootfraction for unfrozen soil only
-      if (perchroot .or. perchroot_alt) then
+      ! if (perchroot .or. perchroot_alt) then
+      ! one kernel over the patches, layer loops sequential (the layer sum in the CPU order)
+      !$acc parallel loop independent gang vector default(present) private(p,c,j,sum1) if(elm_device_ready)
+      do f = 1, fn
+         p = filterp(f)
+         c = veg_pp%column(p)
          if (perchroot_alt) then
             ! use total active layer (defined ass max thaw depth for current and prior year)
+            !$acc loop seq
             do j = 1, ubj
-               do f = 1, fn
-                  p = filterp(f)
-                  c = veg_pp%column(p)
-
-                  if ( j <= max(altmax_lastyear_indx(c), altmax_indx(c), 1) )then
-                     rootfr_unf(p,j) = rootfr(p,j)
-                  else
-                     rootfr_unf(p,j) = 0._r8
-                  end if
-               end do
+               if ( j <= max(altmax_lastyear_indx(c), altmax_indx(c), 1) )then
+                  rootfr_unf(f,j) = rootfr(p,j)
+               else
+                  rootfr_unf(f,j) = 0._r8
+               end if
             end do
          else
             ! use instantaneous temperature
+            !$acc loop seq
             do j = 1, ubj
-               do f = 1, fn
-                  p = filterp(f)
-                  c = veg_pp%column(p)
-                  if (t_soisno(c,j) >= tfrz) then
-                     rootfr_unf(p,j) = rootfr(p,j)
-                  else
-                     rootfr_unf(p,j) = 0._r8
-                  end if
-               end do
+               if (t_soisno(c,j) >= tfrz) then
+                  rootfr_unf(f,j) = rootfr(p,j)
+               else
+                  rootfr_unf(f,j) = 0._r8
+               end if
             end do
-
          end if ! perchroot_alt
-      end if ! perchroot
-
-      !normalize the root fraction for each pft
-      call array_normalization(bounds%begp, bounds%endp, 1, ubj, &
-           fn, filterp, rootfr_unf(bounds%begp:bounds%endp, 1:ubj))
-
+         !normalize the root fraction for each pft
+         sum1 = 0._r8
+         !$acc loop seq
+         do j = 1, ubj
+            sum1=sum1+rootfr_unf(f,j)
+         enddo
+         !normalize with the total if the total is non-zero
+         if(sum1>0._r8 .or. sum1<0._r8)then
+            !$acc loop seq
+            do j = 1, ubj
+               rootfr_unf(f,j) = rootfr_unf(f,j)/sum1
+            enddo
+         endif
+      end do
     end associate
 
   end subroutine normalize_unfrozen_rootfr
 
   !--------------------------------------------------------------------------------
-  subroutine calc_root_moist_stress_clm45default(bounds, &
-       nlevgrnd, fn, filterp, rootfr_unf, &
-       soilstate_vars, energyflux_vars)
+  subroutine calc_root_moist_stress_clm45default( &
+                        nlevgrnd, fn, filterp, rootfr_unf, &
+                        soilstate_vars, energyflux_vars)
     !
     ! DESCRIPTIONS
     ! compute the root water stress using the default clm45 approach
     !
     ! USES
     use shr_kind_mod         , only : r8 => shr_kind_r8
-    use decompMod            , only : bounds_type
     use elm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use VegetationPropertiesType     , only : veg_vp
     use SoilStateType        , only : soilstate_type
@@ -318,18 +369,17 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type)      , intent(in)    :: bounds                         !bounds
     integer                , intent(in)    :: nlevgrnd                       !number of vertical layers
     integer                , intent(in)    :: fn                             !number of filters
     integer                , intent(in)    :: filterp(:)                     !filter array
-    real(r8)               , intent(in)    :: rootfr_unf(bounds%begp: , 1: )
+    real(r8)               , intent(in)    :: rootfr_unf(: , : )
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8) :: smp_node, s_node  !temporary variables
-    real(r8) :: smp_node_lf       !temporary variable
+    real(r8) :: smp_node_lf,sum1, sum2      !temporary variable
     integer :: p, f, j, c, l      !indices
     !------------------------------------------------------------------------------
 
@@ -355,55 +405,59 @@ contains
          h2osoi_vol    => col_ws%h2osoi_vol    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osoi_liqvol => col_ws%h2osoi_liqvol   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture
          )
-      do j = 1,nlevgrnd
-         do f = 1, fn
-            p = filterp(f)
-            c = veg_pp%column(p)
-            l = veg_pp%landunit(p)
 
-            ! Root resistance factors
-            ! rootr effectively defines the active root fraction in each layer
+      ! one kernel over the patches, layer loops sequential (the layer sums in the CPU order)
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc  private(p,c,l,j,s_node,smp_node,smp_node_lf,sum1,sum2) if(elm_device_ready)
+      do f = 1, fn
+         p = filterp(f)
+         c = veg_pp%column(p)
+         l = veg_pp%landunit(p)
+         ! Root resistance factors
+         ! rootr effectively defines the active root fraction in each layer
+         !$acc loop seq
+         do j = 1,nlevgrnd
             if (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz + tc_stress) then
-                    rootr(p,j) = 0._r8
+               rootr(p,j) = 0._r8
             else
                s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
-               !smp_node = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
-               !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
                smp_node = -sucsat(c,j)*s_node**( -bsw(c,j) )
-
                smp_node = max(smpsc(veg_pp%itype(p)), smp_node)
-
                rresis(p,j) = min( (eff_porosity(c,j)/watsat(c,j))* &
                     (smp_node - smpsc(veg_pp%itype(p))) / (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
                if (.not. (perchroot .or. perchroot_alt) ) then
                   rootr(p,j) = rootfr(p,j)*rresis(p,j)
                else
-                  rootr(p,j) = rootfr_unf(p,j)*rresis(p,j)
+                  rootr(p,j) = rootfr_unf(f,j)*rresis(p,j)
                end if
-
-               !it is possible to further separate out a btran function, but I will leave it for the moment, jyt
-               if( .not. use_hydrstress ) then
-                 btran(p)    = btran(p) + max(rootr(p,j),0._r8)
-               endif
-
-               !smp_node_lf = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j)))
-               s_node = h2osoi_vol(c,j)/watsat(c,j)
-
-               !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node_lf)
-               smp_node_lf = -sucsat(c,j)*s_node**( -bsw(c,j) )
-
-               !smp_node_lf =  -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j))
-               smp_node_lf = max(smpsc(veg_pp%itype(p)), smp_node_lf)
-               btran2(p)   = btran2(p) +rootfr(p,j)*min((smp_node_lf - smpsc(veg_pp%itype(p))) / &
-                    (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
             endif
          end do
-      end do
-
-      ! Normalize root resistances to get layer contribution to ET
-      do j = 1,nlevgrnd
-         do f = 1, fn
-            p = filterp(f)
+         !calculate btran and btran2
+         if(.not. use_hydrstress) then
+            sum1 = btran(p)
+            !$acc loop seq
+            do j = 1, nlevgrnd
+               if (.not. (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz + tc_stress)) then
+                  sum1 = sum1 + max(rootr(p,j),0._r8)
+               end if
+            end do
+            btran(p) = sum1
+         end if
+         sum2 = btran2(p)
+         !$acc loop seq
+         do j = 1,nlevgrnd
+            if (.not. (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz + tc_stress)) then
+               s_node = h2osoi_vol(c,j)/watsat(c,j)
+               smp_node_lf = -sucsat(c,j)*s_node**( -bsw(c,j) )
+               smp_node_lf = max(smpsc(veg_pp%itype(p)), smp_node_lf)
+               sum2  = sum2 +rootfr(p,j)*min((smp_node_lf - smpsc(veg_pp%itype(p))) / &
+                        (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
+            end if
+         end do
+         btran2(p) = sum2
+         ! Normalize root resistances to get layer contribution to ET
+         !$acc loop seq
+         do j = 1,nlevgrnd
             if (btran(p) > btran0) then
                rootr(p,j) = rootr(p,j)/btran(p)
             else
@@ -441,13 +495,14 @@ contains
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: p, f, j, c, l                                   ! indices
-    real(r8) :: smp_node, s_node                               ! temporary variables
-    real(r8) :: rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd) ! Rootfraction defined for unfrozen layers only.
+    integer :: p, f, j, c, l                ! indices
+    real(r8) :: smp_node, s_node            ! temporary variables
+    real(r8) :: rootfr_unf(1:fn,1:nlevgrnd) ! Rootfraction defined for unfrozen layers only.
     !------------------------------------------------------------------------------
 
     !define normalized rootfraction for unfrozen soil
-    rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd) = 0._r8
+    ! rootfr_unf is assigned in full by normalize_unfrozen_rootfr before it is read
+    !$acc enter data create(rootfr_unf)
 
     call normalize_unfrozen_rootfr(bounds,  &
          ubj = nlevgrnd,                    &
@@ -455,7 +510,7 @@ contains
          filterp = filterp,                 &
          canopystate_vars=canopystate_vars, &
          soilstate_vars=soilstate_vars,     &
-         rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
+         rootfr_unf=rootfr_unf(1:fn,1:nlevgrnd))
 
     !suppose h2osoi_liq, eff_porosity are already computed somewhere else
 
@@ -463,17 +518,18 @@ contains
        !add other methods later
     case (moist_stress_clm_default)
 
-       call calc_root_moist_stress_clm45default(bounds, &
+       call calc_root_moist_stress_clm45default( &
             nlevgrnd = nlevgrnd,                        &
             fn = fn,                                    &
             filterp = filterp,                          &
             energyflux_vars=energyflux_vars,            &
             soilstate_vars=soilstate_vars,              &
-            rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
+            rootfr_unf=rootfr_unf(1:fn,1:nlevgrnd))
 
     case default
     end select
 
+    !$acc exit data delete(rootfr_unf)
   end subroutine calc_root_moist_stress
 
 end module SoilMoistStressMod

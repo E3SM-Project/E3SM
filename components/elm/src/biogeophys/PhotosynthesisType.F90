@@ -1,6 +1,7 @@
 module PhotosynthesisType
 
   ! !USES:
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
@@ -483,6 +484,7 @@ contains
     integer :: p,c,l ! indices
     !-----------------------------------------------------------------------
 
+    !$acc parallel loop independent gang vector default(present) private(p,l) if(elm_device_ready)
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
        if (.not. lun_pp%lakpoi(l)) then

@@ -10,6 +10,7 @@ module CanopyTemperatureMod
 
   !
   ! !USES:
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
@@ -94,6 +95,7 @@ contains
     integer  :: j            ! soil/snow level index
     integer  :: fp           ! lake filter pft index
     integer  :: fc           ! lake filter column index
+    integer  :: begp, endp   ! patch bounds
     real(r8) :: qred         ! soil surface relative humidity
     real(r8) :: avmuir       ! ir inverse optical depth per unit leaf area
     real(r8) :: eg           ! water vapor pressure at temperature T [pa]
@@ -109,7 +111,6 @@ contains
     real(r8) :: eff_porosity ! effective porosity in layer
     real(r8) :: vol_ice      ! partial volume of ice lens in layer
     real(r8) :: vol_liq      ! partial volume of liquid water in layer
-    real(r8) :: fh2o_eff(bounds%begc:bounds%endc) ! effective surface water fraction (i.e. seen by atm)
     real(r8) :: slope_rad, deg2rad
     !------------------------------------------------------------------------------
 
@@ -203,6 +204,9 @@ contains
          )
 
       deg2rad = SHR_CONST_PI/180._r8
+      begp = bounds%begp 
+      endp = bounds%endp 
+      !$acc parallel loop independent gang vector collapse(2) default(present) if(elm_device_ready)
       do j = -nlevsno+1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -219,7 +223,8 @@ contains
 
       ! calculate moisture stress/resistance for soil evaporation
       call calc_soilevap_stress(bounds, num_nolakec, filter_nolakec, soilstate_vars)
-
+      
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -262,6 +267,7 @@ contains
             else if (col_pp%itype(c) == icol_road_perv) then
                ! Pervious road depends on water in total soil column
                nlevbed = nlev2bed(c)
+               !$acc loop seq 
                do j = 1, nlevbed
                   if (t_soisno(c,j) >= tfrz) then
                      vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
@@ -394,12 +400,10 @@ contains
       ! of its dynamics call.  If and when crops are
       ! enabled simultaneously with FATES, we will
       ! have to apply a filter here.
-#ifndef _OPENACC
       if(use_fates) then
          call alm_fates%TransferZ0mDisp(bounds,frictionvel_vars,canopystate_vars)
       end if
-#endif
-
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          if( .not.(veg_pp%is_fates(p))) then
@@ -410,6 +414,7 @@ contains
 
       ! Initialization
 
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          g = veg_pp%gridcell(p)
@@ -458,7 +463,8 @@ contains
 
       ! Make forcing height a pft-level quantity that is the atmospheric forcing
       ! height plus each pft's z0m+displa
-      do p = bounds%begp,bounds%endp
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
+      do p = begp,endp
          if (veg_pp%active(p)) then
             g = veg_pp%gridcell(p)
             t = veg_pp%topounit(p)
@@ -492,6 +498,7 @@ contains
          end if
       end do
 
+      !$acc parallel loop independent gang vector default(present) if(elm_device_ready)
       do fp = 1,num_nolakep
          p = filter_nolakep(fp)
          c = veg_pp%column(p)
