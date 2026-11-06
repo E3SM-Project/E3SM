@@ -78,17 +78,20 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
   }
 }
 
-// Runtime-CM versions of the above. The switch is on a value that is uniform across
-// the whole kernel, so the cost is negligible for memory-bound kernels, while it
-// avoids instantiating the (expensive) kernel launch machinery once per CM.
+// Runtime-CM version of the above, which also adds a constant shift gamma (only used
+// for CM=Update): result = beta*result + alpha*newVal + gamma.
+// The switch is on a value that is uniform across the whole kernel, so the cost is
+// negligible for memory-bound kernels, while it avoids instantiating the (expensive)
+// kernel launch machinery once per CM.
 template<typename ScalarIn, typename ScalarOut, typename CoeffType>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const CombineMode cm, const ScalarIn& newVal, ScalarOut& result,
-              const CoeffType alpha, const CoeffType beta)
+              const CoeffType alpha, const CoeffType beta, const CoeffType gamma)
 {
   switch (cm) {
     case CombineMode::Replace:  combine<CombineMode::Replace> (newVal,result,alpha,beta); break;
-    case CombineMode::Update:   combine<CombineMode::Update>  (newVal,result,alpha,beta); break;
+    case CombineMode::Update:   combine<CombineMode::Update>  (newVal,result,alpha,beta);
+                                result += gamma;                                          break;
     case CombineMode::Multiply: combine<CombineMode::Multiply>(newVal,result,alpha,beta); break;
     case CombineMode::Divide:   combine<CombineMode::Divide>  (newVal,result,alpha,beta); break;
     case CombineMode::Max:      combine<CombineMode::Max>     (newVal,result,alpha,beta); break;
@@ -128,15 +131,20 @@ void combine_fill_aware (const ScalarIn& newVal, ScalarOut& result,
   }
 }
 
+// Runtime-CM version of combine_fill_aware, with the extra shift gamma (CM=Update only).
+// NOTE: gamma is applied to result regardless of the value of newVal, unless gamma
+//       itself is the fill value (in which case it is skipped).
 template<typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine_fill_aware (const CombineMode cm, const ScalarIn& newVal, ScalarOut& result,
-                         const CoeffType alpha, const CoeffType beta)
+                         const CoeffType alpha, const CoeffType beta, const CoeffType gamma)
 {
   switch (cm) {
     case CombineMode::Replace:  combine_fill_aware<CombineMode::Replace> (newVal,result,alpha,beta); break;
-    case CombineMode::Update:   combine_fill_aware<CombineMode::Update>  (newVal,result,alpha,beta); break;
+    case CombineMode::Update:   combine_fill_aware<CombineMode::Update>  (newVal,result,alpha,beta);
+                                if (gamma!=constants::fill_value<CoeffType>)
+                                  result += gamma;                                                 break;
     case CombineMode::Multiply: combine_fill_aware<CombineMode::Multiply>(newVal,result,alpha,beta); break;
     case CombineMode::Divide:   combine_fill_aware<CombineMode::Divide>  (newVal,result,alpha,beta); break;
     case CombineMode::Max:      combine_fill_aware<CombineMode::Max>     (newVal,result,alpha,beta); break;

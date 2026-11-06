@@ -23,9 +23,7 @@ struct UpdateMaskedKernel {
   void operator() (const YView& y, const XView& x, const MaskView& mask, const Idx&... i) const {
     if (mask(i...)) {
       auto& y_val = y(i...);
-      combine(cm,x(i...),y_val,alpha,beta);
-      if (cm==CombineMode::Update)
-        y_val += gamma;
+      combine(cm,x(i...),y_val,alpha,beta,gamma);
     }
   }
 };
