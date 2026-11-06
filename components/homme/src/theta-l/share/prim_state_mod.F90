@@ -813,7 +813,7 @@ contains
        time0=time1
     endif
        
-    call flush(iulog)  
+    flush(iulog)  
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
    
@@ -1018,8 +1018,8 @@ subroutine extremumLevelHelper(res,field,operation,first,klev)
    real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
    character(len=*),      intent(in)    :: operation
    logical,               intent(in)    :: first
-   real (kind=real_kind), intent(in)    :: field(np,np,klev)
    integer,               intent(in)    :: klev 
+   real (kind=real_kind), intent(in)    :: field(np,np,klev)
 
    real (kind=real_kind)                :: val
    integer                              :: location(3)

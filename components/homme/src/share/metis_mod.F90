@@ -39,8 +39,8 @@ contains
 
     type (GridVertex_t), allocatable   :: SubVertex(:)
 
-    real(kind=4), allocatable   :: tpwgts(:)
-    real(kind=4)                :: tmp
+    real(kind=selected_real_kind(6)), allocatable   :: tpwgts(:)
+    real(kind=selected_real_kind(6))                :: tmp
 
     integer(kind=int_kind), allocatable          :: part(:)
     integer, allocatable          :: part_nl(:),local2global_nl(:)
@@ -51,7 +51,7 @@ contains
     integer                       :: nelem_nl,newPartition
     integer                       :: partitionmethod,numpartitions
     logical , parameter           :: Debug = .true.
-    real (kind=4)                 :: dummy(1) 
+    real (kind=selected_real_kind(6))                 :: dummy(1) 
     nelem_edge = SIZE(GridEdge) 
 
     print *, "nelem = ", nelem
@@ -316,7 +316,7 @@ contains
     integer                               :: xadj(:),adjncy(:)
     integer                               :: vwgt(:),adjwgt(:)
     integer                               :: wgtflag,numflag,edgecut
-    real(kind=4)                          :: tpwgts(:)
+    real(kind=selected_real_kind(6))                          :: tpwgts(:)
     integer                               :: options(5)
     integer                               :: npart
     integer                               :: part(:)

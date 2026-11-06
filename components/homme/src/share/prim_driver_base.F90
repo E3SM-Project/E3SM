@@ -52,7 +52,7 @@ module prim_driver_base
   ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
   type (GridVertex_t), pointer :: GridVertex(:)
   type (GridEdge_t),   public, pointer :: GridEdge(:)
-  type (MetaVertex_t), public :: MetaVertex
+  type (MetaVertex_t), public, target :: MetaVertex
   logical :: can_scalably_init_grid
 
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
