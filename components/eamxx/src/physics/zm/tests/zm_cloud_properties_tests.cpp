@@ -6,6 +6,10 @@
 
 #include "zm_unit_tests_common.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
 namespace scream {
 namespace zm {
 namespace unit_test {
@@ -118,6 +122,101 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
     }
   } // run_bfb
 
+  // Property test for the turbulent entrainment/detrainment offset
+  // (frac_turb_mix). This is deliberately NOT a "bfb" test: it compares a
+  // baseline run (frac_turb_mix=0) against a run with a positive offset on
+  // identical inputs and checks the invariants the offset must satisfy,
+  // rather than comparing against a stored Fortran baseline.
+  void run_property()
+  {
+    auto engine = Base::get_engine();
+
+    // Positive turbulent mixing rate [1/m], comparable in magnitude to the
+    // dynamic entrainment parameter dmpdz and large enough to exercise the
+    // positivity cap that bounds the added detrainment.
+    const Real frac_turb_mix = 1e-3;
+
+    ZmCloudPropertiesData base_data[] = {
+      //                    pcols, ncol, pver, pverp, msg, limcnv
+      ZmCloudPropertiesData(    4,    4,   72,    73,  10,  40),
+      ZmCloudPropertiesData(    4,    4,   72,    73,  20,  50),
+      ZmCloudPropertiesData(    4,    4,  128,   129,  30,  60),
+      ZmCloudPropertiesData(    4,    4,  128,   129,  40,  70),
+    };
+    static constexpr Int num_runs = sizeof(base_data) / sizeof(ZmCloudPropertiesData);
+
+    for (auto& d : base_data) {
+      d.randomize(engine);
+    }
+
+    // Copies run with the turbulent mixing enabled. The copy constructor does
+    // not carry frac_turb_mix (it is not a PTD_STD_DEF scalar), so it must be
+    // set explicitly here after the copy.
+    ZmCloudPropertiesData mix_data[] = {
+      ZmCloudPropertiesData(base_data[0]),
+      ZmCloudPropertiesData(base_data[1]),
+      ZmCloudPropertiesData(base_data[2]),
+      ZmCloudPropertiesData(base_data[3]),
+    };
+    for (auto& d : mix_data) {
+      d.frac_turb_mix = frac_turb_mix;
+    }
+
+    for (auto& d : base_data) { zm_cloud_properties(d); }
+    for (auto& d : mix_data)  { zm_cloud_properties(d); }
+
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 10000 : 100);
+
+    // Aggregated across every config/column: used to confirm the offset
+    // actually changes the solution somewhere convection is active.
+    Real max_entr_diff = 0;
+    Real total_active  = 0;
+
+    for (Int i = 0; i < num_runs; ++i) {
+      ZmCloudPropertiesData& b = base_data[i];
+      ZmCloudPropertiesData& m = mix_data[i];
+      const Int pver  = m.pver;
+      const Int pverp = m.pverp;
+      const Int pcols = m.pcols;
+
+      for (Int c = 0; c < pcols; ++c) {
+        for (Int k = 0; k < pver; ++k) {
+          const Int idx = c*pver + k;
+
+          // (1) Nonnegative updraft condensate: the positivity cap must keep
+          //     the enhanced detrainment from driving liquid water negative.
+          REQUIRE(m.ql[idx] >= -margin);
+
+          // Accumulators for the mixing-has-an-effect check below.
+          total_active  += std::abs(m.mflx_up[idx]);
+          max_entr_diff  = std::max(max_entr_diff,
+                                    std::abs(m.entr_up[idx] - b.entr_up[idx]));
+
+          // (2) Equal increments / net mass flux preserved: adding the same
+          //     offset to entrainment and detrainment must leave the mass-flux
+          //     divergence identity (E-D)*dz == dMflx intact. An unequal
+          //     offset would break this.
+          if (k < pver - 1) {
+            const Int zidx = c*pverp + k;
+            const Real dz  = m.z_int[zidx] - m.z_int[zidx+1];
+            const Real lhs = (m.entr_up[idx] - m.detr_up[idx]) * dz;
+            const Real rhs =  m.mflx_up[idx] - m.mflx_up[idx+1];
+            REQUIRE(lhs == Approx(rhs).margin(margin));
+          }
+        }
+      }
+    }
+
+    // (3) The offset must actually change the solution somewhere convection is
+    //     active - this catches a regression that drops it entirely. Pooled
+    //     across all configs/columns so that a single thin/inactive cloud
+    //     cannot make the check vacuous.
+    if (total_active > 0) {
+      REQUIRE(max_entr_diff > 0);
+    }
+  } // run_property
+
 };
 
 } // namespace unit_test
@@ -132,6 +231,14 @@ TEST_CASE("zm_cloud_properties_bfb", "[zm]")
 
   TestStruct t;
   t.run_bfb();
+}
+
+TEST_CASE("zm_cloud_properties_turb_mix", "[zm]")
+{
+  using TestStruct = scream::zm::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestZmCloudProperties;
+
+  TestStruct t;
+  t.run_property();
 }
 
 } // empty namespace

@@ -255,6 +255,27 @@ void Functions<S,D>::zm_cloud_properties(
           mflx_up(k) = (1/lambda_max) * (std::exp(lambda(k)*zuef) - 1) / zuef;
           entr_up(k) = (rmue - mflx_up(k+1)) / dz(k);
           detr_up(k) = (rmue - mflx_up(k))   / dz(k);
+          // Add an equal "turbulent" fractional mixing offset [1/m]
+          // to both the entrainment and detrainment rates.
+          // Adding the same amount to both leaves the net mass flux
+          // unchanged, while enhancing the detrained condensate/
+          // moisture tendency. This effectively separates the mixing into
+          // a dynamic part tied to the mass flux gradient from the lines above,
+          // and an always-present turbulent part, similar to this paper:
+          // De Rooy, W. C., & Siebesma, A. P. (2010). Analytic expressions for entrainment
+          //   and detrainment in cumulus convection. Quart. J. Roy. Meteor. Soc., 136 , 1216-1227.
+          // Cap the added exchange so the total detrainment over the layer
+          // cannot exceed the mass flux entering from below (mflx_up(k+1)).
+          // Without this bound the explicit liquid-water detrainment term in
+          // the condensate budget (step 6j: dz*detr_up*ql) could remove more
+          // liquid than the layer receives and drive condensate and rain
+          // production negative. The same capped amount is added to both rates
+          // so the net mass flux (entr_up-detr_up) is still preserved exactly.
+          const Real frac_turb_add = Kokkos::max(Real(0), runtime_opt.frac_turb_mix * mflx_up(k));
+          const Real frac_turb_lim = Kokkos::max(Real(0), mflx_up(k+1)/dz(k) - detr_up(k));
+          const Real frac_turb = Kokkos::min(frac_turb_add, frac_turb_lim);
+          entr_up(k) += frac_turb;
+          detr_up(k) += frac_turb;
         }
       }
     }

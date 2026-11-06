@@ -298,6 +298,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <alfa               type="real"    doc="ZM max downdraft mass flux fraction"       >0.14</alfa>
       <ke                 type="real"    doc="ZM evaporation efficiency"                 >2.5E-6</ke>
       <dmpdz              type="real"    doc="ZM fractional mass entrainment rate [1/m]" >-0.7e-3</dmpdz>
+      <frac_turb_mix      type="real"    doc="ZM updraft turb. frac. mixing rate [1/m]"  >0.0</frac_turb_mix>
       <tpert_fix          type="logical" doc="ZM flag to enable tpert"                   >true</tpert_fix>
       <tpert_fac          type="real"    doc="ZM tunable temperature perturbation factor">2.0</tpert_fac>
       <tiedke_add         type="real"    doc="ZM tunable temperature perturbation"       >0.8</tiedke_add>
