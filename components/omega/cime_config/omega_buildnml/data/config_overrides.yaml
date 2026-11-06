@@ -24,7 +24,7 @@ coupled:
     PenetratingShortwaveTendency:
       Enable: true
 
- Submeso:
+  Submeso:
     Enable: true
 
   # buildnml will read the "Filename" entries in Default.yml under the Analysis
