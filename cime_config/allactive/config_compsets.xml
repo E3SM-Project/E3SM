@@ -533,7 +533,7 @@
 <!-- EAMxx fully coupled with OMEGA ocean. NS = no spun-up ICs for omega and mpassi, for testing on small grids -->
 <compset>
   <alias>WCYCLXX1850NS-OMEGA</alias>
-  <lname>1850SOI%CMIP7_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI_OMEGA_MOSART_SGLC_SWAV</lname>
+  <lname>1850%CMIP7_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI_OMEGA_MOSART_SGLC_SWAV</lname>
 </compset>
 
 
