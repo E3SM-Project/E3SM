@@ -396,6 +396,24 @@ def buildnml(case, caseroot, compname):
             grid_date = '20260825'
             grid_prefix = 'mpassi.u03-oi240.rstFromG-chrysalis'
 
+    elif ice_grid == 'u04-oi6to18':
+        decomp_date = '20261020'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20261020'
+        grid_prefix = 'mpassi.u04-oi6to18'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20261026'
+            grid_prefix = 'mpassi.u04-oi6to18.rstFromG-chrysalis'
+
+    elif ice_grid == 'u05-oi6to18':
+        decomp_date = '20261020'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20261020'
+        grid_prefix = 'mpassi.u05-oi6to18'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20261027'
+            grid_prefix = 'mpassi.u05-oi6to18.rstFromG-chrysalis'
+
 
     #--------------------------------------------------------------------
     # Set the initial file

@@ -447,6 +447,8 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to10">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to6">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%u01-oi6to18">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%u04-oi6to18">96</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%u05-oi6to18">96</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>

@@ -21,6 +21,7 @@ module VerticalProfileMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public:: decomp_vertprofiles
+  public:: decomp_vertprofiles_static
   !
   logical , public :: exponential_rooting_profile = .true.
   logical , public :: pftspecific_rootingprofile = .true.
@@ -31,6 +32,29 @@ module VerticalProfileMod
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  logical function decomp_vertprofiles_static()
+    !
+    ! !DESCRIPTION:
+    ! Return .true. when no subgrid weights can change in this time step and none
+    ! changed in the previous one (get_subgrid_weights_updated), and the root
+    ! profile is not taken from rootfr_patch. The profiles that decomp_vertprofiles
+    ! computes for a patch or column then depend only on data that do not change
+    ! during the run (PFT, layers to bedrock, weights) and on altmax_lastyear_indx
+    ! of the column, which alt_calc changes only in alt_annual_update_step.
+    ! The conditions must include all those of zero_all in decomp_vertprofiles.
+    !
+    ! !USES:
+    use elm_varctl  , only : use_fates, create_glacier_mec_landunit, iac_present, use_dynroot
+    use dynSubgridControlMod, only : get_subgrid_weights_updated, get_do_transient_pfts, get_do_transient_crops
+    !-----------------------------------------------------------------------
+
+    decomp_vertprofiles_static = .not. ( get_subgrid_weights_updated() .or. get_do_transient_pfts() .or. &
+         get_do_transient_crops() .or. use_fates .or. create_glacier_mec_landunit .or. iac_present .or. &
+         use_dynroot .or. .not. exponential_rooting_profile )
+
+  end function decomp_vertprofiles_static
 
   !-----------------------------------------------------------------------
   subroutine decomp_vertprofiles(bounds, &
@@ -48,13 +72,17 @@ contains
     !  here seem to only depend on quantities that are valid over inactive as well as active
     !  points. However, note that this routine is (mistakenly) called from two places
     !  currently - the above note applies to its call from the driver, but its call from
-    !  SoilLittDecompMod uses the standard filters that just apply over active points
+    !  EcosystemDynNoLeaching1 uses the standard filters that just apply over active points.
+    !  When decomp_vertprofiles_static() is .true., the driver calls it over the active
+    !  points only (except on the alt_calc update dates), and the second call is skipped.
     ! 
     ! !USES:
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
-    use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
+    use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, max_col_npfts
     use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
-    use pftvarcon   , only : rootprof_beta, noveg
+    use elm_varctl  , only : use_fates, create_glacier_mec_landunit, iac_present
+    use pftvarcon   , only : rootprof_beta, noveg, mxpft
+    use dynSubgridControlMod, only : get_subgrid_weights_updated, get_do_transient_pfts, get_do_transient_crops
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds  
@@ -73,6 +101,13 @@ contains
     real(r8) :: cinput_rootfr(bounds%begp:bounds%endp, 1:nlevdecomp_full)      ! pft-native root fraction used for calculating inputs
     real(r8) :: col_cinput_rootfr(bounds%begc:bounds%endc, 1:nlevdecomp_full)  ! col-native root fraction used for calculating inputs
     integer  :: c, j, fc, p, fp, pi
+    logical  :: zero_all      ! zero the profiles of all patches and columns, not only the filtered ones
+    ! The beta root profile terms and the shallower surface profile depend only
+    ! on the PFT, the level and the number of layers to bedrock, so they are
+    ! computed once per value rather than for every patch and level
+    real(r8) :: beta_pow(0:nlevdecomp, 0:mxpft)        ! rootprof_beta(pft) ** (zisoi(j)*100)
+    logical  :: beta_pow_set(0:mxpft)                  ! beta_pow is set for the PFT
+    real(r8) :: surface_prof_bed(1:nlevdecomp, 1:max(nlevdecomp-1,1)) ! surface profile for columns with nlevbed < nlevdecomp
     integer  :: alt_ind
     integer  :: nlevbed
     ! debugging temp variables
@@ -118,16 +153,56 @@ contains
          end do
 
          ! initialize profiles to zero
-         leaf_prof(begp:endp, :)      = 0._r8
-         froot_prof(begp:endp, :)     = 0._r8
-         croot_prof(begp:endp, :)     = 0._r8
-         stem_prof(begp:endp, :)      = 0._r8
-         nfixation_prof(begc:endc, :) = 0._r8
-         ndep_prof(begc:endc, :)      = 0._r8
-         pdep_prof(begc:endc, :)      = 0._r8
+         ! The profiles are set below only for the filtered patches and columns.
+         ! Elsewhere they are zero. Only this routine writes them, so outside
+         ! the filters they stay zero once zeroed, unless patches and columns
+         ! can become active or inactive: zero them everywhere on the first step
+         ! of a run or restart (when they are still spval) and whenever subgrid
+         ! weights can change, and otherwise only on the filters.
+         zero_all = get_subgrid_weights_updated() .or. get_do_transient_pfts() .or. &
+              get_do_transient_crops() .or. use_fates .or. create_glacier_mec_landunit .or. iac_present
+         if (zero_all) then
+            leaf_prof(begp:endp, :)      = 0._r8
+            froot_prof(begp:endp, :)     = 0._r8
+            croot_prof(begp:endp, :)     = 0._r8
+            stem_prof(begp:endp, :)      = 0._r8
+            nfixation_prof(begc:endc, :) = 0._r8
+            ndep_prof(begc:endc, :)      = 0._r8
+            pdep_prof(begc:endc, :)      = 0._r8
+         else
+            do fp = 1,num_soilp
+               p = filter_soilp(fp)
+               leaf_prof(p, :)  = 0._r8
+               froot_prof(p, :) = 0._r8
+               croot_prof(p, :) = 0._r8
+               stem_prof(p, :)  = 0._r8
+            end do
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               nfixation_prof(c, :) = 0._r8
+               ndep_prof(c, :)      = 0._r8
+               pdep_prof(c, :)      = 0._r8
+            end do
+         end if
 
-         cinput_rootfr(begp:endp, :)     = 0._r8
-         col_cinput_rootfr(begc:endc, :) = 0._r8
+         ! The local root fractions are read only on the filtered columns and
+         ! all their patches
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            cinput_rootfr(col_pp%pfti(c):col_pp%pftf(c), :) = 0._r8
+            col_cinput_rootfr(c, :) = 0._r8
+         end do
+
+         ! These loops make the same scalar calls as the expressions they replace
+         if (nlevdecomp > 1) then
+            do nlevbed = 1, nlevdecomp-1
+               !DIR$ NOVECTOR
+               do j = 1, nlevdecomp
+                  surface_prof_bed(j,nlevbed) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))
+               end do
+            end do
+         end if
+         beta_pow_set(:) = .false.
 
          if ( exponential_rooting_profile ) then
             if ( .not. pftspecific_rootingprofile ) then
@@ -146,10 +221,17 @@ contains
                   nlevbed = nlev2bed(c)
                   rootfr_tot = 0._r8
                   if (veg_pp%itype(p) /= noveg) then
+                     if (.not. beta_pow_set(veg_pp%itype(p))) then
+                        !DIR$ NOVECTOR
+                        do j = 0, nlevdecomp
+                           beta_pow(j,veg_pp%itype(p)) = rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8)
+                        end do
+                        beta_pow_set(veg_pp%itype(p)) = .true.
+                     end if
                      do j = 1, nlevdecomp
                         if (j <= nlevbed) then
-                           cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
-                             rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8) ) &
+                           cinput_rootfr(p,j) = ( beta_pow(j-1,veg_pp%itype(p)) - &
+                             beta_pow(j,veg_pp%itype(p)) ) &
                              / dzsoi_decomp(j)
                            rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
                         else
@@ -185,7 +267,9 @@ contains
             surface_prof_tot = 0._r8
             do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
                rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
-               if (nlevbed < nlevdecomp) then
+               if (nlevbed < nlevdecomp .and. nlevbed >= 1) then
+                  surface_prof_tot = surface_prof_tot + surface_prof_bed(j,nlevbed) * dzsoi_decomp(j)
+               else if (nlevbed < nlevdecomp) then
                   surface_prof_tot = surface_prof_tot + exp(log(surface_prof(j)) * zisoi(nlevdecomp) / &
                   	zisoi(nlevbed)) * dzsoi_decomp(j)
                else
@@ -201,9 +285,10 @@ contains
                   ! set all surface processes to shallower profile
                   if (j <= nlevbed) then
                      if (nlevbed < nlevdecomp) then
-                        leaf_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                        ! here 1 <= j <= nlevbed
+                        leaf_prof(p,j) = surface_prof_bed(j,nlevbed)/ &
                         	surface_prof_tot
-                        stem_prof(p,j) = exp(log(surface_prof(j)) * zisoi(nlevdecomp) / zisoi(nlevbed))/ &
+                        stem_prof(p,j) = surface_prof_bed(j,nlevbed)/ &
                         	surface_prof_tot
                      else
                         leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
@@ -226,7 +311,7 @@ contains
          !      cinput_rootfr(bounds%begp:bounds%endp, :), &
          !      col_cinput_rootfr(bounds%begc:bounds%endc, :), &
          !      'unity')
-         do pi = 1,maxpatch_pft
+         do pi = 1,max_col_npfts
             do fc = 1,num_soilc
                c = filter_soilc(fc)
                if (pi <=  col_pp%npfts(c)) then

@@ -4,7 +4,7 @@ module EcosystemDynMod
   ! Ecosystem dynamics: phenology, vegetation
   !
   ! !USES:
-  use dynSubgridControlMod, only : get_do_harvest
+  use dynSubgridControlMod, only : get_do_harvest, get_subgrid_weights_updated
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_sys_mod         , only : shr_sys_flush
   use elm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot, iac_present, use_fan
@@ -13,6 +13,8 @@ module EcosystemDynMod
   use spmdMod             , only : masterproc
   use elm_varctl          , only : use_century_decomp
   use elm_varctl          , only : ero_ccycle 
+  use elm_varctl          , only : fan_to_bgc_veg, fan_to_bgc_crop
+  use elm_time_manager    , only : is_first_step, is_first_restart_step
   use CNStateType         , only : cnstate_type
   use CanopyStateType     , only : canopystate_type
   use SoilStateType       , only : soilstate_type
@@ -37,7 +39,7 @@ module EcosystemDynMod
   use elm_instMod  , only : alm_fates
   ! bgc interface & pflotran
   use elm_varctl         , only : use_elm_interface, use_elm_bgc, use_pflotran, pf_cmode, pf_hmode
-  use VerticalProfileMod , only : decomp_vertprofiles
+  use VerticalProfileMod , only : decomp_vertprofiles, decomp_vertprofiles_static
   use AllocationMod      , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl         , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
@@ -87,6 +89,7 @@ contains
     use FireMod      , only : FireInit
     use C14DecayMod  , only : C14_init_BombSpike
     use FanUpdateMod , only : fanInit
+    use NitrifDenitrifMod, only : NitrifDenitrifInit
     !
     ! !ARGUMENTS:
     implicit none
@@ -95,6 +98,7 @@ contains
     !-----------------------------------------------------------------------
 
     call AllocationInit (bounds, elm_fates)
+    call NitrifDenitrifInit (bounds)
 
     if(use_fates) return
 
@@ -156,8 +160,16 @@ contains
     type(canopystate_type)   , intent(inout) :: canopystate_vars
 
     real(r8) :: dt
+    logical  :: hrv_zero   ! harvest fluxes zeroed in CNZero are all +0
+    logical  :: pc_skip_deep ! PrecisionControl may skip levels below nlevdecomp
     !-----------------------------------------------------------------------
     dt = dtime_mod;
+
+    ! The harvest fluxes are written only by CNHarvest (do_harvest or IAC) or
+    ! FATES. Without those, CNZero leaves them at +0 (zero_harvest is then
+    ! zero_unused), so the summaries can skip reading them. Keep this in sync
+    ! with zero_harvest in EcosystemDynNoLeaching1 and the CNHarvest call.
+    hrv_zero = .not. (get_do_harvest() .or. iac_present .or. use_fates)
 
     ! only do if ed is off
     call t_startf('PhosphorusWeathering')
@@ -212,14 +224,33 @@ contains
     call t_stopf('PUpdate3')
 
     call t_startf('CNPsum')
-    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp  )
+    call t_startf('CNPsum-precision')
+    ! Within a step, ELM writes decomp_cpools_vr, decomp_npools_vr, ctrunc_vr,
+    ! ntrunc_vr, smin_no3_vr and smin_nh4_vr only on levels 1:nlevdecomp, so
+    ! after one full PrecisionControl pass the deeper levels are fixed points
+    ! of it. Do the full depth on the first step of a run or restart (restart
+    ! read can rescale pools for spinup), after subgrid weights may have
+    ! changed (new filter columns), and where other code writes those levels:
+    ! FATES, the ELM interface/PFLOTRAN, C14Decay (isotopes) and the ECA/MIC
+    ! branch of PrecisionControl. Any new writer to the deeper levels must
+    ! also be added here.
+    pc_skip_deep = .not. (get_subgrid_weights_updated() .or. is_first_step() .or. &
+         is_first_restart_step() .or. use_fates .or. use_elm_interface .or. &
+         use_pflotran .or. use_c13 .or. use_c14 .or. nu_com /= 'RD')
+    call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, pc_skip_deep)
+    call t_stopf('CNPsum-precision')
 
-    call col_cf_summary_for_ch4(col_cf,bounds, num_soilc, filter_soilc)
+    ! col_cf_summary_for_ch4 and veg_cf_summary_for_ch4 already ran at the end
+    ! of EcosystemDynNoLeaching2, and nothing since has changed their inputs
+    ! (decomp_cascade_hr_vr and the veg cpool_to_*/xfer_to_* fluxes), so
+    ! calling them again here would rewrite the same values.
 
     ! Only update the veg_ data structures if we are using cn
     if(.not.use_fates) then
-       call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
-       call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
+       call t_startf('CNPsum-veg_cf')
+       call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf, &
+            hrv_zero=hrv_zero)
+       call t_stopf('CNPsum-veg_cf')
        if ( use_c13 ) then
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
           call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c13')
@@ -228,7 +259,9 @@ contains
           call veg_cf_Summary(veg_cf,bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
           call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'c14')
        end if
+       call t_startf('CNPsum-veg_cs')
        call veg_cs_Summary(veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
+       call t_stopf('CNPsum-veg_cs')
        if ( use_c13 ) then
           call veg_cs_Summary(c13_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
           call col_cs_Summary(c13_col_cs,bounds, num_soilc, filter_soilc)
@@ -237,10 +270,20 @@ contains
           call veg_cs_Summary(c14_veg_cs,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
           call col_cs_Summary(c14_col_cs,bounds, num_soilc, filter_soilc)
        end if
-       call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
+       call t_startf('CNPsum-veg_nf')
+       call veg_nf_Summary(veg_nf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf, &
+            hrv_zero=hrv_zero)
+       call t_stopf('CNPsum-veg_nf')
+       call t_startf('CNPsum-veg_ns')
        call veg_ns_Summary(veg_ns, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
-       call veg_pf_Summary(veg_pf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+       call t_stopf('CNPsum-veg_ns')
+       call t_startf('CNPsum-veg_pf')
+       call veg_pf_Summary(veg_pf, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf, &
+            hrv_zero=hrv_zero)
+       call t_stopf('CNPsum-veg_pf')
+       call t_startf('CNPsum-veg_ps')
        call veg_ps_Summary(veg_ps, bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
+       call t_stopf('CNPsum-veg_ps')
     else
        ! In this scenario, we simply zero all of the
        ! column level variables that would had been upscaled
@@ -253,14 +296,28 @@ contains
        call col_pf%ZeroForFates(bounds,num_soilc, filter_soilc)
     end if
 
-    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk')
+    call t_startf('CNPsum-col_cf')
+    ! hr_current relies on col_cf_summary_for_ch4(col_cf) at the end of
+    ! EcosystemDynNoLeaching2 having set the HR fluxes this step
+    call col_cf_Summary(col_cf,bounds, num_soilc, filter_soilc, 'bulk', hr_current=.true.)
+    call t_stopf('CNPsum-col_cf')
+    call t_startf('CNPsum-col_cs')
     call col_cs_Summary(col_cs,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_cs')
 
+    call t_startf('CNPsum-col_nf')
     call col_nf_Summary(col_nf,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_nf')
+    call t_startf('CNPsum-col_ns')
     call col_ns_Summary(col_ns,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_ns')
 
+    call t_startf('CNPsum-col_pf')
     call col_pf_Summary(col_pf,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_pf')
+    call t_startf('CNPsum-col_ps')
     call col_ps_Summary(col_ps,bounds, num_soilc, filter_soilc)
+    call t_stopf('CNPsum-col_ps')
 
     call t_stopf('CNPsum')
 
@@ -332,6 +389,11 @@ contains
 
     real(r8) :: dt, dayspyr
     integer  :: year, mon, day, sec
+    logical  :: zero_unused    ! zero the fluxes of inactive options in CNZero
+    logical  :: zero_harvest   ! zero the harvest fluxes in CNZero
+    logical  :: zero_fan       ! zero the FAN fluxes in CNZero
+    logical  :: zero_erosion   ! zero the erosion fluxes in CNZero
+    logical  :: zero_full      ! zero all decomposition levels in CNZero
     !-----------------------------------------------------------------------
     dt = dtime_mod;
     year = year_curr; mon = mon_curr; day = day_curr; sec= secs_curr
@@ -346,8 +408,30 @@ contains
 
     call t_startf('CNZero')
 
+    ! Some fluxes are written only when an option is on, and otherwise keep the
+    ! zero set here. Zero them every step only when their option is on; else
+    ! only when patches or columns may have become active (which includes the
+    ! first step of a run or restart). The vertical transport tendencies are
+    ! rewritten every step by SoilLittVertTransp for the levels and pools it
+    ! uses, and the rest stay zero. Isotope fluxes are always zeroed.
+    zero_unused  = get_subgrid_weights_updated() .or. is_first_step() .or. is_first_restart_step()
+    ! (EcosystemDynLeaching relies on this condition to skip the harvest fluxes)
+    zero_harvest = zero_unused .or. get_do_harvest() .or. iac_present .or. use_fates
+    zero_fan     = zero_unused .or. use_fan .or. fan_to_bgc_veg .or. fan_to_bgc_crop
+    zero_erosion = zero_unused .or. ero_ccycle
+    ! ELM writes the column vertically resolved fluxes only on levels 1:nlevdecomp,
+    ! so the deeper levels keep the zero set here. FATES and the ELM interface
+    ! (PFLOTRAN) write differently, so keep full zeroing there. Any new writer to
+    ! the deeper levels must also force zero_full. Some other fluxes are never
+    ! written, or are rewritten on every filter column (or patch) and level before
+    ! any read, so they too are zeroed only on these steps.
+    zero_full    = zero_unused .or. use_fates .or. use_elm_interface .or. use_pflotran
+
     if(.not.use_fates) then
-       call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8)
+       call t_startf('CNZero-veg_cf')
+       call veg_cf_SetValues(veg_cf, num_soilp, filter_soilp, 0._r8, &
+            zero_harvest=zero_harvest, zero_rewritten=zero_full)
+       call t_stopf('CNZero-veg_cf')
        if ( use_c13 ) then
           call veg_cf_setvalues(c13_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c13_col_cf,num_soilc, filter_soilc, 0._r8)
@@ -356,13 +440,31 @@ contains
           call veg_cf_setvalues(c14_veg_cf,num_soilp, filter_soilp, 0._r8)
           call col_cf_SetValues(c14_col_cf,num_soilc, filter_soilc, 0._r8)
        end if
-       call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8)
-       call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8)
+       call t_startf('CNZero-veg_nf')
+       call veg_nf_setvalues (veg_nf,num_soilp, filter_soilp, 0._r8, &
+            zero_harvest=zero_harvest, zero_rewritten=zero_full)
+       call t_stopf('CNZero-veg_nf')
+       call t_startf('CNZero-veg_pf')
+       call veg_pf_SetValues (veg_pf,num_soilp, filter_soilp, 0._r8, &
+            zero_harvest=zero_harvest, zero_rewritten=zero_full)
+       call t_stopf('CNZero-veg_pf')
     end if
 
-    call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8)
-    call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8)
-    call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8)
+    call t_startf('CNZero-col_cf')
+    call col_cf_SetValues(col_cf,num_soilc, filter_soilc, 0._r8, &
+         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused, &
+         zero_deep=zero_full, zero_rewritten=zero_full)
+    call t_stopf('CNZero-col_cf')
+    call t_startf('CNZero-col_nf')
+    call col_nf_SetValues(col_nf,num_soilc, filter_soilc, 0._r8, &
+         zero_harvest=zero_harvest, zero_fan=zero_fan, zero_erosion=zero_erosion, &
+         zero_deep=zero_full, zero_rewritten=zero_full)
+    call t_stopf('CNZero-col_nf')
+    call t_startf('CNZero-col_pf')
+    call col_pf_SetValues(col_pf,num_soilc, filter_soilc, 0._r8, &
+         zero_harvest=zero_harvest, zero_erosion=zero_erosion, zero_transport=zero_unused, &
+         zero_deep=zero_full, zero_rewritten=zero_full)
+    call t_stopf('CNZero-col_pf')
 
     call t_stopf('CNZero')
 
@@ -449,10 +551,15 @@ contains
 
     !-------------------------------------------------------------------------------------------------
     ! 'decomp_vertprofiles' (calc nfixation_prof) is moved from SoilLittDecompAlloc:
+    ! The driver computed the profiles of these points earlier in this step. When
+    ! decomp_vertprofiles_static() is .true. here, no weights changed since then and
+    ! alt_calc does not run in between, so a second call would recompute the same values.
     ! ------------------------------------------------------------------------------------------------
-    call decomp_vertprofiles(bounds,                        &
-          num_soilc, filter_soilc, num_soilp, filter_soilp, &
-          soilstate_vars, canopystate_vars, cnstate_vars)
+    if (.not. decomp_vertprofiles_static()) then
+       call decomp_vertprofiles(bounds,                        &
+             num_soilc, filter_soilc, num_soilp, filter_soilp, &
+             soilstate_vars, canopystate_vars, cnstate_vars)
+    end if
 
     !-------------------------------------------------------------------------------------------------
     ! This subroutine evaluates the current state of N and P supplementation
@@ -741,8 +848,10 @@ contains
 
 
 
+       call t_startf('CNUpdate2-CState2')
        call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             col_cs, veg_cs, col_cf, veg_cf, dt)
+       call t_stopf('CNUpdate2-CState2')
 
        if ( use_c13 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -752,11 +861,15 @@ contains
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
        end if
+       call t_startf('CNUpdate2-NState2')
        call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt )
+       call t_stopf('CNUpdate2-NState2')
 
+       call t_startf('CNUpdate2-PState2')
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
+       call t_stopf('CNUpdate2-PState2')
 
        if (get_do_harvest() .or. iac_present) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -776,8 +889,10 @@ contains
 
 
 
+       call t_startf('CNUpdate2-CState2h')
        call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
              col_cs, veg_cs, col_cf, veg_cf, dt)
+       call t_stopf('CNUpdate2-CState2h')
        if ( use_c13 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf, dt)
@@ -787,22 +902,34 @@ contains
                c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
        end if
 
+       call t_startf('CNUpdate2-NState2h')
        call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
+       call t_stopf('CNUpdate2-NState2h')
 
+       call t_startf('CNUpdate2-PState2h')
        call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
+       call t_stopf('CNUpdate2-PState2h')
 
+       call t_startf('CNUpdate2-WoodProducts')
        call WoodProducts(num_soilc, filter_soilc )
+       call t_stopf('CNUpdate2-WoodProducts')
 
+       call t_startf('CNUpdate2-CropHarvestPools')
        call CropHarvestPools(num_soilc, filter_soilc, dt)
+       call t_stopf('CNUpdate2-CropHarvestPools')
 
+       call t_startf('CNUpdate2-FireArea')
        call FireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, energyflux_vars, soilhydrology_vars, &
             cnstate_vars )
+       call t_stopf('CNUpdate2-FireArea')
 
+       call t_startf('CNUpdate2-FireFluxes')
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars)
+       call t_stopf('CNUpdate2-FireFluxes')
 
 
        call t_stopf('CNUpdate2')
@@ -859,6 +986,8 @@ contains
                cnstate_vars)
        end if
 
+       ! CNPsum in EcosystemDynLeaching relies on this call and the bulk
+       ! col_cf_summary_for_ch4 call below being the last ones this step.
        call veg_cf_summary_for_ch4(veg_cf,bounds, num_soilp, filter_soilp)
        if( use_c13 ) then
           call col_cf_summary_for_ch4(c13_col_cf,bounds, num_soilc, filter_soilc)

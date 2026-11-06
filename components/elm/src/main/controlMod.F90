@@ -63,12 +63,12 @@ module controlMod
                         glcmec_downscale_longwave, glc_snow_persistence_max_days, &
                         wrtdia, create_crop_landunit, nsegspc, co2_ppmv, &
                         subgridflag, irrigate, tw_irr, extra_gw_irr, &
-                        firrig_data, all_active, mpi_sync_nstep_freq, &
+                        firrig_data, run_zero_weight_urban, all_active, mpi_sync_nstep_freq, &
                         use_c13, use_c14, fates_paramfile, use_fates, &
                         use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
                         use_elm_interface, use_elm_bgc, use_pflotran, &
-                        use_hydrstress, domain_decomp_type, &
+                        use_hydrstress, domain_decomp_type, decomp_weight_patch_factor, &
                         use_IM2_hillslope_hydrology, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
@@ -273,8 +273,8 @@ contains
     namelist /elm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active, &
-         mpi_sync_nstep_freq
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, &
+         run_zero_weight_urban, all_active, mpi_sync_nstep_freq
     ! Urban options
 
     namelist /elm_inparm/  &
@@ -360,7 +360,7 @@ contains
 
     namelist /elm_inparm/ use_hydrstress
 
-    namelist /elm_inparm/ domain_decomp_type
+    namelist /elm_inparm/ domain_decomp_type, decomp_weight_patch_factor
 
     namelist /elm_inparm/ &
          use_IM2_hillslope_hydrology
@@ -788,6 +788,7 @@ contains
     call mpi_bcast(create_crop_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Other subgrid logic
+    call mpi_bcast(run_zero_weight_urban, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast(all_active, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! max number of plant functional types in naturally vegetated landunit
@@ -970,6 +971,7 @@ contains
 
     ! domain decomposition
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (decomp_weight_patch_factor, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! hillslope connectivity via topounits
     call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)

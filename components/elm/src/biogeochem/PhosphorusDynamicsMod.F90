@@ -412,6 +412,8 @@ contains
     real(r8):: k_s1_biochem_c         !specfic biochemical rate constant SOM 1
     real(r8), parameter :: r_bc = -5._r8
     real(r8):: sum 
+    real(r8):: pfac         !P limitation factor of one column and level
+    logical :: have_pfac    !pfac has been computed for this column and level
     !-----------------------------------------------------------------------
     associate(&
 
@@ -428,41 +430,45 @@ contains
       !$acc enter data create(sum) 
       ! set initial values for potential C and N fluxes
 
-      !$acc parallel loop independent gang vector collapse(3) default(present)
-      do l = 1, ndecomp_pools
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-
-               dtd = dt/(30._r8*secspday)
-               k_s1_biochem_c = k_s1_biochem( isoilorder(c) )
-               rr=-log(1._r8-k_s1_biochem_c)
-               k_s1_biochem_c = 1-exp(-rr*dtd)
-
-               if ( decomp_ppools_vr_col(c,j,l) > 0._r8 ) then
-
-                 biochem_pmin_ppools_vr_col(c,j,l) = decomp_ppools_vr_col(c,j,l)* &
-                                     k_s1_biochem_c * fpi_vr_col(c,j)*&
-                                     (1._r8-exp(r_bc*(1._r8-fpi_p_vr_col(c,j)) ))/dt
-
-               endif
-
-            end do
-         end do
-      end do
-
-      !$acc parallel loop independent gang worker collapse(2) default(present) private(sum,c)
+      ! The rate constant depends only on the column and the P limitation factor
+      ! only on the column and level, so evaluate them once per column and level
+      ! (the same expressions as when they were evaluated for every pool; the
+      ! limitation factor still only where a pool is positive). The pools of a
+      ! level are then summed in the same order as before.
+      dtd = dt/(30._r8*secspday)
+      !$acc parallel loop independent gang vector collapse(2) default(present) private(c,k_s1_biochem_c,rr,pfac,have_pfac,sum)
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
+
+            k_s1_biochem_c = k_s1_biochem( isoilorder(c) )
+            rr=-log(1._r8-k_s1_biochem_c)
+            k_s1_biochem_c = 1-exp(-rr*dtd)
+
+            have_pfac = .false.
+            !DIR$ NOVECTOR
+            do l = 1, ndecomp_pools
+               if ( decomp_ppools_vr_col(c,j,l) > 0._r8 ) then
+
+                 if (.not. have_pfac) then
+                    pfac = (1._r8-exp(r_bc*(1._r8-fpi_p_vr_col(c,j)) ))
+                    have_pfac = .true.
+                 end if
+                 biochem_pmin_ppools_vr_col(c,j,l) = decomp_ppools_vr_col(c,j,l)* &
+                                     k_s1_biochem_c * fpi_vr_col(c,j)*&
+                                     pfac/dt
+
+               endif
+            end do
+
             sum = 0._r8 
-            !$acc loop vector reduction(+:sum) 
+            !$acc loop seq
             do l = 1, ndecomp_pools
                sum = sum + biochem_pmin_ppools_vr_col(c,j,l)
             enddo
             biochem_pmin_vr_col(c,j) = sum
-         enddo
-      enddo
+         end do
+      end do
       !$acc exit data delete(sum) 
 
 
