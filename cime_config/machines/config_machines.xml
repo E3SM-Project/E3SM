@@ -3851,6 +3851,7 @@
         <env name="FI_CXI_DEFAULT_TX_SIZE">$SHELL{if [ 2048 -lt `./xmlquery --value NUM_NODES` ]; then echo "4096 FI_CXI_DEFAULT_RX_SIZE=4096"; else echo $FI_CXI_DEFAULT_TX_SIZE; fi;}</env>
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
+        <env name="MPIR_CVAR_PROGRESS_TIMEOUT">0</env>
         <env name="RLIMITS"> </env>
      </environment_variables>
      <environment_variables compiler="intelgpu">
