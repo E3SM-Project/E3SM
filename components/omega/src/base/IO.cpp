@@ -233,6 +233,9 @@ void init(int IOSysID, // [in] driver-owned SCORPIO iosystem id
    LOG_INFO("IO::init: using driver-owned SCORPIO iosystem {} with {} IO "
             "tasks and iotype {}",
             SysID, NumIOTasks, IOType);
+   // Driver logs PIO settings for each component to the cpl log at startup
+   LOG_INFO("IO::init: To see the rest of the OCN IO settings (stride, root, "
+            "rearranger) see the pio_* entries in the coupler log (cpl.log.*)");
 
    return;
 
