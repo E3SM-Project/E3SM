@@ -85,7 +85,7 @@ initialize_impl ()
   // plus the input field itself may carry its own mask.
   // Unless the input is masked (or may be filled), the mask only says where the
   // height is in range, so all diags at this height and layer have the same
-  // mask. Name it after the height, so that they share an avg count in IO.
+  // mask. Name it after the height, so that they share a valid count in IO.
   // NOTE: masks with the same name must hold the same values (IO and the horizontal
   //       remapper rely on it), so the name also carries any vector dimension.
   if (f.has_valid_mask() or f.get_header().may_be_filled()) {
