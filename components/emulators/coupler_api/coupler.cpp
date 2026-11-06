@@ -3,6 +3,7 @@
 #include <ekat_yaml.hpp>
 #include <field_registry.hpp>
 #include <filesystem>
+#include <functional>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -88,8 +89,8 @@ Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
       } else if (merge_type_str == "scale") {
         merge_type = MergeType::ScaledByFraction;
       } else {
-        throw std::runtime_error("Unknown merge type specified for " + route_id +
-                                 ": '" + merge_type_str +
+        throw std::runtime_error("Unknown merge type specified for " +
+                                 route_id + ": '" + merge_type_str +
                                  "' (expected 'direct' or 'scale')");
       }
 
@@ -217,7 +218,8 @@ ComponentBuffers& Coupler::component_buffers(std::string_view component_name) {
  * @brief: Create the buffers to allow transfer between components.
  *  If a route has no external_buffer, internal storage is allocated and used.
  */
-void Coupler::build_buffers(RouteBufferMap external_buffers) {
+void Coupler::build_buffers(RouteBufferMap external_buffers,
+                            const ComponentIntervals& intervals) {
   buffers_.clear();
 
   for (auto& route : routes_) {
@@ -251,6 +253,38 @@ void Coupler::build_buffers(RouteBufferMap external_buffers) {
       }
     }
 
+    route.source_component = source_field.component;
+    route.destination_components.clear();
+    route.averages = false;
+    const auto source_interval = intervals.find(route.source_component);
+    std::size_t n_slower_destinations = 0;
+    for (const auto dest_id : route.destinations) {
+
+      const auto& component = registry_.get(dest_id).component;
+      route.destination_components.push_back(component);
+
+      const auto dest_interval = intervals.find(component);
+      if (source_interval != intervals.end() &&
+          dest_interval != intervals.end() &&
+          dest_interval->second > source_interval->second) {
+        ++n_slower_destinations;
+      }
+    }
+    if (n_slower_destinations > 0) {
+      if (n_slower_destinations != route.destinations.size()) {
+        throw std::runtime_error(
+            "Route '" + route.name +
+            "': some destinations run less often than source '" +
+            route.source_component +
+            "' and others don't, so they'd need different values. Use separate "
+            "routes.");
+      }
+      route.averages = true;
+      route.accumulator.assign(route.buffer.size(), 0.0);
+      route.mean.assign(route.buffer.size(), 0.0);
+      route.n_samples = 0;
+    }
+
     auto& source_buffers = buffers_[source_field.component];
     source_buffers.exports.push_back({
         .id = source_id,
@@ -261,8 +295,8 @@ void Coupler::build_buffers(RouteBufferMap external_buffers) {
       const auto& dest_field = registry_.get(dest_id);
       if (dest_field.size != route.buffer.size()) {
         throw std::runtime_error(
-            "Route '" + route.name + "': destination '" +
-            dest_field.component + "' has " + std::to_string(dest_field.size) +
+            "Route '" + route.name + "': destination '" + dest_field.component +
+            "' has " + std::to_string(dest_field.size) +
             " value(s), but source '" + source_field.component + "' has " +
             std::to_string(route.buffer.size()));
       }
@@ -270,10 +304,43 @@ void Coupler::build_buffers(RouteBufferMap external_buffers) {
 
       dest_buffer.imports.push_back({
           .id = dest_id,
-          .data = route.buffer,
+          .data = route.averages ? std::span<const double>(route.mean)
+                                 : std::span<const double>(route.buffer),
       });
     }
   } // routes loop
+}
+
+void Coupler::accumulate_exports(std::string_view component_name) {
+  for (auto& route : routes_) {
+    if (!route.averages || route.source_component != component_name) {
+      continue;
+    }
+    std::ranges::transform(route.accumulator, route.buffer,
+                           route.accumulator.begin(), std::plus<>{});
+    ++route.n_samples;
+  }
+}
+
+void Coupler::prepare_imports(std::string_view component_name) {
+  for (auto& route : routes_) {
+    if (!route.averages ||
+        std::ranges::find(route.destination_components, component_name) ==
+            route.destination_components.end()) {
+      continue;
+    }
+    if (route.n_samples == 0) {
+      throw std::runtime_error(
+          "Route '" + route.name + "': '" + std::string(component_name) +
+          "' is importing a time mean, but source '" + route.source_component +
+          "' has exported nothing since the last import");
+    }
+    const auto n_samples = static_cast<double>(route.n_samples);
+    std::ranges::transform(route.accumulator, route.mean.begin(),
+                           [n_samples](double sum) { return sum / n_samples; });
+    std::ranges::fill(route.accumulator, 0.0);
+    route.n_samples = 0;
+  }
 }
 
 void Coupler::print_field_buffer(std::ostream& os, FieldID id,

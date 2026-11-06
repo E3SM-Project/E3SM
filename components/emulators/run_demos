@@ -18,7 +18,7 @@ YEAR="1985"
 
 WORK_DIR="${SCRIPT_DIR}/demo_data/SamudrACE"
 BUILD_DIR="${SCRIPT_DIR}/build-demo"
-N_STEPS=2
+N_COUPLED_STEPS=2
 
 usage() {
     cat <<USAGE
@@ -31,7 +31,9 @@ Options:
   --work-dir DIR   Python environment, model data, and results
                    (default: demo_data/SamudrACE)
   --build-dir DIR  CMake build directory (default: build-demo)
-  --n-steps N      Atmosphere steps to run, 1 to 20 (default: ${N_STEPS})
+  --n-coupled-steps N
+                   Coupled steps to run, each 20 atmosphere steps and 1 ocean
+                   step, or about 3 minutes on a CPU (default: ${N_COUPLED_STEPS})
   --help           Show this help message
 USAGE
 }
@@ -49,7 +51,7 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --work-dir) need_value "$@"; WORK_DIR="$(realpath -m "$2")"; shift 2 ;;
         --build-dir) need_value "$@"; BUILD_DIR="$(realpath -m "$2")"; shift 2 ;;
-        --n-steps) need_value "$@"; N_STEPS="$2"; shift 2 ;;
+        --n-coupled-steps) need_value "$@"; N_COUPLED_STEPS="$2"; shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) usage >&2; fail "Unknown option: $1" ;;
     esac
@@ -84,6 +86,7 @@ download_data() {
         "initial_conditions/restart-ic-1985-2015_atmosphere.nc"
         "initial_conditions/restart-ic-1985-2015_ocean.nc"
         "forcing_data/atmosphere-forcing-${YEAR}.nc"
+        "forcing_data/ocean-forcing-${YEAR}.nc"
     )
     local missing=()
     local file
@@ -141,7 +144,7 @@ run_samudrace() {
     print_status "Preparing inputs and reference results..."
     "${PYTHON}" "${SCRIPT_DIR}/demos/SamudrACE/prepare_demo.py" \
         --data-dir "${WORK_DIR}/e3smv3" --fields "${FIELDS}" --run-dir "${run_dir}" \
-        --flavor "${FLAVOR}" --year "${YEAR}" --n-steps "${N_STEPS}"
+        --flavor "${FLAVOR}" --year "${YEAR}" --n-coupled-steps "${N_COUPLED_STEPS}"
 
     print_status "Running the demo..."
     # An embedded Python has to be told where its standard library is

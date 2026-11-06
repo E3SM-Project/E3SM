@@ -1,0 +1,18 @@
+fields:
+  flux:
+    kind: flux
+    name: flux
+    merge_type: direct
+    sources:
+      - fast
+    destinations:
+      - slow
+      - sibling
+  sst:
+    kind: flux
+    name: sst
+    merge_type: direct
+    sources:
+      - slow
+    destinations:
+      - fast

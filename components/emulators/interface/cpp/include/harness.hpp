@@ -25,7 +25,11 @@ struct ProcessDescriptor {
 };
 
 class Harness {
-  using ProcessMap = std::map<std::string, ProcessRunOpts>;
+  struct ProcessState {
+    ProcessRunOpts run_opts;
+    int calls_since_run = 0;
+  };
+  using ProcessMap = std::map<std::string, ProcessState>;
 
 public:
   // neither copyable nor movable
@@ -41,7 +45,10 @@ public:
   void initialize(const std::filesystem::path& plan) {
     initialize(plan, RouteBufferMap{});
   }
-  void run_process(std::string_view name);
+  /// Call once per base step. A process with a coupling_interval of N imports,
+  /// runs, and exports on every Nth call.
+  /// @return whether the process ran
+  bool run_process(std::string_view name);
   void add_process(ProcessDescriptor desc);
   void import_to_external(std::string_view name);
   void export_from_external(std::string_view name);

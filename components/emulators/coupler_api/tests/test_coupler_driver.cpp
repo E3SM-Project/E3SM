@@ -1,3 +1,4 @@
+#include <functional>
 #include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
@@ -122,6 +123,63 @@ private:
   CouplingAdapter coupling_;
 };
 static_assert(CoupledProcess<ExternalComponent>);
+
+// One input and one output, each a single value. `model` computes the output
+// from the input and how many times the component has run, from 1.
+class RateComponent {
+public:
+  RateComponent(std::string name, std::string input, std::string output,
+                std::function<double(double, int)> model)
+      : name_(std::move(name)), input_name_(std::move(input)),
+        output_name_(std::move(output)), model_(std::move(model)) {}
+
+  std::string_view name() const { return name_; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(
+        registry,
+        {.role = FieldRole::Import, .component = name_, .name = input_name_, .size = 1},
+        input_);
+    coupling_.register_coupled_field(
+        registry,
+        {.role = FieldRole::Export, .component = name_, .name = output_name_, .size = 1},
+        output_);
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) { output_[0] = model_(input_[0], ++runs_); }
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+  double input() const { return input_[0]; }
+
+private:
+  std::string name_;
+  std::string input_name_;
+  std::string output_name_;
+  std::function<double(double, int)> model_;
+  std::vector<double> input_{0.0};
+  std::vector<double> output_{0.0};
+  int runs_ = 0;
+  CouplingAdapter coupling_;
+};
+static_assert(CoupledProcess<RateComponent>);
+
+// `fast` outputs 1, 2, 3, ... and `slow` outputs ten times its input
+std::unique_ptr<RateComponent> make_fast() {
+  return std::make_unique<RateComponent>(
+      "fast", "sst", "flux", [](double, int runs) { return double(runs); });
+}
+std::unique_ptr<RateComponent> make_slow() {
+  return std::make_unique<RateComponent>(
+      "slow", "flux", "sst", [](double input, int) { return 10.0 * input; });
+}
 } // namespace
 
 TEST_CASE("CouplerDriver rejects an unknown merge type") {
@@ -156,6 +214,78 @@ TEST_CASE("A prognostic field advances through external storage") {
     REQUIRE(state[0] == 10.0 + step);
     REQUIRE(state[1] == 20.0 + step);
   }
+}
+
+TEST_CASE("A route into a slower component delivers a time mean") {
+  using Catch::Matchers::Contains;
+  CouplerDriver driver{};
+  driver.add_component(make_fast());
+  driver.add_component(make_slow());
+  driver.initialize(TEST_DATA_DIR "/rate_plan.yaml", RouteBufferMap{},
+                    ComponentIntervals{{"fast", 1}, {"slow", 3}});
+  auto& fast = driver.get_component_as<RateComponent>("fast");
+  auto& slow = driver.get_component_as<RateComponent>("slow");
+  const ProcessRunOpts opts{1.0, 1};
+
+  REQUIRE_THROWS_WITH(driver.run_component("slow", opts),
+                      Contains("'flux'") && Contains("'slow'") &&
+                          Contains("exported nothing"));
+
+  // The first window's mean is (1 + 2 + 3) / 3
+  for (int i = 0; i < 3; ++i) {
+    driver.run_component("fast", opts);
+  }
+  driver.run_component("slow", opts);
+  REQUIRE(slow.input() == 2.0);
+
+  // The reverse route isn't averaged: each fast step sees slow's latest output
+  for (int i = 0; i < 2; ++i) {
+    driver.run_component("fast", opts);
+    REQUIRE(fast.input() == 20.0);
+  }
+  driver.run_component("fast", opts);
+
+  // The count has reset, so this window's mean is (4 + 5 + 6) / 3
+  driver.run_component("slow", opts);
+  REQUIRE(slow.input() == 5.0);
+}
+
+TEST_CASE("Routes deliver the latest value unless the destination is slower") {
+  const auto final_slow_input = [](const ComponentIntervals& intervals) {
+    CouplerDriver driver{};
+    driver.add_component(make_fast());
+    driver.add_component(make_slow());
+    driver.initialize(TEST_DATA_DIR "/rate_plan.yaml", RouteBufferMap{}, intervals);
+    const ProcessRunOpts opts{1.0, 1};
+    for (int i = 0; i < 3; ++i) {
+      driver.run_component("fast", opts);
+    }
+    driver.run_component("slow", opts);
+    return driver.get_component_as<RateComponent>("slow").input();
+  };
+
+  SECTION("same rate") {
+    REQUIRE(final_slow_input({{"fast", 2}, {"slow", 2}}) == 3.0);
+  }
+  SECTION("no intervals") { REQUIRE(final_slow_input({}) == 3.0); }
+  SECTION("a component without an interval, like cpl7") {
+    REQUIRE(final_slow_input({{"slow", 3}}) == 3.0);
+    REQUIRE(final_slow_input({{"fast", 1}}) == 3.0);
+  }
+}
+
+TEST_CASE("One route cannot deliver both a mean and the latest value") {
+  using Catch::Matchers::Contains;
+  CouplerDriver driver{};
+  driver.add_component(make_fast());
+  driver.add_component(make_slow());
+  driver.add_component(std::make_unique<RateComponent>(
+      "sibling", "flux", "other", [](double input, int) { return input; }));
+
+  REQUIRE_THROWS_WITH(
+      driver.initialize(TEST_DATA_DIR "/mixed_rate_plan.yaml", RouteBufferMap{},
+                        ComponentIntervals{{"fast", 1}, {"slow", 3}, {"sibling", 1}}),
+      Contains("'flux'") && Contains("separate routes"));
 }
 
 TEST_CASE("Two routes cannot deliver to the same input") {

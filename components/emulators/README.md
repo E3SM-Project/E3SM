@@ -305,6 +305,29 @@ To couple emulators without `CPL7`, or to add another kind of component, use `Co
 Any class that satisfies the `CoupledProcess` concept in `coupler_api/include/process.hpp` can be added with `add_component`.
 `coupler_api/tests/test_coupler_driver.cpp` shows this with fake components.
 
+### Processes that run at different rates
+
+`coupling_interval` sets how often a process runs, in base steps. Call `run_process` for every process once per base step: it imports, runs, and exports on every Nth call, and returns whether the process ran. This atmosphere runs every 6 hours, and this ocean every 5 days:
+
+```cpp
+ProcessRunOpts atmosphere{.dt = 21600.f, .coupling_interval = 1};
+ProcessRunOpts ocean{.dt = 432000.f, .coupling_interval = 20};
+```
+
+`initialize` rejects an interval below 1, and processes whose `dt / coupling_interval` differ, since they must share a base step.
+
+No configuration decides how fields cross between rates. It follows from the intervals:
+
+| Route | Destination receives |
+| --- | --- |
+| Into a process that runs less often than its source | The mean of the source's exports since the destination last ran |
+| Into a process that runs as often or more often | The source's latest value, held until it runs again |
+| To or from `cpl7` | The latest value, because `CPL7` does its own averaging |
+
+All destinations of a route must be treated the same way, so a field going to processes at different rates needs a separate route for each.
+
+A process's prognostic fields need one extra step if it runs less often than the base step. `import_to_external` runs every base step, and would copy the process's empty `_out` route over its state before the process first runs. To avoid that, pass the state's span in a `RouteBufferMap` for both the `<name>_out` and `<name>_in` routes, so nothing is copied. See `demos/SamudrACE/samudrace_demo.cpp`.
+
 ### Prognostic fields
 
 A prognostic field is both an input and an output of an emulator, such as an atmosphere's `T_0`. Nothing copies an output back to its input automatically, so the field leaves through `cpl7` and returns on the next step, using two routes:

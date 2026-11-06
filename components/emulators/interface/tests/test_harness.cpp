@@ -185,6 +185,68 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
   REQUIRE(state == Doubles{12.0, 22.0});
 }
 
+TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
+  using Catch::Contains;
+  using Doubles = std::vector<double>;
+  auto config =
+      read_emulator_config(TEST_DATA_DIR "/prognostic_emulator_config.yaml");
+  Doubles state{10.0, 20.0};
+  const auto bindings = [&state] {
+    return ExternalBindings{
+        .to_external = {{"state", state}},
+        .from_external = {{"state", state}},
+    };
+  };
+  const auto descriptor = [&config](float dt, int interval) {
+    return ProcessDescriptor{
+        .run_opts = ProcessRunOpts{.dt = dt, .coupling_interval = interval},
+        .grid = make_test_grid(),
+        .emulator_config = config,
+    };
+  };
+  const auto plan = TEST_DATA_DIR "/test_prognostic_plan.yaml";
+
+  SECTION("runs on every third call") {
+    Harness harness;
+    harness.transfer_bindings(bindings());
+    harness.add_process(descriptor(3.f, 3));
+    harness.initialize(plan);
+    auto& emulator = harness.get_process<Emulator>(std::string_view(config.name));
+
+    const auto input = [&emulator] {
+      const auto span = emulator.get_field("state", ModelFieldRole::Input);
+      return Doubles(span.begin(), span.end());
+    };
+
+    harness.export_from_external("cpl7");
+    REQUIRE_FALSE(harness.run_process(config.name));
+    REQUIRE_FALSE(harness.run_process(config.name));
+    REQUIRE(input() == Doubles{0.0, 0.0}); // hasn't imported yet
+    REQUIRE(harness.run_process(config.name));
+    REQUIRE(input() == Doubles{10.0, 20.0});
+    REQUIRE_FALSE(harness.run_process(config.name));
+  }
+
+  SECTION("rejects an interval below 1") {
+    Harness harness;
+    harness.transfer_bindings(bindings());
+    harness.add_process(descriptor(1.f, 0));
+    REQUIRE_THROWS_WITH(harness.initialize(plan),
+                        Contains("coupling_interval") && Contains("at least 1"));
+  }
+
+  SECTION("rejects processes with different base steps") {
+    Harness harness;
+    harness.transfer_bindings(bindings());
+    harness.add_process(descriptor(6.f, 1));
+    config.name = "other-emulator";
+    harness.add_process(descriptor(120.f, 10));
+    REQUIRE_THROWS_WITH(harness.initialize(plan),
+                        Contains("dt / coupling_interval") &&
+                            Contains("other-emulator"));
+  }
+}
+
 TEST_CASE("Harness prints its external bindings on request", "[harness]") {
   using Catch::Contains;
   std::vector<double> to_external{1.5, 2.5};
