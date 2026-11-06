@@ -8,7 +8,9 @@
 /// driver (CIME/shr_pio), so Omega must reuse it instead of creating its own.
 /// This test creates an iosystem the way a driver would, using IO settings
 /// that differ from the Omega config, and checks that IO::init adopts that
-/// iosystem, its iotype and its netCDF format.
+/// iosystem, its iotype and its netCDF format. It then writes and reads a file
+/// with each driver iotype and netCDF format and checks the netCDF file
+/// version in the file header.
 ///
 //
 //===-----------------------------------------------------------------------===/
@@ -22,9 +24,97 @@
 #include "Pacer.h"
 #include "mpi.h"
 
+#include <filesystem>
+#include <fstream>
+#include <string>
 #include <vector>
 
 using namespace OMEGA;
+
+//------------------------------------------------------------------------------
+// Returns the netCDF file version (1=classic, 2=64-bit offset, 5=64-bit data)
+// from the header of a classic-family netCDF file, or -1 if not netCDF.
+static int readNetCDFVersion(const std::string &Filename) {
+   std::ifstream File(Filename, std::ios::binary);
+   char Magic[4] = {0, 0, 0, 0};
+   File.read(Magic, 4);
+   if (!File || Magic[0] != 'C' || Magic[1] != 'D' || Magic[2] != 'F')
+      return -1;
+   return static_cast<int>(Magic[3]);
+}
+
+//------------------------------------------------------------------------------
+// Initializes IO with the given driver settings, then writes and reads back a
+// distributed array using the default file format and checks that the file
+// was written with the expected netCDF version.
+static void testWriteRead(int DriverSysID,     // driver iosystem id
+                          int DriverIOType,    // driver iotype
+                          int DriverNCFormat,  // driver netCDF format flag
+                          int ExpectedVersion, // expected netCDF file version
+                          MPI_Comm Comm,       // communicator of the iosystem
+                          I4 MyTask,           // this task's rank
+                          I4 NumTasks          // number of tasks
+) {
+
+   IO::init(DriverSysID, DriverIOType, DriverNCFormat);
+
+   const std::string Filename = "IOCoupledInitTest_" +
+                                std::to_string(DriverIOType) + "_" +
+                                std::to_string(DriverNCFormat) + ".nc";
+
+   // One element per task so every task owns a distinct global index
+   std::vector<int> DimLengths = {NumTasks};
+   std::vector<int> GlobalIndx = {MyTask};
+   int DecompID = IO::createDecomp(IO::IOTypeI4, 1, DimLengths, 1, GlobalIndx,
+                                   IO::DefaultRearr);
+
+   // Default file format, so the driver iotype and netCDF format are used
+   int FileID;
+   bool NewFile;
+   IO::openFileWrite(FileID, Filename, NewFile, IO::IfExists::Replace);
+   int DimID    = IO::defineDim(FileID, "NTasks", NumTasks);
+   int DimIDs[] = {DimID};
+   int VarID    = IO::defineVar(FileID, "Data", IO::IOTypeI4, 1, DimIDs);
+   IO::endDefinePhase(FileID);
+
+   I4 Fill     = -999;
+   I4 WriteVal = 10 * MyTask + 1;
+   IO::writeArray(&WriteVal, 1, &Fill, FileID, DecompID, VarID);
+   IO::closeFile(FileID);
+
+   int ReadFileID;
+   IO::openFileRead(ReadFileID, Filename);
+   I4 ReadVal = -1;
+   int ReadVarID;
+   Error Err =
+       IO::readArray(&ReadVal, 1, "Data", ReadFileID, DecompID, ReadVarID);
+   CHECK_ERROR_ABORT(Err, "IOCoupledInitTest: FAIL reading array from {}",
+                     Filename);
+   IO::closeFile(ReadFileID);
+
+   if (ReadVal != WriteVal)
+      ABORT_ERROR("IOCoupledInitTest: FAIL read {} but wrote {} in {}", ReadVal,
+                  WriteVal, Filename);
+
+   // Only the master task inspects the file; share the result
+   MPI_Barrier(Comm);
+   int Version = -1;
+   if (MyTask == 0)
+      Version = readNetCDFVersion(Filename);
+   MPI_Bcast(&Version, 1, MPI_INT, 0, Comm);
+
+   if (Version != ExpectedVersion)
+      ABORT_ERROR("IOCoupledInitTest: FAIL {} is netCDF version {} but the "
+                  "driver iotype {} and netCDF format {} should give {}",
+                  Filename, Version, DriverIOType, DriverNCFormat,
+                  ExpectedVersion);
+
+   IO::destroyDecomp(DecompID);
+
+   MPI_Barrier(Comm);
+   if (MyTask == 0)
+      std::filesystem::remove(Filename);
+}
 
 //------------------------------------------------------------------------------
 // The test driver for a driver-owned SCORPIO iosystem.
@@ -117,6 +207,17 @@ int main(int argc, char *argv[]) {
       int DecompID = IO::createDecomp(IO::IOTypeI4, 1, DimLengths, 1,
                                       GlobalIndx, IO::DefaultRearr);
       IO::destroyDecomp(DecompID);
+
+      // Files must be written with the driver's netCDF format for both the
+      // serial and parallel netCDF iotypes
+      const I4 IOTypes[]      = {PIO_IOTYPE_NETCDF, PIO_IOTYPE_PNETCDF};
+      const I4 NCFormats[][2] = {{0, 1},                // classic
+                                 {PIO_64BIT_OFFSET, 2}, // CDF2
+                                 {PIO_64BIT_DATA, 5}};  // CDF5
+      for (I4 IOType : IOTypes)
+         for (const auto &NCFormat : NCFormats)
+            testWriteRead(DriverSysID, IOType, NCFormat[0], NCFormat[1],
+                          DefComm, MyTask, NumTasks);
 
       PIOc_finalize(DriverSysID);
 
