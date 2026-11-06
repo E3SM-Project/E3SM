@@ -1637,8 +1637,8 @@ contains
 
          enddo ! iCell
 
-         ! frazil: salt in all new ice (kg m-2 per step), using the new ice
-         ! salinity for mushy thermodynamics and the reference salinity otherwise
+         ! frazil: salt in all new ice (kg m-2 per step), using the new ice salinity
+         ! with omega-fluxes or prognostic salt fluxes, the reference salinity otherwise
          do iCell = 1, nCellsSolve
 
             frazilCell = (frazilSalt(iCell) * areaCell(iCell)) / dt
@@ -2917,6 +2917,7 @@ contains
 
       type(MPAS_pool_type), pointer :: &
            meshPool, &
+           tracersPool, &
            tracersAggregatePool, &
            oceanCouplingPool, &
            conservationCheckAMPool
@@ -2924,8 +2925,13 @@ contains
       logical, pointer :: &
            config_AM_conservationCheck_include_ocean
 
+      character(len=strKIND), pointer :: &
+           config_salt_flux_coupling_type
+
       integer, pointer :: &
            nCellsSolve, &
+           nCategories, &
+           nIceLayers, &
            nHemispheres
 
       real(kind=RKIND), dimension(:), pointer :: &
@@ -2935,7 +2941,8 @@ contains
            seaSurfaceSalinity
 
       real(kind=RKIND), dimension(:,:,:), pointer :: &
-           iceVolumeCategory
+           iceVolumeCategory, &
+           iceSalinity
 
       integer, dimension(:,:), pointer :: &
            cellInHemisphere
@@ -2943,7 +2950,14 @@ contains
       integer :: &
            iCell, &
            iCategory, &
+           iIceLayer, &
            iHemisphere
+
+      real(kind=RKIND) :: &
+           nIceLayersInverse
+
+      logical :: &
+           prognosticSalt
 
       real(kind=RKIND) :: &
            saltCell, &
@@ -2964,13 +2978,21 @@ contains
       do while (associated(blockPtr))
 
          call MPAS_pool_get_config(blockPtr % configs, "config_AM_conservationCheck_include_ocean", config_AM_conservationCheck_include_ocean)
+         call MPAS_pool_get_config(blockPtr % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
+
+         ! consistent with the Icepack saltflux_option: with 'prognostic' the salt
+         ! fluxes use the prognostic ice salinity, otherwise the reference salinity
+         prognosticSalt = (trim(config_salt_flux_coupling_type) == "prognostic")
 
          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+         call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
          call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
          call MPAS_pool_get_subpool(blockPtr % structs, "ocean_coupling", oceanCouplingPool)
          call MPAS_pool_get_subpool(blockPtr % structs, "conservationCheckAM", conservationCheckAMPool)
 
          call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nCategories', nCategories)
+         call MPAS_pool_get_dimension(blockPtr % dimensions, 'nIceLayers', nIceLayers)
 
          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
          call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
@@ -2978,11 +3000,36 @@ contains
          call MPAS_pool_get_array(oceanCouplingPool, "oceanMixedLayerDepth", oceanMixedLayerDepth)
          call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
 
+         if (prognosticSalt) then
+            call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
+            call MPAS_pool_get_array(tracersPool, "iceSalinity", iceSalinity, 1)
+         endif
+
+         nIceLayersInverse = 1.0_RKIND / real(nIceLayers,RKIND)
+
          do iCell = 1, nCellsSolve
 
-            ! ice and snow mass
-            saltCell = &
-                 iceVolumeCell(iCell) * areaCell(iCell) * seaiceDensityIce * seaiceReferenceSalinity * 0.001_RKIND
+            ! ice salt
+            if (prognosticSalt) then
+
+               ! prognostic salinity in each ice layer and category
+               saltCell = 0.0_RKIND
+               do iCategory = 1, nCategories
+                  do iIceLayer = 1, nIceLayers
+                     saltCell = saltCell + &
+                          iceSalinity(iIceLayer,iCategory,iCell) * &
+                          iceVolumeCategory(1,iCategory,iCell) * nIceLayersInverse
+                  enddo ! iIceLayer
+               enddo ! iCategory
+               saltCell = saltCell * areaCell(iCell) * seaiceDensityIce * 0.001_RKIND
+
+            else
+
+               ! fixed reference salinity
+               saltCell = &
+                    iceVolumeCell(iCell) * areaCell(iCell) * seaiceDensityIce * seaiceReferenceSalinity * 0.001_RKIND
+
+            endif
 
             do iHemisphere = 1, nHemispheres
                if (cellInHemisphere(iHemisphere,iCell) == 1) then

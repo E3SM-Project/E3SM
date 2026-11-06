@@ -10192,6 +10192,16 @@ subroutine init_column_waves(domain)
               messageType=MPAS_LOG_CRIT)
          endif
 
+         ! omega-fluxes frazil coupling is only supported with mushy thermodynamics,
+         ! since Icepack only sets the new ice volume and salinity from the
+         ! frazil fluxes for mushy thermodynamics
+         if (trim(config_frazil_coupling_type) == "omega-fluxes" .and. &
+          trim(config_thermodynamics_type) /= "mushy") then
+            call mpas_log_write(&
+              'check_column_package_configs: config_frazil_coupling_type=''omega-fluxes'' requires config_thermodynamics_type=''mushy''', &
+              messageType=MPAS_LOG_CRIT)
+         endif
+
     ! check for itd remapping with only one category
     if (nCategories == 1 .and. trim(config_itd_conversion_type) == "linear remap") then
        call mpas_log_write(&
