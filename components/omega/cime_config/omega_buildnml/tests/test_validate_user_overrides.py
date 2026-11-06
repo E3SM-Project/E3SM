@@ -94,24 +94,22 @@ def test_overriding_an_existing_stream_is_allowed(defaults):
     assert validated == user_overrides
 
 
-@pytest.mark.parametrize("option", ["IOBaseTask", "IORearranger"])
+_DRIVER_OWNED_IO_OPTIONS = {
+    "IOTasks": 8,
+    "IOStride": 2,
+    "IOBaseTask": 4,
+    "IORearranger": "subset",
+    "IODefaultFormat": "netcdf3",
+}
+
+
+@pytest.mark.parametrize("option", list(_DRIVER_OWNED_IO_OPTIONS))
 def test_driver_owned_io_options_are_rejected(option, defaults):
     """
-    The base IO task and rearranger are owned by the driver (CIME/shr_pio),
-    so a user may not override them in ``user_nl_omega``.
+    The parallel IO layout is owned by the driver (CIME/shr_pio), so a user
+    may not override it in ``user_nl_omega``.
     """
-    user_overrides = {
-        "IO": {option: 4 if option == "IOBaseTask" else "subset"}
-    }
+    user_overrides = {"IO": {option: _DRIVER_OWNED_IO_OPTIONS[option]}}
 
     with pytest.raises(ValueError, match="cannot be overridden"):
         validate_user_overrides(user_overrides, defaults)
-
-
-def test_component_configurable_io_options_are_allowed(defaults):
-    """``IOTasks`` and ``IOStride`` remain component-configurable."""
-    user_overrides = {"IO": {"IOTasks": 8, "IOStride": 2}}
-
-    validated = validate_user_overrides(user_overrides, defaults)
-
-    assert validated == user_overrides

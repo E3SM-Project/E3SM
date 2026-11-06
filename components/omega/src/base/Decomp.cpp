@@ -324,7 +324,7 @@ void readMesh(
    }
 
    // Create the parallel IO decompositions
-   IO::Rearranger Rearr  = IO::RearrBox;
+   IO::Rearranger Rearr  = IO::DefaultRearr;
    I4 OnCellDecomp       = IO::createDecomp(IO::IOTypeI4, NDims, OnCellDims,
                                             OnCellSize, OnCellOffset, Rearr);
    I4 OnEdgeDecomp       = IO::createDecomp(IO::IOTypeI4, NDims, OnEdgeDims,

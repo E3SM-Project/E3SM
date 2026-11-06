@@ -53,6 +53,36 @@ void initIOTest() {
 }
 
 //------------------------------------------------------------------------------
+// Checks that omitted, "default" or unknown file formats resolve to the default
+// format set on initialization, rather than a hard-coded format, while an
+// explicitly requested format is preserved.
+void testFileFmtFromString() {
+
+   const IO::FileFmt SavedFmt = IO::DefaultFileFmt;
+
+   // Use a default that differs from the built-in IO::FmtDefault
+   IO::DefaultFileFmt = IO::FmtNetCDF3;
+
+   if (IO::FileFmtFromString("") != IO::FmtNetCDF3)
+      ABORT_ERROR("IOTest: blank file format did not use the default FAIL");
+
+   if (IO::FileFmtFromString("default") != IO::FmtNetCDF3 ||
+       IO::FileFmtFromString("Default") != IO::FmtNetCDF3)
+      ABORT_ERROR("IOTest: \"default\" file format did not use the default "
+                  "FAIL");
+
+   if (IO::FileFmtFromString("badformat") != IO::FmtNetCDF3)
+      ABORT_ERROR("IOTest: unknown file format did not use the default FAIL");
+
+   if (IO::FileFmtFromString("pnetcdf") != IO::FmtPnetCDF)
+      ABORT_ERROR("IOTest: explicit file format was not preserved FAIL");
+
+   IO::DefaultFileFmt = SavedFmt;
+
+   return;
+}
+
+//------------------------------------------------------------------------------
 // The test driver for IO. This creates several distributed arrays and
 // associated metadata, writes that data to a file, then re-reads the data
 // to ensure both reading and writing produce the same data.
@@ -784,6 +814,8 @@ int main(int argc, char *argv[]) {
       IO::destroyDecomp(DecompVrtxI8);
       IO::destroyDecomp(DecompVrtxR4);
       IO::destroyDecomp(DecompVrtxR8);
+
+      testFileFmtFromString();
 
       // Exit environments
       Decomp::clear();

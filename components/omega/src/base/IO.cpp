@@ -29,6 +29,7 @@ namespace IO {
 int SysID               = 0;
 FileFmt DefaultFileFmt  = FmtDefault;
 Rearranger DefaultRearr = RearrDefault;
+int DefaultNetCDFMode   = -1;
 
 // Utilities
 //------------------------------------------------------------------------------
@@ -78,12 +79,16 @@ FileFmtFromString(const std::string &Format // [in] choice of IO file format
    // case when no explicit format is supplied by an IOStream and the default
    // is desired
    if (Format.empty())
-      return FmtDefault;
+      return DefaultFileFmt;
 
    // Convert input string to lowercase for easier comparison
    std::string FmtCompare = Format;
    std::transform(FmtCompare.begin(), FmtCompare.end(), FmtCompare.begin(),
                   [](unsigned char c) { return std::tolower(c); });
+
+   // "default" means the format set on initialization, not the built-in one
+   if (FmtCompare == "default")
+      return DefaultFileFmt;
 
    // Find the map entry corresponding to the string choice
    auto FmtFound = FmtMap.find(FmtCompare);
@@ -92,7 +97,7 @@ FileFmtFromString(const std::string &Format // [in] choice of IO file format
    // try to use the default anyway after printing a warning
    if (FmtFound == FmtMap.end()) {
       LOG_WARN("IO: Unknown file format {}; using default instead", FmtCompare);
-      return FmtDefault;
+      return DefaultFileFmt;
    }
 
    // Extract and return enum corresponding to string
@@ -143,54 +148,11 @@ IfExists IfExistsFromString(
 // Methods
 //------------------------------------------------------------------------------
 // Initializes the IO system based on configuration inputs and
-// default MPI communicator. The base task and rearranger are read from the
-// Omega configuration and forwarded to the driver-owned overload below.
+// default MPI communicator. Creates a SCORPIO iosystem using the parallel IO
+// settings in the Omega configuration. Used for standalone runs and unit
+// tests; coupled runs use the overload below.
 void init(const MPI_Comm &InComm // [in] MPI communicator to use
 ) {
-
-   // Retrieve the driver-owned parallel IO parameters from the Omega
-   // configuration. These are read here for standalone runs and unit tests
-   // where there is no coupler to supply them.
-
-   Error Err;
-   Config *OmegaConfig = Config::getOmegaConfig();
-   OMEGA_REQUIRE(OmegaConfig, "Null OmegaConfig pointer in IO::init");
-
-   // Read IO subconfiguration
-   Config IOConfig("IO");
-   Err = OmegaConfig->get(IOConfig);
-   CHECK_ERROR_ABORT(Err, "IO: IO group not found in input Config");
-
-   // Read parallel IO settings - default to single-task if config
-   // values do not exist
-   int IOBaseTask           = 0;
-   std::string InRearranger = "box";
-
-   Err = IOConfig.get("IOBaseTask", IOBaseTask);
-   CHECK_ERROR_WARN(Err, "IO: IOBaseTask not found in Config - using {}",
-                    IOBaseTask);
-
-   Err = IOConfig.get("IORearranger", InRearranger);
-   CHECK_ERROR_WARN(Err, "IO: Rearranger not found in Config - using {}",
-                    InRearranger);
-
-   IOInitParams IOParams{IOBaseTask, RearrFromString(InRearranger)};
-   init(InComm, IOParams);
-
-   return;
-
-} // end init
-
-//------------------------------------------------------------------------------
-// Initializes the IO system using driver-owned IO parameters for the base
-// task and rearranger. The number of IO tasks and the IO stride are still
-// read from the Omega configuration.
-void init(const MPI_Comm &InComm,      // [in] MPI communicator to use
-          const IOInitParams &IOParams // [in] driver-owned IO parameters
-) {
-
-   // Retrieve the remaining parallel IO parameters from the Omega
-   // configuration
 
    Error Err;
    Config *OmegaConfig = Config::getOmegaConfig();
@@ -208,10 +170,12 @@ void init(const MPI_Comm &InComm,      // [in] MPI communicator to use
                     InFileFmt);
    DefaultFileFmt = FileFmtFromString(InFileFmt);
 
-   // Read component-configurable parallel IO settings - default to
-   // single-task if config values do not exist
-   int NumIOTasks = 1;
-   int IOStride   = 1;
+   // Read parallel IO settings - default to single-task if config
+   // values do not exist
+   int NumIOTasks           = 1;
+   int IOStride             = 1;
+   int IOBaseTask           = 0;
+   std::string InRearranger = "box";
 
    Err = IOConfig.get("IOTasks", NumIOTasks);
    CHECK_ERROR_WARN(Err, "IO: NumIOTasks not found in Config - using {}",
@@ -221,25 +185,64 @@ void init(const MPI_Comm &InComm,      // [in] MPI communicator to use
    CHECK_ERROR_WARN(Err, "IO: IOStride not found in Config - using {}",
                     IOStride);
 
-   // Base task and rearranger are supplied by the caller (driver-owned in a
-   // coupled run) rather than read from the component config.
-   DefaultRearr = IOParams.IORearranger;
-   int PIOErr =
-       PIOc_Init_Intracomm(InComm, NumIOTasks, IOStride, IOParams.IOBaseTask,
-                           IOParams.IORearranger, &SysID);
+   Err = IOConfig.get("IOBaseTask", IOBaseTask);
+   CHECK_ERROR_WARN(Err, "IO: IOBaseTask not found in Config - using {}",
+                    IOBaseTask);
+
+   Err = IOConfig.get("IORearranger", InRearranger);
+   CHECK_ERROR_WARN(Err, "IO: Rearranger not found in Config - using {}",
+                    InRearranger);
+   DefaultRearr = RearrFromString(InRearranger);
+
+   int PIOErr = PIOc_Init_Intracomm(InComm, NumIOTasks, IOStride, IOBaseTask,
+                                    DefaultRearr, &SysID);
    if (PIOErr != 0)
       ABORT_ERROR("IO::init: Error initializing SCORPIO");
 
-   // Report the settings SCORPIO was actually initialized with. IOBaseTask and
-   // IORearranger are the interesting ones: in a coupled run they come from the
-   // driver (shr_pio_getioroot/shr_pio_getrearranger) rather than from Omega's
-   // config, and without this message there is no way to observe which values
-   // were used, since they are passed straight into PIOc_Init_Intracomm.
    LOG_INFO(
        "IO::init: IOTasks={} IOStride={} IOBaseTask={} IORearranger={} ({})",
-       NumIOTasks, IOStride, IOParams.IOBaseTask,
-       RearrToString(IOParams.IORearranger),
-       static_cast<int>(IOParams.IORearranger));
+       NumIOTasks, IOStride, IOBaseTask, RearrToString(DefaultRearr),
+       static_cast<int>(DefaultRearr));
+
+   return;
+
+} // end init
+
+//------------------------------------------------------------------------------
+// Initializes the IO system using a SCORPIO iosystem created and owned by the
+// driver (share/util/shr_pio_mod.F90). The IO task layout, base task,
+// rearranger, iotype and netCDF format are therefore set by the case
+// (PIO_NUMTASKS_OCN, PIO_STRIDE_OCN, PIO_ROOT_OCN, PIO_REARRANGER_OCN,
+// PIO_TYPENAME_OCN, PIO_NETCDF_FORMAT_OCN) and not by the Omega configuration.
+void init(int IOSysID,       // [in] driver-owned SCORPIO iosystem id
+          int IOType,        // [in] driver-owned SCORPIO iotype
+          int IONetCDFFormat // [in] driver-owned netCDF file format
+) {
+
+   SysID = IOSysID;
+
+   // The FileFmt values are the SCORPIO iotype values
+   DefaultFileFmt = static_cast<FileFmt>(IOType);
+
+   // Creation mode flag selecting the netCDF file version (classic, 64-bit
+   // offset or 64-bit data) for files written with a netCDF iotype
+   DefaultNetCDFMode = IONetCDFFormat;
+
+   // Value of 0 tells PIOc_init_decomp to use the default rearranger
+   // of the driver-created iosystem
+   DefaultRearr = static_cast<Rearranger>(0);
+
+   int NumIOTasks = 0;
+   int PIOErr     = PIOc_get_numiotasks(SysID, &NumIOTasks);
+   if (PIOErr != 0)
+      ABORT_ERROR("IO::init: Error querying driver-owned SCORPIO iosystem");
+
+   LOG_INFO("IO::init: using driver-owned SCORPIO iosystem {} with {} IO "
+            "tasks, iotype {} and netCDF format {}",
+            SysID, NumIOTasks, IOType, IONetCDFFormat);
+   // Driver logs PIO settings for each component to the cpl log at startup
+   LOG_INFO("IO::init: To see the rest of the OCN IO settings (stride, root, "
+            "rearranger) see the pio_* entries in the coupler log (cpl.log.*)");
 
    return;
 
@@ -283,17 +286,26 @@ void openFileWrite(
     FileFmt InFormat             // [in] (optional) file format
 ) {
 
-   int PIOErr     = 0;                  // internal SCORPIO/PIO return call
-   int Format     = InFormat;           // coerce to integer for PIO calls
-   int TmpPnetcdf = PIO_IOTYPE_PNETCDF; // coerce to int for comparison
-   int IsCDF5     = (Format == TmpPnetcdf) ? PIO_64BIT_DATA : 0;
+   int PIOErr = 0;        // internal SCORPIO/PIO return call
+   int Format = InFormat; // coerce to integer for PIO calls
+
+   // The netCDF file version flag only applies to the classic and parallel
+   // netCDF iotypes. The HDF5-based netCDF4 iotypes must not be given one.
+   // Without a driver-supplied format, only pnetcdf files are written as CDF5.
+   int NetCDFMode = 0;
+   if (Format == PIO_IOTYPE_PNETCDF || Format == PIO_IOTYPE_NETCDF) {
+      if (DefaultNetCDFMode >= 0)
+         NetCDFMode = DefaultNetCDFMode;
+      else if (Format == PIO_IOTYPE_PNETCDF)
+         NetCDFMode = PIO_64BIT_DATA;
+   }
 
    switch (InIfExists) {
    // If the write should be a new file and fail if the
    // file exists, we use create and fail with an error
    case IfExists::Fail:
       PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
-                               NC_NOCLOBBER | IsCDF5 | ModeWrite);
+                               NC_NOCLOBBER | NetCDFMode | ModeWrite);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
                      " file already exists and fail mode requested",
@@ -305,7 +317,7 @@ void openFileWrite(
    // we use create with the CLOBBER option
    case IfExists::Replace:
       PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
-                               NC_CLOBBER | IsCDF5 | ModeWrite);
+                               NC_CLOBBER | NetCDFMode | ModeWrite);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
                      " in replace mode",
@@ -328,7 +340,7 @@ void openFileWrite(
 
       if (FileExists) {
          PIOErr = PIOc_openfile(SysID, &FileID, &Format, &Filename[0],
-                                IsCDF5 | ModeWrite);
+                                NetCDFMode | ModeWrite);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFileWrite: PIO error opening existing file"
                         " {} in append mode",
@@ -336,7 +348,7 @@ void openFileWrite(
          NewFile = false;
       } else {
          PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
-                                  IsCDF5 | ModeWrite);
+                                  NetCDFMode | ModeWrite);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
                         " in append mode",

@@ -28,8 +28,9 @@ module omega_f2cxx_mod
          export_field_names, &
          import_field_indices, &
          export_field_indices, &
-         io_base_task, &
-         io_rearranger, &
+         io_sys_id, &
+         io_type, &
+         io_netcdf_format, &
          cpl_x2o_field_names, &
          cpl_o2x_field_names) bind(c)
 
@@ -48,8 +49,9 @@ module omega_f2cxx_mod
             n_coupler_exports, &
             n_omega_imports, &
             n_omega_exports, &
-            io_base_task, &
-            io_rearranger
+            io_sys_id, &
+            io_type, &
+            io_netcdf_format
 
          character(kind=c_char), target, intent(in) :: &
             yaml_config_name, ocn_log_name, calendar_name
