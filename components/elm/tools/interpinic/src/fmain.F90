@@ -7,7 +7,8 @@ program fmain
 ! This version only needs an input initial file and an output initial file.
 ! Data from the input initial file is mapped into the output initial file.
 
-  use interpinic, only : override_missing, interp_filei
+  use interpinic    , only : override_missing, interp_filei
+  use interpinic_mpi_utils, only : mpi_initialize, mpi_cleanup, masterproc
   implicit none
   include 'netcdf.inc'
 
@@ -19,6 +20,9 @@ program fmain
   character(len=256) :: finidato !output initial dataset to create
   character(len=256) :: cmdline  !input command line
   !----------------------------------------------------
+
+  ! Every rank parses argv -- they all receive it -- but only rank 0 prints.
+  call mpi_initialize()
 
   finidati = ' '
   finidato = ' '
@@ -46,7 +50,7 @@ program fmain
       override_missing = .false.
       cmdline = trim(cmdline) // ' -a '
     case default
-       write (6,*) 'Argument ', arg,' is not known'
+       if (masterproc) write (6,*) 'Argument ', arg,' is not known'
        call usage_exit (' ')
        cmdline = trim(cmdline) // ' ' // trim(arg)
     end select
@@ -61,15 +65,23 @@ program fmain
 
   call interp_filei (finidati, finidato, cmdline)
 
+  call mpi_cleanup()
+
 end program fmain
 
 
 subroutine usage_exit (arg)
+  ! Every rank parses the same argv, so every rank reaches here together and
+  ! MPI_Finalize stays collective.  Only rank 0 prints.
+  use interpinic_mpi_utils, only : masterproc, mpi_cleanup
   implicit none
   character(len=*) :: arg
-  if (arg /= ' ') write (6,*) arg
-  write (6,*) 'Usage: interpinic -i <input initial data file>  -o <output initial data file> [options]'
-  write (6,*) 'options: -a = abort rather than override missing values with closest bare-soil'
-  write (6,*) 'Note - the output initial data file will be overwritten with the interpolated values'
+  if (masterproc) then
+     if (arg /= ' ') write (6,*) arg
+     write (6,*) 'Usage: interpinic -i <input initial data file>  -o <output initial data file> [options]'
+     write (6,*) 'options: -a = abort rather than override missing values with closest bare-soil'
+     write (6,*) 'Note - the output initial data file will be overwritten with the interpolated values'
+  end if
+  call mpi_cleanup()
   stop 999
 end subroutine
