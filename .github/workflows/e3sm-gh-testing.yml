@@ -102,7 +102,7 @@ jobs:
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: e3sm-project/automation/show-trigger@main
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Restore inputdata
         id: inputdata
         uses: actions/cache/restore@v6

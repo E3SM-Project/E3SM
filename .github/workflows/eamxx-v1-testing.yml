@@ -77,7 +77,7 @@ jobs:
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: e3sm-project/automation/show-trigger@main
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Run test
         id: run-tests
         run: |

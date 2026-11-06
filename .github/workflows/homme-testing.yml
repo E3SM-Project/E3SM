@@ -92,11 +92,11 @@ jobs:
               submodule update --init --recursive --depth=1 \
               cime externals/ekat externals/scorpio
       - name: Show action trigger
-        uses: e3sm-project/automation/show-trigger@main
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Get CUDA Arch
         id: gpu
         if: ${{ matrix.runner == 'cuda' }}
-        uses: e3sm-project/automation/gpu-arch@main
+        uses: e3sm-project/automation/gpu-arch@v1
       - name: Set test resources
         env:
           CUDA_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}

@@ -89,11 +89,11 @@ jobs:
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: e3sm-project/automation/show-trigger@main
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Get CUDA Arch
         id: gpu
         if: ${{ matrix.runner == 'cuda' }}
-        uses: e3sm-project/automation/gpu-arch@main
+        uses: e3sm-project/automation/gpu-arch@v1
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
