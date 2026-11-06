@@ -177,7 +177,7 @@ def parse_log(logf, normalize=None):
 
     result = {}
     for line in log_content.splitlines():
-        if "e3sm_compile_wrap.py" in line:
+        if "e3sm_compile_wrap" in line:
             if normalize is not None:
                 for repl, repl_with in normalize:
                     line = line.replace(repl, repl_with)
