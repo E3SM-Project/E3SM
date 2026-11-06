@@ -1,3 +1,8 @@
+# Pick up the generic gnu settings (CIME would not load them automatically for this compiler name)
+include (${CMAKE_CURRENT_LIST_DIR}/gnu.cmake)
+
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -fcheck=bounds")
+
 # Detect the AMD GPU architecture of the runner (via rocminfo), and enable HIP in kokkos
 # NOTE: the MPI wrapper (mpicxx) must use hipcc as backend compiler (set OMPI_CXX/MPICH_CXX before configuring/building)
 find_program (ROCMINFO_EXE rocminfo REQUIRED)
