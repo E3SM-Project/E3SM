@@ -796,11 +796,11 @@ void AtmosphereDriver::create_output_managers () {
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
-    // Check if the stream_name for this file has already been set.
-    if (not params.isParameter("stream_name")) {
-      // No stream_name specified, use default
-      params.set<std::string>("stream_name","output");
-    }
+    // Note: stream_name is now required in all YAML files.
+    // - CIME cases: auto-generated during buildnml preprocessing if not provided
+    // - Standalone tests: must be explicitly set in YAML
+    // OutputManager will provide a helpful error if missing.
+
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);
 
