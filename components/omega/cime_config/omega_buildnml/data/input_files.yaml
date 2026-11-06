@@ -17,7 +17,7 @@ meshes:
 
   u01-oi6to18:
     inputs:
-      - file: mpaso.u01-oi6to18.20260811.teos10.261020.nc
+      - file: omega.u01-oi6to18.20260811.teos10.261020.nc
         streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
 
 # A mesh may list multiple ``inputs`` entries when its streams are split
