@@ -121,7 +121,6 @@ contains
     ! !DESCRIPTION:
     ! Computes column-level burned area
     !
-      !$acc routine seq
     ! !USES:
     use elm_varpar           , only: max_patch_per_col
     use elm_varcon           , only: secspday, spval
@@ -682,7 +681,6 @@ contains
    ! seconds_per_year is the number of seconds in a year.
    !
    ! !USES:
-      !$acc routine seq
    use pftvarcon            , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
    use pftvarcon            , only: lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
    use pftvarcon            , only: iscft, crop

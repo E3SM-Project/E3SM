@@ -35,7 +35,6 @@ contains
     ! On the radiation time step, update all the prognostic carbon state
     ! variables affected by gap-phase mortality fluxes
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -119,7 +118,6 @@ contains
     ! Update all the prognostic carbon state
     ! variables affected by harvest mortality fluxes
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

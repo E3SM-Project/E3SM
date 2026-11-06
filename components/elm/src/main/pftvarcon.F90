@@ -6,6 +6,7 @@ module pftvarcon
   ! read and initialize vegetation (PFT) constants.
   !
   ! !USES:
+  use elm_varctl, only : elm_device_ready  ! compute constructs run on the host before the device copy
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
@@ -340,7 +341,21 @@ module pftvarcon
   ! 06/24/09, Erik Kluzek: Add indices for all pft types, and add expected_pftnames array and comparision
   ! 09/17/10, David Lawrence: Modified code to read in netCDF pft physiology file
   !-----------------------------------------------------------------------
+  !$acc declare create(noveg, jmax_np1, jmax_np2, jmax_np3, vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4)
 
+
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(baset, cc_dstem, cc_leaf, cc_lstem, cc_other, climatezone, crop, evergreen, fd_pft, fm_droot, fm_leaf, fm_lroot, fm_lstem, fm_other, fm_root, fsr_pft, gddmin, graminoid, grnfill, grperc, grpnow, hybgdd, iscft, lfemerg, min_days_senes, minplanttemp, mxmat, ncorn, ncornirrig, needleleaf, nscereal, nscerealirrig, nsoybean, nsoybeanirrig, nsugarcane, nsugarcaneirrig, nwcereal, nwcerealirrig, percrop, planttemp, pprodharv10, root_dmx, rootprof_beta, senestemp, woody)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(laimx, nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig, taper, ztopmx)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(mxtmp, nonvascular)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(irrigated)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(aleaff, allconsl, allconss, arootf, arooti, astemf, bfact, declfact, fleafi, fr_fcel, fr_flab, fr_flig, lf_fcel, lf_flab, lf_flig, nfixer, rsub_top_globalmax)
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(roota_par, rootb_par)
 contains
 
   !-----------------------------------------------------------------------
@@ -1572,6 +1587,8 @@ contains
        write(iulog,*) 'Successfully read PFT physiological data'
        write(iulog,*)
     end if
+
+  !$acc update device(noveg, jmax_np1, jmax_np2, jmax_np3, vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4)
 
   end subroutine pftconrd
 

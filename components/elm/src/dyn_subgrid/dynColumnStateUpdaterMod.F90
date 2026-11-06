@@ -247,7 +247,6 @@ contains
     ! Set subgrid weights after dyn subgrid updates
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     class(column_state_updater_type) , intent(inout) :: this
     type(bounds_type)                , intent(in) :: bounds
@@ -285,7 +284,6 @@ contains
     ! This method does no special handling of any columns.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
@@ -779,7 +777,6 @@ contains
     ! weights.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(column_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
@@ -865,10 +862,8 @@ contains
        g = col_pp%gridcell(c)
        if (this%area_gained_col(c) < 0._r8) then
           if (.not. vals_input_valid(c)) then
-#ifndef _OPENACC
              write(iulog,*) ' ERROR: shrinking column without valid input value'
              call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(sourcefile, __LINE__))
-#endif
           end if
           area_lost = -1._r8 * this%area_gained_col(c)
           total_area_lost_grc(g) = total_area_lost_grc(g) + area_lost

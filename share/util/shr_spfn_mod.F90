@@ -167,6 +167,7 @@ contains
   end function shr_spfn_erf_r4
 
   function shr_spfn_erf_r8(x) result(res)
+    !$acc routine seq
     real(r8), intent(in) :: x
     real(r8) :: res
 
@@ -442,6 +443,7 @@ contains
   !------------------------------------------------------------------
 
   SUBROUTINE CALERF_r8(ARG, RESULT, JINT)
+    !$acc routine seq
 
     !------------------------------------------------------------------
     !  This version uses 8-byte reals

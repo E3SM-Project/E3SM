@@ -55,7 +55,6 @@ contains
      ! DESCRIPTIONS
      ! compute the stress factor for soil evaporation calculation
      !
-      !$acc routine seq
      use shr_kind_mod  , only : r8 => shr_kind_r8
      use shr_const_mod , only : SHR_CONST_PI
      use decompMod     , only : bounds_type
@@ -99,7 +98,6 @@ contains
      ! compute the lee-pielke beta factor to scal actual soil evaporation from potential evaporation
      !
      ! USES
-      !$acc routine seq
      use shr_kind_mod    , only : r8 => shr_kind_r8
      use shr_const_mod   , only : SHR_CONST_PI
      use decompMod       , only : bounds_type
@@ -173,7 +171,6 @@ contains
 
    !------------------------------------------------------------------------------
    function do_soilevap_beta()result(lres)
-     !$acc routine seq
      !DESCRIPTION
      ! return true if the moisture stress for soil evaporation is computed as beta factor
      ! otherwise false
@@ -192,7 +189,6 @@ contains
     !------------------------------------------------------------------------------
 
    function getlblcef(rho,temp)result(cc)
-     !$acc routine seq
      !compute the scaling paramter for laminar boundary resistance
      !the laminar boundary layer resistance is formulated as
      !Rb=2/(k*ustar)*(Sci/Pr)^(2/3)
