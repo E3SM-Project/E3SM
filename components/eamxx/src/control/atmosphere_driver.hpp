@@ -173,19 +173,12 @@ public:
 
 protected:
 
-  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& constants_pl);
-
   void report_res_dep_memory_footprint () const;
 
   void create_logger ();
   // Init the fields with a ModelInit object (see share/data_managers/model_init.hpp)
   void run_model_init ();
 
-  // Legacy init of the fields, still used for runs with the pg2 physics grid.
-  void set_initial_conditions ();
-  void restart_model ();
-
-  void initialize_time_stamps ();
   void set_initialization_groups (const Field& f);
 
   // Allocate the memory buffer shared by all atm procs, and hand it to them.
