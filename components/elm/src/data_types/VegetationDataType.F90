@@ -4124,6 +4124,10 @@ module VegetationDataType
          dim1name='pft', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ntrunc)
 
+    call restartvar(ncid=ncid, flag=flag, varname='plant_n_buffer', xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%plant_n_buffer)
+
     if (crop_prog) then
        call restartvar(ncid=ncid, flag=flag,  varname='grainn', xtype=ncd_double,  &
             dim1name='pft',    long_name='grain N', units='gN/m2', &
@@ -4987,6 +4991,8 @@ module VegetationDataType
     integer  :: fp       ! lake filter indices
     !-----------------------------------------------------------------------
     associate( &
+     plant_p_buffer_patch  => this%plant_p_buffer  , &
+     plant_p_buffer_col    => col_ps%plant_p_buffer , &
      totvegp_patch  => this%totvegp   , &
      totvegp_col    => col_ps%totvegp, &
      totpftp_patch  => this%totpftp   , &
@@ -5045,6 +5051,10 @@ module VegetationDataType
            this%ptrunc(p)
 
    end do
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        plant_p_buffer_patch(bounds%begp:bounds%endp)  , &
+        plant_p_buffer_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
         totvegp_patch(bounds%begp:bounds%endp)  , &

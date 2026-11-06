@@ -498,6 +498,7 @@ contains
     do fp = 1, num_soilp_with_inactive
        p = filter_soilp_with_inactive(fp)
        c = veg_pp%column(p)
+       g = veg_pp%gridcell(p)
 
        ! fine and coarse root to litter and CWD slash carbon fluxes
        col_cf%dwt_slash_cflux(c) =            &
@@ -679,11 +680,17 @@ contains
        col_cf%dwt_prod100c_gain(c) = col_cf%dwt_prod100c_gain(c) - prod100_cflux(fp)/dt
        col_cf%dwt_crop_productc_gain(c) = col_cf%dwt_crop_productc_gain(c) - crop_product_cflux(fp)/dt
 
+       ! prod10_cflux/prod100_cflux are expressed per unit COLUMN area
+       ! (update_patch_state_partition_flux_by_type / flux_out_col_area divide by
+       ! cwtgcell_old(c)), but grc_cf%dwt_prod10c_gain/dwt_prod100c_gain need per unit
+       ! GRIDCELL area - multiply back by cwtgcell_old(c) to convert.
        veg_cf%dwt_prod10c_gain(p) = - prod10_cflux(fp)/dt
-       grc_cf%dwt_prod10c_gain(g)   = grc_cf%dwt_prod10c_gain(g) + veg_cf%dwt_prod10c_gain(p)
+       grc_cf%dwt_prod10c_gain(g)   = grc_cf%dwt_prod10c_gain(g) + &
+            veg_cf%dwt_prod10c_gain(p) * patch_state_updater%cwtgcell_old(c)
 
        veg_cf%dwt_prod100c_gain(p) = - prod100_cflux(fp)/dt
-       grc_cf%dwt_prod100c_gain(g)   = grc_cf%dwt_prod100c_gain(g) + veg_cf%dwt_prod100c_gain(p)
+       grc_cf%dwt_prod100c_gain(g)   = grc_cf%dwt_prod100c_gain(g) + &
+            veg_cf%dwt_prod100c_gain(p) * patch_state_updater%cwtgcell_old(c)
 
        veg_cf%dwt_crop_productc_gain(p) = - crop_product_cflux(fp)/dt
 
@@ -1089,6 +1096,8 @@ contains
    use dynColumnStateUpdaterMod, only : column_state_updater_type
    use dynPriorWeightsMod      , only : prior_weights_type
    use elm_varctl              , only : use_lch4
+   use elm_time_manager        , only : get_step_size
+   use subgridAveMod           , only : c2g, unity
    !
    ! !ARGUMENTS:
    type(bounds_type)               , intent(in)    :: bounds
@@ -1101,23 +1110,70 @@ contains
    type(column_phosphorus_state)   , intent(inout) :: col_ps
    !
    ! !LOCAL VARIABLES:
+   real(r8) :: dt
+   real(r8) :: nonconserved_flux_grc(bounds%begg:bounds%endg)
 
    character(len=*), parameter :: subname = 'dyn_cnbal_col'
    !-----------------------------------------------------------------------
 
+   dt = get_step_size()
+
     call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, col_cs)
+
+   ! Mass lost from shrinking special-landunit columns (e.g. urban) that cannot be
+   ! attributed to any biogeochemistry column is otherwise invisible to the grid-level
+   ! balance checks (col_cs/ns/ps%Summary use filter_soilc, which excludes special
+   ! landunits). dyn_col_cs/ns/ps_Adjustments broadcasts that gridcell-level quantity onto
+   ! every column in the gridcell (in dyn_nonconserved_cflux etc); aggregate it back to the
+   ! gridcell level here, the same way dyn_cbal_adjustments would be, and route it into
+   ! dwt_conv_cflux/nflux/pflux as an immediate loss.
+   call c2g(bounds, col_cs%dyn_nonconserved_cflux(bounds%begc:bounds%endc), &
+        nonconserved_flux_grc(bounds%begg:bounds%endg), &
+        c2l_scale_type = unity, l2g_scale_type = unity)
+
+   grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) = &
+        grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) + &
+        nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
 
    if (use_c13) then
       call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, c13_col_cs)
+
+      call c2g(bounds, c13_col_cs%dyn_nonconserved_cflux(bounds%begc:bounds%endc), &
+           nonconserved_flux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = unity, l2g_scale_type = unity)
+      c13_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) = &
+           c13_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) + &
+           nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
    end if
 
    if (use_c14) then
       call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, c14_col_cs)
+
+      call c2g(bounds, c14_col_cs%dyn_nonconserved_cflux(bounds%begc:bounds%endc), &
+           nonconserved_flux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = unity, l2g_scale_type = unity)
+      c14_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) = &
+           c14_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) + &
+           nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
    end if
 
    call dyn_col_ns_Adjustments(bounds, clump_index, column_state_updater, col_ns)
 
+   call c2g(bounds, col_ns%dyn_nonconserved_nflux(bounds%begc:bounds%endc), &
+        nonconserved_flux_grc(bounds%begg:bounds%endg), &
+        c2l_scale_type = unity, l2g_scale_type = unity)
+   grc_nf%dwt_conv_nflux(bounds%begg:bounds%endg) = &
+        grc_nf%dwt_conv_nflux(bounds%begg:bounds%endg) + &
+        nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
+
    call dyn_col_ps_Adjustments(bounds, clump_index, column_state_updater, col_ps)
+
+   call c2g(bounds, col_ps%dyn_nonconserved_pflux(bounds%begc:bounds%endc), &
+        nonconserved_flux_grc(bounds%begg:bounds%endg), &
+        c2l_scale_type = unity, l2g_scale_type = unity)
+   grc_pf%dwt_conv_pflux(bounds%begg:bounds%endg) = &
+        grc_pf%dwt_conv_pflux(bounds%begg:bounds%endg) + &
+        nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
 
    ! DynamicColumnAdjustments for CH4 needs to be implemented
 
