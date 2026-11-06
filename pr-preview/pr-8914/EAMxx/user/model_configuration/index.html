@@ -5737,22 +5737,23 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:</p>
 <p><strong>Lower-dimensional slices of a field</strong></p>
 <ul>
 <li>These are hyperslices of an existing field or of another diagnostic output.</li>
-<li>As of August 2023, given a field <code>X</code>, the available options are:<ul>
-<li><code>X_at_lev_N</code>: slice the field <code>X</code> at the <code>N</code>-th vertical level index.<ul>
-<li>Recall that in EAMxx <code>N = 0</code> corresponds to the model top.</li>
+<li>These are requested as <a href="../diags/expressions/">expressions</a>, which must be
+  named with <code>:=</code> when written, e.g. <code>T_500 := T_mid.interp(p_mid=500,units='hPa')</code>.
+  Given a field <code>X</code>, the available options are:<ul>
+<li><code>X.isel(lev=N)</code>: slice the field <code>X</code> at the <code>N</code>-th vertical level index.<ul>
+<li>Recall that in EAMxx <code>N = 0</code> corresponds to the model top,
+  and <code>N = -1</code> to the model bottom.</li>
 </ul>
 </li>
-<li><code>X_at_model_bot</code>, <code>X_at_model_top</code>:
-  special case for top and bottom of the model.</li>
-<li><code>X_at_Ymb</code>, <code>X_at_YPa</code>, <code>X_at_YhPa</code>:
+<li><code>X.interp(p_mid=Y,units='U')</code>:
   interpolates the field <code>X</code> at a vertical position specified by the
   given pressure <code>Y</code>.<ul>
-<li>Available units are <code>mb</code> (millibar), <code>Pa</code>, and <code>hPa</code>.</li>
+<li>Available units are <code>mb</code> (millibar), <code>Pa</code> (default), and <code>hPa</code>.</li>
 </ul>
 </li>
-<li><code>X_at_Ym_above_Z</code>:
+<li><code>X.interp(z_mid=Y,reference='Z')</code>:
   interpolates the field <code>X</code> at a vertical height of <code>Y</code> meters above
-  <code>Z</code>, with <code>Z = surface</code> or <code>Z = sealevel</code>.</li>
+  <code>Z</code>, with <code>Z = surface</code> or <code>Z = sealevel</code> (default).</li>
 </ul>
 </li>
 </ul>
