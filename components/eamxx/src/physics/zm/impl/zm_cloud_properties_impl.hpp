@@ -34,7 +34,7 @@ void Functions<S,D>::zm_cloud_properties(
   const Int& jb, // updraft base level
   const Int& lel, // updraft parcel launch level
   // Outputs
-  Int& jt, // updraft plume top
+  Int& cldtop_klev, // updraft plume top
   Int& jlcl, // updraft lifting cond level
   Int& j0, // level where detrainment begins (starting at h_env_min)
   Int& jd, // level of downdraft
@@ -158,21 +158,21 @@ void Functions<S,D>::zm_cloud_properties(
   team.team_barrier();
 
   // =========================================================================
-  // 3. Initialize jt, jd, jlcl; find j0 (level of min saturated MSE)
+  // 3. Initialize cldtop_klev, jd, jlcl; find j0 (level of min saturated MSE)
   // =========================================================================
   // Initial cloud top estimate: at least one level below the convection limit
   Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    jt   = Kokkos::max(lel, limcnv + 1);
-    jt   = Kokkos::min(jt,  pver - 1);
+    cldtop_klev   = Kokkos::max(lel, limcnv + 1);
+    cldtop_klev   = Kokkos::min(cldtop_klev,  pver - 1);
     jd   = pver - 1;
     jlcl = lel;
   });
   team.team_barrier();
 
-  // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
+  // Find level of minimum h_env_sat between cldtop_klev and jb (detrainment onset level)
   using ValLocType = Kokkos::ValLocScalar<Real, Int>;
   ValLocType j0_result;
-  const Int range_start = Kokkos::max(msg, jt);
+  const Int range_start = Kokkos::max(msg, cldtop_klev);
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, range_start, jb + 1),
     [&] (const Int& k, ValLocType& local) {
       if (h_env_sat(k) < local.val) {
@@ -189,7 +189,7 @@ void Functions<S,D>::zm_cloud_properties(
     }
     // Constrain j0 to a physically valid detrainment range
     j0 = Kokkos::min(j0, jb - 2);
-    j0 = Kokkos::max(j0, jt + 2);
+    j0 = Kokkos::max(j0, cldtop_klev + 2);
     j0 = Kokkos::min(j0, pver - 1);
   });
 
@@ -202,7 +202,7 @@ void Functions<S,D>::zm_cloud_properties(
   // 4. Initialize updraft MSE with PBL temperature perturbation (each k independent)
   // =========================================================================
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&] (const Int& k) {
-    if (k >= jt && k <= jb) {
+    if (k >= cldtop_klev && k <= jb) {
       if (runtime_opt.tpert_fix) {
         // No PBL perturbation applied (tpert_fix disables it)
         h_upd(k) = h_env(jb) + cpair * runtime_opt.tiedke_add;
@@ -218,7 +218,7 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // 5. Compute fractional entrainment rate profile
   // =========================================================================
-  zm_calc_fractional_entrainment(team, workspace, pver, pverp, msg, jb, jt, j0,
+  zm_calc_fractional_entrainment(team, workspace, pver, pverp, msg, jb, cldtop_klev, j0,
                                   z_mid, z_int, dz, h_env, h_env_sat,
                                   h_env_min, lambda, lambda_max);
   team.team_barrier();
@@ -246,7 +246,7 @@ void Functions<S,D>::zm_cloud_properties(
 
       // Integrate upward using the fractional entrainment lambda profile
       for (Int k = pver - 1; k >= msg; --k) {
-        if (k >= jt && k < jb) {
+        if (k >= cldtop_klev && k < jb) {
           // Height above cloud base interface
           const Real zuef = z_int(k) - z_int(jb);
           // Mass flux at top of layer (interface between k and k+1)
@@ -308,15 +308,15 @@ void Functions<S,D>::zm_cloud_properties(
             && mflx_up(k) >= ZMC::mu_min) {
           // Updraft MSE crosses saturation MSE from above: this is the cloud top
           if (h_upd(k) - hsthat(k) < ZMC::hu_diff_min) {
-            jt = k + 1;  // Large undershoot: cloud top is one level higher
+            cldtop_klev = k + 1;  // Large undershoot: cloud top is one level higher
           } else {
-            jt = k;
+            cldtop_klev = k;
           }
           doit = false;
         } else if ((h_upd(k) > h_upd(jb) && tot_frz <= 0)
                    || mflx_up(k) < ZMC::mu_min) {
           // Neutral or negative buoyancy, or sub-threshold mass flux
-          jt   = k + 1;
+          cldtop_klev   = k + 1;
           doit = false;
         }
       }
@@ -330,14 +330,14 @@ void Functions<S,D>::zm_cloud_properties(
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&] (const Int& k) {
     if (lambda_max > 0) {
       // Zero all updraft quantities at and above cloud top
-      if (k >= lel && k <= jt) {
+      if (k >= lel && k <= cldtop_klev) {
         mflx_up(k) = 0;
         entr_up(k) = 0;
         detr_up(k) = 0;
         h_upd(k)   = h_env(k);
       }
       // At the cloud top level: non-zero detrainment to conserve mass
-      if (k == jt) {
+      if (k == cldtop_klev) {
         detr_up(k) = mflx_up(k+1) / dz(k);
         entr_up(k) = 0;
         mflx_up(k) = 0;
@@ -360,7 +360,7 @@ void Functions<S,D>::zm_cloud_properties(
         s_upd(k) = (h_upd(k) - latvap * q_upd(k)) / cpair;
       }
       // Compute updraft thermodynamics above cloud base up to cloud top
-      if (!done && k > jt && k < jb && lambda_max > 0) {
+      if (!done && k > cldtop_klev && k < jb && lambda_max > 0) {
         s_upd(k) = mflx_up(k+1)/mflx_up(k) * s_upd(k+1)
                  + dz(k)/mflx_up(k) * (entr_up(k) - detr_up(k)) * s_mid(k);
         q_upd(k) = mflx_up(k+1)/mflx_up(k) * q_upd(k+1)
@@ -385,10 +385,10 @@ void Functions<S,D>::zm_cloud_properties(
 
   // =========================================================================
   // 6h. Above LCL: compute s_upd/q_upd from MSE and interface saturation
-  //     (each k independent given jt and jlcl are known)
+  //     (each k independent given cldtop_klev and jlcl are known)
   // =========================================================================
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
-    if (k > jt && k <= jlcl && lambda_max > 0) {
+    if (k > cldtop_klev && k <= jlcl && lambda_max > 0) {
       // Saturated updraft: s and q follow from MSE and saturation constraint
       s_upd(k) = s_int(k)  + (h_upd(k) - hsthat(k)) / (cpair  * (1 + gamhat(k)));
       q_upd(k) = qsthat(k) + gamhat(k) * (h_upd(k) - hsthat(k)) / (latvap * (1 + gamhat(k)));
@@ -400,12 +400,12 @@ void Functions<S,D>::zm_cloud_properties(
   // 6i. Condensation rate from DSE budget (each k independent given mflx_up)
   // =========================================================================
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
-    if (lambda_max > 0 && k >= jt && k < jb) {
+    if (lambda_max > 0 && k >= cldtop_klev && k < jb) {
       // Condensation = latent heat release implied by DSE flux divergence
       cu(k) = ((mflx_up(k)*s_upd(k) - mflx_up(k+1)*s_upd(k+1))/dz(k)
                - (entr_up(k) - detr_up(k))*s_mid(k))
               / (latvap/cpair);
-      if (k == jt) cu(k) = 0;                           // No condensation at cloud top
+      if (k == cldtop_klev) cu(k) = 0;                           // No condensation at cloud top
       cu(k) = Kokkos::max(Real(0), cu(k));           // Condensation must be non-negative
     }
   });
@@ -419,7 +419,7 @@ void Functions<S,D>::zm_cloud_properties(
     Real return_val = 0;
     for (Int k = pver - 1; k >= msg + 1; --k) {
       rprd(k) = 0;
-      if (k >= jt && k < jb && lambda_max > 0 && mflx_up(k) >= 0) {
+      if (k >= cldtop_klev && k < jb && lambda_max > 0 && mflx_up(k) >= 0) {
         if (mflx_up(k) > 0) {
           // Liquid water mass budget (without autoconversion sink)
           const Real ql1 = (mflx_up(k+1)*ql(k+1)
@@ -443,7 +443,7 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // 7. Downdraft properties
   // =========================================================================
-  zm_downdraft_properties(team, runtime_opt, pver, pverp, msg, jb, jt, j0, jd,
+  zm_downdraft_properties(team, runtime_opt, pver, pverp, msg, jb, cldtop_klev, j0, jd,
                            z_int, dz, s_mid, q_mid, h_env,
                            lambda, lambda_max,
                            qsthat, hsthat, gamhat,

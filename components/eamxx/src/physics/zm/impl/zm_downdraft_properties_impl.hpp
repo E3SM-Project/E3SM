@@ -22,7 +22,7 @@ void Functions<S,D>::zm_downdraft_properties(
   const Int& msg, // number of levels to ignore at model top
   const Int& jb, // updraft base level
   // Inputs/Outputs
-  Int& jt, // updraft top level
+  Int& cldtop_klev, // updraft top level
   // Inputs
   const Int& j0, // level where updraft begins detraining
   // Inputs/Outputs
@@ -61,8 +61,8 @@ void Functions<S,D>::zm_downdraft_properties(
   //----------------------------------------------------------------------------
   // calculate downdraft mass flux
   Kokkos::single(Kokkos::PerTeam(team), [&]() {
-    jt = Kokkos::min(jt, jb-1);
-    jd = Kokkos::max(j0, jt+1);
+    cldtop_klev = Kokkos::min(cldtop_klev, jb-1);
+    jd = Kokkos::max(j0, cldtop_klev+1);
     jd = Kokkos::min(jd, jb);
     h_dnd(jd) = h_env(jd-1);
     if (jd < jb && lambda_max > 0) {
@@ -87,7 +87,7 @@ void Functions<S,D>::zm_downdraft_properties(
   team.team_barrier();
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver), [&](const Int& k) {
-    if ((k >= jt && k <= jb) && lambda_max > 0 && jd < jb) {
+    if ((k >= cldtop_klev && k <= jb) && lambda_max > 0 && jd < jb) {
       mflx_dn(k) *= ratmjb;
     }
   });
@@ -97,7 +97,7 @@ void Functions<S,D>::zm_downdraft_properties(
   // calculate downdraft entrainment and MSE
   Kokkos::single(Kokkos::PerTeam(team), [&]() {
     for (Int k = msg; k < pver; ++k) {
-      if (k >= jt && lambda_max > 0) {
+      if (k >= cldtop_klev && lambda_max > 0) {
         entr_dn(k-1) = (mflx_dn(k-1) - mflx_dn(k)) / dz(k-1);
         const Real mdt = Kokkos::min(mflx_dn(k), -ZMC::small);
         h_dnd(k) = (mflx_dn(k-1)*h_dnd(k-1) - dz(k-1)*entr_dn(k-1)*h_env(k-1)) / mdt;
