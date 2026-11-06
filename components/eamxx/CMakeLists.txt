@@ -58,6 +58,9 @@ if (NOT SCREAM_CIME_BUILD)
     list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "ifport")
   endif()
 
+  # Umbrella target to fetch all input data files registered via GetInputFile
+  add_custom_target(eamxx_input_data)
+
 else()
   # Ensure our languages are all enabled
   enable_language(C CXX Fortran)

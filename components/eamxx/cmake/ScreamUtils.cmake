@@ -205,9 +205,6 @@ function(GetInputFile src_path)
         -P ${SCREAM_SRC_DIR}/../cmake/DownloadInputFile.cmake
       COMMENT "Checking input file ${src_path}"
       VERBATIM)
-    if (NOT TARGET eamxx_input_data)
-      add_custom_target(eamxx_input_data)
-    endif()
     add_dependencies(eamxx_input_data ${file_tgt})
   endif()
 
