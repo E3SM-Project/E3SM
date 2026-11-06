@@ -6,6 +6,7 @@
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
+#include "share/data_managers/model_init.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -919,7 +920,10 @@ initialize_fields ()
   }
 
   // Initialize fields
-  if (m_run_type==RunType::Restart) {
+  // NOTE: the pg2 physics grid still needs the legacy init path
+  if (not fvphyshack) {
+    run_model_init ();
+  } else if (m_run_type==RunType::Restart) {
     restart_model ();
   } else {
     set_initial_conditions ();
@@ -935,6 +939,65 @@ initialize_fields ()
   stop_timer("EAMxx::init");
   m_ad_status |= s_fields_inited;
   m_atm_logger->info("[EAMxx] initialize_fields ... done!");
+}
+
+void AtmosphereDriver::run_model_init ()
+{
+  m_atm_logger->info("  [EAMxx] run_model_init ...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+
+  const bool restart = m_run_type==RunType::Restart;
+
+  // ModelInit works on a copy of the 'initial_conditions' parameters
+  ekat::ParameterList params = m_atm_params.sublist("initial_conditions");
+
+  if (restart) {
+    // ModelInit cannot figure out the name of the restart file, since that
+    // requires the case's rpointer file, so we do it here and pass it as 'filename'.
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    params.set<std::string>("filename",filename);
+    m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
+  } else {
+    if (params.isParameter("filename")) {
+      m_atm_logger->info("    [EAMxx] IC filename: " + params.get<std::string>("filename"));
+    }
+
+    // Store the topography file in the provenance list, for later usage in output file metadata
+    if (params.isParameter("topography_filename")) {
+      const auto& topo_file = params.get<std::string>("topography_filename");
+      m_atm_logger->info("    [EAMxx] Topography filename: " + topo_file);
+      m_atm_params.sublist("provenance").set("topography_file",topo_file);
+    } else {
+      m_atm_params.sublist("provenance").set<std::string>("topography_file","NONE");
+    }
+  }
+
+  ModelInit model_init(params);
+  if (restart) {
+    model_init.set_restart_extra_data(m_atm_process_group->get_restart_extra_data());
+  } else if (m_iop_data_manager) {
+    model_init.set_iop_data_manager(m_iop_data_manager);
+  }
+  model_init.run(m_field_mgr,m_current_ts,m_run_type);
+
+  // Keep track of the fields that were inited
+  const auto group_name = restart ? "RESTART" : "STARTUP";
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    if (not m_field_mgr->has_group(group_name,gn)) {
+      continue;
+    }
+    auto group = m_field_mgr->get_field_group(group_name,gn);
+    for (const auto& f : std::views::values(group.individual_fields())) {
+      if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
+        m_fields_inited[gn].insert(f.name());
+      }
+    }
+  }
+
+  m_atm_logger->info("  [EAMxx] run_model_init ... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
 void AtmosphereDriver::restart_model ()
