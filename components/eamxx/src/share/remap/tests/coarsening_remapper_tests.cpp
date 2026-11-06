@@ -455,4 +455,79 @@ TEST_CASE("coarsening_remap")
   scorpio::finalize_subsystem();
 }
 
+
+TEST_CASE("coarsening_remap_bcast_mask")
+{
+  using namespace ShortFieldTagsNames;
+
+  // A field masked by a broadcast of a (ncol) mask must be remapped exactly like
+  // a field with the same data and a mask that is a full (ncol,nlev) copy of it
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+  int seed = get_random_test_seed(&comm);
+
+  std::string filename = "cr_tests_map_bcast_mask." + std::to_string(comm.size()) + ".nc";
+  const int nldofs_tgt = 3;
+  create_remap_file(filename, nldofs_tgt*comm.size());
+
+  auto src_grid = build_src_grid(comm, nldofs_tgt*comm.size()+1, seed);
+  auto remap = std::make_shared<HorizontalRemapper>(src_grid,filename,true);
+  auto tgt_grid = remap->get_tgt_grid();
+
+  auto src_full  = create_field("full", LayoutType::Scalar3D, *src_grid, LEV, seed+1);
+  auto src_bcast = create_field("bcast",LayoutType::Scalar3D, *src_grid, LEV, seed+1);
+  auto tgt_full  = create_field("full", LayoutType::Scalar3D, *tgt_grid, LEV);
+  auto tgt_bcast = create_field("bcast",LayoutType::Scalar3D, *tgt_grid, LEV);
+
+  // Base (ncol) mask: some columns are masked
+  const int ncols = src_grid->get_num_local_dofs();
+  const int nlevs = src_grid->get_num_vertical_levels();
+  FieldIdentifier m2d_id ("m2d",src_grid->get_2d_scalar_layout(),ekat::units::none,src_grid->name(),DataType::IntType);
+  Field m2d (m2d_id,true);
+  auto m2d_h = m2d.get_view<int*,Host>();
+  for (int i=0; i<ncols; ++i) {
+    m2d_h(i) = (i%3)!=1;
+  }
+  m2d.sync_to_dev();
+
+  // Full mask, with the same values as the broadcasted one
+  auto& m3d = src_full.create_valid_mask("m3d");
+  auto m3d_h = m3d.get_view<int**,Host>();
+  for (int i=0; i<ncols; ++i) {
+    for (int k=0; k<nlevs; ++k) {
+      m3d_h(i,k) = m2d_h(i);
+    }
+  }
+  m3d.sync_to_dev();
+  src_bcast.set_valid_mask(m2d.broadcast_to(src_bcast.get_header().get_identifier().get_layout()));
+
+  remap->register_field(src_full, tgt_full);
+  remap->register_field(src_bcast,tgt_bcast);
+  remap->registration_ends();
+  remap->remap_fwd();
+
+  REQUIRE (tgt_full.has_valid_mask());
+  REQUIRE (tgt_bcast.has_valid_mask());
+  REQUIRE (tgt_bcast.get_valid_mask().get_header().is_broadcast());
+
+  tgt_full.sync_to_host();
+  tgt_bcast.sync_to_host();
+  tgt_full.get_valid_mask().sync_to_host();
+  // A broadcast cannot be synced: sync the original mask
+  tgt_bcast.get_valid_mask().get_header().get_extra_data<Field>("bcast_src").sync_to_host();
+  auto tf = tgt_full.get_view<const Real**,Host>();
+  auto tb = tgt_bcast.get_view<const Real**,Host>();
+  auto mf = tgt_full.get_valid_mask().get_view<const int**,Host>();
+  auto mb = tgt_bcast.get_valid_mask().get_strided_view<const int**,Host>();
+  const int ntgt = tgt_grid->get_num_local_dofs();
+  for (int i=0; i<ntgt; ++i) {
+    for (int k=0; k<nlevs; ++k) {
+      CHECK (mf(i,k)==mb(i,k));
+      CHECK (tf(i,k)==tb(i,k));
+    }
+  }
+
+  scorpio::finalize_subsystem();
+}
+
 } // namespace scream
