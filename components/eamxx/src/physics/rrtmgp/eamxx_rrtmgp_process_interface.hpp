@@ -84,6 +84,11 @@ public:
   bool m_extra_clnsky_diag;
   bool m_extra_clnclrsky_diag;
 
+  // Fraction of the flux in the SW band that straddles the visible/near-IR
+  // transition (0.7 micron) that is attributed to the visible when computing
+  // band-by-band surface albedos and broadband VIS/NIR surface fluxes
+  Real m_sw_split_band_vis_frac;
+
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
