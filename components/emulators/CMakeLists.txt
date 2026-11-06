@@ -1,23 +1,30 @@
 cmake_minimum_required(VERSION 3.18)
 project(emulators LANGUAGES C CXX Fortran)
 
+if (DEFINED E3SM_SOURCE_DIR)
+  set(STANDALONE_MODE OFF)
+else()
+  set(STANDALONE_MODE ON)
+endif()
+
+# Default the download cache to downloads/ in the source tree, but respect a
+# value the user (or the test script) passes. Set before include(FetchContent),
+# which otherwise defines its own default.
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/downloads"
+    CACHE PATH "FetchContent dependency cache")
 include(FetchContent)
-set(
-    FETCHCONTENT_BASE_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}/downloads"
-    CACHE PATH "FetchContent dependency cache"
-    FORCE
-)
-option(EMULATOR_ENABLE_TESTS "Build emulator unit tests" ON)
+
+# Tests are on by default only for standalone builds, not inside E3SM.
+option(EMULATOR_ENABLE_TESTS "Build emulator unit tests" ${STANDALONE_MODE})
+# Sanitizers need the libasan/libubsan runtimes, which many toolchains lack.
+option(EMULATOR_ENABLE_SANITIZERS
+       "Build coupler_api with AddressSanitizer and UBSan (Debug, GCC only)" OFF)
 if(EMULATOR_ENABLE_TESTS)
   # Enable testing at the top level
   enable_testing()
 endif()
 
-if (DEFINED E3SM_SOURCE_DIR)
-  set(STANDALONE_MODE OFF)
-else()
-  set(STANDALONE_MODE ON)
+if (STANDALONE_MODE)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
   make_directory(${PROJECT_BINARY_DIR}/bin)
   make_directory(${PROJECT_BINARY_DIR}/lib)
@@ -39,11 +46,31 @@ set(EKAT_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(EKAT_ENABLE_FORTRAN OFF CACHE BOOL "" FORCE)
 set(EKAT_ENABLE_MPI OFF CACHE BOOL "" FORCE) # unexpected: ekat is not parsing mpi.h correctly?
 
+# Use E3SM's EKAT submodule (the same EKAT EAMxx builds) when it is checked
+# out. Otherwise, e.g. a standalone checkout of this directory, download the
+# same commit. FETCHCONTENT_SOURCE_DIR_EKAT makes FetchContent use a local
+# source tree instead of downloading.
+set(EMULATOR_EKAT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat"
+    CACHE PATH "EKAT source tree to build instead of downloading EKAT")
+if(NOT DEFINED FETCHCONTENT_SOURCE_DIR_EKAT
+   AND EXISTS "${EMULATOR_EKAT_SOURCE_DIR}/CMakeLists.txt")
+  get_filename_component(FETCHCONTENT_SOURCE_DIR_EKAT
+                         "${EMULATOR_EKAT_SOURCE_DIR}" REALPATH)
+endif()
+if(DEFINED FETCHCONTENT_SOURCE_DIR_EKAT)
+  message(STATUS "Using EKAT from ${FETCHCONTENT_SOURCE_DIR_EKAT}")
+else()
+  message(STATUS "EKAT submodule not found; downloading EKAT")
+endif()
+
 FetchContent_Declare(
     ekat
     GIT_REPOSITORY https://github.com/E3SM-Project/EKAT.git
-    GIT_TAG master
-    GIT_SHALLOW TRUE
+    # Keep in sync with the externals/ekat submodule.
+    GIT_TAG ae5e7f8227943a25c66b1a1822973ec665d224e4
+    # Core + YAML parser don't need extern/kokkos, whose SSH URL fails
+    # without GitHub SSH keys (CI, containers, compute nodes).
+    GIT_SUBMODULES ""
 )
 
 FetchContent_MakeAvailable(ekat)
@@ -130,6 +157,9 @@ if (STANDALONE_MODE)
   include(ExternalProject)
   set(MOAB_OPTIONS -G ${CMAKE_GENERATOR})
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR})
+  # Keep the library where IMPORTED_LOCATION expects it; GNUInstallDirs would
+  # pick lib64/ on RHEL-family systems.
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DCMAKE_INSTALL_LIBDIR=lib)
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DBUILD_SHARED_LIBS=OFF)
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_MPI=ON)
   set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_FORTRAN=OFF)

@@ -23,19 +23,22 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             -Wsign-conversion
             -Wformat=2
             -Wnull-dereference
-            -fsanitize=address,undefined
-            -fno-sanitize-recover=all
         >
     )
- target_compile_definitions(coupler_api PRIVATE
+    target_compile_definitions(coupler_api PRIVATE
         $<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>
     )
 
-    # PUBLIC propagates sanitizer runtime linking to consuming executables,
-    # including when my_library is static.
-    target_link_options(coupler_api PUBLIC
-        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
-    )
+    if(EMULATOR_ENABLE_SANITIZERS)
+      target_compile_options(coupler_api PRIVATE
+          $<$<CONFIG:Debug>:-fsanitize=address,undefined -fno-sanitize-recover=all>
+      )
+      # PUBLIC propagates sanitizer runtime linking to consuming executables,
+      # including when coupler_api is static.
+      target_link_options(coupler_api PUBLIC
+          $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+      )
+    endif()
 endif()
 
 set(_coupler_api_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/modules")
