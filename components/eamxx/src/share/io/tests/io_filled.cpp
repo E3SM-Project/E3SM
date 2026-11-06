@@ -103,6 +103,18 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     fm->add_field(f);
   }
 
+  // A field whose mask is a broadcast of the (ncol) mask of another field: IO must
+  // use the count of the original mask, and not create a new one
+  {
+    FL fl ({COL,LEV}, {nlcols,nlevs});
+    Field f(FID("f_bcast",fl,ekat::units::none,grid->name()));
+    f.allocate_view();
+    f.deep_copy(0.0);
+    f.set_valid_mask(fm->get_field("f_"+std::to_string(nlcols)).get_valid_mask().broadcast_to(fl));
+    f.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(f);
+  }
+
   return fm;
 }
 
@@ -162,7 +174,10 @@ void write (const std::string& avg_type, const std::string& freq_units,
       } else {
         randomize_uniform(f,seed+n,-1e6,1e6);
       }
-      f.get_valid_mask().deep_copy(valid ? 1 : 0);
+      // The mask of f_bcast is a (read-only) broadcast: it follows the mask of the (ncol) field
+      if (fn!="f_bcast") {
+        f.get_valid_mask().deep_copy(valid ? 1 : 0);
+      }
     }
 
     // Run output manager
@@ -193,7 +208,14 @@ void read (const std::string& avg_type, const std::string& freq_units,
   auto fm0 = get_fm(grid,t0,seed);
   std::vector<Field> fields;
   for (auto it : fm0->get_repo()) {
-    fields.push_back(it.second->clone());
+    if (it.second->name()=="f_bcast") {
+      // A broadcast mask cannot be cloned: we only need a field with the same layout to read into
+      Field f(it.second->get_header().get_identifier());
+      f.allocate_view();
+      fields.push_back(f);
+    } else {
+      fields.push_back(it.second->clone());
+    }
   }
 
   // Create reader pl
@@ -225,7 +247,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (int n=0; n<num_writes; ++n) {
     reader.read(n);
     for (const auto& f : fields) {
-      auto f0 = fm0->get_field(f.name()).clone(CloneFlags::CopyData);
+      auto f0 = f.clone();
       if (avg_type=="MIN") {
         Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
         set(f0,test_val);
@@ -251,6 +273,14 @@ void read (const std::string& avg_type, const std::string& freq_units,
         REQUIRE (views_are_equal(f,f0));
       }
     }
+  }
+
+  // The count is that of the original mask: f_bcast shares it, instead of having one of its own
+  if (avg_type!="INSTANT") {
+    REQUIRE (scorpio::has_var(filename,"nvalid_f_3"));
+    REQUIRE_FALSE (scorpio::has_var(filename,"nvalid_f_bcast"));
+    REQUIRE (scorpio::get_attribute<std::string>(filename,"f_bcast","averaging_count_tracker")=="nvalid_f_3");
+    REQUIRE (scorpio::get_var(filename,"nvalid_f_3").dim_names().size()==1); // (ncol), not (ncol,lev)
   }
 
   // Check that the fill value gets appropriately set for each variable
