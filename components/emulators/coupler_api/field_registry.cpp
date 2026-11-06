@@ -21,10 +21,11 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
   }
 
   const auto id = static_cast<FieldID>(fields_.size());
-  RegistryKey key{field.component, field.name};
+  RegistryKey key{field.component, field.name, field.role};
   if (lookup_.contains(key)) {
     throw std::runtime_error("Component '" + field.component +
-                             "' registered field '" + field.name + "' twice");
+                             "' registered field '" + field.name + "' as " +
+                             e3sm::coupler::to_string(field.role) + " twice");
   }
 
   lookup_.emplace(std::move(key), id);
@@ -35,8 +36,9 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
 
 
 const RegisteredField& FieldRegistry::get(const std::string& component,
-                                          const std::string& field_name) const {
-  return fields_[get_id(component, field_name)];
+                                          const std::string& field_name,
+                                          FieldRole role) const {
+  return fields_[get_id(component, field_name, role)];
 }
 
 const RegisteredField& FieldRegistry::get(FieldID id) const {
@@ -49,14 +51,16 @@ const RegisteredField& FieldRegistry::get(FieldID id) const {
 }
 
 FieldID FieldRegistry::get_id(const std::string& component,
-                              const std::string& field_name) const {
+                              const std::string& field_name,
+                              FieldRole role) const {
 
-  const auto pair = lookup_.find(RegistryKey{component, field_name});
+  const auto pair = lookup_.find(RegistryKey{component, field_name, role});
   if (pair == lookup_.end()) {
     std::string registered;
     for (const auto& field : fields_) {
       if (field.component == component) {
-        registered += (registered.empty() ? "" : ", ") + field.name;
+        registered += (registered.empty() ? "" : ", ") + field.name + " (" +
+                      e3sm::coupler::to_string(field.role) + ")";
       }
     }
     if (registered.empty()) {
@@ -67,14 +71,16 @@ FieldID FieldRegistry::get_id(const std::string& component,
     }
     throw std::runtime_error("Component '" + component +
                              "' has not registered field '" + field_name +
-                             "'. Registered fields: " + registered);
+                             "' as " + e3sm::coupler::to_string(role) +
+                             ". Registered fields: " + registered);
   }
   return pair->second;
 }
 
 bool FieldRegistry::contains(const std::string& component,
-                             const std::string& field_name) const {
-  RegistryKey key{component, field_name};
+                             const std::string& field_name,
+                             FieldRole role) const {
+  RegistryKey key{component, field_name, role};
   return lookup_.contains(key);
 }
 
@@ -113,8 +119,6 @@ std::string to_string(FieldRole role) {
     return "Import";
   case FieldRole::Export:
     return "Export";
-  case FieldRole::ImportExport:
-    return "ImportExport";
   }
   throw std::runtime_error("Unsupported FieldRole");
 }

@@ -4,6 +4,8 @@ from create_emulator_config_files import (
     EmulatorConfig,
     Field,
     Model,
+    PrognosticField,
+    prognostic_fields,
 )
 
 temperature = Field(
@@ -98,6 +100,34 @@ def test_harness():
     )
     plan.write("test_harness_plan.yaml")
 
+
+def test_prognostic():
+    state = Field(name="state", dimensions=["column"])
+    emulator = EmulatorConfig(
+        name="prognostic-emulator",
+        model=Model(backend="stub"),
+        dimensions=["column"],
+        inputs=[state],
+        outputs=[state],
+    )
+    cpl7 = EmulatorConfig(
+        name="cpl7",
+        model=Model(backend="stub"),
+        dimensions=[],
+        inputs=[state],
+        outputs=[state],
+    )
+    emulator.write("prognostic_emulator_config.yaml")
+    plan = CouplingPlan(
+        fields=[
+            PrognosticField(field=item, component=emulator, external=cpl7)
+            for item in prognostic_fields(emulator)
+        ]
+    )
+    plan.write("test_prognostic_plan.yaml")
+
+
 if __name__ == "__main__":
     test_emulator_coupling()
     test_harness()
+    test_prognostic()

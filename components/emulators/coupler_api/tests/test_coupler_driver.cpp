@@ -1,3 +1,4 @@
+#include <functional>
 #include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
@@ -36,6 +37,149 @@ private:
   CouplingAdapter coupling_;
 };
 static_assert(CoupledProcess<UnplannedComponent>);
+
+// Has `state` as both an input and an output, and advances it by one each run
+class StatefulComponent {
+public:
+  explicit StatefulComponent(std::size_t ncols)
+      : input_(ncols, 0.0), output_(ncols, 0.0) {}
+
+  static constexpr std::string_view name() { return "stateful"; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Import,
+                                      .component = "stateful",
+                                      .name = "state",
+                                      .size = input_.size()},
+                                     input_);
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Export,
+                                      .component = "stateful",
+                                      .name = "state",
+                                      .size = output_.size()},
+                                     output_);
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) {
+    for (std::size_t i = 0; i < input_.size(); ++i) {
+      output_[i] = input_[i] + 1.0;
+    }
+  }
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+
+private:
+  std::vector<double> input_;
+  std::vector<double> output_;
+  CouplingAdapter coupling_;
+};
+static_assert(CoupledProcess<StatefulComponent>);
+
+// Binds one caller-owned span as `state` in both directions
+class ExternalComponent {
+public:
+  explicit ExternalComponent(std::span<double> state) : state_(state) {}
+
+  static constexpr std::string_view name() { return "external"; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Import,
+                                      .component = "external",
+                                      .name = "state",
+                                      .size = state_.size()},
+                                     state_);
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Export,
+                                      .component = "external",
+                                      .name = "state",
+                                      .size = state_.size()},
+                                     state_);
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) {}
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+
+private:
+  std::span<double> state_;
+  CouplingAdapter coupling_;
+};
+static_assert(CoupledProcess<ExternalComponent>);
+
+// One input and one output, each a single value. `model` computes the output
+// from the input and how many times the component has run, from 1.
+class RateComponent {
+public:
+  RateComponent(std::string name, std::string input, std::string output,
+                std::function<double(double, int)> model)
+      : name_(std::move(name)), input_name_(std::move(input)),
+        output_name_(std::move(output)), model_(std::move(model)) {}
+
+  std::string_view name() const { return name_; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(
+        registry,
+        {.role = FieldRole::Import, .component = name_, .name = input_name_, .size = 1},
+        input_);
+    coupling_.register_coupled_field(
+        registry,
+        {.role = FieldRole::Export, .component = name_, .name = output_name_, .size = 1},
+        output_);
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) { output_[0] = model_(input_[0], ++runs_); }
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+  double input() const { return input_[0]; }
+
+private:
+  std::string name_;
+  std::string input_name_;
+  std::string output_name_;
+  std::function<double(double, int)> model_;
+  std::vector<double> input_{0.0};
+  std::vector<double> output_{0.0};
+  int runs_ = 0;
+  CouplingAdapter coupling_;
+};
+static_assert(CoupledProcess<RateComponent>);
+
+// `fast` outputs 1, 2, 3, ... and `slow` outputs ten times its input
+std::unique_ptr<RateComponent> make_fast() {
+  return std::make_unique<RateComponent>(
+      "fast", "sst", "flux", [](double, int runs) { return double(runs); });
+}
+std::unique_ptr<RateComponent> make_slow() {
+  return std::make_unique<RateComponent>(
+      "slow", "flux", "sst", [](double input, int) { return 10.0 * input; });
+}
 } // namespace
 
 TEST_CASE("CouplerDriver rejects an unknown merge type") {
@@ -50,6 +194,131 @@ TEST_CASE("CouplerDriver rejects an unknown merge type") {
 
   REQUIRE_THROWS_WITH(driver.initialize(config),
                       Catch::Matchers::Contains("Unknown merge type"));
+}
+
+TEST_CASE("A prognostic field advances through external storage") {
+  std::vector<double> state{10.0, 20.0};
+
+  CouplerDriver driver{};
+  driver.add_component(std::make_unique<StatefulComponent>(state.size()));
+  driver.add_component(std::make_unique<ExternalComponent>(state));
+  driver.initialize(TEST_DATA_DIR "/prognostic_plan.yaml");
+
+  const ProcessRunOpts opts{3600.0, 1};
+  for (int step = 1; step <= 3; ++step) {
+    CAPTURE(step);
+    driver.export_component("external");
+    driver.run_component("stateful", opts);
+    driver.import_component("external");
+
+    REQUIRE(state[0] == 10.0 + step);
+    REQUIRE(state[1] == 20.0 + step);
+  }
+}
+
+TEST_CASE("A route into a slower component delivers a time mean") {
+  using Catch::Matchers::Contains;
+  CouplerDriver driver{};
+  driver.add_component(make_fast());
+  driver.add_component(make_slow());
+  driver.initialize(TEST_DATA_DIR "/rate_plan.yaml", RouteBufferMap{},
+                    ComponentIntervals{{"fast", 1}, {"slow", 3}});
+  auto& fast = driver.get_component_as<RateComponent>("fast");
+  auto& slow = driver.get_component_as<RateComponent>("slow");
+  const ProcessRunOpts opts{1.0, 1};
+
+  REQUIRE_THROWS_WITH(driver.run_component("slow", opts),
+                      Contains("'flux'") && Contains("'slow'") &&
+                          Contains("exported nothing"));
+
+  // The first window's mean is (1 + 2 + 3) / 3
+  for (int i = 0; i < 3; ++i) {
+    driver.run_component("fast", opts);
+  }
+  driver.run_component("slow", opts);
+  REQUIRE(slow.input() == 2.0);
+
+  // The reverse route isn't averaged: each fast step sees slow's latest output
+  for (int i = 0; i < 2; ++i) {
+    driver.run_component("fast", opts);
+    REQUIRE(fast.input() == 20.0);
+  }
+  driver.run_component("fast", opts);
+
+  // The count has reset, so this window's mean is (4 + 5 + 6) / 3
+  driver.run_component("slow", opts);
+  REQUIRE(slow.input() == 5.0);
+}
+
+TEST_CASE("Routes deliver the latest value unless the destination is slower") {
+  const auto final_slow_input = [](const ComponentIntervals& intervals) {
+    CouplerDriver driver{};
+    driver.add_component(make_fast());
+    driver.add_component(make_slow());
+    driver.initialize(TEST_DATA_DIR "/rate_plan.yaml", RouteBufferMap{}, intervals);
+    const ProcessRunOpts opts{1.0, 1};
+    for (int i = 0; i < 3; ++i) {
+      driver.run_component("fast", opts);
+    }
+    driver.run_component("slow", opts);
+    return driver.get_component_as<RateComponent>("slow").input();
+  };
+
+  SECTION("same rate") {
+    REQUIRE(final_slow_input({{"fast", 2}, {"slow", 2}}) == 3.0);
+  }
+  SECTION("no intervals") { REQUIRE(final_slow_input({}) == 3.0); }
+  SECTION("a component without an interval, like cpl7") {
+    REQUIRE(final_slow_input({{"slow", 3}}) == 3.0);
+    REQUIRE(final_slow_input({{"fast", 1}}) == 3.0);
+  }
+}
+
+TEST_CASE("One route cannot deliver both a mean and the latest value") {
+  using Catch::Matchers::Contains;
+  CouplerDriver driver{};
+  driver.add_component(make_fast());
+  driver.add_component(make_slow());
+  driver.add_component(std::make_unique<RateComponent>(
+      "sibling", "flux", "other", [](double input, int) { return input; }));
+
+  REQUIRE_THROWS_WITH(
+      driver.initialize(TEST_DATA_DIR "/mixed_rate_plan.yaml", RouteBufferMap{},
+                        ComponentIntervals{{"fast", 1}, {"slow", 3}, {"sibling", 1}}),
+      Contains("'flux'") && Contains("separate routes"));
+}
+
+TEST_CASE("Two routes cannot deliver to the same input") {
+  using Catch::Matchers::Contains;
+  std::vector<double> state(2, 0.0);
+
+  CouplerDriver driver{};
+  driver.add_component(std::make_unique<StatefulComponent>(state.size()));
+  driver.add_component(std::make_unique<ExternalComponent>(state));
+
+  REQUIRE_THROWS_WITH(driver.initialize(TEST_DATA_DIR "/double_delivery_plan.yaml"),
+                      Contains("state_again") && Contains("state_in") &&
+                          Contains("'stateful'"));
+}
+
+TEST_CASE("FieldRegistry identifies a field by component, name, and role") {
+  using Catch::Matchers::Contains;
+  FieldRegistry registry;
+
+  const auto import_id = registry.register_field(
+      {.role = FieldRole::Import, .component = "c", .name = "f", .size = 1});
+  const auto export_id = registry.register_field(
+      {.role = FieldRole::Export, .component = "c", .name = "f", .size = 2});
+
+  REQUIRE(import_id != export_id);
+  REQUIRE(registry.get_id("c", "f", FieldRole::Import) == import_id);
+  REQUIRE(registry.get_id("c", "f", FieldRole::Export) == export_id);
+  REQUIRE(registry.get("c", "f", FieldRole::Export).size == 2);
+
+  REQUIRE_THROWS_WITH(
+      registry.register_field(
+          {.role = FieldRole::Export, .component = "c", .name = "f", .size = 2}),
+      Contains("'f'") && Contains("Export") && Contains("twice"));
 }
 
 TEST_CASE("CouplerDriver errors name the problem") {
@@ -93,6 +362,12 @@ TEST_CASE("CouplerDriver errors name the problem") {
     REQUIRE_THROWS_WITH(
         driver.initialize(TEST_DATA_DIR "/no_destinations_plan.yaml"),
         Contains("'temperature'") && Contains("no destinations"));
+  }
+
+  SECTION("route without a field name") {
+    REQUIRE_THROWS_WITH(
+        driver.initialize(TEST_DATA_DIR "/missing_name_plan.yaml"),
+        Contains("missing_name_plan.yaml") && Contains("name"));
   }
 
   SECTION("field the component did not register") {

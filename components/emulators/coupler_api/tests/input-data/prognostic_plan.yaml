@@ -1,0 +1,17 @@
+fields:
+  state_out:
+    kind: state
+    name: state
+    merge_type: direct
+    sources:
+      - stateful
+    destinations:
+      - external
+  state_in:
+    kind: state
+    name: state
+    merge_type: direct
+    sources:
+      - external
+    destinations:
+      - stateful

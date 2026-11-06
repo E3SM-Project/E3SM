@@ -132,15 +132,68 @@ class EmulatorConfig:
         return destination
 
 
+def emulator_config_from_field_list(
+    filename: str | Path,
+    component: str,
+    *,
+    name: str,
+    model: Model,
+    dimensions: Sequence[str],
+    field_dimensions: Mapping[str, Sequence[str]] | None = None,
+    type: str = "component",
+) -> EmulatorConfig:
+    """Create a config from a field list written by extract_fme_fields.py.
+
+    Inputs and outputs keep the order in the list. Each field uses `dimensions`,
+    unless `field_dimensions` gives it different ones.
+    """
+    field_list = yaml.safe_load(Path(filename).read_text(encoding="utf-8"))
+    components = field_list["components"]
+    if component not in components:
+        raise ValueError(
+            f"{filename}: no component {component!r}. "
+            f"Components: {', '.join(components)}"
+        )
+    overrides = field_dimensions or {}
+    unknown = set(overrides) - set(
+        components[component]["inputs"] + components[component]["outputs"]
+    )
+    if unknown:
+        raise ValueError(f"field_dimensions has unknown fields: {sorted(unknown)}")
+
+    def to_fields(names: Sequence[str]) -> list[Field]:
+        return [
+            Field(name=item, dimensions=overrides.get(item, dimensions))
+            for item in names
+        ]
+
+    return EmulatorConfig(
+        name=name,
+        type=type,
+        model=model,
+        dimensions=dimensions,
+        inputs=to_fields(components[component]["inputs"]),
+        outputs=to_fields(components[component]["outputs"]),
+    )
+
+
 @dataclass(kw_only=True)
 class CoupledField:
-    """One coupling: sources export field, destinations import it."""
+    """One coupling: sources export field, destinations import it.
+
+    `route_id` is the entry's key in the plan, and defaults to the field name.
+    """
 
     field: Field
     kind: str
     sources: Sequence[EmulatorConfig]
     destinations: Sequence[EmulatorConfig]
     merge_type: str = "direct"
+    route_id: str | None = None
+
+    @property
+    def key(self) -> str:
+        return self.route_id or self.field.name
 
     def to_dict(self) -> dict:
         if not self.kind or not self.merge_type:
@@ -178,14 +231,60 @@ class CoupledField:
 
 
 @dataclass(kw_only=True)
+class PrognosticField:
+    """A field that `component` outputs and reads back on the next step.
+
+    Expands to `<name>_out` and `<name>_in` routes through `external`. The caller
+    binds one span to both the field's to_external and from_external bindings, and
+    fills it with the initial state before the first step.
+    """
+
+    field: Field
+    component: EmulatorConfig
+    external: EmulatorConfig
+    kind: str = "state"
+
+    def routes(self) -> list[CoupledField]:
+        name = self.field.name
+        return [
+            CoupledField(
+                field=self.field,
+                kind=self.kind,
+                sources=[self.component],
+                destinations=[self.external],
+                route_id=f"{name}_out",
+            ),
+            CoupledField(
+                field=self.field,
+                kind=self.kind,
+                sources=[self.external],
+                destinations=[self.component],
+                route_id=f"{name}_in",
+            ),
+        ]
+
+
+def prognostic_fields(config: EmulatorConfig) -> list[Field]:
+    """Return the fields in both the config's inputs and outputs, in input order."""
+    output_names = {item.name for item in config.outputs}
+    return [item for item in config.inputs if item.name in output_names]
+
+
+@dataclass(kw_only=True)
 class CouplingPlan:
-    fields: Sequence[CoupledField]
+    fields: Sequence[CoupledField | PrognosticField]
 
     def to_dict(self) -> dict:
         fields = {}
+        routes: list[CoupledField] = []
+        for item in self.fields:
+            if isinstance(item, PrognosticField):
+                routes.extend(item.routes())
+            else:
+                routes.append(item)
         # Different objects with the same name can silently refer to different configs.
         components = {}
-        for item in self.fields:
+        for item in routes:
             for component in (*item.sources, *item.destinations):
                 if (
                     component.name in components
@@ -195,10 +294,10 @@ class CouplingPlan:
                         f"Multiple emulator objects named {component.name!r}"
                     )
                 components[component.name] = component
-            name = item.field.name
-            if name in fields:
-                raise ValueError(f"Duplicate coupled field: {name!r}")
-            fields[name] = item.to_dict()
+            key = item.key
+            if key in fields:
+                raise ValueError(f"Duplicate coupled field: {key!r}")
+            fields[key] = item.to_dict()
         return {"fields": fields}
 
     def to_yaml(self) -> str:

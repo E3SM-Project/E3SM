@@ -68,14 +68,38 @@ const DimensionDesc& Emulator::dimension(std::string_view name) const {
 
 const EmulatorFieldDesc&
 Emulator::get_field_descriptor(std::string_view name) const {
-  const auto it =
-      std::ranges::find(field_descriptors_, name,
-                        [](const EmulatorFieldDesc& field) -> std::string_view {
-                          return field.config.name;
-                        });
+
+  const auto has_name = [name](const EmulatorFieldDesc& field) {
+    return field.config.name == name;
+  };
+
+  if (std::ranges::count_if(field_descriptors_, has_name) > 1) {
+    throw std::runtime_error("Emulator '" + m_name + "': field '" +
+                             std::string(name) +
+                             "' is both an input and an output; specify a "
+                             "ModelFieldRole");
+  }
+  const auto it = std::ranges::find_if(field_descriptors_, has_name);
   if (it == field_descriptors_.end()) {
     throw std::runtime_error("Emulator '" + m_name + "': no field named '" +
                              std::string(name) + "'");
+  }
+  return *it;
+}
+
+const EmulatorFieldDesc&
+Emulator::get_field_descriptor(std::string_view name,
+                               ModelFieldRole role) const {
+
+  const auto it = std::ranges::find_if(
+      field_descriptors_, [name, role](const EmulatorFieldDesc& field) {
+        return field.role == role && field.config.name == name;
+      });
+  if (it == field_descriptors_.end()) {
+    throw std::runtime_error(
+        "Emulator '" + m_name + "': no " +
+        (role == ModelFieldRole::Input ? "input" : "output") +
+        " field named '" + std::string(name) + "'");
   }
   return *it;
 }
@@ -86,6 +110,12 @@ std::span<const EmulatorFieldDesc> Emulator::field_descriptors() const {
 
 std::span<const double> Emulator::get_field(std::string_view name) {
   const auto& desc = get_field_descriptor(name);
+  return field_view(desc);
+}
+
+std::span<const double> Emulator::get_field(std::string_view name,
+                                            ModelFieldRole role) {
+  const auto& desc = get_field_descriptor(name, role);
   return field_view(desc);
 }
 
