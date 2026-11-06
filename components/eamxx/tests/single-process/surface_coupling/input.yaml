@@ -41,6 +41,16 @@ initial_conditions:
       sfc_flux_dir_vis:     0.0
       sfc_flux_lw_dn:       0.0
 
+      # Coupling-interval sums of the radiative fluxes (normally computed by
+      # rrtmgp). With a zero count the exporter uses the instantaneous fluxes.
+      sfc_flux_dir_nir_cpl_accum: 0.0
+      sfc_flux_dir_vis_cpl_accum: 0.0
+      sfc_flux_dif_nir_cpl_accum: 0.0
+      sfc_flux_dif_vis_cpl_accum: 0.0
+      sfc_flux_sw_net_cpl_accum:  0.0
+      sfc_flux_lw_dn_cpl_accum:   0.0
+      sfc_flux_cpl_accum_count:   0.0
+
 # The parameters for I/O control
 scorpio:
   output_yaml_files: ["output.yaml"]
