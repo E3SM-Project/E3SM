@@ -5014,8 +5014,8 @@
 with respect to a vertical coordinate (pressure or height).
 In other words, the vertical derivative is the derivative of the field
 along a vertical coordinate.
-To automatically get the derivative of a field X, we can request
-<code>X_pvert_derivative</code> or <code>X_zvert_derivative</code>
+To automatically get the derivative of a field X, we can request the
+<a href="../expressions/">expression</a> <code>X.derivative('p_mid')</code> or <code>X.derivative('z_mid')</code>
 in the output yaml files.</p>
 <p><em>WARNING: support for the dz-based derivative is experimental!</em></p>
 <h2 id="brief-description-of-algorithm">Brief description of algorithm</h2>
@@ -5063,8 +5063,8 @@ when <span class="arithmatex">\(\Delta p_{i,k+1} \gg \Delta p_{i,k}\)</span>,
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_pvert_derivative</span><span class="w">  </span><span class="c1"># K / Pa</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zvert_derivative</span><span class="w">  </span><span class="c1"># K / m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dTdp := T_mid.derivative('p_mid')</span><span class="w">  </span><span class="c1"># K / Pa</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dTdz := T_mid.derivative('z_mid')</span><span class="w">  </span><span class="c1"># K / m</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>

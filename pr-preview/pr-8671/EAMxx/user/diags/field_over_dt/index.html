@@ -4867,9 +4867,9 @@
 <p>Divides any input field by the model timestep <code>dt = t_current − t_start_of_step</code>.
 This is useful for converting accumulated differences into per-second rates.</p>
 <h2 id="configuration">Configuration</h2>
-<p>Append <code>_over_dt</code> to any field name <code>X</code>:</p>
+<p>Request the <a href="../expressions/">expression</a> <code>X.over_dt()</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">X_over_dt</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">X_rate := X.over_dt()</span>
 </code></pre></div>
 <p>The output field has the same layout and grid as <code>X</code>, with units <code>[X_units / s]</code>.</p>
 <h2 id="behavior">Behavior</h2>
@@ -4887,16 +4887,15 @@ This is useful for converting accumulated differences into per-second rates.</p>
 </ul>
 <h2 id="example-atmospheric-backward-tendency">Example: atmospheric backward tendency</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_minus_T_mid_prev_over_dt</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_tend := (T_mid-T_mid.shift(time=1)).over_dt()</span>
 </code></pre></div>
 <p>This composes three diagnostics:</p>
 <ol>
-<li><code>T_mid_prev</code> — <code>FieldPrevDiag</code>: value of <code>T_mid</code> at the start of the step</li>
-<li><code>T_mid_minus_T_mid_prev</code> — <code>BinaryOpsDiag</code>: difference</li>
-<li><code>T_mid_minus_T_mid_prev_over_dt</code> — <code>FieldOverDtDiag</code>: rate</li>
+<li><code>T_mid.shift(time=1)</code> — <code>FieldPrev</code>: value of <code>T_mid</code> at the start of the step</li>
+<li><code>T_mid-T_mid.shift(time=1)</code> — <code>BinaryOp</code>: difference</li>
+<li><code>(..).over_dt()</code> — <code>FieldOverDt</code>: rate</li>
 </ol>
-<p>The shorthand <code>T_mid_atm_backtend</code> expands to the same expression via the
-built-in alias system (see <a href="../builtin_aliases/">Built-in aliases</a>).</p>
+<p>The shorthand <code>T_mid.tend()</code> expands to the same expression.</p>
 <h2 id="caveats">Caveats</h2>
 <ul>
 <li><code>dt</code> must be strictly positive; a zero or negative timestep triggers a runtime error.</li>
@@ -4904,12 +4903,9 @@ built-in alias system (see <a href="../builtin_aliases/">Built-in aliases</a>).<
   stream takes a snapshot at <code>t0</code>, before the first step has run, so <code>dt</code> is zero
   and the run aborts with "dt must be positive". Use an averaged stream
   (<code>averaging_type: average</code>, <code>max</code>, <code>min</code>) instead. The same applies to
-  everything built on top of it, including <code>X_atm_backtend</code>.</li>
+  everything built on top of it, including <code>X.tend()</code>.</li>
 <li>Only fields with <code>Real</code> data type are supported.</li>
-<li>The suffix <code>_over_dt</code> is matched <em>before</em> binary-op patterns, so
-  <code>A_minus_B_over_dt</code> parses as <code>FieldOverDtDiag(A_minus_B)</code>, not
-  <code>BinaryOpsDiag(A_minus_B, over, dt)</code>.
-  See <a href="../parsing_precedence/">Parsing precedence</a> for details.</li>
+<li><code>dt</code> is not a field or constant: <code>X/dt</code> does not work, use <code>X.over_dt()</code>.</li>
 </ul>
 
 
