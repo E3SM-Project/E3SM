@@ -178,22 +178,44 @@ endfunction(CreateUnitTest)
 ###############################################################################
 function(GetInputFile src_path)
 ###############################################################################
-  # We rely on CIME to download for us if this is a CIME case
-  # In standalone, we simply do what CIME would have done
-  if (NOT SCREAM_CIME_BUILD)
-    if (NOT SCREAM_INPUT_ROOT)
-      message(FATAL_ERROR "No SCREAM_INPUT_ROOT set, cannot try to locate input file ${src_path}")
-    endif()
-    set(full_src_path ${SCREAM_INPUT_ROOT}/atm/${src_path})
-    if (NOT EXISTS ${full_src_path})
-      execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/${src_path}
-        RESULT_VARIABLE check_input_status
-        OUTPUT_VARIABLE check_input_output
-        ERROR_VARIABLE  check_input_output
-        )
-      if (NOT check_input_status EQUAL 0)
-        message(FATAL_ERROR "Could not download ${src_path}, output was: ${check_input_output}")
-      endif()
-    endif()
+  # Input files are NOT downloaded at configure time (a network hiccup would
+  # leave us without a build tree). Instead, we register a custom target that
+  # fetches the file at build time:
+  #  - get_input_<file>: one target per file (created once, globally)
+  #  - get_input_dir_<dir>: one target per calling directory, part of ALL, that
+  #    depends on the files registered in that directory. This way, running
+  #    'make' inside a test folder fetches the data that folder needs.
+  #  - eamxx_input_data: umbrella target fetching every registered file.
+  # We rely on CIME to download for us if this is a CIME case.
+  if (SCREAM_CIME_BUILD)
+    return()
   endif()
+  if (NOT SCREAM_INPUT_ROOT)
+    message(FATAL_ERROR "No SCREAM_INPUT_ROOT set, cannot try to locate input file ${src_path}")
+  endif()
+
+  string(MAKE_C_IDENTIFIER "${src_path}" file_id)
+  set(file_tgt get_input_${file_id})
+  if (NOT TARGET ${file_tgt})
+    add_custom_target(${file_tgt}
+      COMMAND ${CMAKE_COMMAND}
+        -DINPUT_ROOT=${SCREAM_INPUT_ROOT}
+        -DREL_PATH=${src_path}
+        -DCHECK_INPUT_SCRIPT=${SCREAM_SRC_DIR}/../scripts/check-input
+        -P ${SCREAM_SRC_DIR}/../cmake/DownloadInputFile.cmake
+      COMMENT "Checking input file ${src_path}"
+      VERBATIM)
+    if (NOT TARGET eamxx_input_data)
+      add_custom_target(eamxx_input_data)
+    endif()
+    add_dependencies(eamxx_input_data ${file_tgt})
+  endif()
+
+  file(RELATIVE_PATH rel_dir ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  string(MAKE_C_IDENTIFIER "${rel_dir}" dir_id)
+  set(dir_tgt get_input_dir_${dir_id})
+  if (NOT TARGET ${dir_tgt})
+    add_custom_target(${dir_tgt} ALL)
+  endif()
+  add_dependencies(${dir_tgt} ${file_tgt})
 endfunction(GetInputFile)
