@@ -73,14 +73,15 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
   }
 
   //----------------------------------------------------------------------------
-  // calculate low-level shear components. The -999 sentinel (when the surface is
-  // above the storm reference level) fails the caller's shear-magnitude gate.
+  // calculate low-level shear components. The MCSP_shear_undefined sentinel (when
+  // the surface is above the storm reference level) is converted to the fill
+  // value by calc_shear_metric(), which fails the caller's shear-magnitude gate.
   if (state_pmid(pver - 1) > ZMC::MCSP_storm_speed_pref) {
     shear_u = storm_u - state_u(pver - 1);
     shear_v = storm_v - state_v(pver - 1);
   } else {
-    shear_u = -999;
-    shear_v = -999;
+    shear_u = ZMC::MCSP_shear_undefined;
+    shear_v = ZMC::MCSP_shear_undefined;
   }
 }
 

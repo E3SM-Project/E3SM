@@ -133,6 +133,14 @@ void ZMDeepConvection::initialize_impl (const RunType)
   //----------------------------------------------------------------------------
   ZMF::s_zm_opts.set_limcnv(m_grid);
   if (this->get_comm().am_i_root()) ZMF::s_zm_opts.print();
+
+  //----------------------------------------------------------------------------
+  // mcsp_shear is undefined where the surface is above the storm reference level
+  // (e.g. Tibetan Plateau, Antarctica), so mask those columns for output. The
+  // mask starts invalid so the field stays masked if the shear is never computed.
+  auto& mcsp_shear_f = get_field_out("mcsp_shear");
+  mcsp_shear_f.create_valid_mask(Field::MaskInit::Invalid);
+  mcsp_shear_f.get_header().set_may_be_filled(true);
 } // ZMDeepConvection::initialize_impl
 
 /*------------------------------------------------------------------------------------------------*/
@@ -200,6 +208,7 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_output.mcsp_dv_out = get_field_out("mcsp_dv_out").get_view<Real**>();
   zm_output.mcsp_freq   = get_field_out("mcsp_freq")  .get_view<Real*>();
   zm_output.mcsp_shear  = get_field_out("mcsp_shear") .get_view<Real*>();
+  const auto mcsp_shear_mask = get_field_out("mcsp_shear").get_valid_mask().get_view<int*>();
   zm_output.zm_depth    = get_field_out("zm_depth")   .get_view<Real*>();
 
   zm_output.evap_ds_out = get_field_out("evap_ds_out").get_view<Real**>();
@@ -261,6 +270,8 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_mcsp_dv_out      = zm_output.mcsp_dv_out;
   const auto loc_zm_output_mcsp_freq        = zm_output.mcsp_freq;
   const auto loc_zm_output_mcsp_shear       = zm_output.mcsp_shear;
+  const auto loc_zm_output_shear_u          = zm_output.shear_u;
+  const auto loc_zm_output_shear_v          = zm_output.shear_v;
   const auto loc_zm_output_zm_depth         = zm_output.zm_depth;
 
   const auto loc_zm_output_evap_ds_out      = zm_output.evap_ds_out;
@@ -308,6 +319,36 @@ void ZMDeepConvection::run_impl (const double dt)
   // Allocate the Workspace for the MCSP / evap / momentum kernels below.
   // Slot length is nlev_int*nwind to fit zm_transport_momentum's (nwind, nlev_int) buffers.
   WSM wsm( nlev_int*nwind, 16, team_policy);
+
+  //--------------------------------------------------------------------------
+  // calculate the low-level shear prior to zm_conv_main() - this is used by
+  // MCSP and by the optional shear scaling of evaporation in zm_conv_evap()
+
+  const bool calc_shear = zm_opts.mcsp_enabled || zm_opts.use_shear_scaling_evap;
+
+  if (calc_shear) {
+    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+      const Int i = team.league_rank();
+      const auto p_mid_i = ekat::subview(loc_zm_input_p_mid, i);
+      const auto uwind_i = ekat::subview(loc_zm_input_uwind, i);
+      const auto vwind_i = ekat::subview(loc_zm_input_vwind, i);
+      Real shear_u_i = 0;
+      Real shear_v_i = 0;
+      ZMF::zm_conv_mcsp_calculate_shear(team, nlev_mid, p_mid_i, uwind_i, vwind_i, shear_u_i, shear_v_i);
+      Kokkos::single(Kokkos::PerTeam(team), [&] () {
+        loc_zm_output_shear_u(i)    = shear_u_i;
+        loc_zm_output_shear_v(i)    = shear_v_i;
+        loc_zm_output_mcsp_shear(i) = zm_opts.calc_shear_metric(shear_u_i, shear_v_i);
+        mcsp_shear_mask(i) = (loc_zm_output_mcsp_shear(i) == constants::fill_value<Real>) ? 0 : 1;
+      });
+    });
+  } else {
+    // keep the shear buffers and output defined (and masked) when nothing uses them
+    Kokkos::deep_copy(zm_output.shear_u, 0);
+    Kokkos::deep_copy(zm_output.shear_v, 0);
+    Kokkos::deep_copy(zm_output.mcsp_shear, constants::fill_value<Real>);
+    Kokkos::deep_copy(mcsp_shear_mask, 0);
+  }
 
   //--------------------------------------------------------------------------
   // run the main ZM scheme
@@ -368,6 +409,8 @@ void ZMDeepConvection::run_impl (const double dt)
       const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
       auto& mcsp_freq_i         = loc_zm_output_mcsp_freq(i);
       auto& mcsp_shear_i        = loc_zm_output_mcsp_shear(i);
+      const Real shear_u_i      = loc_zm_output_shear_u(i);
+      const Real shear_v_i      = loc_zm_output_shear_v(i);
       auto& zm_depth_i          = loc_zm_output_zm_depth(i);
 
       // calculate DSE for MCSP
@@ -379,6 +422,7 @@ void ZMDeepConvection::run_impl (const double dt)
       // call the MCSP scheme
       ZMF::zm_conv_mcsp_tend( team, wsm.get_workspace(team), zm_opts, nlev_mid, nlev_int, dt,
         jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
+        shear_u_i, shear_v_i,
         tend_out_s_i, tend_out_qv_i,
         tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
         mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
@@ -443,8 +487,12 @@ void ZMDeepConvection::run_impl (const double dt)
     const auto evap_ds_out_i      = ekat::subview(loc_zm_output_evap_ds_out, i);
     const auto evap_dq_out_i      = ekat::subview(loc_zm_output_evap_dq_out, i);
 
+    // evaporation efficiency, optionally scaled by the low-level shear
+    const Real evap_efficiency_i = calc_shear ? zm_opts.calc_evap_efficiency(loc_zm_output_mcsp_shear(i))
+                                              : zm_opts.evap_efficiency_max;
+
     // call the ZM evap scheme
-    ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
+    ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt, evap_efficiency_i,
       p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, rain_prod_i, cldfrac_i,
       tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
       loc_zm_output_prec(i), loc_zm_output_snow(i),
@@ -687,6 +735,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.dcape,
                                                                   &zm_output.dsubcld,
                                                                   &zm_output.rliq,
+                                                                  &zm_output.shear_u,
+                                                                  &zm_output.shear_v,
                                                                 };
   for (auto& v : ptrs_1d_scalr) {
     *v = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);

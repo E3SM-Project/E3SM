@@ -858,6 +858,11 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
     const auto mcsp_du_out_c = ekat::subview(mcsp_du_out_d, i);
     const auto mcsp_dv_out_c = ekat::subview(mcsp_dv_out_d, i);
 
+    // shear is computed outside of zm_conv_mcsp_tend (prior to zm_conv_main in eamxx)
+    Real shear_u = 0;
+    Real shear_v = 0;
+    ZMF::zm_conv_mcsp_calculate_shear(team, pver, state_pmid_c, state_u_c, state_v_c, shear_u, shear_v);
+
     ZMF::zm_conv_mcsp_tend(
       team,
       wsm.get_workspace(team),
@@ -873,6 +878,8 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
       state_q_c,
       state_u_c,
       state_v_c,
+      shear_u,
+      shear_v,
       ptend_zm_s_c,
       ptend_zm_q_c,
       ptend_s_c,
@@ -1072,6 +1079,7 @@ void zm_conv_evap(ZmConvEvapData& d)
       pver,
       pverp,
       time_step,
+      init_cp.evap_efficiency_max,
       p_mid_c,
       p_del_c,
       t_mid_c,

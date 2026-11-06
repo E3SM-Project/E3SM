@@ -20,6 +20,7 @@ void Functions<S,D>::zm_conv_evap(
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Real& time_step, // model time step                         [s]
+  const Real& evap_efficiency, // rain evaporation efficiency
   const uview_1d<const Real>& p_mid, // midpoint pressure                       [Pa]
   const uview_1d<const Real>& p_del, // layer thickness                         [Pa]
   const uview_1d<const Real>& t_mid, // temperature                             [K]
@@ -128,7 +129,7 @@ void Functions<S,D>::zm_conv_evap(
       Real evplimit = Kokkos::max(1 - q_mid(k) / qs_k, Real(0));
 
       // total evaporation depends on flux in the top of the layer
-      Real evpprec = runtime_opt.ke * (1 - cldfrc(k)) * evplimit * std::sqrt(flxprec(k));
+      Real evpprec = evap_efficiency * (1 - cldfrc(k)) * evplimit * std::sqrt(flxprec(k));
 
       // Don't let evaporation supersaturate layer (approx).
       evplimit = Kokkos::max(Real(0), (qs_k - q_mid(k)) / time_step);
