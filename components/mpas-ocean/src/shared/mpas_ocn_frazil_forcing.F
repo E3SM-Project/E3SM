@@ -751,8 +751,10 @@ contains
            frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
-        !Determine salt expelled in the upper layer to if using fixed frazil salinity sea ice coupling
-        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. config_expel_excess_frazil_salt) then
+        !Determine salt expelled in the upper layer if using fixed frazil salinity sea ice coupling,
+        !or always under land ice, where frazil salinity is assumed to be 0
+        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. &
+            (config_expel_excess_frazil_salt .or. underLandIce)) then
            newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity &
               * config_frazil_ice_density * ppt_to_salt
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
