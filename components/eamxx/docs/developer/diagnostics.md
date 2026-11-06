@@ -169,7 +169,7 @@ fields whose masks share a name share the count:
 - a mask created with `create_valid_mask()` is named `<output>_valid_mask`,
   so its output gets a count of its own, `nvalid_<output>`;
 - a mask with any other name says where a condition holds (e.g.,
-  `FieldAtPressureLevel` names it after the pressure level), and all fields
+  `FieldVerticalInterp` names it after the vertical level), and all fields
   with a mask of that name share one count.
 
 So outputs of one diagnostic can share a count by sharing a mask:

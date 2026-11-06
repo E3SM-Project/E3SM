@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/diagnostics/pressure_level_index.hpp"
+#include "share/diagnostics/vertical_level_index.hpp"
 #include "share/diagnostics/level_index_utils.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
@@ -16,16 +16,17 @@ struct PressureBnds
 
 Real get_test_pres(const int col, const int lev, const int num_lev, const int num_cols);
 
-std::shared_ptr<PressureLevelIndex>
+std::shared_ptr<VerticalLevelIndex>
 get_index_diag (const Field& p, std::shared_ptr<const AbstractGrid> grid,
                 const std::string& layer, const Real plevel)
 {
   ekat::ParameterList params;
-  params.set("pressure_value",std::to_string(plevel));
-  params.set("pressure_units",std::string("Pa"));
+  params.set("vertical_coordinate",std::string("p"));
+  params.set("value",std::to_string(plevel));
+  params.set("units",std::string("Pa"));
   params.set("vertical_layer",layer);
   const auto& comm = grid->get_comm();
-  auto diag = std::make_shared<PressureLevelIndex>(comm,params,grid);
+  auto diag = std::make_shared<VerticalLevelIndex>(comm,params,grid);
   diag->set_input_field(p);
   return diag;
 }
