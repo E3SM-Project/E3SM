@@ -1,38 +1,205 @@
-cmake_minimum_required(VERSION 3.16)
-project(emulators LANGUAGES CXX Fortran)
+cmake_minimum_required(VERSION 3.18)
+project(emulators LANGUAGES C CXX Fortran)
 
-# Path to externals (relative to this file)
-get_filename_component(E3SM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
-set(EXTERNALS_ROOT "${E3SM_ROOT}/externals")
-
-option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
-
-# When built standalone (i.e. this is the top-level project), default to
-# standalone mode so we don't try to compile Fortran sources (the project
-# only declares CXX).  When included from the full E3SM build Fortran
-# is already enabled by the parent project.
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  set(STANDALONE_MODE ON CACHE BOOL "Standalone build (CXX only, no Fortran)" FORCE)
+if (DEFINED E3SM_SOURCE_DIR)
+  set(STANDALONE_MODE OFF)
+else()
+  set(STANDALONE_MODE ON)
 endif()
 
-if(BUILD_EMULATOR_TESTS)
-  # Catch2 from ekat, unless the user points at another copy. ekat fetches
-  # Catch2 when it is configured, so a fresh clone does not have it.
-  if(NOT CATCH2_INCLUDE_DIR)
-    set(CATCH2_INCLUDE_DIR "${EXTERNALS_ROOT}/ekat/extern/Catch2/single_include")
-  endif()
+# Default the download cache to downloads/ in the source tree, but respect a
+# value the user (or the test script) passes. Set before include(FetchContent),
+# which otherwise defines its own default.
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/downloads"
+    CACHE PATH "FetchContent dependency cache")
+include(FetchContent)
 
-  # Verify Catch2 exists
-  if(NOT EXISTS "${CATCH2_INCLUDE_DIR}/catch2/catch.hpp")
-    message(FATAL_ERROR "Catch2 not found at ${CATCH2_INCLUDE_DIR}. "
-      "Make sure externals/ekat is available, or set CATCH2_INCLUDE_DIR.")
-  endif()
-
+# Tests are on by default only for standalone builds, not inside E3SM.
+option(EMULATOR_ENABLE_TESTS "Build emulator unit tests" ${STANDALONE_MODE})
+# Sanitizers need the libasan/libubsan runtimes, which many toolchains lack.
+option(EMULATOR_ENABLE_SANITIZERS
+       "Build coupler_api with AddressSanitizer and UBSan (Debug, GCC only)" OFF)
+if(EMULATOR_ENABLE_TESTS)
   # Enable testing at the top level
   enable_testing()
 endif()
 
+if (STANDALONE_MODE)
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  make_directory(${PROJECT_BINARY_DIR}/bin)
+  make_directory(${PROJECT_BINARY_DIR}/lib)
+  make_directory(${PROJECT_BINARY_DIR}/include)
+endif()
+
+# ------------------------------------------------------------------------------
+# EKAT
+# ------------------------------------------------------------------------------
+
+# Build only EKAT Core + YAML parser.
+#
+# Core is always enabled. All other optional EKAT packages default to OFF,
+# so we only need to explicitly enable the YAML parser.
+set(EKAT_ENABLE_ALL_PACKAGES OFF CACHE BOOL "" FORCE)
+set(EKAT_ENABLE_YAML_PARSER ON CACHE BOOL "" FORCE)
+
+set(EKAT_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(EKAT_ENABLE_FORTRAN OFF CACHE BOOL "" FORCE)
+set(EKAT_ENABLE_MPI OFF CACHE BOOL "" FORCE) # unexpected: ekat is not parsing mpi.h correctly?
+
+# Use E3SM's EKAT submodule (the same EKAT EAMxx builds) when it is checked
+# out. Otherwise, e.g. a standalone checkout of this directory, download the
+# same commit. FETCHCONTENT_SOURCE_DIR_EKAT makes FetchContent use a local
+# source tree instead of downloading.
+set(EMULATOR_EKAT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat"
+    CACHE PATH "EKAT source tree to build instead of downloading EKAT")
+if(NOT DEFINED FETCHCONTENT_SOURCE_DIR_EKAT
+   AND EXISTS "${EMULATOR_EKAT_SOURCE_DIR}/CMakeLists.txt")
+  get_filename_component(FETCHCONTENT_SOURCE_DIR_EKAT
+                         "${EMULATOR_EKAT_SOURCE_DIR}" REALPATH)
+endif()
+if(DEFINED FETCHCONTENT_SOURCE_DIR_EKAT)
+  message(STATUS "Using EKAT from ${FETCHCONTENT_SOURCE_DIR_EKAT}")
+else()
+  message(STATUS "EKAT submodule not found; downloading EKAT")
+endif()
+
+FetchContent_Declare(
+    ekat
+    GIT_REPOSITORY https://github.com/E3SM-Project/EKAT.git
+    # Keep in sync with the externals/ekat submodule.
+    GIT_TAG ae5e7f8227943a25c66b1a1822973ec665d224e4
+    # Core + YAML parser don't need extern/kokkos, whose SSH URL fails
+    # without GitHub SSH keys (CI, containers, compute nodes).
+    GIT_SUBMODULES ""
+)
+
+FetchContent_MakeAvailable(ekat)
+
+# ------------------------------------------------------------------------------
+# LibTorch
+# ------------------------------------------------------------------------------
+
+option(EMULATOR_ENABLE_LIBTORCH "Build the LibTorch inference backend" OFF)
+set(EMULATOR_LIBTORCH_VERSION "2.5.1" CACHE STRING "LibTorch version to download")
+set(EMULATOR_LIBTORCH_VARIANT "auto" CACHE STRING
+    "LibTorch build to download: auto, cpu, cu118, cu121, cu124, rocm6.2")
+set(EMULATOR_LIBTORCH_URL "" CACHE STRING
+    "LibTorch archive to download if no install is found (overrides the variant)")
+
+if(EMULATOR_ENABLE_LIBTORCH)
+  # Use an existing install (CMAKE_PREFIX_PATH / Torch_DIR) if there is one,
+  # otherwise fetch the prebuilt CPU distribution into the download cache.
+  # Prefer the torch the Python interpreter uses: two LibTorch versions in one
+  # process (e.g. with the embedded Python backend) fail with symbol errors.
+  set(EMULATOR_TORCH_PYTHON "python3" CACHE STRING
+    "Python interpreter with torch, used to locate LibTorch and write the test fixtures")
+  if(NOT Torch_DIR AND NOT CMAKE_PREFIX_PATH)
+    execute_process(COMMAND ${EMULATOR_TORCH_PYTHON} -c
+        "import torch.utils; print(torch.utils.cmake_prefix_path)"
+      RESULT_VARIABLE _torch_py_failed
+      OUTPUT_VARIABLE _torch_py_prefix OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    if(NOT _torch_py_failed)
+      message(STATUS "Using LibTorch from ${EMULATOR_TORCH_PYTHON}: ${_torch_py_prefix}")
+      list(APPEND CMAKE_PREFIX_PATH "${_torch_py_prefix}")
+    endif()
+  endif()
+  find_package(Torch QUIET)
+  if(NOT Torch_FOUND)
+    set(_torch_url "${EMULATOR_LIBTORCH_URL}")
+    if(NOT _torch_url)
+      set(_torch_variant "${EMULATOR_LIBTORCH_VARIANT}")
+      if(_torch_variant STREQUAL "auto")
+        find_program(_torch_nvcc nvcc)
+        if(_torch_nvcc OR DEFINED ENV{CUDA_HOME} OR DEFINED ENV{CUDA_PATH})
+          set(_torch_variant cu124)
+        else()
+          set(_torch_variant cpu)
+        endif()
+      endif()
+      if(_torch_variant STREQUAL "cpu")
+        set(_torch_tag "cpu")
+      else()
+        set(_torch_tag "${_torch_variant}")
+      endif()
+      set(_torch_url "https://download.pytorch.org/libtorch/${_torch_variant}/libtorch-cxx11-abi-shared-with-deps-${EMULATOR_LIBTORCH_VERSION}%2B${_torch_tag}.zip")
+    endif()
+    message(STATUS "LibTorch not found; fetching ${_torch_url}")
+    FetchContent_Declare(
+        libtorch
+        URL ${_torch_url}
+        DOWNLOAD_EXTRACT_TIMESTAMP OFF
+    )
+    FetchContent_GetProperties(libtorch)
+    if(NOT libtorch_POPULATED)
+      FetchContent_Populate(libtorch)
+    endif()
+    list(APPEND CMAKE_PREFIX_PATH "${libtorch_SOURCE_DIR}")
+    find_package(Torch REQUIRED)
+  endif()
+endif()
+
+if (STANDALONE_MODE)
+  # We need to disable the useless, harmful C++ MPI bindings, and no one method seems to work.
+  set(MPI_CXX_SKIP_MPICXX ON)
+  add_definitions(-DOMPI_SKIP_MPICXX)
+  find_package(MPI COMPONENTS C)
+  if (NOT MPI_FOUND)
+    message(FATAL_ERROR "MPI is required for Standalone Mode, but it couldn't be found!")
+  endif()
+  link_libraries(MPI::MPI_C)
+
+  # Fetch MOAB so we don't have to have it preinstalled
+  add_library(MOAB STATIC IMPORTED GLOBAL)
+  set_target_properties(MOAB PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libMOAB.a)
+  # Pinned upstream revision containing vector-valued ID-transfer handling.
+  set(MOAB_REVISION a6114fdc973a08fe1fe700f69fe561dbe04722a4)
+
+  include(ExternalProject)
+  set(MOAB_OPTIONS -G ${CMAKE_GENERATOR})
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR})
+  # Keep the library where IMPORTED_LOCATION expects it; GNUInstallDirs would
+  # pick lib64/ on RHEL-family systems.
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DCMAKE_INSTALL_LIBDIR=lib)
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DBUILD_SHARED_LIBS=OFF)
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_MPI=ON)
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_FORTRAN=OFF)
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_PYMOAB=OFF)
+  set(MOAB_OPTIONS ${MOAB_OPTIONS} -DENABLE_TESTING=OFF)
+
+  ExternalProject_Add(MOAB_proj
+    URL
+      "https://bitbucket.org/fathomteam/moab/get/${MOAB_REVISION}.tar.gz"
+    URL_HASH
+      SHA256=68f07ce7740e619f8d9123be1ae10b893f9b71cde6049b83b11671773f931492
+    DOWNLOAD_NAME "moab-${MOAB_REVISION}.tar.gz"
+    DOWNLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/downloads"
+    DOWNLOAD_EXTRACT_TIMESTAMP OFF
+    PREFIX "${CMAKE_CURRENT_BINARY_DIR}/moab"
+    CMAKE_ARGS ${MOAB_OPTIONS}
+    LOG_CONFIGURE TRUE
+    LOG_BUILD TRUE
+    LOG_INSTALL TRUE
+    BUILD_BYPRODUCTS "${PROJECT_BINARY_DIR}/lib/libMOAB.a"
+  )
+  target_include_directories(MOAB INTERFACE ${PROJECT_BINARY_DIR}/include)
+  target_link_libraries(MOAB INTERFACE MPI::MPI_C)
+  add_dependencies(MOAB MOAB_proj)
+
+  include_directories(${PROJECT_BINARY_DIR}/include)
+  link_directories(${PROJECT_BINARY_DIR}/lib)
+endif()
+
+
 # Add subdirectories
 add_subdirectory(common)
-add_subdirectory(emulatoratm)
-add_subdirectory(driver)
+add_subdirectory(interface)
+add_subdirectory(inference)
+add_subdirectory(coupler_api)
+if(EMULATOR_ENABLE_TESTS)
+add_subdirectory(tests)
+endif()
+
+option(EMULATOR_ENABLE_DEMOS "Build the emulator demos" OFF)
+if(EMULATOR_ENABLE_DEMOS)
+  add_subdirectory(demos)
+endif()

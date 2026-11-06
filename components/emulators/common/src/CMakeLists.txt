@@ -1,25 +1,18 @@
 # Common source library
-cmake_minimum_required(VERSION 3.16)
-
-add_subdirectory(inference)
 
 set(EMULATOR_COMMON_CXX_SOURCES
   emulator.cpp
-  emulator_c_api.cpp
+  emulator_config.cpp
 )
 
-set(EMULATOR_COMMON_F90_SOURCES
-  emulator_f2c_api.F90
-  emulator_f_api.F90
-  emulator_handle.F90
-)
 
 add_library(emulator_common
   ${EMULATOR_COMMON_CXX_SOURCES}
-  ${EMULATOR_COMMON_F90_SOURCES}
 )
 
-target_compile_features(emulator_common PUBLIC cxx_std_17)
+target_link_libraries(emulator_common PUBLIC MOAB)
+target_link_libraries(emulator_common PRIVATE ekat::YamlParser)
+target_compile_features(emulator_common PUBLIC cxx_std_20)
 
 # Place generated Fortran .mod files in a predictable directory so that
 # downstream Fortran targets (e.g. the driver test) can find them.
@@ -30,10 +23,14 @@ target_link_libraries(emulator_common PUBLIC emulator_inference)
 
 target_include_directories(emulator_common PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/inference
 )
 
 target_include_directories(emulator_common PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
+
+target_link_libraries(emulator_common PUBLIC E3SM::coupler_api)
 
