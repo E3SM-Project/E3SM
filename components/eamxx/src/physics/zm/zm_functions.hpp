@@ -561,6 +561,7 @@ struct Functions {
     // -------------------------------------------------------------------------
     void init_all(int ncol, int nlev_mid); // initialize all variables in struct
     void init_tmp(int ncol, int nlev_mid); // initialize temporary tendencies variables only
+    void init_out(int ncol, int nlev_mid); // initialize output variables that zm_conv_evap writes only for active columns
   };
 
   // -----------------------------------------------------------------------------------------------
