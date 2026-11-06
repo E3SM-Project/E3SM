@@ -9,21 +9,24 @@
 
 #include "Types.hpp"
 
+// Numerical values come from the Physical Constants Dictionary (share/util_cxx/pcd_const.h)
+#include "pcd_const.h"
+
 namespace Homme
 {
 
 namespace PhysicalConstants
 {
-  constexpr Real Rwater_vapor  = 461.5;
-  constexpr Real Cpwater_vapor = 1870.0;
-  constexpr Real Rgas          = 287.04;
-  constexpr Real cp            = 1005.0;
+  constexpr Real Rwater_vapor  = pcd::water_vapor_specific_gas_constant_reference;
+  constexpr Real Cpwater_vapor = pcd::water_vapor_specific_heat_capacity_reference;
+  constexpr Real Rgas          = pcd::dry_air_specific_gas_constant_reference;
+  constexpr Real cp            = pcd::dry_air_specific_heat_capacity_reference;
+  constexpr Real rearth0       = pcd::mean_radius;
+  constexpr Real g             = pcd::standard_acceleration_of_gravity;
   constexpr Real kappa         = Rgas / cp;
 // real Earth
-  constexpr Real rearth0       = 6.376e6;
   constexpr Real rrearth0      = 1.0 / rearth0;
-  constexpr Real g             = 9.80616;
-  constexpr Real p0            = 100000;         // [mbar]
+  constexpr Real p0            = 100000;         // [Pa] (no PCD equivalent: standard_atmosphere is 101325 Pa)
 
   constexpr Real Tref          = 288;
 

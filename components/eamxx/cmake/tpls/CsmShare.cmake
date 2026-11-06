@@ -71,5 +71,7 @@ macro (CreateCsmShareTarget)
     set_target_properties(csm_share PROPERTIES
       Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
     target_include_directories(csm_share PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/modules)
+    # C++ header of the Physical Constants Dictionary (pcd_const.h)
+    target_include_directories(csm_share PUBLIC ${SCREAM_BASE_DIR}/../../share/util_cxx)
   endif ()
 endmacro()
