@@ -21,7 +21,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Real& ztodt, // physics time step
-  const Int& jctop, // cloud top level indices
+  const Int& cldtop_klev, // cloud top level index (sentinel -1 when inactive)
   const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
   const uview_1d<const Real>& state_pint, // physics state interface pressure
   const uview_1d<const Real>& state_pdel, // physics state pressure thickness
@@ -108,9 +108,9 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   // calculate mass weighted column average tendencies from ZM
 
   zm_depth = 0;
-  if (jctop != pver - 1) {
+  if (cldtop_klev >= 0) {
     // integrate pressure and ZM tendencies over column using parallel reduction
-    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, cldtop_klev, pver),
       [&] (const Int& k, Real& tend_s_sum, Real& tend_q_sum, Real& pdel_tot) {
         tend_s_sum += ptend_zm_s(k) * state_pdel(k);
         tend_q_sum += ptend_zm_q(k) * state_pdel(k);
@@ -123,7 +123,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
     zm_avg_tend_s /= pdel_sum;
     zm_avg_tend_q /= pdel_sum;
     // calculate diagnostic zm_depth
-    zm_depth = state_pint(pver) - state_pmid(jctop);
+    zm_depth = state_pint(pver) - state_pmid(cldtop_klev);
   }
   team.team_barrier();
 
@@ -147,12 +147,12 @@ void Functions<S,D>::zm_conv_mcsp_tend(
       if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
           std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
         // Calculate tendencies and integrate them using parallel reduce
-        Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
+        Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, cldtop_klev, pver),
           [&] (const Int& k, Real& avg_s, Real& avg_q, Real& avg_k) {
 
             // See eq 7-8 of Moncrieff et al. (2017) - also eq (5) of Moncrieff & Liu (2006)
             const Real pdepth_mid_k = state_pint(pver) - state_pmid(k);
-            const Real pdepth_total = state_pint(pver) - state_pmid(jctop);
+            const Real pdepth_total = state_pint(pver) - state_pmid(cldtop_klev);
 
             // specify the assumed vertical structure
             if (do_mcsp_t) mcsp_tend_s(k) = -1 * runtime_opt.mcsp_t_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
@@ -200,8 +200,10 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   mcsp_freq = 0;
   bool any_tend = false;
 
-  // Calculate final tendencies and check frequency in a single parallel_reduce
-  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
+  // Calculate final tendencies and check frequency in a single parallel_reduce.
+  // Clamp the loop start so inactive columns (cldtop_klev == -1 sentinel) do not form a
+  // negative range; all MCSP tendencies are zero there, so this is a no-op.
+  Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, Kokkos::max(cldtop_klev, 0), pver),
     [&] (const Int& k, bool& local_freq) {
       // subtract mass weighted average tendencies for energy/mass conservation
       mcsp_ds_out(k) = mcsp_tend_s(k) - mcsp_avg_tend_s;

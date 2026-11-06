@@ -24,7 +24,7 @@ void Functions<S,D>::zm_closure(
   const Real& cape_threshold_in, // CAPE threshold for "cloud work function" (i.e. A)
   const Int& lcl, // index of lcl
   const Int& lel, // index of launch leve
-  const Int& jt, // top of updraft
+  const Int& cldtop_klev, // top of updraft
   const Int& mx, // base of updraft
   const Real& dsubcld, // thickness of subcloud layer
   const uview_1d<const Real>& z_mid, // altitude (m)
@@ -111,7 +111,7 @@ void Functions<S,D>::zm_closure(
   // Calculate dtmdt & dqmdt
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg, pver-1), [&](const Int& k) {
     // cloud top
-    if (k == jt) {
+    if (k == cldtop_klev) {
       dtmdt(k) = (1/p_del(k))
                  * (mflx_up(k+1)*(s_upd(k+1) - s_int(k+1) - latvap/cpair*ql(k+1))
                     + mflx_dn(k+1)*(s_dnd(k+1) - s_int(k+1)));
@@ -120,7 +120,7 @@ void Functions<S,D>::zm_closure(
                     + mflx_dn(k+1)*(q_dnd(k+1) - q_int(k+1)));
     }
     // below cloud top
-    if (k > jt && k < mx) {
+    if (k > cldtop_klev && k < mx) {
       dtmdt(k) = (mflx_net(k  )*(s_int(k  ) - s_mid(k))
                   + mflx_net(k+1)*(s_mid(k  ) - s_int(k+1))) / p_del(k)
                  - latvap/cpair * detr_up(k)*(ZMC::beta*ql(k) + (1-ZMC::beta)*ql(k+1));

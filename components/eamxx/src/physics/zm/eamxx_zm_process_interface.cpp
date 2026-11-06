@@ -89,6 +89,8 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
   add_field<Computed>("zm_dcape",             scalar2d,   J/kg/s,   grid_name);
   add_field<Computed>("zm_activity",          scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_cldtop_klev",       scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_msemax_klev",       scalar2d,     none,   grid_name);
 
   add_field<Computed>("zm_detr_qc",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("zm_detr_qi",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -101,6 +103,10 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_detr_up",           scalar3d_mid, 1/s,    grid_name, pack_size);
   add_field<Computed>("zm_mflx_dn",           scalar3d_mid, kg/m2/s,grid_name, pack_size);
   add_field<Computed>("zm_entr_dn",           scalar3d_mid, 1/s,    grid_name, pack_size);
+
+  // Fields needed by MAM wetscav for aerosol convective processing
+  add_field<Computed>("zm_rain_prod",          scalar3d_mid, kg/kg/s,grid_name, pack_size);  // rain production rate (rprddp)
+  add_field<Computed>("zm_icw_liq",            scalar3d_mid, kg/kg,  grid_name, pack_size);  // in-cloud liquid water (icwmrdp)
 
   add_field<Computed>("mcsp_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("mcsp_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -235,9 +241,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_cape             = zm_output.cape;
   const auto loc_zm_output_dcape            = zm_output.dcape;
   const auto loc_zm_output_msemax_klev      = zm_output.msemax_klev;
-  const auto loc_zm_output_jctop            = zm_output.jctop;
-  const auto loc_zm_output_jcbot            = zm_output.jcbot;
-  const auto loc_zm_output_jt               = zm_output.jt;
+  const auto loc_zm_output_cldtop_klev      = zm_output.cldtop_klev;
   const auto loc_zm_output_activity         = zm_output.activity;
   const auto loc_zm_output_tend_out_t       = zm_output.tend_out_t;
   const auto loc_zm_output_tend_out_s       = zm_output.tend_out_s;
@@ -318,7 +322,7 @@ void ZMDeepConvection::run_impl (const double dt)
                     zm_input.phis, zm_input.z_mid, zm_input.z_int,
                     zm_input.pblh, zm_input.tpert, zm_input.landfrac,
                     zm_input.t_prev, zm_input.q_prev,
-                    zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
+                    zm_output.msemax_klev, zm_output.cldtop_klev,
                     zm_output.activity,
                     zm_output.prec, zm_output.tend_out_s, zm_output.tend_out_qv,
                     zm_output.cape, zm_output.dcape,
@@ -343,7 +347,7 @@ void ZMDeepConvection::run_impl (const double dt)
     Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
       const auto phis_i         = loc_zm_input_phis(i);
-      const auto jctop_i        = loc_zm_output_jctop(i);
+      const auto cldtop_klev_i  = loc_zm_output_cldtop_klev(i);
       const auto z_mid_i        = ekat::subview(loc_zm_input_z_mid, i);
       const auto p_mid_i        = ekat::subview(loc_zm_input_p_mid, i);
       const auto p_int_i        = ekat::subview(loc_zm_input_p_int, i);
@@ -378,7 +382,7 @@ void ZMDeepConvection::run_impl (const double dt)
 
       // call the MCSP scheme
       ZMF::zm_conv_mcsp_tend( team, wsm.get_workspace(team), zm_opts, nlev_mid, nlev_int, dt,
-        jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
+        cldtop_klev_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
         tend_out_s_i, tend_out_qv_i,
         tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
         mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
@@ -415,6 +419,9 @@ void ZMDeepConvection::run_impl (const double dt)
 
   // initialize intermediate output tendencies for zm_conv_evap()
   zm_output.init_tmp(m_ncol, nlev_mid);
+
+  // Zero evap_ds/dq_out for all columns before zm_conv_evap.
+  zm_output.init_out(m_ncol, nlev_mid);
 
   // perform the convective evaporation calculations
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
@@ -496,7 +503,7 @@ void ZMDeepConvection::run_impl (const double dt)
     ZMF::zm_transport_momentum( team, wsm.get_workspace(team), nlev_mid, nlev_int, dt,
       wind_mid_i, 2,
       mflx_up_i, mflx_dn_i, detr_up_i, entr_up_i, entr_dn_i, p_del_mb_i,
-      loc_zm_output_jt(i), loc_zm_output_msemax_klev(i), ktm, kbm,
+      loc_zm_output_cldtop_klev(i), loc_zm_output_msemax_klev(i), ktm, kbm,
       wind_tend_i,    // momentum tendency (nwind, nlev)
       tend_tmp_s_i ); // seten (KE-dissipation dry static energy tendency)
 
@@ -577,20 +584,30 @@ void ZMDeepConvection::run_impl (const double dt)
   // Update output fields
 
   // 2D diagnostic output (no vertical dimension)
-  const auto& zm_prec       = get_field_out("zm_prec")    .get_view<Real*>();
-  const auto& zm_snow       = get_field_out("zm_snow")    .get_view<Real*>();
-  const auto& zm_cape       = get_field_out("zm_cape")    .get_view<Real*>();
-  const auto& zm_dcape      = get_field_out("zm_dcape")   .get_view<Real*>();
-  const auto& zm_activity   = get_field_out("zm_activity").get_view<Real*>();
+  const auto& zm_prec        = get_field_out("zm_prec")    .get_view<Real*>();
+  const auto& zm_snow        = get_field_out("zm_snow")    .get_view<Real*>();
+  const auto& zm_cape        = get_field_out("zm_cape")    .get_view<Real*>();
+  const auto& zm_dcape       = get_field_out("zm_dcape")   .get_view<Real*>();
+  const auto& zm_activity    = get_field_out("zm_activity").get_view<Real*>();
+  const auto& zm_cldtop_klev = get_field_out("zm_cldtop_klev")   .get_view<Real*>();
+  const auto& zm_msemax_klev = get_field_out("zm_msemax_klev")   .get_view<Real*>();
   Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
-    zm_prec    (i) = loc_zm_output_prec    (i);
-    zm_snow    (i) = loc_zm_output_snow    (i);
-    zm_cape    (i) = loc_zm_output_cape    (i);
-    zm_dcape   (i) = loc_zm_output_dcape   (i);
-    zm_activity(i) = loc_zm_output_activity(i);
-  });
+    zm_prec       (i) = loc_zm_output_prec    (i);
+    zm_snow       (i) = loc_zm_output_snow    (i);
+    zm_cape       (i) = loc_zm_output_cape    (i);
+    zm_dcape      (i) = loc_zm_output_dcape   (i);
+    zm_activity   (i) = loc_zm_output_activity(i);
+    zm_cldtop_klev(i) = loc_zm_output_cldtop_klev(i);
+    zm_msemax_klev(i) = loc_zm_output_msemax_klev(i);
+ });
 
   // 3D mid-level output
+  // zm_conv_main returns the mass fluxes in [mb/s]; convert to [kg/m2/s] to
+  // match the declared field units (mirrors EAM zm_conv_intr: mu/md * 100/g).
+  // The entrainment/detrainment rates are already in [1/s] and are not scaled.
+  // Note: the internal zm_output.mflx_up/mflx_dn stay in [mb/s] because
+  // zm_transport_momentum consumes them together with p_del_mb [mb].
+  constexpr Real mb_to_kgm2s = ZMF::ZMC::mb_to_pa / PC::gravit.value; // = 100/g
   const auto& mflx_up = get_field_out("zm_mflx_up").get_view<Real**>();
   const auto& entr_up = get_field_out("zm_entr_up").get_view<Real**>();
   const auto& detr_up = get_field_out("zm_detr_up").get_view<Real**>();
@@ -600,21 +617,37 @@ void ZMDeepConvection::run_impl (const double dt)
     KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
     const int k = idx%nlev_mid;
-    mflx_up(i,k) = loc_zm_output_mflx_up(i,k);
+    mflx_up(i,k) = loc_zm_output_mflx_up(i,k) * mb_to_kgm2s;
     entr_up(i,k) = loc_zm_output_entr_up(i,k);
     detr_up(i,k) = loc_zm_output_detr_up(i,k);
-    mflx_dn(i,k) = loc_zm_output_mflx_dn(i,k);
+    mflx_dn(i,k) = loc_zm_output_mflx_dn(i,k) * mb_to_kgm2s;
     entr_dn(i,k) = loc_zm_output_entr_dn(i,k);
   });
 
+  // 3D mid-level output for MAM wetscav coupling
+  const auto& zm_rain_prod_out  = get_field_out("zm_rain_prod").get_view<Real**>();
+  const auto& zm_icw_liq        = get_field_out("zm_icw_liq").get_view<Real**>();
+  Kokkos::parallel_for("zm_aerosol_coupling_outputs",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    // rain production rate (rprddp in EAM Fortran)
+    zm_rain_prod_out(i,k) = loc_zm_output_rain_prod(i,k);
+    // in-cloud liquid water mixing ratio (icwmrdp in EAM Fortran)
+    zm_icw_liq(i,k)        = loc_zm_output_ql(i,k);
+  });
+
   // 3D interface output
+  // zm_conv_main returns the convective mass flux in [mb/s]; convert to
+  // [kg/m2/s] to match the declared field units (mirrors EAM zm_conv_intr:
+  // mcon * 100/g).
   const auto loc_zm_output_mass_flux = zm_output.mass_flux;
   const auto& mass_flux_int = get_field_out("zm_mass_flux_int").get_view<Real**>();
   Kokkos::parallel_for("zm_diag_outputs_3D_int",
     KT::RangePolicy(0, m_ncol*nlev_int), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_int;
     const int k = idx%nlev_int;
-    mass_flux_int(i,k) = loc_zm_output_mass_flux(i,k);
+    mass_flux_int(i,k) = loc_zm_output_mass_flux(i,k) * mb_to_kgm2s;
   });
 
 } // ZMDeepConvection::run_impl
@@ -632,17 +665,20 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   const int nlev_int = m_nlev+1;
   size_t zm_buffer_size = 0;
 
-  zm_buffer_size+= ZMF::ZmInputState::num_1d_intgr * sizeof(Int)   * m_ncol;
   zm_buffer_size+= ZMF::ZmInputState::num_1d_scalr * sizeof(Scalar)* m_ncol;
   zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Real)  * m_ncol * nlev_mid;
   zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmInputState::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
-  zm_buffer_size+= ZMF::ZmOutputTend::num_1d_intgr * sizeof(Int)   * m_ncol;
   zm_buffer_size+= ZMF::ZmOutputTend::num_1d_scalr * sizeof(Scalar)* m_ncol;
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Real)  * m_ncol * nlev_mid;
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
+
+  const size_t num_1d_intgr = ZMF::ZmInputState::num_1d_intgr + ZMF::ZmOutputTend::num_1d_intgr;
+  const size_t int_bytes = num_1d_intgr * sizeof(Int) * m_ncol;
+  const size_t int_bytes_padded = ((int_bytes + sizeof(Real) - 1) / sizeof(Real)) * sizeof(Real);
+  zm_buffer_size+= int_bytes_padded;
 
   return zm_buffer_size;
 }
@@ -663,23 +699,11 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
   //----------------------------------------------------------------------------
-  Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
-  //----------------------------------------------------------------------------
-  // device 1D integer variables
-  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity,
-                                                                  &zm_output.msemax_klev,
-                                                                  &zm_output.jctop,
-                                                                  &zm_output.jcbot,
-                                                                  &zm_output.jt,
-                                                                };
-  for (auto& v : ptrs_1d_intgr) {
-    *v = ZMF::uview_1d<Int>(i_mem, m_ncol);
-    i_mem += v->size();
-  }
-  //----------------------------------------------------------------------------
-  Scalar* scl_mem = reinterpret_cast<Scalar*>(i_mem);
+  Real* r_mem = buffer_manager.get_memory();
+
   //----------------------------------------------------------------------------
   // device 1D scalar scalars
+  Scalar* scl_mem = reinterpret_cast<Scalar*>(r_mem);
   ZMF::uview_1d<Scalar>* ptrs_1d_scalr[num_1d_scalr]          = { &zm_input.tpert,
                                                                   &zm_output.prec,
                                                                   &zm_output.snow,
@@ -692,9 +716,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
     *v = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);
     scl_mem += v->size();
   }
-  //----------------------------------------------------------------------------
 
-  Real* r_mem = reinterpret_cast<Real*>(scl_mem);
+  r_mem = reinterpret_cast<Real*>(scl_mem);
 
   //----------------------------------------------------------------------------
   // device 2D views on mid-point levels
@@ -750,7 +773,21 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
     r_mem += v->size();
   }
   //----------------------------------------------------------------------------
-  size_t used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
+  // device 1D integer variables
+  Int* i_mem = reinterpret_cast<Int*>(r_mem);
+  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity,
+                                                                  &zm_output.msemax_klev,
+                                                                  &zm_output.cldtop_klev,
+                                                                };
+  for (auto& v : ptrs_1d_intgr) {
+    *v = ZMF::uview_1d<Int>(i_mem, m_ncol);
+    i_mem += v->size();
+  }
+  //----------------------------------------------------------------------------
+  const size_t real_bytes = (r_mem - buffer_manager.get_memory()) * sizeof(Real);
+  const size_t int_bytes  = num_1d_intgr * sizeof(Int) * m_ncol;
+  const size_t int_bytes_padded = ((int_bytes + sizeof(Real) - 1) / sizeof(Real)) * sizeof(Real);
+  size_t used_mem = real_bytes + int_bytes_padded;
   auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for ZMDeepConvection.");
   //----------------------------------------------------------------------------
