@@ -10,8 +10,8 @@ namespace scream {
 
 void f_z_src(const Real y0, const Real m, const Field& z_data, Field& out_data);
 // out_data must already have a valid mask (see Field::create_valid_mask):
-// this sets both its data and its mask, matching HeightLevelIndex/
-// FieldAtHeight's rule (see height_level_index.hpp): invalid above the
+// this sets both its data and its mask, matching VerticalLevelIndex/
+// FieldVerticalInterp's rule (see vertical_level_index.hpp): invalid above the
 // top entry always, invalid below the bottom entry unless extrapolating.
 void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data,
             Field& out_data, const bool extrapolate_bottom);
@@ -76,7 +76,7 @@ TEST_CASE("field_at_height")
   s_tgt.allocate_view();
   v_tgt.allocate_view();
 
-  // FieldAtHeight's output always has a valid mask (see
+  // FieldVerticalInterp's output always has a valid mask (see
   // field_at_height.cpp), so these hand-computed reference fields need
   // one too, for views_are_equal to compare them.
   s_tgt.create_valid_mask();
@@ -114,27 +114,28 @@ TEST_CASE("field_at_height")
     util::TimeStamp t0 ({2022,1,1},{0,0,0});
     auto& factory = DiagnosticFactory::instance();
     ekat::ParameterList pl;
-    pl.set("surface_reference",surf_ref);
-    pl.set("height_value",std::to_string(h));
-    pl.set("height_units",std::string("m"));
+    const std::string coord = surf_ref=="sealevel" ? "z" : "height";
+    pl.set("vertical_coordinate",coord);
+    pl.set("value",std::to_string(h));
+    pl.set("units",std::string("m"));
     pl.set("field_name",f.name());
     pl.set("grid_name",grid->name());
-    auto diag = factory.create("FieldAtheight",comm,pl, grid);
+    auto diag = factory.create("FieldVerticalInterp",comm,pl, grid);
     diag->set_input_field(f);
     diag->set_input_field(z);
 
-    // FieldAtHeight now depends on the (mid/int) bracket-index field
-    // computed by HeightLevelIndex. Compute the variant matching z here,
+    // FieldVerticalInterp now depends on the (mid/int) level-index field
+    // computed by VerticalLevelIndex. Compute the variant matching z here,
     // and feed it in, since this test builds the diag by hand (rather
     // than through the io-stream machinery, which resolves such
     // dependencies automatically).
     const std::string layer = z.name().substr(z.name().size()-3)=="mid" ? "mid" : "int";
     ekat::ParameterList idx_pl;
-    idx_pl.set("surface_reference",surf_ref);
-    idx_pl.set("height_value",std::to_string(h));
-    idx_pl.set("height_units",std::string("m"));
+    idx_pl.set("vertical_coordinate",coord);
+    idx_pl.set("value",std::to_string(h));
+    idx_pl.set("units",std::string("m"));
     idx_pl.set("vertical_layer",layer);
-    auto idx_diag = factory.create("HeightLevelIndex",comm,idx_pl,grid);
+    auto idx_diag = factory.create("VerticalLevelIndex",comm,idx_pl,grid);
     idx_diag->set_input_field(z);
     idx_diag->initialize();
     idx_diag->compute(t0);
@@ -209,7 +210,7 @@ TEST_CASE("field_at_height")
     const auto int_src = surf_ref == "sealevel" ? z_int : h_int;
     const int  max_surf_4test = surf_ref == "sealevel" ? max_surf : 0;
     // "above surface" extrapolates below the bottom entry; "above sealevel"
-    // does not (see HeightLevelIndex). Either way, above the top entry is
+    // does not (see VerticalLevelIndex). Either way, above the top entry is
     // always invalid, which f_z_tgt accounts for on its own.
     const bool extrapolate_bottom = surf_ref == "surface";
     for (int irun=0; irun<nruns; ++irun) {
@@ -263,7 +264,7 @@ TEST_CASE("field_at_height")
       }
     }
     // A target above the top entry is always flagged as invalid, regardless
-    // of the surface reference (matches FieldAtPressureLevel at the model
+    // of the surface reference (matches FieldVerticalInterp at the model
     // top). A target below the bottom entry extrapolates for "above
     // surface" heights (always well defined near the surface), but is
     // flagged as invalid for "above sealevel" heights (e.g. a target
@@ -330,7 +331,7 @@ void f_z_src(const Real y0, const Real m, const Field& z_data, Field& out_data) 
 //-------------------------------
 // Calculate the target data, AND the target mask (out_data must already
 // have a valid mask). Note expression here must match the f_z_src above,
-// and the validity rule must match HeightLevelIndex/FieldAtHeight: above
+// and the validity rule must match VerticalLevelIndex/FieldVerticalInterp: above
 // the top entry is always invalid; below the bottom entry is invalid
 // unless extrapolate_bottom.
 void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data,
@@ -345,7 +346,7 @@ void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_da
     const auto& out_view = out_data.get_view<Real**,Host>();
     const auto& mask_view = mask.get_view<int**,Host>();
     for (int ii=0; ii<dims[0]; ++ii) {
-      // Check if FieldAtHeight would have had to extrapolate:
+      // Check if FieldVerticalInterp would have had to extrapolate:
       const bool top_oob = z_target > z_view(ii,0);
       const bool bot_oob = z_target < z_view(ii,zdims[1]-1);
       const int valid = (not top_oob and (not bot_oob or extrapolate_bottom)) ? 1 : 0;
@@ -365,7 +366,7 @@ void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_da
     const auto& out_view = out_data.get_view<Real*,Host>();
     const auto& mask_view = mask.get_view<int*,Host>();
     for (int ii=0; ii<dims[0]; ++ii) {
-      // Check if FieldAtHeight would have had to extrapolate:
+      // Check if FieldVerticalInterp would have had to extrapolate:
       const bool top_oob = z_target > z_view(ii,0);
       const bool bot_oob = z_target < z_view(ii,zdims[1]-1);
       if (top_oob) {

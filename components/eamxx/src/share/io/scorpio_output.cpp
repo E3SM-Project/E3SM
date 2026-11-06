@@ -544,18 +544,18 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //    set the mask as extra data. We DON'T want to compute it here
       // 2. Create count with same layout as the mask
       // 3. In avg=tally/count, count MAY have smaller layout, hence
-      //    be incompatible. E.g., mask came from FieldAtPressureLevel,
+      //    be incompatible. E.g., mask came from FieldVerticalInterp,
       //    and was (ncol), but the field is (ncol,2). In this case, we
       //    ASSUME same mask for all slices, so do scaling on all slices:
       //      avg.component(i).scale_inv(count)
-      // 4. In FieldAtPressureLevel, make ALL instances at same Plev share
+      // 4. In FieldVerticalInterp, make ALL instances at same Plev share
       //    the same mask field. How? Two ideas:
       //      - store a static map string->Field in class, and use a string
       //        key that encodes grid and press level. Only compute mask if
       //        timestamp of mask field is "old"
       //      - make another diag that computes the mask, make F@plev depend
       //        on that diag.
-      // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
+      // 5. FieldVerticalInterp (and vremap) should only fill the mask field
       //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
@@ -1215,7 +1215,7 @@ process_requested_fields()
     // but we would still divide by the raw nsteps, biasing the result low.
     // A count is named after its field, unless the field is a diag whose mask has
     // a name other than the default <name>_valid_mask (see Field::create_valid_mask).
-    // Such a name says where a condition holds (e.g., FieldAtPressureLevel names its
+    // Such a name says where a condition holds (e.g., FieldVerticalInterp names its
     // mask after the level), and all diags with a mask of that name share a count.
     // NOTE: model fields get a count of their own: they may be refreshed at different
     //       times, even if they share a mask.

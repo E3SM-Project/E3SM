@@ -302,7 +302,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     read_fields(filename,fields,gids,io_comm);
 
     // Check the "test" metadata, which should match the field name
-    // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
+    // Note: the FieldVerticalInterp diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
     for (auto& fname : fnames) {
@@ -368,7 +368,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     read_fields(filename,fields,gids,io_comm);
 
     // Check the "test" metadata, which should match the field name
-    // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
+    // Note: the FieldVerticalInterp diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
     for (auto& fname : fnames) {
@@ -448,7 +448,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     read_fields(filename,fields,gids,io_comm);
 
     // Check the "test" metadata, which should match the field name
-    // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
+    // Note: the FieldVerticalInterp diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
     for (auto& fname : fnames) {
