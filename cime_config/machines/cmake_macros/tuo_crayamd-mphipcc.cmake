@@ -31,14 +31,22 @@ string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=ON -DKokkos_ENABLE_SERIAL=ON 
 # resolve SPIO compile issue
 string(APPEND SPIO_CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 
-string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -O2 -x hip --offload-arch=gfx942")
+string(APPEND CMAKE_HIP_FLAGS "${CXXFLAGS} -x hip --offload-arch=gfx942")
+
+string(APPEND CMAKE_C_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g")
+string(APPEND CMAKE_HIP_FLAGS_DEBUG " -O0 -g")
+
+# Match the more conservative Cray release settings already used on Frontier
+# to reduce optimizer-induced restart and history differences.
+string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -hnoacc -hfp0 -hipa0")
+string(APPEND CMAKE_HIP_FLAGS_RELEASE " -O2")
 
 # cray fortran outputs uppercase mod name, forces lowercase
 string(APPEND CMAKE_Fortran_FLAGS " -ef")
-
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
 
 if (COMP_NAME STREQUAL cpl)
 	# auto-detection not working, tries to use AMD variant, we need Cray variant
@@ -49,12 +57,32 @@ set(E3SM_LINK_WITH_FORTRAN "TRUE")
 
 set(PIO_FILESYSTEM_HINTS "lustre")
 
-# The MOAB coupler pulls in a MOAB build that is UBSan-instrumented in this
-# environment, so the final executable must link the UBSan runtime.
-if (DEFINED COMP_INTERFACE AND COMP_INTERFACE STREQUAL "moab")
-	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -lubsan -Wl,--as-needed")
+# Keep the runtime search path attached to the binaries instead of relying on
+# LD_LIBRARY_PATH in the user's shell or batch environment.
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_SKIP_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
+foreach (_prefix
+	"$ENV{NETCDF_C_PATH}"
+	"$ENV{NETCDF_FORTRAN_PATH}"
+	"$ENV{PNETCDF_PATH}"
+	"$ENV{HDF5_ROOT}"
+	"$ENV{TEMPESTREMAP_ROOT}"
+	"$ENV{MOAB_ROOT}")
+	list(APPEND CMAKE_BUILD_RPATH "${_prefix}/lib" "${_prefix}/lib64")
+	list(APPEND CMAKE_INSTALL_RPATH "${_prefix}/lib" "${_prefix}/lib64")
+endforeach()
+
+if (DEFINED COMP_INTERFACE AND COMP_INTERFACE STREQUAL "moab")
 	# MPICH GPU-aware support requires the GTL library to be retained even under --as-needed.
-	# Also add an rpath so compute nodes can find it.
-	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -Wl,-l:libmpi_gtl_hsa.so -Wl,--as-needed -Wl,-rpath,/opt/cray/pe/mpich/9.0.1/gtl/lib")
+	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -Wl,-l:libmpi_gtl_hsa.so -Wl,--as-needed")
+	list(APPEND CMAKE_BUILD_RPATH "/opt/cray/pe/mpich/9.0.1/gtl/lib")
+	list(APPEND CMAKE_INSTALL_RPATH "/opt/cray/pe/mpich/9.0.1/gtl/lib")
 endif()
+
+list(REMOVE_DUPLICATES CMAKE_BUILD_RPATH)
+list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
+
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--enable-new-dtags")
+string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--enable-new-dtags")
