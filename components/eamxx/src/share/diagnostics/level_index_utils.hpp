@@ -5,6 +5,8 @@
 
 #include <ekat_assert.hpp>
 
+#include <cstdio>
+#include <limits>
 #include <string>
 
 // Helpers shared by VerticalLevelIndex and FieldVerticalInterp, so that they agree on
@@ -14,6 +16,28 @@ namespace scream
 {
 namespace level_index_utils
 {
+
+// Canonical spelling of a vertical target value, used to name the range masks, so that
+// equivalent requests (e.g., 900hPa and 900mb) share the same mask. digits10 significant
+// digits absorb the rounding error of unit conversions (e.g., 850.3hPa to Pa and back), and
+// trailing zeros are dropped. No exponent, since it would end up in a variable name.
+inline std::string value_string (const Real v)
+{
+  char buf[64];
+  std::snprintf(buf,sizeof(buf),"%.*g",std::numeric_limits<Real>::digits10,static_cast<double>(v));
+  std::string s = buf;
+  if (s.find('e')!=std::string::npos) {
+    std::snprintf(buf,sizeof(buf),"%.12f",static_cast<double>(v));
+    s = buf;
+    while (s.back()=='0') {
+      s.pop_back();
+    }
+    if (s.back()=='.') {
+      s.pop_back();
+    }
+  }
+  return s;
+}
 
 // Convert a pressure value, expressed in the given units ('mb', 'hPa', 'Pa'), to Pa
 inline Real pressure_in_Pa (const std::string& value, const std::string& units)
@@ -78,11 +102,16 @@ struct VerticalTarget
     return coord_field(layer) + ".searchsorted(" + value_str + ",units='" + units + "')";
   }
 
-  // Name of the range mask for this target, for a given layer. It is named after the
-  // request, as written, so that IO names the avg count after the level the user asked for.
+  // Name of the range mask for this target, for a given layer. It only depends on the
+  // level, not on how the request spells it (e.g., 900hPa and 900mb), so that all equivalent
+  // requests share the same mask name, and IO the same avg count. The pressure is spelled in hPa,
+  // which is what the requests normally use, so that their mask names (and the IO count names)
+  // are the ones of the request.
   std::string mask_name (const std::string& layer) const
   {
-    const std::string lvl = value_str + units + (coord=="p" ? "" : (coord=="z" ? "_above_sealevel" : "_above_surface"));
+    const std::string lvl = coord=="p"
+                          ? value_string(target/100) + "hPa"
+                          : value_string(target) + "m_above_" + (coord=="z" ? "sealevel" : "surface");
     return lvl + (layer=="int" ? "_int" : "") + "_mask";
   }
 
