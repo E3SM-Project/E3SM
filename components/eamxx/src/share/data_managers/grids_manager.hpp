@@ -18,6 +18,10 @@
 namespace scream
 {
 
+// Forward declaration, to avoid a circular include (model_init.hpp includes
+// field_manager.hpp, which includes this header).
+class ModelInit;
+
 class GridsManager
 {
 public:
@@ -28,6 +32,7 @@ public:
   using nonconstgrid_repo_type = std::map<std::string, nonconstgrid_ptr_type>;
   using remapper_type          = AbstractRemapper;
   using remapper_ptr_type      = std::shared_ptr<remapper_type>;
+  using model_init_ptr_type    = std::shared_ptr<ModelInit>;
 
   GridsManager () = default;
   virtual ~GridsManager () = default;
@@ -52,6 +57,12 @@ public:
     return create_remapper(get_grid(from_grid),get_grid(to_grid));
   }
 
+  // Create a ModelInit object, to init the fields living on this grids manager's grids.
+  // The base implementation returns a plain ModelInit. A grids manager whose grids need
+  // special treatment (e.g., because they come with their own dynamics package that must
+  // be initialized too) can return a subclass.
+  model_init_ptr_type create_model_init (const ekat::ParameterList& params) const;
+
   const grid_repo_type& get_repo () const { return m_grids; }
 
   std::set<std::string> get_grid_names () const;
@@ -69,6 +80,10 @@ protected:
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const = 0;
+
+  // Not pure: most grids managers need nothing special
+  virtual model_init_ptr_type
+  do_create_model_init (const ekat::ParameterList& params) const;
 
 private:
 
