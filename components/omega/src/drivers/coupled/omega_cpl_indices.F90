@@ -93,7 +93,7 @@ contains
       export_field_names(7) = "So_dhdy"
       export_field_names(8) = "Faoo_h2otemp"
       export_field_names(9) = "Fioo_q"
-      export_field_names(10) = "Fioo_frazil"
+      export_field_names(10) = "Fioo_frazilm"
 
       ! get mct_avect_index value for each export field name
       call get_indices_from_names( &
