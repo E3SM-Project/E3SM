@@ -322,7 +322,7 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .keywords = {{"time",true}},
            .example = "T_mid.shift(time=1)"});
     r.add({.name = "searchsorted",
-           .desc = "per column, the level indices bracketing a target pressure or height",
+           .desc = "per column, the index of the first level past a target pressure or height",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"units",false}},
            .example = "p_mid.searchsorted(500,units='hPa')"});
