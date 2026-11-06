@@ -40,8 +40,7 @@ std::string find_filename_in_rpointer (
     EKAT_REQUIRE_MSG (control.output_enabled(),
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
         " - restart file prefix: " + stream_name + "\n");
-    // For history restart, need wildcard for stream_name
-    pattern_str += R"([^.]+\.)";  // Match stream_name
+    // For history restart, the stream_name is already included in the prefix
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
   }
   if (is_scream_standalone()) {
