@@ -741,7 +741,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>rayleigh_friction,mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">rayleigh_friction,zm,mac_aero_mic,spc,rrtmgp,cosp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">rayleigh_friction,zm,gw,mac_aero_mic,spc,rrtmgp,cosp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%ZM.*">rayleigh_friction,zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">rayleigh_friction,mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">rayleigh_friction,iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
