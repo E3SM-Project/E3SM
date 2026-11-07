@@ -364,6 +364,23 @@ contains
           ! where stride 2 means "every other"
 
           do t2 = 1, max_topounits
+             ! Area-weight the fertilizer of the irrigated CFT into its rainfed
+             ! twin before the weights are merged.
+             do m = cft_lb, cft_ub-1, 2
+                wt_cft_to   = wt_cft(g,t2, m)
+                wt_cft_from = wt_cft(g,t2, m+1)
+                wt_cft_merge = wt_cft_to + wt_cft_from
+                if (wt_cft_merge > 0._r8) then
+                   if (fert_cft(g,t2,m) /= fert_cft(g,t2,m+1)) then
+                      fert_cft(g,t2,m) = (wt_cft_to * fert_cft(g,t2,m) + &
+                                          wt_cft_from * fert_cft(g,t2,m+1)) / wt_cft_merge
+                   end if
+                   if (fert_p_cft(g,t2,m) /= fert_p_cft(g,t2,m+1)) then
+                      fert_p_cft(g,t2,m) = (wt_cft_to * fert_p_cft(g,t2,m) + &
+                                            wt_cft_from * fert_p_cft(g,t2,m+1)) / wt_cft_merge
+                   end if
+                end if
+             end do
              wt_cft(g,t2, cft_lb:cft_ub-1:2) = &
                wt_cft(g,t2, cft_lb:cft_ub-1:2) + wt_cft(g,t2, cft_lb+1:cft_ub:2)
              wt_cft(g,t2, cft_lb+1:cft_ub:2)  = 0._r8

@@ -1308,8 +1308,9 @@ contains
     integer  :: nl, t                             ! index
     integer  :: m                                 ! index
     integer  :: rainfed_cft(18), irrig_cft(18)    ! rainfed and matching irrigated crop types
+    real(r8) :: wt_cft_merge                      ! combined rainfed + irrigated CFT weight
     integer  :: dimid,varid                    ! netCDF id's
-    integer  :: ier                            ! error status	
+    integer  :: ier                            ! error status
     integer  :: cftsize                        ! size of CFT's
     logical  :: readvar                        ! is variable on dataset
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
@@ -1452,6 +1453,19 @@ contains
             ! Crops that are not on the paramfile have an index of -1 and are skipped
             do m = 1, size(rainfed_cft)
                if (rainfed_cft(m) < 0 .or. irrig_cft(m) < 0) cycle
+               ! Area-weight the fertilizer of the irrigated CFT into its rainfed
+               ! twin before the weights are merged
+               wt_cft_merge = wt_cft(nl,t,rainfed_cft(m)) + wt_cft(nl,t,irrig_cft(m))
+               if (wt_cft_merge > 0._r8) then
+                  if (fert_cft(nl,t,rainfed_cft(m)) /= fert_cft(nl,t,irrig_cft(m))) then
+                     fert_cft(nl,t,rainfed_cft(m)) = (wt_cft(nl,t,rainfed_cft(m)) * fert_cft(nl,t,rainfed_cft(m)) + &
+                          wt_cft(nl,t,irrig_cft(m)) * fert_cft(nl,t,irrig_cft(m))) / wt_cft_merge
+                  end if
+                  if (fert_p_cft(nl,t,rainfed_cft(m)) /= fert_p_cft(nl,t,irrig_cft(m))) then
+                     fert_p_cft(nl,t,rainfed_cft(m)) = (wt_cft(nl,t,rainfed_cft(m)) * fert_p_cft(nl,t,rainfed_cft(m)) + &
+                          wt_cft(nl,t,irrig_cft(m)) * fert_p_cft(nl,t,irrig_cft(m))) / wt_cft_merge
+                  end if
+               end if
                wt_cft(nl,t,rainfed_cft(m)) = wt_cft(nl,t,rainfed_cft(m)) + wt_cft(nl,t,irrig_cft(m))
                wt_cft(nl,t,irrig_cft(m))   = 0._r8
             end do
