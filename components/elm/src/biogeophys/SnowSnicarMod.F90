@@ -13,7 +13,7 @@ module SnowSnicarMod
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use elm_varctl      , only : iulog, use_firn_percolation_and_compaction
   use elm_varcon      , only : namec 
-  use shr_const_mod   , only : SHR_CONST_RHOICE
+  use elm_varcon      , only : denice
   use abortutils      , only : endrun
   use decompMod       , only : bounds_type
   use AerosolMod      , only : snw_rds_min
@@ -305,7 +305,7 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varpar       , only : nlevsno, numrad
-    use shr_const_mod    , only : SHR_CONST_PI
+    use elm_varcon       , only : rpi
     !
     ! !ARGUMENTS:
     integer           , intent(in)  :: flg_snw_ice                                        ! flag: =1 when called from CLM, =2 when called from CSIM
@@ -464,7 +464,7 @@ contains
          )
 
       ! Define constants
-      pi = SHR_CONST_PI
+      pi = rpi
       nint_snw_rds_min = nint(snw_rds_min)
 
       ! always use Delta approximation for snow
@@ -1248,7 +1248,7 @@ contains
       !$acc routine seq
     use elm_varpar       , only : nlevsno
     use elm_varcon       , only : spval
-    use shr_const_mod    , only : SHR_CONST_RHOICE, SHR_CONST_PI
+    use elm_varcon       , only : denice, rpi
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -1412,9 +1412,9 @@ contains
             ! liquid water faction
             frc_liq = min(0.1_r8, (h2osoi_liq(c_idx,i) / (h2osoi_liq(c_idx,i)+h2osoi_ice(c_idx,i))))
 
-            !dr_wet = 1E6_r8*(dtime*(C1_liq_Brun89 + C2_liq_Brun89*(frc_liq**(3))) / (4*SHR_CONST_PI*(snw_rds(c_idx,i)/1E6)**(2)))
+            !dr_wet = 1E6_r8*(dtime*(C1_liq_Brun89 + C2_liq_Brun89*(frc_liq**(3))) / (4*rpi*(snw_rds(c_idx,i)/1E6)**(2)))
             !simplified, units of microns:
-            dr_wet = 1E18_r8*(dtime*(C2_liq_Brun89*(frc_liq**(3))) / (4*SHR_CONST_PI*snw_rds(c_idx,i)**(2)))
+            dr_wet = 1E18_r8*(dtime*(C2_liq_Brun89*(frc_liq**(3))) / (4*rpi*snw_rds(c_idx,i)**(2)))
 
             dr = dr + dr_wet
 
@@ -1811,7 +1811,7 @@ contains
       !$acc routine seq
      use elm_varpar       , only : nlevsno, numrad
      use elm_time_manager , only : get_nstep
-     use shr_const_mod    , only : SHR_CONST_PI
+     use elm_varcon       , only : rpi
      use elm_varctl       , only : snow_shape, snicar_atm_type, use_dust_snow_internal_mixing, use_finetop_rad
      !
      ! !ARGUMENTS:
@@ -2139,9 +2139,9 @@ contains
           )
 
        ! Define constants
-       pi = SHR_CONST_PI
+       pi = rpi
        nint_snw_rds_min = nint(snw_rds_min)
-       deg2rad = SHR_CONST_PI/180._r8
+       deg2rad = rpi/180._r8
 
        ! always use Delta approximation for snow
        DELTA = 1

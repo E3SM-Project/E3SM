@@ -37,7 +37,7 @@ contains
     !         (delta + gamma*(1+0.34*u2))
 
     ! !USES:
-    use elm_varcon       , only : tfrz
+    use elm_varcon       , only : tfrz, secspday
 
     ! !ARGUMENTS:
     implicit none
@@ -64,7 +64,7 @@ contains
     real(r8) :: dc1 = 4098._r8      ! constant in delta eqn
     real(r8) :: gc1 = 0.000665_r8   ! constant in phychrometric eqn
 
-    c2 = c4/(86400._r8/dt)  ! convert to /timestep
+    c2 = c4/(secspday/dt)  ! convert to /timestep
     t_c   = T - tfrz      ! convert to degrees C
     rn_c  = rn*dt/conv1   ! convert from W m-2 to MJ m-2
     g_c   = g*dt/conv1    ! convert from W m-2 to MJ m-2

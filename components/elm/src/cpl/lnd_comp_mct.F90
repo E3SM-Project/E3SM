@@ -856,7 +856,7 @@ contains
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use elm_varcon  , only: re
-    use shr_const_mod, only: SHR_CONST_PI
+    use elm_varcon, only: rpi
     use elm_varctl  ,  only : iulog  ! for messages
      use spmdmod          , only: masterproc
     use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
@@ -911,8 +911,8 @@ contains
     allocate(moab_vert_coords(lsz*dims))
     do i = 1, lsz
       n = i-1 + bounds%begg
-      lonv = ldomain%lonc(n) *SHR_CONST_PI/180.
-      latv = ldomain%latc(n) *SHR_CONST_PI/180.
+      lonv = ldomain%lonc(n) *rpi/180.
+      latv = ldomain%latc(n) *rpi/180.
       moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
       moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
       moab_vert_coords(3*i  )=SIN(latv)
