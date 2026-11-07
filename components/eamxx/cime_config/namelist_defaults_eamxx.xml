@@ -37,6 +37,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <selector name="dyn"       case_env="CAM_TARGET"/>
     <selector name="hgrid"     case_env="ATM_GRID"/>
     <selector name="vgrid"     case_env="EAMXX_VGRID"/>
+    <!-- Physics package, taken from the SCREAM compset modifier (e.g. 2010_SCREAM%MES_ELM...).
+         Valid packages: SYN, MES, CGZ, LES. The package modifier may be combined with
+         other modifiers via '-' (e.g. SCREAM%MAM4xx-MES); by convention it goes last.
+         If the compset has no package modifier, the selector evaluates to False and
+         the legacy (grid-based) defaults apply. -->
+    <selector name="phys"      case_env="COMPSET" regex=".*_SCREAM%(?:[^_]*-)?(SYN|MES|CGZ|LES)(?:-[^_]*)?_.*"/>
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
@@ -262,6 +268,30 @@ be lost if SCREAM_HACK_XML is not enabled.
       <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere">false</set_cld_frac_i_to_one>
       <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
       <extra_p3_diags type="logical" doc="Extra P3 diagnostics">false</extra_p3_diags>
+
+      <!-- Physics-package settings. These come last so they take precedence over the
+           legacy hgrid-keyed entries above; each package sets every package-dependent
+           value explicitly, so the result does not depend on the grid. -->
+      <!-- SYN: synoptic scales are the finest resolved (e.g. ne30); same as legacy low-res defaults -->
+      <autoconversion_prefactor phys="SYN">1350.0</autoconversion_prefactor>
+      <accretion_prefactor      phys="SYN">67.0</accretion_prefactor>
+      <spa_ccn_to_nc_factor     phys="SYN">2000.0</spa_ccn_to_nc_factor>
+      <set_cld_frac_r_to_one    phys="SYN">false</set_cld_frac_r_to_one>
+      <!-- MES: mesoscale-resolving (e.g. ne120, ne256); same as legacy ne256 settings -->
+      <autoconversion_prefactor phys="MES">2700.0</autoconversion_prefactor>
+      <accretion_prefactor      phys="MES">150.0</accretion_prefactor>
+      <spa_ccn_to_nc_factor     phys="MES">1000.0</spa_ccn_to_nc_factor>
+      <set_cld_frac_r_to_one    phys="MES">true</set_cld_frac_r_to_one>
+      <!-- CGZ: convective grey zone (e.g. ne1024); same as legacy ne1024 settings -->
+      <autoconversion_prefactor phys="CGZ">1350.0</autoconversion_prefactor>
+      <accretion_prefactor      phys="CGZ">67.0</accretion_prefactor>
+      <spa_ccn_to_nc_factor     phys="CGZ">2000.0</spa_ccn_to_nc_factor>
+      <set_cld_frac_r_to_one    phys="CGZ">true</set_cld_frac_r_to_one>
+      <!-- LES: large-eddy scales (e.g. CONUS200); provisional, P3 tuning copied from CGZ -->
+      <autoconversion_prefactor phys="LES">1350.0</autoconversion_prefactor>
+      <accretion_prefactor      phys="LES">67.0</accretion_prefactor>
+      <spa_ccn_to_nc_factor     phys="LES">2000.0</spa_ccn_to_nc_factor>
+      <set_cld_frac_r_to_one    phys="LES">true</set_cld_frac_r_to_one>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -284,6 +314,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <coeff_km_horiz type="real" doc="Horizontal eddy diffusivity coefficient for momentum">0.1</coeff_km_horiz>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
+      <!-- LES package: no SGS cloud variability (provisional) -->
+      <shoc_1p5tke phys="LES">true</shoc_1p5tke>
     </shoc>
 
     <!-- ZM deep convection -->
@@ -1135,6 +1167,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mesh_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
     <!-- Settings related to 3D turbulence -->
     <do_3d_turbulence>false</do_3d_turbulence>
+    <do_3d_turbulence phys="LES">true</do_3d_turbulence>
   </ctl_nl>
 
 </namelist_defaults>
