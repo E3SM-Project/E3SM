@@ -9,6 +9,7 @@
 #include "Eos.h"
 #include "Error.h"
 #include "Field.h"
+#include "FillValues.h"
 #include "Logging.h"
 #include "TimeStepper.h"
 
@@ -289,6 +290,10 @@ void Frazil::registerFields() {
    FrazilMassField->attachData<Array1DReal>(FrazilMassFlux, FillOnAttach);
    FrazilSaltField->attachData<Array1DReal>(FrazilSaltFlux, FillOnAttach);
    FrazilEnergyField->attachData<Array1DReal>(FrazilEnergyFlux, FillOnAttach);
+   // not filling on attach skips setting _FillValue, so set explicitly here
+   FrazilMassField->addMetadata("_FillValue", FillValueReal);
+   FrazilSaltField->addMetadata("_FillValue", FillValueReal);
+   FrazilEnergyField->addMetadata("_FillValue", FillValueReal);
    FieldsRegistered = true;
 }
 
