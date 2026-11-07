@@ -17,7 +17,6 @@ coupled:
     IODefaultFormat: -9999 # PIO_TYPENAME_OCN
 
   Tendencies:
-    FrazilTendencyEnable: true
     SfcStressForcingTendencyEnable: true
     SfcThicknessForcingTendencyEnable: true
     SfcTracerForcingTendencyEnable: true

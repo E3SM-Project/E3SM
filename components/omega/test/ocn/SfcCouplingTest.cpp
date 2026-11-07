@@ -36,10 +36,10 @@ struct TestSetup {
        {"Foxx_evap", 12}, {"Foxx_rofl", 13}, {"Foxx_rofi", 14},
        {"Si_bpress", 15}, {"Sa_pslv", 16}};
    std::map<std::string, int> ExportIdxMap = {
-       {"So_t", 2},          {"So_s", 4},          {"So_u", 6},
-       {"So_v", 9},          {"So_dhdx", 5},       {"So_dhdy", 3},
-       {"So_ssh", 1},        {"Faoo_h2otemp", 0},  {"Fioo_q", 8},
-       {"Fioo_frazilm", 7},  {"Fioo_frazils", 11}, {"Fioo_frazilh", 10}};
+       {"So_t", 2},         {"So_s", 4},          {"So_u", 6},
+       {"So_v", 9},         {"So_dhdx", 5},       {"So_dhdy", 3},
+       {"So_ssh", 1},       {"Faoo_h2otemp", 0},  {"Fioo_q", 8},
+       {"Fioo_frazilm", 7}, {"Fioo_frazils", 11}, {"Fioo_frazilh", 10}};
 };
 
 CouplingInitParams mockCouplingInitParams(
