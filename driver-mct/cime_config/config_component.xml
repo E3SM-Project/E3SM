@@ -615,6 +615,32 @@
     </desc>
   </entry>
 
+  <entry id="KOKKOS_BACKEND">
+    <type>char</type>
+    <valid_values></valid_values>
+    <values>
+      <value compclass="ATM">default</value>
+      <value compclass="CPL">default</value>
+      <value compclass="OCN">default</value>
+      <value compclass="WAV">default</value>
+      <value compclass="GLC">default</value>
+      <value compclass="ICE">default</value>
+      <value compclass="ROF">default</value>
+      <value compclass="LND">default</value>
+      <value compclass="ESP">default</value>
+      <value compclass="IAC">default</value>
+    </values>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>Kokkos backend (execution space) used by each component that is built with Kokkos.
+    The value 'default' means that the component should use the default backend of the
+    Kokkos installation/configuration. Any other value (e.g., Serial, OpenMP, Cuda, HIP, SYCL)
+    must be a backend that is enabled in the Kokkos build; it is up to the component to
+    validate it. Components that do not use Kokkos ignore this setting. As for NTASKS, it can
+    be queried/set per component (e.g., ATM_KOKKOS_BACKEND) or for all components at once
+    (KOKKOS_BACKEND).</desc>
+  </entry>
+
   <entry id="EXEROOT">
     <type>char</type>
     <valid_values></valid_values>
