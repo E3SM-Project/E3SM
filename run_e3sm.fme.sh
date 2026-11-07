@@ -75,6 +75,7 @@ readonly PROJECT="${PROJECT:-E3SMinput}"
 #   FME_EXP=F2010-PD ./run_e3sm.fme.sh
 #   FME_EXP=WCYCL20TR ./run_e3sm.fme.sh
 #   FME_EXP=WCYCL20TR-0301 PILOT=TRUE ./run_e3sm.fme.sh       # 2-yr pilot
+#   FME_EXP=WCYCL20TR-0301 FME_MEMBER=0151 FME_JOB_PRIORITY=-100 PILOT=TRUE ./run_e3sm.fme.sh
 #   FME_EXP=F2010-PI STOP_N=1 RESUBMIT=0 ./run_e3sm.fme.sh      # 1-yr shakeout
 #   FME_EXP=F2010-PD STOP_OPTION=ndays STOP_N=10 RESUBMIT=0 ./run_e3sm.fme.sh
 readonly FME_EXP="${FME_EXP:-F2010-PD}"
@@ -183,11 +184,15 @@ case "${FME_EXP^^}" in
     # window boundary, so no leg splits a window. eam.h0 for 2065-01 needs
     # nothing extra: the 2064-12-31 18Z..2065-01-01 00Z record is stamped at
     # the window end and lands in the last leg.
+    # FME_MEMBER picks the CMIP6 v3 LR historical member (0051, 0151, 0251,
+    # 0301, ...): case name, parent and refdir follow it, every other setting
+    # is identical across members. Default 0301.
+    exp_member="${FME_MEMBER:-0301}"
     exp_compset="WCYCL20TR"
-    exp_case_base="v3.LR.historical_0301.aigo_cpl"
+    exp_case_base="v3.LR.historical_${exp_member}.aigo_cpl"
     exp_start_type="branch"
-    exp_refdir="/eagle/E3SMinput/mahf708/scratch/crux/E3SMv3/v3.LR.historical_0301/archive/rest/1940-01-01-00000"
-    exp_refcase="v3.LR.historical_0301"
+    exp_refdir="/eagle/E3SMinput/mahf708/scratch/crux/E3SMv3/v3.LR.historical_${exp_member}/archive/rest/1940-01-01-00000"
+    exp_refcase="v3.LR.historical_${exp_member}"
     exp_refdate="1940-01-01"
     exp_stop_n="5"
     exp_resubmit="24"
@@ -827,6 +832,7 @@ case_setup() {
         ./xmlchange "${EXTRA_XMLCHANGE_RUN}"
     fi
 
+
     # COSP simulator intentionally NOT enabled. The FME/SamudrACE tape carries
     # no COSP fields, so '-cosp' (docosp=.true.) would run the simulator every
     # few radiation steps for 100 years and produce nothing on tape. Re-add
@@ -989,6 +995,19 @@ runtime_options() {
     fi
 
     patch_mpas_streams
+
+    # FME_JOB_PRIORITY: PBS user priority (-1024..1023, qsub -p) for case.run,
+    # e.g. -100 so a second member never jumps ahead of a run that has
+    # priority when both have a leg queued (it only orders the user's own jobs).
+    # Done here, after case.setup has picked the queue for the final PE layout:
+    # setting BATCH_COMMAND_FLAGS earlier froze the placeholder layout's
+    # '-q debug' into the flags (0151, 2026-11-07).
+    if [ -n "${FME_JOB_PRIORITY:-}" ]; then
+        local flags
+        flags=$(./xmlquery --value --subgroup case.run BATCH_COMMAND_FLAGS)
+        ./xmlchange --subgroup case.run BATCH_COMMAND_FLAGS="${flags} -p ${FME_JOB_PRIORITY}"
+        echo "case.run batch flags: $(./xmlquery --value --subgroup case.run BATCH_COMMAND_FLAGS)"
+    fi
 
     popd
 }
