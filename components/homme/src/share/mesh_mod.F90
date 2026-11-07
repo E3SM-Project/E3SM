@@ -808,6 +808,8 @@ contains
   subroutine mesh_init_sfc_from_centroids(nelem, face_numbers, centroids, h, sfcidx)
     use spacecurve_mod, only : sfcmap_t, sfcmap_init, sfcmap_pos2i, sfcmap_finalize
     use sort_mod, only : sortints
+    use parallel_mod, only : abortmp
+    use iso_c_binding, only : c_long_long
 
     integer, intent(in) :: nelem, face_numbers(nelem)
     real(kind=real_kind), intent(in) :: centroids(nelem,2), h
@@ -815,15 +817,22 @@ contains
     real(kind=real_kind), parameter :: pi = 3.141592653589793116d0
     integer, parameter :: nfaces = 6
     type (sfcmap_t) :: sfcmap
-    integer :: ne, ne2, i, face, i2, j2, pos(2), o, sfc, ne2sq
+    integer :: ne, ne2, i, face, i2, j2, pos(2), o, sfc
+    integer (kind=c_long_long) :: ne2sq
     real(kind=real_kind) :: x, y
-    integer, allocatable :: inds(:,:)
+    ! The sort key ne2^2*(face-1) + sfc spans [0, 6*ne2^2), which exceeds
+    ! huge(int32) once ne2 >= 2^15, so the key array must be 64-bit.
+    integer (kind=c_long_long), allocatable :: inds(:,:)
 
     ne = ceiling(pi/h);
     ! find the smallest ne2 which is a power of 2 and ne2>ne. could instead use
     ! find_next_factorable for a smaller ne2.
     ne2 = 2**ceiling(log(real(ne))/log(2d0))
-    ne2sq = ne2*ne2
+    ! sfcmap works in default integers and sfc ranges over [0, ne2^2), so
+    ! ne2 = 2^16 would overflow sfc itself.
+    if (ne2 > 2**15) call abortmp('mesh_init_sfc_from_centroids: element &
+         &too small; SFC index would overflow default integer (ne2 > 2^15)')
+    ne2sq = int(ne2, c_long_long)**2
 
     o = sfcmap_init(ne2, sfcmap)
     allocate(inds(2,nelem))
@@ -838,11 +847,11 @@ contains
        pos = (/ i2, j2 /)
        inds(2,i) = i
        o = sfcmap_pos2i(sfcmap, pos, sfc)
-       inds(1,i) = ne2*ne2*(face-1) + sfc
+       inds(1,i) = ne2sq*(face-1) + sfc
     end do
     call sortints(inds)
     do i = 1, nelem
-       sfcidx(inds(2,i)) = i-1
+       sfcidx(int(inds(2,i))) = i-1
     end do
     deallocate(inds)
     call sfcmap_finalize(sfcmap)
