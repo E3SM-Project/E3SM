@@ -82,20 +82,20 @@ struct TestSetupSphere1 {
    // radius of spherical mesh
    Real Radius = REarth;
 
-   ErrorMeasures ExpectedDivErrors         = {0.013659556526126423,
-                                              0.0036698023569596279};
-   ErrorMeasures ExpectedGradErrors        = {0.0018790366180557886,
-                                              0.0014984647360648147};
-   ErrorMeasures ExpectedCurlErrors        = {0.027146182264483853,
-                                              0.025202560969432571};
-   ErrorMeasures ExpectedReconErrors       = {0.020633072221392729,
-                                              0.0069262670519179576};
-   ErrorMeasures ExpectedVectorReconErrors = {0.0033076912646329529,
-                                              0.0029392950172411601};
-   ErrorMeasures ExpectedAnisoInterpErrors = {0.0024007805796189899,
-                                              0.0018491570972366891};
-   ErrorMeasures ExpectedIsoInterpErrors   = {0.0074341565605974018,
-                                              0.0029922776661517052};
+   ErrorMeasures ExpectedDivErrors         = {0.013659556524995887,
+                                              0.0036698023600862115};
+   ErrorMeasures ExpectedGradErrors        = {0.0018790366228384064,
+                                              0.001498464739730873};
+   ErrorMeasures ExpectedCurlErrors        = {0.027146182264345276,
+                                              0.025202560969394435};
+   ErrorMeasures ExpectedReconErrors       = {0.020633072221392872,
+                                              0.0069262670519179542};
+   ErrorMeasures ExpectedVectorReconErrors = {0.0033076912646330093,
+                                              0.0029392950172411627};
+   ErrorMeasures ExpectedAnisoInterpErrors = {0.0024007805796189691,
+                                              0.0018491570972366796};
+   ErrorMeasures ExpectedIsoInterpErrors   = {0.0074341565605974555,
+                                              0.0029922776661516965};
 
    KOKKOS_FUNCTION Real exactScalar(Real Lon, Real Lat) const {
       return Radius * std::cos(Lon) * std::pow(std::cos(Lat), 4);
