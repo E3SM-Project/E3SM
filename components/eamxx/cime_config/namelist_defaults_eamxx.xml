@@ -768,6 +768,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
+      <!-- SYN package: ZM deep convection + gravity wave drag. GW runs after ZM so it can
+           use ZM's deep_conv_t_tend, and after radiation, mirroring EAM's tphysac order. -->
+      <atm_procs_list phys="SYN">zm,mac_aero_mic,rrtmgp,gw</atm_procs_list>
+      <!-- Process lists don't compose across modifiers, so combinations need explicit entries -->
+      <atm_procs_list phys="SYN" COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,zm,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep,gw</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 
