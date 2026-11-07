@@ -1032,9 +1032,9 @@ _TESTS = {
             "ERS_Ln9.TL319_EC30to60E2r2.GOMEGA-JRA1p5.omega-jra_1958",
 
             # --- B Cases (Fully coupled EAM/ELM/MOSART/MPASSI/OMEGA) ---
-            "SMS_D_Ld1.ne4pg2_oQU240.WCYCL1850NS-OMEGA",
-            "ERS_Ld3.ne4pg2_oQU240.WCYCL1850NS-OMEGA",
-            "PEM_D_Ld3.ne4pg2_oQU240.WCYCL1850NS-OMEGA",
+            "SMS_D_Ld1.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA",
+            "ERS_Ld3.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA",
+            "PEM_D_Ld3.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA",
         )
     },
 
@@ -1044,8 +1044,8 @@ _TESTS = {
         "inherit" : ("e3sm_omega_developer"),
         "tests" : (
             # --- B Cases (Fully coupled EAM/ELM/MOSART/MPASSI/OMEGA) ---
-            "ERS_Ln9.ne30pg2_r05_EC30to60E2r2.WCYCL1850NS-OMEGA",
-            "PEM_Ln9.ne30pg2_r05_EC30to60E2r2.WCYCL1850NS-OMEGA",
+            "ERS_Ln9.ne30pg2_r05_EC30to60E2r2.WCYCLXX1850NS-OMEGA",
+            "PEM_Ln9.ne30pg2_r05_EC30to60E2r2.WCYCLXX1850NS-OMEGA",
         )
     },
 
