@@ -46,6 +46,18 @@ def buildlib(bldroot, installpath, case):
             "is now derived from EAMXX_VGRID. Please, remove it and set EAMXX_VGRID instead.")
     cmake_args_dict["SCREAM_NUM_VERTICAL_LEV"] = m.groups()[0]
 
+    # The kokkos backend is selected via the case var ATM_KOKKOS_BACKEND. The value 'default' means
+    # to use the default kokkos execution space; any other value must be an enabled kokkos backend
+    # (this is checked in our CMakeLists.txt, where we know which backends are enabled).
+    kokkos_backend = case.get_value("ATM_KOKKOS_BACKEND")
+    expect(kokkos_backend is not None,
+           "ATM_KOKKOS_BACKEND is not set for this case. Cases created before the introduction of\n"
+           "this variable must be re-created.")
+    expect("SCREAM_KOKKOS_BACKEND" not in cmake_args_dict,
+           "SCREAM_KOKKOS_BACKEND is set in SCREAM_CMAKE_OPTIONS, but the kokkos backend\n"
+           "is now derived from ATM_KOKKOS_BACKEND. Please, remove it and set ATM_KOKKOS_BACKEND instead.")
+    cmake_args_dict["SCREAM_KOKKOS_BACKEND"] = kokkos_backend
+
     if case.get_value("EXTRA_DEBUG"):
         expect(case.get_value("DEBUG"), "EXTRA_DEBUG is On but DEBUG is Off? Makes no sense.")
 
