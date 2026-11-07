@@ -380,6 +380,8 @@ class GHCIHip(Machine):
         super().setup_base(name="ghci-hip")
         cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-hip"
         cls.gpu_arch = "hip"
+        # The MPI wrappers must use hipcc as backend compiler (Kokkos HIP needs a HIP compiler as CXX)
+        cls.env_setup = ["export MPICH_CXX=hipcc", "export OMPI_CXX=hipcc"]
         cls.num_run_res = int(run_cmd_no_fail("rocminfo 2>/dev/null | grep 'Device Type: *GPU' | wc -l"))
 
 ###############################################################################

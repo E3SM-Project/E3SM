@@ -131,6 +131,7 @@ machines:
   ghci-hip:
     baselines_dir: "/projects/e3sm/baselines/scream/ghci-hip"
     gpu_arch: "hip"
+    env_setup: ["export MPICH_CXX=hipcc", "export OMPI_CXX=hipcc"]
     num_run_res: "$(rocminfo 2>/dev/null | grep 'Device Type: *GPU' | wc -l)"
 
   ruby-intel:

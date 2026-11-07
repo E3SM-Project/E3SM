@@ -2346,6 +2346,8 @@
     </environment_variables>
     <environment_variables compiler="gnu-hip">
       <env name="BLA_VENDOR">OpenBLAS</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
+      <env name="OMPI_CXX">$SHELL{which hipcc}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64lp</env>
