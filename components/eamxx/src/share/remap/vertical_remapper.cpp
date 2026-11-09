@@ -202,9 +202,10 @@ registration_ends_impl ()
         }
         // Unmasked fields with the same layout share one mask (the extrapolation mask
         // only depends on the pressure profiles). A field that may be filled gets its own.
+        // NOTE: the grid is part of the identifier of the mask, so it is not needed in its name
         const auto mask_name = ft.fill_aware
-          ? m_tgt_grid->name() + "_" + src.name() + "_mask"
-          : m_tgt_grid->name() + "_" + ekat::join(tagdim_names,"_") + "_mask";
+          ? "vremap_" + src.name() + "_mask"
+          : "vremap_" + ekat::join(tagdim_names,"_") + "_mask";
         auto& mask = m_masks[mask_name];
         if (not mask.is_allocated()) {
           // Create this src/tgt mask fields, and assign them to these src/tgt fields extra data
