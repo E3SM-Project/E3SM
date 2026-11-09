@@ -465,7 +465,7 @@
       <directive> --cpus-per-task=128</directive>
     </directives>
     <queues>
-      <queue walltimemax="01:00:00" nodemax="64" default="true">regular</queue>
+      <queue walltimemax="02:00:00" nodemax="64" default="true">regular</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
