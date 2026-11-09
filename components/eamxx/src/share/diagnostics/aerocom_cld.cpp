@@ -1,10 +1,5 @@
 #include "aerocom_cld.hpp"
-
-#include "aerocom_cld_util.hpp"
-#include "share/physics/eamxx_common_physics_functions.hpp"
-
-#include <ekat_team_policy_utils.hpp>
-#include <string>
+#include "aerocom_weights.hpp"
 
 namespace scream {
 
@@ -14,218 +9,76 @@ AeroComCld(const ekat::Comm &comm,
            const std::shared_ptr<const AbstractGrid>& grid)
  : AbstractDiagnostic(comm, params, grid)
 {
-  EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"),
-                   "Error! AeroComCld requires 'aero_com_cld_kind' in its "
-                   "input parameters.\n");
+  m_field_name = m_params.get<std::string>("field_name");
+  const auto position = m_params.get<std::string>("position");
+  const auto phase    = m_params.get<std::string>("phase","none");
 
-  m_topbot = m_params.get<std::string>("aero_com_cld_kind");
-  // check if m_topbot is "Bot" or "Top", else error out
-  EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
-                   "Error! AeroComCld requires 'aero_com_cld_kind' "
-                   "to be 'Bot' or 'Top' in its input parameters.\n");
+  // Depend on the (shared) weights, so that all fields sampled at the same
+  // position and phase use one computation of them
+  m_weights_name = AeroComWeights::expression(position,phase);
+  m_diag_name = m_field_name + ".aerocom('" + position + "'" +
+                (phase=="none" ? std::string("") : ",phase='" + phase + "'") + ")";
 
-  using namespace ekat::units;
+  if (m_field_name!="mask") {
+    m_field_in_names.push_back(m_field_name);
+  }
+  m_field_in_names.push_back(m_weights_name);
+}
+
+void AeroComCld::initialize_impl()
+{
   using namespace ShortFieldTagsNames;
 
-  // Set the index map and units map
-  AeroComCldDiagUtil aercom_util;
-  m_index_map = aercom_util.index_map;
-  m_units_map = aercom_util.units_map;
-  m_ndiag     = aercom_util.size;
-
-  // Ensure m_index_map and m_units_map match
-  EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
-                   "Error! Some inconsistency in AeroComCld: index and units "
-                   "maps do not match!\n");
-  // Ensure m_index_map and m_ndiag match
-  EKAT_REQUIRE_MSG(static_cast<int>(m_index_map.size()) == m_ndiag,
-                   "Error! Some inconsistency in AeroComCld: index and units "
-                   "maps do not match!\n");
-
-  // Define layouts we need (both inputs and outputs)
-  auto scalar3d = m_grid->get_3d_scalar_layout(LEV);
-  auto vector2d = m_grid->get_2d_vector_layout(m_ndiag);
-
-  // The fields required for this diagnostic to be computed
-  m_field_in_names = {
-   "T_mid"          ,
-   "pseudo_density" ,
-   "p_mid"          ,
-   "qv"             ,
-   "qc"             ,
-   "qi"             ,
-   "eff_radius_qc"  ,
-   "eff_radius_qi"  ,
-   "cldfrac_tot"    ,
-   "nc"             ,
-   "ni"             ,
-  };
-
-  // A field to store dz
-  FieldIdentifier m_dz_fid("dz", m_grid->get_3d_scalar_layout(LEV), m, m_grid->name());
-  m_dz = Field(m_dz_fid,true);
-
-  // Construct and allocate the output field
-  FieldIdentifier fid(name() + m_topbot, vector2d, none, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
-
-  // Self-document the outputs to parse in post-processing
-  using stratt_t = std::map<std::string, std::string>;
-  auto &metadata =
-      m_diagnostic_output.get_header().get_extra_data<stratt_t>("io: string attributes");
-  for(const auto &it : m_index_map) {
-    metadata[it.first] =
-        std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
+  auto units = ekat::units::none;
+  if (m_field_name!="mask") {
+    const auto& f   = m_fields_in.at(m_field_name);
+    const auto& fid = f.get_header().get_identifier();
+    EKAT_REQUIRE_MSG (fid.get_layout().congruent(m_grid->get_3d_scalar_layout(LEV)) and
+                      f.data_type()==DataType::RealType,
+        "Error! AeroComCld needs a Real (COL,LEV) field.\n"
+        " - field name: " + m_field_name + "\n"
+        " - field layout: " + fid.get_layout().to_string() + "\n"
+        " - field data type: " + e2str(f.data_type()) + "\n");
+    units = fid.get_units();
   }
+
+  FieldIdentifier fid(m_diag_name, m_grid->get_2d_scalar_layout(), units, m_grid->name());
+  m_diagnostic_output = Field(fid,true);
 }
 
 void AeroComCld::compute_impl()
 {
-  /* The goal of this routine/impl is to calculate properties at cloud top
-   * based on the AeroCom recommendation. See reference for routine
-   * get_subcolumn_mask in rrtmpg, where equation 14 is used for the
-   * maximum-random overlap assumption for subcolumn generation. We use
-   * equation 13, the column counterpart. The order is reversed to calculate
-   * cloud-bottom properties as well.
-   */
-  using KT  = KokkosTypes<DefaultDevice>;
-  using MT  = typename KT::MemberType;
-  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
-
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
-
-  // Get the input fields
-  const auto tmid = m_fields_in.at("T_mid").get_view<const Real **>();
-  const auto pden = m_fields_in.at("pseudo_density").get_view<const Real **>();
-  const auto pmid = m_fields_in.at("p_mid").get_view<const Real **>();
-  const auto qv   = m_fields_in.at("qv").get_view<const Real **>();
-  const auto qc   = m_fields_in.at("qc").get_view<const Real **>();
-  const auto qi   = m_fields_in.at("qi").get_view<const Real **>();
-  const auto rel  = m_fields_in.at("eff_radius_qc").get_view<const Real **>();
-  const auto rei  = m_fields_in.at("eff_radius_qi").get_view<const Real **>();
-  const auto cld  = m_fields_in.at("cldfrac_tot").get_view<const Real **>();
-  const auto nc   = m_fields_in.at("nc").get_view<const Real **>();
-  const auto ni   = m_fields_in.at("ni").get_view<const Real **>();
-
-  auto dz = m_dz.get_view<Real **>();
-
-  // Get gravity acceleration constant from constants
-  using physconst = scream::physics::Constants<Real>;
-
-  // Set two potentially tunable parameters
-  auto q_threshold           = q_thresh_set();
-  auto cldfrac_tot_threshold = cldfrac_tot_thresh_set();
+  const auto w = m_fields_in.at(m_weights_name).get_view<const Real**>();
+  const auto x = m_diagnostic_output.get_view<Real*>();
 
   const int ncols = m_grid->get_num_local_dofs();
   const int nlevs = m_grid->get_num_vertical_levels();
-  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
-  const auto out = m_diagnostic_output.get_view<Real **>();
+  // For 'mask', X is 1
+  const bool is_mask = m_field_name=="mask";
+  Field::view_dev_t<const Real**> X;
+  Field::view_dev_t<const int**> m;
+  bool masked = false;
+  if (not is_mask) {
+    const auto& f = m_fields_in.at(m_field_name);
+    X = f.get_view<const Real**>();
+    masked = f.has_valid_mask();
+    if (masked) {
+      m = f.get_valid_mask().get_view<const int**>();
+    }
+  }
 
-  // zero out the outputs
-  Kokkos::deep_copy(out, 0.0);
-
-  bool is_top     = (m_topbot == "Top");
-
-  // subview the out field for each variable
-  auto o_tmid          = ekat::subview_1(out, m_index_map["T_mid"]);
-  auto o_pmid          = ekat::subview_1(out, m_index_map["p_mid"]);
-  auto o_cldfrac_ice   = ekat::subview_1(out, m_index_map["cldfrac_ice"]);
-  auto o_cldfrac_liq   = ekat::subview_1(out, m_index_map["cldfrac_liq"]);
-  auto o_cdnc          = ekat::subview_1(out, m_index_map["cdnc"]);
-  auto o_eff_radius_qc = ekat::subview_1(out, m_index_map["eff_radius_qc"]);
-  auto o_eff_radius_qi = ekat::subview_1(out, m_index_map["eff_radius_qi"]);
-  auto o_nc            = ekat::subview_1(out, m_index_map["nc"]);
-  auto o_ni            = ekat::subview_1(out, m_index_map["ni"]);
-  auto o_cldfrac_tot   = ekat::subview_1(out, m_index_map["cldfrac_tot"]);
-
-  Kokkos::parallel_for(
-      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
-        const int icol = team.league_rank();
-        // Subview the inputs at icol
-        auto tmid_icol = ekat::subview(tmid, icol);
-        auto pden_icol = ekat::subview(pden, icol);
-        auto pmid_icol = ekat::subview(pmid, icol);
-        auto qv_icol   = ekat::subview(qv, icol);
-        auto qc_icol   = ekat::subview(qc, icol);
-        auto qi_icol   = ekat::subview(qi, icol);
-        auto rel_icol  = ekat::subview(rel, icol);
-        auto rei_icol  = ekat::subview(rei, icol);
-        auto cld_icol  = ekat::subview(cld, icol);
-        auto nc_icol   = ekat::subview(nc, icol);
-        auto ni_icol   = ekat::subview(ni, icol);
-
-        // We need dz too
-        auto dz_icol = ekat::subview(dz, icol);
-        PF::calculate_dz(team, pden_icol, pmid_icol, tmid_icol, qv_icol,
-                         dz_icol);
-
-        // Initialize the 1D "clear fraction" as 1 (totally clear)
-        auto clr_icol = 1.0;
-
-        // Loop over all layers in serial (due to accumulative
-        // product), starting at 2 (second highest) layer because the
-        // highest is assumed to hav no clouds for cldtop, but starting
-        // at m_nlevs-1 for cldbot
-
-        auto topbot_calcs = [&](int ilay) {
-          // Only do the calculation if certain conditions are met
-          if((qc_icol(ilay) + qi_icol(ilay)) > q_threshold &&
-             (cld_icol(ilay) > cldfrac_tot_threshold)) {
-            /* PART I: Probabilistically determining cloud top/bot */
-            // Populate clr_tmp as the clear-sky fraction
-            // probability of this level, where clr_icol is that of
-            // the previous level
-            auto clr_tmp =
-                clr_icol *
-                (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
-                (1.0 - ekat::impl::min(cld_icol(ilay - 1),
-                                       Real(1.0 - cldfrac_tot_threshold)));
-            // Temporary variable for probability "weights"
-            auto wts = clr_icol - clr_tmp;
-            // Temporary variable for liquid "phase"
-            auto phi = qc_icol(ilay) / (qc_icol(ilay) + qi_icol(ilay));
-            /* PART II: The inferred properties */
-            /* In general, converting a 3D property X to a 2D cloud-top
-             * counterpart x follows: x(i) += X(i,k) * weights * Phase
-             * but X and Phase are not always needed */
-            o_tmid(icol) += tmid_icol(ilay) * wts;
-            o_pmid(icol) += pmid_icol(ilay) * wts;
-            o_cldfrac_ice(icol) += (1.0 - phi) * wts;
-            o_cldfrac_liq(icol) += phi * wts;
-            // cdnc
-            /* We need to convert nc from 1/mass to 1/volume first, and
-             * from grid-mean to in-cloud, but after that, the
-             * calculation follows the general logic */
-            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
-                        physconst::gravit.value / cld_icol(ilay);
-            o_cdnc(icol) += cdnc * phi * wts;
-            o_nc(icol) += nc_icol(ilay) * phi * wts;
-            o_ni(icol) += ni_icol(ilay) * (1.0 - phi) * wts;
-            o_eff_radius_qc(icol) += rel_icol(ilay) * phi * wts;
-            o_eff_radius_qi(icol) += rei_icol(ilay) * (1.0 - phi) * wts;
-            // Reset clr_icol to clr_tmp to accumulate
-            clr_icol = clr_tmp;
-          }
-        };
-
-        if(is_top) {
-          for(int ilay = 1; ilay < nlevs; ++ilay) {
-            topbot_calcs(ilay);
-          }
-        } else {
-          for(int ilay = nlevs - 1; ilay > 0; --ilay) {
-            topbot_calcs(ilay);
-          }
-        }
-
-        // After the serial loop over levels, the cloudy fraction is
-        // defined as (1 - clr_icol). This is true because
-        // clr_icol is the result of accumulative probabilities
-        // (their products)
-        o_cldfrac_tot(icol) = 1.0 - clr_icol;
-      });
+  using RangePolicy = Kokkos::RangePolicy<typename KokkosTypes<DefaultDevice>::ExeSpace>;
+  Kokkos::parallel_for("AeroComCld", RangePolicy(0,ncols),
+                       KOKKOS_LAMBDA(const int icol) {
+    Real sum = 0;
+    for (int k=0; k<nlevs; ++k) {
+      if (w(icol,k)!=0 and (not masked or m(icol,k)!=0)) {
+        sum += (is_mask ? 1 : X(icol,k))*w(icol,k);
+      }
+    }
+    x(icol) = sum;
+  });
 }
 
 }  // namespace scream

@@ -92,6 +92,10 @@ is an honest analogue.
 | `X.tend()` | tendency of `X` over the last step |
 | `X.broadcast_like(Y)` | `X` broadcast to the layout of `Y` |
 | `p_mid.searchsorted(500, units='hPa')` | level indices bracketing 500 hPa |
+| `X.aerocom('top')` | `X` at cloud top (`'bot'`: at cloud bottom) |
+| `X.aerocom('top', phase='liq')` | `X` at liquid cloud top (`'ice'`: at ice cloud top) |
+| `mask.aerocom('top')` | the cloud fraction seen from above |
+| `cldfrac_tot.aerocom_weights('top')` | per level, the weights `aerocom` sums against |
 
 Notes:
 
@@ -159,10 +163,11 @@ Notes:
   differ. (A field that never declared its units is not checked.)
 - **`mask` and `lev` are placeholders, not fields.** Neither exists in the field
   manager, and neither means anything on its own. `mask` is only legal as the
-  receiver of `.where(..)`: `mask.where(cond)` is the 0/1 indicator of `cond`
-  itself, rather than some field sampled by it. `lev` is only legal as the left
-  operand of the comparison inside `where(..)`, where it means the level index.
-  So `mask.where(lev>5)` is a request, while `mask`, `mask*1.0`,
+  receiver of `.where(..)` or `.aerocom(..)`: `mask.where(cond)` is the 0/1
+  indicator of `cond` itself, rather than some field sampled by it, and
+  `mask.aerocom(..)` samples 1 (see `aerocom` below). `lev` is only legal as
+  the left operand of the comparison inside `where(..)`, where it means the
+  level index. So `mask.where(lev>5)` is a request, while `mask`, `mask*1.0`,
   `mask.mean('lev')` and `lev>5` are not: each of those leaves `mask` or `lev`
   as an operand to be resolved on its own, and the run aborts with
   `The key 'mask' is not associated to any registered product`, since it is
@@ -191,6 +196,22 @@ Notes:
   defaults to `m`). `interp(..)` is built on it, so fields interpolated to the
   same target share one search. Its output has `int` data type, so like
   `mask.where(..)` it cannot be written as is.
+- `aerocom` samples `X` at cloud top or bottom following the AeroCom
+  recommendation: per column, it sums `X` over the levels, each weighted by the
+  probability that it is the first cloudy level seen from above (or below),
+  under the maximum-random overlap assumption. With `phase='liq'` (`'ice'`),
+  each level is weighted also by the share of liquid (ice) in its condensate.
+  `X` must have layout `(ncol,lev)`, the result has the units of `X`, and it is
+  a weighted sum, not a mean. With `mask` as receiver, `X` is 1, so
+  `mask.aerocom('top', phase='liq')` is the liquid cloud fraction seen from
+  above. Levels with no weight are skipped, so `X` need not be finite there:
+  `(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).aerocom('top', phase='liq')`
+  is the in-cloud droplet number per volume at liquid cloud top, and the
+  `where(..)` keeps the division away from levels with no cloud. A masked `X`
+  counts only where it is valid. `aerocom_weights` gives the weights
+  themselves; its receiver must be `cldfrac_tot`. `aerocom(..)` is built on it,
+  so fields sampled at the same position and phase share one computation of
+  the weights. See [the AeroCom algorithm](../../technical/aerocom_cldtop.md).
 - Histogram bin edges are numbers in increasing order. They may be negative,
   and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
 
@@ -210,13 +231,14 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
 | `searchsorted` | named after numpy's, but gives the pair of levels bracketing the target (-1 where out of range) rather than one insertion index, and takes `units` |
+| `aerocom`, `aerocom_weights` | not in xarray; named after the AeroCom recommendation they follow |
 
 `X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, expressed as
 one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
-`mask` and `lev`, both legal only inside `where(..)`. See the note above for what they mean and where they may
-appear.
+`mask` and `lev`, legal only in `where(..)` and, for `mask`, `aerocom(..)`.
+See the note above for what they mean and where they may appear.
 
 ## Errors
 
