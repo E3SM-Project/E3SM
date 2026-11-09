@@ -597,7 +597,7 @@ def setup_mach_env(machine, ctest_j=None):
             if item.find("BASH_FUNC_") != -1 or item.find("=") == -1:
                 continue
 
-            # 2 means only 1st occurence will cause a split.
-            # Just in case some env var value contains '='
-            item_list = item.split("=",2)
+            # maxsplit=1 means only 1st occurence will cause a split.
+            # Just in case some env var value contains '=' (e.g., HIPFLAGS=--gcc-install-dir=/path)
+            item_list = item.split("=",1)
             os.environ.update( dict( { item_list[0] : item_list[1] } ) )
