@@ -105,7 +105,7 @@ flux, which sea ice uses to reconstruct negative ice enthalpy.
 
 `Fioo_q` ($\mathrm{W\ m^{-2}}$) is separate, nonpositive melt potential. It is
 set to zero when frazil is exported; otherwise it represents energy available
-at the surface to melt ice.
+at the surface to melt ice. Note that this is not an energy flux passed to the sea ice model, only an indicator of the ocean state. After melting, the energy required for melting is passed to the ocean via the separate `Fioi_melth` coupling channel.
 
 ## Removal of surface coupling objects
 
