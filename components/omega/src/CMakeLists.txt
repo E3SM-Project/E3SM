@@ -27,6 +27,23 @@ target_compile_definitions(
     OMEGA_VECTOR_LENGTH=${OMEGA_VECTOR_LENGTH}
 )
 
+# Debug builds compile with -g and no -O level, so g++ builds Omega's C++
+# code at -O0. Without inlining, Kokkos kernels on the host (SERIAL and
+# OPENMP) run about 130 times slower than in a Release build, too slow for
+# multi-day debug tests. -Og keeps the code debuggable but makes it about 35
+# times faster. Fortran sources and the external libraries keep the usual
+# debug flags.
+if(("${OMEGA_ARCH}" STREQUAL "SERIAL" OR "${OMEGA_ARCH}" STREQUAL "OPENMP")
+   AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+   AND ("${OMEGA_BUILD_TYPE}" STREQUAL "Debug" OR
+        "${OMEGA_BUILD_TYPE}" STREQUAL "DEBUG"))
+  target_compile_options(
+      OmegaLibFlags
+      INTERFACE
+      $<$<COMPILE_LANGUAGE:CXX>:-Og>
+  )
+endif()
+
 if(OMEGA_SINGLE_PRECISION)
   target_compile_definitions(
       OmegaLibFlags
