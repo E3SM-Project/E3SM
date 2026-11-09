@@ -119,7 +119,7 @@ To avoid this, `src/CMakeLists.txt` adds `-Og` to the C++ compile options
 of the `OmegaLibFlags` interface target when `OMEGA_ARCH` is `SERIAL` or
 `OPENMP`, the C++ compiler is GNU and the build type is `Debug`. `-Og` is
 the optimization level GNU recommends for debugging, and it makes these
-builds about 35 times faster. This reaches the Omega library, executable
+builds about 30 times faster. This reaches the Omega library, executable
 and tests, but not Fortran sources or external libraries. Debug checks
 (`OMEGA_DEBUG`, Kokkos debug checks) and `-g` are unchanged.
 
