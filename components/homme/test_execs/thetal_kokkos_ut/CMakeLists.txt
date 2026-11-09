@@ -18,7 +18,7 @@ SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
 SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 SET (NUM_POINTS 4)
 SET (NUM_PLEV 128)  # TEMP experiment: eamxx uses 128 levels
-SET (QSIZE_D 4)
+SET (QSIZE_D 10)  # TEMP experiment: eamxx uses qsize 10
 SET (PIO_INTERP TRUE)
 
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
