@@ -71,6 +71,7 @@ jobs:
       matrix:
         # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
         runner: [hip]
+        variant: [base, ndebug, qsize10, both]
         # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags.
         # The bfb jobs do not use baselines (they cannot be used with -g), so skip them when blessing.
         bfb: [false]
@@ -78,7 +79,7 @@ jobs:
           # TODO: add a cuda/hip bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
           - {runner: cuda, bfb: true}
           - {runner: hip, bfb: true}
-    name: ${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
+    name: ${{ matrix.runner }}-${{ matrix.variant }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -173,6 +174,21 @@ jobs:
           echo "HOMME_COMPILER=$compiler" >> "$GITHUB_ENV"
           echo "HOMME_PARALLEL=$parallel" >> "$GITHUB_ENV"
           echo "HOMME_RANKS=$ranks" >> "$GITHUB_ENV"
+      - name: Select experiment variant (temporary)
+        run: |
+          # base: -O3 only, qsize 4; ndebug: + -DNDEBUG; qsize10: qsize 10; both: -DNDEBUG and qsize 10
+          v=${{ matrix.variant }}
+          case "$v" in qsize10|both) ;; *) sed -i 's/SET (QSIZE_D 10)/SET (QSIZE_D 4)/' components/homme/test_execs/thetal_kokkos_ut/CMakeLists.txt;; esac
+          opts=""
+          case "$v" in ndebug|both) opts="--cmake-opt CMAKE_CXX_FLAGS=-DNDEBUG";; esac
+          echo "VARIANT_OPTS=$opts" >> "$GITHUB_ENV"
+          grep -n "QSIZE_D\|NUM_PLEV" components/homme/test_execs/thetal_kokkos_ut/CMakeLists.txt | head -3
+          echo "variant=$v opts='$opts'"
+          echo "::group::runner/GPU identity"
+          echo "RUNNER_NAME=$RUNNER_NAME hostname=$(hostname)"
+          rocminfo | grep -E "Uuid:.*GPU|Marketing Name:.*(Instinct|MI)|Name:.*gfx" | sort | uniq -c
+          rocm-smi --showserial --showfwinfo 2>&1 | head -30
+          echo "::endgroup::"
       - name: Run test_homme.py
         working-directory: components/homme
         env:
@@ -202,7 +218,7 @@ jobs:
           # ctest silently ignores '--timeout=1800'.
           cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               --cmake-opt OPT_CXXFLAGS=-O3 --cmake-opt CMAKE_CXX_FLAGS=-DNDEBUG --ctest-arg="--timeout 1800" --no-baseline "${bfb_flag[@]}" "${cuda_flags[@]}")
+               --cmake-opt OPT_CXXFLAGS=-O3 $VARIANT_OPTS --ctest-arg="--timeout 1800" --no-baseline "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then
             cmd+=(-g)
           fi
@@ -236,19 +252,15 @@ jobs:
             isa=$(grep -c INVALID_ISA out.txt)
             echo "[$label] np=$np env='${envs[*]}' args='$*' -> rc=$rc INVALID_ISA=$isa seeds: $seeds"
           }
-          echo "default stack limit: $(ulimit -s)"
-          for lim in default unlimited 1048576 65536 16384 8192; do
-            for np in 1 2; do
-              ( [ "$lim" != "default" ] && ulimit -s $lim; run "stack-$lim(now $(ulimit -s))-np$np" $np A=1 -- )
-            done
-          done
+          for i in 1 2 3; do run "plain-np1" 1 A=1 --; done
+          for i in 1 2 3; do run "plain-np2" 2 A=1 --; done
           echo "::endgroup::"
           exit 0
       - name: Upload ctest logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: log-files-${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
+          name: log-files-${{ matrix.runner }}-${{ matrix.variant }}
           path: |
             components/homme/ctest-build/CMakeCache.txt
             components/homme/ctest-build/Testing/**
