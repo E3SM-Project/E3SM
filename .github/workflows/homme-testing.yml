@@ -70,10 +70,10 @@ jobs:
       fail-fast: false
       matrix:
         # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
-        runner: [gnu, intel, cuda, hip]
+        runner: [hip]
         # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags.
         # The bfb jobs do not use baselines (they cannot be used with -g), so skip them when blessing.
-        bfb: ${{ fromJSON(inputs.bless && '[false]' || '[false, true]') }}
+        bfb: [false]
         exclude:
           # TODO: add a cuda/hip bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
           - {runner: cuda, bfb: true}
@@ -202,7 +202,7 @@ jobs:
           # ctest silently ignores '--timeout=1800'.
           cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               --ctest-arg="--timeout 1800" "${bfb_flag[@]}" "${cuda_flags[@]}")
+               --ctest-arg="--timeout 1800" --no-baseline "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then
             cmd+=(-g)
           fi
@@ -215,6 +215,28 @@ jobs:
           # Print the full command, then run it
           echo "test_homme call: ${cmd[*]}"
           "${cmd[@]}"
+      - name: dirk_ut diagnostics (temporary)
+        if: ${{ always() }}
+        run: |
+          set +e
+          exe=$(find components/homme/ctest-build -type f -name dirk_ut -perm -u+x | head -1)
+          echo "exe: $exe"
+          [ -n "$exe" ] || exit 0
+          echo "::group::code-object metadata of run_newton kernels"
+          ex=$(mktemp -d); (cd $ex && roc-obj-extract "$GITHUB_WORKSPACE/$exe" > /dev/null 2>&1)
+          for co in $ex/*; do
+            if strings -a "$co" | grep -q "run_newton"; then
+              echo "=== $co"
+              /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -B4 -A42 -m1 -E "\.name: .*run_newton" | cut -c1-200
+            fi
+          done
+          echo "::endgroup::"
+          echo "::group::dirk_ut rerun with AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3"
+          cd "$(dirname "$GITHUB_WORKSPACE/$exe")"
+          AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3 HIP_LAUNCH_BLOCKING=1 timeout 900 mpirun -np 1 "$GITHUB_WORKSPACE/$exe" > amd.log 2>&1
+          echo "exit code: $?"; echo "$(wc -l < amd.log) lines; last 60:"; tail -60 amd.log | cut -c1-500
+          echo "::endgroup::"
+          exit 0
       - name: Upload ctest logs
         if: always()
         uses: actions/upload-artifact@v7

@@ -17,7 +17,7 @@ SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/theta-l_kokkos/config.h.cmake.in)
 SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
 SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 SET (NUM_POINTS 4)
-SET (NUM_PLEV 12)
+SET (NUM_PLEV 128)  # TEMP experiment: eamxx uses 128 levels
 SET (QSIZE_D 4)
 SET (PIO_INTERP TRUE)
 

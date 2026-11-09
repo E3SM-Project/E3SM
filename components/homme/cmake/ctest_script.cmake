@@ -119,7 +119,7 @@ else()
     message(STATUS "HOMME ctest script: generate baselines")
     set(_build_target "baseline")
   else()
-    set(_build_target "test-execs")
+    set(_build_target "dirk_ut")  # TEMP experiment
   endif()
 
   # With parallel make, --output-sync=target keeps each target's output together. Otherwise, interleaved
@@ -134,6 +134,7 @@ else()
   elseif (NOT GENERATE)
     message(STATUS "HOMME ctest script: compare against baselines")
     ctest_test(
+      INCLUDE "dirk_ut"
       PARALLEL_LEVEL ${RUN_PARALLEL_LEVEL}
       RETURN_VALUE _test_rv
     )
