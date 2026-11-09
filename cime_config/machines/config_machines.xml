@@ -2352,6 +2352,9 @@
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64lp</env>
     </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="snl-blake">

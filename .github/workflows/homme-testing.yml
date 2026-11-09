@@ -236,13 +236,12 @@ jobs:
             isa=$(grep -c INVALID_ISA out.txt)
             echo "[$label] np=$np env='${envs[*]}' args='$*' -> rc=$rc INVALID_ISA=$isa seeds: $seeds"
           }
-          for i in 1 2 3; do run "plain-np2" 2 A=1 --; done
-          for i in 1 2 3; do run "plain-np1" 1 A=1 --; done
-          for i in 1 2; do run "serialize-np1" 1 AMD_SERIALIZE_KERNEL=3 --; done
-          for i in 1 2; do run "serialize-np2" 2 AMD_SERIALIZE_KERNEL=3 --; done
-          for i in 1 2; do run "loglevel4-np1" 1 AMD_LOG_LEVEL=4 --; done
-          for sd in 1 2 3 4 5 6; do run "seed$sd-np1" 1 A=1 -- --rng-seed $sd; done
-          for sd in 1 2 3; do run "seed$sd-np1-serialize" 1 AMD_SERIALIZE_KERNEL=3 -- --rng-seed $sd; done
+          echo "default stack limit: $(ulimit -s)"
+          for lim in default unlimited 1048576 65536 16384 8192; do
+            for np in 1 2; do
+              ( [ "$lim" != "default" ] && ulimit -s $lim; run "stack-$lim(now $(ulimit -s))-np$np" $np A=1 -- )
+            done
+          done
           echo "::endgroup::"
           exit 0
       - name: Upload ctest logs
