@@ -20,3 +20,9 @@ option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" OFF)
 
 # Python tests rely on the venv in ghci.cmake, which is available on the hip image too
 option (EAMXX_ENABLE_PYTHON "Whether to enable python interface from eamxx" ON)
+
+# On gfx90a, a workgroup of 1024 threads leaves at most 128 registers per thread (VGPRs + AGPRs). With -DNDEBUG,
+# ROCm 6.4.2 compiles some Hommexx kernels (e.g., DirkFunctorImpl::run_newton) with 132 registers, so launching
+# them with 1024 threads (16 warps/team, the default) aborts with HSA_STATUS_ERROR_INVALID_ISA.
+# Cap the team size to 8 warps (512 threads).
+set (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "Maximum number of warps per team on GPU")

@@ -259,6 +259,7 @@ jobs:
             seeds=$(grep -o "seed [0-9]*" out.txt | tr '\n' ' ')
             isa=$(grep -c INVALID_ISA out.txt)
             echo "[$label] np=$np env='${envs[*]}' args='$*' -> rc=$rc INVALID_ISA=$isa seeds: $seeds"
+            if [ $rc -ne 0 ] && [ $isa -eq 0 ]; then echo "--- non-ISA failure, last 40 lines:"; tail -40 out.txt | cut -c1-300; echo "---"; fi
           }
           for i in 1 2 3; do run "plain-np1" 1 A=1 --; done
           for i in 1 2 3; do run "plain-np2" 2 A=1 --; done
