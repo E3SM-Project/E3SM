@@ -30,9 +30,15 @@ TEST_CASE("histogram") {
 
   auto grid = create_point_grid("physics",ngcols,nlevs,comm);
 
-  // Specify histogram bins
+  // Specify histogram bins. As in numpy and xhistogram, 3 edges make 2 bins,
+  // [50,100) and [100,150], and values outside [50,150] are not counted.
   const std::string bin_configuration = "50_100_150";
-  const std::vector<Real> bin_values = {-100.0, 50.0, 100.0, 150.0, 1000.0};
+  const std::vector<Real> bin_values = {50.0, 100.0, 150.0};
+  const int num_bins = bin_values.size()-1;
+  auto in_bin = [&](const Real x, const int bin_i) {
+    const bool last = bin_i==num_bins-1;
+    return bin_values[bin_i] <= x and (x < bin_values[bin_i+1] or (last and x==bin_values[bin_i+1]));
+  };
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout = grid->get_2d_scalar_layout();
@@ -84,6 +90,10 @@ TEST_CASE("histogram") {
   REQUIRE_THROWS(diag_factory.create("Histogram", comm,
                                      params, grid)); // Non-monotonic bin configuation
 
+  params.set<std::string>("bin_configuration", "100");
+  REQUIRE_THROWS(diag_factory.create("Histogram", comm,
+                                     params, grid)); // One edge makes no bin
+
   params.set<std::string>("bin_configuration", bin_configuration);
 
   // Now we should be good to go...
@@ -97,7 +107,6 @@ TEST_CASE("histogram") {
   auto diag1_field = diag1->get();
 
   // Manual calculation
-  const int num_bins = bin_values.size()-1;
   const std::string bin_dim_name = diag1_field.get_header().get_identifier().get_layout().name(0);
   FieldLayout diag0_layout({CMP}, {num_bins}, {bin_dim_name});
   FieldIdentifier diag0_id("qc_histogram_manual", diag0_layout, ekat::units::none, grid->name());
@@ -110,7 +119,7 @@ TEST_CASE("histogram") {
   auto diag0_view_h = diag0_field.get_view<Real *, Host>();
   for (int bin_i = 0; bin_i < num_bins; bin_i++) {
     for (int col_i = 0; col_i < ncols; col_i++) {
-      if (bin_values[bin_i] <= qc1_view_h(col_i) && qc1_view_h(col_i) < bin_values[bin_i+1])
+      if (in_bin(qc1_view_h(col_i),bin_i))
         diag0_view_h(bin_i) += sp(1.0);
     }
   }
@@ -159,7 +168,7 @@ TEST_CASE("histogram") {
     for (int i = 0; i < ncols; i++) {
       for (int j = 0; j < dim3; j++) {
         for (int k = 0; k < nlevs; k++) {
-          if (bin_values[bin_i] <= qc3_view_h(i,j,k) && qc3_view_h(i,j,k) < bin_values[bin_i+1])
+          if (in_bin(qc3_view_h(i,j,k),bin_i))
             diag3m_view_h(bin_i) += sp(1.0);
         }
       }
@@ -174,22 +183,44 @@ TEST_CASE("histogram") {
   auto diag3_field = diag3->get();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));
 
+  // Values on an edge: the first and an interior edge open their bin, and the last
+  // edge closes the last bin. Values outside the edges are not counted.
+  auto diag5 = diag_factory.create("Histogram", comm, params, grid);
+  diag5->set_input_field(qc1);
+  diag5->initialize();
+  auto diag5_field = diag5->get();
+  auto counts_for = [&](const Real x, const int step) {
+    qc1.deep_copy(x);
+    qc1.get_header().get_tracking().update_time_stamp(t0+step);
+    diag5->compute(t0+step);
+    diag5_field.sync_to_host();
+    auto v = diag5_field.get_view<const Real *, Host>();
+    REQUIRE(diag5_field.get_header().get_identifier().get_layout().dim(0) == num_bins);
+    return std::vector<Real>{v(0),v(1)};
+  };
+  const Real n = ngcols;
+  REQUIRE(counts_for( 50.0,2) == std::vector<Real>{n,0});
+  REQUIRE(counts_for(100.0,3) == std::vector<Real>{0,n});
+  REQUIRE(counts_for(150.0,4) == std::vector<Real>{0,n});
+  REQUIRE(counts_for( 49.0,5) == std::vector<Real>{0,0});
+  REQUIRE(counts_for(151.0,6) == std::vector<Real>{0,0});
+
   // The diag reads each edge as a number, so edges can be negative and can have an
   // exponent (the dexpr histogram() passes them down in that form)
   params.set<std::string>("bin_configuration", "-5e1_0_2.5e+01");
   auto diag4 = diag_factory.create("Histogram", comm, params, grid);
-  // All entries in [-50,0), i.e., the second of the 4 bins
+  // All entries in [-50,0), i.e., the first of the 2 bins
   qc1.deep_copy(sp(-25.0));
-  qc1.get_header().get_tracking().update_time_stamp(t0+2);
+  qc1.get_header().get_tracking().update_time_stamp(t0+7);
   diag4->set_input_field(qc1);
   diag4->initialize();
-  diag4->compute(t0+2);
+  diag4->compute(t0+7);
   auto diag4_field = diag4->get();
-  REQUIRE(diag4_field.get_header().get_identifier().get_layout().dim(0) == 4);
+  REQUIRE(diag4_field.get_header().get_identifier().get_layout().dim(0) == 2);
   diag4_field.sync_to_host();
   auto diag4_view_host = diag4_field.get_view<const Real *, Host>();
-  for (int bin_i = 0; bin_i < 4; bin_i++) {
-    REQUIRE(diag4_view_host(bin_i) == Real(bin_i==1 ? ngcols : 0));
+  for (int bin_i = 0; bin_i < 2; bin_i++) {
+    REQUIRE(diag4_view_host(bin_i) == Real(bin_i==0 ? ngcols : 0));
   }
 }
 

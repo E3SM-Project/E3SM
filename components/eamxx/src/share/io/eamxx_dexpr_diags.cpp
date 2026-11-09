@@ -301,11 +301,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {},
            .example = "T_mid.where(qv>0.01)"});
-    r.add({.name = "derivative",
-           .desc = "vertical derivative w.r.t. 'p_mid' or 'z_mid'",
+    r.add({.name = "differentiate",
+           .desc = "vertical derivative w.r.t. 'p_mid' or 'z_mid', as xarray's differentiate",
            .min_positional = 1, .max_positional = 1,
            .keywords = {},
-           .example = "T_mid.derivative('p_mid')"});
+           .example = "T_mid.differentiate('p_mid')"});
     r.add({.name = "histogram",
            .desc = "counts per bin, given the bin edges",
            .min_positional = 0, .max_positional = 0,
@@ -460,15 +460,15 @@ void translate_call (const Call& call, const ast::Expression& self,
     return;
   }
 
-  if (call.name=="derivative") {
+  if (call.name=="differentiate") {
     const auto wrt = string_arg(*call.positional[0],"the coordinate");
     EKAT_REQUIRE_MSG (wrt=="p_mid" or wrt=="z_mid",
-        "Error! Unknown coordinate in derivative().\n"
+        "Error! Unknown coordinate in differentiate().\n"
         " - expression: " + ast::to_string(self) + "\n"
         " - input: '" + wrt + "'\n"
         " - valid coordinates: 'p_mid', 'z_mid'\n");
     diag_name = "VertDerivative";
-    params.set<std::string>("derivative_method",wrt=="p_mid" ? "p" : "z");
+    params.set<std::string>("coordinate",wrt);
     return;
   }
 
@@ -477,6 +477,7 @@ void translate_call (const Call& call, const ast::Expression& self,
     EKAT_REQUIRE_MSG (bins!=nullptr and bins->elements.size()>=2,
         "Error! histogram() takes 'bins', an array of at least two edges.\n"
         " - expression: " + ast::to_string(self) + "\n");
+    // As in numpy and xhistogram, n edges make n-1 bins, the last one closed.
     // The diag splits the edges on '_' and reads each one as a number, so
     // signs and exponents are fine as dexpr renders them (e.g., -2, 1e-05)
     std::string config;
