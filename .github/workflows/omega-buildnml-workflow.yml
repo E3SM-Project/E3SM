@@ -2,7 +2,7 @@ name: omega-buildnml
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, master]
     paths:
       - 'components/omega/cime_config/**'
       - '!components/omega/cime_config/*.xml'
@@ -11,7 +11,7 @@ on:
       - '.github/workflows/omega-buildnml-workflow.yml'
 
   pull_request:
-    branches: [develop]
+    branches: [develop, master]
     paths:
       - 'components/omega/cime_config/**'
       - '!components/omega/cime_config/*.xml'
@@ -77,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.13", "3.14"]
     defaults:
       run:
         shell: bash -l {0}
