@@ -665,12 +665,17 @@ class Teos10Eos {
       return (pot_enthalpy / Cp0Sw);
    }
 
-   /// Calculates freezing Conservative Temperature using TEOS-10 polynomial
-   /// (polynomial error in [-5e-4, 6e-4] K, from GSW package).
-   /// P is relative pressure (gauge pressure in Pa, i.e., absolute pressure
-   /// minus the standard atmosphere).
+   /// Calculates freezing Conservative Temperature [degC] using the TEOS-10
+   /// polynomial from GSW (gsw_ct_freezing_poly; polynomial error in
+   /// [-5e-4, 6e-4] K).
+   /// \param Sa Absolute Salinity [g/kg]
+   /// \param PDb Sea pressure [dbar] (absolute pressure minus the standard
+   ///        atmosphere). NOTE: units are dbar, NOT Pa. Omega pressure fields
+   ///        (e.g. Pressure, SurfacePressure) are in Pa and must be converted
+   ///        with Pa2Db before calling.
+   /// \param SaturationFract Saturation fraction of dissolved air [0-1]
    static KOKKOS_FUNCTION Real calcCtFreezingTeos10(
-       const Real Sa, const Real P, const Real SaturationFract) {
+       const Real Sa, const Real PDb, const Real SaturationFract) {
       constexpr Real Sso = 35.16504;
       constexpr Real C0  = 0.017947064327968736;
       constexpr Real C1  = -6.076099099929818;
@@ -705,7 +710,7 @@ class Teos10Eos {
 
       Real Sar = SaPos * 1.0e-2;
       Real X   = Kokkos::sqrt(Sar);
-      Real Pr  = P * 1.0e-4;
+      Real Pr  = PDb * 1.0e-4;
 
       Real CtFreez =
           C0 + Sar * (C1 + X * (C2 + X * (C3 + X * (C4 + X * (C5 + C6 * X))))) +
@@ -1098,15 +1103,22 @@ class Eos {
       return 0.0_Real;
    }
 
-   /// Calculate freezing temperature of seawater.
-   /// For TEOS-10, uses the Roquet et al. 75-term polynomial.
+   /// Calculate freezing Conservative Temperature [degC] of seawater.
+   /// For TEOS-10, uses the GSW gsw_ct_freezing_poly polynomial.
    /// For LinearEos, uses a simple linear salinity-dependent approximation.
    /// For ConstantEos, returns a constant approximate ocean freezing point.
+   /// \param Choice EOS type
+   /// \param Sa Absolute Salinity [g/kg]
+   /// \param PDb Sea pressure [dbar] (absolute pressure minus the standard
+   ///        atmosphere). NOTE: units are dbar, NOT Pa. Omega pressure fields
+   ///        (e.g. Pressure, SurfacePressure) are in Pa and must be converted
+   ///        with Pa2Db before calling.
+   /// \param SaturationFract Saturation fraction of dissolved air [0-1]
    static KOKKOS_FUNCTION Real calcCtFreezing(EosType Choice, const Real Sa,
-                                              const Real P,
+                                              const Real PDb,
                                               const Real SaturationFract) {
       if (Choice == EosType::Teos10Eos) {
-         return Teos10Eos::calcCtFreezingTeos10(Sa, P, SaturationFract);
+         return Teos10Eos::calcCtFreezingTeos10(Sa, PDb, SaturationFract);
       }
       if (Choice == EosType::LinearEos) {
          // Linear salinity-dependent freezing point; coefficient -0.054
