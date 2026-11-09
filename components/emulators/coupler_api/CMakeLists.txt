@@ -50,7 +50,7 @@ set_target_properties(coupler_api PROPERTIES
 target_include_directories(coupler_api
   PUBLIC
     $<BUILD_INTERFACE:${_coupler_api_mod_dir}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
 target_link_libraries(coupler_api PUBLIC ekat::YamlParser MOAB)
