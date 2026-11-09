@@ -1,59 +1,51 @@
 # Vertical derivative diagnostics
 
-We can automatically calculate the vertical derivative of a given field
-with respect to a vertical coordinate (pressure or height).
-In other words, the vertical derivative is the derivative of the field
-along a vertical coordinate.
-To automatically get the derivative of a field X, we can request the
-[expression](expressions.md) `X.derivative('p_mid')` or `X.derivative('z_mid')`
-in the output yaml files.
+We can calculate the vertical derivative of a field with respect to a vertical
+coordinate, pressure or height, by requesting the
+[expression](expressions.md) `X.differentiate('p_mid')` or
+`X.differentiate('z_mid')` in the output yaml files. The name and the numbers
+are xarray's: the result is what `X.differentiate('p_mid')` gives in xarray on
+one column whose level coordinate is that column's `p_mid`.
 
-*WARNING: support for the dz-based derivative is experimental!*
+## Algorithm
 
-## Brief description of algorithm
+For simplicity, the field `X` can only have two dimensions (column and level).
+This covers most fields of interest, but notably does not cover
+higher-dimensioned fields in radiation and MAM. `X` and the coordinate `x`
+(`p_mid` or `z_mid`) are both on midpoints.
 
-For simplicity, the field `X` can only have two dimensions
-(column and level). This covers most fields of interest, but
-notably does not cover higher-dimensioned fields in radiation and MAM.
-We calculate the derivative by finding the difference in the
-input field `X`, which must be provided on midpoints, by interpolating
-its values at interfaces weighted by the pressure differential.
-That is, for a pressure-based derivative
-
-$$
-\nabla_{p} X = \frac{\Delta X}{\Delta p}
-$$
-
-and for height-based derivative
+In each column, the derivative is numpy's `gradient` of `X` with respect to
+the values of `x`, which is what xarray's `differentiate` computes. At an
+interior level $k$, with $h_1 = x_k - x_{k-1}$ and $h_2 = x_{k+1} - x_k$, it is
+second-order accurate on uneven spacing:
 
 $$
-\nabla_{p} X = \frac{\Delta X}{\Delta z}
+\left.\frac{\partial X}{\partial x}\right|_k =
+  \frac{-h_2}{h_1 (h_1+h_2)} X_{k-1}
++ \frac{h_2 - h_1}{h_1 h_2} X_k
++ \frac{h_1}{h_2 (h_1+h_2)} X_{k+1}
 $$
 
-where
+and at the top and bottom levels it is one-sided and first-order, as with
+xarray's default `edge_order=1`:
 
 $$
-\Delta X = \tilde{X}_{i,k+1} - \tilde{X}_{i,k}
+\left.\frac{\partial X}{\partial x}\right|_0 = \frac{X_1 - X_0}{x_1 - x_0},
+\qquad
+\left.\frac{\partial X}{\partial x}\right|_{n-1} = \frac{X_{n-1} - X_{n-2}}{x_{n-1} - x_{n-2}}.
 $$
 
-$$
-\tilde{X}_{i,k+1} = \frac{\left(
-    X_{i,k} \times \Delta p_{i,k+1} +
-    X_{i,k+1} \times \Delta p_{i,k}
-  \right)}
-  {\left(
-    \Delta p_{i,k+1} + \Delta p_{i,k}
-  \right)}
-$$
+The derivative is with respect to the coordinate as it stands. Level indices
+increase downward, so `p_mid` increases with $k$ and `z_mid` decreases: in a
+troposphere where temperature falls with height, `T_mid.differentiate('p_mid')`
+is positive and `T_mid.differentiate('z_mid')` negative.
 
-Here, $\Delta p$ is the "pseudo density" pressure differential in Pa;
-and $\Delta z$ is the height of the layer in m
+If `X` is masked (e.g., `X.where(..)`), a level of the result is valid only if
+every level its difference reads is valid ($k-1$, $k$, $k+1$ inside; the two
+levels used at the top and bottom), which is where xarray would not propagate
+a NaN. Elsewhere it is missing.
 
-Note that the definition $\tilde{X}_{i,k+1}$ assumes that all
-fields are weighted by the pressure differential, which is a
-prognostic parameter of the dynamics core solver. Also note that
-when $\Delta p_{i,k+1} \gg \Delta p_{i,k}$,
-$\tilde{X}_{i,k+1}$ is closer to $X_{i,k}$ than $X_{i,k+1}$.
+The units of the result are those of `X` divided by those of the coordinate.
 
 ## Example
 
@@ -67,8 +59,8 @@ fields:
   physics_pg2:
     field_names:
       # in this example, we use T_mid in units of K
-      - dTdp := T_mid.derivative('p_mid')  # K / Pa
-      - dTdz := T_mid.derivative('z_mid')  # K / m
+      - dTdp := T_mid.differentiate('p_mid')  # K / Pa
+      - dTdz := T_mid.differentiate('z_mid')  # K / m
 output_control:
   frequency: 1
   frequency_units: nmonths

@@ -47,6 +47,11 @@ class BinaryOp : public AbstractDiagnostic {
   ekat::units::Units m_arg1_units = ekat::units::Units::invalid();
   ekat::units::Units m_arg2_units = ekat::units::Units::invalid();
 
+  // A numeric literal (as opposed to a named constant) carries no units of its own:
+  // added to or subtracted from a quantity, it takes that quantity's units.
+  bool m_arg1_is_literal = false;
+  bool m_arg2_is_literal = false;
+
   bool m_arg1_has_mask = false;
   bool m_arg2_has_mask = false;
 };

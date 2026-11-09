@@ -317,12 +317,16 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("dexpr_other_calls") {
-    auto d1 = create_diagnostic("T_mid.derivative('p_mid')",grid);
+    auto d1 = create_diagnostic("T_mid.differentiate('p_mid')",grid);
     REQUIRE (std::dynamic_pointer_cast<VertDerivative>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("derivative_method")=="p");
-    REQUIRE_THROWS (create_diagnostic("T_mid.derivative('t')",grid));
+    REQUIRE (d1->get_params().get<std::string>("coordinate")=="p_mid");
+    auto d1z = create_diagnostic("T_mid.differentiate('z_mid')",grid);
+    REQUIRE (d1z->get_params().get<std::string>("coordinate")=="z_mid");
+    REQUIRE_THROWS (create_diagnostic("T_mid.differentiate('t')",grid));
     // the bare shorthands are gone; name the coordinate
-    REQUIRE_THROWS (create_diagnostic("T_mid.derivative('p')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.differentiate('p')",grid));
+    // xarray's name, not the old one
+    REQUIRE_THROWS (create_diagnostic("T_mid.derivative('p_mid')",grid));
 
     auto d2 = create_diagnostic("T_mid.histogram(bins=[0,1.5,2])",grid);
     REQUIRE (std::dynamic_pointer_cast<Histogram>(d2)!=nullptr);
