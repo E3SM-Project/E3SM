@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 namespace {
 void check_buffer_count(const char* kind, std::size_t expected,
@@ -111,4 +111,4 @@ CouplingAdapter::resolve(std::span<const FieldID> ids) const {
   return result;
 }
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler

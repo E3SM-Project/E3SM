@@ -1,13 +1,13 @@
 #ifndef E3SM_EMULATOR_MOAB_TRANSPORT_HPP
 #define E3SM_EMULATOR_MOAB_TRANSPORT_HPP
 
-#include "moab_adapter.hpp"
-#include "mpi.h"
+#include <moab_adapter.hpp>
+#include <mpi.h>
 #include <span>
 #include <string>
 #include <vector>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 /*
   std::string field;
@@ -91,5 +91,5 @@ private:
   bool initialized_ = false;
 };
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler
 #endif

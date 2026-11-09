@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 void CouplerDriver::initialize(const std::string& filename,
                                RouteBufferMap external_buffers,
                                const ComponentIntervals& intervals) {
@@ -76,4 +76,4 @@ void CouplerDriver::require_initialized(std::string_view action,
   }
 }
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler

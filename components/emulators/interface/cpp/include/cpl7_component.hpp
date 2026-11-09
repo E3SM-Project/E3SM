@@ -1,14 +1,14 @@
 #ifndef E3SM_EMULATOR_CPL7_COMPONENT_HPP
 #define E3SM_EMULATOR_CPL7_COMPONENT_HPP
 
-#include "field_registry.hpp"
-#include "process.hpp"
 #include <coupler.hpp>
+#include <field_registry.hpp>
 #include <ostream>
+#include <process.hpp>
 #include <stdexcept>
 #include <string_view>
 namespace e3sm::emulator {
-using namespace e3sm::coupler;
+using namespace coupler;
 
 struct ExternalField {
   std::string name;

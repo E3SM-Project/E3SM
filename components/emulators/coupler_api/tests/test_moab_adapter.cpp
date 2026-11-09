@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-using namespace e3sm::coupler;
+using namespace e3sm::emulator::coupler;
 
 TEST_CASE("MoabAdapter stores scalar and vector fields", "[moab][mpi]") {
   int rank = 0;

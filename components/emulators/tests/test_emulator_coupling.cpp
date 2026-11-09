@@ -13,9 +13,8 @@
 #include <memory>
 #include <process.hpp>
 
-using namespace e3sm::coupler;
-
 namespace e3sm::emulator::tests {
+using namespace coupler;
 // An embedded interpreter does not see a virtual environment's packages,
 //
 // so the build passes the location of the ones it found

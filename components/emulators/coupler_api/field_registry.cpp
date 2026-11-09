@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 /**
  * @brief: Registers available fields with the registry.
@@ -25,7 +25,7 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
   if (lookup_.contains(key)) {
     throw std::runtime_error("Component '" + field.component +
                              "' registered field '" + field.name + "' as " +
-                             e3sm::coupler::to_string(field.role) + " twice");
+                             role_to_string(field.role) + " twice");
   }
 
   lookup_.emplace(std::move(key), id);
@@ -33,7 +33,6 @@ FieldID FieldRegistry::register_field(RegisteredField field) {
 
   return id;
 }
-
 
 const RegisteredField& FieldRegistry::get(const std::string& component,
                                           const std::string& field_name,
@@ -60,7 +59,7 @@ FieldID FieldRegistry::get_id(const std::string& component,
     for (const auto& field : fields_) {
       if (field.component == component) {
         registered += (registered.empty() ? "" : ", ") + field.name + " (" +
-                      e3sm::coupler::to_string(field.role) + ")";
+                      role_to_string(field.role) + ")";
       }
     }
     if (registered.empty()) {
@@ -71,7 +70,7 @@ FieldID FieldRegistry::get_id(const std::string& component,
     }
     throw std::runtime_error("Component '" + component +
                              "' has not registered field '" + field_name +
-                             "' as " + e3sm::coupler::to_string(role) +
+                             "' as " + role_to_string(role) +
                              ". Registered fields: " + registered);
   }
   return pair->second;
@@ -113,7 +112,7 @@ std::string to_string(const RegisteredFieldAttributes& attr,
   return out_str.str();
 }
 
-std::string to_string(FieldRole role) {
+std::string role_to_string(const FieldRole role) {
   switch (role) {
   case FieldRole::Import:
     return "Import";
@@ -132,7 +131,7 @@ std::string FieldRegistry::to_string() const {
 
     out << "  Field ID: " << id << '\n'
         << "    component: " << field.component << '\n'
-        << "    role: " << e3sm::coupler::to_string(field.role) << '\n'
+        << "    role: " << role_to_string(field.role) << '\n'
         << "    size: " << field.size << '\n'
         << "    name: " << field.name << '\n';
   }
@@ -140,4 +139,4 @@ std::string FieldRegistry::to_string() const {
   return out.str();
 }
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler

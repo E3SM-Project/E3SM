@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 namespace {
 template <typename Map> std::string join_keys(const Map& map) {
@@ -415,4 +415,4 @@ void Coupler::print_coupling_plan(std::ostream& os) const {
   }
 }
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler

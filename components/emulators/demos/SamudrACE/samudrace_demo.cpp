@@ -168,6 +168,7 @@ void run(const fs::path& run_dir) {
   auto& ocean_emulator =
       harness.get_process<Emulator>(std::string_view(ocean.name));
 
+
   auto co2 = [](int step)->double{return 3.4545895385742185e-4 + step * 9.8904126311004355e-10;};
 
   const int n_steps = n_coupled_steps * n_inner_steps;

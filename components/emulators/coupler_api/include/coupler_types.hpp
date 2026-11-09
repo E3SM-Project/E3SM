@@ -54,7 +54,6 @@ struct EmulatorGridDesc {
   const double* area;
 };
 
-
 /**
  * @brief Fortran/C struct to create RegisteredField entry
  * Fields:

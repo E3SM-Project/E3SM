@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-using namespace e3sm::coupler;
+using namespace e3sm::emulator::coupler;
 struct CommOwner {
   MPI_Comm value;
   ~CommOwner() {
