@@ -85,17 +85,8 @@ jobs:
             [ -x "$exe" ] || continue
             # 1. Metadata (resource usage) of the failing kernel (Homme::DirkFunctorImpl::run_newton), from the code objects in e3sm.exe
             echo "::group::code-object metadata of run_newton kernels"
-            ex=$(mktemp -d); (cd $ex && roc-obj-extract "$exe" > /dev/null 2>&1)
-            ls $ex | wc -l
-            for co in $ex/*; do
-              if strings -a "$co" | grep -q "run_newton"; then
-                echo "=== $co"
-                /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -n -E "run_newton" | head -3
-                /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -B4 -A42 -m1 -E "\.name: .*run_newton" | cut -c1-200
-                /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -E "amdhsa.version|amdhsa.target|code_object_version" | head -5
-              fi
-            done
-            echo "::endgroup::"
+          python3 "$GITHUB_WORKSPACE/.github/hip_diag_codeobj.py" "$exe"
+          echo "::endgroup::"
             # 2. Re-run the model with full dispatch logging (level 4), serialized, to see the dispatch record of the failing kernel
             cd "$rd" || continue
             echo "::group::rerun: AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3"

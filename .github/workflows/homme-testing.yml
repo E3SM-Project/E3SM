@@ -223,13 +223,7 @@ jobs:
           echo "exe: $exe"
           [ -n "$exe" ] || exit 0
           echo "::group::code-object metadata of run_newton kernels"
-          ex=$(mktemp -d); (cd $ex && roc-obj-extract "$GITHUB_WORKSPACE/$exe" > /dev/null 2>&1)
-          for co in $ex/*; do
-            if strings -a "$co" | grep -q "run_newton"; then
-              echo "=== $co"
-              /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -B4 -A42 -m1 -E "\.name: .*run_newton" | cut -c1-200
-            fi
-          done
+          python3 "$GITHUB_WORKSPACE/.github/hip_diag_codeobj.py" "$GITHUB_WORKSPACE/$exe"
           echo "::endgroup::"
           echo "::group::dirk_ut rerun with AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3"
           cd "$(dirname "$GITHUB_WORKSPACE/$exe")"
