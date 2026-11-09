@@ -83,22 +83,30 @@ jobs:
           for d in /tmp/${{ matrix.name }}*; do
             exe="$d/bld/e3sm.exe"; rd="$d/run"
             [ -x "$exe" ] || continue
-            cd "$rd" || continue
-            # Re-run the model directly, serializing kernel launches and tracing the HIP API,
-            # to find which kernel triggers HSA_STATUS_ERROR_INVALID_ISA. One log per rank.
-            for variant in default onegpu; do
-              extra=""; [ "$variant" = "onegpu" ] && extra="HIP_VISIBLE_DEVICES=0"
-              echo "::group::rerun ($variant): AMD_LOG_LEVEL=3 AMD_SERIALIZE_KERNEL=3 $extra"
-              rm -f amd.$variant.*.log
-              timeout 600 mpirun -np 2 bash -c "env $extra AMD_LOG_LEVEL=3 AMD_SERIALIZE_KERNEL=3 HIP_LAUNCH_BLOCKING=1 $exe > amd.$variant.\$PMI_RANK.log 2>&1"
-              echo "exit code: $?"
-              for f in amd.$variant.*.log; do
-                echo "--- $f: $(wc -l < $f) lines; last 40:"
-                tail -40 "$f" | cut -c1-400
-                tail -400 "$f" > "$f.tail"
-              done
-              echo "::endgroup::"
+            # 1. Metadata (resource usage) of the failing kernel (Homme::DirkFunctorImpl::run_newton), from the code objects in e3sm.exe
+            echo "::group::code-object metadata of run_newton kernels"
+            ex=$(mktemp -d); (cd $ex && roc-obj-extract "$exe" > /dev/null 2>&1)
+            ls $ex | wc -l
+            for co in $ex/*; do
+              if strings -a "$co" | grep -q "run_newton"; then
+                echo "=== $co"
+                /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -n -E "run_newton" | head -3
+                /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -B4 -A42 -m1 -E "\.name: .*run_newton" | cut -c1-200
+                /opt/rocm/lib/llvm/bin/llvm-readobj --notes "$co" 2>&1 | grep -E "amdhsa.version|amdhsa.target|code_object_version" | head -5
+              fi
             done
+            echo "::endgroup::"
+            # 2. Re-run the model with full dispatch logging (level 4), serialized, to see the dispatch record of the failing kernel
+            cd "$rd" || continue
+            echo "::group::rerun: AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3"
+            rm -f amd.*.log
+            timeout 900 mpirun -np 2 bash -c "env AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3 HIP_LAUNCH_BLOCKING=1 $exe > amd.\$PMI_RANK.log 2>&1"
+            echo "exit code: $?"
+            f=amd.0.log
+            echo "--- $f: $(wc -l < $f) lines; last 90 lines:"
+            tail -90 "$f" | cut -c1-500
+            tail -400 "$f" > "$f.tail"
+            echo "::endgroup::"
           done
           exit 0
       - name: Print TestStatus.log
