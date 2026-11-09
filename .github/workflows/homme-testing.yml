@@ -202,7 +202,7 @@ jobs:
           # ctest silently ignores '--timeout=1800'.
           cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               --ctest-arg="--timeout 1800" --no-baseline "${bfb_flag[@]}" "${cuda_flags[@]}")
+               --cmake-opt OPT_CXXFLAGS=-O3 --ctest-arg="--timeout 1800" --no-baseline "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then
             cmd+=(-g)
           fi
