@@ -225,10 +225,24 @@ jobs:
           echo "::group::code-object metadata of run_newton kernels"
           python3 "$GITHUB_WORKSPACE/.github/hip_diag_codeobj.py" "$GITHUB_WORKSPACE/$exe"
           echo "::endgroup::"
-          echo "::group::dirk_ut rerun with AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3"
-          cd "$(dirname "$GITHUB_WORKSPACE/$exe")"
-          AMD_LOG_LEVEL=4 AMD_SERIALIZE_KERNEL=3 HIP_LAUNCH_BLOCKING=1 timeout 900 mpirun -np 1 "$GITHUB_WORKSPACE/$exe" > amd.log 2>&1
-          echo "exit code: $?"; echo "$(wc -l < amd.log) lines; last 60:"; tail -60 amd.log | cut -c1-500
+          echo "::group::dirk_ut repeated runs under different conditions"
+          d="$(dirname "$GITHUB_WORKSPACE/$exe")"; cd "$d"
+          x="$GITHUB_WORKSPACE/$exe"
+          run () { # label, np, env-assignments..., then extra dirk_ut args after --
+            label="$1"; np="$2"; shift 2
+            envs=(); while [ "$1" != "--" ] && [ -n "$1" ]; do envs+=("$1"); shift; done; shift
+            timeout 600 mpirun -np "$np" env "${envs[@]}" "$x" "$@" > out.txt 2>&1; rc=$?
+            seeds=$(grep -o "seed [0-9]*" out.txt | tr '\n' ' ')
+            isa=$(grep -c INVALID_ISA out.txt)
+            echo "[$label] np=$np env='${envs[*]}' args='$*' -> rc=$rc INVALID_ISA=$isa seeds: $seeds"
+          }
+          for i in 1 2 3; do run "plain-np2" 2 A=1 --; done
+          for i in 1 2 3; do run "plain-np1" 1 A=1 --; done
+          for i in 1 2; do run "serialize-np1" 1 AMD_SERIALIZE_KERNEL=3 --; done
+          for i in 1 2; do run "serialize-np2" 2 AMD_SERIALIZE_KERNEL=3 --; done
+          for i in 1 2; do run "loglevel4-np1" 1 AMD_LOG_LEVEL=4 --; done
+          for sd in 1 2 3 4 5 6; do run "seed$sd-np1" 1 A=1 -- --rng-seed $sd; done
+          for sd in 1 2 3; do run "seed$sd-np1-serialize" 1 AMD_SERIALIZE_KERNEL=3 -- --rng-seed $sd; done
           echo "::endgroup::"
           exit 0
       - name: Upload ctest logs
