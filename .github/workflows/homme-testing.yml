@@ -176,6 +176,7 @@ jobs:
           echo "HOMME_RANKS=$ranks" >> "$GITHUB_ENV"
       - name: Select experiment variant (temporary)
         run: |
+          set +e +o pipefail
           # base: -O3 only, qsize 4; ndebug: + -DNDEBUG; qsize10: qsize 10; both: -DNDEBUG and qsize 10
           v=${{ matrix.variant }}
           case "$v" in qsize10|both) ;; *) sed -i 's/SET (QSIZE_D 10)/SET (QSIZE_D 4)/' components/homme/test_execs/thetal_kokkos_ut/CMakeLists.txt;; esac
