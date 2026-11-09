@@ -79,18 +79,28 @@ jobs:
       - name: HIP diagnostics (temporary)
         if: ${{ always() }}
         run: |
-          echo "::group::env"; env | grep -i -E 'hip|rocm|hsa|gcc|xnack|^PATH|LD_LIBRARY|MPICH|OMPI' | sort; echo "::endgroup::"
-          echo "::group::hipcc"; which -a hipcc; hipcc --version 2>&1 | head -20; echo "::endgroup::"
-          echo "::group::rocminfo ISA"; rocminfo | grep -E 'Marketing|Name:.*(gfx|amdgcn)|XNACK'; echo "::endgroup::"
+          set +e
           for d in /tmp/${{ matrix.name }}*; do
-            exe="$d/bld/e3sm.exe"
+            exe="$d/bld/e3sm.exe"; rd="$d/run"
             [ -x "$exe" ] || continue
-            echo "::group::ldd $exe (hip/hsa/rocm/stdc++)"; ldd "$exe" | grep -i -E 'hip|hsa|rocm|amd|stdc|gcc_s'; echo "::endgroup::"
-            echo "::group::amdgcn targets embedded in e3sm.exe"
-            strings -a "$exe" | grep -o -E 'amdgcn-amd-amdhsa-+[a-z0-9:+-]+' | sort | uniq -c
-            echo "::endgroup::"
-            echo "::group::roc-obj-ls"; (roc-obj-ls "$exe" 2>&1 || /opt/rocm/bin/roc-obj-ls "$exe" 2>&1) | head -40; echo "::endgroup::"
+            cd "$rd" || continue
+            # Re-run the model directly, serializing kernel launches and tracing the HIP API,
+            # to find which kernel triggers HSA_STATUS_ERROR_INVALID_ISA. One log per rank.
+            for variant in default onegpu; do
+              extra=""; [ "$variant" = "onegpu" ] && extra="HIP_VISIBLE_DEVICES=0"
+              echo "::group::rerun ($variant): AMD_LOG_LEVEL=3 AMD_SERIALIZE_KERNEL=3 $extra"
+              rm -f amd.$variant.*.log
+              timeout 600 mpirun -np 2 bash -c "env $extra AMD_LOG_LEVEL=3 AMD_SERIALIZE_KERNEL=3 HIP_LAUNCH_BLOCKING=1 $exe > amd.$variant.\$PMI_RANK.log 2>&1"
+              echo "exit code: $?"
+              for f in amd.$variant.*.log; do
+                echo "--- $f: $(wc -l < $f) lines; last 40:"
+                tail -40 "$f" | cut -c1-400
+                tail -400 "$f" > "$f.tail"
+              done
+              echo "::endgroup::"
+            done
           done
+          exit 0
       - name: Print TestStatus.log
         if: ${{ always() && steps.run-tests.outcome == 'failure' }}
         run: |
@@ -109,6 +119,7 @@ jobs:
             /tmp/${{ matrix.name }}*/TestStatus.log
             /tmp/${{ matrix.name }}*/bld/**/*.bldlog.*
             /tmp/${{ matrix.name }}*/bld/**/CMakeCache.txt
+            /tmp/${{ matrix.name }}*/run/amd.*.tail
             /tmp/${{ matrix.name }}*/run/**/*.log.*
             /tmp/${{ matrix.name }}*/run/**/*.cprnc.out
           retention-days: 14
