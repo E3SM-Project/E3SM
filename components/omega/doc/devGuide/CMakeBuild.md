@@ -108,6 +108,21 @@ During this step, the build process is configured. It includes building
 external libraries, followed by building the Omega main model from source
 files. Optionally, tests can also be built.
 
+### Optimization in CPU Debug builds with GNU
+
+`Debug` builds compile Omega's C++ code with `-g` and no `-O` level, so
+`g++` builds it at `-O0`. Without inlining, Kokkos kernels on the host
+(`SERIAL` and `OPENMP`) run about 130 times slower than in a `Release`
+build, so multi-day debug tests such as `ERS_D` run out of wall time.
+
+To avoid this, `src/CMakeLists.txt` adds `-Og` to the C++ compile options
+of the `OmegaLibFlags` interface target when `OMEGA_ARCH` is `SERIAL` or
+`OPENMP`, the C++ compiler is GNU and the build type is `Debug`. `-Og` is
+the optimization level GNU recommends for debugging, and it makes these
+builds about 30 times faster. This reaches the Omega library, executable
+and tests, but not Fortran sources or external libraries. Debug checks
+(`OMEGA_DEBUG`, Kokkos debug checks) and `-g` are unchanged.
+
 ## Step 4: Output
 
 The final step, which is optional, involves copying a subset of the build
