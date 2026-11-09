@@ -54,13 +54,16 @@ macro (CreateCsmShareTarget)
 
     add_library(csm_share ${share_sources})
 
-    # These CPP macros are needed in shr_infnan_mod
+    # These CPP macros are needed in shr_infnan_mod and shr_sys_mod (the latter declares system/chdir as external
+    # functions if LINUX is defined but CPRGNU is not, which breaks the link with gfortran).
+    # NOTE: the C++ compiler may be Clang (e.g., hipcc) while the Fortran compiler is gfortran, so CPRGNU must
+    #       also be set based on the Fortran compiler (and CPRCRAY only if the Fortran compiler is not GNU)
     target_compile_definitions(csm_share PUBLIC
-      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:GNU>>:CPRGNU>
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<OR:$<CXX_COMPILER_ID:GNU>,$<Fortran_COMPILER_ID:GNU>>>:CPRGNU>
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Intel>>:CPRINTEL>
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:IntelLLVM>>:CPRINTEL>
-      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Clang>>:CPRCRAY>
-      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:clang>>:CPRCRAY>
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Clang>,$<NOT:$<Fortran_COMPILER_ID:GNU>>>:CPRCRAY>
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:clang>,$<NOT:$<Fortran_COMPILER_ID:GNU>>>:CPRCRAY>
       EAMXX_STANDALONE)
 
 
