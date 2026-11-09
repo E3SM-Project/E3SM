@@ -34,20 +34,23 @@ bool str2real (const std::string& s, Real& value) {
   return true;
 }
 
-// Resolves 's' as a scalar operand, if it is one. The dictionary is checked
+// Resolves 's' as a scalar operand, if it is one, and says whether it is a
+// numeric literal rather than a named constant. The dictionary is checked
 // first: a lookup is cheaper than a strtod, and named constants are the common
 // case. Called once per operand, from the constructor; initialize_impl and
 // compute_impl use the cached values.
-bool scalar_operand (const std::string& s, Real& value, ekat::units::Units& units) {
+bool scalar_operand (const std::string& s, Real& value, ekat::units::Units& units, bool& is_literal) {
   const auto& dict = physics::Constants<Real>::dictionary();
   auto it = dict.find(s);
   if (it!=dict.end()) {
     value = it->second.value;
     units = it->second.units;
+    is_literal = false;
     return true;
   }
   if (str2real(s,value)) {
     units = ekat::units::none;
+    is_literal = true;
     return true;
   }
   return false;
@@ -67,7 +70,10 @@ ekat::units::Units apply_binary_op(const ekat::units::Units& a, const ekat::unit
   switch (op_code) {
     case OP_PLUS: [[fallthrough]];
     case OP_MINUS:
-      EKAT_REQUIRE_MSG(a == b, "Error! Addition/subtraction requires compatible units.\n");
+      EKAT_REQUIRE_MSG(a == b,
+          "Error! Addition/subtraction requires compatible units.\n"
+          " - lhs units: " + a.get_si_string() + "\n"
+          " - rhs units: " + b.get_si_string() + "\n");
       return a;
     case OP_TIMES:
       return a * b;
@@ -229,8 +235,8 @@ BinaryOp(const ekat::Comm &comm,
 
   // A non-field operand's value/units never change, so resolve them here rather
   // than on every compute_impl call.
-  m_arg1_is_field = not scalar_operand(m_arg1_name,m_arg1_value,m_arg1_units);
-  m_arg2_is_field = not scalar_operand(m_arg2_name,m_arg2_value,m_arg2_units);
+  m_arg1_is_field = not scalar_operand(m_arg1_name,m_arg1_value,m_arg1_units,m_arg1_is_literal);
+  m_arg2_is_field = not scalar_operand(m_arg2_name,m_arg2_value,m_arg2_units,m_arg2_is_literal);
   if (m_arg1_is_field)
     m_field_in_names.push_back(m_arg1_name);
   if (m_arg2_is_field)
@@ -268,10 +274,17 @@ void BinaryOp::initialize_impl()
   auto dl = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_layout()
                             : (m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_layout()
                                                : FieldLayout({},{}));
-  const auto u1 = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_units()
-                                  : m_arg1_units;
-  const auto u2 = m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_units()
-                                  : m_arg2_units;
+  auto u1 = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_units()
+                            : m_arg1_units;
+  auto u2 = m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_units()
+                            : m_arg2_units;
+  // A numeric literal has no units of its own. In a sum or difference it takes
+  // the units of the other operand, so T_mid-273.15 is in K; in a product or
+  // ratio it is a pure number, so p_mid/100 stays in Pa. Named constants keep theirs.
+  if (m_binary_op_code==OP_PLUS or m_binary_op_code==OP_MINUS) {
+    if (m_arg1_is_literal and not m_arg2_is_literal) u1 = u2;
+    if (m_arg2_is_literal and not m_arg1_is_literal) u2 = u1;
+  }
   auto diag_units = apply_binary_op(u1, u2, m_binary_op_code);
   auto gn = m_params.get<std::string>("grid_name");
   auto diag_name = m_arg1_name + "_" + m_binary_op_str + "_" + m_arg2_name;

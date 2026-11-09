@@ -53,12 +53,14 @@ field_names:
   - p_ratio    := p_mid / P0
 ```
 
-A numeric literal has no units. Multiplying or dividing by one keeps the
-units of the field, so `p_mid/100` holds the pressure in hPa, but is written
-with the units of `p_mid`, which are Pa; nothing converts units for you.
-Adding a number to, or subtracting it from, a field with units is rejected when
-the stream is set up, since `+` and `-` need operands with the same units:
-`T_mid - 273.15` is an error.
+A numeric literal has no units of its own. Added to or subtracted from a
+field, it takes the field's units, so `T_mid - 273.15` is in K (and holds the
+temperature in degrees Celsius). Multiplying or dividing by one keeps the units
+of the field, so `p_mid/100` holds the pressure in hPa, but is written with the
+units of `p_mid`, which are Pa; nothing converts units for you. A named
+constant keeps its units: `T_mid - Tmelt` is in K, while `qv + Tmelt` is
+rejected when the stream is set up, since `+` and `-` need operands with the
+same units.
 
 Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. When in
 doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
@@ -84,8 +86,8 @@ is an honest analogue.
 | `X.sum('lev')` | vertical sum |
 | `X.mean('lev', weights='dp')` | vertical mean weighted by `dp` |
 | `X.where(qv>0.01)` | `X` where `qv>0.01`, missing elsewhere |
-| `X.derivative('p_mid')` | vertical derivative with respect to `p_mid` |
-| `X.histogram(bins=[0,1,2])` | histogram of `X` over the given bin edges |
+| `X.differentiate('p_mid')` | vertical derivative with respect to `p_mid` |
+| `X.histogram(bins=[0,1,2])` | counts of `X` in the bins `[0,1)` and `[1,2]` |
 | `X.zonal_mean(bins=20)` | zonal mean in 20 latitude bins |
 | `X.shift(time=1)` | `X` at the previous step |
 | `X.over_dt()` | `X` divided by the timestep |
@@ -191,8 +193,22 @@ Notes:
   defaults to `m`). `interp(..)` is built on it, so fields interpolated to the
   same target share one search. Its output has `int` data type, so like
   `mask.where(..)` it cannot be written as is.
-- Histogram bin edges are numbers in increasing order. They may be negative,
-  and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
+- `differentiate` is xarray's: numpy's `gradient` along the level dimension,
+  using the values of the named coordinate (`p_mid` or `z_mid`) in each column.
+  Interior levels use second-order central differences on the (uneven) spacing,
+  and the top and bottom levels one-sided first-order differences, as xarray's
+  default `edge_order=1`. The derivative is with respect to the coordinate as
+  it stands, so `T_mid.differentiate('z_mid')` is negative where temperature
+  falls with height. Where `X` is masked, a level is valid only if every level
+  its difference reads is valid. See [Vertical derivative](vert_derivative.md).
+- `histogram` bins the way numpy's `histogram` and xhistogram do: n edges make
+  n-1 bins, each bin includes its lower edge, the last bin also includes its
+  upper edge, and values outside the edges are not counted. To count the tails,
+  add edges beyond any value the field takes, e.g.
+  `bins=[-1e30,0,1e-5,1e-4,1e30]`. Bin edges are numbers in increasing order;
+  they may be negative, and may be written with an exponent
+  (`bins=[-1,0,1e-5,1e-4]`). The counts are over every entry of `X` on every
+  rank, as with xhistogram's default `dim=None`.
 
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,
@@ -200,12 +216,13 @@ and so on.
 
 ### Where this departs from xarray
 
-`isel`, `interp`, `mean`, `sum`, `where` and `shift` mean what they mean in
-xarray, on the same arguments. The rest have no xarray spelling we could adopt:
+`isel`, `interp`, `mean`, `sum`, `where`, `shift` and `differentiate` mean
+what they mean in xarray, on the same arguments. The rest have no xarray
+spelling we could adopt:
 
 | | |
 | --- | --- |
-| `histogram` | not in xarray; the keyword follows [xhistogram](https://xhistogram.readthedocs.io) |
+| `histogram` | not in xarray; it is [xhistogram](https://xhistogram.readthedocs.io)'s `histogram(X, bins=..)`, with the same binning, and always reduces over every dimension |
 | `zonal_mean` | xarray would be `groupby_bins('lat', 20).mean()`, a call chain we cannot represent |
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |

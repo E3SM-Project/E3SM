@@ -13,18 +13,20 @@ Histogram::Histogram(const ekat::Comm &comm, const ekat::ParameterList &params,
   m_field_name = m_params.get<std::string>("field_name");
   const std::string bin_config = m_params.get<std::string>("bin_configuration");
 
-  // extract bin values from configuration, append end values, and check
+  // Extract the bin edges from the configuration and check them. As in numpy and
+  // xhistogram, n edges make n-1 bins, and values outside the edges are not counted.
   const std::vector<std::string> bin_strings = ekat::split(bin_config, "_");
-  m_bin_reals.reserve(bin_strings.size()+2);
-  m_bin_reals.push_back(std::numeric_limits<Real>::lowest());
+  EKAT_REQUIRE_MSG(bin_strings.size()>=2,
+      "Error! Histogram needs at least two bin edges.\n"
+      " - bin configuration: " + bin_config + "\n");
+  m_bin_reals.reserve(bin_strings.size());
   for (const auto& s : bin_strings) {
     auto val = std::stod(s);
-    EKAT_REQUIRE_MSG(val > m_bin_reals.back(),
+    EKAT_REQUIRE_MSG(m_bin_reals.empty() or val > m_bin_reals.back(),
         "Error! Histogram bin values must be monotonically increasing.\n"
         " - bin configuration: " + bin_config + "\n");
     m_bin_reals.push_back(val);
   }
-  m_bin_reals.push_back(std::numeric_limits<Real>::max());
 
   m_field_in_names.push_back(m_field_name);
 }
@@ -94,10 +96,13 @@ void Histogram::compute_impl()
             const int bin_i = tm.league_rank();
             const Real bin_lower = bin_values_view(bin_i);
             const Real bin_upper = bin_values_view(bin_i+1);
+            // Each bin is [lower,upper), except the last, which is [lower,upper]
+            const bool last_bin = bin_i==num_bins-1;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1),
                 [&](int i, Real &val) {
                   if ((not masked or mask_view(i)!=0) and
-                      (bin_lower <= field_view(i)) && (field_view(i) < bin_upper))
+                      bin_lower <= field_view(i) and
+                      (field_view(i) < bin_upper or (last_bin and field_view(i) == bin_upper)))
                     val += sp(1.0);
                 },
                 histogram_view(bin_i));
@@ -114,12 +119,15 @@ void Histogram::compute_impl()
             const int bin_i = tm.league_rank();
             const Real bin_lower = bin_values_view(bin_i);
             const Real bin_upper = bin_values_view(bin_i+1);
+            // Each bin is [lower,upper), except the last, which is [lower,upper]
+            const bool last_bin = bin_i==num_bins-1;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1*d2),
                 [&](int ind, Real &val) {
                   const int i1 = ind / d2;
                   const int i2 = ind % d2;
                   if ((not masked or mask_view(i1,i2)!=0) and
-                      (bin_lower <= field_view(i1,i2)) && (field_view(i1,i2) < bin_upper))
+                      bin_lower <= field_view(i1,i2) and
+                      (field_view(i1,i2) < bin_upper or (last_bin and field_view(i1,i2) == bin_upper)))
                     val += sp(1.0);
                 },
                 histogram_view(bin_i));
@@ -137,6 +145,8 @@ void Histogram::compute_impl()
             const int bin_i = tm.league_rank();
             const Real bin_lower = bin_values_view(bin_i);
             const Real bin_upper = bin_values_view(bin_i+1);
+            // Each bin is [lower,upper), except the last, which is [lower,upper]
+            const bool last_bin = bin_i==num_bins-1;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1*d2*d3),
                 [&](int ind, Real &val) {
                   const int i1 = ind / (d2*d3);
@@ -144,7 +154,8 @@ void Histogram::compute_impl()
                   const int i2 = ind2 / d3;
                   const int i3 = ind2 % d3;
                   if ((not masked or mask_view(i1,i2,i3)!=0) and
-                      (bin_lower <= field_view(i1,i2,i3)) && (field_view(i1,i2,i3) < bin_upper))
+                      bin_lower <= field_view(i1,i2,i3) and
+                      (field_view(i1,i2,i3) < bin_upper or (last_bin and field_view(i1,i2,i3) == bin_upper)))
                     val += sp(1.0);
                 },
                 histogram_view(bin_i));

@@ -45,7 +45,7 @@ fields:
       - T_vsum    := T_mid.sum('lev')
       - T_dpavg   := T_mid.mean('lev', weights='dp')
       - T_wet     := T_mid.where(qv>0.01)
-      - T_dpdz    := T_mid.derivative('p_mid')
+      - T_dTdp    := T_mid.differentiate('p_mid')
       - T_hist    := T_mid.histogram(bins=[200,250,300])
       - T_zonal   := T_mid.zonal_mean(bins=20)
       - T_prev    := T_mid.shift(time=1)

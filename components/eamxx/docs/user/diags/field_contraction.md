@@ -85,9 +85,13 @@ And so on...
 
 We currently have a utility to calculate histograms online.
 To select the histogram, request `X.histogram(bins=[..])` with the edges
-of the bins. For example, the histogram specified by
-`T_mid.histogram(bins=[250,270,290,310])` has 5 bins effectively defined by
-[$-\infty$, 250), [250, 270), [270, 290), [290, 310), and [310, $\infty$).
+of the bins. The binning is that of numpy's `histogram` and of
+[xhistogram](https://xhistogram.readthedocs.io): n edges make n-1 bins, and
+values outside the edges are not counted. For example, the histogram specified
+by `T_mid.histogram(bins=[250,270,290,310])` has 3 bins, [250, 270),
+[270, 290) and [290, 310]; the last bin includes its upper edge. To count the
+tails as well, add edges beyond any value the field takes, e.g.
+`T_mid.histogram(bins=[0,250,270,290,310,1000])`.
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |

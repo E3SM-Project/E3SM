@@ -1,6 +1,5 @@
 #include "catch2/catch.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
-#include "share/physics/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -8,188 +7,213 @@
 
 namespace scream {
 
-
+// VertDerivative is xarray's differentiate (numpy's gradient, edge_order=1),
+// applied in each column with the coordinate's own values.
 TEST_CASE("vert_derivative") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  // A numerical tolerance
-  // auto tol = std::numeric_limits<Real>::epsilon() * 100;
-
-  // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
-
-  // A time stamp
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
-  // Create a grids manager - single column for these tests
-  const int nlevs = 150;
-  const int ncols = 195;
-
-  auto grid = create_point_grid("physics",ncols,nlevs,comm);
-
-  // Input (randomized) qc
-  FieldLayout scalar1d_layout = grid->get_vertical_layout(LEV);
-  FieldLayout scalar2d_layout = grid->get_3d_scalar_layout(LEV);
-
-  FieldIdentifier fin2_fid("qc", scalar2d_layout, kg / kg, grid->name());
-  FieldIdentifier dp_fid("pseudo_density", scalar2d_layout, Pa, grid->name());
-
-  Field fin2(fin2_fid);
-  Field dp(dp_fid);
-
-  fin2.allocate_view();
-  dp.allocate_view();
-
-  // Random number generator seed
-  int seed = get_random_test_seed();
-
-  // Construct the diagnostics factory
   auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
-  ekat::ParameterList params;
+  const auto tol = std::numeric_limits<Real>::epsilon() * 1e4;
+
+  auto make_diag = [&](const std::shared_ptr<const AbstractGrid>& grid,
+                       const std::string& field, const std::string& coord) {
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", field);
+    params.set<std::string>("coordinate", coord);
+    return diag_factory.create("VertDerivative", comm, params, grid);
+  };
+
   SECTION("bad_diag") {
-    // this will throw because no field_name was provided
+    auto grid = create_point_grid("physics",4*comm.size(),5,comm);
+    ekat::ParameterList params;
+    params.set("grid_name", grid->name());
+    // No field_name
+    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
+    // No coordinate
+    params.set<std::string>("field_name", "qc");
+    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
+    // With respect to itself
+    params.set<std::string>("coordinate", "qc");
     REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
   }
 
-  fin2.get_header().get_tracking().update_time_stamp(t0);
-  dp.get_header().get_tracking().update_time_stamp(t0);
-  // instead of random fin2, let's just a predictable one:
-  fin2.sync_to_host();
-  auto fin2_v_host_assign = fin2.get_view<Real **, Host>();
-  for (int icol = 0; icol < ncols; ++icol) {
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-      fin2_v_host_assign(icol, ilev) = 1.0 + icol + ilev;
+  SECTION("numpy_reference") {
+    // Reference values from numpy/xarray:
+    //   x = [1,2,4,7,11], f = [1,3,2,5,4]
+    //   np.gradient(f,x)       == xr.DataArray(f,coords={'x':x}).differentiate('x')
+    //                          == [2, 7/6, 1/10, 13/28, -1/4]
+    //   np.gradient(f,x[::-1]) == [-1/2, -1/42, -23/30, 1/6, 1]
+    // Column i uses the coordinate scaled by (i+1), so its derivative is the
+    // reference divided by (i+1).
+    const int nlevs = 5;
+    auto grid = create_point_grid("physics",4*comm.size(),nlevs,comm);
+    const int ncols = grid->get_num_local_dofs();
+    const auto lay = grid->get_3d_scalar_layout(LEV);
+
+    const std::vector<Real> x   = {1, 2, 4, 7, 11};
+    const std::vector<Real> fv  = {1, 3, 2, 5, 4};
+    const std::vector<Real> inc = {2, 7.0/6, 0.1, 13.0/28, -0.25};
+    const std::vector<Real> dec = {-0.5, -1.0/42, -23.0/30, 1.0/6, 1};
+
+    Field f (FieldIdentifier("qc",    lay, kg/kg, grid->name()));
+    Field p (FieldIdentifier("p_mid", lay, Pa,    grid->name()));
+    Field z (FieldIdentifier("z_mid", lay, m,     grid->name()));
+    for (auto fld : {&f,&p,&z}) {
+      fld->allocate_view();
+      fld->get_header().get_tracking().update_time_stamp(t0);
     }
-  }
-  fin2.sync_to_dev();
-  randomize_uniform(dp, seed++, 10, 2000);
-
-  // Create and set up the diagnostic
-  params.set("grid_name", grid->name());
-  params.set<std::string>("field_name", "qc");
-  SECTION("bad_diag_2") {
-    // this will throw because no derivative_method was provided
-    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
-  }
-
-  SECTION("bad_diag_3") {
-    // this will throw because bad derivative_method was provided
-    params.set<std::string>("derivative_method", "xyz");
-    REQUIRE_THROWS(diag_factory.create("VertDerivative", comm, params, grid));
-  }
-
-  // dp_vert_derivative
-  params.set<std::string>("derivative_method", "p");
-  auto dp_vert_derivative = diag_factory.create("VertDerivative", comm, params, grid);
-
-  // Fields for manual calculation
-  FieldIdentifier diag1_fid("qc_vert_derivative_manual", scalar2d_layout, kg / kg, grid->name());
-  Field diag1_m(diag1_fid);
-  diag1_m.allocate_view();
-
-  SECTION("dp_vert_derivative") {
-    // calculate dp_vert_div manually
-    dp.sync_to_host();
-    fin2.sync_to_host();
-    diag1_m.sync_to_host();
-
-    auto dp_v      = dp.get_view<const Real **, Host>();
-    auto fin2_v    = fin2.get_view<const Real **, Host>();
-    auto diag1_m_v = diag1_m.get_view<Real **, Host>();
-
-    for (int icol = 0; icol < ncols; ++icol) {
-      for (int ilev = 0; ilev < nlevs; ++ilev) {
-        auto fa1 = (ilev < nlevs - 1) ? (fin2_v(icol, ilev + 1) * dp_v(icol, ilev) +
-                    fin2_v(icol, ilev) * dp_v(icol, ilev + 1)) /
-                   (dp_v(icol, ilev) + dp_v(icol, ilev + 1)) : fin2_v(icol, nlevs-1);
-        auto fa0 = (ilev > 0 ) ? (fin2_v(icol, ilev) * dp_v(icol, ilev - 1) +
-                    fin2_v(icol, ilev - 1) * dp_v(icol, ilev)) /
-                   (dp_v(icol, ilev - 1) + dp_v(icol, ilev)) : fin2_v(icol, 0);
-        diag1_m_v(icol, ilev) = (fa1 - fa0) / dp_v(icol, ilev);
+    auto fh = f.get_view<Real**,Host>();
+    auto ph = p.get_view<Real**,Host>();
+    auto zh = z.get_view<Real**,Host>();
+    for (int i=0; i<ncols; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        fh(i,k) = fv[k];
+        ph(i,k) = (i+1)*x[k];          // increasing downward, like p_mid
+        zh(i,k) = (i+1)*x[nlevs-1-k];  // decreasing downward, like z_mid
       }
     }
-    diag1_m.sync_to_dev();
+    f.sync_to_dev(); p.sync_to_dev(); z.sync_to_dev();
 
-    // Calculate weighted avg through diagnostics
-    dp_vert_derivative->set_input_field(fin2);
-    dp_vert_derivative->set_input_field(dp);
-    dp_vert_derivative->initialize();
-    dp_vert_derivative->compute(t0);
-    auto dp_vert_derivative_f = dp_vert_derivative->get();
-
-    // Check that the two are the same manually using the tolerance
-    dp_vert_derivative_f.sync_to_host();
-    auto view_deriv_f_d = dp_vert_derivative_f.get_view<Real **, Host>();
-    auto view_deriv_f_m = diag1_m.get_view<Real **, Host>();
-    for (int icol = 0; icol < ncols; ++icol) {
-      for (int ilev = 0; ilev < nlevs; ++ilev) {
-        // TODO: the calculations are sometimes diverging because of fp issues in the test on h100 gcc13
-        // TODO: so a cop-out, just test if the abs diff is within 1e-5
-        REQUIRE(std::abs(view_deriv_f_d(icol, ilev) - view_deriv_f_m(icol, ilev)) < 1e-5);
-      }
-    }
-  }
-
-  SECTION("dp_vert_derivative_masked") {
-    // calculate dp_vert_div manually
-    fin2.create_valid_mask();
-    randomize_uniform(fin2.get_valid_mask(),seed++);
-    dp.sync_to_host();
-    fin2.sync_to_host();
-    diag1_m.sync_to_host();
-
-    auto dp_v      = dp.get_view<const Real **, Host>();
-    auto fin2_v    = fin2.get_view<const Real **, Host>();
-    auto fin2_m    = fin2.get_valid_mask().get_view<const int**, Host>();
-    auto diag1_m_v = diag1_m.get_view<Real **, Host>();
-    auto diag1_m_mask = diag1_m.create_valid_mask();
-    auto diag1_m_mask_v = diag1_m.get_valid_mask().get_view<int**,Host>();
-    int last_lev = nlevs-1;
-    for (int icol = 0; icol < ncols; ++icol) {
-      for (int ilev = 0; ilev < nlevs; ++ilev) {
-        if (fin2_m(icol,ilev)==0 or
-            (ilev>0 and fin2_m(icol,ilev-1)==0) or
-            (ilev<last_lev and fin2_m(icol,ilev+1)==0)) {
-          diag1_m_mask_v(icol,ilev)=0;
-          continue;
+    for (const auto& [coord,ref] : {std::pair{&p,&inc},std::pair{&z,&dec}}) {
+      auto diag = make_diag(grid,"qc",coord->name());
+      diag->set_input_field(f);
+      diag->set_input_field(*coord);
+      diag->initialize();
+      diag->compute(t0);
+      auto d = diag->get();
+      REQUIRE (d.get_header().get_identifier().get_units()==kg/kg/coord->get_header().get_identifier().get_units());
+      REQUIRE (not d.has_valid_mask());
+      d.sync_to_host();
+      auto dh = d.get_view<const Real**,Host>();
+      for (int i=0; i<ncols; ++i) {
+        for (int k=0; k<nlevs; ++k) {
+          REQUIRE_THAT (dh(i,k), Catch::Matchers::WithinAbs((*ref)[k]/(i+1),tol));
         }
-        diag1_m_mask_v(icol,ilev)=1;
-        auto fa1 = (ilev < nlevs - 1) ? (fin2_v(icol, ilev + 1) * dp_v(icol, ilev) +
-                    fin2_v(icol, ilev) * dp_v(icol, ilev + 1)) /
-                   (dp_v(icol, ilev) + dp_v(icol, ilev + 1)) : fin2_v(icol, nlevs-1);
-        auto fa0 = (ilev > 0 ) ? (fin2_v(icol, ilev) * dp_v(icol, ilev - 1) +
-                    fin2_v(icol, ilev - 1) * dp_v(icol, ilev)) /
-                   (dp_v(icol, ilev - 1) + dp_v(icol, ilev)) : fin2_v(icol, 0);
-        diag1_m_v(icol, ilev) = (fa1 - fa0) / dp_v(icol, ilev);
       }
     }
-    diag1_m.sync_to_dev();
-    diag1_m.get_valid_mask().sync_to_dev();
-
-    // Calculate weighted avg through diagnostics
-    dp_vert_derivative->set_input_field(fin2);
-    dp_vert_derivative->set_input_field(dp);
-    dp_vert_derivative->initialize();
-    dp_vert_derivative->compute(t0);
-    auto dp_vert_derivative_f = dp_vert_derivative->get();
-
-    // Check diag mask field
-    REQUIRE (dp_vert_derivative_f.has_valid_mask());
-    REQUIRE (views_are_equal(dp_vert_derivative_f.get_valid_mask(),diag1_m_mask));
-
-    // Set diag and manual diag to 0 where mask=0, then compute diff norm
-    dp_vert_derivative_f.deep_copy(0,diag1_m_mask,true);
-    diag1_m.deep_copy(0,diag1_m_mask,true);
-    diag1_m.update(dp_vert_derivative_f,1,-1,diag1_m_mask);
-
-    constexpr auto tol = std::numeric_limits<Real>::epsilon()*1000;
-    REQUIRE_THAT (inf_norm(diag1_m).as<Real>(),Catch::WithinAbs(0,tol));
   }
 
-  // TODO: add SECTION("dz_vert_derivative")
+  SECTION("exact_on_quadratics") {
+    // On any spacing, numpy's interior stencil is exact for a quadratic, and the
+    // one-sided end stencil gives the secant slope. With f = 3 + 2x + x^2/2:
+    //   interior: f'(x_k) = 2 + x_k;   ends: 2 + (x_0+x_1)/2 and 2 + (x_{n-2}+x_{n-1})/2
+    const int nlevs = 72;
+    auto grid = create_point_grid("physics",8*comm.size(),nlevs,comm);
+    const int ncols = grid->get_num_local_dofs();
+    const auto lay = grid->get_3d_scalar_layout(LEV);
+
+    Field f  (FieldIdentifier("T_mid", lay, K,  grid->name()));
+    Field x  (FieldIdentifier("p_mid", lay, Pa, grid->name()));
+    Field dx (FieldIdentifier("dx",    lay, Pa, grid->name()));
+    for (auto fld : {&f,&x,&dx}) {
+      fld->allocate_view();
+      fld->get_header().get_tracking().update_time_stamp(t0);
+    }
+    int seed = get_random_test_seed();
+    randomize_uniform(dx, seed++, 0.2, 2.0);
+    dx.sync_to_host();
+    auto dxh = dx.get_view<const Real**,Host>();
+    auto xh  = x.get_view<Real**,Host>();
+    auto fh  = f.get_view<Real**,Host>();
+    for (int i=0; i<ncols; ++i) {
+      Real xk = 1;
+      for (int k=0; k<nlevs; ++k) {
+        xk += dxh(i,k);
+        xh(i,k) = xk;
+        fh(i,k) = 3 + 2*xk + xk*xk/2;
+      }
+    }
+    x.sync_to_dev(); f.sync_to_dev();
+
+    auto expected = [&](const int i, const int k) -> Real {
+      if (k==0)       return 2 + (xh(i,0)+xh(i,1))/2;
+      if (k==nlevs-1) return 2 + (xh(i,nlevs-2)+xh(i,nlevs-1))/2;
+      return 2 + xh(i,k);
+    };
+
+    auto diag = make_diag(grid,"T_mid","p_mid");
+    diag->set_input_field(f);
+    diag->set_input_field(x);
+    diag->initialize();
+    diag->compute(t0);
+    auto d = diag->get();
+    d.sync_to_host();
+    auto dh = d.get_view<const Real**,Host>();
+    for (int i=0; i<ncols; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        REQUIRE_THAT (dh(i,k), Catch::Matchers::WithinRel(expected(i,k),tol));
+      }
+    }
+
+    // Masked input: a level is valid where every level its stencil reads is valid
+    // (k-1,k,k+1 inside; k,k+1 at the top; k-1,k at the bottom), which is where
+    // xarray would not propagate a NaN, and there the value is unchanged.
+    f.create_valid_mask();
+    randomize_uniform(f.get_valid_mask(),seed++);
+    f.get_valid_mask().sync_to_host();
+    auto fm = f.get_valid_mask().get_view<const int**,Host>();
+
+    auto mdiag = make_diag(grid,"T_mid","p_mid");
+    mdiag->set_input_field(f);
+    mdiag->set_input_field(x);
+    mdiag->initialize();
+    mdiag->compute(t0);
+    auto md = mdiag->get();
+    REQUIRE (md.has_valid_mask());
+    REQUIRE (md.get_header().may_be_filled());
+    md.sync_to_host();
+    md.get_valid_mask().sync_to_host();
+    auto mdh = md.get_view<const Real**,Host>();
+    auto mdm = md.get_valid_mask().get_view<const int**,Host>();
+    int nvalid = 0, ninvalid = 0;
+    for (int i=0; i<ncols; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        const int km = k==0 ? 0 : k-1;
+        const int kp = k==nlevs-1 ? nlevs-1 : k+1;
+        int valid = 1;
+        for (int j=km; j<=kp; ++j) valid *= fm(i,j)!=0 ? 1 : 0;
+        REQUIRE ((mdm(i,k)!=0)==(valid==1));
+        if (valid) {
+          ++nvalid;
+          REQUIRE (mdh(i,k)==dh(i,k));
+        } else {
+          ++ninvalid;
+          REQUIRE (mdh(i,k)==constants::fill_value<Real>);
+        }
+      }
+    }
+    // Make sure the mask test could have failed both ways
+    REQUIRE (nvalid>0);
+    REQUIRE (ninvalid>0);
+  }
+
+  SECTION("layout_checks") {
+    auto grid = create_point_grid("physics",4*comm.size(),5,comm);
+    Field f (FieldIdentifier("qc",    grid->get_3d_scalar_layout(LEV), kg/kg, grid->name()));
+    Field s (FieldIdentifier("ps",    grid->get_2d_scalar_layout(),    Pa,    grid->name()));
+    Field pi(FieldIdentifier("p_int", grid->get_3d_scalar_layout(ILEV),Pa,    grid->name()));
+    for (auto fld : {&f,&s,&pi}) {
+      fld->allocate_view();
+      fld->get_header().get_tracking().update_time_stamp(t0);
+    }
+    // Coordinate on a different layout
+    auto d1 = make_diag(grid,"qc","p_int");
+    d1->set_input_field(f);
+    d1->set_input_field(pi);
+    REQUIRE_THROWS (d1->initialize());
+    // Field without a level dimension
+    auto d2 = make_diag(grid,"ps","qc");
+    d2->set_input_field(s);
+    d2->set_input_field(f);
+    REQUIRE_THROWS (d2->initialize());
+  }
 }
 
 } // namespace scream
