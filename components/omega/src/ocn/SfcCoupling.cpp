@@ -546,8 +546,9 @@ void OcnToCplFields::updateFields(const OceanState *State,
              if (NewAvgFrazilMassFlux > Real(0.0)) {
                 LocMeltPotentialFlux(ICell) = Real(0.0);
              } else {
-                const Real CtFreezing = Eos::calcCtFreezing(
-                    EosChoice, NewAvgSfcSal, LocSurfacePressure(ICell), 0.0);
+                const Real CtFreezing =
+                    Eos::calcCtFreezing(EosChoice, NewAvgSfcSal,
+                                        LocSurfacePressure(ICell) * Pa2Db, 0.0);
                 const Real MeltEnergy = RhoSw * Cp0Sw *
                                         PseudoThick(ICell, KSfc) *
                                         (CtFreezing - NewAvgSfcTemp);
