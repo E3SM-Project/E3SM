@@ -259,6 +259,7 @@ module elm_varctl
                                                                         ! cnp => Carbon+Nitrogen+Phosphorus
   integer, public            :: fates_seeddisp_cadence = iundef         ! 0 => no seed dispersal across gridcells
                                                                         ! 1, 2, 3  => daily, monthly, or yearly seed dispersal
+  logical, public            :: use_gcam_landuse = .true.
 
   ! FATES history dimension level
   ! fates can produce history at either the daily timescale (dynamics)

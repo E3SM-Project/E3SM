@@ -144,6 +144,7 @@ for the iac data in the e3sm distribution
 <ehc_eam_co2_emissions>.true.</ehc_eam_co2_emissions>
 <gcam_spinup>.true.</gcam_spinup>
 <run_gcam>.true.</run_gcam>
+<use_gcam_usa>.false.</use_gcam_usa>
 
 
 <!-- mksrf  -->

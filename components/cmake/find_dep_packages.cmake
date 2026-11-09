@@ -57,3 +57,7 @@ if (NOT DEFINED ENV{SKIP_BLAS})
   find_package(BLAS REQUIRED)
   find_package(LAPACK REQUIRED)
 endif()
+
+if (COMP_NAMES MATCHES ".*gcam.*")
+  find_package(Boost REQUIRED)
+endif()

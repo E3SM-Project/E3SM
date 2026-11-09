@@ -314,6 +314,7 @@
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
+      <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then ls -d /global/common/software/e3sm/boost/*/intel/2023.1.0 2>/dev/null | sort -V | tail -n 1; else echo "$Boost_ROOT"; fi}</env>
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
@@ -324,6 +325,7 @@
       <!--env name="H5Z_ZFP_ROOT">$SHELL{if [ -z "$H5Z_ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-zfp/1.1.1/intel-2024.1.0; else echo "$H5Z_ZFP_ROOT"; fi}</env-->
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
+      <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then ls -d /global/common/software/e3sm/boost/*/gcc/14.3 2>/dev/null | sort -V | tail -n 1; else echo "$Boost_ROOT"; fi}</env>
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/gcc-native-12.3; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/gcc-native-12.3; else echo "$BLOSC2_ROOT"; fi}</env>
@@ -2987,6 +2989,7 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
       <env name="UCX_TLS">^xpmem</env>
+      <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then ls -d /soft/boost/*/swing/gcc-9.4 2>/dev/null | sort -V | tail -n 1; else echo "$Boost_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -3665,6 +3668,7 @@
     </environment_variables>
     <environment_variables compiler="gnu.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then echo /soft/spack/hpc/0.6.2/install/gnu/linux-sles15-zen3/gcc-12.3.0/boost-1.83.0-mfxtdavi43qxnr5yp5xsvxvqt5iaamvp; else echo "$Boost_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
@@ -3852,6 +3856,7 @@
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
         <env name="RLIMITS"> </env>
+        <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then echo /opt/aurora/26.181.0/spack/unified/1.1.1/install/linux-x86_64/boost-1.88.0-p2oqv56; else echo "$Boost_ROOT"; fi}</env>
      </environment_variables>
      <environment_variables compiler="intelgpu">
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
@@ -4329,6 +4334,7 @@
       <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}/</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}/</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
+      <env name="Boost_ROOT">$SHELL{if [ -z "$Boost_ROOT" ]; then ls -d /share/apps/boost/*/ 2>/dev/null | sort -V | tail -n 1 | sed 's:/$::'; else echo "$Boost_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="LD_LIBRARY_PATH">/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$ENV{LD_LIBRARY_PATH}</env>
