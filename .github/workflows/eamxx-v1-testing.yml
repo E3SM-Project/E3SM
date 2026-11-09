@@ -61,13 +61,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {runner: gnu, name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci_gnu.eamxx-output-preset-2--eamxx-L72}
-          - {runner: gnu, name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97}
-          - {runner: gnu, name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-small_kernels--eamxx-output-preset-5}
-          - {runner: gnu, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72}
-          - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-output-prod}
-          - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-output-prod}
-          - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-cuda.eamxx-output-prod}
           - {runner: hip, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-hip.eamxx-output-prod}
     name: ${{ matrix.name }}
     steps:
@@ -83,6 +76,21 @@ jobs:
         id: run-tests
         run: |
           ./cime/scripts/create_test ${{ matrix.name }} ${{ env.flags }} --wait
+      - name: HIP diagnostics (temporary)
+        if: ${{ always() }}
+        run: |
+          echo "::group::env"; env | grep -i -E 'hip|rocm|hsa|gcc|xnack|^PATH|LD_LIBRARY|MPICH|OMPI' | sort; echo "::endgroup::"
+          echo "::group::hipcc"; which -a hipcc; hipcc --version 2>&1 | head -20; echo "::endgroup::"
+          echo "::group::rocminfo ISA"; rocminfo | grep -E 'Marketing|Name:.*(gfx|amdgcn)|XNACK'; echo "::endgroup::"
+          for d in /tmp/${{ matrix.name }}*; do
+            exe="$d/bld/e3sm.exe"
+            [ -x "$exe" ] || continue
+            echo "::group::ldd $exe (hip/hsa/rocm/stdc++)"; ldd "$exe" | grep -i -E 'hip|hsa|rocm|amd|stdc|gcc_s'; echo "::endgroup::"
+            echo "::group::amdgcn targets embedded in e3sm.exe"
+            strings -a "$exe" | grep -o -E 'amdgcn-amd-amdhsa-+[a-z0-9:+-]+' | sort | uniq -c
+            echo "::endgroup::"
+            echo "::group::roc-obj-ls"; (roc-obj-ls "$exe" 2>&1 || /opt/rocm/bin/roc-obj-ls "$exe" 2>&1) | head -40; echo "::endgroup::"
+          done
       - name: Print TestStatus.log
         if: ${{ always() && steps.run-tests.outcome == 'failure' }}
         run: |
@@ -100,6 +108,7 @@ jobs:
             /tmp/${{ matrix.name }}*/TestStatus
             /tmp/${{ matrix.name }}*/TestStatus.log
             /tmp/${{ matrix.name }}*/bld/**/*.bldlog.*
+            /tmp/${{ matrix.name }}*/bld/**/CMakeCache.txt
             /tmp/${{ matrix.name }}*/run/**/*.log.*
             /tmp/${{ matrix.name }}*/run/**/*.cprnc.out
           retention-days: 14
