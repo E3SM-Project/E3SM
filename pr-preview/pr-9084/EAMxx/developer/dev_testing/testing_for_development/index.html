@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -5411,7 +5411,8 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 <span class="nb">configure_file</span><span class="p">(</span><span class="o">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="o">}</span><span class="s">/output.yaml</span>
 <span class="w">               </span><span class="o">${</span><span class="nv">CMAKE_CURRENT_BINARY_DIR</span><span class="o">}</span><span class="s">/output.yaml</span><span class="p">)</span>
 
-<span class="c"># Ensure test input files are present in the data dir</span>
+<span class="c"># Register test input files. They are NOT downloaded at configure time:</span>
+<span class="c"># running 'make' in this folder fetches them.</span>
 <span class="nb">set</span><span class="w"> </span><span class="p">(</span><span class="s">TEST_INPUT_FILES</span>
 <span class="w">  </span><span class="s">eamxx/init/</span><span class="o">${</span><span class="nv">inject_ash_IC_file</span><span class="o">}</span>
 <span class="w">  </span><span class="s">eamxx/mam4xx/.../inject_ash_input_data_file_ABC.nc</span>
@@ -5798,7 +5799,7 @@ and make the necessary modifications to your code.</li>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../../../../javascript/mathjax.js"></script>
       
