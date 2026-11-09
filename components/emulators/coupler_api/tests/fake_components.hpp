@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-namespace e3sm::coupler::test {
+namespace e3sm::emulator::coupler::test {
 
 class FakeAtmosphere {
 public:

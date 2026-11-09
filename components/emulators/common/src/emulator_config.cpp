@@ -14,13 +14,6 @@ namespace e3sm::emulator {
 namespace {
 
 constexpr std::string TABS = "  ";
-EmulatorType get_type_from_string(std::string type, std::string name) {
-  if (name == "process") {
-    return EmulatorType::Process;
-  } else {
-    return EmulatorType::Component;
-  }
-}
 
 TensorLayout get_layout_from_string(std::string layout) {
   if (layout == "SampleMajor") {
@@ -101,7 +94,7 @@ EmulatorConfig read_emulator_config(const std::filesystem::path& filename) {
 
     const auto& attrs = params.sublist("emulator");
     cfg.name = attrs.get<std::string>("name");
-    cfg.type = attrs.get<std::string>("type");
+    // cfg.type = attrs.get<std::string>("type");
 
     // Get Model network configuration
     const auto config_dir = std::filesystem::absolute(filename).parent_path();
@@ -171,7 +164,6 @@ std::string to_string(const FieldConfig& cfg) {
 std::string to_string(const EmulatorConfig& cfg) {
   std::ostringstream out_string;
   out_string << "| Emulator Configuration for: " << cfg.name << '\n';
-  out_string << "| type: " << cfg.type << '\n';
   out_string << to_string(cfg.model);
   out_string << "| Sample Space dimensions: [ ";
   for (const auto& dim : cfg.dimensions) {

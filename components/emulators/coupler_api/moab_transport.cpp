@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 namespace {
 
 int checked_size_to_int(std::size_t size) {
@@ -375,4 +375,4 @@ Transport::~Transport() {
   }
 }
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler

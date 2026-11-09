@@ -39,7 +39,6 @@ TEST_CASE("Parse sample emulator config") {
   std::cout << config << std::endl;
 
   REQUIRE(config.name == "lnd-emulator");
-  REQUIRE(config.type == "component");
 
   SECTION("model configuration") {
     REQUIRE(config.model.path.filename() ==

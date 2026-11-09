@@ -1,14 +1,14 @@
-#include <functional>
-#include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
+#include <functional>
+#include <memory>
 
 #include "fake_components.hpp"
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 
-using namespace e3sm::coupler;
-using namespace e3sm::coupler::test;
+using namespace e3sm::emulator::coupler;
+using namespace e3sm::emulator::coupler::test;
 
 static_assert(CoupledProcess<FakeAtmosphere>);
 static_assert(CoupledProcess<FakeLand>);

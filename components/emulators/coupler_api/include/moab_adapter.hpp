@@ -9,7 +9,7 @@
 #include <span>
 #include <string>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 /*
   std::string name;
   FieldRole role;
@@ -87,6 +87,6 @@ private:
   using TagMap = std::map<std::string, TagInfo>;
   TagMap tags_;
 };
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler
 
 #endif

@@ -5,7 +5,7 @@
 #include <memory>
 #include <process.hpp>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 /**
  */
@@ -64,6 +64,6 @@ private:
   bool initialized_ = false;
 };
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler
 
 #endif

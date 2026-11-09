@@ -1,16 +1,16 @@
-#include "emulator_config.hpp"
-#include <algorithm>
-#include <string_view>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "harness.hpp"
+#include <algorithm>
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
+#include <emulator_config.hpp>
 #include <filesystem>
-#include <sstream>
+#include <harness.hpp>
 #include <process.hpp>
+#include <sstream>
+#include <string_view>
 
 enum class Layout {
   Strided,
@@ -168,7 +168,8 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
   };
   using Doubles = std::vector<double>;
 
-  // The stub backend leaves outputs unchanged, so set what the model would write
+  // The stub backend leaves outputs unchanged, so set what the model would
+  // write
   std::ranges::copy(Doubles{11.0, 21.0}, emulator.output_fields().begin());
   step();
   REQUIRE(values(emulator.get_field("state", ModelFieldRole::Input)) ==
@@ -211,7 +212,8 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
     harness.transfer_bindings(bindings());
     harness.add_process(descriptor(3.f, 3));
     harness.initialize(plan);
-    auto& emulator = harness.get_process<Emulator>(std::string_view(config.name));
+    auto& emulator =
+        harness.get_process<Emulator>(std::string_view(config.name));
 
     const auto input = [&emulator] {
       const auto span = emulator.get_field("state", ModelFieldRole::Input);
@@ -232,7 +234,8 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
     harness.transfer_bindings(bindings());
     harness.add_process(descriptor(1.f, 0));
     REQUIRE_THROWS_WITH(harness.initialize(plan),
-                        Contains("coupling_interval") && Contains("at least 1"));
+                        Contains("coupling_interval") &&
+                            Contains("at least 1"));
   }
 
   SECTION("rejects processes with different base steps") {
@@ -261,9 +264,9 @@ TEST_CASE("Harness prints its external bindings on request", "[harness]") {
   std::ostringstream out;
   harness.print_bindings(out);
 
-  REQUIRE_THAT(out.str(), Contains("to_external") &&
-                              Contains("surface_flux") && Contains("1.5") &&
-                              Contains("2.5") && Contains("from_external") &&
+  REQUIRE_THAT(out.str(), Contains("to_external") && Contains("surface_flux") &&
+                              Contains("1.5") && Contains("2.5") &&
+                              Contains("from_external") &&
                               Contains("temperature") && Contains("3.5"));
 }
 

@@ -7,7 +7,7 @@
 #include <moab/Types.hpp>
 #include <moab/iMOAB.h>
 #include <stdexcept>
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 namespace {
 int checked_size_to_int(std::size_t size) {
@@ -207,4 +207,4 @@ void MoabAdapter::create_global_id_tag(const MoabPartition& part) {
     MPI_Abort(comm(), err);
   }
 }
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler

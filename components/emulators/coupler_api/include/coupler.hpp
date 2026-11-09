@@ -10,7 +10,7 @@
 #include <string_view>
 #include <unordered_map>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 using CouplingBuffer = FieldBuffer<double>;
 
@@ -98,8 +98,7 @@ struct ComponentBuffers {
  * - read_coupling_fields_from_yaml: generate CoupledFieldEntry list from yaml
  * config file
  */
-using RouteBufferMap =
-    std::unordered_map<std::string, std::span<double>>;
+using RouteBufferMap = std::unordered_map<std::string, std::span<double>>;
 
 /// How many base steps pass between runs of each component. A component that
 /// isn't listed, such as an external one, doesn't take part in averaging.
@@ -160,5 +159,5 @@ private:
   read_coupling_fields_from_yaml(const std::filesystem::path& filename);
 };
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler
 #endif

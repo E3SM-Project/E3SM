@@ -24,7 +24,7 @@
 
 namespace e3sm::emulator {
 
-using namespace e3sm::coupler;
+using namespace coupler;
 
 /**
  * @brief Abstract base class for all E3SM emulators.
@@ -38,7 +38,8 @@ public:
   Emulator(const GridDesc grid, const EmulatorConfig emu_config);
   /// The backend and MOAB adapter clean up after themselves. Call finalize()
   /// to see a failure in the model's finalize(), which the destructor can only
-  /// log. With MOAB, destroy the emulator before iMOAB_Finalize and MPI_Finalize.
+  /// log. With MOAB, destroy the emulator before iMOAB_Finalize and
+  /// MPI_Finalize.
   ~Emulator() = default;
 
   // Coupled spans point into this object's field buffers
@@ -53,11 +54,11 @@ public:
   void finalize();
 
   // Accessors
-  std::string_view name() const { return m_name; }
-  MPI_Comm comm() const { return m_grid.comm; }
-  EmulatorType type() const { return m_type; }
-  int id() const { return m_component_id; }
-  int moab_app_id() const { return m_moab_app_id; }
+  std::string_view name() const { return name_; }
+  MPI_Comm comm() const { return grid_.comm; }
+  EmulatorType type() const { return type_; }
+  int id() const { return component_id_; }
+  int moab_app_id() const { return moab_app_id_; }
   bool is_initialized() const { return m_initialized; }
   int step_count() const { return m_step_count; }
   void print_info(std::ostream& os) const;
@@ -66,33 +67,34 @@ public:
   void populate_registry(FieldRegistry& registry);
 
   void configure_coupling(const ActiveCouplingFields& plan) {
-    m_coupling.configure(plan);
+    coupling_.configure(plan);
   }
 
   void export_fields(std::span<ExportBuffer> buffers) const {
-    m_coupling.export_fields(buffers);
+    coupling_.export_fields(buffers);
   }
 
   void import_fields(std::span<const ImportBuffer> buffers) {
-    m_coupling.import_fields(buffers);
+    coupling_.import_fields(buffers);
   }
   std::span<const int> get_local_gids() const {
-    return m_coupling.get_local_gids();
+    return coupling_.get_local_gids();
   };
 
   // TODO: Let's move this to protected after adjusting Fortran-C API??
   void set_grid_data(const GridDesc& grid);
-  int get_num_local_cols() const { return m_grid.num_local_columns; };
-  int get_num_global_cols() const { return m_grid.num_global_columns; };
-  int get_nx() const { return m_grid.nx; };
-  int get_ny() const { return m_grid.ny; };
-  std::span<const double> get_latitudes() const { return m_grid.lat; };
-  std::span<const double> get_longitudes() const { return m_grid.lon; };
-  std::span<const double> get_areas() const { return m_grid.area; };
+  int get_num_local_cols() const { return grid_.num_local_columns; };
+  int get_num_global_cols() const { return grid_.num_global_columns; };
+  int get_nx() const { return grid_.nx; };
+  int get_ny() const { return grid_.ny; };
+  std::span<const double> get_latitudes() const { return grid_.lat; };
+  std::span<const double> get_longitudes() const { return grid_.lon; };
+  std::span<const double> get_areas() const { return grid_.area; };
 
   // diagnostics and lookups
   std::span<const EmulatorFieldDesc> field_descriptors() const;
-  // These throw if the name is both an input and an output; pass a role instead.
+  // These throw if the name is both an input and an output; pass a role
+  // instead.
   const EmulatorFieldDesc& get_field_descriptor(std::string_view name) const;
   std::span<const double> get_field(std::string_view name);
 
@@ -109,19 +111,19 @@ protected:
   void register_import_field(FieldRegistry& registry, RegisteredField field,
                              Container& storage) {
     field.role = FieldRole::Import;
-    field.component = m_name;
+    field.component = name_;
     field.size = storage.size();
 
-    m_coupling.register_coupled_field(registry, std::move(field), storage);
+    coupling_.register_coupled_field(registry, std::move(field), storage);
   }
   template <typename Container>
   void register_export_field(FieldRegistry& registry, RegisteredField field,
                              Container& storage) {
     field.role = FieldRole::Export;
-    field.component = m_name;
+    field.component = name_;
     field.size = storage.size();
 
-    m_coupling.register_coupled_field(registry, std::move(field), storage);
+    coupling_.register_coupled_field(registry, std::move(field), storage);
   }
 
   // Returns a view to part of the flat buffer that holds the field's data
@@ -132,15 +134,15 @@ protected:
   void register_with_moab();
 
 private:
-  std::filesystem::path m_config_path;
-  GridDesc m_grid;
-  EmulatorConfig m_emulator_config;
-  CouplingAdapter m_coupling;
-  EmulatorType m_type;
-  int m_component_id;
-  std::string m_name;
-  int m_moab_app_id;
-  std::optional<MoabAdapter> m_moab;
+  std::filesystem::path config_path_;
+  GridDesc grid_;
+  EmulatorConfig emulator_config_;
+  CouplingAdapter coupling_;
+  EmulatorType type_;
+  int component_id_;
+  std::string name_;
+  int moab_app_id_;
+  std::optional<MoabAdapter> moab_;
 
   bool m_initialized = false;
   bool m_finalized = false;

@@ -17,12 +17,8 @@ enum class TensorLayout { SampleMajor, FeatureMajor };
  * @brief Enumeration of emulator types in E3SM.
  */
 enum class EmulatorType {
-  ATM = 0,     ///< Atmosphere component emulator
-  OCN = 1,     ///< Ocean component emulator
-  ICE = 2,     ///< Sea ice component emulator
-  LND = 3,     ///< Land component emulator
-  Process = 4, ///< Process emulator
-  Component = 5
+  Process = 0, ///< Process emulator
+  Component = 1 ///<
 };
 
 enum class ModelFieldRole {
@@ -72,7 +68,7 @@ struct FieldConfig {
  **/
 struct EmulatorConfig {
   std::string name;
-  std::string type;
+  // std::string type;
 
   ModelConfig model;
   std::vector<std::string> dimensions;

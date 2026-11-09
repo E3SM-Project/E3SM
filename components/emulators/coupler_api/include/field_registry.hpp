@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 enum class FieldRole {
   Import,
@@ -35,7 +35,8 @@ struct RegisteredFieldAttributes {
   std::string units;
 };
 
-const RegisteredFieldAttributes read_attributes(const ekat::ParameterList& params);
+const RegisteredFieldAttributes
+read_attributes(const ekat::ParameterList& params);
 std::string to_string(const RegisteredFieldAttributes& attr,
                       std::string_view spaces);
 
@@ -48,7 +49,6 @@ template <typename T> struct FieldBuffer {
 
 using ImportBuffer = FieldBuffer<const double>;
 using ExportBuffer = FieldBuffer<double>;
-
 
 /**
   FieldRole role;
@@ -63,6 +63,7 @@ struct RegisteredField {
   std::size_t size = 0;
 };
 
+std::string role_to_string(FieldRole role);
 /**
  * @brief Registry that tells the coupler what fields are available to be
  * coupled Fields:
@@ -112,7 +113,6 @@ private:
   std::unordered_map<RegistryKey, FieldID, RegistryKeyHash> lookup_;
 };
 
-std::string to_string(FieldRole role);
 
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler
 #endif

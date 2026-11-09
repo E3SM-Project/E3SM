@@ -10,7 +10,7 @@
 #include <typeindex>
 #include <vector>
 
-namespace e3sm::coupler {
+namespace e3sm::emulator::coupler {
 
 struct FieldBinding {
   FieldID id;
@@ -134,5 +134,5 @@ public:
   std::vector<FieldBinding> active_imports_;
   std::vector<int> local_gids_;
 };
-} // namespace e3sm::coupler
+} // namespace e3sm::emulator::coupler
 #endif
