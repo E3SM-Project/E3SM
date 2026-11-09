@@ -13,8 +13,8 @@ configure_file(
 )
 
 set(CPL7_INTERFACE_CXX_SOURCES
-  cpp/cpl7_component.cpp
-  cpp/harness.cpp)
+  cpl7_component.cpp
+  harness.cpp)
 
 set(CPL7_INTERFACE_F90_SOURCES)
 
@@ -30,9 +30,8 @@ set_target_properties(emulator_interface PROPERTIES
 
 target_include_directories(emulator_interface PUBLIC
                           ${CMAKE_CURRENT_SOURCE_DIR}
-                          ${CMAKE_CURRENT_SOURCE_DIR}/cpp/include
                           ${CMAKE_CURRENT_SOURCE_DIR}/modules
-                          ${CMAKE_CURRENT_SOURCE_DIR}/../coupler_api/include
+                          ${CMAKE_CURRENT_SOURCE_DIR}/../coupler_api
 )
 
 target_link_libraries(emulator_interface PUBLIC E3SM::coupler_api emulator_common)
