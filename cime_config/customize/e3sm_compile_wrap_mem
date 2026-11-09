@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 A script to wrap all e3sm compilations. This script should be enabled
 by prefixing it to all compiler and link calls. This can be done easily in
