@@ -1,0 +1,111 @@
+name: omega-buildnml
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'components/omega/cime_config/**'
+      - '!components/omega/cime_config/*.xml'
+      - 'components/omega/configs/Default.yml'
+      - 'components/omega/dev-conda.txt'
+      - '.github/workflows/omega-buildnml-workflow.yml'
+
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'components/omega/cime_config/**'
+      - '!components/omega/cime_config/*.xml'
+      - 'components/omega/configs/Default.yml'
+      - 'components/omega/dev-conda.txt'
+      - '.github/workflows/omega-buildnml-workflow.yml'
+
+  workflow_dispatch:
+
+concurrency:
+  # Cancel in progress runs testing the same git ref
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  validate-config:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' ||
+            github.repository == 'E3SM-Project/Omega' }}
+    name: validate configuration files
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Conda Environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: "omega_ci"
+          miniforge-version: latest
+          channels: conda-forge
+          channel-priority: strict
+          auto-update-conda: true
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          conda create -n omega_dev --file components/omega/dev-conda.txt \
+              python=${{ env.PYTHON_VERSION }}
+          conda activate omega_dev
+          conda list
+
+      - name: Validate Omega configuration files
+        run: |
+          conda activate omega_dev
+          cd components/omega/cime_config
+          ./validate_config.py
+
+  unit-tests:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' ||
+            github.repository == 'E3SM-Project/Omega' }}
+    name: unit tests (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Conda Environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: "omega_ci"
+          miniforge-version: latest
+          channels: conda-forge
+          channel-priority: strict
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          conda create -n omega_dev --file components/omega/dev-conda.txt \
+              python=${{ matrix.python-version }}
+          conda activate omega_dev
+          conda list
+
+      - name: Run omega_buildnml unit tests
+        run: |
+          conda activate omega_dev
+          cd components/omega/cime_config
+          python -m pytest omega_buildnml/tests -v

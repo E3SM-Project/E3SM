@@ -1,0 +1,169 @@
+(omega-home)=
+# Omega
+
+The Ocean Model for E3SM Global Applications (Omega) initially is an eddy-resolving,
+global ocean model in the early stages of development by the
+[E3SM](https://e3sm.org/) ocean team.  The first release is planned for
+Summer 2026.  A non-eddying configuration will be released in early 2027.
+
+The model is written in c++ using the [Kokkos](https://github.com/kokkos)
+framework for performance portability.  Omega is based on the
+[TRSK formulation](https://doi.org/10.1016/j.jcp.2009.08.006) for geophysical
+models on unstructured meshes. The first version of Omega will primarily be a direct port
+of the [MPAS-Ocean](https://e3sm.org/model/e3sm-model-description/v1-description/v1-ocean-sea-ice-land-ice/)
+component of E3SM for comparison purposes.
+
+Development is taking place at https://github.com/E3SM-Project/Omega.
+
+
+```{toctree}
+:caption: User's guide
+:maxdepth: 2
+
+userGuide/QuickStart
+userGuide/OmegaBuild
+userGuide/DataTypes
+userGuide/MachEnv
+userGuide/Config
+userGuide/Broadcast
+userGuide/Logging
+userGuide/Driver
+userGuide/MpasMesh
+userGuide/Decomp
+userGuide/Dimension
+userGuide/EOS
+userGuide/Error
+userGuide/Field
+userGuide/IO
+userGuide/IOStreams
+userGuide/Halo
+userGuide/HorzMesh
+userGuide/HorzOperators
+userGuide/AuxiliaryVariables
+userGuide/AuxiliaryState
+userGuide/TendencyTerms
+userGuide/Tendencies
+userGuide/OceanState
+userGuide/TimeMgr
+userGuide/TimeStepping
+userGuide/SplitTimeStepping
+userGuide/Reductions
+userGuide/Tracers
+userGuide/TridiagonalSolvers
+userGuide/VertCoord
+userGuide/PGrad
+userGuide/Timing
+userGuide/VerticalMixingCoeff
+userGuide/KPPMix
+userGuide/RayleighDamping
+userGuide/SubmesoEddies
+userGuide/VertAdv
+userGuide/Forcing
+userGuide/Frazil
+userGuide/SfcCoupling
+userGuide/Analysis
+```
+
+```{toctree}
+:caption: Developer's guide
+:maxdepth: 2
+
+devGuide/QuickStart
+devGuide/CondaEnv
+devGuide/Linting
+devGuide/Docs
+devGuide/BuildDocs
+devGuide/Testing
+devGuide/DataTypes
+devGuide/ParallelLoops
+devGuide/MachEnv
+devGuide/Config
+devGuide/Driver
+devGuide/EOS
+devGuide/Broadcast
+devGuide/CMakeBuild
+devGuide/BuildNml
+devGuide/Logging
+devGuide/Decomp
+devGuide/Dimension
+devGuide/Error
+devGuide/Field
+devGuide/CFUnits
+devGuide/IO
+devGuide/IOStreams
+devGuide/Halo
+devGuide/HorzMesh
+devGuide/HorzOperators
+devGuide/AuxiliaryVariables
+devGuide/AuxiliaryState
+devGuide/TendencyTerms
+devGuide/Tendencies
+devGuide/OceanState
+devGuide/TimeMgr
+devGuide/TimeStepping
+devGuide/SplitTimeStepping
+devGuide/Reductions
+devGuide/Tracers
+devGuide/TridiagonalSolvers
+devGuide/VertCoord
+devGuide/PGrad
+devGuide/Timing
+devGuide/VerticalMixingCoeff
+devGuide/KPPMix
+devGuide/RayleighDamping
+devGuide/SubmesoEddies
+devGuide/VertAdv
+devGuide/Forcing
+devGuide/Frazil
+devGuide/SfcCoupling
+devGuide/Analysis
+```
+
+```{toctree}
+:caption: Design documents
+:maxdepth: 1
+
+design/OmegaV0ShallowWater
+design/OmegaV1GoverningEqns
+design/Analysis
+design/Broadcast
+design/Config
+design/Coupling
+design/DataTypes
+design/Decomp
+design/Driver
+design/EOS
+design/Error
+design/FillValues
+design/Frazil
+design/Halo
+design/HorzMeshClass
+design/Logging
+design/MachEnv
+design/Metadata
+design/PGrad
+design/PGradHighOrder
+design/IO
+design/IOStreams
+design/RayleighDamping
+design/Reductions
+design/State
+design/StateValidation
+design/SubmesoscaleEddies
+design/Tendency
+design/Tendencies
+design/AuxiliaryVariables
+design/AuxiliaryState
+design/TimeMgr
+design/Timers
+design/TimeStepping
+design/SplitTimeStepping
+design/Tracers
+design/TridiagonalSolver
+design/KPPMix
+design/VertAdv
+design/VertCoord
+design/VerticalMixingCoeff
+
+design/Template
+```

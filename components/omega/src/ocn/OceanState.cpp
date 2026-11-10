@@ -1,0 +1,613 @@
+//===-- ocn/OceanState.cpp - ocean state methods -------------*- C++ -*-===//
+//
+// The OceanState class initializes the prognostic variables in OMEGA.
+// It contains a method to update the time levels for each variable.
+// It is meant to provide a container for passing (non-tracer) prognostic
+// variables throughout the OMEGA tendency computation routines.
+//
+//===----------------------------------------------------------------------===//
+
+#include "OceanState.h"
+#include "DataTypes.h"
+#include "Decomp.h"
+#include "Error.h"
+#include "Field.h"
+#include "Halo.h"
+#include "Logging.h"
+#include "MachEnv.h"
+#include "OmegaKokkos.h"
+#include "TimeStepper.h"
+#include "Tracers.h"
+#include "VertCoord.h"
+
+namespace OMEGA {
+
+// create the static class members
+OceanState *OceanState::DefaultOceanState = nullptr;
+std::map<std::string, std::unique_ptr<OceanState>> OceanState::AllOceanStates;
+
+//------------------------------------------------------------------------------
+// Initialize the state. Assumes that Decomp, HorzMesh, VertCoord, and
+// TimeStepper have already been initialized.
+
+int OceanState::init() {
+
+   int Err = 0; // default successful return code
+
+   // Retrieve the default decomposition and mesh
+   Decomp *DefDecomp     = Decomp::getDefault();
+   HorzMesh *DefHorzMesh = HorzMesh::getDefault();
+   OMEGA_REQUIRE(DefHorzMesh,
+                 "Null default HorzMesh pointer in OceanState::init");
+   Halo *DefHalo = Halo::getDefault();
+   OMEGA_REQUIRE(DefHalo, "Null default Halo pointer in OceanState::init");
+
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   OMEGA_REQUIRE(DefVCoord,
+                 "Null default VertCoord pointer in OceanState::init");
+   int NVertLayers = DefVCoord->NVertLayers;
+
+   auto *DefTimeStepper = TimeStepper::getDefault();
+   if (!DefTimeStepper) {
+      LOG_ERROR("TimeStepper needs to be initialized before OceanState");
+   }
+   int NTimeLevels = DefTimeStepper->getNTimeLevels();
+   LOG_INFO("OceanState: Initializing default state with {} vertical layers "
+            "and {} time levels",
+            NVertLayers, NTimeLevels);
+
+   if (NTimeLevels < 2) {
+      LOG_ERROR("OceanState: the number of time level is lower than 2");
+      return -2;
+   }
+
+   // Only the mode-split time steppers carry the split velocity and barotropic
+   // pressure fields; every other stepper leaves them unallocated.
+   const bool UseModeSplit = DefTimeStepper->isSplit();
+
+   // Create the default state and set pointer to it
+   OceanState::DefaultOceanState = create(
+       "Default", DefHorzMesh, DefHalo, NVertLayers, NTimeLevels, UseModeSplit);
+
+   // State values are filled by a later read of the initial state or
+   // restart file
+
+   return Err;
+}
+
+//------------------------------------------------------------------------------
+// Construct a new local state
+
+OceanState::OceanState(
+    const std::string &Name_, //< [in] Name for new state
+    HorzMesh *Mesh,           //< [in] HorzMesh for state
+    Halo *MeshHalo_,          //< [in] Halo for Mesh
+    const int NVertLayers_,   //< [in] number of vertical layers
+    const int NTimeLevels_,   //< [in] number of time levels
+    const bool UseModeSplit_  //< [in] carry split velocity/barotropic pressure
+) {
+
+   UseModeSplit = UseModeSplit_;
+
+   // Retrieve mesh cell/edge/vertex totals from Decomp
+   NCellsOwned = Mesh->NCellsOwned;
+   NCellsAll   = Mesh->NCellsAll;
+   NCellsSize  = Mesh->NCellsSize;
+
+   NEdgesOwned = Mesh->NEdgesOwned;
+   NEdgesAll   = Mesh->NEdgesAll;
+   NEdgesSize  = Mesh->NEdgesSize;
+
+   NVertLayers = NVertLayers_;
+   NTimeLevels = NTimeLevels_;
+
+   MeshHalo = MeshHalo_;
+
+   Name = Name_;
+
+   CurTimeIndex = 0;
+
+   // Allocate state host arrays
+   PseudoThicknessH.resize(NTimeLevels);
+   NormalVelocityH.resize(NTimeLevels);
+
+   for (int I = 0; I < NTimeLevels; I++) {
+      PseudoThicknessH[I] = HostArray2DReal(
+          "PseudoThickness" + std::to_string(I), NCellsSize, NVertLayers);
+      NormalVelocityH[I] = HostArray2DReal("NormalVelocity" + std::to_string(I),
+                                           NEdgesSize, NVertLayers);
+   }
+
+   // Allocate state device arrays
+   PseudoThickness.resize(NTimeLevels);
+   NormalVelocity.resize(NTimeLevels);
+
+   // Create device arrays and copy host data
+   for (int I = 0; I < NTimeLevels; I++) {
+      PseudoThickness[I] = Array2DReal("PseudoThickness" + std::to_string(I),
+                                       NCellsSize, NVertLayers);
+      NormalVelocity[I]  = Array2DReal("NormalVelocity" + std::to_string(I),
+                                       NEdgesSize, NVertLayers);
+   }
+
+   // The split velocity and barotropic pressure are only carried by the
+   // mode-split time steppers.
+   if (UseModeSplit) {
+      NormalBaroclinicVelocityH.resize(NTimeLevels);
+      NormalBarotropicVelocityH.resize(NTimeLevels);
+      BarotropicPressureAnomalyH.resize(NTimeLevels);
+      NormalBaroclinicVelocity.resize(NTimeLevels);
+      NormalBarotropicVelocity.resize(NTimeLevels);
+      BarotropicPressureAnomaly.resize(NTimeLevels);
+
+      for (int I = 0; I < NTimeLevels; I++) {
+         NormalBaroclinicVelocityH[I] =
+             HostArray2DReal("NormalBaroclinicVelocity" + std::to_string(I),
+                             NEdgesSize, NVertLayers);
+         NormalBarotropicVelocityH[I] = HostArray1DReal(
+             "NormalBarotropicVelocity" + std::to_string(I), NEdgesSize);
+         BarotropicPressureAnomalyH[I] = HostArray1DReal(
+             "BarotropicPressureAnomaly" + std::to_string(I), NCellsSize);
+
+         NormalBaroclinicVelocity[I] =
+             Array2DReal("NormalBaroclinicVelocity" + std::to_string(I),
+                         NEdgesSize, NVertLayers);
+         NormalBarotropicVelocity[I] = Array1DReal(
+             "NormalBarotropicVelocity" + std::to_string(I), NEdgesSize);
+         BarotropicPressureAnomaly[I] = Array1DReal(
+             "BarotropicPressureAnomaly" + std::to_string(I), NCellsSize);
+
+         deepCopy(NormalBaroclinicVelocityH[I], 0.);
+         deepCopy(NormalBarotropicVelocityH[I], 0.);
+         deepCopy(BarotropicPressureAnomalyH[I], 0.);
+         deepCopy(NormalBaroclinicVelocity[I], 0.);
+         deepCopy(NormalBarotropicVelocity[I], 0.);
+         deepCopy(BarotropicPressureAnomaly[I], 0.);
+      }
+   }
+
+   // Apply edge layer mask to NormalVelocity for all time levels so that
+   // fully-inactive layers are initialized with FillValueReal and boundary
+   // layers with 0.
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   for (int I = 0; I < NTimeLevels; I++) {
+      DefVCoord->applyEdgeLayerMask(NormalVelocity[I], NEdgesAll);
+   }
+
+   // Register fields and metadata for IO
+   defineFields();
+
+} // end state constructor
+
+/// Create a new state by calling the constructor and put it in the
+/// AllOceanStates map
+OceanState *
+OceanState::create(const std::string &Name, //< [in] Name for new state
+                   HorzMesh *Mesh,          //< [in] HorzMesh for state
+                   Halo *MeshHalo,          //< [in] Halo for Mesh
+                   const int NVertLayers,   //< [in] number of vertical layers
+                   const int NTimeLevels,   //< [in] number of time levels
+                   const bool UseModeSplit  //< [in] carry split velocity fields
+) {
+
+   OMEGA_REQUIRE(Mesh,
+                 "Null HorzMesh pointer in OceanState::create with Name = {}",
+                 Name);
+   OMEGA_REQUIRE(MeshHalo,
+                 "Null Halo pointer in OceanState::create with Name = {}",
+                 Name);
+
+   // Check to see if a state of the same name already exists and
+   // if so, exit with an error
+   if (AllOceanStates.find(Name) != AllOceanStates.end()) {
+      LOG_ERROR(
+          "Attempted to create an OceanState with name {} but an OceanState of "
+          "that name already exists",
+          Name);
+      return nullptr;
+   }
+
+   // create a new state on the heap and put it in a map of
+   // unique_ptrs, which will manage its lifetime
+   auto *NewOceanState = new OceanState(Name, Mesh, MeshHalo, NVertLayers,
+                                        NTimeLevels, UseModeSplit);
+   AllOceanStates.emplace(Name, NewOceanState);
+
+   return NewOceanState;
+} // end state create
+
+//------------------------------------------------------------------------------
+// Destroys a local mesh and deallocates all arrays
+OceanState::~OceanState() {
+
+   // Kokkos arrays removed when no longer in scope
+
+   FieldGroup::destroy(StateGroupName);
+   Field::destroy(PseudoThicknessFldName);
+   Field::destroy(NormalVelocityFldName);
+   if (UseModeSplit) {
+      Field::destroy(NormalBaroclinicVelocityFldName);
+      Field::destroy(NormalBarotropicVelocityFldName);
+      Field::destroy(BarotropicPressureAnomalyFldName);
+   }
+
+} // end destructor
+
+//------------------------------------------------------------------------------
+// Removes a state from list by name
+void OceanState::erase(std::string InName // [in] name of state to remove
+) {
+
+   AllOceanStates.erase(InName); // remove the state from the list and in
+                                 // the process, calls the destructor
+
+} // end state erase
+//------------------------------------------------------------------------------
+// Removes all states to clean up before exit
+void OceanState::clear() {
+
+   AllOceanStates.clear();      // removes all states from the list and in
+                                // the process, calls the destructors for each
+   DefaultOceanState = nullptr; // prevent dangling pointer
+} // end clear
+
+//------------------------------------------------------------------------------
+// Define IO fields and metadata
+void OceanState::defineFields() {
+
+   PseudoThicknessFldName           = "PseudoThickness";
+   NormalVelocityFldName            = "NormalVelocity";
+   NormalBaroclinicVelocityFldName  = "NormalBaroclinicVelocity";
+   NormalBarotropicVelocityFldName  = "NormalBarotropicVelocity";
+   BarotropicPressureAnomalyFldName = "BarotropicPressureAnomaly";
+
+   if (Name != "Default") {
+      PseudoThicknessFldName.append(Name);
+      NormalVelocityFldName.append(Name);
+      NormalBaroclinicVelocityFldName.append(Name);
+      NormalBarotropicVelocityFldName.append(Name);
+      BarotropicPressureAnomalyFldName.append(Name);
+   }
+
+   // Create fields for state variables
+   int NDims = 2;
+   std::vector<std::string> DimNames(NDims);
+   DimNames[0] = "NEdges";
+   DimNames[1] = "NVertLayers";
+   auto NormalVelocityField =
+       Field::create(NormalVelocityFldName,               // field name
+                     "Velocity component normal to edge", // long Name
+                     "m s-1",                             // units
+                     "",                                  // CF standard Name
+                     -9.99E+10,                           // min valid value
+                     9.99E+10,                            // max valid value
+                     NDims,   // number of dimensions
+                     DimNames // dimension names
+       );
+
+   DimNames[0] = "NCells";
+   auto PseudoThicknessField =
+       Field::create(PseudoThicknessFldName,                     // Field name
+                     "Pseudo-thickness of layer at cell center", /// long Name
+                     "m",                                        // units
+                     "cell_thickness", // CF standard Name
+                     0.0,              // min valid value
+                     9.99E+30,         // max valid value
+                     NDims,            // number of dimensions
+                     DimNames          // dimension names
+       );
+
+   // The mode-split fields exist only when a split time stepper carries them.
+   std::shared_ptr<Field> NormalBaroclinicVelocityField;
+   std::shared_ptr<Field> NormalBarotropicVelocityField;
+   std::shared_ptr<Field> BarotropicPressureAnomalyField;
+   if (UseModeSplit) {
+      DimNames[0] = "NEdges";
+      DimNames[1] = "NVertLayers";
+      NormalBaroclinicVelocityField =
+          Field::create(NormalBaroclinicVelocityFldName, // field name
+                        "Baroclinic velocity component normal to edge", "m s-1",
+                        "", -9.99E+10, 9.99E+10, NDims, DimNames);
+
+      NDims       = 1;
+      DimNames[0] = "NEdges";
+      DimNames.resize(NDims);
+      NormalBarotropicVelocityField =
+          Field::create(NormalBarotropicVelocityFldName, // field name
+                        "Barotropic velocity component normal to edge", "m s-1",
+                        "", -9.99E+10, 9.99E+10, NDims, DimNames);
+
+      DimNames[0] = "NCells";
+      BarotropicPressureAnomalyField =
+          Field::create(BarotropicPressureAnomalyFldName, // field name
+                        "Barotropic pressure anomaly", "Pa", "", -9.99E+30,
+                        9.99E+30, NDims, DimNames);
+   }
+
+   // Create a field group for state fields. VertCoord initializes before
+   // OceanState and owns SurfacePressure, which it also adds to this "State"
+   // group, so the group may already exist; reuse it if so.
+   StateGroupName = "State";
+   if (Name != "Default") {
+      StateGroupName.append(Name);
+   }
+   std::shared_ptr<FieldGroup> StateGroup;
+   if (FieldGroup::exists(StateGroupName))
+      StateGroup = FieldGroup::get(StateGroupName);
+   else
+      StateGroup = FieldGroup::create(StateGroupName);
+
+   // Add restart group if needed
+   if (!FieldGroup::exists("Restart"))
+      auto RestartGroup = FieldGroup::create("Restart");
+
+   StateGroup->addField(NormalVelocityFldName);
+   StateGroup->addField(PseudoThicknessFldName);
+
+   FieldGroup::addFieldToGroup(NormalVelocityFldName, "Restart");
+   FieldGroup::addFieldToGroup(PseudoThicknessFldName, "Restart");
+
+   // Associate Field with data
+   const I4 TimeIndex = getTimeIndex(0);
+
+   NormalVelocityField->attachData<Array2DReal>(NormalVelocity[TimeIndex]);
+   PseudoThicknessField->attachData<Array2DReal>(PseudoThickness[TimeIndex]);
+
+   if (UseModeSplit) {
+      FieldGroup::addFieldToGroup(NormalBaroclinicVelocityFldName, "Restart");
+      FieldGroup::addFieldToGroup(NormalBarotropicVelocityFldName, "Restart");
+      FieldGroup::addFieldToGroup(BarotropicPressureAnomalyFldName, "Restart");
+
+      NormalBaroclinicVelocityField->attachData<Array2DReal>(
+          NormalBaroclinicVelocity[TimeIndex]);
+      NormalBarotropicVelocityField->attachData<Array1DReal>(
+          NormalBarotropicVelocity[TimeIndex]);
+      BarotropicPressureAnomalyField->attachData<Array1DReal>(
+          BarotropicPressureAnomaly[TimeIndex]);
+   }
+
+} // end defineIOFields
+
+//------------------------------------------------------------------------------
+// Get pseudo-thickness device array
+Array2DReal OceanState::getPseudoThickness(const I4 TimeLevel) const {
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return PseudoThickness[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get pseudo-thickness host array
+HostArray2DReal OceanState::getPseudoThicknessH(const I4 TimeLevel) const {
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return PseudoThicknessH[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get normal velocity device array
+Array2DReal OceanState::getNormalVelocity(const I4 TimeLevel) const {
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return NormalVelocity[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get normal velocity host array
+HostArray2DReal OceanState::getNormalVelocityH(const I4 TimeLevel) const {
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return NormalVelocityH[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get normal baroclinic velocity device array
+Array2DReal OceanState::getNormalBaroclinicVelocity(const I4 TimeLevel) const {
+   OMEGA_REQUIRE(UseModeSplit,
+                 "OceanState {}: {} requires a mode-split time "
+                 "stepper; the field is not allocated otherwise",
+                 Name, "NormalBaroclinicVelocity");
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return NormalBaroclinicVelocity[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get normal baroclinic velocity host array
+HostArray2DReal
+OceanState::getNormalBaroclinicVelocityH(const I4 TimeLevel) const {
+   OMEGA_REQUIRE(UseModeSplit,
+                 "OceanState {}: {} requires a mode-split time "
+                 "stepper; the field is not allocated otherwise",
+                 Name, "NormalBaroclinicVelocityH");
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return NormalBaroclinicVelocityH[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get normal barotropic velocity device array
+Array1DReal OceanState::getNormalBarotropicVelocity(const I4 TimeLevel) const {
+   OMEGA_REQUIRE(UseModeSplit,
+                 "OceanState {}: {} requires a mode-split time "
+                 "stepper; the field is not allocated otherwise",
+                 Name, "NormalBarotropicVelocity");
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return NormalBarotropicVelocity[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get normal barotropic velocity host array
+HostArray1DReal
+OceanState::getNormalBarotropicVelocityH(const I4 TimeLevel) const {
+   OMEGA_REQUIRE(UseModeSplit,
+                 "OceanState {}: {} requires a mode-split time "
+                 "stepper; the field is not allocated otherwise",
+                 Name, "NormalBarotropicVelocityH");
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return NormalBarotropicVelocityH[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get barotropic pressure anomaly device array
+Array1DReal OceanState::getBarotropicPressureAnomaly(const I4 TimeLevel) const {
+   OMEGA_REQUIRE(UseModeSplit,
+                 "OceanState {}: {} requires a mode-split time "
+                 "stepper; the field is not allocated otherwise",
+                 Name, "BarotropicPressureAnomaly");
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return BarotropicPressureAnomaly[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Get barotropic pressure anomaly host array
+HostArray1DReal
+OceanState::getBarotropicPressureAnomalyH(const I4 TimeLevel) const {
+   OMEGA_REQUIRE(UseModeSplit,
+                 "OceanState {}: {} requires a mode-split time "
+                 "stepper; the field is not allocated otherwise",
+                 Name, "BarotropicPressureAnomalyH");
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+   return BarotropicPressureAnomalyH[TimeIndex];
+}
+
+//------------------------------------------------------------------------------
+// Perform copy to device for state variables
+// TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
+void OceanState::copyToDevice(const I4 TimeLevel) {
+
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+
+   deepCopy(PseudoThickness[TimeIndex], PseudoThicknessH[TimeIndex]);
+   deepCopy(NormalVelocity[TimeIndex], NormalVelocityH[TimeIndex]);
+   if (UseModeSplit) {
+      deepCopy(NormalBaroclinicVelocity[TimeIndex],
+               NormalBaroclinicVelocityH[TimeIndex]);
+      deepCopy(NormalBarotropicVelocity[TimeIndex],
+               NormalBarotropicVelocityH[TimeIndex]);
+      deepCopy(BarotropicPressureAnomaly[TimeIndex],
+               BarotropicPressureAnomalyH[TimeIndex]);
+   }
+} // end copyToDevice
+
+//------------------------------------------------------------------------------
+// Perform copy to host for state variables
+// TimeLevel == [1: new, 0:current, -1:previous, -2:two times ago, ...]
+void OceanState::copyToHost(const I4 TimeLevel) {
+
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+
+   deepCopy(PseudoThicknessH[TimeIndex], PseudoThickness[TimeIndex]);
+   deepCopy(NormalVelocityH[TimeIndex], NormalVelocity[TimeIndex]);
+   if (UseModeSplit) {
+      deepCopy(NormalBaroclinicVelocityH[TimeIndex],
+               NormalBaroclinicVelocity[TimeIndex]);
+      deepCopy(NormalBarotropicVelocityH[TimeIndex],
+               NormalBarotropicVelocity[TimeIndex]);
+      deepCopy(BarotropicPressureAnomalyH[TimeIndex],
+               BarotropicPressureAnomaly[TimeIndex]);
+   }
+} // end copyToHost
+
+//------------------------------------------------------------------------------
+// Apply layer masks to NormalVelocity, PseudoThickness, Temperature, and
+// Salinity at the given time level after reading an IC or restart file.
+void OceanState::applyLayerMasks(const I4 TimeLevel) {
+
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   DefVCoord->applyEdgeLayerMask(getNormalVelocity(TimeLevel), NEdgesAll);
+   DefVCoord->applyCellLayerMask(getPseudoThickness(TimeLevel), NCellsAll);
+   DefVCoord->applyCellLayerMask(Tracers::getByName(TimeLevel, "Temperature"),
+                                 NCellsAll);
+   DefVCoord->applyCellLayerMask(Tracers::getByName(TimeLevel, "Salinity"),
+                                 NCellsAll);
+
+} // end applyLayerMasks
+
+//------------------------------------------------------------------------------
+// Perform state halo exchange
+// TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
+void OceanState::exchangeHalo(const I4 TimeLevel) {
+
+   const I4 TimeIndex = getTimeIndex(TimeLevel);
+
+   MeshHalo->exchangeFullArrayHalo(PseudoThickness[TimeIndex], OnCell);
+   MeshHalo->exchangeFullArrayHalo(NormalVelocity[TimeIndex], OnEdge);
+   if (UseModeSplit) {
+      MeshHalo->exchangeFullArrayHalo(NormalBaroclinicVelocity[TimeIndex],
+                                      OnEdge);
+      MeshHalo->exchangeFullArrayHalo(NormalBarotropicVelocity[TimeIndex],
+                                      OnEdge);
+      MeshHalo->exchangeFullArrayHalo(BarotropicPressureAnomaly[TimeIndex],
+                                      OnCell);
+   }
+
+} // end exchangeHalo
+
+//------------------------------------------------------------------------------
+// Perform time level update
+void OceanState::updateTimeLevels() {
+
+   if (NTimeLevels == 1)
+      ABORT_ERROR("OceanState: can't update time levels for NTimeLevels == 1");
+
+   // Exchange halo
+   exchangeHalo(1);
+
+   // Update current time index for pseudo-thickness and normal velocity
+   CurTimeIndex = (CurTimeIndex + 1) % NTimeLevels;
+
+   // Update IOField data associations. Pass false to avoid overwriting the
+   // just-computed state with fill values; this is a pointer update only.
+   Field::attachFieldData<Array2DReal>(NormalVelocityFldName,
+                                       NormalVelocity[CurTimeIndex], false);
+   Field::attachFieldData<Array2DReal>(PseudoThicknessFldName,
+                                       PseudoThickness[CurTimeIndex], false);
+   if (UseModeSplit) {
+      Field::attachFieldData<Array2DReal>(
+          NormalBaroclinicVelocityFldName,
+          NormalBaroclinicVelocity[CurTimeIndex], false);
+      Field::attachFieldData<Array1DReal>(
+          NormalBarotropicVelocityFldName,
+          NormalBarotropicVelocity[CurTimeIndex], false);
+      Field::attachFieldData<Array1DReal>(
+          BarotropicPressureAnomalyFldName,
+          BarotropicPressureAnomaly[CurTimeIndex], false);
+   }
+
+} // end updateTimeLevels
+
+//------------------------------------------------------------------------------
+// Get default state
+OceanState *OceanState::getDefault() { return OceanState::DefaultOceanState; }
+
+//------------------------------------------------------------------------------
+// Get state by name
+OceanState *OceanState::get(const std::string Name ///< [in] Name of state
+) {
+
+   // look for an instance of this name
+   auto it = AllOceanStates.find(Name);
+
+   // if found, return the state pointer
+   if (it != AllOceanStates.end()) {
+      return it->second.get();
+
+      // otherwise print error and return null pointer
+   } else {
+      LOG_ERROR("OceanState::get: Attempt to retrieve non-existent state:");
+      LOG_ERROR("{} has not been defined or has been removed", Name);
+      return nullptr;
+   }
+} // end get state
+
+//------------------------------------------------------------------------------
+// Get time index from time level
+// TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
+I4 OceanState::getTimeIndex(const I4 TimeLevel) const {
+
+   OMEGA_REQUIRE(NTimeLevels <= 1 ||
+                     !(TimeLevel > 1 || (TimeLevel + NTimeLevels) <= 1),
+                 "OceanState: Time level {} is out of range for NTimeLevels {}",
+                 TimeLevel, NTimeLevels);
+
+   return (TimeLevel + CurTimeIndex + NTimeLevels) % NTimeLevels;
+} // end get time index
+
+} // end namespace OMEGA
+
+//===----------------------------------------------------------------------===//
