@@ -36,9 +36,6 @@ module GridcellType
      integer , pointer :: topi         (:) => null() ! beginning topographic unit index for each gridcell
      integer , pointer :: topf         (:) => null() ! ending topographic unit index for each gridcell
      integer , pointer :: ntopounits   (:) => null() ! number of topographic units for each gridcell calculated from topi and topf
-     integer , pointer :: lndi         (:) => null() ! beginning landunit index for each gridcell
-     integer , pointer :: lndf         (:) => null() ! ending landunit index for each gridcell
-     integer , pointer :: nlandunits   (:) => null() ! number of landunits for each gridcell
      integer , pointer :: coli         (:) => null() ! beginning column index for each gridcell
      integer , pointer :: colf         (:) => null() ! ending column index for each gridcell
      integer , pointer :: ncolumns     (:) => null() ! number of columns for each gridcell
@@ -63,7 +60,6 @@ module GridcellType
      real(r8) , pointer :: dayl        (:) => null() ! daylength (seconds)
      real(r8) , pointer :: prev_dayl   (:) => null() ! daylength from previous timestep (seconds)
      real(r8) , pointer :: elevation   (:) => null() ! mean soil surface elevation, above mean sea level (m)
-     real(r8) , pointer :: froudenum   (:) => null() ! Froude number (dimensionless)
      real(r8) , pointer :: MaxElevation   (:) => null() ! Maximum soil surface elevation, above mean sea level (meter) needed for precipitation downscaling
  
      !integer , pointer :: topounit_indices (:,:) => null()
@@ -106,9 +102,6 @@ contains
     allocate(this%topi      (begg:endg)) ; this%topi      (:) = ispval
     allocate(this%topf      (begg:endg)) ; this%topf      (:) = ispval
     allocate(this%ntopounits(begg:endg)) ; this%ntopounits(:) = 1      ! Default number of topounits per grid is 1
-    allocate(this%lndi      (begg:endg)) ; this%lndi      (:) = ispval
-    allocate(this%lndf      (begg:endg)) ; this%lndf      (:) = ispval
-    allocate(this%nlandunits(begg:endg)) ; this%nlandunits(:) = ispval
     allocate(this%coli      (begg:endg)) ; this%coli      (:) = ispval
     allocate(this%colf      (begg:endg)) ; this%colf      (:) = ispval
     allocate(this%ncolumns  (begg:endg)) ; this%ncolumns  (:) = ispval
@@ -134,7 +127,6 @@ contains
     allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = spval
     
     allocate(this%elevation (begg:endg)) ; this%elevation (:) = spval
-    allocate(this%froudenum (begg:endg)) ; this%froudenum (:) = spval 
     allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = spval
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
@@ -159,9 +151,6 @@ contains
     deallocate(this%topi             )
     deallocate(this%topf             )
     deallocate(this%ntopounits       )
-    deallocate(this%lndi             )
-    deallocate(this%lndf             )
-    deallocate(this%nlandunits       )
     deallocate(this%coli             )
     deallocate(this%colf             )
     deallocate(this%ncolumns         )
@@ -172,7 +161,6 @@ contains
     deallocate(this%dayl             )
     deallocate(this%prev_dayl        )
     deallocate(this%elevation        )
-    deallocate(this%froudenum        )
     deallocate(this%MaxElevation     )
     deallocate(this%landunit_indices )
     deallocate(this%stdev_elev       ) 

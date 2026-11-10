@@ -399,12 +399,12 @@ contains
          mbb           => photosyns_vars%mbb_patch                 , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship
          rh_leaf       => photosyns_vars%rh_leaf_patch             , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)
 
-         leafn         => veg_ns%leafn           , &
-         leafn_storage => veg_ns%leafn_storage   , &
-         leafn_xfer    => veg_ns%leafn_xfer      , &
-         leafp         => veg_ps%leafp         , &
-         leafp_storage => veg_ps%leafp_storage , &
-         leafp_xfer    => veg_ps%leafp_xfer    , &
+         leafn         => veg_ns%core%leaf           , &
+         leafn_storage => veg_ns%core%leaf_storage   , &
+         leafn_xfer    => veg_ns%core%leaf_xfer      , &
+         leafp         => veg_ps%core%leaf         , &
+         leafp_storage => veg_ps%core%leaf_storage , &
+         leafp_xfer    => veg_ps%core%leaf_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                            &
          )
@@ -1874,12 +1874,12 @@ contains
          bbb        => photosyns_inst%bbb_patch              , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)
          mbb        => photosyns_inst%mbb_patch              , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship
          rh_leaf    => photosyns_inst%rh_leaf_patch          , & ! Output: [real(r8) (:)   ]  fractional humidity at leaf surface (dimensionless)
-         leafn         => veg_ns%leafn           , &
-         leafn_storage => veg_ns%leafn_storage   , &
-         leafn_xfer    => veg_ns%leafn_xfer      , &
-         leafp         => veg_ps%leafp         , &
-         leafp_storage => veg_ps%leafp_storage , &
-         leafp_xfer    => veg_ps%leafp_xfer    , &
+         leafn         => veg_ns%core%leaf           , &
+         leafn_storage => veg_ns%core%leaf_storage   , &
+         leafn_xfer    => veg_ns%core%leaf_xfer      , &
+         leafp         => veg_ps%core%leaf         , &
+         leafp_storage => veg_ps%core%leaf_storage , &
+         leafp_xfer    => veg_ps%core%leaf_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                          , &
          bsw           => soilstate_inst%bsw_col                , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"

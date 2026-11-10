@@ -47,10 +47,6 @@ module DecompCascadeCNMod
      real(r8), pointer :: np_s3_new_cn     => null()     !C:P for SOM 3
      real(r8), pointer :: np_s4_new_cn     => null()     !C:P for SOM 4
 
-     real(r8), pointer :: cp_s1_new_cn     => null()     !C:P for SOM 1
-     real(r8), pointer :: cp_s2_new_cn     => null()     !C:P for SOM 2
-     real(r8), pointer :: cp_s3_new_cn     => null()     !C:P for SOM 3
-     real(r8), pointer :: cp_s4_new_cn     => null()     !C:P for SOM 4
 
      real(r8), pointer :: rf_l1s1_cn       => null() !respiration fraction litter 1 -> SOM 1
      real(r8), pointer :: rf_l2s2_cn       => null() !respiration fraction litter 2 -> SOM 2
@@ -121,10 +117,6 @@ contains
      allocate(DecompCNParamsInst%np_s2_new_cn); DecompCNParamsInst%np_s2_new_cn=spval
      allocate(DecompCNParamsInst%np_s3_new_cn); DecompCNParamsInst%np_s3_new_cn=spval
      allocate(DecompCNParamsInst%np_s4_new_cn); DecompCNParamsInst%np_s4_new_cn=spval
-     allocate(DecompCNParamsInst%cp_s1_new_cn); DecompCNParamsInst%cp_s1_new_cn=spval
-     allocate(DecompCNParamsInst%cp_s2_new_cn); DecompCNParamsInst%cp_s2_new_cn=spval
-     allocate(DecompCNParamsInst%cp_s3_new_cn); DecompCNParamsInst%cp_s3_new_cn=spval
-     allocate(DecompCNParamsInst%cp_s4_new_cn); DecompCNParamsInst%cp_s4_new_cn=spval
      allocate(DecompCNParamsInst%rf_l1s1_cn  ); DecompCNParamsInst%rf_l1s1_cn  =spval
      allocate(DecompCNParamsInst%rf_l2s2_cn  ); DecompCNParamsInst%rf_l2s2_cn  =spval
      allocate(DecompCNParamsInst%rf_l3s3_cn  ); DecompCNParamsInst%rf_l3s3_cn  =spval

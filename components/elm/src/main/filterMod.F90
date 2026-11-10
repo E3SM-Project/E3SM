@@ -26,15 +26,11 @@ module filterMod
   private
   !
   type clumpfilter
-     integer, pointer :: natvegp(:)      ! nat-vegetated (present) filter (pfts)
-     integer :: num_natvegp              ! number of pfts in nat-vegetated filter
 
      integer, pointer :: pcropp(:)       ! prognostic crop filter (pfts)
      integer :: num_pcropp               ! number of pfts in prognostic crop filter
      integer, pointer :: ppercropp(:)    ! prognostic perennial crop filter (pfts)
      integer :: num_ppercropp            ! number of pfts in prognostic perennial crop filter
-     integer, pointer :: soilnopcropp(:) ! soil w/o prog. crops (pfts)
-     integer :: num_soilnopcropp         ! number of pfts in soil w/o prog crops
 
      integer, pointer :: lakep(:)        ! lake filter (pfts)
      integer :: num_lakep                ! number of pfts in lake filter
@@ -84,8 +80,6 @@ module filterMod
      integer, pointer :: nolakeurbanp(:) ! non-lake, non-urban filter (pfts)
      integer :: num_nolakeurbanp         ! number of pfts in non-lake, non-urban filter
 
-     integer, pointer :: icemecc(:)      ! glacier mec filter (cols)
-     integer :: num_icemecc              ! number of columns in glacier mec filter
      
      integer, pointer :: do_smb_c(:)     ! glacier+bareland SMB calculations-on filter (cols)
      integer :: num_do_smb_c             ! number of columns in glacier+bareland SMB mec filter         
@@ -198,7 +192,6 @@ contains
        allocate(this_filter(nc)%lakesnowc(bounds%endc-bounds%begc+1))
        allocate(this_filter(nc)%lakenosnowc(bounds%endc-bounds%begc+1))
 
-       allocate(this_filter(nc)%natvegp(bounds%endp-bounds%begp+1))
 
        allocate(this_filter(nc)%hydrologyc(bounds%endc-bounds%begc+1))
        allocate(this_filter(nc)%hydrononsoic(bounds%endc-bounds%begc+1))
@@ -214,9 +207,7 @@ contains
 
        allocate(this_filter(nc)%pcropp(bounds%endp-bounds%begp+1))
        allocate(this_filter(nc)%ppercropp(bounds%endp-bounds%begp+1))
-       allocate(this_filter(nc)%soilnopcropp(bounds%endp-bounds%begp+1))
 
-       allocate(this_filter(nc)%icemecc(bounds%endc-bounds%begc+1))      
        allocate(this_filter(nc)%do_smb_c(bounds%endc-bounds%begc+1))       
        
     end do
@@ -424,7 +415,6 @@ contains
                 l =veg_pp%landunit(p)
                 if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                    fnc = fnc + 1
-                   this_filter(nc)%soilnopcropp(fnc) = p
                 end if
              else
                 if (percrop(veg_pp%itype(p)) < 1) then
@@ -440,7 +430,6 @@ contains
     end do
     this_filter(nc)%num_pcropp   = fc
     this_filter(nc)%num_ppercropp   = fpc
-    this_filter(nc)%num_soilnopcropp = fnc   ! This wasn't being set before...
 
     ! Create landunit-level urban and non-urban filters
 
@@ -515,12 +504,10 @@ contains
              l = col_pp%landunit(c)
              if (lun_pp%itype(l) == istice_mec) then
                 f = f + 1
-                this_filter(nc)%icemecc(f) = c
              end if
           end if
        end if
     end do
-    this_filter(nc)%num_icemecc = f
     
     f = 0
     do c = bounds%begc,bounds%endc

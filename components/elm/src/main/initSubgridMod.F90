@@ -424,8 +424,6 @@ contains
     top_pp%gridcell(ti) = gi
     top_pp%wtgcell(ti) = wtgcell
     top_pp%elevation(ti) = elv
-    top_pp%slope(ti) = slp
-    top_pp%aspect(ti) = asp
     top_pp%topo_grc_ind(ti) = topo_ind    
     top_pp%active(ti) = is_tpu_active
     top_pp%downhill_ti(ti) = -1   ! initialized to no downhill neighbor state (-1)

@@ -1894,13 +1894,11 @@ contains
        procinfo%begl_ghost      = 0
        procinfo%begc_ghost      = 0
        procinfo%begp_ghost      = 0
-       procinfo%begCohort_ghost = 0
        procinfo%endg_ghost      = 0
        procinfo%endt_ghost      = 0
        procinfo%endl_ghost      = 0
        procinfo%endc_ghost      = 0
        procinfo%endp_ghost      = 0
-       procinfo%endCohort_ghost = 0
 
        ! All = local (as no ghost cells)
        procinfo%ncells_all      = procinfo%ncells

@@ -47,18 +47,12 @@ module elm_interface_funcsMod
   use EnergyFluxType        , only : energyflux_type
 
   use CNStateType           , only : cnstate_type
-  use CNCarbonFluxType      , only : carbonflux_type
-  use CNCarbonStateType     , only : carbonstate_type
-  use CNNitrogenFluxType    , only : nitrogenflux_type
-  use CNNitrogenStateType   , only : nitrogenstate_type
 
   use CH4Mod                , only : ch4_type
 
   use PhotosynthesisType    , only : photosyns_type
   use cropType              , only : crop_type
   use CanopyStateType       , only : canopystate_type
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use PhosphorusFluxType    , only : phosphorusflux_type
 
   use SoilWaterRetentionCurveMod    , only : soil_water_retention_curve_type
 
@@ -140,9 +134,7 @@ contains
            atm2lnd_vars, soilstate_vars,                          &
            waterstate_vars, waterflux_vars,                       &
            temperature_vars, energyflux_vars,                     &
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           phosphorusflux_vars, phosphorusstate_vars,             &
+           cnstate_vars, &
            ch4_vars                                               &
            )
 
@@ -163,12 +155,6 @@ contains
     type(energyflux_type)       , intent(in)    :: energyflux_vars
 
     type(cnstate_type)          , intent(in)    :: cnstate_vars
-    type(carbonflux_type)       , intent(in)    :: carbonflux_vars
-    type(carbonstate_type)      , intent(in)    :: carbonstate_vars
-    type(nitrogenflux_type)     , intent(in)    :: nitrogenflux_vars
-    type(nitrogenstate_type)    , intent(in)    :: nitrogenstate_vars
-    type(phosphorusflux_type)   , intent(in)    :: phosphorusflux_vars
-    type(phosphorusstate_type)  , intent(in)    :: phosphorusstate_vars
     type(ch4_type)              , intent(in)    :: ch4_vars
 
     type(elm_interface_data_type), intent(inout) :: elm_idata
@@ -202,14 +188,11 @@ contains
     call get_elm_bgc_state(elm_idata_bgc,                   &
                     bounds, num_soilc, filter_soilc,        &
                     atm2lnd_vars, soilstate_vars,           &
-                    carbonstate_vars, nitrogenstate_vars,   &
-                    phosphorusstate_vars,                   &
                     ch4_vars)
 
     call get_elm_bgc_flux(elm_idata_bgc,                    &
                     bounds, num_soilc, filter_soilc,        &
-                    cnstate_vars, carbonflux_vars,          &
-                    nitrogenflux_vars, phosphorusflux_vars, &
+                    cnstate_vars, &
                     ch4_vars)
 
     end associate
@@ -496,8 +479,6 @@ contains
   subroutine get_elm_bgc_state(elm_bgc_data,                    &
                         bounds, num_soilc, filter_soilc,        &
                         atm2lnd_vars, soilstate_vars,           &
-                        carbonstate_vars, nitrogenstate_vars,   &
-                        phosphorusstate_vars,                   &
                         ch4_vars)
 
     ! get clm bgc state variables
@@ -509,9 +490,6 @@ contains
 
     type(atm2lnd_type)          , intent(in) :: atm2lnd_vars
     type(soilstate_type)        , intent(in) :: soilstate_vars
-    type(carbonstate_type)      , intent(in) :: carbonstate_vars
-    type(nitrogenstate_type)    , intent(in) :: nitrogenstate_vars
-    type(phosphorusstate_type)  , intent(in) :: phosphorusstate_vars
     type(ch4_type)              , intent(in) :: ch4_vars          ! not yet used, but will be.
 
     type(elm_interface_bgc_datatype), intent(inout) :: elm_bgc_data
@@ -524,9 +502,9 @@ contains
     !------------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr=> col_cs%decomp_cpools_vr     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
-       decomp_npools_vr=> col_ns%decomp_npools_vr   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-       decomp_ppools_vr=> col_ps%decomp_ppools_vr , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
+       decomp_cpools_vr=> col_cs%core%decomp_pools_vr     , & ! (gC/m3) vertically-resolved decomposing (litter, cwd, soil) c pools
+       decomp_npools_vr=> col_ns%core%decomp_pools_vr   , & ! (gN/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+       decomp_ppools_vr=> col_ps%core%decomp_pools_vr , & ! [real(r8) (:,:,:) ! col (gP/m3) vertically-resolved decomposing (litter, cwd, soil) P pools
        smin_no3_vr     => col_ns%smin_no3_vr        , & ! (gN/m3) vertically-resolved soil mineral NO3
        smin_nh4_vr     => col_ns%smin_nh4_vr        , & ! (gN/m3) vertically-resolved soil mineral NH4
        smin_nh4sorb_vr => col_ns%smin_nh4sorb_vr    , & ! (gN/m3) vertically-resolved soil mineral NH4 absorbed
@@ -534,7 +512,7 @@ contains
        solutionp_vr    => col_ps%solutionp_vr     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
        labilep_vr      => col_ps%labilep_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
        secondp_vr      => col_ps%secondp_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-       sminp_vr        => col_ps%sminp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
+       sminp_vr        => col_ps%mineral%smin_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
        occlp_vr        => col_ps%occlp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
        primp_vr        => col_ps%primp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
        !
@@ -593,8 +571,7 @@ contains
 !--------------------------------------------------------------------------------------
   subroutine get_elm_bgc_flux(elm_bgc_data,                      &
                         bounds, num_soilc, filter_soilc,         &
-                        cnstate_vars, carbonflux_vars,           &
-                        nitrogenflux_vars, phosphorusflux_vars,  &
+                        cnstate_vars, &
                         ch4_vars)
 
   !
@@ -614,9 +591,6 @@ contains
     integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
 
     type(cnstate_type)                  , intent(in)    :: cnstate_vars
-    type(carbonflux_type)               , intent(in)    :: carbonflux_vars
-    type(nitrogenflux_type)             , intent(in)    :: nitrogenflux_vars
-    type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
     type(ch4_type)                      , intent(in) :: ch4_vars          ! not yet used, but will be.
 
     type(elm_interface_bgc_datatype)   , intent(inout) :: elm_bgc_data
@@ -642,18 +616,18 @@ contains
     !
     associate ( &
       ! plant litering and removal + SOM/LIT vertical transport
-      externalc_to_decomp_cpools_vr    => col_cf%externalc_to_decomp_cpools        , &
-      externaln_to_decomp_npools_vr    => col_nf%externaln_to_decomp_npools      , &
-      externalp_to_decomp_ppools_vr    => col_pf%externalp_to_decomp_ppools    , &
+      externalc_to_decomp_cpools_vr    => col_cf%core%external_to_decomp_pools        , &
+      externaln_to_decomp_npools_vr    => col_nf%core%external_to_decomp_pools      , &
+      externalp_to_decomp_ppools_vr    => col_pf%core%external_to_decomp_pools    , &
       t_scalar                         => col_cf%t_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
       w_scalar                         => col_cf%w_scalar                          , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
       o_scalar                         => col_cf%o_scalar                          , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
       ! inorg. nitrogen source
-      ndep_to_sminn                    => col_nf%ndep_to_sminn                   , &
+      ndep_to_sminn                    => col_nf%mineral%dep_to_smin                   , &
       nfix_to_sminn                    => col_nf%nfix_to_sminn                   , &
       fert_to_sminn                    => col_nf%fert_to_sminn                   , &
       soyfixn_to_sminn                 => col_nf%soyfixn_to_sminn                , &
-      supplement_to_sminn_vr           => col_nf%supplement_to_sminn_vr          , &
+      supplement_to_sminn_vr           => col_nf%mineral%supplement_to_smin_vr          , &
       !
       nfixation_prof                   => cnstate_vars%nfixation_prof_col                       , &
       ndep_prof                        => cnstate_vars%ndep_prof_col                            , &
@@ -662,16 +636,16 @@ contains
 
       no3_net_transport_vr             => col_nf%no3_net_transport_vr            , &
       nh4_net_transport_vr             => col_nf%nh4_net_transport_vr            , &
-      col_plant_ndemand_vr             => col_nf%plant_ndemand_vr                , &
+      col_plant_ndemand_vr             => col_nf%uptake%plant_demand_vr                , &
 
-      plant_ndemand_col                => col_nf%plant_ndemand                   , &
-      plant_pdemand_col                => col_pf%plant_pdemand                 , &
+      plant_ndemand_col                => col_nf%uptake%plant_demand                   , &
+      plant_pdemand_col                => col_pf%uptake%plant_demand                 , &
 
-      col_plant_pdemand_vr             => col_pf%plant_pdemand_vr              , &
-      pdep_to_sminp                    => col_pf%pdep_to_sminp                 , &
+      col_plant_pdemand_vr             => col_pf%uptake%plant_demand_vr              , &
+      pdep_to_sminp                    => col_pf%mineral%dep_to_smin                 , &
       ! assume pdep_prof = ndep_prof
       fert_p_to_sminp                  => col_pf%fert_p_to_sminp               , &
-      supplement_to_sminp_vr           => col_pf%supplement_to_sminp_vr        , &
+      supplement_to_sminp_vr           => col_pf%mineral%supplement_to_smin_vr        , &
       sminp_net_transport_vr           => col_pf%sminp_net_transport_vr          &
     )
 
@@ -876,10 +850,7 @@ contains
 
 !--------------------------------------------------------------------------------------
   subroutine update_bgc_state_decomp(elm_bgc_data,  &
-           bounds, num_soilc, filter_soilc,         &
-           carbonstate_vars, nitrogenstate_vars,    &
-           phosphorusstate_vars                     &
-           )
+           bounds, num_soilc, filter_soilc)
 
     implicit none
 
@@ -887,9 +858,6 @@ contains
     integer                             , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                             , intent(in)    :: filter_soilc(:)   ! filter for soil columns
 
-    type(carbonstate_type)              , intent(inout) :: carbonstate_vars
-    type(nitrogenstate_type)            , intent(inout) :: nitrogenstate_vars
-    type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
 
     type(elm_interface_bgc_datatype)    , intent(in)    :: elm_bgc_data
 
@@ -900,9 +868,9 @@ contains
 !------------------------------------------------------------------------------------
     !
     associate ( &
-       decomp_cpools_vr             => col_cs%decomp_cpools_vr           , &
-       decomp_npools_vr             => col_ns%decomp_npools_vr         , &
-       decomp_ppools_vr             => col_ps%decomp_ppools_vr         &
+       decomp_cpools_vr             => col_cs%core%decomp_pools_vr           , &
+       decomp_npools_vr             => col_ns%core%decomp_pools_vr         , &
+       decomp_ppools_vr             => col_ps%core%decomp_pools_vr         &
     )
 ! ------------------------------------------------------------------------
 !
@@ -921,8 +889,7 @@ contains
 
 !--------------------------------------------------------------------------------------
     subroutine update_bgc_state_smin(elm_bgc_data,      &
-           bounds, num_soilc, filter_soilc,             &
-           nitrogenstate_vars, phosphorusstate_vars)
+           bounds, num_soilc, filter_soilc)
 
     use CNDecompCascadeConType, only : decomp_cascade_con
     use elm_time_manager, only : get_step_size
@@ -933,8 +900,6 @@ contains
     integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
 
-    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
-    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
 
     type(elm_interface_bgc_datatype), intent(in) :: elm_bgc_data
 
@@ -945,7 +910,7 @@ contains
 !------------------------------------------------------------------------------------
      !
      associate ( &
-     sminn_vr           => col_ns%sminn_vr           , &
+     sminn_vr           => col_ns%mineral%smin_vr           , &
      smin_no3_vr        => col_ns%smin_no3_vr        , &
      smin_nh4_vr        => col_ns%smin_nh4_vr        , &
      smin_nh4sorb_vr    => col_ns%smin_nh4sorb_vr    , &
@@ -953,7 +918,7 @@ contains
      solutionp_vr       => col_ps%solutionp_vr     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
      labilep_vr         => col_ps%labilep_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
      secondp_vr         => col_ps%secondp_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-     sminp_vr           => col_ps%sminp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + second
+     sminp_vr           => col_ps%mineral%smin_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + second
      occlp_vr           => col_ps%occlp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
      primp_vr           => col_ps%primp_vr           & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
 
@@ -981,9 +946,7 @@ contains
 
 !--------------------------------------------------------------------------------------
     subroutine update_bgc_flux_decomp_sourcesink(elm_bgc_data,       &
-           bounds, num_soilc, filter_soilc,                          &
-           carbonflux_vars, nitrogenflux_vars,                       &
-           phosphorusflux_vars)
+           bounds, num_soilc, filter_soilc)
 
     use CNDecompCascadeConType, only : decomp_cascade_con
 
@@ -993,9 +956,6 @@ contains
     integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
 
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
     type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
@@ -1003,9 +963,9 @@ contains
     character(len=256) :: subname = "update_bgc_flux_decomp_sourcesink"
 
     associate ( &
-     decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
-     decomp_npools_sourcesink_vr  => col_nf%decomp_npools_sourcesink  , &
-     decomp_ppools_sourcesink_vr  => col_pf%decomp_ppools_sourcesink  &
+     decomp_cpools_sourcesink_vr  => col_cf%core%decomp_pools_sourcesink    , &
+     decomp_npools_sourcesink_vr  => col_nf%core%decomp_pools_sourcesink  , &
+     decomp_ppools_sourcesink_vr  => col_pf%core%decomp_pools_sourcesink  &
      )
 
     do fc = 1, num_soilc
@@ -1022,9 +982,7 @@ contains
 
 !--------------------------------------------------------------------------------------
     subroutine update_bgc_flux_decomp_cascade(elm_bgc_data, &
-           bounds, num_soilc, filter_soilc,                 &
-           carbonflux_vars, nitrogenflux_vars,              &
-           phosphorusflux_vars)
+           bounds, num_soilc, filter_soilc)
 
     use CNDecompCascadeConType, only : decomp_cascade_con
 
@@ -1034,9 +992,6 @@ contains
     integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
 
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
     type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
 
@@ -1049,12 +1004,12 @@ contains
 
      decomp_cascade_hr_vr_col         => col_cf%decomp_cascade_hr_vr                   , &
 
-     decomp_cascade_ctransfer_vr_col  => col_cf%decomp_cascade_ctransfer_vr            , &
-     decomp_cascade_ntransfer_vr_col  => col_nf%decomp_cascade_ntransfer_vr          , &
-     decomp_cascade_ptransfer_vr_col  => col_pf%decomp_cascade_ptransfer_vr        , &
+     decomp_cascade_ctransfer_vr_col  => col_cf%core%decomp_cascade_transfer_vr            , &
+     decomp_cascade_ntransfer_vr_col  => col_nf%core%decomp_cascade_transfer_vr          , &
+     decomp_cascade_ptransfer_vr_col  => col_pf%core%decomp_cascade_transfer_vr        , &
 
-     decomp_cascade_sminn_flux_vr_col => col_nf%decomp_cascade_sminn_flux_vr         , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
-     decomp_cascade_sminp_flux_vr_col => col_pf%decomp_cascade_sminp_flux_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
+     decomp_cascade_sminn_flux_vr_col => col_nf%mineral%decomp_cascade_smin_flux_vr         , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+     decomp_cascade_sminp_flux_vr_col => col_pf%mineral%decomp_cascade_smin_flux_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
 
      sminn_to_denit_decomp_cascade_vr_col => col_nf%sminn_to_denit_decomp_cascade_vr   & ! Output: [real(r8) (:,:,:) ]
      )
@@ -1082,8 +1037,7 @@ contains
 !--------------------------------------------------------------------------------------
     subroutine update_bgc_flux_smin(elm_bgc_data,   &
            bounds, num_soilc, filter_soilc,         &
-           cnstate_vars,                            &
-           nitrogenflux_vars, phosphorusflux_vars)
+           cnstate_vars)
 
     implicit none
 
@@ -1093,8 +1047,6 @@ contains
 
     type(cnstate_type)                  , intent(inout) :: cnstate_vars
 
-    type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
     type(elm_interface_bgc_datatype)    , intent(in)    :: elm_bgc_data
 
     integer :: fc, c, j
@@ -1110,35 +1062,35 @@ contains
 
      potential_immob              => col_nf%potential_immob           , & ! Output: [real(r8) (:)   ]
      actual_immob                 => col_nf%actual_immob              , & ! Output: [real(r8) (:)   ]
-     sminn_to_plant               => col_nf%sminn_to_plant            , & ! Output: [real(r8) (:)   ]
+     sminn_to_plant               => col_nf%uptake%smin_to_plant            , & ! Output: [real(r8) (:)   ]
 
-     sminn_to_plant_vr            => col_nf%sminn_to_plant_vr         , &
+     sminn_to_plant_vr            => col_nf%uptake%smin_to_plant_vr         , &
      smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr      , &
      smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr      , &
      potential_immob_vr           => col_nf%potential_immob_vr        , &
      actual_immob_vr              => col_nf%actual_immob_vr           , &
      actual_immob_no3_vr          => col_nf%actual_immob_no3_vr       , & ! Output: [real(r8) (:,:) ]
      actual_immob_nh4_vr          => col_nf%actual_immob_nh4_vr       , & ! Output: [real(r8) (:,:) ]
-     gross_nmin_vr                => col_nf%gross_nmin_vr             , &
-     net_nmin_vr                  => col_nf%net_nmin_vr               , & ! Output: [real(r8) (:,:)   ]
+     gross_nmin_vr                => col_nf%mineral%gross_min_vr             , &
+     net_nmin_vr                  => col_nf%mineral%net_min_vr               , & ! Output: [real(r8) (:,:)   ]
 
      sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr  , & ! Output: [real(r8) (:,:) ]
-     supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr    , & ! Output: [real(r8) (:,:) ]
+     supplement_to_sminn_vr       => col_nf%mineral%supplement_to_smin_vr    , & ! Output: [real(r8) (:,:) ]
 
      no3_net_transport_vr         => col_nf%no3_net_transport_vr      , & ! Output: updated from PF, if coupled
      nh4_net_transport_vr         => col_nf%nh4_net_transport_vr      , & ! Output: updated from PF, if coupled
 
      potential_immob_p            => col_pf%potential_immob_p       , & ! Output: [real(r8) (:)   ]
      actual_immob_p               => col_pf%actual_immob_p          , & ! Output: [real(r8) (:)   ]
-     sminp_to_plant               => col_pf%sminp_to_plant          , & ! Output: [real(r8) (:)   ]
+     sminp_to_plant               => col_pf%uptake%smin_to_plant          , & ! Output: [real(r8) (:)   ]
 
-     supplement_to_sminp_vr       => col_pf%supplement_to_sminp_vr  , & ! Output: [real(r8) (:,:) ]
+     supplement_to_sminp_vr       => col_pf%mineral%supplement_to_smin_vr  , & ! Output: [real(r8) (:,:) ]
 
-     sminp_to_plant_vr            => col_pf%sminp_to_plant_vr       , &
+     sminp_to_plant_vr            => col_pf%uptake%smin_to_plant_vr       , &
      potential_immob_p_vr         => col_pf%potential_immob_p_vr    , & ! Output: [real(r8) (:,:)   ]
      actual_immob_p_vr            => col_pf%actual_immob_p_vr       , &
-     gross_pmin_vr                => col_pf%gross_pmin_vr           , & ! Output: [real(r8) (:,:)   ]
-     net_pmin_vr                  => col_pf%net_pmin_vr               & ! Output: [real(r8) (:,:)   ]
+     gross_pmin_vr                => col_pf%mineral%gross_min_vr           , & ! Output: [real(r8) (:,:)   ]
+     net_pmin_vr                  => col_pf%mineral%net_min_vr               & ! Output: [real(r8) (:,:)   ]
      )
 
      do fc = 1, num_soilc
@@ -1192,8 +1144,7 @@ contains
 
 !--------------------------------------------------------------------------------------
     subroutine update_bgc_flux_nitdenit(elm_bgc_data,   &
-           bounds, num_soilc, filter_soilc,             &
-           nitrogenflux_vars, phosphorusflux_vars)
+           bounds, num_soilc, filter_soilc)
 
     implicit none
 
@@ -1201,8 +1152,6 @@ contains
     integer                             , intent(in)    :: num_soilc         ! number of soil columns in filter
     integer                             , intent(in)    :: filter_soilc(:)   ! filter for soil columns
 
-    type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
     type(elm_interface_bgc_datatype)    , intent(in)    :: elm_bgc_data
 
     integer :: fc, c, j
@@ -1234,8 +1183,7 @@ contains
 
 !--------------------------------------------------------------------------------------
   subroutine update_bgc_flux_gas_pf(elm_bgc_data,  &
-     bounds, num_soilc, filter_soilc,              &
-     carbonflux_vars, nitrogenflux_vars)
+     bounds, num_soilc, filter_soilc)
 
      ! PFLOTRAN gas fluxes
      implicit none
@@ -1244,8 +1192,6 @@ contains
      integer                            , intent(in)    :: num_soilc       ! number of soil columns in filter
      integer                            , intent(in)    :: filter_soilc(:) ! filter for soil columns
 
-     type(carbonflux_type)              , intent(inout) :: carbonflux_vars
-     type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars
      type(elm_interface_bgc_datatype)   , intent(in)    :: elm_bgc_data
 
      !character(len=256) :: subname = "get_pf_bgc_gaslosses"
@@ -1284,9 +1230,7 @@ contains
   subroutine update_bgc_data_pf2elm(elm_bgc_data, bounds,         &
            num_soilc, filter_soilc,                               &
            num_soilp, filter_soilp,                               &
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           phosphorusflux_vars, phosphorusstate_vars,             &
+           cnstate_vars, &
            ch4_vars)
     ! USES
     use elm_varctl          , only : use_pflotran, pf_cmode
@@ -1301,12 +1245,6 @@ contains
     integer                     , intent(in)    :: filter_soilp(:)   ! filter for soil patches
 
     type(cnstate_type)          , intent(inout) :: cnstate_vars
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)      , intent(inout) :: carbonstate_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
-    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
 
     type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
@@ -1320,22 +1258,17 @@ contains
         ! bgc_state_decomp is updated in CLM
         ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
         call update_bgc_flux_decomp_sourcesink(elm_bgc_data,    &
-                    bounds, num_soilc, filter_soilc,            &
-                    carbonflux_vars, nitrogenflux_vars,         &
-                    phosphorusflux_vars)
+                    bounds, num_soilc, filter_soilc)
 
         call update_bgc_state_smin(elm_bgc_data,                &
-                    bounds, num_soilc, filter_soilc,            &
-                    nitrogenstate_vars, phosphorusstate_vars)
+                    bounds, num_soilc, filter_soilc)
 
         call update_bgc_flux_smin(elm_bgc_data,                 &
                     bounds, num_soilc, filter_soilc,            &
-                    cnstate_vars,                               &
-                    nitrogenflux_vars, phosphorusflux_vars)
+                    cnstate_vars)
 
         call update_bgc_flux_gas_pf(elm_bgc_data,               &
-                    bounds, num_soilc, filter_soilc,            &
-                    carbonflux_vars, nitrogenflux_vars)
+                    bounds, num_soilc, filter_soilc)
 
     end if
 
@@ -1353,10 +1286,7 @@ contains
                 num_soilp, filter_soilp,                    &
                 canopystate_vars, soilstate_vars,           &
                 temperature_vars, waterstate_vars,          &
-                cnstate_vars, ch4_vars,                     &
-                carbonstate_vars, carbonflux_vars,          &
-                nitrogenstate_vars, nitrogenflux_vars,      &
-                phosphorusstate_vars,phosphorusflux_vars)
+                cnstate_vars, ch4_vars)
 
     ! USES:
     use SoilLittDecompMod          , only: SoilLittDecompAlloc
@@ -1374,12 +1304,6 @@ contains
     type(waterstate_type)               , intent(inout) :: waterstate_vars
     type(cnstate_type)                  , intent(inout) :: cnstate_vars
     type(ch4_type)                      , intent(inout) :: ch4_vars
-    type(carbonstate_type)              , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)               , intent(inout) :: carbonflux_vars
-    type(nitrogenstate_type)            , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)             , intent(inout) :: nitrogenflux_vars
-    type(phosphorusstate_type)          , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
 
     type(elm_interface_data_type)       , intent(inout) :: elm_interface_data
     real(r8) :: dt
@@ -1391,10 +1315,7 @@ contains
                 num_soilc, filter_soilc,                    &
                 canopystate_vars, soilstate_vars,           &
                 temperature_vars, waterstate_vars,          &
-                cnstate_vars, ch4_vars,                     &
-                carbonstate_vars, carbonflux_vars,          &
-                nitrogenstate_vars, nitrogenflux_vars,      &
-                phosphorusstate_vars,phosphorusflux_vars)
+                cnstate_vars, ch4_vars)
 
     ! STEP-2: (ii) run SoilLittDecompAlloc
     call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
@@ -1405,8 +1326,7 @@ contains
     ! STEP-2: (iii) update elm_bgc_data from SoilLittDecompAlloc
     call elm_bgc_update_data(elm_interface_data%bgc, bounds, &
                 num_soilc, filter_soilc,                     &
-                cnstate_vars, carbonflux_vars,               &
-                nitrogenflux_vars, phosphorusflux_vars)
+                cnstate_vars)
 
   end subroutine elm_bgc_run
 !--------------------------------------------------------------------------------------
@@ -1418,10 +1338,7 @@ contains
             bounds, num_soilc, filter_soilc,            &
             canopystate_vars, soilstate_vars,           &
             temperature_vars, waterstate_vars,          &
-            cnstate_vars, ch4_vars,                     &
-            carbonstate_vars, carbonflux_vars,          &
-            nitrogenstate_vars, nitrogenflux_vars,      &
-            phosphorusstate_vars,phosphorusflux_vars)
+            cnstate_vars, ch4_vars)
 
     ! USES:
 
@@ -1436,12 +1353,6 @@ contains
     type(waterstate_type)       , intent(inout) :: waterstate_vars
     type(cnstate_type)          , intent(inout) :: cnstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
-    type(carbonstate_type)      , intent(inout) :: carbonstate_vars
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
 
     type(elm_interface_data_type), intent(in)   :: elm_interface_data
 
@@ -1450,9 +1361,9 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-        decomp_cpools_vr        => col_cs%decomp_cpools_vr        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
-        decomp_npools_vr        => col_ns%decomp_npools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
-        decomp_ppools_vr        => col_ps%decomp_ppools_vr    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
+        decomp_cpools_vr        => col_cs%core%decomp_pools_vr        , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
+        decomp_npools_vr        => col_ns%core%decomp_pools_vr      , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) N pools
+        decomp_ppools_vr        => col_ps%core%decomp_pools_vr    , & ! Input:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) P pools
 
         smin_no3_vr             => col_ns%smin_no3_vr           , &      ! (gN/m3) vertically-resolved soil mineral NO3
         smin_nh4_vr             => col_ns%smin_nh4_vr           , &      ! (gN/m3) vertically-resolved soil mineral NH4
@@ -1461,12 +1372,12 @@ contains
         solutionp_vr            => col_ps%solutionp_vr        , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
         labilep_vr              => col_ps%labilep_vr          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
         secondp_vr              => col_ps%secondp_vr          , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-        sminp_vr                => col_ps%sminp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
+        sminp_vr                => col_ps%mineral%smin_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + secondp
         occlp_vr                => col_ps%occlp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
         primp_vr                => col_ps%primp_vr            , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
         !
-        plant_ndemand_col       => col_nf%plant_ndemand          , &
-        plant_pdemand_col       => col_pf%plant_pdemand        , &
+        plant_ndemand_col       => col_nf%uptake%plant_demand          , &
+        plant_pdemand_col       => col_pf%uptake%plant_demand        , &
         !
         !alt_indx                => canopystate_vars%alt_indx_col                , & ! Input:  [integer  (:)     ]  current depth of thaw
         !
@@ -1555,8 +1466,7 @@ contains
   ! pass data from clm_bgc to elm_bgc_data
   subroutine elm_bgc_update_data(elm_bgc_data, bounds,  &
             num_soilc, filter_soilc,                    &
-            cnstate_vars, carbonflux_vars,              &
-            nitrogenflux_vars, phosphorusflux_vars)
+            cnstate_vars)
 
     ! USES:
 
@@ -1566,9 +1476,6 @@ contains
     integer                             , intent(in)    :: filter_soilc(:)    ! filter for soil columns
 
     type(cnstate_type)                  , intent(in)    :: cnstate_vars
-    type(carbonflux_type)               , intent(in)    :: carbonflux_vars
-    type(nitrogenflux_type)             , intent(in)    :: nitrogenflux_vars
-    type(phosphorusflux_type)           , intent(in)    :: phosphorusflux_vars
 
     type(elm_interface_bgc_datatype)    , intent(inout) :: elm_bgc_data
 
@@ -1587,7 +1494,7 @@ contains
 
          potential_immob              => col_nf%potential_immob                          , & ! Output: [real(r8) (:)   ]
          actual_immob                 => col_nf%actual_immob                             , & ! Output: [real(r8) (:)   ]
-         sminn_to_plant               => col_nf%sminn_to_plant                           , & ! Output: [real(r8) (:)   ]
+         sminn_to_plant               => col_nf%uptake%smin_to_plant                           , & ! Output: [real(r8) (:)   ]
          sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr                 , & ! Output: [real(r8) (:,:) ]
          pot_f_nit_vr                 => col_nf%pot_f_nit_vr                             , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux
          pot_f_denit_vr               => col_nf%pot_f_denit_vr                           , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
@@ -1600,37 +1507,37 @@ contains
          n2_n2o_ratio_denit_vr        => col_nf%n2_n2o_ratio_denit_vr                    , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
          f_n2o_denit_vr               => col_nf%f_n2o_denit_vr                           , & ! Output: [real(r8) (:,:) ]  flux of N2O from denitrification [gN/m3/s]
          f_n2o_nit_vr                 => col_nf%f_n2o_nit_vr                             , & ! Output: [real(r8) (:,:) ]  flux of N2O from nitrification [gN/m3/s]
-         supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr                   , & ! Output: [real(r8) (:,:) ]
-         sminn_to_plant_vr            => col_nf%sminn_to_plant_vr                        , & ! Output: [real(r8) (:,:) ]
+         supplement_to_sminn_vr       => col_nf%mineral%supplement_to_smin_vr                   , & ! Output: [real(r8) (:,:) ]
+         sminn_to_plant_vr            => col_nf%uptake%smin_to_plant_vr                        , & ! Output: [real(r8) (:,:) ]
          actual_immob_vr              => col_nf%actual_immob_vr                          , & ! Output: [real(r8) (:,:) ]
 
          potential_immob_p            => col_pf%potential_immob_p                      , & ! Output: [real(r8) (:)   ]
          actual_immob_p               => col_pf%actual_immob_p                         , & ! Output: [real(r8) (:)   ]
-         sminp_to_plant               => col_pf%sminp_to_plant                         , & ! Output: [real(r8) (:)   ]
-         supplement_to_sminp_vr       => col_pf%supplement_to_sminp_vr                 , & ! Output: [real(r8) (:,:) ]
-         sminp_to_plant_vr            => col_pf%sminp_to_plant_vr                      , & ! Output: [real(r8) (:,:) ]
+         sminp_to_plant               => col_pf%uptake%smin_to_plant                         , & ! Output: [real(r8) (:)   ]
+         supplement_to_sminp_vr       => col_pf%mineral%supplement_to_smin_vr                 , & ! Output: [real(r8) (:,:) ]
+         sminp_to_plant_vr            => col_pf%uptake%smin_to_plant_vr                      , & ! Output: [real(r8) (:,:) ]
          actual_immob_p_vr            => col_pf%actual_immob_p_vr                      , & ! Output: [real(r8) (:,:) ]
 
-         decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
-         decomp_cascade_sminn_flux_vr     =>    col_nf%decomp_cascade_sminn_flux_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
+         decomp_cascade_ntransfer_vr      =>    col_nf%core%decomp_cascade_transfer_vr       , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
+         decomp_cascade_sminn_flux_vr     =>    col_nf%mineral%decomp_cascade_smin_flux_vr      , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral N flux for transition along decomposition cascade (gN/m3/s)
          potential_immob_vr               =>    col_nf%potential_immob_vr                , & ! Output: [real(r8) (:,:)   ]
          sminn_to_denit_decomp_cascade_vr =>    col_nf%sminn_to_denit_decomp_cascade_vr  , & ! Output: [real(r8) (:,:,:) ]
-         gross_nmin_vr                    =>    col_nf%gross_nmin_vr                     , & ! Output: [real(r8) (:,:)   ]
-         net_nmin_vr                      =>    col_nf%net_nmin_vr                       , & ! Output: [real(r8) (:,:)   ]
-         gross_nmin                       =>    col_nf%gross_nmin                        , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)
-         net_nmin                         =>    col_nf%net_nmin                          , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
+         gross_nmin_vr                    =>    col_nf%mineral%gross_min_vr                     , & ! Output: [real(r8) (:,:)   ]
+         net_nmin_vr                      =>    col_nf%mineral%net_min_vr                       , & ! Output: [real(r8) (:,:)   ]
+         gross_nmin                       =>    col_nf%mineral%gross_min                        , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)
+         net_nmin                         =>    col_nf%mineral%net_min                          , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
 
          ! add phosphorus
-         decomp_cascade_ptransfer_vr      =>    col_pf%decomp_cascade_ptransfer_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
-         decomp_cascade_sminp_flux_vr     =>    col_pf%decomp_cascade_sminp_flux_vr    , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
+         decomp_cascade_ptransfer_vr      =>    col_pf%core%decomp_cascade_transfer_vr     , & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of P from donor to receiver pool along decomp. cascade (gP/m3/s)
+         decomp_cascade_sminp_flux_vr     =>    col_pf%mineral%decomp_cascade_smin_flux_vr    , & ! Output: [real(r8) (:,:,:) ]  vert-res mineral P flux for transition along decomposition cascade (gP/m3/s)
          potential_immob_p_vr             =>    col_pf%potential_immob_p_vr            , & ! Output: [real(r8) (:,:)   ]
-         gross_pmin_vr                    =>    col_pf%gross_pmin_vr                   , & ! Output: [real(r8) (:,:)   ]
-         net_pmin_vr                      =>    col_pf%net_pmin_vr                     , & ! Output: [real(r8) (:,:)   ]
-         gross_pmin                       =>    col_pf%gross_pmin                      , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
-         net_pmin                         =>    col_pf%net_pmin                        , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
+         gross_pmin_vr                    =>    col_pf%mineral%gross_min_vr                   , & ! Output: [real(r8) (:,:)   ]
+         net_pmin_vr                      =>    col_pf%mineral%net_min_vr                     , & ! Output: [real(r8) (:,:)   ]
+         gross_pmin                       =>    col_pf%mineral%gross_min                      , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
+         net_pmin                         =>    col_pf%mineral%net_min                        , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
 
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr                , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         decomp_cascade_ctransfer_vr      =>    col_cf%core%decomp_cascade_transfer_vr         , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
          phr_vr                           =>    col_cf%phr_vr                              , & ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)
          fphr                             =>    col_cf%fphr                                  & ! Output: [real(r8) (:,:)   ]  fraction of potential SOM + LITTER heterotrophic
          )
@@ -1700,9 +1607,7 @@ contains
   subroutine update_bgc_data_elm2elm(elm_bgc_data,bounds,         &
            num_soilc, filter_soilc,                               &
            num_soilp, filter_soilp,                               &
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           phosphorusflux_vars, phosphorusstate_vars,             &
+           cnstate_vars, &
            ch4_vars)
     ! USES
 
@@ -1717,12 +1622,6 @@ contains
     integer                     , intent(in)    :: filter_soilp(:)   ! filter for soil patches
 
     type(cnstate_type)          , intent(inout) :: cnstate_vars
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)      , intent(inout) :: carbonstate_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
-    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
     type(ch4_type)              , intent(inout) :: ch4_vars
 
     type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
@@ -1734,18 +1633,14 @@ contains
     ! bgc_state_decomp is updated in CLM
     ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
     call update_bgc_flux_decomp_cascade(elm_bgc_data,   &
-                bounds, num_soilc, filter_soilc,        &
-                carbonflux_vars, nitrogenflux_vars,     &
-                phosphorusflux_vars)
+                bounds, num_soilc, filter_soilc)
 
     call update_bgc_flux_smin(elm_bgc_data,             &
                 bounds, num_soilc, filter_soilc,        &
-                cnstate_vars,                           &
-                nitrogenflux_vars, phosphorusflux_vars)
+                cnstate_vars)
 
     call update_bgc_flux_nitdenit(elm_bgc_data,         &
-                bounds, num_soilc, filter_soilc,        &
-                nitrogenflux_vars, phosphorusflux_vars)
+                bounds, num_soilc, filter_soilc)
 
   end subroutine update_bgc_data_elm2elm
 !--------------------------------------------------------------------------------------

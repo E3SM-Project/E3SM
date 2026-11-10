@@ -59,24 +59,24 @@ contains
        c = filter_soilc(fc)
 
        ! calculate fluxes (1/sec)
-       col_cf%prod10c_loss(c)    = col_cs%prod10c(c)    * kprod10
-       col_cf%prod100c_loss(c)   = col_cs%prod100c(c)   * kprod100
+       col_cf%core%prod10_loss(c)    = col_cs%core%prod10(c)    * kprod10
+       col_cf%core%prod100_loss(c)   = col_cs%core%prod100(c)   * kprod100
 
        if ( use_c13 ) then
-          c13_col_cf%prod10c_loss(c)  = c13_col_cs%prod10c(c)  * kprod10
-          c13_col_cf%prod100c_loss(c) = c13_col_cs%prod100c(c) * kprod100
+          c13_col_cf%core%prod10_loss(c)  = c13_col_cs%core%prod10(c)  * kprod10
+          c13_col_cf%core%prod100_loss(c) = c13_col_cs%core%prod100(c) * kprod100
        endif
 
        if ( use_c14 ) then
-          c14_col_cf%prod10c_loss(c)  = c14_col_cs%prod10c(c)  * kprod10
-          c14_col_cf%prod100c_loss(c) = c14_col_cs%prod100c(c) * kprod100
+          c14_col_cf%core%prod10_loss(c)  = c14_col_cs%core%prod10(c)  * kprod10
+          c14_col_cf%core%prod100_loss(c) = c14_col_cs%core%prod100(c) * kprod100
        endif
 
-       col_nf%prod10n_loss(c)    = col_ns%prod10n(c)    * kprod10
-       col_nf%prod100n_loss(c)   = col_ns%prod100n(c)   * kprod100
+       col_nf%core%prod10_loss(c)    = col_ns%core%prod10(c)    * kprod10
+       col_nf%core%prod100_loss(c)   = col_ns%core%prod100(c)   * kprod100
 
-       col_pf%prod10p_loss(c)    = col_ps%prod10p(c)    * kprod10
-       col_pf%prod100p_loss(c)   = col_ps%prod100p(c)   * kprod100
+       col_pf%core%prod10_loss(c)    = col_ps%core%prod10(c)    * kprod10
+       col_pf%core%prod100_loss(c)   = col_ps%core%prod100(c)   * kprod100
     end do
 
 
@@ -84,50 +84,50 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
-       col_cs%prod10c(c)    = col_cs%prod10c(c)             &
-            + col_cf%hrv_deadstemc_to_prod10c(c)*dt         & ! from harvest
-            - col_cf%prod10c_loss(c)*dt                       ! from decomposition
+       col_cs%core%prod10(c)    = col_cs%core%prod10(c)             &
+            + col_cf%core%hrv_deadstem_to_prod10(c)*dt         & ! from harvest
+            - col_cf%core%prod10_loss(c)*dt                       ! from decomposition
 
-       col_cs%prod100c(c)   = col_cs%prod100c(c)            &
-            + col_cf%hrv_deadstemc_to_prod100c(c)*dt        & ! from harvest
-            - col_cf%prod100c_loss(c)*dt                      ! from decomposition
+       col_cs%core%prod100(c)   = col_cs%core%prod100(c)            &
+            + col_cf%core%hrv_deadstem_to_prod100(c)*dt        & ! from harvest
+            - col_cf%core%prod100_loss(c)*dt                      ! from decomposition
 
 
        if ( use_c13 ) then
-          c13_col_cs%prod10c(c)  = c13_col_cs%prod10c(c)    &
-               + c13_col_cf%hrv_deadstemc_to_prod10c(c)*dt  & ! from harvest
-               - c13_col_cf%prod10c_loss(c)*dt                ! from decomposition
+          c13_col_cs%core%prod10(c)  = c13_col_cs%core%prod10(c)    &
+               + c13_col_cf%core%hrv_deadstem_to_prod10(c)*dt  & ! from harvest
+               - c13_col_cf%core%prod10_loss(c)*dt                ! from decomposition
 
-          c13_col_cs%prod100c(c) = c13_col_cs%prod100c(c)   &
-               + c13_col_cf%hrv_deadstemc_to_prod100c(c)*dt & ! from harvest
-               - c13_col_cf%prod100c_loss(c)*dt               ! from decomposition
+          c13_col_cs%core%prod100(c) = c13_col_cs%core%prod100(c)   &
+               + c13_col_cf%core%hrv_deadstem_to_prod100(c)*dt & ! from harvest
+               - c13_col_cf%core%prod100_loss(c)*dt               ! from decomposition
        endif
 
        if ( use_c14 ) then
-          c14_col_cs%prod10c(c)  = c14_col_cs%prod10c(c)    &
-               + c14_col_cf%hrv_deadstemc_to_prod10c(c)*dt  & ! from harvest
-               - c14_col_cf%prod10c_loss(c)*dt                ! from decomposition
+          c14_col_cs%core%prod10(c)  = c14_col_cs%core%prod10(c)    &
+               + c14_col_cf%core%hrv_deadstem_to_prod10(c)*dt  & ! from harvest
+               - c14_col_cf%core%prod10_loss(c)*dt                ! from decomposition
 
-          c14_col_cs%prod100c(c) = c14_col_cs%prod100c(c)   &
-               + c14_col_cf%hrv_deadstemc_to_prod100c(c)*dt & ! from harvest
-               - c14_col_cf%prod100c_loss(c)*dt               ! from decomposition
+          c14_col_cs%core%prod100(c) = c14_col_cs%core%prod100(c)   &
+               + c14_col_cf%core%hrv_deadstem_to_prod100(c)*dt & ! from harvest
+               - c14_col_cf%core%prod100_loss(c)*dt               ! from decomposition
        endif
 
-       col_ns%prod10n(c)    = col_ns%prod10n(c)             &
-            + col_nf%hrv_deadstemn_to_prod10n(c)*dt         & ! from harvest
-            - col_nf%prod10n_loss(c)*dt                       ! from decomposition
+       col_ns%core%prod10(c)    = col_ns%core%prod10(c)             &
+            + col_nf%core%hrv_deadstem_to_prod10(c)*dt         & ! from harvest
+            - col_nf%core%prod10_loss(c)*dt                       ! from decomposition
 
-       col_ns%prod100n(c)   = col_ns%prod100n(c)            &
-            + col_nf%hrv_deadstemn_to_prod100n(c)*dt        & ! from harvest
-            - col_nf%prod100n_loss(c)*dt                      ! from decomposition
+       col_ns%core%prod100(c)   = col_ns%core%prod100(c)            &
+            + col_nf%core%hrv_deadstem_to_prod100(c)*dt        & ! from harvest
+            - col_nf%core%prod100_loss(c)*dt                      ! from decomposition
 
-       col_ps%prod10p(c)    = col_ps%prod10p(c)             &
-            + col_pf%hrv_deadstemp_to_prod10p(c)*dt         & ! from harvest
-            - col_pf%prod10p_loss(c)*dt                       ! from decomposition
+       col_ps%core%prod10(c)    = col_ps%core%prod10(c)             &
+            + col_pf%core%hrv_deadstem_to_prod10(c)*dt         & ! from harvest
+            - col_pf%core%prod10_loss(c)*dt                       ! from decomposition
 
-       col_ps%prod100p(c)   = col_ps%prod100p(c)            &
-            + col_pf%hrv_deadstemp_to_prod100p(c)*dt        & ! from harvest
-            - col_pf%prod100p_loss(c)*dt                      ! from decomposition
+       col_ps%core%prod100(c)   = col_ps%core%prod100(c)            &
+            + col_pf%core%hrv_deadstem_to_prod100(c)*dt        & ! from harvest
+            - col_pf%core%prod100_loss(c)*dt                      ! from decomposition
 
     end do ! end of column loop
 
