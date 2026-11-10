@@ -4,9 +4,10 @@ name: homme
 # self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change,
 # and every night on master.
 #
-# Jobs (matrix): runner in {gnu, intel, cuda} x bfb in {false, true} (no cuda bfb yet).
+# Jobs (matrix): runner in {gnu, intel, cuda, hip} x bfb in {false, true} (no gpu bfb yet).
 #  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>[-bfb].cmake
-#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnugpu.
+#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnu-cuda,
+#    and for the hip runner is gnu-hip.
 #  - bfb jobs set HOMMEXX_BFB_TESTING=ON (with strict fp flags), to compare the cxx and f90 builds
 #    against each other within the same build. They do not compare against baselines (--no-baseline).
 #  - Only the submodules that Homme needs (cime, ekat, scorpio) are checked out.
@@ -63,18 +64,20 @@ defaults:
 
 jobs:
   tests:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
       fail-fast: false
       matrix:
         # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
-        runner: [gnu, intel, cuda]
+        runner: [gnu, intel, cuda, hip]
         # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags.
         # The bfb jobs do not use baselines (they cannot be used with -g), so skip them when blessing.
         bfb: ${{ fromJSON(inputs.bless && '[false]' || '[false, true]') }}
         exclude:
-          # TODO: add a cuda bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
+          # TODO: add a cuda/hip bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
           - {runner: cuda, bfb: true}
+          - {runner: hip, bfb: true}
     name: ${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
     steps:
       - name: Check out the repository
@@ -93,21 +96,21 @@ jobs:
               cime externals/ekat externals/scorpio
       - name: Show action trigger
         uses: e3sm-project/automation/show-trigger@v1
-      - name: Get CUDA Arch
+      - name: Get GPU Arch
         id: gpu
-        if: ${{ matrix.runner == 'cuda' }}
+        if: ${{ matrix.runner == 'cuda' || matrix.runner == 'hip' }}
         uses: e3sm-project/automation/gpu-arch@v1
       - name: Set test resources
         env:
-          CUDA_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
+          GPU_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
           # Homme tests do not reserve cpus/gpus, so we must make sure to not oversubscribe the node.
           # Here we figure out the compiler (as CIME calls it), and how to split the node between ranks
           # per test, threads per rank, and number of tests running at the same time.
           # The results are set in the env, for the next steps.
-          if [ -n "${CUDA_CMAKE_CONFIGS:-}" ]; then
+          if [ "${{ matrix.runner }}" = "cuda" ]; then
             # GPU runner (the gpu-arch step detected the cuda arch)
-            compiler=gnugpu
+            compiler=gnu-cuda
             ranks=2    # one rank per GPU (2 GPUs per node)
             threads=1
 
@@ -118,6 +121,18 @@ jobs:
               echo "NVCC_WRAPPER_DEFAULT_COMPILER=${NVCC_WRAPPER_DEFAULT_COMPILER:-g++}"
               echo "OMPI_CXX=${OMPI_CXX:-$nvcc_wrapper}"
               echo "MPICH_CXX=${MPICH_CXX:-$nvcc_wrapper}"
+            } >> "$GITHUB_ENV"
+          elif [ "${{ matrix.runner }}" = "hip" ]; then
+            # GPU runner (the gpu-arch step detected the hip arch)
+            compiler=gnu-hip
+            ranks=2    # one rank per GPU (2 GPUs per node)
+            threads=1
+
+            # The MPI wrappers must use hipcc as backend compiler, both when configuring and
+            # when building (so this must be in the env of the next step). Honor any pre-existing setting.
+            {
+              echo "OMPI_CXX=${OMPI_CXX:-hipcc}"
+              echo "MPICH_CXX=${MPICH_CXX:-hipcc}"
             } >> "$GITHUB_ENV"
           else
             compiler=${{ matrix.runner }}
@@ -161,7 +176,7 @@ jobs:
       - name: Run test_homme.py
         working-directory: components/homme
         env:
-          CUDA_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
+          GPU_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
           # BFB jobs use the machine file ghci-<runner>-bfb.cmake (via --bfb), and only care about cxx vs f90
           # comparisons within the same build, so they do not compare against baselines.
@@ -170,10 +185,10 @@ jobs:
             bfb_flag=(--bfb --no-baseline)
           fi
 
-          # CUDA_CMAKE_CONFIGS (from the gpu-arch step outputs) is a semicolon-separated list of key=val
-          # (empty tokens are ignored, so this is a no-op for non-cuda runners)
+          # GPU_CMAKE_CONFIGS (from the gpu-arch step outputs) is a semicolon-separated list of key=val
+          # (empty tokens are ignored, so this is a no-op for non-gpu runners)
           cuda_flags=()
-          IFS=';' read -ra configs <<< "${CUDA_CMAKE_CONFIGS:-}"
+          IFS=';' read -ra configs <<< "${GPU_CMAKE_CONFIGS:-}"
           for config in "${configs[@]}"; do
             if [ -n "$config" ]; then
               cuda_flags+=(--cmake-opt "$config")

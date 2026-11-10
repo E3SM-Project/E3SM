@@ -2301,7 +2301,7 @@
     <DESC>RHEL9 image(s), used for GitHub CI</DESC>
     <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>gnu,intel,gnugpu</COMPILERS>
+    <COMPILERS>gnu,intel,gnu-cuda,gnu-hip</COMPILERS>
     <MPILIBS>openmpi,mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/tmp</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/e3sm/data/inputdata</DIN_LOC_ROOT>
@@ -2315,7 +2315,8 @@
     <SUPPORTED_BY>lbertag at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnugpu">2</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu-cuda">2</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu-hip">2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -2340,8 +2341,13 @@
     <environment_variables compiler="gnu">
       <env name="BLA_VENDOR">OpenBLAS</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu">
+    <environment_variables compiler="gnu-cuda">
       <env name="BLA_VENDOR">OpenBLAS</env>
+    </environment_variables>
+    <environment_variables compiler="gnu-hip">
+      <env name="BLA_VENDOR">OpenBLAS</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
+      <env name="OMPI_CXX">$SHELL{which hipcc}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64lp</env>
