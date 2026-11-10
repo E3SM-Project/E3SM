@@ -28,12 +28,29 @@ VALIDATION_FILE is one of (from mam_x_validation/aero_model/):
   aero_model_wetdep_convproc_ts_3.yaml     inputs only
 MAM4XX_OUTPUT.py is the file the mam4xx validation test writes
 (mam4xx_aero_model_wetdep_convproc_ts_3.py in its build directory).
+
+Using output from a full EAMxx case (e.g. ne30pg2):
+  - The case must run ZM with mam4_wetscav convproc_do_aer: true.
+  - Request the fields listed in output.yaml in the case's output stream,
+    with averaging_type: instant, on the physics grid (no horizontal or
+    vertical remap). Averaged ktop/kbot/zm_activity are meaningless; the
+    script warns if the output looks averaged.
+  - Pick a time slice with --time. Only that slice is read, so files with
+    many slices are fine.
+  - ZM, P3 and wetscav output fields (zm_*, evap_dq_out, nevapr,
+    precip_total_tend, aerdepwetis, aerdepwetcw) are exactly what wetscav
+    used or produced. In a full case, processes after wetscav (radiation,
+    dynamics, ...) also change T_mid, p_mid, pseudo_density and qv/qc/qi/nc/ni
+    before output, so those are close to, not exactly, the wetscav inputs.
+  - Different level counts (e.g. 128 vs 72) are handled: layer thicknesses
+    are rescaled before comparing.
 """
 
 import argparse
 import ast
 import math
 import sys
+import warnings
 
 import numpy as np
 import yaml
@@ -264,10 +281,11 @@ def _get(nc, name, tidx):
         raise KeyError(f"field '{name}' not found in EAMxx output; "
                        f"add it to output.yaml")
     var = nc.variables[name]
-    x = np.asarray(var[:], dtype=float)
-    if "time" in var.dimensions:
-        x = np.take(x, tidx, axis=var.dimensions.index("time"))
-    return x
+    # Read only the requested time slice: a ne30pg2 file with many slices
+    # would not fit in memory otherwise.
+    idx = tuple(tidx if d == "time" else slice(None) for d in var.dimensions)
+    x = var[idx]
+    return np.ma.filled(np.ma.asarray(x, dtype=float), np.nan)
 
 
 def read_eamxx(path, tidx):
@@ -277,6 +295,9 @@ def read_eamxx(path, tidx):
     with Dataset(path) as nc:
         g = lambda n: _get(nc, n, tidx)  # noqa: E731
         ntime = len(nc.dimensions["time"]) if "time" in nc.dimensions else 1
+        if not -ntime <= tidx < ntime:
+            sys.exit(f"error: --time {tidx} is out of range; {path} has "
+                     f"{ntime} time slice(s) (valid: 0..{ntime - 1} or -1)")
 
         mflx_int = g("zm_mass_flux_int")              # (ncol, nlev+1)
         cmfmc = np.maximum(0.0, mflx_int[:, 1:])      # interface below mid-level k
@@ -308,11 +329,16 @@ def read_eamxx(path, tidx):
             "dpdry": g("pseudo_density_dry") * PA_TO_MB,
         }
         s = {
-            "ktop": np.rint(g("zm_cldtop_klev")).astype(int),
+            "ktop": np.rint(np.nan_to_num(g("zm_cldtop_klev"))).astype(int),
             # mam4xx loops over ktop <= k < kbot, so the interface passes the
             # 0-based ZM cloud-base level + 1 (same as Fortran maxg).
-            "kbot": np.rint(g("zm_msemax_klev")).astype(int) + 1,
-            "zm_activity": np.rint(g("zm_activity")).astype(int),
+            "kbot": np.rint(np.nan_to_num(g("zm_msemax_klev"))).astype(int) + 1,
+            "zm_activity": np.where(np.isnan(g("zm_activity")), 0,
+                                    np.rint(np.nan_to_num(g("zm_activity")))
+                                    ).astype(int),
+            # raw values, to detect averaged (non-instant) output
+            "zm_activity_raw": np.nan_to_num(g("zm_activity")),
+            "ktop_raw": np.nan_to_num(g("zm_cldtop_klev")),
         }
         lat = g("lat") if "lat" in nc.variables else None
         lon = g("lon") if "lon" in nc.variables else None
@@ -333,7 +359,8 @@ def read_eamxx(path, tidx):
 # -----------------------------------------------------------------------------
 def stats(x):
     x = np.asarray(x).ravel()
-    nz = np.abs(x[x != 0])
+    x = x[~np.isnan(x)]          # fill values were turned into nan
+    nz = np.abs(x[np.abs(x) > TINY * np.max(np.abs(x))]) if x.size else x
     return {
         "min": float(x.min()) if x.size else math.nan,
         "max": float(x.max()) if x.size else math.nan,
@@ -352,7 +379,52 @@ def nearest_factor(ratio):
     return best if best_d is not None and best_d < math.log10(1.5) else None
 
 
+THICKNESS_VARS = ("pdel", "dp", "dpdry")
+TINY = 1e-8          # values below TINY * max|x| are ignored in medians
+FRAC_FLAG = 0.25     # flag when more than this fraction of columns is off
+MAX_INDEX_ROWS = 20  # EAMxx rows shown in the ktop/kbot table
 RATIO_FLAG = 5.0   # flag a column whose median|x| is more than 5x from validation
+
+
+def spread_verdict(ratios, cols, ref="validation"):
+    """Judge per-column ratios (EAMxx / reference; nan = not defined).
+
+    Returns (flag or None, note or None). A flag means a systematic factor
+    (the median over columns is more than RATIO_FLAG off, which is what a unit
+    error looks like) or more than FRAC_FLAG of the columns off. A few columns
+    off is normal column-to-column variation and only gets a note.
+    """
+    r = np.asarray(ratios, dtype=float)
+    ok = ~np.isnan(r) & (r > 0)
+    if not np.any(ok):
+        return None, None
+    lr = np.log10(r[ok])
+    off = np.abs(lr) > math.log10(RATIO_FLAG)
+    med = float(10 ** np.median(lr))
+    cols_off = np.asarray(cols)[ok][off]
+    worst = float(10 ** lr[np.argmax(np.abs(lr))])
+    p5, p95 = (float(10 ** q) for q in np.percentile(lr, [5, 95]))
+    spread = f"p5-p95 {p5:.3g} to {p95:.3g}x"
+    if abs(math.log10(med)) > math.log10(RATIO_FLAG):
+        fac = nearest_factor(med)
+        hint = f", close to {fac}" if fac else ""
+        if abs(math.log10(med)) > 8:
+            hint = ", mass and number mixed up: species index shift?"
+        return (f"systematic: median over columns {med:.3g}x {ref}{hint} "
+                f"({spread})"), None
+    if off.mean() > FRAC_FLAG:
+        fac = nearest_factor(worst)
+        hint = f", close to {fac}" if fac else ""
+        if abs(math.log10(worst)) > 8:
+            hint = ", mass and number mixed up: species index shift?"
+        return (f"more than {RATIO_FLAG:g}x from {ref} in "
+                + _cols_list(cols_off, np.asarray(cols)[ok])
+                + f", worst {worst:.3g}x{hint}"), None
+    if off.any():
+        return None, (f"{off.sum()} of {ok.sum()} columns more than "
+                      f"{RATIO_FLAG:g}x off ({spread}), likely column-to-"
+                      "column variation")
+    return None, None
 
 
 def check_variable(key, e, v, cols):
@@ -369,23 +441,17 @@ def check_variable(key, e, v, cols):
             flags.append("all zero on one side only")
 
     # Per-column ratios: one bad column must not hide in a pooled median.
+    notes = []
     if sv["medabs"] > 0:
-        bad = []
-        for i, c in enumerate(cols):
-            m = stats(e[i])["medabs"]
-            if m > 0:
-                rc = m / sv["medabs"]
-                if abs(math.log10(rc)) > math.log10(RATIO_FLAG):
-                    bad.append((int(c), rc))
-        if bad:
-            worst = max(bad, key=lambda t: abs(math.log10(t[1])))
-            fac = nearest_factor(worst[1])
-            shown = ", ".join(f"{c}" for c, _ in bad[:8])
-            more = f" (+{len(bad) - 8} more)" if len(bad) > 8 else ""
-            flags.append(f"{len(bad)} of {len(cols)} columns more than "
-                         f"{RATIO_FLAG:g}x from validation (cols {shown}{more}; "
-                         f"worst {worst[1]:.3g}x"
-                         + (f", close to {fac}" if fac else "") + ")")
+        a = np.abs(np.asarray(e, dtype=float))
+        amax = np.nanmax(a) if np.any(~np.isnan(a)) else 0.0
+        a[a <= TINY * amax] = np.nan
+        with warnings.catch_warnings():   # all-nan columns are expected
+            warnings.simplefilter("ignore", RuntimeWarning)
+            med = np.nanmedian(a, axis=1)          # per-column median|x|
+        flag, note = spread_verdict(med / sv["medabs"], cols)
+        flags += [flag] if flag else []
+        notes += [note] if note else []
 
     if sign == "+" and se["fneg"] > 0:
         flags.append(f"EAMxx has {se['fneg']:.1%} negative values")
@@ -402,7 +468,7 @@ def check_variable(key, e, v, cols):
         flags.append("validation dp > 100 mb: looks like Pa")
 
     return {"key": key, "units": units, "e": se, "v": sv, "ratio": ratio,
-            "flags": flags}
+            "flags": flags, "notes": notes}
 
 
 def conv_layers(eu, du):
@@ -461,7 +527,7 @@ def check_deposition(fortran, eamxx, cols, mam4xx=None):
     for i, sp in enumerate(PCNST_NAMES):
         f = float(fortran[i])
         ei = e[:, i]
-        flags = []
+        flags, notes = [], []
         if f == 0.0:
             bad = cols[ei != 0]
             if bad.size:
@@ -477,23 +543,15 @@ def check_deposition(fortran, eamxx, cols, mam4xx=None):
             ri = rcol[:, i]
             if np.any(~np.isnan(ri)):
                 ratios[sp] = float(np.nanmedian(ri))
-            off = cols[np.abs(np.log10(np.where(np.isnan(ri), 1.0, ri)))
-                       > math.log10(RATIO_FLAG)]
-            if off.size:
-                worst = ri[np.nanargmax(np.abs(np.log10(ri)))]
-                fac = nearest_factor(worst)
-                hint = f" (close to {fac})" if fac else ""
-                if abs(math.log10(worst)) > 8:
-                    # number fluxes are ~1e3-1e7 #/m2/s, mass ~1e-20-1e-10 kg/m2/s
-                    hint = " (mass and number mixed up: species index shift?)"
-                flags.append(f"more than {RATIO_FLAG:g}x from Fortran in "
-                             + _cols_list(off, cols)
-                             + f", worst {worst:.3g}x" + hint)
+            flag, note = spread_verdict(ri, cols, "Fortran")
+            flags += [flag] if flag else []
+            notes += [note] if note else []
         m = "" if mam4xx is None else fmt(float(mam4xx[i]))
         rows.append((i, sp, fmt(f), m, fmt(float(ei.min())),
                      fmt(float(np.median(ei))), fmt(float(ei.max())),
                      f"{ratios[sp]:.3g}" if sp in ratios else "",
-                     "OK" if not flags else "⚠️ " + "; ".join(flags)))
+                     "⚠️ " + "; ".join(flags) if flags else
+                     "OK" + (f" ({'; '.join(notes)})" if notes else "")))
     return rows, ratios, rcol
 
 
@@ -535,6 +593,10 @@ def main():
 
     ncol = ev["temperature"].shape[0]
     nlev_e, nlev_v = ev["temperature"].shape[1], vv["temperature"].shape[1]
+    raw_act = es["zm_activity_raw"]
+    averaged = bool(np.any(np.abs(raw_act - np.round(raw_act)) > 1e-6)
+                    or np.any(np.abs(es["ktop_raw"] - np.round(es["ktop_raw"]))
+                              > 1e-6))
     active = np.nonzero(es["zm_activity"] == 1)[0]
 
     out = []
@@ -549,8 +611,17 @@ def main():
     w(f"- Columns with ZM active: {active.size} of {ncol}")
     w(f"- Validation dt = {vs['dt'][0]:g} s, convproc_do_aer = "
       f"{vs['convproc_do_aer'][0]}, convproc_do_gas = {vs['convproc_do_gas'][0]}")
+    if averaged:
+        w("- **⚠️ `zm_activity` or `zm_cldtop_klev` has non-integer values: the "
+          "output looks averaged. Use `averaging_type: instant` for this "
+          "check; averaged indices, activity flags and profiles are not what "
+          "wetscav received.**")
     if nlev_e != nlev_v:
-        w(f"- **Level count differs: EAMxx {nlev_e}, validation {nlev_v}**")
+        w(f"- Level count differs: EAMxx {nlev_e}, validation {nlev_v}. "
+          f"EAMxx layer thicknesses ({', '.join(THICKNESS_VARS)}) are "
+          f"multiplied by {nlev_e}/{nlev_v} before comparing, so thinner "
+          "layers are not taken for a unit error. Level indices (ktop, kbot) "
+          "are only checked against each side's own profiles.")
     w("")
 
     if active.size == 0:
@@ -574,9 +645,15 @@ def main():
       "| Status |")
     w("|---|---|---|---|---|---|---|---|---|---|---|---|")
     nflag = 0
+    # Layer thicknesses scale with the number of levels (72 vs e.g. 128).
+    thick_scale = nlev_e / nlev_v
     for key in VARIABLES:
-        r = check_variable(key, ev[key][cols], vv[key], cols)
-        status = "OK" if not r["flags"] else "⚠️ " + "; ".join(r["flags"])
+        e_key = ev[key][cols]
+        if key in THICKNESS_VARS and nlev_e != nlev_v:
+            e_key = e_key * thick_scale
+        r = check_variable(key, e_key, vv[key], cols)
+        status = ("⚠️ " + "; ".join(r["flags"]) if r["flags"] else
+                  "OK" + (f" ({'; '.join(r['notes'])})" if r["notes"] else ""))
         nflag += bool(r["flags"])
         ratio = "nan" if math.isnan(r["ratio"]) else f"{r['ratio']:.3g}"
         w(f"| `{key}` | {r['units']} | {EAMXX_SOURCE[key]} | "
@@ -606,14 +683,23 @@ def main():
     rows = check_indices("validation", vv, vs, [0])
     if active.size:
         rows += check_indices("EAMxx", ev, es, active)
-    n_off = 0
-    for side, c, kt, kb, f, l, note in rows:
+    n_off = sum(1 for r in rows if r[0] == "EAMxx" and "1 too small" in r[6])
+    eam_rows = [r for r in rows if r[0] == "EAMxx"]
+    eam_bad = [r for r in eam_rows if r[6] != "OK"]
+    # Show the validation column, then problem columns first, at most
+    # MAX_INDEX_ROWS EAMxx rows (a ne30pg2 run has thousands of active columns).
+    shown = [r for r in rows if r[0] == "validation"] + \
+        (eam_bad + [r for r in eam_rows if r[6] == "OK"])[:MAX_INDEX_ROWS]
+    for side, c, kt, kb, f, l, note in shown:
         loc = ""
         if side == "EAMxx" and lat is not None and lon is not None:
             loc = f" ({float(lat[c]):.1f}, {float(lon[c]):.1f})"
         w(f"| {side} | {c}{loc} | {kt} | {kb} | {f} | {l} | {note} |")
-        if side == "EAMxx" and "1 too small" in note:
-            n_off += 1
+    if len(eam_rows) > MAX_INDEX_ROWS:
+        w(f"\n{len(eam_rows) - MAX_INDEX_ROWS} more EAMxx columns not shown.")
+    if eam_rows:
+        w(f"\nEAMxx: {len(eam_rows) - len(eam_bad)} of {len(eam_rows)} active "
+          f"columns OK, {len(eam_bad)} with a problem.")
     w("")
 
     # --- wet deposition outputs
@@ -656,7 +742,7 @@ def main():
                 mcol = f" {m} |" if mout else ""
                 w(f"| {i} | {sp} | {f} |{mcol} {emin} | {emed} | {emax} | "
                   f"{r} | {st} |")
-                nbad += st != "OK"
+                nbad += st.startswith("⚠️")
             w("")
             w("`ratio` is the median over columns of \\|EAMxx\\| / "
               "\\|Fortran\\|.\n")
@@ -668,15 +754,11 @@ def main():
                 w(f"- {label} species: per-column median ratio ranges "
                   f"{np.nanmin(g):.3g} to {np.nanmax(g):.3g} "
                   f"(median {np.nanmedian(g):.3g})")
-                off = cols[ok][np.abs(np.log10(g[ok])) > math.log10(RATIO_FLAG)]
-                if off.size:
-                    gv = g[ok][np.abs(np.log10(g[ok])) > math.log10(RATIO_FLAG)]
-                    fac = nearest_factor(float(np.median(gv)))
-                    w(f"  - ⚠️ all {label} species together are more than "
-                      f"{RATIO_FLAG:g}x from Fortran in "
-                      + _cols_list(off, cols)
-                      + f" (median {np.median(gv):.3g}x"
-                      + (f", close to {fac}" if fac else "") + ")")
+                flag, note = spread_verdict(g, cols, "Fortran")
+                if flag:
+                    w(f"  - ⚠️ all {label} species together: {flag}")
+                elif note:
+                    w(f"  - {note}")
             if mout and name in mout:
                 d = np.abs(mout[name] - vout[name])
                 sc = np.maximum(np.abs(vout[name]), 1e-300)
