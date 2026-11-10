@@ -118,7 +118,7 @@ TEST_CASE ("update") {
         for (int i=0; i<ncol; ++i)
           for (int j=0; j<ncmp; ++j)
             for (int k=0; k<nlev; ++k)
-              REQUIRE_THAT (yv(i,j,k), Catch::Matchers::WithinRel(expected(i,j,k),1e-12));
+              REQUIRE_THAT (yv(i,j,k), Catch::Matchers::WithinRel(expected(i,j,k),Real(1e-12)));
       };
 
       { // scale

@@ -677,7 +677,7 @@ class TestAllScream(object):
 
         # Add any override the user may have requested
         for env_var in self._custom_env_vars:
-            key,val = env_var.split("=",2)
+            key,val = env_var.split("=",1)
             os.environ.update( { key : val } )
 
         success = True
