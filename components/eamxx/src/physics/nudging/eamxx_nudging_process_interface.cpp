@@ -1,6 +1,7 @@
 #include "eamxx_nudging_process_interface.hpp"
 
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/remap/identity_remapper.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"

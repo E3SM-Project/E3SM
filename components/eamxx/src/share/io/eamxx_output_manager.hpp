@@ -8,7 +8,7 @@
 #include "share/io/eamxx_io_control.hpp"
 
 #include "share/data_managers/field_manager.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_utils.hpp"
 
@@ -63,7 +63,6 @@ class OutputManager
 {
 public:
   using fm_type = FieldManager;
-  using gm_type = GridsManager;
   using globals_map_t = std::map<std::string,std::shared_ptr<std::any>>;
 
   // Constructor(s) & Destructor
