@@ -23,6 +23,12 @@ def buildnml(case, caseroot, compname):
 
     os.chdir(caseroot)
 
+    # The homme dycores (and compose) use Kokkos, which we get from the ekat support lib
+    libs = case.get_values("CASE_SUPPORT_LIBRARIES")
+    expect(libs, "CASE_SUPPORT_LIBRARIES is not set for this case. Cases created before it was introduced must be re-created.")
+    if "ekat" not in libs and case.get_value("CAM_TARGET") in ("preqx_kokkos", "theta-l", "theta-l_kokkos"):
+        case.set_value("CASE_SUPPORT_LIBRARIES", ",".join(libs + ["ekat"]))
+
     # Gather case parameters
     atm_flux_method     = case.get_value("ATM_FLUX_INTEGRATION_METHOD")
     atm_gustiness       = case.get_value("ATM_SUPPLIES_GUSTINESS")
