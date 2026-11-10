@@ -43,7 +43,7 @@ module prim_movie_mod
        nf_output_init_complete,  &
        nf_output_register_variables,&
        nf_put_var => nf_put_var_netcdf, &
-       nf_close_all, &
+       nf_close_files, nf_finalize_pio, &
        nf_output_register_dims, &
        nf_advance_frame, &
        nf_variable_attributes, &
@@ -70,6 +70,7 @@ module prim_movie_mod
 
   type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
+  type(io_desc_t), private :: iodescv, iodescvp1
 
 contains
 
@@ -117,7 +118,6 @@ contains
     integer(kind=nfsizekind) :: start(2), count(2)
     integer*8, allocatable :: compDOF(:)
     integer*8, allocatable :: compDOFp1(:)
-    type(io_desc_t) :: iodescv, iodescvp1
     integer,allocatable  :: subelement_corners(:,:)
     real(kind=real_kind),allocatable  :: var1(:,:),var2(:,:)
     character(len=varname_len), pointer :: output_varnames(:)
@@ -432,8 +432,22 @@ contains
 
 
   subroutine prim_movie_finish
+    use pio, only : pio_freedecomp
+    use common_io_mod, only : PIOFS
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, iodesc3dp1
 ! ncdf is a module global
-  call nf_close_all(ncdf)
+  ! Close the files first (this flushes pending writes), and only then free the io decomps,
+  ! which must happen before finalizing the iosystem. Otherwise they would be released after
+  ! MPI_Finalize, freeing their MPI datatypes too late.
+  call nf_close_files(ncdf)
+  call pio_freedecomp(PIOFS, iodescv)
+  call pio_freedecomp(PIOFS, iodescvp1)
+  call pio_freedecomp(PIOFS, iodesc2d)
+  call pio_freedecomp(PIOFS, iodesc3d)
+  call pio_freedecomp(PIOFS, iodesc3dp1)
+  call pio_freedecomp(PIOFS, iodesct)
+  call pio_freedecomp(PIOFS, iodesc3d_subelem)
+  call nf_finalize_pio()
   end subroutine prim_movie_finish
 
 
