@@ -98,6 +98,7 @@ Cosp2/quikbeam  physics/cosp2/external/src/simulator/quickbeam          U Colo. 
 Cosp2/rrtov     physics/cosp2/external/src/simulator/rrtov              U Colo.         BSD
 icarus-scops    physics/icarus-scops            BCC                 BSD
 HOMMEXX         components/homme/src/share/cxx  SNL                 BSD
+GradHOMMEXX     components/homme/src/share/cxx  SNL                 BSD
 
 -------------------------------------------------------------------------------
 
