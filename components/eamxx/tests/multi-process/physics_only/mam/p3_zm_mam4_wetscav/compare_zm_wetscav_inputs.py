@@ -235,7 +235,9 @@ def read_eamxx(path, tidx):
         }
         s = {
             "ktop": np.rint(g("zm_cldtop_klev")).astype(int),
-            "kbot": np.rint(g("zm_msemax_klev")).astype(int),
+            # mam4xx loops over ktop <= k < kbot, so the interface passes the
+            # 0-based ZM cloud-base level + 1 (same as Fortran maxg).
+            "kbot": np.rint(g("zm_msemax_klev")).astype(int) + 1,
             "zm_activity": np.rint(g("zm_activity")).astype(int),
         }
         lat = g("lat") if "lat" in nc.variables else None
@@ -440,7 +442,7 @@ def main():
       "layer with `eu` or `du` > 0, and a correct `kbot` is the last such layer "
       "+ 1. The validation test uses `ktop = jt - 1`, `kbot = maxg`. The EAMxx "
       "interface uses `ktop = round(zm_cldtop_klev)`, "
-      "`kbot = round(zm_msemax_klev)`.\n")
+      "`kbot = round(zm_msemax_klev) + 1`.\n")
     w("| Side | col | ktop | kbot | first conv layer | last conv layer | Result |")
     w("|---|---|---|---|---|---|---|")
     rows = check_indices("validation", vv, vs, [0])
