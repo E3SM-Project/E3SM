@@ -279,18 +279,34 @@ void Functions<S,D>::shoc_main_internal(
 
     if (use_emulated_moment_w2 || use_emulated_moment_w3) {
       const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
-      // w_sec and w3 are mid-level fields; do not write the extra
-      // interface pack from the emulator-inclusive input grid.
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlev)),
-                           [&] (const Int& k) {
-        const auto active = zi_grid(k) < 8000;
-        if (use_emulated_moment_w2) {
-          w_sec(k).set(active, ekat::max(min_emulated_w_sec, emulated_w_sec(k)));
-        }
-        if (use_emulated_moment_w3) {
-          w3(k).set(active, emulated_w3(k));
-        }
-      });
+      const auto w3clip = scream::shoc::Constants<Scalar>::w3clip;
+      const Int nlev_pack = ekat::npack<Pack>(nlev);
+
+      if (use_emulated_moment_w2) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack),
+                             [&] (const Int& k) {
+          const auto active = zi_grid(k) < 8000;
+          const auto w2 = ekat::min(Scalar(2) * tke(k),
+                                    ekat::max(min_emulated_w_sec, emulated_w_sec(k)));
+          w_sec(k).set(active, w2);
+        });
+      }
+
+      team.team_barrier();
+      if (use_emulated_moment_w3) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlevi)),
+                             [&] (const Int& k) {
+          const auto active = zi_grid(k) < 8000;
+          const auto w2 = w_sec(k < nlev_pack ? k : nlev_pack - 1);
+          const auto cond = w3clip * ekat::sqrt(Scalar(2) * ekat::cube(w2));
+          const auto emulated_w3_value = emulated_w3(k);
+          Pack tsign(1);
+          tsign.set(emulated_w3_value < 0, -1);
+          const auto exceeds_limit = tsign * emulated_w3_value > cond;
+          w3(k).set(active, emulated_w3_value);
+          w3(k).set(active && exceeds_limit, tsign * cond);
+        });
+      }
       team.team_barrier();
     }
 
@@ -575,22 +591,38 @@ void Functions<S,D>::shoc_main_internal(
 
     if (use_emulated_moment_w2 || use_emulated_moment_w3) {
       const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
-      // w_sec and w3 are mid-level fields.  The emulator inputs include an
-      // extra interface level, but that level must not be written here.
-      Kokkos::parallel_for(shcol*nlev, KOKKOS_LAMBDA(const int idx) {
-        const int i = idx/nlev;
-        const int k = idx%nlev;
-        const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
-        if (active) {
-          if (use_emulated_moment_w2) {
-            w_sec(i,k/Pack::n)[k%Pack::n] = ekat::max(
-              min_emulated_w_sec, emulated_w_sec(i,k/Pack::n)[k%Pack::n]);
+      const auto w3clip = scream::shoc::Constants<Scalar>::w3clip;
+      if (use_emulated_moment_w2) {
+        Kokkos::parallel_for(shcol*nlev, KOKKOS_LAMBDA(const int idx) {
+          const int i = idx/nlev;
+          const int k = idx%nlev;
+          const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
+          if (active) {
+            w_sec(i,k/Pack::n)[k%Pack::n] = ekat::min(
+              Scalar(2) * tke(i,k/Pack::n)[k%Pack::n],
+              ekat::max(min_emulated_w_sec,
+                        emulated_w_sec(i,k/Pack::n)[k%Pack::n]));
           }
-          if (use_emulated_moment_w3) {
-            w3(i,k/Pack::n)[k%Pack::n] = emulated_w3(i,k/Pack::n)[k%Pack::n];
+        });
+      }
+      if (use_emulated_moment_w3) {
+        Kokkos::parallel_for(shcol*nlevi, KOKKOS_LAMBDA(const int idx) {
+          const int i = idx/nlevi;
+          const int k = idx%nlevi;
+          const int km = k < nlev ? k : nlev - 1;
+          const int kp = km/Pack::n;
+          const int s = km%Pack::n;
+          const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
+          const auto theterm = w_sec(i,kp)[s];
+          const auto cond = w3clip * ekat::sqrt(Scalar(2) * ekat::cube(theterm));
+          const auto emulated_w3_value = emulated_w3(i,k/Pack::n)[k%Pack::n];
+          const auto tsign = emulated_w3_value < 0 ? Scalar(-1) : Scalar(1);
+          if (active) {
+            w3(i,k/Pack::n)[k%Pack::n] =
+              tsign * emulated_w3_value > cond ? tsign * cond : emulated_w3_value;
           }
-        }
-      });
+        });
+      }
       Kokkos::fence();
     }
 
