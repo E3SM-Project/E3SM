@@ -91,7 +91,9 @@ is an honest analogue.
 | `X.over_dt()` | `X` divided by the timestep |
 | `X.tend()` | tendency of `X` over the last step |
 | `X.broadcast_like(Y)` | `X` broadcast to the layout of `Y` |
-| `p_mid.searchsorted(500, units='hPa')` | level indices bracketing 500 hPa |
+| `p_mid.searchsorted(500, units='hPa')` | index of the first level with pressure above 500 hPa |
+| `z_mid.searchsorted(1000)` | index of the first level below 1000 m above sea level |
+| `height_mid.searchsorted(100)` | index of the first level below 100 m above the surface |
 
 Notes:
 
@@ -184,13 +186,15 @@ Notes:
   per the bullet above cannot be multiplied.
 - `X.tend()` is shorthand for `(X - X.shift(time=1)).over_dt()`, and inherits
   the `over_dt` restriction above.
-- `searchsorted` gives, per column, the pair of level indices that bracket a
-  target pressure or height. Its receiver picks the coordinate: `p_mid`/`p_int` for a
-  pressure (`units` defaults to `Pa`), `z_mid`/`z_int` for a height above sea
-  level, and `height_mid`/`height_int` for a height above the surface (`units`
-  defaults to `m`). `interp(..)` is built on it, so fields interpolated to the
-  same target share one search. Its output has `int` data type, so like
-  `mask.where(..)` it cannot be written as is.
+- `searchsorted` gives, per column, the index of the first level whose pressure is
+  above the target pressure (for a height, which decreases with the level index,
+  the first level below the target); the index is `nlevs` if there is none. That is
+  numpy's `searchsorted(side='right')` along the level dimension. Its receiver picks
+  the coordinate: `p_mid`/`p_int` for a pressure (`units` defaults to `Pa`),
+  `z_mid`/`z_int` for a height above sea level, and `height_mid`/`height_int` for a
+  height above the surface (`units` defaults to `m`). `interp(..)` is built on it, so
+  fields interpolated to the same target share one search. Its output has `int` data
+  type, so like `mask.where(..)` it cannot be written as is.
 - Histogram bin edges are numbers in increasing order. They may be negative,
   and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
 
@@ -209,7 +213,7 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 | `zonal_mean` | xarray would be `groupby_bins('lat', 20).mean()`, a call chain we cannot represent |
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
-| `searchsorted` | named after numpy's, but gives the pair of levels bracketing the target (-1 where out of range) rather than one insertion index, and takes `units` |
+| `searchsorted` | named after numpy's (`side='right'`), but takes `units`, and for heights, which decrease with the level index, it looks for the first level below the target |
 
 `X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, expressed as
 one diagnostic rather than as a graph of three.
