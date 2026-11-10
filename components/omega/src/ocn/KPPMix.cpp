@@ -260,9 +260,6 @@ void KPPMix::update(const Array3DReal &TracerArray, I4 TempTracerIndex,
        Kokkos::subview(TracerArray, SaltTracerIndex, Kokkos::ALL, Kokkos::ALL);
 
    OMEGA_SCOPE(LocPressureMid, VCoord->PressureMid);
-   EqState->computeSpecVol(ConservTemp, AbsSalinity, LocPressureMid);
-   EqState->computeBruntVaisalaFreqSq(ConservTemp, AbsSalinity, LocPressureMid,
-                                      EqState->SpecVol);
 
    PotentialDensityOnCell PotentialDensityCalc;
    OMEGA_SCOPE(LocPotentialDensityCalc, PotentialDensityCalc);

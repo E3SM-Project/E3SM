@@ -104,7 +104,12 @@ static void initStateForTimeStepper(
    // before the first step.
    TimeStepper *DefStepper = TimeStepper::getDefault();
    OceanState *DefState    = OceanState::getDefault();
-   DefStepper->initializeStateFromInput(DefState, ReadRestart);
+
+   // Do not time auxiliary computations outside of the time stepping loop
+   // to make the time stepping timer stack easier to interpret
+   Pacer::disableTiming();
+   DefStepper->prepareFirstStep(DefState, Tracers::getAll(0), ReadRestart);
+   Pacer::enableTiming();
 }
 
 //------------------------------------------------------------------------------

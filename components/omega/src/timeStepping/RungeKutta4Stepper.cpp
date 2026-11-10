@@ -45,6 +45,8 @@ RungeKutta4Stepper::RungeKutta4Stepper(
    RKProj[1] = 1. / 2;
    RKProj[2] = 1.;
    RKProj[3] = 1.;
+
+   FirstProjFactor = RKProj[0];
 }
 
 //------------------------------------------------------------------------------
@@ -78,6 +80,9 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
                                 TimeInstant &SimTime // current simulation time
 ) const {
 
+   OMEGA_REQUIRE(PrepareFirstStepCalled,
+                 "prepareFirstStep was not called before doStep");
+
    const MPI_Comm Comm = MeshHalo->getComm();
 
    const int CurLevel  = 0;
@@ -98,11 +103,9 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
       // q^{n+1} = q^{n} + dt * RKB[0] * R^{(0)}
       if (Stage == 0) {
          weightTracers(NextTracerArray, CurTracerArray, State, CurLevel);
-         prescribeState(State, CurLevel, State, CurLevel, ForcingStageTime);
-         updateKPPFields(State, CurLevel, CurLevel, CurLevel);
-         Tend->computeAllTendencies(State, AuxState, CurTracerArray, CurLevel,
-                                    CurLevel, CurLevel, StageTime,
-                                    RKProj[Stage] * TimeStep, RKB[Stage]);
+         Tend->computeAllTendenciesOnly(State, AuxState, CurTracerArray,
+                                        CurLevel, CurLevel, CurLevel, StageTime,
+                                        RKB[Stage]);
          updateStateByTend(State, NextLevel, State, CurLevel,
                            RKB[Stage] * TimeStep);
          accumulateTracersUpdate(NextTracerArray, RKB[Stage] * TimeStep);
@@ -146,12 +149,12 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
 
    applyImplicitVerticalMixing(State, CurLevel, CurLevel, CurLevel, "RK4");
 
-   validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);
-
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
    ++StepCount;
+
+   prepareNextStep(State, Tracers::getAll(CurLevel));
 }
 
 } // namespace OMEGA

@@ -1563,6 +1563,23 @@ void Tendencies::computeAllTendencies(
    AuxState->computeAll(State, TracerArray, ThickTimeLevel, VelTimeLevel,
                         ProjDt);
 
+   computeAllTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,
+                            VelTimeLevel, TracerTimeLevel, Time,
+                            FinalUpdateWeight);
+
+} // end all tendency compute
+
+// Compute all tendencies without computing auxiliary variables
+void Tendencies::computeAllTendenciesOnly(
+    const OceanState *State,        ///< [in] State variables
+    const AuxiliaryState *AuxState, ///< [in] Auxilary state variables
+    const Array3DReal &TracerArray, ///< [in] Tracer array
+    int ThickTimeLevel,             ///< [in] Time level
+    int VelTimeLevel,               ///< [in] Time level
+    int TracerTimeLevel,            ///< [in] Time level
+    TimeInstant Time,               ///< [in] Time
+    Real FinalUpdateWeight          ///< [in] final update weight
+) {
    computePseudoThicknessTendenciesOnly(State, AuxState, ThickTimeLevel,
                                         VelTimeLevel, Time);
    computeVelocityTendenciesOnly(State, AuxState, TracerArray, ThickTimeLevel,

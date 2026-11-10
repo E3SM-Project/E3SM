@@ -24,13 +24,18 @@ RungeKutta2Stepper::RungeKutta2Stepper(
     )
     : TimeStepper(InName, TimeStepperType::RungeKutta2, 2, InTimeStep,
                   InStartType, InStartTime, InStopType, InStopTime,
-                  InDuration) {}
+                  InDuration) {
+   FirstProjFactor = 0.5_Real;
+}
 
 //------------------------------------------------------------------------------
 // Advance the state by one step of the midpoint Runge Kutta scheme
 void RungeKutta2Stepper::doStep(OceanState *State,   // model state
                                 TimeInstant &SimTime // current simulation time
 ) const {
+
+   OMEGA_REQUIRE(PrepareFirstStepCalled,
+                 "prepareFirstStep was not called before doStep");
 
    const int CurLevel  = 0;
    const int NextLevel = 1;
@@ -42,15 +47,10 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
 
    resetFrazilFluxes();
 
-   prescribeState(State, CurLevel, State, CurLevel, SimTime);
-
-   updateKPPFields(State, CurLevel, CurLevel, CurLevel);
-
    // q = (h,u,phi)
    // R_q^{n} = RHS_q(u^{n}, h^{n}, phi^{n}, t^{n})
-   Tend->computeAllTendencies(State, AuxState, CurTracerArray, CurLevel,
-                              CurLevel, CurLevel, SimTime, 0.5 * TimeStep,
-                              0.0_Real);
+   Tend->computeAllTendenciesOnly(State, AuxState, CurTracerArray, CurLevel,
+                                  CurLevel, CurLevel, SimTime, 0.0_Real);
 
    // q^{n+0.5} = q^{n} + 0.5*dt*R_q^{n}
    updateStateByTend(State, NextLevel, State, CurLevel, 0.5 * TimeStep);
@@ -83,12 +83,12 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
 
    applyImplicitVerticalMixing(State, CurLevel, CurLevel, CurLevel, "RK2");
 
-   validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);
-
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
    ++StepCount;
+
+   prepareNextStep(State, Tracers::getAll(CurLevel));
 }
 
 } // namespace OMEGA

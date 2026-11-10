@@ -29,6 +29,9 @@ class SplitExplicitRK2Stepper : public TimeStepper {
    /// Indicate that this is a split time stepper
    bool isSplit() const override;
 
+   void prepareFirstStep(OceanState *State, const Array3DReal &CurTracerArray,
+                         bool ReadRestart) override;
+
    /// Advance the state by one split-explicit RK2 step.
    void doStep(OceanState *State,   ///< [inout] model state
                TimeInstant &SimTime ///< [inout] current simulation time
@@ -38,7 +41,7 @@ class SplitExplicitRK2Stepper : public TimeStepper {
    void initializeStateFromInput(
        OceanState *State, ///< [inout] model state after input has been read
        bool ReadRestart   ///< [in] true if restart input initialized the state
-   ) const override;
+   ) const;
 
    void
    computeTransportVelocity(OceanState *State, ///< [inout] model state
@@ -95,7 +98,8 @@ class SplitExplicitRK2Stepper : public TimeStepper {
        I4 CurLevel,                            ///< [in] current time level
        I4 NextLevel,                           ///< [in] next time level
        const TimeInstant &StageTime,           ///< [in] current stage time
-       const TimeInterval &StageTimeStep       ///< [in] current stage time step
+       const TimeInterval &StageTimeStep,      ///< [in] current stage time step
+       I4 Iter                                 ///< [in] current outer iteration
    ) const;
 
    void doThicknessTracerUpdate(

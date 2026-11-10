@@ -108,6 +108,10 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
 
    DefForcing->computeAll();
 
+   // Recompute auxiliary variables and prepare for time stepping after
+   // importing coupler data
+   DefTimeStepper->prepareNextStep(DefOceanState, Tracers::getAll(0));
+
    // time loop, integrate until CouplingAlarm or error encountered
    while (Err == 0 && !(CouplingAlarm->isRinging())) {
 

@@ -319,6 +319,9 @@ void timeLoop(TimeInstant TimeStart, Real TimeEnd) {
    const TimeInterval TimeStep = Stepper->getTimeStep();
    TimeInstant CurTime         = Stepper->getStartTime();
 
+   Stepper->prepareFirstStep(OceanState::get("TestState"), Tracers::getAll(0),
+                             false);
+
    // Time loop
    for (int Step = 0; Step < NSteps; ++Step) {
       Stepper->doStep(State, CurTime);
@@ -394,9 +397,6 @@ int testTimeStepper(const std::string &Name, TimeStepperType Type,
 
       Err += initState();
 
-      TestTimeStepper->initializeStateFromInput(OceanState::get("TestState"),
-                                                false);
-
       timeLoop(TimeStart, TimeEnd);
 
       Errors[RefLevel] = computeErrors();
@@ -459,7 +459,7 @@ int testOptionalStopTime(const std::string &Name, TimeStepperType Type) {
                        DefHalo);
    auto *State = OceanState::get("TestState");
    initState();
-   Stepper->initializeStateFromInput(State, false);
+   Stepper->prepareFirstStep(State, Tracers::getAll(0), false);
    TimeInstant CurTime = TimeStart;
    Stepper->doStep(State, CurTime);
 

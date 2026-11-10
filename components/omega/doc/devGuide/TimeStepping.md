@@ -48,6 +48,19 @@ persists on the instance across calls, so it can be used to identify the
 first `doStep` call even when `doStep` is invoked repeatedly across
 separate calls to `ocnRun`, as is done by the coupled driver.
 
+### Prepare first step method
+The `prepareFirstStep` method initializes the time stepper for time integration
+by computing the auxiliary variables needed for the first step and doing other
+setup tasks. It needs to be called before `doStep` can be called. The time step
+needs to be set before calling this method, and should not be changed before the
+first `doStep` call.
+
+### Prepare next step method
+The `prepareNextStep` method prepares the time stepper for taking its next time step.
+It is automatically called at the end of `doStep`. It might need to be called manually
+if the model state is modified in the time stepping loop outside of the `doStep` method,
+or if the time step is changed before the next call to `doStep`.
+
 ### Time stepper management methods
 
 #### Initialization

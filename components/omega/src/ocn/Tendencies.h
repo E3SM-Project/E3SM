@@ -138,6 +138,14 @@ class Tendencies {
                              int VelTimeLevel, int TracerTimeLevel,
                              TimeInstant Time, TimeInterval ProjDt,
                              Real FinalUpdateWeight = 1.0_Real);
+
+   void computeAllTendenciesOnly(const OceanState *State,
+                                 const AuxiliaryState *AuxState,
+                                 const Array3DReal &TracerArray,
+                                 int ThickTimeLevel, int VelTimeLevel,
+                                 int TracerTimeLevel, TimeInstant Time,
+                                 Real FinalUpdateWeight = 1.0_Real);
+
    void computePseudoThicknessTendenciesOnly(const OceanState *State,
                                              const AuxiliaryState *AuxState,
                                              int ThickTimeLevel,

@@ -160,11 +160,13 @@ class TimeStepper {
                        TimeInstant &SimTime ///< [inout] current simulation time
    ) const = 0;
 
-   /// Optional method-specific state initialization after initial/restart read.
-   virtual void initializeStateFromInput(
-       OceanState *, ///< [inout] model state after input has been read
-       bool          ///< [in] true if restart input initialized the state
-   ) const {}
+   /// Method-specific initialization to set up the first time step after
+   /// initial/restart read. Calling doStep before calling this function is an
+   /// error.
+   virtual void prepareFirstStep(
+       OceanState *State, const Array3DReal &CurTracerArray,
+       bool ReadRestart ///< [in] true if restart input initialized the state
+   );
 
    /// 1st stage of two-stage initialization for the default time stepper
    /// This version with no input parameters is for standalone mode
@@ -414,6 +416,12 @@ class TimeStepper {
        const std::string &TimerPrefix ///< [in] timer name prefix
    ) const;
 
+   /// Computes all auxiliary variables and performs other setup (e.g.
+   /// prescribes state ) for the first stage of the next time step. It also
+   /// validates the current state.
+   void prepareNextStep(OceanState *State,
+                        const Array3DReal &CurTracerArray) const;
+
  protected:
    /// Name of time stepper
    std::string Name;
@@ -462,6 +470,12 @@ class TimeStepper {
    HorzMesh *Mesh;           /// Ptr to horizontal mesh info
    VertCoord *VCoord;        /// Ptr to vertical coordinate
    Halo *MeshHalo;           /// Ptr to defined halos
+
+   // Flag that indicates prepareFirstStep has been called
+   bool PrepareFirstStepCalled = false;
+
+   // Time step projection factor of the first time stepper stage
+   Real FirstProjFactor;
 
    /// Reset frazil fluxes accumulated across the current outer ocean step.
    void resetFrazilFluxes() const;

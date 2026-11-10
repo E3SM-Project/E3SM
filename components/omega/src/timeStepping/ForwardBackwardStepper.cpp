@@ -24,7 +24,9 @@ ForwardBackwardStepper::ForwardBackwardStepper(
     )
     : TimeStepper(InName, TimeStepperType::ForwardBackward, 2, InTimeStep,
                   InStartType, InStartTime, InStopType, InStopTime,
-                  InDuration) {}
+                  InDuration) {
+   FirstProjFactor = 1;
+}
 
 //------------------------------------------------------------------------------
 // Advance the state by one step of the forward-backward scheme
@@ -32,6 +34,9 @@ void ForwardBackwardStepper::doStep(
     OceanState *State,   // input model state
     TimeInstant &SimTime // current simulation time
 ) const {
+
+   OMEGA_REQUIRE(PrepareFirstStepCalled,
+                 "prepareFirstStep was not called before doStep");
 
    const int VelCurLevel    = 0;
    const int ThickCurLevel  = 0;
@@ -53,14 +58,10 @@ void ForwardBackwardStepper::doStep(
    if (AuxState == nullptr)
       LOG_CRITICAL("Invalid AuxState");
 
-   prescribeVelocity(State, VelCurLevel, State, VelCurLevel, SimTime);
-
-   updateKPPFields(State, TracerCurLevel, ThickCurLevel, VelCurLevel);
-
    // R_u^{n} = RHS_u(u^{n}, h^{n}, t^{n})
-   Tend->computeVelocityTendencies(State, AuxState, CurTracerArray,
-                                   ThickCurLevel, VelCurLevel, TracerCurLevel,
-                                   SimTime + TimeStep, TimeStep);
+   Tend->computeVelocityTendenciesOnly(State, AuxState, CurTracerArray,
+                                       ThickCurLevel, VelCurLevel,
+                                       TracerCurLevel, SimTime + TimeStep);
 
    // u^{n+1} = u^{n} + R_u^{n}
    updateVelocityByTend(State, VelNextLevel, State, VelCurLevel, TimeStep);
@@ -105,12 +106,12 @@ void ForwardBackwardStepper::doStep(
    applyImplicitVerticalMixing(State, TracerCurLevel, ThickCurLevel,
                                VelCurLevel, "ForwardBackward");
 
-   validateOceanState(State, AuxState, VertCoord::getDefault(), 0);
-
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
    ++StepCount;
+
+   prepareNextStep(State, Tracers::getAll(TracerCurLevel));
 }
 
 } // namespace OMEGA

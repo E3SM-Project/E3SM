@@ -30,7 +30,10 @@ SplitExplicitRK2Stepper::SplitExplicitRK2Stepper(
     : TimeStepper(InName, InType, 2, InTimeStep, InStartType, InStartTime,
                   InStopType, InStopTime, InDuration),
       SEConfig(SplitExplicitInit::readConfigOptions(
-          InTimeStep, InType == TimeStepperType::UnsplitRK2)) {}
+          InTimeStep, InType == TimeStepperType::UnsplitRK2)) {
+
+   FirstProjFactor = 1;
+}
 
 bool SplitExplicitRK2Stepper::isSplit() const { return true; }
 
@@ -74,13 +77,6 @@ void SplitExplicitRK2Stepper::initializeStateFromInput(OceanState *State,
 
    Array3DReal CurTracerArray = Tracers::getAll(CurLevel);
 
-   // This is the only call to computeMomVertAux outside of the time stepping
-   // loop Don't time it to make the time stepping timer stack easier to
-   // interpret
-   Pacer::disableTiming();
-   AuxState->computeMomVertAux(State, CurTracerArray, CurLevel);
-   Pacer::enableTiming();
-
    if (SEConfig.SplitFactor == 0._Real) {
       SplitExplicitInit::computeUnsplitVelocitySplit(State, Mesh, VCoord,
                                                      CurLevel, NextLevel);
@@ -99,22 +95,36 @@ void SplitExplicitRK2Stepper::initializeStateFromInput(OceanState *State,
    State->copyToHost(CurLevel);
 }
 
+void SplitExplicitRK2Stepper::prepareFirstStep(
+    OceanState *State, const Array3DReal &CurTracerArray, bool ReadRestart) {
+
+   prepareNextStep(State, CurTracerArray);
+
+   // Initialize split state
+   initializeStateFromInput(State, ReadRestart);
+
+   PrepareFirstStepCalled = true;
+}
+
 //------------------------------------------------------------------------------
 void SplitExplicitRK2Stepper::doBaroclinicVelocityUpdate(
     OceanState *State, const Array3DReal &TendencyTracerArray, I4 CurLevel,
     I4 NextLevel, const TimeInstant &StageTime,
-    const TimeInterval &StageTimeStep) const {
+    const TimeInterval &StageTimeStep, I4 Iter) const {
 
    Pacer::start("SE-RK2:stage1Bcl", 2);
 
-   // TODO: A placeholder at this moment.
-   // prescribeState(State, CurLevel, State, CurLevel, StageTime);
-
    // Compute baroclinic velocity tendencies and update baroclinic velocity for
    // the first half of the stage time step
-   Tend->computeVelocityTendencies(State, AuxState, TendencyTracerArray,
-                                   NextLevel, NextLevel, NextLevel, StageTime,
-                                   StageTimeStep);
+   if (Iter == 0) {
+      Tend->computeVelocityTendenciesOnly(State, AuxState, TendencyTracerArray,
+                                          NextLevel, NextLevel, NextLevel,
+                                          StageTime);
+   } else {
+      Tend->computeVelocityTendencies(State, AuxState, TendencyTracerArray,
+                                      NextLevel, NextLevel, NextLevel,
+                                      StageTime, StageTimeStep);
+   }
 
    // Perform baroclinic velocity iteration with Coriolis acceleration
    doBaroclinicCoriolisIteration(State, CurLevel, NextLevel, StageTimeStep);
@@ -532,6 +542,8 @@ void SplitExplicitRK2Stepper::finalizeTimeStepIterationState(
 //------------------------------------------------------------------------------
 void SplitExplicitRK2Stepper::doStep(OceanState *State,
                                      TimeInstant &SimTime) const {
+   OMEGA_REQUIRE(PrepareFirstStepCalled,
+                 "prepareFirstStep was not called before doStep");
 
    if (!State)
       LOG_CRITICAL("Invalid State");
@@ -548,7 +560,6 @@ void SplitExplicitRK2Stepper::doStep(OceanState *State,
    VertMix *VMix = VertMix::getInstance();
 
    resetFrazilFluxes();
-   updateKPPFields(State, CurLevel, CurLevel, CurLevel);
 
    // Initialize NextLevel from CurLevel
    // TODO: This can be optimized in the future.
@@ -572,7 +583,7 @@ void SplitExplicitRK2Stepper::doStep(OceanState *State,
 
       // Stage 1: Baroclinic velocity advance, with long time step
       doBaroclinicVelocityUpdate(State, NextTracerArray, CurLevel, NextLevel,
-                                 VelStageTime, TimeStep);
+                                 VelStageTime, TimeStep, TimeStepIteration);
 
       Pacer::timingBarrier("SE-RK2:haloStage1Barrier", 3, Comm);
       Pacer::start("SE-RK2:haloStage1", 3);
@@ -612,40 +623,14 @@ void SplitExplicitRK2Stepper::doStep(OceanState *State,
    Tracers::updateTimeLevels();
    Pacer::stop("SE-RK2:haloExch", 3);
 
-   // Refresh kinetic diagnostics from the completed n+dt velocity before
-   // validation and history output.
-   const Array2DReal NormalVelCur = State->getNormalVelocity(CurLevel);
-   OMEGA_SCOPE(LocKineticAux, AuxState->KineticAux);
-   OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
-   OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   parallelForOuter(
-       "refreshFinalKineticAux",
-       LaunchConfig({Mesh->NCellsAll},
-                    TeamScratch<Real>(2 * VCoord->NVertLayers)),
-       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
-          LocKineticAux.computeVarsOnCell(Team, ICell, NormalVelCur);
-       });
-
-   // Apply implicit vertical mixing
-   CurTracerArray = Tracers::getAll(CurLevel);
-   if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
-      VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
-                            CurLevel);
-
-      // Re-exchange halos after vertical mixing
-      Pacer::timingBarrier("SE-RK2:vMixHaloExchBarrier", 3, Comm);
-      Pacer::start("SE-RK2:vMixHaloExch", 3);
-      State->exchangeHalo(CurLevel);
-      Tracers::exchangeHalo(CurLevel);
-      Pacer::stop("SE-RK2:vMixHaloExch", 3);
-   }
-
-   validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);
+   applyImplicitVerticalMixing(State, CurLevel, CurLevel, CurLevel, "SE-RK2");
 
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
    ++StepCount;
+
+   prepareNextStep(State, Tracers::getAll(CurLevel));
 }
 
 } // namespace OMEGA
