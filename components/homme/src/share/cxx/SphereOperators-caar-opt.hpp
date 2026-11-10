@@ -517,7 +517,7 @@ struct SphereScanOps {
 #endif
 
   template <typename OutView, typename InView, typename EndView>
-  KOKKOS_INLINE_FUNCTION void nacs(OutView &out, const int n, const InView &in, const EndView &end) const
+  KOKKOS_INLINE_FUNCTION void bwd_scan(OutView &out, const int n, const InView &in, const EndView &end) const
   {
     Dispatch<>::parallel_scan(
       t, NUM_PHYSICAL_LEV,

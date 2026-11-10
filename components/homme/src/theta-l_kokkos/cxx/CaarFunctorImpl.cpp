@@ -285,7 +285,7 @@ void CaarFunctorImpl::epoch4_scanOps(const SphereOuter::Team &team)
     team,
     KOKKOS_LAMBDA(const SphereScanOps::Team &team) {
       SphereScanOps s(team);
-      s.nacs(state_phinh_i, data_n0, buffers_pnh, geometry_phis);
+      s.bwd_scan(state_phinh_i, data_n0, buffers_pnh, geometry_phis);
       Kokkos::parallel_for(
         Kokkos::ThreadVectorRange(s.t, NUM_PHYSICAL_LEV),
         [&](const int z) {
