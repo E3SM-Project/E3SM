@@ -9,18 +9,29 @@ The EAMxx side comes from the netCDF output of the p3_zm_mam4_wetscav test
 eamxx_mam_wetscav_process_interface.cpp, so both sides are compared in the
 units mam4xx expects (mb, mb/s, 0-based indices with exclusive kbot).
 
+When the validation file is the Fortran data file (mam_<test>.py), the
+script also compares the wet deposition outputs aerdepwetis and aerdepwetcw
+per species with the Fortran values (and, optionally, with the mam4xx
+standalone result).
+
 The two sides are different columns and states, so values are not expected
-to match. The script checks orders of magnitude, signs, value ranges and the
-ktop/kbot index convention.
+to match. The script checks orders of magnitude, signs, zero patterns, value
+ranges and the ktop/kbot index convention.
 
 Usage:
-  compare_zm_wetscav_inputs.py EAMXX_OUTPUT.nc VALIDATION_INPUT.yaml
+  compare_zm_wetscav_inputs.py EAMXX_OUTPUT.nc VALIDATION_FILE
+                               [--mam4xx MAM4XX_OUTPUT.py]
                                [--time IDX] [--report FILE.md]
 
-VALIDATION_INPUT.yaml is e.g. mam_x_validation/aero_model/aero_model_wetdep_convproc_ts_3.yaml
+VALIDATION_FILE is one of (from mam_x_validation/aero_model/):
+  mam_aero_model_wetdep_convproc_ts_3.py   inputs + Fortran outputs (preferred)
+  aero_model_wetdep_convproc_ts_3.yaml     inputs only
+MAM4XX_OUTPUT.py is the file the mam4xx validation test writes
+(mam4xx_aero_model_wetdep_convproc_ts_3.py in its build directory).
 """
 
 import argparse
+import ast
 import math
 import sys
 
@@ -34,12 +45,12 @@ DP1, DP2 = 0.018, 500.0             # dp_frac formula in the wetscav interface
 
 # Known unit factors, used to label a magnitude mismatch
 KNOWN_FACTORS = {
-    "100 (Pa vs mb)": 100.0,
-    "1/100 (mb vs Pa)": 0.01,
+    "100": 100.0,
+    "1/100": 0.01,
     "g": GRAVITY,
     "1/g": 1.0 / GRAVITY,
-    "100/g (mb/s -> kg/m2/s)": 100.0 / GRAVITY,
-    "g/100 (kg/m2/s -> mb/s)": GRAVITY / 100.0,
+    "100/g": 100.0 / GRAVITY,
+    "g/100": GRAVITY / 100.0,
     "1000": 1000.0,
     "1/1000": 0.001,
 }
@@ -126,17 +137,80 @@ VALIDATION_SOURCE = {
 }
 
 
+# Tracer order of the pcnst = 40 constituents (same in EAM, mam4xx and EAMxx):
+# 9 non-chemistry tracers, then the 31 gas-phase chemistry species
+# (mam4xx mo_setsox.hpp). Aerosols start at index 15.
+PCNST_NAMES = [
+    "Q", "CLDLIQ", "CLDICE", "NUMLIQ", "NUMICE", "RAINQM", "SNOWQM", "NUMRAI",
+    "NUMSNO", "O3", "H2O2", "H2SO4", "SO2", "DMS", "SOAG",
+    "so4_a1", "pom_a1", "soa_a1", "bc_a1", "dst_a1", "ncl_a1", "mom_a1",
+    "num_a1", "so4_a2", "soa_a2", "ncl_a2", "mom_a2", "num_a2", "dst_a3",
+    "ncl_a3", "so4_a3", "bc_a3", "pom_a3", "soa_a3", "mom_a3", "num_a3",
+    "pom_a4", "bc_a4", "mom_a4", "num_a4",
+]
+AERO_START = 15
+
+# Fortran outputs compared with the EAMxx output fields of the same name.
+DEPOSITION_OUTPUTS = ("aerdepwetis", "aerdepwetcw")
+
+
 # -----------------------------------------------------------------------------
 # Readers
 # -----------------------------------------------------------------------------
-def read_validation(path):
-    """Return (inputs dict as passed to aero_model_wetdep, header string)."""
-    with open(path) as f:
-        header = f.readline().strip()
-        f.seek(0)
-        data = yaml.safe_load(f)["input"]["fixed"]
+def _literal(node):
+    """ast.literal_eval that also accepts the names nan and inf."""
+    if isinstance(node, ast.Name) and node.id in ("nan", "inf"):
+        return float(node.id)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        return -_literal(node.operand)
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [_literal(e) for e in node.elts]
+    return ast.literal_eval(node)
 
-    a = {k: np.asarray(v, dtype=float) for k, v in data.items()}
+
+def read_skywalker_py(path):
+    """Read a Skywalker Python data file (e.g. mam_<test>.py) without running it.
+
+    Returns (inputs, outputs, header). Each value is a flat float array.
+    """
+    with open(path) as f:
+        text = f.read()
+    header = text.splitlines()[0].strip() if text else ""
+    groups = {"input": {}, "output": {}}
+    for node in ast.parse(text).body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        t = node.targets[0]
+        if (isinstance(t, ast.Attribute) and isinstance(t.value, ast.Name)
+                and t.value.id in groups):
+            vals = np.asarray(_literal(node.value), dtype=float)
+            # Skywalker stores one row per ensemble member; take the first.
+            groups[t.value.id][t.attr] = vals[0].ravel() if vals.ndim > 1 \
+                else vals.ravel()
+    return groups["input"], groups["output"], header
+
+
+def read_validation(path):
+    """Read the validation inputs (and Fortran outputs, for a .py file).
+
+    Accepts the Skywalker input YAML (aero_model_wetdep_convproc_ts_3.yaml)
+    or the Fortran data file (mam_aero_model_wetdep_convproc_ts_3.py), which
+    holds the same inputs plus the Fortran outputs.
+    """
+    if path.endswith(".py"):
+        a, outputs, header = read_skywalker_py(path)
+    else:
+        with open(path) as f:
+            header = f.readline().strip()
+            f.seek(0)
+            data = yaml.safe_load(f)["input"]["fixed"]
+        a = {k: np.asarray(v, dtype=float) for k, v in data.items()}
+        outputs = {}
+    return _validation_inputs(a) + (outputs, header)
+
+
+def _validation_inputs(a):
+    """Inputs as the mam4xx test passes them to aero_model_wetdep."""
     nlev = int(a["pver"][0])
     pcnst = int(a["pcnst"][0])
     # state_q is stored column-major (Fortran order), as read by
@@ -182,7 +256,7 @@ def read_validation(path):
     # Wrap 1-column profiles as (1, nlev) so both sides look the same.
     v = {k: x.reshape(1, -1) for k, x in v.items()}
     s = {k: np.array([x]) for k, x in scalars.items()}
-    return v, s, shallow, header
+    return v, s, shallow
 
 
 def _get(nc, name, tidx):
@@ -242,7 +316,16 @@ def read_eamxx(path, tidx):
         }
         lat = g("lat") if "lat" in nc.variables else None
         lon = g("lon") if "lon" in nc.variables else None
-    return v, s, lat, lon, ntime
+        dep = {}
+        for name in DEPOSITION_OUTPUTS + ("aerdepwetis_convproc",):
+            if name in nc.variables:
+                x = g(name)
+                # make it (ncol, pcnst)
+                if x.ndim == 2 and x.shape[0] == len(PCNST_NAMES) \
+                        and x.shape[1] != len(PCNST_NAMES):
+                    x = x.T
+                dep[name] = x
+    return v, s, lat, lon, ntime, dep
 
 
 # -----------------------------------------------------------------------------
@@ -356,6 +439,74 @@ def check_indices(name, vals, scal, cols):
     return rows
 
 
+def _cols_list(bad, cols, limit=8):
+    shown = ", ".join(str(int(c)) for c in bad[:limit])
+    more = f" +{len(bad) - limit} more" if len(bad) > limit else ""
+    return f"{len(bad)} of {len(cols)} columns (cols {shown}{more})"
+
+
+def check_deposition(fortran, eamxx, cols, mam4xx=None):
+    """Per-species comparison of a wet deposition flux [kg/m2/s or #/m2/s].
+
+    fortran, mam4xx: (pcnst,) single-column values; eamxx: (ncol, pcnst).
+    Every check is done per column, so one bad column is not hidden by a
+    median over columns. Returns table rows, pooled per-species ratios, and
+    per-column ratios (ncol_sel, pcnst; nan where not defined).
+    """
+    e = eamxx[cols]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rcol = np.where((fortran != 0) & (e != 0),
+                        np.abs(e) / np.abs(fortran), np.nan)
+    rows, ratios = [], {}
+    for i, sp in enumerate(PCNST_NAMES):
+        f = float(fortran[i])
+        ei = e[:, i]
+        flags = []
+        if f == 0.0:
+            bad = cols[ei != 0]
+            if bad.size:
+                flags.append("nonzero where Fortran is zero in "
+                             + _cols_list(bad, cols))
+        else:
+            if not np.any(ei != 0):
+                flags.append("zero in all EAMxx columns, nonzero in Fortran")
+            wrong = cols[np.sign(ei) == -np.sign(f)]
+            if wrong.size:
+                flags.append("opposite sign to Fortran in "
+                             + _cols_list(wrong, cols))
+            ri = rcol[:, i]
+            if np.any(~np.isnan(ri)):
+                ratios[sp] = float(np.nanmedian(ri))
+            off = cols[np.abs(np.log10(np.where(np.isnan(ri), 1.0, ri)))
+                       > math.log10(RATIO_FLAG)]
+            if off.size:
+                worst = ri[np.nanargmax(np.abs(np.log10(ri)))]
+                fac = nearest_factor(worst)
+                hint = f" (close to {fac})" if fac else ""
+                if abs(math.log10(worst)) > 8:
+                    # number fluxes are ~1e3-1e7 #/m2/s, mass ~1e-20-1e-10 kg/m2/s
+                    hint = " (mass and number mixed up: species index shift?)"
+                flags.append(f"more than {RATIO_FLAG:g}x from Fortran in "
+                             + _cols_list(off, cols)
+                             + f", worst {worst:.3g}x" + hint)
+        m = "" if mam4xx is None else fmt(float(mam4xx[i]))
+        rows.append((i, sp, fmt(f), m, fmt(float(ei.min())),
+                     fmt(float(np.median(ei))), fmt(float(ei.max())),
+                     f"{ratios[sp]:.3g}" if sp in ratios else "",
+                     "OK" if not flags else "⚠️ " + "; ".join(flags)))
+    return rows, ratios, rcol
+
+
+def column_group_ratios(rcol, number):
+    """Per-column median ratio over aerosol mass (or number) species."""
+    idx = [i for i, sp in enumerate(PCNST_NAMES)
+           if i >= AERO_START and sp.startswith("num_") == number]
+    sub = rcol[:, idx]
+    with np.errstate(all="ignore"):
+        return np.array([np.nanmedian(r) if np.any(~np.isnan(r)) else np.nan
+                         for r in sub])
+
+
 # -----------------------------------------------------------------------------
 # Report
 # -----------------------------------------------------------------------------
@@ -368,14 +519,19 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("eamxx_nc")
-    p.add_argument("validation_yaml")
+    p.add_argument("validation_file",
+                   help="mam_<test>.py (inputs + Fortran outputs) or <test>.yaml")
+    p.add_argument("--mam4xx",
+                   help="mam4xx validation output (mam4xx_<test>.py), to show "
+                        "the standalone mam4xx deposition next to Fortran")
     p.add_argument("--time", type=int, default=-1,
                    help="time index in the EAMxx file (default: last)")
     p.add_argument("--report", help="write the Markdown report to this file")
     args = p.parse_args()
 
-    vv, vs, vshallow, vheader = read_validation(args.validation_yaml)
-    ev, es, lat, lon, ntime = read_eamxx(args.eamxx_nc, args.time)
+    vv, vs, vshallow, vout, vheader = read_validation(args.validation_file)
+    ev, es, lat, lon, ntime, edep = read_eamxx(args.eamxx_nc, args.time)
+    mout = read_skywalker_py(args.mam4xx)[1] if args.mam4xx else {}
 
     ncol = ev["temperature"].shape[0]
     nlev_e, nlev_v = ev["temperature"].shape[1], vv["temperature"].shape[1]
@@ -386,7 +542,9 @@ def main():
     w("# ZM → wetscav input check: EAMxx vs mam4xx validation\n")
     w(f"- EAMxx file: `{args.eamxx_nc}` (time index {args.time} of {ntime}, "
       f"{ncol} columns, {nlev_e} levels)")
-    w(f"- Validation file: `{args.validation_yaml}` ({nlev_v} levels)")
+    w(f"- Validation file: `{args.validation_file}` ({nlev_v} levels)")
+    if args.mam4xx:
+        w(f"- mam4xx standalone output: `{args.mam4xx}`")
     w(f"- Validation header: `{vheader.lstrip('# ')}`")
     w(f"- Columns with ZM active: {active.size} of {ncol}")
     w(f"- Validation dt = {vs['dt'][0]:g} s, convproc_do_aer = "
@@ -458,9 +616,94 @@ def main():
             n_off += 1
     w("")
 
+    # --- wet deposition outputs
+    dep_summary = []
+    w("## Wet deposition outputs\n")
+    if not vout:
+        w("Skipped: pass the Fortran data file (`mam_<test>.py`) to compare "
+          "`aerdepwetis` and `aerdepwetcw`.\n")
+    else:
+        w("Fortran is the single validation column. EAMxx min / median / max "
+          "are over the columns used above. Units: kg/m2/s for mass species, "
+          "#/m2/s for `num_*` (the EAMxx field metadata says kg/m2/s for all). "
+          "Negative = removal. Deposition depends on the column's precipitation, "
+          "so a single species more than "
+          f"{RATIO_FLAG:g}x off can be physical; a unit or index error shows up "
+          "as the same factor across the mass (or number) species, or as a "
+          "shifted zero pattern.\n")
+        for name in DEPOSITION_OUTPUTS:
+            if name not in vout:
+                w(f"- `{name}`: not in the validation file\n")
+                continue
+            if name not in edep:
+                w(f"- `{name}`: not in the EAMxx output; add it to output.yaml\n")
+                continue
+            if edep[name].shape[1] != len(PCNST_NAMES):
+                w(f"- `{name}`: EAMxx shape {edep[name].shape} is not "
+                  f"(ncol, {len(PCNST_NAMES)})\n")
+                continue
+            rows, ratios, rcol = check_deposition(
+                vout[name], edep[name], cols,
+                mout.get(name) if mout else None)
+            w(f"### `{name}`\n")
+            mh = " mam4xx |" if mout else ""
+            ms = "---|" if mout else ""
+            w(f"| idx | species | Fortran |{mh} EAMxx min | EAMxx median | "
+              "EAMxx max | ratio | Status |")
+            w(f"|---|---|---|{ms}---|---|---|---|---|")
+            nbad = 0
+            for i, sp, f, m, emin, emed, emax, r, st in rows:
+                mcol = f" {m} |" if mout else ""
+                w(f"| {i} | {sp} | {f} |{mcol} {emin} | {emed} | {emax} | "
+                  f"{r} | {st} |")
+                nbad += st != "OK"
+            w("")
+            w("`ratio` is the median over columns of \\|EAMxx\\| / "
+              "\\|Fortran\\|.\n")
+            for label, number in (("mass", False), ("number", True)):
+                g = column_group_ratios(rcol, number)
+                ok = ~np.isnan(g)
+                if not np.any(ok):
+                    continue
+                w(f"- {label} species: per-column median ratio ranges "
+                  f"{np.nanmin(g):.3g} to {np.nanmax(g):.3g} "
+                  f"(median {np.nanmedian(g):.3g})")
+                off = cols[ok][np.abs(np.log10(g[ok])) > math.log10(RATIO_FLAG)]
+                if off.size:
+                    gv = g[ok][np.abs(np.log10(g[ok])) > math.log10(RATIO_FLAG)]
+                    fac = nearest_factor(float(np.median(gv)))
+                    w(f"  - ⚠️ all {label} species together are more than "
+                      f"{RATIO_FLAG:g}x from Fortran in "
+                      + _cols_list(off, cols)
+                      + f" (median {np.median(gv):.3g}x"
+                      + (f", close to {fac}" if fac else "") + ")")
+            if mout and name in mout:
+                d = np.abs(mout[name] - vout[name])
+                sc = np.maximum(np.abs(vout[name]), 1e-300)
+                rel = float(np.max(np.where(vout[name] != 0, d / sc, 0.0)))
+                w(f"- mam4xx standalone vs Fortran: max relative difference "
+                  f"{rel:.3g} (this is the error of the validation test "
+                  "itself)")
+            w("")
+            dep_summary.append(f"- `{name}`: {nbad} of {len(PCNST_NAMES)} "
+                               "species flagged")
+        if "aerdepwetis_convproc" in edep and "aerdepwetis" in edep:
+            tot = np.abs(edep["aerdepwetis"][cols][:, AERO_START:]).sum(axis=1)
+            cnv = np.abs(edep["aerdepwetis_convproc"][cols][:, AERO_START:]
+                         ).sum(axis=1)
+            share = cnv[tot > 0] / tot[tot > 0]
+            if share.size:
+                w(f"- EAMxx share of `aerdepwetis` from convective processing "
+                  f"(`aerdepwetis_convproc`, aerosol species, summed |flux|): "
+                  f"median {np.median(share):.3g}, max {share.max():.3g} over "
+                  f"{share.size} columns. The Fortran file has no separate "
+                  "convproc output.\n")
+
     # --- summary
     w("## Summary\n")
-    w(f"- Variables flagged: {nflag} of {len(VARIABLES)}")
+    w(f"- Input variables flagged: {nflag} of {len(VARIABLES)}")
+    for line in dep_summary:
+        w(line)
     if active.size:
         w(f"- EAMxx active columns where kbot is 1 too small: "
           f"{n_off} of {active.size}")
