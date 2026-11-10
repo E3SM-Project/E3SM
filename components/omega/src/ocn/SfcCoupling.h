@@ -12,6 +12,7 @@
 
 #include "DataTypes.h"
 #include "Forcing.h"
+#include "Frazil.h"
 #include "GlobalConstants.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
@@ -107,10 +108,19 @@ class OcnToCplFields {
 
    ///< Faoo_h2otemp [W m^-2], extra heat in ocn due to water mass fluxes
    HostArray1DReal AvgExtraEnergyH;
+   ///< Fioo_q [W m^-2], ocean melt and freeze potential
+   HostArray1DReal MeltPotentialFluxH;
+   ///< Fioo_frazilm [kg m^-2 s^-1], ocean frazil mass production
+   HostArray1DReal AvgFrazilMassFluxH;
+   ///< Fioo_frazils [kg m^-2 s^-1], ocean frazil salt production
+   HostArray1DReal AvgFrazilSaltFluxH;
+   ///< Fioo_frazilh [W m^-2], ocean frazil heat production
+   HostArray1DReal AvgFrazilEnergyFluxH;
 
    // Accumulate one ocean timestep's contribution to the running averages
    void updateFields(const OceanState *State, const Array3DReal &TracerArray,
-                     const Array1DReal &ExtraEnergy, I4 NAccumSteps,
+                     const Array1DReal &ExtraEnergy, const Frazil *FrazilPtr,
+                     const Real CouplingTimeStepSeconds, I4 NAccumSteps,
                      I4 NCellsOwned, I4 NEdgesAll);
 
    // Copy device arrays into their host mirrors and do unit conversion.
@@ -126,9 +136,13 @@ class OcnToCplFields {
    // except through copyToHost(), so that the different unit bewteen the
    // device and host mirrors of temperature and salinity are not exposed to
    // the rest of the code.
-   Array1DReal AvgSfcTemperature; // [C], conservative temperature
-   Array1DReal AvgSfcSalinity;    // [g kg^-1], absolute salinity
-   Array1DReal AvgExtraEnergy;    // [W m-2], energy for atm "energy fixer"
+   Array1DReal AvgSfcTemperature;   // [C], conservative temperature
+   Array1DReal AvgSfcSalinity;      // [g kg^-1], absolute salinity
+   Array1DReal AvgExtraEnergy;      // [W m-2], energy for atm "energy fixer"
+   Array1DReal MeltPotentialFlux;   // [W m^-2], melt and freeze potential
+   Array1DReal AvgFrazilMassFlux;   // [kg m^-2 s^-1], frazil mass production
+   Array1DReal AvgFrazilSaltFlux;   // [kg m^-2 s^-1], frazil salt production
+   Array1DReal AvgFrazilEnergyFlux; // [W m^-2], frazil heat production
 
    Array1DReal AvgSfcNormalVelocity; // [m s^-1], velocity normal to edge
    Array1DReal AvgSfcSshGrad;        // [m m^-1], ssh gradient normal to edge
@@ -172,6 +186,9 @@ class SfcCoupling {
 
    // Number of ocn timesteps acccumulated over the coupling interval
    I4 NAccumSteps;
+   // Length of coupling timestep in second. Follows Omegas convention of
+   // storing timestep length as a double (cf. Real) to maintain precision
+   R8 CouplingTimeStepSeconds;
 
    CouplingLayout Layout; ///< Coupling layout (MCT or MOAB)
 
@@ -258,7 +275,8 @@ class SfcCoupling {
 
    /// Update the export fields
    void updateExportFields(const OceanState *State,
-                           const Array3DReal &TracerArray);
+                           const Array3DReal &TracerArray,
+                           const Frazil *FrazilPtr);
 };
 
 } // end namespace OMEGA

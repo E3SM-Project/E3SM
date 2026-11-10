@@ -6,6 +6,7 @@
 #include "Eos.h"
 #include "Field.h"
 #include "Forcing.h"
+#include "Frazil.h"
 #include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
@@ -35,8 +36,10 @@ struct TestSetup {
        {"Foxx_evap", 12}, {"Foxx_rofl", 13}, {"Foxx_rofi", 14},
        {"Si_bpress", 15}, {"Sa_pslv", 16}};
    std::map<std::string, int> ExportIdxMap = {
-       {"So_t", 2},    {"So_s", 4},    {"So_u", 6},   {"So_v", 9},
-       {"So_dhdx", 5}, {"So_dhdy", 3}, {"So_ssh", 1}, {"Faoo_h2otemp", 0}};
+       {"So_t", 2},         {"So_s", 4},          {"So_u", 6},
+       {"So_v", 9},         {"So_dhdx", 5},       {"So_dhdy", 3},
+       {"So_ssh", 1},       {"Faoo_h2otemp", 0},  {"Fioo_q", 8},
+       {"Fioo_frazilm", 7}, {"Fioo_frazils", 11}, {"Fioo_frazilh", 10}};
 };
 
 CouplingInitParams mockCouplingInitParams(
@@ -50,7 +53,7 @@ CouplingInitParams mockCouplingInitParams(
        CouplingTimeStep.value_or(DefTimeStepper->getTimeStep());
 
    CouplingInitParams CouplingParams{.NImportFields    = 17,
-                                     .NExportFields    = 10,
+                                     .NExportFields    = 12,
                                      .ImportIdxMap     = Setup.ImportIdxMap,
                                      .ExportIdxMap     = Setup.ExportIdxMap,
                                      .CouplingTimeStep = CouplingTimeStep_,
@@ -140,6 +143,7 @@ int initSfcCouplingTest(const std::string &MeshFile) {
    }
 
    Eos::init();
+   Frazil::init();
 
    Forcing::init();
    Tracers::init();
@@ -381,6 +385,7 @@ int testUpdateExportFields(const I4 NSteps) {
    SfcCoupling *DefCoupling = SfcCoupling::getDefault();
    OceanState *DefState     = OceanState::getDefault();
    VertCoord *DefVertCoord  = VertCoord::getDefault();
+   Frazil *DefFrazil        = Frazil::getDefault();
 
    int NCells = DefCoupling->NCellsOwned;
 
@@ -408,7 +413,7 @@ int testUpdateExportFields(const I4 NSteps) {
       }
       Tracers::copyToDevice(0);
 
-      DefCoupling->updateExportFields(DefState, Tracers::getAll(0));
+      DefCoupling->updateExportFields(DefState, Tracers::getAll(0), DefFrazil);
    }
 
    // Sanity check: the expected number of updates was performed
@@ -486,6 +491,7 @@ int testExportToCoupler(const CouplingLayout Layout) {
    SfcCoupling *DefCoupling = SfcCoupling::getDefault();
    OceanState *DefState     = OceanState::getDefault();
    VertCoord *DefVertCoord  = VertCoord::getDefault();
+   Frazil *DefFrazil        = Frazil::getDefault();
 
    int NCells   = DefCoupling->NCellsOwned;
    int NImports = DefCoupling->NImportFields;
@@ -523,7 +529,7 @@ int testExportToCoupler(const CouplingLayout Layout) {
    }
    Tracers::copyToDevice(0);
 
-   DefCoupling->updateExportFields(DefState, Tracers::getAll(0));
+   DefCoupling->updateExportFields(DefState, Tracers::getAll(0), DefFrazil);
 
    auto SshCellOwned =
        Kokkos::subview(DefVertCoord->SshCell, std::pair(0, NCells));
@@ -648,6 +654,8 @@ void finalizeSfcCouplingTest() {
    AuxiliaryState::clear();
    VertAdv::clear();
    Tracers::clear();
+   Eos::destroyInstance();
+   Frazil::clear();
    Forcing::clear();
    OceanState::clear();
    VertCoord::clear();

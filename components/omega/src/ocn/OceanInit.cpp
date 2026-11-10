@@ -374,11 +374,13 @@ void ocnInit2(const Real *CplToOcnData, Real *OcnToCplData) {
 
    SfcCoupling *DefSfcCoupling = SfcCoupling::getDefault();
    OceanState *DefOceanState   = OceanState::getDefault();
+   Frazil *DefFrazil           = Frazil::getDefault();
 
    DefSfcCoupling->attachData(CplToOcnData, OcnToCplData);
 
    // Populate export fields with initial SST, SSS, velocities, and SSH
-   DefSfcCoupling->updateExportFields(DefOceanState, Tracers::getAll(0));
+   DefSfcCoupling->updateExportFields(DefOceanState, Tracers::getAll(0),
+                                      DefFrazil);
 
    DefSfcCoupling->exportToCoupler();
 

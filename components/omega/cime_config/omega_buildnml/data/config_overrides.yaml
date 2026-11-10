@@ -27,6 +27,11 @@ coupled:
   Submeso:
     Enable: true
 
+  Frazil:
+    # Should be switch to Teos10 option, once the GSW calls can run on device
+    FrazilType: FixedProperty
+    ConservationCheck: false
+
   # buildnml will read the "Filename" entries in Default.yml under the Analysis
   # section and prepend '${CASE}.omega.' to the default filename
   Analysis:
