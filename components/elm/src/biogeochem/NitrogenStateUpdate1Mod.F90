@@ -6,6 +6,7 @@ module NitrogenStateUpdate1Mod
   ! !USES:
   use shr_kind_mod           , only: r8 => shr_kind_r8
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+  use elm_varctl             , only : use_cropman
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varpar             , only : nlit_pools
   use elm_varctl             , only : iulog
@@ -169,6 +170,7 @@ contains
                        col_nf%phenology_n_to_litr_lig_n(c,j) * dt + &
                        col_nf%residue_to_litr_lig_n(c,j) * dt
 
+                  if (use_cropman) then
                   ! update residue pools
                   col_ns%residue_npools(c,i_met_lit) = col_ns%residue_npools(c,i_met_lit) - &
                        col_nf%residue_to_litr_met_n(c,j) * dzsoi_decomp(j) * dt
@@ -176,11 +178,13 @@ contains
                        col_nf%residue_to_litr_cel_n(c,j) * dzsoi_decomp(j) * dt
                   col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) - &
                        col_nf%residue_to_litr_lig_n(c,j) * dzsoi_decomp(j) * dt
+                  end if
                end if
 
             end do
          end do
 
+         if (use_cropman) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! update residue pools
@@ -200,6 +204,7 @@ contains
             col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) - &
                   col_nf%residue_ntransfer(c,i_lig_lit) * dt
          end do
+         end if
 
          ! repeating N dep and fixation for crops
          if ( crop_prog )then
@@ -254,6 +259,7 @@ contains
             end if
          end do
 
+         if (use_cropman) then
          do k = 1, nlit_pools
             do j = 1, ndecomp_cascade_transitions
                if (cascade_donor_pool(j) == i_met_lit+k-1) then
@@ -270,6 +276,7 @@ contains
                end do
             end if
          end do
+         end if
          
          do j = 1, nlevdecomp
             ! column loop

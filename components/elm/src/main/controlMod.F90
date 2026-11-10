@@ -326,6 +326,9 @@ contains
          use_erosion, ero_ccycle
 
     namelist /elm_inparm/ &
+         use_cropman
+
+    namelist /elm_inparm/ &
          use_top_solar_rad
 
     namelist /elm_mosart/ &
@@ -504,6 +507,11 @@ contains
 
        if (.not. use_erosion .and. ero_ccycle) then
           call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+
+       if (use_cropman .and. .not. use_crop) then
+          call endrun(msg=' ERROR: use_cropman = .true. requires use_crop = .true.'//&
             errMsg(__FILE__, __LINE__))
        end if
 
@@ -977,6 +985,9 @@ contains
     ! soil erosion
     call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    ! cropland management
+    call mpi_bcast (use_cropman, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Budget
     call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)

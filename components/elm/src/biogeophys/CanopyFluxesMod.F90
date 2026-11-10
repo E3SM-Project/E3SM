@@ -14,6 +14,7 @@ module CanopyFluxesMod
   use shr_log_mod           , only : errMsg => shr_log_errMsg
   use abortutils            , only : endrun
   use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
+  use elm_varctl            , only : use_cropman
   use elm_varctl            , only : use_hydrstress
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
@@ -1014,8 +1015,8 @@ contains
             !Litter layer resistance. Added by K.Sakaguchi
             snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
             fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
-            if (use_cn) then
-               lai_dl_dyn = fscov(c) 
+            if (use_cropman) then
+               lai_dl_dyn = fscov(c)
             else
                lai_dl_dyn = lai_dl
             end if

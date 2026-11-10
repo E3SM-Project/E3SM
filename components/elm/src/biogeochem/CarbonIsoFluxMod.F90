@@ -11,6 +11,7 @@ module CarbonIsoFluxMod
   use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit
   use elm_varpar             , only : nlit_pools
   use elm_varcon             , only : krsd
+  use elm_varctl             , only : use_cropman
   use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
@@ -986,56 +987,89 @@ contains
          residue_to_litr_lig_c     =>    col_cf%residue_to_litr_lig_c         & ! InOut: [real(r8) (:,:) ] C fluxes associated with residue to litter lignin pool (gC/m3/s)
          )
 
-      do j = 1, nlevdecomp
+      if (use_cropman) then
+         do j = 1, nlevdecomp
+            do pi = 1,max_patch_per_col
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+
+                  if ( pi <=  col_pp%npfts(c) ) then
+                     p = col_pp%pfti(c) + pi - 1
+                     if (veg_pp%active(p)) then
+                        ! fine root litter carbon fluxes
+                        phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
+                             + frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                        phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
+                             + frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                        phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
+                             + frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                        ! residue C to litter C
+                        r2l = residue2litr(p)
+                        residue_to_litr_met_c(c,j) = residue_to_litr_met_c(c,j) + &
+                           residue_cpools(c,i_met_lit) * residue_prof(p,j) * r2l * wtcol(p)
+                        residue_to_litr_cel_c(c,j) = residue_to_litr_cel_c(c,j) + &
+                           residue_cpools(c,i_cel_lit) * residue_prof(p,j) * r2l * wtcol(p)
+                        residue_to_litr_lig_c(c,j) = residue_to_litr_lig_c(c,j) + &
+                           residue_cpools(c,i_lig_lit) * residue_prof(p,j) * r2l * wtcol(p)                     
+                     end if
+                  end if
+
+               end do
+            end do
+
+         end do
+
          do pi = 1,max_patch_per_col
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-
+            
                if ( pi <=  col_pp%npfts(c) ) then
                   p = col_pp%pfti(c) + pi - 1
                   if (veg_pp%active(p)) then
-                     ! fine root litter carbon fluxes
-                     phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
-                          + frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
-                          + frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                     phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
-                          + frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
-
-                     ! residue C to litter C
-                     r2l = residue2litr(p)
-                     residue_to_litr_met_c(c,j) = residue_to_litr_met_c(c,j) + &
-                        residue_cpools(c,i_met_lit) * residue_prof(p,j) * r2l * wtcol(p)
-                     residue_to_litr_cel_c(c,j) = residue_to_litr_cel_c(c,j) + &
-                        residue_cpools(c,i_cel_lit) * residue_prof(p,j) * r2l * wtcol(p)
-                     residue_to_litr_lig_c(c,j) = residue_to_litr_lig_c(c,j) + &
-                        residue_cpools(c,i_lig_lit) * residue_prof(p,j) * r2l * wtcol(p)                     
+                     ! leaf litter carbon fluxes
+                     phenology_c_to_residue_met_c(c) = phenology_c_to_residue_met_c(c) &
+                          + leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                     phenology_c_to_residue_cel_c(c) = phenology_c_to_residue_cel_c(c) &
+                          + leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                     phenology_c_to_residue_lig_c(c) = phenology_c_to_residue_lig_c(c) &
+                          + leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
                   end if
                end if
-
             end do
          end do
+      else
+         do j = 1, nlevdecomp
+            do pi = 1,max_patch_per_col
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
 
-      end do
+                  if ( pi <=  col_pp%npfts(c) ) then
+                     p = col_pp%pfti(c) + pi - 1
+                     if (veg_pp%active(p)) then
+                        ! leaf litter carbon fluxes
+                        phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
+                             + leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                        phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
+                             + leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                        phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
+                             + leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
 
-      do pi = 1,max_patch_per_col
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            
-            if ( pi <=  col_pp%npfts(c) ) then
-               p = col_pp%pfti(c) + pi - 1
-               if (veg_pp%active(p)) then
-                  ! leaf litter carbon fluxes
-                  phenology_c_to_residue_met_c(c) = phenology_c_to_residue_met_c(c) &
-                       + leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
-                  phenology_c_to_residue_cel_c(c) = phenology_c_to_residue_cel_c(c) &
-                       + leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
-                  phenology_c_to_residue_lig_c(c) = phenology_c_to_residue_lig_c(c) &
-                       + leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
-               end if
-            end if
+                        ! fine root litter carbon fluxes
+                        phenology_c_to_litr_met_c(c,j) = phenology_c_to_litr_met_c(c,j) &
+                             + frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                        phenology_c_to_litr_cel_c(c,j) = phenology_c_to_litr_cel_c(c,j) &
+                             + frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                        phenology_c_to_litr_lig_c(c,j) = phenology_c_to_litr_lig_c(c,j) &
+                             + frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                     end if
+                  end if
+
+               end do
+            end do
+
          end do
-      end do
+      end if
 
     end associate
    end subroutine CNCIsoLitterToColumn
@@ -1259,44 +1293,7 @@ contains
           harvest_c_to_cwdc                =>    col_cf%harvest_c_to_cwdc                    & ! InOut:  [real(r8) (:,:) ]  C fluxes associated with harvest to CWD pool (gC/m3/s)
           )
 
-       do pi = 1,maxpatch_pft
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-
-             if (pi <=  col_pp%npfts(c)) then
-                p = col_pp%pfti(c) + pi - 1
-
-                if (veg_pp%active(p)) then
-
-                  ! leaf harvest mortality carbon fluxes
-                  harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + &
-                       hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
-                  harvest_c_to_residue_cel_c(c) = harvest_c_to_residue_cel_c(c) + &
-                       hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
-                  harvest_c_to_residue_lig_c(c) = harvest_c_to_residue_lig_c(c) + &
-                       hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
-
-                  ! storage harvest mortality carbon fluxes
-                  harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + & 
-                       (hrv_leafc_storage_to_litter(p) + &
-                       hrv_livestemc_storage_to_litter(p) + &
-                       hrv_deadstemc_storage_to_litter(p) + &
-                       hrv_gresp_storage_to_litter(p) + &
-                       hrv_cpool_to_litter(p)) * wtcol(p)
-
-                  ! transfer harvest mortality carbon fluxes
-                  harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + & 
-                       (hrv_leafc_xfer_to_litter(p) + &
-                       hrv_livestemc_xfer_to_litter(p) + &
-                       hrv_deadstemc_xfer_to_litter(p) + &
-                       hrv_gresp_xfer_to_litter(p)) * wtcol(p)
-                end if
-             end if
-
-          end do
-       end do
-
-       do j = 1, nlevdecomp
+       if (use_cropman) then
           do pi = 1,maxpatch_pft
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
@@ -1306,61 +1303,192 @@ contains
 
                    if (veg_pp%active(p)) then
 
-                      ! fine root harvest mortality carbon fluxes
-                      harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                           hrv_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                      harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
-                           hrv_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
-                      harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
-                           hrv_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                     ! leaf harvest mortality carbon fluxes
+                     harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + &
+                          hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p)
+                     harvest_c_to_residue_cel_c(c) = harvest_c_to_residue_cel_c(c) + &
+                          hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p)
+                     harvest_c_to_residue_lig_c(c) = harvest_c_to_residue_lig_c(c) + &
+                          hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p)
 
-                      ! wood harvest mortality carbon fluxes
-                      harvest_c_to_cwdc(c,j)  = harvest_c_to_cwdc(c,j)  + &
-                           hrv_livestemc_to_litter(p)  * wtcol(p) * stem_prof(p,j)
-                      harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
-                           hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                      harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
-                           hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                     ! storage harvest mortality carbon fluxes
+                     harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + & 
+                          (hrv_leafc_storage_to_litter(p) + &
+                          hrv_livestemc_storage_to_litter(p) + &
+                          hrv_deadstemc_storage_to_litter(p) + &
+                          hrv_gresp_storage_to_litter(p) + &
+                          hrv_cpool_to_litter(p)) * wtcol(p)
 
-                      ! storage harvest mortality carbon fluxes
-                      harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
-                           hrv_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                      harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                           hrv_livecrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                      harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                           hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
-
-
-                      ! transfer harvest mortality carbon fluxes
-                      harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
-                           hrv_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
-                      harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                           hrv_livecrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
-                      harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
-                           hrv_deadcrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                     ! transfer harvest mortality carbon fluxes
+                     harvest_c_to_residue_met_c(c) = harvest_c_to_residue_met_c(c) + & 
+                          (hrv_leafc_xfer_to_litter(p) + &
+                          hrv_livestemc_xfer_to_litter(p) + &
+                          hrv_deadstemc_xfer_to_litter(p) + &
+                          hrv_gresp_xfer_to_litter(p)) * wtcol(p)
                    end if
                 end if
 
              end do
-
           end do
-       end do
 
-       do pi = 1,maxpatch_pft
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             if (pi <=  col_pp%npfts(c)) then
-                p = col_pp%pfti(c) + pi - 1
+          do j = 1, nlevdecomp
+             do pi = 1,maxpatch_pft
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
 
-                if (veg_pp%active(p)) then
-                   chrv_deadstemc_to_prod10c(c)  = chrv_deadstemc_to_prod10c(c)  + &
-                        phrv_deadstemc_to_prod10c(p)  * wtcol(p)
-                   chrv_deadstemc_to_prod100c(c)  = chrv_deadstemc_to_prod100c(c)  + &
-                        phrv_deadstemc_to_prod100c(p)  * wtcol(p)
+                   if (pi <=  col_pp%npfts(c)) then
+                      p = col_pp%pfti(c) + pi - 1
+
+                      if (veg_pp%active(p)) then
+
+                         ! fine root harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
+                              hrv_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
+                              hrv_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                         ! wood harvest mortality carbon fluxes
+                         harvest_c_to_cwdc(c,j)  = harvest_c_to_cwdc(c,j)  + &
+                              hrv_livestemc_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                         harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                              hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                              hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                         ! storage harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                              hrv_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_livecrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+
+                         ! transfer harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                              hrv_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_livecrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_deadcrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                      end if
+                   end if
+
+                end do
+
+             end do
+          end do
+
+          do pi = 1,maxpatch_pft
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                if (pi <=  col_pp%npfts(c)) then
+                   p = col_pp%pfti(c) + pi - 1
+
+                   if (veg_pp%active(p)) then
+                      chrv_deadstemc_to_prod10c(c)  = chrv_deadstemc_to_prod10c(c)  + &
+                           phrv_deadstemc_to_prod10c(p)  * wtcol(p)
+                      chrv_deadstemc_to_prod100c(c)  = chrv_deadstemc_to_prod100c(c)  + &
+                           phrv_deadstemc_to_prod100c(p)  * wtcol(p)
+                   end if
                 end if
-             end if
+             end do
           end do
-       end do
+       else
+          do j = 1, nlevdecomp
+             do pi = 1,maxpatch_pft
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+
+                   if (pi <=  col_pp%npfts(c)) then
+                      p = col_pp%pfti(c) + pi - 1
+
+                      if (veg_pp%active(p)) then
+
+                         ! leaf harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_leafc_to_litter(p) * lf_flab(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                         harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
+                              hrv_leafc_to_litter(p) * lf_fcel(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+                         harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
+                              hrv_leafc_to_litter(p) * lf_flig(ivt(p)) * wtcol(p) * leaf_prof(p,j)
+
+                         ! fine root harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_frootc_to_litter(p) * fr_flab(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_cel_c(c,j) = harvest_c_to_litr_cel_c(c,j) + &
+                              hrv_frootc_to_litter(p) * fr_fcel(ivt(p)) * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_lig_c(c,j) = harvest_c_to_litr_lig_c(c,j) + &
+                              hrv_frootc_to_litter(p) * fr_flig(ivt(p)) * wtcol(p) * froot_prof(p,j)
+
+                         ! wood harvest mortality carbon fluxes
+                         harvest_c_to_cwdc(c,j)  = harvest_c_to_cwdc(c,j)  + &
+                              hrv_livestemc_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                         harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                              hrv_livecrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_cwdc(c,j) = harvest_c_to_cwdc(c,j) + &
+                              hrv_deadcrootc_to_litter(p) * wtcol(p) * croot_prof(p,j)
+
+                         ! storage harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                              hrv_leafc_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                              hrv_frootc_storage_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                              hrv_livestemc_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                              hrv_deadstemc_storage_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_livecrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_deadcrootc_storage_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                              hrv_gresp_storage_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                              hrv_cpool_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+
+
+                         ! transfer harvest mortality carbon fluxes
+                         harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                              hrv_leafc_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)     = harvest_c_to_litr_met_c(c,j)     + &
+                              hrv_frootc_xfer_to_litter(p)     * wtcol(p) * froot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                              hrv_livestemc_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)  = harvest_c_to_litr_met_c(c,j)  + &
+                              hrv_deadstemc_xfer_to_litter(p)  * wtcol(p) * stem_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_livecrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j) = harvest_c_to_litr_met_c(c,j) + &
+                              hrv_deadcrootc_xfer_to_litter(p) * wtcol(p) * croot_prof(p,j)
+                         harvest_c_to_litr_met_c(c,j)      = harvest_c_to_litr_met_c(c,j)      + &
+                              hrv_gresp_xfer_to_litter(p)      * wtcol(p) * leaf_prof(p,j)
+                      end if
+                   end if
+
+                end do
+
+             end do
+          end do
+
+          do pi = 1,maxpatch_pft
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                if (pi <=  col_pp%npfts(c)) then
+                   p = col_pp%pfti(c) + pi - 1
+
+                   if (veg_pp%active(p)) then
+                      chrv_deadstemc_to_prod10c(c)  = chrv_deadstemc_to_prod10c(c)  + &
+                           phrv_deadstemc_to_prod10c(p)  * wtcol(p)
+                      chrv_deadstemc_to_prod100c(c)  = chrv_deadstemc_to_prod100c(c)  + &
+                           phrv_deadstemc_to_prod100c(p)  * wtcol(p)
+                   end if
+                end if
+             end do
+          end do
+       end if
 
      end associate
 

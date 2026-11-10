@@ -17,7 +17,7 @@ module FireMod
   use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
   use shr_strdata_mod        , only : shr_strdata_advance
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use elm_varctl             , only : iulog
+  use elm_varctl             , only : iulog, use_cropman
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, nlit_pools
   use elm_varcon             , only : dzsoi_decomp
   use pftvarcon              , only : fsr_pft, fd_pft, noveg
@@ -1388,11 +1388,13 @@ contains
         f = farea_burned(c)
 
         ! residue C/N/P fire loss
-        do l = 1, nlit_pools
-           m_residue_fire_closs(c,l) = residue_cpools(c,l) * f * 0.5_r8
-           m_residue_fire_nloss(c,l) = residue_npools(c,l) * f * 0.5_r8
-           m_residue_fire_ploss(c,l) = residue_ppools(c,l) * f * 0.5_r8
-        end do
+        if (use_cropman) then
+           do l = 1, nlit_pools
+              m_residue_fire_closs(c,l) = residue_cpools(c,l) * f * 0.5_r8
+              m_residue_fire_nloss(c,l) = residue_npools(c,l) * f * 0.5_r8
+              m_residue_fire_ploss(c,l) = residue_ppools(c,l) * f * 0.5_r8
+           end do
+        end if
 
         ! change CC for litter from 0.4_r8 to 0.5_r8 and CC for CWD from 0.2_r8
         ! to 0.25_r8 according to Li et al.(2014)

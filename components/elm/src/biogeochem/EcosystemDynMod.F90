@@ -12,7 +12,7 @@ module EcosystemDynMod
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
   use elm_varctl          , only : use_century_decomp
-  use elm_varctl          , only : ero_ccycle 
+  use elm_varctl          , only : ero_ccycle, use_cropman
   use CNStateType         , only : cnstate_type
   use CanopyStateType     , only : canopystate_type
   use SoilStateType       , only : soilstate_type
@@ -676,11 +676,13 @@ contains
         call CNLitterToColumn(num_soilp, filter_soilp, cnstate_vars )
         call t_stop_lnd(event)
 
-        event = 'CNResidueToColumn'
-        call t_start_lnd(event)
-        call CNResidueToColumn(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-          crop_vars, cnstate_vars )
-        call t_stop_lnd(event)
+        if (use_cropman) then
+           event = 'CNResidueToColumn'
+           call t_start_lnd(event)
+           call CNResidueToColumn(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+                crop_vars, cnstate_vars )
+           call t_stop_lnd(event)
+        end if
 
         !--------------------------------------------
         ! Update1

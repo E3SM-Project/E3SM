@@ -10,7 +10,7 @@ module SoilHydrologyMod
   use elm_varctl        , only : iulog, use_vichydro
   use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
   use elm_varctl        , only : use_modified_infil
-  use elm_varctl        , only : use_cn
+  use elm_varctl        , only : use_cropman
   use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -152,7 +152,7 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          g = col_pp%gridcell(c)
-         if (use_cn) then
+         if (use_cropman) then
             fff(c) = fover(g) * (1._r8 + 10._r8*fscov(c))
          else
             fff(c) = fover(g)
@@ -474,15 +474,14 @@ contains
                 rsurf_vic = min(qflx_in_soil(c), rsurf_vic)
                 qinmax = (1._r8 - fsat(c)) * 10._r8**(-e_ice*top_icefrac)*(qflx_in_soil(c) - rsurf_vic)
              else
-                if (use_cn) then
+                rscov(:) = 1._r8
+                if (use_cropman) then
                    pscov = 2._r8 * (1._r8 + 2._r8 * fscov(c))
-                else
-                   pscov = 2._r8
+                   do j = 1, 3, 1
+                     rscov(j) = 1._r8 - min(0.9_r8, max(0._r8, h2osoi_liq(c,j)/(denh2o*dz(c,j))/watsat(c,j)))
+                     rscov(j) = rscov(j)**(1._r8/pscov-0.5_r8)
+                   end do
                 end if
-                do j = 1, 3, 1
-                  rscov(j) = 1._r8 - min(0.9_r8, max(0._r8, h2osoi_liq(c,j)/(denh2o*dz(c,j))/watsat(c,j)))
-                  rscov(j) = rscov(j)**(1._r8/pscov-0.5_r8)
-                end do
                 if ( use_modified_infil ) then
                   qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
                 else

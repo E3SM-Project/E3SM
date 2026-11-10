@@ -7,6 +7,7 @@ module NitrogenStateUpdate2Mod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use elm_varpar          , only : nlevsoi, nlevdecomp
+  use elm_varctl          , only : use_cropman
   use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl          , only : iulog
   use CNNitrogenStateType , only : nitrogenstate_type
@@ -154,6 +155,7 @@ contains
             end do
          end do
 
+         if (use_cropman) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! update residue pools
@@ -164,6 +166,7 @@ contains
             col_ns%residue_npools(c,i_lig_lit) = col_ns%residue_npools(c,i_lig_lit) + &
                  col_nf%harvest_n_to_residue_lig_n(c) * dt
          end do
+         end if
 
       endif
 

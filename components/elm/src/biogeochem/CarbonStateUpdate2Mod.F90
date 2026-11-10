@@ -9,6 +9,7 @@ module CarbonStateUpdate2Mod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
+  use elm_varctl       , only : use_cropman
   use pftvarcon        , only : iscft
   use elm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp
@@ -169,6 +170,7 @@ contains
             end do
          end do
 
+         if (use_cropman) then
          do fc = 1,num_soilc 
             c = filter_soilc(fc)
 
@@ -180,6 +182,7 @@ contains
             col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) + &
                  col_cf%harvest_c_to_residue_lig_c(c) * dt
          end do
+         end if
 
       endif
 

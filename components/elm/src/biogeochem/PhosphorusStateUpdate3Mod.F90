@@ -9,6 +9,7 @@ module PhosphorusStateUpdate3Mod
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use elm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
+  use elm_varctl          , only : use_cropman
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use elm_varpar          , only : nlit_pools 
@@ -123,6 +124,7 @@ contains
            endif
         end do
 
+         if (use_cropman) then
          do k = 1, nlit_pools
             do j = 1, ndecomp_cascade_transitions
                if (cascade_donor_pool(j) == i_met_lit+k-1) then
@@ -144,6 +146,7 @@ contains
                end do
             end if
          end do 
+         end if
 
 
         do j = 1, nlevdecomp
@@ -331,12 +334,14 @@ contains
          end do
       end do
 
+      if (use_cropman) then
       do l = 1, nlit_pools
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             col_ps%residue_ppools(c,l) = col_ps%residue_ppools(c,l) - col_pf%m_residue_fire_ploss(c,l) * dt
          end do
       end do
+      end if
 
     endif !is_active_betr_bgc
 

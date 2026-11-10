@@ -54,7 +54,7 @@ contains
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use elm_varcon  , only : zsoi_till
     use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
+    use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot, use_cropman
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:
@@ -231,22 +231,24 @@ contains
                residue_prof(p,1) = 1._r8/dzsoi_decomp(1)
             endif
 
-            if (altmax_lastyear_indx(c) > 0) then
-               zsoi_till_active = min( zsoi_till, zisoi(nlevbed) )
-               surface_prof_tot = 0._r8
-               do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
-                  if (zisoi(j) <= zsoi_till_active) then
-                     tillage_prof(p,j) = 1./zsoi_till_active
-                  else if (zisoi(j) - dzsoi_decomp(j) < zsoi_till_active) then
-                     tillage_prof(p,j) = ((zsoi_till_active - zisoi(j) + dzsoi_decomp(j)) / &
-                        dzsoi_decomp(j)) / zsoi_till_active
-                  end if
-                  surface_prof_tot = surface_prof_tot + tillage_prof(p,j) * dzsoi_decomp(j)
-               end do
-               tillage_prof(p,:) = tillage_prof(p,:) / surface_prof_tot
-            else
-               ! if fully frozen, or no roots, put everything in the top layer
-               tillage_prof(p,1) = 1./dzsoi_decomp(1)
+            if (use_cropman) then
+               if (altmax_lastyear_indx(c) > 0) then
+                  zsoi_till_active = min( zsoi_till, zisoi(nlevbed) )
+                  surface_prof_tot = 0._r8
+                  do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                     if (zisoi(j) <= zsoi_till_active) then
+                        tillage_prof(p,j) = 1./zsoi_till_active
+                     else if (zisoi(j) - dzsoi_decomp(j) < zsoi_till_active) then
+                        tillage_prof(p,j) = ((zsoi_till_active - zisoi(j) + dzsoi_decomp(j)) / &
+                           dzsoi_decomp(j)) / zsoi_till_active
+                     end if
+                     surface_prof_tot = surface_prof_tot + tillage_prof(p,j) * dzsoi_decomp(j)
+                  end do
+                  tillage_prof(p,:) = tillage_prof(p,:) / surface_prof_tot
+               else
+                  ! if fully frozen, or no roots, put everything in the top layer
+                  tillage_prof(p,1) = 1./dzsoi_decomp(1)
+               end if
             end if
 
          end do
@@ -373,7 +375,8 @@ contains
          end do
          if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
               ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) .or. &
-              ( abs(residue_prof_sum - 1._r8) > delta ) .or. ( abs(tillage_prof_sum - 1._r8) > delta ) ) then
+              ( use_cropman .and. ( ( abs(residue_prof_sum - 1._r8) > delta ) .or. &
+              ( abs(tillage_prof_sum - 1._r8) > delta ) ) ) ) then
             c = veg_pp%column(p)
             write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, &
                stem_prof_sum, residue_prof_sum, tillage_prof_sum

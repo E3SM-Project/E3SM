@@ -6,6 +6,7 @@ module PhosphorusStateUpdate1Mod
   ! !USES:
   use shr_kind_mod           , only: r8 => shr_kind_r8
   use elm_varpar             , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+  use elm_varctl             , only : use_cropman
   use elm_varpar             , only : crop_prog, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varpar             , only : nlit_pools
   use elm_varctl             , only : iulog
@@ -164,6 +165,7 @@ contains
                        col_pf%phenology_p_to_litr_lig_p(c,j) * dt + &
                        col_pf%residue_to_litr_lig_p(c,j) * dt
 
+                  if (use_cropman) then
                   ! update residue pools
                   col_ps%residue_ppools(c,i_met_lit) = col_ps%residue_ppools(c,i_met_lit) - &
                        col_pf%residue_to_litr_met_p(c,j) * dzsoi_decomp(j) * dt
@@ -171,11 +173,13 @@ contains
                        col_pf%residue_to_litr_cel_p(c,j) * dzsoi_decomp(j) * dt
                   col_ps%residue_ppools(c,i_lig_lit) = col_ps%residue_ppools(c,i_lig_lit) - &
                        col_pf%residue_to_litr_lig_p(c,j) * dzsoi_decomp(j) * dt
+                  end if
                   
                end do
             end do
          end if
 
+         if (use_cropman) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! update residue pools
@@ -195,6 +199,7 @@ contains
             col_ps%residue_ppools(c,i_lig_lit) = col_ps%residue_ppools(c,i_lig_lit) - &
                  col_pf%residue_ptransfer(c,i_lig_lit) * dt
          end do
+         end if
 
         ! P fertilization for crops
       if ( crop_prog )then
@@ -246,6 +251,7 @@ contains
             end do
          end if
       end do
+      if (use_cropman) then
       do k = 1, nlit_pools
          do j = 1, ndecomp_cascade_transitions
             if (cascade_donor_pool(j) == i_met_lit+k-1) then
@@ -262,6 +268,7 @@ contains
             end do
          end if
       end do
+      end if
       endif ! if (.not. is_active_betr_bgc))
       !------------------------------------------------------------------
 

@@ -14,7 +14,7 @@ module SedYieldMod
   use elm_varcon        , only : dzsoi_decomp
   use elm_varcon        , only : grav, denh2o, rpi
   use elm_varcon        , only : ispval
-  use elm_varctl        , only : use_crop, use_cn
+  use elm_varctl        , only : use_crop, use_cn, use_cropman
   use elm_varpar        , only : mxpft, nlevsno, max_patch_per_col
   use elm_varpar        , only : nlevslp
   use elm_varpar        , only : ndecomp_pools
@@ -91,7 +91,7 @@ contains
     real(r8) :: fungrvl                                    ! ground uncovered by gravel
     real(r8) :: ftillage, flitho, fglacier                 ! factors of tillage, lithology and glacier
     real(r8) :: wglc                                       ! weight of glacier land unit
-    real(r8) :: Broot                                      ! biomass of roots [kg/m3]
+    real(r8) :: Brsd, Broot                                ! biomass of residue and roots
     real(r8) :: Crsd, Clai, PCT_gnd                        ! ground cover calculated from residue and LAI
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
@@ -121,7 +121,10 @@ contains
          fgrvl            =>    soilstate_vars%cellgrvl_col         , & ! Input: [real(r8) (:,:) ] gravel percentage
          litho            =>    soilstate_vars%litho_col            , & ! Input: [real(r8) (:) ] lithology erodiblity index
 
-         fscov            =>    col_cs%fscov                        , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
+         tillage          =>    soilstate_vars%tillage_col          , & ! Input: [real(r8) (:) ] conserved tillage fraction (use_cropman=.false.)
+
+         decomp_cpools_vr =>    col_cs%decomp_cpools_vr             , & ! Input: [real(r8) (:,:,:) ] soil carbon pools [gC/m3]
+         fscov            =>    col_cs%fscov                        , & ! Input: [real(r8) (:) ] fraction of soil covered by residue (use_cropman=.true.)
 
          frac_sno         =>    col_ws%frac_sno                     , & ! Input: [real(r8) (:) ] fraction of ground covered by snow (0 to 1)
 
@@ -187,6 +190,22 @@ contains
             ! lithology factors
             flitho = litho(c)
 
+            if (.not. use_cropman) then
+               ! tillage factor and ground cover calculated by plant residue
+               ftillage = 2.7_r8 - 1.7_r8 * tillage(c)
+               Brsd = 0.0_r8  ! kg/m2
+               do lp = 1, ndecomp_pools
+                  if ( decomp_cascade_con%is_litter(lp) .and. decomp_cpools_vr(c,1,lp)>0._r8 ) then
+                     Brsd = Brsd + 1.e-3_r8 * decomp_cpools_vr(c,1,lp) * dzsoi_decomp(1) 
+                  end if
+               end do
+               if (use_cn) then
+                  Crsd = 1._r8 - exp(-6.68_r8 * Brsd)
+               else
+                  Crsd = 0._r8
+               end if
+            end if
+
             stxt = (/fclay(c,1), 100._r8-fclay(c,1)-fsand(c,1), fsand(c,1), &
                 fgrvl(c,1)/)
             K = SoilDetachability(stxt)
@@ -208,22 +227,19 @@ contains
                      KE_LD = max(15.8_r8*sqrt(cheight)-5.87_r8, 0._r8) * fungrvl * Dl
                      ! ground cover factor
                      Clai = 1._r8 - exp(-tlai(p))
+                     if (use_cropman) Crsd = fscov(c)
                      if (use_cn) then
-                        Crsd = fscov(c)
                         Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
                            (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      else
-                        Crsd = 0._r8
                         Broot = 0._r8
                      end if
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
                      fgndcov = exp( -gcbc_p(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_p(veg_pp%itype(p))*Broot ) 
                      if( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p)))then
-                        if (use_crop) then
+                        if (use_cropman) then
                            ftillage = 2.7_r8 - 1.7_r8 * conservag(p)
-                        else
-                           ftillage = 2.7_r8
                         end if
 
                         Es_Pcrp = Es_Pcrp + pfactor(c) * ftillage * flitho * &
@@ -264,12 +280,11 @@ contains
                   if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
                      ! ground cover factor 
                      Clai = 1._r8 - exp(-tlai(p))
+                     if (use_cropman) Crsd = fscov(c)
                      if (use_cn) then
-                        Crsd = fscov(c)
                         Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
                            (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      else
-                        Crsd = 0._r8
                         Broot = 0._r8
                      end if
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
@@ -280,10 +295,8 @@ contains
                      fsr = fsr + veg_pp%wtcol(p) * (0.03_r8/nh)**0.6_r8
                   
                      if ( crop(veg_pp%itype(p)) >= 1 .or. iscft(veg_pp%itype(p))) then
-                        if (use_crop) then
+                        if (use_cropman) then
                            ftillage = 2.7_r8 - 1.7_r8 * conservag(p)
-                        else
-                           ftillage = 2.7_r8
                         end if
                         ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 

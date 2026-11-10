@@ -13,7 +13,7 @@ module CropType
   use decompMod           , only : bounds_type
   use elm_varcon          , only : spval
   use elm_varpar          , only : crop_prog
-  use elm_varctl          , only : iulog, use_crop
+  use elm_varctl          , only : iulog, use_crop, use_cropman
   use topounit_varcon     , only : max_topounits
   use ColumnDataType      , only : col_es
   use VegetationDataType  , only : veg_es
@@ -323,11 +323,14 @@ contains
     if (use_crop) then
        allocate(conservag2d(bounds%begg:bounds%endg,max_topounits))
 
-       call getfil (fsurdat, locfn, 0)
-       call ncd_pio_openfile (ncid, locfn, 0)
-       call ncd_io(ncid=ncid, varname='Tillage', flag='read', data=conservag2d, dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) conservag2d(:,:) = 0._r8
-       call ncd_pio_closefile(ncid) 
+       conservag2d(:,:) = 0._r8
+       if (use_cropman) then
+          call getfil (fsurdat, locfn, 0)
+          call ncd_pio_openfile (ncid, locfn, 0)
+          call ncd_io(ncid=ncid, varname='Tillage', flag='read', data=conservag2d, dim1name=grlnd, readvar=readvar)
+          if (.not. readvar) conservag2d(:,:) = 0._r8
+          call ncd_pio_closefile(ncid)
+       end if
 
        do p= bounds%begp,bounds%endp
           g = veg_pp%gridcell(p)
@@ -541,38 +544,42 @@ contains
        end if
        deallocate(temp1d)
 
-       allocate(temp1d(bounds%begp:bounds%endp))
-       if (flag == 'write') then
-          do p= bounds%begp,bounds%endp
-             if (this%istilled_patch(p)) then
-                temp1d(p) = 1
-             else
-                temp1d(p) = 0
-             end if
-          end do
+       if (use_cropman) then
+         allocate(temp1d(bounds%begp:bounds%endp))
+         if (flag == 'write') then
+            do p= bounds%begp,bounds%endp
+               if (this%istilled_patch(p)) then
+                  temp1d(p) = 1
+               else
+                  temp1d(p) = 0
+               end if
+            end do
+         end if
+         call restartvar(ncid=ncid, flag=flag,  varname='istilled', xtype=ncd_log,  &
+              dim1name='pft', &
+              long_name='Flag that tillage performed' , &
+              interpinic_flag='interp', readvar=readvar, data=temp1d)
+         if (flag == 'read') then
+            do p= bounds%begp,bounds%endp
+               if (temp1d(p) == 1) then
+                  this%istilled_patch(p) = .true.
+               else
+                  this%istilled_patch(p) = .false.
+               end if
+            end do
+         end if
+         deallocate(temp1d) 
        end if
-       call restartvar(ncid=ncid, flag=flag,  varname='istilled', xtype=ncd_log,  &
-            dim1name='pft', &
-            long_name='Flag that tillage performed' , &
-            interpinic_flag='interp', readvar=readvar, data=temp1d)
-       if (flag == 'read') then
-          do p= bounds%begp,bounds%endp
-             if (temp1d(p) == 1) then
-                this%istilled_patch(p) = .true.
-             else
-                this%istilled_patch(p) = .false.
-             end if
-          end do
-       end if
-       deallocate(temp1d) 
 
        call restartvar(ncid=ncid, flag=flag,  varname='harvdate', xtype=ncd_int,  &
             dim1name='pft', long_name='harvest date', units='jday', nvalid_range=(/1,366/), & 
             interpinic_flag='interp', readvar=readvar, data=this%harvdate_patch)
 
-       call restartvar(ncid=ncid, flag=flag,  varname='tilldate', xtype=ncd_int,  &
-            dim1name='pft', long_name='tillage date', units='jday', nvalid_range=(/1,366/), &
-            interpinic_flag='interp', readvar=readvar, data=this%tilldate_patch)
+       if (use_cropman) then
+         call restartvar(ncid=ncid, flag=flag,  varname='tilldate', xtype=ncd_int,  &
+              dim1name='pft', long_name='tillage date', units='jday', nvalid_range=(/1,366/), &
+              interpinic_flag='interp', readvar=readvar, data=this%tilldate_patch)
+       end if
 
        call restartvar(ncid=ncid, flag=flag,  varname='vf', xtype=ncd_double,  &
             dim1name='pft', long_name='vernalization factor', units='', &

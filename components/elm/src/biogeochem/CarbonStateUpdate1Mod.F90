@@ -9,6 +9,7 @@ module CarbonStateUpdate1Mod
   use elm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varpar              , only : nlit_pools
+  use elm_varctl              , only : use_cropman
   use elm_varcon              , only : dzsoi_decomp
   use elm_varctl              , only : nu_com, use_c13, use_c14
   use elm_varctl              , only : use_pflotran, pf_cmode, use_fates
@@ -238,6 +239,7 @@ contains
                        col_cf%phenology_c_to_litr_lig_c(c,j) * dt + &
                        col_cf%residue_to_litr_lig_c(c,j) * dt
 
+                  if (use_cropman) then
                   ! update residue pools
                   col_cs%residue_cpools(c,i_met_lit) = col_cs%residue_cpools(c,i_met_lit) - &
                         col_cf%residue_to_litr_met_c(c,j) * dzsoi_decomp(j) * dt
@@ -245,10 +247,12 @@ contains
                         col_cf%residue_to_litr_cel_c(c,j) * dzsoi_decomp(j) * dt
                   col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) - &
                         col_cf%residue_to_litr_lig_c(c,j) * dzsoi_decomp(j) * dt 
+                  end if
                end do
             end do
          end if
 
+         if (use_cropman) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! update residue pools
@@ -268,6 +272,7 @@ contains
             col_cs%residue_cpools(c,i_lig_lit) = col_cs%residue_cpools(c,i_lig_lit) - &
                   (col_cf%residue_hr(c,i_lig_lit) + col_cf%residue_ctransfer(c,i_lig_lit)) * dt
          end do
+         end if
 
          ! litter and SOM HR fluxes
          do k = 1, ndecomp_cascade_transitions
@@ -294,6 +299,7 @@ contains
                end do
             end if
          end do
+         if (use_cropman) then
          do k = 1, nlit_pools
             do j = 1, ndecomp_cascade_transitions
                if (cascade_donor_pool(j) == i_met_lit+k-1) then
@@ -311,6 +317,7 @@ contains
                end do
             end if
          end do
+         end if
 
       endif   !end if is_active_betr_bgc()
 

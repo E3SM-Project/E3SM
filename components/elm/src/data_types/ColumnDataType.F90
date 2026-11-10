@@ -31,6 +31,7 @@ module ColumnDataType
   use elm_varctl      , only : pf_hmode, nu_com
   use elm_varctl      , only : use_extrasnowlayers
   use elm_varctl      , only : use_fan
+  use elm_varctl      , only : use_cropman
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
@@ -2142,8 +2143,8 @@ contains
     allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = spval
     allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = spval
     allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = spval
-    allocate(this%residue_cpools   (begc:endc,1:nlit_pools))                      ; this%residue_cpools   (:,:)   = spval
-    allocate(this%residuec             (begc:endc))     ; this%residuec             (:)     = spval
+    allocate(this%residue_cpools   (begc:endc,1:nlit_pools))                      ; this%residue_cpools   (:,:)   = 0._r8
+    allocate(this%residuec             (begc:endc))     ; this%residuec             (:)     = 0._r8
     allocate(this%fscov                (begc:endc))     ; this%fscov                (:)     = spval
 
     !-----------------------------------------------------------------------
@@ -2240,15 +2241,17 @@ contains
             avgflag='A', long_name='100-yr wood product C', &
             ptr_col=this%prod100c, default='inactive')
 
-       this%residuec(begc:endc) = spval
-       call hist_addfld1d (fname='RESIDUEC', units='gC/m^2', &
-            avgflag='A', long_name='total surface residue carbon', &
-            ptr_col=this%residuec)
+       if (use_cropman) then
+          this%residuec(begc:endc) = spval
+          call hist_addfld1d (fname='RESIDUEC', units='gC/m^2', &
+               avgflag='A', long_name='total surface residue carbon', &
+               ptr_col=this%residuec)
 
-       this%fscov(begc:endc) = spval
-       call hist_addfld1d (fname='FSCOV', units='fraction', &
-            avgflag='A', long_name='fraction of soil covered by residue', &
-            ptr_col=this%fscov, default='inactive')
+          this%fscov(begc:endc) = spval
+          call hist_addfld1d (fname='FSCOV', units='fraction', &
+               avgflag='A', long_name='fraction of soil covered by residue', &
+               ptr_col=this%fscov, default='inactive')
+       end if
 
        if(.not.use_fates)then
 
@@ -2357,10 +2360,12 @@ contains
               avgflag='A', long_name='C13 total wood product C', &
                ptr_col=this%totprodc)
 
-       this%residuec(begc:endc) = spval
-       call hist_addfld1d (fname='C13_RESIDUEC', units='gC13/m^2', &
-            avgflag='A', long_name='C13 total surface residue carbon', &
-            ptr_col=this%residuec)
+       if (use_cropman) then
+          this%residuec(begc:endc) = spval
+          call hist_addfld1d (fname='C13_RESIDUEC', units='gC13/m^2', &
+               avgflag='A', long_name='C13 total surface residue carbon', &
+               ptr_col=this%residuec)
+       end if
 
 
     else if ( carbon_type == 'c14' ) then
@@ -2450,10 +2455,12 @@ contains
              avgflag='A', long_name='C14 total wood product C', &
              ptr_col=this%totprodc)
 
-       this%residuec(begc:endc) = spval
-       call hist_addfld1d (fname='C14_RESIDUEC', units='gC14/m^2', &
-            avgflag='A', long_name='C14 total surface residue carbon', &
-            ptr_col=this%residuec)
+       if (use_cropman) then
+          this%residuec(begc:endc) = spval
+          call hist_addfld1d (fname='C14_RESIDUEC', units='gC14/m^2', &
+               avgflag='A', long_name='C14 total surface residue carbon', &
+               ptr_col=this%residuec)
+       end if
 
     endif ! if c12/c13/c14
 
@@ -2684,17 +2691,19 @@ contains
           end if
        end do
 
-       do k = 1, nlit_pools
-          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c'
-          ptr1d => this%residue_cpools(:,k)
-          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          if (flag=='read' .and. .not. readvar) then
-             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-                  errMsg(__FILE__, __LINE__))
-          end if
-       end do
+       if (use_cropman) then
+          do k = 1, nlit_pools
+             varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c'
+             ptr1d => this%residue_cpools(:,k)
+             call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                  dim1name='column', long_name='',  units='', fill_value=spval, &
+                  interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+             if (flag=='read' .and. .not. readvar) then
+                call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+          end do
+       end if
 
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr
@@ -2751,13 +2760,15 @@ contains
             dim1name='column', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%prod1c)
 
-       call restartvar(ncid=ncid, flag=flag, varname='residuec', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%residuec)
+       if (use_cropman) then
+          call restartvar(ncid=ncid, flag=flag, varname='residuec', xtype=ncd_double,  &
+               dim1name='column', long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=this%residuec)
 
-       call restartvar(ncid=ncid, flag=flag, varname='fscov', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
-            interpinic_flag='interp', readvar=readvar, data=this%fscov)
+          call restartvar(ncid=ncid, flag=flag, varname='fscov', xtype=ncd_double,  &
+               dim1name='column', long_name='', units='', &
+               interpinic_flag='interp', readvar=readvar, data=this%fscov)
+       end if
 
     end if ! C12
 
@@ -2789,29 +2800,31 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(this%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
                    endif
                 end do
              end do
           end if
        end do ! ndecomp_pools
 
-       do k = 1, nlit_pools
-          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c_13'
-          ptr1d => this%residue_cpools(:,k)
-          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%residue_cpools with atmospheric c13 value for: '//varname
-             do i = bounds%begc,bounds%endc
-                if (c12_carbonstate_vars%residue_cpools(i,k) /= spval .and. &
-                     .not. isnan(c12_carbonstate_vars%residue_cpools(i,k)) ) then
-                      this%residue_cpools(i,k) = c12_carbonstate_vars%residue_cpools(i,k) * c3_r2
-                end if
-             end do
-          end if
-       end do
+       if (use_cropman) then
+         do k = 1, nlit_pools
+            varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c_13'
+            ptr1d => this%residue_cpools(:,k)
+            call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                 dim1name='column', long_name='',  units='', fill_value=spval, &
+                 interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+            if (flag=='read' .and. .not. readvar) then
+               write(iulog,*) 'initializing this%residue_cpools with atmospheric c13 value for: '//varname
+               do i = bounds%begc,bounds%endc
+                  if (c12_carbonstate_vars%residue_cpools(i,k) /= spval .and. &
+                       .not. isnan(c12_carbonstate_vars%residue_cpools(i,k)) ) then
+                        this%residue_cpools(i,k) = c12_carbonstate_vars%residue_cpools(i,k) * c3_r2
+                  end if
+               end do
+            end if
+         end do
+       end if
 
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr
@@ -2923,29 +2936,31 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(c12_carbonstate_vars%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
                    endif
                 end do
              end do
           end if
        end do
 
-       do k = 1, nlit_pools
-          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c_14'
-          ptr1d => this%residue_cpools(:,k)
-          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-               dim1name='column', long_name='',  units='', fill_value=spval, &
-               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-          if (flag=='read' .and. .not. readvar) then
-             write(iulog,*) 'initializing this%residue_cpools with atmospheric c14 value for: '//varname
-             do i = bounds%begc,bounds%endc
-                if (c12_carbonstate_vars%residue_cpools(i,k) /= spval .and. &
-                     .not. isnan(c12_carbonstate_vars%residue_cpools(i,k)) ) then
-                      this%residue_cpools(i,k) = c12_carbonstate_vars%residue_cpools(i,k) * c14ratio
-                end if
-             end do
-          end if
-       end do
+       if (use_cropman) then
+         do k = 1, nlit_pools
+            varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'c_14'
+            ptr1d => this%residue_cpools(:,k)
+            call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+                 dim1name='column', long_name='',  units='', fill_value=spval, &
+                 interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+            if (flag=='read' .and. .not. readvar) then
+               write(iulog,*) 'initializing this%residue_cpools with atmospheric c14 value for: '//varname
+               do i = bounds%begc,bounds%endc
+                  if (c12_carbonstate_vars%residue_cpools(i,k) /= spval .and. &
+                       .not. isnan(c12_carbonstate_vars%residue_cpools(i,k)) ) then
+                        this%residue_cpools(i,k) = c12_carbonstate_vars%residue_cpools(i,k) * c14ratio
+                  end if
+               end do
+            end if
+         end do
+       end if
 
        if (use_vertsoilc) then
           ptr2d => this%ctrunc_vr
@@ -3274,7 +3289,6 @@ contains
     ! fraction of soil covered by residue
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       !this%fscov(c) = 1.0 - exp( -9.52e-3_r8 * this%residuec(c) )
        this%fscov(c) = 1.0 - exp( -6.68e-3_r8 * this%residuec(c) )
     end do
 
@@ -3464,8 +3478,8 @@ contains
     allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = spval
     allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = spval
     allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = spval
-    allocate(this%residue_npools        (begc:endc,1:nlit_pools))        ; this%residue_npools        (:,:) = spval
-    allocate(this%residuen              (begc:endc))                     ; this%residuen              (:)   = spval
+    allocate(this%residue_npools        (begc:endc,1:nlit_pools))        ; this%residue_npools        (:,:) = 0._r8
+    allocate(this%residuen              (begc:endc))                     ; this%residuen              (:)   = 0._r8
     if (use_fan) then
        allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
        allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
@@ -3571,10 +3585,12 @@ contains
               ptr_col=this%totsomn_1m, default='inactive')
     endif
 
-    this%residuen(begc:endc) = spval
-    call hist_addfld1d (fname='RESIDUEN', units='gN/m^2', &
-         avgflag='A', long_name='total surface residue N', &
-         ptr_col=this%residuen)
+    if (use_cropman) then
+       this%residuen(begc:endc) = spval
+       call hist_addfld1d (fname='RESIDUEN', units='gN/m^2', &
+            avgflag='A', long_name='total surface residue N', &
+            ptr_col=this%residuen)
+    end if
 
     this%ntrunc(begc:endc) = spval
      call hist_addfld1d (fname='COL_NTRUNC', units='gN/m^2',  &
@@ -3992,17 +4008,19 @@ contains
        end if
     end do
 
-    do k = 1, nlit_pools
-       varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'n'
-       ptr1d => this%residue_npools(:,k)
-       call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-            dim1name='column', long_name='',  units='', fill_value=spval, &
-            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       if (flag=='read' .and. .not. readvar) then
-          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-    end do
+    if (use_cropman) then
+       do k = 1, nlit_pools
+          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'n'
+          ptr1d => this%residue_npools(:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='column', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          if (flag=='read' .and. .not. readvar) then
+             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+       end do
+    end if
 
     if (use_vertsoilc) then
        ptr2d => this%ntrunc_vr
@@ -4106,9 +4124,11 @@ contains
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1n)
 
-    call restartvar(ncid=ncid, flag=flag, varname='residuen', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%residuen)
+    if (use_cropman) then
+       call restartvar(ncid=ncid, flag=flag, varname='residuen', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%residuen)
+    end if
 
     if (use_fan) then
        call restartvar(ncid=ncid, flag=flag, varname='tan_g1', xtype=ncd_double, &
@@ -4794,8 +4814,8 @@ contains
     allocate(this%totpftp              (begc:endc))                   ; this%totpftp              (:)   = spval
     allocate(this%totvegp              (begc:endc))                   ; this%totvegp              (:)   = spval
     allocate(this%decomp_ppools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%decomp_ppools_vr(:,:,:)= spval
-    allocate(this%residue_ppools       (begc:endc,1:nlit_pools))      ; this%residue_ppools       (:,:) = spval
-    allocate(this%residuep             (begc:endc))                   ; this%residuep             (:)   = spval
+    allocate(this%residue_ppools       (begc:endc,1:nlit_pools))      ; this%residue_ppools       (:,:) = 0._r8
+    allocate(this%residuep             (begc:endc))                   ; this%residuep             (:)   = 0._r8
     allocate(this%begpb                (begc:endc))                   ; this%begpb                (:)   = spval
     allocate(this%endpb                (begc:endc))                   ; this%endpb                (:)   = spval
     allocate(this%errpb                (begc:endc))                   ; this%errpb                (:)   = spval
@@ -4867,10 +4887,12 @@ contains
        endif
     end do
 
-    this%residuep(begc:endc) = spval
-    call hist_addfld1d (fname='RESIDUEP', units='gP/m^2', &
-         avgflag='A', long_name='total surface residue P', &
-         ptr_col=this%residuep)
+    if (use_cropman) then
+       this%residuep(begc:endc) = spval
+       call hist_addfld1d (fname='RESIDUEP', units='gP/m^2', &
+            avgflag='A', long_name='total surface residue P', &
+            ptr_col=this%residuep)
+    end if
 
 
     if ( nlevdecomp_full > 1 ) then
@@ -5223,17 +5245,19 @@ contains
     end do
 
     ! residue P
-    do k = 1, nlit_pools
-       varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'p'
-       ptr1d => this%residue_ppools(:,k)
-       call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
-            dim1name='column', long_name='',  units='', fill_value=spval, &
-            interpinic_flag='interp' , readvar=readvar, data=ptr1d)
-       if (flag=='read' .and. .not. readvar) then
-          call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-    end do
+    if (use_cropman) then
+       do k = 1, nlit_pools
+          varname = 'residue_' // trim(decomp_cascade_con%decomp_pool_name_restart(i_met_lit+k-1)) // 'p'
+          ptr1d => this%residue_ppools(:,k)
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double,  &
+               dim1name='column', long_name='',  units='', fill_value=spval, &
+               interpinic_flag='interp' , readvar=readvar, data=ptr1d)
+          if (flag=='read' .and. .not. readvar) then
+             call endrun(msg='ERROR:: '//trim(varname)//' is required on an initialization dataset'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+       end do
+    end if
 
     if (use_vertsoilc) then
        ptr2d => this%ptrunc_vr
@@ -5280,9 +5304,11 @@ contains
          dim1name='column', long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%prod1p)
 
-    call restartvar(ncid=ncid, flag=flag, varname='residuep', xtype=ncd_double,  &
-         dim1name='column', long_name='', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%residuep)
+    if (use_cropman) then
+       call restartvar(ncid=ncid, flag=flag, varname='residuep', xtype=ncd_double,  &
+            dim1name='column', long_name='', units='', &
+            interpinic_flag='interp', readvar=readvar, data=this%residuep)
+    end if
 
     !--------------------------------
     ! Spinup state
@@ -6349,8 +6375,8 @@ contains
     allocate(this%decomp_cpools_yield_vr            (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_yield_vr(:,:,:) = spval
     allocate(this%decomp_cascade_hr                 (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_hr               (:,:)   = spval
     allocate(this%decomp_cascade_ctransfer          (begc:endc,1:ndecomp_cascade_transitions))     ; this%decomp_cascade_ctransfer        (:,:)   = spval
-    allocate(this%residue_hr                        (begc:endc,1:nlit_pools))     ; this%residue_hr                   (:,:) = spval
-    allocate(this%residue_ctransfer                 (begc:endc,1:nlit_pools))     ; this%residue_ctransfer            (:,:) = spval
+    allocate(this%residue_hr                        (begc:endc,1:nlit_pools))     ; this%residue_hr                   (:,:) = 0._r8
+    allocate(this%residue_ctransfer                 (begc:endc,1:nlit_pools))     ; this%residue_ctransfer            (:,:) = 0._r8
     allocate(this%o_scalar                          (begc:endc,1:nlevdecomp_full)); this%o_scalar                     (:,:) = spval
     allocate(this%w_scalar                          (begc:endc,1:nlevdecomp_full)); this%w_scalar                     (:,:) = spval
     allocate(this%t_scalar                          (begc:endc,1:nlevdecomp_full)); this%t_scalar                     (:,:) = spval
@@ -6362,16 +6388,16 @@ contains
     allocate(this%phenology_c_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_met_c    (:,:) = spval
     allocate(this%phenology_c_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_cel_c    (:,:) = spval
     allocate(this%phenology_c_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_lig_c    (:,:) = spval
-    allocate(this%phenology_c_to_residue_met_c      (begc:endc))                  ; this%phenology_c_to_residue_met_c (:)   = spval
-    allocate(this%phenology_c_to_residue_cel_c      (begc:endc))                  ; this%phenology_c_to_residue_cel_c (:)   = spval
-    allocate(this%phenology_c_to_residue_lig_c      (begc:endc))                  ; this%phenology_c_to_residue_lig_c (:)   = spval
+    allocate(this%phenology_c_to_residue_met_c      (begc:endc))                  ; this%phenology_c_to_residue_met_c (:)   = 0._r8
+    allocate(this%phenology_c_to_residue_cel_c      (begc:endc))                  ; this%phenology_c_to_residue_cel_c (:)   = 0._r8
+    allocate(this%phenology_c_to_residue_lig_c      (begc:endc))                  ; this%phenology_c_to_residue_lig_c (:)   = 0._r8
     allocate(this%gap_mortality_c_to_litr_met_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_met_c(:,:) = spval
     allocate(this%gap_mortality_c_to_litr_cel_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_cel_c(:,:) = spval
     allocate(this%gap_mortality_c_to_litr_lig_c     (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_litr_lig_c(:,:) = spval
     allocate(this%gap_mortality_c_to_cwdc           (begc:endc,1:nlevdecomp_full)); this%gap_mortality_c_to_cwdc      (:,:) = spval
     allocate(this%m_decomp_cpools_to_fire_vr        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%m_decomp_cpools_to_fire_vr(:,:,:)= spval
     allocate(this%m_decomp_cpools_to_fire           (begc:endc,1:ndecomp_pools))  ; this%m_decomp_cpools_to_fire      (:,:) = spval
-    allocate(this%m_residue_fire_closs              (begc:endc,1:nlit_pools))     ; this%m_residue_fire_closs         (:,:) = spval
+    allocate(this%m_residue_fire_closs              (begc:endc,1:nlit_pools))     ; this%m_residue_fire_closs         (:,:) = 0._r8
     allocate(this%decomp_cpools_erode               (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_erode          (:,:) = spval
     allocate(this%decomp_cpools_deposit             (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_deposit        (:,:) = spval
     allocate(this%decomp_cpools_yield               (begc:endc,1:ndecomp_pools))  ; this%decomp_cpools_yield          (:,:) = spval
@@ -6383,15 +6409,15 @@ contains
     allocate(this%somc_erode                        (begc:endc))                  ; this%somc_erode                   (:)   = spval
     allocate(this%somc_deposit                      (begc:endc))                  ; this%somc_deposit                 (:)   = spval
     allocate(this%somc_yield                        (begc:endc))                  ; this%somc_yield                   (:)   = spval
-    allocate(this%residue_to_litr_met_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_met_c        (:,:) = spval
-    allocate(this%residue_to_litr_cel_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_cel_c        (:,:) = spval
-    allocate(this%residue_to_litr_lig_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_lig_c        (:,:) = spval
+    allocate(this%residue_to_litr_met_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_met_c        (:,:) = 0._r8
+    allocate(this%residue_to_litr_cel_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_cel_c        (:,:) = 0._r8
+    allocate(this%residue_to_litr_lig_c             (begc:endc,1:nlevdecomp_full)); this%residue_to_litr_lig_c        (:,:) = 0._r8
     allocate(this%harvest_c_to_litr_met_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_met_c      (:,:) = spval
     allocate(this%harvest_c_to_litr_cel_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_cel_c      (:,:) = spval
     allocate(this%harvest_c_to_litr_lig_c           (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_litr_lig_c      (:,:) = spval
-    allocate(this%harvest_c_to_residue_met_c        (begc:endc))                  ; this%harvest_c_to_residue_met_c   (:)   = spval
-    allocate(this%harvest_c_to_residue_cel_c        (begc:endc))                  ; this%harvest_c_to_residue_cel_c   (:)   = spval
-    allocate(this%harvest_c_to_residue_lig_c        (begc:endc))                  ; this%harvest_c_to_residue_lig_c   (:)   = spval
+    allocate(this%harvest_c_to_residue_met_c        (begc:endc))                  ; this%harvest_c_to_residue_met_c   (:)   = 0._r8
+    allocate(this%harvest_c_to_residue_cel_c        (begc:endc))                  ; this%harvest_c_to_residue_cel_c   (:)   = 0._r8
+    allocate(this%harvest_c_to_residue_lig_c        (begc:endc))                  ; this%harvest_c_to_residue_lig_c   (:)   = 0._r8
     allocate(this%harvest_c_to_cwdc                 (begc:endc,1:nlevdecomp_full)); this%harvest_c_to_cwdc            (:,:) = spval
     allocate(this%hrv_deadstemc_to_prod10c          (begc:endc))                  ; this%hrv_deadstemc_to_prod10c     (:)   = spval
     allocate(this%hrv_deadstemc_to_prod100c         (begc:endc))                  ; this%hrv_deadstemc_to_prod100c    (:)   = spval
@@ -8253,14 +8279,16 @@ contains
           this%decomp_cpools_deposit(i,k) = value_column
        end do 
     end do 
-    do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
-          do fi = 1,num_column
-             i = filter_column(fi)
-             this%decomp_cpools_transport_tendency(i,j,k) = value_column
+    if (use_cropman) then
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_cpools_transport_tendency(i,j,k) = value_column
+             end do
           end do
        end do
-    end do
+    end if
 
   end subroutine col_cf_setvalues
 
@@ -8700,9 +8728,9 @@ contains
     allocate(this%phenology_n_to_litr_met_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_met_n     (:,:) = spval
     allocate(this%phenology_n_to_litr_cel_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_cel_n     (:,:) = spval
     allocate(this%phenology_n_to_litr_lig_n       (begc:endc, 1:nlevdecomp_full)) ; this%phenology_n_to_litr_lig_n     (:,:) = spval
-    allocate(this%phenology_n_to_residue_met_n    (begc:endc))                    ; this%phenology_n_to_residue_met_n  (:)   = spval
-    allocate(this%phenology_n_to_residue_cel_n    (begc:endc))                    ; this%phenology_n_to_residue_cel_n  (:)   = spval
-    allocate(this%phenology_n_to_residue_lig_n    (begc:endc))                    ; this%phenology_n_to_residue_lig_n  (:)   = spval
+    allocate(this%phenology_n_to_residue_met_n    (begc:endc))                    ; this%phenology_n_to_residue_met_n  (:)   = 0._r8
+    allocate(this%phenology_n_to_residue_cel_n    (begc:endc))                    ; this%phenology_n_to_residue_cel_n  (:)   = 0._r8
+    allocate(this%phenology_n_to_residue_lig_n    (begc:endc))                    ; this%phenology_n_to_residue_lig_n  (:)   = 0._r8
     allocate(this%gap_mortality_n_to_litr_met_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_met_n (:,:) = spval
     allocate(this%gap_mortality_n_to_litr_cel_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_cel_n (:,:) = spval
     allocate(this%gap_mortality_n_to_litr_lig_n   (begc:endc, 1:nlevdecomp_full)) ; this%gap_mortality_n_to_litr_lig_n (:,:) = spval
@@ -8711,13 +8739,13 @@ contains
     allocate(this%harvest_n_to_litr_met_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_met_n       (:,:) = spval
     allocate(this%harvest_n_to_litr_cel_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_cel_n       (:,:) = spval
     allocate(this%harvest_n_to_litr_lig_n         (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_litr_lig_n       (:,:) = spval
-    allocate(this%harvest_n_to_residue_met_n      (begc:endc))                    ; this%harvest_n_to_residue_met_n    (:)   = spval
-    allocate(this%harvest_n_to_residue_cel_n      (begc:endc))                    ; this%harvest_n_to_residue_cel_n    (:)   = spval
-    allocate(this%harvest_n_to_residue_lig_n      (begc:endc))                    ; this%harvest_n_to_residue_lig_n    (:)   = spval
+    allocate(this%harvest_n_to_residue_met_n      (begc:endc))                    ; this%harvest_n_to_residue_met_n    (:)   = 0._r8
+    allocate(this%harvest_n_to_residue_cel_n      (begc:endc))                    ; this%harvest_n_to_residue_cel_n    (:)   = 0._r8
+    allocate(this%harvest_n_to_residue_lig_n      (begc:endc))                    ; this%harvest_n_to_residue_lig_n    (:)   = 0._r8
     allocate(this%harvest_n_to_cwdn               (begc:endc, 1:nlevdecomp_full)) ; this%harvest_n_to_cwdn             (:,:) = spval
-    allocate(this%residue_to_litr_met_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_met_n         (:,:) = spval
-    allocate(this%residue_to_litr_cel_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_cel_n         (:,:) = spval
-    allocate(this%residue_to_litr_lig_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_lig_n         (:,:) = spval
+    allocate(this%residue_to_litr_met_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_met_n         (:,:) = 0._r8
+    allocate(this%residue_to_litr_cel_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_cel_n         (:,:) = 0._r8
+    allocate(this%residue_to_litr_lig_n           (begc:endc, 1:nlevdecomp_full)) ; this%residue_to_litr_lig_n         (:,:) = 0._r8
     allocate(this%plant_ndemand                   (begc:endc))                    ; this%plant_ndemand                 (:)   = spval
     allocate(this%plant_ndemand_vr                (begc:endc,1:nlevdecomp_full))  ; this%plant_ndemand_vr              (:,:) = spval
     allocate(this%f_ngas_decomp_vr                (begc:endc,1:nlevdecomp_full))  ; this%f_ngas_decomp_vr              (:,:) = spval
@@ -8754,11 +8782,11 @@ contains
     allocate(this%decomp_cascade_ntransfer_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_ntransfer_vr      (:,:,:) = spval
     allocate(this%decomp_cascade_sminn_flux_vr    (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions)) ; this%decomp_cascade_sminn_flux_vr     (:,:,:) = spval
     allocate(this%m_decomp_npools_to_fire_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%m_decomp_npools_to_fire_vr       (:,:,:) = spval
-    allocate(this%m_residue_fire_nloss            (begc:endc,1:nlit_pools                                   )) ; this%m_residue_fire_nloss             (:,:)   = spval
+    allocate(this%m_residue_fire_nloss            (begc:endc,1:nlit_pools                                   )) ; this%m_residue_fire_nloss             (:,:)   = 0._r8
     allocate(this%decomp_cascade_ntransfer        (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_ntransfer         (:,:)   = spval
     allocate(this%decomp_cascade_sminn_flux       (begc:endc,1:ndecomp_cascade_transitions                  )) ; this%decomp_cascade_sminn_flux        (:,:)   = spval
-    allocate(this%residue_ntransfer               (begc:endc,1:nlit_pools                                   )) ; this%residue_ntransfer                (:,:)   = spval
-    allocate(this%residue_sminn_flux              (begc:endc,1:nlit_pools                                   )) ; this%residue_sminn_flux               (:,:)   = spval
+    allocate(this%residue_ntransfer               (begc:endc,1:nlit_pools                                   )) ; this%residue_ntransfer                (:,:)   = 0._r8
+    allocate(this%residue_sminn_flux              (begc:endc,1:nlit_pools                                   )) ; this%residue_sminn_flux               (:,:)   = 0._r8
     allocate(this%m_decomp_npools_to_fire         (begc:endc,1:ndecomp_pools                                )) ; this%m_decomp_npools_to_fire          (:,:)   = spval
     allocate(this%decomp_npools_erode             (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_erode              (:,:)   = spval
     allocate(this%decomp_npools_deposit           (begc:endc,1:ndecomp_pools                                )) ; this%decomp_npools_deposit            (:,:)   = spval
@@ -8775,7 +8803,7 @@ contains
     allocate(this%decomp_npools_sourcesink        (begc:endc,1:nlevdecomp_full,1:ndecomp_pools              )) ; this%decomp_npools_sourcesink         (:,:,:) = spval
     allocate(this%externaln_to_decomp_npools      (begc:endc,1:nlevdecomp_full, 1:ndecomp_pools             )) ; this%externaln_to_decomp_npools       (:,:,:) = spval
     allocate(this%pmnf_decomp_cascade             (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions     )) ; this%pmnf_decomp_cascade              (:,:,:) = spval
-    allocate(this%pmnf_residue                    (begc:endc,1:nlit_pools                                   )) ; this%pmnf_residue                     (:,:)   = spval
+    allocate(this%pmnf_residue                    (begc:endc,1:nlit_pools                                   )) ; this%pmnf_residue                     (:,:)   = 0._r8
 
     if (use_fan) then
        allocate(this%manure_tan_appl                 (begc:endc)) ; this%manure_tan_appl               (:)   = spval
@@ -10647,18 +10675,18 @@ contains
     allocate(this%decomp_cascade_ptransfer_vr      (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_ptransfer_vr  (:,:,:) = spval
     allocate(this%decomp_cascade_sminp_flux_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_cascade_transitions )) ; this%decomp_cascade_sminp_flux_vr (:,:,:) = spval
     allocate(this%m_decomp_ppools_to_fire_vr       (begc:endc,1:nlevdecomp_full,1:ndecomp_pools               )) ; this%m_decomp_ppools_to_fire_vr   (:,:,:) = spval
-    allocate(this%m_residue_fire_ploss             (begc:endc,1:nlit_pools))      ; this%m_residue_fire_ploss          (:,:) = spval
+    allocate(this%m_residue_fire_ploss             (begc:endc,1:nlit_pools))      ; this%m_residue_fire_ploss          (:,:) = 0._r8
     allocate(this%decomp_cascade_ptransfer         (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%decomp_cascade_ptransfer     (:,:)   = spval
     allocate(this%decomp_cascade_sminp_flux        (begc:endc,1:ndecomp_cascade_transitions                   )) ; this%decomp_cascade_sminp_flux    (:,:)   = spval
-    allocate(this%residue_ptransfer                (begc:endc,1:nlit_pools))      ; this%residue_ptransfer             (:,:) = spval
-    allocate(this%residue_sminp_flux               (begc:endc,1:nlit_pools))      ; this%residue_sminp_flux            (:,:) = spval
+    allocate(this%residue_ptransfer                (begc:endc,1:nlit_pools))      ; this%residue_ptransfer             (:,:) = 0._r8
+    allocate(this%residue_sminp_flux               (begc:endc,1:nlit_pools))      ; this%residue_sminp_flux            (:,:) = 0._r8
     allocate(this%m_decomp_ppools_to_fire          (begc:endc,1:ndecomp_pools ))  ; this%m_decomp_ppools_to_fire       (:,:) = spval
     allocate(this%phenology_p_to_litr_met_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_met_p     (:,:) = spval
     allocate(this%phenology_p_to_litr_cel_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_cel_p     (:,:) = spval
     allocate(this%phenology_p_to_litr_lig_p        (begc:endc,1:nlevdecomp_full)) ; this%phenology_p_to_litr_lig_p     (:,:) = spval
-    allocate(this%phenology_p_to_residue_met_p     (begc:endc))                   ; this%phenology_p_to_residue_met_p  (:)   = spval
-    allocate(this%phenology_p_to_residue_cel_p     (begc:endc))                   ; this%phenology_p_to_residue_cel_p  (:)   = spval
-    allocate(this%phenology_p_to_residue_lig_p     (begc:endc))                   ; this%phenology_p_to_residue_lig_p  (:)   = spval
+    allocate(this%phenology_p_to_residue_met_p     (begc:endc))                   ; this%phenology_p_to_residue_met_p  (:)   = 0._r8
+    allocate(this%phenology_p_to_residue_cel_p     (begc:endc))                   ; this%phenology_p_to_residue_cel_p  (:)   = 0._r8
+    allocate(this%phenology_p_to_residue_lig_p     (begc:endc))                   ; this%phenology_p_to_residue_lig_p  (:)   = 0._r8
     allocate(this%gap_mortality_p_to_litr_met_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_met_p (:,:) = spval
     allocate(this%gap_mortality_p_to_litr_cel_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_cel_p (:,:) = spval
     allocate(this%gap_mortality_p_to_litr_lig_p    (begc:endc,1:nlevdecomp_full)) ; this%gap_mortality_p_to_litr_lig_p (:,:) = spval
@@ -10667,13 +10695,13 @@ contains
     allocate(this%harvest_p_to_litr_met_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_met_p       (:,:) = spval
     allocate(this%harvest_p_to_litr_cel_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_cel_p       (:,:) = spval
     allocate(this%harvest_p_to_litr_lig_p          (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_litr_lig_p       (:,:) = spval
-    allocate(this%harvest_p_to_residue_met_p       (begc:endc))                   ; this%harvest_p_to_residue_met_p    (:)   = spval
-    allocate(this%harvest_p_to_residue_cel_p       (begc:endc))                   ; this%harvest_p_to_residue_cel_p    (:)   = spval
-    allocate(this%harvest_p_to_residue_lig_p       (begc:endc))                   ; this%harvest_p_to_residue_lig_p    (:)   = spval
+    allocate(this%harvest_p_to_residue_met_p       (begc:endc))                   ; this%harvest_p_to_residue_met_p    (:)   = 0._r8
+    allocate(this%harvest_p_to_residue_cel_p       (begc:endc))                   ; this%harvest_p_to_residue_cel_p    (:)   = 0._r8
+    allocate(this%harvest_p_to_residue_lig_p       (begc:endc))                   ; this%harvest_p_to_residue_lig_p    (:)   = 0._r8
     allocate(this%harvest_p_to_cwdp                (begc:endc,1:nlevdecomp_full)) ; this%harvest_p_to_cwdp             (:,:) = spval
-    allocate(this%residue_to_litr_met_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_met_p         (:,:) = spval
-    allocate(this%residue_to_litr_cel_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_cel_p         (:,:) = spval
-    allocate(this%residue_to_litr_lig_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_lig_p         (:,:) = spval
+    allocate(this%residue_to_litr_met_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_met_p         (:,:) = 0._r8
+    allocate(this%residue_to_litr_cel_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_cel_p         (:,:) = 0._r8
+    allocate(this%residue_to_litr_lig_p            (begc:endc,1:nlevdecomp_full)) ; this%residue_to_litr_lig_p         (:,:) = 0._r8
     allocate(this%primp_to_labilep_vr              (begc:endc,1:nlevdecomp_full)) ; this%primp_to_labilep_vr           (:,:) = spval
     allocate(this%primp_to_labilep                 (begc:endc))                   ; this%primp_to_labilep              (:)   = spval
     allocate(this%labilep_to_secondp_vr            (begc:endc,1:nlevdecomp_full)) ; this%labilep_to_secondp_vr         (:,:) = spval
@@ -10702,7 +10730,7 @@ contains
     allocate(this%adsorb_to_labilep                (begc:endc))                   ; this%adsorb_to_labilep             (:)   = spval
     allocate(this%desorb_to_solutionp              (begc:endc))                   ; this%desorb_to_solutionp           (:)   = spval
     allocate(this%pmpf_decomp_cascade              (begc:endc,1:nlevdecomp,1:ndecomp_cascade_transitions  )) ; this%pmpf_decomp_cascade              (:,:,:) = spval
-    allocate(this%pmpf_residue                     (begc:endc,1:nlit_pools))      ; this%pmpf_residue                  (:,:) = spval
+    allocate(this%pmpf_residue                     (begc:endc,1:nlit_pools))      ; this%pmpf_residue                  (:,:) = 0._r8
     allocate(this%plant_p_uptake_flux              (begc:endc))                   ; this%plant_p_uptake_flux           (:)   = spval
     allocate(this%soil_p_immob_flux                (begc:endc))                   ; this%soil_p_immob_flux             (:)   = spval
     allocate(this%soil_p_immob_flux_vr             (begc:endc,1:nlevdecomp_full)) ; this%soil_p_immob_flux_vr          (:,:) = spval

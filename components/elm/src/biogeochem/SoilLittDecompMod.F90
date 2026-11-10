@@ -16,6 +16,7 @@ module SoilLittDecompMod
   use elm_varpar             , only : nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varpar             , only : nlit_pools
+  use elm_varctl             , only : use_cropman
   use DecompCascadeCNMod     , only : decomp_rate_constants_cn
   use DecompCascadeBGCMod    , only : decomp_rate_constants_bgc
   use NitrifDenitrifMod    , only : nitrif_denitrif
@@ -254,6 +255,7 @@ contains
          end if
       end do
 
+      if (use_cropman) then
       do l = 1, nlit_pools
          if ( floating_cn_ratio_decomp_pools(i_met_lit+l-1) ) then
             do fc = 1,num_soilc
@@ -269,6 +271,7 @@ contains
             end do
          end if
       end do
+      end if
 
       !! calculate c:p ratios of applicable pools
       do l = 1, ndecomp_pools
@@ -297,6 +300,7 @@ contains
          end do
       end do
 
+      if (use_cropman) then
       do l = 1, nlit_pools
          if ( floating_cp_ratio_decomp_pools(i_met_lit+l-1) ) then
             do fc = 1,num_soilc
@@ -312,6 +316,7 @@ contains
             end do
          end if
       end do
+      end if
 
       ! calculate the non-nitrogen-limited fluxes
       ! these fluxes include the  "/ dt" term to put them on a
@@ -375,6 +380,7 @@ contains
          end do
       end do
 
+      if (use_cropman) then
       do k = 1, nlit_pools
          do i = 1, ndecomp_cascade_transitions
             if (cascade_donor_pool(i) == i_met_lit+k-1) then
@@ -419,6 +425,7 @@ contains
             end if
          end do
       end do
+      end if
 
       ! Sum up all the potential immobilization fluxes (positive pmnf flux)
       ! and all the mineralization fluxes (negative pmnf flux)
@@ -448,6 +455,7 @@ contains
             end do
          end do
       end do
+      if (use_cropman) then
       do k = 1, nlit_pools
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -464,6 +472,7 @@ contains
             end if
          end do
       end do
+      end if
 
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
@@ -488,6 +497,7 @@ contains
             end do
          end do
       end do
+      if (use_cropman) then
       do k = 1, nlit_pools
          do i = 1, ndecomp_cascade_transitions
             if (cascade_donor_pool(i) == i_met_lit+k-1) then
@@ -500,6 +510,7 @@ contains
             phr_vr(c,1) = phr_vr(c,1) + rf_decomp_cascade(c,1,csi) * p_residue_cpool_loss(c,k)
          end do
       end do
+      end if
 
 
 !-------------------------------------------------------------------------------------------------
@@ -595,6 +606,7 @@ contains
          end do
       end do
 
+      if (use_cropman) then
       do k = 1, nlit_pools
          do i = 1, ndecomp_cascade_transitions
             if (cascade_donor_pool(i) == i_met_lit+k-1) then
@@ -656,6 +668,7 @@ contains
             end if
          end do
       end do
+      end if
 
       if (nu_com .eq. 'RD') then
          do fc = 1,num_soilc
@@ -678,6 +691,7 @@ contains
                 end do
              end do
           end do
+          if (use_cropman) then
           do k = 1, nlit_pools
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
@@ -689,6 +703,7 @@ contains
                 end if
              end do
           end do
+          end if
       end if
 
       if (nu_com .ne. 'RD') then
@@ -726,6 +741,7 @@ contains
              end do
           end do
        end do
+       if (use_cropman) then
        do k = 1, nlit_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -746,6 +762,7 @@ contains
           end do
        end do
        end if
+       end if
 
       if (use_lch4) then
          ! Calculate total fraction of potential HR, for methane code
@@ -763,6 +780,7 @@ contains
                end do
             end do
          end do
+         if (use_cropman) then
          do k = 1, nlit_pools
             do i = 1, ndecomp_cascade_transitions
                if (cascade_donor_pool(i) == i_met_lit+k-1) then
@@ -775,6 +793,7 @@ contains
                hrsum(c,1) = hrsum(c,1) + rf_decomp_cascade(c,1,csi) * p_residue_cpool_loss(c,k)
             end do
          end do
+         end if
 
          ! Nitrogen limitation / (low)-moisture limitation
          do j = 1,nlevdecomp
