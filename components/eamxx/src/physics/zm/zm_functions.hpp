@@ -129,6 +129,15 @@ struct Functions {
     static inline constexpr Real dmpdz                     = -0.7e-3;  // default convective entrainment parameter [1/m]
     static inline constexpr Real tiedke_add                = 0.8;      // default Tiedke temperature perturbation addition [K]
     static inline constexpr Real c0                        = 0.0020;   // default autoconversion coefficient
+    // autoconversion (c0) scaling parameters
+    static inline constexpr Real c0_rh_min_default         = 0.25;     // c0 humidity factor at or below c0_sf_lo
+    static inline constexpr Real c0_sf_lo_default          = 0.5;      // column saturation fraction where the humidity ramp starts
+    static inline constexpr Real c0_sf_hi_default          = 0.85;     // column saturation fraction where the humidity ramp ends
+    static inline constexpr Real c0_sf_p_bot_default       = 850e2;    // bottom (high pressure) bound of saturation fraction layer [Pa]
+    static inline constexpr Real c0_sf_p_top_default       = 300e2;    // top (low pressure) bound of saturation fraction layer [Pa]
+    static inline constexpr Real c0_t_lo_default           = 253.15;   // temperature at or below which c0_t_min_frac is used [K]
+    static inline constexpr Real c0_t_hi_default           = 273.15;   // temperature at or above which the temperature factor is one [K]
+    static inline constexpr Real c0_t_min_frac_default     = 0.4;      // c0 temperature factor at or below c0_t_lo
 
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments. ttrice defines the transition
@@ -177,6 +186,35 @@ struct Functions {
       mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff_default);
       mcsp_mom_coeff      = params.get<Real>("mcsp_mom_coeff",      ZMC::MCSP_mom_coeff_default);
       mcsp_use_full_shear = params.get<bool>("mcsp_use_full_shear", false);
+      // autoconversion (c0) scaling parameters
+      use_rh_scaling_c0   = params.get<bool>("use_rh_scaling_c0",   false);
+      use_temp_scaling_c0 = params.get<bool>("use_temp_scaling_c0", false);
+      c0_rh_min           = params.get<Real>("c0_rh_min",           ZMC::c0_rh_min_default);
+      c0_sf_lo            = params.get<Real>("c0_sf_lo",            ZMC::c0_sf_lo_default);
+      c0_sf_hi            = params.get<Real>("c0_sf_hi",            ZMC::c0_sf_hi_default);
+      c0_sf_p_bot         = params.get<Real>("c0_sf_p_bot",         ZMC::c0_sf_p_bot_default);
+      c0_sf_p_top         = params.get<Real>("c0_sf_p_top",         ZMC::c0_sf_p_top_default);
+      c0_t_lo             = params.get<Real>("c0_t_lo",             ZMC::c0_t_lo_default);
+      c0_t_hi             = params.get<Real>("c0_t_hi",             ZMC::c0_t_hi_default);
+      c0_t_min_frac       = params.get<Real>("c0_t_min_frac",       ZMC::c0_t_min_frac_default);
+      if (use_rh_scaling_c0) {
+        EKAT_REQUIRE_MSG(0 <= c0_rh_min && c0_rh_min <= 1,
+          "Error! ZmRuntimeOpt: c0_rh_min must be within [0,1], but got " << c0_rh_min << "\n");
+        EKAT_REQUIRE_MSG(c0_sf_lo < c0_sf_hi,
+          "Error! ZmRuntimeOpt: c0 humidity scaling parameters must satisfy "
+          "c0_sf_lo < c0_sf_hi, but got (" << c0_sf_lo << ", " << c0_sf_hi << ")\n");
+        EKAT_REQUIRE_MSG(0 < c0_sf_p_top && c0_sf_p_top < c0_sf_p_bot,
+          "Error! ZmRuntimeOpt: c0 saturation fraction layer must satisfy "
+          "0 < c0_sf_p_top < c0_sf_p_bot [Pa], but got ("
+          << c0_sf_p_top << ", " << c0_sf_p_bot << ")\n");
+      }
+      if (use_temp_scaling_c0) {
+        EKAT_REQUIRE_MSG(0 <= c0_t_min_frac && c0_t_min_frac <= 1,
+          "Error! ZmRuntimeOpt: c0_t_min_frac must be within [0,1], but got " << c0_t_min_frac << "\n");
+        EKAT_REQUIRE_MSG(c0_t_lo < c0_t_hi,
+          "Error! ZmRuntimeOpt: c0 temperature scaling parameters must satisfy "
+          "c0_t_lo < c0_t_hi, but got (" << c0_t_lo << ", " << c0_t_hi << ")\n");
+      }
 
       // determine SVP table size (add two to make the table slightly too big, just in case)
       plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
@@ -255,8 +293,61 @@ struct Functions {
       os << indent << "mcsp_q_coeff    : " << mcsp_q_coeff   << "\n";
       os << indent << "mcsp_mom_coeff  : " << mcsp_mom_coeff << "\n";
       os << indent << "mcsp_use_full_shear : " << mcsp_use_full_shear << "\n";
+      // autoconversion (c0) scaling parameters
+      os << indent << "use_rh_scaling_c0   : " << use_rh_scaling_c0   << "\n";
+      os << indent << "use_temp_scaling_c0 : " << use_temp_scaling_c0 << "\n";
+      os << indent << "c0_rh_min       : " << c0_rh_min      << "\n";
+      os << indent << "c0_sf_lo        : " << c0_sf_lo       << "\n";
+      os << indent << "c0_sf_hi        : " << c0_sf_hi       << "\n";
+      os << indent << "c0_sf_p_bot     : " << c0_sf_p_bot    << "\n";
+      os << indent << "c0_sf_p_top     : " << c0_sf_p_top    << "\n";
+      os << indent << "c0_t_lo         : " << c0_t_lo        << "\n";
+      os << indent << "c0_t_hi         : " << c0_t_hi        << "\n";
+      os << indent << "c0_t_min_frac   : " << c0_t_min_frac  << "\n";
       os << std::endl;
       os.flags(saved_flags);
+    }
+
+    // -------------------------------------------------------------------------
+    // land/ocean blend of the autoconversion coefficient [1/m]
+    KOKKOS_INLINE_FUNCTION
+    Real calc_c0_base(const Real& landfrac) const {
+      return c0_ocn * (1 - landfrac) + c0_lnd * landfrac;
+    }
+
+    // -------------------------------------------------------------------------
+    // c0 humidity factor in [c0_rh_min,1] - c0_rh_min at or below c0_sf_lo,
+    // one at or above c0_sf_hi, linear in between. Returns exactly one when
+    // use_rh_scaling_c0=false so that the default configuration is BFB
+    KOKKOS_INLINE_FUNCTION
+    Real calc_c0_rh_factor(const Real& sat_frac) const {
+      if (!use_rh_scaling_c0) return 1;
+      Real ramp = (sat_frac - c0_sf_lo) / (c0_sf_hi - c0_sf_lo);
+      ramp = Kokkos::min(Real(1), Kokkos::max(Real(0), ramp));
+      return c0_rh_min + (1 - c0_rh_min) * ramp;
+    }
+
+    // -------------------------------------------------------------------------
+    // c0 temperature factor in [c0_t_min_frac,1] - one at or above c0_t_hi,
+    // c0_t_min_frac at or below c0_t_lo, linear in between. Returns exactly one
+    // when use_temp_scaling_c0=false so that the default configuration is BFB
+    KOKKOS_INLINE_FUNCTION
+    Real calc_c0_temp_factor(const Real& temp) const {
+      if (!use_temp_scaling_c0) return 1;
+      if (temp >= c0_t_hi) return 1;
+      if (temp <= c0_t_lo) return c0_t_min_frac;
+      return c0_t_min_frac + (1 - c0_t_min_frac) * (temp - c0_t_lo) / (c0_t_hi - c0_t_lo);
+    }
+
+    // -------------------------------------------------------------------------
+    // effective per-level autoconversion coefficient [1/m]. The factors are only
+    // applied when enabled so that the result is identical to c0_base otherwise
+    KOKKOS_INLINE_FUNCTION
+    Real calc_c0(const Real& c0_base, const Real& c0_rh_fac, const Real& temp) const {
+      Real c0_k = c0_base;
+      if (use_rh_scaling_c0)   c0_k *= c0_rh_fac;
+      if (use_temp_scaling_c0) c0_k *= calc_c0_temp_factor(temp);
+      return c0_k;
     }
 
     Real tau;               // convective adjustment time scale
@@ -288,6 +379,17 @@ struct Functions {
     Real mcsp_q_coeff;      // MCSP coefficient for specific humidity tendencies
     Real mcsp_mom_coeff;    // MCSP momentum coefficient (dimensionless fraction of the shear)
     bool mcsp_use_full_shear; // use full (u,v) shear vector instead of zonal-only shear
+    // autoconversion (c0) scaling parameters
+    bool use_rh_scaling_c0;   // scale c0 by a column saturation fraction factor
+    bool use_temp_scaling_c0; // scale c0 by a per-level environmental temperature factor
+    Real c0_rh_min;           // c0 humidity factor at or below c0_sf_lo
+    Real c0_sf_lo;            // saturation fraction where the humidity ramp starts
+    Real c0_sf_hi;            // saturation fraction where the humidity ramp ends
+    Real c0_sf_p_bot;         // bottom (high pressure) bound of saturation fraction layer [Pa]
+    Real c0_sf_p_top;         // top (low pressure) bound of saturation fraction layer [Pa]
+    Real c0_t_lo;             // temperature at or below which c0_t_min_frac is used [K]
+    Real c0_t_hi;             // temperature at or above which the temperature factor is one [K]
+    Real c0_t_min_frac;       // c0 temperature factor at or below c0_t_lo
     // saturation vapor pressure (svp) table
     Int plenest;            // saturation vapor pressure table size
     view_1d<Real> estbl;    // saturation vapor pressure table values
@@ -470,6 +572,10 @@ struct Functions {
     view_1d<Real>    mcsp_freq;      // MSCP frequency for output
     view_1d<Real>    mcsp_shear;     // MCSP shear used to check against threshold
     view_1d<Real>    zm_depth;       // MCSP pressure depth of ZM heating
+    // autoconversion (c0) scaling diagnostic outputs
+    view_1d<Real>    c0_sat_frac;    // column saturation fraction used for c0 humidity scaling
+    view_1d<Real>    c0_rh_fac;      // c0 humidity factor (also an input to zm_conv_main)
+    view_2d<Real>    c0_eff;         // effective autoconversion coefficient    [1/m]
     // ZM evap diagnostic outputs
     view_2d<Real>    evap_ds_out;    // zm_conv_evap output tendency
     view_2d<Real>    evap_dq_out;    // zm_conv_evap output tendency
@@ -812,6 +918,7 @@ struct Functions {
     const uview_1d<const Real>& pbl_hgt, // boundary layer height                   [m]      [ncol]
     const uview_1d<const Real>& tpert, // parcel temperature perturbation         [K]      [ncol]
     const uview_1d<const Real>& landfrac, // land fraction                           []       [ncol]
+    const uview_1d<const Real>& c0_rh_fac, // c0 humidity scaling factor (one if off)  []       [ncol]
     const uview_2d<const Real>& t_star, // for DCAPE - prev temperature            [K]      [ncol,pver]
     const uview_2d<const Real>& q_star, // for DCAPE - prev sp. humidity           [kg/kg]  [ncol,pver]
     // Outputs
@@ -951,6 +1058,7 @@ struct Functions {
     const uview_1d<const Real>& s_int, // interface values of dry stat energy
     const uview_1d<const Real>& q_mid, // env specific humidity
     const Real& landfrac, // Land fraction
+    const Real& c0_rh_fac, // c0 humidity scaling factor (one if disabled)
     const Real& tpert_g, // PBL temperature perturbation
     const Int& jb, // updraft base level
     const Int& lel, // updraft parcel launch level
