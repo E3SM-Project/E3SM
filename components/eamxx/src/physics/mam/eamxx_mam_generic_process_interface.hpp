@@ -45,7 +45,8 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   // Populate the wet_atm and dry_atm struct.
   void populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
                         mam_coupling::Buffer &buffer);
-  void populate_wet_atm(mam_coupling::WetAtmosphere &wet_atm);
+  void populate_wet_atm(mam_coupling::WetAtmosphere &wet_atm,
+                        mam_coupling::Buffer &buffer);
   void add_fields_dry_atm();
   void add_tracers_wet_atm();
 
