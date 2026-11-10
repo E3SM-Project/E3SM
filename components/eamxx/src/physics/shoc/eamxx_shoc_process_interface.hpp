@@ -545,7 +545,13 @@ protected:
 #ifdef EAMXX_HAS_INFERENCE
   struct MomentsEmulator;
   void init_moments_emulator();
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
   void run_moments_emulator();
+#ifdef KOKKOS_ENABLE_CUDA
+protected:
+#endif
   std::shared_ptr<MomentsEmulator> m_moments_emulator;
 #endif
 

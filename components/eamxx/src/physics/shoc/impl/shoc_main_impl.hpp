@@ -598,10 +598,10 @@ void Functions<S,D>::shoc_main_internal(
           const int k = idx%nlev;
           const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
           if (active) {
-            w_sec(i,k/Pack::n)[k%Pack::n] = ekat::min(
+            w_sec(i,k/Pack::n)[k%Pack::n] = Kokkos::min(
               Scalar(2) * tke(i,k/Pack::n)[k%Pack::n],
-              ekat::max(min_emulated_w_sec,
-                        emulated_w_sec(i,k/Pack::n)[k%Pack::n]));
+              Kokkos::max(min_emulated_w_sec,
+                          emulated_w_sec(i,k/Pack::n)[k%Pack::n]));
           }
         });
       }
@@ -614,7 +614,8 @@ void Functions<S,D>::shoc_main_internal(
           const int s = km%Pack::n;
           const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
           const auto theterm = w_sec(i,kp)[s];
-          const auto cond = w3clip * ekat::sqrt(Scalar(2) * ekat::cube(theterm));
+          const auto cond = w3clip * Kokkos::sqrt(
+            Scalar(2) * theterm * theterm * theterm);
           const auto emulated_w3_value = emulated_w3(i,k/Pack::n)[k%Pack::n];
           const auto tsign = emulated_w3_value < 0 ? Scalar(-1) : Scalar(1);
           if (active) {
