@@ -81,7 +81,30 @@ field_names:
   - zm_cape
   - zm_prec
   - zm_snow
-  
+  # ZM fields read by wetscav convective processing
+  - zm_activity
+  - zm_rain_prod
+  - zm_icw_liq
+  - zm_mass_flux_int
+  - evap_dq_out
+
+  # Wetscav convproc output
+  - aerdepwetis_convproc
+
+  # State and P3 fields read by wetscav (wetscav does not modify them,
+  # so the end-of-step values are the values wetscav used)
+  - T_mid
+  - p_mid
+  - pseudo_density
+  - pseudo_density_dry
+  - qv
+  - qc
+  - qi
+  - nc
+  - ni
+  - precip_total_tend
+  - nevapr
+
 output_control:
   frequency: ${NUM_STEPS}
   frequency_units: nsteps
