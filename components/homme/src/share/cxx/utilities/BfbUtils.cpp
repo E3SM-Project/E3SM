@@ -23,10 +23,6 @@ void initialize_kokkos_f90 () {
 }
 
 void finalize_kokkos_f90 () {
-#ifdef HOMMEXX_ENABLE_GPU
-  g_cxx_log_dev = Kokkos::View<double*, Homme::ExecSpace>();
-  g_cxx_log_host = Kokkos::View<double*, Homme::ExecSpace>::host_mirror_type();
-#endif
   Kokkos::finalize();
 }
 
