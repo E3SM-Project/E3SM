@@ -712,7 +712,7 @@ void MAMWetscav::run_impl(const double dt) {
           mu_icol = mflx_up_tmp_icol;
           md_icol = mflx_dn_tmp_icol;
           ktop = Kokkos::round(zm_cldtop_klev_in(icol));
-          kbot = Kokkos::round(zm_msemax_klev_in(icol));
+          kbot = Kokkos::round(zm_msemax_klev_in(icol))+1;
           // Get deep convection activity flag (1 = active, 0 = inactive)
           zm_activity_icol = Kokkos::round(zm_activity_in(icol));
         } 
