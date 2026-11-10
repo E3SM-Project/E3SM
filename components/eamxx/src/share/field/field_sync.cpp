@@ -6,6 +6,12 @@ namespace scream
 void Field::
 sync_to_host (const bool fence) const {
   // Sanity check
+  // Broadcast fields share the data with their source field, and their views
+  // have stride 0. Syncing them would make no sense; sync the source instead.
+  EKAT_REQUIRE_MSG (not m_header->is_broadcast(),
+      "Error! Cannot sync a broadcast field. Sync its source field instead.\n"
+      " - field name: " + name() + "\n");
+
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
 
@@ -39,6 +45,12 @@ sync_to_host (const bool fence) const {
 void Field::
 sync_to_dev (const bool fence) const {
   // Sanity check
+  // Broadcast fields share the data with their source field, and their views
+  // have stride 0. Syncing them would make no sense; sync the source instead.
+  EKAT_REQUIRE_MSG (not m_header->is_broadcast(),
+      "Error! Cannot sync a broadcast field. Sync its source field instead.\n"
+      " - field name: " + name() + "\n");
+
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Input field must be allocated in order to sync host and device views.\n");
 

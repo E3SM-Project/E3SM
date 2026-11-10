@@ -1,7 +1,12 @@
 #ifndef SRF_EMISSION_HPP
 #define SRF_EMISSION_HPP
 
+#include "share/remap/abstract_remapper.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/util/eamxx_timing.hpp"
+#include "share/core/eamxx_types.hpp"
+
+#include <memory>
 
 namespace scream::mam_coupling {
 template <typename ScalarType, typename DeviceType>
@@ -75,7 +80,7 @@ struct srfEmissFunctions {
       const std::string &srfEmiss_data_file,
       const std::vector<std::string> &field_names, const std::string &map_file);
 
-  static std::shared_ptr<AtmosphereInput> create_srfEmiss_data_reader(
+  static std::shared_ptr<FieldReader> create_srfEmiss_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &srfEmiss_data_file);
 
@@ -85,14 +90,14 @@ struct srfEmissFunctions {
                             const srfEmissOutput &data_out);
 
   static void update_srfEmiss_data_from_file(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      std::shared_ptr<FieldReader> &scorpio_reader,
       const util::TimeStamp &ts,
       const int time_index,  // zero-based
       const Real scale_factor, // applied to file data
       AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input);
 
   static void update_srfEmiss_timestate(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      std::shared_ptr<FieldReader> &scorpio_reader,
       const util::TimeStamp &ts, AbstractRemapper &srfEmiss_horiz_interp, const Real scale_factor,
       srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg,
       srfEmissInput &srfEmiss_end);
@@ -118,7 +123,7 @@ struct srfEmissFunctions {
       std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
       srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
       srfEmissOutput &SrfEmissData_out,
-      std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
+      std::shared_ptr<FieldReader> &SrfEmissDataReader);
 
   static void init_srf_emiss_objects(
       const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
@@ -128,7 +133,7 @@ struct srfEmissFunctions {
       std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
       srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
       srfEmissOutput &SrfEmissData_out,
-      std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
+      std::shared_ptr<FieldReader> &SrfEmissDataReader);
 
 };  // struct srfEmissFunctions
 }  // namespace scream::mam_coupling

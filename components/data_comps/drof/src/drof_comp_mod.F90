@@ -588,6 +588,7 @@ CONTAINS
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
       call moab_set_tag_from_av(tagname, r2x, index_list, mrofid, datam, lsize) ! loop over all a2x fields, not just a few
+      call mct_string_clean(mctOStr) ! mct_list_get allocates a new string each iteration; free it here to avoid a per-timestep leak
     enddo
     call mct_list_clean(temp_list)
     deallocate(datam) ! maybe we should keep it around, deallocate at the final only?

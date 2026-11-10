@@ -226,6 +226,7 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
+  integer, public            :: fates_lu_transition_logic = -9          ! controls logic around transition between land use classes
   logical, public            :: use_fates_managed_fire = .false.        ! true => turn on managed fire
   character(len=256), public :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
   character(len=256), public :: fates_photosynth_acclimation = ''       ! nonacclimating, kumarathunge2019
@@ -244,6 +245,7 @@ module elm_varctl
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
+  logical, public            :: use_fates_dbh_init = .false.            ! true => initialize cohorts from dbh (nocomp only)
   logical, public            :: use_fates_nocomp = .false.              ! true => no competition mode
   logical, public            :: use_fates_sp = .false.                  ! true => FATES satellite phenology mode
   logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode
@@ -253,9 +255,8 @@ module elm_varctl
   character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
-  integer, public            :: fates_parteh_mode = -9                  ! 1 => carbon only
-                                                                        ! 2 => C+N+P (not enabled yet)
-                                                                        ! no others enabled
+  character(len=256), public :: fates_parteh_mode = ''                  ! carbon_onoly => carbon only
+                                                                        ! cnp => Carbon+Nitrogen+Phosphorus
   integer, public            :: fates_seeddisp_cadence = iundef         ! 0 => no seed dispersal across gridcells
                                                                         ! 1, 2, 3  => daily, monthly, or yearly seed dispersal
 
@@ -273,12 +274,6 @@ module elm_varctl
   integer, dimension(2), public   :: fates_history_dimlevel = (/2,2/)
 
   
-  !----------------------------------------------------------
-  !  BeTR switches
-  !----------------------------------------------------------
-  logical, public :: use_betr = .false.          ! true=> use BeTR
-  !$acc declare create(use_betr)
-
   !----------------------------------------------------------
   ! lai streams switch for Sat. Phenology
   !----------------------------------------------------------
@@ -400,6 +395,7 @@ module elm_varctl
   logical, public :: use_atm_downscaling_to_topunit  = .false.
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
   logical, public :: use_lake_wat_storage = .false.
+  character(len = SHR_KIND_CS), public :: lake_evap_cap_method = 'none' ! Lake evap cap method values can be none, rain_snow, or rain_snow_h2osno
   logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
   logical, public :: use_finetop_rad     = .false.  ! fineTOP : fine(grid)-scale topographic effect on surface radiation balance (longwave + shortwave)
   
@@ -417,20 +413,6 @@ module elm_varctl
   !----------------------------------------------------------
   logical, public :: use_polygonal_tundra = .false.
   logical, public :: use_arctic_init     = .false.
-
-  !----------------------------------------------------------
-  ! VSFM switches
-  !----------------------------------------------------------
-  logical          , public :: use_vsfm                    = .false.
-  logical          , public :: vsfm_use_dynamic_linesearch = .false.
-  logical          , public :: vsfm_include_seepage_bc     = .false.
-  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
-  character(len=32), public :: vsfm_lateral_model_type     = 'none'
-
-  !----------------------------------------------------------
-  ! PETSc-based thermal model switches
-  !----------------------------------------------------------
-  logical, public :: use_petsc_thermal_model = .false.
 
   !----------------------------------------------------------
   ! Stub EM switches
@@ -471,9 +453,8 @@ module elm_varctl
   real(r8), public         :: add_temperature = 0d0
 
   !-----------------------------------------------------------------------
-  ! Lateral grid connectivity
+  ! Domain decomposition
   !-----------------------------------------------------------------------
-  logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
@@ -520,6 +501,20 @@ module elm_varctl
   !$acc declare copyin(initth_pf2clm)
   !$acc declare copyin(pf_clmnstep0 )
 
+  !-----------------------------------------------------------------------
+  ! N fixation parameters are assigned for individual pft
+  logical, public :: nfix_npp_patch = .false.
+  !$acc declare create(nfix_npp_patch)
+
+  !-----------------------------------------------------------------------
+  ! onset_gdd summation ending switch in phenology
+  ! by default, onset_gdd will reset to zero passing summer-solstice
+  ! This may cause non-growing if heavy winter snowing which results in
+  ! snow-melting passing summer-solstice in arctic.
+  ! When this switches, it will end by offset critical daylength (i.e. vegetation senescence starts normally in Fall)
+  logical, public :: onset_gdd_extension = .false.
+  !$acc declare create(onset_gdd_extension)
+
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode
    character(len=fname_len), public :: metdata_bypass = ' '    ! met data directory for CPL_BYPASS mode (site, qian, cru_ncep)
@@ -548,11 +543,6 @@ module elm_varctl
   !$acc declare copyin(use_noio           )
   !$acc declare copyin(use_var_soil_thick )
   !$acc declare copyin(tw_irr)
-  !$acc declare copyin(use_vsfm                   )
-  !$acc declare copyin(vsfm_use_dynamic_linesearch)
-  !$acc declare copyin(vsfm_include_seepage_bc    )
-  !$acc declare copyin(vsfm_satfunc_type          )
-  !$acc declare copyin(vsfm_lateral_model_type    )
 
 
   !----------------------------------------------------------

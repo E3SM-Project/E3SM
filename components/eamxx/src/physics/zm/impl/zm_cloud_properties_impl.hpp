@@ -167,6 +167,7 @@ void Functions<S,D>::zm_cloud_properties(
     jd   = pver - 1;
     jlcl = lel;
   });
+  team.team_barrier();
 
   // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
   using ValLocType = Kokkos::ValLocScalar<Real, Int>;
@@ -195,6 +196,7 @@ void Functions<S,D>::zm_cloud_properties(
   if (j0_result.val < h_env_min) {
     h_env_min = j0_result.val;
   }
+  team.team_barrier();
 
   // =========================================================================
   // 4. Initialize updraft MSE with PBL temperature perturbation (each k independent)

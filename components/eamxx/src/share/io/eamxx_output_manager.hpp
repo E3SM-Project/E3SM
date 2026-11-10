@@ -145,6 +145,16 @@ protected:
   std::vector<output_ptr_type>   m_output_streams;
   std::vector<output_ptr_type>   m_geo_data_streams;
 
+  // Candidate geo data fields, collected during setup() and used to lazily create
+  // m_geo_data_streams on the first call to setup_file(). When geo streams are created,
+  // we add these fields ONLY IF they don't have the io_output_if_dim_exists extra data
+  // set, or if the corresponding dim is ALREADY in the output file.
+  struct GeoData {
+    std::shared_ptr<const AbstractGrid> grid;
+    std::vector<Field>                  fields;
+  };
+  std::map<std::string,GeoData> m_grid_name_to_geo_data;
+
   globals_map_t                  m_globals;
 
   ekat::Comm                     m_io_comm;

@@ -2,7 +2,8 @@ INCLUDE (ScreamUtils)
 
 # Create the exec
 CreateADUnitTestExec (shoc_p3_nudging
-  LIBS shoc p3 nudging)
+  LIBS shoc p3 nudging
+)
 
 # Ensure test input files are present in the data dir
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
@@ -12,9 +13,11 @@ GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 set (RUN_T0 2021-10-12-45000)
 
 # Run a quick setup function to create vertical remap file:
-CreateUnitTest(create_vert_remap_and_weights "create_vert_remap_and_weights.cpp"
+CreateUnitTest(create_vert_remap_and_weights
+  SOURCES create_vert_remap_and_weights.cpp
   LIBS scream_share
-  FIXTURES_SETUP shoc_p3_create_vertical_remap_and_weights_file)
+  FIXTURES_SETUP shoc_p3_create_vertical_remap_and_weights_file
+)
 
 # Run a test to setup nudging source data:
 set (NUM_STEPS  5)

@@ -66,12 +66,7 @@ struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_drag_prof_f(d);
-      }
-      else {
-        gw_drag_prof(d);
-      }
+      gw_drag_prof(d);
     }
 
     // Verify BFB results, all data should be in C layout

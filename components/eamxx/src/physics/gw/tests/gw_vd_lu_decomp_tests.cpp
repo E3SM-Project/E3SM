@@ -58,12 +58,7 @@ struct UnitWrap::UnitTest<D>::TestVdLuDecomp : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        vd_lu_decomp_f(d);
-      }
-      else {
-        vd_lu_decomp(d);
-      }
+      vd_lu_decomp(d);
     }
 
     // Verify BFB results, all data should be in C layout

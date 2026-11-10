@@ -79,7 +79,6 @@ contains
 
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete)
 
-    use physical_constants,     only: dd_pi
 
     type(element_t),            intent(inout), target :: elem(:)
     type(TimeLevel_t),target,   intent(in) :: tl
@@ -96,8 +95,6 @@ contains
     real (kind=real_kind)  :: Qvar(qsize_d,diagtimes),Qmass(qsize_d,diagtimes),Q1mass(qsize_d)
     real (kind=real_kind),save  :: time0
     real (kind=real_kind),save  :: TOTE0=0,Qmass0(qsize_d)=0
-    real (kind=real_kind)  :: I_div(nlev)
-    real (kind=real_kind)  :: I_vort(nlev)
 
     real (kind=real_kind)  :: tmp(np,np,nets:nete)
     real (kind=real_kind),allocatable  :: tmp3d(:,:,:,:)
@@ -106,27 +103,24 @@ contains
     real (kind=real_kind)  :: dp(np,np)
     real (kind=real_kind)  :: phi_i(np,np,nlevp)
     real (kind=real_kind)  :: dphi(np,np,nlev)
-    real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_p
-    real (kind=real_kind)  :: tdiag(np,np,nlev), muvalue(np,np,nlevp), tempext
+    real (kind=real_kind)  :: w_over_dz(np,np,nlev)
+    real (kind=real_kind)  :: tdiag(np,np,nlev), muvalue(np,np,nlevp)
     !    real (kind=real_kind)  :: E(np,np)
-    integer                :: location(3)
 
     real (kind=real_kind) :: usum_local(nets:nete), vsum_local(nets:nete), tsum_local(nets:nete), thetasum_local(nets:nete),&
                              psmin_local(nets:nete),psmax_local(nets:nete),pssum_local(nets:nete), &
                              fusum_local(nets:nete), fvsum_local(nets:nete), ftsum_local(nets:nete), fqsum_local(nets:nete), &
                              wsum_local(nets:nete), phisum_local(nets:nete), dpsum_local(nets:nete)
 
-    real (kind=real_kind) :: qvmin_p(qsize_d), psmin_p, dpmin_p, TSmin_p
+    real (kind=real_kind) :: qvmin_p(qsize_d), psmin_p, TSmin_p
 
-    real (kind=real_kind) :: qvmax_p(qsize_d), psmax_p, dpmax_p, TSmax_p
+    real (kind=real_kind) :: qvmax_p(qsize_d), psmax_p, TSmax_p
 
     real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d),&
          pssum_p, dpsum_p, thetasum_p, wsum_p
 
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
-    real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
-    real (kind=real_kind) :: fumax_p, fvmax_p, ftmax_p, fqmax_p
-    real (kind=real_kind) :: phimax_p, phimin_p, phisum_p
+    real (kind=real_kind) :: phisum_p
 
     real (kind=real_kind) :: umax_local(2), umin_local(2), vmax_local(2), vmin_local(2),&
                              wmax_local(2), wmin_local(2), thetamin_local(2), thetamax_local(2),&
@@ -145,7 +139,7 @@ contains
     real (kind=real_kind) :: PEhorz1,PEhorz2
     real (kind=real_kind) :: KEH1,KEH2,KEV1,KEV2
     real (kind=real_kind) :: KEwH1,KEwH2,KEwH3,KEwV1,KEwV2
-    real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
+    real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, n0q
     integer               :: npts,n,q
     integer :: max_itercnt_g
@@ -432,7 +426,6 @@ contains
  
 100 format (A10,3(E23.15))
 102 format (A4,I3,A3,3(E24.16))
-108 format (A10,E23.15,A6,E23.15,A6,E23.15)
 109 format (A10,E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
 110 format (A33,E23.15,A2,I3,A1)
 
@@ -813,7 +806,7 @@ contains
        time0=time1
     endif
        
-
+    call flush(iulog)  
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
    
@@ -855,7 +848,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use dimensions_mod, only : np, np, nlev,nlevp
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
-    use physical_constants, only : Cp, cpwater_vapor
+    use physical_constants, only : Cp
     use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
@@ -865,10 +858,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance
 
-    integer :: ie,k,i,j
+    integer :: ie,k
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1  ! delta pressure
     real (kind=real_kind), dimension(np,np)  :: E
-    real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
+    real (kind=real_kind), dimension(np,np)  :: suml,suml2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind) :: phi(np,np,nlev)
     real (kind=real_kind) :: phi_i(np,np,nlevp)  
@@ -968,9 +961,6 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (hvcoord_t)                  :: hvcoord
     
     integer :: ie,k,q
-    real (kind=real_kind), dimension(np,np)  :: ps         ! pressure
-    real (kind=real_kind), dimension(np,np)  :: dp         ! delta pressure
-    real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance
@@ -1013,7 +1003,7 @@ end subroutine prim_diag_scalars
 !helper routine to compute min/max for derived quantities
 subroutine extremumLevelHelper(res,field,operation,first,klev)
    use kinds, only : real_kind
-   use dimensions_mod, only : np, np, nlev
+   use dimensions_mod, only : np, np
    implicit none
    real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
    character(len=*),      intent(in)    :: operation

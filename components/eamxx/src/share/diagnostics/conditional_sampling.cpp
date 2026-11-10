@@ -6,6 +6,7 @@
 #include <ekat_team_policy_utils.hpp>
 
 #include <charconv>
+#include <cstdlib>
 #include <string>
 
 namespace scream {
@@ -30,16 +31,22 @@ std::pair<int,bool> str2int (const std::string& s) {
   return std::make_pair(0,false);
 }
 
+// NOTE: the overload of from_chars for floating point was not immediately added
+//       by compilers supporting C++17. Some compilers (e.g., on compy) do not
+//       support it. Hence, stick with strtod.
 std::pair<double,bool> str2dbl (const std::string& s) {
-  // Check if rhs is a value
-  auto beg = s.data();
-  auto end = beg + s.size();
-  double d;
-  auto [ptr,ec] = std::from_chars(beg,end,d);
-  if (ec == std::errc{} && ptr == end) {
-    return std::make_pair(d,true);
+  if (s.empty()) return {0.0, false};
+
+  char* endptr;
+  const char* startptr = s.c_str();
+  double d = std::strtod(startptr, &endptr);
+
+  // Check if conversion happened and reached the end of the string
+  if (endptr != startptr && *endptr == '\0') {
+    return {d, true};
   }
-  return std::make_pair(0.0,false);
+
+  return {0.0, false};
 }
 
 // This is to avoid using original diag string in output field name,
@@ -84,8 +91,9 @@ Comparison str2cmp (const std::string& cmp_str)
 }
 
 ConditionalSampling::
-ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params)
- : AtmosphereDiagnostic(comm, params)
+ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params,
+                    const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm, params, grid)
 {
   m_input_f = m_params.get<std::string>("field_name");
   m_condition_lhs = m_params.get<std::string>("condition_lhs");
@@ -99,7 +107,7 @@ ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params)
   auto rhs_as_int    = str2int(m_condition_rhs);
 
   EKAT_REQUIRE_MSG (not m_lhs_is_lev or (rhs_as_int.second and rhs_as_int.first>=0),
-      "Error! Conditional sampling of the form X_where_lev_CMP_Z requires Z to be a positive integer.\n"
+      "Error! Conditional sampling of the form X.where(lev CMP Z) requires Z to be a non-negative integer.\n"
       " - X  : " + m_input_f + "\n"
       " - CMP: " + cmp + "\n"
       " - Z  : " + m_condition_rhs + "\n");
@@ -113,99 +121,81 @@ ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params)
   m_diag_is_mask = m_input_f == "mask";
 
   m_diag_name = m_input_f + "_where_" + m_condition_lhs + "_" + cmp2str(m_condition_cmp) + "_" + m_condition_rhs;
-}
 
-void ConditionalSampling::create_requests()
-{
   using namespace ShortFieldTagsNames;
-  const auto &gn = m_params.get<std::string>("grid_name");
-  const auto g   = m_grids_manager->get_grid("physics");
 
   // Special case: if the input field is "mask", we're just computing the mask where the condition holds
   if (not m_diag_is_mask) {
-    add_field<Required>(m_input_f, gn);
+    m_field_in_names.push_back(m_input_f);
   }
 
   // Special case: if lhs field is "lev", we don't need a lhs field.
   // We can actually precompute the output mask for a 1d col
   if (m_lhs_is_lev) {
-    FieldIdentifier lev_fid("lev_mask",g->get_vertical_layout(LEV),ekat::units::Units::nondimensional(),g->name(),DataType::IntType);
+    FieldIdentifier lev_fid("lev_mask",m_grid->get_vertical_layout(LEV),ekat::units::none,m_grid->name(),DataType::IntType);
     m_lev_mask = Field(lev_fid,true);
     auto lev_idx = m_lev_mask.clone("lev_idx");
     auto lev_idx_h = lev_idx.get_view<int*,Host>();
-    for (int k=0; k<g->get_num_vertical_levels(); ++k)
+    for (int k=0; k<m_grid->get_num_vertical_levels(); ++k)
       lev_idx_h(k) = k;
     lev_idx.sync_to_dev();
     compute_mask(lev_idx,m_rhs_value,m_condition_cmp,m_lev_mask);
   } else {
-    add_field<Required>(m_condition_lhs, gn);
+    m_field_in_names.push_back(m_condition_lhs);
   }
 
   if (m_rhs_is_field) {
-    add_field<Required>(m_condition_rhs, gn);
+    m_field_in_names.push_back(m_condition_rhs);
   }
 }
 
-void ConditionalSampling::initialize_impl(const RunType /*run_type*/)
+void ConditionalSampling::initialize_impl()
 {
   if (m_diag_is_mask) {
     if (m_lhs_is_lev) {
-      m_diagnostic_output = m_lev_mask.clone(m_diag_name);
+      m_diagnostic_output = m_lev_mask.alias(m_diag_name);
     } else {
-      auto dfid = get_field_in(m_condition_lhs).get_header().get_identifier().clone(m_diag_name);
-      dfid.reset_dtype(DataType::IntType).reset_units(ekat::units::Units::nondimensional());
+      auto dfid = m_fields_in.at(m_condition_lhs).get_header().get_identifier().clone(m_diag_name);
+      dfid.reset_dtype(DataType::IntType).reset_units(ekat::units::none);
       m_diagnostic_output = Field(dfid,true);
     }
   } else {
-    auto xfid = get_field_in(m_input_f).get_header().get_identifier();
-    m_diagnostic_output = Field(xfid.clone(m_diag_name),true);
+    m_diagnostic_output = m_fields_in.at(m_input_f).clone(m_diag_name);
     m_diagnostic_output.create_valid_mask();
+    // Entries failing the condition hold the fill value, so averaging must skip them
+    m_diagnostic_output.get_header().set_may_be_filled(true);
+  }
+
+  // Comparing two fields requires same units, unless either never declared them
+  if (m_rhs_is_field and not m_lhs_is_lev) {
+    using ekat::units::Units;
+    const auto& lhs_units = m_fields_in.at(m_condition_lhs).get_header().get_identifier().get_units();
+    const auto& rhs_units = m_fields_in.at(m_condition_rhs).get_header().get_identifier().get_units();
+    EKAT_REQUIRE_MSG (lhs_units==Units::invalid() or rhs_units==Units::invalid() or lhs_units==rhs_units,
+        "Error! Conditional sampling compares two fields with different units.\n"
+        " - lhs name : " + m_condition_lhs + "\n"
+        " - rhs name : " + m_condition_rhs + "\n"
+        " - lhs units: " + lhs_units.get_si_string() + "\n"
+        " - rhs units: " + rhs_units.get_si_string() + "\n");
   }
 
   // If lhs is "lev" but diag is not "mask", we can still precompute the diag mask by
-  // broadcsting m_lev_mask
+  // broadcasting m_lev_mask
   if (m_lhs_is_lev and not m_diag_is_mask) {
     auto mask = m_diagnostic_output.get_valid_mask();
-    const auto& dims = mask.get_header().get_identifier().get_layout().dims();
-    auto lev_mask_v = m_lev_mask.get_view<const int*>();
-    switch (mask.rank()) {
-      case 1:
-        mask.deep_copy(m_lev_mask);
-        break;
-      case 2:
-        {
-          auto mask_v = mask.get_view<int**>();
-          auto set_idx = KOKKOS_LAMBDA(int i, int k) {
-            mask_v(i,k) = lev_mask_v(k);
-          };
-          MDRange<2> p({0,0},{dims[0],dims[1]});
-          Kokkos::parallel_for(p,set_idx);
-        } break;
-      case 3:
-        {
-          auto mask_v = mask.get_view<int***>();
-          auto set_idx = KOKKOS_LAMBDA(int i, int j, int k) {
-            mask_v(i,j,k) = lev_mask_v(k);
-          };
-          MDRange<3> p({0,0,0},{dims[0],dims[1],dims[2]});
-          Kokkos::parallel_for(p,set_idx);
-        } break;
-      default:
-        EKAT_ERROR_MSG ("Error! Unsupported rank  in ConditionalSampling initialization.\n"
-            " - diag name: " + m_diag_name + "\n"
-            " - diag rank: " + std::to_string(mask.rank()) + "\n");
-    }
+    m_lev_mask_bcast = m_lev_mask.broadcast_like(mask);
+    mask.deep_copy(m_lev_mask_bcast);
   }
 }
 
-void ConditionalSampling::compute_diagnostic_impl()
+void ConditionalSampling::compute_impl()
 {
   // Compute the mask (unless lhs is "lev", in which case we already did)
   auto& mask = m_diag_is_mask ? m_diagnostic_output : m_diagnostic_output.get_valid_mask();
   if (not m_lhs_is_lev) {
-    const auto& lhs = get_field_in(m_condition_lhs);
+    const auto& lhs = m_fields_in.at(m_condition_lhs);
     if (m_rhs_is_field) {
-      const auto& rhs = get_field_in(m_condition_rhs);
+      const auto& rhs = m_fields_in.at(m_condition_rhs);
       compute_mask(lhs,rhs,m_condition_cmp,mask);
       if (rhs.has_valid_mask())
         mask.scale(rhs.get_valid_mask());
@@ -217,7 +207,15 @@ void ConditionalSampling::compute_diagnostic_impl()
   }
 
   if (not m_diag_is_mask) {
-    const auto& f = get_field_in(m_input_f);
+    const auto& f = m_fields_in.at(m_input_f);
+    // Intersect with the input's own mask, so chained where(..) calls are a conjunction
+    if (f.has_valid_mask()) {
+      if (m_lhs_is_lev) {
+        // The lev mask is only computed at init: restore it before scaling in place
+        mask.deep_copy(m_lev_mask_bcast);
+      }
+      mask.scale(f.get_valid_mask());
+    }
     m_diagnostic_output.deep_copy(f,mask);
     constexpr auto fv = constants::fill_value<Real>;
     m_diagnostic_output.deep_copy(fv,mask,true);

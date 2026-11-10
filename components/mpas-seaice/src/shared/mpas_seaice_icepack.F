@@ -593,8 +593,8 @@ subroutine init_column_waves(domain)
                               waveFreqBinWidth_TEMP)
 
       ! remove frequency 'tails' (which are only needed in WW3, not MPAS-SI)
-      waveFrequency(1:nFrequencies-2) = waveFrequency_TEMP(2:nFrequencies-1) 
-      waveFreqBinWidth(1:nFrequencies-2) = waveFreqBinWidth_TEMP(2:nFrequencies-1) 
+      waveFrequency = waveFrequency_TEMP(2:nFrequencies-1) 
+      waveFreqBinWidth = waveFreqBinWidth_TEMP(2:nFrequencies-1) 
 
       ! initialize HS and Spectra
       if (.not. config_do_restart) then
@@ -2414,9 +2414,13 @@ subroutine init_column_waves(domain)
          iceAreaCell, &
          seaFreezingTemperature, &
          seaSurfaceSalinity, &
+         oceanFrazilSalinityReduction, &
          lateralIceMeltRate, &
          lateralIceMelt, &
          freezingMeltingPotential, &
+         frazilMassFlux, &
+         frazilSaltFlux, &
+         frazilHeatFlux, &
          frazilFormation, &
          rainfallRate, &
          pondFreshWaterFlux, &
@@ -2538,8 +2542,12 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(atmos_coupling, "rainfallRate", rainfallRate)
 
        call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
+       call MPAS_pool_get_array(ocean_coupling, "frazilMassFlux", frazilMassFlux)
+       call MPAS_pool_get_array(ocean_coupling, "frazilSaltFlux", frazilSaltFlux)
+       call MPAS_pool_get_array(ocean_coupling, "frazilHeatFlux", frazilHeatFlux)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+       call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
 
        call MPAS_pool_get_array(wave_coupling, "significantWaveHeight", significantWaveHeight)
        call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
@@ -2641,6 +2649,7 @@ subroutine init_column_waves(domain)
                fresh=oceanFreshWaterFlux(iCell), &
                fsalt=oceanSaltFlux(iCell), &
                fhocn=oceanHeatFlux(iCell), &
+               dSin0_frazil_cell=max(oceanFrazilSalinityReduction(iCell), 0.0_RKIND), &
                faero_ocn=oceanAerosolFlux(:,iCell), &
                first_ice=newlyFormedIceLogical(:), & 
                flux_bio=oceanBioFluxesTemp(:,iCell), &
@@ -2658,7 +2667,10 @@ subroutine init_column_waves(domain)
                d_afsd_latg=dFloeSizeLateralGrowth(:,iCell),    &
                d_afsd_newi=dFloeSizeNewIce(:,iCell),   &
                d_afsd_latm=dFloeSizeLateralMelt(:,iCell),   &
-               d_afsd_weld=dFloeSizeWeld(:,iCell))
+               d_afsd_weld=dFloeSizeWeld(:,iCell), &
+               frazilm=frazilMassFlux(iCell), &
+               frazils=frazilSaltFlux(iCell), &
+               frazilh=frazilHeatFlux(iCell))
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)
@@ -9934,6 +9946,7 @@ subroutine init_column_waves(domain)
          config_category_bounds_type, &
          config_pond_refreezing_type, &
          config_salt_flux_coupling_type, &
+         config_frazil_coupling_type, &
          config_ocean_heat_transfer_type, &
          config_sea_freezing_temperature_type, &
          config_snow_redistribution_scheme
@@ -10004,6 +10017,7 @@ subroutine init_column_waves(domain)
     call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
     call MPAS_pool_get_config(domain % configs, "config_category_bounds_type", config_category_bounds_type)
     call MPAS_pool_get_config(domain % configs, "config_pond_refreezing_type", config_pond_refreezing_type)
+    call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_salt_flux_coupling_type", config_salt_flux_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
@@ -10125,10 +10139,20 @@ subroutine init_column_waves(domain)
        call config_error("config_pond_refreezing_type", config_pond_refreezing_type, "'cesm' or 'hlid'")
     endif
 
-    ! check config_salt_flux_coupling_type
-    if (trim(config_salt_flux_coupling_type) /= "constant") then
-       call config_error("config_salt_flux_coupling_type", config_salt_flux_coupling_type, "'constant'")
-    endif
+      ! check config_salt_flux_coupling_type value
+      if (.not. (trim(config_salt_flux_coupling_type) == "constant" .or. &
+                         trim(config_salt_flux_coupling_type) == "prognostic")) then
+           call config_error("config_salt_flux_coupling_type", config_salt_flux_coupling_type, "'constant' or 'prognostic'")
+      endif
+
+      ! check for consistency in  salt coupling and frazil coupling
+      if (trim(config_salt_flux_coupling_type) == "prognostic" .and. &
+                          .not. (trim(config_frazil_coupling_type) == "omega-fluxes")) then
+         call mpas_log_write(&
+              'check_column_package_configs: config_salt_flux_coupling_type=''prognostic'' ' // &
+              'requires config_frazil_coupling_type=''omega-fluxes''', &
+              messageType=MPAS_LOG_CRIT)
+      endif
 
     ! check for consistency in snow vertical dimension
     if (config_nSnowLayers /= nSnowlayers) &
@@ -10156,6 +10180,14 @@ subroutine init_column_waves(domain)
             'check_column_package_configs: More than one melt pond scheme active', &
             messageType=MPAS_LOG_CRIT)
     endif
+
+         ! prognostic salt coupling is only supported with mushy thermodynamics
+         if (trim(config_salt_flux_coupling_type) == "prognostic" .and. &
+          trim(config_thermodynamics_type) /= "mushy") then
+            call mpas_log_write(&
+              'check_column_package_configs: config_salt_flux_coupling_type=''prognostic'' requires config_thermodynamics_type=''mushy''', &
+              messageType=MPAS_LOG_CRIT)
+         endif
 
     ! check for itd remapping with only one category
     if (nCategories == 1 .and. trim(config_itd_conversion_type) == "linear remap") then
@@ -14698,7 +14730,7 @@ subroutine init_column_waves(domain)
                               = tracerObject % index_brineFraction
                tracerObject % ancestorIndices(tracerObject % index_mobileFraction+ iBioLayer - 1,2) = 0
                retentionTime(iBioLayer) = 1.0_RKIND
-               releaseTime(iBioLayer) = 1.0_RKIND
+               releaseTime(iBioLayer) = config_rapid_mobile_to_stationary_time
 
                if (BGCTracerType(iBioLayer) >=  0.0_RKIND .and. BGCTracerType(iBioLayer) < 0.5_RKIND) then
                   retentionTime(iBioLayer) = config_rapid_mobile_to_stationary_time

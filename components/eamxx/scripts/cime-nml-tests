@@ -191,22 +191,26 @@ class TestBuildnml(unittest.TestCase):
     def test_nml_defaults_append(self):
     ###########################################################################
         """
-        Test that the append attribute for array-type params in namelist defaults works as expected
+        Test that the action attribute (append/remove) for array-type params in namelist defaults works as expected
         """
         case = self._common_case
 
         # Add test_only proc
         self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
 
-        # Test case 1: append to base, then to last. Should give all 3 entries stacked
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 1'", from_dir=case)
+        # Test case 1: append only
+        run_cmd_no_fail("./xmlchange EAMXX_VGRID=L128v4", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
-        self._get_values(case,"my_param","1,2,3,4,5,6")
+        self._get_values(case,"my_param","1,2,3,4")
 
-        # Test case 2: append to last, then to base. Should give 1st and 3rd entry
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 2'", from_dir=case)
+        # Test case 2: append, then remove one of the appended entries
+        run_cmd_no_fail("./xmlchange EAMXX_VGRID=L72", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
-        self._get_values(case,"my_param","1,2,5,6")
+        self._get_values(case,"my_param","1,2,4")
+
+        # Restore the default vgrid, since this case is shared with the other tests
+        run_cmd_no_fail("./xmlchange EAMXX_VGRID=L128v4", from_dir=case)
+        run_cmd_no_fail("./case.setup", from_dir=case)
 
     ###########################################################################
     def test_append(self):
@@ -280,7 +284,7 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("surf_mom_flux", "40.0,2.0")], case)
+        self._chg_atmconfig([("dgnum", "1,2,3,4")], case)
 
     ###########################################################################
     def test_atmchanges_on_all_matches(self):
@@ -371,6 +375,103 @@ class TestBuildnml(unittest.TestCase):
 
         stat, output, error = run_cmd("./atmquery --grep p3",from_dir=case)
         expect (output=="", "There is still a trace of the removed process")
+
+    ###########################################################################
+    def test_atmchanges_add_rm_leaves(self):
+    ###########################################################################
+        """
+        Test atmchanges that add/remove leaves to/from open nodes
+        """
+        case = self._common_case
+
+        # test_only has some open nodes (see namelist_defaults_eamxx.xml)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
+
+        # Add a new leaf, and modify it
+        run_cmd_assert_result(self, "./atmchange --add test_only::open_params::extra=5,6", from_dir=case)
+        self._get_values(case, "test_only::open_params::extra", value="5,6", expect_equal=True)
+        self._chg_atmconfig([("test_only::open_params::extra", "7,8")], case)
+
+        # Remove a leaf that is in the defaults file
+        run_cmd_assert_result(self, "./atmchange --rm test_only::open_params::p1", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep '^p1$'",from_dir=case)
+        expect (output=="", "There is still a trace of the removed leaf")
+
+        # Changes must survive regeneration of the XML file, but not a reset
+        self._chg_atmconfig([("test_only::number_of_subcycles", "42")], case)
+        self._get_values(case, "test_only::open_params::extra", value="7,8", expect_equal=True)
+        stat, output, error = run_cmd("./atmquery --grep '^p1$'",from_dir=case)
+        expect (output=="", "The removal of a leaf was lost")
+
+        run_cmd_assert_result(self, "./atmchange --reset", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep '^extra$'",from_dir=case)
+        expect (output=="", "The added leaf survived an atmchange --reset")
+
+    ###########################################################################
+    def test_atmchanges_add_rm_leaves_invalid(self):
+    ###########################################################################
+        """
+        Test that adding/removing leaves is only allowed in open nodes
+        """
+        case = self._common_case
+
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
+
+        for cmd in ["--add p3::foo=1",                          # not an open node
+                    "--rm p3::number_of_subcycles",             # not an open node
+                    "--add test_only::open_params::p1=1",       # already exists
+                    "--rm test_only::open_params::p100",        # does not exist
+                    "--add test_only::open_params::extra=hi",      # wrong type
+                    "--add --rm test_only::open_params::extra",    # incompatible options
+                    "--add test_only::open_params::extra",         # missing value
+                    "test_only::open_params::extra:=1",            # internal operators are not allowed
+                    "test_only::open_params::p1~="]:
+            stat, out, err = run_cmd (f"./atmchange {cmd}",from_dir=case)
+            expect (stat!=0,f"Command './atmchange {cmd}' should have failed")
+
+    ###########################################################################
+    def test_atmchanges_ic_constant_fields(self):
+    ###########################################################################
+        """
+        Test atmchanges that add/remove IC constants (open nodes in the IC section)
+        """
+        case = self._common_case
+
+        # Add constants to the overrides/defaults nodes (scalar and vector), and modify them
+        run_cmd_assert_result(self, "./atmchange --add constant_fields::overrides::my_field=1.5", from_dir=case)
+        run_cmd_assert_result(self, "./atmchange --add constant_fields::defaults::my_vec_field=1,2,3", from_dir=case)
+        self._get_values(case, "constant_fields::overrides::my_field", value="1.5", expect_equal=True)
+        self._get_values(case, "constant_fields::defaults::my_vec_field", value="1,2,3", expect_equal=True)
+        self._chg_atmconfig([("constant_fields::overrides::my_field", "2.5")], case)
+
+        # Remove a constant that is in the defaults file
+        run_cmd_assert_result(self, "./atmchange --rm constant_fields::overrides::tke", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep '^tke$'",from_dir=case)
+        expect (output=="", "There is still a trace of the removed constant")
+
+        # Changes must survive regeneration of the XML file, but not a reset
+        self._chg_atmconfig([("p3::enable_precondition_checks", "false")], case)
+        self._get_values(case, "constant_fields::overrides::my_field", value="2.5", expect_equal=True)
+
+        run_cmd_assert_result(self, "./atmchange --reset", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep my_field",from_dir=case)
+        expect (output=="", "The added constant survived an atmchange --reset")
+        self._get_values(case, "constant_fields::overrides::tke")
+
+    ###########################################################################
+    def test_atmchanges_ic_constant_fields_invalid(self):
+    ###########################################################################
+        """
+        Test that IC constants can only be added to the overrides/defaults nodes, and be real arrays
+        """
+        case = self._common_case
+
+        for cmd in ["--add constant_fields::my_field=1.5",           # not an open node
+                    "--add initial_conditions::my_field=1.5",        # not an open node
+                    "--add constant_fields::overrides::my_field=hi",     # wrong type
+                    "--add constant_fields::overrides::qr=1.5"]:         # qr is already in the overrides
+            stat, out, err = run_cmd (f"./atmchange {cmd}",from_dir=case)
+            expect (stat!=0,f"Command './atmchange {cmd}' should have failed")
 
 ###############################################################################
 def parse_command_line(args, desc):

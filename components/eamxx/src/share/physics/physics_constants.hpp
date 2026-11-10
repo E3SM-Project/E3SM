@@ -37,11 +37,9 @@ struct Constants
   static constexpr auto W   = ekat::units::W;
 
   // Some shorthand units
-  static constexpr auto m2     = Units(m*m,"m2");
-  static constexpr auto m3     = Units(m*m*m,"m3");
-  static constexpr auto s2     = Units(s*s,"s2");
-  static constexpr auto nondim = Units::nondimensional();
-  static constexpr auto rad    = Units(nondim,"rad");
+  static constexpr auto m2     = (m*m).rename("m2");
+  static constexpr auto m3     = (m*m*m).rename("m3");
+  static constexpr auto s2     = (s*s).rename("s2");
 
   // Commonly used numeric constants
   static constexpr Scalar ZERO    = 0.0;
@@ -72,7 +70,7 @@ struct Constants
   static constexpr auto MWWV            = MWH2O;
   static constexpr auto MWdry           = quantity_t(28.966, g/mol);   // dry air molar mass
   static constexpr auto ep_2            = MWH2O / MWdry;               // dimensionless (MWH2O/MWdry)
-  static constexpr auto o2mmr           = quantity_t(0.23143,nondim);  // o2 mass mixing ratio (dimensionless)
+  static constexpr auto o2mmr           = quantity_t(0.23143,ekat::units::none);  // o2 mass mixing ratio (dimensionless)
 
   static constexpr auto gravit          = quantity_t(9.80616, m/s2);
 
@@ -123,16 +121,12 @@ struct Constants
   static constexpr Scalar basetemp      = 300.0;
   static constexpr auto r_earth         = quantity_t(6.376e6,m); // Radius of the earth in m
   static constexpr auto stebol          = quantity_t(5.670374419e-8,W/m2/pow(K,4)); // Stefan-Boltzmann's constant (W/m^2/K^4)
-  static constexpr auto omega           = quantity_t(7.292e-5,rad/s); // Earth's rotation (rad/sec)
+  static constexpr auto omega           = quantity_t(7.292e-5,ekat::units::rad/s); // Earth's rotation (rad/sec)
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
   static constexpr int VTABLE_DIM1    = 10;
   static constexpr int MU_R_TABLE_DIM = 150;
-
-  // Turbulent Mountain Stress constants
-  static constexpr Scalar orocnst     = 1;     // Converts from standard deviation to height [ no unit ]
-  static constexpr Scalar z0fac       = 0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
 
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
@@ -148,6 +142,9 @@ struct Constants
   static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator
   static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid
   static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
+
+  // Perturbation magnitude for derivative used for implicit stress, in Pa (move to namelist?)
+  static constexpr Scalar tau_pert_mag = 0.001;
 
   static const std::map<ci_string,quantity_t>& dictionary() {
     static std::map<ci_string,quantity_t> dict;
@@ -186,7 +183,8 @@ struct Constants
       dict["RWV"]         = RWV;
       dict["r_earth"]     = r_earth;
       dict["stebol"]      = stebol;
-      dict["omega"]       = omega;
+      // NOTE: not "omega", which is also the name of a field (the vertical velocity)
+      dict["omega_earth"] = omega;
     }
     return dict;
   }

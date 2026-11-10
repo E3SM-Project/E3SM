@@ -39,7 +39,7 @@ struct ComposeTransportImpl {
   enum : int { np2 = NP*NP };
   enum : int { num_lev_pack = NUM_LEV };
   enum : int { max_num_lev_pack = NUM_LEV_P };
-  enum : int { max_num_lev_aligned = max_num_lev_pack*packn };
+  enum : int { max_num_lev_aligned = (int)max_num_lev_pack*(int)packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
 
   static_assert(max_num_lev_aligned >= 3,
@@ -78,7 +78,7 @@ struct ComposeTransportImpl {
   struct VelocityRecord;
 
   struct Data {
-    int nelemd, qsize, limiter_option, cdr_check, hv_q, hv_subcycle_q;
+    int nelemd, qsize, limiter_option, cdr_check, hv_q, hv_subcycle_q, hv_subcycle_q_sgs;
     int geometry_type; // 0: sphere, 1: plane
     int trajectory_nsubstep; // 0: original alg, >= 1: enhanced
     int trajectory_nvelocity;
@@ -107,7 +107,7 @@ struct ComposeTransportImpl {
 
     Data ()
       : nelemd(-1), qsize(-1), limiter_option(9), cdr_check(0), hv_q(0),
-        hv_subcycle_q(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
+        hv_subcycle_q(0), hv_subcycle_q_sgs(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
         independent_time_steps(false), do_3d_turbulence(false)
     {}
   };
@@ -126,7 +126,8 @@ struct ComposeTransportImpl {
   TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize, m_tu_ne_hv_q;
 
   std::shared_ptr<BoundaryExchange>
-    m_qdp_dss_be[Q_NUM_TIME_LEVELS], m_v_dss_be[2], m_hv_dss_be[2];
+    m_qdp_dss_be[Q_NUM_TIME_LEVELS], m_v_dss_be[2], m_hv_dss_be[2],
+    m_horiz_turb_dss_be[2];
 
   ComposeTransportImpl();
   ComposeTransportImpl(const int num_elems);
@@ -160,7 +161,7 @@ struct ComposeTransportImpl {
 
   int run_trajectory_unit_tests();
   int run_enhanced_trajectory_unit_tests();
-  ComposeTransport::TestDepView::HostMirror
+  ComposeTransport::TestDepView::host_mirror_type
   test_trajectory(Real t0, Real t1, const bool independent_time_steps);
 
   // In test code, the bfb flag says to construct manufactured fields on host to
@@ -312,7 +313,7 @@ struct ComposeTransportImpl {
   KOKKOS_FUNCTION
   static void ugradv_sphere (
     const SphereOperators& sphere_ops, const KernelVariables& kv,
-    const typename ViewConst<ExecViewUnmanaged<Real[2][3][NP][NP]> >::type& vec_sphere2cart,
+    const typename ViewConst<ExecViewUnmanaged<Real[3][3][NP][NP]> >::type& vec_sphere2cart,
     // velocity, latlon
     const typename ViewConst<ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEV]> >::type& u,
     const typename ViewConst<ExecViewUnmanaged<Scalar[2][NP][NP][NUM_LEV]> >::type& v,

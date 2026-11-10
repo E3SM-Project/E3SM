@@ -89,16 +89,28 @@ void Functions<S,D>::gw_drag_prof(
   //------------------------------------------------------------------------
   // Compute the stress profiles and diffusivities
   //------------------------------------------------------------------------
-  gwd_compute_stress_profiles_and_diffusivities(
+  // NOTE: calling the _serial variant rather than the parallel
+  // gwd_compute_stress_profiles_and_diffusivities(). On the current
+  // Kokkos/CUDA stack the parallel version hangs (team threads are lost
+  // progressively over the serial outer k-loop's many team_barriers /
+  // parallel_reduce syncs); the _serial variant runs the whole k-loop
+  // serially-redundantly on every team thread and avoids the hang.
+  // See the comment block at the top of the _serial implementation for
+  // details and how to revert when the underlying stack issue is fixed.
+  gwd_compute_stress_profiles_and_diffusivities_serial(
     team, workspace, init, pver, pgwv,
     src_level, ubi, c, rhoi,
     ni, kvtt, t, ti, piln, tau);
+
+  team.team_barrier();
 
   // Tau projected in the four cardinal directions, for the momentum
   // conservation routine and for diagnostic output.
   if ( pgwv > 0) {
     gwd_project_tau(team, workspace, init, pver, pgwv, tend_level, tau, ubi, c, xv, yv, taucd);
   }
+
+  team.team_barrier();
 
   //------------------------------------------------------------------------
   // Compute the tendencies from the stress divergence.
@@ -107,6 +119,8 @@ void Functions<S,D>::gw_drag_prof(
   gwd_compute_tendencies_from_stress_divergence(
     team, workspace, init, pver, pgwv, do_taper, dt, effgw, tend_level, max_level,
     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw);
+
+  team.team_barrier();
 
   if (pgwv > 0) {
      // Precalculate rhoi for the following routines. We have rhoi, but

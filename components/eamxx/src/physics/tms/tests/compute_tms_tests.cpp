@@ -91,6 +91,14 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Bas
 
 namespace {
 
+TEST_CASE("compute_tms_property", "tms")
+{
+  using TestStruct = scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;
+
+  TestStruct t;
+  t.run_property();
+}
+
 TEST_CASE("compute_tms_bfb", "tms")
 {
   using TestStruct = scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;

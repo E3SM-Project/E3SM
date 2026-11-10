@@ -38,7 +38,7 @@ contains
   use hybvcoord_mod,  only: hvcoord_t
   use control_mod,    only: rsplit
   use hybrid_mod,     only: hybrid_t
-  use physical_constants, only : Cp,g
+  use physical_constants, only : g
 
   type (hybrid_t),  intent(in)    :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout) :: elem(:)

@@ -103,7 +103,7 @@ module cam_history
   !   The size of these parameters should match the assignments in restart_vars_setnames and restart_dims_setnames below
   !   
   integer, parameter :: restartvarcnt              = 38
-  integer, parameter :: restartdimcnt              = 10
+  integer, parameter :: restartdimcnt              = 11
   type(rvar_id)      :: restartvars(restartvarcnt)
   type(rdim_id)      :: restartdims(restartdimcnt)
   integer, parameter :: ptapes_dim_ind             =  1
@@ -116,6 +116,7 @@ module cam_history
   integer, parameter :: maxvarmdims_dim_ind        =  8
   integer, parameter :: registeredmdims_dim_ind    =  9
   integer, parameter :: max_hcoordname_len_dim_ind = 10
+  integer, parameter :: avgflag_len_dim_ind        = 11
 
   integer :: nfmaster = 0             ! number of fields in master field list
   integer :: nflds(ptapes)            ! number of fields per tape
@@ -1099,9 +1100,10 @@ CONTAINS
     rvindex = rvindex + 1
     restartvars(rvindex)%name = 'avgflag'
     restartvars(rvindex)%type = pio_char
-    restartvars(rvindex)%ndims = 2
-    restartvars(rvindex)%dims(1) = maxnflds_dim_ind
-    restartvars(rvindex)%dims(2) = ptapes_dim_ind
+    restartvars(rvindex)%ndims = 3
+    restartvars(rvindex)%dims(1) = avgflag_len_dim_ind
+    restartvars(rvindex)%dims(2) = maxnflds_dim_ind
+    restartvars(rvindex)%dims(3) = ptapes_dim_ind
 
     rvindex = rvindex + 1
     restartvars(rvindex)%name = 'sampling_seq'
@@ -1262,6 +1264,9 @@ CONTAINS
 
     restartdims(max_hcoordname_len_dim_ind)%name = 'max_hcoordname_len'
     restartdims(max_hcoordname_len_dim_ind)%len  = max_hcoordname_len
+
+    restartdims(avgflag_len_dim_ind)%name = 'avgflag_len'
+    restartdims(avgflag_len_dim_ind)%len  = 1
 
   end subroutine restart_dims_setnames
 
@@ -1517,11 +1522,11 @@ CONTAINS
         ierr = pio_put_var(File, numlev_desc,start,tape(t)%hlist(f)%field%numlev)
 
         ierr = pio_put_var(File, hwrt_prec_desc,start,tape(t)%hlist(f)%hwrt_prec)
+        ierr = pio_put_var(File, avgflag_desc,startc,tape(t)%hlist(f)%avgflag)
         ierr = pio_put_var(File, sseq_desc,startc,tape(t)%hlist(f)%field%sampling_seq)
         ierr = pio_put_var(File, longname_desc,startc,tape(t)%hlist(f)%field%long_name)
         ierr = pio_put_var(File, standardname_desc,startc,tape(t)%hlist(f)%field%standard_name)
         ierr = pio_put_var(File, units_desc,startc,tape(t)%hlist(f)%field%units)
-        ierr = pio_put_var(File, avgflag_desc,start, tape(t)%hlist(f)%avgflag)
 
         ierr = pio_put_var(File, fillval_desc,start, tape(t)%hlist(f)%field%fillvalue)
         ierr = pio_put_var(File, meridional_complement_desc,start, tape(t)%hlist(f)%field%meridional_complement)
@@ -1583,7 +1588,7 @@ CONTAINS
 
   subroutine read_restart_history (File)
     use pio,                 only: pio_inq_dimid
-    use pio,                 only: pio_inq_varid, pio_inq_dimname
+    use pio,                 only: pio_inq_varid, pio_inq_dimname, pio_inq_varndims
     use cam_pio_utils,       only: cam_pio_openfile, cam_pio_closefile
     use cam_pio_utils,       only: cam_pio_var_info
     use ioFileMod,           only: getfil
@@ -1836,11 +1841,22 @@ CONTAINS
         ierr = pio_get_var(File,fillval_desc, (/f,t/), tape(t)%hlist(f)%field%fillvalue)
         ierr = pio_get_var(File,meridional_complement_desc, (/f,t/), tape(t)%hlist(f)%field%meridional_complement)
         ierr = pio_get_var(File,zonal_complement_desc, (/f,t/), tape(t)%hlist(f)%field%zonal_complement)
-        ierr = pio_get_var(File,avgflag_desc, (/f,t/), tape(t)%hlist(f)%avgflag)
+        ! avgflag: new restarts store it as 3D (avgflag_len=1, maxnflds, ptapes) to satisfy
+        ! PIO's convention that the first Fortran dim is the string length.  Old restarts
+        ! stored it as 2D (maxnflds, ptapes) without a leading string-length dim, which
+        ! caused spurious PIO buffer-size warnings.  Support both layouts here.
+        ierr = pio_inq_varndims(File, avgflag_desc, ndims)
+        if (ndims == 3) then
+          ierr = pio_get_var(File,avgflag_desc, (/1,f,t/), tape(t)%hlist(f)%avgflag)
+        else
+          ierr = pio_get_var(File,avgflag_desc, (/f,t/), tape(t)%hlist(f)%avgflag)
+        end if
         ierr = pio_get_var(File,longname_desc, (/1,f,t/), tape(t)%hlist(f)%field%long_name)
         tape(t)%hlist(f)%field%standard_name = ''
         ierr = pio_get_var(File,standardname_desc, (/1,f,t/), tape(t)%hlist(f)%field%standard_name)
+        call strip_null(tape(t)%hlist(f)%field%standard_name)
         ierr = pio_get_var(File,units_desc, (/1,f,t/), tape(t)%hlist(f)%field%units)
+        call strip_null(tape(t)%hlist(f)%field%units)
         tape(t)%hlist(f)%field%sampling_seq(1:max_chars) = ' '
         ierr = pio_get_var(File,sseq_desc, (/1,f,t/), tape(t)%hlist(f)%field%sampling_seq)
         call strip_null(tape(t)%hlist(f)%field%sampling_seq)
@@ -2214,6 +2230,7 @@ CONTAINS
 
     type(master_entry), pointer :: listentry
     logical                     :: fieldontape      ! .true. iff field on tape
+    logical                     :: tape_names_valid ! .true. if tape names are valid
 
     ! List of active grids (first dim) for each tape (second dim)
     ! An active grid is one for which there is a least one field being output
@@ -2223,6 +2240,7 @@ CONTAINS
     !
     ! First ensure contents of fincl, fexcl, and fwrtpr are all valid names
     !
+    tape_names_valid = .true.
     do t=1,ptapes
       f = 1
       do while (f < pflds .and. fincl(f,t) /= ' ')
@@ -2232,7 +2250,7 @@ CONTAINS
         if(associated(listentry)) mastername = listentry%field%name
         if (name /= mastername) then
           write(iulog,*)'FLDLST: ', trim(name), ' in fincl(', f, ') not found'
-          call endrun
+          tape_names_valid = .false.
         end if
         f = f + 1
       end do
@@ -2245,7 +2263,7 @@ CONTAINS
 
         if (fexcl(f,t) /= mastername) then
           write(iulog,*)'FLDLST: ', fexcl(f,t), ' in fexcl(', f, ') not found'
-          call endrun
+          tape_names_valid = .false.
         end if
         f = f + 1
       end do
@@ -2258,17 +2276,21 @@ CONTAINS
         if(associated(listentry)) mastername = listentry%field%name
         if (name /= mastername) then
           write(iulog,*)'FLDLST: ', trim(name), ' in fwrtpr(', f, ') not found'
-          call endrun
+          tape_names_valid = .false.
         end if
         do ff=1,f-1                 ! If duplicate entry is found, stop
           if (trim(name) == trim(getname(fwrtpr(ff,t)))) then
             write(iulog,*)'FLDLST: Duplicate field ', name, ' in fwrtpr'
-            call endrun
+            tape_names_valid = .false.
           end if
         end do
         f = f + 1
       end do
     end do
+
+    if(.not. tape_names_valid) then
+      call endrun
+    end if
 
     nflds(:) = 0
     ! IC history file is to be created, set properties
@@ -3837,18 +3859,20 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution', &
-    'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
-    &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
-    &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
-    &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
-    &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
-    &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
-    &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
-    &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
-    &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+    'LLNL (Lawrence Livermore National Laboratory); &
+    &ANL (Argonne National Laboratory); &
+    &BNL (Brookhaven National Laboratory); &
+    &LANL (Los Alamos National Laboratory); &
+    &LBNL (Lawrence Berkeley National Laboratory); &
+    &ORNL (Oak Ridge National Laboratory); &
+    &PNNL (Pacific Northwest National Laboratory); &
+    &SNL (Sandia National Laboratories). &
+    &Mailing address: LLNL Climate Program, c/o Peter M. Caldwell, &
     &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
                       'e3sm-data-support@llnl.gov')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'license',  &
+                      'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 
@@ -4151,7 +4175,7 @@ end subroutine print_active_fldlst
              'h_define: cannot define long_name for '//trim(fname_tmp))
 
         str = tape(t)%hlist(f)%field%standard_name
-        if (str /= ' ') then
+        if (len_trim(str) > 0) then
           ierr=pio_put_att (tape(t)%File, varid, 'standard_name', trim(str))
           call cam_pio_handle_error(ierr,                                       &
                'h_define: cannot define standard_name for '//trim(fname_tmp))

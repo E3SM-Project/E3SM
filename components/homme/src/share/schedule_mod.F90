@@ -41,7 +41,7 @@ contains
     use gridgraph_mod, only : gridvertex_t, gridedge_t, assignment ( = )
 #ifdef _MPI
     use parallel_mod, only : nComPoints, iam, mpi_status_size, rrequest, srequest, &
-	status, npackpoints
+        status, npackpoints
 #else
     use parallel_mod, only : nComPoints, iam
 #endif
@@ -63,8 +63,7 @@ contains
     integer,allocatable           :: tmpP_ghost(:,:)
     integer                       :: nSend,nRecv,nedges 
     integer                       :: icycle
-    integer			  :: iSched
-    logical, parameter            :: VerbosePrint=.FALSE.
+    integer                       :: iSched
     logical, parameter            :: Debug=.FALSE.
     integer :: l1,l2,l1id,l2id
 

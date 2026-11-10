@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
+
+<config_definition>
+
+<entry id="ehc_bld" value=".">
+CICE build directory; contains .o and .mod files.
+</entry>
+
+<entry id="hgrid" value="">
+Horizontal grid specifier.  
+</entry>
+
+<entry id="usr_src" value="" list="1">
+User source directories to prepend to the filepath.  Multiple directories
+are specified as a comma separated list with no embedded white space.
+</entry>
+
+</config_definition>

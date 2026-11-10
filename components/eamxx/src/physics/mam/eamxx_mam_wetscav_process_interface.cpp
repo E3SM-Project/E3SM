@@ -91,13 +91,10 @@ MAMWetscav::create_requests()
   // Stratiform rain production rate [kg/kg/s]
   add_field<Required>("precip_total_tend", scalar3d_mid, kg / kg / s, grid_name);
 
-  // For variables that are non dimensional (e.g., fractions etc.)
-  static constexpr auto nondim = Units::nondimensional();
-
   //----------- Variables from macrophysics scheme -------------
 
   // Total cloud fraction [fraction]
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -160,7 +157,7 @@ MAMWetscav::create_requests()
   add_field<Computed>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
 
   // Fraction of transported species that are insoluble [fraction]
-  add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
+  add_field<Computed>("fracis", scalar3d_mid, none, grid_name);
 
   // Aerosol wet deposition (interstitial) [kg/m2/s]
   add_field<Computed>("aerdepwetis", scalar2d_pcnst, kg / m2 / s, grid_name);
@@ -242,7 +239,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -326,7 +323,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
                                   mam4::aero_model::nimptblgrow_total,
                                   mam4::AeroConfig::num_modes());
 
-  mam4::wetdep::init_scavimptbl(scavimptblvol_host, scavimptblnum_host);
+  mam4::wetdep::init_scavimptbl(aero_config_, scavimptblvol_host, scavimptblnum_host);
 
   scavimptblnum_ = view_2d("scavimptblnum", mam4::aero_model::nimptblgrow_total,
                            mam4::AeroConfig::num_modes());
@@ -350,6 +347,7 @@ void MAMWetscav::run_impl(const double dt) {
   Kokkos::fence();
 
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const mam_coupling::WetAtmosphere &wet_atm = wet_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
   const auto &isprx                          = isprx_;
@@ -437,11 +435,11 @@ void MAMWetscav::run_impl(const double dt) {
   const Real scav_fraction_below_cloud_strat  = scav_fraction_below_cloud_strat_;
   const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
   // Loop over atmosphere columns
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index
 
-        const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
         // set surface state data
         // fetch column-specific subviews into aerosol prognostics
         mam4::Prognostics progs =

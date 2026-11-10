@@ -2,17 +2,14 @@
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_header.hpp"
-#include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/field/field.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 #include "share/core/eamxx_types.hpp"
@@ -39,7 +36,7 @@ get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs);
 void randomize_fields (const FieldManager& fm, int seed);
 
 void time_advance (const FieldManager& fm,
-                   const std::list<ekat::CaseInsensitiveString>& fnames,
+                   const std::vector<std::string>& fnames,
                    const int dt);
 
 TEST_CASE("output_restart","io")
@@ -62,7 +59,10 @@ TEST_CASE("output_restart","io")
   auto fm0 = get_test_fm(grid);
   randomize_fields(*fm0,seed);
 
-  const auto& out_fields = fm0->get_group_info("output").m_fields_names;
+  auto out_group = fm0->get_field_group("output");
+  std::vector<std::string> out_fields;
+  for (auto it : out_group.individual_fields())
+    out_fields.push_back(it.first);
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);
@@ -200,7 +200,7 @@ std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
   auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
-    copy->add_field(it.second->clone());
+    copy->add_field(it.second->clone(CloneFlags::All));
   }
 
   return copy;
@@ -232,7 +232,7 @@ get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs)
 }
 /*===================================================================================================*/
 void time_advance (const FieldManager& fm,
-                   const std::list<ekat::CaseInsensitiveString>& fnames,
+                   const std::vector<std::string>& fnames,
                    const int dt) {
   for (const auto& fname : fnames) {
     auto f  = fm.get_field(fname);

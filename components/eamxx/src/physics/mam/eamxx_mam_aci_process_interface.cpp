@@ -83,8 +83,6 @@ void MAMAci::create_requests() {
   using namespace ekat::units;
   constexpr auto n_unit = 1 / kg;  // units of number mixing ratios of tracers
 
-  constexpr auto nondim = ekat::units::Units::nondimensional();
-
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
@@ -109,10 +107,10 @@ void MAMAci::create_requests() {
   // "shoc_cldfrac" and in the F90 code it is called "cloud_frac"
 
   // Liquid stratiform cloud fraction at midpoints
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // Previous value of liquid stratiform cloud fraction at midpoints
-  add_field<Required>("cldfrac_liq_prev", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq_prev", scalar3d_mid, none, grid_name);
 
   // Eddy diffusivity for heat
   add_field<Required>("eddy_diff_heat", scalar3d_mid, m2 / s, grid_name);
@@ -156,6 +154,14 @@ void MAMAci::create_requests() {
 
   // FIXME: [TEMPORARY]droplet number mixing ratio source tendency [#/kg/s]
   add_field<Computed>("nsource", scalar3d_mid, n_unit / s, grid_name);
+
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  // Exact explicit vertical-mixing loop count from ndrop. The sum and maximum
+  // aggregate all MAMAci calls in the enclosing physics step.
+  add_field<Computed>("ndrop_nsubmix", scalar2d, none, grid_name);
+  add_field<Computed>("ndrop_sum_nsubmix", scalar2d, none, grid_name);
+  add_field<Computed>("ndrop_max_nsubmix", scalar2d, none, grid_name);
+#endif
 
   // FIXME: [TEMPORARY]droplet number mixing ratio tendency due to mixing
   // [#/kg/s]
@@ -311,6 +317,11 @@ void MAMAci::initialize_impl(const RunType run_type) {
       {"nc_nuceat_tend", {-1e100, 1e100}},                   // FIXME
       {"nsource", {-1e10, 1e10}},                            // FIXME
       {"ndropmix", {-1e10, 1e10}},                           // FIXME
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+      {"ndrop_nsubmix", {0, detail::max_exact_ndrop_nsubmix_aggregate}},
+      {"ndrop_sum_nsubmix", {0, detail::max_exact_ndrop_nsubmix_aggregate}},
+      {"ndrop_max_nsubmix", {0, detail::max_exact_ndrop_nsubmix_aggregate}},
+#endif
       {"nc_inp_to_aci", {-1e10, 1e10}},                      // FIXME
       {"ccn_0p02", {-1e10, 1e10}},                           // FIXME
       {"ccn_0p05", {-1e10, 1e10}},                           // FIXME
@@ -344,7 +355,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   liqcldf_prev_ = get_field_in("cldfrac_liq_prev").get_view<const Real **>();
   kvh_mid_      = get_field_in("eddy_diff_heat").get_view<const Real **>();
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
 
   // ------------------------------------------------------------------------
@@ -441,6 +452,18 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Temporarily output nc_inp_to_aci_
   nc_inp_to_aci_ = get_field_out("nc_inp_to_aci").get_view<Real **>();
 
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  ndrop_nsubmix_ = get_field_out("ndrop_nsubmix").get_view<Real *>();
+  ndrop_sum_nsubmix_ =
+      get_field_out("ndrop_sum_nsubmix").get_view<Real *>();
+  ndrop_max_nsubmix_ =
+      get_field_out("ndrop_max_nsubmix").get_view<Real *>();
+  Kokkos::deep_copy(ndrop_nsubmix_, Real(0));
+  Kokkos::deep_copy(ndrop_sum_nsubmix_, Real(0));
+  Kokkos::deep_copy(ndrop_max_nsubmix_, Real(0));
+  reset_ndrop_nsubmix_accumulators_ = true;
+#endif
+
   // FIXME: [TEMPORARY] remove the following ccn outputs
   ccn_0p02_ = get_field_out("ccn_0p02").get_view<Real **>();
   ccn_0p05_ = get_field_out("ccn_0p05").get_view<Real **>();
@@ -467,8 +490,7 @@ void MAMAci::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
   // NOTE: If we use buffer_ to initialize diagnostic_scratch_,
   // we must reset these values to zero each time run_impl is called.
-  for(int i = 0; i < hetro_scratch_; ++i)
-    diagnostic_scratch_[i] = view_2d("diagnostic_scratch_", ncol_, nlev_);
+  diagnostic_scratch_ = view_3d("diagnostic_scratch_", ncol_, mam4::Diagnostics::number_of_hetfrz_diag, nlev_);
   //---------------------------------------------------------------------------------
   // Initialize the processes
   //---------------------------------------------------------------------------------
@@ -497,6 +519,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
 void MAMAci::run_impl(const double dt) {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  const bool completes_physics_step =
+      do_update_time_stamp() &&
+      get_subcycle_iter() == get_num_subcycles() - 1;
+#endif
+
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
@@ -515,7 +543,7 @@ void MAMAci::run_impl(const double dt) {
                      // output
                      w0_, rho_);
 
-  compute_tke_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
+  compute_tke_at_interfaces(team_policy, w_sec_mid_, wet_atm_.dz, nlev_,
                             w_sec_int_,
                             // output
                             tke_);
@@ -536,7 +564,7 @@ void MAMAci::run_impl(const double dt) {
   //  NOTE: The Fortran version uses "ast" for cloud fraction which is
   //  equivalent to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
   compute_nucleate_ice_tendencies(
-      nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
+      nucleate_ice_, team_policy, wet_atm_, dry_atm_, dry_aero_, wsubice_,
       aitken_dry_dia_, nlev_, dt,
       // output
       nihf_, niim_, nidep_, nimey_, naai_hom_,
@@ -561,10 +589,14 @@ void MAMAci::run_impl(const double dt) {
   //  aerosols tendencies
   Kokkos::deep_copy(ccn_, 0.0);
   call_function_dropmixnuc(
-      team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
+      team_policy, dt, wet_atm_, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+      ndrop_nsubmix_, ndrop_sum_nsubmix_, ndrop_max_nsubmix_,
+      reset_ndrop_nsubmix_accumulators_,
+#endif
       // ## output to be used by the other processes ##
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
       // work arrays
@@ -593,7 +625,7 @@ void MAMAci::run_impl(const double dt) {
 
   // Compute hetrozenous freezing
   call_hetfrz_compute_tendencies(
-      team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
+      team_policy, hetfrz_, wet_atm_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
       // ## output to be used by the other processes ##
       hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
       hetfrz_deposition_nucleation_tend_,
@@ -618,6 +650,12 @@ void MAMAci::run_impl(const double dt) {
 
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  reset_ndrop_nsubmix_accumulators_ = false;
+  if(completes_physics_step) {
+    reset_ndrop_nsubmix_accumulators_ = true;
+  }
+#endif
 }
 
 }  // namespace scream

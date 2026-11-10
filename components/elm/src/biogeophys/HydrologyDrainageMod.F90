@@ -20,7 +20,6 @@ module HydrologyDrainageMod
   use ColumnDataType    , only : col_ws, col_wf
   use VegetationType    , only : veg_pp
 
-  use elm_instMod   , only : ep_betr
 
   use timeinfoMod
   !
@@ -50,7 +49,7 @@ contains
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop, istice
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use elm_varcon       , only : denh2o, denice, secspday, frac_to_downhill
-    use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
+    use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro
     !use domainMod        , only : ldomain
     use elm_varsur         , only : f_surf
     use TopounitType       , only : top_pp
@@ -59,7 +58,7 @@ contains
     use ocn2lndType      , only : ocn2lnd_type
     use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use SoilHydrologyMod , only : ELMVICMap, Drainage
-    use elm_varctl       , only : use_vsfm, use_IM2_hillslope_hydrology
+    use elm_varctl       , only : use_IM2_hillslope_hydrology
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -141,25 +140,13 @@ contains
       endif
 
 #ifndef _OPENACC
-      if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
-        call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
-      endif
 #endif
 
-      if (.not. use_vsfm) then
-         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
-              num_urbanc, filter_urbanc,&
-              soilhydrology_vars, soilstate_vars, ocn2lnd_vars, dtime)
-      endif
+      call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+           num_urbanc, filter_urbanc,&
+           soilhydrology_vars, soilstate_vars, ocn2lnd_vars, dtime)
 
 #ifndef _OPENACC
-      if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
-          waterflux_vars=col_wf)
-        call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
-        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
-      endif
 #endif
 
       do j = 1, nlevgrnd

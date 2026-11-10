@@ -25,13 +25,13 @@ OR
     > {0} data
 
     \033[1;32m# Plot data for multiple architectures \033[0m
-    > {0} blake bowman weaver  -d Fortran -D Initial
+    > {0} mach1 mach2 mach3 -d Fortran -D Initial
 
     \033[1;32m# Very stripped-down plot for all key archs \033[0m
-    > {0} blake bowman weaver  -d Fortran -t ref -t final -v blake:CPU -v weaver:GPU -v threads: -v final:C++/Kokkos -f 28
+    > {0} mach1 mach2 mach3 -d Fortran -t ref -t final -v mach1:CPU -v mach2:GPU -v threads: -v final:C++/Kokkos -f 28
 
     \033[1;32m# Plot two different code versions for a single arch  \033[0m
-    > {0} <sha1>/weaver <sha2>/weaver -v commit:version
+    > {0} <sha1>/mach1 <sha2>/mach2 -v commit:version
 """.format(os.path.basename(args[0])),
         description=description,
         formatter_class=GoodFormatter
@@ -138,9 +138,6 @@ class Plotter(object):
             "ref" : "Fortran",
             "vanilla" : "Initial Kokkos",
             "final" : "Final Kokkos",
-            "bowman" : "KNL",
-            "blake" : "Skylake",
-            "weaver" : "Nvidia_V100",
             "commit" : ""}
 
         for varname_display_chg in varname_map:

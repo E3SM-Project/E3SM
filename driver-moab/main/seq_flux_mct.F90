@@ -247,7 +247,7 @@ contains
 
   subroutine seq_flux_init(comp, fractions, mbid)
 
-    use shr_moab_mod,     only: mbGetnCells
+    use shr_moab_mod,     only: mbGetnCells, mbGetEntityType
 
     !-----------------------------------------------------------------------
     !
@@ -514,7 +514,7 @@ contains
     allocate(rmask(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate rmask',ier)
 
-    ent_type = 1
+    ent_type = mbGetEntityType(mbid)
     tagname = "lat"//C_NULL_CHAR
     ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, lats)
     tagname = "lon"//C_NULL_CHAR
@@ -855,7 +855,7 @@ contains
 
   subroutine seq_flux_ocnalb( infodata, ocn, a2x_o, fractions_o, xao_o )
 
-    use shr_moab_mod,     only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
+    use shr_moab_mod,     only: mbGetnCells, mbGetEntityType, mbGetCellTagVals, mbSetCellTagVals
     !-----------------------------------------------------------------------
     !
     ! Arguments
@@ -1007,7 +1007,7 @@ contains
        endif
 
     endif
-    ent_type = 1 ! cells for mpas ocean
+    ent_type = mbGetEntityType(mboxid)
 
     if (flux_albav) then
 
@@ -1120,7 +1120,7 @@ contains
        ! copy here fractions ifrad and ofrad to moab tags
        if (mboxid > 0 ) then
          tagname = 'ifrac:ofrac'//C_NULL_CHAR
-         ent_type = 1 ! cells for ocean mesh
+         ent_type = mbGetEntityType(mboxid)
          ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in getting ifrac, ofrac  '
@@ -1607,7 +1607,7 @@ contains
        index_xao_Faox_lwup = mct_aVect_indexRA(xao,'Faox_lwup')
        index_xao_Faox_swdn = mct_aVect_indexRA(xao,'Faox_swdn')
        index_xao_Faox_swup = mct_aVect_indexRA(xao,'Faox_swup')
-       index_xao_So_fswpen            = mct_aVect_indexRA(xao,'So_fswpen')
+       index_xao_So_fswpen            = mct_aVect_indexRA(xao,'So_fswpen_ao')
        index_xao_So_warm_diurn        = mct_aVect_indexRA(xao,'So_warm_diurn')
        index_xao_So_salt_diurn        = mct_aVect_indexRA(xao,'So_salt_diurn')
        index_xao_So_speed_diurn       = mct_aVect_indexRA(xao,'So_speed_diurn')
@@ -1935,7 +1935,9 @@ contains
     call mbSetCellTagVals(mbfid, 'So_u10', u10res, nloc)
     u10gust = sqrt(duu10n)
     call mbSetCellTagVals(mbfid, 'So_u10withgusts', u10gust, nloc)
-    call mbSetCellTagVals(mbfid, 'So_fswpen', fswpen, nloc)
+    ! xao copy of fswpen: renamed So_fswpen_ao so it does not collide with the o2x So_fswpen
+    ! tag on the shared (aliased) ocn coupler mesh. See seq_flds_mod / cplcomp_moab_init_ocn.
+    call mbSetCellTagVals(mbfid, 'So_fswpen_ao', fswpen, nloc)
 
 #ifdef MOABDEBUG
         ! debug out file

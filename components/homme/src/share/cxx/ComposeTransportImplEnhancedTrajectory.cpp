@@ -588,7 +588,7 @@ void ComposeTransportImpl
   assert(params.dt_tracer_factor > 0);
 
   const auto etai = cmvdc(m_hvcoord.etai);
-  const Real deta_ave = (etai(num_phys_lev) - etai(0)) / num_phys_lev;
+  const Real deta_ave = (etai(num_phys_lev) - etai(0)) / (int)num_phys_lev;
   m_data.deta_tol = 10*std::numeric_limits<Real>::epsilon()*deta_ave;
 
   // diff(etai)

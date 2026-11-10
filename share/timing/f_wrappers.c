@@ -192,7 +192,7 @@ int gptlget_eventvalue (const char *timername, const char *eventname, int *t, do
 			int nc1, int nc2);
 int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
-int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
+int gptlget_memusage (long long *size, long long *rss, long long *share, long long *text, long long *datastack);
 int gptlprint_memusage (const char *str, int nc);
 #ifdef HAVE_PAPI
 int gptl_papilibraryinit (void);
@@ -534,7 +534,7 @@ int gptlget_regionname (int *t, int *region, char *name, int nc)
   return ret;
 }
 
-int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
+int gptlget_memusage (long long *size, long long *rss, long long *share, long long *text, long long *datastack)
 {
   return GPTLget_memusage (size, rss, share, text, datastack);
 }

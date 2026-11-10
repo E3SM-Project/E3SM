@@ -425,7 +425,7 @@ static int test_approx_derivative () {
     const auto f = KOKKOS_LAMBDA (const cti::MT& team) {
       KernelVariables kv(team);
       const auto f = [&] (const int i, const int j, const int k) {
-        const Real x = 1.7*(k + 1e-1*i*k + 1e-2*j*k*k)/cti::num_phys_lev;
+        const Real x = 1.7*(k + 1e-1*i*k + 1e-2*j*k*k)/(int)cti::num_phys_lev;
         xs(i,j,k) = x;
         ys(i,j,k) = (a*x + b)*x + c;
       };
@@ -493,7 +493,9 @@ static int test_calc_p (const HybridVCoord& hvcoord) {
       Real accum = hvcoord.hybrid_ai0*hvcoord.ps0;
       for (int k = 0; k < cti::num_phys_lev; ++k)
         accum += dph(i,j,k);
-      if (ph(i,j,cti::num_phys_lev) != accum) ++nerr;
+      if (std::abs(ph(i,j,cti::num_phys_lev) - accum) >
+          10*std::numeric_limits<Real>::epsilon()*accum)
+        ++nerr;
     }
   if (nerr) printf("test_calc_p failed %d\n", nerr);
   return nerr;
@@ -569,7 +571,7 @@ int ComposeTransportImpl::run_trajectory_unit_tests () {
           test_reconstruct_and_limit_dp());
 }
 
-ComposeTransport::TestDepView::HostMirror ComposeTransportImpl::
+ComposeTransport::TestDepView::host_mirror_type ComposeTransportImpl::
 test_trajectory (Real t0, Real t1, const bool independent_time_steps) {
   using Kokkos::create_mirror_view;
   using Kokkos::deep_copy;

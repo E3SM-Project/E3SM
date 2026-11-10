@@ -31,11 +31,9 @@ OR
     \033[1;32m# case.test SMS\033[0m
     > {0}
 """.format(os.path.basename(args[0])),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        description=description, prog=".case.test",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     CIME.utils.setup_standard_logging_options(parser)
 

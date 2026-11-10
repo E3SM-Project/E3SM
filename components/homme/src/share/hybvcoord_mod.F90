@@ -148,6 +148,12 @@ contains
        end if
     endif
 
+    ! Mark error if the B coefficient at model top is non-zero.
+    if (hvcoord%hybi(1) .ne. 0._r8) then
+       write(iulog,*) 'error: hvcoord%hybi(1) is non-zero'
+       ierr = 99
+    end if
+
 #if (defined HORIZ_OPENMP)
 !$OMP END CRITICAL
 #endif

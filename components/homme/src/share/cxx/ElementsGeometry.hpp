@@ -31,7 +31,10 @@ public:
   ExecViewManaged<Real * [2][2][NP][NP]>  m_metinv;
   ExecViewManaged<Real * [NP][NP]>        m_metdet;
   ExecViewManaged<Real * [2][2][NP][NP]>  m_tensorvisc;
-  ExecViewManaged<Real * [2][3][NP][NP]>  m_vec_sph2cart;
+  // Second tensor viscosity matrix, used by the sponge layer (theta-l_kokkos
+  // only), controlled by laplace_scaling. Always allocated (see init()).
+  ExecViewManaged<Real * [2][2][NP][NP]>  m_tensorvisc2;
+  ExecViewManaged<Real * [3][3][NP][NP]>  m_vec_sph2cart;
 
   // Prescribed surface geopotential height at eta = 1
   ExecViewManaged<Real *    [NP][NP]> m_phis;
@@ -50,7 +53,7 @@ public:
 
   Real m_scale_factor, m_laplacian_rigid_factor;
 
-  void init (const int num_elems, const bool consthv, const bool alloc_gradphis,
+  void init (const int num_elems, const bool alloc_gradphis,
              // Usually, scale_factor is rearth for sphere-Earth problems and 1
              // for planar problems. Usually, laplacian_rigid_factor is 1/rearth
              // for the sphere and 0 for the plane. If laplacian_rigid_factor is
@@ -70,13 +73,26 @@ public:
                       CF90Ptr& spheremp, CF90Ptr& rspheremp,
                       CF90Ptr& metdet, CF90Ptr& metinv,
                       CF90Ptr& tensorvisc,
-                      CF90Ptr& vec_sph2cart, const bool consthv,
-                      const Real* sphere_cart = nullptr, const Real* sphere_latlon = nullptr);
+                      CF90Ptr& vec_sph2cart,
+                      const Real* sphere_cart = nullptr, const Real* sphere_latlon = nullptr,
+                      CF90Ptr& tensorvisc2 = nullptr);
+
+  // Fill (or refresh) just the tensorVisc view for one element. This is
+  // separate from set_elem_data() because tensorVisc is the only field in
+  // prim_init_grid_views's payload that is computed AFTER dss_hvtensor runs;
+  // all other geometry fields (D, Dinv, fcor, spheremp, rspheremp, metdet,
+  // metinv, vec_sph2cart, sphere_cart/latlon) are constant and are copied
+  // once, early, by set_elem_data().
+  void set_tensorvisc (const int ie, CF90Ptr& tensorvisc);
+
+  // Same as set_tensorvisc(), but for tensorVisc_2 (the sponge-layer tensor
+  // coefficient), which is likewise recomputed by dss_hvtensor after the
+  // initial (constant-field) set_elem_data() copy.
+  void set_tensorvisc2 (const int ie, CF90Ptr& tensorvisc2);
 
   void set_phis (const int ie, CF90Ptr& phis);
 
 private:
-  bool m_consthv;
   int  m_num_elems;
 };
 

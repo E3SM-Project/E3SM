@@ -115,6 +115,10 @@ public:
   // multi-slice subview over contiguous indices
   FieldAllocProp subview (const int idim, const int k_beg, const int k_end) const;
 
+  // Return allocation props of a field that is a read-only broadcast of this one,
+  // to a larger layout (tgt). The data can only be accessed via strided views.
+  FieldAllocProp broadcast (const layout_type& tgt) const;
+
   // Request allocation able to accommodate a pack of ScalarType of the given pack size
   void request_allocation (const int pack_size = 1);
 

@@ -7,7 +7,6 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/data_managers/IOPDataManager.hpp"
 #include "share/data_managers/SCDataManager.hpp"
@@ -106,6 +105,9 @@ public:
   // tms' surface drag coefficient.
   void setup_shoc_tms_links();
 
+  // Propagate HOMME's parsed 3D turbulence flag to SHOC's internal runtime option.
+  void setup_shoc_3d_turbulence_link();
+
   // Add column data to all pre/postcondition property checks
   // for use in output.
   void add_additional_column_data_to_property_checks ();
@@ -169,12 +171,9 @@ public:
 
   const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
 
-#ifndef KOKKOS_ENABLE_CUDA
-  // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
-#endif
-  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
-protected:
+
+  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& constants_pl);
 
   void report_res_dep_memory_footprint () const;
 
@@ -182,11 +181,13 @@ protected:
   void set_initial_conditions ();
   void restart_model ();
 
-  // Read fields from a file
-  void read_fields_from_file (const std::vector<Field>& fields,
-                              const std::shared_ptr<const AbstractGrid>& grid,
-                              const std::string& file_name);
-  void register_groups ();
+  void initialize_time_stamps ();
+  void set_initialization_groups (const Field& f);
+
+  // Allocate the memory buffer shared by all atm procs, and hand it to them.
+  // Must be called after all fields/groups are set in the atm procs, since
+  // buffer sizes may depend on them (e.g., number of tracers).
+  void allocate_buffers ();
 
   template<typename T>
   using strmap_t = std::map<std::string,T>;
@@ -256,7 +257,7 @@ protected:
   // Current simulation casename
   std::string m_casename;
   // maps grid name to a vector of its initialized fields
-  strmap_t<strvec_t> m_fields_inited;
+  strmap_t<std::set<std::string>> m_fields_inited;
 };
 
 }  // namespace control

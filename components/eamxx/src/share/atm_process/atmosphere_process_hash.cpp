@@ -152,8 +152,8 @@ void hash_if (const std::list<Field>& fs, HashType& accum, const Lambda& conditi
 
 void hash (const std::list<FieldGroup>& fgs, HashType& accum) {
   for (const auto& g : fgs)
-    for (const auto& e : g.m_individual_fields)
-      hash(*e.second, accum);
+    for (const auto& e : g.individual_fields())
+      hash(e.second, accum);
 }
 
 } // namespace anon
@@ -208,10 +208,10 @@ void AtmosphereProcess
         hash(f,laccum.back());
       }
       for (const auto& g : m_groups_in) {
-        for (const auto& [fn,f] : g.m_individual_fields) {
+        for (const auto& [fn,f] : g.individual_fields()) {
           laccum.emplace_back();
-          hash_names.push_back(make_hash_name(*f));
-          hash(*f,laccum.back());
+          hash_names.push_back(make_hash_name(f));
+          hash(f,laccum.back());
         }
       }
     } else {
@@ -221,10 +221,10 @@ void AtmosphereProcess
         hash(f,laccum.back());
       }
       for (const auto& g : m_groups_out) {
-        for (const auto& [fn,f] : g.m_individual_fields) {
+        for (const auto& [fn,f] : g.individual_fields()) {
           laccum.emplace_back();
-          hash_names.push_back(make_hash_name(*f));
-          hash(*f,laccum.back());
+          hash_names.push_back(make_hash_name(f));
+          hash(f,laccum.back());
         }
       }
     }

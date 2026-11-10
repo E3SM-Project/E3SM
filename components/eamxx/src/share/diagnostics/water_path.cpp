@@ -6,12 +6,15 @@
 namespace scream
 {
 
-WaterPathDiagnostic::
-WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
+WaterPath::
+WaterPath (const ekat::Comm& comm, const ekat::ParameterList& params,
+           const std::shared_ptr<const AbstractGrid>& grid)
+ : AbstractDiagnostic(comm,params,grid)
 {
+  using namespace ekat::units;
+
   EKAT_REQUIRE_MSG (params.isParameter("water_kind"),
-      "Error! WaterPathDiagnostic requires 'water_kind' in its input parameters.\n");
+      "Error! WaterPath requires 'water_kind' in its input parameters.\n");
 
   m_kind = m_params.get<std::string>("water_kind");
   if (m_kind=="Liq") {
@@ -26,39 +29,22 @@ WaterPathDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_qname = "qv";
   } else {
     EKAT_ERROR_MSG (
-        "Error! Invalid choice for 'WaterKind' in WaterPathDiagnostic.\n"
+        "Error! Invalid choice for 'WaterKind' in WaterPath.\n"
         "  - input value: " + m_kind + "\n"
         "  - valid values: Liq, Ice, Rain, Rime, Vap\n");
   }
-}
 
-void WaterPathDiagnostic::
-create_requests()
-{
-  using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
+  m_field_in_names.push_back("pseudo_density");
+  m_field_in_names.push_back(m_qname);
 
   auto m2 = pow (m,2);
-
-  auto grid  = m_grids_manager->get_grid("physics");
-  const auto& grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  auto scalar2d = grid->get_2d_scalar_layout();
-  auto scalar3d = grid->get_3d_scalar_layout(LEV);
-
-  // The fields required for this diagnostic to be computed
-  add_field<Required>("pseudo_density", scalar3d, Pa,    grid_name);
-  add_field<Required>(m_qname,          scalar3d, kg/kg, grid_name);
-
-  // Construct and allocate the diagnostic field
-  FieldIdentifier fid (m_kind + name(), scalar2d, kg/m2, grid_name);
+  auto diag_layout = m_grid->get_2d_scalar_layout();
+  FieldIdentifier fid (m_kind + name(), diag_layout, kg/m2, m_grid->name());
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
 
-void WaterPathDiagnostic::compute_diagnostic_impl()
+void WaterPath::compute_impl()
 {
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;
@@ -68,22 +54,24 @@ void WaterPathDiagnostic::compute_diagnostic_impl()
   constexpr Real g = PC::gravit.value;
 
   const auto wp     = m_diagnostic_output.get_view<Real*>();
-  const auto q      = get_field_in(m_qname).get_view<const Real**>();
-  const auto rho    = get_field_in("pseudo_density").get_view<const Real**>();
+  const auto q      = m_fields_in.at(m_qname).get_view<const Real**>();
+  const auto rho    = m_fields_in.at("pseudo_density").get_view<const Real**>();
 
-  const auto num_levs = m_num_levs;
-  const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
-  Kokkos::parallel_for("Compute " + m_kind + name(), policy,
-                       KOKKOS_LAMBDA(const MT& team) {
+  const auto nlevs = m_grid->get_num_vertical_levels();
+  const auto ncols = m_grid->get_num_local_dofs();
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
+
+  auto lambda = KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();
     auto q_icol    = ekat::subview(q,icol);
     auto rho_icol  = ekat::subview(rho,icol);
-    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_levs),
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlevs),
                             [&] (const int& ilev, Real& lsum) {
       lsum += q_icol(ilev) * rho_icol(ilev) / g;
     },wp(icol));
     team.team_barrier();
-  });
+  };
+  Kokkos::parallel_for("Compute " + m_kind + name(), policy, lambda);
 }
 
 } //namespace scream

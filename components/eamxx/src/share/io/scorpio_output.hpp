@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
@@ -37,7 +37,7 @@
  *        field_names:                  ARRAY OF STRINGS
  *     GRID_NAME_2:
  *        field_names:                  ARRAY OF STRINGS
- *        output_data_layout:           STRING                (default: 'default')
+ *        output_data_layout:           STRING                (default: 'unique')
  *     ...
  *     GRID_NAME_N:
  *        field_names:                  ARRAY OF STRINGS
@@ -65,15 +65,13 @@
  *     - GRID_NAME: parameters specifying fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
- *          This option is mostly used to enable dyn->phys_gll remap (to save storage),
- *          but can be expanded to support other online layout changes (e.g., transpose
- *          (ncol,[...,]nlev) layouts). The default value 'default' will use the default
- *          for this grid. Usually, 'default' does the same thing as 'native' (which does
- *          no layout change, and outputs the fields as they appear on this grid), but for
- *          the dynamics grid the default behavior is to remap to phys_gll layout.
- *          Other values are available on a per grid basis. E.g., the dynamics grid
- *          supports 'dg' (same as 'native') and 'cg' (which implements the dyn->phys_gll
- *          remap, which is the same behavior as 'default').
+ *          This option is mostly used to enable dyn->phys_gll remap (to save storage).
+ *          Valid values are 'native', which does no layout change, and outputs the
+ *          fields as they appear on this grid, and 'unique' (the default), which outputs
+ *          the fields on the unique grid of this grid (see AbstractGrid::get_unique_grid).
+ *          For grids that are already unique, the two choices are equivalent. For the
+ *          dynamics grid, the unique grid is phys_gll, so 'unique' implements the
+ *          dyn->phys_gll remap.
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
@@ -125,7 +123,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
+  using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
   ~AtmosphereOutput();
 
@@ -145,7 +143,7 @@ public:
                          const scorpio::FileMode mode);
 
   void init_timestep(const util::TimeStamp &start_of_step);
-  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+  void run(const std::string &filename, const util::TimeStamp& ts, const bool output_step, const bool checkpoint_step,
            const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint() const;
@@ -173,16 +171,18 @@ protected:
   void register_variables(const std::string &filename, const std::string &fp_precision,
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
-  void compute_diagnostics(const bool allow_invalid_fields);
+  void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const FieldIdentifier& fid);
+  void set_avg_cnt_tracking(const Field& f);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
   bool m_transpose = false;
+  // True if frequency_units is nsteps and frequency is 1
+  bool m_output_every_step = false;
 
   // We store separate shared pointers for field mgrs at different stages of IO:
   // More specifically, the order of operations is as follows:
@@ -220,8 +220,10 @@ protected:
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType m_avg_type;
-  Real m_avg_coeff_threshold =
-      0.5; // % of unfilled values required to not just assign value as FillValue
+  // Fraction (in [0,1)) of the output interval that must be valid for an averaged
+  // value to be written out (rather than assigned the FillValue). The default of 0
+  // means we take into account >0 valid snaps (i.e., even if only 1 is valid, we take it).
+  Real m_avg_coeff_threshold = 0;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
@@ -232,8 +234,8 @@ protected:
   // them, but they are NOT written to the NC output file.
   strvec_t m_intermediate_aliases;
   strmap_t<Field> m_field_to_avg_count;
+  strmap_t<Field> m_mask_to_count;
   std::vector<Field> m_avg_counts;
-  strmap_t<std::string> m_field_to_avg_cnt_suffix;
   strmap_t<strvec_t> m_vars_dims;
   strmap_t<int> m_dims_len;
   std::list<diag_ptr_type> m_diagnostics;

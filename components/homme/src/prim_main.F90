@@ -14,7 +14,7 @@ program prim_main
                               omp_set_num_threads, omp_get_nested, &
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
-  use dimensions_mod,   only: nelemd, qsize
+  use dimensions_mod,   only: nelemd
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
   use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
@@ -55,17 +55,13 @@ program prim_main
   type (hybrid_t)             :: hybrid         ! parallel structure for shared memory/distributed memory
   type (parallel_t)           :: par            ! parallel structure for distributed memory programming
   type (domain1d_t), pointer  :: dom_mt(:)
-  type (RestartHeader_t)      :: RestartHeader
   type (TimeLevel_t)          :: tl             ! Main time level struct
   type (hvcoord_t)            :: hvcoord        ! hybrid vertical coordinate struct
 
-  real*8 timeit, et, st
   integer nets,nete
   integer ithr
   integer ierr
   
-  character (len=20) :: numproc_char
-  character (len=20) :: numtrac_char
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   logical :: call_enablef

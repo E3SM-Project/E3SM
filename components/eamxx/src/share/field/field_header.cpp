@@ -48,6 +48,48 @@ std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const s
   return fh;
 }
 
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::map<FieldTag,std::string>& tag_names) const {
+  return alias(name, m_identifier.get_grid_name(), tag_names);
+}
+
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  auto layout = get_identifier().get_layout().clone();
+  layout.rename_dims(tag_names);
+  auto fid = get_identifier().clone(name);
+  fid.reset_grid(grid_name);
+  fid.reset_layout(layout);
+  auto fh = std::make_shared<FieldHeader>(fid);
+  if (get_parent() != nullptr) {
+    // If we're aliasing, we MUST keep track of the parent
+    fh->create_parent_child_link(get_parent());
+  }
+  fh->m_tracking = m_tracking;
+  fh->m_alloc_prop = m_alloc_prop;
+  fh->m_extra_data = m_extra_data;
+  return fh;
+}
+
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::map<std::string,std::string>& tag_names) const {
+  return alias(name, m_identifier.get_grid_name(), tag_names);
+}
+
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const {
+  auto layout = get_identifier().get_layout().clone();
+  layout.rename_dims(tag_names);
+  auto fid = get_identifier().clone(name);
+  fid.reset_grid(grid_name);
+  fid.reset_layout(layout);
+  auto fh = std::make_shared<FieldHeader>(fid);
+  if (get_parent() != nullptr) {
+    // If we're aliasing, we MUST keep track of the parent
+    fh->create_parent_child_link(get_parent());
+  }
+  fh->m_tracking = m_tracking;
+  fh->m_alloc_prop = m_alloc_prop;
+  fh->m_extra_data = m_extra_data;
+  return fh;
+}
+
 bool FieldHeader::is_aliasing (const FieldHeader& rhs) const
 {
   if (this==&rhs)
@@ -121,6 +163,33 @@ create_subfield_header(const FieldIdentifier& id,
   // Create alloc props
   fh->m_alloc_prop = std::make_shared<FieldAllocProp>(
       parent->get_alloc_properties().subview(idim, k_beg, k_end));
+
+  return fh;
+}
+
+std::shared_ptr<FieldHeader>
+FieldHeader::broadcast (const FieldLayout& tgt)
+{
+  EKAT_REQUIRE_MSG (not is_broadcast(),
+      "Error! Cannot broadcast a field that is already a broadcast.\n");
+
+  const auto& src = m_identifier.get_layout();
+  auto dim_map = src.broadcast_map(tgt);
+  EKAT_REQUIRE_MSG (dim_map.has_value(),
+      "Error! Cannot broadcast to the provided target layout.\n"
+      " - src field name: " + m_identifier.name() + "\n"
+      " - src layout: " + src.to_string() + "\n"
+      " - tgt layout: " + tgt.to_string() + "\n");
+
+  auto fh = std::make_shared<FieldHeader>(m_identifier.clone().reset_layout(tgt));
+
+  // Same tracking as the source: a broadcast is just a different view of the same data
+  fh->m_tracking = m_tracking;
+
+  // The alloc props bcast will simply be marked as non-contiguous and NOT LayoutRight-compatible
+  fh->m_alloc_prop = std::make_shared<FieldAllocProp>(m_alloc_prop->broadcast(tgt));
+
+  fh->set_may_be_filled(may_be_filled());
 
   return fh;
 }

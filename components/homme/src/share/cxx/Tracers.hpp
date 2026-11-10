@@ -22,6 +22,10 @@ struct Tracers {
 
   void pull_qdp(CF90Ptr &state_qdp);
   void push_qdp(F90Ptr &state_qdp) const;
+  // Push a single qdp time level: source level src_qdp_tl -> F90 level dst_qdp_tl.
+  // The two differ in general, because the qdp levels are rotated before the
+  // vertical remap while the dynamics levels are rotated after it.
+  void push_qdp(F90Ptr &state_qdp, const int src_qdp_tl, const int dst_qdp_tl) const;
 
   KOKKOS_INLINE_FUNCTION
   int num_tracers() const {

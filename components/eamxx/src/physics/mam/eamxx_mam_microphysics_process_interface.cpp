@@ -7,6 +7,7 @@
 #include "readfiles/photo_table_utils.cpp"
 #include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
 #include "physics/mam/readfiles/vertical_remapper_exo_coldens.hpp"
+#include "physics/mam/readfiles/vertical_remapper_elevated_emissions_mam4.hpp"
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -27,6 +28,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
   config_.amicphys.do_coag   = m_params.get<bool>("mam4_do_coag");
+  config_.amicphys.aero_species = aero_config_.aero_species;
   check_fields_intervals_    = m_params.get<bool>("create_fields_interval_checks", false);
 
   // these parameters guide the coupling between parameterizations
@@ -127,9 +129,8 @@ MAMMicrophysics::create_requests()
   add_field<Required>("horiz_winds", vector3d, m / s, grid_name);
 
   //----------- Variables from microphysics scheme -------------
-  constexpr auto nondim = ekat::units::Units::nondimensional();
   // Total cloud fraction [fraction]
-  add_field<Required>("cldfrac_liq", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
   // Evaporation from stratiform rain [kg/kg/s]
   add_field<Required>("nevapr", scalar3d_mid, kg / kg / s, grid_name);
@@ -165,11 +166,11 @@ MAMMicrophysics::create_requests()
       grid_->get_2d_vector_layout(mam4::mo_drydep::n_land_type, "class");
 
   // Fractional land use [fraction]
-  add_field<Required>("fraction_landuse", vector2d_class, nondim, grid_name);
+  add_field<Required>("fraction_landuse", vector2d_class, none, grid_name);
 
   //----------- Variables from the coupler ---------
   // surface albedo shortwave, direct
-  add_field<Required>("sfc_alb_dir_vis", scalar2d, nondim, grid_name);
+  add_field<Required>("sfc_alb_dir_vis", scalar2d, none, grid_name);
 
   // Surface temperature[K]
   add_field<Required>("surf_radiative_T", scalar2d, K, grid_name);
@@ -225,17 +226,17 @@ MAMMicrophysics::create_requests()
 
     // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
 
     // Diagnostics: tendencies due to aqueous chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
 
     // Diagnostics: SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, none, grid_name);
 
     // Diagnostics: H2SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, nondim,
+    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, none,
                         grid_name);
 
     // Register computed diagnostic fields
@@ -249,17 +250,28 @@ MAMMicrophysics::create_requests()
     // Diagnostics: tendencies due to aerosol microphysics (gas aerosol exchange) [mixed units:
     // mol/mol/s or #/mol/s]
     add_field<Computed>("mam4_microphysics_tendency_condensation",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_renaming",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_nucleation",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_coagulation",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_renaming_cloud_borne",
-                        vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+                        vector3d_num_gas_aerosol_constituents, none, grid_name);
     constexpr auto cm2 = m * m / 10000;
     add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_gas_pcnst, 1 / cm2 / s, grid_name);
+
+    // Diagnostic: implicit solver outcome for gas phase chemistry
+    // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
+    //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
+    // Values 0-1 indicate success; 2-5 indicate failure modes.
+    add_field<Computed>("mam4_imp_sol_outcome", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_failed_attempts", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_cut_count", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_accepted_steps", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_requested_interval", scalar3d_mid, s, grid_name);
+    add_field<Computed>("mam4_imp_sol_accepted_interval", scalar3d_mid, s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -277,12 +289,12 @@ MAMMicrophysics::create_requests()
   if (config_.linoz.compute) {
     // The DataInterpolation class uses Field. We save these fields in FM.
     for(const auto &field_name : var_names_linoz_) {
-      add_field<Computed>(field_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(field_name, scalar3d_mid, none, grid_name);
     }
   }
   for(const auto &field_name : var_names_oxi_) {
     // Adding oxid_ to avoid conflicts with gases treated as tracers.
-    add_field<Computed>("oxid_"+field_name, scalar3d_mid, nondim, grid_name);
+    add_field<Computed>("oxid_"+field_name, scalar3d_mid, none, grid_name);
   }
 
   // list of species for elevated emissiones.
@@ -311,7 +323,7 @@ MAMMicrophysics::create_requests()
   for(const auto &pair : elevated_emis_var_names_) {
     const auto &var_name =pair.first;
     for(const auto &field_name : pair.second) {
-      add_field<Computed>(field_name+"_"+var_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(field_name+"_"+var_name, scalar3d_mid, none, grid_name);
     }
   }
 
@@ -462,17 +474,17 @@ void MAMMicrophysics::set_oxid_reader()
   const auto oxid_file_name = m_params.get<std::string>("mam4_oxid_file_name");
   const std::string oxid_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
+  const auto oxid_time_interpolation_method = 
+      m_params.get<std::string>("time_interpolation_method", "yearly_periodic");
   // get fields from FM.
   std::vector<Field> oxid_fields;
   for(const auto &field_name : var_names_oxi_) {
       oxid_fields.push_back(get_field_out("oxid_"+field_name).alias(field_name));
   }
 
-  // Beg of any year, since we use yearly periodic timeline
-  util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
-  data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_oxid);
-  data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
+  data_interp_oxid_->setup_time_database({oxid_file_name}, oxid_time_interpolation_method);
+  data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file, m_iop_data_manager);
   data_interp_oxid_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_data_oxid;
   remap_data_oxid.vr_type = DataInterpolation::Dynamic3DRef;
@@ -491,24 +503,24 @@ void MAMMicrophysics::set_oxid_reader()
     remap_data_oxid.custom_remapper=vertical_remapper;
   }
   data_interp_oxid_->create_vert_remapper (remap_data_oxid);
-  data_interp_oxid_->init_data_interval (start_of_step_ts());
+  data_interp_oxid_->init_time_interpolation (start_of_step_ts(), DataInterpolation::Linear);
 }
 // set DataInterpolation object for linoz reader.
 void MAMMicrophysics::set_linoz_reader(){
   auto pmid = get_field_in("p_mid");
-  // Beg of any year, since we use yearly periodic timeline
-  util::TimeStamp ref_ts_linoz (1,1,1,0,0,0);
   const auto m_linoz_file_name = m_params.get<std::string>("mam4_linoz_file_name");
   const std::string linoz_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
+  const auto linoz_time_interpolation_method = 
+      m_params.get<std::string>("time_interpolation_method", "yearly_periodic");
   std::vector<Field> linoz_fields;
   for(const auto &field_name : var_names_linoz_) {
       linoz_fields.push_back(get_field_out(field_name));
   }
 
   data_interp_linoz_ = std::make_shared<DataInterpolation>(grid_,linoz_fields);
-  data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_linoz);
-  data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
+  data_interp_linoz_->setup_time_database({m_linoz_file_name}, linoz_time_interpolation_method);
+  data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file, m_iop_data_manager);
   data_interp_linoz_->set_logger(m_atm_logger);
 
   DataInterpolation::VertRemapData remap_data_linoz;
@@ -528,7 +540,7 @@ void MAMMicrophysics::set_linoz_reader(){
     remap_data_linoz.custom_remapper=vertical_remapper_linoz;
   }
   data_interp_linoz_->create_vert_remapper (remap_data_linoz);
-  data_interp_linoz_->init_data_interval (start_of_step_ts());
+  data_interp_linoz_->init_time_interpolation (start_of_step_ts(), DataInterpolation::Linear);
 }
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_exo_coldens_reader()
@@ -540,12 +552,14 @@ void MAMMicrophysics::set_exo_coldens_reader()
   const std::string exo_coldens_file_name = m_params.get<std::string>("mam4_exo_coldens_file_name");
   const std::string exo_coldens_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
+  const auto exo_coldens_time_interpolation_method = 
+      m_params.get<std::string>("time_interpolation_method", "yearly_periodic");
   // get fields from FM.
   auto grid_exo_coldens = grid_->clone("exo_grid",true);
   grid_exo_coldens->reset_vertical_configuration(1, AbstractGrid::VKind::Model);
   auto layout = grid_exo_coldens->get_3d_scalar_layout(LEV);
 
-  auto molec = Units::nondimensional();// example;
+  auto molec = none;// example;
   auto cm2 = pow(m / 100,2);
   auto molec_cm2 = Units(molec/cm2,"molecules/cm2");
   const std::string exo_coldens_name = "O3_column_density";
@@ -554,11 +568,9 @@ void MAMMicrophysics::set_exo_coldens_reader()
   field_exo.allocate_view();
   exo_coldens_fields_.push_back(field_exo);
 
-  // Beg of any year, since we use yearly periodic timeline
-  util::TimeStamp ref_ts_exo_coldens (1,1,1,0,0,0);
   data_interp_exo_coldens_ = std::make_shared<DataInterpolation>(grid_exo_coldens,exo_coldens_fields_);
-  data_interp_exo_coldens_->setup_time_database ({exo_coldens_file_name},util::TimeLine::YearlyPeriodic,DataInterpolation::Linear, ref_ts_exo_coldens);
-  data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file);
+  data_interp_exo_coldens_->setup_time_database({exo_coldens_file_name}, exo_coldens_time_interpolation_method);
+  data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file, m_iop_data_manager);
   data_interp_exo_coldens_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_exo_coldens;
   remap_exo_coldens.vr_type = DataInterpolation::Custom;
@@ -570,45 +582,45 @@ void MAMMicrophysics::set_exo_coldens_reader()
   remap_exo_coldens.custom_remapper=vertical_remapper;
 
   data_interp_exo_coldens_->create_vert_remapper (remap_exo_coldens);
-  data_interp_exo_coldens_->init_data_interval (start_of_step_ts());
-
+  data_interp_exo_coldens_->init_time_interpolation (start_of_step_ts(), DataInterpolation::Linear);
 }
 
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_elevated_emissions_reader()
 {
+  using namespace ShortFieldTagsNames;
+
   const auto z_iface = get_field_out("z_mam4_int");
   const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
+  const auto elevated_emis_time_interpolation_method = 
+      m_params.get<std::string>("time_interpolation_method", "yearly_periodic");
   for(const auto &pair : elevated_emis_var_names_) {
     const auto& var_name=pair.first;
     std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
     const auto file_name  = m_params.get<std::string>(item_name);
-    // Beg of any year, since we use yearly periodic timeline
-    util::TimeStamp ref_ts_vertical (1,1,1,0,0,0);
     std::vector<Field> vertical_fields;
     for(const auto &field_name :pair.second) {
       vertical_fields.push_back(get_field_out(field_name+"_"+var_name).alias(field_name));
     }
     std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
-    di_vertical->set_input_files_dimname(ShortFieldTagsNames::LEV,"altitude");
-    di_vertical->set_input_files_dimname(ShortFieldTagsNames::ILEV,"altitude_int");
-    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_vertical);
-    di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
+    di_vertical->set_input_files_dimname(e2str(LEV),"altitude");
+    di_vertical->set_input_files_dimname(e2str(ILEV),"altitude_int");
+    di_vertical->setup_time_database({file_name}, elevated_emis_time_interpolation_method);
+    di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file, m_iop_data_manager);
     di_vertical->set_logger(m_atm_logger);
     DataInterpolation::VertRemapData remap_data_vertical;
     remap_data_vertical.vr_type = DataInterpolation::Custom;
     remap_data_vertical.pmid = z_iface;
     auto grid_after_hremap_vertical = di_vertical->get_grid_after_hremap();
     // we create elevated emission remapper
-    auto vertical_remapper_elevated = std::make_shared<VerticalRemapperMAM4>(grid_after_hremap_vertical, grid_,
-    VerticalRemapperMAM4::VertRemapType::MAM4_ELEVATED_EMISSIONS);
+    auto vertical_remapper_elevated = std::make_shared<VerticalRemapperElevatedEmissionsMAM4>(grid_after_hremap_vertical, grid_);
     // we set source and target variables for interpolation
-    vertical_remapper_elevated->set_source_pressure(file_name);
-    vertical_remapper_elevated->set_target_pressure(z_iface);
+    vertical_remapper_elevated->set_source_interface_height(file_name);
+    vertical_remapper_elevated->set_target_interface_height(z_iface);
     remap_data_vertical.custom_remapper=vertical_remapper_elevated;
     di_vertical->create_vert_remapper (remap_data_vertical);
-    di_vertical->init_data_interval (start_of_step_ts());
+    di_vertical->init_time_interpolation (start_of_step_ts(), DataInterpolation::Linear);
     data_interp_elevated_emissions_.push_back(di_vertical);
   }//end var_name
 }
@@ -647,7 +659,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
 
   // FIXME: we are using cldfrac_tot in other mam4xx process.
@@ -709,11 +721,28 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
       {"mam4_gas_dry_deposition_flux",
       "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
+
+      {"mam4_imp_sol_outcome",
+      "Implicit solver outcome for gas phase chemistry: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput, 3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted"},
+
+      {"mam4_imp_sol_failed_attempts",
+      "Implicit solver failed convergence attempts for gas phase chemistry"},
+
+      {"mam4_imp_sol_cut_count",
+      "Implicit solver timestep cut count for gas phase chemistry"},
+
+      {"mam4_imp_sol_accepted_steps",
+      "Implicit solver accepted sub-steps for gas phase chemistry"},
+
+      {"mam4_imp_sol_requested_interval",
+      "Implicit solver requested integration interval for gas phase chemistry [units: s]"},
+
+      {"mam4_imp_sol_accepted_interval",
+      "Implicit solver accepted integration interval for gas phase chemistry [units: s]"},
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
   }
-
 
   // set field property checks for the fields in this process
   /* e.g.

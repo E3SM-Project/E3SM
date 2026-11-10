@@ -12,8 +12,7 @@ namespace scream {
 
 TEST_CASE("field_contractions") {
   using namespace ShortFieldTagsNames;
-
-  constexpr auto nondim = ekat::units::Units::nondimensional();
+  using namespace ekat::units;
 
   // Accumulations in the Kokkos threaded reductions may be done in a
   // different order than the manual ones below, so we can only test
@@ -29,16 +28,16 @@ TEST_CASE("field_contractions") {
     int nlev = 17;
 
     // Set a weight field with values [1,2,...,ncols]
-    FieldIdentifier wfid("f", {{COL}, {ncol}}, nondim, "g");
+    FieldIdentifier wfid("f", {{COL}, {ncol}}, none, "g");
     Field w(wfid,true);
     randomize_uniform(w,seed++);
 
     // Create (random) sample fields
     // NOTE: suffix _x stands for "horizontal", _z for "vertical", _xz for "horiz-and-vert"
-    FieldIdentifier scl_fid("s", {{}, {}}, nondim, "g");  // scalar
-    FieldIdentifier vec_x_fid("v_x", {{COL, CMP}, {ncol, ncmp}}, nondim, "g");
-    FieldIdentifier scl_xz_fid("s_xz", {{COL, LEV}, {ncol, nlev}}, nondim, "g");
-    FieldIdentifier vec_xz_fid("v_xz", {{COL, CMP, LEV}, {ncol, ncmp, nlev}}, nondim, "g");
+    FieldIdentifier scl_fid("s", {{}, {}}, none, "g");  // scalar
+    FieldIdentifier vec_x_fid("v_x", {{COL, CMP}, {ncol, ncmp}}, none, "g");
+    FieldIdentifier scl_xz_fid("s_xz", {{COL, LEV}, {ncol, nlev}}, none, "g");
+    FieldIdentifier vec_xz_fid("v_xz", {{COL, CMP, LEV}, {ncol, ncmp, nlev}}, none, "g");
     Field scl(scl_fid,true);
     Field vec_x(vec_x_fid,true);
     Field vec_xz(vec_xz_fid,true);
@@ -46,10 +45,10 @@ TEST_CASE("field_contractions") {
     randomize_uniform(vec_x, seed++);
     randomize_uniform(vec_xz, seed++);
 
-    FieldIdentifier scl_x_fid("s_x", {{COL}, {ncol}}, nondim, "g");
-    FieldIdentifier scl_z_fid("s_z", {{LEV}, {nlev}}, nondim, "g");
-    FieldIdentifier vec_fid  ("v", {{CMP}, {ncmp}}, nondim, "g");
-    FieldIdentifier vec_z_fid("v_z", {{CMP, LEV}, {ncmp, nlev}}, nondim, "g");
+    FieldIdentifier scl_x_fid("s_x", {{COL}, {ncol}}, none, "g");
+    FieldIdentifier scl_z_fid("s_z", {{LEV}, {nlev}}, none, "g");
+    FieldIdentifier vec_fid  ("v", {{CMP}, {ncmp}}, none, "g");
+    FieldIdentifier vec_z_fid("v_z", {{CMP, LEV}, {ncmp, nlev}}, none, "g");
 
     Field scl_x(scl_x_fid);
     Field vec  (vec_fid);
@@ -68,7 +67,7 @@ TEST_CASE("field_contractions") {
     REQUIRE_THROWS(horiz_contraction(scl, scl_x, vec_x)); // incompatible weight layout
 
     SECTION ("scl_x") {
-      auto f_in = scl_x.clone();
+      auto f_in = scl_x.clone(CloneFlags::CopyData);
       auto f_out = scl.clone();
 
       horiz_contraction(f_out, f_in, w);
@@ -85,7 +84,7 @@ TEST_CASE("field_contractions") {
     }
 
     SECTION ("scl_x_masked") {
-      auto f_in = scl_x.clone();
+      auto f_in = scl_x.clone(CloneFlags::CopyData);
       auto f_out = scl.clone();
       auto mask = f_in.create_valid_mask("mask",Field::MaskInit::Valid);
       mask.sync_to_host();
@@ -113,7 +112,7 @@ TEST_CASE("field_contractions") {
     }
 
     SECTION ("vec_xz") {
-      auto f_in  = vec_xz.clone();
+      auto f_in  = vec_xz.clone(CloneFlags::CopyData);
       auto f_out = vec_z.clone();
       auto mask = f_in.create_valid_mask();
       randomize_uniform(mask,seed++);
@@ -148,10 +147,10 @@ TEST_CASE("field_contractions") {
     for(FieldTag lev_tag : {LEV,ILEV}) {
       // Create (random) sample fields
       // NOTE: suffix _x stands for "horizontal", _z for "vertical", _xz for "horiz-and-vert"
-      FieldIdentifier scl_fid   ("s",    {{}, {}}, nondim, "g");  // scalar
-      FieldIdentifier scl_xz_fid("s_xz", {{COL, lev_tag}, {ncol, nlev}}, nondim, "g");
-      FieldIdentifier vec_z_fid ("v_z",  {{CMP, lev_tag}, {ncmp, nlev}}, nondim, "g");
-      FieldIdentifier vec_xz_fid("v_xz", {{COL, CMP, lev_tag}, {ncol, ncmp, nlev}}, nondim, "g");
+      FieldIdentifier scl_fid   ("s",    {{}, {}}, ekat::units::none, "g");  // scalar
+      FieldIdentifier scl_xz_fid("s_xz", {{COL, lev_tag}, {ncol, nlev}}, ekat::units::none, "g");
+      FieldIdentifier vec_z_fid ("v_z",  {{CMP, lev_tag}, {ncmp, nlev}}, ekat::units::none, "g");
+      FieldIdentifier vec_xz_fid("v_xz", {{COL, CMP, lev_tag}, {ncol, ncmp, nlev}}, ekat::units::none, "g");
 
       Field scl(scl_fid,true);
       Field scl_xz(scl_xz_fid,true);
@@ -163,10 +162,10 @@ TEST_CASE("field_contractions") {
       randomize_uniform(vec_xz, seed++);
 
       // Output/utility fields
-      FieldIdentifier scl_x_fid("s_x", {{COL}, {ncol}}, nondim, "g");
-      FieldIdentifier vec_x_fid("v_x", {{COL,CMP}, {ncol,ncmp}}, nondim, "g");
-      FieldIdentifier vec_fid  ("v", {{CMP}, {ncmp}}, nondim, "g");
-      FieldIdentifier scl_z_fid ("s_z",  {{lev_tag}, {nlev}}, nondim, "g");
+      FieldIdentifier scl_x_fid("s_x", {{COL}, {ncol}}, ekat::units::none, "g");
+      FieldIdentifier vec_x_fid("v_x", {{COL,CMP}, {ncol,ncmp}}, ekat::units::none, "g");
+      FieldIdentifier vec_fid  ("v", {{CMP}, {ncmp}}, ekat::units::none, "g");
+      FieldIdentifier scl_z_fid ("s_z",  {{lev_tag}, {nlev}}, ekat::units::none, "g");
 
       Field scl_x(scl_x_fid,true);
       Field vec_x(vec_x_fid,true);
@@ -182,7 +181,7 @@ TEST_CASE("field_contractions") {
       REQUIRE_THROWS(vert_contraction(scl, scl_z, vec_xz)); // incompatible weight layout
 
       SECTION ("scl_z") {
-        auto f_in = scl_z.clone();
+        auto f_in = scl_z.clone(CloneFlags::CopyData);
         auto f_out = scl.clone();
         auto w = scl_z.clone();
         randomize_uniform (w,seed++);
@@ -202,7 +201,7 @@ TEST_CASE("field_contractions") {
       }
 
       SECTION ("scl_z_masked") {
-        auto f_in = scl_z.clone();
+        auto f_in = scl_z.clone(CloneFlags::CopyData);
         auto f_out = scl.clone();
         auto w = scl_z.clone();
         randomize_uniform (w,seed++);
@@ -232,7 +231,7 @@ TEST_CASE("field_contractions") {
       }
 
       SECTION ("scl_xz_w_z") {
-        auto f_in = scl_xz.clone();
+        auto f_in = scl_xz.clone(CloneFlags::CopyData);
         auto f_out = scl_x.clone();
         auto w = scl_z.clone();
         randomize_uniform (w,seed++);
@@ -259,7 +258,7 @@ TEST_CASE("field_contractions") {
       }
 
       SECTION ("vec_xz_w_xz") {
-        auto f_in = vec_xz.clone();
+        auto f_in = vec_xz.clone(CloneFlags::CopyData);
         auto f_out = vec_x.clone();
         auto w = scl_xz.clone();
         randomize_uniform (w,seed++);

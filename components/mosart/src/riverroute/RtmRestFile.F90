@@ -611,7 +611,11 @@ endif
              if (nsrest == nsrContinue) then
                 call shr_sys_abort()
              else
-                dfld = 0._r8
+               if (nv == 22) then
+                  dfld_int = 0
+               else
+                  dfld = 0._r8
+               endif
                 if (vname == 'DAM_STORAGE_LIQ') then
                    storage_read = .false.
                 elseif (vname == 'DAM_RELEASE_LIQ') then
@@ -620,6 +624,8 @@ endif
                 elseif (vname == 'DAM_STORMTHSTOP_LIQ') then
                    stormth_read = .false.
                    compute_release = .true.
+                elseif (vname == 'DAM_ACTIVE_LIQ') then
+                   compute_release = .true.   
                 endif
              end if
           end if

@@ -58,12 +58,13 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
   // set invariants
   const auto& invariants = invariants_;
   const auto& dry_atm = dry_atm_;
+  const auto& wet_atm = wet_atm_;
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl::setinv", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int icol     = team.league_rank();   // column index
       // fetch column-specific atmosphere state data
-      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
       const auto invariants_icol = ekat::subview(invariants, icol);
       view_1d cnst_offline_icol[mam4::mo_setinv::num_tracer_cnst];
       for(int i = 0; i < mam4::mo_setinv::num_tracer_cnst; ++i) {
@@ -106,7 +107,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     // subroutine defined within
     //  mozart/mo_gas_phase_chemdr.F90)
     const int icol     = team.league_rank();   // column index
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
     mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
@@ -156,7 +157,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     // calculate o3 column densities (first component of col_dens in Fortran
     // code)
     auto o3_col_dens_icol = ekat::subview(o3_col_dens, icol);
-    const auto& atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto& atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
     const auto& vmr_icol = ekat::subview(vmr,icol);  
     mam4::microphysics::compute_o3_column_density(
       team, atm.hydrostatic_dp, vmr_icol, o3_exo_col(icol, 0), o3_ndx, o3_col_dens_icol);
@@ -178,7 +179,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     const auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
     const auto &work_photo_table_icol =
             ekat::subview(work_photo_table, icol);
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
     const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
         // set up photolysis work arrays for this column.
     mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays_icol;
@@ -215,7 +216,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
       "MAMMicrophysics::run_impl::sethet", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
     const int icol     = team.league_rank();   // column index
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
     const auto phis= dry_atm.phis(icol);
     const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
     // convert column latitude to radians
@@ -298,7 +299,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     "MAMMicrophysics::run_impl::drydep_xactive", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
     const int icol     = team.league_rank();   // column index
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
 
     const auto work_set_het_icol = ekat::subview(work_set_het, icol);
     auto work_set_het_ptr = (Real *)work_set_het_icol.data();
@@ -412,24 +413,31 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     Kokkos::deep_copy(vmr0,vmr);
 
     if (config_.compute_gas_phase_chemistry) {
-    // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
-    // the device.
-    int clsmap_4[num_gas_aerosol_constituents], permute_4[num_gas_aerosol_constituents];
-    for(int i = 0; i < num_gas_aerosol_constituents; ++i) {
-      clsmap_4[i]              = mam4::gas_chemistry::clsmap_4[i];
-      permute_4[i]             = mam4::gas_chemistry::permute_4[i];
-    }
 
     view_3d gas_phase_chemistry_dvmrdt;
+    view_2d imp_sol_outcome_view;
+    view_2d imp_sol_failed_attempts_view;
+    view_2d imp_sol_cut_count_view;
+    view_2d imp_sol_accepted_steps_view;
+    view_2d imp_sol_requested_interval_view;
+    view_2d imp_sol_accepted_interval_view;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
+      imp_sol_outcome_view = get_field_out("mam4_imp_sol_outcome").get_view<Real **>();
+      imp_sol_failed_attempts_view = get_field_out("mam4_imp_sol_failed_attempts").get_view<Real **>();
+      imp_sol_cut_count_view = get_field_out("mam4_imp_sol_cut_count").get_view<Real **>();
+      imp_sol_accepted_steps_view = get_field_out("mam4_imp_sol_accepted_steps").get_view<Real **>();
+      imp_sol_requested_interval_view = get_field_out("mam4_imp_sol_requested_interval").get_view<Real **>();
+      imp_sol_accepted_interval_view = get_field_out("mam4_imp_sol_accepted_interval").get_view<Real **>();
     }
+
+    const bool collect_imp_sol_diags = extra_mam4_aero_microphys_diags_;
 
     Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::gas_phase_chemistry", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int icol     = team.league_rank();   // column index
-      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
       const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
       const auto invariants_icol = ekat::subview(invariants, icol);
       const auto extfrc_icol = ekat::subview(extfrc, icol);
@@ -446,12 +454,39 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         // extract atm state variables (input)
         const Real temperature = atm.temperature(kk);
         const auto &vmr_kk = ekat::subview(vmr_icol, kk);
-        mam4::microphysics::gas_phase_chemistry(
-        // in
-        temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
-        clsmap_4, permute_4, het_rates_k.data(),
-        // out
-        vmr_kk);
+
+        // Call gas_phase_chemistry and capture ImpSolResult return value
+        const auto result = mam4::microphysics::gas_phase_chemistry(
+          temperature, dt, photo_rates_k.data(), extfrc_k.data(),
+          invariants_k.data(), het_rates_k.data(),
+          vmr_kk);
+
+        // Store the solver outcome and stats if diagnostics enabled
+        // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
+        //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
+        if (collect_imp_sol_diags) {
+          imp_sol_outcome_view(icol, kk) = Kokkos::round(int(result.outcome));
+          imp_sol_failed_attempts_view(icol, kk) = Kokkos::round(result.failed_attempts);
+          imp_sol_cut_count_view(icol, kk) = Kokkos::round(result.cut_count);
+          imp_sol_accepted_steps_view(icol, kk) = Kokkos::round(result.accepted_steps);
+          imp_sol_requested_interval_view(icol, kk) = result.requested_interval;
+          imp_sol_accepted_interval_view(icol, kk) = result.accepted_interval;
+        }
+
+        // Check for failure and report as warning (not error)
+        // Outcome values can be inspected in the mam4_imp_sol_outcome field
+        if (!result.success()) {
+#ifndef NDEBUG
+          Kokkos::printf(
+              "WARNING: imp_sol did not complete chemistry interval at "
+              "icol=%d, lev=%d, outcome=%d, failed_attempts=%d, "
+              "cut_count=%d, accepted_steps=%d, "
+              "requested=%.6e, accepted=%.6e\n",
+              icol, kk, static_cast<int>(result.outcome),
+              result.failed_attempts, result.cut_count, result.accepted_steps,
+              result.requested_interval, result.accepted_interval);
+#endif
+        }
       });
 
     });
@@ -464,7 +499,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     KOKKOS_LAMBDA(const int i) {
       const int icol = i / nlev;
       const int kk   = i % nlev;
-      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
       const Real pdel = atm.hydrostatic_dp(kk);
       const Real mbar = mam4::Constants::molec_weight_dry_air;
       const Real gravit = mam4::Constants::gravity;
@@ -495,7 +530,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     KOKKOS_LAMBDA(const ThreadTeam &team) {
 
     const int icol     = team.league_rank();   // column index
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
     //----------------------
     // Aerosol microphysics
     //----------------------
@@ -548,7 +583,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
       KOKKOS_LAMBDA(const int i) {
         const int icol = i / nlev;
         const int kk   = i % nlev;
-        const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
         const Real pdel = atm.hydrostatic_dp(kk);
         const Real mbar = mam4::Constants::molec_weight_dry_air;
         const Real gravit = mam4::Constants::gravity;
@@ -605,7 +640,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     KOKKOS_LAMBDA(const ThreadTeam &team) {
 
       const int icol     = team.league_rank();   // column index
-      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
 
       mam4::MicrophysDiagnosticArrays diag_arrays;
       if (extra_mam4_aero_microphys_diags) {
@@ -726,7 +761,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int icol     = team.league_rank();   // column index
       const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
-      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
       const auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
       // convert column latitude to radians
       const Real rlats = col_lat * M_PI / 180.0;
@@ -744,7 +779,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
        //Find tropopause (or quit simulation if not found) as extinction should be
       // applied only above tropopause */
       const int ilev_tropp = mam4::aero_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
-          atm.temperature,  atm.height, ekat::subview(dry_atm.z_iface, icol));
+          atm.temperature,  atm.height, ekat::subview(wet_atm.z_iface, icol));
       // Part 1: LINOZ chemistry
       Kokkos::parallel_for(
        Kokkos::TeamVectorRange(team, ilev_tropp),
@@ -850,7 +885,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     "MAMMicrophysics::run_impl::diagnostics", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int icol     = team.league_rank();   // column index
-      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
       const auto dqdt_aqso4_icol = ekat::subview(dqdt_aqso4,icol);
       const auto dqdt_aqh2so4_icol =ekat::subview(dqdt_aqh2so4,icol);
 

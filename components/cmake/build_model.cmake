@@ -269,6 +269,29 @@ macro(build_model COMP_CLASS COMP_NAME)
       endif()
     endforeach()
 
+    if (TARGET hdf5 AND MPILIB STREQUAL "openmpi" AND MACH MATCHES "^(pm|muller|alvarez)-")
+      target_link_libraries(${TARGET_NAME} hdf5)
+    endif()
+
+    # driver-mct/main sources (e.g. cime_comp_mod.F90) use netcdf directly, but
+    # the component libraries only link netcdf PRIVATEly (via csm_share), so
+    # its usage requirements (e.g. include dirs for netcdf.mod) do not
+    # propagate up to this exe target. Pull in just the include dirs here.
+    #
+    # Deliberately NOT using target_link_libraries(${TARGET_NAME} netcdf):
+    # CMake treats "netcdf" as a single graph node, so linking it directly to
+    # this executable pins its (and PnetCDF's) position to wherever it's
+    # first encountered, ahead of the component libraries below that also
+    # transitively link it via csm_share -> spio. But piof/pioc (also pulled
+    # in via csm_share -> spio) reference PnetCDF symbols, so libpnetcdf.a
+    # must come after them on the link line, or the linker drops its symbols
+    # before piof/pioc need them. Only requesting the include dirs avoids
+    # adding that extra, mis-ordering link edge, while the link libraries
+    # still reach this target correctly ordered via csm_share -> spio.
+    find_package(NETCDF REQUIRED)
+    get_target_property(NETCDF_INTERFACE_INCLUDE_DIRS netcdf INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(${TARGET_NAME} PRIVATE ${NETCDF_INTERFACE_INCLUDE_DIRS})
+
     if (USE_MOAB)
       target_link_libraries(${TARGET_NAME} ${MOAB_LIBRARIES})
       target_include_directories(${TARGET_NAME} PRIVATE ${MOAB_INCLUDE_DIRS})
@@ -283,14 +306,14 @@ macro(build_model COMP_CLASS COMP_NAME)
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
 
       # A bit hacky, some platforms need help with the fortran linker
-      if (COMPILER STREQUAL "intel" OR COMPILER STREQUAL "oneapi-ifx")
+      if (COMPILER STREQUAL "intel")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
       endif()
 
     else()
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
-      if (COMPILER STREQUAL "oneapi-ifxgpu")
+      if (COMPILER STREQUAL "intelgpu")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -fsycl -Xsycl-target-backend \"-device pvc\" ")
       endif()
 
@@ -327,6 +350,10 @@ macro(build_model COMP_CLASS COMP_NAME)
         if (USE_PETSC)
           target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
           target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
+        endif()
+        if (USE_MOAB)
+          target_link_libraries(${TARGET_NAME} PRIVATE ${MOAB_LIBRARIES})
+          target_include_directories(${TARGET_NAME} PRIVATE ${MOAB_INCLUDE_DIRS})
         endif()
       endif()
       if (COMP_NAME STREQUAL "ww3")

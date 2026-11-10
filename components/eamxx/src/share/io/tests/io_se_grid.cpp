@@ -1,14 +1,13 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
-#include "share/field/field_identifier.hpp"
-#include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
+#include "share/field/field_reader.hpp"
+#include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -53,6 +52,7 @@ TEST_CASE("se_grid_io")
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(io_comm,num_my_elems,np,num_levs);
   auto grid = gm->get_grid("SE Grid");
+  auto gids = grid->get_partitioned_dim_gids();
 
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
@@ -78,22 +78,25 @@ TEST_CASE("se_grid_io")
   // Get a fresh new field manager, and set fields to NaN
   auto fm1 = get_test_fm(grid,t0,false);
   const auto fnames = {"field_1", "field_2", "field_3", "field_packed"};
+  std::vector<Field> fields;
   for (const auto& fname : fnames) {
-    auto f = fm1->get_field(fname);
+    auto& f = fields.emplace_back(fm1->get_field(fname));
     f.deep_copy(ekat::invalid<Real>());
   }
 
   // Check fields were written correctly
   auto in_params = get_in_params(io_comm,t0);
-  AtmosphereInput ins_input(in_params,fm1);
-  ins_input.read_variables();
+  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
+                       + std::to_string(io_comm.size())
+                       + "." + t0.to_string() + ".nc";
+
+  read_fields(filename,fields,gids,io_comm);
 
   for (const auto& fname : fnames) {
     auto f0 = fm0->get_field(fname);
     auto f1 = fm1->get_field(fname);
     REQUIRE (views_are_equal(f0,f1));
   }
-  ins_input.finalize();
 
   // All Done
   scorpio::finalize_subsystem();

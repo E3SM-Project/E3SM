@@ -3,6 +3,7 @@ common_setup()
 
 include (${EKAT_MACH_FILES_PATH}/kokkos/amd-zen3.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
+include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 

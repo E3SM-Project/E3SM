@@ -1,8 +1,7 @@
-
 #ifndef EAMXX_VERT_CONTRACT_HPP
 #define EAMXX_VERT_CONTRACT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream {
 
@@ -18,26 +17,24 @@ namespace scream {
  * are filled with fill_value and the output field's valid_mask is set to 0.
  */
 
-class VertContractDiag : public AtmosphereDiagnostic {
+class VertContract : public AbstractDiagnostic {
  public:
   // Constructors
-  VertContractDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
+  VertContract(const ekat::Comm &comm, const ekat::ParameterList &params,
+               const std::shared_ptr<const AbstractGrid> &grid);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name() const { return "VertContractDiag"; }
-
-  // Set the grid
-  void create_requests ();
+  std::string name() const { return "VertContract"; }
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
 #endif
-  void compute_diagnostic_impl();
-  void initialize_impl(const RunType /*run_type*/);
+  void compute_impl();
+  void initialize_impl();
 
-  // Name of each field (because the diagnostic impl is generic)
-  std::string m_diag_name;
+  std::string m_field_name; // Input field name
+
   // Name of contraction method (avg, sum)
   std::string m_contract_method;
   // Name of weighting method (dp, dz, none)

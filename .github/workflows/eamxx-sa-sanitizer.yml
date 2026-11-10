@@ -23,79 +23,39 @@ env:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
-  gcc-openmp:
-    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
-    name: gcc-openmp / valg
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Run tests
-        uses: ./.github/actions/test-all-eamxx
-        with:
-          build_type: valg
-          machine: ghci-snl-cpu
-          generate: false
-          submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  gcc-cuda:
-    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+  sanitizer:
+    runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
       fail-fast: false
       matrix:
-        build_type: [csm, csr, csi, css]
-    name: gcc-cuda / ${{ matrix.build_type }}
+        include:
+          - {name: gnu-openmp, runner: gnu, build_type: valg, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: csm, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: csr, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: csi, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+          - {name: gnu-cuda, runner: cuda, build_type: css, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+    name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Get CUDA Arch
-        run: |
-          # Ensure nvidia-smi is available
-          if ! command -v nvidia-smi &> /dev/null; then
-              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
-              exit 1
-          fi
-
-          # Get the GPU model from nvidia-smi, and set env for next step
-          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
-          case "$gpu_model" in
-              *"H100"*)
-                  echo "Hopper=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
-                  ARCH=90
-                  ;;
-              *"A100"*)
-                  echo "Ampere=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
-                  ;;
-              *"V100"*)
-                  echo "Volta=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
-                  ;;
-              *)
-                  echo "Unsupported GPU model: $gpu_model"
-                  exit 1
-                  ;;
-          esac
+        id: gpu
+        if: ${{ matrix.runner == 'cuda' }}
+        uses: e3sm-project/automation/gpu-arch@v1
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
-          machine: ghci-snl-cuda
+          machine: ghci-${{ matrix.runner }}
           generate: false
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=ON
+          cmake-configs: ${{ matrix.cmake_configs }};${{ steps.gpu.outputs.cmake-configs }}

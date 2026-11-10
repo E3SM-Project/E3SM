@@ -24,6 +24,7 @@ if (NOT EAMXX_ENABLE_GPU)
     eti/shoc_compute_shoc_mix_shoc_length.cpp
     eti/shoc_compute_shoc_vapor.cpp
     eti/shoc_compute_shoc_temperature.cpp
+    eti/shoc_compute_shear_strain3d.cpp
     eti/shoc_compute_shr_prod.cpp
     eti/shoc_compute_tmpi.cpp
     eti/shoc_diag_obklen.cpp

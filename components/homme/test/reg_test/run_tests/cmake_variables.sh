@@ -4,6 +4,9 @@ HOMME_DIR=@Homme_Build_DIR@
 # The location of the baseline results
 HOMME_BASELINE_DIR=@Homme_Baseline_DIR@
 
+# Whether the tests should skip the comparison against baseline results
+HOMME_SKIP_BASELINE_COMPARE=@HOMME_SKIP_BASELINE_COMPARE@
+
 # The location of the baseline results
 HOMME_DEFAULT_BASELINE_DIR=${HOMME_DIR}/tests/baseline
 
@@ -44,3 +47,6 @@ HOMME_Submission_Header=@HOMME_SUBMISSION_HEADER@
 
 # Machine
 HOMME_MACHINE=@HOMME_MACHINE@
+
+# Per-test timeout in seconds for runTestsStd() (0 = no limit)
+HOMME_TESTING_TIMELIMIT=@HOMME_TESTING_TIMELIMIT@

@@ -24,7 +24,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   using const_view_1d = typename KT::template view_1d<const Real>;
   using const_view_2d = typename KT::template view_2d<const Real>;
 
-  using view_1d_host = typename KT::view_1d<Real>::HostMirror;
+  using view_1d_host = typename KT::view_1d<Real>::host_mirror_type;
 
   using view_int_2d = typename KT::template view_2d<int>;
 
@@ -40,7 +40,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // --------------------------------------------------------------------------
 
   // The name of the subcomponent
-  std::string name() const { return "mam_aero_microphysics"; }
+  std::string name() const override { return "mam_aero_microphysics"; }
 
   // grid
   void create_requests() override;
@@ -56,7 +56,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() override {/*Do nothing*/};
 
  private:
   void run_microphysics_kernels(const double dt, const double eccf);

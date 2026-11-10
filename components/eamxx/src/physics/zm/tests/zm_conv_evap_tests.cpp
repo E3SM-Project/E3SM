@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvEvap : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_conv_evap_f(d);
-      }
-      else {
-        zm_conv_evap(d);
-      }
+      zm_conv_evap(d);
     }
 
     const auto margin = std::numeric_limits<Real>::epsilon() *

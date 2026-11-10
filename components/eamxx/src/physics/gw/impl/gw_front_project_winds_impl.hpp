@@ -34,7 +34,15 @@ void Functions<S,D>::gw_front_project_winds(
   const Real vsrc = GWC::half*(v(kbot+1)+v(kbot));
 
   // Get the unit vector components and magnitude at the surface.
-  get_unit_vector(usrc, vsrc, xv, yv, ubi(kbot+1));
+  // xv and yv are thread-private outputs: every team thread computes its own
+  // copy, since every thread needs them for the projections. The magnitude
+  // goes to the shared ubi array, so it is published once. See the note in
+  // gw_convect_project_winds.
+  Real src_wind_mag;
+  get_unit_vector(usrc, vsrc, xv, yv, src_wind_mag);
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    ubi(kbot+1) = src_wind_mag;
+  });
 
   // Project the local wind at midpoints onto the source wind.
   Kokkos::parallel_for(
@@ -45,7 +53,9 @@ void Functions<S,D>::gw_front_project_winds(
 
   // Compute the interface wind projection by averaging the midpoint winds.
   // Use the top level wind at the top interface.
-  ubi(0) = ubm(0);
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    ubi(0) = ubm(0);
+  });
 
   midpoint_interp(team,
                   ekat::subview(ubm, Kokkos::pair<int, int>{0, kbot+1}),

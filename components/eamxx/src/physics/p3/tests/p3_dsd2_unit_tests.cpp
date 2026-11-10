@@ -214,21 +214,35 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
 namespace {
 
-TEST_CASE("p3_cloud_dsd2", "[p3_functions]")
+TEST_CASE("p3_cloud_dsd2_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
   T t;
   t.run_cloud_phys();
+}
+
+TEST_CASE("p3_cloud_dsd2_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+
+  T t;
   t.run_cloud_bfb();
 }
 
-TEST_CASE("p3_rain_dsd2", "[p3_functions]")
+TEST_CASE("p3_rain_dsd2_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
   T t;
   t.run_rain_phys();
+}
+
+TEST_CASE("p3_rain_dsd2_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+
+  T t;
   t.run_rain_bfb();
 }
 

@@ -102,7 +102,6 @@ cd ${e3sm_root}/components/eamxx
     1) Issue PR
     2) AT will fail with differences in the baseline tests
     3) Review and merge.
-    4) Ask JimF or LucaB for a bless to baselines on mappy and weaver.
 
     If you are developing a branch and baselines tests are failing unexpectedly, it is
     likely that your branch has fallen out of date. You should upstream merge or rebase

@@ -27,6 +27,7 @@
   <entry id="PIO_STRIDE">
     <values>
       <value>$MAX_MPITASKS_PER_NODE</value>
+      <value mach="cech">1</value>
     </values>
   </entry>
 
@@ -51,7 +52,6 @@
       <value mach="userdefined">netcdf</value>
       <value mach="melvin">netcdf</value>
       <value mach="mappy">netcdf</value>
-      <value mach="weaver">netcdf</value>
       <value mach="eastwind">netcdf</value>
       <value mach="constance">netcdf</value>
       <value mach="cascade">netcdf</value>

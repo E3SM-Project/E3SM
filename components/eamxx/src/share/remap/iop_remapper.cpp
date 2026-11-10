@@ -124,7 +124,7 @@ void IOPRemapper::remap_fwd_impl ()
   // 2. Rank root_id broadcasts the single-col fields
   for (int i=0; i<m_num_fields; ++i) {
     auto& f = m_single_col_fields[i];
-    int col_size = f.get_header().get_identifier().get_layout().size();
+    int col_size = f.get_header().get_alloc_properties().get_num_scalars();
 #if SCREAM_MPI_ON_DEVICE
     m_comm.broadcast(f.get_internal_view_data<Real>(),col_size,root_id);
 #else

@@ -1,11 +1,11 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
+#include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
@@ -39,7 +39,7 @@ void set (const Field& f, const double v) {
 }
 
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {
@@ -93,14 +93,13 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(fl.size()),fl,units,grid->name());
+    FID fid("f_"+std::to_string(fl.size()),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
-    f.deep_copy(0.0); // For the "filled" field we start with a filled value.
+    f.deep_copy(0.0);
+    f.create_valid_mask(Field::MaskInit::Valid);
     f.get_header().get_tracking().update_time_stamp(t0);
-    f.get_header().set_may_be_filled(true);
     fm->add_field(f);
   }
 
@@ -132,7 +131,6 @@ void write (const std::string& avg_type, const std::string& freq_units,
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   om_pl.set<Real>("fill_threshold",fill_threshold);
-  om_pl.set("track_avg_cnt",true);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
   ctrl_pl.set("frequency",freq);
@@ -151,13 +149,20 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Set fields to n+1 or the fill_value, depending on step:
-    //  - n+1 if n+1 is odd
-    //  - fill_value if n+1 is even
-    Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : fill_value;
-    for (const auto& n : fnames) {
-      auto f = fm->get_field(n);
-      set(f,setval);
+    // Set fields to n+1 (and mark them valid) or mark them invalid, depending on step:
+    //  - valid, with value n+1, if n+1 is even
+    //  - invalid otherwise. Invalid entries are filled with random garbage,
+    //    to check that IO never lets it reach the file (not even by accident,
+    //    e.g., via min/max/avg accumulation)
+    const bool valid = (n+1) % 2 == 0;
+    for (const auto& fn : fnames) {
+      auto f = fm->get_field(fn);
+      if (valid) {
+        set(f,1.0*(n+1));
+      } else {
+        randomize_uniform(f,seed+n,-1e6,1e6);
+      }
+      f.get_valid_mask().deep_copy(valid ? 1 : 0);
     }
 
     // Run output manager
@@ -181,18 +186,17 @@ void read (const std::string& avg_type, const std::string& freq_units,
   // Get gm
   auto gm = get_gm (comm);
   auto grid = gm->get_grid("point_grid");
+  auto gids = grid->get_partitioned_dim_gids();
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
   auto fm0 = get_fm(grid,t0,seed);
-  auto fm  = get_fm(grid,t0,-seed-1);
-  std::vector<std::string> fnames;
-  for (auto it : fm->get_repo()) {
-    fnames.push_back(it.second->name());
+  std::vector<Field> fields;
+  for (auto it : fm0->get_repo()) {
+    fields.push_back(it.second->clone());
   }
 
   // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_filled";
   auto filename = casename
     + "." + avg_type
@@ -201,11 +205,12 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+  FieldReader reader;
+  reader.set_file_specs(filename);
+  reader.set_dim_decomp(gids,comm);
+  reader.set_fields(fields);
 
-  // We set the value n to each input field for each odd valued timestep and fill_value for each even valued timestep
+  // We set the value n to each input field for each odd valued timestep and mark it invalid (with garbage data) for each even valued timestep
   // Hence, at output step N = snap*freq, we should get
   //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
   //  avg=MAX:     output = N if (N%2=0), else N-1
@@ -218,10 +223,9 @@ void read (const std::string& avg_type, const std::string& freq_units,
   //         where M = freq/2 + ( N%2=0 ? 0 : 1 ),
   //               a = floor(N/freq)*freq + ( N%2=0 ? 0 : -1)
   for (int n=0; n<num_writes; ++n) {
-    reader.read_variables(n);
-    for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
-      auto f  = fm->get_field(fn);
+    reader.read(n);
+    for (const auto& f : fields) {
+      auto f0 = fm0->get_field(f.name()).clone(CloneFlags::CopyData);
       if (avg_type=="MIN") {
         Real test_val = ((n+1)*freq%2==0) ? n*freq+1 : n*freq+2;
         set(f0,test_val);
@@ -250,9 +254,9 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Check that the fill value gets appropriately set for each variable
-  for (const auto& fn: fnames) {
+  for (const auto& f: fields) {
     // NOTE: use float, since default fp_precision for I/O is 'single'
-    auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
+    auto att_fill = scorpio::get_attribute<float>(filename,f.name(),"_FillValue");
     REQUIRE(att_fill==constants::fill_value<Real>);
   }
 }

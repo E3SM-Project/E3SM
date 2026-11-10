@@ -57,12 +57,7 @@ struct UnitWrap::UnitTest<D>::TestGwProf : public UnitWrap::UnitTest<D>::Base {
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_prof_f(d);
-      }
-      else {
-        gw_prof(d);
-      }
+      gw_prof(d);
     }
 
     // Verify BFB results, all data should be in C layout

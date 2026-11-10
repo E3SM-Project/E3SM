@@ -230,8 +230,8 @@ void run(std::mt19937_64& engine)
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
   };
-  auto hview_as_real = [&] (const typename view_1d::HostMirror& v) -> typename rview_1d::HostMirror {
-    return typename rview_1d::HostMirror(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
+  auto hview_as_real = [&] (const typename view_1d::host_mirror_type& v) -> typename rview_1d::host_mirror_type {
+    return typename rview_1d::host_mirror_type(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
   };
 
   // Construct random input data

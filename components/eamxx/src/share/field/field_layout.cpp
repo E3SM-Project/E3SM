@@ -214,6 +214,21 @@ FieldLayout FieldLayout::transpose() const
   return flt;
 }
 
+std::optional<std::vector<int>> FieldLayout::broadcast_map (const FieldLayout& tgt) const
+{
+  // Greedily match the dims of *this (in order) with those of tgt
+  std::vector<int> dim_map(tgt.rank(),-1);
+  int isrc = 0;
+  for (int itgt=0; itgt<tgt.rank() and isrc<rank(); ++itgt) {
+    if (tgt.tag(itgt)==m_tags[isrc] and tgt.dim(itgt)==m_dims[isrc]) {
+      dim_map[itgt] = isrc++;
+    }
+  }
+  if (isrc!=rank())
+    return std::nullopt;
+  return dim_map;
+}
+
 FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)
 {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
@@ -259,6 +274,16 @@ FieldLayout& FieldLayout::rename_dims (const std::map<FieldTag,std::string>& new
   return *this;
 }
 
+FieldLayout& FieldLayout::rename_dims (const std::map<std::string,std::string>& new_names)
+{
+  for (int i=0; i<m_rank; ++i) {
+    if (new_names.count(m_names[i]))
+      m_names[i] = new_names.at(m_names[i]);
+  }
+
+  return *this;
+}
+
 FieldLayout& FieldLayout::reset_dim (const int idim, const int extent)
 {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
@@ -291,6 +316,11 @@ FieldLayout& FieldLayout::reset_dim (const FieldTag t, const int extent, const b
 }
 
 void FieldLayout::set_extents () {
+  if (m_rank == 0 or (m_rank == 1 and m_tags[0] == FieldTag::Invalid)) {
+    m_extents = decltype(m_extents)();
+    m_extents_h = decltype(m_extents_h)();
+    return;
+  }
   m_extents = decltype(m_extents)("",m_rank);
   m_extents_h = Kokkos::create_mirror_view(m_extents);
   std::copy_n(m_dims.begin(),m_rank,m_extents_h.data());

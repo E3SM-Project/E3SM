@@ -631,7 +631,7 @@ contains
   ! Set data in a single GridVertex according to gm%phase = 1 or 2.
   subroutine gm_set(gm, igv, i, j, face, dir)
     use dimensions_mod, only: np
-    use control_mod, only: north, south, east, west, neast, seast, swest, nwest
+    use control_mod, only: north, south, east, west
 
     type (GridManager_t), intent(inout) :: gm
     integer, intent(in) :: igv, i, j, face, dir

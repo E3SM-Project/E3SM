@@ -8,6 +8,7 @@ module coordinate_systems_mod
 ! cubic coordinates are on the unit cube or the [-\pi/4,\pi/4] cube
 ! and if the spherical longitude is in [0,2\pi] or [-\pi,\pi]
   use kinds, only : real_kind, longdouble_kind
+  use, intrinsic :: iso_c_binding, only : c_double
   implicit none
   private
 
@@ -20,15 +21,15 @@ module coordinate_systems_mod
   end type cartesian2D_t
 
   type, bind(C), public :: cartesian3D_t
-     real(real_kind) :: x             ! x coordinate
-     real(real_kind) :: y             ! y coordinate
-     real(real_kind) :: z             ! z coordinate
+     real(c_double) :: x             ! x coordinate
+     real(c_double) :: y             ! y coordinate
+     real(c_double) :: z             ! z coordinate
   end type cartesian3D_t
 
   type, bind(C), public :: spherical_polar_t
-     real(real_kind) :: r             ! radius
-     real(real_kind) :: lon           ! longitude
-     real(real_kind) :: lat           ! latitude
+     real(c_double) :: r             ! radius
+     real(c_double) :: lon           ! longitude
+     real(c_double) :: lat           ! latitude
   end type spherical_polar_t
 
 
@@ -293,7 +294,6 @@ contains
 
 
   pure function cart_to_spherical_v(cart) result (sphere)
-    use physical_constants, only     : dd_pi
     implicit none
     type(cartesian3D_t), intent(in) :: cart(:)
     type(spherical_polar_t)         :: sphere(SIZE(cart))

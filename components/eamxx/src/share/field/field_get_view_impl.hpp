@@ -3,6 +3,8 @@
 
 #include "share/field/field.hpp"
 
+#include <array>
+
 namespace scream
 {
 
@@ -96,17 +98,54 @@ get_strided_view_type<DT, HD> {
                     "Error! Source field allocation is not compatible with the "
                     "requested value type.\n");
 
+    // Check if this field is a broadcast of another field
+    if (m_header->is_broadcast()) {
+      // Get the strided view of the source field (whose rank is smaller than DstRank),
+      // and build a rank-DstRank view, with the same pointer, and stride 0 along
+      // the broadcasted dims. NOTE: we MUST build the src field, since only the Field
+      // structure can build the original view (from which we grab the strides)
+      const auto& src = m_header->template get_extra_data<Field>("bcast_src");
+      const auto& src_layout = src.get_header().get_identifier().get_layout();
+
+      DstValueType* ptr = nullptr;
+      std::array<size_t,MaxRank> src_strides = {0};
+      auto get_src_strides = [&](const auto& v) {
+        ptr = v.data();
+        for (int i=0; i<src_layout.rank(); ++i) {
+          src_strides[i] = v.stride(i);
+        }
+      };
+      switch (src_layout.rank()) {
+        case 0: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,0>,HD>()); break;
+        case 1: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,1>,HD>()); break;
+        case 2: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,2>,HD>()); break;
+        case 3: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,3>,HD>()); break;
+        case 4: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,4>,HD>()); break;
+        case 5: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,5>,HD>()); break;
+        default:
+          EKAT_ERROR_MSG ("Error! Unexpected source rank in broadcast field.\n"
+                          " - field name: " + name() + "\n");
+      }
+
+      auto tgt_layout = m_header->get_identifier().get_layout();
+      // We already check broadcast works when we created this field
+      auto dim_map = src_layout.broadcast_map(tgt_layout).value();
+      Kokkos::LayoutStride kl;
+      for (int i=0; i<DstRank; ++i) {
+        kl.dimension[i] = fl.dim(i);
+        kl.stride[i]    = dim_map[i]>=0 ? src_strides[dim_map[i]] : 0;
+      }
+      return DstView(ptr,kl);
+    }
+
     // Check if this field is a subview of another field
     const auto parent = m_header->get_parent();
     if (parent != nullptr) {
       // Parent field has correct layout to reinterpret the view into N+1-dim view,
       // for single-slice subfield, and N-dim view for multi-slice subfield.
       // So create the parent field on the fly, use it to get the N+{1,0}-dim view,
-      // then subview it. NOTE: we can set protected members, since f is the same
-      // type of this class.
-      Field f;
-      f.m_header = parent;
-      f.m_data = m_data;
+      // then subview it.
+      Field f(parent, m_data, m_is_read_only);
 
       // get subview info to determine whether we are single- or multi-slicing
       const auto& sv_alloc_prop = m_header->get_alloc_properties();
@@ -158,15 +197,16 @@ auto Field::get_ND_view () const
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
 
+  EKAT_REQUIRE_MSG (m_header->get_alloc_properties().allows_layout_right(),
+    "Error! Cannot build a LayoutRight view of this field; use get_strided_view.\n"
+    " - field name: " + name() + "\n");
+
   // Check if this field is a subview of another field
   const auto parent = m_header->get_parent();
   if (parent!=nullptr) {
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
-    // NOTE: we can set protected members, since f is the same type of this class.
-    Field f;
-    f.m_header = parent;
-    f.m_data   = m_data;
+    Field f(parent, m_data, m_is_read_only);
 
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
 
@@ -204,10 +244,9 @@ auto Field::get_ND_view () const
       num_values = fl.dim(i)==0 ? 0 : num_values/fl.dim(i);
     }
   }
-  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
+  auto ptr = get_internal_view_data<T,HD>();
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
-
   return ret_type (ptr,kl);
 }
 
@@ -235,8 +274,8 @@ auto Field::get_ND_view () const
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
+  auto ptr = get_internal_view_data<T,HD>();
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
   return ret_type (ptr,kl);
 }

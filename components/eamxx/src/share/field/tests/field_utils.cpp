@@ -93,9 +93,86 @@ TEST_CASE("field_utils") {
       } else {
         REQUIRE(not views_are_equal(f1,f2));
       }
+    }
 
-      // On all ranks, the *global* comparison should fail
-      REQUIRE(not views_are_equal(f1,f2,&comm));
+    // Tolerance-based comparison. Use two fresh, plain (unpacked) fields,
+    // filled identically on every rank, so this part does not depend on
+    // parallel_test/am_i_root.
+    {
+      FieldIdentifier fid_t ("field_t", {tags,dims}, m/s, "some_grid");
+      Field ft1(fid_t), ft2(fid_t);
+      ft1.allocate_view();
+      ft2.allocate_view();
+      ft1.deep_copy(1.0);
+      ft2.deep_copy(1.0);
+      REQUIRE(views_are_equal(ft1,ft2));
+
+      constexpr Real delta = 1e-3;
+      ft2.deep_copy(1.0+delta);
+      REQUIRE(not views_are_equal(ft1,ft2));
+      REQUIRE(not views_are_equal(ft1,ft2,Real(delta/2)));
+      REQUIRE(views_are_equal(ft1,ft2,Real(2*delta)));
+    }
+
+    // Masked comparison. Again use fresh, plain fields, identical on every
+    // rank.
+    {
+      FieldIdentifier fid_m ("field_m", {tags,dims}, m/s, "some_grid");
+      Field fm1(fid_m), fm2(fid_m);
+      fm1.allocate_view();
+      fm2.allocate_view();
+      fm1.deep_copy(1.0);
+      fm2.deep_copy(1.0);
+
+      fm1.create_valid_mask();
+      fm2.create_valid_mask();
+      auto m1v = fm1.get_valid_mask().get_view<int**>();
+      auto m2v = fm2.get_valid_mask().get_view<int**>();
+      auto v2m = fm2.get_view<Real**>();
+
+      // Mark the last level invalid, identically on both fields.
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        for (int j=0; j<dim1; ++j) {
+          m1v(i,j) = (j<dim1-1) ? 1 : 0;
+          m2v(i,j) = (j<dim1-1) ? 1 : 0;
+        }
+      });
+      Kokkos::fence();
+
+      // Masks agree, and data agrees everywhere: fields compare equal.
+      REQUIRE(views_are_equal(fm1,fm2));
+
+      // Perturb fm2 ONLY at the invalid (last) level: since that entry is
+      // masked out on both fields, it must not affect the comparison.
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        v2m(i,dim1-1) += 1234.5;
+      });
+      Kokkos::fence();
+      REQUIRE(views_are_equal(fm1,fm2));
+
+      // A difference at a VALID entry must still be caught.
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        v2m(i,0) += 1234.5;
+      });
+      Kokkos::fence();
+      REQUIRE(not views_are_equal(fm1,fm2));
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        v2m(i,0) -= 1234.5;
+      });
+      Kokkos::fence();
+      REQUIRE(views_are_equal(fm1,fm2)); // back to agreeing
+
+      // Only one field masked: the comparison still pass if the two
+      // field agree where the mask is valid
+      Field fu(fid_m);
+      fu.allocate_view();
+      fu.deep_copy(fm1); // same data as fm1
+      fu.deep_copy(-123,fm1.get_valid_mask(),true); // Random value where fm1 is invalid
+      REQUIRE(views_are_equal(fm1,fu));
     }
   }
 
@@ -103,7 +180,6 @@ TEST_CASE("field_utils") {
     using namespace ShortFieldTagsNames;
     using IPDF = std::uniform_int_distribution<int>;
 
-    auto nondim = Units::nondimensional();
     int seed = get_random_test_seed();
     std::mt19937_64 engine(seed);
 
@@ -112,17 +188,17 @@ TEST_CASE("field_utils") {
     const int nlevs = IPDF(3,9)(engine); // between 3-9 levels
 
     // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
-    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               nondim, "");
-    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        nondim, "");
-    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        nondim, "");
-    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), nondim, "");
+    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               none, "");
+    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        none, "");
+    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        none, "");
+    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), none, "");
     Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
     f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
     f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
 
     // We need GIDs for fields with COL component. This test is not over
     // multiple ranks, so just set as [0, ncols-1].
-    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "", DataType::IntType));
+    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), none, "", DataType::IntType));
     gids.allocate_view();
     auto gids_data = gids.get_internal_view_data<int,Host>();
     std::iota(gids_data, gids_data+ncols, 0);
@@ -130,7 +206,7 @@ TEST_CASE("field_utils") {
 
     // Create masks s.t. only last 3 levels are perturbed. For variety,
     // 1d and 2d fields will use lambda mask and 3 field will use a view.
-    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),nondim,"",DataType::IntType);
+    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),none,"",DataType::IntType);
     Field pmask(pmask_fid,true);
     auto pmask_h = pmask.get_view<int*,Host>();
     for (int i=0; i<nlevs; ++i) {

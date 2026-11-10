@@ -35,7 +35,7 @@ contains
   subroutine dead_init_mct(model, Eclock, x2d, d2x, &
          flds_x2d, flds_d2x, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg )
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg, flood)
 
     ! !INPUT/OUTPUT PARAMETERS:
     character(len=*) , intent(in)    :: model
@@ -57,6 +57,7 @@ contains
     integer(IN)      , intent(in)    :: logunit     ! logging unit number
     integer(IN)      , intent(out)   :: nxg         ! global dim i-direction
     integer(IN)      , intent(out)   :: nyg         ! global dim j-direction
+    logical, intent(out),optional   :: flood
 
     !--- local variables ---
     integer(IN)              :: ierr          ! error code
@@ -68,7 +69,7 @@ contains
     integer(IN)              :: nproc_x
     integer(IN)              :: seg_len
     integer(IN)              :: decomp_type
-    logical                  :: flood=.false. ! rof flood flag
+    logical                  :: lflood=.false.
 
     !--- formats ---
     character(*), parameter :: F00   = "('(',a,'_init_mct) ',8a)"
@@ -89,7 +90,11 @@ contains
 
     call dead_read_inparms(model, mpicom, my_task, master_task, &
        inst_index, inst_suffix, inst_name, logunit, &
-       nxg, nyg, decomp_type, nproc_x, seg_len, flood)
+       nxg, nyg, decomp_type, nproc_x, seg_len, lflood)
+
+    if (present(flood)) then
+      flood=lflood
+    endif
 
     ! Initialize grid
 

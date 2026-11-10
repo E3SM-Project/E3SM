@@ -59,7 +59,7 @@ module shal_movie_mod
        nf_global_attribute, &
        nf_output_init_complete,  &
        nf_advance_frame, &
-       nf_close_all, &
+       nf_close_files, nf_finalize_pio, &
        nf_get_frame, &
        nf_put_var => nf_put_var_netcdf, &
        iodesc2d, iodesc3d, iodescT
@@ -89,6 +89,7 @@ private
 
 ! local size of variable block for output
   type(nf_handle), target, save :: ncdf(max_output_streams)
+  logical, save :: decomps_inited = .false.
   integer :: nxyp
 contains
   subroutine GetDOF(elem, gcols, nz, compdof)
@@ -156,6 +157,7 @@ contains
     count=-1
     call PIO_initDecomp(PIOFS,pio_double,(/1/),&
          compDOF(1:1),IOdescT)
+    decomps_inited = .true.
     deallocate(compdof)
 
 
@@ -476,9 +478,22 @@ endif
   end subroutine shal_movie_output
 
   subroutine shal_movie_finish
+    use pio, only : pio_freedecomp
+    use common_io_mod, only : PIOFS
     integer :: istat(4)
 
-    call nf_close_all(ncdf)
+    ! Close the files first (this flushes pending writes), and only then free the io decomps,
+    ! which must happen before finalizing the iosystem. Otherwise they would be released after
+    ! MPI_Finalize, freeing their MPI datatypes too late.
+    call nf_close_files(ncdf)
+    ! The decomps only exist if shal_movie_init was called (it is skipped, e.g., for restart runs)
+    if (decomps_inited) then
+      call pio_freedecomp(PIOFS, iodesc2d)
+      call pio_freedecomp(PIOFS, iodesc3d)
+      call pio_freedecomp(PIOFS, iodescT)
+      decomps_inited = .false.
+    endif
+    call nf_finalize_pio()
     istat=0
   end subroutine shal_movie_finish
 

@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_cloud_properties_f(d);
-      }
-      else {
-        zm_cloud_properties(d);
-      }
+      zm_cloud_properties(d);
     }
 
     const auto margin = std::numeric_limits<Real>::epsilon() *

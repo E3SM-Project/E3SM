@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmDowndraftProperties : public UnitWrap::UnitT
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_downdraft_properties_f(d);
-      }
-      else {
-        zm_downdraft_properties(d);
-      }
+      zm_downdraft_properties(d);
     }
 
     // TODO - Remove?

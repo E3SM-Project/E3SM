@@ -25,9 +25,10 @@ public:
       : InferenceBackend(config) {}
   ~StubBackend() override = default;
 
+  using InferenceBackend::infer;
+
   /// @copydoc InferenceBackend::infer
-  bool infer(const double *inputs, double *outputs,
-             int batch_size = 1) override;
+  bool infer(const TensorMap &inputs, TensorMap &outputs) override;
 
   /// @copydoc InferenceBackend::finalize
   void finalize() override;

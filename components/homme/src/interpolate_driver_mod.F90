@@ -15,7 +15,7 @@
 module interpolate_driver_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only : file_desc_t, var_desc_t , io_desc_t, & ! _EXTERNAL
-   pio_get_att, pio_setdebuglevel, pio_closefile, &
+   pio_get_att, pio_setdebuglevel, pio_closefile, pio_freedecomp, &
    pio_put_att, pio_global, pio_put_var, pio_iotask_rank, &
    pio_read_darray, pio_setframe, pio_get_var, &
    PIO_OFFSET_KIND, pio_char, &
@@ -82,6 +82,8 @@ module interpolate_driver_mod
   type(nf_handle), private, target, save :: ncdf(max_output_streams)
 !  type(io_desc_t), pointer :: iodesc3d, iodesc2d, iodesc3dp1
   type(io_desc_t) , save:: iodesc3d, iodesc2d, iodesc3dp1
+  ! Whether the decomps above are currently initialized (and need to be freed)
+  logical, save :: decomps_inited = .false.
 
 #endif
 
@@ -95,6 +97,7 @@ contains
     !  use interpolate_mod
     use dof_mod
     use interpolate_mod, only : interpdata_t
+    use pio_io_mod, only : nf_close
     !  use domain_mod, only : domain1d_t, decompose
     !  use thread_mod, only : omp_get_thread_num
     !  use reduction_mod, only : reductionbuffer_ordered_1d_t
@@ -131,7 +134,9 @@ contains
           if (hybrid%par%masterproc) print *,'interpolating...'
           call interpolate_vars(infile, outfile, elem, hybrid%par, interpdata)
           call pio_closefile(infile%fileid)
-          call pio_closefile(outfile%fileid)
+          ! Closing the output file via nf_close also frees its io decomps
+          call nf_close(outfile)
+          call free_io_decomps()
           call free_infile(infile)
           deallocate(interpdata)
        end if
@@ -140,6 +145,17 @@ contains
   end subroutine interpolate_driver
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
+  ! Free the module-level io decomps. This must be called after closing the files that used them
+  ! (closing flushes pending writes, which need the decomps), and before MPI_Finalize.
+  subroutine free_io_decomps()
+    if (decomps_inited) then
+      call pio_freedecomp(piofs, iodesc2d)
+      call pio_freedecomp(piofs, iodesc3d)
+      call pio_freedecomp(piofs, iodesc3dp1)
+      decomps_inited = .false.
+    endif
+  end subroutine free_io_decomps
+
   subroutine free_infile(infile)
     type(file_t), intent(inout) :: infile
 
@@ -280,6 +296,7 @@ contains
     call getcompdof(ldof, elem, nlev+1)
     call PIO_initDecomp(piofs,pio_double,(/ncols,nlev+1/), &
          ldof, iodesc3dp1)
+    decomps_inited = .true.
 
     deallocate(ldof)
 
@@ -912,6 +929,7 @@ contains
     call freeedgebuffer(edge)
 
     call pio_closefile(infile%fileid)
+    call free_io_decomps()
     call free_infile(infile)
 #endif
   end subroutine pio_read_phis
@@ -1234,7 +1252,7 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq
+    use dimensions_mod, only: nelemd, np, npsq
     use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dof_mod, only: putuniquepoints
@@ -1302,6 +1320,7 @@ contains
     call freeedgebuffer(edge)
 
     call pio_closefile(infile%fileid)
+    call free_io_decomps()
     call free_infile(infile)
 #endif
   end subroutine read_gll_topo_file
@@ -1310,7 +1329,7 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use common_io_mod, only: varname_len, io_stride, num_io_procs, num_agg
+    use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use control_mod, only: max_string_len
@@ -1372,11 +1391,13 @@ contains
        stat = pio_inq_varid(fileid, fieldnames(fldi), vardesc)
        if (stat /= 0) then
           if (par%masterproc) print *, 'read_physgrid_topo: could not find var', fieldnames(fldi)
+          call pio_freedecomp(piofs, iodesc2d)
           return
        end if
        call pio_read_darray(fileid, vardesc, iodesc2d, raw, stat)
        if (stat /= 0) then
           if (par%masterproc) print *, 'read_physgrid_topo: pio_read_darray returned stat', stat
+          call pio_freedecomp(piofs, iodesc2d)
           return
        end if
        do ie = 1,nelemd
@@ -1386,6 +1407,7 @@ contains
     deallocate(raw)
 
     call pio_closefile(fileid)
+    call pio_freedecomp(piofs, iodesc2d)
     stat = 0
 #endif
   end subroutine read_physgrid_topo_file
@@ -1397,10 +1419,10 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+    use dimensions_mod, only: nelemd, np
     use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
-    use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
+    use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio, nf_close
     use control_mod, only: max_string_len
 #endif
 
@@ -1472,7 +1494,8 @@ contains
     ! Write GLL field PHIS_d.
     call write_gll_field(elem, ncdf(1), gll_fields(:,:,:,1), ncdf(1)%varlist(nvar))
 
-    call pio_closefile(ncdf(1)%fileid)
+    ! nf_close closes the file and frees its io decomps
+    call nf_close(ncdf(1))
     call restore_output_vars(save_state)
 #endif
   end subroutine write_physgrid_topo_file
@@ -1482,10 +1505,10 @@ contains
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+    use dimensions_mod, only: nelemd
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use common_io_mod, only: varname_len
-    use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
+    use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio, nf_close
     use control_mod, only: max_string_len
 #endif
 
@@ -1548,7 +1571,8 @@ contains
        end do
     end if
 
-    call pio_closefile(ncdf(1)%fileid)
+    ! nf_close closes the file and frees its io decomps
+    call nf_close(ncdf(1))
     call restore_output_vars(save_state)
 #endif
   end subroutine write_physgrid_smoothed_phis_file

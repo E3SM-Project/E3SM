@@ -1,9 +1,8 @@
 name: eamxx-scripts
 
 on:
-  # Runs on PRs against master, but only if they touch eamxx scripts
+  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
   pull_request:
-    branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
     paths:
       - 'components/eamxx/scripts/**'
@@ -37,26 +36,25 @@ env:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
-  cpu-gcc:
-    runs-on:  [self-hosted, gcc, ghci-snl-cpu]
+  gnu:
+    runs-on:  [self-hosted, gnu, e3sm]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Run test
         run: |
           cd components/eamxx
           if [ "${{ env.submit }}" == "true" ]; then
-            ./scripts/scripts-ctest-driver -s -m ghci-snl-cpu
+            ./scripts/scripts-ctest-driver -s -m ghci-gnu
           else
-            ./scripts/scripts-tests -f -m ghci-snl-cpu
-            ./scripts/cime-nml-tests
+            ./scripts/scripts-ctest-driver -m ghci-gnu
           fi

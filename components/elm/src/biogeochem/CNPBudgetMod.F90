@@ -334,18 +334,18 @@ module CNPBudgetMod
   real(r8), public :: p_budg_stateG(p_s_size, p_size) ! global sum, valid only on root pe
 
   !----- formats -----
-  character(*),parameter :: C_FA0  = "('    ',12x,(42x,a10,2x),' | ',(3x,a10,2x))"
-  character(*),parameter :: C_FF = "('    ',a51,f15.8,' | ',f18.2)"
-  character(*),parameter :: FF2= "('    ',a12,a15,' | ',f18.2)"
-  character(*),parameter :: C_FS = "('    ',a12,7(f18.2),26x,' | ',(f18.2))"
-  character(*),parameter :: C_FS0= "('    ',12x,8(a19),' | ',(a19))"
-  character(*),parameter :: C_FS2= "('    ',a12,67x,f18.2,67x,' | ',f18.2)"
-  character(*),parameter :: C_FS3= "('    ',a12,8(f18.2),8x,' | ',(f18.2))"
-  character(*),parameter :: C_FS_2 = "('    ',a25,f15.2,5x,f15.2,5x,' | ',f18.2)"
-  character(*),parameter :: C_SA0  = "('    ',33x,2(5x,a3,8x),' | ',(8x,a12,2x))"
-  character(*),parameter :: C_FS2_2= "('    ',a12,17x,f18.2,18x,' | ',f18.2)"
-  character(*),parameter :: C_SA0_2= "('    ',31x,2(5x,a3,9x),' |',(8x,a12,2x))"
-  character(*),parameter :: C_FS3_3= "('    ',a12,53x,' | ',(f18.2))"
+  character(*),parameter :: C_FA0   = "('    ',12x,(40x,a12,2x),' | ',(3x,a12))"
+  character(*),parameter :: C_FF    = "('    ',a51,f15.8,' | ',f18.2)"
+  character(*),parameter :: FF2     = "('    ',a12,a15,' | ',f18.2)"
+  character(*),parameter :: C_FS    = "('    ',a12,7(f18.2),26x,' | ',(f18.2))"
+  character(*),parameter :: C_FS0   = "('    ',12x,8(a19),' | ',(a19))"
+  character(*),parameter :: C_FS2   = "('    ',a12,67x,f18.2,67x,' | ',f18.2)"
+  character(*),parameter :: C_FS3   = "('    ',a12,8(f18.2),8x,' | ',(f18.2))"
+  character(*),parameter :: C_FS_2  = "('    ',a25,2(2x,f20.2),2x,' | ',f18.2)"
+  character(*),parameter :: C_SA0   = "('    ',33x,2(5x,a3,8x),' | ',(8x,a12,2x))"
+  character(*),parameter :: C_FS2_2 = "('    ',a12,23x,f18.2,18x,' | ',f18.2)"
+  character(*),parameter :: C_SA0_2 = "('    ',25x,2(13x,a3,6x),2x,' | ',(6x,a12))"
+  character(*),parameter :: C_FS3_3 = "('    ',a12,53x,' | ',(f18.2))"
 
 contains
 
@@ -904,7 +904,7 @@ contains
        budg_stateG(s_c_error,ip) *unit_conversion
 
 
-    write(iulog,'(70("-"),"|",23("-"))')
+    write(iulog,'(76("-"),"|",19("-"))')
 
     write(iulog,C_FS2_2)'       *SUM*', &
          (budg_stateG(s_totpftc_end           ,ip) - budg_stateG(s_totpftc_beg          ,ip))*unit_conversion + &
@@ -931,7 +931,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
-    write(iulog,'(70("-"),"|",23("-"))')
+    write(iulog,'(76("-"),"|",19("-"))')
 
   end subroutine CarbonBudget_Message
 

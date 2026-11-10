@@ -31,9 +31,9 @@ CONTAINS
     !----- local -----
 
     ! --- Memory stats ---
-    integer :: msize                   ! memory size (high water)
-    integer :: mrss0,mrss1,mrss2       ! temporary rss
-    integer :: mshare,mtext,mdatastack
+    integer(8) :: msize                ! memory size (high water)
+    integer(8) :: mrss0,mrss1,mrss2    ! temporary rss
+    integer(8) :: mshare,mtext,mdatastack
     logical :: lprt
     integer :: ierr
 
@@ -95,8 +95,8 @@ CONTAINS
     logical, optional :: prt
 
     !----- local ---
-    integer :: msize,mrss
-    integer :: mshare,mtext,mdatastack
+    integer(8) :: msize,mrss
+    integer(8) :: mshare,mtext,mdatastack
     integer :: ierr
     integer :: GPTLget_memusage, GPTLprint_memusage
 

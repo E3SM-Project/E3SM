@@ -242,7 +242,6 @@ OPTIONS
      -version                 Echo the SVN tag name used to check out this ELM distribution.
      -vichydro                Toggle to turn on VIC hydrologic parameterizations (default is off)
                               This turns on the namelist variable: use_vichydro
-     -betr_mode               Turn on betr model for tracer transport in soil. [on|off] default is off.
      -solar_rad_scheme "value"  Type of solar radiation scheme
                                 pp = Plane-Parallel
                                 top = Subgrid topographic parameterization
@@ -313,7 +312,6 @@ sub process_commandline {
                envxml_dir            => ".",
                vichydro              => 0,
                maxpft                => "default",
-               betr_mode             => "default",
                methane               => 0,
                nutrient              => "default",
                nutrient_comp_pathway => "default",
@@ -368,7 +366,6 @@ sub process_commandline {
              "maxpft=i"                  => \$opts{'maxpft'},
              "v|verbose"                 => \$opts{'verbose'},
              "version"                   => \$opts{'version'},
-             "betr_mode=s"               => \$opts{'betr_mode'},
              "methane"                   => \$opts{'methane'},
              "nutrient=s"                => \$opts{'nutrient'},
              "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
@@ -701,7 +698,6 @@ sub process_namelist_commandline_options {
   setup_cmdl_fates_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_bgc_spinup($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_vichydro($opts, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_cmdl_betr_mode($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_cmdl_solar_rad_scheme($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
 }
 
@@ -821,6 +817,7 @@ sub setup_cmdl_fates_mode {
                      "use_fates_ed_prescribed_phys",
                      "use_fates_fixed_biogeog",
                      "use_fates_inventory_init",
+		     "use_fates_dbh_init",
                      "use_fates_luh",
                      "use_fates_lupft",
                      "use_fates_nocomp",
@@ -841,7 +838,8 @@ sub setup_cmdl_fates_mode {
                      "fates_regeneration_model",
                      "fates_hydro_solver",
                      "fates_radiation_model",
-                     "fates_electron_transport_model");
+                     "fates_electron_transport_model",
+                     "fates_lu_transition_logic");
 
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
@@ -902,6 +900,10 @@ sub setup_cmdl_fates_mode {
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
+       $var = "use_fates_dbh_init";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
        $var = "use_fates_managed_fire";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
@@ -930,49 +932,6 @@ sub setup_cmdl_fates_mode {
     }
   }
 }
-
-#-------------------------------------------------------------------------------
-sub setup_cmdl_betr_mode {
-  #
-  # call this at least after crop check is called
-  #
-  my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-
-  my $val;
-  my $var = "betr_mode";
-
-  $val = $opts->{$var};
-  $nl_flags->{'betr_mode'} = $val;
-
-  if ( $nl_flags->{'crop'} eq "on" ) {
-      if ( $nl_flags->{$var} == 1 ) {
-	  # BeTR should not be used with crop
-	  fatal_error("** Cannot turn betr mode on with crop \n" );
-      }
-  } else {
-
-    $var = "use_betr";
-    $nl_flags->{$var} = ".false.";
-    if ($nl_flags->{'betr_mode'} eq "on") {
-      message("Using BETR (Reactive Transport).");
-      $val = ".true.";
-      $nl_flags->{$var} = $val;
-    }
-    if ( defined($nl->get_value($var)) && $nl->get_value($var) ne $val ) {
-      fatal_error("$var is inconsistent with the commandline setting of -betr_mode");
-    }
-    if ( $nl_flags->{$var} eq ".true." ) {
-      my $group = $definition->get_group_name($var);
-      $nl->set_variable_value($group, $var, $val);
-      if (  ! $definition->is_valid_value( $var, $val ) ) {
-        my @valid_values   = $definition->get_valid_values( $var );
-        fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
-      }
-
-    }
-  }
-}
-
 
 #-------------------------------------------------------------------------------
 sub setup_cmdl_check_bgc {
@@ -3438,6 +3397,7 @@ sub setup_logic_fates {
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
                    "use_fates_inventory_init",
+		   "use_fates_dbh_init",
                    "use_fates_lupft",
                    "use_fates_planthydro",
                    "use_fates_potentialveg",
@@ -3453,7 +3413,8 @@ sub setup_logic_fates {
                    "fates_regeneration_model",
                    "fates_hydro_solver",
                    "fates_radiation_model",
-	                 "fates_electron_transport_model");
+	               "fates_electron_transport_model",
+                   "fates_lu_transition_logic");
 
     foreach my $var (@list) {
        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
@@ -3464,6 +3425,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
+                                                                                      'fates_lu_transition_logic'=>$nl->get_value('fates_lu_transition_logic'),
                                                                                       'fates_harvest_mode'=>remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode')) );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp', 'use_fates'=>$nl_flags->{'use_fates'},
 	                                                                              'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
@@ -3500,6 +3462,15 @@ sub setup_logic_fates {
           }
        }
     }
+
+    # Make sure that dbh initialization is only active if FATES is in no-comp mode
+    my $var = "use_fates_dbh_init";
+    if ( defined($nl->get_value($var))  ) {
+	if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
+	    fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
+	}
+    }
+    
     # make sure that fates landuse x pft mode has the necessary run mode configurations
     # and add the necessary landuse x pft static mapping data default if not defined
     my $var = "use_fates_lupft";
@@ -3630,7 +3601,7 @@ sub write_output_files {
   {
     @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm
                  elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks
-                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm elm_mosart);
+                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm elm_mosart);
     #@groups = qw(elm_inparm elm_canopyhydrology_inparm elm_soilhydrology_inparm
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on

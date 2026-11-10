@@ -19,7 +19,8 @@ void Functions<S,D>::zm_transport_momentum(
   const Workspace& workspace,
   const Int& pver, // number of mid-point levels
   const Int& pverp, // number of interface levels
-  const uview_2d<const Real>& wind_in, // input Momentum array
+  const Real& dt, // time step in seconds : 2*delta_t
+  const uview_2d<const Real>& wind_mid, // input Momentum array (nwind, pver)
   const Int& nwind, // number of tracers to transport
   const uview_1d<const Real>& mu, // mass flux up
   const uview_1d<const Real>& md, // mass flux down
@@ -28,35 +29,31 @@ void Functions<S,D>::zm_transport_momentum(
   const uview_1d<const Real>& ed, // mass entraining from downdraft
   const uview_1d<const Real>& dp, // gathered pressure delta between interfaces
   const Int& jt, // index of cloud top for each column
-  const Int& mx, // index of cloud top for each column
-  const Int& ideep, // gathering array
-  const Int& il1g, // gathered min ncol index
-  const Int& il2g, // gathered max ncol index
-  const Real& dt, // time step in seconds : 2*delta_t
+  const Int& mx, // index of max MSE (i.e. cloud base)
   const Int& ktm, // Highest top level for any column
   const Int& kbm, // Highest bottom level for any column
   // Outputs
   const uview_2d<Real>& wind_tend, // output momentum tendency
-  const uview_2d<Real>& pguall, // apparent force from  updraft PG
-  const uview_2d<Real>& pgdall, // apparent force from  downdraft PG
-  const uview_2d<Real>& icwu, // in-cloud winds in updraft
-  const uview_2d<Real>& icwd, // in-cloud winds in downdraft
+  // unused diagnostics - commented out but kept for easy restoration
+  // const uview_2d<Real>& pguall, // apparent force from  updraft PG
+  // const uview_2d<Real>& pgdall, // apparent force from  downdraft PG
+  // const uview_2d<Real>& icwu, // in-cloud winds in updraft
+  // const uview_2d<Real>& icwd, // in-cloud winds in downdraft
   const uview_1d<Real>& seten) // dry energy tendency)
 {
 
   // Allocate temporary arrays (2D: pver x nwind or pverp x nwind)
-  uview_1d<Real> wind0_1d, windf_1d, wind_mid_1d, wind_int_1d, wind_int_d_1d, wind_int_u_1d;
+  uview_1d<Real> wind0_1d, windf_1d, wind_int_1d, wind_int_d_1d, wind_int_u_1d;
   uview_1d<Real> wind_tend_tmp_1d, mududp_1d, mddudp_1d, pgu_1d, pgd_1d, mflux_1d;
-  workspace.template take_many_contiguous_unsafe<12>(
-    {"wind0", "windf", "wind_mid", "wind_int", "wind_int_d", "wind_int_u",
+  workspace.template take_many_contiguous_unsafe<11>(
+    {"wind0", "windf", "wind_int", "wind_int_d", "wind_int_u",
      "wind_tend_tmp", "mududp", "mddudp", "pgu", "pgd", "mflux"},
-    {&wind0_1d, &windf_1d, &wind_mid_1d, &wind_int_1d, &wind_int_d_1d, &wind_int_u_1d,
+    {&wind0_1d, &windf_1d, &wind_int_1d, &wind_int_d_1d, &wind_int_u_1d,
      &wind_tend_tmp_1d, &mududp_1d, &mddudp_1d, &pgu_1d, &pgd_1d, &mflux_1d});
 
   uview_2d<Real>
     wind0(wind0_1d.data(), nwind, pver),
     windf(windf_1d.data(), nwind, pver),
-    wind_mid(wind_mid_1d.data(), nwind, pver),
     wind_int(wind_int_1d.data(), nwind, pver),
     wind_int_d(wind_int_d_1d.data(), nwind, pver),
     wind_int_u(wind_int_u_1d.data(), nwind, pver),
@@ -71,11 +68,12 @@ void Functions<S,D>::zm_transport_momentum(
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver*nwind), [&] (const Int& idx) {
     const Int k = idx / nwind;
     const Int m = idx % nwind;
-    wind_tend(k,m) = 0;
-    pguall(k,m) = 0;
-    pgdall(k,m) = 0;
-    icwu(k,m) = wind_in(k,m);
-    icwd(k,m) = wind_in(k,m);
+    wind_tend(m,k) = 0;
+    // unused diagnostics - commented out but kept for easy restoration
+    // pguall(m,k) = 0;
+    // pgdall(m,k) = 0;
+    // icwu(m,k) = wind_mid(m,k);
+    // icwd(m,k) = wind_mid(m,k);
     wind0(m,k) = 0;
     windf(m,k) = 0;
     mflux(m,k) = 0;
@@ -92,9 +90,8 @@ void Functions<S,D>::zm_transport_momentum(
   // Loop over each wind component using team parallelism
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nwind), [&] (const Int& m) {
 
-    // Gather up the winds
+    // Save the initial winds
     for (Int k = 0; k < pver; ++k) {
-      wind_mid(m,k) = wind_in(k,m);
       wind0(m,k) = wind_mid(m,k);
     }
 
@@ -194,12 +191,13 @@ void Functions<S,D>::zm_transport_momentum(
 
     // Initialize to zero everywhere, then scatter tendency back to full array
     for (Int k = 0; k < pver; ++k) {
-      wind_tend(k,m) = wind_tend_tmp(m,k);
+      wind_tend(m,k) = wind_tend_tmp(m,k);
       // Output apparent force on the mean flow from pressure gradient
-      pguall(k,m) = -pgu(m,k);
-      pgdall(k,m) = -pgd(m,k);
-      icwu(k,m) = wind_int_u(m,k);
-      icwd(k,m) = wind_int_d(m,k);
+      // unused diagnostics - commented out but kept for easy restoration
+      // pguall(m,k) = -pgu(m,k);
+      // pgdall(m,k) = -pgd(m,k);
+      // icwu(m,k) = wind_int_u(m,k);
+      // icwd(m,k) = wind_int_d(m,k);
     }
 
     // Calculate momentum flux
@@ -246,8 +244,8 @@ void Functions<S,D>::zm_transport_momentum(
 
   team.team_barrier();
 
-  workspace.template release_many_contiguous<12>(
-    {&wind0_1d, &windf_1d, &wind_mid_1d, &wind_int_1d, &wind_int_d_1d, &wind_int_u_1d,
+  workspace.template release_many_contiguous<11>(
+    {&wind0_1d, &windf_1d, &wind_int_1d, &wind_int_d_1d, &wind_int_u_1d,
      &wind_tend_tmp_1d, &mududp_1d, &mddudp_1d, &pgu_1d, &pgd_1d, &mflux_1d});
 }
 

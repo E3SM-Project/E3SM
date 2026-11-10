@@ -78,12 +78,28 @@ subview (const int idim, const int k, const bool dynamic) const {
     props.m_last_extent = m_layout.dim(idim);
     props.m_pack_size_max = 1;
   } else {
-    // We are keeping the last dim, so same last extent and max pack size
+    // We are keeping the last dim, so same value sizes, last extent, and max pack size
     props.m_last_extent = m_last_extent;
     props.m_pack_size_max = m_pack_size_max;
+    props.m_value_type_sizes = m_value_type_sizes;
   }
   // give it an invalid value because subviews don't get allocated
   props.m_alloc_size = -1;
+  return props;
+}
+
+FieldAllocProp FieldAllocProp::broadcast (const layout_type& tgt) const
+{
+  EKAT_REQUIRE_MSG (is_committed(),
+      "Error! Broadcast requires alloc properties to be committed.\n");
+
+  FieldAllocProp props(*this);
+  props.m_layout = tgt.clone();
+
+  // Broadcasting is done via stride-0 views, so neither contiguity nor LayoutRight hold
+  props.m_contiguous = false;
+  props.m_allows_layout_right = false;
+
   return props;
 }
 

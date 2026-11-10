@@ -252,60 +252,60 @@ class compute_sphere_operator_test_ml {
   ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>
       vector_input_d;
   ExecViewManaged<Real * [2][2][NP][NP]> tensor_d;
-  ExecViewManaged<Real * [2][3][NP][NP]> vec_sph2cart_d;
+  ExecViewManaged<Real * [3][3][NP][NP]> vec_sph2cart_d;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>
       scalar_output_d;
   ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>
       vector_output_d;
   // host
   // rely on fact NUM_PHYSICAL_LEV=NUM_LEV*VECTOR_SIZE
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>::HostMirror
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>::host_mirror_type
       scalar_input_host,
       scalar_input_COPY2_host;
   const int scalar_input_len =
       NUM_PHYSICAL_LEV * NP * NP;  // temp code
 
-  ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>::HostMirror
+  ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>::host_mirror_type
       vector_input_host;
   const int vector_input_len =
       NUM_PHYSICAL_LEV * 2 * NP * NP;
 
-  ExecViewManaged<Real * [2][2][NP][NP]>::HostMirror d_host;
+  ExecViewManaged<Real * [2][2][NP][NP]>::host_mirror_type d_host;
   const int d_len = 2 * 2 * NP * NP;  // temp code
 
-  ExecViewManaged<Real * [2][2][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [2][2][NP][NP]>::host_mirror_type
       dinv_host;
   const int dinv_len = 2 * 2 * NP * NP;  // temp code
 
-  ExecViewManaged<Real * [2][2][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [2][2][NP][NP]>::host_mirror_type
       metinv_host;
   const int metinv_len = 2 * 2 * NP * NP;  // temp code
 
-  ExecViewManaged<Real * [NP][NP]>::HostMirror metdet_host;
+  ExecViewManaged<Real * [NP][NP]>::host_mirror_type metdet_host;
   const int metdet_len = NP * NP;
 
-  ExecViewManaged<Real * [NP][NP]>::HostMirror
+  ExecViewManaged<Real * [NP][NP]>::host_mirror_type
       spheremp_host;
   const int spheremp_len = NP * NP;
 
-  ExecViewManaged<Real [NP][NP]>::HostMirror mp_host;
+  ExecViewManaged<Real [NP][NP]>::host_mirror_type mp_host;
   const int mp_len = NP * NP;
 
-  ExecViewManaged<Real[NP][NP]>::HostMirror dvv_host;
+  ExecViewManaged<Real[NP][NP]>::host_mirror_type dvv_host;
   const int dvv_len = NP * NP;
 
-  ExecViewManaged<Real * [2][2][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [2][2][NP][NP]>::host_mirror_type
       tensor_host;
   const int tensor_len = 2 * 2 * NP * NP;  // temp code
 
-  ExecViewManaged<Real * [2][3][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [3][3][NP][NP]>::host_mirror_type
       vec_sph2cart_host;
   const int vec_sph2cart_len =
-      2 * 3 * NP * NP;  // temp code
+      3 * 3 * NP * NP;  // temp code
 
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>::HostMirror
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>::host_mirror_type
       scalar_output_host;
-  ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>::HostMirror
+  ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>::host_mirror_type
       vector_output_host;
 
   SphereOperators     sphere_ops;
@@ -747,7 +747,7 @@ TEST_CASE("divergence_sphere_update",
 
   // divergence_sphere_update uses the output as part of input (if add_hyperviscosity!=0),
   // so create a copy here for fortran
-  decltype(testing_div_update_ml.scalar_output_d)::HostMirror scalar_output_host_copy("",elements);
+  decltype(testing_div_update_ml.scalar_output_d)::host_mirror_type scalar_output_host_copy("",elements);
   Kokkos::deep_copy(scalar_output_host_copy, testing_div_update_ml.scalar_output_d);
 
   testing_div_update_ml.run_functor_divergence_sphere_update();
@@ -1111,7 +1111,7 @@ TEST_CASE(
         Real dvvf[NP][NP];
         Real dinvf[2][2][NP][NP];
         Real tensorf[2][2][NP][NP];
-        Real vec_sph2cartf[2][3][NP][NP];
+        Real vec_sph2cartf[3][3][NP][NP];
         Real sphf[NP][NP];
 
         for(int _i = 0; _i < NP; _i++)

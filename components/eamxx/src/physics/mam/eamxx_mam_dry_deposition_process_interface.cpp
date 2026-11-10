@@ -3,14 +3,11 @@
 // Drydep functions are stored in the following hpp file
 #include <physics/mam/eamxx_mam_dry_deposition_functions.hpp>
 
-// For reading fractional land use file
-#include <physics/mam/readfiles/fractional_land_use.hpp>
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
 namespace scream {
-
-using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params) {
@@ -64,7 +61,6 @@ void MAMDryDep::create_requests() {
       LEV, num_aero_modes, mam_coupling::num_modes_tag_name());
 
   using namespace ekat::units;
-  auto nondim = ekat::units::Units::nondimensional();
 
   auto m3 = m * m * m;  // meter cubed
 
@@ -88,7 +84,7 @@ void MAMDryDep::create_requests() {
   //----------- Variables from microphysics scheme -------------
 
   // Total cloud fraction [fraction] (Require only for building DS)
-  add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d_mid, none, grid_name);
 
   //----------- Variables from coupler (land component)---------
   // Obukhov length [m]
@@ -98,7 +94,7 @@ void MAMDryDep::create_requests() {
   add_field<Required>("ustar", scalar2d, m / s, grid_name);
 
   // Land fraction [fraction]
-  add_field<Required>("landfrac", scalar2d, nondim, grid_name);
+  add_field<Required>("landfrac", scalar2d, none, grid_name);
 
   // Friction velocity from land model [m/s]
   add_field<Required>("fv", scalar2d, m / s, grid_name);
@@ -109,11 +105,11 @@ void MAMDryDep::create_requests() {
   //----------- Variables from coupler (ice component)---------
 
   // Ice fraction [unitless]
-  add_field<Required>("icefrac", scalar2d, nondim, grid_name);
+  add_field<Required>("icefrac", scalar2d, none, grid_name);
 
   //----------- Variables from coupler (ocean component)---------
   // Ocean fraction [unitless]
-  add_field<Required>("ocnfrac", scalar2d, nondim, grid_name);
+  add_field<Required>("ocnfrac", scalar2d, none, grid_name);
 
   //----------- Variables from other mam4xx processes ------------
   // Geometric mean wet diameter for number distribution [m]
@@ -147,26 +143,7 @@ void MAMDryDep::create_requests() {
                       vector2d_pcnst, 1 / m2 / s, grid_name);
 
   // Fractional land use [fraction]
-  add_field<Computed>("fraction_landuse", vector2d_class, nondim, grid_name);
-  // -------------------------------------------------------------
-  // setup to enable reading fractional land use file
-  // -------------------------------------------------------------
-
-  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
-  const std::string frac_landuse_data_file =
-      m_params.get<std::string>("fractional_land_use_file");
-
-  // Field to be read from file
-  const std::string field_name = "fraction_landuse";
-
-  // Dimensions of the filed
-  const std::string dim_name1 = "ncol";
-  const std::string dim_name2 = "class";
-
-  // initialize the file read
-  FracLandUseFunc::init_frac_landuse_file_read(
-      ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
-      mapping_file, horizInterp_, dataReader_);  // output
+  add_field<Computed>("fraction_landuse", vector2d_class, none, grid_name);
 
 }  // set_grids
 
@@ -298,7 +275,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   // interface
   add_interval_checks();
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -322,16 +299,29 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Read fractional land use data
   //-----------------------------------------------------------------
-  frac_landuse_fm_ = get_field_out("fraction_landuse").get_view<Real **>();
-  // This data is time-independent, we read all data here for the
-  // entire simulation
-  FracLandUseFunc::update_frac_land_use_data_from_file(
-      dataReader_, *horizInterp_,
-      frac_landuse_);  // output
-
-  // Copy fractional landuse values to a FM array to be used by other processes
-  Kokkos::deep_copy(frac_landuse_fm_, frac_landuse_);
+  read_fractional_land_use_data();
 }  // initialize_impl
+
+// =========================================================================================
+void MAMDryDep::read_fractional_land_use_data() {
+  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
+  const auto frac_landuse_data_file =
+      m_params.get<std::string>("fractional_land_use_file");
+  std::vector<Field> frac_landuse_fields = {
+      get_field_out("fraction_landuse")};
+  auto frac_landuse_interp =
+      std::make_shared<DataInterpolation>(grid_, frac_landuse_fields);
+  frac_landuse_interp->set_logger(m_atm_logger);
+  frac_landuse_interp->setup_static_database({frac_landuse_data_file});
+  frac_landuse_interp->create_horiz_remappers(
+      mapping_file == "none" ? "" : mapping_file, m_iop_data_manager);
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  frac_landuse_interp->create_vert_remapper(remap_data);
+  frac_landuse_interp->run();
+
+  frac_landuse_ = get_field_out("fraction_landuse").get_view<const Real **>();
+}
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
@@ -384,7 +374,7 @@ void MAMDryDep::run_impl(const double dt) {
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
                      aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
-                     wet_dens_, dry_atm_, dry_aero_,
+                     wet_dens_, wet_atm_, dry_atm_, dry_aero_,
                      // Inouts-outputs
                      qqcw_,
                      // Outputs

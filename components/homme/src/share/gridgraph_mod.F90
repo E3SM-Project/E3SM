@@ -514,7 +514,7 @@ contains
   implicit none
   type (GridVertex_t), intent(in) :: Vertex(:)
 
-  integer :: i,j,k,l,m,nnbrs,inbrs,nvert
+  integer :: i,j,k,nnbrs,inbrs,nvert
   nvert = SIZE(Vertex)
 
   do i=1,nvert

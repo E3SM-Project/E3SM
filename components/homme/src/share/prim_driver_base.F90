@@ -275,7 +275,6 @@ contains
     ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
-    use physical_constants, only : dd_pi
     ! --------------------------------
 
     implicit none
@@ -733,22 +732,20 @@ contains
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
     use control_mod,          only: runtype, topology, dt_remap_factor, dt_tracer_factor,&
-                                    tstep_type, hypervis_subcycle, &
-                                    hypervis_subcycle_q, hypervis_subcycle_tom, &
                                     transport_alg, prim_step_type
-    use global_norms_mod,     only: test_global_integral, print_cfl, dss_hvtensor
+    use global_norms_mod,     only: print_mesh_stats, print_cfl, dss_hvtensor
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2
-    use time_mod,             only: timelevel_t, tstep, timelevel_init, nendstep, TimeLevel_Qdp
+    use time_mod,             only: timelevel_t, timelevel_init, nendstep, TimeLevel_Qdp
 #ifdef CAM
-    use time_mod,             only: nsplit
+    use time_mod,             only: nsplit, tstep
 #endif
 
 #ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
+    use prim_derived_type_mod ,only : derived_type, initialize, tstep
     use, intrinsic :: iso_c_binding
 #endif
 
@@ -762,10 +759,6 @@ contains
     ! ==================================
     ! Local variables
     ! ==================================
-
-    ! variables used to calculate CFL
-    real (kind=real_kind) :: dt_dyn_vis         ! viscosity timestep used in dynamics
-    real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
 #ifdef CAM
     integer :: k
@@ -811,21 +804,9 @@ contains
 #endif
 
     if (topology == "cube" .OR. topology=='plane') then
-       call test_global_integral(elem, hybrid,nets,nete)
+       call print_mesh_stats(elem, hybrid,nets,nete)
     end if
 
-
-    ! compute timestep seen by viscosity operator:
-    dt_dyn_vis = tstep
-    if (dt_tracer_factor>1 .and. tstep_type == 1) then
-       ! tstep_type==1: RK2 followed by LF.  internal LF stages apply viscosity at 2*dt
-       dt_dyn_vis = 2*tstep
-    endif
-    dt_tracer_vis=tstep*dt_tracer_factor
-
-    ! compute actual viscosity timesteps with subcycling
-    dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
-    dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
 
 #ifdef TRILINOS
 
@@ -964,7 +945,8 @@ contains
     ! apply dss and bilinear projection to tensor coefficients
     call dss_hvtensor(elem,hybrid,nets,nete)
 
-    ! advective and viscious CFL estimates
+    ! advective and viscous CFL estimates, plus dt_dyn/dt_tracer/dt_remap
+    ! timestep-size diagnostics (printed inside print_cfl)
     call print_cfl(elem,hybrid,nets,nete)
 
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
@@ -976,29 +958,6 @@ contains
     endif
 
     if (hybrid%masterthread) then
-       ! CAM has set tstep based on dtime before calling prim_init2(),
-       ! so only now does HOMME learn the timstep.  print them out:
-       write(iulog,'(a,2f9.2)')        "dt_remap: (0=disabled)   ",tstep*dt_remap_factor
-       if (transport_alg > 0) then
-          if (qsize>0) then
-              write(iulog,'(a,2f9.2)') "dt_tracer (SL):          ",tstep*dt_tracer_factor
-          endif
-       elseif(transport_alg == 0) then
-          if (qsize>0) then
-             write(iulog,'(a,2f9.2)')  "dt_tracer (EUL), per RK stage: ", &
-                 tstep*dt_tracer_factor,(tstep*dt_tracer_factor)/2
-          end if
-       endif
-       write(iulog,'(a,2f9.2)')        "dt_dyn:                  ",tstep
-       write(iulog,'(a,2f9.2)')        "dt_dyn (viscosity):      ",dt_dyn_vis
-       write(iulog,'(a,2f9.2)')        "dt_tracer (viscosity):   ",dt_tracer_vis
-       if (hypervis_subcycle_tom==0) then                                                     
-          ! applied with hyperviscosity                                                       
-          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",dt_dyn_vis                                 
-       else                                                                                   
-          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom               
-       endif                                                                 
-
        if (prim_step_type == 2) then
           write(iulog,*) "Running with prim_step_flexible"
        elseif(prim_step_type == 1) then
@@ -1044,7 +1003,7 @@ contains
     use prim_state_mod,     only: prim_printstate
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
-    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp, nsplit, tstep
+    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
 #if USE_OPENACC
     use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
 #endif
@@ -1551,7 +1510,7 @@ contains
   use control_mod,        only : use_moisture, dt_remap_factor
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
-  use physical_constants, only : cp, g, kappa, Rgas, p0
+  use physical_constants, only : cp, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
 #ifdef HOMMEXX_BFB_TESTING

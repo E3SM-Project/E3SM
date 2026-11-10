@@ -1,3 +1,8 @@
+# Whether the tests should skip the comparison against baselines (cmake option HOMME_SKIP_BASELINE_COMPARE)
+skipBaselineCompare() {
+  [ "${HOMME_SKIP_BASELINE_COMPARE}" = TRUE -o "${HOMME_SKIP_BASELINE_COMPARE}" = ON ]
+}
+
 parseHeader() {
   cat $1 | \
   sed -e "s/\${TEST_NAME}/${TEST_NAME}/g" \
@@ -218,6 +223,15 @@ runTestsStd() {
   SUBMIT_JOB_ID=()
   SUBMIT_TEST=()
 
+  # Collect names of any tests that fail so we can report them all at the end.
+  # Declared local so repeated calls to runTestsStd() don't accumulate failures
+  # across invocations.
+  local -a FAILED_TESTS=()
+
+  # Determine per-test timeout (seconds).  A value of 0 disables the timeout.
+  # The variable is injected by cmake_variables.sh; fall back to 1800 s if unset.
+  local _timelimit="${HOMME_TESTING_TIMELIMIT:-1800}"
+
   # Loop through all of the tests
   for subNum in $(seq 1 ${num_submissions})
   do
@@ -227,6 +241,13 @@ runTestsStd() {
     #echo "subFile=${subFile}"
     subJobName=`basename ${subFile} .sh`
     #echo "subJobName=$subJobName"
+
+    # Extract the MPI rank count from the run script (first "Pure MPI test 1" launch line).
+    local _mpi_n
+    _mpi_n=$(awk '/# Pure MPI test 1/{getline; if (match($0, /-n ([0-9]+)/, a)) print a[1]; exit}' "${subFile}" 2>/dev/null)
+    if [ -z "${_mpi_n}" ]; then
+      _mpi_n="?"
+    fi
 
     # setup file for stdout and stderr redirection
     THIS_STDOUT=${subJobName}.out
@@ -239,21 +260,67 @@ runTestsStd() {
     #cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     cmd="${subFile}"
     echo "$cmd"
-    $cmd
+    # Record per-test start time
+    local _t_start=$(date +%s)
+    # Use timeout to prevent srun from hanging indefinitely on resource errors.
+    if [ "${_timelimit}" -gt 0 ] 2>/dev/null; then
+      timeout "${_timelimit}" $cmd
+    else
+      $cmd
+    fi
     # Get the status of the run
     RUN_STAT=$?
+    local _t_elapsed=$(( $(date +%s) - _t_start ))
+    if [ $RUN_STAT -eq 124 ]; then
+      echo "WARNING: test ${subJobName} timed out after ${_timelimit} seconds (possible srun hang) -- skipping, continuing with remaining tests"
+      printf "TIMING: %-7s %-85s nproc=%-5s elapsed=%ss\n" "${subNum}/${num_submissions}" "${subJobName}" "${_mpi_n}" "${_t_elapsed}"
+      FAILED_TESTS+=( "${subJobName}(timeout)" )
+      continue
+    fi
     # Do some error checking
     if [ $RUN_STAT = 0 ]; then
       # the command was succesful
       echo "test ${subJobName} was run successfully"
+      printf "TIMING: %-7s %-85s nproc=%-5s elapsed=%ss\n" "${subNum}/${num_submissions}" "${subJobName}" "${_mpi_n}" "${_t_elapsed}"
       SUBMIT_TEST+=( "${subJobName}" )
       SUBMIT_JOB_ID+=( "${RUN_PID}" )
     else
-      echo "ERROR: run failed. check out/err files in:"
+      echo "WARNING: run failed for test ${subJobName}. check out/err files in:"
       echo `dirname ${subFile}`
-      exit -7
+      printf "TIMING: %-7s %-85s nproc=%-5s elapsed=%ss\n" "${subNum}/${num_submissions}" "${subJobName}" "${_mpi_n}" "${_t_elapsed}"
+      FAILED_TESTS+=( "${subJobName}(exit=${RUN_STAT})" )
+      continue
     fi
   done
+
+  # After all tests have run, report any failures and exit non-zero if there were any.
+  if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
+    echo ""
+    # Separate timed-out tests from genuinely failed tests for clearer diagnostics.
+    local TIMED_OUT_TESTS=()
+    local TRULY_FAILED_TESTS=()
+    for ft in "${FAILED_TESTS[@]}"; do
+      if [[ "${ft}" == *"(timeout)"* ]]; then
+        TIMED_OUT_TESTS+=( "${ft}" )
+      else
+        TRULY_FAILED_TESTS+=( "${ft}" )
+      fi
+    done
+    echo "ERROR: ${#FAILED_TESTS[@]} test(s) did not pass:"
+    if [ ${#TRULY_FAILED_TESTS[@]} -gt 0 ]; then
+      echo "  FAILED (${#TRULY_FAILED_TESTS[@]} test(s)):"
+      for ft in "${TRULY_FAILED_TESTS[@]}"; do
+        echo "    - ${ft}"
+      done
+    fi
+    if [ ${#TIMED_OUT_TESTS[@]} -gt 0 ]; then
+      echo "  TIMED OUT after ${_timelimit}s (${#TIMED_OUT_TESTS[@]} test(s)):"
+      for ft in "${TIMED_OUT_TESTS[@]}"; do
+        echo "    - ${ft}"
+      done
+    fi
+    exit 1
+  fi
 }
 
 
@@ -353,6 +420,10 @@ if true; then
       ############################################################
       # load the cprnc files for this run
       FILES="${NC_OUTPUT_FILES}"
+      if skipBaselineCompare ; then
+        echo "Test ${TEST_NAME}: comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON)"
+        FILES=""
+      fi
 
       if [ -z "${FILES}" ] ; then
           echo "Test ${TEST_NAME} doesn't specify any baseline comparison tests"
@@ -520,6 +591,10 @@ createAllRunScriptsGeneric() {
       ############################################################
       # load the cprnc files for this run
       FILES="${NC_OUTPUT_FILES}"
+      if skipBaselineCompare ; then
+        echo "Test ${TEST_NAME}: comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON)"
+        FILES=""
+      fi
 
       if [ -z "${FILES}" ] ; then
           echo "Test ${TEST_NAME} doesn't specify any baseline comparison tests"
@@ -647,6 +722,13 @@ execLine() {
   NUM_MPI_PROCS=$3
   OPT="> $4.out 2> $4.err"
 
+  # The status of a run script is the one of its last command. Normally, a failure of an earlier launch of
+  # a multi-launch test is still caught when comparing the output files with the baselines. If that is
+  # disabled, make each launch stop the script (with its exit code) if it fails.
+  if skipBaselineCompare ; then
+    OPT="$OPT || exit \$?"
+  fi
+
   if [ -n "${MPI_RUN_SCRIPT}" ]; then
     echo "${MPI_RUN_SCRIPT} ${NUM_MPI_PROCS} $EXEC $OPT" >> $RUN_SCRIPT
   elif [ -n "${MPI_EXEC}" ]; then
@@ -712,6 +794,10 @@ diffCprncOutput() {
 
   # NC_OUTPUT_FILES is defined in the .sh file
   FILES="${NC_OUTPUT_FILES}"
+  if skipBaselineCompare ; then
+    echo "Test ${TEST_NAME}: comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON)"
+    FILES=""
+  fi
 
   if [ -z "${FILES}" ] ; then
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -832,6 +918,12 @@ echo "##########################################################################
 }
 
 checkBaselineResults() {
+
+  # Nothing to check if we do not compare against baselines
+  if skipBaselineCompare ; then
+    echo "Comparison against baselines is disabled (HOMME_SKIP_BASELINE_COMPARE=ON): not checking baseline files"
+    return 0
+  fi
 
   filesNotFound=false
 

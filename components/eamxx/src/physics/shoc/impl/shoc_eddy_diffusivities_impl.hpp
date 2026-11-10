@@ -3,6 +3,8 @@
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
+#include <cmath>
+
 namespace scream {
 namespace shoc {
 
@@ -52,6 +54,28 @@ void Functions<S,D>::eddy_diffusivities(
 
     tkh(k).set(!condition, Ckh*isotropy(k)*tke(k));
     tk(k).set(!condition,  Ckm*isotropy(k)*tke(k));
+  });
+}
+
+template<typename S, typename D>
+KOKKOS_FUNCTION
+void Functions<S,D>::horizontal_eddy_diffusivities(
+  const MemberType&            team,
+  const Int&                   nlev,
+  const Scalar&                Ckh_horiz,
+  const Scalar&                Ckm_horiz,
+  const Scalar&                grid_dx,
+  const Scalar&                grid_dy,
+  const uview_1d<const Pack>& tke,
+  const uview_1d<Pack>&       eddy_diff_heat_horiz,
+  const uview_1d<Pack>&       eddy_diff_mom_horiz)
+{
+  const Scalar horiz_length = std::sqrt(grid_dx*grid_dy);
+  const Int nlev_pack = ekat::npack<Pack>(nlev);
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
+    const Pack velocity_scale = ekat::sqrt(tke(k));
+    eddy_diff_heat_horiz(k) = Ckh_horiz*horiz_length*velocity_scale;
+    eddy_diff_mom_horiz(k)  = Ckm_horiz*horiz_length*velocity_scale;
   });
 }
 

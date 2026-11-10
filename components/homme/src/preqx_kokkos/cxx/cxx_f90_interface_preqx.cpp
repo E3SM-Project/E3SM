@@ -239,8 +239,7 @@ void init_elements_c (const int& num_elems)
   Elements& e = c.create<Elements> ();
   const SimulationParams& params = c.get<SimulationParams>();
 
-  const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv, /* alloc_gradphis = */ false,
+  e.init (num_elems, /* alloc_gradphis = */ false,
           params.scale_factor, params.laplacian_rigid_factor,
           /* alloc_sphere_coords = */ false);
 
@@ -309,13 +308,17 @@ void init_functors_c ()
 void init_elements_2d_c (const int& ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                          CF90Ptr& spheremp, CF90Ptr& rspheremp,
                          CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
-                         CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart)
+                         CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart,
+                         CF90Ptr &tensorvisc2)
 {
   Elements& e = Context::singleton().get<Elements> ();
-  const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
-  const bool consthv = (params.hypervis_scaling==0.0);
-  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
+  // preqx_kokkos never uses tensorVisc_2 (the sponge-layer tensor
+  // coefficient, only used by theta-l_kokkos), but it is passed through
+  // here (and copied into m_tensorvisc2) so that ElementsGeometry's
+  // initialization is uniform across dycores.
+  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,
+                             vec_sph2cart,nullptr,nullptr,tensorvisc2);
   e.m_geometry.set_phis(ie,phis);
 }
 

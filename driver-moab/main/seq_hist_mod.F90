@@ -16,6 +16,7 @@ module seq_hist_mod
 
   use shr_kind_mod,      only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN
   use shr_kind_mod,      only: CL => SHR_KIND_CL, CS => SHR_KIND_CS
+  use shr_kind_mod,      only: CXX => SHR_KIND_CXX
   use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_datetod2string, shr_cal_ymdtod2string
   use mct_mod           ! adds mct_ prefix to mct lib
@@ -41,12 +42,13 @@ module seq_hist_mod
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ax
 
-  use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid
+  use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid, mbgxid
   use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields,seq_flds_dom_fields
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2a_fields, seq_flds_x2i_fields
   use seq_flds_mod, only: seq_flds_x2l_fields, seq_flds_x2r_fields
-  use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals
+  use seq_flds_mod, only: seq_flds_g2x_fields, seq_flds_x2g_fields
+  use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
 
   use component_type_mod
 
@@ -131,6 +133,11 @@ module seq_hist_mod
   type(mct_aVect), pointer :: xao_ox(:)
   type(mct_aVect), pointer :: xao_ax(:)
   type(mct_aVect), pointer :: o2x_ax(:)
+
+  !--- derived type for aux history accumulator buffers ---
+  type :: avg_buf_type
+     real(r8), allocatable :: data(:,:)  ! (numpts, nflds)
+  end type avg_buf_type
 
   !===============================================================================
 contains
@@ -384,17 +391,16 @@ contains
              deallocate(mask)
           endif
 
-!          ! Ready to uncomment once mbgxid exists
-!          if (glc_present) then
-!             call seq_io_write(hist_file, mbgxid, 'domg',  &
-!                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid)
-!             call seq_io_write(hist_file, mbgxid, 'fracg',  &
-!                  'gfrac:lfrac', whead=whead, wdata=wdata, dims2din=latlonid)
-!             call seq_io_write(hist_file, mbgxid, 'g2x', &
-!                  trim(seq_flds_g2x_fields), nt=1, whead=whead, wdata=wdata, dims2din=latlonid)
-!             call seq_io_write(hist_file, mbgxid, 'x2g', &
-!                  trim(seq_flds_x2g_fields), nt=1, whead=whead, wdata=wdata, dims2din=latlonid)
-!          endif
+          if (glc_present) then
+             call seq_io_write(hist_file, mbgxid, 'domg',  &
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2do=latlonid)
+             call seq_io_write(hist_file, mbgxid, 'fracg',  &
+                  'gfrac:lfrac', whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2din=latlonid)
+             call seq_io_write(hist_file, mbgxid, 'g2x', &
+                  trim(seq_flds_g2x_fields), whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2din=latlonid)
+             call seq_io_write(hist_file, mbgxid, 'x2g', &
+                  trim(seq_flds_x2g_fields), whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2din=latlonid)
+          endif
 
           !MOAB TODO:  convert this
 !         if (wav_present) then
@@ -433,7 +439,8 @@ contains
   !===============================================================================
 
   subroutine seq_hist_writeavg(infodata, EClock_d, &
-       atm, lnd, ice, ocn, rof, glc, wav, iac, write_now, cpl_inst_tag)
+       atm, lnd, ice, ocn, rof, glc, wav, iac, write_now, cpl_inst_tag, &
+       rof_coupled_now)
 
     implicit none
 
@@ -449,6 +456,7 @@ contains
     type (component_type)   ,  intent(in) :: iac(:)
     logical                 ,  intent(in) :: write_now  ! write or accumulate
     character(len=*)        ,  intent(in) :: cpl_inst_tag
+    logical                 ,  intent(in) :: rof_coupled_now ! .true. if rof coupled this step
 
     integer(IN)           :: curr_ymd     ! Current date YYYYMMDD
     integer(IN)           :: curr_tod     ! Current time-of-day (s)
@@ -463,41 +471,38 @@ contains
     integer(IN)           :: fk           ! index
     character(CL)         :: time_units   ! units of time variable
     character(CL)         :: calendar     ! calendar type
-    integer(IN)           :: lsize        ! local size of an aVect
     character(CL)         :: case_name    ! case name
     character(CL)         :: hist_file    ! Local path to history filename
     logical               :: whead, wdata ! flags write header vs. data
     integer(IN)           :: iidx         ! component instance counter
 
-    type(mct_aVect), save  :: a2x_ax_avg(num_inst_atm)   ! tavg aVect/bundle
-    type(mct_aVect), save  :: x2a_ax_avg(num_inst_atm)
-    type(mct_aVect), save  :: l2x_lx_avg(num_inst_lnd)
-    type(mct_aVect), save  :: x2l_lx_avg(num_inst_lnd)
-    type(mct_aVect), save  :: r2x_rx_avg(num_inst_rof)
-    type(mct_aVect), save  :: x2r_rx_avg(num_inst_rof)
-    type(mct_aVect), save  :: o2x_ox_avg(num_inst_ocn)
-    type(mct_aVect), save  :: x2o_ox_avg(num_inst_ocn)
-    type(mct_aVect), save  :: i2x_ix_avg(num_inst_ice)
-    type(mct_aVect), save  :: x2i_ix_avg(num_inst_ice)
-    type(mct_aVect), save  :: g2x_gx_avg(num_inst_glc)
-    type(mct_aVect), save  :: x2g_gx_avg(num_inst_glc)
-    type(mct_aVect), save  :: w2x_wx_avg(num_inst_wav)
-    type(mct_aVect), save  :: x2w_wx_avg(num_inst_wav)
-    type(mct_aVect), save  :: z2x_zx_avg(num_inst_iac)
-    type(mct_aVect), save  :: x2z_zx_avg(num_inst_iac)
-    type(mct_aVect), save, pointer  :: xao_ox_avg(:)
-    type(mct_aVect), save, pointer  :: xao_ax_avg(:)
+    type(avg_buf_type), save :: a2x_ax_avg(num_inst_atm)
+    type(avg_buf_type), save :: x2a_ax_avg(num_inst_atm)
+    type(avg_buf_type), save :: l2x_lx_avg(num_inst_lnd)
+    type(avg_buf_type), save :: x2l_lx_avg(num_inst_lnd)
+    type(avg_buf_type), save :: r2x_rx_avg(num_inst_rof)
+    type(avg_buf_type), save :: x2r_rx_avg(num_inst_rof)
+    type(avg_buf_type), save :: o2x_ox_avg(num_inst_ocn)
+    type(avg_buf_type), save :: x2o_ox_avg(num_inst_ocn)
+    type(avg_buf_type), save :: i2x_ix_avg(num_inst_ice)
+    type(avg_buf_type), save :: x2i_ix_avg(num_inst_ice)
+    type(avg_buf_type), save, allocatable :: xao_ox_avg(:)
+    type(avg_buf_type), save, allocatable :: xao_ax_avg(:)
 
     integer(IN)    , save  :: cnt                 ! counts samples in tavg
     real(r8)       , save  :: tbnds(2)            ! CF1.0 time bounds
     character(len=18) :: date_str
 
     logical        , save  :: first_call = .true. ! flags 1st call of this routine
+    logical        , save  :: rof_coupled = .false. ! .true. once rof has coupled at least once
 
-    type(mct_gsMap),  pointer :: gsmap  ! component decomp on cpl pes
-    type(mct_gGrid),  pointer :: dom    ! component domain on cpl pes
-    type(mct_avect),  pointer :: c2x    ! component->coupler avs on cpl pes
-    type(mct_avect),  pointer :: x2c    ! coupler->component avs on cpl pes
+    integer(IN)   :: numpts, nflds, ii
+    real(r8), allocatable :: tag_data(:)
+    real(r8), allocatable, target :: matrix_data(:,:)
+    real(r8), dimension(:,:), pointer :: p_matrix
+    real(r8), dimension(:,:), pointer :: p_x2l_lm ! land merge snapshot of x2l
+    type(mct_list) :: temp_list
+    type(mct_string) :: mctOStr
     character(CL) :: model_doi_url
 
     !-------------------------------------------------------------------------------
@@ -557,125 +562,110 @@ contains
 
     if (first_call) then
        if (atm_present .and. histavg_atm) then
-          do iidx = 1,  num_inst_atm
-             c2x => component_get_c2x_cx(atm(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(a2x_ax_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(a2x_ax_avg(iidx))
-
-             x2c => component_get_x2c_cx(atm(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2a_ax_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2a_ax_avg(iidx))
+          numpts = mbGetnCells(mbaxid)
+          call mct_list_init(temp_list, seq_flds_a2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_atm
+             allocate(a2x_ax_avg(iidx)%data(numpts, nflds))
+             a2x_ax_avg(iidx)%data = 0.0_r8
+          enddo
+          call mct_list_init(temp_list, seq_flds_x2a_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_atm
+             allocate(x2a_ax_avg(iidx)%data(numpts, nflds))
+             x2a_ax_avg(iidx)%data = 0.0_r8
           enddo
        endif
        if (lnd_present .and. histavg_lnd) then
-          do iidx = 1,  num_inst_lnd
-             c2x => component_get_c2x_cx(lnd(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(l2x_lx_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(l2x_lx_avg(iidx))
-
-             x2c => component_get_x2c_cx(lnd(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2l_lx_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2l_lx_avg(iidx))
+          numpts = mbGetnCells(mblxid)
+          call mct_list_init(temp_list, seq_flds_l2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_lnd
+             allocate(l2x_lx_avg(iidx)%data(numpts, nflds))
+             l2x_lx_avg(iidx)%data = 0.0_r8
+          enddo
+          call mct_list_init(temp_list, seq_flds_x2l_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_lnd
+             allocate(x2l_lx_avg(iidx)%data(numpts, nflds))
+             x2l_lx_avg(iidx)%data = 0.0_r8
           enddo
        endif
        if (rof_present .and. histavg_rof) then
-          do iidx = 1,  num_inst_rof
-             c2x => component_get_c2x_cx(rof(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(r2x_rx_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(r2x_rx_avg(iidx))
-
-             x2c => component_get_x2c_cx(rof(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2r_rx_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2r_rx_avg(iidx))
+          numpts = mbGetnCells(mbrxid)
+          call mct_list_init(temp_list, seq_flds_r2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_rof
+             allocate(r2x_rx_avg(iidx)%data(numpts, nflds))
+             r2x_rx_avg(iidx)%data = 0.0_r8
+          enddo
+          call mct_list_init(temp_list, seq_flds_x2r_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_rof
+             allocate(x2r_rx_avg(iidx)%data(numpts, nflds))
+             x2r_rx_avg(iidx)%data = 0.0_r8
           enddo
        endif
        if (ocn_present .and. histavg_ocn) then
-          do iidx = 1,  num_inst_ocn
-             c2x => component_get_c2x_cx(ocn(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(o2x_ox_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(o2x_ox_avg(iidx))
-
-             x2c => component_get_x2c_cx(ocn(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2o_ox_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2o_ox_avg(iidx))
+          numpts = mbGetnCells(mboxid)
+          call mct_list_init(temp_list, seq_flds_o2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_ocn
+             allocate(o2x_ox_avg(iidx)%data(numpts, nflds))
+             o2x_ox_avg(iidx)%data = 0.0_r8
+          enddo
+          call mct_list_init(temp_list, seq_flds_x2o_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_ocn
+             allocate(x2o_ox_avg(iidx)%data(numpts, nflds))
+             x2o_ox_avg(iidx)%data = 0.0_r8
           enddo
        endif
        if (ice_present .and. histavg_ice) then
-          do iidx = 1,  num_inst_ice
-             c2x => component_get_c2x_cx(ice(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(i2x_ix_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(i2x_ix_avg(iidx))
-
-             x2c => component_get_x2c_cx(ice(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2i_ix_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2i_ix_avg(iidx))
+          numpts = mbGetnCells(mbixid)
+          call mct_list_init(temp_list, seq_flds_i2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_ice
+             allocate(i2x_ix_avg(iidx)%data(numpts, nflds))
+             i2x_ix_avg(iidx)%data = 0.0_r8
           enddo
-       endif
-       if (glc_present .and. histavg_glc) then
-          do iidx = 1,  num_inst_glc
-             c2x => component_get_c2x_cx(glc(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(g2x_gx_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(g2x_gx_avg(iidx))
-
-             x2c => component_get_x2c_cx(glc(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2g_gx_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2g_gx_avg(iidx))
-          enddo
-       endif
-       if (wav_present .and. histavg_wav) then
-          do iidx = 1,  num_inst_wav
-             c2x => component_get_c2x_cx(wav(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(w2x_wx_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(w2x_wx_avg(iidx))
-
-             x2c => component_get_x2c_cx(wav(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2w_wx_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2w_wx_avg(iidx))
-          enddo
-       endif
-       if (iac_present .and. histavg_iac) then
-          do iidx = 1,  num_inst_iac
-             c2x => component_get_c2x_cx(iac(iidx))
-             lsize = mct_aVect_lsize(c2x)
-             call mct_aVect_init(z2x_zx_avg(iidx), c2x, lsize)
-             call mct_aVect_zero(z2x_zx_avg(iidx))
-
-             x2c => component_get_x2c_cx(iac(iidx))
-             lsize = mct_aVect_lsize(x2c)
-             call mct_aVect_init(x2z_zx_avg(iidx), x2c, lsize)
-             call mct_aVect_zero(x2z_zx_avg(iidx))
+          call mct_list_init(temp_list, seq_flds_x2i_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
+          do iidx = 1, num_inst_ice
+             allocate(x2i_ix_avg(iidx)%data(numpts, nflds))
+             x2i_ix_avg(iidx)%data = 0.0_r8
           enddo
        endif
        if (ocn_present .and. histavg_xao) then
+          numpts = mbGetnCells(mbofxid)
+          call mct_list_init(temp_list, seq_flds_xao_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
           allocate(xao_ox_avg(num_inst_xao))
-          xao_ox => prep_aoflux_get_xao_ox()
-          do iidx = 1,  num_inst_xao
-             lsize = mct_aVect_lsize(xao_ox(iidx))
-             call mct_aVect_init(xao_ox_avg(iidx), xao_ox(iidx), lsize)
-             call mct_aVect_zero(xao_ox_avg(iidx))
+          do iidx = 1, num_inst_xao
+             allocate(xao_ox_avg(iidx)%data(numpts, nflds))
+             xao_ox_avg(iidx)%data = 0.0_r8
           enddo
        endif
        if (atm_present .and. histavg_xao) then
+          numpts = mbGetnCells(mbaxid)
+          call mct_list_init(temp_list, seq_flds_xao_fields)
+          nflds = mct_list_nitem(temp_list)
+          call mct_list_clean(temp_list)
           allocate(xao_ax_avg(num_inst_xao))
-          xao_ax => prep_aoflux_get_xao_ax()
-          do iidx = 1,  num_inst_xao
-             lsize = mct_aVect_lsize(xao_ax(iidx))
-             call mct_aVect_init(xao_ax_avg(iidx), xao_ax(iidx), lsize)
-             call mct_aVect_zero(xao_ax_avg(iidx))
+          do iidx = 1, num_inst_xao
+             allocate(xao_ax_avg(iidx)%data(numpts, nflds))
+             xao_ax_avg(iidx)%data = 0.0_r8
           enddo
        endif
        cnt = 0
@@ -683,165 +673,341 @@ contains
        first_call = .false.
     endif
 
-    if (.not.write_now) then
+    ! Latch whether rof has coupled at least once. Until then the x2r MOAB tags
+    ! have never been written, so x2r must contribute zero to the average (this
+    ! matches driver-mct, where the x2r attribute vector is zero-filled at alloc).
+    rof_coupled = rof_coupled .or. rof_coupled_now
+
+    if (.not.write_now) then ! accumulate values in buffer
        cnt = cnt + 1
+       allocate(tag_data(max(mbGetnCells(mbaxid),mbGetnCells(mblxid), &
+                             mbGetnCells(mbrxid),mbGetnCells(mboxid), &
+                             mbGetnCells(mbixid),mbGetnCells(mbofxid))))
        if (atm_present .and. histavg_atm) then
-          do iidx = 1,  num_inst_atm
-             c2x => component_get_c2x_cx(atm(iidx))
-             x2c => component_get_x2c_cx(atm(iidx))
-             a2x_ax_avg(iidx)%rAttr = a2x_ax_avg(iidx)%rAttr + c2x%rAttr
-             x2a_ax_avg(iidx)%rAttr = x2a_ax_avg(iidx)%rAttr + x2c%rAttr
+          numpts = mbGetnCells(mbaxid)
+          call mct_list_init(temp_list, seq_flds_a2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_atm
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                a2x_ax_avg(iidx)%data(:,ii) = a2x_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2a_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_atm
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                x2a_ax_avg(iidx)%data(:,ii) = x2a_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
+          enddo
+          call mct_list_clean(temp_list)
        endif
        if (lnd_present .and. histavg_lnd) then
-          do iidx = 1,  num_inst_lnd
-             c2x => component_get_c2x_cx(lnd(iidx))
-             x2c => component_get_x2c_cx(lnd(iidx))
-             l2x_lx_avg(iidx)%rAttr = l2x_lx_avg(iidx)%rAttr + c2x%rAttr
-             x2l_lx_avg(iidx)%rAttr = x2l_lx_avg(iidx)%rAttr + x2c%rAttr
+          numpts = mbGetnCells(mblxid)
+          call mct_list_init(temp_list, seq_flds_l2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_lnd
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mblxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                l2x_lx_avg(iidx)%data(:,ii) = l2x_lx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          ! Accumulate x2l from the x2l_lm snapshot taken during the land merge,
+          ! not from the live MOAB tag.  Fields mapped into x2l later in the same
+          ! step (e.g. Flrr_volr, mapped in cime_run_rof_recv_post after the land
+          ! merge has already run) would otherwise be picked up a step early and
+          ! counted one extra time relative to driver-mct.  This is the same
+          ! source the instantaneous history uses.
+          if (lnd_prognostic) then
+             do iidx = 1, num_inst_lnd
+                p_x2l_lm => prep_lnd_get_x2l_lm()
+                x2l_lx_avg(iidx)%data(:,:) = x2l_lx_avg(iidx)%data(:,:) + p_x2l_lm(:,:)
+             enddo
+          endif
        endif
        if (rof_present .and. histavg_rof) then
-          do iidx = 1,  num_inst_rof
-             c2x => component_get_c2x_cx(rof(iidx))
-             x2c => component_get_x2c_cx(rof(iidx))
-             r2x_rx_avg(iidx)%rAttr = r2x_rx_avg(iidx)%rAttr + c2x%rAttr
-             x2r_rx_avg(iidx)%rAttr = x2r_rx_avg(iidx)%rAttr + x2c%rAttr
+          numpts = mbGetnCells(mbrxid)
+          call mct_list_init(temp_list, seq_flds_r2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_rof
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                r2x_rx_avg(iidx)%data(:,ii) = r2x_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          ! x2r tags are unwritten until rof first couples; add zero until then
+          if (rof_coupled) then
+             call mct_list_init(temp_list, seq_flds_x2r_fields)
+             nflds = mct_list_nitem(temp_list)
+             do iidx = 1, num_inst_rof
+                do ii = 1, nflds
+                   call mct_list_get(mctOStr, ii, temp_list)
+                   call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                   call mct_string_clean(mctOStr)
+                   x2r_rx_avg(iidx)%data(:,ii) = x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+                enddo
+             enddo
+             call mct_list_clean(temp_list)
+          endif
        endif
        if (ocn_present .and. histavg_ocn) then
-          do iidx = 1,  num_inst_ocn
-             c2x => component_get_c2x_cx(ocn(iidx))
-             x2c => component_get_x2c_cx(ocn(iidx))
-             o2x_ox_avg(iidx)%rAttr = o2x_ox_avg(iidx)%rAttr + c2x%rAttr
-             x2o_ox_avg(iidx)%rAttr = x2o_ox_avg(iidx)%rAttr + x2c%rAttr
+          numpts = mbGetnCells(mboxid)
+          call mct_list_init(temp_list, seq_flds_o2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ocn
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                o2x_ox_avg(iidx)%data(:,ii) = o2x_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2o_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ocn
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                x2o_ox_avg(iidx)%data(:,ii) = x2o_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
+          enddo
+          call mct_list_clean(temp_list)
        endif
        if (ice_present .and. histavg_ice) then
-          do iidx = 1,  num_inst_ice
-             c2x => component_get_c2x_cx(ice(iidx))
-             x2c => component_get_x2c_cx(ice(iidx))
-             i2x_ix_avg(iidx)%rAttr = i2x_ix_avg(iidx)%rAttr + c2x%rAttr
-             x2i_ix_avg(iidx)%rAttr = x2i_ix_avg(iidx)%rAttr + x2c%rAttr
+          numpts = mbGetnCells(mbixid)
+          call mct_list_init(temp_list, seq_flds_i2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ice
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                i2x_ix_avg(iidx)%data(:,ii) = i2x_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
-       endif
-       if (glc_present .and. histavg_glc) then
-          do iidx = 1,  num_inst_glc
-             c2x => component_get_c2x_cx(glc(iidx))
-             x2c => component_get_x2c_cx(glc(iidx))
-             g2x_gx_avg(iidx)%rAttr = g2x_gx_avg(iidx)%rAttr + c2x%rAttr
-             x2g_gx_avg(iidx)%rAttr = x2g_gx_avg(iidx)%rAttr + x2c%rAttr
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2i_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ice
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                x2i_ix_avg(iidx)%data(:,ii) = x2i_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
-       endif
-       if (wav_present .and. histavg_wav) then
-          do iidx = 1,  num_inst_wav
-             c2x => component_get_c2x_cx(wav(iidx))
-             x2c => component_get_x2c_cx(wav(iidx))
-             w2x_wx_avg(iidx)%rAttr = w2x_wx_avg(iidx)%rAttr + c2x%rAttr
-             x2w_wx_avg(iidx)%rAttr = x2w_wx_avg(iidx)%rAttr + x2c%rAttr
-          enddo
-       endif
-       if (iac_present .and. histavg_iac) then
-          do iidx = 1,  num_inst_iac
-             c2x => component_get_c2x_cx(iac(iidx))
-             x2c => component_get_x2c_cx(iac(iidx))
-             z2x_zx_avg(iidx)%rAttr = z2x_zx_avg(iidx)%rAttr + c2x%rAttr
-             x2z_zx_avg(iidx)%rAttr = x2z_zx_avg(iidx)%rAttr + x2c%rAttr
-          enddo
+          call mct_list_clean(temp_list)
        endif
        if (ocn_present .and. histavg_xao) then
-          xao_ox => prep_aoflux_get_xao_ox()
-          do iidx = 1,  num_inst_ocn
-             xao_ox_avg(iidx)%rAttr = xao_ox_avg(iidx)%rAttr + xao_ox(iidx)%rAttr
+          numpts = mbGetnCells(mbofxid)
+          call mct_list_init(temp_list, seq_flds_xao_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_xao
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbofxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                xao_ox_avg(iidx)%data(:,ii) = xao_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
        endif
        if (atm_present .and. histavg_xao) then
-          xao_ax => prep_aoflux_get_xao_ax()
-          do iidx = 1,  num_inst_ocn
-             xao_ax_avg(iidx)%rAttr = xao_ax_avg(iidx)%rAttr + xao_ax(iidx)%rAttr
+          numpts = mbGetnCells(mbaxid)
+          call mct_list_init(temp_list, seq_flds_xao_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_xao
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                xao_ax_avg(iidx)%data(:,ii) = xao_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
        endif
+       deallocate(tag_data)
 
-    else
+    else  ! accumulate one more slice, make average, write
 
        cnt = cnt + 1
        tbnds(2) = curr_time
+       allocate(tag_data(max(mbGetnCells(mbaxid),mbGetnCells(mblxid), &
+                             mbGetnCells(mbrxid),mbGetnCells(mboxid), &
+                             mbGetnCells(mbixid),mbGetnCells(mbofxid))))
        if (atm_present .and. histavg_atm) then
-          do iidx = 1,  num_inst_atm
-             c2x => component_get_c2x_cx(atm(iidx))
-             x2c => component_get_x2c_cx(atm(iidx))
-             a2x_ax_avg(iidx)%rAttr = (a2x_ax_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2a_ax_avg(iidx)%rAttr = (x2a_ax_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mbaxid)
+          call mct_list_init(temp_list, seq_flds_a2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_atm
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                a2x_ax_avg(iidx)%data(:,ii) = (a2x_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2a_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_atm
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                x2a_ax_avg(iidx)%data(:,ii) = (x2a_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
+          enddo
+          call mct_list_clean(temp_list)
        endif
        if (lnd_present .and. histavg_lnd) then
-          do iidx = 1,  num_inst_lnd
-             c2x => component_get_c2x_cx(lnd(iidx))
-             x2c => component_get_x2c_cx(lnd(iidx))
-             l2x_lx_avg(iidx)%rAttr = (l2x_lx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2l_lx_avg(iidx)%rAttr = (x2l_lx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mblxid)
+          call mct_list_init(temp_list, seq_flds_l2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_lnd
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mblxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                l2x_lx_avg(iidx)%data(:,ii) = (l2x_lx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
+          enddo
+          call mct_list_clean(temp_list)
+          ! See the comment in the accumulate branch: x2l comes from the land
+          ! merge snapshot, not the live MOAB tag.
+          do iidx = 1, num_inst_lnd
+             if (lnd_prognostic) then
+                p_x2l_lm => prep_lnd_get_x2l_lm()
+                x2l_lx_avg(iidx)%data(:,:) = (x2l_lx_avg(iidx)%data(:,:) + p_x2l_lm(:,:)) / (cnt * 1.0_r8)
+             else
+                x2l_lx_avg(iidx)%data(:,:) = x2l_lx_avg(iidx)%data(:,:) / (cnt * 1.0_r8)
+             endif
           enddo
        endif
        if (rof_present .and. histavg_rof) then
-          do iidx = 1,  num_inst_rof
-             c2x => component_get_c2x_cx(rof(iidx))
-             x2c => component_get_x2c_cx(rof(iidx))
-             r2x_rx_avg(iidx)%rAttr = (r2x_rx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2r_rx_avg(iidx)%rAttr = (x2r_rx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mbrxid)
+          call mct_list_init(temp_list, seq_flds_r2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_rof
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                r2x_rx_avg(iidx)%data(:,ii) = (r2x_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2r_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_rof
+             do ii = 1, nflds
+                if (rof_coupled) then
+                   ! rof has coupled: fold in this step's x2r sample, then average
+                   call mct_list_get(mctOStr, ii, temp_list)
+                   call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                   call mct_string_clean(mctOStr)
+                   x2r_rx_avg(iidx)%data(:,ii) = (x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+                else
+                   ! rof never coupled this window: buffer is a sum of zeros; just average
+                   x2r_rx_avg(iidx)%data(:,ii) = x2r_rx_avg(iidx)%data(:,ii) / (cnt * 1.0_r8)
+                endif
+             enddo
+          enddo
+          call mct_list_clean(temp_list)
        endif
        if (ocn_present .and. histavg_ocn) then
-          do iidx = 1,  num_inst_ocn
-             c2x => component_get_c2x_cx(ocn(iidx))
-             x2c => component_get_x2c_cx(ocn(iidx))
-             o2x_ox_avg(iidx)%rAttr = (o2x_ox_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2o_ox_avg(iidx)%rAttr = (x2o_ox_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mboxid)
+          call mct_list_init(temp_list, seq_flds_o2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ocn
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                o2x_ox_avg(iidx)%data(:,ii) = (o2x_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2o_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ocn
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                x2o_ox_avg(iidx)%data(:,ii) = (x2o_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
+          enddo
+          call mct_list_clean(temp_list)
        endif
        if (ice_present .and. histavg_ice) then
-          do iidx = 1,  num_inst_ice
-             c2x => component_get_c2x_cx(ice(iidx))
-             x2c => component_get_x2c_cx(ice(iidx))
-             i2x_ix_avg(iidx)%rAttr = (i2x_ix_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2i_ix_avg(iidx)%rAttr = (x2i_ix_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mbixid)
+          call mct_list_init(temp_list, seq_flds_i2x_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ice
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                i2x_ix_avg(iidx)%data(:,ii) = (i2x_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
-       endif
-       if (glc_present .and. histavg_glc) then
-          do iidx = 1,  num_inst_glc
-             c2x => component_get_c2x_cx(glc(iidx))
-             x2c => component_get_x2c_cx(glc(iidx))
-             g2x_gx_avg(iidx)%rAttr = (g2x_gx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2g_gx_avg(iidx)%rAttr = (x2g_gx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
+          call mct_list_clean(temp_list)
+          call mct_list_init(temp_list, seq_flds_x2i_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_ice
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                x2i_ix_avg(iidx)%data(:,ii) = (x2i_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
-       endif
-       if (wav_present .and. histavg_wav) then
-          do iidx = 1,  num_inst_wav
-             c2x => component_get_c2x_cx(wav(iidx))
-             x2c => component_get_x2c_cx(wav(iidx))
-             w2x_wx_avg(iidx)%rAttr = (w2x_wx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2w_wx_avg(iidx)%rAttr = (x2w_wx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
-          enddo
-       endif
-       if (iac_present .and. histavg_iac) then
-          do iidx = 1,  num_inst_iac
-             c2x => component_get_c2x_cx(iac(iidx))
-             x2c => component_get_x2c_cx(iac(iidx))
-             z2x_zx_avg(iidx)%rAttr = (z2x_zx_avg(iidx)%rAttr + c2x%rAttr) / (cnt * 1.0_r8)
-             x2z_zx_avg(iidx)%rAttr = (x2z_zx_avg(iidx)%rAttr + x2c%rAttr) / (cnt * 1.0_r8)
-          enddo
+          call mct_list_clean(temp_list)
        endif
        if (ocn_present .and. histavg_xao) then
-          xao_ox => prep_aoflux_get_xao_ox()
-          do iidx = 1,  num_inst_ocn
-             xao_ox_avg(iidx)%rAttr = (xao_ox_avg(iidx)%rAttr + xao_ox(iidx)%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mbofxid)
+          call mct_list_init(temp_list, seq_flds_xao_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_xao
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbofxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                xao_ox_avg(iidx)%data(:,ii) = (xao_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
        endif
        if (atm_present .and. histavg_xao) then
-          xao_ax => prep_aoflux_get_xao_ax()
-          do iidx = 1,  num_inst_ocn
-             xao_ax_avg(iidx)%rAttr = (xao_ax_avg(iidx)%rAttr + xao_ax(iidx)%rAttr) / (cnt * 1.0_r8)
+          numpts = mbGetnCells(mbaxid)
+          call mct_list_init(temp_list, seq_flds_xao_fields)
+          nflds = mct_list_nitem(temp_list)
+          do iidx = 1, num_inst_xao
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                xao_ax_avg(iidx)%data(:,ii) = (xao_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+             enddo
           enddo
+          call mct_list_clean(temp_list)
        endif
+       deallocate(tag_data)
 
        call seq_infodata_GetData( infodata,  case_name=case_name)
        call seq_timemgr_EClockGetData( EClock_d,  prev_ymd=prev_ymd,  prev_tod=prev_tod)
@@ -895,114 +1061,93 @@ contains
              endif
 
              if (atm_present .and. histavg_atm) then
-                gsmap => component_get_gsmap_cx(atm(1))
-                dom   => component_get_dom_cx(atm(1))
-               !call seq_io_write(hist_file, gsmap, dom%data, 'dom_ax',  &
-               !     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata, pre='doma')
-
-               !call seq_io_write(hist_file, gsmap, x2a_ax_avg, 'x2a_ax',  &
-               !     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
-               !     pre='x2aavg', tavg=.true.)
-               !call seq_io_write(hist_file, gsmap, a2x_ax_avg, 'a2x_ax',  &
-               !     nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
-               !     pre='a2xavg', tavg=.true.)
+                call seq_io_write(hist_file, mbaxid, 'doma', &
+                     trim(seq_flds_dom_fields), nx=atm_nx, ny=atm_ny, nt=1, &
+                     whead=whead, wdata=wdata)
+                matrix_data = x2a_ax_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbaxid, 'x2aavg', &
+                     trim(seq_flds_x2a_fields), nx=atm_nx, ny=atm_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
+                matrix_data = a2x_ax_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbaxid, 'a2xavg', &
+                     trim(seq_flds_a2x_fields), nx=atm_nx, ny=atm_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
              if (lnd_present .and. histavg_lnd) then
-                gsmap => component_get_gsmap_cx(lnd(1))
-                dom   => component_get_dom_cx(lnd(1))
-               !call seq_io_write(hist_file, gsmap, dom%data, 'dom_lx',  &
-               !     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata, pre='doml')
-               !call seq_io_write(hist_file, gsmap, l2x_lx_avg, 'l2x_lx',  &
-               !     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata,  &
-               !     pre='l2xavg', tavg=.true.)
-               !call seq_io_write(hist_file, gsmap, x2l_lx_avg, 'x2l_lx',  &
-               !     nx=lnd_nx, ny=lnd_ny, nt=1, whead=whead, wdata=wdata,  &
-               !     pre='x2lavg', tavg=.true.)
+                call seq_io_write(hist_file, mblxid, 'doml', &
+                     trim(seq_flds_dom_fields), nx=lnd_nx, ny=lnd_ny, nt=1, &
+                     whead=whead, wdata=wdata)
+                matrix_data = l2x_lx_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mblxid, 'l2xavg', &
+                     trim(seq_flds_l2x_fields), nx=lnd_nx, ny=lnd_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
+                matrix_data = x2l_lx_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mblxid, 'x2lavg', &
+                     trim(seq_flds_x2l_fields), nx=lnd_nx, ny=lnd_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
-
              if (rof_present .and. histavg_rof) then
-                gsmap => component_get_gsmap_cx(rof(1))
-                dom   => component_get_dom_cx(rof(1))
-              ! call seq_io_write(hist_file, gsmap, dom%data, 'dom_rx',  &
-              !      nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata, pre='domr')
-              ! call seq_io_write(hist_file, gsmap, r2x_rx_avg, 'r2x_rx',  &
-              !      nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
-              !      pre='r2xavg', tavg=.true.)
-              ! call seq_io_write(hist_file, gsmap, x2r_rx_avg, 'x2r_rx',  &
-              !      nx=rof_nx, ny=rof_ny, nt=1, whead=whead, wdata=wdata,  &
-              !      pre='x2ravg', tavg=.true.)
+                call seq_io_write(hist_file, mbrxid, 'domr', &
+                     trim(seq_flds_dom_fields), nx=rof_nx, ny=rof_ny, nt=1, &
+                     whead=whead, wdata=wdata)
+                matrix_data = r2x_rx_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbrxid, 'r2xavg', &
+                     trim(seq_flds_r2x_fields), nx=rof_nx, ny=rof_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
+                matrix_data = x2r_rx_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbrxid, 'x2ravg', &
+                     trim(seq_flds_x2r_fields), nx=rof_nx, ny=rof_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
              if (ocn_present .and. histavg_ocn) then
-                gsmap => component_get_gsmap_cx(ocn(1))
-                dom   => component_get_dom_cx(ocn(1))
-             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_ox',  &
-             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata, pre='domo')
-             !  call seq_io_write(hist_file, gsmap, o2x_ox_avg, 'o2x_ox',  &
-             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='o2xavg', tavg=.true.)
-             !  call seq_io_write(hist_file, gsmap, x2o_ox_avg, 'x2o_ox',  &
-             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='x2oavg', tavg=.true.)
+                call seq_io_write(hist_file, mboxid, 'domo', &
+                     trim(seq_flds_dom_fields), nx=ocn_nx, ny=ocn_ny, nt=1, &
+                     whead=whead, wdata=wdata)
+                matrix_data = o2x_ox_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mboxid, 'o2xavg', &
+                     trim(seq_flds_o2x_fields), nx=ocn_nx, ny=ocn_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
+                matrix_data = x2o_ox_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mboxid, 'x2oavg', &
+                     trim(seq_flds_x2o_fields), nx=ocn_nx, ny=ocn_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
              if (ice_present .and. histavg_ice) then
-                gsmap => component_get_gsmap_cx(ice(1))
-                dom   => component_get_dom_cx(ice(1))
-             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_ix',  &
-             !       nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata, pre='domi')
-             !  call seq_io_write(hist_file, gsmap, i2x_ix_avg, 'i2x_ix',  &
-             !       nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='i2xavg', tavg=.true.)
-             !  call seq_io_write(hist_file, gsmap, x2i_ix_avg, 'x2i_ix',  &
-             !       nx=ice_nx, ny=ice_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='x2iavg', tavg=.true.)
-             endif
-             if (glc_present .and. histavg_glc) then
-                gsmap => component_get_gsmap_cx(glc(1))
-                dom   => component_get_dom_cx(glc(1))
-             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_gx',  &
-             !       nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata, pre='domg')
-             !  call seq_io_write(hist_file, gsmap, g2x_gx_avg, 'g2x_gx',  &
-             !       nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='g2xavg', tavg=.true.)
-             !  call seq_io_write(hist_file, gsmap, x2g_gx_avg, 'x2g_gx',  &
-             !       nx=glc_nx, ny=glc_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='x2gavg', tavg=.true.)
-             endif
-             if (wav_present .and. histavg_wav) then
-                gsmap => component_get_gsmap_cx(wav(1))
-                dom   => component_get_dom_cx(wav(1))
-             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_wx',  &
-             !       nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata, pre='domw')
-             !  call seq_io_write(hist_file, gsmap, w2x_wx_avg, 'w2x_wx',  &
-             !       nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='w2xavg', tavg=.true.)
-             !  call seq_io_write(hist_file, gsmap, x2w_wx_avg, 'x2w_wx',  &
-             !       nx=wav_nx, ny=wav_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='x2wavg', tavg=.true.)
-             endif
-             if (iac_present .and. histavg_iac) then
-                gsmap => component_get_gsmap_cx(iac(1))
-                dom   => component_get_dom_cx(iac(1))
-             !  call seq_io_write(hist_file, gsmap, dom%data, 'dom_zx',  &
-             !       nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata, pre='domz')
-             !  call seq_io_write(hist_file, gsmap, z2x_zx_avg, 'z2x_zx',  &
-             !       nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='z2xavg', tavg=.true.)
-             !  call seq_io_write(hist_file, gsmap, x2z_zx_avg, 'x2z_zx',  &
-             !       nx=iac_nx, ny=iac_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='x2zavg', tavg=.true.)
+                call seq_io_write(hist_file, mbixid, 'domi', &
+                     trim(seq_flds_dom_fields), nx=ice_nx, ny=ice_ny, nt=1, &
+                     whead=whead, wdata=wdata)
+                matrix_data = i2x_ix_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbixid, 'i2xavg', &
+                     trim(seq_flds_i2x_fields), nx=ice_nx, ny=ice_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
+                matrix_data = x2i_ix_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbixid, 'x2iavg', &
+                     trim(seq_flds_x2i_fields), nx=ice_nx, ny=ice_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
              if (ocn_present .and. histavg_xao) then
-                gsmap => component_get_gsmap_cx(ocn(1))
-             !  call seq_io_write(hist_file, gsmap, xao_ox_avg, 'xao_ox',  &
-             !       nx=ocn_nx, ny=ocn_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='xaooavg', tavg=.true.)
+                matrix_data = xao_ox_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbofxid, 'xaooavg', &
+                     trim(seq_flds_xao_fields), nx=ocn_nx, ny=ocn_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
              if (atm_present .and. histavg_xao) then
-                gsmap => component_get_gsmap_cx(atm(1))
-             !  call seq_io_write(hist_file, gsmap, xao_ax_avg, 'xao_ax',  &
-             !       nx=atm_nx, ny=atm_ny, nt=1, whead=whead, wdata=wdata,  &
-             !       pre='xaoaavg', tavg=.true.)
+                matrix_data = xao_ax_avg(1)%data
+                p_matrix => matrix_data
+                call seq_io_write(hist_file, mbaxid, 'xaoaavg', &
+                     trim(seq_flds_xao_fields), nx=atm_nx, ny=atm_ny, nt=1, &
+                     whead=whead, wdata=wdata, matrix=p_matrix)
              endif
           enddo
 
@@ -1011,75 +1156,57 @@ contains
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
           if (atm_present .and. histavg_atm) then
-             do iidx = 1,  num_inst_atm
-                call mct_aVect_zero(a2x_ax_avg(iidx))
-                call mct_aVect_zero(x2a_ax_avg(iidx))
+             do iidx = 1, num_inst_atm
+                a2x_ax_avg(iidx)%data = 0.0_r8
+                x2a_ax_avg(iidx)%data = 0.0_r8
              enddo
           endif
           if (lnd_present .and. histavg_lnd) then
-             do iidx = 1,  num_inst_lnd
-                call mct_aVect_zero(l2x_lx_avg(iidx))
-                call mct_aVect_zero(x2l_lx_avg(iidx))
+             do iidx = 1, num_inst_lnd
+                l2x_lx_avg(iidx)%data = 0.0_r8
+                x2l_lx_avg(iidx)%data = 0.0_r8
              enddo
           endif
           if (rof_present .and. histavg_rof) then
-             do iidx = 1,  num_inst_rof
-                call mct_aVect_zero(r2x_rx_avg(iidx))
-                call mct_aVect_zero(x2r_rx_avg(iidx))
+             do iidx = 1, num_inst_rof
+                r2x_rx_avg(iidx)%data = 0.0_r8
+                x2r_rx_avg(iidx)%data = 0.0_r8
              enddo
           endif
           if (ocn_present .and. histavg_ocn) then
-             do iidx = 1,  num_inst_ocn
-                call mct_aVect_zero(o2x_ox_avg(iidx))
-                call mct_aVect_zero(x2o_ox_avg(iidx))
+             do iidx = 1, num_inst_ocn
+                o2x_ox_avg(iidx)%data = 0.0_r8
+                x2o_ox_avg(iidx)%data = 0.0_r8
              enddo
           endif
           if (ice_present .and. histavg_ice) then
-             do iidx = 1,  num_inst_ice
-                call mct_aVect_zero(i2x_ix_avg(iidx))
-                call mct_aVect_zero(x2i_ix_avg(iidx))
-             enddo
-          endif
-          if (glc_present .and. histavg_glc) then
-             do iidx = 1,  num_inst_glc
-                call mct_aVect_zero(g2x_gx_avg(iidx))
-                call mct_aVect_zero(x2g_gx_avg(iidx))
-             enddo
-          endif
-          if (wav_present .and. histavg_wav) then
-             do iidx = 1,  num_inst_wav
-                call mct_aVect_zero(w2x_wx_avg(iidx))
-                call mct_aVect_zero(x2w_wx_avg(iidx))
-             enddo
-          endif
-          if (iac_present .and. histavg_iac) then
-             do iidx = 1,  num_inst_wav
-                call mct_aVect_zero(z2x_zx_avg(iidx))
-                call mct_aVect_zero(x2z_zx_avg(iidx))
+             do iidx = 1, num_inst_ice
+                i2x_ix_avg(iidx)%data = 0.0_r8
+                x2i_ix_avg(iidx)%data = 0.0_r8
              enddo
           endif
           if (ocn_present .and. histavg_xao) then
-             do iidx = 1,  num_inst_xao
-                call mct_aVect_zero(xao_ox_avg(iidx))
+             do iidx = 1, num_inst_xao
+                xao_ox_avg(iidx)%data = 0.0_r8
              enddo
           endif
           if (atm_present .and. histavg_xao) then
-             do iidx = 1,  num_inst_xao
-                call mct_aVect_zero(xao_ax_avg(iidx))
+             do iidx = 1, num_inst_xao
+                xao_ax_avg(iidx)%data = 0.0_r8
              enddo
           endif
           cnt = 0
           tbnds(1) = curr_time
 
-       endif
-    endif
+       endif  ! if CPL task
+    endif ! end of average and write block
 
   end subroutine seq_hist_writeavg
 
   !===============================================================================
 
   subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, inst_suffix, &
-       nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write)
+       nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write, matrix)
 
     implicit none
 
@@ -1117,14 +1244,19 @@ contains
     ! simplify later reading by a data model.
     integer                  , optional, intent(in) :: yr_offset
 
-    ! If av_to_write is provided, then write fields from this attribute vector.
-    ! Otherwise, get the attribute vector from 'comp', based on 'flow'.
+    ! If av_to_write is provided, use it to get the list of tags to write.
+    ! The data is written from MOAB tags unless 'matrix' is provided.
+    ! Otherwise, get the tag list from 'comp', based on 'flow'.
     type(mct_avect), target  , optional, intent(in) :: av_to_write
 
+    ! If matrix is provided (non-averaged writes only), write the data directly
+    ! from this (numpts, nflds) array instead of reading the MOAB tags; the columns
+    ! must follow the tag-list order. Used for the l2x1yrg aux file, whose data
+    ! comes from the prep_glc accumulator rather than the instantaneous l2x tags.
+    real(r8), dimension(:,:), pointer, optional :: matrix
+
     !--- local ---
-    type(mct_gGrid), pointer :: dom
     type(mct_avect), pointer :: av
-    type(mct_gsMap), pointer :: gsmap
     character(CL)            :: case_name  ! case name
     integer(IN)              :: curr_ymd   ! Current date YYYYMMDD
     integer(IN)              :: curr_tod   ! Current time-of-day (s)
@@ -1138,7 +1270,8 @@ contains
     character(CL)            :: time_units ! units of time variable
     character(CL)            :: calendar   ! calendar type
     integer(IN)              :: samples_per_file
-    integer(IN)              :: lsize      ! local size of an aVect
+    integer(IN)              :: numpts     ! local size from MOAB mesh
+    integer(IN)              :: nflds      ! number of fields
     logical                  :: first_call
     integer(IN)              :: found = -10
     logical                  :: useavg
@@ -1147,19 +1280,29 @@ contains
     logical                  :: whead, wdata  ! for writing restart/history cdf files
     real(r8)                 :: tbnds(2)
     character(len=16) :: date_str
+    integer(IN)              :: mbxid      ! MOAB mesh ID for this component
+    character(CXX)           :: tag_list   ! field list for MOAB IO
+    type(mct_list)           :: temp_list  ! for parsing full tag_list
+    type(mct_list)           :: flds_list  ! for parsing flds subset
+    type(mct_string)         :: mctOStr    ! for extracting field names
+    type(mct_string)         :: mctOStr2   ! for comparing field names
+    integer(IN)              :: ii, jj     ! loop indices
+    integer(IN)              :: nflds_out  ! number of fields in flds subset
+    real(r8), dimension(:,:), allocatable, target :: matrix_data ! for writing via matrix param
+    real(r8), dimension(:,:), pointer :: p_matrix
+    real(r8), dimension(:), allocatable :: tag_data  ! temp buffer for reading one tag
 
     integer(IN), parameter   :: maxout = 20
     integer(IN)       , save :: ntout = 0
     character(CS)     , save :: tname(maxout) = 'x1y2z3'
     integer(IN)       , save :: ncnt(maxout)  = -10
     character(CL)     , save :: hist_file(maxout)       ! local path to history filename
-    type(mct_aVect)   , save :: avavg(maxout)           ! av accumulator if needed
+    integer(IN)       , save :: nflds_saved(maxout) = 0 ! number of fields per entry
+    type(avg_buf_type), save :: avavg(maxout)           ! accumulator buffers
     integer(IN)       , save :: avcnt(maxout) = 0       ! accumulator counter
     logical           , save :: fwrite(maxout) = .true. ! first write
     real(r8)          , save :: tbnds1(maxout)          ! first time_bnds
     real(r8)          , save :: tbnds2(maxout)          ! second time_bnds
-
-    type(mct_aVect)         :: avflds                  ! non-avg av for a subset of fields
 
     real(r8), parameter :: c0 = 0.0_r8 ! zero
     character(CL) :: model_doi_url
@@ -1202,6 +1345,24 @@ contains
     enddo
 
     if (iamin_CPLID) then
+       ! Determine MOAB mesh ID from component type
+       select case(trim(comp%ntype))
+         case('atm')
+           mbxid = mbaxid
+         case('lnd')
+           mbxid = mblxid
+         case('rof')
+           mbxid = mbrxid
+         case('ocn')
+           mbxid = mboxid
+         case('ice')
+           mbxid = mbixid
+         case default
+           call shr_sys_abort('seq_hist_writeaux: unsupported component type: '//trim(comp%ntype))
+       end select
+       numpts = mbGetnCells(mbxid)
+
+       ! Get tag_list: use av_to_write if provided, otherwise component aVect
        if (present(av_to_write)) then
           av => av_to_write
        else
@@ -1211,8 +1372,9 @@ contains
              av => component_get_x2c_cx(comp)
           end if
        end if
-       dom   => component_get_dom_cx(comp)
-       gsmap => component_get_gsmap_cx(comp)
+       tag_list = mct_aVect_exportRList2c(av)
+       call mct_list_init(temp_list, trim(tag_list))
+       nflds = mct_list_nitem(temp_list)
     end if
 
     if (first_call) then
@@ -1224,9 +1386,9 @@ contains
        tname(ntout) = trim(aname)
        ncnt(ntout) = -10
        if (iamin_CPLID .and. useavg) then
-          lsize = mct_aVect_lsize(av)
-          call mct_aVect_init(avavg(ntout), av, lsize)
-          call mct_aVect_zero(avavg(ntout))
+          nflds_saved(ntout) = nflds
+          allocate(avavg(ntout)%data(numpts, nflds))
+          avavg(ntout)%data(:,:) = 0.0_r8
           avcnt(ntout) = 0
        endif
        tbnds1(ntout) = prev_time
@@ -1237,14 +1399,30 @@ contains
 
        samples_per_file = nt
 
+       ! Accumulate from MOAB tags into plain real array
        if (useavg) then
+          nflds = nflds_saved(found)
+          allocate(tag_data(numpts))
           if (lwrite_now) then
              avcnt(found) = avcnt(found) + 1
-             avavg(found)%rAttr = (avavg(found)%rAttr + av%rAttr) / (avcnt(found) * 1.0_r8)
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                call mct_string_clean(mctOStr)
+                avavg(found)%data(:,ii) = (avavg(found)%data(:,ii) + tag_data(:)) / (avcnt(found) * 1.0_r8)
+             enddo
           else
              avcnt(found) = avcnt(found) + 1
-             avavg(found)%rAttr = avavg(found)%rAttr + av%rAttr
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
+                call mct_string_clean(mctOStr)
+                avavg(found)%data(:,ii) = avavg(found)%data(:,ii) + tag_data(:)
+             enddo
           endif
+          deallocate(tag_data)
        endif
 
        if (lwrite_now) then
@@ -1262,6 +1440,7 @@ contains
 
           if (ncnt(found) == 1) then
              fk1 = 1
+             fwrite(found) = .true.
              call seq_infodata_GetData( infodata,  case_name=case_name)
              call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
 
@@ -1304,14 +1483,6 @@ contains
                 call shr_sys_abort('seq_hist_writeaux fk illegal')
              end if
 
-             if (present(flds)) then
-                if (fk == fk1) then
-                   lsize = mct_aVect_lsize(av)
-                   call mct_aVect_init(avflds,  rList=flds,  lsize=lsize)
-                   call mct_aVect_zero(avflds)
-                end if
-             end if
-
              avg_time = 0.5_r8 * (tbnds(1) + tbnds(2))
              !------- tcx nov 2011 tbnds of same values causes problems in ferret
              if (tbnds(1) >= tbnds(2)) then
@@ -1324,40 +1495,77 @@ contains
                      nt=ncnt(found), whead=whead, wdata=wdata, tbnds=tbnds, file_ind=found)
              endif
 
+             ! Write domain on first write of each file
              if (fwrite(found)) then
-             !  call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
-             !       nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
+                call seq_io_write(hist_file(found), mbxid, trim(dname), &
+                     trim(seq_flds_dom_fields), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, file_ind=found)
              endif
 
+             ! Write field data
              if (useavg) then
                 if (present(flds)) then
-                   call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
-                !  call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                !       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                !       pre=trim(aname), tavg=.true., use_float=(.not. use_double), &
-                !       file_ind=found)
+                   ! Averaged with field subset: extract matching columns from accumulator
+                   call mct_list_init(flds_list, trim(flds))
+                   nflds_out = mct_list_nitem(flds_list)
+                   allocate(matrix_data(numpts, nflds_out))
+                   do ii = 1, nflds_out
+                      call mct_list_get(mctOStr, ii, flds_list)
+                      ! Find matching column index in full tag_list
+                      do jj = 1, nflds_saved(found)
+                         call mct_list_get(mctOStr2, jj, temp_list)
+                         if (trim(mct_string_toChar(mctOStr)) == &
+                             trim(mct_string_toChar(mctOStr2))) then
+                            matrix_data(:,ii) = avavg(found)%data(:,jj)
+                            call mct_string_clean(mctOStr2)
+                            exit
+                         endif
+                         call mct_string_clean(mctOStr2)
+                      enddo
+                      call mct_string_clean(mctOStr)
+                   enddo
+                   p_matrix => matrix_data
+                   call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                        trim(flds), whead=whead, wdata=wdata, &
+                        nx=nx, ny=ny, nt=ncnt(found), &
+                        matrix=p_matrix, file_ind=found, &
+                        use_float=(.not. use_double))
+                   deallocate(matrix_data)
+                   call mct_list_clean(flds_list)
                 else
-                !  call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
-                !       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                !       pre=trim(aname), tavg=.true.,  use_float=(.not. use_double), &
-                !       file_ind=found)
+                   ! Averaged, all fields
+                   allocate(matrix_data(numpts, nflds_saved(found)))
+                   matrix_data = avavg(found)%data
+                   p_matrix => matrix_data
+                   call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                        trim(tag_list), whead=whead, wdata=wdata, &
+                        nx=nx, ny=ny, nt=ncnt(found), &
+                        matrix=p_matrix, file_ind=found, &
+                        use_float=(.not. use_double))
+                   deallocate(matrix_data)
                 end if
              else if (present(flds)) then
-                call mct_aVect_copy(aVin=av,  aVout=avflds)
-              ! call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-              !      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-              !      use_float=(.not. use_double), file_ind=found)
+                ! Non-averaged with field subset: write from MOAB tags
+                call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                     trim(flds), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, nt=ncnt(found), &
+                     file_ind=found, &
+                     use_float=(.not. use_double))
+             else if (present(matrix)) then
+                ! Non-averaged, all fields, data supplied by the caller
+                call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                     trim(tag_list), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, nt=ncnt(found), &
+                     matrix=matrix, file_ind=found, &
+                     use_float=(.not. use_double))
              else
-              ! call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
-              !      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-              !      use_float=(.not. use_double), file_ind=found)
+                ! Non-averaged, all fields: write from MOAB tags
+                call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                     trim(tag_list), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, nt=ncnt(found), &
+                     file_ind=found, &
+                     use_float=(.not. use_double))
              endif
-
-             if (present(flds)) then
-                if (fk == 2) then
-                   call mct_aVect_clean(avflds)
-                end if
-             end if
 
              if (fk == 1) then
                 call seq_io_enddef(hist_file(found), file_ind=found)
@@ -1366,7 +1574,7 @@ contains
              if (fk == 2) then
                 fwrite(found) = .false.
                 if (useavg) then
-                   call mct_aVect_zero(avavg(found))
+                   avavg(found)%data(:,:) = 0.0_r8
                    avcnt(found) = 0
                 endif
                 tbnds1(found) = curr_time
@@ -1380,6 +1588,8 @@ contains
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
        endif   ! lwrite_now
+
+       call mct_list_clean(temp_list)
 
     endif   ! iamin_CPLID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

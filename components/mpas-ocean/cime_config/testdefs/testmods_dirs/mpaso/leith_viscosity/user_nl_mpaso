@@ -1,0 +1,6 @@
+ config_use_leith_del2 = .true.
+ config_use_leith_del4 = .true.
+ config_leith_visc2_max = 1000.0
+ config_leith_visc4_max = 2.0e14
+ config_use_mom_del2 = .false.
+ config_use_mom_del4 = .false.

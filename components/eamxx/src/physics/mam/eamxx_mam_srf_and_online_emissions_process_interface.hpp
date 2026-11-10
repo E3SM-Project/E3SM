@@ -2,14 +2,12 @@
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
 #include "share/remap/abstract_remapper.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
-#include <physics/mam/srf_emission.hpp>
 
-// For reading marine organics file
-#include <physics/mam/readfiles/marine_organics.hpp>
+#include "share/field/field_reader.hpp"
 
 // For declaring surface and online emission class derived from atm process
 // class
@@ -41,33 +39,25 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   const_view_2d dust_fluxes_;
 
   // Constituent fluxes of species in [kg/m2/s]
-  view_2d constituent_fluxes_;
+  Field constituent_fluxes_;
 
-  // Work array to store fluxes after unit conversions to kg/m2/s
-  view_1d fluxes_in_mks_units_;
+  // Runtime scale factors for online emissions from namelist.
+  Real dust_emis_scale_factor;
+  Real seasalt_emis_scale_factor;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
-  // For reading soil erodibility file
-  std::shared_ptr<AbstractRemapper> serod_horizInterp_;
-  std::shared_ptr<AtmosphereInput> serod_dataReader_;
   const_view_1d soil_erodibility_;
 
  public:
-  // For reading surface emissions and marine organics file
-  using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-  using marineOrganicsFunc =
-      marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
-
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
-
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
   // The name of the subcomponent
-  std::string name() const { return "mam_srf_online_emissions"; }
+  std::string name() const override { return "mam_srf_online_emissions"; }
 
   // grid
   void create_requests() override;
@@ -83,7 +73,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() override {/*Do nothing*/};
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
@@ -105,9 +95,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, icol);
       team.team_barrier();
-      // vertical heights has to be computed after computing dry mixing ratios
-      // for atmosphere
-      compute_vertical_layer_heights(team, dry_atm_pre_, icol);
+      compute_vertical_layer_heights(team, wet_atm_pre_, dry_atm_pre_, icol);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, icol);
     }  // Preprocess operator()
 
@@ -148,23 +136,20 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
     // Species-specific scale factor
     Real scale_factor = 1.0;
 
-    // Data structure for reading interpolation
-    std::shared_ptr<AbstractRemapper> horizInterp_;
-    std::shared_ptr<AtmosphereInput> dataReader_;
-    srfEmissFunc::srfEmissTimeState timeState_;
-    srfEmissFunc::srfEmissInput data_start_, data_end_;
-    srfEmissFunc::srfEmissOutput data_out_;
+    // Data interpolation object and local output fields for each file sector.
+    std::shared_ptr<DataInterpolation> data_interp_;
+    std::vector<Field> emiss_sector_fields_;
   };
 
   // A vector for carrying emissions for all the species
   std::vector<srf_emiss_> srf_emiss_species_;
 
   // For reading marine organics file
-  std::shared_ptr<AbstractRemapper> morg_horizInterp_;
-  std::shared_ptr<AtmosphereInput> morg_dataReader_;
-  marineOrganicsFunc::marineOrganicsTimeState morg_timeState_;
-  marineOrganicsFunc::marineOrganicsInput morg_data_start_, morg_data_end_;
-  marineOrganicsFunc::marineOrganicsOutput morg_data_out_;
+  std::shared_ptr<DataInterpolation> morg_data_interp_;
+  std::vector<Field> morg_fields_;
+
+  // Temporary field for accumulating sector emissions during run_impl
+  Field sector_field_sum_;
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
@@ -172,6 +157,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+  
+  // Read soil erodibility data from file
+  void read_soil_erodibility_data();
 
 };  // MAMSrfOnlineEmiss
 

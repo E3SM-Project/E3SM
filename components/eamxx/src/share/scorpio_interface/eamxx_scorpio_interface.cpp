@@ -12,6 +12,7 @@
 #include <set>
 #include <numeric>
 #include <functional>
+#include <string_view>
 
 namespace scream {
 namespace scorpio {
@@ -204,12 +205,16 @@ int pio_iotype (IOType iotype) {
   int iotype_int = {};
   auto& s = ScorpioSession::instance();
   switch(iotype){
-    case IOType::DefaultIOType: iotype_int = s.pio_type_default;                    break;
-    case IOType::NetCDF:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);   break;
-    case IOType::PnetCDF:       iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);  break;
-    case IOType::Adios:         iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);    break;
-    case IOType::Adiosc:        iotype_int = static_cast<int>(PIO_IOTYPE_ADIOSC);   break;
-    case IOType::Hdf5:          iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);     break;
+    case IOType::DefaultIOType:   iotype_int = s.pio_type_default;                           break;
+    case IOType::PnetCDF:         iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);         break;
+    case IOType::NetCDF:          iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);          break;
+    case IOType::NetCDF4C:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF4C);        break;
+    case IOType::NetCDF4P:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF4P);        break;
+    case IOType::NetCDF4P_NCZARR: iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF4P_NCZARR); break;
+    case IOType::Adios:           iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);           break;
+    case IOType::Adiosc:          iotype_int = static_cast<int>(PIO_IOTYPE_ADIOSC);          break;
+    case IOType::Hdf5:            iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);            break;
+    case IOType::Hdf5C:           iotype_int = static_cast<int>(PIO_IOTYPE_HDF5C);           break;
     default:
       EKAT_ERROR_MSG ("Unrecognized/unsupported iotype.\n");
   }
@@ -251,50 +256,55 @@ struct PeekFile {
   bool            was_open;
 };
 
-PIOFile& get_file (const std::string& filename,
-                   const std::string& context)
+PIOFile& get_file (std::string_view filename,
+                   std::string_view context)
 {
   auto& s = ScorpioSession::instance();
+  const std::string filename_str(filename);
 
-  EKAT_REQUIRE_MSG (s.files.count(filename)==1,
+  EKAT_REQUIRE_MSG (s.files.count(filename_str)==1,
       "Error! Could not retrieve the file. File not open.\n"
-      " - filename: " + filename + "\n"
+      " - filename: " + filename_str + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return s.files.at(filename);
+  return s.files.at(filename_str);
 }
 
-PIODim& get_dim (const std::string& filename,
-                 const std::string& dimname,
-                 const std::string& context)
+PIODim& get_dim (std::string_view filename,
+                 std::string_view dimname,
+                 std::string_view context)
 {
   const auto& f = get_file(filename,context);
-  EKAT_REQUIRE_MSG (f.dims.count(dimname)==1,
+  const std::string filename_str(filename);
+  const std::string dimname_str(dimname);
+  EKAT_REQUIRE_MSG (f.dims.count(dimname_str)==1,
       "Error! Could not retrieve dimension. Dimension not found.\n"
-      " - filename: " + filename + "\n"
-      " - dimname : " + dimname + "\n"
+      " - filename: " + filename_str + "\n"
+      " - dimname : " + dimname_str + "\n"
       " - dims on file: " + print_map_keys(f.dims) + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return *f.dims.at(dimname);
+  return *f.dims.at(dimname_str);
 }
 
-PIOVar& get_var (const std::string& filename,
-                 const std::string& varname,
-                 const std::string& context)
+PIOVar& get_var (std::string_view filename,
+                 std::string_view varname,
+                 std::string_view context)
 {
   const auto& f = get_file(filename,context);
-  EKAT_REQUIRE_MSG (f.vars.count(varname)==1,
+  const std::string filename_str(filename);
+  const std::string varname_str(varname);
+  EKAT_REQUIRE_MSG (f.vars.count(varname_str)==1,
       "Error! Could not retrieve variable. Variable not found.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + varname + "\n"
+      " - filename: " + filename_str + "\n"
+      " - varname : " + varname_str + "\n"
       " - vars on file : " + print_map_keys(f.vars) + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return *f.vars.at(varname);
+  return *f.vars.at(varname_str);
 }
 
 } // namespace impl

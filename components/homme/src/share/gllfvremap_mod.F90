@@ -45,6 +45,9 @@ module gllfvremap_mod
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod, only: bfb_pow
 #endif
+#ifdef HORIZ_OPENMP
+  use thread_mod, only: hthreads
+#endif
 
   implicit none
 
@@ -539,7 +542,6 @@ contains
     real(kind=real_kind), intent(out) :: p(psz)
     logical, intent(in), optional :: square, augment
 
-    type (hybrid_t) :: hybrid
     integer :: ie, nf2
     logical :: augment_in
 
@@ -566,8 +568,8 @@ contains
     real(kind=real_kind), intent(in) :: g(:)
     real(kind=real_kind), intent(out) :: p(:)
 
-    real(kind=real_kind) :: wg(np,np,1), wf(np*np,2), ones(np,np), qmin, qmax, phispg(npsq)
-    integer :: nf, nf2, i, j, k
+    real(kind=real_kind) :: wg(np,np,1), wf(np*np,2), ones(np,np), phispg(npsq)
+    integer :: nf, nf2, k
 
     ones = one
     nf = gfr%nphys
@@ -606,7 +608,7 @@ contains
     ! extrema. Conserve the integral of height.
 
     use kinds, only: iulog
-    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr, edge_g
+    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr
     use bndry_mod, only: bndry_exchangeV
 
     type (hybrid_t), intent(in) :: hybrid
@@ -670,7 +672,6 @@ contains
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use hybvcoord_mod, only: hvcoord_t
-    use thread_mod, only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -701,7 +702,6 @@ contains
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use hybvcoord_mod, only: hvcoord_t
-    use thread_mod, only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -729,7 +729,6 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use thread_mod, only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -773,7 +772,6 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use thread_mod, only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -977,6 +975,7 @@ contains
 
     real(kind=real_kind) :: wrk(np*np*nphys*nphys), v
     integer :: gi, gj, fi, fj, info
+    external :: dgeqrf
 
     do fj = 1,nphys
        do fi = 1,nphys
@@ -1061,6 +1060,7 @@ contains
 
     integer :: nf, nf2, npi, np2, gi, gj, fi, fj, info
     real(kind=real_kind) :: wrk(gfr%nphys,gfr%nphys), x(np,np), wr(np*np)
+    external :: dtrsm, dormqr, dtrtrs
 
     nf = gfr%nphys
     nf2 = nf*nf
@@ -1636,6 +1636,7 @@ contains
 
     real(kind=real_kind) :: Mnp2(np*np,4)
     integer :: i, info, n
+    external :: dpotrf, dtrtrs
 
     if (gfr%nphys /= 1) return
 
@@ -1677,6 +1678,7 @@ contains
 
     real(kind=real_kind) :: x(np*np), mass, wr(4)
     integer :: np2, i, n, info
+    external :: dtrtrs
 
     np2 = np*np
     n = np2
@@ -1773,7 +1775,7 @@ contains
 
     do ie = nets,nete
        wr(:,:,1) = elem(ie)%state%phis
-       call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,:1))
+       call gfr_pg1_g_reconstruct_scalar(gfr, elem(ie)%metdet, wr(:,:,:1))
        elem(ie)%state%phis = wr(:,:,1)
        call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(1,1,ie), &
             gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
@@ -1860,11 +1862,10 @@ contains
     call gfr_f2g_dss(hybrid, elem, nets, nete)
   end subroutine gfr_pg1_reconstruct_hybrid
 
-  subroutine gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+  subroutine gfr_pg1_g_reconstruct_scalar(gfr, gll_metdet, g)
     ! Wrapper to core solve routine. g is a density.
 
     type (GllFvRemap_t), intent(in) :: gfr
-    integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
@@ -1886,10 +1887,9 @@ contains
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp(:,:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
-    real(kind=real_kind) wr(np*np)
 
     g = dp*g
-    call gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+    call gfr_pg1_g_reconstruct_scalar(gfr, gll_metdet, g)
     g = g/dp
   end subroutine gfr_pg1_g_reconstruct_scalar_dp
 
@@ -1911,7 +1911,7 @@ contains
           wr(:,:,d) = elem(ie)%Dinv(:,:,d,1)*v(:,:,1,k) + elem(ie)%Dinv(:,:,d,2)*v(:,:,2,k)
        end do
        do d = 1,2
-          call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,d:d))
+          call gfr_pg1_g_reconstruct_scalar(gfr, elem(ie)%metdet, wr(:,:,d:d))
        end do
        ! ref -> sphere
        do d = 1,2
@@ -1925,7 +1925,6 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use thread_mod, only: hthreads
     use hybvcoord_mod, only: hvcoord_t
 
     type (parallel_t), intent(in) :: par
@@ -1953,7 +1952,6 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use thread_mod, only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
@@ -2358,7 +2356,7 @@ contains
     use parallel_mod, only: global_shared_buf, global_shared_sum, nrepro_vars
     use global_norms_mod, only: wrap_repro_sum
     use kinds, only: iulog
-    use dimensions_mod, only: nlev, qsize_d, qsize
+    use dimensions_mod, only: nlev, qsize
     use hybvcoord_mod, only: hvcoord_t
 
     type (GllFvRemap_t), intent(in) :: gfr

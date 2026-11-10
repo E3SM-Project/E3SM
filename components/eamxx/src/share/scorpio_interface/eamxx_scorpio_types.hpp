@@ -23,11 +23,15 @@ std::string e2str (const FileMode mode);
 enum IOType {
   // Default I/O type is used to let the code choose I/O type as needed (via CIME)
   DefaultIOType = 0,
-  NetCDF,
   PnetCDF,
+  NetCDF,
+  NetCDF4C,
+  NetCDF4P,
+  NetCDF4P_NCZARR,
   Adios,
   Adiosc,
   Hdf5,
+  Hdf5C,
   Invalid
 };
 

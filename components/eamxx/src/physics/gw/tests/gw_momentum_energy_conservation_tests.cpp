@@ -58,12 +58,7 @@ struct UnitWrap::UnitTest<D>::TestMomentumEnergyConservation : public UnitWrap::
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        momentum_energy_conservation_f(d);
-      }
-      else {
-        momentum_energy_conservation(d);
-      }
+      momentum_energy_conservation(d);
     }
 
     // We need a tolerance since the order of operations is different from f90.

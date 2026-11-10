@@ -162,7 +162,7 @@ contains
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
 
     call t_startf('precomput_divdp')
-    call precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )   
+    call precompute_divdp( elem , deriv , nets , nete )   
     call t_stopf('precomput_divdp')
 
     !rhs_multiplier is for obtaining dp_tracers at each stage:
@@ -185,7 +185,7 @@ contains
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.
     call t_startf('qdp_tavg')
-    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
+    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
     call t_stopf('qdp_tavg')
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -212,13 +212,11 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine precompute_divdp( elem , hybrid , deriv , dt , nets , nete , n0_qdp )
+  subroutine precompute_divdp( elem , deriv , nets , nete )
     implicit none
     type(element_t)      , intent(inout) :: elem(:)
-    type (hybrid_t)      , intent(in   ) :: hybrid
     type (derivative_t)  , intent(in   ) :: deriv
-    real(kind=real_kind) , intent(in   ) :: dt
-    integer              , intent(in   ) :: nets , nete , n0_qdp
+    integer              , intent(in   ) :: nets , nete 
     integer :: ie , k
 
     do ie = nets , nete 
@@ -231,11 +229,10 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
+  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
     implicit none
     type(element_t)     , intent(inout) :: elem(:)
-    integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
-    real(kind=real_kind), intent(in   ) :: nu_p
+    integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete 
     integer :: ie
 
     do ie=nets,nete

@@ -40,7 +40,8 @@ TEST_CASE("scream_ad_test") {
   // Load ad parameter list
   ekat::ParameterList ad_params("Atmosphere Driver");
   parse_yaml_file(fname,ad_params);
-  ad_params.print();
+  if (ad_params.sublist("debug").get("print_params",false))
+    ad_params.print();
 
   // Time stepping parameters
         auto& ts     = ad_params.sublist("time_stepping");

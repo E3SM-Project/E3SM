@@ -201,9 +201,11 @@ extern "C" void pam_driver() {
   // Microphysics initialization - load lookup tables
   #if defined(P3_CXX)
     if (is_first_step || is_restart) {
-      auto am_i_root = coupler.get_option<bool>("am_i_root");
       using P3F = scream::p3::Functions<scream::Real, scream::DefaultDevice>;
-      P3F::p3_init(/*write_tables=*/false, am_i_root);
+      // PAM does not currently plumb an MPI communicator through the
+      // coupler, so pass comm=nullptr here: every rank reads the lookup
+      // table files independently, matching the pre-existing behavior.
+      P3F::p3_init(/*write_tables=*/false, /*comm=*/nullptr);
       pam::p3_init_lookup_tables(); // Load P3 lookup table data - avoid re-loading every CRM call
     }
   #endif

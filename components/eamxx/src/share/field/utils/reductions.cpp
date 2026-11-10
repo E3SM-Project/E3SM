@@ -19,6 +19,9 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
   ST c = 0;
   ST temp,y;
   switch (fl.rank()) {
+    case 0:
+      norm = f.template get_strided_view<const ST,Host>()();
+      break;
     case 1:
       {
         auto v = f.template get_strided_view<const ST*,Host>();
@@ -215,6 +218,9 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
   ST c = 0;
   ST temp,y;
   switch (fl.rank()) {
+    case 0:
+      sum = f.template get_strided_view<const ST,Host>()();
+      break;
     case 1:
       {
         auto v = f.template get_strided_view<const ST*,Host>();
@@ -319,6 +325,9 @@ ST field_max(const Field& f, const ekat::Comm* comm)
 
   ST max = std::numeric_limits<ST>::lowest();
   switch (fl.rank()) {
+    case 0:
+      max = f.template get_strided_view<const ST,Host>()();
+      break;
     case 1:
       {
         auto v = f.template get_strided_view<const ST*,Host>();
@@ -405,6 +414,9 @@ ST field_min(const Field& f, const ekat::Comm* comm)
 
   ST min = std::numeric_limits<ST>::max();
   switch (fl.rank()) {
+    case 0:
+      min = f.template get_strided_view<const ST,Host>()();
+      break;
     case 1:
       {
         auto v = f.template get_strided_view<const ST*,Host>();
@@ -536,22 +548,22 @@ ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm)
   EKAT_REQUIRE_MSG (f.is_allocated(),
     "[field_sum] Error! Input field was not yet allocated.\n");
 
-  ScalarWrapper norm;
+  ScalarWrapper sum;
   switch (f.data_type()) {
     case DataType::IntType:
-      norm.set(impl::field_sum<int>(f,comm));
+      sum.set(impl::field_sum<int>(f,comm));
       break;
     case DataType::FloatType:
-      norm.set(impl::field_sum<float>(f,comm));
+      sum.set(impl::field_sum<float>(f,comm));
       break;
     case DataType::DoubleType:
-      norm.set(impl::field_sum<double>(f,comm));
+      sum.set(impl::field_sum<double>(f,comm));
       break;
     default:
       EKAT_ERROR_MSG ("[field_sum] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
-  return norm;
+  return sum;
 }
 
 ScalarWrapper field_max(const Field& f, const ekat::Comm* comm)
@@ -559,22 +571,22 @@ ScalarWrapper field_max(const Field& f, const ekat::Comm* comm)
   EKAT_REQUIRE_MSG (f.is_allocated(),
     "[field_max] Error! Input field was not yet allocated.\n");
 
-  ScalarWrapper norm;
+  ScalarWrapper max;
   switch (f.data_type()) {
     case DataType::IntType:
-      norm.set(impl::field_max<int>(f,comm));
+      max.set(impl::field_max<int>(f,comm));
       break;
     case DataType::FloatType:
-      norm.set(impl::field_max<float>(f,comm));
+      max.set(impl::field_max<float>(f,comm));
       break;
     case DataType::DoubleType:
-      norm.set(impl::field_max<double>(f,comm));
+      max.set(impl::field_max<double>(f,comm));
       break;
     default:
       EKAT_ERROR_MSG ("[field_max] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
-  return norm;
+  return max;
 }
 
 ScalarWrapper field_min(const Field& f, const ekat::Comm* comm)
@@ -582,22 +594,22 @@ ScalarWrapper field_min(const Field& f, const ekat::Comm* comm)
   EKAT_REQUIRE_MSG (f.is_allocated(),
     "[field_min] Error! Input field was not yet allocated.\n");
 
-  ScalarWrapper norm;
+  ScalarWrapper min;
   switch (f.data_type()) {
     case DataType::IntType:
-      norm.set(impl::field_min<int>(f,comm));
+      min.set(impl::field_min<int>(f,comm));
       break;
     case DataType::FloatType:
-      norm.set(impl::field_min<float>(f,comm));
+      min.set(impl::field_min<float>(f,comm));
       break;
     case DataType::DoubleType:
-      norm.set(impl::field_min<double>(f,comm));
+      min.set(impl::field_min<double>(f,comm));
       break;
     default:
       EKAT_ERROR_MSG ("[field_min] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
   }
-  return norm;
+  return min;
 }
 
 } // namespace scream

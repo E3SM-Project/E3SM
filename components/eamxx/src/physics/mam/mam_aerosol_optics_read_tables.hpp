@@ -4,9 +4,8 @@
 #include "mam_coupling.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/data_managers/grids_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -18,15 +17,14 @@ make_field (const std::string& name,
             const FieldLayout& layout,
             const std::shared_ptr<const AbstractGrid>& grid)
 {
-  const auto units = ekat::units::Units::nondimensional();
-  FieldIdentifier fid(name,layout,units,grid->name());
+  FieldIdentifier fid(name,layout,ekat::units::none,grid->name());
   Field f(fid);
   f.allocate_view();
   return f;
 };
 
-using view_2d_host    = typename KT::view_2d<Real>::HostMirror;
-using view_5d_host    = typename KT::view_ND<Real, 5>::HostMirror;
+using view_2d_host    = typename KT::view_2d<Real>::host_mirror_type;
+using view_5d_host    = typename KT::view_ND<Real, 5>::host_mirror_type;
 using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
 constexpr int nlwbands = mam4::modal_aero_opt::nlwbands;
@@ -89,15 +87,14 @@ inline void read_rrtmg_table(
   constexpr int refindex_im   = mam4::modal_aero_opt::refindex_im;
   constexpr int coef_number   = mam4::modal_aero_opt::coef_number;
 
-  using view_3d_host = typename KT::view_3d<Real>::HostMirror;
+  using view_3d_host = typename KT::view_3d<Real>::host_mirror_type;
 
   // temp views:
   view_3d_host temp_lw_3d_host("temp_absplw_host", coef_number, refindex_real,
                                refindex_im);
 
-  AtmosphereInput rrtmg(table_filename, grid, aerosol_optics_fields, true);
-  rrtmg.read_variables();
-  rrtmg.finalize();
+  // NOTE: no need to set decomp gids, since these fields are NOT decomposed
+  read_fields(table_filename,aerosol_optics_fields);
 
   // copy data from host to device for mode 1
   // TODO: why can't we copy device data directly?
@@ -223,10 +220,8 @@ inline void read_water_refindex(const std::string &table_filename,
     refindex_real_water_lw
   };
 
-  // create a object to read data
-  AtmosphereInput refindex_water(table_filename, grid, fields, true);
-  refindex_water.read_variables();
-  refindex_water.finalize();
+  // NOTE: no need to pass the gids, as these fields are not decomposed
+  read_fields(table_filename, fields);
 
   //  maybe make a 1D vied of Kokkos::complex<Real>
   const auto crefwlw_host = Kokkos::create_mirror_view(crefwlw);
@@ -277,9 +272,9 @@ create_refindex_fields (const std::string& surname,
 inline void set_refindex_aerosol(
     const int species_id,
     std::map<std::string, Field> fields,
-    mam_coupling::complex_view_2d::HostMirror
+    mam_coupling::complex_view_2d::host_mirror_type
         &specrefndxsw_host,  // complex refractive index for water visible
-    mam_coupling::complex_view_2d::HostMirror &specrefndxlw_host)
+    mam_coupling::complex_view_2d::host_mirror_type &specrefndxlw_host)
 {
   std::string sw_real_name = "refindex_real_aer_sw";
   std::string lw_real_name = "refindex_real_aer_lw";

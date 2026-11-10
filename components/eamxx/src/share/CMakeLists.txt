@@ -16,6 +16,9 @@ add_subdirectory(field)
 # Grid structures
 add_subdirectory(grid)
 
+# Diagnostic classes
+add_subdirectory(diagnostics)
+
 # Property checks structures
 add_subdirectory(property_checks)
 
@@ -27,9 +30,6 @@ add_subdirectory(data_managers)
 
 # Atm process
 add_subdirectory(atm_process)
-
-# Diagnostic classes
-add_subdirectory(diagnostics)
 
 # IO library
 add_subdirectory(io)

@@ -148,14 +148,14 @@ private:
 
   // TODO: do we need the counters on the device? It appears we never use them...
   ExecViewManaged<int[NUM_CONNECTION_SHARINGS+1][NUM_CONNECTION_KINDS+1]>             m_num_connections;
-  ExecViewManaged<int[NUM_CONNECTION_SHARINGS+1][NUM_CONNECTION_KINDS+1]>::HostMirror h_num_connections;
+  ExecViewManaged<int[NUM_CONNECTION_SHARINGS+1][NUM_CONNECTION_KINDS+1]>::host_mirror_type h_num_connections;
 
   ExecViewManaged<HaloExchangeUnstructuredConnectionInfo*> d_ucon;
-  ExecViewManaged<ConnectionInfo*>::HostMirror h_ucon;
+  ExecViewManaged<ConnectionInfo*>::host_mirror_type h_ucon;
   ExecViewManaged<int*>             d_ucon_ptr;
-  ExecViewManaged<int*>::HostMirror h_ucon_ptr;
+  ExecViewManaged<int*>::host_mirror_type h_ucon_ptr;
   ExecViewManaged<int*>             d_ucon_dir_ptr;
-  ExecViewManaged<int*>::HostMirror h_ucon_dir_ptr;
+  ExecViewManaged<int*>::host_mirror_type h_ucon_dir_ptr;
   // Helper used to accumulate connections during add_connection phase. Emptied
   // in finalize. l_ is local; r_ is remote.
   struct UConInfo {

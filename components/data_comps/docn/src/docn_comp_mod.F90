@@ -291,7 +291,7 @@ CONTAINS
     kssh  = mct_aVect_indexRA(o2x,'So_ssh')
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
-    kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
+    kfraz = mct_aVect_indexRA(o2x,'Fioo_frazilm') ! ocn frazil
     kh2ot = mct_aVect_indexRA(o2x,'Faoo_h2otemp') ! ocn frazil
     kh2o  = mct_aVect_indexRA(o2x,'So_frac_h2oocn', perrwith='quiet')
 
@@ -988,6 +988,7 @@ CONTAINS
       mct_field = mct_string_toChar(mctOStr)
       tagname = trim(mct_field)//C_NULL_CHAR
       call moab_set_tag_from_av(tagname, o2x, index_list, mpoid, data, lsize)
+      call mct_string_clean(mctOStr) ! mct_list_get allocates a new string each iteration; free it here to avoid a per-timestep leak
     enddo
     call mct_list_clean(temp_list)
     deallocate(data)

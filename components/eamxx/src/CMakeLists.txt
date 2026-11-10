@@ -1,7 +1,7 @@
 if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib. Subfolders will add sources as we scan them
   add_library(eamxx_test_support)
-  target_include_directories (eamxx_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
+  target_link_libraries (eamxx_test_support PUBLIC Catch2::Catch2)
 endif()
 
 add_subdirectory(share)

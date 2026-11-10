@@ -1,7 +1,8 @@
 INCLUDE (ScreamUtils)
 
 # Create the test
-CreateUnitTest(surface_coupling surface_coupling.cpp
+CreateUnitTest(surface_coupling
+  SOURCES surface_coupling.cpp
   LABELS surface_coupling driver
   LIBS scream_control scream_share
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}

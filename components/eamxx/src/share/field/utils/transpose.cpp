@@ -7,7 +7,7 @@ namespace scream {
 namespace impl {
 
 template<typename ST>
-void transpose (const Field& src, Field& tgt) {
+void transpose (const Field& src, const Field& tgt) {
   using exec_space = Field::device_t::execution_space;
   constexpr auto Right = Kokkos::Iterate::Right;
 
@@ -61,7 +61,7 @@ void transpose (const Field& src, Field& tgt) {
 
 } // namespace impl
 
-void transpose (const Field& src, Field& tgt)
+void transpose (const Field& src, const Field& tgt)
 {
   // Check tgt field has the right layout
   const auto& src_id = src.get_header().get_identifier();

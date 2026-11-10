@@ -9,7 +9,8 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver;tms;shoc;cld;spa;p3;rrtmgp;physics;dp")
-CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2_dp "homme_shoc_cld_spa_p3_rrtmgp_pg2_dp.cpp"
+CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_pg2_dp
+  SOURCES homme_shoc_cld_spa_p3_rrtmgp_pg2_dp.cpp
   LABELS ${TEST_LABELS}
   LIBS cld_fraction tms shoc spa iop_forcing p3 scream_rrtmgp ${dynLibName} scream_control
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}

@@ -17,6 +17,8 @@ macro(BuildCprnc)
     set(CPRNC_BINARY ${CCSM_CPRNC} CACHE INTERNAL "")
     configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake.in
                     ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake @ONLY)
+    configure_file(${SCREAM_BASE_DIR}/cmake/ProcessUtils.cmake
+                   ${CMAKE_BINARY_DIR}/bin/ProcessUtils.cmake COPYONLY)
   else()
     if (NOT "${CCSM_CPRNC}" STREQUAL "")
       message(WARNING "Path ${CCSM_CPRNC} does not exist, so we will try to build it")
@@ -51,6 +53,8 @@ macro(BuildCprnc)
 
       configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake.in
                       ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake @ONLY)
+      configure_file(${SCREAM_BASE_DIR}/cmake/ProcessUtils.cmake
+                     ${CMAKE_BINARY_DIR}/bin/ProcessUtils.cmake COPYONLY)
     endif()
   endif()
 endmacro()

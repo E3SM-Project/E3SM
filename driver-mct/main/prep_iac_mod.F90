@@ -249,7 +249,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     if (l2zacc_lx_cnt > 1 ) then 
        do eli = 1,num_inst_lnd
-          write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
+          !write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
 
           call mct_avect_avg(l2zacc_lx(eli),l2zacc_lx_cnt)
           

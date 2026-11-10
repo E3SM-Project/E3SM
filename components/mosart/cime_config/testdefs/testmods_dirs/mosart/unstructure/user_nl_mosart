@@ -1,4 +1,4 @@
 frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_Global_half_unstructured_c200728.nc'
-frivinp_mesh = 'UNDEFINED'
+frivinp_mesh = '$DIN_LOC_ROOT/rof/mosart/SCRIP_Global_half_unstructured_c200728.nc'
 inundflag = .true.
 opt_elevprof = 1

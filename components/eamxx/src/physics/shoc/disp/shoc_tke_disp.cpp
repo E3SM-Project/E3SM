@@ -20,7 +20,10 @@ void Functions<Real,DefaultDevice>
   const Scalar&                Ckh,
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
+  const bool&                  do_3d_turb,
   const view_2d<const Pack>&  wthv_sec,
+  const view_3d<const Pack>&  shear_strain3d_components,
+  const view_2d<Pack>&        shear_strain3d,
   const view_2d<const Pack>&  shoc_mix,
   const view_2d<const Pack>&  dz_zi,
   const view_2d<const Pack>&  dz_zt,
@@ -28,6 +31,7 @@ void Functions<Real,DefaultDevice>
   const view_2d<const Pack>&  tabs,
   const view_2d<const Pack>&  u_wind,
   const view_2d<const Pack>&  v_wind,
+  const view_2d<const Pack>&  w_field,
   const view_2d<const Pack>&  brunt,
   const view_2d<const Pack>&  zt_grid,
   const view_2d<const Pack>&  zi_grid,
@@ -47,11 +51,17 @@ void Functions<Real,DefaultDevice>
     const Int i = team.league_rank();
 
     auto workspace       = workspace_mgr.get_workspace(team);
+    uview_2d<const Pack> shear_strain3d_components_s;
+    if (do_3d_turb) {
+      shear_strain3d_components_s = ekat::subview(shear_strain3d_components, i);
+    }
 
     shoc_tke(team, nlev, nlevi, dtime,
              lambda_low, lambda_high, lambda_slope, lambda_thresh,
-             Ckh, Ckm, shoc_1p5tke,
+             Ckh, Ckm, shoc_1p5tke, do_3d_turb,
              ekat::subview(wthv_sec, i),
+             shear_strain3d_components_s,
+             ekat::subview(shear_strain3d, i),
              ekat::subview(shoc_mix, i),
              ekat::subview(dz_zi, i),
              ekat::subview(dz_zt, i),
@@ -59,6 +69,7 @@ void Functions<Real,DefaultDevice>
              ekat::subview(tabs, i),
              ekat::subview(u_wind, i),
              ekat::subview(v_wind, i),
+             ekat::subview(w_field, i),
              ekat::subview(brunt, i),
              ekat::subview(zt_grid, i),
              ekat::subview(zi_grid, i),

@@ -456,6 +456,13 @@ contains
          configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
+         if ( poolItr % memberName(1:nameLength) == 'mixedLayerHeatBudget' .and. .not. config_compute_active_tracer_budgets) then
+            call mpas_log_write( &
+               'Cannot run mixed layer heat budget AM without config_compute_active_tracer_budget=.true., Disabling AM', &
+                MPAS_LOG_WARN)
+            config_AM_enable = .false.
+         end if
+
          if ( config_AM_enable ) then
 #ifdef MPAS_DEBUG
             call mpas_log_write( '      Initializing AM ' // poolItr % memberName(1:nameLength))

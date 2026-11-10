@@ -19,6 +19,17 @@ ENDIF ()
 
 MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
+# Allow to skip the comparison of the tests' output against baselines (e.g., if we only care about
+# comparisons within the same build, like f90 vs cxx)
+OPTION(HOMME_SKIP_BASELINE_COMPARE "Skip the comparison against baseline results in the tests" OFF)
+# CMake accepts many spellings of a boolean (1, YES, true, ...), but the test scripts only know ON/OFF
+IF (HOMME_SKIP_BASELINE_COMPARE)
+  SET (HOMME_SKIP_BASELINE_COMPARE ON)
+  MESSAGE(STATUS "HOMME_SKIP_BASELINE_COMPARE is ON: tests will not be compared against baselines")
+ELSE ()
+  SET (HOMME_SKIP_BASELINE_COMPARE OFF)
+ENDIF ()
+
 # Determine if there is a submission system
 OPTION(USE_QUEUING "Whether run tests through the queue" TRUE)
 IF (USE_QUEUING)
@@ -69,11 +80,22 @@ ENDIF ()
 IF (${HOMME_SUBMISSION_TYPE} STREQUAL none) 
   SET(HOMME_QUEUING FALSE)
   IF (USE_NUM_PROCS)
-    MESSAGE(STATUS "Using ${USE_NUM_PROCS} processors")
+    # USE_NUM_PROCS is the number of ranks CIME has allocated (e.g. from a
+    # _P96 test option).  Treat it as the cap: each test uses as many ranks
+    # as it needs, but no more than USE_NUM_PROCS.
+    SET(MAX_NUM_PROCS ${USE_NUM_PROCS})
+    MESSAGE(STATUS "HOMME testing max procs (from USE_NUM_PROCS): ${USE_NUM_PROCS}")
   ELSE ()
-    INCLUDE(ProcessorCount)
-    ProcessorCount(MAX_NUM_PROCS)
-    MESSAGE(STATUS "Warning: No queuing system. Maximum number of processes is ${MAX_NUM_PROCS}")
+    # HOMME_TESTING_MAX_PROCS caps the per-test NUM_CPUS when running without a
+    # queuing system and USE_NUM_PROCS is not set.  The default of 24 matches a
+    # typical CIME _P24 test layout; pass -DHOMME_TESTING_MAX_PROCS=N to
+    # override (e.g. from a CIME _P<N> test name or a machine XML default).
+    IF (NOT DEFINED HOMME_TESTING_MAX_PROCS)
+      SET (HOMME_TESTING_MAX_PROCS 24 CACHE STRING
+           "Maximum MPI ranks per test when running without a queuing system (default 24)")
+    ENDIF ()
+    SET(MAX_NUM_PROCS ${HOMME_TESTING_MAX_PROCS})
+    MESSAGE(STATUS "HOMME testing max procs (HOMME_TESTING_MAX_PROCS): ${HOMME_TESTING_MAX_PROCS}")
   ENDIF ()
 ELSE ()
   IF (USE_NUM_PROCS)
@@ -117,6 +139,15 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
                ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
+# Per-test timeout (seconds) applied by runTestsStd() via the shell 'timeout'
+# command.  On timeout the test is skipped and the suite continues rather than
+# aborting; 0 disables the timeout entirely.
+IF (NOT DEFINED HOMME_TESTING_TIMELIMIT)
+  SET (HOMME_TESTING_TIMELIMIT 1800 CACHE STRING
+       "Per-test timeout in seconds used by runTestsStd() (0 = no limit)")
+ENDIF ()
+MESSAGE(STATUS "HOMME per-test testing timelimit: ${HOMME_TESTING_TIMELIMIT} seconds")
+
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/cmake_variables.sh
                ${CMAKE_BINARY_DIR}/tests/cmake_variables.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/check_baseline.sh
@@ -145,6 +176,8 @@ ADD_CUSTOM_TARGET(check
 if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 # Force cprnc to be built when make check is run
 ADD_DEPENDENCIES(check cprnc)
+# Same for test-execs, since the tests need cprnc (a no-op if cprnc is a prebuilt binary, found via CPRNC_DIR)
+ADD_DEPENDENCIES(test-execs cprnc)
 endif()
 
 

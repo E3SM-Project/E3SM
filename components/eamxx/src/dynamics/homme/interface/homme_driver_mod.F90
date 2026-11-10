@@ -183,11 +183,12 @@ contains
   subroutine prim_init_model_f90 () bind(c)
     use prim_driver_mod,   only: prim_init_ref_states_views, &
                                  prim_init_diags_views, prim_init_kokkos_functors, &
-                                 prim_init_state_views
+                                 prim_init_state_views, prim_init_tensorvisc, &
+                                 prim_init_tensorvisc2
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
-    use global_norms_mod,  only: dss_hvtensor, print_cfl
-    use control_mod,       only: disable_diagnostics
+    use global_norms_mod,  only: dss_hvtensor, print_cfl, print_mesh_stats
+    use control_mod,       only: disable_diagnostics, topology
     use dimensions_mod,    only: nelemd
     use homme_context_mod, only: is_model_inited, is_data_structures_inited, &
                                  elem, hybrid, hvcoord, deriv, tl
@@ -210,8 +211,28 @@ contains
     ! Apply dss and bilinear projection to tensor coefficients
     call dss_hvtensor(elem,hybrid,1,nelemd)
 
-    ! Print advective and viscious CFL estimates
+    ! Update the C++ tensorVisc view with dss_hvtensor's result (the other,
+    ! constant, geometry views were already sent to C++ earlier, in
+    ! prim_complete_init1_phase_f90 -> prim_init_grid_views).
+    call prim_init_tensorvisc (elem)
+
+    ! Same as above, but for tensorVisc_2 (the sponge-layer tensor
+    ! coefficient), which dss_hvtensor also updates.
+    call prim_init_tensorvisc2 (elem)
+
+    ! Print mesh statistics (element area, norm(Dinv), distortion, etc.),
+    ! same diagnostics printed by EAM's prim_init2 (prim_driver_base.F90).
+    if (topology == "cube" .OR. topology == "plane") then
+       call print_mesh_stats(elem, hybrid, 1, nelemd)
+    end if
+
+    ! Print advective and viscous CFL estimates, plus dt_dyn/dt_tracer/
+    ! dt_remap timestep-size diagnostics (all printed inside print_cfl)
     call print_cfl(elem,hybrid,1,nelemd)
+
+    ! Initialize reference states before functors so that setup() can read
+    ! nu_scale_top from ref_states (needed by HyperviscosityFunctorImpl).
+    call prim_init_ref_states_views (elem)
 
     ! Initialize the C++ functors in the C++ context
     ! Here we set allocate_buffer=false since the AD
@@ -219,8 +240,7 @@ contains
     ! single buffer.
     call prim_init_kokkos_functors (allocate_buffer)
 
-    ! Init ref_states views, and diags views
-    call prim_init_ref_states_views (elem)
+    ! Init diags views
     call prim_init_diags_views (elem)
 
     ! In order to print up to date stuff in F90

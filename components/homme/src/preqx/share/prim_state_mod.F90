@@ -71,7 +71,6 @@ contains
 
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete)
 
-    use physical_constants,     only: dd_pi
 
     type(element_t),            intent(in) :: elem(:)
     type(TimeLevel_t),target,   intent(in) :: tl
@@ -80,7 +79,7 @@ contains
     integer,                    intent(in) :: nets,nete
 
     ! Local variables...
-    integer :: i,j,k,ie
+    integer :: j,k,ie
     integer,parameter  :: type=ORDERED
 
     real (kind=real_kind)  :: Mass2,Mass
@@ -88,8 +87,6 @@ contains
     real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
     real (kind=real_kind),save  :: time0
     real (kind=real_kind),save  :: TOTE0=0,Qmass0(qsize_d)=0
-    real (kind=real_kind)  :: I_div(nlev)
-    real (kind=real_kind)  :: I_vort(nlev)
 
     real (kind=real_kind)  :: tmp(np,np,nets:nete)
     real (kind=real_kind),allocatable  :: tmp3d(:,:,:,:)
@@ -127,13 +124,12 @@ contains
 
 
     real(kind=real_kind) :: relvort
-    real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
-    real (kind=real_kind) :: time, time2,time1, scale, dt, dt_split
+    real (kind=real_kind) :: time, time2,time1, scale, dt
     real (kind=real_kind) :: KEvert,IEvert,T1,T2,T2_s,T2_m,S1,S2,S1_wet
     real (kind=real_kind) :: KEhorz,IEhorz,IEhorz_wet,IEvert_wet
     real (kind=real_kind) :: ddt_tot,ddt_diss
-    integer               :: n0, n0q, nm1, np1
+    integer               :: n0, n0q
     integer               :: npts,n,q
     
     call t_startf('prim_printstate')
@@ -649,7 +645,8 @@ contains
 
     type(hybrid_t), intent(in) :: hybrid
     integer, intent(in) :: nets, nete
-    integer :: ok, size, rss_int, share, text, datastack, ie
+    integer :: ok, ie
+    integer(8) :: size, rss_int, share, text, datastack
     real(kind=real_kind) :: rss, rss_min, rss_max, rss_mean
 
     ok = GPTLget_memusage(size, rss_int, share, text, datastack)
@@ -704,7 +701,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use control_mod, only : use_cpstar
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
-    use physical_constants, only : Cp, cpwater_vapor
+    use physical_constants, only : Cp
     use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
@@ -717,10 +714,9 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     integer :: ie,k,i,j
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1  ! delta pressure
     real (kind=real_kind), dimension(np,np)  :: E
-    real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
+    real (kind=real_kind), dimension(np,np)  :: suml,suml2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-    real (kind=real_kind), dimension(np,np,nlev)  :: p,phi
-    real (kind=real_kind) :: cp_star1,qval_t1,qval_t2
+    real (kind=real_kind) :: cp_star1,qval_t1
 
 
     integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
@@ -829,9 +825,6 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (hvcoord_t)                  :: hvcoord
     
     integer :: ie,k,q
-    real (kind=real_kind), dimension(np,np)  :: ps         ! pressure
-    real (kind=real_kind), dimension(np,np)  :: dp         ! delta pressure
-    real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance

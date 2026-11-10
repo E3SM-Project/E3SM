@@ -29,6 +29,28 @@
   -->
   <workflow_jobs id="default">
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
+    <job name="case.build">
+      <template>template.case.build</template>
+      <!-- Not part of the default submit workflow; submitted explicitly by case.build
+           when BATCHED_BUILD is TRUE on the machine. -->
+      <prereq>False</prereq>
+      <runtime_parameters>
+        <task_count>1</task_count>
+        <tasks_per_node>1</tasks_per_node>
+        <walltime>02:00:00</walltime>
+      </runtime_parameters>
+      <runtime_parameters MACH="pm-gpu">
+        <queue>shared</queue>
+      </runtime_parameters>
+      <runtime_parameters MACH="pm-cpu">
+        <queue>shared</queue>
+      </runtime_parameters>
+      <runtime_parameters MACH="cech">
+        <task_count>1</task_count>
+        <tasks_per_node>1</tasks_per_node>
+        <walltime>01:30:00</walltime>
+      </runtime_parameters>
+    </job>
     <job name="case.run">
       <template>template.case.run</template>
       <prereq>$BUILD_COMPLETE and not $TEST</prereq>

@@ -26,9 +26,6 @@ void SurfaceCouplingImporter::create_requests()
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
 
-  // The units of mixing ratio Q are technically non-dimensional.
-  // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  constexpr auto nondim = Units::nondimensional();
   constexpr auto m2 = pow(m, 2);
 
   // Define the different field layouts that will be used for this process
@@ -38,10 +35,10 @@ void SurfaceCouplingImporter::create_requests()
   const FieldLayout vector2d = m_grid->get_2d_vector_layout(2);
   const FieldLayout vector4d = m_grid->get_2d_vector_layout(4);
 
-  add_field<Computed>("sfc_alb_dir_vis",  scalar2d, nondim,  grid_name);
-  add_field<Computed>("sfc_alb_dir_nir",  scalar2d, nondim,  grid_name);
-  add_field<Computed>("sfc_alb_dif_vis",  scalar2d, nondim,  grid_name);
-  add_field<Computed>("sfc_alb_dif_nir",  scalar2d, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dir_vis",  scalar2d, none,    grid_name);
+  add_field<Computed>("sfc_alb_dir_nir",  scalar2d, none,    grid_name);
+  add_field<Computed>("sfc_alb_dif_vis",  scalar2d, none,    grid_name);
+  add_field<Computed>("sfc_alb_dif_nir",  scalar2d, none,    grid_name);
   add_field<Computed>("surf_lw_flux_up",  scalar2d, W/m2,    grid_name);
   add_field<Computed>("surf_sens_flux",   scalar2d, W/m2,    grid_name);
   add_field<Computed>("surf_evap",        scalar2d, kg/m2/s, grid_name);
@@ -51,9 +48,9 @@ void SurfaceCouplingImporter::create_requests()
   add_field<Computed>("qv_2m",            scalar2d, kg/kg,   grid_name);
   add_field<Computed>("wind_speed_10m",   scalar2d, m/s,     grid_name);
   add_field<Computed>("snow_depth_land",  scalar2d, m,       grid_name);
-  add_field<Computed>("ocnfrac",          scalar2d, nondim,  grid_name);
-  add_field<Computed>("landfrac",         scalar2d, nondim,  grid_name);
-  add_field<Computed>("icefrac",          scalar2d, nondim,  grid_name);
+  add_field<Computed>("ocnfrac",          scalar2d, none,    grid_name);
+  add_field<Computed>("landfrac",         scalar2d, none,    grid_name);
+  add_field<Computed>("icefrac",          scalar2d, none,    grid_name);
   // Friction velocity [m/s]
   add_field<Computed>("fv",               scalar2d, m/s,     grid_name);
   // Aerodynamical resistance
@@ -178,13 +175,15 @@ void SurfaceCouplingImporter::do_import(const bool called_during_initialization)
 
     auto offset = icol*info.col_stride + info.col_offset;
 
-    // if this is during initialization, check whether or not the field should be imported
+    // if this is during initialization, check whether or not the field should be imported.
+    // Also skip if cpl_indx == -1 (field not found in MCT attribute vector via perrWith='quiet').
+    // Note: indices are already converted from 1-based Fortran to 0-based C++, so valid indices are >= 0.
     bool do_import = (not called_during_initialization || info.transfer_during_initialization);
-    if (do_import) {
+    if (do_import && info.cpl_indx >= 0) {
 #ifdef HAVE_MOAB
       info.data[offset] = cpl_imports_view_d(info.cpl_indx, icol)*info.constant_multiple;
 #else
-      info.data[offset] = cpl_imports_view_d(icol,info.cpl_indx)*info.constant_multiple;
+      info.data[offset] = cpl_imports_view_d(icol, info.cpl_indx)*info.constant_multiple;
 #endif
     }
   });

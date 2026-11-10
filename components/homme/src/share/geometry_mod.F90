@@ -47,7 +47,7 @@ subroutine set_area_correction_map0(elem, nelemd, par, gp)
 
   real(kind=real_kind) :: aratio(nelemd,1)
   real(kind=real_kind) :: area(1)
-  integer :: ie, i, j
+  integer :: ie
 
   area = 0.0d0
   do ie=1,nelemd

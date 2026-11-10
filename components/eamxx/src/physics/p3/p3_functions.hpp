@@ -8,6 +8,7 @@
 #include <ekat_pack_kokkos.hpp>
 #include <ekat_parameter_list.hpp>
 #include <ekat_workspace.hpp>
+#include <ekat_comm.hpp>
 
 namespace scream
 {
@@ -363,6 +364,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> flux_qir, flux_qit;
     // rain sedimentation
     view_2d<Pack> v_qr, v_nr;
+    view_1d<bool> nucleationPossible, hydrometeorsPresent;
   };
 #endif
 
@@ -395,7 +397,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   static void get_global_ice_lookup_tables(view_ice_table &ice_table_vals,
                                            view_collect_table &collect_table_vals);
 
-  static P3LookupTables p3_init(const bool write_tables = false, const bool masterproc = false);
+  // If comm is non-null, only the root rank reads the lookup table files from
+  // disk; the data is then broadcast to the other ranks in comm. If comm is
+  // null (e.g. in stand-alone tools/unit tests), every calling process reads
+  // the files independently, as was always done in the past.
+  static P3LookupTables p3_init(const bool write_tables = false, const ekat::Comm* comm = nullptr);
 
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION

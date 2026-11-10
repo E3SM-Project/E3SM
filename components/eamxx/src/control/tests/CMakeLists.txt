@@ -3,9 +3,11 @@ if (NOT ${SCREAM_ONLY_GENERATE_BASELINES})
   include (ScreamUtils)
 
   # Unit test the ad
-  CreateUnitTest(ad_ut "ad_tests.cpp"
+  CreateUnitTest(ad_ut
+    SOURCES ad_tests.cpp
     LIBS scream_control
-    LABELS driver)
+    LABELS driver
+  )
 
   # Copy yaml input file to run directory
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ad_tests.yaml

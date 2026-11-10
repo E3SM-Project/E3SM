@@ -16,9 +16,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
     const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
-  scorpio::register_file(data_file, scorpio::Read);
   const int ncols_data = scorpio::get_dimlen(data_file, "ncol");
-  scorpio::release_file(data_file);
 
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
@@ -53,7 +51,6 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();
-  const auto nondim    = ekat::units::Units::nondimensional();
 
   std::vector<Field> field_emiss_sectors;
 
@@ -61,7 +58,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
   for(int icomp = 0; icomp < sector_size; ++icomp) {
     auto comp_name = sector_names[icomp];
     // set and allocate fields
-    Field f(FieldIdentifier(comp_name, layout_2d, nondim, tgt_grid->name()));
+    Field f(FieldIdentifier(comp_name, layout_2d, ekat::units::none, tgt_grid->name()));
     f.allocate_view();
     field_emiss_sectors.push_back(f);
     remapper->register_field_from_tgt(f);
@@ -73,7 +70,7 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
 }  // create_horiz_remapper
 
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput>
+std::shared_ptr<FieldReader>
 srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &srfEmiss_data_file) {
@@ -82,8 +79,13 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
     field_emiss_sectors.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
-                                           field_emiss_sectors, true);
+  auto gids = io_grid->get_partitioned_dim_gids();
+  auto comm = io_grid->get_comm();
+  auto reader = std::make_shared<FieldReader>();
+  reader->set_file_specs(srfEmiss_data_file);
+  reader->set_dim_decomp(gids, comm);
+  reader->set_fields(field_emiss_sectors);
+  return reader;
 }  // create_srfEmiss_data_reader
 
 template <typename S, typename D>
@@ -173,7 +175,7 @@ void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state,
 
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    std::shared_ptr<FieldReader> &reader, const util::TimeStamp &ts,
     const int time_index,  // zero-based
     const Real scale_factor,
     AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
@@ -183,7 +185,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 
   // 1. Read from file
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::read_data");
-  scorpio_reader->read_variables(time_index);
+  reader->read(time_index);
   stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::read_data");
 
   // 2. Run the horiz remapper (it is a do-nothing op if srfEmiss data is on
@@ -219,7 +221,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    std::shared_ptr<FieldReader> &reader, const util::TimeStamp &ts,
     AbstractRemapper &srfEmiss_horiz_interp, const Real scale_factor,
     srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
   // Now we check if we have to update the data that changes monthly
@@ -243,7 +245,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month, scale_factor,
+    update_srfEmiss_data_from_file(reader, ts, next_month, scale_factor,
                                    srfEmiss_horiz_interp, srfEmiss_end);
   }
 
@@ -258,7 +260,7 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
     std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
     srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
     srfEmissOutput &SrfEmissData_out,
-    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
+    std::shared_ptr<FieldReader> &SrfEmissDataReader) {
   // Init horizontal remap
   SrfEmissHorizInterp =
       create_horiz_remapper(grid, data_file, sectors, srf_map_file);
@@ -268,7 +270,7 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
   SrfEmissData_end   = srfEmissInput(ncol, sectors.size());
   SrfEmissData_out.init(ncol, 1, true);
 
-  // Create reader (an AtmosphereInput object)
+  // Create reader (an FieldReader object)
   SrfEmissDataReader =
       create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
 }  // init_srf_emiss_objects

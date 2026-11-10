@@ -28,7 +28,7 @@ class IOPDataManager
   template<typename ScalarT>
   using view_3d = KT::template view_3d<ScalarT>;
   template<typename ScalarT>
-  using view_1d_host = typename view_1d<ScalarT>::HostMirror;
+  using view_1d_host = typename view_1d<ScalarT>::host_mirror_type;
 
 public:
 
@@ -135,8 +135,6 @@ private:
   ekat::ParameterList m_params;
 
   TimeInfo m_time_info;
-
-  Real m_dynamics_dx_size;
 
   std::map<std::string,grid_ptr> m_io_grids;
 

@@ -9,9 +9,6 @@ module ExternalModelConstants
 
   integer, parameter, public :: EM_INITIALIZATION_STAGE                          = 000
 
-  integer, public, parameter :: EM_ID_BETR                                       = 001
-  integer, parameter, public :: EM_BETR_BEGIN_MASS_BALANCE_STAGE                 = 002
-  integer, parameter, public :: EM_BETR_PRE_DIAG_WATER_FLUX_STAGE                = 003
 
   integer, public, parameter :: EM_ID_FATES                                      = 101
   integer, parameter, public :: EM_FATES_SUNFRAC_STAGE                           = 102

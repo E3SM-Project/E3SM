@@ -49,6 +49,11 @@ if (TARGET zm)
   list(APPEND SCREAM_LIBS zm)
 endif()
 
+# GW is not always on yet
+if (TARGET gw)
+  list(APPEND SCREAM_LIBS gw)
+endif()
+
 if (SCREAM_ENABLE_MAM)
   list (APPEND SCREAM_LIBS mam)
 endif()

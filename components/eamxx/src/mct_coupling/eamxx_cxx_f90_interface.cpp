@@ -20,10 +20,6 @@
 #include <ekat_assert.hpp>
 #include <ekat_fpe.hpp>
 
-#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
-#include <hip/hip_runtime.h>
-#endif
-
 // Anonymous namespace, for some utility functions
 namespace {
 
@@ -228,12 +224,6 @@ void scream_setup_surface_coupling (const char*& import_field_names, int*& impor
   });
 }
 
-#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
-void scream_init_hip_atm () {
-    hipInit(0);
-}
-#endif
-
 void scream_init_atm ()
 {
   using namespace scream;
@@ -339,7 +329,7 @@ void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
     auto lat_cxx = phys_grid->get_geometry_data("lat").get_view<const Real*, Host>();
     auto lon_cxx = phys_grid->get_geometry_data("lon").get_view<const Real*, Host>();
 
-    using geo_view_f90 = ekat::Unmanaged<decltype(lat_cxx)::HostMirror>;
+    using geo_view_f90 = ekat::Unmanaged<decltype(lat_cxx)::host_mirror_type>;
     geo_view_f90 lat_f90(lat_ptr, ncols);
     geo_view_f90 lon_f90(lon_ptr, ncols);
     Kokkos::deep_copy(lat_f90, lat_cxx);
@@ -357,7 +347,7 @@ void scream_get_cols_area (double* const& area_ptr) {
 
     auto area_cxx = phys_grid->get_geometry_data("area").get_view<const Real*, Host>();
 
-    using geo_view_f90 = ekat::Unmanaged<decltype(area_cxx)::HostMirror>;
+    using geo_view_f90 = ekat::Unmanaged<decltype(area_cxx)::host_mirror_type>;
     geo_view_f90  area_f90 (area_ptr, ncols);
     Kokkos::deep_copy(area_f90,area_cxx);
   });

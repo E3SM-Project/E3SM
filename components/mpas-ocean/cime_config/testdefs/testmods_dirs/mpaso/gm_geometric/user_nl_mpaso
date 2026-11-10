@@ -1,0 +1,3 @@
+ config_gm_closure = 'geometric'
+ config_gm_spatially_variable_max_kappa = 800.0
+ config_gm_spatially_variable_min_kappa = 100.0

@@ -9,17 +9,33 @@
 
 #include <array>
 
+/* =================================================================================================
+  Turbulent Mountain Stress (TMS) handles surface stress from unresolved orography
+  by treating the unresolved terrain as an enhanced surface roughness. Using the
+  "effective roughness length" of Fiedler and Panofsky (1972), the orography is
+  replaced by an equivalent flat surface whose roughness length gives the same
+  area-averaged momentum flux under a neutral log-law profile.
+
+  References:
+    Richter, J. H., F. Sassi, and R. R. Garcia, 2010: Toward a physically
+      based gravity wave source parameterization in a general circulation
+      model. J. Atmos. Sci., 67, 136-156, doi:10.1175/2009JAS3112.1.
+    Fiedler, F., and H. A. Panofsky, 1972: The geostrophic drag coefficient
+      and the "effective" roughness length. Quart. J. Roy. Meteor. Soc., 98,
+      213-220, doi:10.1002/qj.49709841519.
+================================================================================================= */
+
 namespace scream
 {
 
-// =========================================================================================
+// =================================================================================================
 TurbulentMountainStress::TurbulentMountainStress (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
   // Do nothing
 }
 
-// =========================================================================================
+// =================================================================================================
 void TurbulentMountainStress::create_requests()
 {
   using namespace ekat::units;
@@ -28,7 +44,6 @@ void TurbulentMountainStress::create_requests()
   // Define some useful units. The units of mixing ratio
   // Q are technically non-dimensional. Nevertheless,
   // for output reasons, we like to see 'kg/kg'.
-  const auto nondim = Units::nondimensional();
   const auto m2 = pow(m,2);
 
   // Initialize grid from grids manager
@@ -48,25 +63,25 @@ void TurbulentMountainStress::create_requests()
   auto vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);
 
   constexpr int ps = Pack::n;
-  add_field<Required>("horiz_winds",    vector3d_mid, m/s,    grid_name,            ps);
-  add_field<Required>("T_mid",          scalar3d_mid, K,      grid_name,            ps);
-  add_field<Required>("p_mid",          scalar3d_mid, Pa,     grid_name,            ps);
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa,     grid_name,            ps);
-  add_field<Required>("sgh30",          scalar2d    , m,      grid_name);
-  add_field<Required>("landfrac",       scalar2d    , nondim, grid_name);
+  add_field<Required>("horiz_winds",    vector3d_mid, m/s,  grid_name,            ps);
+  add_field<Required>("T_mid",          scalar3d_mid, K,    grid_name,            ps);
+  add_field<Required>("p_mid",          scalar3d_mid, Pa,   grid_name,            ps);
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa,   grid_name,            ps);
+  add_field<Required>("sgh30",          scalar2d    , m,    grid_name);
+  add_field<Required>("landfrac",       scalar2d    , none, grid_name);
   add_tracer<Required>("qv", m_grid, kg/kg, ps);
 
   add_field<Computed>("surf_drag_coeff_tms", scalar2d, kg/(m2*s), grid_name);
   add_field<Computed>("wind_stress_tms",     vector2d, N/m2,      grid_name);
 }
 
-// =========================================================================================
+// =================================================================================================
 void TurbulentMountainStress::initialize_impl (const RunType /* run_type */)
 {
   // Do nothing
 }
 
-// =========================================================================================
+// =================================================================================================
 void TurbulentMountainStress::run_impl (const double /* dt */)
 {
   using TPF = ekat::TeamPolicyFactory<TMSFunctions::KT::ExeSpace>;
@@ -122,6 +137,15 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
   });
 
   // Compute TMS
+  // Tunable parameters read from the namelist (defaults match TMSFunctions::Defaults).
+  using Defaults = TMSFunctions::Defaults;
+  const Real obstacle_height_factor  = m_params.get<double>("obstacle_height_factor",  Defaults::obstacle_height_factor);
+  const Real obstacle_height_min     = m_params.get<double>("obstacle_height_min",     Defaults::obstacle_height_min);
+  const Real roughness_length_factor = m_params.get<double>("roughness_length_factor", Defaults::roughness_length_factor);
+  const Real roughness_length_max    = m_params.get<double>("roughness_length_max",    Defaults::roughness_length_max);
+  const Real ri_shear_sqr_min        = m_params.get<double>("ri_shear_sqr_min",        Defaults::ri_shear_sqr_min);
+  const Real drag_scaling_factor     = m_params.get<double>("drag_scaling_factor",     Defaults::drag_scaling_factor);
+
   TMSFunctions::compute_tms(ncols, nlevs,
                             ekat::scalarize(horiz_winds),
                             ekat::scalarize(T_mid),
@@ -129,15 +153,21 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
                             ekat::scalarize(exner),
                             ekat::scalarize(z_mid),
                             sgh30, landfrac,
+                            obstacle_height_factor,
+                            obstacle_height_min,
+                            roughness_length_factor,
+                            roughness_length_max,
+                            ri_shear_sqr_min,
+                            drag_scaling_factor,
                             surf_drag_coeff_tms, wind_stress_tms);
 }
 
-// =========================================================================================
+// =================================================================================================
 void TurbulentMountainStress::finalize_impl()
 {
   // Do nothing
 }
-// =========================================================================================
+// =================================================================================================
 size_t TurbulentMountainStress::requested_buffer_size_in_bytes() const
 {
   const int nlev_packs  = ekat::npack<Pack>(m_nlevs);
@@ -145,7 +175,7 @@ size_t TurbulentMountainStress::requested_buffer_size_in_bytes() const
   return Buffer::num_2d_midpoint_views*m_ncols*nlev_packs*sizeof(Pack) +
          Buffer::num_2d_interface_views*m_ncols*nlevi_packs*sizeof(Pack);
 }
-// =========================================================================================
+// =================================================================================================
 void TurbulentMountainStress::init_buffers(const ATMBufferManager &buffer_manager)
 {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),

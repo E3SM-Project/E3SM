@@ -114,6 +114,16 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     createExecLib (${hommeLibName} ${HOMME_TARGET} "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
                    ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
     target_compile_definitions(${hommeLibName} PUBLIC HOMMEXX_CONFIG_IS_CMAKE SCREAM)
+
+    # Homme's Fortran code triggers a large number of benign warnings that would
+    # bury the useful ones in the build log:
+    #  - conversion: implicit narrowing, e.g. quad precision GLL points to real(8)
+    #  - unused-dummy-argument: interfaces are shared among different dycores
+    # Silence them (for the Fortran sources of this lib only, and without
+    # propagating the flags to the targets that link against it).
+    target_compile_options(${hommeLibName} PRIVATE
+      $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-Wno-conversion>
+      $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-Wno-unused-dummy-argument>)
     # Link to cime's csm_share lib
     target_link_libraries (${hommeLibName} PUBLIC csm_share)
     if (HOMME_ENABLE_COMPOSE)
@@ -121,8 +131,8 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     endif()
 
     string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
-    if ((SCREAM_MACHINE STREQUAL "ascent" OR SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-      # --fmad=false is causing nondeterminism in RRTMGP on Ascent and pm-gpu,
+    if ((SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+      # --fmad=false is causing nondeterminism in RRTMGP on pm-gpu,
       # perhaps due to an nvcc bug. Provide a FLAGS entry to prevent
       # SetCudaFlags from adding --fmad=false. Use -UNDEBUG as an (inert) entry
       # for FLAGS so that cmake_parse_arguments defines SCF_FLAGS.
@@ -150,6 +160,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_rayleigh_friction.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/physics_dynamics_remapper.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/homme_grids_manager.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/eamxx_homme_3d_turbulence_strain.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_context_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_driver_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_grid_mod.F90
@@ -162,7 +173,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_compile_definitions(${dynLibName} PUBLIC EAMXX_HAS_HOMME)
-    target_link_libraries(${dynLibName} PUBLIC scream_share eamxx_io ${hommeLibName})
+    target_link_libraries(${dynLibName} PUBLIC eamxx_field eamxx_grid eamxx_remap eamxx_atm_process eamxx_data_managers eamxx_algorithm ${hommeLibName})
     get_target_property(modulesDir ${hommeLibName} Fortran_MODULE_DIRECTORY)
     set_target_properties(${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
     target_include_directories(${dynLibName} PUBLIC ${modulesDir})

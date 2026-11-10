@@ -412,6 +412,8 @@ gnu-cray:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
+# ifx (Intel oneAPI) fpp mishandles the COMMA macro-argument idiom used in the
+# MPAS framework, so preprocess .F with GNU cpp via GEN_F90=true instead.
 intel-cray:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
@@ -438,6 +440,7 @@ intel-cray:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"USE_SHTNS = $(USE_SHTNS)" \
+	"GEN_F90 = true" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 cray-cray:

@@ -23,9 +23,11 @@
 namespace Homme {
 
 void RefStates::init(const int num_elems) {
-  dp_ref = decltype(dp_ref)("dp_ref",num_elems);
-  phi_i_ref = decltype(phi_i_ref)("phi_i_ref",num_elems);
-  theta_ref = decltype(theta_ref)("theta_ref",num_elems);
+  dp_ref       = decltype(dp_ref)      ("dp_ref",      num_elems);
+  phi_i_ref    = decltype(phi_i_ref)   ("phi_i_ref",   num_elems);
+  theta_ref    = decltype(theta_ref)   ("theta_ref",   num_elems);
+  nu_scale_top = decltype(nu_scale_top)("nu_scale_top");
+  nu_scale_top_ilev_pack_lim = 0;
 
   m_num_elems = num_elems;
 
@@ -74,7 +76,7 @@ void ElementsState::randomize(const int seed,
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
-  auto sort_and_chek = [](const ExecViewManaged<Real[NUM_PHYSICAL_LEV]>::HostMirror v)->bool {
+  auto sort_and_chek = [](const ExecViewManaged<Real[NUM_PHYSICAL_LEV]>::host_mirror_type v)->bool {
     Real* start = reinterpret_cast<Real*>(v.data());
     Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_PHYSICAL_LEV;
     std::sort(start,end);
@@ -132,7 +134,7 @@ void ElementsState::randomize(const int seed,
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
-  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::HostMirror v)->bool {
+  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::host_mirror_type v)->bool {
     Real* start = reinterpret_cast<Real*>(v.data());
     Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_LEV_P*VECTOR_SIZE;
     std::sort(start,end);
@@ -261,7 +263,7 @@ void ElementsState::randomize(const int seed,
   // Note: to avoid errors in the equation of state, we need phi to be increasing.
   //       Rather than using a constraint (which may call the function many times,
   //       we simply ask that there are no duplicates, then we sort it later.
-  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::HostMirror v)->bool {
+  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::host_mirror_type v)->bool {
     Real* start = reinterpret_cast<Real*>(v.data());
     Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_LEV_P*VECTOR_SIZE;
     std::sort(start,end);
@@ -349,6 +351,24 @@ void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_w_i, F9
   sync_to_host(m_vtheta_dp, state_vtheta_dp_f90);
   sync_to_host(m_phinh_i,   state_phinh_i_f90);
   sync_to_host(m_dp3d,      state_dp3d_f90);
+}
+
+void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_w_i, F90Ptr& state_vtheta_dp,
+                                          F90Ptr& state_phinh_i, F90Ptr& state_dp3d,
+                                          const int tl) const {
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV ][2][NP][NP]> state_v_f90         (state_v,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_INTERFACE_LEV]   [NP][NP]> state_w_i_f90       (state_w_i,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV ]   [NP][NP]> state_vtheta_dp_f90 (state_vtheta_dp,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_INTERFACE_LEV]   [NP][NP]> state_phinh_i_f90   (state_phinh_i,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV ]   [NP][NP]> state_dp3d_f90      (state_dp3d,m_num_elems);
+
+  // Source and destination time level coincide for the dynamics state: the
+  // caller passes the (0-based) level that Fortran will read.
+  sync_to_host(m_v,         state_v_f90,         tl, tl);
+  sync_to_host(m_w_i,       state_w_i_f90,       tl, tl);
+  sync_to_host(m_vtheta_dp, state_vtheta_dp_f90, tl, tl);
+  sync_to_host(m_phinh_i,   state_phinh_i_f90,   tl, tl);
+  sync_to_host(m_dp3d,      state_dp3d_f90,      tl, tl);
 }
 
 static bool all_good_elems (const ElementsState& s, const int tlvl) {

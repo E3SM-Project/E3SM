@@ -172,6 +172,7 @@ module seq_frac_mct
   ! for tri grid, sameg_al would be false
 
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes
+  use seq_comm_mct, only : mbgxid   !          iMOAB id of moab glc migrated to coupler pes
 
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
         iMOAB_WriteMesh, iMOAB_SendElementTag, iMOAB_ReceiveElementTag, &
@@ -408,11 +409,32 @@ contains
 
     ! Initialize fractions on glc grid decomp, just an initial "guess", updated later
 
-    ! MOABTODO: add capabiility for MOAB
     if (glc_present) then
        call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=0)
        call mct_aVect_zero(fractions_g)
+       if (mbgxid .ge. 0  ) then
+         arrSize = mbGetnCells(mbgxid)
+         tagname = trim(fraclist_g)//C_NULL_CHAR ! 'gfrac:lfrac'
+         tagtype = 1  ! dense, double
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining fraction tags on glc mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining fraction tags on glc mesh on cpl')
+         endif
 
+         ! zero the fractions on glc
+         allocate(tagValues(arrSize*2) )
+         tagValues = 0.0_r8
+         call mbSetCellTagVals(mbgxid, fraclist_g,tagValues,arrSize*2)
+         deallocate(tagValues)
+
+         ! set gfrac to the domain frac
+         allocate(tagValues(arrSize))
+         call mbGetCellTagVals(mbgxid, 'frac',tagValues,arrSize)
+         call mbSetCellTagVals(mbgxid, 'gfrac',tagValues,arrSize)
+         deallocate(tagValues)
+       endif
     end if
 
     ! Initialize fractions on land grid decomp, just an initial "guess", updated later
@@ -451,8 +473,8 @@ contains
        if (atm_present) then
           mapper_l2a => prep_atm_get_mapper_Fl2a()
           mapper_a2l => prep_lnd_get_mapper_Fa2l()
-          call seq_map_map(mapper_l2a, fractions_l, fractions_a, fldlist='lfrin', norm=.false.)
-          call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='afrac', norm=.false.)
+          call seq_map_map(mapper_l2a, fractions_l, fractions_a, fldlist='lfrin', norm=.false., omit_nonlinear=.true.)
+          call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='afrac', norm=.false., omit_nonlinear=.true.)
        endif
 
     end if  ! end of (if lnd_present)
@@ -554,7 +576,7 @@ contains
 
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
-          call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
+          call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false., omit_nonlinear=.true.)
        endif
 #ifdef MOABDEBUG
        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
@@ -606,7 +628,8 @@ contains
        if (ice_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           ! this will be a copy
-          call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false.)
+          call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false., &
+               omit_nonlinear=.true.)
 
           ! copy the computed ofrac to mbofxid
           allocate(tagValues(arrSize) )
@@ -626,7 +649,8 @@ contains
           deallocate(tagValues)
           ! map ofrac to atm
           mapper_o2a => prep_atm_get_mapper_Fo2a()
-          call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false.)
+          call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false., &
+               omit_nonlinear=.true.)
 #ifdef MOABDEBUG
          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
          if (mbaxid .ge. 0  ) then
@@ -642,13 +666,15 @@ contains
 
        if (atm_present) then
           mapper_a2o => prep_ocn_get_mapper_Fa2o()
-          call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false.)
+          call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false., &
+               omit_nonlinear=.true.)
        endif
 
        if (ice_present) then
           ! --- this should be an atm2ice call above, but atm2ice doesn't work
           mapper_o2i => prep_ice_get_mapper_SFo2i()
-          call seq_map_map(mapper_o2i,fractions_o,fractions_i,fldlist='afrac',norm=.false.)
+          call seq_map_map(mapper_o2i,fractions_o,fractions_i,fldlist='afrac',norm=.false., &
+               omit_nonlinear=.true.)
        endif
     end if  ! end of if ocn present
 
@@ -735,7 +761,8 @@ contains
 
        if (atm_present) then
           mapper_a2l => prep_lnd_get_mapper_Fa2l()
-          call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='lfrac', norm=.false.)
+          call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='lfrac', norm=.false., &
+              omit_nonlinear=.true.)
        else
           ! If the atmosphere is absent, then simply set fractions_l(lfrac) = fractions_l(lfrin)
           ! MCT
@@ -749,16 +776,18 @@ contains
     end if
     if (lnd_present .and. rof_present) then
        mapper_l2r => prep_rof_get_mapper_Fl2r()
-       call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac:lfrin', norm=.false.)
+       call seq_map_map(mapper_l2r, fractions_l, fractions_r, fldlist='lfrac:lfrin', norm=.false., &
+            omit_nonlinear=.true.)
     endif
     if (lnd_present .and. glc_present) then
        mapper_l2g => prep_glc_get_mapper_Fl2g()
-       call seq_map_map(mapper_l2g, fractions_l, fractions_g, fldlist='lfrac', norm=.false.)
+       call seq_map_map(mapper_l2g, fractions_l, fractions_g, fldlist='lfrac', norm=.false., &
+             omit_nonlinear=.true.)
     end if
 
 
     if (lnd_present) call seq_frac_check(fractions_l,mblxid,'lnd init')
-    if (glc_present) call seq_frac_check(fractions_g,-1,'glc init')
+    if (glc_present) call seq_frac_check(fractions_g,mbgxid,'glc init')
     if (rof_present) call seq_frac_check(fractions_r,mbrxid,'rof init')
     if (wav_present) call seq_frac_check(fractions_w,-1,'wav init')
     if (iac_present) call seq_frac_check(fractions_z,-1,'iac init')
@@ -939,7 +968,7 @@ contains
           endif
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
-               fldlist='ofrac:ifrac',norm=.false.)
+               fldlist='ofrac:ifrac',norm=.false., omit_nonlinear=.true.)
           call seq_frac_check(fractions_o,mboxid,'ocn set')
 
           ! set the ofrac on mbofxid instance, because it is needed for prep_aoxflux
@@ -952,7 +981,7 @@ contains
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a, fractions_i, fractions_a, &
-               fldlist='ofrac:ifrac', norm=.false.)
+               fldlist='ofrac:ifrac', norm=.false., omit_nonlinear=.true.)
 #ifdef MOABDEBUG
             write(lnum,"(I0.2)")num_moab_exports
             outfile = 'atmCplFr_'//trim(lnum)//'.h5m'//C_NULL_CHAR

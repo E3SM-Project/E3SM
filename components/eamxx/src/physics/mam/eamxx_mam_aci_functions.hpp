@@ -7,6 +7,34 @@
 
 namespace scream {
 
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+namespace detail {
+
+static constexpr Real max_exact_ndrop_nsubmix_aggregate = 16777216;
+
+KOKKOS_INLINE_FUNCTION
+void accumulate_ndrop_nsubmix(const int nsubmix, const bool reset,
+                              Real &latest, Real &sum, Real &maximum) {
+  const Real count = static_cast<Real>(nsubmix);
+  EKAT_KERNEL_REQUIRE_MSG(
+      nsubmix > 0 &&
+          nsubmix <= static_cast<int>(max_exact_ndrop_nsubmix_aggregate) &&
+          (reset || (sum >= 0 &&
+                     sum <= max_exact_ndrop_nsubmix_aggregate - count)),
+      "ndrop nsubmix is invalid or exceeds the exact integer output range");
+  latest = count;
+  if(reset) {
+    sum     = count;
+    maximum = count;
+  } else {
+    sum += count;
+    maximum = count > maximum ? count : maximum;
+  }
+}
+
+}  // namespace detail
+#endif
+
 namespace {
 
 void compute_w0_and_rho(const int ncol,
@@ -93,6 +121,7 @@ void compute_subgrid_scale_velocities(
 
 void compute_nucleate_ice_tendencies(
     const mam4::NucleateIce &nucleate_ice, mam4::ThreadTeamPolicy team_policy,
+    const mam_coupling::WetAtmosphere &wet_atmosphere,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
     const mam_coupling::AerosolState &dry_aero, const MAMAci::view_2d wsubice,
     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
@@ -124,7 +153,7 @@ void compute_nucleate_ice_tendencies(
 
         // Store atmopsheric vars (Tmid, Pmid, cloud fraction, qv, wsubmin)
         mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+            atmosphere_for_column(wet_atmosphere, dry_atmosphere, icol);
 
         // Update the updraft velocity needed by nucleation to be "wsubice"
         // in the atm object
@@ -155,7 +184,7 @@ void compute_nucleate_ice_tendencies(
         // grab views from the buffer to store tendencies, not used as all
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);  // not used
-        const mam4::AeroConfig aero_config;
+        const mam4::AeroConfig aero_config(nucleate_ice.aero_species);
         const Real t = 0;  // not used
         nucleate_ice.compute_tendencies(aero_config, team, t, dt, atm,
                                         surf, progs, diags, tends);
@@ -192,6 +221,7 @@ void store_liquid_cloud_fraction(
 
 void call_function_dropmixnuc(
     mam4::ThreadTeamPolicy team_policy, const Real dt,
+    mam_coupling::WetAtmosphere &wet_atmosphere,
     mam_coupling::DryAtmosphere &dry_atmosphere, const MAMAci::view_2d rpdel,
     const MAMAci::const_view_2d kvh_mid, const MAMAci::view_2d kvh_int,
     const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
@@ -204,6 +234,12 @@ void call_function_dropmixnuc(
     MAMAci::view_3d coltend_cw, MAMAci::view_2d qcld,
     MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn,
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+    mam_coupling::view_1d ndrop_nsubmix,
+    mam_coupling::view_1d ndrop_sum_nsubmix,
+    mam_coupling::view_1d ndrop_max_nsubmix,
+    const bool reset_ndrop_nsubmix_accumulators,
+#endif
 
     // ## outputs to be used by other processes ##
     // qqcw_fld_work should be directly assigned to the cloud borne aerosols
@@ -228,11 +264,11 @@ void call_function_dropmixnuc(
   // Extract atmosphere variables
   MAMAci::const_view_2d T_mid  = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid  = dry_atmosphere.p_mid;
-  MAMAci::const_view_2d zm     = dry_atmosphere.z_mid;
+  MAMAci::const_view_2d zm     = wet_atmosphere.z_mid;
   MAMAci::const_view_2d pdel   = dry_atmosphere.p_del;
   MAMAci::const_view_2d p_int  = dry_atmosphere.p_int;
   MAMAci::const_view_2d nc     = dry_atmosphere.nc;
-  MAMAci::const_view_2d atm_dz = dry_atmosphere.dz;
+  MAMAci::const_view_2d atm_dz = wet_atmosphere.dz;
 
   //----------------------------------------------------------------------
   // ## Declare local variables for class variables
@@ -271,28 +307,13 @@ void call_function_dropmixnuc(
   //---------------------------------------------------------------------------
   // ## Initialize the ndrop class.
   //---------------------------------------------------------------------------
-  const int ntot_amode        = mam_coupling::num_aero_modes();
-  const int maxd_aspectype    = mam4::ndrop::maxd_aspectype;
-  const int nspec_max         = mam4::ndrop::nspec_max;
-  int nspec_amode[ntot_amode] = {};
-  int lspectype_amode[maxd_aspectype][ntot_amode] = {};
-  int lmassptr_amode[maxd_aspectype][ntot_amode]  = {};
-  int numptr_amode[ntot_amode]                    = {};
-  int mam_idx[ntot_amode][nspec_max]              = {};
-  int mam_cnst_idx[ntot_amode][nspec_max]         = {};
-
-  Real specdens_amode[maxd_aspectype] = {};
-  Real spechygro[maxd_aspectype]      = {};
+  const int ntot_amode = mam_coupling::num_aero_modes();
   Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
        num2vol_ratio_min_nmodes[ntot_amode] = {},
        num2vol_ratio_max_nmodes[ntot_amode] = {};
-  Real aten                                 = 0;
-  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
-                                   numptr_amode, specdens_amode, spechygro,
-                                   mam_idx, mam_cnst_idx);
+  Real aten = 0;
   mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten, num2vol_ratio_min_nmodes,
                           num2vol_ratio_max_nmodes);
-  //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
   Kokkos::parallel_for(
@@ -314,7 +335,7 @@ void call_function_dropmixnuc(
 
         // get atmospheric quantities
         mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+            atmosphere_for_column(wet_atmosphere, dry_atmosphere, icol);
 
         // Compute kvh at interfaces
         const auto kvh_mid_col = ekat::subview(kvh_mid, icol);
@@ -365,6 +386,9 @@ void call_function_dropmixnuc(
               }
             });
         team.team_barrier();
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+        int nsubmix = 0;
+#endif
         mam4::ndrop::dropmixnuc(
             team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
             ekat::subview(p_int, icol), ekat::subview(pdel, icol),
@@ -372,10 +396,8 @@ void call_function_dropmixnuc(
             // in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
             ekat::subview(zm, icol), ekat::subview(state_q_work_loc, icol),
             ekat::subview(nc, icol), ekat::subview(kvh_int, icol),  // kvh[kk+1]
-            ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode,
-            spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
-            num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
-            alogsig, aten, mam_idx, mam_cnst_idx,
+            ekat::subview(cloud_frac, icol), num2vol_ratio_min_nmodes,
+            num2vol_ratio_max_nmodes, exp45logsig, alogsig, aten,
             local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
             ekat::subview(wsub, icol),                                  // in
             ekat::subview(cloud_frac_prev, icol),                       // in
@@ -383,8 +405,11 @@ void call_function_dropmixnuc(
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
-            ekat::subview(wtke, icol), ekat::subview(ccn, icol), coltend_view,
-            coltend_cw_view, top_lev,
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+            nsubmix,
+#endif
+            ekat::subview(wtke, icol), ekat::subview(ccn, icol),
+            coltend_view, coltend_cw_view, top_lev,
             // work arrays
             raercol_cw_view, raercol_view, ekat::subview(nact, icol),
             ekat::subview(mact, icol), ekat::subview(eddy_diff, icol),
@@ -395,6 +420,15 @@ void call_function_dropmixnuc(
             ekat::subview(srcn, icol), ekat::subview(source, icol),
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
             ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
+
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+        Kokkos::single(Kokkos::PerTeam(team), [&]() {
+          detail::accumulate_ndrop_nsubmix(
+              nsubmix, reset_ndrop_nsubmix_accumulators,
+              ndrop_nsubmix(icol), ndrop_sum_nsubmix(icol),
+              ndrop_max_nsubmix(icol));
+        });
+#endif
       });
 }
 
@@ -457,6 +491,7 @@ void update_interstitial_aerosols(
 
 void call_hetfrz_compute_tendencies(
     mam4::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
+    mam_coupling::WetAtmosphere &wet_atm_,
     mam_coupling::DryAtmosphere &dry_atm_,
     mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
     const double dt, const int nlev,
@@ -464,14 +499,11 @@ void call_hetfrz_compute_tendencies(
     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
     MAMAci::view_2d hetfrz_contact_nucleation_tend,
     MAMAci::view_2d hetfrz_depostion_nucleation_tend,
-    MAMAci::view_2d diagnostic_scratch_[]) {
+    MAMAci::view_3d diagnostic_scratch) {
   mam4::Hetfrz hetfrz                        = hetfrz_;
   mam_coupling::AerosolState dry_aero        = dry_aero_;
+  mam_coupling::WetAtmosphere wet_atmosphere = wet_atm_;
   mam_coupling::DryAtmosphere dry_atmosphere = dry_atm_;
-
-  MAMAci::view_2d diagnostic_scratch[MAMAci::hetro_scratch_];
-  for(int i = 0; i < MAMAci::hetro_scratch_; ++i)
-    diagnostic_scratch[i] = diagnostic_scratch_[i];
 
   Kokkos::parallel_for(
       "MAMAci::run_impl::call_hetfrz_compute_tendencies", team_policy,
@@ -481,7 +513,7 @@ void call_hetfrz_compute_tendencies(
         //   tendencies class.
 
         mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+            atmosphere_for_column(wet_atmosphere, dry_atmosphere, icol);
         mam4::Surface surf{};
         set_min_background_mmr(team, dry_aero, icol);
         mam4::Prognostics progs =
@@ -507,56 +539,18 @@ void call_hetfrz_compute_tendencies(
         diags.hetfrz_depostion_nucleation_tend =
             ekat::subview(hetfrz_depostion_nucleation_tend, icol);
 
-        diags.bc_num        = ekat::subview(diagnostic_scratch[0], icol);
-        diags.dst1_num      = ekat::subview(diagnostic_scratch[1], icol);
-        diags.dst3_num      = ekat::subview(diagnostic_scratch[2], icol);
-        diags.bcc_num       = ekat::subview(diagnostic_scratch[3], icol);
-        diags.dst1c_num     = ekat::subview(diagnostic_scratch[4], icol);
-        diags.dst3c_num     = ekat::subview(diagnostic_scratch[5], icol);
-        diags.bcuc_num      = ekat::subview(diagnostic_scratch[6], icol);
-        diags.dst1uc_num    = ekat::subview(diagnostic_scratch[7], icol);
-        diags.dst3uc_num    = ekat::subview(diagnostic_scratch[8], icol);
-        diags.bc_a1_num     = ekat::subview(diagnostic_scratch[0], icol);
-        diags.dst_a1_num    = ekat::subview(diagnostic_scratch[10], icol);
-        diags.dst_a3_num    = ekat::subview(diagnostic_scratch[11], icol);
-        diags.bc_c1_num     = ekat::subview(diagnostic_scratch[12], icol);
-        diags.dst_c1_num    = ekat::subview(diagnostic_scratch[13], icol);
-        diags.dst_c3_num    = ekat::subview(diagnostic_scratch[14], icol);
-        diags.fn_bc_c1_num  = ekat::subview(diagnostic_scratch[15], icol);
-        diags.fn_dst_c1_num = ekat::subview(diagnostic_scratch[16], icol);
-        diags.fn_dst_c3_num = ekat::subview(diagnostic_scratch[17], icol);
-        diags.na500         = ekat::subview(diagnostic_scratch[18], icol);
-        diags.totna500      = ekat::subview(diagnostic_scratch[19], icol);
-        diags.freqimm       = ekat::subview(diagnostic_scratch[20], icol);
-        diags.freqcnt       = ekat::subview(diagnostic_scratch[21], icol);
-        diags.freqdep       = ekat::subview(diagnostic_scratch[22], icol);
-        diags.freqmix       = ekat::subview(diagnostic_scratch[23], icol);
-        diags.dstfrezimm    = ekat::subview(diagnostic_scratch[24], icol);
-        diags.dstfrezcnt    = ekat::subview(diagnostic_scratch[25], icol);
-        diags.dstfrezdep    = ekat::subview(diagnostic_scratch[26], icol);
-        diags.bcfrezimm     = ekat::subview(diagnostic_scratch[27], icol);
-        diags.bcfrezcnt     = ekat::subview(diagnostic_scratch[28], icol);
-        diags.bcfrezdep     = ekat::subview(diagnostic_scratch[19], icol);
-        diags.nimix_imm     = ekat::subview(diagnostic_scratch[30], icol);
-        diags.nimix_cnt     = ekat::subview(diagnostic_scratch[31], icol);
-        diags.nimix_dep     = ekat::subview(diagnostic_scratch[32], icol);
-        diags.dstnidep      = ekat::subview(diagnostic_scratch[33], icol);
-        diags.dstnicnt      = ekat::subview(diagnostic_scratch[34], icol);
-        diags.dstniimm      = ekat::subview(diagnostic_scratch[35], icol);
-        diags.bcnidep       = ekat::subview(diagnostic_scratch[36], icol);
-        diags.bcnicnt       = ekat::subview(diagnostic_scratch[37], icol);
-        diags.bcniimm       = ekat::subview(diagnostic_scratch[38], icol);
-        diags.numice10s     = ekat::subview(diagnostic_scratch[39], icol);
-        diags.numimm10sdst  = ekat::subview(diagnostic_scratch[40], icol);
-        diags.numimm10sbc   = ekat::subview(diagnostic_scratch[41], icol);
-        diags.stratiform_cloud_fraction =
-            ekat::subview(diagnostic_scratch[42], icol);
+	diags.hetfrz = ekat::subview(diagnostic_scratch, icol);
+
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int k) {
+          for (int d = 0; d < mam4::Diagnostics::number_of_hetfrz_diag; ++d)
+            diags.hetfrz(d, k) = 0.;
+        });
 
         // assign cloud fraction
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
                              [&](int klev) {
-                               diags.stratiform_cloud_fraction(klev) =
+                               diags.hetfrz(mam4::Diagnostics::stratiform_cloud_fraction, klev) =
                                    atm.cloud_fraction(klev);
                              });
         //-------------------------------------------------------------
@@ -568,9 +562,8 @@ void call_hetfrz_compute_tendencies(
         // grab views from the buffer to store tendencies, not used as all
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
-        const mam4::AeroConfig aero_config;
         const Real t = 0;  // not used
-        hetfrz.compute_tendencies(aero_config, team, t, dt, atm, surf,
+        hetfrz.compute_tendencies(hetfrz.aero_config, team, t, dt, atm, surf,
                                   progs, diags, tends);
       });
 }

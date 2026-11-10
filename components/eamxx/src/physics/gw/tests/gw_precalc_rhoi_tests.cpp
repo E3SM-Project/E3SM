@@ -57,12 +57,7 @@ struct UnitWrap::UnitTest<D>::TestGwdPrecalcRhoi : public UnitWrap::UnitTest<D>:
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gwd_precalc_rhoi_f(d);
-      }
-      else {
-        gwd_precalc_rhoi(d);
-      }
+      gwd_precalc_rhoi(d);
     }
 
     // Verify BFB results, all data should be in C layout

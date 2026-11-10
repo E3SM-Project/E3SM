@@ -78,8 +78,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     Scalar c_diag_3rd_mom;
     Scalar Ckh;
     Scalar Ckm;
+    Scalar Ckh_horiz;
+    Scalar Ckm_horiz;
     bool shoc_1p5tke;
     bool extra_diags;
+    bool do_3d_turb;
   };
 
   // This struct stores input views for shoc_main.
@@ -110,12 +113,20 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_1d<const Scalar> uw_sfc;
     // Surface momentum flux (v-direction) [m2/s2]
     view_1d<const Scalar> vw_sfc;
+    // Perturbation to surface momentum flux (u-direction) [m2/s2]
+    view_1d<const Scalar> uw_sfc_pert;
+    // Perturbation to surface momentum flux (v-direction) [m2/s2]
+    view_1d<const Scalar> vw_sfc_pert;
     // Surface flux for tracers [varies]
     view_2d<const Pack> wtracer_sfc;
     // Inverse of the exner function [-]
     view_2d<const Pack> inv_exner;
     // Host model surface geopotential height
     view_1d<const Scalar> phis;
+    // Dycore-computed local tensor components: A00,A01,A10,A11,A20,A21 [/s]
+    view_3d<const Pack> shear_strain3d_components;
+    // 3D strain term for shear production of TKE [/s2]
+    view_2d<Pack> shear_strain3d;
   };
 
   // This struct stores input/outputs views for shoc_main.
@@ -142,6 +153,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> shoc_cldfrac;
     // cloud liquid mixing ratio [kg/kg]
     view_2d<Pack> shoc_ql;
+    // Perturbation in winds due to surface perturbation [m/s]
+    view_2d<Pack>  um_pert;
+    view_2d<Pack>  vm_pert;
   };
 
   // This struct stores output only views for shoc_main.
@@ -490,7 +504,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const uview_1d<const Pack> &wtracer_sfc,
       const Workspace &workspace, const uview_1d<Pack> &thetal, const uview_1d<Pack> &qw,
       const uview_2d_strided<Pack> &tracer, const uview_1d<Pack> &tke,
-      const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind);
+      const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind,
+      const Scalar& uw_sfc_pert, const Scalar& vw_sfc_pert,
+      const uview_1d<Pack>& um_pert, const uview_1d<Pack>& vm_pert);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   static void update_prognostics_implicit_disp(
       const Int &shcol, const Int &nlev, const Int &nlevi, const Int &num_tracer,
@@ -502,7 +518,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_1d<const Scalar> &wqw_sfc, const view_2d<const Pack> &wtracer_sfc,
       const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &thetal, const view_2d<Pack> &qw,
       const view_3d_strided<Pack> &tracer, const view_2d<Pack> &tke, const view_2d<Pack> &u_wind,
-      const view_2d<Pack> &v_wind);
+      const view_2d<Pack> &v_wind, const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
+      const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert);
 #endif
 
   KOKKOS_FUNCTION
@@ -529,11 +546,47 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void adv_sgs_tke(const MemberType &team, const Int &nlev, const Real &dtime,
-                          const bool &shoc_1p5tke, const uview_1d<const Pack> &shoc_mix,
-                          const uview_1d<const Pack> &wthv_sec,
+                          const bool &shoc_1p5tke, const bool &do_3d_turb,
+                          const uview_1d<const Pack> &shoc_mix, const uview_1d<const Pack> &wthv_sec,
                           const uview_1d<const Pack> &sterm_zt, const uview_1d<const Pack> &tk,
-                          const uview_1d<const Pack> &brunt, const uview_1d<Pack> &tke,
-                          const uview_1d<Pack> &a_diss);
+                          const uview_1d<const Pack> &brunt, const uview_1d<const Pack> &shear_strain3d,
+                          const uview_1d<Pack> &tke, const uview_1d<Pack> &a_diss);
+
+  KOKKOS_FUNCTION
+  static void compute_vertical_shear_terms(
+      const MemberType &team, const Int &nlev, const Int &nlevi,
+      const uview_1d<const Pack> &dz_zi,
+      const uview_1d<const Pack> &u_wind,
+      const uview_1d<const Pack> &v_wind,
+      const uview_1d<const Pack> &w_field,
+      const uview_1d<const Pack> &zt_grid,
+      const uview_1d<const Pack> &zi_grid,
+      const Workspace &workspace,
+      const uview_1d<Pack> &du_dz_m,
+      const uview_1d<Pack> &dv_dz_m,
+      const uview_1d<Pack> &dw_dz_m);
+
+  KOKKOS_FUNCTION
+  static void assemble_shoc_shear_strain3d(
+      const MemberType &team, const Int &nlev,
+      const uview_2d<const Pack> &shear_strain3d_components,
+      const uview_1d<const Pack> &du_dz_m,
+      const uview_1d<const Pack> &dv_dz_m,
+      const uview_1d<const Pack> &dw_dz_m,
+      const uview_1d<Pack> &shear_strain3d);
+#ifdef SCREAM_SHOC_SMALL_KERNELS
+  static void compute_shear_strain3d_disp(
+      const Int &shcol, const Int &nlev, const Int &nlevi,
+      const view_3d<const Pack> &shear_strain3d_components,
+      const view_2d<const Pack> &dz_zi,
+      const view_2d<const Pack> &u_wind,
+      const view_2d<const Pack> &v_wind,
+      const view_2d<const Pack> &w_field,
+      const view_2d<const Pack> &zt_grid,
+      const view_2d<const Pack> &zi_grid,
+      const WorkspaceMgr &workspace_mgr,
+      const view_2d<Pack> &shear_strain3d);
+#endif
 
   KOKKOS_FUNCTION
   static void
@@ -683,7 +736,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &extra_diags,
+      const bool &do_3d_turb, const bool &extra_diags,
       // Input Variables
       const Scalar &host_dx, const Scalar &host_dy, const uview_1d<const Pack> &zt_grid,
       const uview_1d<const Pack> &zi_grid, const uview_1d<const Pack> &pres,
@@ -692,6 +745,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const Scalar &uw_sfc, const Scalar &vw_sfc,
       const uview_1d<const Pack> &wtracer_sfc, const uview_1d<const Pack> &inv_exner,
       const Scalar &phis,
+      const uview_2d<const Pack> &shear_strain3d_components,
+      const uview_1d<Pack> &shear_strain3d,
       // Local Workspace
       const Workspace &workspace,
       // Input/Output Variables
@@ -710,7 +765,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<Pack> &wthl_sec, const uview_1d<Pack> &wqw_sec,
       const uview_1d<Pack> &wtke_sec, const uview_1d<Pack> &uw_sec, const uview_1d<Pack> &vw_sec,
       const uview_1d<Pack> &w3, const uview_1d<Pack> &wqls_sec, const uview_1d<Pack> &brunt,
-      const uview_1d<Pack> &isotropy);
+      const uview_1d<Pack> &isotropy,
+      const Scalar& uw_sfc_pert, const Scalar& vw_sfc_pert, const uview_1d<Pack>& um_pert,
+      const uview_1d<Pack>& vm_pert);
 #else
   static void shoc_main_internal(
       const Int &shcol,        // Number of columns
@@ -725,7 +782,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &extra_diags,
+      const bool &do_3d_turb, const bool &extra_diags,
       // Input Variables
       const view_1d<const Scalar> &host_dx, const view_1d<const Scalar> &host_dy,
       const view_2d<const Pack> &zt_grid, const view_2d<const Pack> &zi_grid,
@@ -735,6 +792,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_1d<const Scalar> &wqw_sfc, const view_1d<const Scalar> &uw_sfc,
       const view_1d<const Scalar> &vw_sfc, const view_2d<const Pack> &wtracer_sfc,
       const view_2d<const Pack> &inv_exner, const view_1d<const Scalar> &phis,
+      const view_3d<const Pack> &shear_strain3d_components,
+      const view_2d<Pack> &shear_strain3d,
       // Workspace Manager
       WorkspaceMgr &workspace_mgr,
       // Input/Output Variables
@@ -752,6 +811,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_2d<Pack> &wqw_sec, const view_2d<Pack> &wtke_sec, const view_2d<Pack> &uw_sec,
       const view_2d<Pack> &vw_sec, const view_2d<Pack> &w3, const view_2d<Pack> &wqls_sec,
       const view_2d<Pack> &brunt, const view_2d<Pack> &isotropy,
+      const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
+      const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert,
       // Temporaries
       const view_1d<Scalar> &se_b, const view_1d<Scalar> &ke_b, const view_1d<Scalar> &wv_b,
       const view_1d<Scalar> &wl_b, const view_1d<Scalar> &se_a, const view_1d<Scalar> &ke_a,
@@ -853,14 +914,25 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                      const uview_1d<Pack> &tkh, const uview_1d<Pack> &tk);
 
   KOKKOS_FUNCTION
+  static void horizontal_eddy_diffusivities(
+      const MemberType &team, const Int &nlev, const Scalar &Ckh_horiz,
+      const Scalar &Ckm_horiz, const Scalar &grid_dx, const Scalar &grid_dy,
+      const uview_1d<const Pack> &tke, const uview_1d<Pack> &eddy_diff_heat_horiz,
+      const uview_1d<Pack> &eddy_diff_mom_horiz);
+
+  KOKKOS_FUNCTION
   static void shoc_tke(const MemberType &team, const Int &nlev, const Int &nlevi,
                        const Scalar &dtime, const Scalar &lambda_low, const Scalar &lambda_high,
                        const Scalar &lambda_slope, const Scalar &lambda_thresh, const Scalar &Ckh,
-                       const Scalar &Ckm, const bool &shoc_1p5tke,
-                       const uview_1d<const Pack> &wthv_sec, const uview_1d<const Pack> &shoc_mix,
+                       const Scalar &Ckm, const bool &shoc_1p5tke, const bool &do_3d_turb,
+                       const uview_1d<const Pack> &wthv_sec,
+                       const uview_2d<const Pack> &shear_strain3d_components,
+                       const uview_1d<Pack> &shear_strain3d,
+                       const uview_1d<const Pack> &shoc_mix,
                        const uview_1d<const Pack> &dz_zi, const uview_1d<const Pack> &dz_zt,
                        const uview_1d<const Pack> &pres, const uview_1d<const Pack> &tabs,
                        const uview_1d<const Pack> &u_wind, const uview_1d<const Pack> &v_wind,
+                       const uview_1d<const Pack> &w_field,
                        const uview_1d<const Pack> &brunt, const uview_1d<const Pack> &zt_grid,
                        const uview_1d<const Pack> &zi_grid, const Scalar &pblh,
                        const Workspace &workspace, const uview_1d<Pack> &tke,
@@ -871,11 +943,15 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                             const Scalar &dtime, const Scalar &lambda_low,
                             const Scalar &lambda_high, const Scalar &lambda_slope,
                             const Scalar &lambda_thresh, const Scalar &Ckh, const Scalar &Ckm,
-                            const bool &shoc_1p5tke, const view_2d<const Pack> &wthv_sec,
+                            const bool &shoc_1p5tke, const bool &do_3d_turb,
+                            const view_2d<const Pack> &wthv_sec,
+                            const view_3d<const Pack> &shear_strain3d_components,
+                            const view_2d<Pack> &shear_strain3d,
                             const view_2d<const Pack> &shoc_mix, const view_2d<const Pack> &dz_zi,
                             const view_2d<const Pack> &dz_zt, const view_2d<const Pack> &pres,
                             const view_2d<const Pack> &tabs, const view_2d<const Pack> &u_wind,
-                            const view_2d<const Pack> &v_wind, const view_2d<const Pack> &brunt,
+                            const view_2d<const Pack> &v_wind, const view_2d<const Pack> &w_field,
+                            const view_2d<const Pack> &brunt,
                             const view_2d<const Pack> &zt_grid,
                             const view_2d<const Pack> &zi_grid, const view_1d<const Scalar> &pblh,
                             const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &tke,
@@ -923,6 +999,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 #include "shoc_isotropic_ts_impl.hpp"
 #include "shoc_length_impl.hpp"
 #include "shoc_linear_interp_impl.hpp"
+#include "shoc_compute_shear_strain3d_impl.hpp"
 #include "shoc_main_impl.hpp"
 #include "shoc_pblintd_check_pblh_impl.hpp"
 #include "shoc_pblintd_cldcheck_impl.hpp"

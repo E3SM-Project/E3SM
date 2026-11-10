@@ -37,8 +37,7 @@ void Cosp::create_requests()
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  Units nondim = Units::nondimensional();
-  Units percent (nondim,"%");
+  auto percent = none.rename("%");
   auto micron = micro*m;
   auto m2 = pow(m, 2);
   auto s2 = pow(s, 2);
@@ -66,7 +65,7 @@ void Cosp::create_requests()
   add_field<Required>("surf_radiative_T", scalar2d    , K,      grid_name);
   //add_field<Required>("surfelev",    scalar2d    , m,      grid_name);
   //add_field<Required>("landmask",    scalar2d    , nondim, grid_name);
-  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, nondim, grid_name, DataType::IntType));
+  add_field<Required>(FieldIdentifier("sunlit_mask", scalar2d, none, grid_name, DataType::IntType));
   add_field<Required>("p_mid",             scalar3d_mid, Pa,     grid_name);
   add_field<Required>("p_int",             scalar3d_int, Pa,     grid_name);
   //add_field<Required>("height_mid",  scalar3d_mid, m,      grid_name);
@@ -74,13 +73,13 @@ void Cosp::create_requests()
   add_field<Required>("T_mid",            scalar3d_mid, K,      grid_name);
   add_field<Required>("phis",             scalar2d    , m2/s2,  grid_name);
   add_field<Required>("pseudo_density",   scalar3d_mid, Pa,     grid_name);
-  add_field<Required>("cldfrac_rad",      scalar3d_mid, nondim, grid_name);
+  add_field<Required>("cldfrac_rad",      scalar3d_mid, none,   grid_name);
   add_tracer<Required>("qv", m_grid, kg/kg);
   add_tracer<Required>("qc", m_grid, kg/kg);
   add_tracer<Required>("qi", m_grid, kg/kg);
   // Optical properties, should be computed in radiation interface
-  add_field<Required>("dtau067",     scalar3d_mid, nondim, grid_name); // 0.67 micron optical depth
-  add_field<Required>("dtau105",     scalar3d_mid, nondim, grid_name); // 10.5 micron optical depth
+  add_field<Required>("dtau067",     scalar3d_mid, none, grid_name); // 0.67 micron optical depth
+  add_field<Required>("dtau105",     scalar3d_mid, none, grid_name); // 10.5 micron optical depth
   // Effective radii, should be computed in either microphysics or radiation interface
   // TODO: should these be meters or microns? Was meters before, but using "m" instead
   // of "micron" seemed to cause prim_model_finalize to throw error with the following:
@@ -98,7 +97,7 @@ void Cosp::create_requests()
   // We can allocate these now
   m_z_mid = Field(FieldIdentifier("z_mid",scalar3d_mid,m,grid_name),true);
   m_z_int = Field(FieldIdentifier("z_int",scalar3d_int,m,grid_name),true);
-  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,nondim,grid_name),true);
+  m_sunlit_real = Field(FieldIdentifier("sunlit_mask_real",scalar2d,none,grid_name),true);
 }
 
 // =========================================================================================
@@ -108,8 +107,12 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   CospFunc::initialize(m_num_cols, m_num_subcols, m_num_levs);
 
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
-  // Create the masks for the 4d fields
+  // Create the masks for the cosp output fields. Each has its own mask, which is only updated
+  // when we run cosp (which may be less often than the sunlit mask is refreshed), so that the
+  // mask says where the data is valid. Initially, the masks are all invalid (cosp has not run yet)
+  FieldLayout scalar2d_cldtot ( {COL}, {m_num_cols}, {e2str(COL)});
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
                                 {m_num_cols,m_num_tau,m_num_ctp},
                                 {e2str(COL), "cosp_tau", "cosp_prs"});
@@ -117,13 +120,14 @@ void Cosp::initialize_impl (const RunType /* run_type */)
                                 {m_num_cols,m_num_tau,m_num_cth},
                                 {e2str(COL), "cosp_tau", "cosp_cth"});
 
-  const auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, nondim, m_grid->name(), DataType::IntType);
-  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, nondim, m_grid->name(), DataType::IntType);
+  FieldIdentifier mcld_fid ("sunlit_mask_cldtot", scalar2d_cldtot, none, m_grid->name(), DataType::IntType);
+  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, none, m_grid->name(), DataType::IntType);
+  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, none, m_grid->name(), DataType::IntType);
+  Field mcld(mcld_fid,true);
   Field mctp(mctp_fid,true);
   Field mcth(mcth_fid,true);
   std::map<std::string,Field> masks = {
-    {"isccp_cldtot", get_field_in("sunlit_mask")},
+    {"isccp_cldtot", mcld},
     {"isccp_ctptau", mctp},
     {"modis_ctptau", mctp},
     {"misr_cthtau",  mcth},
@@ -131,7 +135,7 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   // Set the mask field for each of the cosp computed fields
   std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
   for (const auto& field_name : vnames) {
-    // the mask here is just the sunlit mask, so set it
+    // the mask is the sunlit mask at the time cosp ran (night values are fill_value)
     auto& f = get_field_out(field_name);
 
     f.set_valid_mask(masks.at(field_name));
@@ -152,12 +156,20 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   FieldLayout cosp_prs_bnds_layout ({CMP,CMP}, {m_num_ctp,2}, {"cosp_prs","nbnd"});
   FieldLayout cosp_cth_bnds_layout ({CMP,CMP}, {m_num_cth,2}, {"cosp_cth","nbnd"});
 
-  auto cosp_tau_f      = m_grid->create_geometry_data("cosp_tau",      cosp_tau_layout,     nondim);
+  auto cosp_tau_f      = m_grid->create_geometry_data("cosp_tau",      cosp_tau_layout,     none);
   auto cosp_prs_f      = m_grid->create_geometry_data("cosp_prs",      cosp_prs_layout,     Pa);
   auto cosp_cth_f      = m_grid->create_geometry_data("cosp_cth",      cosp_cth_layout,     m);
-  auto cosp_tau_bnds_f = m_grid->create_geometry_data("cosp_tau_bnds", cosp_tau_bnds_layout, nondim);
+  auto cosp_tau_bnds_f = m_grid->create_geometry_data("cosp_tau_bnds", cosp_tau_bnds_layout, none);
   auto cosp_prs_bnds_f = m_grid->create_geometry_data("cosp_prs_bnds", cosp_prs_bnds_layout, Pa);
   auto cosp_cth_bnds_f = m_grid->create_geometry_data("cosp_cth_bnds", cosp_cth_bnds_layout, m);
+
+  // In IO, make the output of this geo data conditional to vars using it being present in the stream
+  cosp_tau_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_tau"));
+  cosp_prs_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_prs"));
+  cosp_cth_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_cth"));
+  cosp_tau_bnds_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_tau"));
+  cosp_prs_bnds_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_prs"));
+  cosp_cth_bnds_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_cth"));
 
   // Retrieve bin centers and edges from the Fortran COSP interface (mod_cosp_config).
   // The F90 arrays for edges have shape (2, nbins) in Fortran column-major order, so the
@@ -206,7 +218,7 @@ void Cosp::run_impl (const double dt)
   // Make sure cosp frequency is multiple of rad frequency?
 
   // Compare frequency in steps with current timestep
-  auto update_cosp = cosp_do(cosp_freq_in_steps, end_of_step_ts().get_num_steps());
+  auto update_cosp = cosp_do(cosp_freq_in_steps, start_of_step_ts().get_num_steps());
 
   // Call COSP wrapper routines
   if (update_cosp) {
@@ -326,8 +338,9 @@ void Cosp::run_impl (const double dt)
     get_field_out("modis_ctptau").sync_to_dev();
     get_field_out("misr_cthtau").sync_to_dev();
 
-    // Update the ctptau and cthtau masks by broadcasting sunlit mask
+    // Update the masks of the output fields with the sunlit mask (broadcasting it for the 4d fields)
     const auto& sunlit = get_field_in("sunlit_mask");
+    get_field_out("isccp_cldtot").get_valid_mask().deep_copy(sunlit);
     auto& ctptau = get_field_out("isccp_ctptau").get_valid_mask();
     auto& cthtau = get_field_out("misr_cthtau").get_valid_mask();
 

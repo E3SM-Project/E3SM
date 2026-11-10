@@ -290,12 +290,6 @@ This downscaling is conservative.
 <default>Default: .true.</default>
 </entry>
 
-<entry id="use_betr" type="logical" category="physics"
-        group="elm_inparm" valid_values="" value=".false.">
-Toggle to turn on the BeTR
-(BETR = 'on' is EXPERIMENTAL NOT SUPPORTED!)
-</entry>
-
 <entry id="use_fates" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the FATES
@@ -339,8 +333,8 @@ Note that the landuse_timeseries option is not the same as the FATES fluh_timese
 This option is older than the luhdata options and may be depricated at some point in the future.
 </entry>
 
-<entry id="fates_parteh_mode" type="integer" category="physics"
-       group="elm_inparm" valid_values="1,2">
+<entry id="fates_parteh_mode" type="char*80" category="physics"
+       group="elm_inparm" valid_values="carbon_only,cnp">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
@@ -457,6 +451,13 @@ Toggle to turn on prescribed physiology (only relevant if FATES is being used).
 Toggle to turn on inventory initialization(only relevant if FATES is being used).
 </entry>
 
+<entry id="use_fates_dbh_init" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Initialize cohorts at coldstart with diameter at breast height instead of density
+(Applies only if use_fates_nocomp=.true.)
+(Only relevant if FATES is on).
+</entry>
+
 <entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname to the inventory initialization control file.
@@ -517,6 +518,14 @@ is provided as a namelist option to engage all necessary options).  The file is 
 by the FATES land use data tool (https://github.com/NGEET/tools-fates-landusedata)
 which processes the raw land use data from the THEMIS tool data sets
 (https://doi.org/10.5065/29s7-7b41)
+</entry>
+
+<entry id="fates_lu_transition_logic" type="integer" category="physics"
+        group="elm_inparm" valid_values="1,2,3,4,5,6,7,8,9">
+Select the logic for land use class transitions.
+Allowed values are 1-9. See the Land Use subsection of the Namelist Options section
+of the FATES user guide for an explanation of the options.
+(Only relevant if FATES with land use is on)
 </entry>
 
 <entry id="use_hydrstress" type="logical" category="physics"
@@ -835,17 +844,24 @@ with config_use_snicar_ad in mpas-seaice namelist
 
 <entry id="use_extrasnowlayers" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
-Toggle to use 16 snow layers instead of 5.  This option enables more realistic
-snowpack conditions on glaciers and ice sheets, including a semi-empirical
-firn densification model.
+Toggle to use 16 snow layers instead of 5.  This option was implemented to
+enable more realistic snowpack conditions on glaciers and ice sheets.  In
+that context, it should generally be used with use_firn_percolation_and_compaction,
+but it can also be used on its own to enable more snow layers for other applications.
+It also increases the snow water cap (h2osno_max) and affects snow initialization
+and snow-layer history/output handling. Additionally, it controls which snow-layer
+combining and dividing algorithms are used (16-layer schemes vs. 5-layer schemes).
 </entry>
 
 <entry id="use_firn_percolation_and_compaction" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 This option enables more realistic
 snowpack conditions on glaciers and ice sheets, including a semi-empirical
-firn densification model. uses the same physics as use_extrasnowlayers but
-uses the original 5 snow layer scheme
+firn densification model.  This option is typically used in conjunction with
+use_extrasnowlayers, but it can also be used on its own to enable the firn model
+with the standard 5 snow layers.
+This option also controls snow-capping and related snow-water flux handling paths.
+</entry>
 
 <entry id="use_T_rho_dependent_snowthk" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
@@ -1557,7 +1573,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_icycape,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne32np4.pg2,ne60np4,ne64np4.pg2,ne120np4,ne120np4.pg2,ne128np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne512np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_CAx32v1.pg2,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025,0.01x0.01">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_icycape,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne32np4.pg2,ne60np4,ne64np4.pg2,ne120np4,ne120np4.pg2,ne128np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne512np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_CAx32v1.pg2,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025,0.01x0.01,u01-lr6to10,u02-lr10,u03-lr240,u04-lr12p5,u05-lr25">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry>
@@ -1571,7 +1587,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5,SOwISC12to30E3r3,SOwISC12to30E3r4">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5,SOwISC12to30E3r3,SOwISC12to30E3r4,u01-oi6to18,u02-oi30,u03-oi240,u04-oi6to18,u05-oi6to18">
 Land mask description
 </entry>
 
@@ -1815,38 +1831,6 @@ Set to alblak values (0.6, 0.4) to keep albedo constant for ice-covered lakes wi
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- namelist elements associated with the betr_initializeMod                                  -->
-<!-- ========================================================================================  -->
-<entry id="reaction_method" type="char*256" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Specify what reaction module will be used within the betr framework.
-</entry>
-
-<entry id="AppParNLFile" type="char*256" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Specify file to input parameters that will be used within the betr framework.
-</entry>
-
-<entry id="advection_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on advection in betr if it is true.
-</entry>
-
-<entry id="diffusion_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on diffusion in betr if it is true.
-</entry>
-
-<entry id="ebullition_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on ebullition in betr if it is true.
-</entry>
-
-<entry id="reaction_on" type="logical" category="elm_betr"
-       group="betr_inparm" valid_values="" >
-Turn on reaction in betr if it is true.
-</entry>
-<!-- ========================================================================================  -->
 <!-- namelist elements associated with the Hydrology1Mod                                       -->
 <!-- ========================================================================================  -->
 
@@ -2021,15 +2005,10 @@ and pct_nat_pft read from the surface dataset.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options related to lateral grid connectivity                                     -->
+<!-- Namelist options related to domain decomposition                                          -->
 <!-- ========================================================================================  -->
-<entry id="lateral_connectivity" type="logical" category="elm_initialization"
-       group="elm_inparm" valid_values="" >
-If TRUE setup up lateral grid connectivity in CLM.
-</entry>
-
 <entry id="domain_decomp_type" type="char*256" category="elm_initialization"
-       group="elm_inparm" valid_values="round_robin,graph_partitioning,simple,moab" >
+       group="elm_inparm" valid_values="round_robin,simple,moab" >
 Specifies the method for decomposing CLM grids across processors.
 </entry>
 
@@ -2072,50 +2051,12 @@ topounit level. Based on the IM2 implementation from NGEE Arctic project.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options related to Variably Saturated Flow Model (VSFM)                          -->
+<!-- Namelist options related to plant phenology                                               -->
 <!-- ========================================================================================  -->
 
-<entry id="use_vsfm" type="logical" category="default_settings"
-        group="elm_inparm" valid_values="">
-Runtime flag to turn on/off VSFM.
-</entry>
-
-<entry id="vsfm_satfunc_type" type="char*32" category="elm_physics"
-       group="elm_inparm"
-       valid_values="brooks_corey,smooth_brooks_corey_bz2,smooth_brooks_corey_bz3,van_genuchten" >
-Type of saturation function used in VSFM.
-    brooks_corey             = use the Brooks Corey model
-    smooth_brooks_corey_bz2  = use the smooth approximation of Brooks Corey Model with no quadratic term
-    smooth_brooks_corey_bz3  = use the smooth approximation of Brooks Corey Model with no cubic term
-    van_genuchten            = use the van Genuchten model
-</entry>
-
-<entry id="vsfm_use_dynamic_linesearch"  type="logical" category="default_settings"
-       group="elm_inparm" valid_values="">
-Runtime flag to dynamically modify PETSc SNES linesearch option when VSFM fails to converge before cutting the timestep.
-</entry>
-
-<entry id="vsfm_lateral_model_type" type="char*32" category="elm_physics"
-       group="elm_inparm"
-       valid_values="none,source_sink,three_dimensional" >
-Type of lateral flow formulation supported in VSFM.
-    none               = No lateral flow
-    source_sink        = 1D VSFM solution + Lateral flow modeled as source/sink term
-    three_dimensional  = 3D VSFM solution (only supported for serial run)
-</entry>
-
-<entry id="vsfm_include_seepage_bc" type="logical" category="default_settings"
-        group="elm_inparm" valid_values="">
-Runtime flag to add seepage boundary condition on the top soil layer to allow for exfiltration.
-</entry>
-
-<!-- ========================================================================================  -->
-<!-- Namelist options related to PETSc-based thermal model                                     -->
-<!-- ========================================================================================  -->
-
-<entry id="use_petsc_thermal_model" type="logical" category="default_settings"
-        group="elm_inparm" valid_values="">
-Runtime flag to turn on/off PETSc based thermal model.
+<entry id="onset_gdd_extension" type="logical" category="default_settings"
+    group="elm_inparm" valid_values="">
+    Runtime flag to turn on/off stress_deciduous PFT's onset gdd summation end from summer solstice to offset starting.
 </entry>
 
 <!-- ========================================================================================  -->
@@ -2134,6 +2075,17 @@ Runtime flag to turn on/off variable soil thickness.
 <entry id="use_lake_wat_storage" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 Runtime flag to turn on/off lake water storage.
+</entry>
+
+<entry id="lake_evap_cap_method"
+       type="char*32"
+       category="default_settings"
+       group="elm_inparm"
+       valid_values="none,rain_snow,rain_snow_h2osno"
+       value="none" >
+Method used to cap lake evaporation by available water. 'none' applies no cap. 'rain_snow' caps
+evaporation at this timestep's rain+snow forcing (forc_rain+forc_snow). 'rain_snow_h2osno'
+additionally includes the lake column's persistent snowpack (h2osno).
 </entry>
 
 <!-- ========================================================================================  -->

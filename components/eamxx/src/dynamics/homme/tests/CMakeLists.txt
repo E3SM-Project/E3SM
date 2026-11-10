@@ -8,15 +8,17 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
 
   # Test dynamics-physics fields remapping
   CreateUnitTest(homme_pd_remap
-      "homme_pd_remap_tests.cpp;test_helper_mod.F90"
-      LIBS ${dynLibName}
-      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-      LABELS dynamics)
+    SOURCES homme_pd_remap_tests.cpp test_helper_mod.F90
+    LIBS ${dynLibName}
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    LABELS dynamics
+  )
 
   # Test I/O on dyn grid
   CreateUnitTest(dyn_grid_io
-      "dyn_grid_io.cpp;test_helper_mod.F90"
-      LIBS eamxx_io ${dynLibName}
-      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-      LABELS dynamics io)
+    SOURCES dyn_grid_io.cpp test_helper_mod.F90
+    LIBS eamxx_io ${dynLibName}
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    LABELS dynamics io
+  )
 endif()

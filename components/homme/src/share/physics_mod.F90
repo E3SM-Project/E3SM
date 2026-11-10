@@ -104,7 +104,7 @@ contains
 #else
     
     estar = exp(53.67957_real_kind - 6743.769_real_kind/abs(Tin) &
-	- 4.8451_real_kind * log(ABS(Tin)))
+        - 4.8451_real_kind * log(ABS(Tin)))
 #endif
     ! convert to code units
     if (p0 <  2000 ) then
@@ -191,7 +191,6 @@ contains
     real (kind=real_kind),intent(in)     :: Tin,pin
 
     real (kind=real_kind)                :: estar,e_vapor
-    real*8                               :: st,et
 
     ! returns pressure in mb or Pa?  
     estar   = Saturation_Vapor_Pressure(Tin)     

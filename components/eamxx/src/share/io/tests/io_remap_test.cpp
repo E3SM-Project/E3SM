@@ -4,10 +4,9 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-
 #include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_pack.hpp>
 
@@ -17,6 +16,11 @@ using namespace scream;
 
 constexpr int packsize = SCREAM_PACK_SIZE;
 constexpr Real fill_val = constants::fill_value<Real>;
+// Fraction of a tgt column that must come from valid (unfilled) src columns during
+// horiz remap. The 'remap_horizontal' stream sets this explicitly via the output
+// params, while 'remap_vertical_horizontal' leaves it unset, to test the default.
+constexpr Real hr_fill_threshold     = 0.0;
+constexpr Real hr_fill_threshold_def = 0.5;
 using         Pack     = ekat::Pack<Real,packsize>;
 using stratts_t = std::map<std::string,std::string>;
 
@@ -28,10 +32,13 @@ get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 std::shared_ptr<FieldManager>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid, const bool midonly, const int p_ref=-1);
 
+std::vector<Field>
+get_test_fields(std::shared_ptr<FieldManager> fm, const int p_ref=-1);
+
 Real calculate_output(const Real pressure, const int col, const int cmp);
 
-ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap);
-ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref);
+ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap, const Real hr_thresh=-1);
+std::string get_filename(const std::string& name, ekat::Comm& comm, const std::string& tstamp);
 
 bool approx(const Real a, const Real b) {
   const Real tol = std::numeric_limits<Real>::epsilon()*100000;
@@ -256,7 +263,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical remap ... done\n",io_comm);
 
   print ("    -> horizontal remap ... \n",io_comm);
-  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
+  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true,hr_fill_threshold);
   om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
   om_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -288,16 +295,16 @@ TEST_CASE("io_remap_test","io_remap_test")
     print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("point_grid");
+    auto gids      = grid_vert->get_partitioned_dim_gids();
     auto fm_vert   = get_test_fm(grid_vert,true,p_ref);
-    auto vert_in   = set_input_params("remap_vertical",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(vert_in,fm_vert);
-    test_input.read_variables();
+    auto fields    = get_test_fields(fm_vert,p_ref);
+    auto filename  = get_filename("remap_vertical",io_comm,t0.to_string());
+    read_fields(filename,fields,gids,io_comm);
 
     // Check the "test" metadata, which should match the field name
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = vert_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -305,8 +312,6 @@ TEST_CASE("io_remap_test","io_remap_test")
     std::string f_at_lev_name = "Y_int_at_" + std::to_string(p_ref) + "Pa";
     att_val = scorpio::get_attribute<std::string>(filename,f_at_lev_name,"test");
     REQUIRE (att_val=="Y_int");
-
-    test_input.finalize();
 
     // Test vertically remapped output.
     // The single flat variable, "Y_flat" should match the source value exactly.  No vertical interpolation.
@@ -356,16 +361,16 @@ TEST_CASE("io_remap_test","io_remap_test")
     print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("point_grid");
+    auto gids       = grid_horiz->get_partitioned_dim_gids();
     auto fm_horiz   = get_test_fm(grid_horiz,false,p_ref);
-    auto horiz_in   = set_input_params("remap_horizontal",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(horiz_in,fm_horiz);
-    test_input.read_variables();
+    auto fields     = get_test_fields(fm_horiz,p_ref);
+    auto filename   = get_filename("remap_horizontal",io_comm,t0.to_string());
+    read_fields(filename,fields,gids,io_comm);
 
     // Check the "test" metadata, which should match the field name
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = horiz_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -373,7 +378,6 @@ TEST_CASE("io_remap_test","io_remap_test")
     std::string f_at_lev_name = "Y_int_at_" + std::to_string(p_ref) + "Pa";
     att_val = scorpio::get_attribute<std::string>(filename,f_at_lev_name,"test");
     REQUIRE (att_val=="Y_int");
-    test_input.finalize();
 
     // Test horizontally remapped output.
     // The remap we are testing is rather simple, each pair of subsequent columns are remapped to a single
@@ -414,18 +418,15 @@ TEST_CASE("io_remap_test","io_remap_test")
       // For the pressured sliced variable we expect some masking which needs to be checked.
       Real Ys_exp = 0.0;
       Real Ys_wgt = 0.0;
-      bool found  = false;
       if (p_ref<=pi_v(col1,nlevs_src) && p_ref>=pi_v(col1,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col1,0)*wgt;
         Ys_wgt += wgt;
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
         Ys_wgt += (1.0 - wgt);
       }
-      if (found) {
+      if (Ys_wgt>hr_fill_threshold) {
         Ys_exp /= Ys_wgt;
       } else {
         Ys_exp = fill_val;
@@ -438,18 +439,18 @@ TEST_CASE("io_remap_test","io_remap_test")
   //                                ---  Vertical + Horizontal Remapping ---
   {
     print ("    -> vertical + horizontal remap ... \n",io_comm);
-    auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
-    auto grid_vh = gm_vh->get_grid("point_grid");
-    auto fm_vh   = get_test_fm(grid_vh,true,p_ref);
-    auto vh_in   = set_input_params("remap_vertical_horizontal",io_comm,t0.to_string(),p_ref);
-    AtmosphereInput test_input(vh_in,fm_vh);
-    test_input.read_variables();
+    auto gm_vh    = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
+    auto grid_vh  = gm_vh->get_grid("point_grid");
+    auto gids     = grid_vh->get_partitioned_dim_gids();
+    auto fm_vh    = get_test_fm(grid_vh,true,p_ref);
+    auto fields   = get_test_fields(fm_vh,p_ref);
+    auto filename = get_filename("remap_vertical_horizontal",io_comm,t0.to_string());
+    read_fields(filename,fields,gids,io_comm);
 
     // Check the "test" metadata, which should match the field name
     // Note: the FieldAtPressureLevel diag should get the attribute from its input field,
     //       so the valuf for "Y_int"_at_XPa should be "Y_int"
     std::string att_val;
-    const auto& filename = vh_in.get<std::string>("filename");
     for (auto& fname : fnames) {
       att_val = scorpio::get_attribute<std::string>(filename,fname,"test");
       REQUIRE (att_val==fname);
@@ -457,7 +458,6 @@ TEST_CASE("io_remap_test","io_remap_test")
     std::string f_at_lev_name = "Y_int_at_" + std::to_string(p_ref) + "Pa";
     att_val = scorpio::get_attribute<std::string>(filename,f_at_lev_name,"test");
     REQUIRE (att_val=="Y_int");
-    test_input.finalize();
 
     // Test vertically + horizontally remapped output.
     // This test is a combination of the vertical test and horizontal test above.
@@ -491,33 +491,36 @@ TEST_CASE("io_remap_test","io_remap_test")
         const Real mid_mask_2 = (p_jj<=pm_v(col2,nlevs_src-1) && p_jj>=pm_v(col2,0));
         const Real int_mask_1 = (p_jj<=pi_v(col1,nlevs_src)   && p_jj>=pi_v(col1,0));
         const Real int_mask_2 = (p_jj<=pi_v(col2,nlevs_src)   && p_jj>=pi_v(col2,0));
+        // Fraction of the tgt column coming from valid src columns
+        const Real mid_mask_r = mid_mask_1*wgt + mid_mask_2*(1-wgt);
+        const Real int_mask_r = int_mask_1*wgt + int_mask_2*(1-wgt);
         Real test_mid;
         Real test_int;
-        if (mid_mask_1 + mid_mask_2 > 0.0) {
-          test_mid = (mid_mask_1*calculate_output(p_jj,col1,0)*wgt + mid_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
+        if (mid_mask_r > hr_fill_threshold_def) {
+          test_mid = (mid_mask_1*calculate_output(p_jj,col1,0)*wgt + mid_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/mid_mask_r;
         } else {
-          // This point is completely masked out, assign masked value
+          // Not enough valid src data, assign masked value
           test_mid = fill_val;
         }
-        if (int_mask_1 + int_mask_2 > 0.0) {
-          test_int = (int_mask_1*calculate_output(p_jj,col1,0)*wgt + int_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
+        if (int_mask_r > hr_fill_threshold_def) {
+          test_int = (int_mask_1*calculate_output(p_jj,col1,0)*wgt + int_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/int_mask_r;
         } else {
-          // This point is completely masked out, assign masked value
+          // Not enough valid src data, assign masked value
           test_int = fill_val;
         }
         REQUIRE(approx(Ym_v_vh(ii,jj), test_mid));
         REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
         for (int cc=0; cc<2; cc++) {
-          if (mid_mask_1 + mid_mask_2 > 0.0) {
-            test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
+          if (mid_mask_r > hr_fill_threshold_def) {
+            test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/mid_mask_r;
           } else {
-            // This point is completely masked out, assign masked value
+            // Not enough valid src data, assign masked value
             test_mid = fill_val;
           }
-          if (int_mask_1 + int_mask_2 > 0.0) {
-            test_int = (int_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + int_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
+          if (int_mask_r > hr_fill_threshold_def) {
+            test_int = (int_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + int_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/int_mask_r;
           } else {
-            // This point is completely masked out, assign masked value
+            // Not enough valid src data, assign masked value
             test_int = fill_val;
           }
           REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
@@ -527,18 +530,15 @@ TEST_CASE("io_remap_test","io_remap_test")
       // For the pressured sliced variable we expect it to match the solution from horizontal mapping only so we use the same syntax.
       Real Ys_exp = 0.0;
       Real Ys_wgt = 0.0;
-      bool found  = false;
       if (p_ref<=pi_v(col1,nlevs_src) && p_ref>=pi_v(col1,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col1,0)*wgt;
         Ys_wgt += wgt;
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
         Ys_wgt += (1.0 - wgt);
       }
-      if (found) {
+      if (Ys_wgt>hr_fill_threshold_def) {
         Ys_exp /= Ys_wgt;
       } else {
         Ys_exp = fill_val;
@@ -667,8 +667,21 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   return fm;
 }
+
+std::vector<Field>
+get_test_fields(std::shared_ptr<FieldManager> fm, const int p_ref)
+{
+  std::vector<Field> fields;
+  for (std::string n : {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"}) {
+    fields.push_back(fm->get_field(n));
+  }
+  if (p_ref>=0) {
+    fields.push_back(fm->get_field("Y_int_at_"+std::to_string(p_ref)+"Pa"));
+  }
+  return fields;
+}
 /*==========================================================================================================*/
-ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap)
+ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap, const Real hr_thresh)
 {
   using vos_type = std::vector<std::string>;
   ekat::ParameterList params;
@@ -682,7 +695,8 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 
   vos_type fields_out = {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
   if (p_ref>=0) {
-    fields_out.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
+    const auto p = std::to_string(p_ref);
+    fields_out.push_back("Y_int_at_"+p+"Pa := Y_int.interp(p_mid="+p+",units='Pa')");
   }
   if (!vert_remap && !horiz_remap) {
     fields_out.push_back("p_surf");
@@ -696,26 +710,19 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   }
   if (horiz_remap) {
     params.set<std::string>("horiz_remap_file",remap_filename); // TODO, make this work for general np=?
+    // A negative value means "don't set the param", so that we test the default too
+    if (hr_thresh>=0) {
+      params.set<Real>("horiz_remap_fill_threshold",hr_thresh);
+    }
   }
 
   return params;
 }
 /*==========================================================================================================*/
-ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref)
+std::string get_filename(const std::string& name, ekat::Comm& comm, const std::string& tstamp)
 {
-  using vos_type = std::vector<std::string>;
-  ekat::ParameterList in_params("Input Parameters");
-  std::string filename = name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
-  in_params.set<std::string>("filename",filename);
-  vos_type fields_in =  {"Y_flat", "Y_mid", "Y_int", "V_mid", "V_int"};
-  if (p_ref>=0) {
-    fields_in.push_back("Y_int_at_"+std::to_string(p_ref)+"Pa");
-  }
+  return name + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + tstamp + ".nc";
 
-  in_params.set<vos_type>("field_names", fields_in);
-  in_params.set<std::string>("floating_point_precision","real");
-  return in_params;
 }
-/*==========================================================================================================*/
 
 } //namespace

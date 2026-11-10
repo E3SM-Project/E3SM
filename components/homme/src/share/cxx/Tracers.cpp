@@ -72,6 +72,14 @@ void Tracers::push_qdp(F90Ptr &state_qdp) const {
   sync_to_host(qdp, state_qdp_f90);
 }
 
+void Tracers::push_qdp(F90Ptr &state_qdp, const int src_qdp_tl,
+                       const int dst_qdp_tl) const {
+  HostViewUnmanaged<
+      Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>
+  state_qdp_f90(state_qdp, qdp.extent_int(0));
+  sync_to_host(qdp, state_qdp_f90, src_qdp_tl, dst_qdp_tl);
+}
+
 HashType Tracers::hash (const int tl) const {  
   HashType accum = 0;
   Homme::hash(tl, qdp, NUM_PHYSICAL_LEV, accum);

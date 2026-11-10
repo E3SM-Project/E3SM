@@ -79,7 +79,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
 
-# Prefer shared libraries (Yellowstone etc.) 
+# Prefer shared libraries (Yellowstone etc.)
 OPTION(PREFER_SHARED "Prefer linking with shared libraries." FALSE)
 
 # need to tell the source to use this capability
@@ -105,7 +105,7 @@ OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
 # Default use quad precision
 OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)
 
-IF (${HOMME_QUAD_PREC}) 
+IF (${HOMME_QUAD_PREC})
   testQuadPrec(HOMME_QUAD_SUPPORTED)
   IF (NOT ${HOMME_QUAD_SUPPORTED})
     SET(HOMME_QUAD_PREC FALSE)
@@ -225,6 +225,11 @@ IF (HOMME_USE_KOKKOS)
 
   # An option to allow workspace sharing on GPU
   OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
+
+  # For now, hommexx view usage is only compatible with Kokkos' lecacy view impl.
+  # FIXME: View usage in Hommexx will need to allow for Kokkos' MDSpan view implementation as the legacy
+  #        implementation will go away in the future, unannounced (it's an "impl" option => no deprecation).
+  OPTION (Kokkos_ENABLE_IMPL_VIEW_LEGACY "Currently, HOMME is only compatible with Kokkos' legacy view implementation." ON)
 ENDIF()
 
 ##############################################################################
@@ -252,12 +257,12 @@ OPTION(HOMME_USE_MKL "Whether to use Intel's MKL/oneMKL instead of blas/lapack" 
 IF(HOMME_USE_MKL)
   IF(DEFINED ENV{MKLROOT})
     SET(MKL_ROOT_PATH "$ENV{MKLROOT}")
-    IF(MKL_ROOT_PATH MATCHES "oneapi/mkl")
-      SET(MKL_TYPE "oneMKL")
+    IF(MKL_ROOT_PATH MATCHES "oneapi")
+      SET(MKL_TYPE "oneMKL" CACHE INTERNAL "")
       MESSAGE(STATUS "Detected oneMKL based on MKLROOT: ${MKL_ROOT_PATH}")
       FIND_PACKAGE(MKL REQUIRED $ENV{MKLROOT}/lib/cmake/mkl)
     ELSE()
-      SET(MKL_TYPE "Intel MKL")
+      SET(MKL_TYPE "Intel MKL" CACHE INTERNAL "")
       MESSAGE(STATUS "Detected standalone Intel MKL based on MKLROOT: ${MKL_ROOT_PATH}")
     ENDIF()
   ELSE()
@@ -460,7 +465,7 @@ if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc)
     set(SFC ${CMAKE_Fortran_COMPILER})
     set(SCC ${CMAKE_C_COMPILER})
-    
+
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
@@ -483,6 +488,17 @@ IF (HOMME_USE_KOKKOS)
     # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
     include (EkatBuildKokkos)
   endif()
+
+  # Add --fmad=false for BFB and CUDA
+  if (HOMMEXX_BFB_TESTING AND Kokkos_ENABLE_CUDA AND TARGET kokkoscore)
+    include (EkatSetCompilerFlags)
+    if (Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE)
+      SetCudaFlags(kokkoscore CUDA_LANG FLAGS --fmad=false)
+    else()
+      SetCudaFlags(kokkoscore FLAGS --fmad=false)
+    endif()
+  endif()
+
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests

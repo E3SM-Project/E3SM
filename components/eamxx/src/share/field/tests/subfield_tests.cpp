@@ -445,7 +445,7 @@ TEST_CASE ("sync_subfields") {
   constexpr int nlevs = 8;
 
   // Create field with (col, cmp, lev)
-  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),Units::nondimensional(),"the_grid",DataType::IntType);
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),none,"the_grid",DataType::IntType);
   Field f (fid);
   f.allocate_view();
 

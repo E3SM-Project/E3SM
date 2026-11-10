@@ -15,10 +15,10 @@ typedef double Real;
 namespace ko = Kokkos;
 
 // Fortran array wrappers with Fortran index order.
-// Use HostMirror::memory_space (not HostMirror directly) to:
-//   1. Get the correct memory space on APUs where HostMirror of HIPSpace stays in HIPSpace.
-//   2. Preserve const qualifiers on T, which HostMirror strips.
-using HostMirrorMemSpace = typename ko::View<Real*, ko::DefaultExecutionSpace::memory_space>::HostMirror::memory_space;
+// Use host_mirror_type::memory_space (not host_mirror_type directly) to:
+//   1. Get the correct memory space on APUs where host_mirror_type of HIPSpace stays in HIPSpace.
+//   2. Preserve const qualifiers on T, which host_mirror_type strips.
+using HostMirrorMemSpace = typename ko::View<Real*, ko::DefaultExecutionSpace::memory_space>::host_mirror_type::memory_space;
 template <typename T> using FA1 = ko::View<T*,     ko::LayoutLeft, HostMirrorMemSpace>;
 template <typename T> using FA2 = ko::View<T**,    ko::LayoutLeft, HostMirrorMemSpace>;
 template <typename T> using FA3 = ko::View<T***,   ko::LayoutLeft, HostMirrorMemSpace>;
@@ -29,9 +29,9 @@ template <typename MT> using DepPoints =
   ko::View<Real****, ko::LayoutRight, typename MT::DDT>;
 template <typename MT> using QExtrema =
   ko::View<Real****, ko::LayoutRight, typename MT::DDT>;
-  
-template <typename MT> using DepPointsH = typename DepPoints<MT>::HostMirror;
-template <typename MT> using QExtremaH = typename QExtrema<MT>::HostMirror;
+
+template <typename MT> using DepPointsH = typename DepPoints<MT>::host_mirror_type;
+template <typename MT> using QExtremaH = typename QExtrema<MT>::host_mirror_type;
 
 template <typename MT> using QExtremaHConst = ko::Const<QExtremaH<MT> >;
 template <typename MT> using QExtremaConst = ko::Const<QExtrema<MT> >;
@@ -66,7 +66,7 @@ struct HommeFormatSubArray {
     assert(i >= 0);
     return data[i];
   }
-  COMPOSE_FORCEINLINE_FUNCTION 
+  COMPOSE_FORCEINLINE_FUNCTION
   T& operator() (const Int& k, const Int& lev) const {
     static_assert(rank == 2, "rank 2 array");
     assert(k >= 0);
@@ -74,7 +74,7 @@ struct HommeFormatSubArray {
     check(k, lev);
     return data[lev*np2 + k];
   }
-  COMPOSE_FORCEINLINE_FUNCTION 
+  COMPOSE_FORCEINLINE_FUNCTION
   T& operator() (const Int& q_or_timelev, const Int& k, const Int& lev) const {
     static_assert(rank == 3, "rank 3 array");
     assert(q_or_timelev >= 0);
@@ -83,7 +83,7 @@ struct HommeFormatSubArray {
     check(k, lev, q_or_timelev);
     return data[(q_or_timelev*nlev + lev)*np2 + k];
   }
-  COMPOSE_FORCEINLINE_FUNCTION 
+  COMPOSE_FORCEINLINE_FUNCTION
   T& operator() (const Int& timelev, const Int& q, const Int& k, const Int& lev) const {
     static_assert(rank == 4, "rank 4 array");
     assert(timelev >= 0);
@@ -95,7 +95,7 @@ struct HommeFormatSubArray {
   }
 
 private:
-  static const int np2 = 16;  
+  static const int np2 = 16;
   T* data;
   const Int nlev, qsized, ntimelev;
 
@@ -112,7 +112,7 @@ private:
         assert(q_or_timelev < qsized);
     }
     if (timelev >= 0) assert(timelev < ntimelev);
-#endif    
+#endif
   }
 };
 
@@ -154,7 +154,7 @@ struct HommeFormatArray {
     return *(ie_data_ptr[ie] + i);
 #endif
   }
-  COMPOSE_FORCEINLINE_FUNCTION 
+  COMPOSE_FORCEINLINE_FUNCTION
   T& operator() (const Int& ie, const Int& k, const Int& lev) const {
     static_assert(rank == 3, "rank 3 array");
 #if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__ || defined __SYCL_DEVICE_ONLY__
@@ -167,7 +167,7 @@ struct HommeFormatArray {
     return *(ie_data_ptr[ie] + lev*np2 + k);
 #endif
   }
-  COMPOSE_FORCEINLINE_FUNCTION 
+  COMPOSE_FORCEINLINE_FUNCTION
   T& operator() (const Int& ie, const Int& q_or_timelev, const Int& k,
                  const Int& lev) const {
     static_assert(rank == 4, "rank 4 array");
@@ -182,7 +182,7 @@ struct HommeFormatArray {
     return *(ie_data_ptr[ie] + (q_or_timelev*nlev + lev)*np2 + k);
 #endif
   }
-  COMPOSE_FORCEINLINE_FUNCTION 
+  COMPOSE_FORCEINLINE_FUNCTION
   T& operator() (const Int& ie, const Int& timelev, const Int& q, const Int& k,
                  const Int& lev) const {
     static_assert(rank == 5, "rank 4 array");
@@ -226,7 +226,7 @@ private:
         assert(q_or_timelev < qsized);
     }
     if (timelev >= 0) assert(timelev < ntimelev);
-#endif    
+#endif
   }
 };
 

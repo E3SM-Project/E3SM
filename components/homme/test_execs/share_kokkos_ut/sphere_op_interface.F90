@@ -280,7 +280,7 @@ contains
     real(kind=real_kind), intent(in) :: dinv(np, np, 2, 2)
     real(kind=real_kind), intent(in) :: spheremp(np, np)
     real(kind=real_kind), intent(in) :: tensorVisc(np, np, 2, 2)
-    real(kind=real_kind), intent(in) :: vec_sph2cart(np, np, 3, 2)
+    real(kind=real_kind), intent(in) :: vec_sph2cart(np, np, 3, 3)
     logical, value, intent(in) :: var_coef
     real(kind=real_kind), intent(in) :: hvpower, hvscaling
     real(kind=real_kind), intent(out)     :: laplace(np,np,2)
@@ -300,7 +300,7 @@ contains
     elem%tensorVisc = tensorVisc
     elem%vec_sphere2cart = vec_sph2cart
 
-    laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
+    laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,tensorVisc)
 
   end subroutine vlaplace_sphere_wk_cartesian_c_callable
 
@@ -346,7 +346,7 @@ contains
     elem%Dinv = dinv
     elem%rmetdet = rmetdet
 
-    laplace = vlaplace_sphere_wk_contra(v,deriv,elem,.false.,nu_ratio)
+    laplace = vlaplace_sphere_wk_contra(v,deriv,elem,nu_ratio)
 
   end subroutine vlaplace_sphere_wk_contra_c_callable
 

@@ -33,6 +33,11 @@
 <config_dt ice_grid="RRSwISC6to18E3r5">900.0</config_dt>
 <config_dt ice_grid="SOwISC12to30E3r3">1800.0</config_dt>
 <config_dt ice_grid="SOwISC12to30E3r4">1800.0</config_dt>
+<config_dt ice_grid="u01-oi6to18">900.0</config_dt>
+<config_dt ice_grid="u02-oi30">1800.0</config_dt>
+<config_dt ice_grid="u03-oi240">7200.0</config_dt>
+<config_dt ice_grid="u04-oi6to18">900.0</config_dt>
+<config_dt ice_grid="u05-oi6to18">900.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -95,6 +100,10 @@
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS18to6v3">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="RRSwISC6to18E3r5">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="u01-oi6to18">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="u02-oi30">70.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="u04-oi6to18">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="u05-oi6to18">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
@@ -112,6 +121,10 @@
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS18to6v3">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="RRSwISC6to18E3r5">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="u01-oi6to18">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="u02-oi30">-60.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="u04-oi6to18">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="u05-oi6to18">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
@@ -177,6 +190,11 @@
 <config_dynamics_subcycle_number ice_grid="RRSwISC6to18E3r5">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="SOwISC12to30E3r3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="SOwISC12to30E3r4">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="u01-oi6to18">2</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="u02-oi30">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="u03-oi240">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="u04-oi6to18">2</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="u05-oi6to18">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -220,8 +238,8 @@
 <config_use_ice_age>false</config_use_ice_age>
 <config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
-<config_use_level_meltponds>true</config_use_level_meltponds>
-<config_use_sealevel_meltponds>false</config_use_sealevel_meltponds>
+<config_use_level_meltponds>false</config_use_level_meltponds>
+<config_use_sealevel_meltponds>true</config_use_sealevel_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
@@ -362,7 +380,7 @@
 <config_mobility_type_lipids>0.0</config_mobility_type_lipids>
 <config_mobility_type_inorganic_carbon>-1.0</config_mobility_type_inorganic_carbon>
 <config_mobility_type_proteins>0.0</config_mobility_type_proteins>
-<config_mobility_type_dissolved_iron>0.0</config_mobility_type_dissolved_iron>
+<config_mobility_type_dissolved_iron>-1.0</config_mobility_type_dissolved_iron>
 <config_mobility_type_particulate_iron>0.5</config_mobility_type_particulate_iron>
 <config_mobility_type_black_carbon1>-1.0</config_mobility_type_black_carbon1>
 <config_mobility_type_black_carbon2>-1.0</config_mobility_type_black_carbon2>
@@ -444,6 +462,9 @@
 <config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
 <config_congelation_freezing_method ice_grid="RRSwISC6to18E3r5">'one-step'</config_congelation_freezing_method>
 <config_congelation_freezing_method ice_grid="SOwISC12to30E3r3">'one-step'</config_congelation_freezing_method>
+<config_congelation_freezing_method ice_grid="u01-oi6to18">'one-step'</config_congelation_freezing_method>
+<config_congelation_freezing_method ice_grid="u04-oi6to18">'one-step'</config_congelation_freezing_method>
+<config_congelation_freezing_method ice_grid="u05-oi6to18">'one-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->

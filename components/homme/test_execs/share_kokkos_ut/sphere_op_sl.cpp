@@ -138,31 +138,31 @@ class compute_sphere_operator_test {
   // do not take ie or nlev fields,  but to make it a more
   // reasonable test and to have parallel_for we ise another
   // dimension.
-  ExecViewManaged<Real * [NP][NP]>::HostMirror
+  ExecViewManaged<Real * [NP][NP]>::host_mirror_type
       scalar_input_host;
   // how to get total length of view? use dim0*dim1*...till
   // dim7
   const int scalar_input_len = NP * NP;  // temp code
-  ExecViewManaged<Real * [2][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [2][NP][NP]>::host_mirror_type
       vector_input_host;
   // how to get total length of view? use dim0*dim1*...till
   // dim7
   const int vector_input_len = 2 * NP * NP;  // temp code
-  ExecViewManaged<Real * [2][2][NP][NP]>::HostMirror d_host;
+  ExecViewManaged<Real * [2][2][NP][NP]>::host_mirror_type d_host;
   const int d_len = 2 * 2 * NP * NP;  // temp code
-  ExecViewManaged<Real * [2][2][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [2][2][NP][NP]>::host_mirror_type
       dinv_host;
   const int dinv_len = 2 * 2 * NP * NP;  // temp code
-  ExecViewManaged<Real * [NP][NP]>::HostMirror metdet_host;
+  ExecViewManaged<Real * [NP][NP]>::host_mirror_type metdet_host;
   const int metdet_len = NP * NP;
-  ExecViewManaged<Real * [NP][NP]>::HostMirror
+  ExecViewManaged<Real * [NP][NP]>::host_mirror_type
       spheremp_host;
   const int spheremp_len = NP * NP;
-  ExecViewManaged<Real[NP][NP]>::HostMirror dvv_host;
+  ExecViewManaged<Real[NP][NP]>::host_mirror_type dvv_host;
   const int dvv_len = NP * NP;
-  ExecViewManaged<Real * [NP][NP]>::HostMirror
+  ExecViewManaged<Real * [NP][NP]>::host_mirror_type
       scalar_output_host;
-  ExecViewManaged<Real * [2][NP][NP]>::HostMirror
+  ExecViewManaged<Real * [2][NP][NP]>::host_mirror_type
       vector_output_host;
 
   SphereOperators     sphere_ops;

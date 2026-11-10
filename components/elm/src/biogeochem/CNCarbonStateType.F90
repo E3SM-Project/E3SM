@@ -109,7 +109,6 @@ module CNCarbonStateType
      real(r8), pointer :: totecosysc_col           (:)     ! col (gC/m2) total ecosystem carbon, incl veg but excl cpool
      real(r8), pointer :: totcolc_col              (:)     ! col (gC/m2) total column carbon, incl veg and cpool
      real(r8), pointer :: totabgc_col              (:)     ! col (gC/m2) total column above ground carbon, excluding som 
-     real(r8), pointer :: totblgc_col              (:)     ! col (gc/m2) total column non veg carbon
 
      ! variables for above ground vegetation biomass
      real(r8), pointer :: totvegc_abg_patch            (:)     ! (gC/m2) total above vegetation carbon, excluding cpool
@@ -258,7 +257,6 @@ contains
 
 
     allocate(this%totabgc_col              (begc :endc))                   ;     this%totabgc_col              (:)   = nan
-    allocate(this%totblgc_col              (begc:endc))                    ;     this%totblgc_col              (:)   = nan
     allocate(this%decomp_cpools_vr_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))  
     this%decomp_cpools_vr_col(:,:,:)= nan
 
@@ -360,16 +358,6 @@ contains
     !-------------------------------
 
     ! add history fields for all CLAMP CN variables
-
-
-
-    if (carbon_type == 'c12') then
-
-
-       !those variables are now ouput in betr
-
-
-    end if
 
     !-------------------------------
     ! C13 state variables - column
@@ -632,7 +620,6 @@ contains
 
     use restUtilMod
     use ncdio_pio
-    use tracer_varcon  , only : is_active_betr_bgc
     !
     ! !ARGUMENTS:
     class (carbonstate_type) :: this

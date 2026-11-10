@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspCalculateShear : public UnitWrap::Un
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_conv_mcsp_calculate_shear_f(d);
-      }
-      else {
-        zm_conv_mcsp_calculate_shear(d);
-      }
+      zm_conv_mcsp_calculate_shear(d);
     }
 
     // Verify BFB results, all data should be in C layout
@@ -65,9 +60,13 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspCalculateShear : public UnitWrap::Un
       for (Int i = 0; i < num_runs; ++i) {
         ZmConvMcspCalculateShearData& d_baseline = baseline_data[i];
         ZmConvMcspCalculateShearData& d_test = test_data[i];
-        REQUIRE(d_baseline.total(d_baseline.mcsp_shear) == d_test.total(d_test.mcsp_shear));
-        for (Int k = 0; k < d_baseline.total(d_baseline.mcsp_shear); ++k) {
-          REQUIRE(d_baseline.mcsp_shear[k] == d_test.mcsp_shear[k]);
+        REQUIRE(d_baseline.total(d_baseline.shear_u) == d_test.total(d_test.shear_u));
+        for (Int k = 0; k < d_baseline.total(d_baseline.shear_u); ++k) {
+          REQUIRE(d_baseline.shear_u[k] == d_test.shear_u[k]);
+        }
+        REQUIRE(d_baseline.total(d_baseline.shear_v) == d_test.total(d_test.shear_v));
+        for (Int k = 0; k < d_baseline.total(d_baseline.shear_v); ++k) {
+          REQUIRE(d_baseline.shear_v[k] == d_test.shear_v[k]);
         }
       }
     }

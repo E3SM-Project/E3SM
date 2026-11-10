@@ -129,12 +129,15 @@ void BfbTreeAllReducer<ES>
     // Send to parents.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
-      mpi::isend(*p_, &bd_[mmd.offset * nf], mmd.size * nf, mmd.rank, mpitag);
+      mpi::isend(*p_, &bd_[mmd.offset * nf], mmd.size * nf, mmd.rank, mpitag,
+                 &lvl.me_send_req[i]);
     }
   }
   // Root to leaves.
   for (size_t il = ns.levels.size(); il > 0; --il) {
     auto& lvl = ns.levels[il-1];
+    // Wait for l2r sends from bd_ to complete before receiving r2l into bd_.
+    mpi::waitall(lvl.me_send_req.size(), lvl.me_send_req.data());
     // Get the global sum from parent.
     for (size_t i = 0; i < lvl.me.size(); ++i) {
       const auto& mmd = lvl.me[i];
@@ -155,8 +158,13 @@ void BfbTreeAllReducer<ES>
     // Send.
     for (size_t i = 0; i < lvl.kids.size(); ++i) {
       const auto& mmd = lvl.kids[i];
-      mpi::isend(*p_, &bd_[mmd.offset * nf], mmd.size * nf, mmd.rank, mpitag);
+      mpi::isend(*p_, &bd_[mmd.offset * nf], mmd.size * nf, mmd.rank, mpitag,
+                 &lvl.kids_req[i]);
     }
+  }
+  for (size_t il = 0; il < ns.levels.size(); ++il) {
+    auto& lvl = ns.levels[il];
+    mpi::waitall(lvl.kids_req.size(), lvl.kids_req.data());
   }
 
   fill_recv(recv);

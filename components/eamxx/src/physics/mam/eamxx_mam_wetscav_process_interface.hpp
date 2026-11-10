@@ -25,7 +25,7 @@ class MAMWetscav : public MAMGenericInterface
 {
   using KT           = ekat::KokkosTypes<DefaultDevice>;
   using view_2d      = typename KT::template view_2d<Real>;
-  using view_2d_host = typename KT::template view_2d<Real>::HostMirror;
+  using view_2d_host = typename KT::template view_2d<Real>::host_mirror_type;
   using int_view_2d  = typename KT::template view_2d<int>;
 
   // a thread team dispatched to a single vertical column
@@ -69,8 +69,8 @@ private:
   // Local variables
   // ------------------------------------------------
 
-  // Number of aerosol modes
-  static constexpr int ntot_amode_ = mam4::AeroConfig::num_modes();
+  // aerosol metadata
+  mam4::AeroConfig aero_config_;
 
   // Work arrays
   view_2d work_;

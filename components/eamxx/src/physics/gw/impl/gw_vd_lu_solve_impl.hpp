@@ -50,6 +50,8 @@ void Functions<S,D>::vd_lu_solve(
     }
   });
 
+  team.team_barrier();
+
   workspace.release(zf);
 }
 

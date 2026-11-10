@@ -310,7 +310,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '20231120'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
         data_iceberg_file = 'Iceberg_Climatology_Merino.IcoswISC30E3r5.20240805.nc'
-        dust_iron_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac.IcoswISC30E3r5.20240511.nc'
+        dust_iron_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac+CAM6-PD.IcoswISC30E3r5.20251030.nc'
         if ice_ic_mode == 'spunup':
             if iceberg_mode == 'data':
                 grid_date = '20240207'
@@ -368,6 +368,51 @@ def buildnml(case, caseroot, compname):
             grid_date = '211015'
             # Below is just a placeholder
             grid_prefix = 'seaice.ICOS10_80Layer.restartFromChrysalis'
+
+    elif ice_grid == 'u01-oi6to18':
+        decomp_date = '20260811'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20260811'
+        grid_prefix = 'mpassi.u01-oi6to18'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20260825'
+            grid_prefix = 'mpassi.u01-oi6to18.rstFromG-chrysalis'
+
+    elif ice_grid == 'u02-oi30':
+        decomp_date = '20260811'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20260811'
+        grid_prefix = 'mpassi.u02-oi30'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20260825'
+            grid_prefix = 'mpassi.u02-oi30.rstFromG-chrysalis'
+
+    elif ice_grid == 'u03-oi240':
+        decomp_date = '20260811'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20260811'
+        grid_prefix = 'mpassi.u03-oi240'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20260825'
+            grid_prefix = 'mpassi.u03-oi240.rstFromG-chrysalis'
+
+    elif ice_grid == 'u04-oi6to18':
+        decomp_date = '20261020'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20261020'
+        grid_prefix = 'mpassi.u04-oi6to18'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20261026'
+            grid_prefix = 'mpassi.u04-oi6to18.rstFromG-chrysalis'
+
+    elif ice_grid == 'u05-oi6to18':
+        decomp_date = '20261020'
+        decomp_prefix = 'partitions/mpas-seaice.graph.info.'
+        grid_date = '20261020'
+        grid_prefix = 'mpassi.u05-oi6to18'
+        if ice_ic_mode == 'spunup':
+            grid_date = '20261027'
+            grid_prefix = 'mpassi.u05-oi6to18.rstFromG-chrysalis'
 
 
     #--------------------------------------------------------------------
@@ -852,6 +897,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="snowVolumeCell"/>')
             lines.append('    <var name="uVelocityGeo"/>')
             lines.append('    <var name="vVelocityGeo"/>')
+            lines.append('    <var name="frazilMassFlux"/>')
+            lines.append('    <var name="frazilSaltFlux"/>')
+            lines.append('    <var name="frazilHeatFlux"/>')
             if ("WW3" in compset or "DWAV%FSD" in compset or "DWAV%ZEROS" in compset):
                 lines.append('    <var name="floeSizeDiameter"/> ')
                 lines.append('    <var name="waveSpectra"/> ')
@@ -913,6 +961,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="airTemperature"/>')
             lines.append('    <var name="congelation"/>')
             lines.append('    <var name="frazilFormation"/>')
+            lines.append('    <var name="frazilMassFlux"/>')
+            lines.append('    <var name="frazilSaltFlux"/>')
+            lines.append('    <var name="frazilHeatFlux"/>')
             lines.append('    <var name="snowiceFormation"/>')
             lines.append('    <var name="snowMelt"/>')
             lines.append('    <var name="surfaceIceMelt"/>')

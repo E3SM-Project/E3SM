@@ -59,6 +59,12 @@ public:
 
   ~HorizontalRemapper ();
 
+  // When tracking masks, each tgt entry gets a real-valued mask in [0,1]: the fraction
+  // of its interpolation weight coming from valid (i.e., not filled) src entries.
+  // Entries above thresh are rescaled by that fraction (so they store the average over
+  // the valid src entries), while the others are masked (and set to the fill value later on).
+  void set_mask_threshold (const Real thresh);
+
 protected:
 
   void registration_ends_impl () override;
@@ -99,6 +105,9 @@ protected:
   // Whether we are tracking mask fields
   bool                m_track_mask;
 
+  // See set_mask_threshold
+  Real                m_mask_threshold = 0.5;
+
   // Indermediate version of the fields, on the overlap grid
   std::vector<Field>  m_ov_fields;
 
@@ -118,7 +127,7 @@ protected:
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
   template<typename T>
-  using hview_1d = typename view_1d<T>::HostMirror;
+  using hview_1d = typename view_1d<T>::host_mirror_type;
 
   template<typename T>
   using view_2d = typename KT::template view_2d<T>;

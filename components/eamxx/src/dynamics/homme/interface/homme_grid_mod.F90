@@ -80,15 +80,13 @@ contains
   end subroutine init_grids_f90
 
   subroutine cleanup_grid_init_data_f90 () bind(c)
-    use phys_grid_mod, only: pg_cleanup_grid_init_data=>cleanup_grid_init_data
     use dyn_grid_mod,  only: dg_cleanup_grid_init_data=>cleanup_grid_init_data
 
     ! Do not call this if grids were not inited!
     call check_grids_inited(.true.)
 
-    ! Clean up in dyn and phys grid mods
+    ! Clean up in dyn grid mod
     call dg_cleanup_grid_init_data()
-    call pg_cleanup_grid_init_data ()
   end subroutine cleanup_grid_init_data_f90
 
   subroutine finalize_geometry_f90 () bind(c)
@@ -133,7 +131,7 @@ contains
   end subroutine get_dyn_grid_data_f90
 
   subroutine get_phys_grid_data_f90 (pg_type, gids_ptr, lat_ptr, lon_ptr, area_ptr) bind(c)
-    use phys_grid_mod, only: get_my_phys_data
+    use phys_grid_mod, only: get_my_phys_data, get_num_local_columns
     !
     ! Input(s)
     !
@@ -149,7 +147,7 @@ contains
     ! Sanity check
     call check_grids_inited(.true.)
 
-    ncols = get_num_local_columns_f90(mod(pg_type,10))
+    ncols = get_num_local_columns(mod(pg_type,10))
 
     call c_f_pointer (gids_ptr, gids, [ncols])
     call c_f_pointer (lat_ptr,  lat,  [ncols])

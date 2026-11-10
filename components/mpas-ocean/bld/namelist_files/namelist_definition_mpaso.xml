@@ -217,6 +217,17 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- lateral_walls -->
+
+<entry id="config_wall_slip_factor" type="real"
+	category="lateral_walls" group="lateral_walls">
+Lateral wall slip boundary condition: no-slip=0.0, free-slip=1.0, with partial-slip lying in-between. This factor multiplies relative vorticity computed at vertices positioned on lateral boundaries.
+
+Valid values: Any real number between 0.0 and 1.0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- hmix -->
 
 <entry id="config_hmix_scaleWithMesh" type="logical"
@@ -342,15 +353,47 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_Leith_del2" type="logical"
 	category="hmix_Leith" group="hmix_Leith">
-If true, the Leith enstrophy-cascade closure is turned on
+If true, the modified del2 Leith enstrophy-cascade closure is turned on
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Leith_parameter" type="real"
+<entry id="config_use_Leith_del4" type="logical"
 	category="hmix_Leith" group="hmix_Leith">
-Non-dimensional Leith closure parameter
+If true, the modified del4 Leith enstrophy-cascade closure is turned on
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del2_parameter" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Leith del2 closure parameter
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del4_parameter" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Leith del4 closure parameter
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del2_div_scaler" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Leith del2 closure divergence scaler
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_del4_div_scaler" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Leith del4 closure divergence scaler
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -365,6 +408,14 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_Leith_visc2_max" type="real"
+	category="hmix_Leith" group="hmix_Leith">
+Upper bound on the allowable value of Leith-computed viscosity
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Leith_visc4_max" type="real"
 	category="hmix_Leith" group="hmix_Leith">
 Upper bound on the allowable value of Leith-computed viscosity
 
@@ -522,6 +573,22 @@ Valid values: around 1 degree
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_submesoscale_ice_aware" type="logical"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+flag to enable the ice-aware MLE for submesoscale eddies
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ice_aware_crit_conc" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+Critical sea-ice concentration (fraction) for the ice-aware MLE. Where the sea-ice concentration averaged to an edge is at or below this value, the MLE efficiency decreases smoothly as concentration increases. Above this value, the efficiency is held at its fully ice-covered value of about 0.26.
+
+Valid values: between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- GM_eddy_parameterization -->
 
@@ -537,7 +604,7 @@ Default: Defined in namelist_defaults.xml
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling
 
-Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'
+Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch', 'geometric'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -634,6 +701,46 @@ Default: Defined in namelist_defaults.xml
 factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)
 
 Valid values: small positive values less than equal to one
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_alpha" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Configured GEOMETRIC efficiency
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_eddyDiff" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Eddy diffusivity for the depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_dissipation" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Number of days to dissipate the depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_backgroundEddyEnergy" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Background total depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_maximumEddyEnergy" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum total depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1694,6 +1801,22 @@ Default: Defined in namelist_defaults.xml
 maximum fraction of layer thickness than can be used or created at an instant by frazil.
 
 Valid values: Any positive real number between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_include_sensible_heat_frazil" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_expel_excess_frazil_salt" type="logical"
+	category="frazil_ice" group="frazil_ice">
+If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -3260,6 +3383,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ecosysTracers_atm_dust_from_coupler" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, get atmospheric dust inputs from the coupler, else from ecosys monthly forcing file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel1 available for output
@@ -3295,6 +3426,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_ecosysTracers_diagnostic_fields_level5" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel5 available for output
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_iron_solubility_file" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, read in Fe solubility from the ecosys forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

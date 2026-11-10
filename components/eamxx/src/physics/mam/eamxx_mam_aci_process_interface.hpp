@@ -17,7 +17,6 @@ namespace scream {
 class MAMAci final : public MAMGenericInterface {
  public:
   // declare some constant scratch space lengths
-  static constexpr int hetro_scratch_   = 43;
   static constexpr int dropmix_scratch_ = 15;
 
   // views for multi-column data
@@ -47,6 +46,9 @@ class MAMAci final : public MAMGenericInterface {
   Real wsubmin_;                   // Minimum subgrid vertical velocity
   bool enable_aero_vertical_mix_;  // To enable vertical mixing of aerosols
   int top_lev_;                    // Top level for MAM4xx
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  bool reset_ndrop_nsubmix_accumulators_ = true;
+#endif
 
   //------------------------------------------------------------------------
   // END: ACI runtime ( or namelist) options
@@ -104,6 +106,11 @@ class MAMAci final : public MAMGenericInterface {
   view_3d ccn_;
   view_3d coltend_; 
   view_3d coltend_cw_; 
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  view_1d ndrop_nsubmix_;
+  view_1d ndrop_sum_nsubmix_;
+  view_1d ndrop_max_nsubmix_;
+#endif
 
   // raercol_cw_ and raercol_ are work-array views for dropmixnuc whose
   // storage is allocated from the temporary buffer in init_temporary_views().
@@ -123,7 +130,7 @@ class MAMAci final : public MAMGenericInterface {
   view_2d hetfrz_contact_nucleation_tend_;
   view_2d hetfrz_deposition_nucleation_tend_;
 
-  view_2d diagnostic_scratch_[hetro_scratch_];
+  view_3d diagnostic_scratch_;
 
   // Subgrid scale velocities
   view_2d wsub_, wsubice_, wsig_;  //, w2_;
@@ -194,9 +201,7 @@ class MAMAci final : public MAMGenericInterface {
       compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
                                 dry_aero_pre_, i);
       team.team_barrier();
-      // vertical heights has to be computed after computing dry mixing ratios
-      // for atmosphere
-      compute_vertical_layer_heights(team, dry_atm_pre_, i);
+      compute_vertical_layer_heights(team, wet_atm_pre_, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
       // FIXME: we only set_min_background_mmr in aci.
       set_min_background_mmr(team, dry_aero_pre_,

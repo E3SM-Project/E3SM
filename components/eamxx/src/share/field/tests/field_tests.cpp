@@ -36,6 +36,10 @@ TEST_CASE("field", "") {
 
     f1.allocate_view();
 
+    // Cannot get view using wrong scalar type (even if of same sizeof)
+    using same_sz_int = std::conditional_t<sizeof(Real)==8,std::int64_t,int>;
+    REQUIRE_THROWS(f1.get_view<same_sz_int**>());
+
     // Reshape should work with both dynamic and static dims
     auto v1 = f1.get_view<Real[3][24]>();
     auto v2 = f1.get_view<Real**>();
@@ -93,11 +97,35 @@ TEST_CASE("field", "") {
     fap1.request_allocation(16);
     f1.allocate_view();
     f1.deep_copy(3.0);
+    auto ts = util::TimeStamp(2022,1,2,3,4,5);
+    f1.get_header().get_tracking().update_time_stamp(ts);
 
-    Field f2 = f1.clone();
+    Field f_none = f1.clone();
+    REQUIRE(f_none.is_allocated());
+    REQUIRE(f_none.get_header().get_alloc_properties().get_largest_pack_size()==1);
+    REQUIRE(!f_none.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_alloc = f1.clone(CloneFlags::MatchPacking);
+    REQUIRE(f_alloc.is_allocated());
+    REQUIRE(f_alloc.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_alloc.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_ts = f1.clone(CloneFlags::CopyTimeStamp);
+    REQUIRE(f_ts.is_allocated());
+    REQUIRE(f_ts.get_header().get_tracking().get_time_stamp()==ts);
+    REQUIRE(f_ts.get_header().get_alloc_properties().get_largest_pack_size()==1);
+
+    Field f_data = f1.clone(CloneFlags::MatchPacking | CloneFlags::CopyData);
+    REQUIRE(f_data.is_allocated());
+    REQUIRE(f_data.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_data.get_header().get_tracking().get_time_stamp().is_valid());
+    REQUIRE(views_are_equal(f1,f_data));
+
+    Field f2 = f1.clone(CloneFlags::All);
     auto& fap2 = f2.get_header().get_alloc_properties();
     REQUIRE(f2.is_allocated());
     REQUIRE(fap2.get_alloc_size()==fap1.get_alloc_size());
+    REQUIRE(f2.get_header().get_tracking().get_time_stamp()==ts);
     REQUIRE(views_are_equal(f1,f2));
 
     // Changing f2 should leave f1 unchanged
@@ -126,6 +154,25 @@ TEST_CASE("field", "") {
     // Check extra data is also shared
     f1.get_header().set_extra_data("foo",1);
     REQUIRE (f2.get_header().has_extra_data("foo"));
+
+    // alias with tag renaming: COL -> "ncol_d", LEV -> "lev_d"
+    std::map<FieldTag,std::string> tag_names = {{COL,"ncol_d"},{LEV,"lev_d"}};
+    Field f3 = f1.alias("renamed_alias", tag_names);
+
+    REQUIRE(f3.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f3.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f3.get_header().get_alloc_properties());
+    REQUIRE(f1.get_internal_view_data<Real>()==f3.get_internal_view_data<Real>());
+    // Tags (FieldTag enum values) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().tags()==f3.get_header().get_identifier().get_layout().tags());
+    // Dims (extents) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().dims()==f3.get_header().get_identifier().get_layout().dims());
+    // Names are renamed
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(0)=="ncol_d");
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(1)=="lev_d");
+    // Original field's names are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(0)=="ncol");
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(1)=="lev");
   }
 
   SECTION ("is_aliasing") {
@@ -228,12 +275,12 @@ TEST_CASE("field", "") {
 
   SECTION ("rank0_field") {
     // Create 0d field
-    FieldIdentifier fid0("f_0d", FieldLayout({},{}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid0("f_0d", FieldLayout({},{}), none, "dummy_grid");
     Field f0(fid0);
     f0.allocate_view();
 
     // Create 1d field
-    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), none, "dummy_grid");
     Field f1(fid1);
     f1.allocate_view();
 
@@ -272,6 +319,46 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS (f.allocate_view());
   }
 
+  SECTION ("shallow_const") {
+    // Manipulation methods should be callable on const Field objects,
+    // since Field uses a "shallow const" design (like Kokkos::View).
+    Field f(fid, true);
+
+    // Bind a const reference to the allocated field
+    const Field& cf = f;
+
+    // All manipulation methods should compile and run on a const Field
+    cf.deep_copy(1.0);
+    cf.scale(2.0);
+    cf.add_scalar(-1.0);
+    cf.update(cf, 0.0, 1.0);
+
+    // Verify effect: f started at 1.0, scale(2.0) -> 2.0,
+    // add_scalar(-1.0) -> 1.0, update(cf,0,1) -> 1.0
+    cf.sync_to_host();
+    {
+      auto v = cf.get_view<Real**,Host>();
+      for (int i=0; i<dims[0]; ++i)
+        for (int j=0; j<dims[1]; ++j)
+          REQUIRE (v(i,j)==1.0);
+    }
+
+    // A read-only field should throw on any manipulation method
+    const Field ro = f.get_const();
+    REQUIRE_THROWS (ro.deep_copy(0.0));
+    REQUIRE_THROWS (ro.deep_copy(f.clone()));
+    REQUIRE_THROWS (ro.scale(1.0));
+    REQUIRE_THROWS (ro.scale(f));
+    REQUIRE_THROWS (ro.scale_inv(f));
+    REQUIRE_THROWS (ro.update(f, 1.0, 0.0));
+    REQUIRE_THROWS (ro.add_scalar(0.0));
+    REQUIRE_THROWS (ro.max(f));
+    REQUIRE_THROWS (ro.min(f));
+
+    // But if rhs aliases lhs, deep_copy is skipped, so it should not throw
+    REQUIRE_NOTHROW(ro.deep_copy(ro.alias("")));
+  }
+
   SECTION ("valid_mask") {
     auto mfid = fid.clone("mask").reset_dtype(DataType::IntType);
     auto ml = mfid.get_layout();
@@ -299,6 +386,122 @@ TEST_CASE("field", "") {
     REQUIRE (views_are_equal(f2.get_valid_mask(),ones));
     REQUIRE (views_are_equal(f3.get_valid_mask(),zeros));
     REQUIRE (f3.get_valid_mask().name()=="my_mask");
+  }
+  SECTION ("broadcast") {
+    const int ncol = 3, ncmp = 2, nlev = 5;
+    FieldIdentifier sfid ("src", {{COL,LEV},{ncol,nlev}}, m/s, "some_grid");
+    FieldLayout tgt ({COL,CMP,LEV},{ncol,ncmp,nlev});
+
+    Field f (sfid,true);
+    randomize_uniform (f,seed++);
+    f.sync_to_host();
+
+    auto check_values = [&](const Field& fb, const Field& src_f) {
+      REQUIRE (fb.get_header().get_identifier().get_layout().congruent(tgt));
+      REQUIRE (fb.is_read_only());
+      auto vb = fb.get_strided_view<const Real***,Host>();
+      auto vs = src_f.get_strided_view<const Real**,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vb(i,j,k)==vs(i,k));
+    };
+
+    SECTION ("values") {
+      auto fb = f.broadcast_to(tgt);
+      check_values(fb,f);
+
+      // No new allocation: same underlying data
+      REQUIRE (fb.get_internal_view_data<const Real>()==f.get_internal_view_data<const Real>());
+
+      // Shortcut with field as target
+      Field t (FieldIdentifier("t",tgt,m/s,"some_grid"),true);
+      check_values (f.broadcast_like(t),f);
+
+      // Broadcasting to the same layout is a no-op (but the result is read-only)
+      auto fc = f.broadcast_like(f);
+      REQUIRE (fc.is_read_only());
+      REQUIRE (views_are_equal(fc,f));
+    }
+
+    SECTION ("other_layouts") {
+      // Broadcast along the first and last dims
+      Field g (FieldIdentifier("g",{{CMP},{ncmp}},m/s,"some_grid"),true);
+      randomize_uniform (g,seed++);
+      g.sync_to_host();
+      auto gb = g.broadcast_to(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev}));
+      auto vb = gb.get_strided_view<const Real***,Host>();
+      auto vg = g.get_strided_view<const Real*,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vb(i,j,k)==vg(j));
+
+      // Scalar layout can be broadcasted to anything
+      Field sc (FieldIdentifier("s",FieldLayout::scalar(),m/s,"some_grid"),true);
+      sc.deep_copy(3.0);
+      sc.sync_to_host();
+      auto sb = sc.broadcast_to(tgt);
+      auto vsb = sb.get_strided_view<const Real***,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vsb(i,j,k)==3.0);
+    }
+
+    SECTION ("subfield") {
+      // Source with non-trivial strides
+      Field p (FieldIdentifier("p",{{COL,CMP,LEV},{ncol,ncmp,nlev}},m/s,"some_grid"),true);
+      randomize_uniform (p,seed++);
+      auto sf = p.subfield(CMP,1);   // layout (COL,LEV)
+      sf.sync_to_host();
+      check_values (sf.broadcast_to(tgt),sf);
+    }
+
+    SECTION ("errors") {
+      // Not allocated
+      Field na (sfid);
+      REQUIRE_THROWS (na.broadcast_to(tgt));
+
+      // Incompatible extents, tags, order, or larger source rank
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev+1})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({COL,CMP},{ncol,ncmp})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({LEV,CMP,COL},{nlev,ncmp,ncol})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({COL},{ncol})));
+
+      // Cannot broadcast a broadcast
+      auto fb = f.broadcast_to(tgt);
+      REQUIRE_THROWS (fb.broadcast_to(FieldLayout({COL,CMP,LEV,GP},{ncol,ncmp,nlev,2})));
+
+      // Broadcasted field is read-only and only supports strided views
+      REQUIRE_THROWS (fb.get_strided_view<Real***,Host>());
+      REQUIRE_THROWS (fb.get_view<const Real***,Host>());
+      REQUIRE_THROWS (fb.deep_copy(1.0));
+      REQUIRE_THROWS (fb.sync_to_host());   // sync the source instead
+      REQUIRE_THROWS (fb.sync_to_dev());
+    }
+
+    SECTION ("mask") {
+      // No mask in the source => no mask in the broadcast
+      REQUIRE (not f.broadcast_to(tgt).has_valid_mask());
+
+      auto& mask = f.create_valid_mask(Field::MaskInit::Valid);
+      mask.subfield(COL,0).deep_copy(0);
+      mask.sync_to_host();
+
+      auto fb = f.broadcast_to(tgt);
+      REQUIRE (fb.has_valid_mask());
+
+      const auto& mb = fb.get_valid_mask();
+      REQUIRE (mb.get_header().get_identifier().get_layout().congruent(tgt));
+      REQUIRE (mb.data_type()==DataType::IntType);
+      auto vm = mb.get_strided_view<const int***,Host>();
+      auto vs = mask.get_strided_view<const int**,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vm(i,j,k)==vs(i,k));
+    }
   }
 }
 

@@ -45,6 +45,7 @@ struct SimulationParams
   bool      theta_hydrostatic_mode;   // Only for theta model
   bool      do_3d_turbulence;
 
+  double    tom_sponge_start = 0.0;   // start of TOM sponge layer, in hPa (0 = use ptop)
   double    dcmip16_mu;               // Only for theta model
   double    nu;
   double    nu_p;
@@ -54,8 +55,14 @@ struct SimulationParams
   double    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
+  int       horiz_turb_subcycle = 1;
   int       hypervis_subcycle_tom;
   double    hypervis_scaling;
+  // Scaling exponent for the sponge-layer (nu_top) tensor viscosity, mirroring
+  // Fortran's laplace_scaling (theta-l_kokkos only; defaults to 0, i.e. constant
+  // coefficient sponge-layer diffusion, for preqx_kokkos and any case that
+  // doesn't set it explicitly).
+  double    laplace_scaling = 0.0;
   double    nu_ratio1, nu_ratio2; // control balance between div and vort components in vector laplace
   int       nsplit = 0;
   int       nsplit_iteration;
@@ -99,8 +106,10 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   nu_div: " << nu_div << "\n";
   out << "   hypervis_order: " << hypervis_order << "\n";
   out << "   hypervis_subcycle: " << hypervis_subcycle << "\n";
+  out << "   horiz_turb_subcycle: " << horiz_turb_subcycle << "\n";
   out << "   hypervis_subcycle_tom: " << hypervis_subcycle_tom << "\n";
   out << "   hypervis_scaling: " << hypervis_scaling << "\n";
+  out << "   laplace_scaling: " << laplace_scaling << "\n";
   out << "   nu_ratio1: " << nu_ratio1 << "\n";
   out << "   nu_ratio2: " << nu_ratio2 << "\n";
   out << "   use_cpstar: " << (use_cpstar ? "yes" : "no") << "\n";
@@ -108,6 +117,7 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   disable_diagnostics: " << (disable_diagnostics ? "yes" : "no") << "\n";
   out << "   theta_hydrostatic_mode: " << (theta_hydrostatic_mode ? "yes" : "no") << "\n";
   out << "   do_3d_turbulence: " << (do_3d_turbulence ? "yes" : "no") << "\n";
+  out << "   tom_sponge_start: " << tom_sponge_start << "\n";
   out << "   prescribed_wind: " << (prescribed_wind ? "yes" : "no") << "\n";
   out << "   nsplit: " << nsplit << "\n";
   out << "   scale_factor: " << scale_factor << "\n";

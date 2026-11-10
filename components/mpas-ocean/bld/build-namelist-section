@@ -48,6 +48,12 @@ add_default($nl, 'config_dt');
 add_default($nl, 'config_time_integrator');
 add_default($nl, 'config_number_of_time_levels');
 
+#################################
+# Namelist group: lateral_walls #
+#################################
+
+add_default($nl, 'config_wall_slip_factor');
+
 ########################
 # Namelist group: hmix #
 ########################
@@ -82,9 +88,14 @@ add_default($nl, 'config_tracer_del4');
 ##############################
 
 add_default($nl, 'config_use_Leith_del2');
-add_default($nl, 'config_Leith_parameter');
+add_default($nl, 'config_use_Leith_del4');
+add_default($nl, 'config_Leith_del2_parameter');
+add_default($nl, 'config_Leith_del4_parameter');
+add_default($nl, 'config_Leith_del2_div_scaler');
+add_default($nl, 'config_Leith_del4_div_scaler');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
+add_default($nl, 'config_Leith_visc4_max');
 
 #########################################
 # Namelist group: Redi_isopycnal_mixing #
@@ -113,6 +124,8 @@ add_default($nl, 'config_submesoscale_tau');
 add_default($nl, 'config_submesoscale_Ce');
 add_default($nl, 'config_submesoscale_Lfmin');
 add_default($nl, 'config_submesoscale_ds_max');
+add_default($nl, 'config_submesoscale_ice_aware');
+add_default($nl, 'config_submesoscale_ice_aware_crit_conc');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -132,6 +145,11 @@ add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');
 add_default($nl, 'config_GM_EG_Rhines_factor');
+add_default($nl, 'config_GM_geometric_alpha');
+add_default($nl, 'config_GM_geometric_eddyDiff');
+add_default($nl, 'config_GM_geometric_dissipation');
+add_default($nl, 'config_GM_geometric_backgroundEddyEnergy');
+add_default($nl, 'config_GM_geometric_maximumEddyEnergy');
 add_default($nl, 'config_GM_horizontal_taper');
 add_default($nl, 'config_GM_horizontal_ramp_min');
 add_default($nl, 'config_GM_horizontal_ramp_max');
@@ -320,6 +338,8 @@ add_default($nl, 'config_use_frazil_ice_porosity');
 add_default($nl, 'config_frazil_ice_density');
 add_default($nl, 'config_frazil_ice_porosity');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
+add_default($nl, 'config_include_sensible_heat_frazil');
+add_default($nl, 'config_expel_excess_frazil_salt');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
 add_default($nl, 'config_frazil_sea_ice_reference_salinity');
@@ -631,11 +651,13 @@ add_default($nl, 'config_use_ecosysTracers_surface_value');
 add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 add_default($nl, 'config_use_ecosys_frazil_tendencies');
 add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
+add_default($nl, 'config_use_ecosysTracers_atm_dust_from_coupler');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5');
+add_default($nl, 'config_use_ecosysTracers_iron_solubility_file');
 
 ####################################################
 # Namelist group: tracer_forcing_freshwaterTracers #

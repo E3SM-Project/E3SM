@@ -1298,6 +1298,8 @@ CONTAINS
         CALL W3IORS ('HOT', NDS(6), XXX, 1, .TRUE. )
       endif
 
+      if (inflags1(2) .and. allocated(cx)) deallocate(cx, cy)
+      if (inflags1(3) .and. allocated(wx)) deallocate(wx, wy)
 
     END SUBROUTINE WAV_RUN_MCT
 

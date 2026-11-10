@@ -1,64 +1,42 @@
 #include "longwave_cloud_forcing.hpp"
 
-#include <ekat_team_policy_utils.hpp>
-
 namespace scream
 {
 
-// =========================================================================================
-LongwaveCloudForcingDiagnostic::LongwaveCloudForcingDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
-{
-  // Nothing to do here
-}
-
-// =========================================================================================
-void LongwaveCloudForcingDiagnostic::create_requests()
+LongwaveCloudForcing::
+LongwaveCloudForcing (const ekat::Comm& comm, const ekat::ParameterList& params,
+                      const std::shared_ptr<const AbstractGrid>& grid)
+  : AbstractDiagnostic(comm,params,grid)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
-
-  Units m2 (m*m,"m2");
-
-  auto grid  = m_grids_manager->get_grid("physics");
-  const auto& grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-
-  FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("LW_flux_up",        scalar3d_layout_mid, W/m2,  grid_name);
-  add_field<Required>("LW_clrsky_flux_up", scalar3d_layout_mid, W/m2,  grid_name);
+  m_field_in_names.push_back("LW_flux_up");
+  m_field_in_names.push_back("LW_clrsky_flux_up");
 
-  // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d_layout_col, W/m2, grid_name);
-  m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation();
+  auto m2 = (m*m).rename("m2");
+  auto diag_layout = m_grid->get_2d_scalar_layout();
+  FieldIdentifier diag_fid(name(),diag_layout,W/m2,m_grid->name());
+
+  m_diagnostic_output = Field(diag_fid);
   m_diagnostic_output.allocate_view();
 }
-// =========================================================================================
-void LongwaveCloudForcingDiagnostic::compute_diagnostic_impl()
-{
-  using KT         = KokkosTypes<DefaultDevice>;
-  using TPF        = ekat::TeamPolicyFactory<KT::ExeSpace>;
-  using MemberType = typename KT::MemberType;
 
-  const auto default_policy = TPF::get_default_team_policy(m_num_cols,1);
+void LongwaveCloudForcing::compute_impl()
+{
+  using KT = KokkosTypes<DefaultDevice>;
+
+  const int ncols = m_grid->get_num_local_dofs();
 
   const auto& LWCF              = m_diagnostic_output.get_view<Real*>();
-  const auto& LW_flux_up        = get_field_in("LW_flux_up").get_view<const Real**>();
-  const auto& LW_clrsky_flux_up = get_field_in("LW_clrsky_flux_up").get_view<const Real**>();
+  const auto& LW_flux_up        = m_fields_in.at("LW_flux_up").get_view<const Real**>();
+  const auto& LW_clrsky_flux_up = m_fields_in.at("LW_clrsky_flux_up").get_view<const Real**>();
 
-  Kokkos::parallel_for("LongwaveCloudForcingDiagnostic",
-                       default_policy,
-                       KOKKOS_LAMBDA(const MemberType& team) {
-    const int icol = team.league_rank();
+  typename KT::RangePolicy policy (0,ncols);
+  auto lambda = KOKKOS_LAMBDA(const int icol) {
     LWCF(icol) =  LW_clrsky_flux_up(icol,0) -  LW_flux_up(icol,0) ;
-  });
-  Kokkos::fence();
+  };
+  Kokkos::parallel_for("LongwaveCloudForcing",policy,lambda);
 }
 
 } //namespace scream

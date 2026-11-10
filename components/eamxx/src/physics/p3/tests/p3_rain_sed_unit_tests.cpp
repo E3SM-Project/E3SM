@@ -133,8 +133,8 @@ void run_bfb_rain_sed()
   // With stored baselines, we must use a fixed seed!
   auto engine = Base::get_engine();
 
-  // F90 is quite slow on weaver, so we decrease dt to reduce
-  // the number of steps in rain_sed.
+  // F90 was quite slow on weaver (an old GPU machine),
+  // so we decrease dt to reduce the number of steps in rain_sed.
 #ifdef EAMXX_ENABLE_GPU
   constexpr Scalar dt = 5.800E+01;
 #else
@@ -227,13 +227,18 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_rain_sed", "[p3_functions]")
+TEST_CASE("p3_rain_sed_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
 
-  T t;
-  t.run_phys();
-  t.run_bfb();
+  T t;  t.run_phys();
+}
+
+TEST_CASE("p3_rain_sed_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
+
+  T t;  t.run_bfb();
 }
 
 } // namespace

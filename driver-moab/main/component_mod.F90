@@ -22,7 +22,6 @@ module component_mod
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
   use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
-  use seq_diag_mct,     only: seq_diag_avect_mct
   use seq_map_type_mod
   use seq_map_mod
   use t_drv_timers_mod
@@ -224,7 +223,7 @@ contains
     ! Local Variables
     integer :: k1, k2
     integer :: eci
-    character(*), parameter :: subname = '(component_init_cc:mct)'
+    character(*), parameter :: subname = '(component_init_cc:moab)'
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
@@ -379,6 +378,8 @@ contains
              endif
 
              ! Create x2c_cx and c2x_cx
+             ! Using x2c_cc and c2x_cc
+             ! MOAB: the Avs are needed for the attribute lists but will be zero size
              allocate(comp(eci)%x2c_cx, comp(eci)%c2x_cx)
 
              call seq_mctext_avCreate(comp(eci)%x2c_cc, comp(eci)%compid, &
@@ -477,7 +478,7 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(ocn(1))   !dom_ox
           ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
-          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.)
        endif
     endif
 
@@ -486,7 +487,7 @@ contains
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
        ! copy aream from ocean to ice.  This is always a copy since ice and ocean have same mesh
-       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.)
     endif
 
     if (rof_c2_ocn) then
@@ -502,7 +503,7 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
           ! it should work for FV and spectral too
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.) 
        endif
     end if
 
@@ -511,7 +512,7 @@ contains
           dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
           dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
-          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.)
        endif
     endif
 #ifdef MOABDEBUG
@@ -1040,12 +1041,12 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
        do eci = 1,size(comp)
           if (flow == 'x2c') then  ! coupler to component
-             call seq_diag_avect_mct(infodata, CPLID, comp(eci)%x2c_cx, &
-                  comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
+!            call seq_diag_avect_mct(infodata, CPLID, comp(eci)%x2c_cx, &
+!                 comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
           end if
           if (flow == 'c2x') then  ! component to coupler
-             call seq_diag_avect_mct(infodata, CPLID, comp(eci)%c2x_cx, &
-                  comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
+!            call seq_diag_avect_mct(infodata, CPLID, comp(eci)%c2x_cx, &
+!                 comp(eci)%dom_cx, comp(eci)%gsmap_cx, trim(comment)//comp(eci)%suffix)
           end if
        enddo
 

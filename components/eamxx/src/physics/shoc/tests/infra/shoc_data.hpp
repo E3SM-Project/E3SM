@@ -26,7 +26,7 @@ struct FortranData {
   Real dtime;
   Array1 host_dx, host_dy;
   Array2 zt_grid, zi_grid, pres, presi, pdel, thv, w_field;
-  Array1 wthl_sfc, wqw_sfc, uw_sfc, vw_sfc;
+  Array1 wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, uw_sfc_pert, vw_sfc_pert;
   Array2 wtracer_sfc, inv_exner;
   Array1 phis;
 
@@ -37,6 +37,7 @@ struct FortranData {
 
   // Out
   Array2 shoc_cldfrac, shoc_ql;
+  Array2 um_pert, vm_pert;
   Array1 pblh;
   Array2 shoc_mix, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec,
     wtke_sec, uw_sec, vw_sec, w3, wqls_sec, isotropy, brunt, shoc_ql2;

@@ -1,12 +1,16 @@
 #include "horiz_interp_remapper_data.hpp"
 
+#include "share/field/field_reader.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
+#include "share/util/gid_directory.hpp"
+#include "share/util/eamxx_alltoallv.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
 #include <algorithm>
 #include <numeric>
+#include <filesystem>
 
 namespace scream {
 
@@ -21,36 +25,6 @@ struct RealsClose {
     return std::round(a * 10000) < std::round(b * 10000);
   }
 };
-
-// Check whether two grids store the same GID values on every rank.
-// Fast path: if the dofs_gids fields alias each other (same allocation), return true immediately.
-// Fallback: compare global dof counts, then compare local GID arrays element-by-element.
-bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
-                           const std::shared_ptr<const AbstractGrid>& g2)
-{
-  using gid_type = AbstractGrid::gid_type;
-
-  const auto gids1 = g1->get_dofs_gids();
-  const auto gids2 = g2->get_dofs_gids();
-
-  // Fast path: identical backing allocation
-  if (gids1.is_aliasing(gids2)) {
-    return true;
-  }
-
-  // Different allocations: verify sizes then compare values
-  if (g1->get_num_global_dofs() != g2->get_num_global_dofs()) {
-    return false;
-  }
-  if (g1->get_num_local_dofs() != g2->get_num_local_dofs()) {
-    return false;
-  }
-
-  const auto h1 = gids1.get_view<const gid_type*, Host>();
-  const auto h2 = gids2.get_view<const gid_type*, Host>();
-  const int n = g1->get_num_local_dofs();
-  return std::equal(h1.data(), h1.data()+n, h2.data());
-}
 
 // Helper fcn to gather the union of sets across MPI ranks
 std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
@@ -85,7 +59,9 @@ build (const std::shared_ptr<const AbstractGrid>& src_grid,
        const std::shared_ptr<const AbstractGrid>& tgt_grid,
        const std::string& map_file)
 {
-  start_timer ("Build HorizRemap data (two grids)" + map_file);
+  std::filesystem::path p(map_file);
+  // The "2" stands for "2 grids bld"
+  start_timer ("HRemap2 " + p.filename().string() + " bld");
 
   EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point,
       "Error! Horizontal interpolatory remap only works on PointGrid grids.\n"
@@ -144,13 +120,19 @@ build (const std::shared_ptr<const AbstractGrid>& src_grid,
   } else {
     m_imp_exp = std::make_shared<GridImportExport>(src_grid,m_overlap_grid);
   }
-  stop_timer ("Build HorizRemap data (two grids)" + map_file);
+  stop_timer ("HRemap2 " + p.filename().string() + " bld");
 }
 void HorizRemapperData::
 build (const std::shared_ptr<const AbstractGrid>& grid,
        const std::string& map_file)
 {
-  start_timer ("Build HorizRemap data (one grid)" + map_file);
+  std::filesystem::path p(map_file);
+
+  // The "1" stands for "build from 1 grid"
+  start_timer ("HRemap1 " + p.filename().string() + " bld");
+
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   EKAT_REQUIRE_MSG (grid,
       "[HorizRemapperDataRepo::build_data_from_src] Error! Invalid src grid pointer.\n");
@@ -185,16 +167,15 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   // Only read the lat/lon/area vars if they are present. If one is present, we assume they all are
   if (scorpio::has_var(map_file,"yc"+suffix)) {
-    const auto nondim = ekat::units::Units::nondimensional();
-    ekat::units::Units deg(nondim,"deg");
+    std::map<FieldTag,std::string> tag_rename = { {COL,"n"+suffix} };
+    auto deg = none.rename("deg");
 
-    gen_grid->create_geometry_data("lat", gen_grid->get_2d_scalar_layout(),deg);
-    gen_grid->create_geometry_data("lon", gen_grid->get_2d_scalar_layout(),deg);
-    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),nondim);
-    gen_grid->read_geometry_data(map_file,
-                                 {"lat","lon","area"},
-                                 {"yc"+suffix,"xc"+suffix,"area"+suffix},
-                                 {{"ncol","n"+suffix}});
+    const auto& layout2d = gen_grid->get_2d_scalar_layout();
+    auto lat  = gen_grid->create_geometry_data("lat", layout2d,deg).alias("yc"+suffix,tag_rename);
+    auto lon  = gen_grid->create_geometry_data("lon", layout2d,deg).alias("xc"+suffix,tag_rename);
+    auto area = gen_grid->create_geometry_data("area",layout2d,sr ).alias("area"+suffix,tag_rename);
+    auto gids = gen_grid->get_partitioned_dim_gids().alias("gids",tag_rename);
+    read_fields(map_file,{lat,lon,area},gids,comm);
 
     // If this is a remap TO a lat-lon grid, setup some geo data that our output classes
     // will use to write to file using (lat,lon) layout rather than (ncol)
@@ -211,7 +192,7 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
     build(gen_grid,grid,map_file);
   }
 
-  stop_timer ("Build HorizRemap data (one grid)" + map_file);
+  stop_timer ("HRemap1 " + p.filename().string() + " bld");
 }
 
 std::vector<Triplet>
@@ -220,21 +201,27 @@ read_mat_triplets (const std::string& map_file)
 {
   using gid_type = AbstractGrid::gid_type;
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   const auto& comm = m_src_grid->get_comm();
 
   // Split the triplets evenly across ranks, and read them
   int n_s = scorpio::get_dimlen(map_file,"n_s");
   auto io_grid = create_point_grid("remap_data_io_grid",n_s,0,comm);
-  io_grid->reset_field_tag_name(COL,"n_s");
 
-  auto row_h = io_grid->create_geometry_data<gid_type>("row",io_grid->get_2d_scalar_layout()).get_view<const gid_type*,Host>();
-  auto col_h = io_grid->create_geometry_data<gid_type>("col",io_grid->get_2d_scalar_layout()).get_view<const gid_type*,Host>();
-  auto S_h   = io_grid->create_geometry_data<Real>("S",  io_grid->get_2d_scalar_layout()).get_view<const Real*,Host>();
-  io_grid->read_geometry_data(map_file,{"row","col","S"});
+  auto fl = io_grid->get_2d_scalar_layout().rename_dim(0,"n_s");
+  auto gids = io_grid->get_partitioned_dim_gids().alias("gids",{{COL,"n_s"}});
+
+  Field row(FieldIdentifier("row",fl,none,"",DataType::IntType),true);
+  Field col(FieldIdentifier("col",fl,none,"",DataType::IntType),true);
+  Field S  (FieldIdentifier("S",fl,none,""),true);
+  read_fields(map_file,{row,col,S},gids,comm);
 
   int nlweights = io_grid->get_num_local_dofs();
 
+  auto row_h = row.get_view<const gid_type*,Host>();
+  auto col_h = col.get_view<const gid_type*,Host>();
+  auto S_h   = S.get_view<const Real*,Host>();
   std::vector<Triplet> triplets;
   for (int i=0; i<nlweights; ++i) {
     triplets.emplace_back(row_h[i],col_h[i],S_h[i]);
@@ -249,26 +236,42 @@ get_my_triplets (const std::vector<Triplet>& triplets)
 {
   using gid_type = AbstractGrid::gid_type;
 
-  // Create a grid where the GIDs are the id of rows or cols of the triplets we read
-  // We pick row/col based on which side of the remap was the input grid
-  std::set<gid_type> unique_gids;
-  for (const auto& t : triplets) {
-    unique_gids.insert(m_coarsening ? t.col : t.row);
-  }
-  auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,m_src_grid->get_comm());
-  auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type*,Host>();
-  int k = 0;
-  for (auto gid : unique_gids) {
-    io_grid_gids_h(k++) = gid;
-  }
-  io_grid->get_dofs_gids().sync_to_dev();
+  const auto& comm = m_src_grid->get_comm();
+  const int nranks = comm.size();
 
-  // Group triplets to export by their gid
-  std::map<int,std::vector<Triplet>> io_triplets;
-  const auto& io_grid_gid2lid = io_grid->get_gid2lid_map();
-  for (const auto& t : triplets) {
-    auto io_lid = io_grid_gid2lid.at(m_coarsening ? t.col : t.row);
-    io_triplets[io_lid].emplace_back(t.row,t.col,t.w);
+  // Each triplet is needed by the rank that owns its row/col on the fine grid
+  // (i.e., the col if coarsening, the row if refining)
+  auto fine_grid = m_coarsening ? m_src_grid : m_tgt_grid;
+  auto fine_gid = [&](const Triplet& t) { return m_coarsening ? t.col : t.row; };
+
+  // Find who owns the fine grid gid of each triplet we read
+  const int ntriplets = triplets.size();
+  Field::view_host_t<gid_type*> gids ("",ntriplets);
+  for (int i=0; i<ntriplets; ++i) {
+    gids[i] = fine_gid(triplets[i]);
+  }
+  auto fine_gids_h = fine_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  GidDirectory<gid_type> directory (comm,fine_gids_h);
+  const auto owners = directory.lookup(gids);
+  const auto& owner_pids = owners.pids;
+  const auto& owner_lids = owners.lids;
+
+  // Group the triplets by owner. Within each owner, keep the order in which we read them
+  std::vector<int> send_counts (nranks,0);
+  for (int i=0; i<ntriplets; ++i) {
+    EKAT_REQUIRE_MSG (owner_pids[i]>=0,
+        "Error! Could not find the owner of one of the gids in the map file.\n"
+        "  - gid: " + std::to_string(gids[i]) + "\n"
+        "  - fine grid name: " + fine_grid->name() + "\n");
+    ++send_counts[owner_pids[i]];
+  }
+  std::vector<int> cursor (nranks,0);
+  for (int p=1; p<nranks; ++p) {
+    cursor[p] = cursor[p-1] + send_counts[p-1];
+  }
+  std::vector<Triplet> send_triplets (ntriplets);
+  for (int i=0; i<ntriplets; ++i) {
+    send_triplets[cursor[owner_pids[i]]++] = triplets[i];
   }
 
   // Create data type for a triplet
@@ -281,20 +284,31 @@ get_my_triplets (const std::vector<Triplet>& triplets)
   MPI_Type_create_struct (3,lengths,displacements,types,&mpi_triplet_t);
   MPI_Type_commit(&mpi_triplet_t);
 
-  // Create import-export and gather the triplets we need for our local mat-vec
-  auto fine_grid = m_coarsening ? m_src_grid : m_tgt_grid;
-  std::map<int,std::vector<Triplet>> my_triplets_map;
-  GridImportExport imp_exp (fine_grid,io_grid);
-  imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  // Send the triplets to their owners
+  std::vector<Triplet> my_triplets;
+  std::vector<int> recv_counts;
+  alltoallv(comm,send_triplets,send_counts,my_triplets,recv_counts,false,mpi_triplet_t);
   MPI_Type_free(&mpi_triplet_t);
 
-  std::vector<Triplet> my_triplets;
-  for (auto& it : my_triplets_map) {
-    my_triplets.reserve(my_triplets.size()+it.second.size());
-    std::move(it.second.begin(),it.second.end(),std::back_inserter(my_triplets));
+  // Sort the triplets we received by the lid of their fine grid gid. We use a stable sort so that,
+  // within a lid, triplets are ordered by sending rank, and then by the order in which they were read.
+  const auto& gid2lid = fine_grid->get_gid2lid_map();
+  const int nmine = my_triplets.size();
+  std::vector<int> my_lids (nmine);
+  for (int i=0; i<nmine; ++i) {
+    my_lids[i] = gid2lid.at(fine_gid(my_triplets[i]));
+  }
+  std::vector<int> order (nmine);
+  std::iota(order.begin(),order.end(),0);
+  std::stable_sort(order.begin(),order.end(),
+                   [&](const int a, const int b) { return my_lids[a]<my_lids[b]; });
+  std::vector<Triplet> sorted_triplets;
+  sorted_triplets.reserve(nmine);
+  for (int i : order) {
+    sorted_triplets.push_back(my_triplets[i]);
   }
 
-  return my_triplets;
+  return sorted_triplets;
 }
 
 void HorizRemapperData::
@@ -384,10 +398,11 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
                   const std::string& map_file)
 {
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   // Add lat/lon to the temp grid, and read from map file
-  auto nondim = ekat::units::Units::nondimensional();
-  ekat::units::Units deg(nondim,"degrees");
+  auto degN = none.rename("degrees_north");
+  auto degE = none.rename("degrees_east");
 
   // Declare lat/lon and read them from the map file.
   // WARNING: the vars/dims names are different from what eamxx uses
@@ -413,8 +428,8 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   // Re-create lat/lon geometry data with only lat (or lon) dim
   grid->delete_geometry_data("lat");
   grid->delete_geometry_data("lon");
-  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
-  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
+  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),degN);
+  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),degE);
   
   auto lat_h = lat.get_view<Real*,Host>();
   auto lon_h = lon.get_view<Real*,Host>();
@@ -424,8 +439,8 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   lon.sync_to_dev();
 
   auto scalar2d = grid->get_2d_scalar_layout();
-  auto lat_idx = grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
-  auto lon_idx = grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
+  auto lat_idx = grid->create_geometry_data("lat_idx",scalar2d,none,DataType::IntType);
+  auto lon_idx = grid->create_geometry_data("lon_idx",scalar2d,none,DataType::IntType);
   lat_idx.get_header().set_extra_data("save_as_geo_data",false);
   lon_idx.get_header().set_extra_data("save_as_geo_data",false);
 
@@ -493,8 +508,8 @@ get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
     // are compatible with the src/tgt grids of shared_data. Two grids are
     // considered compatible if they store the same GID values on every rank
     // (they may or may not share the same backing allocation).
-    EKAT_REQUIRE_MSG (grids_have_same_gids(src_grid, shared_data->m_src_grid) and
-                      grids_have_same_gids(tgt_grid, shared_data->m_tgt_grid),
+    EKAT_REQUIRE_MSG (src_grid->has_same_gids_as(*shared_data->m_src_grid) and
+                      tgt_grid->has_same_gids_as(*shared_data->m_tgt_grid),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - src grid name: " + src_grid->name() + "\n"
@@ -524,8 +539,8 @@ get_data (const std::shared_ptr<const AbstractGrid>& grid,
     // is compatible with the src or tgt grid of shared_data. Two grids are
     // considered compatible if they store the same GID values on every rank
     // (they may or may not share the same backing allocation).
-    EKAT_REQUIRE_MSG (grids_have_same_gids(grid, shared_data->m_src_grid) or
-                      grids_have_same_gids(grid, shared_data->m_tgt_grid),
+    EKAT_REQUIRE_MSG (grid->has_same_gids_as(*shared_data->m_src_grid) or
+                      grid->has_same_gids_as(*shared_data->m_tgt_grid),
         "Error! Trying to retrieve remap data using a grid that is unrelated to the one(s) used before.\n"
         " - map file: " + map_file + "\n"
         " - grid name: " + grid->name() + "\n");

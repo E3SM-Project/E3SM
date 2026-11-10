@@ -254,12 +254,9 @@ class PerfAnalysis(object):
     ###############################################################################
         force_threads = self._force_threads if force_threads is None else force_threads
 
-        if self._machine == "bowman":
-            os.environ["OMP_NUM_THREADS"] = "272"
-            os.environ["NUMA_PREFIX"] = "numactl -i 1"
-        elif self._machine == "blake":
+        if self._machine == "blake":
             os.environ["OMP_NUM_THREADS"] = "96"
-        elif self._machine in ["white", "weaver", "melvin"]:
+        elif self._machine in ["melvin"]:
             pass
         elif self._machine == "mappy":
             os.environ["OMP_NUM_THREADS"] = "46"

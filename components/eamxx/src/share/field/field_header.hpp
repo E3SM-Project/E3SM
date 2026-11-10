@@ -82,6 +82,10 @@ public:
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
   std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::map<std::string,std::string>& tag_names) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const;
 
   // Two headers alias each other if either
   //   - they are the same obj
@@ -89,8 +93,15 @@ public:
   //   - they have the same parent field and their subview info (form alloc prop) are the same
   bool is_aliasing (const FieldHeader& rhs) const;
 
+  // Whether this header belongs to a field that is a broadcast of another
+  bool is_broadcast () const { return has_extra_data("bcast_src"); }
+
   bool may_be_filled () const { return has_extra_data("may_be_filled") and get_extra_data<bool>("may_be_filled"); }
   void set_may_be_filled (const bool value) { set_extra_data("may_be_filled",value); }
+
+  // Create the header of a field representing the same field as this header, but broadcasted
+  // to a higher rank layout.
+  std::shared_ptr<FieldHeader> broadcast(const FieldLayout& tgt);
 protected:
 
   // Friend this function, so it can set up a subfield header

@@ -30,27 +30,33 @@ void Functions<S,D>::gw_storm_speed(
   Real& umin,
   Real& umax)
 {
-  storm_speed = Int(Kokkos::copysign(ekat::impl::max(std::abs(ubm(cinit.k_src_wind))-storm_speed_min, Real(0)), ubm(cinit.k_src_wind)));
-
+  // storm_speed, uh, umin and umax may be shared (they alias workspace in
+  // gw_beres_src), so each is written by a single thread. Team reductions
+  // hand their result to every thread, so reduce into private locals first.
+  Real uh_sum;
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, Real& lsum) {
       lsum += ubm(k)/(mini-maxi+1);
-    }, Kokkos::Sum<Real>(uh));
-
-  team.team_barrier();
+    }, Kokkos::Sum<Real>(uh_sum));
 
   Kokkos::single(Kokkos::PerTeam(team), [&] {
-    uh -= storm_speed;
+    storm_speed = Int(Kokkos::copysign(ekat::impl::max(std::abs(ubm(cinit.k_src_wind))-storm_speed_min, Real(0)), ubm(cinit.k_src_wind)));
+
+    uh = uh_sum - storm_speed;
 
     // Limit uh to table range.
     uh = ekat::impl::min(uh, Real(cinit.maxuh));
     uh = ekat::impl::max(uh, Real(-cinit.maxuh));
   });
 
+  team.team_barrier();
+
   // Speeds for critical level filtering.
   if (maxi > mini) {
-    umin =  init.pgwv*init.dc;
-    umax = -init.pgwv*init.dc;
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      umin =  init.pgwv*init.dc;
+      umax = -init.pgwv*init.dc;
+    });
   }
   else {
     using ResultType = Kokkos::MinMax<Real>::value_type;
@@ -62,11 +68,13 @@ void Functions<S,D>::gw_storm_speed(
         if (ubm(k) > update.max_val) update.max_val = ubm(k);
       }, Kokkos::MinMax<Real>(min_max_result));
 
-    team.team_barrier();
-
-    umin = min_max_result.min_val;
-    umax = min_max_result.max_val;
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      umin = min_max_result.min_val;
+      umax = min_max_result.max_val;
+    });
   }
+
+  team.team_barrier();
 }
 
 } // namespace gw

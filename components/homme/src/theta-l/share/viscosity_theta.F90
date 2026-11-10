@@ -53,10 +53,9 @@ type (EdgeBuffer_t)  , intent(inout) :: edgebuf  ! initialized for 5 vars
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
-integer :: i,j,k,kptr,ie,nlyr_tot,ssize
+integer :: k,kptr,ie,nlyr_tot,ssize
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
-real (kind=real_kind), dimension(np,np) :: tmp2
 real (kind=real_kind), dimension(np,np,nlevp) :: p_i
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
@@ -144,21 +143,21 @@ endif
       ! apply inverse mass matrix, then apply laplace again
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,1,ie)
-         stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,2,ie)
-         stens(:,:,k,2,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,2,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,3,ie)
-         stens(:,:,k,3,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,3,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,4,ie)
-         stens(:,:,k,4,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,4,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
-              var_coef=.true.,nu_ratio=nu_ratio2)
+              var_coef=(hypervis_scaling>0),nu_ratio=nu_ratio2)
 
       enddo
    enddo

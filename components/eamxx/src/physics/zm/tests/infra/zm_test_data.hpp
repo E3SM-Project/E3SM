@@ -345,7 +345,7 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
   Real *state_pmid, *state_u, *state_v;
 
   // Outputs
-  Real *mcsp_shear;
+  Real *shear_u, *shear_v;
 
   ZmConvMcspCalculateShearData(Int pcols_, Int ncol_, Int pver_) :
     PhysicsTestData({
@@ -354,7 +354,7 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
     },
     {
       {&state_pmid, &state_u, &state_v},
-      {&mcsp_shear}
+      {&shear_u, &shear_v}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_)
   {}
@@ -384,7 +384,7 @@ struct ZmConvMcspTendData : public PhysicsTestData {
   Real *ptend_s, *ptend_q, *ptend_u, *ptend_v;
 
   // Outputs
-  Real *mcsp_dt_out, *mcsp_dq_out, *mcsp_du_out, *mcsp_dv_out, *mcsp_freq, *mcsp_shear, *zm_depth;
+  Real *mcsp_ds_out, *mcsp_dq_out, *mcsp_du_out, *mcsp_dv_out, *mcsp_freq, *mcsp_shear, *zm_depth;
 
   ZmConvMcspTendData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real ztodt_) :
     PhysicsTestData({
@@ -394,7 +394,7 @@ struct ZmConvMcspTendData : public PhysicsTestData {
       {pcols_}
     },
     {
-      {&state_pmid, &state_pdel, &state_s, &state_q, &state_u, &state_v, &ptend_zm_s, &ptend_zm_q, &ptend_s, &ptend_q, &ptend_u, &ptend_v, &mcsp_dt_out, &mcsp_dq_out, &mcsp_du_out, &mcsp_dv_out},
+      {&state_pmid, &state_pdel, &state_s, &state_q, &state_u, &state_v, &ptend_zm_s, &ptend_zm_q, &ptend_s, &ptend_q, &ptend_u, &ptend_v, &mcsp_ds_out, &mcsp_dq_out, &mcsp_du_out, &mcsp_dv_out},
       {&state_pint},
       {&mcsp_freq, &mcsp_shear, &zm_depth}
     },
@@ -860,40 +860,23 @@ struct ZmCalcOutputTendData : public PhysicsTestData {
   }
 };
 
-// Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
-void ientropy_f(IentropyData& d);
+// Glue functions for host test data
 void ientropy(IentropyData& d);
-void entropy_f(EntropyData& d);
 void entropy(EntropyData& d);
-void zm_transport_tracer_f(ZmTransportTracerData& d);
 void zm_transport_tracer(ZmTransportTracerData& d);
-void zm_transport_momentum_f(ZmTransportMomentumData& d);
 void zm_transport_momentum(ZmTransportMomentumData& d);
-void compute_dilute_cape_f(ComputeDiluteCapeData& d);
 void compute_dilute_cape(ComputeDiluteCapeData& d);
-void find_mse_max_f(FindMseMaxData& d);
 void find_mse_max(FindMseMaxData& d);
-void compute_dilute_parcel_f(ComputeDiluteParcelData& d);
 void compute_dilute_parcel(ComputeDiluteParcelData& d);
-void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d);
 void compute_cape_from_parcel(ComputeCapeFromParcelData& d);
-void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d);
 void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d);
-void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d);
 void zm_conv_mcsp_tend(ZmConvMcspTendData& d);
-void zm_conv_main_f(ZmConvMainData& d);
 std::vector<bool> zm_conv_main(ZmConvMainData& d);
-void zm_conv_evap_f(ZmConvEvapData& d);
 void zm_conv_evap(ZmConvEvapData& d);
-void zm_calc_fractional_entrainment_f(ZmCalcFractionalEntrainmentData& d);
 void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d);
-void zm_downdraft_properties_f(ZmDowndraftPropertiesData& d);
 void zm_downdraft_properties(ZmDowndraftPropertiesData& d);
-void zm_cloud_properties_f(ZmCloudPropertiesData& d);
 void zm_cloud_properties(ZmCloudPropertiesData& d);
-void zm_closure_f(ZmClosureData& d);
 void zm_closure(ZmClosureData& d);
-void zm_calc_output_tend_f(ZmCalcOutputTendData& d);
 void zm_calc_output_tend(ZmCalcOutputTendData& d);
 // End glue function decls
 

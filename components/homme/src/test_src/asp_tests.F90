@@ -164,7 +164,7 @@ CONTAINS
     IMPLICIT NONE
     REAL(r8), INTENT(IN) :: lon,lat,eta,rotation_angle
     LOGICAL, INTENT(IN)  :: lperturb
-    REAL(r8) :: cos_lat, u_lat, phi_vertical, rot_lon, rot_lat, sin_tmp, cos_tmp, r, u_perturb, v_lat
+    REAL(r8) :: u_lat, phi_vertical, rot_lon, rot_lat, sin_tmp, cos_tmp, r, u_perturb, v_lat
     REAL(r8) :: perturb_lon, perturb_lat, v_tmp
 
     perturb_lon = perturbation_longitude*deg2rad
@@ -206,7 +206,7 @@ CONTAINS
     IMPLICIT NONE
     REAL(r8), INTENT(IN) :: lon,lat,eta,rotation_angle
     LOGICAL, INTENT(IN)  :: lperturb
-    REAL(r8) :: cos_lat, u_lat, phi_vertical, rot_lon, rot_lat, sin_tmp, cos_tmp, r, u_perturb, v_lat
+    REAL(r8) :: u_lat, phi_vertical, rot_lon, rot_lat, sin_tmp, cos_tmp, r, u_perturb, v_lat
     REAL(r8) :: perturb_lon, perturb_lat, u_tmp
 
     perturb_lon = perturbation_longitude*deg2rad
@@ -349,7 +349,7 @@ CONTAINS
 !
 !-----------------------------------------------------------------------
 !
-      integer kxdim,kydim,kx,ky,kcall
+      integer kcall
       real(r8) :: pxreg,pyreg,&
                   pxrot,pyrot,&
                   pxcen,pycen
@@ -358,7 +358,6 @@ CONTAINS
 !
       real(r8) zsycen,zcycen,zxmxc,zsxmxc,zcxmxc,zsyreg,zcyreg, &
                zsyrot,zcyrot,zcxrot,zsxrot,zpi,zpih
-      integer jy,jx
 
       zpih = pi*0.5d0
 !
@@ -460,7 +459,7 @@ CONTAINS
 !
 !-----------------------------------------------------------------------
 
-      integer kxdim,kydim,kx,ky,kcall
+      integer kcall
       real(r8) puarg,pvarg,    &
                pures,pvres,    &
                pa,   pb,       &
@@ -471,7 +470,6 @@ CONTAINS
 !
 !-----------------------------------------------------------------------
 !
-      integer jy,jx
       real(r8) zpih,zsyc,zcyc,zsxreg,zcxreg,zsyreg,zcyreg,zxmxc,&
                zsxmxc,zcxmxc,zsxrot,zcxrot,zsyrot,zcyrot
 !
@@ -643,7 +641,7 @@ end subroutine
 !-----------------------------------------------------------------------                             
       real(r8) :: alpha
       real(r8) :: sin_tmp, cos_tmp
-      real(r8) :: d1, d2, s, r
+      real(r8) :: d1, d2, r
       
       alpha = rotation_angle*deg2rad
 !-----------------------------------------------------------------------
@@ -735,7 +733,7 @@ end subroutine
 !     local
 !----------------------------------------------------------------------- 
       real(r8) :: tmp1, tmp2, tmp3
-      real(r8) :: sin_lat, cos_lat, sin_slat, cos_slat
+      real(r8) :: sin_lat, cos_lat
       real(r8) :: exponent_1, exponent_2
       real(r8) :: AA, BB, CC
       real(r8) :: phis_perturb
@@ -872,7 +870,7 @@ end subroutine
 !     local variables
 !----------------------------------------------------------------------- 
       real(r8) :: sin_tmp, cos_tmp
-      real(r8) :: tmp1, tmp2, tmp3
+      real(r8) :: tmp1
       real(r8) :: theta                                                    ! potential temperature
       real(r8) :: theta_mean
       real(r8) :: pres                                                     ! pressure
@@ -994,10 +992,10 @@ implicit none
 
 !!!! replace a with earth rad
 
-	real(kind=real_kind), parameter ::	a	= 6371220.0d0,	&	! Earth's Radius (m)
-				Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
-				pi	= 4.d0*atan(1.d0)       ! pi
+        real(kind=real_kind), parameter :: a  = 6371220.0d0,    & ! Earth's Radius (m)
+                                           Rd = 287.0d0,        & ! Ideal gas const dry air (J kg^-1 K^1)
+                                           cp = 1004.5d0,       & ! Specific heat capacity (J kg^-1 K^1)
+                                           pi = 4.d0*atan(1.d0)   ! pi
 
 private
 
@@ -1020,8 +1018,8 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
     integer :: nets,nete
 
 !   local
-    real (kind=real_kind)  :: lat,lon,eta(nlev)
-    integer :: i,j,k,ie,idex,t
+    real (kind=real_kind)  :: lat,lon
+    integer :: i,j,k,ie,idex
     logical :: perturbation 
     real(kind=real_kind) :: eta_c
 
@@ -1150,7 +1148,7 @@ if (qsize>=5) then
    perturb_lon = perturbation_longitude*deg2rad
    perturb_lat = perturbation_latitude*deg2rad
 
-   ! now compute PHI, needed to init tracers:	
+   ! now compute PHI, needed to init tracers:
    do ie=nets,nete
       ! compute height
       do k=1,nlev+1
@@ -1178,7 +1176,7 @@ if (qsize>=5) then
          lat = elem(ie)%spherep(i,j)%lat
          do k=1,nlev
 
-	    height=phi(i,j,k)/g
+            height=phi(i,j,k)/g
             sin_tmp = sin(lat) * sin(perturb_lat)
             cos_tmp = cos(lat) * cos(perturb_lat)
             r  = ACOS (sin_tmp + cos_tmp*cos(lon-perturb_lon))       ! great circle distance without 'a'
@@ -1217,12 +1215,11 @@ subroutine asp_advection_vertical(time,hvcoord,ps_v,eta_dot_dpdn)
     type (hvcoord_t)                  :: hvcoord
 
 
-    ! local	
-    real (kind=real_kind)  :: dpdn(np,np,nlevp)
-    real (kind=real_kind)  :: eta_dot,p1,p2
-    integer i,j,k
+    ! local
+    real (kind=real_kind)  :: eta_dot
+    integer k
 
-    ! compute dp/dn at interfaces	
+    ! compute dp/dn at interfaces
     ! note that for this problem: ps = ps0 = 1000 mb.  
     ! thus  p = A p0 + B ps = (A + B) p0 = eta p0
     ! dp/dn = p0
@@ -1249,7 +1246,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
     integer :: nets,nete
 
 !   local
-    real (kind=real_kind)  :: lat,lon,eta(nlev),height,q5,q6
+    real (kind=real_kind)  :: lat,lon,height,q5,q6
     real (kind=real_kind)  :: u_wind,v_wind
     real (kind=real_kind)  :: surface_geopotential, surface_pressure
     real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
@@ -1284,7 +1281,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
        call set_thermostate(elem(ie),ps,temperature,hvcoord)
     enddo
 
-    ! now compute PHI, needed to init tracers:	
+    ! now compute PHI, needed to init tracers:
     do ie=nets,nete
        ! compute height
        do k=1,nlev+1
@@ -1344,19 +1341,17 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
     integer :: nets,nete
 
 !   local
-    real (kind=real_kind)  :: lat,lon,eta(nlev),height,q5,q6
+    real (kind=real_kind)  :: lat,lon
     real (kind=real_kind)  :: u_wind,v_wind
     real (kind=real_kind)  :: surface_geopotential, surface_pressure
-    real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
-    real (kind=real_kind)  :: ph(np,np,nlev+1)
-    real (kind=real_kind)  :: phi(np,np,nlev)
+    real (kind=real_kind)  :: p(np,np,nlev)
     real (kind=real_kind)  :: temperature(np,np,nlev),ps(np,np)
-    integer :: i,j,k,ie,idex
+    integer :: i,j,k,ie
 
     if (hybrid%masterthread) write(iulog,*) 'initializing ASP Rossby Haurwitz test'
 
     ! initialize surface pressure
-    p=0	
+    p=0
     do ie=nets,nete
     do j=1,np
        do i=1,np
@@ -1415,15 +1410,15 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
     integer :: nets,nete
 
 !   local
-    real (kind=real_kind)  :: lat,lon,eta(nlev),height,q5,q6
+    real (kind=real_kind)  :: lat,lon
     real (kind=real_kind)  :: u_wind,v_wind,temperature(np,np,nlev),ps(np,np)
     real (kind=real_kind)  :: surface_geopotential, surface_pressure, p
-    integer :: i,j,k,ie,idex
+    integer :: i,j,k,ie
 
     if (hybrid%masterthread) write(iulog,*) 'initializing ASP mountain Rossby test'
 
     ! initialize surface pressure
-    p=0	 ! not used by initial condition
+    p=0  ! not used by initial condition
     do ie=nets,nete
        do j=1,np
        do i=1,np
@@ -1454,7 +1449,6 @@ end subroutine
 
 subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
     use dimensions_mod, only : np,nlev
-    use cube_mod, only : rotate_grid
     use prim_si_mod, only : preq_hydrostatic
     use testcases_3_4_5_6, only : gravity_wave ! _EXTERNAL
 
@@ -1464,13 +1458,11 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
     integer :: nets,nete, choice
 
 !   local
-    real (kind=real_kind)  :: lat,lon,eta(nlev),height,dz,q5,q6
+    real (kind=real_kind)  :: lat,lon,height,dz
     real (kind=real_kind)  :: u_wind,v_wind,temperature(np,np,nlev)
     real (kind=real_kind)  :: surface_geopotential, surface_pressure
-    real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev),ps(np,np)
-    real (kind=real_kind)  :: ph(np,np,nlev+1)
-    real (kind=real_kind)  :: phi(np,np,nlev)
-    integer :: i,j,k,ie,idex
+    real (kind=real_kind)  :: ps(np,np)
+    integer :: i,j,k,ie
 
     if (hybrid%masterthread) write(iulog,*) 'initializing ASP gravity wave test'
 

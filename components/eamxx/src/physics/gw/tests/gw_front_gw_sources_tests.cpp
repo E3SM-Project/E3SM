@@ -70,12 +70,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        gw_front_gw_sources_f(d);
-      }
-      else {
-        gw_front_gw_sources(d);
-      }
+      gw_front_gw_sources(d);
     }
 
     const auto margin = std::numeric_limits<Real>::epsilon() *

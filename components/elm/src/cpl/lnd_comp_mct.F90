@@ -703,9 +703,9 @@ contains
     ! fill this in
 #ifdef HAVE_MOAB
     ! deallocate moab fields arrays
-      deallocate (l2x_lm)
-      if (allocated(l2x_lm_t)) deallocate (l2x_lm_t)
-      deallocate (x2l_lm)
+    if (allocated(l2x_lm)) deallocate (l2x_lm)
+    if (allocated(l2x_lm_t)) deallocate (l2x_lm_t)
+    if (allocated(x2l_lm))  deallocate (x2l_lm)
 #endif
     call final()
 
@@ -883,9 +883,9 @@ contains
     character*32  appname
 
     ! define a MOAB app for ELM
-    appname="LNDMB"//C_NULL_CHAR
+    appname="LNDMB"
     ! first land instance, should be 9
-    ierr = iMOAB_RegisterApplication(appname, mpicom_lnd_moab, LNDID, mlnid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_lnd_moab, LNDID, mlnid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app')
     if(masterproc) then

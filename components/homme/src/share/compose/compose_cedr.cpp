@@ -357,8 +357,8 @@ struct ReproSumReducer :
     Real* rcvptr = rcvbuf;
     if (ko::OnGpu<typename MT::DES>::value) {
       if (send.size() == 0) {
-        send = typename RealList::HostMirror("send", nlocal*count);
-        recv = typename RealList::HostMirror("recv", count);
+        send = typename RealList::host_mirror_type("send", nlocal*count);
+        recv = typename RealList::host_mirror_type("recv", count);
       }
       cedr_assert(static_cast<int>(send.size()) == nlocal*count);
       ko::deep_copy(send, ConstRealList(sendbuf, nlocal*count));
@@ -382,7 +382,7 @@ private:
   typedef Kokkos::View<Real*, typename MT::DES> RealList;
   typedef Kokkos::View<const Real*, typename MT::DES> ConstRealList;
 
-  mutable typename RealList::HostMirror send, recv;
+  mutable typename RealList::host_mirror_type send, recv;
   const Int fcomm_, n_accum_in_place_;
 };
 

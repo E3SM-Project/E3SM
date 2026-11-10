@@ -118,13 +118,18 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale : public UnitWrap::Unit
 
 namespace {
 
-TEST_CASE("p3_ice_relaxation_timescale", "[p3_functions]")
+TEST_CASE("p3_ice_relaxation_timescale_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceRelaxationTimescale;
 
-  T t;
-  t.run_ice_relaxation_timescale_phys();
-  t.run_ice_relaxation_timescale_bfb();
+  T t;  t.run_ice_relaxation_timescale_phys();
+}
+
+TEST_CASE("p3_ice_relaxation_timescale_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceRelaxationTimescale;
+
+  T t;  t.run_ice_relaxation_timescale_bfb();
 }
 
 }

@@ -45,7 +45,7 @@ contains
           open(fileunit, file=trim(nlfilename), status='old' )
           call shr_nl_find_group_name(fileunit, 'fan_inparm', iostat)
           if (iostat /= 0) then
-             write(logunit, *) subname, 'FAN/CAM coupling not specified'
+             write(logunit, *) subname, 'FAN/EAM coupling not specified'
              fan_nh3_to_atm = .false.
              !call shr_sys_abort(subName//'Error reading namelist')
           else          

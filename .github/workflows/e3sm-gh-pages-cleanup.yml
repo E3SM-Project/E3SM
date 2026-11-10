@@ -1,0 +1,75 @@
+name: Remove docs previews of closed PRs
+
+# e3sm-gh-pages.yml publishes a preview of each same-repo PR under pr-preview/pr-<N> on
+# gh-pages, and does not run when a PR is closed or merged; this removes the previews of every
+# PR that is no longer open. Previews count toward GitHub Pages' 1 GB site limit, at 7 to
+# 21 MB each, so running daily keeps at most a day's worth of closed PRs' previews around.
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily, 9 AM UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only list the previews that would be removed'
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          show-progress: false
+      - name: Remove previews of closed PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          # Stop rather than remove the previews of open PRs missing from a short list
+          limit=2000
+          open=$(gh pr list -R "$GITHUB_REPOSITORY" --state open --limit "$limit" --json number --jq '.[].number')
+          count=$(wc -w <<< "$open")
+          if [ "$count" -eq 0 ] || [ "$count" -ge "$limit" ]; then
+            echo "::error::got $count open PRs; not removing anything"
+            exit 1
+          fi
+          removed=()
+          for dir in pr-preview/pr-*/; do
+            n=${dir#pr-preview/pr-}; n=${n%/}
+            [[ $n =~ ^[0-9]+$ ]] || continue
+            grep -qxF "$n" <<< "$open" && continue
+            removed+=("$n")
+            [ "$DRY_RUN" = true ] || git rm -rq "${dir%/}"
+          done
+          {
+            echo "### Previews of closed PRs: ${#removed[@]}"
+            [ "${#removed[@]}" -eq 0 ] || printf '#%s ' "${removed[@]}"
+            echo
+            [ "$DRY_RUN" != true ] || echo "Dry run: nothing removed"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$DRY_RUN" = true ] || [ "${#removed[@]}" -eq 0 ]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qm "Remove docs previews of ${#removed[@]} closed PRs"
+          # e3sm-gh-pages.yml may push to gh-pages meanwhile; the removals rebase onto it
+          for attempt in 1 2 3; do
+            git push origin HEAD:gh-pages && exit 0
+            git pull -q --rebase origin gh-pages
+          done
+          exit 1

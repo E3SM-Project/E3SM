@@ -50,7 +50,7 @@ int run_kokkos(int argc, char** argv) {
   }
   std::string inputfile, baseline, device;
 
-  for (int i = 1; i < argc-1; ++i) {
+  for (int i = 1; i < argc; ++i) {
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;
@@ -76,10 +76,6 @@ int run_kokkos(int argc, char** argv) {
     logger->error("Baseline " + baseline + " does not exist.\n");
     return -1;
   }
-
-  // Initialize kokkos
-  logger->info("Initialize kokkos...\n");
-  scream::init_kls();
 
   // Get reference fluxes from input file; do this here so we can get ncol dimension
   logger->info("Read fluxes...\n");
@@ -254,7 +250,6 @@ int run_kokkos(int argc, char** argv) {
   logger->info("Cleaning up...\n");
   // Clean up or else Kokkos will throw errors
   interface_t::rrtmgp_finalize();
-  scream::finalize_kls();
 
   return nerr != 0 ? 1 : 0;
 }  // end of main driver code
@@ -264,8 +259,10 @@ int run_kokkos(int argc, char** argv) {
 int main(int argc, char** argv) {
 
     MPI_Init(&argc,&argv);
+    scream::initialize_eamxx_session(argc, argv);
     int ret = 0;
     ret += run_kokkos(argc,argv);
+    scream::finalize_eamxx_session();
     MPI_Finalize();
 
     return ret;

@@ -11,14 +11,13 @@ using scream::Real;
 using scream::Int;
 
 //
-// A C++ interface to gw fortran calls and vice versa
+// A C++ interface to gw functions, operating on host test data.
 //
 
 namespace scream {
 namespace gw {
 
 using GWF = Functions<Real, DefaultDevice>;
-using GWC = typename GWF::C;
 
 using ExeSpace   = typename GWF::KT::ExeSpace;
 using MemberType = typename GWF::KT::MemberType;
@@ -30,65 +29,8 @@ using view3dr_d = GWF::view_3d<Real>;
 
 using WSM = typename GWF::WorkspaceManager;
 
-extern "C" {
-
-void gwd_compute_tendencies_from_stress_divergence_bridge_f(Int ncol, bool do_taper, Real dt, Real effgw, Int* tend_level, Real* lat, Real* dpm, Real* rdpm, Real* c, Real* ubm, Real* t, Real* nm, Real* xv, Real* yv, Real* tau, Real* gwut, Real* utgw, Real* vtgw);
-
-void gw_common_init_bridge_f(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orographic_only, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
-
-void gw_prof_bridge_f(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi, Real* ti, Real* nm, Real* ni);
-
-void momentum_energy_conservation_bridge_f(Int ncol, Int* tend_level, Real dt, Real* taucd, Real* pint, Real* pdel, Real* u, Real* v, Real* dudt, Real* dvdt, Real* dsdt, Real* utgw, Real* vtgw, Real* ttgw);
-
-void gwd_compute_stress_profiles_and_diffusivities_bridge_f(Int ncol, Int* src_level, Real* ubi, Real* c, Real* rhoi, Real* ni, Real* kvtt, Real* t, Real* ti, Real* piln, Real* tau);
-
-void gwd_project_tau_bridge_f(Int ncol, Int* tend_level, Real* tau, Real* ubi, Real* c, Real* xv, Real* yv, Real* taucd);
-
-void gwd_precalc_rhoi_bridge_f(Int pcnst, Int ncol, Real dt, Int* tend_level, Real* pmid, Real* pint, Real* t, Real* gwut, Real* ubm, Real* nm, Real* rdpm, Real* c, Real* q, Real* dse, Real* egwdffi, Real* qtgw, Real* dttdf, Real* dttke, Real* ttgw);
-
-void gw_drag_prof_bridge_f(Int pcnst, Int ncol, Int* src_level, Int* tend_level, bool do_taper, Real dt, Real* lat, Real* t, Real* ti, Real* pmid, Real* pint, Real* dpm, Real* rdpm, Real* piln, Real* rhoi, Real* nm, Real* ni, Real* ubm, Real* ubi, Real* xv, Real* yv, Real effgw, Real* c, Real* kvtt, Real* q, Real* dse, Real* tau, Real* utgw, Real* vtgw, Real* ttgw, Real* qtgw, Real* taucd, Real* egwdffi, Real* gwut, Real* dttdf, Real* dttke);
-
-void gw_front_init_bridge_f(Real taubgnd, Real frontgfc_in, Int kfront_in);
-
-void gw_front_project_winds_bridge_f(Int ncol, Int kbot, Real* u, Real* v, Real* xv, Real* yv, Real* ubm, Real* ubi);
-
-void gw_front_gw_sources_bridge_f(Int ncol, Int kbot, Real* frontgf, Real* tau);
-
-void gw_cm_src_bridge_f(Int ncol, Int kbot, Real* u, Real* v, Real* frontgf, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c);
-
-void gw_convect_init_bridge_f(Int maxh, Int maxuh, Real plev_src_wind, Real* mfcc_in);
-
-void gw_convect_project_winds_bridge_f(Int ncol, Real* u, Real* v, Real* xv, Real* yv, Real* ubm, Real* ubi);
-
-void gw_heating_depth_bridge_f(Int ncol, Real maxq0_conversion_factor, Real hdepth_scaling_factor, bool use_gw_convect_old, Real* zm, Real* netdt, Int* mini, Int* maxi, Real* hdepth, Real* maxq0_out, Real* maxq0);
-
-void gw_storm_speed_bridge_f(Int ncol, Real storm_speed_min, Real* ubm, Int* mini, Int* maxi, Int* storm_speed, Real* uh, Real* umin, Real* umax);
-
-void gw_convect_gw_sources_bridge_f(Int ncol, Real* lat, Real hdepth_min, Real* hdepth, Int* mini, Int* maxi, Real* netdt, Real* uh, Int* storm_speed, Real* maxq0, Real* umin, Real* umax, Real* tau);
-
-void gw_beres_src_bridge_f(Int ncol, Real* lat, Real* u, Real* v, Real* netdt, Real* zm, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c, Real* hdepth, Real* maxq0_out, Real maxq0_conversion_factor, Real hdepth_scaling_factor, Real hdepth_min, Real storm_speed_min, bool use_gw_convect_old);
-
-void gw_ediff_bridge_f(Int ncol, Int kbot, Int ktop, Int* tend_level, Real* gwut, Real* ubm, Real* nm, Real* rho, Real dt, Real gravit, Real* pmid, Real* rdpm, Real* c, Real* egwdffi, Real *decomp_ca, Real *decomp_cc, Real *decomp_dnom, Real *decomp_ze);
-
-void gw_diff_tend_bridge_f(Int ncol, Int kbot, Int ktop, Real* q, Real dt, Real *decomp_ca, Real *decomp_cc, Real *decomp_dnom, Real *decomp_ze, Real* dq);
-
-void gw_oro_init_bridge_f();
-
-void gw_oro_src_bridge_f(Int ncol, Real* u, Real* v, Real* t, Real* sgh, Real* pmid, Real* pint, Real* dpm, Real* zm, Real* nm, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c);
-
-void vd_lu_decomp_bridge_f(Int ncol, Real* ksrf, Real* kv, Real* tmpi, Real* rpdel, Real ztodt, Real gravit, Real* cc_top, Int ntop, Int nbot, Real* decomp_ca, Real* decomp_cc, Real* decomp_dnom, Real* decomp_ze);
-
-void vd_lu_solve_bridge_f(Int ncol, Real* q, Real* decomp_ca, Real* decomp_cc, Real* decomp_dnom, Real* decomp_ze, Int ntop, Int nbot, Real* cd_top);
-} // extern "C" : end _f decls
-
 // Inits and finalizes are not intended to be called outside this comp unit
 namespace {
-
-void gw_common_init_f(GwCommonInit& init)
-{
-  // Expects init has already been transitioned to f90
-  gw_common_init_bridge_f(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit.value, GWC::Rair.value, init.alpha);
-}
 
 // Wrapper around gw_init for cxx
 void gw_common_init(GwCommonInit& d)
@@ -103,7 +45,6 @@ void gw_common_init(GwCommonInit& d)
     d.pgwv,
     d.dc,
     cref,
-    d.orographic_only,
     d.do_molec_diff,
     d.tau_0_ubc,
     d.nbot_molec,
@@ -112,13 +53,6 @@ void gw_common_init(GwCommonInit& d)
     d.fcrit2,
     d.kwv,
     alpha);
-}
-
-void gw_convect_init_f(GwConvectInitData& d)
-{
-  // Expects d has already been transitioned to f90
-  gw_common_init_f(d.init);
-  gw_convect_init_bridge_f(d.maxh, d.maxuh, d.plev_src_wind, d.mfcc_in);
 }
 
 void gw_convect_init(GwConvectInitData& d)
@@ -137,14 +71,6 @@ void gw_finalize_cxx()
 }
 
 } // empty namespace
-
-void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>(); // This will shift array data + 1
-  gw_common_init_f(d.init);
-  gwd_compute_tendencies_from_stress_divergence_bridge_f(d.ncol, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
-  d.transition<ekat::TransposeDirection::f2c>(); // This will shift array data - 1
-}
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d)
 {
@@ -266,14 +192,6 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
   gw_finalize_cxx();
 }
 
-void gw_prof_f(GwProfData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gw_prof_bridge_f(d.ncol, d.cpair, d.t, d.pmid, d.pint, d.rhoi, d.ti, d.nm, d.ni);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gw_prof(GwProfData& d)
 {
   gw_common_init(d.init);
@@ -342,14 +260,6 @@ void gw_prof(GwProfData& d)
                        two_d_reals_out);
 
   gw_finalize_cxx();
-}
-
-void momentum_energy_conservation_f(MomentumEnergyConservationData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  momentum_energy_conservation_bridge_f(d.ncol, d.tend_level, d.dt, d.taucd, d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void momentum_energy_conservation(MomentumEnergyConservationData& d)
@@ -440,14 +350,6 @@ void momentum_energy_conservation(MomentumEnergyConservationData& d)
   gw_finalize_cxx();
 }
 
-void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gwd_compute_stress_profiles_and_diffusivities_bridge_f(d.ncol, d.src_level, d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln, d.tau);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d)
 {
   gw_common_init(d.init);
@@ -533,14 +435,6 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
   gw_finalize_cxx();
 }
 
-void gwd_project_tau_f(GwdProjectTauData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gwd_project_tau_bridge_f(d.ncol, d.tend_level, d.tau, d.ubi, d.c, d.xv, d.yv, d.taucd);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gwd_project_tau(GwdProjectTauData& d)
 {
   gw_common_init(d.init);
@@ -614,14 +508,6 @@ void gwd_project_tau(GwdProjectTauData& d)
   ekat::device_to_host({d.taucd}, d.ncol, d.init.pver + 1, 4, three_d_reals_out);
 
   gw_finalize_cxx();
-}
-
-void gwd_precalc_rhoi_f(GwdPrecalcRhoiData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gwd_precalc_rhoi_bridge_f(d.pcnst, d.ncol, d.dt, d.tend_level, d.pmid, d.pint, d.t, d.gwut, d.ubm, d.nm, d.rdpm, d.c, d.q, d.dse, d.egwdffi, d.qtgw, d.dttdf, d.dttke, d.ttgw);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
@@ -749,14 +635,6 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
   ekat::device_to_host({d.qtgw}, d.ncol, d.init.pver, d.pcnst, three_d_reals_out);
 
   gw_finalize_cxx();
-}
-
-void gw_drag_prof_f(GwDragProfData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gw_drag_prof_bridge_f(d.pcnst, d.ncol, d.src_level, d.tend_level, d.do_taper, d.dt, d.lat, d.t, d.ti, d.pmid, d.pint, d.dpm, d.rdpm, d.piln, d.rhoi, d.nm, d.ni, d.ubm, d.ubi, d.xv, d.yv, d.effgw, d.c, d.kvtt, d.q, d.dse, d.tau, d.utgw, d.vtgw, d.ttgw, d.qtgw, d.taucd, d.egwdffi, d.gwut, d.dttdf, d.dttke);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_drag_prof(GwDragProfData& d)
@@ -959,25 +837,10 @@ void gw_drag_prof(GwDragProfData& d)
   gw_finalize_cxx();
 }
 
-void gw_front_init_f(GwFrontInitData& d)
-{
-  // Expects d has already been transitioned to f90
-  gw_common_init_f(d.init);
-  gw_front_init_bridge_f(d.taubgnd, d.frontgfc_in, d.kfront_in);
-}
-
 void gw_front_init(GwFrontInitData& d)
 {
   gw_common_init(d.init);
   GWF::gw_front_init(d.taubgnd, d.frontgfc_in, d.kfront_in);
-}
-
-void gw_front_project_winds_f(GwFrontProjectWindsData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_front_init_f(d.init);
-  gw_front_project_winds_bridge_f(d.ncol, d.kbot, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_front_project_winds(GwFrontProjectWindsData& d)
@@ -1020,16 +883,22 @@ void gw_front_project_winds(GwFrontProjectWindsData& d)
     const auto ubm_c = ekat::subview(ubm_d, i);
     const auto ubi_c = ekat::subview(ubi_d, i);
 
+    // xv/yv are thread-private outputs; publish them to the views once
+    Real xv, yv;
     GWF::gw_front_project_winds(
       team,
       pver,
       kbot,
       u_c,
       v_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       ubm_c,
       ubi_c);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      xv_d(i) = xv;
+      yv_d(i) = yv;
+    });
   });
 
   // Now get arrays
@@ -1042,14 +911,6 @@ void gw_front_project_winds(GwFrontProjectWindsData& d)
   ekat::device_to_host({d.ubi, d.ubm}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
 
   gw_finalize_cxx();
-}
-
-void gw_front_gw_sources_f(GwFrontGwSourcesData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_front_init_f(d.init);
-  gw_front_gw_sources_bridge_f(d.ncol, d.kbot, d.frontgf, d.tau);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_front_gw_sources(GwFrontGwSourcesData& d)
@@ -1102,14 +963,6 @@ void gw_front_gw_sources(GwFrontGwSourcesData& d)
   ekat::device_to_host({d.tau}, d.ncol, pgwv*2 + 1, pver + 1, vec3dr_out);
 
   gw_finalize_cxx();
-}
-
-void gw_cm_src_f(GwCmSrcData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_front_init_f(d.init);
-  gw_cm_src_bridge_f(d.ncol, d.kbot, d.u, d.v, d.frontgf, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_cm_src(GwCmSrcData& d)
@@ -1174,6 +1027,11 @@ void gw_cm_src(GwCmSrcData& d)
     const auto c_c = ekat::subview(c_d, i);
     const auto frontgf_c = ekat::subview(frontgf_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_cm_src(
       team,
       init_cp,
@@ -1184,14 +1042,21 @@ void gw_cm_src(GwCmSrcData& d)
       u_c,
       v_c,
       frontgf_c,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c);
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays
@@ -1210,14 +1075,6 @@ void gw_cm_src(GwCmSrcData& d)
   ekat::device_to_host({d.src_level, d.tend_level}, d.ncol, vec1di_out);
 
   gw_finalize_cxx();
-}
-
-void gw_convect_project_winds_f(GwConvectProjectWindsData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_f(d.init);
-  gw_convect_project_winds_bridge_f(d.ncol, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_convect_project_winds(GwConvectProjectWindsData& d)
@@ -1260,16 +1117,22 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d)
     const auto ubm_c = ekat::subview(ubm_d, i);
     const auto v_c = ekat::subview(v_d, i);
 
+    // xv/yv are thread-private outputs; publish them to the views once
+    Real xv, yv;
     GWF::gw_convect_project_winds(
       team,
       init_cp,
       pver,
       u_c,
       v_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       ubm_c,
       ubi_c);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      xv_d(i) = xv;
+      yv_d(i) = yv;
+    });
   });
 
   // Now get arrays
@@ -1282,14 +1145,6 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d)
   ekat::device_to_host({d.ubi, d.ubm}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
 
   gw_finalize_cxx();
-}
-
-void gw_heating_depth_f(GwHeatingDepthData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_f(d.init);
-  gw_heating_depth_bridge_f(d.ncol, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.use_gw_convect_old, d.zm, d.netdt, d.mini, d.maxi, d.hdepth, d.maxq0_out, d.maxq0);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_heating_depth(GwHeatingDepthData& d)
@@ -1363,14 +1218,6 @@ void gw_heating_depth(GwHeatingDepthData& d)
   gw_finalize_cxx();
 }
 
-void gw_storm_speed_f(GwStormSpeedData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_f(d.init);
-  gw_storm_speed_bridge_f(d.ncol, d.storm_speed_min, d.ubm, d.mini, d.maxi, d.storm_speed, d.uh, d.umin, d.umax);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gw_storm_speed(GwStormSpeedData& d)
 {
   gw_convect_init(d.init);
@@ -1437,14 +1284,6 @@ void gw_storm_speed(GwStormSpeedData& d)
   ekat::device_to_host({d.storm_speed}, d.ncol, vec1di_out);
 
   gw_finalize_cxx();
-}
-
-void gw_convect_gw_sources_f(GwConvectGwSourcesData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_f(d.init);
-  gw_convect_gw_sources_bridge_f(d.ncol, d.lat, d.hdepth_min, d.hdepth, d.mini, d.maxi, d.netdt, d.uh, d.storm_speed, d.maxq0, d.umin, d.umax, d.tau);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_convect_gw_sources(GwConvectGwSourcesData& d)
@@ -1528,14 +1367,6 @@ void gw_convect_gw_sources(GwConvectGwSourcesData& d)
   gw_finalize_cxx();
 }
 
-void gw_beres_src_f(GwBeresSrcData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_convect_init_f(d.init);
-  gw_beres_src_bridge_f(d.ncol, d.lat, d.u, d.v, d.netdt, d.zm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c, d.hdepth, d.maxq0_out, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.hdepth_min, d.storm_speed_min, d.use_gw_convect_old);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gw_beres_src(GwBeresSrcData& d)
 {
   gw_convect_init(d.init);
@@ -1608,6 +1439,12 @@ void gw_beres_src(GwBeresSrcData& d)
     const auto c_c = ekat::subview(c_d, i);
     const auto netdt_c = ekat::subview(netdt_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call. hdepth/maxq0_out are shared outputs that
+    // the kernel writes exactly once, so they can take view elements directly.
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_beres_src(
       team,
       wsm.get_workspace(team),
@@ -1625,16 +1462,23 @@ void gw_beres_src(GwBeresSrcData& d)
       hdepth_min,
       storm_speed_min,
       use_gw_convect_old,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c,
       hdepth_d(i),
       maxq0_out_d(i));
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays
@@ -1653,14 +1497,6 @@ void gw_beres_src(GwBeresSrcData& d)
   ekat::device_to_host({d.src_level, d.tend_level}, d.ncol, vec1di_out);
 
   gw_finalize_cxx();
-}
-
-void gw_ediff_f(GwEdiffData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gw_ediff_bridge_f(d.ncol, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit.value, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_ediff(GwEdiffData& d)
@@ -1772,14 +1608,6 @@ void gw_ediff(GwEdiffData& d)
   gw_finalize_cxx();
 }
 
-void gw_diff_tend_f(GwDiffTendData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gw_diff_tend_bridge_f(d.ncol, d.kbot, d.ktop, d.q, d.dt, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.dq);
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void gw_diff_tend(GwDiffTendData& d)
 {
   gw_common_init(d.init);
@@ -1837,15 +1665,6 @@ void gw_diff_tend(GwDiffTendData& d)
   ekat::device_to_host({d.dq}, d.ncol, d.init.pver, two_d_reals_out);
 
   gw_finalize_cxx();
-}
-
-void gw_oro_src_f(GwOroSrcData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  gw_oro_init_bridge_f();
-  gw_oro_src_bridge_f(d.ncol, d.u, d.v, d.t, d.sgh, d.pmid, d.pint, d.dpm, d.zm, d.nm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void gw_oro_src(GwOroSrcData& d)
@@ -1918,6 +1737,11 @@ void gw_oro_src(GwOroSrcData& d)
     const auto ubi_c = ekat::subview(ubi_d, i);
     const auto c_c = ekat::subview(c_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_oro_src(
       team,
       init_cp,
@@ -1932,14 +1756,21 @@ void gw_oro_src(GwOroSrcData& d)
       dpm_c,
       zm_c,
       nm_c,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c);
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays
@@ -1958,14 +1789,6 @@ void gw_oro_src(GwOroSrcData& d)
   ekat::device_to_host({d.src_level, d.tend_level}, d.ncol, vec1di_out);
 
   gw_finalize_cxx();
-}
-
-void vd_lu_decomp_f(VdLuDecompData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  vd_lu_decomp_bridge_f(d.ncol, d.ksrf, d.kv, d.tmpi, d.rpdel, d.ztodt, GWC::gravit.value, d.cc_top, d.ntop, d.nbot, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void vd_lu_decomp(VdLuDecompData& d)
@@ -2047,14 +1870,6 @@ void vd_lu_decomp(VdLuDecompData& d)
                        two_d_reals_out);
 
   gw_finalize_cxx();
-}
-
-void vd_lu_solve_f(VdLuSolveData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  gw_common_init_f(d.init);
-  vd_lu_solve_bridge_f(d.ncol, d.q, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.ntop, d.nbot, d.cd_top);
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void vd_lu_solve(VdLuSolveData& d)

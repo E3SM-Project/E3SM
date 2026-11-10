@@ -20,7 +20,9 @@
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 3e16
   nu_p              = 3e16  
-  nu_top            = 2.5e5         
+  nu_top            = 5e-7
+  tom_sponge_start  = 15                        ! hPa, start of tensor-viscosity sponge layer
+  laplace_scaling   = 1                         ! 1 = tensor viscosity sponge layer
   limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
