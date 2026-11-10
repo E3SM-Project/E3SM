@@ -391,7 +391,7 @@ contains
        budg_print_ann,  budg_print_ltann,  budg_print_ltend)
     !
     use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
-    use shr_const_mod   , only : shr_const_pi
+    use elm_varcon      , only : rpi
     !
     implicit none
     !
@@ -440,7 +440,7 @@ contains
        endif
 
        if (plev > 0) then
-          unit_conversion = 1.d0/(4.0_r8*shr_const_pi)*1.0e6_r8
+          unit_conversion = 1.d0/(4.0_r8*rpi)*1.0e6_r8
           if (.not.sumdone) then
              sumdone = .true.
              call WaterBudget_Sum0()

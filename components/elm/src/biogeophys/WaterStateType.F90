@@ -356,11 +356,11 @@ contains
     ! Initialize time constant variables and cold start conditions 
     !
     ! !USES:
-    use shr_const_mod   , only : shr_const_pi
+    use elm_varcon      , only : rpi
     use shr_log_mod     , only : errMsg => shr_log_errMsg
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use shr_const_mod   , only : SHR_CONST_TKFRZ
+    use elm_varcon      , only : tfrz
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istcrop, istice_mec  
     use column_varcon   , only : icol_shadewall, icol_road_perv
