@@ -225,11 +225,6 @@ IF (HOMME_USE_KOKKOS)
 
   # An option to allow workspace sharing on GPU
   OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
-
-  # For now, hommexx view usage is only compatible with Kokkos' lecacy view impl.
-  # FIXME: View usage in Hommexx will need to allow for Kokkos' MDSpan view implementation as the legacy
-  #        implementation will go away in the future, unannounced (it's an "impl" option => no deprecation).
-  OPTION (Kokkos_ENABLE_IMPL_VIEW_LEGACY "Currently, HOMME is only compatible with Kokkos' legacy view implementation." ON)
 ENDIF()
 
 ##############################################################################
