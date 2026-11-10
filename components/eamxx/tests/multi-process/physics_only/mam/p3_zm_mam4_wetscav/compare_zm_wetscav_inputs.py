@@ -284,8 +284,13 @@ def _get(nc, name, tidx):
     # Read only the requested time slice: a ne30pg2 file with many slices
     # would not fit in memory otherwise.
     idx = tuple(tidx if d == "time" else slice(None) for d in var.dimensions)
-    x = var[idx]
-    return np.ma.filled(np.ma.asarray(x, dtype=float), np.nan)
+    x = np.ma.filled(np.ma.asarray(var[idx], dtype=float), np.nan)
+    # Put the column axis first, so transposed output (transpose: true,
+    # e.g. (lev, ncol)) is handled too.
+    dims = [d for d in var.dimensions if d != "time"]
+    if "ncol" in dims and dims.index("ncol") != 0:
+        x = np.moveaxis(x, dims.index("ncol"), 0)
+    return x
 
 
 def read_eamxx(path, tidx):

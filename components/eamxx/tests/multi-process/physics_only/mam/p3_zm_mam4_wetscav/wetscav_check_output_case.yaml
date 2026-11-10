@@ -1,0 +1,51 @@
+%YAML 1.1
+---
+# Output stream for checking the ZM -> MAM4 wetscav inputs in a full EAMxx
+# case (e.g. ne30pg2 L72) with compare_zm_wetscav_inputs.py.
+# Add it to a case with:
+#   ./atmchange output_yaml_files+=/path/to/wetscav_check_output_case.yaml
+# Instant output is required: averaged ktop/kbot/zm_activity are meaningless.
+filename_prefix: wetscav_check
+averaging_type: instant
+max_snapshots_per_file: 8
+fields:
+  physics_pg2:
+    field_names:
+      # ZM fields read by wetscav convective processing
+      - zm_activity
+      - zm_cldtop_klev
+      - zm_msemax_klev
+      - zm_mflx_up
+      - zm_mflx_dn
+      - zm_entr_up
+      - zm_detr_up
+      - zm_entr_dn
+      - zm_detr_qc
+      - zm_detr_qi
+      - zm_rain_prod
+      - zm_icw_liq
+      - zm_mass_flux_int
+      - evap_dq_out
+      # P3 fields read by wetscav
+      - precip_total_tend
+      - nevapr
+      # Cloud fraction and state read by wetscav
+      - cldfrac_liq
+      - T_mid
+      - p_mid
+      - pseudo_density
+      - pseudo_density_dry
+      - qv
+      - qc
+      - qi
+      - nc
+      - ni
+      # Wetscav outputs
+      - aerdepwetis
+      - aerdepwetcw
+      - aerdepwetis_convproc
+output_control:
+  # One snapshot every 3 hours (6 steps at dt = 1800 s). About 0.4 GB per
+  # snapshot at ne30pg2 L72, so keep the run short (e.g. 1 day).
+  frequency: 6
+  frequency_units: nsteps
