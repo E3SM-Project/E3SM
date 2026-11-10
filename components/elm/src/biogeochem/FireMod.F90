@@ -123,7 +123,7 @@ contains
     !
       !$acc routine seq
     ! !USES:
-    use elm_varpar           , only: max_patch_per_col
+    use elm_varpar           , only: max_col_npfts
     use elm_varcon           , only: secspday, spval
     use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
@@ -300,7 +300,7 @@ contains
         cropf_col(c) = 0._r8
         lfwt(c)      = 0._r8
      end do
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            if (pi <=  col_pp%npfts(c)) then
@@ -324,7 +324,7 @@ contains
         c = filter_soilc(fc)
         fuelc_crop(c)=0._r8
      end do
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            if (pi <=  col_pp%npfts(c)) then
@@ -363,7 +363,7 @@ contains
            dtrotr_col(c)=0._r8
         end if
      end do
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            g = col_pp%gridcell(c)
@@ -504,7 +504,7 @@ contains
         end if
      end do
 
-     do pi = 1,max_patch_per_col
+     do pi = 1,max_col_npfts
         do fc = 1,num_soilc
            c = filter_soilc(fc)
            g = col_pp%gridcell(c)
@@ -691,6 +691,8 @@ contains
    use dynSubgridControlMod , only: get_flanduse_timeseries
    use elm_varcon           , only: secspday
    use dynSubgridControlMod , only: run_has_transient_landcover
+   use dynSubgridControlMod , only: get_subgrid_weights_updated
+   use elm_time_manager     , only: is_first_step, is_first_restart_step
    !
    ! !ARGUMENTS:
    integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -707,8 +709,12 @@ contains
    real(r8):: m_veg                ! speedup factor for accelerated decomp
    integer :: fp,fc                ! filter indices
    real(r8):: f                    ! rate for fire effects (1/s)
+   logical :: patch_burns(num_soilp) ! f /= 0 for the patch at this filter position
+   real(r8):: f_lit(num_soilc)     ! litter fire loss rate of the column at this filter position (1/s)
+   real(r8):: f_cwd(num_soilc)     ! CWD fire loss rate of the column at this filter position (1/s)
+   logical :: zero_unburnt_pools   ! rewrite the zero fire loss of pools that are neither litter nor CWD
    integer :: itype
-   real(r8):: cc_other_sc, wt_col, baf_crop_sc,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj
+   real(r8):: cc_other_sc, wt_col, lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj
 
    logical           :: transient_landcover  ! whether this run has any prescribed transient landcover
 
@@ -1004,6 +1010,10 @@ contains
            end if
         end if
 
+        ! Every patch fire flux below is a product with f, so all of them
+        ! are zero where f is
+        patch_burns(fp) = (f /= 0._r8)
+
         ! apply this rate to the pft state variables to get flux rates
         ! biomass burning
         ! carbon fluxes
@@ -1261,6 +1271,9 @@ contains
      ! fire-induced transfer of carbon and nitrogen pools to litter and cwd
      ! add phosphorus transfer fluxes -X.YANG
      do fp = 1,num_soilp
+       ! A patch without fire fluxes would add only zeros
+       if (.not. patch_burns(fp)) cycle
+
        p = filter_soilp(fp)
        c = veg_pp%column(p)
        wt_col = veg_pp%wtcol(p)
@@ -1377,69 +1390,73 @@ contains
         end do
      end do
      !
-     ! vertically-resolved decomposing C/N fire loss
-     ! column loop
-     ! add phosphorus
+     ! vertically-resolved decomposing C/N/P fire loss
+     !
+     ! The pool and level loops are outside the column loop so the inner loop
+     ! walks each (column,level,pool) array in memory order. Each entry is
+     ! computed from the same expression as before. Pools that are neither
+     ! litter nor CWD have no fire loss: they are set to zero and no other
+     ! routine writes them outside FATES, so they are rewritten only when the
+     ! filter may hold columns that have not been written yet (the zero_unused
+     ! predicate of EcosystemDynNoLeaching1). The fire-loss loops of
+     ! CarbonStateUpdate3, NitrogenStateUpdate3 and PhosphorusStateUpdate3
+     ! also rely on these zeros.
+     zero_unburnt_pools = get_subgrid_weights_updated() .or. is_first_step() .or. &
+          is_first_restart_step()
+
      do fc = 1,num_soilc
         c = filter_soilc(fc)
+        f_lit(fc) = farea_burned(c)
+        f_cwd(fc) = farea_burned(c) - baf_crop(c)
+     end do
 
-        baf_crop_sc = baf_crop(c)
-        f = farea_burned(c)
-
-        ! change CC for litter from 0.4_r8 to 0.5_r8 and CC for CWD from 0.2_r8
-        ! to 0.25_r8 according to Li et al.(2014)
-        do j = 1, nlevdecomp
-           ! carbon fluxes
-           do l = 1, ndecomp_pools
-              m_decomp_cpools_to_fire_vr(c,j,l) = 0._r8 
-              if ( is_litter(l) ) then
-                 m_decomp_cpools_to_fire_vr(c,j,l) = decomp_cpools_vr(c,j,l) * f * 0.5_r8
-              end if
-              if ( is_cwd(l) ) then
-                 m_decomp_cpools_to_fire_vr(c,j,l) = decomp_cpools_vr(c,j,l) * &
-                      (f-baf_crop_sc) * 0.25_r8
-
-                 if (spinup_state == 1) then
-                   m_decomp_cpools_to_fire_vr(c,j,l) = m_decomp_cpools_to_fire_vr(c,j,l) * &
-                     decomp_cascade_con%spinup_factor(l)
-                   if (kyr >= 40) m_decomp_cpools_to_fire_vr(c,j,l) = &
-                     m_decomp_cpools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
-                 end if
-              end if
+     ! change CC for litter from 0.4_r8 to 0.5_r8 and CC for CWD from 0.2_r8
+     ! to 0.25_r8 according to Li et al.(2014)
+     do l = 1, ndecomp_pools
+        if ( is_cwd(l) ) then
+           do j = 1, nlevdecomp
+              do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 m_decomp_cpools_to_fire_vr(c,j,l) = decomp_cpools_vr(c,j,l) * f_cwd(fc) * 0.25_r8
+                 m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * f_cwd(fc) * 0.25_r8
+                 m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * f_cwd(fc) * 0.25_r8
+              end do
            end do
-
-           ! nitrogen fluxes
-           do l = 1, ndecomp_pools
-              m_decomp_npools_to_fire_vr(c,j,l) = 0.0_r8 
-              if ( is_litter(l) ) then
-                 m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * f * 0.5_r8
-              end if
-              if ( is_cwd(l) ) then
-                 m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * &
-                      (f-baf_crop_sc) * 0.25_r8
-                 if (spinup_state == 1) then
-                   m_decomp_npools_to_fire_vr(c,j,l) = m_decomp_npools_to_fire_vr(c,j,l) * &
-                     decomp_cascade_con%spinup_factor(l)
-                   if (kyr >= 40) m_decomp_npools_to_fire_vr(c,j,l) = &
-                     m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
-                 end if
-             end if
+           if (spinup_state == 1) then
+              do j = 1, nlevdecomp
+                 do fc = 1,num_soilc
+                    c = filter_soilc(fc)
+                    m_decomp_cpools_to_fire_vr(c,j,l) = m_decomp_cpools_to_fire_vr(c,j,l) * &
+                         decomp_cascade_con%spinup_factor(l)
+                    if (kyr >= 40) m_decomp_cpools_to_fire_vr(c,j,l) = &
+                         m_decomp_cpools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
+                    m_decomp_npools_to_fire_vr(c,j,l) = m_decomp_npools_to_fire_vr(c,j,l) * &
+                         decomp_cascade_con%spinup_factor(l)
+                    if (kyr >= 40) m_decomp_npools_to_fire_vr(c,j,l) = &
+                         m_decomp_npools_to_fire_vr(c,j,l) / cnstate_vars%scalaravg_col(c,j)
+                 end do
+              end do
+           end if
+        else if ( is_litter(l) ) then
+           do j = 1, nlevdecomp
+              do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 m_decomp_cpools_to_fire_vr(c,j,l) = decomp_cpools_vr(c,j,l) * f_lit(fc) * 0.5_r8
+                 m_decomp_npools_to_fire_vr(c,j,l) = decomp_npools_vr(c,j,l) * f_lit(fc) * 0.5_r8
+                 m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * f_lit(fc) * 0.5_r8
+              end do
            end do
-
-           ! phosphorus fluxes - loss due to fire
-           do l = 1, ndecomp_pools
-              m_decomp_ppools_to_fire_vr(c,j,l) = 0._r8  
-              if ( is_litter(l) ) then
-                 m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * f * 0.5_r8
-              end if
-              if ( is_cwd(l) ) then
-                 m_decomp_ppools_to_fire_vr(c,j,l) = decomp_ppools_vr(c,j,l) * &
-                      (f-baf_crop_sc) * 0.25_r8
-              end if
+        else if ( zero_unburnt_pools ) then
+           do j = 1, nlevdecomp
+              do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 m_decomp_cpools_to_fire_vr(c,j,l) = 0._r8
+                 m_decomp_npools_to_fire_vr(c,j,l) = 0._r8
+                 m_decomp_ppools_to_fire_vr(c,j,l) = 0._r8
+              end do
            end do
-
-        end do
-     end do  ! end of column loop
+        end if
+     end do
 
      ! carbon loss due to deforestation fires
 

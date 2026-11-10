@@ -158,6 +158,12 @@ module elm_varctl
   ! Other subgrid logic
   !----------------------------------------------------------
 
+  ! true => allocate urban landunits everywhere where we have valid urban data (0-weight
+  !         urban landunits are allocated but inactive unless all_active is true)
+  ! false => only allocate urban landunits with non-zero weight (saves memory; requires a
+  !          finidat file generated with the same setting)
+  logical, public :: run_zero_weight_urban = .true.
+
   ! true => make ALL patches, cols & landunits active (even if weight is 0)
   logical, public :: all_active = .false.
   !$acc declare copyin(all_active)
@@ -456,6 +462,9 @@ module elm_varctl
   ! Domain decomposition
   !-----------------------------------------------------------------------
   character(len=256), public :: domain_decomp_type    = 'round_robin'
+  ! With domain_decomp_type = 'round_robin_weighted': weight of an active soil patch
+  ! relative to an active soil column in the gridcell weights (0 => columns only)
+  real(r8), public :: decomp_weight_patch_factor = 0._r8
 
   !-----------------------------------------------------------------------
   ! Subgrid hillslope hydrologic connectivity (through topounits)
