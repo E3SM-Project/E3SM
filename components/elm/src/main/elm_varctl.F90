@@ -384,6 +384,13 @@ module elm_varctl
   ! Set once the device data layer holds the model state: until then OpenACC compute
   ! constructs (if(elm_device_ready)) run on the host, e.g. during the instance initialization
   logical, public :: elm_device_ready = .false.
+
+  ! Aerosol treatment in snow, fixed at build time (-DMODAL_AER): compsets with BC are modal
+#ifdef MODAL_AER
+  logical, parameter, public :: use_modal_aer = .true.
+#else
+  logical, parameter, public :: use_modal_aer = .false.
+#endif
   logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.

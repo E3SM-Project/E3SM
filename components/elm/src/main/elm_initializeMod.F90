@@ -521,7 +521,11 @@ contains
     use LakeCon               , only : LakeConInit
     use SatellitePhenologyMod , only : SatellitePhenologyInit, readAnnualVegetation
     use SatellitePhenologyMod , only : interpMonthlyVeg, SatellitePhenology
+#ifdef MODAL_AER
     use SnowSnicarMod         , only : SnowAge_init, SnowOptics_init
+#else
+    use SnowSnicarNonModalMod , only : SnowAge_init => SnowAge_init_nonmodal, SnowOptics_init => SnowOptics_init_nonmodal
+#endif
     use initVerticalMod       , only : initVertical
     use lnd2atmMod            , only : lnd2atm_minimal
     use glc2lndMod            , only : glc2lnd_type

@@ -132,12 +132,16 @@ module UrbanParamsType
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_perv, icol_road_imperv, icol_road_perv
     use landunit_varcon , only : isturb_MIN
+    use ColumnType      , only : col_pp
+    use VegetationType  , only : veg_pp
     !
     ! !ARGUMENTS:
     class(urbanparams_type) :: this
     type(bounds_type)      , intent(in)    :: bounds
     !
     ! !LOCAL VARIABLES:
+    integer, parameter  :: surface_coltype(5) = (/icol_roof, icol_sunwall, icol_shadewall, icol_road_imperv, icol_road_perv/)
+    integer             :: k                 ! surface index of an urban landunit
     integer             :: j,l,c,p,t,ti,topi,g       ! indices
     integer             :: nc,fl,ib        ! indices 
     integer             :: dindx           ! urban density type index
@@ -356,6 +360,27 @@ module UrbanParamsType
                   exp(-1.0_r8 * (0.5_r8 * beta * C_d / vkc**2 * &
                   (1 - lun_pp%z_d_town(l) / lun_pp%ht_roof(l)) * frontal_ai)**(-0.5_r8))
           end if
+
+          if (lun_pp%ht_roof(l) - lun_pp%z_d_town(l) <= lun_pp%z_0_town(l)) then
+             write (iulog,*) 'aerodynamic parameter error in urban landunit ', l
+             write (iulog,*) 'h_r - z_d <= z_0'
+             write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', lun_pp%ht_roof(l), lun_pp%z_d_town(l), lun_pp%z_0_town(l)
+             call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          end if
+
+          ! UrbanFluxes addresses the surfaces of a landunit directly, as offsets from coli and pfti:
+          ! one column with one patch per surface, in this order (set_landunit_urban).
+          if (lun_pp%colf(l) - lun_pp%coli(l) + 1 /= size(surface_coltype) .or. &
+               lun_pp%pftf(l) - lun_pp%pfti(l) + 1 /= size(surface_coltype)) then
+             call endrun(decomp_index=l, elmlevel=namel, msg='unexpected urban landunit layout'//errMsg(__FILE__, __LINE__))
+          end if
+          do k = 1, size(surface_coltype)
+             c = lun_pp%coli(l) + k - 1
+             p = lun_pp%pfti(l) + k - 1
+             if (col_pp%itype(c) /= surface_coltype(k) .or. veg_pp%column(p) /= c) then
+                call endrun(decomp_index=l, elmlevel=namel, msg='unexpected urban landunit layout'//errMsg(__FILE__, __LINE__))
+             end if
+          end do
 
        else ! Not urban point
 
