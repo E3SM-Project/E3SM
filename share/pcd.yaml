@@ -10,7 +10,7 @@
 #
 
 physical_constants_dictionary:
-  version_number: 0.3.0
+  version_number: 0.4.0
   institution: E3SM Project
   description: Community-based dictionary for consistent physical constant sets
   contact: E3SM Project
@@ -141,6 +141,14 @@ physical_constants_dictionary:
         seawater - 2010: Calculation and use of thermodynamic properties,
         Intergovernmental Oceanographic Commission, Manuals and Guides No. 56,
         UNESCO (English), 196 pp., 2010.
+      "
+    AsayDavis2016:
+      description: "Marine ice sheet-ocean intercomparison protocol specifying ice-ocean coupling constants"
+      citation: "
+        Asay-Davis, X. S., et al., Experimental design for three interrelated
+        marine ice sheet and ocean model intercomparison projects:
+        MISMIP v. 3 (MISMIP+), ISOMIP v. 2 (ISOMIP+) and MISOMIP v. 1 (MISOMIP1),
+        Geosci. Model Dev., 9, 2471-2497, doi:10.5194/gmd-9-2471-2016, 2016.
       "
 
   set:
@@ -734,6 +742,17 @@ physical_constants_dictionary:
             description: "
               Canonical reference-scale seawater density; model adopts
               1026 kg m-3.
+            "
+          - name: ice_shelf_seawater_density_reference
+            value: 1028.0
+            units: kg m-3
+            prec: double
+            type: strict
+            reference: AsayDavis2016
+            description: "
+               Conventional seawater density for land-ice flotation and 
+               ice-shelf draft. Distinct from seawater_density_reference, 
+               which is more representative of the ocean surface.
             "
           - name: seawater_specific_heat_capacity_reference
             value: 3996.0

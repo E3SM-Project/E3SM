@@ -10,7 +10,7 @@
 namespace pcd {
 
 // pcd.yaml version and institution information
-const std::string pcdversion = "0.3.0";
+const std::string pcdversion = "0.4.0";
 const std::string pcdinstitution = "E3SM Project";
 
 // mathematical constants
@@ -83,6 +83,7 @@ constexpr double water_vapor_specific_heat_capacity_reference = 1810.0;         
 
 // earth_seawater constants
 constexpr double seawater_density_reference = 1026.0;                                                                                                                                     // [kg m-3] Gill_1982
+constexpr double ice_shelf_seawater_density_reference = 1028.0;                                                                                                                           // [kg m-3] AsayDavis2016
 constexpr double seawater_specific_heat_capacity_reference = 3996.0;                                                                                                                      // [J kg-1 K-1] Gill_1982
 constexpr double seawater_specific_heat_capacity_teos10 = 3991.86795711963;                                                                                                               // [J kg-1 K-1] TEOS10_2010
 constexpr double ocean_reference_salinity = 34.7;                                                                                                                                         // [g kg-1] Levitus1982
