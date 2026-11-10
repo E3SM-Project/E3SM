@@ -25,6 +25,7 @@ module PhenologyMod
   use SoilStateType       , only : soilstate_type
   use atm2lndType         , only : atm2lnd_type
   use elm_varctl          , only : nu_com
+  use elm_varctl          , only : use_cropman
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_cf, col_nf, col_pf
   use TopounitDataType    , only : top_af, top_as
@@ -3086,17 +3087,33 @@ contains
                if (iscft(ivt(p))) then
                ! this assumes that offset_counter == dt for crops
                ! if this were ever changed, we'd need to add code to the "else"
-                  leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
-                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
-                  livestemc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
+                  if (use_cropman) then
+                     leafc_to_litter(p) = max(0._r8, (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p)) )
+                     frootc_to_litter(p) = max(0._r8, t1 * frootc(p) + cpool_to_frootc(p) )
+                     livestemc_to_litter(p) = max(0._r8, (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p)) )
+                  else
+                     leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
+                     frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                     livestemc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * livestemc(p)) + cpool_to_livestemc(p))
+                  end if
                else
-                  leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
-                  frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                  if (use_cropman) then
+                     leafc_to_litter(p)  = max(0._r8, t1 * leafc(p)  + cpool_to_leafc(p) )
+                     frootc_to_litter(p) = max(0._r8, t1 * frootc(p) + cpool_to_frootc(p) )
+                  else
+                     leafc_to_litter(p)  = t1 * leafc(p)  + cpool_to_leafc(p)
+                     frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
+                  end if
                end if
             else
                t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
-               leafc_to_litter(p)  = prev_leafc_to_litter(p)  + t1*(leafc(p)  - prev_leafc_to_litter(p)*offset_counter(p))
-               frootc_to_litter(p) = prev_frootc_to_litter(p) + t1*(frootc(p) - prev_frootc_to_litter(p)*offset_counter(p))
+               if (use_cropman) then
+                  leafc_to_litter(p)  = max(0._r8, prev_leafc_to_litter(p)  + t1*(leafc(p)  - prev_leafc_to_litter(p)*offset_counter(p)) )
+                  frootc_to_litter(p) = max(0._r8, prev_frootc_to_litter(p) + t1*(frootc(p) - prev_frootc_to_litter(p)*offset_counter(p)) )
+               else
+                  leafc_to_litter(p)  = prev_leafc_to_litter(p)  + t1*(leafc(p)  - prev_leafc_to_litter(p)*offset_counter(p))
+                  frootc_to_litter(p) = prev_frootc_to_litter(p) + t1*(frootc(p) - prev_frootc_to_litter(p)*offset_counter(p))
+               end if
             end if
 
             if ( nu_com .eq. 'RD') then
@@ -3239,8 +3256,13 @@ contains
          ! only calculate these fluxes if the background litterfall rate is non-zero
          if (bglfr_leaf(p) > 0._r8) then
             ! units for bglfr are already 1/s
-            leafc_to_litter(p)  = bglfr_leaf(p) * leafc(p)
-            frootc_to_litter(p) = bglfr_froot(p) * frootc(p)
+            if (use_cropman) then
+               leafc_to_litter(p)  = max(0._r8, bglfr_leaf(p) * leafc(p) )
+               frootc_to_litter(p) = max(0._r8, bglfr_froot(p) * frootc(p) )
+            else
+               leafc_to_litter(p)  = bglfr_leaf(p) * leafc(p)
+               frootc_to_litter(p) = bglfr_froot(p) * frootc(p)
+            end if
 
             if ( nu_com .eq. 'RD') then
                ! calculate the leaf N litterfall and retranslocation
