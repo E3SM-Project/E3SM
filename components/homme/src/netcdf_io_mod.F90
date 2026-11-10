@@ -36,7 +36,7 @@ module netcdf_io_mod
 
   ! public interfaces  
   public :: nf_output_init_begin, nf_output_init_complete, nf_output_register_variables, &
-       nf_put_var_netcdf, nf_close, nf_close_all,  &
+       nf_put_var_netcdf, nf_close, nf_close_all, nf_close_files, nf_finalize_pio, &
        nf_output_register_dims, nf_advance_frame,  &
        nf_variable_attributes, nf_get_frame, nf_global_attribute
 
@@ -589,15 +589,30 @@ contains
   ! close the files and deallocate the lists
   subroutine nf_close_all(ncdf_list)
     type(nf_handle), intent(inout) :: ncdf_list(:)
+
+    call nf_close_files(ncdf_list)
+    call nf_finalize_pio()
+
+  end subroutine nf_close_all
+
+  ! Close the files (this also flushes any pending write_darray). Callers that own io decomps
+  ! should free them after this, and before nf_finalize_pio.
+  subroutine nf_close_files(ncdf_list)
+    type(nf_handle), intent(inout) :: ncdf_list(:)
     integer :: ios
-    integer :: ierr
 
     do ios=1,max_output_streams
        call nf_close(ncdf_list(ios))
     end do
+
+  end subroutine nf_close_files
+
+  subroutine nf_finalize_pio()
+    integer :: ierr
+
     call PIO_finalize(PIOFS, ierr)
 
-  end subroutine nf_close_all
+  end subroutine nf_finalize_pio
 
   subroutine nf_close(ncdf)
     type(nf_handle), intent(inout) :: ncdf
