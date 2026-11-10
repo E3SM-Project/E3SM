@@ -398,7 +398,7 @@ contains
                 if (size(comp) > 1) then
                     mpi_tag = comp(eci)%cplcompid*100+eci*10+1
                 else
-                    mpi_tag = comp(eci)%cplcompid*10000+eci*10+1
+                    mpi_tag = comp(eci)%cplcompid*100+eci*10+1
                 end if
                 call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=mpi_tag)
 
@@ -633,7 +633,7 @@ contains
           if ( num_inst > 1) then
              mpi_tag = comp(eci)%cplcompid*100+eci*10+5
           else
-             mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
+             mpi_tag = comp(eci)%cplcompid*100+eci*10+5
           end if
           call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag, &
                omit_nonlinear=.true.)
@@ -657,7 +657,7 @@ contains
           if (num_inst > 1) then
               mpi_tag = comp(eci)%cplcompid*100+eci*10+7
           else
-              mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
+              mpi_tag = comp(eci)%cplcompid*100+eci*10+7
           end if
           call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag, &
                omit_nonlinear=.true.)
@@ -923,14 +923,14 @@ contains
              if ( size(comp) > 1) then
                 mpi_tag = comp(eci)%cplcompid*100+eci*10+2
              else
-                mpi_tag = comp(eci)%cplcompid*10000+eci*10+2
+                mpi_tag = comp(eci)%cplcompid*100+eci*10+2
              end if
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
           else if (flow == 'c2x') then ! component to coupler
              if ( size(comp) > 1) then
                 mpi_tag = comp(eci)%cplcompid*100+eci*10+4
              else
-                mpi_tag = comp(eci)%cplcompid*10000+eci*10+4
+                mpi_tag = comp(eci)%cplcompid*100+eci*10+4
              end if
              call seq_map_map(comp(eci)%mapper_Cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
           end if
