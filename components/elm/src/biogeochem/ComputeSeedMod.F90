@@ -67,7 +67,6 @@ contains
     ! here.
     !
     ! !USES:
-    !$acc routine seq
     use pftvarcon       , only : noveg
     !
     ! !ARGUMENTS:
@@ -161,7 +160,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer , intent(in)  :: pft_type
     logical , intent(in)  :: ignore_current_state
     real(r8), intent(in)  :: leaf         ! g/m2 leaf C or N
@@ -200,7 +198,6 @@ contains
     ! this value into an appropriate value for c13, c14, n or p.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     real(r8)            :: multiplier ! function result
     integer, intent(in) :: species    ! which C/N species we're operating on; should be one of the values in SpeciesMod

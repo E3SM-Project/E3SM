@@ -44,7 +44,6 @@ contains
     ! specified, e.g., if there are conflicts between glacier area and crop area).
     !
     ! !USES:
-      !$acc routine seq
     !# use subgridWeightsMod, only : get_landunit_weight, set_landunit_weight
     !
     ! !ARGUMENTS:
@@ -105,7 +104,6 @@ contains
     ! needed.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     real(r8), intent(inout) :: landunit_weights(:)  ! weight of each landunit; this is updated in-place
     !
     ! !LOCAL VARIABLES:

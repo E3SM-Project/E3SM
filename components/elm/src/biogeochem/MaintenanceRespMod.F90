@@ -85,7 +85,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil points in column filter
     integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points

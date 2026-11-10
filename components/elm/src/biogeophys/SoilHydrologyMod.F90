@@ -48,7 +48,6 @@ contains
     ! Calculate surface runoff
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : denice, denh2o, wimp, pondmx_urban, frac_from_uphill
     use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon   , only : icol_road_imperv, icol_road_perv
@@ -297,7 +296,6 @@ contains
      ! Calculate infiltration into surface soil layer (minus the evaporation)
      !
      ! !USES:
-      !$acc routine seq
      use shr_const_mod    , only : shr_const_pi
      use elm_varpar       , only : nlayer, nlayert
      use elm_varpar       , only : nlevsoi, nlevgrnd
@@ -756,7 +754,6 @@ contains
      ! Calculate watertable, considering aquifer recharge but no drainage.
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon       , only : pondmx, tfrz, watmin,denice,denh2o
      use elm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
@@ -1767,7 +1764,6 @@ contains
      ! Calculate subsurface drainage
      !
      ! !USES:
-      !$acc routine seq
      use elm_varpar       , only : nlevsoi, nlevgrnd, nlayer, nlayert
      use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic, e_ice
      use pftvarcon        , only : rsub_top_globalmax
@@ -2395,7 +2391,6 @@ contains
      ! mapping from VIC to CLM layers, M.Huang
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon  , only : denh2o, denice, watmin
      use elm_varpar  , only : nlevsoi, nlayer, nlayert, nlevgrnd
      use decompMod   , only : bounds_type
