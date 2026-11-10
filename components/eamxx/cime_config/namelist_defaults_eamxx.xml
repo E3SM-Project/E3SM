@@ -695,7 +695,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">shoc,cld_fraction,spa,p3</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">tms,shoc,cld_fraction,spa,p3</atm_procs_list>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne32np4">12</number_of_subcycles>
@@ -728,6 +728,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <roughness_length_max    type="real" doc="Maximum effective roughness length">100.0</roughness_length_max>
       <ri_shear_sqr_min        type="real" doc="Minimum squared wind shear between the lowest two levels for TMS Richardson number [m2/s2]">0.01</ri_shear_sqr_min>
       <drag_scaling_factor     type="real" doc="Scaling factor for TMS drag coefficient and stress">1.0</drag_scaling_factor>
+      <drag_scaling_factor COMPSET=".*SCREAM%BETA.*">0.1</drag_scaling_factor>
     </tms>
 
     <physics inherit="atm_proc_group">
