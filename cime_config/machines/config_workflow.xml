@@ -48,7 +48,7 @@
       <runtime_parameters MACH="cech">
         <task_count>1</task_count>
         <tasks_per_node>1</tasks_per_node>
-        <walltime>00:25:00</walltime>
+        <walltime>01:30:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">

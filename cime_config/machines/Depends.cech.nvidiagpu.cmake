@@ -27,7 +27,28 @@ if (NOT DEBUG AND (COMP_NAME STREQUAL "elm" OR COMP_NAME STREQUAL "cice"))
   add_compile_options("-O1")
 endif()
 
-# 2. SCREAM / EAMxx C++ View Utilities, ETI, and Process Interfaces:
+# 2. MPAS Framework Components (mpaso / mpassi / mali / common):
+# On cech (nvidiagpu), nvfortran (fort2) OOM-kills (signal 9) or hangs for >70 minutes
+# when optimizing large MPAS ocean/seaice files with deep derived-type pointer chains
+# (e.g. mpas_ocn_particle_list.f90, mpas_ocn_rpn_calculator.f90,
+# mpas_ocn_lagrangian_particle_tracking*.f90, mpas_ocn_diagnostics.f90).
+# Note: build_mpas_model.cmake populates CORES and then calls add_subdirectory("mpas-framework/src")
+# where Depends.cech.nvidiagpu.cmake is included with CORES defined.
+# Since ATM is the focus on this machine, compiling MPAS at -O0 completely avoids
+# nvfortran optimization hangs and OOMs while allowing all coupled/MPAS tests to build and pass.
+if (NOT DEBUG AND (DEFINED CORES OR COMP_NAME STREQUAL "mpaso" OR COMP_NAME STREQUAL "mpassi" OR COMP_NAME STREQUAL "mali"))
+  if (DEFINED CMAKE_Fortran_FLAGS_RELEASE)
+    string(REPLACE "-O2" "-O0" CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}")
+    string(REPLACE "-O1" "-O0" CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}")
+  endif()
+  if (DEFINED CMAKE_C_FLAGS_RELEASE)
+    string(REPLACE "-O2" "-O0" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+    string(REPLACE "-O1" "-O0" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+  endif()
+  add_compile_options("-O0")
+endif()
+
+# 3. SCREAM / EAMxx C++ View Utilities, ETI, and Process Interfaces:
 # NVHPC template instantiation and optimization at -O2/-O3 is very slow for view sync,
 # masking utilities, ETI template instantiations, and glue interfaces.
 # Apply -O1 once during the final 'cpl' component pass (after build_eamxx() has defined

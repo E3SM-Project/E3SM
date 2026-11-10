@@ -75,7 +75,7 @@ def buildlib(bldroot, installpath, case):
     else:
         print ("no value found in env for Ekat_ROOT. building from scratch")
 
-    srcroot = case.get_value("SRCROOT")
+    srcroot = os.path.abspath(case.get_value("SRCROOT"))
     ekat_dir = os.path.join(srcroot, "externals", "ekat")
     ekat_cmake_files = os.path.join(ekat_dir, "cmake", "machine-files")
     mach = case.get_value("MACH")

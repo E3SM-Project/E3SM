@@ -14,7 +14,21 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 NUMA_NODE="0,1"
-if [ -n "${SLURM_LOCALID}" ]; then
+TASKS_PER_NODE=${SLURM_NTASKS_PER_NODE:-${SLURM_TASKS_PER_NODE%%[(,]*}}
+if [ -n "${TASKS_PER_NODE}" ] && [ "${TASKS_PER_NODE}" -gt 4 ] 2>/dev/null; then
+  gpu=$(( (${SLURM_LOCALID:-0} * 4) / ${TASKS_PER_NODE} ))
+  export KOKKOS_DEVICE_ID=${gpu}
+  case ${gpu} in
+    0|1)
+      export UCX_NET_DEVICES=mlx5_0:1
+      NUMA_NODE="0"
+      ;;
+    *)
+      export UCX_NET_DEVICES=mlx5_3:1
+      NUMA_NODE="1"
+      ;;
+  esac
+elif [ -n "${SLURM_LOCALID}" ]; then
   case ${SLURM_LOCALID} in
     0|1)
       export UCX_NET_DEVICES=mlx5_0:1

@@ -5801,6 +5801,7 @@
     <GMAKE_J>128</GMAKE_J>
     <BATCHED_BUILD>TRUE</BATCHED_BUILD>
     <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>144</MAX_TASKS_PER_NODE>
@@ -5823,16 +5824,19 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
     <environment_variables>
-      <env name="PATH">$SHELL{if [ "$(uname -m)" = "aarch64" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/bin:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/bin:/software/hpc_sdk/Linux_aarch64/25.11/compilers/bin; else echo /global/homes/n/ndk/e3sm/3rdparty/login/bin; fi}:$ENV{PATH}</env>
+      <env name="PATH">$SHELL{if [ "$(uname -m)" = "aarch64" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/moab/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/moab/tpls/tempestremap/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/bin:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/bin:/software/hpc_sdk/Linux_aarch64/25.11/compilers/bin; else echo /global/homes/n/ndk/e3sm/3rdparty/login/bin; fi}:$ENV{PATH}</env>
       <env name="NETCDF_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
       <env name="PNETCDF_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf</env>
       <env name="NETCDF_C_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
       <env name="NETCDF_FORTRAN_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
       <env name="HDF5_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5</env>
       <env name="HDF5_ROOT">/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/moab; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_PATH">$SHELL{if [ -z "$MOAB_PATH" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/moab; else echo "$MOAB_PATH"; fi}</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="OMPI_MCA_sharedfp">^lockedfile</env>
       <env name="OPAL_PREFIX">/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi</env>
-      <env name="LD_LIBRARY_PATH">$SHELL{lp=/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/nccl_rdma_sharp_plugin/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/sharp/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib/ucc:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib/ucx:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/hcoll/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/lib:/software/hpc_sdk/Linux_aarch64/25.11/compilers/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
+      <env name="LD_LIBRARY_PATH">$SHELL{lp=/global/homes/n/ndk/e3sm/3rdparty/compute/moab/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/moab/tpls/tempestremap/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/moab/tpls/zoltan/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/nccl_rdma_sharp_plugin/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/sharp/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib/ucc:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib/ucx:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/hcoll/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/lib:/software/hpc_sdk/Linux_aarch64/25.11/compilers/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
       <env name="UCX_TLS">rc,cuda_copy,cuda_ipc,sm,self</env>
       <env name="UCX_MEMTYPE_CACHE">y</env>
       <env name="CUDA_DEVICE_MAX_CONNECTIONS">1</env>
