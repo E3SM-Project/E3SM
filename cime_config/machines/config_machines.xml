@@ -4744,35 +4744,57 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc/12.3</command>
-        <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">cpe/26.03</command>
+        <command name="load">PrgEnv-gnu/8.7.0</command>
+        <command name="load">gcc/15.2.0</command>
+        <command name="load">craype/2.7.36</command>
+        <command name="load">craype-x86-rome</command>
+        <command name="load">craype-network-ofi</command>
+        <command name="load">libfabric/2.3.1</command>
+        <command name="load">cray-mpich/9.1.0</command>
+        <command name="load">cray-libsci/26.03.0</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.21</command>
       </modules>
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia/8.5.0</command>
         <command name="load">nvidia/24.7</command>
         <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">craype-accel-host</command>
+        <command name="load">craype/2.7.30</command>
+        <command name="load">cray-mpich/8.1.28</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
       </modules>
 
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.5.0</command>
         <command name="load">intel/2023.2.0</command>
         <command name="load">intel-mkl/2023.2.0</command>
+        <command name="load">craype-accel-host</command>
+        <command name="load">craype/2.7.30</command>
+        <command name="load">cray-mpich/8.1.28</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
       </modules>
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc/8.4.0</command>
         <command name="load">aocc/3.2.0</command>
         <command name="load">cray-libsci/23.05.1.4</command>
-      </modules>
-
-      <modules>
+        <command name="load">craype-accel-host</command>
         <command name="load">craype/2.7.30</command>
         <command name="load">cray-mpich/8.1.28</command>
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
         <command name="load">cray-parallel-netcdf/1.12.3.9</command>
+      </modules>
+
+      <modules>
         <command name="load">cmake/3.29.6</command>
       </modules>
     </module_system>
@@ -4794,9 +4816,6 @@
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-    </environment_variables>
-    <environment_variables compiler="gnu">
-      <env name="LD_LIBRARY_PATH">/usr/lib64/gcc/x86_64-suse-linux/12:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
