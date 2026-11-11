@@ -6,7 +6,8 @@
 namespace scream {
 
 /*
- * This diagnostic will produce the "number" path.
+ * This diagnostic will produce the "number" paths of liquid, ice and rain,
+ * in the fields LiqNumberPath, IceNumberPath and RainNumberPath.
  */
 
 class NumberPath : public AbstractDiagnostic {
@@ -26,9 +27,9 @@ class NumberPath : public AbstractDiagnostic {
   void compute_impl() override;
 
  protected:
-  std::string m_qname;
-  std::string m_nname;
-  std::string m_kind;
+  Field m_liq;
+  Field m_ice;
+  Field m_rain;
 };
 
 }  // namespace scream
