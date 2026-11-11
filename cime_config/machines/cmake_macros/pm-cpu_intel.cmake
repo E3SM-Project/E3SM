@@ -14,7 +14,6 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     endif()
 endif()
 
-string(APPEND CMAKE_Fortran_FLAGS " -fimf-use-svml")
 #  string(APPEND FFLAGS " -qno-opt-dynamic-align")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
 string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
