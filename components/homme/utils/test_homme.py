@@ -308,13 +308,13 @@ def main(argv):
         print(f"ERROR: ctest failed (exit code {res.returncode}). The logs are in '{work_dir / 'Testing' / 'Temporary'}'")
         return res.returncode
 
-    # 3. Process succeeded! If needed, copy to baseline dir
+    # 3. Process succeeded! If needed, copy some artifacts to the baseline dir
+    #    (the tests already copied the baselines in baseline_dir/tests/baseline)
     if args.generate:
-        print(f"Baseline generation successful. Copying baselines/artifacts to {baseline_dir}...")
+        print(f"Baseline generation successful. Copying artifacts to {baseline_dir}...")
         try:
             tgt = baseline_dir
             src = work_dir
-            shutil.copytree(src / 'tests/baseline', tgt / 'tests/baseline', dirs_exist_ok=True)
             shutil.copytree(src / 'Testing', tgt / 'Testing', dirs_exist_ok=True)
             shutil.copy2(src / 'CMakeCache.txt', tgt / 'CMakeCache.txt')
             shutil.copy2(src / 'homme_git_sha.h', tgt / 'homme_git_sha.h')

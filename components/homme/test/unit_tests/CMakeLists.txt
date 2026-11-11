@@ -1,24 +1,19 @@
 SET(UNITTESTER_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
 include (EkatBuildCatch2)
+# Run a unit test executable with NUM_CPUS ranks. Extra args are passed to the executable.
+# The MPI launcher is set up in homme_setup_testing (cmake/HommeTesting.cmake).
 function(cxx_unit_test_add_test test_name target_name NUM_CPUS)
   SET(EXTRA_ARGS ${ARGN})
-  set(TMP ${USE_MPI_OPTIONS})
-  separate_arguments(TMP)
-  if (USE_MPI_RUN_SCRIPT)
-    ADD_TEST(${test_name} ${USE_MPI_RUN_SCRIPT} ${NUM_CPUS} ./${target_name} ${EXTRA_ARGS})
-  else()
-    ADD_TEST(${test_name} ${USE_MPIEXEC} -n ${NUM_CPUS} ${TMP} ./${target_name} ${EXTRA_ARGS})
-  endif()
-  SET_TESTS_PROPERTIES(${test_name} PROPERTIES LABELS "unit")
+  ADD_TEST(NAME ${test_name}
+           COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NUM_CPUS} ${HOMME_MPIEXEC_PREFLAGS_LIST} $<TARGET_FILE:${target_name}> ${HOMME_MPIEXEC_POSTFLAGS_LIST} ${EXTRA_ARGS})
+  SET_TESTS_PROPERTIES(${test_name} PROPERTIES LABELS "unit" PROCESSORS ${NUM_CPUS})
 endfunction()
 
 macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs config_defines NUM_CPUS)
   ADD_EXECUTABLE(${target_name} ${UNITTESTER_DIR}/tester.cpp ${target_f90_srcs} ${target_cxx_srcs})
-  #add exec to test_execs ,baseline, and check targets in makefile
+  # Build this exec as part of the test-execs target
   ADD_DEPENDENCIES(test-execs ${target_name})
-  ADD_DEPENDENCIES(baseline ${target_name})
-  ADD_DEPENDENCIES(check ${target_name})
 
   cxx_unit_test_add_test(${target_name}_test ${target_name} ${NUM_CPUS})
 
