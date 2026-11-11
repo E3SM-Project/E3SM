@@ -30,7 +30,7 @@ src/theta-l      nonhydrostatic model with SB81 vertical discretization
 For instructions on building and configuring, see README.cmake
 
 HOMME has a large regression test suite.  For instructions on running and adding
-new tests, see homme/test/reg_test/README
+new tests, see homme/test/README.md
 
 
 ================================================================================
