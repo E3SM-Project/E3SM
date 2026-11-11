@@ -94,7 +94,7 @@
   <!-- v4 candidate configuration -->
   <compset>
     <alias>F20TRxx-BETA</alias>
-    <lname>20TR_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>20TR_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -104,7 +104,7 @@
 
   <compset>
     <alias>F2010xx-BETA</alias>
-    <lname>2010_SCREAM%BETA_ELM%SPBC_MPASSI_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_SCREAM%BETA_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
   </compset>
 
   <compset>
