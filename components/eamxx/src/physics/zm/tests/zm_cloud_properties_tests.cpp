@@ -168,13 +168,7 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
     const auto margin = std::numeric_limits<Real>::epsilon() *
       (ekat::is_single_precision<Real>::value ? 10000 : 100);
 
-    // Aggregated across every config/column: used to confirm the offset
-    // actually changes the solution somewhere convection is active.
-    Real max_entr_diff = 0;
-    Real total_active  = 0;
-
     for (Int i = 0; i < num_runs; ++i) {
-      ZmCloudPropertiesData& b = base_data[i];
       ZmCloudPropertiesData& m = mix_data[i];
       const Int pver  = m.pver;
       const Int pverp = m.pverp;
@@ -188,10 +182,13 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
           //     the enhanced detrainment from driving liquid water negative.
           REQUIRE(m.ql[idx] >= -margin);
 
-          // Accumulators for the mixing-has-an-effect check below.
-          total_active  += std::abs(m.mflx_up[idx]);
-          max_entr_diff  = std::max(max_entr_diff,
-                                    std::abs(m.entr_up[idx] - b.entr_up[idx]));
+          // (1b) Turbulent detrainment exports updraft properties through an
+          //      implicit (relaxation) form in the h, s and q budgets, which
+          //      must stay finite and leave the condensation rate nonnegative.
+          REQUIRE(std::isfinite(m.s_upd[idx]));
+          REQUIRE(std::isfinite(m.q_upd[idx]));
+          REQUIRE(std::isfinite(m.cu[idx]));
+          REQUIRE(m.cu[idx] >= 0);
 
           // (2) Equal increments / net mass flux preserved: adding the same
           //     offset to entrainment and detrainment must leave the mass-flux
@@ -208,14 +205,97 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
       }
     }
 
-    // (3) The offset must actually change the solution somewhere convection is
-    //     active - this catches a regression that drops it entirely. Pooled
-    //     across all configs/columns so that a single thin/inactive cloud
-    //     cannot make the check vacuous.
-    if (total_active > 0) {
-      REQUIRE(max_entr_diff > 0);
-    }
+    // (3) The offset must actually change the solution. The randomized
+    //     columns above are not physically consistent soundings, so a plume
+    //     there may terminate right above cloud base and leave no level that
+    //     received turbulent mixing. Use a deterministic, conditionally
+    //     unstable tropical sounding instead, where the plume is guaranteed to
+    //     survive well above cloud base.
+    run_sounding_effect(frac_turb_mix, margin);
   } // run_property
+
+  // Fill every column of d with the same idealized tropical sounding:
+  // uniform layers up to 20 km, a 6.5 K/km lapse rate to a 15 km tropopause,
+  // a moist boundary layer (RH=0.85 below 1.5 km) under a drier free
+  // troposphere (RH=0.5), launched from the lowest model level.
+  static void fill_sounding(ZmCloudPropertiesData& d)
+  {
+    using PC = scream::physics::Constants<Real>;
+    const Real grav  = PC::gravit.value;
+    const Real cpair = PC::Cpair.value;
+    const Real rdair = PC::Rair.value;
+    const Real ztop  = 20000;
+    const Int  pver  = d.pver;
+    const Int  pverp = d.pverp;
+    const Real dzl   = ztop / pver;
+
+    auto temp_at = [] (const Real z) {
+      return z < 15000 ? Real(300) - Real(6.5e-3)*z : Real(202.5);
+    };
+
+    for (Int c = 0; c < d.pcols; ++c) {
+      for (Int k = 0; k < pverp; ++k) {
+        d.z_int[c*pverp + k] = ztop - k*dzl;
+      }
+      // Hydrostatic pressure, integrated upward from 1000 mb at the surface
+      Real p_sfc_side = 1000;
+      Real z_prev     = 0;
+      for (Int k = pver - 1; k >= 0; --k) {
+        const Int  idx = c*pver + k;
+        const Real z   = (d.z_int[c*pverp + k] + d.z_int[c*pverp + k + 1]) / 2;
+        const Real t   = temp_at(z);
+        const Real tbar = (temp_at(z_prev) + t) / 2;
+        const Real p   = p_sfc_side * std::exp(-grav*(z - z_prev)/(rdair*tbar));
+        // Tetens saturation vapor pressure [mb]
+        const Real es  = Real(6.112) * std::exp(Real(17.67)*(t - Real(273.15))/(t - Real(29.65)));
+        const Real qs  = Real(0.622) * es / (p - es);
+        const Real rh  = z < 1500 ? Real(0.85) : Real(0.5);
+        d.z_mid[idx] = z;
+        d.p_mid[idx] = p;
+        d.t_mid[idx] = t;
+        d.q_mid[idx] = std::max(Real(1e-6), rh*qs);
+        d.s_mid[idx] = t + grav*z/cpair;
+        p_sfc_side = p;
+        z_prev     = z;
+      }
+      for (Int k = 0; k < pver; ++k) {
+        const Int idx = c*pver + k;
+        d.s_int[idx] = (k == 0) ? d.s_mid[idx] : (d.s_mid[idx-1] + d.s_mid[idx]) / 2;
+      }
+      d.landfrac[c] = 0;
+      d.tpert_g[c]  = 0;
+      d.jb[c]       = pver - 1;
+      // Launch the cloud-top search at ~13 km
+      d.lel[c]      = static_cast<Int>((ztop - 13000) / dzl);
+    }
+  }
+
+  void run_sounding_effect(const Real frac_turb_mix, const Real margin)
+  {
+    //                         pcols, ncol, pver, pverp, msg, limcnv
+    ZmCloudPropertiesData base(    1,    1,   72,    73,   0,    5);
+    fill_sounding(base);
+    ZmCloudPropertiesData mix(base);
+    mix.frac_turb_mix = frac_turb_mix;
+
+    zm_cloud_properties(base);
+    zm_cloud_properties(mix);
+
+    const Int jb   = mix.jb[0];
+    const Int jt   = mix.jt[0];
+
+    // The plume must survive at least a few levels above cloud base,
+    // otherwise this check would be vacuous.
+    REQUIRE(jt < jb - 2);
+
+    Real max_entr_diff = 0;
+    for (Int k = jt + 1; k < jb; ++k) {
+      REQUIRE(mix.mflx_up[k] > 0);
+      REQUIRE(mix.ql[k] >= -margin);
+      max_entr_diff = std::max(max_entr_diff, std::abs(mix.entr_up[k] - base.entr_up[k]));
+    }
+    REQUIRE(max_entr_diff > 0);
+  }
 
 };
 

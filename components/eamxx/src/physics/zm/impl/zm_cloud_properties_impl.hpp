@@ -68,13 +68,14 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   // Allocate temporary workspace arrays (all pver-sized; pflxs used as pverp)
   // =========================================================================
+  // detr_turb holds the turbulent part of detr_up (see step 6b)
   uview_1d<Real> gamma, dz, h_env, h_env_sat, h_upd, h_dnd, qsthat, hsthat,
-                 gamhat, q_dnd_sat, lambda, fice, tug, tmp_frz, pflxs;
-  workspace.template take_many_contiguous_unsafe<15>(
+                 gamhat, q_dnd_sat, lambda, fice, tug, tmp_frz, pflxs, detr_turb;
+  workspace.template take_many_contiguous_unsafe<16>(
     {"gamma", "dz", "h_env", "h_env_sat", "h_upd", "h_dnd", "qsthat", "hsthat",
-     "gamhat", "q_dnd_sat", "lambda", "fice", "tug", "tmp_frz", "pflxs"},
+     "gamhat", "q_dnd_sat", "lambda", "fice", "tug", "tmp_frz", "pflxs", "detr_turb"},
     {&gamma, &dz, &h_env, &h_env_sat, &h_upd, &h_dnd, &qsthat, &hsthat,
-     &gamhat, &q_dnd_sat, &lambda, &fice, &tug, &tmp_frz, &pflxs});
+     &gamhat, &q_dnd_sat, &lambda, &fice, &tug, &tmp_frz, &pflxs, &detr_turb});
 
   // Scalar locals (captured by reference in Kokkos lambdas)
   Real c0mask = 0, totpcp = 0, totevp = 0, h_env_min = 1.e6, lambda_max = 0, tot_frz = 0;
@@ -123,7 +124,7 @@ void Functions<S,D>::zm_cloud_properties(
     // Zero microphysics and workspace arrays
     lambda(k)  = 0;  fice(k)    = 0;
     tug(k)     = 0;  tmp_frz(k) = 0;
-    pflxs(k)   = 0;
+    pflxs(k)   = 0;  detr_turb(k) = 0;
   });
   team.team_barrier();
 
@@ -276,6 +277,11 @@ void Functions<S,D>::zm_cloud_properties(
           const Real frac_turb = Kokkos::min(frac_turb_add, frac_turb_lim);
           entr_up(k) += frac_turb;
           detr_up(k) += frac_turb;
+          // Keep the turbulent part separately. Unlike the dynamic detrainment
+          // (plumes ending at neutral buoyancy, which leave with saturated
+          // environmental properties), turbulent exchange removes bulk updraft
+          // air, so the updraft budgets below export updraft properties for it.
+          detr_turb(k) = frac_turb;
         }
       }
     }
@@ -297,6 +303,17 @@ void Functions<S,D>::zm_cloud_properties(
           mflx_up(k) = 0;
           entr_up(k) = 0;
           detr_up(k) = mflx_up(k+1) / dz(k);
+          detr_turb(k) = 0;
+        } else if (detr_turb(k) > 0) {
+          // MSE budget with turbulent exchange: the dynamic detrainment leaves
+          // with saturated environmental MSE, while the turbulent detrainment
+          // exports the updraft's own MSE. That term is treated implicitly
+          // (moved to the left-hand side), which makes the turbulent part a
+          // relaxation of h_upd toward h_env that stays bounded for any dz*detr_turb.
+          const Real detr_dyn = detr_up(k) - detr_turb(k);
+          h_upd(k) = (mflx_up(k+1)*h_upd(k+1)
+                      + dz(k)*(entr_up(k)*h_env(k) - detr_dyn*h_env_sat(k)))
+                   / (mflx_up(k) + dz(k)*detr_turb(k));
         } else {
           // MSE budget: updraft MSE is flux-weighted mix of below and environment
           h_upd(k) = mflx_up(k+1)/mflx_up(k) * h_upd(k+1)
@@ -355,6 +372,7 @@ void Functions<S,D>::zm_cloud_properties(
         mflx_up(k) = 0;
         entr_up(k) = 0;
         detr_up(k) = 0;
+        detr_turb(k) = 0;
         h_upd(k)   = h_env(k);
       }
       // At the cloud top level: non-zero detrainment to conserve mass
@@ -382,10 +400,22 @@ void Functions<S,D>::zm_cloud_properties(
       }
       // Compute updraft thermodynamics above cloud base up to cloud top
       if (!done && k > jt && k < jb && lambda_max > 0) {
-        s_upd(k) = mflx_up(k+1)/mflx_up(k) * s_upd(k+1)
-                 + dz(k)/mflx_up(k) * (entr_up(k) - detr_up(k)) * s_mid(k);
-        q_upd(k) = mflx_up(k+1)/mflx_up(k) * q_upd(k+1)
-                 + dz(k)/mflx_up(k) * (entr_up(k)*q_mid(k) - detr_up(k)*qst(k));
+        if (detr_turb(k) > 0) {
+          // Same split as the MSE budget in 6c: dynamic detrainment leaves
+          // with s_mid and qst, turbulent detrainment exports the updraft's
+          // own s_upd and q_upd (implicit, consistent with h_upd).
+          const Real detr_dyn = detr_up(k) - detr_turb(k);
+          const Real denom    = mflx_up(k) + dz(k)*detr_turb(k);
+          s_upd(k) = (mflx_up(k+1)*s_upd(k+1)
+                      + dz(k)*(entr_up(k) - detr_dyn)*s_mid(k)) / denom;
+          q_upd(k) = (mflx_up(k+1)*q_upd(k+1)
+                      + dz(k)*(entr_up(k)*q_mid(k) - detr_dyn*qst(k))) / denom;
+        } else {
+          s_upd(k) = mflx_up(k+1)/mflx_up(k) * s_upd(k+1)
+                   + dz(k)/mflx_up(k) * (entr_up(k) - detr_up(k)) * s_mid(k);
+          q_upd(k) = mflx_up(k+1)/mflx_up(k) * q_upd(k+1)
+                   + dz(k)/mflx_up(k) * (entr_up(k)*q_mid(k) - detr_up(k)*qst(k));
+        }
 
         // Updraft temperature at the layer interface
         const Real tu    = s_upd(k) - grav/cpair * z_int(k);
@@ -422,9 +452,13 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
     if (lambda_max > 0 && k >= jt && k < jb) {
-      // Condensation = latent heat release implied by DSE flux divergence
+      // Condensation = latent heat release implied by DSE flux divergence.
+      // The dynamic detrainment leaves with s_mid (folded into the (E-D)*s_mid
+      // term), while turbulent detrainment exports s_upd, so the difference
+      // detr_turb*(s_upd-s_mid) must also be supplied by condensation.
       cu(k) = ((mflx_up(k)*s_upd(k) - mflx_up(k+1)*s_upd(k+1))/dz(k)
-               - (entr_up(k) - detr_up(k))*s_mid(k))
+               - (entr_up(k) - detr_up(k))*s_mid(k)
+               + detr_turb(k)*(s_upd(k) - s_mid(k)))
               / (latvap/cpair);
       if (k == jt) cu(k) = 0;                           // No condensation at cloud top
       cu(k) = Kokkos::max(Real(0), cu(k));           // Condensation must be non-negative
@@ -516,9 +550,9 @@ void Functions<S,D>::zm_cloud_properties(
   team.team_barrier();
 
   // Release workspace
-  workspace.template release_many_contiguous<15>(
+  workspace.template release_many_contiguous<16>(
     {&gamma, &dz, &h_env, &h_env_sat, &h_upd, &h_dnd, &qsthat, &hsthat,
-     &gamhat, &q_dnd_sat, &lambda, &fice, &tug, &tmp_frz, &pflxs});
+     &gamhat, &q_dnd_sat, &lambda, &fice, &tug, &tmp_frz, &pflxs, &detr_turb});
 }
 
 } // namespace zm
