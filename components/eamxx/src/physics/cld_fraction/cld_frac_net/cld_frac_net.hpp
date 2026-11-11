@@ -1,14 +1,15 @@
 #ifndef LAPIS_MODULE_H
 #define LAPIS_MODULE_H
 #include <Kokkos_Core.hpp>
-extern Kokkos::View<float[72][64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_72x64xf32;
-extern Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_72xf32_0;
-extern Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_64xf32_0;
-extern Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_72xf32;
-extern Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_64xf32;
-extern Kokkos::View<float[64][72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_64x72xf32_0;
-extern Kokkos::View<float[144][64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_144x64xf32;
-extern Kokkos::View<float[64][72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> __constant_64x72xf32;
+#include "share/core/eamxx_types.hpp"
+extern Kokkos::View<float[72][64], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_72x64xf32;
+extern Kokkos::View<float[72], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_72xf32_0;
+extern Kokkos::View<float[64], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_64xf32_0;
+extern Kokkos::View<float[72], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_72xf32;
+extern Kokkos::View<float[64], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_64xf32;
+extern Kokkos::View<float[64][72], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_64x72xf32_0;
+extern Kokkos::View<float[144][64], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_144x64xf32;
+extern Kokkos::View<float[64][72], Kokkos::LayoutRight, scream::EamxxExecSpace> __constant_64x72xf32;
 struct GlobalViews_forward {
   GlobalViews_forward() {
     m__constant_72x64xf32 = __constant_72x64xf32;
@@ -20,14 +21,14 @@ struct GlobalViews_forward {
     m__constant_144x64xf32 = __constant_144x64xf32;
     m__constant_64x72xf32 = __constant_64x72xf32;
   }
-  Kokkos::View<float[72][64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_72x64xf32;
-  Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_72xf32_0;
-  Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_64xf32_0;
-  Kokkos::View<float[72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_72xf32;
-  Kokkos::View<float[64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_64xf32;
-  Kokkos::View<float[64][72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_64x72xf32_0;
-  Kokkos::View<float[144][64], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_144x64xf32;
-  Kokkos::View<float[64][72], Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace> m__constant_64x72xf32;
+  Kokkos::View<float[72][64], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_72x64xf32;
+  Kokkos::View<float[72], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_72xf32_0;
+  Kokkos::View<float[64], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_64xf32_0;
+  Kokkos::View<float[72], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_72xf32;
+  Kokkos::View<float[64], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_64xf32;
+  Kokkos::View<float[64][72], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_64x72xf32_0;
+  Kokkos::View<float[144][64], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_144x64xf32;
+  Kokkos::View<float[64][72], Kokkos::LayoutRight, scream::EamxxExecSpace> m__constant_64x72xf32;
 };
 // Return the total amount of scratch that the function uses
 // This is the upper bound to what forward_L0_scratch_required can return
