@@ -41,6 +41,12 @@ def buildnml(case, caseroot, compname):
     """
     expect(compname == "scream", compname)
 
+    # EAMxx needs Kokkos (via EKAT), which we get from the ekat support lib
+    libs = case.get_values("CASE_SUPPORT_LIBRARIES")
+    expect(libs, "CASE_SUPPORT_LIBRARIES is not set for this case. Cases created before it was introduced must be re-created.")
+    if "ekat" not in libs:
+        case.set_value("CASE_SUPPORT_LIBRARIES", ",".join(libs + ["ekat"]))
+
     rundir     = case.get_value("RUNDIR")
     screamroot = os.path.join(case.get_value("SRCROOT"), "components/eamxx")
     rundata    = os.path.join(rundir, "data")
