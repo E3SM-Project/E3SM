@@ -493,15 +493,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        ! Standalone Homme: the 1st command line argument (if any) is the namelist file,
        ! and the 2nd (if any) is the file where iulog writes to (from here on).
        ! Without arguments, the namelists are read from standard input.
+       ! NOTE: open the namelist file first, so that we can check that the log file is not the same file
        nl_unit = input_unit
-       if (command_argument_count() >= 2) then
-          call get_command_argument(2, log_file, status=ierr)
-          if (ierr /= 0) call abortmp(subname//':: could not read the log file name (2nd command line argument)')
-          open(newunit=log_unit, file=trim(log_file), status='replace', action='write', iostat=ierr)
-          if (ierr /= 0) call abortmp(subname//':: could not open the log file '//trim(log_file))
-          write(iulog,*) 'Writing the log to ',trim(log_file)
-          iulog = log_unit
-       end if
        if (command_argument_count() >= 1) then
           call get_command_argument(1, nl_file, status=ierr)
           if (ierr /= 0) call abortmp(subname//':: could not read the namelist file name (1st command line argument)')
@@ -510,6 +503,20 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           write(iulog,*) 'Reading the namelists from ',trim(nl_file)
        else
           write(iulog,*) 'Reading the namelists from standard input'
+       end if
+       if (command_argument_count() >= 2) then
+          call get_command_argument(2, log_file, status=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not read the log file name (2nd command line argument)')
+          ! Opening the log file would erase it, so make sure it is not the namelist file
+          ! (if it is, it is already connected to nl_unit)
+          inquire(file=trim(log_file), number=log_unit)
+          if (nl_unit /= input_unit .and. log_unit == nl_unit) then
+             call abortmp(subname//':: the log file and the namelist file are the same file: '//trim(log_file))
+          end if
+          open(newunit=log_unit, file=trim(log_file), status='replace', action='write', iostat=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not open the log file '//trim(log_file))
+          write(iulog,*) 'Writing the log to ',trim(log_file)
+          iulog = log_unit
        end if
 #endif
        write(iulog,*)"reading ctl namelist..."
