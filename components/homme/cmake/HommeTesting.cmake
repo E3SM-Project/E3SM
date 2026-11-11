@@ -199,6 +199,20 @@ function (homme_add_system_test name)
   #     Set up the test folder    #
   #################################
   set (test_dir ${HOMME_TESTS_DIR}/${name})
+  # Namelists can use HOMME_TEST_QVARS in output_varnames, to output all the tracers (Homme
+  # can output up to 5 tracers), e.g.: output_varnames1 = 'ps','T'${HOMME_TEST_QVARS}
+  set (HOMME_TEST_QVARS)
+  if (HOMME_TEST_QSIZE)
+    foreach (iq RANGE 1 5)
+      if (iq GREATER HOMME_TEST_QSIZE)
+        break()
+      elseif (iq EQUAL 1)
+        string (APPEND HOMME_TEST_QVARS ",'Q'")
+      else()
+        string (APPEND HOMME_TEST_QVARS ",'Q${iq}'")
+      endif()
+    endforeach()
+  endif()
   foreach (nl IN LISTS hast_NAMELISTS hast_OMP_NAMELISTS)
     # Some namelists contain cmake variables (e.g., to generate multiple testcases
     # with different ne or ndays), so use configure_file to replace them with their values
@@ -427,16 +441,15 @@ function (homme_resolve_test_ranks out_var nranks_in max_ranks namelists)
   set (${out_var} ${NUM_CPUS} PARENT_SCOPE)
 endfunction()
 
-# Create a test that compares the output of a F90 test and a C++ test, both bit-for-bit
-# (netcdf files) and via the diagnostics written in the logs (only for theta tests).
+# Create a test that checks that the netcdf outputs of a F90 test and a C++ test are bit-for-bit identical.
 #   homme_add_cxx_vs_f90_test (<name> F90_TEST <f90-test> CXX_TEST <cxx-test> OUTPUTS <files...> [LABELS ...])
 function (homme_add_cxx_vs_f90_test name)
   cmake_parse_arguments (PARSE_ARGV 1 hacvf "" "F90_TEST;CXX_TEST" "OUTPUTS;LABELS")
   string (REPLACE ";" "," outputs "${hacvf_OUTPUTS}")
   add_test (NAME ${name}
             COMMAND ${CMAKE_COMMAND} -DCPRNC=${CPRNC_BINARY}
-                    -DF90_DIR=${HOMME_TESTS_DIR}/${hacvf_F90_TEST} -DF90_TEST_NAME=${hacvf_F90_TEST}
-                    -DCXX_DIR=${HOMME_TESTS_DIR}/${hacvf_CXX_TEST} -DCXX_TEST_NAME=${hacvf_CXX_TEST}
+                    -DF90_DIR=${HOMME_TESTS_DIR}/${hacvf_F90_TEST}
+                    -DCXX_DIR=${HOMME_TESTS_DIR}/${hacvf_CXX_TEST}
                     -DFILES=${outputs}
                     -P ${HOMME_TESTING_SCRIPTS_DIR}/HommeCxxVsF90.cmake
             WORKING_DIRECTORY ${HOMME_TESTS_DIR}/${hacvf_CXX_TEST})
