@@ -802,7 +802,9 @@ _TESTS = {
 	"e3sm_eamxx_v4_beta" : {
         "time"  : "01:00:00",
         "tests" : (
-            "SMS_Ld1.ne4pg2_ne4pg2.F2010xx-BETA.eamxx-output-preset-1",
+            "ERS_Ld1.ne4pg2_oQU240.F2010xx-BETA.eamxx-output-preset-1",
+			"PET_Ld1.ne4pg2_oQU240.F2010xx-BETA",
+			"PEM_Ld1.ne4pg2_oQU240.F2010xx-BETA",
             )
     },
 
