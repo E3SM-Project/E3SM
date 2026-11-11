@@ -8,7 +8,7 @@ on:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
       - '.github/actions/test-all-eamxx/**'
-      - 'cime_config/machine/config_machines.xml'
+      - 'cime_config/machines/config_machines.xml'
       - 'components/eamxx/**'
       # Only the homme files that eamxx builds (not standalone-only stuff, like machine files or tests)
       - 'components/homme/CMakeLists.txt'
