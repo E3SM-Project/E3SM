@@ -13,6 +13,11 @@
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
+# Raise soft locked-memory limit (RLIMIT_MEMLOCK) to match the compute node's
+# unlimited hard limit in case Slurm propagated a low limit (e.g. 8192 KB) from
+# the login node, which otherwise causes UCX ibv_reg_mr() failures on multi-node runs.
+ulimit -Sl unlimited 2>/dev/null || true
+
 NUMA_NODE="0,1"
 TASKS_PER_NODE=${SLURM_NTASKS_PER_NODE:-${SLURM_TASKS_PER_NODE%%[(,]*}}
 if [ -n "${TASKS_PER_NODE}" ] && [ "${TASKS_PER_NODE}" -gt 4 ] 2>/dev/null; then
