@@ -1,0 +1,87 @@
+name: merge-to-next
+
+# After a PR is merged into master, make sure its branch is also merged into next.
+# If the merge into next conflicts, open an issue (assigned to whoever merged the PR).
+# The logic lives in .github/scripts/merge-to-next.sh
+
+on:
+  # pull_request_target (rather than pull_request) so that the token has write access
+  # even for PRs from forks. We never execute code from the PR: we only run git commands.
+  pull_request_target:
+    branches: [ master ]
+    types: [closed]
+  # Safety net, in case an event was missed: look again at the recently merged PRs
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: 'Look at PRs merged in the last N days'
+        default: '3'
+      dry_run:
+        description: 'Merge locally, but do not push or open issues'
+        type: boolean
+        default: false
+
+# Serialize runs, so that two PRs merged back-to-back do not race to push to next.
+# GitHub keeps at most one *pending* run per group (older pending runs get canceled),
+# which is fine: each run handles all the recently merged PRs, not just its own.
+concurrency:
+  group: merge-to-next
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+jobs:
+  merge-to-next:
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # For pull_request_target, checkout gets the *base* branch (master), not the PR code
+      PR_NUM: ${{ github.event.pull_request.number }}
+      LOOKBACK_DAYS: ${{ inputs.lookback_days || '3' }}
+      DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Pushing to next may require a token that is allowed to bypass branch
+          # protection rules. Set the NEXT_PUSH_TOKEN secret if the default token is not enough.
+          token: ${{ secrets.NEXT_PUSH_TOKEN || github.token }}
+
+      - name: Merge recently merged PRs into next
+        id: merge
+        run: |
+          # Copy the script away, since the clone may switch branches
+          cp .github/scripts/merge-to-next.sh "${RUNNER_TEMP}/merge-to-next.sh"
+          set +e
+          bash "${RUNNER_TEMP}/merge-to-next.sh"
+          rc=$?
+          echo "rc=${rc}" >> "${GITHUB_OUTPUT}"
+          exit ${rc}
+
+      # rc=3 means that the script already opened issues for the PRs that could not be
+      # merged. Any other failure is unexpected (e.g., push rejected by branch protection).
+      - name: Open issue on unexpected failure
+        if: failure() && steps.merge.outputs.rc != '3' && github.event_name == 'pull_request_target'
+        env:
+          PR_URL: ${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}
+          INTEGRATOR: ${{ github.event.pull_request.merged_by.login }}
+        run: |
+          TITLE="merge-to-next workflow failed after PR #${PR_NUM} was merged"
+          {
+            echo "PR ${PR_URL} was merged into \`master\`, but the merge-to-next workflow failed"
+            echo "unexpectedly, so \`next\` may be missing it. Please check the workflow run, and"
+            echo "merge the PR branch into \`next\` by hand if needed: ${RUN_URL}"
+          } > "${RUNNER_TEMP}/issue-body.md"
+          gh issue create --repo "${{ github.repository }}" \
+            --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue-body.md" \
+            --assignee "${INTEGRATOR}" \
+          || gh issue create --repo "${{ github.repository }}" \
+            --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue-body.md"
