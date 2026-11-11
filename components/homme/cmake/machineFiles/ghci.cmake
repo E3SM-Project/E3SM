@@ -14,8 +14,7 @@ SET (NetCDF_C_PATH       "$ENV{NETCDF_C_ROOT}"       CACHE STRING "" FORCE)
 # NOTE: we do not set CPRNC_DIR, since there is no prebuilt cprnc in our images. Homme will compile it
 # from the CIME sources instead (it is built along with the test executables).
 
-SET (USE_QUEUING FALSE CACHE BOOL "")
-SET (USE_MPIEXEC "mpirun" CACHE STRING "")
+SET (MPIEXEC_EXECUTABLE "mpirun" CACHE FILEPATH "")
 
 SET (HOMMEXX_BFB_TESTING      FALSE   CACHE BOOL "")
 SET (BUILD_HOMME_PREQX_KOKKOS TRUE    CACHE BOOL "")

@@ -1,196 +1,35 @@
+# Homme tests: build the test executables, and create the ctest tests.
+#
+# The tests are created with the functions in cmake/HommeTesting.cmake. Each system test X
+# runs in ${CMAKE_BINARY_DIR}/tests/X. Use 'ctest -N -L <label>' to list tests with a given label
+# (e.g., system, unit, baseline_gen, baseline_cmp, cxx_vs_f90, theta-l_kokkos, ...).
+#
+# Targets:
+#   test-execs: build all the executables needed by the tests (and cprnc)
+#   check     : run all the tests (same as running ctest)
+#   baseline  : run the tests that generate baselines (ctest -L baseline_gen), and copy
+#               their outputs in ${CMAKE_BINARY_DIR}/tests/baseline
+# NOTE: CIME's HOMME test uses the test-execs, check, and baseline targets.
 
-# Set up a file to hold a list of all of the  tests
-SET (HOMME_TEST_LIST ${CMAKE_BINARY_DIR}/tests/test_list.sh)
-FILE (WRITE ${HOMME_TEST_LIST} "${POUND}!/bin/bash\n")
-FILE (APPEND ${HOMME_TEST_LIST} "${POUND} A list of all of the HOMME tests\n")
-FILE (APPEND ${HOMME_TEST_LIST} "\n")
-SET (NUM_TEST_FILES 0)
+include (HommeTesting)
+homme_setup_testing()
 
-SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
-SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
-
-# Want this to be resetable...
-IF (DEFINED HOMME_BASELINE_DIR)
-  # Need to check that the files are there...
-  SET(Homme_Baseline_DIR ${HOMME_BASELINE_DIR}/tests/baseline)
-ELSE ()
-  SET(Homme_Baseline_DIR ${CMAKE_BINARY_DIR}/tests/baseline)
-ENDIF ()
-
-MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
-
-# Allow to skip the comparison of the tests' output against baselines (e.g., if we only care about
-# comparisons within the same build, like f90 vs cxx)
-OPTION(HOMME_SKIP_BASELINE_COMPARE "Skip the comparison against baseline results in the tests" OFF)
-# CMake accepts many spellings of a boolean (1, YES, true, ...), but the test scripts only know ON/OFF
-IF (HOMME_SKIP_BASELINE_COMPARE)
-  SET (HOMME_SKIP_BASELINE_COMPARE ON)
-  MESSAGE(STATUS "HOMME_SKIP_BASELINE_COMPARE is ON: tests will not be compared against baselines")
-ELSE ()
-  SET (HOMME_SKIP_BASELINE_COMPARE OFF)
-ENDIF ()
-
-# Determine if there is a submission system
-OPTION(USE_QUEUING "Whether run tests through the queue" TRUE)
-IF (USE_QUEUING)
-  # lsf uses bsub
-  FIND_PROGRAM(BSUB_PATH bsub) # Note this searches the environment
-  IF (BSUB_PATH)
-    MESSAGE(STATUS "Using LSF queuing")
-    SET(HOMME_SUBMISSION_TYPE lsf)
-    SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/lsf.sh)
-  ENDIF ()
-  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
-    # pbs uses qsub
-    FIND_PROGRAM(QSUB_PATH qsub) # Note this searches the environment
-    IF (QSUB_PATH)
-      MESSAGE(STATUS "Using PBS queuing")
-      SET(HOMME_SUBMISSION_TYPE pbs)
-      SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/pbs.sh)
-    ENDIF ()
-  ENDIF ()
-  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
-    # moab uses msub
-    FIND_PROGRAM(MSUB_PATH msub) # Note this searches the environment
-    IF (MSUB_PATH)
-      MESSAGE(STATUS "Using MOAB queuing")
-      SET(HOMME_SUBMISSION_TYPE moab)
-      SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/moab.sh)
-    ENDIF ()
-  ENDIF ()
-  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
-    # slurm uses squeue
-    FIND_PROGRAM(SQUEUE_PATH squeue) # Note this searches the environment
-    IF (SQUEUE_PATH)
-      MESSAGE(STATUS "Using SLURM queuing")
-      SET(HOMME_SUBMISSION_TYPE slurm)
-      SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/slurm.sh)
-    ENDIF ()
-  ENDIF ()
-  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
-    MESSAGE(STATUS "No queuing system found")
-    SET(HOMME_SUBMISSION_TYPE none)
-  ENDIF ()
-ELSE ()
-  MESSAGE(STATUS "Not searching for queuing system")
-  SET(HOMME_SUBMISSION_TYPE none)
-ENDIF ()
-
-# Queuing specific info
-IF (${HOMME_SUBMISSION_TYPE} STREQUAL none) 
-  SET(HOMME_QUEUING FALSE)
-  IF (USE_NUM_PROCS)
-    # USE_NUM_PROCS is the number of ranks CIME has allocated (e.g. from a
-    # _P96 test option).  Treat it as the cap: each test uses as many ranks
-    # as it needs, but no more than USE_NUM_PROCS.
-    SET(MAX_NUM_PROCS ${USE_NUM_PROCS})
-    MESSAGE(STATUS "HOMME testing max procs (from USE_NUM_PROCS): ${USE_NUM_PROCS}")
-  ELSE ()
-    # HOMME_TESTING_MAX_PROCS caps the per-test NUM_CPUS when running without a
-    # queuing system and USE_NUM_PROCS is not set.  The default of 24 matches a
-    # typical CIME _P24 test layout; pass -DHOMME_TESTING_MAX_PROCS=N to
-    # override (e.g. from a CIME _P<N> test name or a machine XML default).
-    IF (NOT DEFINED HOMME_TESTING_MAX_PROCS)
-      SET (HOMME_TESTING_MAX_PROCS 24 CACHE STRING
-           "Maximum MPI ranks per test when running without a queuing system (default 24)")
-    ENDIF ()
-    SET(MAX_NUM_PROCS ${HOMME_TESTING_MAX_PROCS})
-    MESSAGE(STATUS "HOMME testing max procs (HOMME_TESTING_MAX_PROCS): ${HOMME_TESTING_MAX_PROCS}")
-  ENDIF ()
-ELSE ()
-  IF (USE_NUM_PROCS)
-    MESSAGE(STATUS "Warning: Variable USE_NUM_PROCS not supported when using queuing")
-  ENDIF ()
-  IF (DEFINED HOMME_PROJID)
-    MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID}")
-  ELSE ()
-    # Check environment variables
-    IF (DEFINED ENV{HOMME_PROJID})
-      SET(HOMME_PROJID $ENV{HOMME_PROJID})
-      MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID} from environment")
-    ELSE ()
-      MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID
-                           using -DHOMME_PROJID=XXXX0000 or in the environment")
-    ENDIF ()
-  ENDIF ()
-  # We have queuing
-  SET(HOMME_QUEUING TRUE)
-
-  # Allow use to override the HOMME_SUBMISSION_HEADER
-  IF (DEFINED SUBMISSION_HEADER)
-    IF (EXISTS ${SUBMISSION_HEADER})
-      SET(HOMME_SUBMISSION_HEADER ${SUBMISSION_HEADER})
-    ELSE ()
-      MESSAGE(FATAL_ERROR "SUBMISSION_HEADER set but file not found at: ${SUBMISSION_HEADER}")
-    ENDIF ()
-  ENDIF ()
-  IF (DEFINED HOMME_SUBMISSION_HEADER)
-    MESSAGE(STATUS "Using submission header ${HOMME_SUBMISSION_HEADER}")
-  ENDIF ()
-
-ENDIF ()
-
-# Because of the queuing system on machines like Yellowstone the testing can be a little awkward
-# The following scripts prepare submission scripts and allow submission to
-# queues on machines that have queues.
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
-               ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
-               ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
-               ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
-# Per-test timeout (seconds) applied by runTestsStd() via the shell 'timeout'
-# command.  On timeout the test is skipped and the suite continues rather than
-# aborting; 0 disables the timeout entirely.
-IF (NOT DEFINED HOMME_TESTING_TIMELIMIT)
-  SET (HOMME_TESTING_TIMELIMIT 1800 CACHE STRING
-       "Per-test timeout in seconds used by runTestsStd() (0 = no limit)")
-ENDIF ()
-MESSAGE(STATUS "HOMME per-test testing timelimit: ${HOMME_TESTING_TIMELIMIT} seconds")
-
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/cmake_variables.sh
-               ${CMAKE_BINARY_DIR}/tests/cmake_variables.sh @ONLY)
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/check_baseline.sh
-               ${CMAKE_BINARY_DIR}/tests/check_baseline.sh @ONLY)
-
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
-               ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
-
-
-# create list of all executables needed by tests
-ADD_CUSTOM_TARGET(test-execs)
-
-ADD_CUSTOM_TARGET(check 
-                  COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
-
-if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
-# Force cprnc to be built when make check is run
-ADD_DEPENDENCIES(check cprnc)
-# Same for test-execs, since the tests need cprnc (a no-op if cprnc is a prebuilt binary, found via CPRNC_DIR)
-ADD_DEPENDENCIES(test-execs cprnc)
+add_custom_target (test-execs)
+if (NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  # The tests need cprnc (a no-op if cprnc is a prebuilt binary, found via CPRNC_DIR)
+  add_dependencies (test-execs cprnc)
 endif()
 
+add_custom_target (check
+  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_dependencies (check test-execs)
 
-# Create a target for making the reference data
-ADD_CUSTOM_TARGET(baseline
-         COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "baseline")
-
-# Create a target for making the reference data
-ADD_TEST(verifyBaselineResults ${CMAKE_BINARY_DIR}/tests/check_baseline.sh)
-# looks like a target(check) cant depend on a test(verifyBaselineResults)
-#ADD_DEPENDENCIES(check verifyBaselineResults)
-
-IF (${HOMME_QUEUING})
-  # The first CMake test is running
-  #   this is a little awkward because submit_tests.sh uses 
-  #   submissions-list.sh which hasn't been created yet.
-  ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
-
-  ADD_DEPENDENCIES(check submitAndRunTests)
-  # Set the time limit to submit and run the tests at three hours
-  SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
-
-ENDIF ()
+add_custom_target (baseline
+  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L baseline_gen
+  COMMAND ${CMAKE_COMMAND} -P ${HOMME_COPY_BASELINES_SCRIPT}
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_dependencies (baseline test-execs)
 
 # Add the test exec subdirs for the sweqx executable
 IF(${BUILD_HOMME_SWEQX})
@@ -280,82 +119,26 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
 ENDIF ()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list
-INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
-# Need a properly scoped variable to store the test directories for the
-#  replaceBaselineResults target
-SET(TEST_DIR_LIST "")
+include (${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 createTests(HOMME_TESTS)
 
-IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_PREQX_KOKKOS)
-  MESSAGE("-- Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
-    "   Example ctest lines:\n"
-    "     ctest -LE \"nightly\": All tests except nightly.\n"
-    "     ctest -L \"dev|unit\": Tests label dev or unit.")
+if (HOMMEXX_BFB_TESTING AND BUILD_HOMME_PREQX_KOKKOS)
+  message (STATUS "Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.")
   make_profiles_up_to(${HOMME_TESTING_PROFILE} profiles)
-  FOREACH (p ${profiles})
-    MESSAGE("-- For profile ${p}:")
+  foreach (p ${profiles})
+    message (STATUS "For profile ${p}:")
     createTestsWithProfile(HOMME_PREQX_TESTS_WITH_PROFILE ${p})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
-  ENDFOREACH ()
-ENDIF()
-IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_THETA_KOKKOS)
-  MESSAGE("-- Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
-    "   Example ctest lines:\n"
-    "     ctest -LE \"nightly\": All tests except nightly.\n"
-    "     ctest -L \"dev|unit\": Tests label dev or unit.")
+  endforeach ()
+endif()
+if (HOMMEXX_BFB_TESTING AND BUILD_HOMME_THETA_KOKKOS)
+  message (STATUS "Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.")
   make_profiles_up_to(${HOMME_TESTING_PROFILE} profiles)
-  FOREACH (p ${profiles})
-    MESSAGE("-- For profile ${p}:")
+  foreach (p ${profiles})
+    message (STATUS "For profile ${p}:")
     createTestsWithProfile(HOMME_THETA_TESTS_WITH_PROFILE ${p})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(THETA_COMPARE_F_C_TEST ${p})
-  ENDFOREACH ()
-ENDIF()
+  endforeach ()
+endif()
 
-# End the file with the total number of test files
-FILE (APPEND ${HOMME_TEST_LIST} "\n")
-FILE (APPEND ${HOMME_TEST_LIST} "NUM_TEST_FILES=${NUM_TEST_FILES}\n")
-
-# Create a target for making the reference data
-ADD_CUSTOM_TARGET(replaceBaselineResults)
-FOREACH(TEST_DIR ${TEST_DIR_LIST})
-  GET_FILENAME_COMPONENT(TEST_BASE_NAME ${TEST_DIR} NAME)
-  ADD_CUSTOM_COMMAND(TARGET replaceBaselineResults PRE_BUILD
-           COMMAND ${CMAKE_COMMAND} -E copy_directory 
-           ${TEST_DIR} ${Homme_Baseline_DIR}/${TEST_BASE_NAME})
-  ADD_CUSTOM_COMMAND(TARGET replaceBaselineResults PRE_BUILD
-           COMMAND ${CMAKE_COMMAND} -E echo 
-           "Copying test results ${TEST_DIR} to baseline directory ${Homme_Baseline_DIR}/${TEST_BASE_NAME}")
-ENDFOREACH()
-
-# Now create run scripts
-# To monitor the process, disable RESULT OUTPUT ERROR lines below
-# and add -x to the 1st line in createRunScripts
-EXECUTE_PROCESS(
-  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "all"
-  RESULT_VARIABLE CREATE_RUNS_RESULT
-  OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
-  ERROR_VARIABLE CREATE_RUNS_ERROR)
-
-
-
-IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
-  MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error
-                        ${CREATE_RUNS_RESULT}\n"
-          "OUTPUT: \n ${CREATE_RUNS_OUTPUT}\n"
-          "ERROR: \n ${CREATE_RUNS_ERROR}")
-ENDIF ()
-
-EXECUTE_PROCESS(
-  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "baseline"
-  RESULT_VARIABLE CREATE_RUNS_RESULT
-  OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
-  ERROR_VARIABLE CREATE_RUNS_ERROR)
-
-IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
-  MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh baseline\" has failed with error
-                        ${CREATE_RUNS_RESULT}\n"
-          "OUTPUT: \n ${CREATE_RUNS_OUTPUT}\n"
-          "ERROR: \n ${CREATE_RUNS_ERROR}")
-
-ENDIF ()
-
+homme_write_copy_baselines_script()

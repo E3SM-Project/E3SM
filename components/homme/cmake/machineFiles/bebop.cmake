@@ -18,6 +18,5 @@ ELSE ()
 ENDIF ()
 
 SET (HOMME_USE_MKL "TRUE" CACHE FILEPATH "") # for Intel
-SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (CPRNC_DIR /lcrc/group/acme/tools/cprnc CACHE FILEPATH "")
 

@@ -16,44 +16,51 @@ BFB.  Non-BFB changes require verifing minimal changes in l2
 solution errors,conservation errors, energy budget errors, and
 checking plots of the vorticity field and and tracers.
 
+How the tests are run:
+   Each test runs in <build-dir>/tests/<test-name>, which contains the namelists and the
+   outputs (the log <test-name>.log, and movies/*.nc). The test runs
+     <mpi-launcher> <exe> <namelist> <test-name>.log
+   and a test with N namelists is split in N tests (<test-name>_run1, ..., <test-name>_runN),
+   which ctest runs in order. The tests must run inside an allocation (there is no
+   support for submitting jobs to a queue). The MPI launcher is set via the cmake
+   variables MPIEXEC_EXECUTABLE, MPIEXEC_NUMPROC_FLAG, MPIEXEC_PREFLAGS, and
+   MPIEXEC_POSTFLAGS (see the machine files in cmake/machineFiles).
+   Useful ctest commands:
+     ctest -N                   list all tests
+     ctest -N -L baseline_gen   list the tests that generate baselines (also: system, unit,
+                                baseline_cmp, cxx_vs_f90, theta-l, theta-l_kokkos, ...)
+     ctest -R swtc1 -V          run test swtc1 (and its checks), printing the commands
+
 To generate baselines:
    cd /working/path1
    cmake -C $MACHFILE -DUSE_NUM_PROCS=24  /path/to/homme/baseline/code
-   make -j4 clean
-   make -j4 baseline    make baselines in /working/path1/tests/baseline/
-   make -j4 check       run tests, store results in /working/path1/tests
-                        compare against self baselines 
+   make -j4 test-execs
+   make baseline        run the tests in the baseline_gen label, and copy their
+                        outputs in /working/path1/tests/baseline/
+   make check           run tests, store results in /working/path1/tests,
+                        compare against self baselines
+   Alternatively, configure with -DHOMME_BASELINE_DIR=<dir> -DHOMME_GENERATE_BASELINES=ON,
+   and run 'ctest -L baseline_gen': the outputs are copied in <dir>/tests/baseline.
 
 To compare a different branch against the baselines:
    cd /working/path2
    cmake -C $MACHFILE -DUSE_NUM_PROCS=24  -DHOMME_BASELINE_DIR=/working/path1
-   make -j4 clean
-   make -j4 check      run tests, store results in /working/path2/tests
+   make -j4 test-execs
+   make check          run tests, store results in /working/path2/tests
                        compare against results in $HOMME_BASELINE_DIR/tests/baseline
-
-
-
-The above instructions assume you have queing disabled in your machine's cmake
-file.  If your cluster is supported by HOMME's testing system, and queing is
-enabled, then "make baseline" and "make check" above will submit jobs to the
-que and monitor their progress.  In this case, -DUSE_NUM_PROCS is ignored and
-the number of procs and nodes that will be used is configured for each test case.
-The queue support code is currently not maintained and is most likley broken.  
-
+                       (the comparisons are the tests named <test-name>_baseline_cmp)
 
 Instructions to create a new test:
 Determine executable (sweqx, preqx, theta, etc...)
 Create new executable configuration (if needed).
-   i.e. homme/test_exec/swtcA
+   i.e. homme/test_execs/swtcA
 Create cmake description of test and namelist:
    homme/test/reg_test/run_tests/swtc2.cmake
    homme/test/reg_test/namelists/swtc2.nl
    homme/test/reg_test/run_tests/test-list.cmake   (update for new test)
-   
+The variables that the test description can set are listed in createTest
+(cmake/HommeTesting.cmake), which forwards them to homme_add_system_test.
 
-
-
- 
 =======================================================================
 SHALLOW WATER TESTS -- DETAILS
 

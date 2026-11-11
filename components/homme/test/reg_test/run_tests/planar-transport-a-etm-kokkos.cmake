@@ -8,5 +8,5 @@ set(MAX_NUM_CPUS 160)
 set(NC_OUTPUT_FILES planar_transport_a1.nc)
 
 check_transport_error_norms(
-  ${TEST_NAME} "planar_conv" "${TEST_NAME}_1.out"
+  ${TEST_NAME} "planar_conv" "${TEST_NAME}.log"
   "3.9e-3;3.9e-3;4.1e-3")
