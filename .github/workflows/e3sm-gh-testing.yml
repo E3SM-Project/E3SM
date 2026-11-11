@@ -28,6 +28,12 @@ on:
       - '!components/*/docs/**'
       - '!components/*/mkdocs.yml'
       - '!.github/**'
+      # Skip homme changes that only affect its standalone build/testing (e.g., machine files or tests)
+      - '!components/homme/**'
+      - 'components/homme/CMakeLists.txt'
+      - 'components/homme/src/**'
+      - 'components/homme/cmake/*'
+      - '!components/homme/cmake/ctest_script.cmake'
       - '.github/workflows/e3sm-gh-testing.yml'
 
   # Manual run on master is used to bless

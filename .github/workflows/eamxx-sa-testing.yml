@@ -10,7 +10,10 @@ on:
       - '.github/actions/test-all-eamxx/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
-      - 'components/homme/**'
+      # Only the homme files that eamxx builds (not standalone-only stuff, like machine files or tests)
+      - 'components/homme/CMakeLists.txt'
+      - 'components/homme/src/**'
+      - 'components/homme/cmake/*'
       - 'components/eam/src/physics/cosp2/external/**'
       - 'components/eam/src/physics/rrtmgp/**'
       - 'externals/ekat'
@@ -18,6 +21,7 @@ on:
       - 'externals/haero'
       - 'externals/scorpio'
       # second, no to these
+      - '!components/homme/cmake/ctest_script.cmake'
       - '!components/eamxx/.clang-format'
       - '!components/eamxx/docs/**'
       - '!components/eamxx/mkdocs.yml'
