@@ -1,3 +1,1 @@
-PREQX_KOKKOS_SETUP()
-#              name                       target        NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(preqx-nlev10-native-kokkos preqx_kokkos  4  4   10    TRUE       FALSE       3)
+homme_add_model_exec (preqx-nlev10-native-kokkos MODEL preqx_kokkos NP 4 NC 4 PLEV 10 QSIZE_D 3 PIO)

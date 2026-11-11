@@ -1,8 +1,8 @@
-THETAL_KOKKOS_SETUP()
-
 # Set the variables for this test executable        NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(theta-nlev128-kokkos theta-l_kokkos  4  4  128   ${PREQX_USE_PIO}   FALSE        10)
-
+if (PREQX_USE_PIO)
+  set (pio_opt PIO)
+endif()
+homme_add_model_exec (theta-nlev128-kokkos MODEL theta-l_kokkos NP 4 NC 4 PLEV 128 QSIZE_D 10 ${pio_opt})
 # Setting HOMME_TESTS_* variables, so the namelist.nl file in the exec 
 # directory is usable. Since that namelist should be used for development
 # and/or debugging purposes only, we make the test 'small'
@@ -40,5 +40,4 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/test/vcoord/${HOMME_TEST_VCOORD_INT_FILE}
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/test/vcoord/${HOMME_TEST_VCOORD_MID_FILE}
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
 

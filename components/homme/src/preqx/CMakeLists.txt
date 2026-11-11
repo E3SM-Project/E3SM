@@ -1,8 +1,6 @@
 # macro for building PREQx primitive equations executable
 
 macro(preqx_setup)
-
-
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
