@@ -1,6 +1,3 @@
 #_______________________________________________________________________
 # create executable needed by planar nhgw (native)
-
-preqx_setup()
-#              name                 target NP  NC PLEV USE_PIO  WITH_ENERGY QSIZE_D
-createTestExec(preqx-nlev10-native  preqx  4   4  10   TRUE    FALSE       1       )
+homme_add_model_exec (preqx-nlev10-native MODEL preqx NP 4 NC 4 PLEV 10 QSIZE_D 1 PIO)

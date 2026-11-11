@@ -1,11 +1,6 @@
 # macro for building PREQx primitive equations executable
 
 macro(preqx_setup)
-
-
-INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
-LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
-
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)

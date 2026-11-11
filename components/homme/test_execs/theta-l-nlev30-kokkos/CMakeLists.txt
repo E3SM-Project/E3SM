@@ -1,8 +1,5 @@
-THETAL_KOKKOS_SETUP()
-
 # Set the variables for this test executable        NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(theta-l-nlev30-kokkos theta-l_kokkos  4  4  30   FALSE   TRUE        6)
-
+homme_add_model_exec (theta-l-nlev30-kokkos MODEL theta-l_kokkos NP 4 NC 4 PLEV 30 QSIZE_D 6 ENERGY)
 # Setting HOMME_TESTS_* variables, so the namelist.nl file in the exec 
 # directory is usable. Since that namelist should be used for development
 # and/or debugging purposes only, we make the test 'small' (ne=2, ndays=1),

@@ -1,6 +1,3 @@
 #_______________________________________________________________________
 # create executable needed by planar density current (native output)
-
-thetal_setup()
-#              name                 target NP  NC PLEV USE_PIO  WITH_ENERGY QSIZE_D
-createTestExec(theta-l-nlev256-native         theta-l  4   4  256   TRUE    TRUE       3       )
+homme_add_model_exec (theta-l-nlev256-native MODEL theta-l NP 4 NC 4 PLEV 256 QSIZE_D 3 PIO ENERGY)
