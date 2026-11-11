@@ -15,7 +15,7 @@ module prim_driver_base
 
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
-  use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
+  use element_mod,      only: element_t, allocate_element_desc
   use element_ops,      only: copy_state
   use gridgraph_mod,    only: GridVertex_t, GridEdge_t
   use hybrid_mod,       only: hybrid_t
@@ -108,15 +108,6 @@ contains
     ! Initialize and partition the geometry
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
-
-    ! ==================================
-    ! Initialize element pointers (if any)
-    ! ==================================
-    ! TODO: this is for OPENACC only. preqx_acc should define its own prim_init1,
-    !       which should do the same things as in this prim_init1, including
-    !       the call to setup_element_pointers, which should be removed from
-    !       the base version of prim_init1
-    call setup_element_pointers(elem)
 
     ! ==================================
     ! Initialize element arrays (fluxes and state)
@@ -1004,9 +995,6 @@ contains
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
-#if USE_OPENACC
-    use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
-#endif
 
     implicit none
 
@@ -1061,13 +1049,6 @@ contains
        ! E(1) Energy after CAM forcing
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
 
-#if (USE_OPENACC)
-       !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-       call t_startf("copy_qdp_h2d")
-       call copy_qdp_h2d( elem , n0_qdp )
-       call t_stopf("copy_qdp_h2d")
-#endif
-
       if (.not. single_column) then 
 
         ! Loop over rsplit vertically lagrangian timesiteps
@@ -1093,12 +1074,6 @@ contains
       ! defer final timelevel update until after remap and diagnostics
       !compute timelevels for tracers (no longer the same as dynamics)
       call TimeLevel_Qdp( tl, dt_tracer_factor, n0_qdp, np1_qdp)
-
-#if (USE_OPENACC)
-      call t_startf("copy_qdp_h2d")
-      call copy_qdp_d2h( elem , np1_qdp )
-      call t_stopf("copy_qdp_h2d")
-#endif
 
       if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,4,.false.,nets,nete)
 

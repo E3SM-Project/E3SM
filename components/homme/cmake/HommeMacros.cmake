@@ -477,24 +477,6 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "EXEC=${EXEC_NAME}\n")
 
-  #not making it more general due to jsrun, p9/gpu, loading modules...
-  if (HOMME_MACHINE MATCHES "summit-gpu")
-    #cmake 3.17
-    #foreach(varn varv IN ZIP_LISTS ${varnames} ${varvals})
-    #  file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
-    #  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    #endforeach()
-
-    list(LENGTH varnames len1)
-    math(EXPR len2 "${len1} - 1")
-
-    foreach(val RANGE ${len2})
-      list(GET varnames ${val} varn)
-      list(GET varvals ${val} varv)
-      file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
-      FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    endforeach()
-  endif()
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
 

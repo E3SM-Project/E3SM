@@ -797,7 +797,7 @@ if (defined $opts{'dyn'}) {
     if (defined $opts{'dyn_target'}) {
         #$cfg_ref->set('dyn_target', $opts{'dyn_target'});
         if (substr($opts{'dyn_target'},0,5) eq 'preqx') {
-            # preqx, preqx_acc, preqx_kokkos use 'preqx' namelist defaults
+            # preqx, preqx_kokkos use 'preqx' namelist defaults
             $cfg_ref->set('dyn_target', 'preqx');
         }
         if (substr($opts{'dyn_target'},0,5) eq 'theta') {
@@ -2710,10 +2710,6 @@ sub write_filepath
       print $fh "$camsrcdir/homme/src/share\n";
       if ($opts{'dyn_target'} eq 'preqx') {
         print $fh "$camsrcdir/homme/src/preqx\n";
-        print $fh "$camsrcdir/homme/src/preqx/share\n";
-      }
-      elsif($opts{'dyn_target'} eq 'preqx_acc') {
-        print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
       }
       elsif($opts{'dyn_target'} eq 'theta-l') {

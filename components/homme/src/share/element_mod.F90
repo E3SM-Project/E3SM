@@ -19,7 +19,6 @@ module element_mod
   public :: element_var_coordinates3D
   public :: GetColumnIdP
   public :: allocate_element_desc
-  public :: setup_element_pointers
 
   type, public :: index_t
 !    native grid "uniquepoints" output global id given by  UniquePtOffset + 0..NumUniquePts
@@ -269,33 +268,5 @@ contains
   end subroutine allocate_element_desc
 
 
-! this should go in openACC's element_state.F90, but it cant because that
-! module doesn't know about element_t.  
-! LB: this should go in prim_driver_mod in preqx_acc, and that module
-!     should define its own version of prim_init1, which would be pretty
-!     much the same as the version in prim_driver_base, with the addition
-!     of a call to this subroutine (which should be removed from the base
-!     version of prim_init1
-  subroutine setup_element_pointers(elem)
-    use dimensions_mod, only: nelemd, qsize
-#if USE_OPENACC
-    use element_state, only : state_Qdp, derived_vn0, derived_divdp, derived_divdp_proj
-#endif
-    implicit none
-    type(element_t), intent(inout) :: elem(:)
-    integer :: ie
-#if USE_OPENACC
-    allocate( state_Qdp                (np,np,nlev,qsize,2,nelemd)            )
-    allocate( derived_vn0              (np,np,2,nlev,nelemd)                  )
-    allocate( derived_divdp            (np,np,nlev,nelemd)                    )
-    allocate( derived_divdp_proj       (np,np,nlev,nelemd)                    )
-    do ie = 1 , nelemd
-      elem(ie)%state%Qdp                 => state_Qdp                (:,:,:,:,:,ie)
-      elem(ie)%derived%vn0               => derived_vn0              (:,:,:,:,ie)  
-      elem(ie)%derived%divdp             => derived_divdp            (:,:,:,ie)    
-      elem(ie)%derived%divdp_proj        => derived_divdp_proj       (:,:,:,ie)    
-    enddo
-#endif
-  end subroutine setup_element_pointers
   
 end module element_mod
