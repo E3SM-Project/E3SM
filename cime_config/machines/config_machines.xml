@@ -5840,7 +5840,7 @@
       <env name="OMP_WAIT_POLICY">PASSIVE</env> <!-- note this is attempt to reduce impact of STALLS on cech and may be able to remove once resolved -->
     </environment_variables>
     <resource_limits>
-      <resource name="RLIMIT_MEMLOCK">-1</resource>
+      <!-- <resource name="RLIMIT_MEMLOCK">-1</resource> -->
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
   </machine>
