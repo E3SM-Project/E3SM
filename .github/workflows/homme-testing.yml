@@ -23,21 +23,6 @@ name: homme
 # bfb jobs are not affected).
 
 on:
-  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    paths:
-      - '.github/workflows/homme-testing.yml'
-      - 'cime_config/machines/config_machines.xml'
-      - 'components/homme/**'
-      - 'externals/ekat'
-      - 'externals/scorpio'
-
-  # Nightly run on master, to catch changes of results (or breakages) that come in through PRs that do not
-  # touch homme. The time is in UTC: 10 AM UTC is 3 AM MT during Standard Time (4 AM during Daylight Saving Time).
-  schedule:
-    - cron: '0 10 * * *'
-
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
@@ -70,10 +55,10 @@ jobs:
       fail-fast: false
       matrix:
         # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
-        runner: [gnu, intel, cuda, hip]
+        runner: [hip]
         # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags.
         # The bfb jobs do not use baselines (they cannot be used with -g), so skip them when blessing.
-        bfb: ${{ fromJSON(inputs.bless && '[false]' || '[false, true]') }}
+        bfb: [false]
         exclude:
           # TODO: add a cuda/hip bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
           - {runner: cuda, bfb: true}
@@ -173,55 +158,51 @@ jobs:
           echo "HOMME_COMPILER=$compiler" >> "$GITHUB_ENV"
           echo "HOMME_PARALLEL=$parallel" >> "$GITHUB_ENV"
           echo "HOMME_RANKS=$ranks" >> "$GITHUB_ENV"
-      - name: Run test_homme.py
+      - name: Debug build and run of the failing tests
         working-directory: components/homme
         env:
           GPU_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
-          # BFB jobs use the machine file ghci-<runner>-bfb.cmake (via --bfb), and only care about cxx vs f90
-          # comparisons within the same build, so they do not compare against baselines.
-          bfb_flag=()
-          if [ "${{ matrix.bfb }}" = "true" ]; then
-            bfb_flag=(--bfb --no-baseline)
-          fi
-
-          # GPU_CMAKE_CONFIGS (from the gpu-arch step outputs) is a semicolon-separated list of key=val
-          # (empty tokens are ignored, so this is a no-op for non-gpu runners)
-          cuda_flags=()
+          cfg=()
           IFS=';' read -ra configs <<< "${GPU_CMAKE_CONFIGS:-}"
-          for config in "${configs[@]}"; do
-            if [ -n "$config" ]; then
-              cuda_flags+=(--cmake-opt "$config")
-            fi
-          done
+          for c in "${configs[@]}"; do if [ -n "$c" ]; then cfg+=("-D$c"); fi; done
 
-          # Each runner has its own machine file (ghci-<runner>[-bfb].cmake).
-          # The ctest timeout per test is 10 minutes by default, but the runners' hosts are shared (e.g., other
-          # users running builds), so some tests take twice as long as usual. Use Homme's own limit
-          # (HOMME_TESTING_TIMELIMIT in ghci.cmake). NOTE: the value must be separated by a space, since
-          # ctest silently ignores '--timeout=1800'.
-          cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
-               -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               --ctest-arg="--timeout 1800" "${bfb_flag[@]}" "${cuda_flags[@]}")
-          if [ "${{ env.generate }}" = "true" ]; then
-            cmd+=(-g)
-          fi
+          mkdir -p dbg-build && cd dbg-build
+          cmake -C ../cmake/machineFiles/ghci-hip.cmake -DUSE_NUM_PROCS="$HOMME_RANKS" \
+                -DHOMME_SKIP_BASELINE_COMPARE=ON -DCMAKE_VERBOSE_MAKEFILE=ON "${cfg[@]}" .. > configure.log 2>&1 \
+            || { tail -100 configure.log; exit 1; }
+          grep -E "CMAKE_CXX_FLAGS|WARP_PER_TEAM" CMakeCache.txt || true
 
-          # Like other E3SM machines (see resource_limits in config_machines.xml), use an unlimited stack.
-          # With few ranks per test, each rank holds a lot of data, and the default stack (8MB) is not enough
-          # (e.g., the I/O of some tests segfaults). If the hard limit is lower, use that.
+          execs=(theta-l-nlev30-kokkos theta-l-nlev128-native-kokkos)
+          make -j32 "${execs[@]}" > build.log 2>&1 || { tail -200 build.log; exit 1; }
+          echo "Compile flags of a theta-l_kokkos source:"
+          grep -m1 -E "mpicxx .*theta-l_kokkos.*-c " build.log | tr ' ' '\n' | grep -E "^-(O|g|D?NDEBUG|-offload|f|m)" | sort -u || true
+
           ulimit -s unlimited 2>/dev/null || ulimit -s "$(ulimit -H -s)"
 
-          # Print the full command, then run it
-          echo "test_homme call: ${cmd[*]}"
-          "${cmd[@]}"
+          # Serialize kernels, so that the last kernel launch logged before the abort is the one that failed
+          export AMD_SERIALIZE_KERNEL=3
+          export AMD_LOG_LEVEL=4
+          rc=0
+          for t in thetah-sl-testconv-3e-kokkos planar-transport-a-etm-kokkos; do
+            echo "::group::$t"
+            ( cd tests/$t && bash ./$t-run.sh ) && echo "$t: PASS" || { echo "$t: FAIL"; rc=1; }
+            for f in tests/$t/${t}_1.err; do
+              [ -f "$f" ] || continue
+              echo "--- last kernel launches before the end of $f:"
+              grep -n -E "ShaderName|KernelName|hipLaunchKernel|hipModuleLaunchKernel|INVALID_ISA" "$f" | tail -20 || true
+            done
+            echo "::endgroup::"
+          done
+          exit $rc
       - name: Upload ctest logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: log-files-${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
           path: |
-            components/homme/ctest-build/CMakeCache.txt
-            components/homme/ctest-build/Testing/**
-            components/homme/ctest-build/tests/**/*.err
-            components/homme/ctest-build/tests/**/*.out
+            components/homme/dbg-build/CMakeCache.txt
+            components/homme/dbg-build/*.log
+            components/homme/dbg-build/Testing/**
+            components/homme/dbg-build/tests/**/*.err
+            components/homme/dbg-build/tests/**/*.out
