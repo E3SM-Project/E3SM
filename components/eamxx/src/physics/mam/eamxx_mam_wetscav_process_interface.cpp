@@ -239,7 +239,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
 
-  populate_wet_atm(wet_atm_);
+  populate_wet_atm(wet_atm_, buffer_);
   populate_dry_atm(dry_atm_, buffer_);
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -347,6 +347,7 @@ void MAMWetscav::run_impl(const double dt) {
   Kokkos::fence();
 
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
+  const mam_coupling::WetAtmosphere &wet_atm = wet_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
   const auto &isprx                          = isprx_;
@@ -438,7 +439,7 @@ void MAMWetscav::run_impl(const double dt) {
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index
 
-        const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+        const auto atm = mam_coupling::atmosphere_for_column(wet_atm, dry_atm, icol);
         // set surface state data
         // fetch column-specific subviews into aerosol prognostics
         mam4::Prognostics progs =

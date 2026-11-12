@@ -491,9 +491,11 @@ static int test_calc_p (const HybridVCoord& hvcoord) {
   for (int i = 0; i < cti::np; ++i)
     for (int j = 0; j < cti::np; ++j) {
       Real accum = hvcoord.hybrid_ai0*hvcoord.ps0;
-      for (int k = 0; k < cti::num_phys_lev; ++k)
+      if (ph(i,j,0) != accum) ++nerr;
+      for (int k = 0; k < cti::num_phys_lev; ++k) {
         accum += dph(i,j,k);
-      if (ph(i,j,cti::num_phys_lev) != accum) ++nerr;
+        if (ph(i,j,k+1) != accum) ++nerr;
+      }
     }
   if (nerr) printf("test_calc_p failed %d\n", nerr);
   return nerr;

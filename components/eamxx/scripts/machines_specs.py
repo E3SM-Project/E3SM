@@ -372,6 +372,19 @@ class GHCICuda(Machine):
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
 
 ###############################################################################
+class GHCIHip(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base(name="ghci-hip")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-hip"
+        cls.gpu_arch = "hip"
+        # The MPI wrappers must use hipcc as backend compiler (Kokkos HIP needs a HIP compiler as CXX)
+        cls.env_setup = ["export MPICH_CXX=hipcc", "export OMPI_CXX=hipcc"]
+        cls.num_run_res = int(run_cmd_no_fail("rocminfo 2>/dev/null | grep 'Device Type: *GPU' | wc -l"))
+
+###############################################################################
 class LLNLIntel(Machine):
 ###############################################################################
     @classmethod
@@ -584,7 +597,7 @@ def setup_mach_env(machine, ctest_j=None):
             if item.find("BASH_FUNC_") != -1 or item.find("=") == -1:
                 continue
 
-            # 2 means only 1st occurence will cause a split.
-            # Just in case some env var value contains '='
-            item_list = item.split("=",2)
+            # maxsplit=1 means only 1st occurence will cause a split.
+            # Just in case some env var value contains '=' (e.g., HIPFLAGS=--gcc-install-dir=/path)
+            item_list = item.split("=",1)
             os.environ.update( dict( { item_list[0] : item_list[1] } ) )

@@ -402,6 +402,14 @@
 					description="maximum grid scale to scale up buoyancy gradient"
 					possible_values="around 1 degree"
 					/>
+		<nml_option name="config_submesoscale_ice_aware" type="logical" default_value=".false."
+					description="flag to enable the ice-aware MLE for submesoscale eddies"
+					possible_values=".true. or .false."
+					/>
+		<nml_option name="config_submesoscale_ice_aware_crit_conc" type="real" default_value="0.5"
+					description="Critical sea-ice concentration (fraction) for the ice-aware MLE. Where the sea-ice concentration averaged to an edge is at or below this value, the MLE efficiency decreases smoothly as concentration increases. Above this value, the efficiency is held at its fully ice-covered value of about 0.26."
+					possible_values="between 0 and 1"
+					/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false."
@@ -1120,6 +1128,10 @@
 		/>
 		<nml_option name="config_include_sensible_heat_frazil" type="logical" default_value=".true."
 					description="Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_expel_excess_frazil_salt" type="logical" default_value=".true."
+					description="If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^-1 C^-1"
@@ -2293,6 +2305,7 @@
 			<var name="accumulatedFrazilIceMass"/>
 			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedFrazilIceSalinity"/>
+			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedLandIceMass"/>
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
@@ -2666,11 +2679,11 @@
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceEnergy" type="real" dimensions="nCells Time" units="J m^-2"
-			 description="Energy added to the ocean per unit area from frazil ice production. Reset to zero at each coupling interval"
+			 description="Accumulated frazil ice energy per unit area. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
-			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 description="Salt mass per unit area associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
@@ -4521,7 +4534,7 @@
 			 packages="frazilIce"
 		/>
 		<var name="lowSalinityFrazilIce" type="real" dimensions="nCells Time" units="kg m^-2"
-			 description="min(0,AccumulatedFrazilIceMass * reference salinity - accumulatedFrazilIceSalinity), non-zero indicates possible non-conservation"
+			 description="Salt mass deficit per unit area of newly formed frazil relative to the reference salinity; positive indicates insufficient salt"
 			 packages="frazilIce"
 		/>
 		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"

@@ -4,6 +4,8 @@ SET(TEST_NAME thetah-sl-testconv-3e)
 SET(EXEC_NAME theta-l-nlev30)
 
 SET(NUM_CPUS 16)
+# 2400 elements (ne=20) with semi_lagrange_halo=2 requires >= 3 elements/rank
+SET(MAX_NUM_CPUS 800)
 
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/thetah-sl-testconv-3e.nl)
 

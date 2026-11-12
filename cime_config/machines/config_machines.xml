@@ -162,9 +162,10 @@
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>10</GMAKE_J>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCHED_BUILD>TRUE</BATCHED_BUILD>
+    <CMAKE_BACKEND>ninja</CMAKE_BACKEND>
     <TESTS>e3sm_developer</TESTS>
-    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
@@ -400,6 +401,7 @@
     <BASELINE_ROOT>/global/cfs/cdirs/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/global/cfs/cdirs/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>6</GMAKE_J>
+    <CMAKE_BACKEND>ninja</CMAKE_BACKEND>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
@@ -1905,15 +1907,15 @@
       <modules compiler="craygnu.*">
         <command name="reset"></command>
         <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
-        <command name="load">Core/25.03</command>
+        <command name="load">Core/26.05</command>
         <command name="load">PrgEnv-gnu</command>
-        <command name="load">cpe/25.09</command>
+        <command name="load">cpe/26.03</command>
         <command name="load">gcc-native/14.2</command>
         <command name="load">libunwind</command>
         <command name="load">cray-python/3.11.7</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
-        <command name="load">cmake/3.30.5</command>
+        <command name="load">cmake/3.31.11</command>
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
@@ -1921,18 +1923,18 @@
       </modules>
       <modules compiler="craygnu-mphipcc">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/6.2.4</command>
+        <command name="load">rocm/7.2.0</command>
       </modules>
       <modules compiler="craycray.*">
         <command name="reset"></command>
-        <command name="load">Core/25.03</command>
+        <command name="load">Core/26.05</command>
         <command name="load">PrgEnv-cray/8.7.0</command>
         <command name="load">cpe/26.03</command>
         <command name="load">libunwind</command>
         <command name="load">cray-python</command>
         <command name="load">subversion</command>
         <command name="load">git</command>
-        <command name="load">cmake/3.30.5</command>
+        <command name="load">cmake/3.31.11</command>
         <command name="load">cray-hdf5-parallel/1.14.3.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.3</command>
         <command name="load">cray-parallel-netcdf/1.12.3.21</command>
@@ -2299,7 +2301,7 @@
     <DESC>RHEL9 image(s), used for GitHub CI</DESC>
     <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>gnu,intel,gnugpu</COMPILERS>
+    <COMPILERS>gnu,intel,gnu-cuda,gnu-hip</COMPILERS>
     <MPILIBS>openmpi,mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/tmp</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/e3sm/data/inputdata</DIN_LOC_ROOT>
@@ -2313,7 +2315,8 @@
     <SUPPORTED_BY>lbertag at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnugpu">2</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu-cuda">2</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu-hip">2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -2338,8 +2341,13 @@
     <environment_variables compiler="gnu">
       <env name="BLA_VENDOR">OpenBLAS</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu">
+    <environment_variables compiler="gnu-cuda">
       <env name="BLA_VENDOR">OpenBLAS</env>
+    </environment_variables>
+    <environment_variables compiler="gnu-hip">
+      <env name="BLA_VENDOR">OpenBLAS</env>
+      <env name="MPICH_CXX">$SHELL{which hipcc}</env>
+      <env name="OMPI_CXX">$SHELL{which hipcc}</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="BLA_VENDOR">Intel10_64lp</env>
@@ -5775,6 +5783,76 @@
     <environment_variables compiler="intel18">
       <env name="FORT_BUFFERED">yes</env>
     </environment_variables>
+  </machine>
+
+  <machine MACH="cech">
+    <DESC>cech machine</DESC>
+    <NODENAME_REGEX>cech</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>nvidiagpu,nvidia</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>e3sm</PROJECT>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/e3sm_scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{HOME}/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>128</GMAKE_J>
+    <BATCHED_BUILD>TRUE</BATCHED_BUILD>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>144</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{expr 144 / `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="binding"> --cpu-bind=cores</arg>
+        <arg name="placement"> -m block:block</arg>
+        <arg name="affinity"> $SHELL{echo $CIMEROOT/../cime_config/machines/scripts/cech_set_affinity.sh}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+    <environment_variables>
+      <env name="PATH">$SHELL{if [ "$(uname -m)" = "aarch64" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/moab/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/moab/tpls/tempestremap/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/bin:/global/homes/n/ndk/e3sm/3rdparty/compute/bin:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/bin:/software/hpc_sdk/Linux_aarch64/25.11/compilers/bin; else echo /global/homes/n/ndk/e3sm/3rdparty/login/bin; fi}:$ENV{PATH}</env>
+      <env name="NETCDF_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
+      <env name="PNETCDF_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf</env>
+      <env name="NETCDF_C_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
+      <env name="NETCDF_FORTRAN_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf</env>
+      <env name="HDF5_PATH">/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5</env>
+      <env name="HDF5_ROOT">/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/moab; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_PATH">$SHELL{if [ -z "$MOAB_PATH" ]; then echo /global/homes/n/ndk/e3sm/3rdparty/compute/moab; else echo "$MOAB_PATH"; fi}</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="OMPI_MCA_sharedfp">^lockedfile</env>
+      <env name="OPAL_PREFIX">/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi</env>
+      <env name="LD_LIBRARY_PATH">$SHELL{lp=/global/homes/n/ndk/e3sm/3rdparty/compute/moab/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/moab/tpls/tempestremap/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/moab/tpls/zoltan/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf/lib:/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/nccl_rdma_sharp_plugin/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/sharp/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib/ucc:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucc/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib/ucx:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ucx/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/hcoll/lib:/software/hpc_sdk/Linux_aarch64/25.11/comm_libs/13.0/hpcx/hpcx-2.25.1/ompi/lib:/software/hpc_sdk/Linux_aarch64/25.11/compilers/lib; if [ -z "$LD_LIBRARY_PATH" ]; then echo $lp; else echo "$lp:$LD_LIBRARY_PATH"; fi}</env>
+      <env name="UCX_TLS">rc,cuda_copy,cuda_ipc,sm,self</env>
+      <env name="UCX_MEMTYPE_CACHE">y</env>
+      <env name="CUDA_DEVICE_MAX_CONNECTIONS">1</env>
+      <!-- <env name="UCX_MAX_RNDV_RAILS">1</env> -->
+      <!-- <env name="OMPI_MCA_coll_ucc_enable">0</env> -->
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_WAIT_POLICY">PASSIVE</env> <!-- note this is attempt to reduce impact of STALLS on cech and may be able to remove once resolved -->
+    </environment_variables>
+    <resource_limits>
+      <!-- <resource name="RLIMIT_MEMLOCK">-1</resource> -->
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <default_run_suffix>

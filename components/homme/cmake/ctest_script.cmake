@@ -11,8 +11,8 @@ if (NOT DEFINED BUILD_WORK_DIR)
   set(BUILD_WORK_DIR "${HOMME_ROOT}/ctest-build")
 endif()
 
-if (NOT DEFINED MACHINE)
-  message(FATAL_ERROR "MACHINE is required (e.g., -DMACHINE=pm-cpu)")
+if (NOT DEFINED MACHINE_FILE)
+  message(FATAL_ERROR "MACHINE_FILE is required (e.g., -DMACHINE_FILE=pm-cpu-bfb)")
 endif()
 
 if (NOT DEFINED BFB_TESTING)
@@ -46,18 +46,18 @@ endif()
 # ---------------------------------------------------------------------------
 # Derived settings
 # ---------------------------------------------------------------------------
-if (BFB_TESTING)
-  set(_machine_suffix "-bfb")
-else()
-  set(_machine_suffix "")
-endif()
-
-set(_machine_file "${HOMME_ROOT}/cmake/machineFiles/${MACHINE}${_machine_suffix}.cmake")
+# MACHINE_FILE is the name (without .cmake) of a file in cmake/machineFiles
+set(_machine_file "${HOMME_ROOT}/cmake/machineFiles/${MACHINE_FILE}.cmake")
 if (NOT EXISTS "${_machine_file}")
   message(FATAL_ERROR "Machine file not found: ${_machine_file}")
 endif()
 
-if (NOT DEFINED BASELINE_DIR)
+if (NO_BASELINE)
+  # Tests will not be compared against baselines (only against each other, e.g., f90 vs cxx)
+  if (GENERATE)
+    message (FATAL_ERROR "Cannot generate baselines when NO_BASELINE is TRUE")
+  endif()
+elseif (NOT DEFINED BASELINE_DIR)
   message (FATAL_ERROR "BASELINE_DIR was not specified")
 endif()
 
@@ -87,7 +87,11 @@ ctest_start(${dashboard_model} TRACK ${dashboard_track})
 # Configure
 # ---------------------------------------------------------------------------
 set(_configure_opts "-C${_machine_file}")
-list(APPEND _configure_opts "-DHOMME_BASELINE_DIR=${BASELINE_DIR}")
+if (NO_BASELINE)
+  list(APPEND _configure_opts "-DHOMME_SKIP_BASELINE_COMPARE=ON")
+else()
+  list(APPEND _configure_opts "-DHOMME_BASELINE_DIR=${BASELINE_DIR}")
+endif()
 list(APPEND _configure_opts "-DCMAKE_VERBOSE_MAKEFILE=ON")
 
 if (DEBUG)
@@ -107,38 +111,34 @@ if (_cfg_rv)
   set(_had_failure TRUE)
 else()
   # -------------------------------------------------------------------------
-  # Build test-execs
+  # Build
   # -------------------------------------------------------------------------
+  if (GENERATE)
+    # For generate, Homme uses 'make baseline', rather than rely on ctest labels.
+    # The target depends on all the test executables, so it builds them first, then runs the tests.
+    message(STATUS "HOMME ctest script: generate baselines")
+    set(_build_target "baseline")
+  else()
+    set(_build_target "test-execs")
+  endif()
+
+  # With parallel make, --output-sync=target keeps each target's output together. Otherwise, interleaved
+  # compiler output can confuse ctest's error/warning parsing, producing bogus "errors" in the build log.
   ctest_build(
-    TARGET "test-execs"
-    FLAGS "-j${BUILD_PARALLEL_LEVEL}"
+    TARGET "${_build_target}"
+    FLAGS "-j${BUILD_PARALLEL_LEVEL} --output-sync=target"
     RETURN_VALUE _bld_rv
   )
   if (_bld_rv)
     set(_had_failure TRUE)
-  else()
-    if (GENERATE)
-      # -----------------------------------------------------------------------
-      # For generate, Homme uses 'make baseline', rather than rely on ctest labels...
-      # -----------------------------------------------------------------------
-      message(STATUS "HOMME ctest script: generate baselines")
-      ctest_build(
-        TARGET "baseline"
-        FLAGS "-j${BUILD_PARALLEL_LEVEL}"
-        RETURN_VALUE _bld_rv
-      )
-      if (_bld_rv)
-        set(_had_failure TRUE)
-      endif()
-    else()
-      message(STATUS "HOMME ctest script: compare against baselines")
-      ctest_test(
-        PARALLEL_LEVEL ${RUN_PARALLEL_LEVEL}
-        RETURN_VALUE _test_rv
-      )
-      if (_test_rv)
-        set(_had_failure TRUE)
-      endif()
+  elseif (NOT GENERATE)
+    message(STATUS "HOMME ctest script: compare against baselines")
+    ctest_test(
+      PARALLEL_LEVEL ${RUN_PARALLEL_LEVEL}
+      RETURN_VALUE _test_rv
+    )
+    if (_test_rv)
+      set(_had_failure TRUE)
     endif()
   endif()
 endif()

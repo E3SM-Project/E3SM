@@ -291,7 +291,7 @@ CONTAINS
     kssh  = mct_aVect_indexRA(o2x,'So_ssh')
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
-    kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
+    kfraz = mct_aVect_indexRA(o2x,'Fioo_frazilm') ! ocn frazil
     kh2ot = mct_aVect_indexRA(o2x,'Faoo_h2otemp') ! ocn frazil
     kh2o  = mct_aVect_indexRA(o2x,'So_frac_h2oocn', perrwith='quiet')
 

@@ -19,6 +19,17 @@ ENDIF ()
 
 MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
+# Allow to skip the comparison of the tests' output against baselines (e.g., if we only care about
+# comparisons within the same build, like f90 vs cxx)
+OPTION(HOMME_SKIP_BASELINE_COMPARE "Skip the comparison against baseline results in the tests" OFF)
+# CMake accepts many spellings of a boolean (1, YES, true, ...), but the test scripts only know ON/OFF
+IF (HOMME_SKIP_BASELINE_COMPARE)
+  SET (HOMME_SKIP_BASELINE_COMPARE ON)
+  MESSAGE(STATUS "HOMME_SKIP_BASELINE_COMPARE is ON: tests will not be compared against baselines")
+ELSE ()
+  SET (HOMME_SKIP_BASELINE_COMPARE OFF)
+ENDIF ()
+
 # Determine if there is a submission system
 OPTION(USE_QUEUING "Whether run tests through the queue" TRUE)
 IF (USE_QUEUING)
@@ -165,6 +176,8 @@ ADD_CUSTOM_TARGET(check
 if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 # Force cprnc to be built when make check is run
 ADD_DEPENDENCIES(check cprnc)
+# Same for test-execs, since the tests need cprnc (a no-op if cprnc is a prebuilt binary, found via CPRNC_DIR)
+ADD_DEPENDENCIES(test-execs cprnc)
 endif()
 
 

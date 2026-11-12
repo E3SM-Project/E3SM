@@ -8,7 +8,6 @@ on:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
       - '.github/actions/test-all-eamxx/**'
-      - '.github/actions/get-cuda-arch/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
@@ -67,6 +66,7 @@ defaults:
 
 jobs:
   tests:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
       fail-fast: false
@@ -80,6 +80,9 @@ jobs:
           - {name: gnu-cuda, runner: cuda, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
           - {name: gnu-cuda, runner: cuda, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
           - {name: gnu-cuda, runner: cuda, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+          - {name: gnu-hip, runner: hip, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
+          - {name: gnu-hip, runner: hip, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
+          - {name: gnu-hip, runner: hip, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
     name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
@@ -89,10 +92,11 @@ jobs:
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Get CUDA Arch
-        if: ${{ matrix.runner == 'cuda' }}
-        uses: ./.github/actions/get-cuda-arch
+        uses: e3sm-project/automation/show-trigger@v1
+      - name: Get GPU Arch
+        id: gpu
+        if: ${{ matrix.runner == 'cuda' || matrix.runner == 'hip' }}
+        uses: e3sm-project/automation/gpu-arch@v1
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
@@ -100,6 +104,6 @@ jobs:
           machine: ghci-${{ matrix.runner }}
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: ${{ matrix.cmake_configs }};${{ env.CUDA_CMAKE_CONFIGS }}
+          cmake-configs: ${{ matrix.cmake_configs }};${{ steps.gpu.outputs.cmake-configs }}
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}

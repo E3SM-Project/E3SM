@@ -565,8 +565,8 @@
 			possible_values="true or false"
 		/>
 		<nml_option name="config_frazil_coupling_type" type="character" default_value="external" units="unitless"
-			description="Type of frazil ice coupling."
-			possible_values="'external', 'internal', 'fresh_ice_correction'"
+			description="Type of frazil ice coupling. Coupled configurations support 'external' and 'omega-fluxes'. The 'omega-fluxes' option requires config_ocean_surface_type = 'free'."
+			possible_values="'external', 'internal', 'fresh_ice_correction', 'omega-fluxes'"
 		/>
 		<nml_option name="config_include_pond_freshwater_feedback" type="logical" default_value="false" units="unitless"
 			description="Reduce the ocean fresh water flux by the pond fresh water flux for coupling."
@@ -2133,6 +2133,9 @@
 			<var name="oceanStressCellV"/>
 			<var name="seaSurfaceTemperature"/>
 			<var name="freezingMeltingPotential"/>
+			<var name="frazilMassFlux"/>
+			<var name="frazilSaltFlux"/>
+			<var name="frazilHeatFlux"/>
 			<var name="airOceanDragCoefficientRatio"/>
 			<var name="skeletalAlgaeConc"/>
 			<var name="skeletalDOCConc"/>
@@ -2246,6 +2249,7 @@
 				input_interval="none"
 				immutable="true">
 			<var name="seaSurfaceSalinity"/>
+			<var name="oceanFrazilSalinityReduction"/>
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
 			<var name="seaSurfaceTiltU"/>
@@ -2281,6 +2285,7 @@
 				immutable="true">
 		        <var name="seaSurfaceTemperature"/>
                         <var name="seaSurfaceSalinity"/>
+		        <var name="oceanFrazilSalinityReduction"/>
                         <var name="oceanMixedLayerDepth"/>
 		</stream>
 		<stream name="SOMVaryingThicknessMonthlyForcing"
@@ -2343,6 +2348,7 @@
 				immutable="true">
 			<var name="seaSurfaceTemperature"/>
 			<var name="seaSurfaceSalinity"/>
+			<var name="oceanFrazilSalinityReduction"/>
 			<var name="oceanMixedLayerDepth"/>
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
@@ -2454,9 +2460,13 @@
 			<var name="longwaveDown"/>
 			<var name="seaSurfaceTemperature"/>
 			<var name="seaSurfaceSalinity"/>
+			<var name="oceanFrazilSalinityReduction"/>
 			<var name="uOceanVelocityVertexGeo"/>
 			<var name="vOceanVelocityVertexGeo"/>
 			<var name="freezingMeltingPotential"/>
+			<var name="frazilMassFlux"/>
+			<var name="frazilSaltFlux"/>
+			<var name="frazilHeatFlux"/>
 			<var name="shortwaveScalingFactor"/>
 			<var name="airTemperature"/>
 			<var name="congelation"/>
@@ -4343,6 +4353,13 @@
 		     default_value="34.0"
                      description="Sea surface salinity"
 		/>
+		<var name="oceanFrazilSalinityReduction"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="1e-3"
+		     default_value="3.0"
+		     description="Bulk salinity reduction for newly formed frazil ice"
+		/>
 		<var name="seaFreezingTemperature"
 		     type="real"
 		     dimensions="nCells Time"
@@ -4363,6 +4380,21 @@
 		     type="real"
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
+		/>
+		<var name="frazilMassFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		/>
+		<var name="frazilSaltFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2 s-1"
+		/>
+		<var name="frazilHeatFlux"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
 		/>
 		<var name="uOceanVelocity"
 		     type="real"

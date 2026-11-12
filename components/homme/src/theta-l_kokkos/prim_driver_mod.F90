@@ -46,7 +46,6 @@ contains
     use time_mod,         only : timelevel_t
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
-    use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
     use control_mod,      only : prescribed_wind
     !
     ! Inputs
@@ -73,11 +72,9 @@ contains
     !Init the kokkos functors (and their boundary exchanges)
     call prim_init_kokkos_functors ()
 
-    ! Init the kokkos views
+    ! Init the kokkos views (copies dp3d and ps_v from Fortran elem%state,
+    ! which prim_init2_base has already initialized for both CAM and standalone)
     call prim_init_elements_views (elem)
-
-    ! Initialize dp3d from ps_v
-    call initialize_dp3d_from_ps_c ()
 
     if (prescribed_wind == 1) then
        call init_standalone_test(elem,deriv1,hybrid,hvcoord,nets,nete)

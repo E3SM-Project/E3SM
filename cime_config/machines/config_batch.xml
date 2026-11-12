@@ -451,6 +451,25 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="cech" type="nersc_slurm">
+    <directives>
+      <directive> --exclusive</directive>
+      <directive> --gpus-per-node=4</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives workflow="!case.build">
+      <directive> --cpus-per-task={{ thread_count }}</directive>
+    </directives>
+    <directives workflow="case.build">
+      <directive> --ntasks=1</directive>
+      <directive> --cpus-per-task=128</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="02:00:00" nodemax="64" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="pm-gpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=gpu</directive>
@@ -496,6 +515,10 @@
   <batch_system MACH="pm-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
+    </directives>
+    <directives workflow="case.build">
+      <directive> --ntasks=1</directive>
+      <directive> --cpus-per-task=16</directive>
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->

@@ -626,23 +626,37 @@ void ZMDeepConvection::finalize_impl ()
 }
 
 /*------------------------------------------------------------------------------------------------*/
+namespace {
+// Round a byte count up to the alignment required by the Real/Scalar views carved from the buffer
+using ZMScalar = typename zm::Functions<Real, DefaultDevice>::Scalar;
+static_assert(sizeof(ZMScalar) == sizeof(Real),
+              "ZM buffer layout assumes Scalar and Real have the same size");
+constexpr size_t pad_to_buffer_alignment (const size_t nbytes)
+{
+  constexpr size_t align = alignof(Real) > alignof(ZMScalar) ? alignof(Real) : alignof(ZMScalar);
+  return ((nbytes + align - 1) / align) * align;
+}
+} // anonymous namespace
+
+/*------------------------------------------------------------------------------------------------*/
 size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
 {
   const int nlev_mid = m_nlev;
   const int nlev_int = m_nlev+1;
   size_t zm_buffer_size = 0;
 
-  zm_buffer_size+= ZMF::ZmInputState::num_1d_intgr * sizeof(Int)   * m_ncol;
   zm_buffer_size+= ZMF::ZmInputState::num_1d_scalr * sizeof(Scalar)* m_ncol;
   zm_buffer_size+= ZMF::ZmInputState::num_2d_midlv * sizeof(Real)  * m_ncol * nlev_mid;
   zm_buffer_size+= ZMF::ZmInputState::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmInputState::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
-  zm_buffer_size+= ZMF::ZmOutputTend::num_1d_intgr * sizeof(Int)   * m_ncol;
   zm_buffer_size+= ZMF::ZmOutputTend::num_1d_scalr * sizeof(Scalar)* m_ncol;
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_midlv * sizeof(Real)  * m_ncol * nlev_mid;
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
+
+  const size_t num_1d_intgr = ZMF::ZmInputState::num_1d_intgr + ZMF::ZmOutputTend::num_1d_intgr;
+  zm_buffer_size+= pad_to_buffer_alignment(num_1d_intgr * sizeof(Int) * m_ncol);
 
   return zm_buffer_size;
 }
@@ -663,23 +677,11 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
   //----------------------------------------------------------------------------
-  Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
-  //----------------------------------------------------------------------------
-  // device 1D integer variables
-  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity,
-                                                                  &zm_output.msemax_klev,
-                                                                  &zm_output.jctop,
-                                                                  &zm_output.jcbot,
-                                                                  &zm_output.jt,
-                                                                };
-  for (auto& v : ptrs_1d_intgr) {
-    *v = ZMF::uview_1d<Int>(i_mem, m_ncol);
-    i_mem += v->size();
-  }
-  //----------------------------------------------------------------------------
-  Scalar* scl_mem = reinterpret_cast<Scalar*>(i_mem);
+  Real* r_mem = buffer_manager.get_memory();
+
   //----------------------------------------------------------------------------
   // device 1D scalar scalars
+  Scalar* scl_mem = reinterpret_cast<Scalar*>(r_mem);
   ZMF::uview_1d<Scalar>* ptrs_1d_scalr[num_1d_scalr]          = { &zm_input.tpert,
                                                                   &zm_output.prec,
                                                                   &zm_output.snow,
@@ -692,9 +694,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
     *v = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);
     scl_mem += v->size();
   }
-  //----------------------------------------------------------------------------
 
-  Real* r_mem = reinterpret_cast<Real*>(scl_mem);
+  r_mem = reinterpret_cast<Real*>(scl_mem);
 
   //----------------------------------------------------------------------------
   // device 2D views on mid-point levels
@@ -750,7 +751,23 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
     r_mem += v->size();
   }
   //----------------------------------------------------------------------------
-  size_t used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
+  // device 1D integer variables
+  Int* i_mem = reinterpret_cast<Int*>(r_mem);
+  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity,
+                                                                  &zm_output.msemax_klev,
+                                                                  &zm_output.jctop,
+                                                                  &zm_output.jcbot,
+                                                                  &zm_output.jt,
+                                                                };
+  for (auto& v : ptrs_1d_intgr) {
+    *v = ZMF::uview_1d<Int>(i_mem, m_ncol);
+    i_mem += v->size();
+  }
+  //----------------------------------------------------------------------------
+  const size_t real_bytes = (r_mem - buffer_manager.get_memory()) * sizeof(Real);
+  // Measure the integer block from the pointer so the check validates the actual carving
+  const size_t int_bytes  = (i_mem - reinterpret_cast<Int*>(r_mem)) * sizeof(Int);
+  size_t used_mem = real_bytes + pad_to_buffer_alignment(int_bytes);
   auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
   EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for ZMDeepConvection.");
   //----------------------------------------------------------------------------

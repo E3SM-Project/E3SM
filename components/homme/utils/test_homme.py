@@ -9,6 +9,7 @@ import subprocess
 import os
 import sys
 import shutil
+import shlex
 import getpass
 
 DEFAULT_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -46,6 +47,13 @@ def _parse_args(argv):
         help="In case the machine supports 2+ compilers, the user can ask for a specific one",
     )
     parser.add_argument(
+        "--machine-file",
+        default=None,
+        help="Name (without -bfb suffix and .cmake extension) of the file in components/homme/cmake/machineFiles "
+             "to use, instead of the one named like the machine. Useful if the machine supports 2+ compilers, "
+             "and each needs its own file (e.g., ghci-gnu).",
+    )
+    parser.add_argument(
         "-r",
         "--root-dir",
         default=DEFAULT_ROOT,
@@ -62,6 +70,12 @@ def _parse_args(argv):
         "--generate",
         action="store_true",
         help="If true, generate baselines, otherwise compare against existing ones"
+    )
+    parser.add_argument(
+        "--no-baseline",
+        action="store_true",
+        help="Do not compare against baselines (e.g., for --bfb, where we only care about f90 vs cxx). "
+             "Cannot be used with --generate.",
     )
     parser.add_argument(
         "--baseline-root",
@@ -141,6 +155,9 @@ def ensure_paths(args,machine):
     """
     Ensures the root, work, and baseline dirs exist 
     """
+    expect(not (args.no_baseline and args.generate),
+           "ERROR: --no-baseline and --generate cannot be used together")
+
     root_dir = pathlib.Path(args.root_dir).resolve()
 
     expect(root_dir.is_dir() and root_dir.name == "homme",
@@ -151,6 +168,9 @@ def ensure_paths(args,machine):
     else:
         work_dir = root_dir / "ctest-build"
 
+    if args.no_baseline:
+        return root_dir, work_dir, None
+
     # We may need some mach defaults here
     if args.compiler:
         compiler = args.compiler
@@ -160,9 +180,9 @@ def ensure_paths(args,machine):
     if args.baseline_root:
         baseline_dir = pathlib.Path(args.baseline_root).resolve()
     else:
-        raw_name = machine.get_value('BASELINE_ROOT',resolved=False)
-        baseline_dir_name = raw_name.replace('$COMPILER',compiler)
-        baseline_dir = pathlib.Path(baseline_dir_name).resolve() / args.baseline_name / "homme"
+        machine.set_value('COMPILER', compiler)
+        raw_name = machine.get_value('BASELINE_ROOT', resolved=True)
+        baseline_dir = pathlib.Path(raw_name).resolve() / args.baseline_name / "homme"
 
     if args.generate:
         # Ok if dir does not exist, but we MUST be able to create it
@@ -194,14 +214,22 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     ctest_j = args.run_parallel_level
     if args.run_parallel_level <= 0:
         ctest_j = machine.get_value('MAX_TASKS_PER_NODE')
-    cmd  =  "ctest --output-on-failure"
+    # The machine file is named after the machine, unless the user asks for a different one
+    machine_file = args.machine_file or args.machine
+    if args.bfb:
+        machine_file += "-bfb"
+
+    cmd  =  "ctest -V --output-on-failure"
     cmd +=  " " + " ".join(args.ctest_arg)
     cmd += f" -S {ctest_script}"
     cmd += f" -D HOMME_ROOT={root_dir}"
     cmd += f" -D BUILD_WORK_DIR={work_dir}"
-    cmd += f" -D MACHINE={args.machine}"
+    cmd += f" -D MACHINE_FILE={machine_file}"
     cmd += f" -D BFB_TESTING={_bool_str(args.bfb)}"
-    cmd += f" -D BASELINE_DIR={baseline_dir}"
+    if args.no_baseline:
+        cmd += " -D NO_BASELINE=TRUE"
+    else:
+        cmd += f" -D BASELINE_DIR={baseline_dir}"
     cmd += f" -D DEBUG={_bool_str(args.debug)}"
     cmd += f" -D GENERATE={args.generate}"
     cmd += f" -D BUILD_PARALLEL_LEVEL={make_j}"
@@ -211,49 +239,44 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     if args.cprnc_dir:
         cmd += f" -D CPRNC_DIR={pathlib.Path(args.cprnc_dir).resolve()}"
     if cmake_opts:
-        cmd += f" -D EXTRA_CMAKE_OPTIONS={';'.join(cmake_opts)}"
+        # The opts are joined with ';' (a cmake list), so quote it to keep the shell from splitting it
+        cmd += " -D " + shlex.quote(f"EXTRA_CMAKE_OPTIONS={';'.join(cmake_opts)}")
 
     return cmd
 
-def dump_last_ctest_log(work_dir):
+def clean_work_dir(work_dir,root_dir):
     """
-    Finds and dumps the last relevant CTest failure log from Testing/Temporary/
-    accounting for variable suffixes (e.g., LastTest_*.log).
-    """
-    temporary_dir = pathlib.Path(work_dir) / "Testing" / "Temporary"
+    Remove the build left in work_dir by a previous run (if any), so that stale state cannot affect this run.
+    E.g., an old CMakeCache.txt makes cmake silently ignore a changed --cmake-opt or machine file, and old test
+    outputs in work_dir/tests/baseline would end up in the baselines when generating them.
 
-    if not temporary_dir.is_dir():
-        print("DEBUG: No CTest 'Testing/Temporary' directory found to extract logs.")
+    We only remove a dir if it is a cmake build dir of this homme source tree. If the dir is not empty and we
+    cannot tell that, we abort rather than risk removing something else (e.g., if the user passes a source dir).
+    """
+    if not work_dir.exists():
         return
 
-    # Order of precedence for checking failures
-    stages = ["LastTest", "LastBuild", "LastConfigure"]
+    expect(work_dir.is_dir() and not work_dir.is_symlink(),
+           f"ERROR: work dir '{work_dir}' is not a directory")
 
-    for stage in stages:
-        # Match files like LastTest.log, LastTest_*.log, etc.
-        matching_logs = list(temporary_dir.glob(f"{stage}*.log"))
+    if not any(work_dir.iterdir()):
+        return
 
-        if not matching_logs:
-            continue
+    # CMake records the source dir that a build dir was configured from
+    src_dir = None
+    cache = work_dir / "CMakeCache.txt"
+    if cache.is_file():
+        for line in cache.read_text(errors="replace").splitlines():
+            if line.startswith("CMAKE_HOME_DIRECTORY:"):
+                src_dir = pathlib.Path(line.split("=",1)[1]).resolve()
+                break
 
-        # Sort by modification time to ensure we grab the file from the run that just failed
-        matching_logs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-        log_path = matching_logs[0]
+    expect(src_dir == root_dir,
+           f"ERROR: work dir '{work_dir}' is not empty, and it is not a cmake build dir of '{root_dir}'.\n"
+           f"       Refusing to remove it. Remove it manually, or choose a different --work-dir.")
 
-        if log_path.is_file() and log_path.stat().st_size > 0:
-            print("\n" + "="*80)
-            print(f" DUMPING FULL CTEST LOG: {stage} -> {log_path.name}")
-            print("="*80)
-
-            try:
-                # Read and print the entire file content at once
-                full_log_content = log_path.read_text(errors="replace")
-                print(full_log_content)
-            except (OSError, ValueError) as e:
-                print(f"ERROR: Could not read log file {log_path.name}: {e}")
-
-            print("="*80 + "\n")
-            return  # Stop after printing the latest failing stage
+    print(f"Removing previous build dir '{work_dir}'")
+    shutil.rmtree(work_dir)
 
 def main(argv):
     """
@@ -269,11 +292,12 @@ def main(argv):
 
     cmd = _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine)
 
-    cmd = 'echo "nc root: $NETCDF_C_ROOT" && ' + cmd
     print(f"RUN: {cmd}")
     if args.dry_run:
         return 0
 
+    # Always start from a clean build dir, so no stale state (e.g., an old CMakeCache.txt) is silently reused
+    clean_work_dir(work_dir,root_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Run the command and capture the process result object
@@ -281,7 +305,7 @@ def main(argv):
 
     # 2. Check if the CTest process failed
     if res.returncode != 0:
-        dump_last_ctest_log(work_dir)
+        print(f"ERROR: ctest failed (exit code {res.returncode}). The logs are in '{work_dir / 'Testing' / 'Temporary'}'")
         return res.returncode
 
     # 3. Process succeeded! If needed, copy to baseline dir

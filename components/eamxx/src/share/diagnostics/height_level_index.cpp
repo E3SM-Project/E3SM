@@ -1,4 +1,5 @@
 #include "height_level_index.hpp"
+#include "level_index_utils.hpp"
 
 #include <ekat_std_utils.hpp>
 #include <ekat_units.hpp>
@@ -67,7 +68,11 @@ HeightLevelIndex (const ekat::Comm& comm, const ekat::ParameterList& params,
       " - valid values: 'mid', 'int'\n");
   m_z_field_name = z_name + "_" + layer;
 
-  m_diag_name = "lev_at_" + z_val + units + "_above_" + surf_ref + "_" + layer;
+  // Matches the dependency name FieldAtHeight declares, and the expression
+  // that builds this diag.
+  m_diag_name = m_z_field_name + ".searchsorted(" + z_val + ",units='" + units + "')";
+  // Named after the request, so that IO names the avg count after the height the user asked for
+  m_mask_name = z_val + units + "_above_" + surf_ref + (layer=="int" ? "_int" : "") + "_mask";
 
   m_field_in_names.push_back(m_z_field_name);
 }
@@ -90,13 +95,15 @@ initialize_impl ()
       " - field name  : " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n");
 
-  // The output is (ncol,2): the pair of level indices bracketing the
-  // target height in each column (or, if the target is out of range,
-  // both indices are set to the bottom level for extrapolation, or to
-  // -1 to flag the target as invalid; see class doc above).
-  auto idx_layout = layout.clone().strip_dim(tag).append_dim(CMP,2,"bracket");
-  FieldIdentifier d_fid (m_diag_name, idx_layout, ekat::units::none, m_grid->name(), DataType::IntType);
+  // The output is (ncol): the index of the first level with height strictly below the target
+  // in each column (nlevs if there is none). Since heights decrease with the level index,
+  // this is searchsorted's counterpart (with side='right') for a descending array.
+  const auto col_layout = layout.clone().strip_dim(tag);
+  FieldIdentifier d_fid (m_diag_name, col_layout, ekat::units::none, m_grid->name(), DataType::IntType);
   m_diagnostic_output = Field(d_fid,true);
+
+  // The mask of columns where the target height is valid
+  m_diagnostic_output.create_valid_mask(m_mask_name);
 }
 
 void HeightLevelIndex::compute_impl()
@@ -110,7 +117,8 @@ void HeightLevelIndex::compute_impl()
   const int nlevs = zl.dim(1);
 
   auto z_tgt = m_z;
-  auto idx = m_diagnostic_output.get_view<int**>();
+  auto idx = m_diagnostic_output.get_view<int*>();
+  auto mask = m_diagnostic_output.get_valid_mask().get_view<int*>();
   auto extrapolate_bottom = m_extrapolate_bottom;
 
   auto policy = KT::RangePolicy(0,ncols);
@@ -118,21 +126,21 @@ void HeightLevelIndex::compute_impl()
     auto z_i = ekat::subview(z_v,icol);
     auto beg = z_i.data();
     auto end = beg + nlevs;
-    auto it = find_first_smaller_z(beg,end,z_tgt);
-    if (it==beg) {
-      // Target is above the top entry: always flagged as invalid,
-      // regardless of the reference (see class doc).
-      idx(icol,0) = -1;
-      idx(icol,1) = -1;
-    } else if (it==end) {
-      // Target is below the bottom entry: extrapolate using it, or
-      // flag as invalid, depending on the reference (see class doc).
-      idx(icol,0) = extrapolate_bottom ? nlevs-1 : -1;
-      idx(icol,1) = extrapolate_bottom ? nlevs-1 : -1;
+    auto last = beg + (nlevs-1);
+    // Heights decrease with the level index, so *beg is the top, and *last the bottom.
+    // We don't need to search if the target is out of range: we know the index.
+    if (z_tgt>*beg) {
+      // Target is above the top entry: always invalid, regardless of the reference.
+      idx(icol) = 0;
+      mask(icol) = 0;
+    } else if (z_tgt<=*last) {
+      // Target is at or below the bottom entry: extrapolate, or flag it as invalid,
+      // depending on the reference. See class doc.
+      idx(icol) = nlevs;
+      mask(icol) = extrapolate_bottom ? 1 : 0;
     } else {
-      auto pos = it - beg;
-      idx(icol,0) = pos-1;
-      idx(icol,1) = pos;
+      idx(icol) = find_first_smaller_z(beg,end,z_tgt) - beg;
+      mask(icol) = 1;
     }
   });
 }

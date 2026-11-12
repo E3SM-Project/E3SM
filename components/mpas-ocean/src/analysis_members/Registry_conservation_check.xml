@@ -86,7 +86,7 @@
 			description="Iceberg heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
 		<var name="accumulatedFrazilHeatFlux" type="real" dimensions="Time" units="W m^-2"
-			description="Heat flux from frazil, integrated in space and time, given to couipler. Positive into the ocean."
+			description="Heat flux from frazil, integrated in space and time, given to coupler. Positive into the ocean."
 		/>
 		<var name="accumulatedLandIceHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Land ice heat flux, integrated in space and time. Positive into the ocean."

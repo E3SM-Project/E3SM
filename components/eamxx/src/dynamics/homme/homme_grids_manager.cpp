@@ -113,18 +113,9 @@ build_grids ()
       "  - num MPI ranks: " + std::to_string(m_comm.size()) + "\n"
       "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
 
-  // We know we need the dyn grid, so build it
+  // We know we need the dyn grid, so build it. This also builds the GLL grid
+  // with no rebalance, which is the unique grid of the dyn grid.
   build_dynamics_grid ();
-
-  // Also the GLL grid with no rebalance is needed for sure
-  build_physics_grid("gll","none");
-
-  // Set the physics_gll grid as io_aux_grid in the dyn grid
-  auto physics_gll_grid = get_grid_nonconst("physics_gll");
-  auto dyn_grid = get_grid_nonconst("dynamics");
-  dyn_grid->set_aux_grid("default",physics_gll_grid);
-  dyn_grid->set_aux_grid("cg",physics_gll_grid);
-  dyn_grid->set_aux_grid("dg",dyn_grid);
 
   // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
@@ -158,26 +149,31 @@ void HommeGridsManager::build_dynamics_grid () {
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
 
-  // Filling the cg/dg gids, elgpgp, coords, lat/lon views
-  auto dg_dofs = dyn_grid->get_dofs_gids();
-  auto cg_dofs = dyn_grid->get_cg_dofs_gids();
+  // Filling the dofs gids, unique grid gids, elgpgp, coords, lat/lon views
+  auto gids = dyn_grid->get_dofs_gids();
+  // The gids of the dyn grid dofs on its unique grid (physics_gll)
+  using namespace ShortFieldTagsNames;
+  Field unique_gids (FieldIdentifier("unique_grid_gids",FieldLayout({CMP},{dyn_grid->get_num_local_dofs()}),
+                                     none,dyn_grid->name(),DataType::IntType));
+  unique_gids.allocate_view();
   auto elgpgp  = dyn_grid->get_lid_to_idx_map();
   auto elgids  = dyn_grid->get_partitioned_dim_gids ();
   auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
   auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
 
-  auto dg_dofs_h = dg_dofs.get_view<gid_type*,Host>();
-  auto cg_dofs_h = cg_dofs.get_view<gid_type*,Host>();
+  auto gids_h = gids.get_view<gid_type*,Host>();
+  auto unique_gids_h = unique_gids.get_view<gid_type*,Host>();
   auto elgpgp_h  = elgpgp.get_view<int**,Host>();
   auto elgids_h  = elgids.get_view<int*,Host>();
   auto lat_h     = lat.get_view<Real***,Host>();
   auto lon_h     = lon.get_view<Real***,Host>();
 
-  // Get (ie,igp,jgp,gid) data for each dof
-  get_dyn_grid_data_f90 (dg_dofs_h.data(),cg_dofs_h.data(),elgpgp_h.data(),elgids_h.data(), lat_h.data(), lon_h.data());
+  // Get (ie,igp,jgp,gid) data for each dof. NOTE: the Fortran side calls the dofs gids 'dg gids'
+  // (element-based numbering), and the unique grid gids 'cg gids' (numbering of the shared nodes).
+  get_dyn_grid_data_f90 (gids_h.data(),unique_gids_h.data(),elgpgp_h.data(),elgids_h.data(), lat_h.data(), lon_h.data());
 
-  dg_dofs.sync_to_dev();
-  cg_dofs.sync_to_dev();
+  gids.sync_to_dev();
+  unique_gids.sync_to_dev();
   elgpgp.sync_to_dev();
   elgids.sync_to_dev();
   lat.sync_to_dev();
@@ -195,6 +191,15 @@ void HommeGridsManager::build_dynamics_grid () {
 
   dyn_grid->m_disambiguation_suffix = "_d";
   add_nonconst_grid(dyn_grid);
+
+  // The physics_gll grid (with no rebalance) is the unique grid of the dyn grid: same points,
+  // but without the repetitions due to the element boundaries. IO uses it to save dyn grid fields.
+  // It is needed in any case, so build it now, and link it to the dyn grid, so that the latter is
+  // fully set up when this method returns.
+  // NOTE: the physics grid copies the vertical coordinates from the dyn grid, so the latter must
+  //       already be registered (and have its vcoords) when building the former.
+  build_physics_grid("gll","none");
+  dyn_grid->set_unique_grid(get_grid_nonconst("physics_gll"),unique_gids);
 }
 
 void HommeGridsManager::

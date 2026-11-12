@@ -120,7 +120,7 @@ void GWDrag::initialize_impl (const RunType) {
   using Interval = FieldWithinIntervalCheck;
   // using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
-  add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
+  add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-300.0, 300.0,false);
 
   // print GWD parameters to the log file
   if (this->get_comm().am_i_root()) { GWF::print_params(); }

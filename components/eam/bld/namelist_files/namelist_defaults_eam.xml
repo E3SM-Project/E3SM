@@ -1270,8 +1270,8 @@
 <!-- MCSP -->
 <zmconv_MCSP_heat_coeff                                               >0.0D0</zmconv_MCSP_heat_coeff>
 <zmconv_MCSP_moisture_coeff                                           >0.0D0</zmconv_MCSP_moisture_coeff>
-<zmconv_MCSP_uwind_coeff                                              >0.0D0</zmconv_MCSP_uwind_coeff>
-<zmconv_MCSP_vwind_coeff                                              >0.0D0</zmconv_MCSP_vwind_coeff>
+<zmconv_MCSP_mom_coeff                                                >0.0D0</zmconv_MCSP_mom_coeff>
+<zmconv_MCSP_use_full_shear                                           >.false.</zmconv_MCSP_use_full_shear>
 
 <!-- Cloud sedimentation -->
 

@@ -222,7 +222,9 @@ module seq_comm_mct
   logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
+  logical, public :: mb_scm_atm = .false.
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  logical, public :: mb_scm_ocn = .false. ! SCM data ocean is a migrated point cloud
   integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   integer, public :: mbintxao ! iMOAB id for intersection mesh between ocean and atmosphere
   integer, public :: mbintxoa ! iMOAB id for intersection mesh between atmosphere and ocean
@@ -233,6 +235,7 @@ module seq_comm_mct
   integer, public :: mbintxal ! iMOAB id for intersection mesh between atmosphere and land
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
+  logical, public :: mb_scm_ice = .false. ! SCM data ice is a migrated point cloud
   integer, public :: mbintxia ! iMOAB id for intersection mesh between ice and atmosphere
   integer, public :: mrofid   ! iMOAB id of moab rof app
   integer, public :: mbrxid   ! iMOAB id of moab rof read from file on coupler pes
@@ -243,6 +246,10 @@ module seq_comm_mct
   integer, public :: mbintxlr ! iMOAB id for intersection mesh between land and river
   integer, public :: mbintxrl ! iMOAB id for intersection mesh between river and land
   integer, public :: mbintxri ! iMOAB id for intersection mesh between river and ice
+  integer, public :: mbglid   ! iMOAB id for glc (MALI land ice), on glc component pes
+  integer, public :: mbgxid   ! iMOAB id for glc migrated mesh to coupler pes
+  integer, public :: mbintxlg ! iMOAB id for read map between land and glc
+  integer, public :: mbintxgl ! iMOAB id for read map between glc and land
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
@@ -678,7 +685,9 @@ contains
     mlnid = -1    ! iMOAB id for land comp
     mphaid = -1   ! iMOAB id for phys grid on atm pes
     mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
+    mb_scm_atm = .false.
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    mb_scm_ocn = .false.
     mbofxid = -1 ! iMOAB id for second mpas ocean migrated mesh to coupler pes, for flux calculations
     mbintxao = -1 ! iMOAB id for atm intx with mpas ocean
     mbintxoa = -1 ! iMOAB id for  mpas ocean  intx with atm
@@ -687,6 +696,7 @@ contains
     mbintxal = -1 ! iMOAB id for atm intx with lnd on coupler pes
     mpsiid = -1   ! iMOAB for sea-ice
     mbixid = -1   ! iMOAB for sea-ice migrated to coupler
+    mb_scm_ice = .false.
     mbintxia = -1 ! iMOAB id for ice intx with atm on coupler pes
     mrofid = -1   ! iMOAB id of moab rof app
     mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
@@ -695,6 +705,11 @@ contains
     mbintxar = -1 ! iMOAB id for intx mesh between atm and river
     mbintxlr = -1 ! iMOAB id for intx mesh between land and river
     mbintxrl = -1 ! iMOAB id for intx mesh between river and land
+    mbintxri = -1 ! iMOAB id for intx mesh between river and ice
+    mbglid = -1   ! iMOAB id for glc (MALI land ice) on component pes
+    mbgxid = -1   ! iMOAB id for glc migrated to coupler pes
+    mbintxlg = -1 ! iMOAB id of moab instance of map read from lnd2glc map file
+    mbintxgl = -1 ! iMOAB id of moab instance of map read from glc2lnd map file
     num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
