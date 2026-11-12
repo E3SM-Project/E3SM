@@ -252,8 +252,6 @@ contains
     use parallel_mod, only : mpiinteger_t, mpi_max, mpi_sum, haltmp
 #endif
     ! --------------------------------
-    use metis_mod, only : genmetispart
-    ! --------------------------------
     use spacecurve_mod, only : genspacepart
     ! --------------------------------
     use scalable_grid_init_mod, only : sgi_init_grid
@@ -377,8 +375,7 @@ contains
           if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
           call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
        else
-          if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
-          call genmetispart(GridEdge,GridVertex)
+          call abortmp('prim_init1: unsupported partmethod (use 4, space filling curve, or a Zoltan2 method)')
        endif
     endif ! .not. can_scalably_init_grid
 
