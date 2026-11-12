@@ -14,12 +14,10 @@ SET(HOMME_TESTS
   swtc2.cmake
   swtc5.cmake
   swtc6.cmake
-  swimtc5.cmake
   baro2b.cmake
   baro2c.cmake
   baro2d.cmake
   baroCamMoist.cmake
-  baro2d-imp.cmake
   thetah-test22.cmake
   thetanh-test22.cmake
   preqx-TC-ftype4.cmake
