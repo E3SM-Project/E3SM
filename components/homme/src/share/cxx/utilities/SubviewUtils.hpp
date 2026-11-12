@@ -23,11 +23,7 @@ template <typename ScalarType, int DIM1, typename MemSpace,
           typename... Properties>
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1], MemSpace>
 subview(ViewType<ScalarType * [DIM1], MemSpace, Properties...> v_in, int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType[DIM1], MemSpace>(
-      &v_in.impl_map().reference(ie, 0));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, typename MemSpace,
@@ -35,11 +31,7 @@ template <typename ScalarType, int DIM1, int DIM2, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM2], MemSpace>
 subview(ViewType<ScalarType[DIM1][DIM2], MemSpace, Properties...> v_in,
         int idx_1) {
-  assert(v_in.data() != nullptr);
-  assert(idx_1 < v_in.extent_int(0));
-  assert(idx_1 >= 0);
-  return ViewUnmanaged<ScalarType[DIM2], MemSpace>(
-      &v_in.impl_map().reference(idx_1, 0));
+  return Kokkos::subview(v_in, idx_1, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, typename MemSpace,
@@ -47,11 +39,7 @@ template <typename ScalarType, int DIM1, int DIM2, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1][DIM2], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2], MemSpace, Properties...> v_in,
         int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType[DIM1][DIM2], MemSpace>(
-      &v_in.impl_map().reference(ie, 0, 0));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, typename MemSpace,
@@ -59,11 +47,7 @@ template <typename ScalarType, int DIM1, int DIM2, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM2], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2], MemSpace, Properties...> v_in,
         int idx_0, const int idx_1) {
-  assert(v_in.data() != nullptr);
-  assert(idx_0 >= 0 && idx_0 < v_in.extent_int(0) );
-  assert(idx_1 >= 0 && idx_1 < v_in.extent_int(1) );
-  return ViewUnmanaged<ScalarType[DIM2], MemSpace>(
-      &v_in.impl_map().reference(idx_0, idx_1, 0));
+  return Kokkos::subview(v_in, idx_0, idx_1, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
@@ -71,13 +55,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM3], MemSpace>
 subview(ViewType<ScalarType[DIM1][DIM2][DIM3], MemSpace, Properties...> v_in,
         int idx_1, int idx_2) {
-  assert(v_in.data() != nullptr);
-  assert(idx_1 < v_in.extent_int(0));
-  assert(idx_1 >= 0);
-  assert(idx_2 < v_in.extent_int(1));
-  assert(idx_2 >= 0);
-  return ViewUnmanaged<ScalarType[DIM3], MemSpace>(
-      &v_in.impl_map().reference(idx_1, idx_2, 0));
+  return Kokkos::subview(v_in, idx_1, idx_2, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
@@ -85,11 +63,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3], MemSpace, Properties...> v_in,
         int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3], MemSpace>(
-      &v_in.impl_map().reference(ie, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
@@ -97,13 +71,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM2][DIM3], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3], MemSpace, Properties...> v_in,
         int ie, int idim1) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim1 < v_in.extent_int(1));
-  assert(idim1 >= 0);
-  return ViewUnmanaged<ScalarType[DIM2][DIM3], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, 0, 0));
+  return Kokkos::subview(v_in, ie, idim1, Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
@@ -111,15 +79,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, typename MemSpace,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM3], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3], MemSpace, Properties...> v_in,
         int ie, int idim1, int idim2) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim1 < v_in.extent_int(1));
-  assert(idim1 >= 0);
-  assert(idim2 < v_in.extent_int(2));
-  assert(idim2 >= 0);
-  return ViewUnmanaged<ScalarType[DIM3], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, idim2, 0));
+  return Kokkos::subview(v_in, ie, idim1, idim2, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -128,11 +88,8 @@ KOKKOS_INLINE_FUNCTION
 ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
             v_in, int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpace>(
-      &v_in.impl_map().reference(ie, 0, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -141,11 +98,7 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM2][DIM3][DIM4], MemSpace>
 subview(
     ViewType<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...> v_in,
     int var) {
-  assert(v_in.data() != nullptr);
-  assert(var < v_in.extent_int(0));
-  assert(var >= 0);
-  return ViewUnmanaged<ScalarType[DIM2][DIM3][DIM4], MemSpace>(
-      &v_in.impl_map().reference(var, 0, 0, 0));
+  return Kokkos::subview(v_in, var, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -153,12 +106,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM4], MemSpace>
 subview(ViewType<ScalarType [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
             v_in, int idim1, int idim2, int idim3) {
-  assert(v_in.data() != nullptr);
-  assert(idim1>=0 && idim1 < v_in.extent_int(0));
-  assert(idim2>=0 && idim2 < v_in.extent_int(1));
-  assert(idim3>=0 && idim3 < v_in.extent_int(2));
-  return ViewUnmanaged<ScalarType[DIM4], MemSpace>(
-      &v_in.impl_map().reference(idim1, idim2, idim3, 0));
+  return Kokkos::subview(v_in, idim1, idim2, idim3, Kokkos::ALL);
 }
 
 
@@ -167,17 +115,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM4], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
             v_in, int ie, int tl, int igp, int jgp) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(tl < v_in.extent_int(1));
-  assert(tl >= 0);
-  assert(igp < v_in.extent_int(2));
-  assert(igp >= 0);
-  assert(jgp < v_in.extent_int(3));
-  assert(jgp >= 0);
-  return ViewUnmanaged<ScalarType[DIM4], MemSpace>(
-      &v_in.impl_map().reference(ie, tl, igp, jgp, 0));
+  return Kokkos::subview(v_in, ie, tl, igp, jgp, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -185,13 +123,8 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM2][DIM3][DIM4], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
             v_in, int ie, int idim1) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim1 < v_in.extent_int(1));
-  assert(idim1 >= 0);
-  return ViewUnmanaged<ScalarType[DIM2][DIM3][DIM4], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, idim1, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -199,15 +132,7 @@ template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
 KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM3][DIM4], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace, Properties...>
             v_in, int ie, int idim1, int idim2) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim1 < v_in.extent_int(1));
-  assert(idim1 >= 0);
-  assert(idim2 < v_in.extent_int(2));
-  assert(idim2 >= 0);
-  return ViewUnmanaged<ScalarType[DIM3][DIM4], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, idim2, 0, 0));
+  return Kokkos::subview(v_in, ie, idim1, idim2, Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, int DIM5,
@@ -217,11 +142,8 @@ ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4][DIM5], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4][DIM5], MemSpace,
                  Properties...> v_in,
         int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4][DIM5], MemSpace>(
-      &v_in.impl_map().reference(ie, 0, 0, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, int DIM5,
@@ -231,13 +153,8 @@ ViewUnmanaged<ScalarType[DIM2][DIM3][DIM4][DIM5], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4][DIM5], MemSpace,
                  Properties...> v_in,
         int ie, int idim1) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim1 < v_in.extent_int(1));
-  assert(idim1 >= 0);
-  return ViewUnmanaged<ScalarType[DIM2][DIM3][DIM4][DIM5], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, 0, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, idim1, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, int DIM5,
@@ -246,15 +163,8 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM3][DIM4][DIM5], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4][DIM5], MemSpace,
                  Properties...> v_in,
         int ie, int idim1, int idim2) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim1 < v_in.extent_int(1));
-  assert(idim1 >= 0);
-  assert(idim2 < v_in.extent_int(2));
-  assert(idim2 >= 0);
-  return ViewUnmanaged<ScalarType[DIM3][DIM4][DIM5], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, idim2, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, idim1, idim2, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, int DIM5,
@@ -263,14 +173,7 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM5], MemSpace>
 subview(ViewType<ScalarType * [DIM1][DIM2][DIM3][DIM4][DIM5], MemSpace,
                  Properties...> v_in,
         int ie, int idim1, int idim2, int idim3, int idim4) {
-  assert(v_in.data() != nullptr);
-  assert(ie >= 0 && ie < v_in.extent_int(0));
-  assert(idim1 >= 0 && idim1 < v_in.extent_int(1));
-  assert(idim2 >= 0 && idim2 < v_in.extent_int(2));
-  assert(idim3 >= 0 && idim3 < v_in.extent_int(3));
-  assert(idim4 >= 0 && idim4 < v_in.extent_int(4));
-  return ViewUnmanaged<ScalarType[DIM5], MemSpace>(
-      &v_in.impl_map().reference(ie, idim1, idim2, idim3, idim4, 0));
+  return Kokkos::subview(v_in, ie, idim1, idim2, idim3, idim4, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3,
@@ -279,11 +182,8 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType * [DIM1][DIM2][DIM3], MemSpace>
 subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3], MemSpace,
                  Properties...> v_in,
         int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType * [DIM1][DIM2][DIM3], MemSpace>(
-    &v_in.impl_map().reference(ie, 0, 0, 0, 0), v_in.extent_int(1));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -292,11 +192,8 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemS
 subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
                  Properties...> v_in,
         int ie) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  return ViewUnmanaged<ScalarType * [DIM1][DIM2][DIM3][DIM4], MemSpace>(
-    &v_in.impl_map().reference(ie, 0, 0, 0, 0), v_in.extent_int(1));
+  return Kokkos::subview(v_in, ie, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3,
@@ -305,13 +202,8 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3], MemSpace>
 subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3], MemSpace,
                  Properties...> v_in,
         int ie, int remap_idx) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(remap_idx < v_in.extent_int(1));
-  assert(remap_idx >= 0);
-  return ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3], MemSpace>(
-    &v_in.impl_map().reference(ie, remap_idx, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, remap_idx, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3,
@@ -320,17 +212,7 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM3], MemSpace>
 subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3], MemSpace,
                  Properties...> v_in,
         int ie, int remap_idx, int idim1, int idim2) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(remap_idx < v_in.extent_int(1));
-  assert(remap_idx >= 0);
-  assert(idim1 < v_in.extent_int(2));
-  assert(idim1 >= 0);
-  assert(idim2 < v_in.extent_int(3));
-  assert(idim2 >= 0);
-  return ViewUnmanaged<ScalarType[DIM3], MemSpace>(
-    &v_in.impl_map().reference(ie, remap_idx, idim1, idim2, 0));
+  return Kokkos::subview(v_in, ie, remap_idx, idim1, idim2, Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -339,17 +221,8 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM3][DIM4], MemSpace>
 subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
                  Properties...> v_in,
         int ie, int remap_idx, int idim1, int idim2) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(remap_idx < v_in.extent_int(1));
-  assert(remap_idx >= 0);
-  assert(idim1 < v_in.extent_int(2));
-  assert(idim1 >= 0);
-  assert(idim2 < v_in.extent_int(3));
-  assert(idim2 >= 0);
-  return ViewUnmanaged<ScalarType[DIM3][DIM4], MemSpace>(
-    &v_in.impl_map().reference(ie, remap_idx, idim1, idim2, 0, 0));
+  return Kokkos::subview(v_in, ie, remap_idx, idim1, idim2, Kokkos::ALL,
+                         Kokkos::ALL);
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
@@ -358,13 +231,8 @@ KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpac
 subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
                  Properties...> v_in,
         int ie, int idim0) {
-  assert(v_in.data() != nullptr);
-  assert(ie < v_in.extent_int(0));
-  assert(ie >= 0);
-  assert(idim0 < v_in.extent_int(1));
-  assert(idim0 >= 0);
-  return ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpace>(
-    &v_in.impl_map().reference(ie, idim0, 0, 0, 0, 0));
+  return Kokkos::subview(v_in, ie, idim0, Kokkos::ALL, Kokkos::ALL,
+                         Kokkos::ALL, Kokkos::ALL);
 }
 
 // Force a subview to be const
