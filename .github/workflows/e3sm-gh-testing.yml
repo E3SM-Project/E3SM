@@ -28,6 +28,16 @@ on:
       - '!components/*/docs/**'
       - '!components/*/mkdocs.yml'
       - '!.github/**'
+      # Skip homme changes that only affect its standalone build/testing (e.g., machine files or tests)
+      # NOTE: keep this homme list in sync with eamxx-sa-testing.yml and eamxx-v1-testing.yml
+      - '!components/homme/**'
+      - 'components/homme/CMakeLists.txt'
+      - 'components/homme/src/**'
+      - 'components/homme/cmake/HommeMacros.cmake'
+      - 'components/homme/cmake/SetHostPaths.cmake'
+      - 'components/homme/cmake/homme_git_sha.h.in'
+      - 'components/homme/cmake/FindExtrae.cmake'
+      - 'components/homme/cmake/FindZoltan.cmake'
       - '.github/workflows/e3sm-gh-testing.yml'
 
   # Manual run on master is used to bless

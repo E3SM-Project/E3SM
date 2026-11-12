@@ -10,7 +10,15 @@ on:
       - 'cime_config/machines/config_machines.xml'
       - 'cime_config/machines/cmake_macros/ghci*.cmake'
       - 'components/eamxx/**'
-      - 'components/homme/**'
+      # Only the homme files that eamxx builds (not standalone-only stuff, like machine files or tests)
+      # NOTE: keep this homme list in sync with eamxx-sa-testing.yml and e3sm-gh-testing.yml
+      - 'components/homme/CMakeLists.txt'
+      - 'components/homme/src/**'
+      - 'components/homme/cmake/HommeMacros.cmake'
+      - 'components/homme/cmake/SetHostPaths.cmake'
+      - 'components/homme/cmake/homme_git_sha.h.in'
+      - 'components/homme/cmake/FindExtrae.cmake'
+      - 'components/homme/cmake/FindZoltan.cmake'
       - 'components/eam/src/physics/rrtmgp/**'
       - 'components/eam/src/physics/cosp2/**'
       - 'externals/ekat'
