@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -5164,7 +5164,7 @@ from the internal field name:</p>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:=LiqWaterPath"</span><span class="w">            </span><span class="c1"># Aliased field</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"p_mid"</span><span class="w">                        </span><span class="c1"># Regular field name  </span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"temp:=T_mid"</span><span class="w">                  </span><span class="c1"># Aliased field</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"surf_temp:=temp_at_model_bot"</span><span class="w"> </span><span class="c1"># Alias of diagnostic of an alias</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"surf_temp:=temp.isel(lev=-1)"</span><span class="w"> </span><span class="c1"># Alias of diagnostic of an alias</span>
 </code></pre></div>
 <h2 id="output-behavior">Output Behavior</h2>
 <p>When using aliases:</p>
@@ -5196,16 +5196,16 @@ Declare such fields in an <code>aliases</code> subsection of the per-grid block:
 <div class="highlight"><pre><span></span><code><span class="nt">fields</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">aliases</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MyDiag:=T_mid_times_p_mid"</span><span class="w">       </span><span class="c1"># computed but NOT written to NC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MyDiag:=T_mid*p_mid"</span><span class="w">       </span><span class="c1"># computed but NOT written to NC</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MyDiagSqrd:=MyDiag_times_MyDiag"</span><span class="w"> </span><span class="c1"># uses MyDiag; IS written to NC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MyDiagSqrd:=MyDiag*MyDiag"</span><span class="w"> </span><span class="c1"># uses MyDiag; IS written to NC</span>
 </code></pre></div>
 <p><code>MyDiag</code> is created and registered in the internal field manager so that
 <code>MyDiagSqrd</code> can depend on it, but it does not appear in the output file.
 Only <code>MyDiagSqrd</code> is written.</p>
 <p>The <code>aliases</code> section uses the same <code>alias:=original</code> syntax as
 <code>field_names</code> entries, and the expression on the right-hand side is
-resolved with the same composable-diagnostic parser.</p>
+resolved as an <a href="../diags/expressions/">expression</a>.</p>
 <p>Rules:</p>
 <ul>
 <li>A name declared in <code>aliases</code> must not also appear in <code>field_names</code>.</li>
@@ -5283,7 +5283,7 @@ but we do allow requesting the same field again but with an alias</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../../../javascript/mathjax.js"></script>
       

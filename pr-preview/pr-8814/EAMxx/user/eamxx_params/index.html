@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -5545,14 +5545,14 @@
 <li>type: real</li>
 </ul>
 </li>
-<li>zm::mcsp_u_coeff:<ul>
-<li>description: MCSP U-wind coefficient</li>
+<li>zm::mcsp_mom_coeff:<ul>
+<li>description: MCSP momentum coefficient</li>
 <li>type: real</li>
 </ul>
 </li>
-<li>zm::mcsp_v_coeff:<ul>
-<li>description: MCSP V-wind coefficient</li>
-<li>type: real</li>
+<li>zm::mcsp_use_full_shear:<ul>
+<li>description: MCSP flag to use full shear vector instead of zonal-only</li>
+<li>type: logical</li>
 </ul>
 </li>
 <li>zm::number_of_subcycles:<ul>
@@ -6948,8 +6948,9 @@
 </ul>
 </li>
 <li>rrtmgp::rad_frequency:<ul>
-<li>description: <strong>MISSING</strong></li>
-<li>type: <strong>MISSING</strong></li>
+<li>description: Frequency (in number of timesteps) at which to call the radiation code</li>
+<li>type: integer</li>
+<li>constraints: gt 0</li>
 </ul>
 </li>
 <li>rrtmgp::do_aerosol_rad:<ul>
@@ -7141,8 +7142,8 @@
 <li>type: real</li>
 </ul>
 </li>
-<li>tms::wspd_squared_min:<ul>
-<li>description: Minimum lowest level wind speed squared [m2/s2]</li>
+<li>tms::ri_shear_sqr_min:<ul>
+<li>description: Minimum squared wind shear between the lowest two levels for TMS Richardson number [m2/s2]</li>
 <li>type: real</li>
 </ul>
 </li>
@@ -8058,7 +8059,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../../../javascript/mathjax.js"></script>
       

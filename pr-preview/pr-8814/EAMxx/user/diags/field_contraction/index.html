@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -5080,10 +5080,9 @@
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
 We can also automatically calculate zonal averages and histograms.
-We have <em>experimental</em> support for composing diagnostics; below,
-the horizontal and vertical reductions can be composed
-sequentially, but if using dp- or dz-weighted reductions,
-one must do the vertical reduction first.</p>
+All of these are written as <a href="../expressions/">expressions</a>, and compose:
+e.g., <code>X.mean('lev',weights='dp').mean('col')</code>. If using dp- or dz-weighted
+vertical reductions, do the vertical reduction first.</p>
 <h2 id="horizontal-reduction">Horizontal reduction</h2>
 <p>We currently offer only one horizontal reduction <span class="arithmatex">\(C\)</span>, and it is defined as</p>
 <div class="arithmatex">\[
@@ -5094,8 +5093,7 @@ and <span class="arithmatex">\(w_{i}\)</span> is the weight at column <span clas
 We note that the field <span class="arithmatex">\(F\)</span> can have other dimensions (<span class="arithmatex">\(\dots\)</span>).
 The weight <span class="arithmatex">\(w\)</span> is defined as the area fraction in column <span class="arithmatex">\(i\)</span>,
 that is, the area in column <span class="arithmatex">\(i\)</span> divided by the total area in all columns.</p>
-<p>To select the horizontal reduction, you only need to suffix
-a field name <code>X</code> with <code>_horiz_avg</code> in the output requests.</p>
+<p>To select the horizontal reduction, request <code>X.mean('col')</code>.</p>
 <table>
 <thead>
 <tr>
@@ -5106,7 +5104,7 @@ a field name <code>X</code> with <code>_horiz_avg</code> in the output requests.
 </thead>
 <tbody>
 <tr>
-<td><code>X_horiz_avg</code></td>
+<td><code>X.mean('col')</code></td>
 <td>Area fraction</td>
 <td>Average across all columns</td>
 </tr>
@@ -5119,9 +5117,8 @@ C_{\dots} = \sum_{k} w_{k} \cdot F_{\dots k}
 \]</div>
 <p>where <span class="arithmatex">\(F_{\dots k}\)</span> is the field at level <span class="arithmatex">\(k\)</span>,
 and <span class="arithmatex">\(w_{k}\)</span> is the weight at level <span class="arithmatex">\(k\)</span>.</p>
-<p>To select the vertical reduction, you only need to suffix
-a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code> or
-<code>_vert_(avg|sum)</code> in the output yaml files.</p>
+<p>To select the vertical reduction, request <code>X.mean('lev')</code> or <code>X.sum('lev')</code>,
+optionally with <code>weights='dp'</code> or <code>weights='dz'</code>.</p>
 <table>
 <thead>
 <tr>
@@ -5132,32 +5129,32 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code> o
 </thead>
 <tbody>
 <tr>
-<td><code>X_vert_avg_dp_weighted</code></td>
+<td><code>X.mean('lev',weights='dp')</code></td>
 <td><span class="arithmatex">\(\Delta p_{k}\)</span></td>
 <td>Average across all levels, weighted by <span class="arithmatex">\(\Delta p_{k}\)</span></td>
 </tr>
 <tr>
-<td><code>X_vert_sum_dp_weighted</code></td>
+<td><code>X.sum('lev',weights='dp')</code></td>
 <td><span class="arithmatex">\(\Delta p_{k}\)</span></td>
 <td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta p_{k}\)</span></td>
 </tr>
 <tr>
-<td><code>X_vert_avg_dz_weighted</code></td>
+<td><code>X.mean('lev',weights='dz')</code></td>
 <td><span class="arithmatex">\(\Delta z_{k}\)</span></td>
 <td>Average across all levels, weighted by <span class="arithmatex">\(\Delta z_{k}\)</span></td>
 </tr>
 <tr>
-<td><code>X_vert_sum_dz_weighted</code></td>
+<td><code>X.sum('lev',weights='dz')</code></td>
 <td><span class="arithmatex">\(\Delta z_{k}\)</span></td>
 <td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta z_{k}\)</span></td>
 </tr>
 <tr>
-<td><code>X_vert_avg</code></td>
+<td><code>X.mean('lev')</code></td>
 <td>1</td>
 <td>Average across all levels</td>
 </tr>
 <tr>
-<td><code>X_vert_sum</code></td>
+<td><code>X.sum('lev')</code></td>
 <td>1</td>
 <td>Sum across all levels</td>
 </tr>
@@ -5176,9 +5173,8 @@ reductions, the field provided to the reduction utility must be
 at least 2 in rank, e.g., (ncol, nlev).</p>
 <h2 id="zonal-reduction">Zonal reduction</h2>
 <p>We currently have a utility to calculate zonal averages online.
-To select the zonal average, you need to suffix
-a field name <code>X</code> with <code>_zonal_avg</code> and the
-number of bins <code>Y</code> as <code>_Y_bins</code>. All zonal averages are calculated
+To select the zonal average with <code>Y</code> latitude bins, request
+<code>X.zonal_mean(bins=Y)</code>. All zonal averages are calculated
 using the area fraction in each bin as the weight.</p>
 <p>For 180 latitude bins, the bins are defined
 as follows: [-90, -89), [-89, -88), ..., [89, 90].
@@ -5195,7 +5191,7 @@ And so on...</p>
 </thead>
 <tbody>
 <tr>
-<td><code>X_zonal_avg_Y_bins</code></td>
+<td><code>X.zonal_mean(bins=Y)</code></td>
 <td>Area fraction</td>
 <td>Average across the zonal direction</td>
 </tr>
@@ -5203,10 +5199,9 @@ And so on...</p>
 </table>
 <h2 id="histograms">Histograms</h2>
 <p>We currently have a utility to calculate histograms online.
-To select the histogram, you need to suffix a field name <code>X</code> with
-<code>_histogram_</code> followed by the values specifying the edges of the bins,
-separated by <code>_</code>. For example, the histogram specified by
-<code>T_mid_histogram_250_270_290_310</code> has 5 bins effectively defined by
+To select the histogram, request <code>X.histogram(bins=[..])</code> with the edges
+of the bins. For example, the histogram specified by
+<code>T_mid.histogram(bins=[250,270,290,310])</code> has 5 bins effectively defined by
 [<span class="arithmatex">\(-\infty\)</span>, 250), [250, 270), [270, 290), [290, 310), and [310, <span class="arithmatex">\(\infty\)</span>).</p>
 <table>
 <thead>
@@ -5218,7 +5213,7 @@ separated by <code>_</code>. For example, the histogram specified by
 </thead>
 <tbody>
 <tr>
-<td><code>X_histogram_V0_V1_..._VN</code></td>
+<td><code>X.histogram(bins=[V0,V1,...,VN])</code></td>
 <td>1 or 0</td>
 <td>Count of field values within each range</td>
 </tr>
@@ -5234,20 +5229,20 @@ separated by <code>_</code>. For example, the histogram specified by
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span><span class="w">  </span><span class="c1"># K * Pa * s / (m * m)</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dz_weighted</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_horiz_sum</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted_horiz_avg</span><span class="w">  </span><span class="c1"># K * m</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted_horiz_avg</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_180_bins</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_90_bins</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_histogram_250_270_290_310</span><span class="w"> </span><span class="c1"># count</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_col      := T_mid.mean('col')</span><span class="w">                       </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dpavg    := T_mid.mean('lev',weights='dp')</span><span class="w">          </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dpsum    := T_mid.sum('lev',weights='dp')</span><span class="w">           </span><span class="c1"># K * Pa * s / (m * m)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dzavg    := T_mid.mean('lev',weights='dz')</span><span class="w">          </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dzsum    := T_mid.sum('lev',weights='dz')</span><span class="w">           </span><span class="c1"># K * m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vavg     := T_mid.mean('lev')</span><span class="w">                       </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vsum     := T_mid.sum('lev')</span><span class="w">                        </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vsum_col := T_mid.sum('lev').mean('col')</span><span class="w">            </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_col_vsum := T_mid.mean('col').sum('lev')</span><span class="w">            </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dz_col   := T_mid.sum('lev',weights='dz').mean('col')</span><span class="w">  </span><span class="c1"># K * m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dp_col   := T_mid.mean('lev',weights='dp').mean('col')</span><span class="w"> </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_zon180   := T_mid.zonal_mean(bins=180)</span><span class="w">              </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_zon90    := T_mid.zonal_mean(bins=90)</span><span class="w">               </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_hist     := T_mid.histogram(bins=[250,270,290,310])</span><span class="w"> </span><span class="c1"># count</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
@@ -5312,7 +5307,7 @@ separated by <code>_</code>. For example, the histogram specified by
       <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../../../../javascript/mathjax.js"></script>
       
