@@ -1,3 +1,20 @@
+#EMULATOR_TEST_HAVE_PYTHON AND EMULATOR_TEST_HAVE_LIBTORCH
+set(EMULATOR_TEST_HAVE_PYTHON  OFF)
+set(EMULATOR_TEST_HAVE_LIBTORCH OFF)
+
+# Copy test data into a build directory counterpart that also holds generated files.
+set(EMULATOR_TEST_FIXTURE_DIR ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/fixtures DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+set(EMULATOR_COUPLING_FIXTURES
+  ${EMULATOR_TEST_FIXTURE_DIR}/forcing_emulator.pt
+  ${EMULATOR_TEST_FIXTURE_DIR}/land_emulator.pt
+)
+add_custom_command(
+  OUTPUT ${EMULATOR_COUPLING_FIXTURES}
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/make_coupling_fixtures.py ${EMULATOR_TEST_FIXTURE_DIR}
+  COMMENT "Generating emulator coupling fixtures..."
+)
+add_custom_target(emulator_coupling_test_fixtures DEPENDS ${EMULATOR_COUPLING_FIXTURES})
 
 #EMULATOR_TEST_HAVE_PYTHON AND EMULATOR_TEST_HAVE_LIBTORCH
 set(EMULATOR_TEST_HAVE_PYTHON  OFF)
