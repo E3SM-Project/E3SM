@@ -168,6 +168,6 @@ private:
   CouplingAdapter coupling_;
 };
 
-} // namespace e3sm::coupler::test
+} // namespace e3sm::emulator::coupler::test
 
 #endif
