@@ -444,12 +444,12 @@ contains
     natt = size(avp_i%rAttr, 1)
     
     if (mct_aVect_lSize(mapper%dom_cx_s%data) /= lsize_i) then
-       write(logunit, '(A,2I8)') 'nlmap> src sizes do not match', &
+       write(logunit, '(A,2I12)') 'nlmap> src sizes do not match', &
             lsize_i, mct_aVect_lSize(mapper%dom_cx_s%data)
        call shr_sys_abort(subname//' ERROR: nlmap> src sizes do not match')
     end if
     if (mct_aVect_lSize(mapper%dom_cx_d%data) /= lsize_o) then
-       write(logunit, '(A,2I8)') 'nlmap> dst sizes do not match', &
+       write(logunit, '(A,2I12)') 'nlmap> dst sizes do not match', &
             lsize_o, mct_aVect_lSize(mapper%dom_cx_d%data)
        call shr_sys_abort(subname//' ERROR: nlmap> dst sizes do not match')
     end if
