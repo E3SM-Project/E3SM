@@ -22,6 +22,7 @@ module ocn_frazil_forcing
    use mpas_kind_types
    use mpas_constants
    use mpas_derived_types
+   use mpas_log, only : mpas_log_write
    use mpas_pool_routines
    use mpas_timekeeping
    use mpas_timer
@@ -1097,6 +1098,14 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
+
+      if (config_use_frazil_ice_porosity .and. &
+          trim(config_land_ice_flux_mode) /= 'off' .and. &
+          trim(config_land_ice_flux_mode) /= 'pressure_only') then
+         call mpas_log_write('config_use_frazil_ice_porosity cannot be enabled with ' // &
+                             'config_land_ice_flux_mode = ' // trim(config_land_ice_flux_mode), &
+                             MPAS_LOG_CRIT)
+      end if
 
       frazilFormationOn = .false.
 
