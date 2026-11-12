@@ -1,9 +1,10 @@
 # make_coupling_fixtures.py
-from pathlib import Path
 
+import os
+import sys
 import torch
+from pathlib import Path
 from torch import Tensor, nn
-
 
 class ForcingModel(nn.Module):
     def __init__(self, nlevels: int):
@@ -30,7 +31,10 @@ class LandModel(nn.Module):
 
 
 def main():
-    destination = Path(__file__).resolve().parent
+    if len(sys.argv) != 2:
+        sys.exit("usage: make_libtorch_fixture.py OUTDIR")
+    destination = Path(sys.argv[1])
+    os.makedirs(destination, exist_ok=True)
 
     for filename, model in (
         ("forcing_emulator.pt", ForcingModel(nlevels=3)),
