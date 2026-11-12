@@ -1756,8 +1756,8 @@ contains
                           do k = 1, nlit_pools
                              if (pmnf_residue(c,k) > 0.0_r8 .and. pmpf_residue(c,k) > 0.0_r8) then
                                 actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) - pmnf_residue(c,k) &
-                                   * (fpi_nh4_vr(j) - fpi_p_vr(c,j)) 
-                                actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(c,k) * fpi_no3_vr(j)
+                                   * (fpi_nh4_vr(fc,j) - fpi_p_vr(c,j)) 
+                                actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(c,k) * fpi_no3_vr(fc,j)
                              end if
                           end do
                        end if
@@ -1775,7 +1775,7 @@ contains
                           do k = 1, nlit_pools
                              if (pmnf_residue(c,k) > 0.0_r8 .and. pmpf_residue(c,k) > 0.0_r8) then
                                 actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(c,k) &
-                                   * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) )
+                                   * (fpi_nh4_vr(fc,j) + fpi_no3_vr(fc,j) - fpi_p_vr(c,j) )
                              end if
                           end do
                        end if
@@ -1812,7 +1812,7 @@ contains
                     if (j == 1) then
                        do k = 1, nlit_pools
                           if (pmnf_residue(c,k) > 0.0_r8 .and. pmpf_residue(c,k) > 0.0_r8) then
-                             excess_immob_p_vr(j) = excess_immob_p_vr(j) + pmpf_residue(c,k) &
+                             excess_immob_p_vr(fc,j) = excess_immob_p_vr(fc,j) + pmpf_residue(c,k) &
                                 * (fpi_p_vr(c,j) - fpi_vr(c,j))
                              actual_immob_p_vr(c,j) = actual_immob_p_vr(c,j) - pmpf_residue(c,k) &
                                 * (fpi_p_vr(c,j) - fpi_vr(c,j))
@@ -1834,12 +1834,12 @@ contains
                        if (j == 1) then
                           do k = 1, nlit_pools
                              if (pmnf_residue(c,k) > 0.0_r8 .and. pmpf_residue(c,k) > 0.0_r8) then
-                                excess_immob_nh4_vr(j) = excess_immob_nh4_vr(j) + pmnf_residue(c,k) &
-                                   * (fpi_nh4_vr(j) - fpi_p_vr(c,j))
-                                excess_immob_no3_vr(j) = excess_immob_no3_vr(j) + pmnf_residue(c,k) * fpi_no3_vr(j)
+                                excess_immob_nh4_vr(fc,j) = excess_immob_nh4_vr(fc,j) + pmnf_residue(c,k) &
+                                   * (fpi_nh4_vr(fc,j) - fpi_p_vr(c,j))
+                                excess_immob_no3_vr(fc,j) = excess_immob_no3_vr(fc,j) + pmnf_residue(c,k) * fpi_no3_vr(fc,j)
                                 actual_immob_nh4_vr(c,j) = actual_immob_nh4_vr(c,j) - pmnf_residue(c,k) &
-                                   * (fpi_nh4_vr(j) - fpi_p_vr(c,j))
-                                actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(c,k) * fpi_no3_vr(j)
+                                   * (fpi_nh4_vr(fc,j) - fpi_p_vr(c,j))
+                                actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(c,k) * fpi_no3_vr(fc,j)
                              end if
                           end do
                        end if
@@ -1855,10 +1855,10 @@ contains
                        if (j == 1) then
                           do k = 1, nlit_pools
                              if (pmnf_residue(c,k) > 0.0_r8 .and. pmpf_residue(c,k) > 0.0_r8) then
-                                excess_immob_no3_vr(j) = excess_immob_no3_vr(j) + pmnf_residue(c,k) &
-                                   * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) )
+                                excess_immob_no3_vr(fc,j) = excess_immob_no3_vr(fc,j) + pmnf_residue(c,k) &
+                                   * (fpi_nh4_vr(fc,j) + fpi_no3_vr(fc,j) - fpi_p_vr(c,j) )
                                 actual_immob_no3_vr(c,j) = actual_immob_no3_vr(c,j) - pmnf_residue(c,k) &
-                                   * (fpi_nh4_vr(j) + fpi_no3_vr(j) - fpi_p_vr(c,j) )
+                                   * (fpi_nh4_vr(fc,j) + fpi_no3_vr(fc,j) - fpi_p_vr(c,j) )
                              end if
                           end do
                        end if
