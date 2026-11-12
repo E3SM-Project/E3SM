@@ -2226,6 +2226,16 @@ Toggle to turn on the soil erosion and OM pools feedback.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options for cropland management model                                            -->
+<!-- ========================================================================================  -->
+
+<entry id="use_cropman" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on the cropland management model (crop residue pools, tillage,
+residue effects on infiltration and erosion). Requires use_cn = .true.
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options for using modifed infiltration scheme in h2osfc                          -->
 <!-- ========================================================================================  -->
 

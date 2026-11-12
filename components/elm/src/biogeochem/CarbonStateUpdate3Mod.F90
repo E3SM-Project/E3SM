@@ -9,6 +9,8 @@ module CarbonStateUpdate3Mod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use elm_varctl       , only : use_cropman
+  use elm_varpar       , only : nlit_pools
   use elm_varctl       , only : use_erosion, ero_ccycle
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
@@ -83,6 +85,15 @@ contains
             end do
          end do
       end do
+         
+         if (use_cropman) then
+         do l = 1, nlit_pools
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               col_cs%residue_cpools(c,l) = col_cs%residue_cpools(c,l) - col_cf%m_residue_fire_closs(c,l) * dt
+            end do
+         end do
+         end if
 
       ! SOM C losses due to erosion
       if ( ero_ccycle ) then

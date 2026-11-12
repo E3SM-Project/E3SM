@@ -240,6 +240,10 @@ module elm_varcon
   real(r8), public, parameter :: frac_to_downhill = 1.0_r8  ! (fraction, valid values from 0.0 to 1.0)
   ! fraction of from_uphill water state that get transferred to columns on the topounit in each timestep
   real(r8), public, parameter :: frac_from_uphill = 0.5_r8  ! (fraction, valid values from 0.0 to 1.0)
+  ! agricultural management constants
+  real(r8), parameter :: krsd = 2.2e-8_r8    ! background residue incorporation rate (s^-1)
+  real(r8), parameter :: zsoi_till = 0.2_r8  ! tillage depth (m)
+  !------------------------------------------------------------------
 
 contains
 
