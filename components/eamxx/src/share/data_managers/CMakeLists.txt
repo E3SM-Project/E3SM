@@ -1,6 +1,7 @@
 add_library(eamxx_data_managers
   field_manager.cpp
   IOPDataManager.cpp
+  model_init.cpp
 )
 
 target_link_libraries(eamxx_data_managers PUBLIC
