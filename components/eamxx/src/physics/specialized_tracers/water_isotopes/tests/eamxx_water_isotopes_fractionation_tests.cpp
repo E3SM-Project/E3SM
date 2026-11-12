@@ -53,7 +53,7 @@ struct AlphaTable {
 
 // Indexed by LiquidVaporFractionation.
 const AlphaTable
-liq_expected[etoi(wiso::LiquidVaporFractionation::FormulationCount)] = {
+liq_expected[etoi(water_isotopes::LiquidVaporFractionation::FormulationCount)] = {
   // Horita & Wesolowski (1994). Spreadsheet rows 12 (D) and 7 (18O).
   { "Horita & Wesolowski 1994, L-V", 5,
     {273.0, 283.0, 293.0, 303.0, 400.0},
@@ -70,7 +70,7 @@ liq_expected[etoi(wiso::LiquidVaporFractionation::FormulationCount)] = {
 
 // Indexed by IceVaporFractionation.
 const AlphaTable
-ice_expected[etoi(wiso::IceVaporFractionation::FormulationCount)] = {
+ice_expected[etoi(water_isotopes::IceVaporFractionation::FormulationCount)] = {
   /* Default: the two elements come from two different studies with different
      fitted ranges (Merlivat & Nief 1971 for D, Majoube 1971 for 18O), so this
      row keeps only the temperatures in range for both.
@@ -99,16 +99,16 @@ void run_sweep(
   const char* phase_name,  // "liquid-vapor" or "ice-vapor"
   const AlphaTable& expected,  // Tabulated reference values
   typename ekat::ScalarTraits<ScalarT>::scalar_type tol,  // Tolerance
-  const wiso::WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params)
+  const water_isotopes::WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params)
 {
   using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
-  using WIF = wiso::WaterIsotopeFractionation;
+  using WIF = water_isotopes::WaterIsotopeFractionation;
 
   // Choose the alpha function based on phase
   const bool use_liquid_vapor = (std::string(phase_name) == "liquid-vapor");
-  auto alpha_fn = [use_liquid_vapor](const ScalarT& t, wiso::WaterIsotopologues species,
-                                      wiso::WisoAlphaDir dir,
-                                      const wiso::WaterIsotopeParameters<RealT>& iso_params) -> ScalarT {
+  auto alpha_fn = [use_liquid_vapor](const ScalarT& t, water_isotopes::WaterIsotopologues species,
+                                      water_isotopes::WisoAlphaDir dir,
+                                      const water_isotopes::WaterIsotopeParameters<RealT>& iso_params) -> ScalarT {
     return use_liquid_vapor ? WIF::alpha_liquid_vapor<ScalarT>(t, species, dir, iso_params)
                             : WIF::alpha_ice_vapor<ScalarT>(t, species, dir, iso_params);
   };
@@ -124,31 +124,31 @@ void run_sweep(
 
     const ScalarT t(T_i);
 
-    const ScalarT a_hdo = alpha_fn(t, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor,
+    const ScalarT a_hdo = alpha_fn(t, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor,
 iso_params);
-    const ScalarT a_o18 = alpha_fn(t, wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor,
+    const ScalarT a_o18 = alpha_fn(t, water_isotopes::WaterIsotopologues::H218O, water_isotopes::CondensedOverVapor,
 iso_params);
 
     REQUIRE( relative_approx(a_hdo, ref_hdo, tol) );
     REQUIRE( relative_approx(a_o18, ref_o18, tol) );
 
     // H216O check
-    const ScalarT a_16 = alpha_fn(t, wiso::WaterIsotopologues::H216O, wiso::CondensedOverVapor,
+    const ScalarT a_16 = alpha_fn(t, water_isotopes::WaterIsotopologues::H216O, water_isotopes::CondensedOverVapor,
 iso_params);
     REQUIRE( (a_16 == ScalarT(1)).all() );
 
     // Direction checks
-    const ScalarT a_hdo_inv = alpha_fn(t, wiso::WaterIsotopologues::HDO, wiso::VaporOverCondensed,
+    const ScalarT a_hdo_inv = alpha_fn(t, water_isotopes::WaterIsotopologues::HDO, water_isotopes::VaporOverCondensed,
 iso_params);
-    const ScalarT a_o18_inv = alpha_fn(t, wiso::WaterIsotopologues::H218O, wiso::VaporOverCondensed,
+    const ScalarT a_o18_inv = alpha_fn(t, water_isotopes::WaterIsotopologues::H218O, water_isotopes::VaporOverCondensed,
 iso_params);
     REQUIRE( relative_approx(a_hdo_inv, 1.0/ref_hdo, tol) );
     REQUIRE( relative_approx(a_o18_inv, 1.0/ref_o18, tol) );
 
     // Power law checks for H217O and HTO
-    const ScalarT a_17 = alpha_fn(t, wiso::WaterIsotopologues::H217O, wiso::CondensedOverVapor,
+    const ScalarT a_17 = alpha_fn(t, water_isotopes::WaterIsotopologues::H217O, water_isotopes::CondensedOverVapor,
 iso_params);
-    const ScalarT a_ht = alpha_fn(t, wiso::WaterIsotopologues::HTO, wiso::CondensedOverVapor,
+    const ScalarT a_ht = alpha_fn(t, water_isotopes::WaterIsotopologues::HTO, water_isotopes::CondensedOverVapor,
 iso_params);
     REQUIRE( relative_approx(a_17, std::pow(ref_o18, 0.529), tol) );
     REQUIRE( relative_approx(a_ht, std::pow(ref_hdo, 2.0), tol) );
@@ -179,14 +179,14 @@ int index_of_T(const AlphaTable& tbl, double T)
 // device-callable and gives the same result as the host path.
 void run_on_device()
 {
-  using WIF = wiso::WaterIsotopeFractionation;
+  using WIF = water_isotopes::WaterIsotopeFractionation;
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using view_1d = typename KT::template view_1d<Real>;
 
   // The kernel below default-constructs its parameters, so check against the
   // default formulations' rows. 273 K is tabulated for both, so one temperature
   // covers both device calls.
-  const wiso::WaterIsotopeRuntimeOptions defaults;
+  const water_isotopes::WaterIsotopeRuntimeOptions defaults;
   const AlphaTable& liq = liq_expected[etoi(defaults.liquid_vapor)];
   const AlphaTable& ice = ice_expected[etoi(defaults.ice_vapor)];
 
@@ -200,11 +200,11 @@ void run_on_device()
   // Constructed inside the kernel to confirm the resolving constructor itself is
   // device-callable, not just the evaluator.
   Kokkos::parallel_for("wiso_frac_device", 1, KOKKOS_LAMBDA(const int /*i*/) {
-    wiso::WaterIsotopeParameters<Real> iso_params;
-    out(0) = WIF::alpha_liquid_vapor(ekat::Pack<Real, 1>(T_chk), wiso::WaterIsotopologues::HDO,
-                                     wiso::CondensedOverVapor, iso_params)[0];
-    out(1) = WIF::alpha_ice_vapor   (ekat::Pack<Real, 1>(T_chk), wiso::WaterIsotopologues::H218O,
-                                     wiso::CondensedOverVapor, iso_params)[0];
+    water_isotopes::WaterIsotopeParameters<Real> iso_params;
+    out(0) = WIF::alpha_liquid_vapor(ekat::Pack<Real, 1>(T_chk), water_isotopes::WaterIsotopologues::HDO,
+                                     water_isotopes::CondensedOverVapor, iso_params)[0];
+    out(1) = WIF::alpha_ice_vapor   (ekat::Pack<Real, 1>(T_chk), water_isotopes::WaterIsotopologues::H218O,
+                                     water_isotopes::CondensedOverVapor, iso_params)[0];
   });
   Kokkos::fence();
 
@@ -245,15 +245,15 @@ void verify_formulation_differences()
      The 1e-2 lower bound this assertion previously carried was calibrated when
      the Majoube path overflowed to +inf; it encoded the bug, not the physics. */
   {
-    wiso::WaterIsotopeParameters<Real> iso_params_horita;  // Default
-    wiso::WaterIsotopeRuntimeOptions opts_maj;
-    opts_maj.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
-    wiso::WaterIsotopeParameters<Real> iso_params_majoube(opts_maj);
+    water_isotopes::WaterIsotopeParameters<Real> iso_params_horita;  // Default
+    water_isotopes::WaterIsotopeRuntimeOptions opts_maj;
+    opts_maj.liquid_vapor = water_isotopes::LiquidVaporFractionation::Majoube1971;
+    water_isotopes::WaterIsotopeParameters<Real> iso_params_majoube(opts_maj);
 
-    Real alpha_horita = wiso::WaterIsotopeFractionation::alpha_liquid_vapor(
-      t_warm, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params_horita)[0];
-    Real alpha_majoube = wiso::WaterIsotopeFractionation::alpha_liquid_vapor(
-      t_warm, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params_majoube)[0];
+    Real alpha_horita = water_isotopes::WaterIsotopeFractionation::alpha_liquid_vapor(
+      t_warm, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params_horita)[0];
+    Real alpha_majoube = water_isotopes::WaterIsotopeFractionation::alpha_liquid_vapor(
+      t_warm, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params_majoube)[0];
 
     Real rel_diff = std::abs(alpha_horita - alpha_majoube) / alpha_horita;
 
@@ -267,15 +267,15 @@ void verify_formulation_differences()
 
   // Ice-vapor: Merlivat vs IsoCAM3 should differ slightly
   {
-    wiso::WaterIsotopeParameters<Real> iso_params_merlivat;  // Default
-    wiso::WaterIsotopeRuntimeOptions opts_iso;
-    opts_iso.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
-    wiso::WaterIsotopeParameters<Real> iso_params_isocam3(opts_iso);
+    water_isotopes::WaterIsotopeParameters<Real> iso_params_merlivat;  // Default
+    water_isotopes::WaterIsotopeRuntimeOptions opts_iso;
+    opts_iso.ice_vapor = water_isotopes::IceVaporFractionation::IsoCAM3;
+    water_isotopes::WaterIsotopeParameters<Real> iso_params_isocam3(opts_iso);
 
-    Real alpha_merlivat = wiso::WaterIsotopeFractionation::alpha_ice_vapor(
-      t_cold, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params_merlivat)[0];
-    Real alpha_isocam3 = wiso::WaterIsotopeFractionation::alpha_ice_vapor(
-      t_cold, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params_isocam3)[0];
+    Real alpha_merlivat = water_isotopes::WaterIsotopeFractionation::alpha_ice_vapor(
+      t_cold, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params_merlivat)[0];
+    Real alpha_isocam3 = water_isotopes::WaterIsotopeFractionation::alpha_ice_vapor(
+      t_cold, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params_isocam3)[0];
 
     Real rel_diff = std::abs(alpha_merlivat - alpha_isocam3) / alpha_merlivat;
 
@@ -293,7 +293,7 @@ void verify_formulation_differences()
    works, not just that the masked lane's numeric result looks fine. */
 void verify_dead_lane_fpe_safety()
 {
-  using WIF  = wiso::WaterIsotopeFractionation;
+  using WIF  = water_isotopes::WaterIsotopeFractionation;
 
   if (SCREAM_PACK_SIZE < 2) {
     return;  // no padding lane to poison
@@ -306,7 +306,7 @@ void verify_dead_lane_fpe_safety()
   ekat::disable_all_fpes();
   ekat::enable_fpes(FE_DIVBYZERO | FE_INVALID);
 
-  wiso::WaterIsotopeParameters<Real> iso_params;
+  water_isotopes::WaterIsotopeParameters<Real> iso_params;
 
   PackN t(Real(273.15));
   MaskN range_mask(true);
@@ -314,13 +314,13 @@ void verify_dead_lane_fpe_safety()
   range_mask.set(1, false);
 
   const PackN alpha = WIF::alpha_liquid_vapor(
-      t, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params, range_mask);
+      t, water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params, range_mask);
 
   ekat::disable_all_fpes();
   ekat::enable_fpes(saved_fpes);
 
   const PackN alpha_ref = WIF::alpha_liquid_vapor(
-      PackN(Real(273.15)), wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, iso_params);
+      PackN(Real(273.15)), water_isotopes::WaterIsotopologues::HDO, water_isotopes::CondensedOverVapor, iso_params);
 
   // Reaching this point at all (no FPE abort) is the primary check; the value
   // check confirms the poisoned dead lane did not perturb the live one.
@@ -330,7 +330,7 @@ void verify_dead_lane_fpe_safety()
 template <typename RealT>
 void run_both_pack_sizes(
   const char* phase, const AlphaTable& expected,
-  RealT tol, const wiso::WaterIsotopeParameters<RealT>& iso_params)
+  RealT tol, const water_isotopes::WaterIsotopeParameters<RealT>& iso_params)
 {
   using Pack1 = ekat::Pack<RealT, 1>;
   using PackN = ekat::Pack<RealT, SCREAM_PACK_SIZE>;
@@ -354,29 +354,29 @@ TEST_CASE("water_isotopes_fractionation") {
        formulation to either enum brings it under test as soon as its expected
        values are added to the table above. */
     SECTION("all_liquid_vapor_formulations") {
-      for (int f = 0; f < etoi(wiso::LiquidVaporFractionation::FormulationCount); ++f) {
-        const auto formulation = static_cast<wiso::LiquidVaporFractionation>(f);
+      for (int f = 0; f < etoi(water_isotopes::LiquidVaporFractionation::FormulationCount); ++f) {
+        const auto formulation = static_cast<water_isotopes::LiquidVaporFractionation>(f);
         INFO("liquid-vapor formulation index " << f << " ("
-             << wiso::liquid_vapor_ref[f] << ")");
+             << water_isotopes::liquid_vapor_ref[f] << ")");
         REQUIRE( expected_is_populated(liq_expected[f]) );
 
-        wiso::WaterIsotopeRuntimeOptions opts;
+        water_isotopes::WaterIsotopeRuntimeOptions opts;
         opts.liquid_vapor = formulation;
-        wiso::WaterIsotopeParameters<Real> iso_params(opts);
+        water_isotopes::WaterIsotopeParameters<Real> iso_params(opts);
         run_both_pack_sizes("liquid-vapor", liq_expected[f], tight_tol, iso_params);
       }
     }
 
     SECTION("all_ice_vapor_formulations") {
-      for (int f = 0; f < etoi(wiso::IceVaporFractionation::FormulationCount); ++f) {
-        const auto formulation = static_cast<wiso::IceVaporFractionation>(f);
+      for (int f = 0; f < etoi(water_isotopes::IceVaporFractionation::FormulationCount); ++f) {
+        const auto formulation = static_cast<water_isotopes::IceVaporFractionation>(f);
         INFO("ice-vapor formulation index " << f << " ("
-             << wiso::ice_vapor_ref[f] << ")");
+             << water_isotopes::ice_vapor_ref[f] << ")");
         REQUIRE( expected_is_populated(ice_expected[f]) );
 
-        wiso::WaterIsotopeRuntimeOptions opts;
+        water_isotopes::WaterIsotopeRuntimeOptions opts;
         opts.ice_vapor = formulation;
-        wiso::WaterIsotopeParameters<Real> iso_params(opts);
+        water_isotopes::WaterIsotopeParameters<Real> iso_params(opts);
         run_both_pack_sizes("ice-vapor", ice_expected[f], tight_tol, iso_params);
       }
     }
@@ -386,11 +386,11 @@ TEST_CASE("water_isotopes_fractionation") {
        reordering that moved the default would otherwise leave the
        default-constructed path -- the one production uses -- unswept. */
     SECTION("defaults_are_covered") {
-      wiso::WaterIsotopeRuntimeOptions defaults;
+      water_isotopes::WaterIsotopeRuntimeOptions defaults;
       REQUIRE( expected_is_populated(liq_expected[etoi(defaults.liquid_vapor)]) );
       REQUIRE( expected_is_populated(ice_expected[etoi(defaults.ice_vapor)]) );
 
-      wiso::WaterIsotopeParameters<Real> iso_params;  // default-constructed
+      water_isotopes::WaterIsotopeParameters<Real> iso_params;  // default-constructed
       run_both_pack_sizes("liquid-vapor",
         liq_expected[etoi(defaults.liquid_vapor)], tight_tol, iso_params);
       run_both_pack_sizes("ice-vapor",

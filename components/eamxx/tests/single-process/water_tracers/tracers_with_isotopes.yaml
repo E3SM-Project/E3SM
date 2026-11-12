@@ -1,0 +1,9 @@
+%YAML 1.1
+---
+# As tracers_generic.yaml, plus isotopes
+tracers:
+  wtrc_bp:    {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
+  wtrc_bf:    {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}
+  wtrc_hdo:   {type: isotope, species: HDO}
+  wtrc_h218o: {type: isotope, species: H218O}
+...
