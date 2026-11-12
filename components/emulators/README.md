@@ -97,6 +97,31 @@ plan = CouplingPlan(
 )
 ```
 
+### Getting the fields from an `fme` checkpoint
+
+For a coupled `fme` model such as SamudrACE, `scripts/config/extract_fme_fields.py` writes the model's inputs and outputs, in order, to a YAML field list. It also records each component's timestep and forcing fields, and the fields the components exchange. It must run in an environment with `fme` installed:
+
+```bash
+python scripts/config/extract_fme_fields.py checkpoints/C1A0.tar -o fields.yaml
+```
+
+`emulator_config_from_field_list` then creates a config from that list, without needing `fme` or torch:
+
+```python
+from create_emulator_config_files import Model, emulator_config_from_field_list
+
+atmosphere = emulator_config_from_field_list(
+    "fields.yaml",
+    "atmosphere",
+    name="atm-emulator",
+    model=Model(backend="python", options={"python_module": "my_model"}),
+    dimensions=["lat", "lon"],
+)
+atmosphere.write("atm_emulator_config.yaml")
+```
+
+Use the `field_dimensions` argument for any field whose dimensions differ from `dimensions`.
+
 ### `emulator_config.yaml`
 
 ```yaml
