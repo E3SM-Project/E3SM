@@ -30,7 +30,7 @@ AODVis(const ekat::Comm &comm, const ekat::ParameterList &params,
 }
 
 void AODVis::initialize_impl() {
-  // The sunlit mask, under a name of our own: IO shares an avg count between diags
+  // The sunlit mask, under a name of our own: IO shares a valid count between diags
   // whose masks have the same name, and that is for diags masked the same way by design
   const auto& sunlit = m_fields_in.at("sunlit_mask");
   m_diagnostic_output.set_valid_mask(sunlit.alias(m_diagnostic_output.name()+"_valid_mask"));
