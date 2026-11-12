@@ -155,17 +155,7 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/check_baseline.sh
 
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
-               ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
-if (HOMME_MACHINE MATCHES "summit-gpu")
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-gpu
-               ${CMAKE_BINARY_DIR}/load-modules-gpu COPYONLY)
-endif()
-if (HOMME_MACHINE MATCHES "summit-p9")
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-p9
-               ${CMAKE_BINARY_DIR}/load-modules-p9 COPYONLY)
-endif()
 
 # create list of all executables needed by tests
 ADD_CUSTOM_TARGET(test-execs)
@@ -254,32 +244,23 @@ IF(${BUILD_HOMME_THETA})
 ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})
-  #summit-gpu will have only gpu targets
-  if (${HOMME_MACHINE} MATCHES "summit-gpu")
+  ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
+  ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
 
-    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
-    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
+  ADD_SUBDIRECTORY(theta-nlev128-kokkos)
 
-  else()
+  # For doubly periodic tests.
+  ADD_SUBDIRECTORY(theta-l-nlev20-native-kokkos)
+  ADD_SUBDIRECTORY(theta-l-nlev10-native-kokkos)
+  ADD_SUBDIRECTORY(theta-l-nlev128-native-kokkos)
 
-    ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
-    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
+  # This one we build it only if both theta and theta_kokkos are requested,
+  # since it's just needed for perf/correctness comparisons
+  IF (BUILD_HOMME_THETA)
+    ADD_SUBDIRECTORY(theta-nlev128)
+  ENDIF()
 
-    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
-
-    # For doubly periodic tests.
-    ADD_SUBDIRECTORY(theta-l-nlev20-native-kokkos)
-    ADD_SUBDIRECTORY(theta-l-nlev10-native-kokkos)
-    ADD_SUBDIRECTORY(theta-l-nlev128-native-kokkos)
-
-    # This one we build it only if both theta and theta_kokkos are requested,
-    # since it's just needed for perf/correctness comparisons
-    IF (BUILD_HOMME_THETA)
-      ADD_SUBDIRECTORY(theta-nlev128)
-    ENDIF()
-
-    ADD_SUBDIRECTORY(thetal_kokkos_ut)
-  endif()
+  ADD_SUBDIRECTORY(thetal_kokkos_ut)
 
 ENDIF()
 

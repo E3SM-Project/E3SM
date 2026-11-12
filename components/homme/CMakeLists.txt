@@ -90,8 +90,6 @@ add_definitions(-DHOMMEXX_CONFIG_IS_CMAKE)
 
 SET (PERFORMANCE_PROFILE "" CACHE STRING "Whether to build and link with various profiler libraries")
 
-# Set up some directories to facilitate finding netcdf and pnetcdf
-INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
 # Debug statement, please leave here
@@ -542,19 +540,12 @@ IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(src/theta-l)
 ENDIF()
 
-IF(${BUILD_HOMME_PREQX_ACC})
-  ADD_SUBDIRECTORY(src/preqx_acc)
-ENDIF()
-
 IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
 ENDIF()
 
 IF(${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(src/theta-l_kokkos)
-ENDIF()
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(src/swim)
 ENDIF()
 
 IF(${BUILD_HOMME_TOOL})
