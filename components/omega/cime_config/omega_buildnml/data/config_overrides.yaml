@@ -1,0 +1,115 @@
+coupled:
+  TimeIntegration:
+    TimeStepper: SplitExplicitRK2
+    StartType: Coupled
+    StartTime: 9999-12-31_00:00:00
+    StopType: Coupled
+    StopCriterion: 9999-12-31_00:00:00
+
+  # Coupled driver owns the SCORPIO IO system, so these options are never read.
+  # They are set to a sentinel so omega.yml doesn't suggest they are in use.
+  # To change them, set the case variable listed next to each option instead.
+  IO:
+    IOTasks: -9999 # PIO_NUMTASKS_OCN
+    IOStride: -9999 # PIO_STRIDE_OCN
+    IOBaseTask: -9999 # PIO_ROOT_OCN
+    IORearranger: -9999 # PIO_REARRANGER_OCN
+    IODefaultFormat: -9999 # PIO_TYPENAME_OCN
+
+  Tendencies:
+    SfcStressForcingTendencyEnable: true
+    SfcThicknessForcingTendencyEnable: true
+    SfcTracerForcingTendencyEnable: true
+    FrazilTendencyEnable: true
+    PenetratingShortwaveTendency:
+      Enable: true
+
+  Submeso:
+    Enable: true
+
+  Frazil:
+    # Should be switch to Teos10 option, once the GSW calls can run on device
+    FrazilType: FixedProperty
+    ConservationCheck: false
+
+  # buildnml will read the "Filename" entries in Default.yml under the Analysis
+  # section and prepend '${CASE}.omega.' to the default filename
+  Analysis:
+    GlobalStats:
+      Enable: true
+    MOC:
+      Enable: true
+    MonthlyAverages:
+      Enable: true
+      Fields: [Temperature, Salinity, PseudoThickness, SpecVol, GeomZMid,
+          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell,
+          FrazilMassFlux, FrazilSaltFlux, FrazilEnergyFlux]
+
+  # buildnml will also prepend '${CASE}.omega.' to the default filename of
+  # 'write' mode IOStreams, except RestartRead which get special handling to
+  # ensure it's formatted as the coupled driver expects
+  IOStreams:
+    Forcing:
+      FreqUnits: Never
+
+    History:
+      Contents:
+        - Tracers
+        - State
+        - SshCell
+        - GeomZMid
+        - GeomZInterface
+        - Frazil
+
+    RestartRead:
+      UsePointerFile: true
+      PointerFilename: rpointer.ocn
+      UseStartEnd: false
+
+    RestartWrite:
+      UsePointerFile: true
+      PointerFilename: rpointer.ocn
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 1
+      FreqUnits: OnDemand
+      UseStartEnd: false
+      Contents: [Restart]
+
+meshes:
+  # Per-mesh overrides may set any option except `IOStreams`.
+  oQU240:
+    TimeIntegration:
+      TimeStep: "0000_01:00:00"
+      ModeSplitShare:
+        BtrTimeStep: 0000_00:03:00
+    Tendencies:
+      VelDiffTendencyEnable: false
+      ViscDel4: 2.0e14
+    HorzMesh:
+      MeshScalingEnable: false
+
+    Analysis:
+      MOC:
+        NumBins: 60
+
+  EC30to60E2r2:
+    TimeIntegration:
+      TimeStep: "0000_00:30:00"
+      ModeSplitShare:
+        BtrTimeStep: 0000_00:01:15
+    Tendencies:
+      ViscDel2: 1197.0
+      ViscDel4: 2.06e11
+
+  u01-oi6to18:
+    TimeIntegration:
+      TimeStep: "0000_00:05:00"
+      ModeSplitShare:
+        BtrTimeStep: 0000_00:00:10
+    Tendencies:
+      TracerDiffTendencyEnable: false
+      VelDiffTendencyEnable: false
+      ViscDel4: 9.99e9
+      TracerHyperDiffTendencyEnable: false

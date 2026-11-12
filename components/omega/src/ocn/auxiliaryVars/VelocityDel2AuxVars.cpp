@@ -1,0 +1,105 @@
+#include "VelocityDel2AuxVars.h"
+#include "DataTypes.h"
+#include "Field.h"
+
+#include <limits>
+
+namespace OMEGA {
+
+VelocityDel2AuxVars::VelocityDel2AuxVars(const std::string &AuxStateSuffix,
+                                         const HorzMesh *Mesh,
+                                         const VertCoord *VCoord)
+    : Del2Edge("VelDel2Edge" + AuxStateSuffix, Mesh->NEdgesSize,
+               VCoord->NVertLayers),
+      Del2DivCell("VelDel2DivCell" + AuxStateSuffix, Mesh->NCellsSize,
+                  VCoord->NVertLayers),
+      Del2RelVortVertex("VelDel2RelVortVertex" + AuxStateSuffix,
+                        Mesh->NVerticesSize, VCoord->NVertLayers),
+      NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
+      EdgeSignOnCell(Mesh->EdgeSignOnCell), DcEdge(Mesh->DcEdge),
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell),
+      EdgesOnVertex(Mesh->EdgesOnVertex), CellsOnEdge(Mesh->CellsOnEdge),
+      VerticesOnEdge(Mesh->VerticesOnEdge), EdgeMask(VCoord->EdgeMask),
+      EdgeSignOnVertex(Mesh->EdgeSignOnVertex),
+      AreaTriangle(Mesh->AreaTriangle), VertexDegree(Mesh->VertexDegree),
+      NVertLayers(VCoord->NVertLayers),
+      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
+      MinLayerEdgeTop(VCoord->MinLayerEdgeTop),
+      MaxLayerEdgeBot(VCoord->MaxLayerEdgeBot),
+      MinLayerVertexTop(VCoord->MinLayerVertexTop),
+      MaxLayerVertexBot(VCoord->MaxLayerVertexBot),
+      MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
+
+void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
+                                         const std::string &MeshName) const {
+
+   // Create/define fields
+   int NDims = 2;
+   std::vector<std::string> DimNames(NDims);
+   DimNames[1] = "NVertLayers";
+   std::string DimSuffix;
+   if (MeshName == "Default") {
+      DimSuffix = "";
+   } else {
+      DimSuffix = MeshName;
+   }
+
+   // Del2 vel on edges
+   DimNames[0]        = "NEdges" + DimSuffix;
+   auto Del2EdgeField = Field::create(
+       Del2Edge.label(),                            // field name
+       "laplacian of horizontal velocity on edges", // long Name or description
+       "m-1 s-1",                                   // units
+       "",                                          // CF standard Name
+       std::numeric_limits<Real>::lowest(),         // min valid value
+       std::numeric_limits<Real>::max(),            // max valid value
+       NDims,                                       // number of dimensions
+       DimNames                                     // dimension names
+   );
+
+   // Del2 vel on cells
+   DimNames[0] = "NCells" + DimSuffix;
+   auto Del2DivCellField =
+       Field::create(Del2DivCell.label(), // field name
+                     "divergence of laplacian of horizontal velocity "
+                     "on cells", // long Name or description
+                     "m-2 s-1",  // units
+                     "",         // CF standard Name
+                     std::numeric_limits<Real>::lowest(), // min valid value
+                     std::numeric_limits<Real>::max(),    // max valid value
+                     NDims,   // number of dimensions
+                     DimNames // dimension names
+       );
+
+   // Del2 of relative vorticity on vertices
+   DimNames[0]                 = "NVertices" + DimSuffix;
+   auto Del2RelVortVertexField = Field::create(
+       Del2RelVortVertex.label(),                     // field name
+       "laplacian of relative vorticity at vertices", // long name, description
+       "m-2 s-1",                                     // units
+       "",                                            // CF standard Name
+       std::numeric_limits<Real>::lowest(),           // min valid value
+       std::numeric_limits<Real>::max(),              // max valid value
+       NDims,                                         // number of dimensions
+       DimNames                                       // dimension names
+   );
+
+   // Add fields to Aux Field group
+   FieldGroup::addFieldToGroup(Del2Edge.label(), AuxGroupName);
+   FieldGroup::addFieldToGroup(Del2DivCell.label(), AuxGroupName);
+   FieldGroup::addFieldToGroup(Del2RelVortVertex.label(), AuxGroupName);
+
+   // Attach data to fields
+   Del2EdgeField->attachData<Array2DReal>(Del2Edge);
+   Del2DivCellField->attachData<Array2DReal>(Del2DivCell);
+   Del2RelVortVertexField->attachData<Array2DReal>(Del2RelVortVertex);
+}
+
+void VelocityDel2AuxVars::unregisterFields() const {
+   Field::destroy(Del2Edge.label());
+   Field::destroy(Del2DivCell.label());
+   Field::destroy(Del2RelVortVertex.label());
+}
+
+} // namespace OMEGA

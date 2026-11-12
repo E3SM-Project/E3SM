@@ -1,0 +1,1424 @@
+//===-- base/VertCoord.cpp - vertical coordinate ----------------*- C++ -*-===//
+//
+// The VertCoord class contains member variables related to the vertical mesh
+// and methods for computing these variables in Omega. The class will also serve
+// as the container for information defining the extent of the vertical
+// dimension and the number of active vertical layers in each column.
+//
+//===----------------------------------------------------------------------===//
+
+#include "VertCoord.h"
+#include "Dimension.h"
+#include "Error.h"
+#include "Field.h"
+#include "GlobalConstants.h"
+#include "IO.h"
+#include "IOStream.h"
+#include "OmegaKokkos.h"
+
+#include <limits>
+
+namespace OMEGA {
+
+// create static class members
+VertCoord *VertCoord::DefaultVertCoord = nullptr;
+std::map<std::string, std::unique_ptr<VertCoord>> VertCoord::AllVertCoords;
+
+//------------------------------------------------------------------------------
+// Initialize the default vertical coordinate, requires prior initialization
+// of Decomp and Halo. The optional arguments simplify the use of the VertCoord
+// in some unit tests. If ReadStream is false, the InitialVertCoord stream will
+// not be read during construction. If a value for NVertLayers is passed as
+// argument, the dimension will not be read from the mesh file.
+void VertCoord::init(
+    const bool
+        ReadStream, //< [in] optional argument to read stream, true by default
+    const int
+        InNVertLayers //< [in] optional argument to set NVertLayers explicitly
+                      //< instead of reading dimension from mesh file
+) {
+
+   Decomp *DefDecomp = Decomp::getDefault();
+   OMEGA_REQUIRE(DefDecomp, "Null default Decomp pointer in VertCoord::init");
+
+   Halo *DefHalo = Halo::getDefault();
+   OMEGA_REQUIRE(DefHalo, "Null default Halo pointer in VertCoord::init");
+
+   Config *OmegaConfig = Config::getOmegaConfig();
+   OMEGA_REQUIRE(OmegaConfig, "Null OmegaConfig pointer in VertCoord::init");
+
+   VertCoord::DefaultVertCoord = create("Default", DefDecomp, DefHalo,
+                                        OmegaConfig, ReadStream, InNVertLayers);
+
+} // end init
+
+//------------------------------------------------------------------------------
+// Construct a new VertCoord instance given a Decomp.
+VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
+                     const Decomp *Decomp,     //< [in] associated Decomp
+                     Halo *MeshHalo,           //< [in] mesh halo exchanger
+                     Config *Options,          //< [in] configuration options
+                     const bool ReadStream,    //< [in] logical to read stream
+                     const int InNVertLayers   //< [in] int to set vertical dim
+) {
+   Error Err; // Error code
+
+   // If ReadStream is true, a prescribed value for NVertLayers is not valid
+   if (ReadStream == true and InNVertLayers != 0) {
+      ABORT_ERROR("VertCoord: ReadStream is true but a value for NVertLayers "
+                  "is explicitly provided, which is not a valid combination");
+   }
+
+   // Store name suffix
+   Name = Name_;
+
+   // If InNVertlayers is 0 (default), attempt to read the dimension from the
+   // mesh file. If the mesh file does not define a vertical dimension, use
+   // NVertLayers = 1. If a value for InNVertLayers is explicitly provided,
+   // use that value is instead.
+   if (InNVertLayers == 0) {
+
+      // Retrieve filename from stream
+      std::string Filename = IOStream::getFilename("InitialVertCoord");
+      int FileID;
+
+      std::string OmegaDimName = "NVertLayers";
+      std::string MPASDimName  = "nVertLevels";
+
+      // Open the file for reading (assume IO has already been initialized)
+      IO::openFileRead(FileID, Filename);
+
+      // Set NVertLayers
+      I4 NVertLayersID;
+      Err =
+          IO::getDimFromFile(FileID, OmegaDimName, NVertLayersID, NVertLayers);
+
+      if (Err.isFail()) { // dim not found, try again with older MPAS name
+         Err = IO::getDimFromFile(FileID, MPASDimName, NVertLayersID,
+                                  NVertLayers);
+         if (Err.isFail()) {
+            LOG_INFO("VertCoord: vertical dimension not found in mesh file, "
+                     "using NVertLayers = 1");
+            NVertLayers = 1;
+         }
+      }
+
+      IO::closeFile(FileID);
+
+   } else {
+      NVertLayers = InNVertLayers;
+   }
+
+   // Create the dimensions
+   NVertLayersP1 = NVertLayers + 1;
+
+   std::string DimName   = "NVertLayers";
+   std::string DimP1Name = "NVertLayersP1";
+   if (Name != "Default") {
+      DimName.append(Name);
+      DimP1Name.append(Name);
+   }
+
+   auto VertDim   = Dimension::create(DimName, NVertLayers);
+   auto VertDimP1 = Dimension::create(DimP1Name, NVertLayersP1);
+
+   // Retrieve mesh variables from Decomp
+   NCellsOwned = Decomp->NCellsOwned;
+   NCellsAll   = Decomp->NCellsAll;
+   NCellsSize  = Decomp->NCellsSize;
+
+   NEdgesOwned = Decomp->NEdgesOwned;
+   NEdgesHalo0 = Decomp->NEdgesHaloH(0);
+   NEdgesAll   = Decomp->NEdgesAll;
+   NEdgesSize  = Decomp->NEdgesSize;
+
+   NVerticesOwned = Decomp->NVerticesOwned;
+   NVerticesHalo0 = Decomp->NVerticesHaloH(0);
+   NVerticesAll   = Decomp->NVerticesAll;
+   NVerticesSize  = Decomp->NVerticesSize;
+   VertexDegree   = Decomp->VertexDegree;
+
+   // Retrieve connectivity arrays from Decomp
+   CellsOnEdge    = Decomp->CellsOnEdge;
+   CellsOnVertex  = Decomp->CellsOnVertex;
+   VerticesOnEdge = Decomp->VerticesOnEdge;
+
+   // Allocate device arrays
+   MaxLayerCell    = Array1DI4("MaxLayerCell", NCellsSize);
+   MinLayerCell    = Array1DI4("MinLayerCell", NCellsSize);
+   BottomGeomDepth = Array1DReal("BottomGeomDepth", NCellsSize);
+   SurfacePressure = Array1DReal("SurfacePressure", NCellsSize);
+   PressureInterface =
+       Array2DReal("PressureInterface", NCellsSize, NVertLayersP1);
+   PressureMid    = Array2DReal("PressureMid", NCellsSize, NVertLayers);
+   GeomZInterface = Array2DReal("GeomZInterface", NCellsSize, NVertLayersP1);
+   GeomZMid       = Array2DReal("GeomZMid", NCellsSize, NVertLayers);
+   SshCell        = Array1DReal("SshCell", NCellsSize);
+   TotalPseudoThickness = Array1DReal("TotalPseudoThickness", NCellsSize);
+   deepCopy(SshCell, 0._Real);
+   deepCopy(TotalPseudoThickness, 0._Real);
+
+   GeopotentialMid = Array2DReal("GeopotentialMid", NCellsSize, NVertLayers);
+   PseudoThicknessTarget =
+       Array2DReal("PseudoThicknessTarget", NCellsSize, NVertLayers);
+   RefPseudoThickness =
+       Array2DReal("RefPseudoThickness", NCellsSize, NVertLayers);
+   VertCoordMovementWeights =
+       Array1DReal("VertCoordMovementWeights", NVertLayers);
+
+   // Make host copies for device arrays not being read from file
+   PressureInterfaceH     = createHostMirrorCopy(PressureInterface);
+   PressureMidH           = createHostMirrorCopy(PressureMid);
+   SshCellH               = createHostMirrorCopy(SshCell);
+   GeomZInterfaceH        = createHostMirrorCopy(GeomZInterface);
+   GeomZMidH              = createHostMirrorCopy(GeomZMid);
+   GeopotentialMidH       = createHostMirrorCopy(GeopotentialMid);
+   PseudoThicknessTargetH = createHostMirrorCopy(PseudoThicknessTarget);
+   TotalPseudoThicknessH  = createHostMirrorCopy(TotalPseudoThickness);
+
+   // SurfacePressure is read from the initial-state/restart stream later, in
+   // OceanInit; its host mirror is refreshed then by initSurfacePressure().
+   SurfacePressureH = createHostMirrorCopy(SurfacePressure);
+
+   // Define field metadata
+   defineFields();
+
+   // Set MinLayerCell, MaxLayerCell, and BottomGeomDepth arrays
+   setStreamArrays(ReadStream, MeshHalo);
+
+   // Compute Edge and Vertex vertical ranges
+   minMaxLayerEdge(MeshHalo);
+   minMaxLayerVertex(MeshHalo);
+
+   // Set computational masks
+   setMasks();
+
+} // end constructor
+
+//------------------------------------------------------------------------------
+// Calls the VertCoord constructor and places it in the AllVertCoords map
+VertCoord *VertCoord::create(
+    const std::string &Name, // [in] name for new VertCoord
+    const Decomp *Decomp,    // [in] associated Decomp
+    Halo *MeshHalo,          // [in] mesh halo exchanger
+    Config *Options,         // [in] configuration options
+    const bool ReadStream,   // [in] optional logical to read stream
+    const int InNVertLayers  // [in] optional int to set vertical dim
+) {
+   OMEGA_REQUIRE(
+       Decomp, "Null Decomp pointer in VertCoord::create with Name = {}", Name);
+   OMEGA_REQUIRE(MeshHalo,
+                 "Null Halo pointer in VertCoord::create with Name = {}", Name);
+   OMEGA_REQUIRE(Options,
+                 "Null Config pointer in VertCoord::create with Name = {}",
+                 Name);
+
+   // Check to see if a VertCoord of the same name already exists and, if so,
+   // exit with an error
+   if (AllVertCoords.find(Name) != AllVertCoords.end()) {
+      LOG_ERROR("Attempted to create a VertCoord with name {} but a VertCoord "
+                "of that name already exists",
+                Name);
+      return nullptr;
+   }
+
+   // create a new VertCoord on the heap and put it in a map of unique_ptrs,
+   // which will manage its lifetime
+   auto *NewVertCoord = new VertCoord(Name, Decomp, MeshHalo, Options,
+                                      ReadStream, InNVertLayers);
+   AllVertCoords.emplace(Name, NewVertCoord);
+
+   return NewVertCoord;
+} // end create
+
+//------------------------------------------------------------------------------
+// Define IO fields and metadata
+void VertCoord::defineFields() {
+
+   // Set field names (append Name if not default)
+   MinLayerCellFldName          = "MinLayerCell";
+   MaxLayerCellFldName          = "MaxLayerCell";
+   BottomGeomDepthFldName       = "BottomGeomDepth";
+   RefPseudoThickFldName        = "RefPseudoThickness";
+   VCoordMvmtWgtsFldName        = "VertCoordMovementWeights";
+   PressInterfFldName           = "PressureInterface";
+   PressMidFldName              = "PressureMid";
+   GeomZInterfFldName           = "GeomZInterface";
+   GeomZMidFldName              = "GeomZMid";
+   SshFldName                   = "SshCell";
+   GeopotFldName                = "GeopotentialMid";
+   PseudoThicknessTargetFldName = "PseudoThicknessTarget";
+   SurfacePressureFldName       = "SurfacePressure";
+   TotalPseudoThickFldName      = "TotalPseudoThickness";
+
+   if (Name != "Default") {
+      MinLayerCellFldName.append(Name);
+      MaxLayerCellFldName.append(Name);
+      BottomGeomDepthFldName.append(Name);
+      RefPseudoThickFldName.append(Name);
+      VCoordMvmtWgtsFldName.append(Name);
+      PressInterfFldName.append(Name);
+      PressMidFldName.append(Name);
+      GeomZInterfFldName.append(Name);
+      GeomZMidFldName.append(Name);
+      GeopotFldName.append(Name);
+      PseudoThicknessTargetFldName.append(Name);
+      SshFldName.append(Name);
+      SurfacePressureFldName.append(Name);
+      TotalPseudoThickFldName.append(Name);
+   }
+
+   // Create fields for VertCoord variables
+   int NDims = 1;
+   std::vector<std::string> DimNames(NDims);
+   DimNames[0] = "NCells";
+
+   auto MinLayerCellField = Field::create(
+       MinLayerCellFldName,                         // field name
+       "Index to first active cell in each column", // long name or description
+       "",                                          // units
+       "",                                          // CF standard Name
+       0,                                           // min valid value
+       std::numeric_limits<I4>::max(),              // max valid value
+       NDims,                                       // number of dimensions
+       DimNames                                     // dimension names
+   );
+
+   auto MaxLayerCellField = Field::create(
+       MaxLayerCellFldName,                        // field name
+       "Index to last active cell in each column", // long name or description
+       "",                                         // units
+       "",                                         // CF standard Name
+       -1,                                         // min valid value
+       std::numeric_limits<I4>::max(),             // max valid value
+       NDims,                                      // number of dimensions
+       DimNames                                    // dimension names
+   );
+
+   auto BottomGeomDepthField = Field::create(
+       BottomGeomDepthFldName, // field name
+       "Depth of the bottom of the ocean. Given as a positive distance from"
+       "sea level",                      // long name or description
+       "m",                              // units
+       "sea_floor_depth_below_geoid",    // CF standard Name
+       0.0,                              // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   auto SshField = Field::create(
+       SshFldName,                          // field name
+       "sea surface height at cell center", // long Name or description
+       "m",                                 // units
+       "sea_surface_height",                // CF standard Name
+       std::numeric_limits<Real>::lowest(), // min valid value
+       std::numeric_limits<Real>::max(),    // max valid value
+       NDims,                               // number of dimensions
+       DimNames                             // dimension names
+   );
+
+   auto SurfacePressureField = Field::create(
+       SurfacePressureFldName, // field name
+       "Pressure at the top of the ocean column relative to reference "
+       "atmospheric pressure (i.e. absolute pressure - 101,325 Pa)", // long
+                                                                     // name
+       "Pa",                                                         // units
+       "",        // CF standard Name
+       -9.99E+10, // min valid value
+       9.99E+10,  // max valid value
+       NDims,     // number of dims
+       DimNames   // dimension names
+   );
+
+   // SurfacePressure is optional in the initial-state/restart file; when it is
+   // absent the read is skipped and it defaults to zero in initSurfacePressure.
+   SurfacePressureField->setOptionalRead(true);
+
+   auto TotalPseudoThicknessField =
+       Field::create(TotalPseudoThickFldName,                      // field name
+                     "Total pseudo thickness in each cell column", // long name
+                     "m",                                          // units
+                     "",       // CF standard Name
+                     0.0,      // min valid value
+                     9.99E+10, // max valid value
+                     NDims,    // number of dimensions
+                     DimNames  // dimension names
+       );
+
+   NDims = 2;
+   DimNames.resize(NDims);
+   DimNames[1] = "NVertLayers";
+
+   auto RefPseudoThickField = Field::create(
+       RefPseudoThickFldName, // field name
+       "Reference pseudo-thickness of ocean layers without SSH or internal "
+       "perturbation",                   // long name or description
+       "m",                              // units
+       "",                               // CF standard Name
+       0.0,                              // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   NDims = 1;
+   DimNames.resize(NDims);
+   DimNames[0] = "NVertLayers";
+
+   auto VertCoordMvmtWgtsField = Field::create(
+       VCoordMvmtWgtsFldName, // field name
+       "Weights for distributing changes in total column thickness across "
+       "layers",                         // long name or description
+       "",                               // units
+       "",                               // CF standard Name
+       0.0,                              // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   NDims = 2;
+   DimNames.resize(NDims);
+   DimNames[0] = "NCells";
+   DimNames[1] = "NVertLayersP1";
+
+   auto PressureInterfaceField = Field::create(
+       PressInterfFldName,                                       // field name
+       "Relative pressure (gauge pressure) at layer interfaces", // long name
+       "Pa",                                                     // units
+       "",                               // CF standard Name
+       -AtmRefP,                         // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   auto GeomZInterfaceField = Field::create(
+       GeomZInterfFldName,                     // field name
+       "Geometric height at layer interfaces", // long name or description
+       "m",                                    // units
+       "height",                               // CF standard Name
+       std::numeric_limits<Real>::lowest(),    // min valid value
+       std::numeric_limits<Real>::max(),       // max valid value
+       NDims,                                  // number of dimensions
+       DimNames                                // dimension names
+   );
+
+   DimNames[1] = "NVertLayers";
+
+   auto PressureMidField = Field::create(
+       PressMidFldName,                                         // field name
+       "Relative pressure (gauge pressure) at layer midpoints", // long name
+       "Pa",                                                    // units
+       "",                               // CF standard Name
+       -AtmRefP,                         // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
+   );
+
+   auto GeomZMidField = Field::create(
+       GeomZMidFldName,                       // field name
+       "Geometric height at layer midpoints", // long name or description
+       "m",                                   // units
+       "height",                              // CF standard Name
+       std::numeric_limits<Real>::lowest(),   // min valid value
+       std::numeric_limits<Real>::max(),      // max valid value
+       NDims,                                 // number of dimensions
+       DimNames                               // dimension names
+   );
+
+   auto GeopotentialMidField = Field::create(
+       GeopotFldName,                       // field name
+       "Geopotential at layer midpoints",   // long name or description
+       "m2 s-2",                            // units
+       "geopotential",                      // CF standard Name
+       std::numeric_limits<Real>::lowest(), // min valid value
+       std::numeric_limits<Real>::max(),    // max valid value
+       NDims,                               // number of dimensions
+       DimNames                             // dimension names
+   );
+
+   auto PseudoThicknessTargetField = Field::create(
+       PseudoThicknessTargetFldName, // field name
+       "desired pseudo-thickness based on total perturbation "
+       "from the reference pseudo-thickness", // long name or description
+       "m",                                   // units
+       "",                                    // CF standard Name
+       0.0,                                   // min valid value
+       std::numeric_limits<Real>::max(),      // max valid value
+       NDims,                                 // number of dimensions
+       DimNames                               // dimension names
+   );
+
+   // Create a field group for initial VertCoord fields
+   InitGroupName = "InitVertCoord";
+   if (Name != "Default") {
+      InitGroupName.append(Name);
+   }
+   auto InitVCoordGroup = FieldGroup::create(InitGroupName);
+
+   InitVCoordGroup->addField(MinLayerCellFldName);
+   InitVCoordGroup->addField(MaxLayerCellFldName);
+   InitVCoordGroup->addField(BottomGeomDepthFldName);
+   InitVCoordGroup->addField(RefPseudoThickFldName);
+   InitVCoordGroup->addField(VCoordMvmtWgtsFldName);
+
+   MinLayerCellField->attachData<Array1DI4>(MinLayerCell);
+   MaxLayerCellField->attachData<Array1DI4>(MaxLayerCell);
+   BottomGeomDepthField->attachData<Array1DReal>(BottomGeomDepth);
+   RefPseudoThickField->attachData<Array2DReal>(RefPseudoThickness);
+   VertCoordMvmtWgtsField->attachData<Array1DReal>(VertCoordMovementWeights);
+
+   // Create a field group for VertCoord fields
+   GroupName = "VertCoord";
+   if (Name != "Default") {
+      GroupName.append(Name);
+   }
+   auto VCoordGroup = FieldGroup::create(GroupName);
+
+   VCoordGroup->addField(PressInterfFldName);
+   VCoordGroup->addField(PressMidFldName);
+   VCoordGroup->addField(GeomZInterfFldName);
+   VCoordGroup->addField(GeomZMidFldName);
+   VCoordGroup->addField(GeopotFldName);
+   VCoordGroup->addField(PseudoThicknessTargetFldName);
+   VCoordGroup->addField(SshFldName);
+   VCoordGroup->addField(TotalPseudoThickFldName);
+
+   // Associate Field with data
+   PressureInterfaceField->attachData<Array2DReal>(PressureInterface);
+   PressureMidField->attachData<Array2DReal>(PressureMid);
+   GeomZInterfaceField->attachData<Array2DReal>(GeomZInterface);
+   GeomZMidField->attachData<Array2DReal>(GeomZMid);
+   GeopotentialMidField->attachData<Array2DReal>(GeopotentialMid);
+   PseudoThicknessTargetField->attachData<Array2DReal>(PseudoThicknessTarget);
+   SshField->attachData<Array1DReal>(SshCell);
+   TotalPseudoThicknessField->attachData<Array1DReal>(TotalPseudoThickness);
+
+   // Add SurfacePressure to the State and Restart groups so it is written to
+   // the history/restart files and read from the initial-state and restart
+   // files when present. The read is optional (see setOptionalRead above): if
+   // the variable is absent, SurfacePressure defaults to zero. VertCoord
+   // initializes before OceanState, which also contributes fields to these
+   // groups, so create each group only if it does not already exist.
+   std::string StateGrpName = "State";
+   if (Name != "Default") {
+      StateGrpName.append(Name);
+   }
+   if (!FieldGroup::exists(StateGrpName))
+      FieldGroup::create(StateGrpName);
+   FieldGroup::addFieldToGroup(SurfacePressureFldName, StateGrpName);
+
+   if (!FieldGroup::exists("Restart"))
+      FieldGroup::create("Restart");
+   FieldGroup::addFieldToGroup(SurfacePressureFldName, "Restart");
+
+   SurfacePressureField->attachData<Array1DReal>(SurfacePressure);
+
+} // end defineFields
+
+//------------------------------------------------------------------------------
+// Destroys a local VertCoord and deallocates all arrays
+VertCoord::~VertCoord() {
+
+   if (FieldGroup::exists(InitGroupName)) {
+      Field::destroy(MinLayerCellFldName);
+      Field::destroy(MaxLayerCellFldName);
+      Field::destroy(BottomGeomDepthFldName);
+      Field::destroy(RefPseudoThickFldName);
+      Field::destroy(VCoordMvmtWgtsFldName);
+      FieldGroup::destroy(InitGroupName);
+   }
+
+   if (FieldGroup::exists(GroupName)) {
+      Field::destroy(PressInterfFldName);
+      Field::destroy(PressMidFldName);
+      Field::destroy(GeomZInterfFldName);
+      Field::destroy(GeomZMidFldName);
+      Field::destroy(GeopotFldName);
+      Field::destroy(PseudoThicknessTargetFldName);
+      Field::destroy(SshFldName);
+      Field::destroy(TotalPseudoThickFldName);
+      FieldGroup::destroy(GroupName);
+   }
+
+   // SurfacePressure belongs to the shared "State"/"Restart" groups (owned by
+   // OceanState), so destroy only the field here, not those groups.
+   if (Field::exists(SurfacePressureFldName)) {
+      Field::destroy(SurfacePressureFldName);
+   }
+
+} // end destructor
+
+//------------------------------------------------------------------------------
+// Removes a VertCoord from map by name
+void VertCoord::erase(std::string Name) {
+   AllVertCoords.erase(Name); // removes the VertCoord from the list and in the
+                              // process, calls the destructor
+} // end erase
+
+//------------------------------------------------------------------------------
+// Removes all VertCoords to clean up before exit
+void VertCoord::clear() {
+
+   AllVertCoords.clear(); // removes all VertCoords from the list and in the
+                          // process, calls the destructors for each
+
+   DefaultVertCoord = nullptr; // prevent dangling pointer
+} // end clear
+
+//------------------------------------------------------------------------------
+// If ReadStream = true, read MinLayerCell, MaxLayerCell, and BottomGeomDepth
+// from the initial stream. If ReadStream = false, default values are used.
+void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
+
+   Error Err; // Error code
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocBottomGeomDepth, BottomGeomDepth);
+   OMEGA_SCOPE(LocPseudoThick, RefPseudoThickness);
+   OMEGA_SCOPE(LocVCoordMvmtWgts, VertCoordMovementWeights);
+
+   // If ReadStream is true (default) attempt to read values for MinLayerCell,
+   // MaxLayerCell, and BottomGeomDepth from the InitialVertCoord stream.
+   // Otherwise, MinLayerCell and MaxLayerCell will be set to the first and
+   // last indices of the vertical range, BottomGeomDepth will remain
+   // uninitialized and will need to be initialized explicitly if needed.
+   if (ReadStream) {
+
+      // Fetch input stream and validate
+      std::string StreamName = "InitialVertCoord";
+      if (Name != "Default") {
+         StreamName.append(Name);
+      }
+
+      // Validate InitalVertCoord stream
+      auto VCoordStream = IOStream::get(StreamName);
+      if (VCoordStream == nullptr)
+         ABORT_ERROR("VertCoord: IO stream '{}' is not defined", StreamName);
+      bool IsValidated = VCoordStream->validate();
+
+      // auto VCoordStream = IOStream::get(StreamName);
+      // bool IsValidated  = VCoordStream->validate();
+
+      // Read InitialVertCoord stream
+      if (IsValidated) {
+         // Attempt to read stream, an error will be raised if any field fails
+         // to be read. Determine which fields may not have been read properly.
+         // If MinLayerCell or MaxLayerCell were not read properly default
+         // values will be used. If BottomGeomDepth was not read properly,
+         // abort with error.
+         Err = IOStream::read(StreamName);
+         if (Err.isFail()) {
+            LOG_INFO("VertCoord: Error while reading {} stream", StreamName);
+            I4 NFill1 = 0;
+            parallelReduce(
+                {MinLayerCell.extent_int(0)},
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocMinLayerCell(I) == FillValueI4)
+                      ++Count;
+                },
+                NFill1);
+            if (NFill1 > 0) {
+               LOG_INFO("VertCoord: Error reading MinLayerCell from {}, "
+                        "using MinLayerCell = 0",
+                        StreamName);
+               deepCopy(MinLayerCell, 1);
+            }
+            I4 NFill2 = 0;
+            parallelReduce(
+                {MaxLayerCell.extent_int(0)},
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocMaxLayerCell(I) == FillValueI4)
+                      ++Count;
+                },
+                NFill2);
+            if (NFill2 > 0) {
+               LOG_INFO("VertCoord: Error reading MaxLayerCell from {}, "
+                        "using MaxLayerCell = NVertLayers - 1",
+                        StreamName);
+               deepCopy(MaxLayerCell, NVertLayers);
+            }
+            I4 NFill3 = 0;
+            parallelReduce(
+                {BottomGeomDepth.extent_int(0)},
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocBottomGeomDepth(I) == FillValueReal)
+                      ++Count;
+                },
+                NFill3);
+            if (NFill3 > 0) {
+               ABORT_ERROR("VertCoord: Error reading BottomGeomDepth from {}",
+                           StreamName);
+            }
+            I4 NFill4 = 0;
+            parallelReduce(
+                {RefPseudoThickness.extent_int(0),
+                 RefPseudoThickness.extent_int(1)},
+                KOKKOS_LAMBDA(int I, int J, I4 &Count) {
+                   if (LocPseudoThick(I, J) == FillValueReal)
+                      ++Count;
+                },
+                NFill4);
+            if (NFill4 > 0) {
+               ABORT_ERROR("VertCoord: Error reading RefPseudoThickness "
+                           "from {}",
+                           StreamName);
+            }
+            I4 NFill5 = 0;
+            parallelReduce(
+                {VertCoordMovementWeights.extent_int(0)},
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocVCoordMvmtWgts(I) == FillValueReal)
+                      ++Count;
+                },
+                NFill5);
+            if (NFill5 > 0) {
+               // Stream did not populate weights — use default
+               deepCopy(VertCoordMovementWeights, 1._Real);
+            } else {
+               Real Sum5     = 0.;
+               I4 NumNonZero = 0;
+               parallelReduce(
+                   {VertCoordMovementWeights.extent_int(0)},
+                   KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
+                      Real W = LocVCoordMvmtWgts(I);
+                      Accum += W;
+                      if (W != 0) {
+                         NonZeroCount += 1;
+                      }
+                   },
+                   Sum5, NumNonZero);
+               if (Sum5 < 0.) {
+                  ABORT_ERROR(
+                      "VertCoord: Error reading VertCoordMovementWeights "
+                      "from {}",
+                      StreamName);
+               } else if (NumNonZero == 0) {
+                  // TODO: ABORT_ERROR when all weights equal 0
+                  deepCopy(VertCoordMovementWeights, 1._Real);
+               }
+            }
+         }
+      } else {
+         ABORT_ERROR("Error validating IO stream {}", StreamName);
+      }
+   } else {
+      deepCopy(MinLayerCell, 1);
+      deepCopy(MaxLayerCell, NVertLayers);
+      deepCopy(VertCoordMovementWeights, 1._Real);
+   }
+
+   // Subtract 1 to convert to zero-based indexing
+   parallelFor(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell) {
+          LocMinLayerCell(ICell) -= 1;
+          LocMaxLayerCell(ICell) -= 1;
+       });
+
+   // Exchange halos since stream only reads owned cells
+   MeshHalo->exchangeFullArrayHalo(MinLayerCell, OnCell);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerCell, OnCell);
+   MeshHalo->exchangeFullArrayHalo(BottomGeomDepth, OnCell);
+   MeshHalo->exchangeFullArrayHalo(RefPseudoThickness, OnCell);
+
+   // The index ICell = NCellsAll represents an inactive cell
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
+   OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
+   parallelFor(
+       {1}, KOKKOS_LAMBDA(const int &) {
+          LocMinLayerCell(LocNCellsAll) = LocNVertLayersP1;
+          LocMaxLayerCell(LocNCellsAll) = -1;
+       });
+
+   // Make host copies for device arrays read from mesh file
+   MaxLayerCellH             = createHostMirrorCopy(MaxLayerCell);
+   MinLayerCellH             = createHostMirrorCopy(MinLayerCell);
+   BottomGeomDepthH          = createHostMirrorCopy(BottomGeomDepth);
+   RefPseudoThicknessH       = createHostMirrorCopy(RefPseudoThickness);
+   VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);
+}
+
+//------------------------------------------------------------------------------
+// Exchange SurfacePressure halo
+void VertCoord::updateSurfacePressure(Halo *MeshHalo) {
+   int Err = MeshHalo->exchangeFullArrayHalo(SurfacePressure, OnCell);
+   if (Err != 0) {
+      ABORT_ERROR("VertCoord: Error exchanging SurfacePressure halo");
+   }
+}
+
+//------------------------------------------------------------------------------
+// Apply the zero default when SurfacePressure was absent from the input, then
+// exchange halo and copy SurfacePressure to host after the initial-state or
+// restart stream has been read.
+void VertCoord::initSurfacePressure(Halo *MeshHalo) {
+   // SurfacePressure is an optional read. If it was not present in the
+   // initial-state or restart file, its owned cells still hold the fill value
+   // set by attachData; in that case default the whole array to zero. Only the
+   // owned cells are checked because halo cells are not populated until the
+   // exchange below.
+   OMEGA_SCOPE(LocSurfacePressure, SurfacePressure);
+   I4 NFill = 0;
+   parallelReduce(
+       {NCellsOwned},
+       KOKKOS_LAMBDA(int ICell, I4 &Count) {
+          if (LocSurfacePressure(ICell) == FillValueReal)
+             ++Count;
+       },
+       NFill);
+   if (NFill > 0) {
+      LOG_INFO("VertCoord: SurfacePressure not found in input, "
+               "using SurfacePressure = 0");
+      deepCopy(SurfacePressure, 0._Real);
+   }
+
+   updateSurfacePressure(MeshHalo);
+   deepCopy(SurfacePressureH, SurfacePressure);
+}
+
+//------------------------------------------------------------------------------
+// Compute min and max layer indices for edges based on MinLayerCell and
+// MaxLayerCell
+void VertCoord::minMaxLayerEdge(Halo *MeshHalo) {
+
+   MinLayerEdgeTop = Array1DI4("MinLayerEdgeTop", NEdgesSize);
+   MinLayerEdgeBot = Array1DI4("MinLayerEdgeBot", NEdgesSize);
+   MaxLayerEdgeTop = Array1DI4("MaxLayerEdgeTop", NEdgesSize);
+   MaxLayerEdgeBot = Array1DI4("MaxLayerEdgeBot", NEdgesSize);
+
+   OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
+   OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   parallelFor(
+       {NEdgesOwned}, KOKKOS_LAMBDA(int IEdge) {
+          I4 Lyr1;
+          I4 Lyr2;
+          const I4 ICell1 = LocCellsOnEdge(IEdge, 0);
+          const I4 ICell2 = LocCellsOnEdge(IEdge, 1);
+
+          Lyr1 = LocMaxLayerCell(ICell1) == -1 ? LocNVertLayersP1
+                                               : LocMinLayerCell(ICell1);
+          Lyr2 = LocMaxLayerCell(ICell2) == -1 ? LocNVertLayersP1
+                                               : LocMinLayerCell(ICell2);
+          LocMinLayerEdgeTop(IEdge) = Kokkos::min(Lyr1, Lyr2);
+
+          Lyr1 = LocMaxLayerCell(ICell1) == -1 ? 0 : LocMinLayerCell(ICell1);
+          Lyr2 = LocMaxLayerCell(ICell2) == -1 ? 0 : LocMinLayerCell(ICell2);
+          LocMinLayerEdgeBot(IEdge) = Kokkos::max(Lyr1, Lyr2);
+
+          LocMaxLayerEdgeTop(IEdge) =
+              Kokkos::min(LocMaxLayerCell(ICell1), LocMaxLayerCell(ICell2));
+          LocMaxLayerEdgeBot(IEdge) =
+              Kokkos::max(LocMaxLayerCell(ICell1), LocMaxLayerCell(ICell2));
+       });
+
+   MeshHalo->exchangeFullArrayHalo(MinLayerEdgeTop, OnEdge);
+   MeshHalo->exchangeFullArrayHalo(MinLayerEdgeBot, OnEdge);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerEdgeTop, OnEdge);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerEdgeBot, OnEdge);
+
+   OMEGA_SCOPE(LocNEdgesAll, NEdgesAll);
+   parallelFor(
+       {1}, KOKKOS_LAMBDA(const int &) {
+          LocMinLayerEdgeTop(LocNEdgesAll) = LocNVertLayersP1;
+          LocMinLayerEdgeBot(LocNEdgesAll) = LocNVertLayersP1;
+          LocMaxLayerEdgeTop(LocNEdgesAll) = -1;
+          LocMaxLayerEdgeBot(LocNEdgesAll) = -1;
+       });
+
+   // Set the [MinLayerEdgeBot, MaxLayerEdgeTop] range to be invalid
+   // on the outermost edges of the halo layer.
+   OMEGA_SCOPE(LocNEdgesHalo0, NEdgesHalo0);
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
+   // start from NEdgesHalo(0) to exclude any edges of the owned cells
+   parallelFor(
+       {NEdgesAll - NEdgesHalo0}, KOKKOS_LAMBDA(int EdgeOffset) {
+          const int IEdge = LocNEdgesHalo0 + EdgeOffset;
+
+          // Is any cell on this edge an invalid (remote) cell ?
+          if (LocCellsOnEdge(IEdge, 0) == LocNCellsAll ||
+              LocCellsOnEdge(IEdge, 1) == LocNCellsAll) {
+             LocMinLayerEdgeBot(IEdge) = LocNVertLayersP1;
+             LocMaxLayerEdgeTop(IEdge) = -1;
+          }
+       });
+
+   MinLayerEdgeTopH = createHostMirrorCopy(MinLayerEdgeTop);
+   MinLayerEdgeBotH = createHostMirrorCopy(MinLayerEdgeBot);
+   MaxLayerEdgeTopH = createHostMirrorCopy(MaxLayerEdgeTop);
+   MaxLayerEdgeBotH = createHostMirrorCopy(MaxLayerEdgeBot);
+} // end MinMaxLayerEdge
+
+//------------------------------------------------------------------------------
+// Compute min and max layer indices for vertices based on MinLayerCell and
+// MaxLayerCell
+void VertCoord::minMaxLayerVertex(Halo *MeshHalo) {
+
+   MinLayerVertexTop = Array1DI4("MinLayerVertexTop", NVerticesSize);
+   MinLayerVertexBot = Array1DI4("MinLayerVertexBot", NVerticesSize);
+   MaxLayerVertexTop = Array1DI4("MaxLayerVertexTop", NVerticesSize);
+   MaxLayerVertexBot = Array1DI4("MaxLayerVertexBot", NVerticesSize);
+
+   OMEGA_SCOPE(LocNVertLayersP1, NVertLayersP1);
+   OMEGA_SCOPE(LocVertexDegree, VertexDegree);
+   OMEGA_SCOPE(LocCellsOnVertex, CellsOnVertex);
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocMinLayerVertexTop, MinLayerVertexTop);
+   OMEGA_SCOPE(LocMinLayerVertexBot, MinLayerVertexBot);
+   OMEGA_SCOPE(LocMaxLayerVertexTop, MaxLayerVertexTop);
+   OMEGA_SCOPE(LocMaxLayerVertexBot, MaxLayerVertexBot);
+
+   parallelFor(
+       {NVerticesOwned}, KOKKOS_LAMBDA(int IVertex) {
+          I4 Lyr;
+          I4 ICell = LocCellsOnVertex(IVertex, 0);
+          Lyr      = LocMaxLayerCell(ICell) == -1 ? 0 : LocMinLayerCell(ICell);
+          LocMinLayerVertexBot(IVertex) = Lyr;
+          for (int I = 1; I < LocVertexDegree; ++I) {
+             ICell = LocCellsOnVertex(IVertex, I);
+             Lyr   = LocMaxLayerCell(ICell) == -1 ? 0 : LocMinLayerCell(ICell);
+             LocMinLayerVertexBot(IVertex) =
+                 Kokkos::max(LocMinLayerVertexBot(IVertex), Lyr);
+          }
+
+          ICell = LocCellsOnVertex(IVertex, 0);
+          Lyr   = LocMaxLayerCell(ICell) == -1 ? LocNVertLayersP1
+                                               : LocMinLayerCell(ICell);
+          LocMinLayerVertexTop(IVertex) = Lyr;
+          for (int I = 1; I < LocVertexDegree; ++I) {
+             ICell = LocCellsOnVertex(IVertex, I);
+             Lyr   = LocMaxLayerCell(ICell) == -1 ? LocNVertLayersP1
+                                                  : LocMinLayerCell(ICell);
+             LocMinLayerVertexTop(IVertex) =
+                 Kokkos::min(LocMinLayerVertexTop(IVertex), Lyr);
+          }
+
+          ICell                         = LocCellsOnVertex(IVertex, 0);
+          LocMaxLayerVertexBot(IVertex) = LocMaxLayerCell(ICell);
+          for (int I = 1; I < LocVertexDegree; ++I) {
+             ICell                         = LocCellsOnVertex(IVertex, I);
+             LocMaxLayerVertexBot(IVertex) = Kokkos::max(
+                 LocMaxLayerVertexBot(IVertex), LocMaxLayerCell(ICell));
+          }
+
+          ICell                         = LocCellsOnVertex(IVertex, 0);
+          LocMaxLayerVertexTop(IVertex) = LocMaxLayerCell(ICell);
+          for (int I = 1; I < LocVertexDegree; ++I) {
+             ICell                         = LocCellsOnVertex(IVertex, I);
+             LocMaxLayerVertexTop(IVertex) = Kokkos::min(
+                 LocMaxLayerVertexTop(IVertex), LocMaxLayerCell(ICell));
+          }
+       });
+
+   MeshHalo->exchangeFullArrayHalo(MinLayerVertexTop, OnVertex);
+   MeshHalo->exchangeFullArrayHalo(MinLayerVertexBot, OnVertex);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerVertexTop, OnVertex);
+   MeshHalo->exchangeFullArrayHalo(MaxLayerVertexBot, OnVertex);
+
+   OMEGA_SCOPE(LocNVerticesAll, NVerticesAll);
+   parallelFor(
+       {1}, KOKKOS_LAMBDA(const int &) {
+          LocMinLayerVertexTop(LocNVerticesAll) = LocNVertLayersP1;
+          LocMinLayerVertexBot(LocNVerticesAll) = LocNVertLayersP1;
+          LocMaxLayerVertexTop(LocNVerticesAll) = -1;
+          LocMaxLayerVertexBot(LocNVerticesAll) = -1;
+       });
+
+   // Set the [MinLayerVertexBot, MaxLayerVertexTop] range to be invalid
+   // on the outermost vertices of the halo layer.
+   OMEGA_SCOPE(LocNVerticesHalo0, NVerticesHalo0);
+   OMEGA_SCOPE(LocNCellsAll, NCellsAll);
+   // start from NVerticesHalo(0) to exclude any vertices of the owned cells
+   parallelFor(
+       {NVerticesAll - NVerticesHalo0}, KOKKOS_LAMBDA(int VertexOffset) {
+          const int IVertex = LocNVerticesHalo0 + VertexOffset;
+
+          // Is any cell on this vertex an invalid (remote) cell ?
+          bool IsOuterMost = LocCellsOnVertex(IVertex, 0) == LocNCellsAll;
+          for (int I = 1; I < LocVertexDegree; ++I) {
+             IsOuterMost =
+                 IsOuterMost || LocCellsOnVertex(IVertex, I) == LocNCellsAll;
+          }
+
+          if (IsOuterMost) {
+             LocMinLayerVertexBot(IVertex) = LocNVertLayersP1;
+             LocMaxLayerVertexTop(IVertex) = -1;
+          }
+       });
+
+   MinLayerVertexTopH = createHostMirrorCopy(MinLayerVertexTop);
+   MinLayerVertexBotH = createHostMirrorCopy(MinLayerVertexBot);
+   MaxLayerVertexTopH = createHostMirrorCopy(MaxLayerVertexTop);
+   MaxLayerVertexBotH = createHostMirrorCopy(MaxLayerVertexBot);
+} // end MinMaxLayerVertex
+
+//------------------------------------------------------------------------------
+// set computational masks for mesh elements
+void VertCoord::setMasks() {
+
+   // EdgeMask & BoundaryEdge
+   EdgeMask     = Array2DReal("EdgeMask", NEdgesSize, NVertLayers);
+   BoundaryEdge = Array2DReal("BoundaryEdge", NEdgesSize, NVertLayers);
+
+   OMEGA_SCOPE(LocEdgeMask, EdgeMask);
+   OMEGA_SCOPE(LocBoundaryEdge, BoundaryEdge);
+   OMEGA_SCOPE(LocMinLyrEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLyrEdgeTop, MaxLayerEdgeTop);
+
+   // EdgeMask = 1 if active layers on both sides, 0 otherwise.
+   // BoundaryEdge = 0 if active layers on both sides, 1 otherwise.
+   deepCopy(EdgeMask, 0.);
+   deepCopy(BoundaryEdge, 1.);
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const I4 KMin = LocMinLyrEdgeBot(IEdge);
+          const I4 KMax = LocMaxLyrEdgeTop(IEdge);
+
+          parallelForInner(
+              Team, Range{KMin, KMax}, INNER_LAMBDA(int K) {
+                 LocEdgeMask(IEdge, K)     = 1._Real;
+                 LocBoundaryEdge(IEdge, K) = 0._Real;
+              });
+       });
+
+   EdgeMaskH     = createHostMirrorCopy(EdgeMask);
+   BoundaryEdgeH = createHostMirrorCopy(BoundaryEdge);
+
+   // BoundaryCell & BoundaryVertex
+   //              = 1 in inactive layers, 0 otherwise.
+   BoundaryCell   = Array2DReal("BoundaryCell", NCellsSize, NVertLayers);
+   BoundaryVertex = Array2DReal("BoundaryVertex", NVerticesSize, NVertLayers);
+
+   OMEGA_SCOPE(LocBoundaryCell, BoundaryCell);
+   OMEGA_SCOPE(LocBoundaryVertex, BoundaryVertex);
+   OMEGA_SCOPE(LocCellsOnEdge, CellsOnEdge);
+   OMEGA_SCOPE(LocVerticesOnEdge, CellsOnEdge);
+   OMEGA_SCOPE(LocNVertLayers, NVertLayers);
+
+   deepCopy(BoundaryCell, 0.);
+   deepCopy(BoundaryVertex, 0.);
+
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const I4 JCell0   = LocCellsOnEdge(IEdge, 0);
+          const I4 JCell1   = LocCellsOnEdge(IEdge, 1);
+          const I4 JVertex0 = LocVerticesOnEdge(IEdge, 0);
+          const I4 JVertex1 = LocVerticesOnEdge(IEdge, 1);
+
+          parallelForInner(
+              Team, LocNVertLayers, INNER_LAMBDA(int K) {
+                 if (LocBoundaryEdge(IEdge, K) == 1._Real) {
+                    LocBoundaryCell(JCell0, K)     = 1._Real;
+                    LocBoundaryCell(JCell1, K)     = 1._Real;
+                    LocBoundaryVertex(JVertex0, K) = 1._Real;
+                    LocBoundaryVertex(JVertex1, K) = 1._Real;
+                 }
+              });
+       });
+
+   BoundaryCellH   = createHostMirrorCopy(BoundaryCell);
+   BoundaryVertexH = createHostMirrorCopy(BoundaryVertex);
+
+   // CellMask
+   CellMask = Array2DReal("CellMask", NCellsSize, NVertLayers);
+
+   OMEGA_SCOPE(LocCellMask, CellMask);
+   OMEGA_SCOPE(LocMinLyrCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLyrCell, MaxLayerCell);
+
+   // CellMask = 1 in active layers, 0 otherwise.
+   deepCopy(CellMask, 0.);
+   parallelForOuter(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin = LocMinLyrCell(ICell);
+          const I4 KMax = LocMaxLyrCell(ICell);
+
+          parallelForInner(
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K) { LocCellMask(ICell, K) = 1._Real; });
+       });
+
+   CellMaskH = createHostMirrorCopy(CellMask);
+
+   // VertexMask
+   VertexMask = Array2DReal("VertexMask", NVerticesSize, NVertLayers);
+
+   OMEGA_SCOPE(LocVrtxMask, VertexMask);
+   OMEGA_SCOPE(LocMinLyrVrtxTop, MinLayerVertexTop);
+   OMEGA_SCOPE(LocMaxLyrVrtxBot, MaxLayerVertexBot);
+
+   // VertexMask = 1 if at least 1 surrounding cell layer is active,
+   // 0 otherwise.
+   deepCopy(VertexMask, 0.);
+   parallelForOuter(
+       {NVerticesAll}, KOKKOS_LAMBDA(int IVertex, const TeamMember &Team) {
+          const I4 KMin = LocMinLyrVrtxTop(IVertex);
+          const I4 KMax = LocMaxLyrVrtxBot(IVertex);
+
+          parallelForInner(
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K) { LocVrtxMask(IVertex, K) = 1._Real; });
+       });
+
+   VertexMaskH = createHostMirrorCopy(VertexMask);
+
+} // end setMasks()
+
+//------------------------------------------------------------------------------
+// Compute the relative pressure (gauge pressure, i.e., absolute pressure minus
+// the standard atmosphere of 101325 Pa) at each layer interface and midpoint
+// given PseudoThickness and SurfacePressure (also relative). Hierarchical
+// parallelism is used with a parallel_for loop over all cells and a
+// parallel_scan performing a prefix sum in each column from the top-most active
+// layer to the bottom-most active layer.
+void VertCoord::computePressure(
+    const Array2DReal &PseudoThickness, // [in] pseudo-thickness
+    const Array1DReal &SurfacePressure  // [in] surface pressure
+) {
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocPressInterf, PressureInterface);
+   OMEGA_SCOPE(LocPressMid, PressureMid);
+
+   parallelForOuter(
+       "computePressure", {NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin               = LocMinLayerCell(ICell);
+          const I4 KMax               = LocMaxLayerCell(ICell);
+          LocPressInterf(ICell, KMin) = SurfacePressure(ICell);
+          parallelScanInner(
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
+                 Real Increment = Gravity * RhoSw * PseudoThickness(ICell, K);
+                 Accum += Increment;
+
+                 if (IsFinal) {
+                    LocPressInterf(ICell, K + 1) =
+                        SurfacePressure(ICell) + Accum;
+                    LocPressMid(ICell, K) =
+                        SurfacePressure(ICell) + Accum - 0.5 * Increment;
+                 }
+              });
+       });
+} // end computePressure
+
+//------------------------------------------------------------------------------
+// Compute total pseudo thickness in each cell column.
+void VertCoord::computeTotalPseudoThickness(
+    const Array2DReal &PseudoThickness // [in] pseudo thickness
+) {
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocTotalPseudoThickness, TotalPseudoThickness);
+
+   parallelForOuter(
+       "computeTotalPseudoThickness", {NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin = LocMinLayerCell(ICell);
+          const I4 KMax = LocMaxLayerCell(ICell);
+
+          Real ColumnThickness = 0._Real;
+          parallelReduceInner(
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(const int K, Real &Accum) {
+                 Accum += PseudoThickness(ICell, K);
+              },
+              ColumnThickness);
+
+          Kokkos::single(
+              PerTeam(Team), INNER_LAMBDA() {
+                 LocTotalPseudoThickness(ICell) = ColumnThickness;
+              });
+       });
+} // end computeTotalPseudoThickness
+
+//------------------------------------------------------------------------------
+// Compute geometric height z at layer interfaces and midpoints given the
+// PseudoThickness, SpecVol, and BottomGeomDepth. Hierarchical parallelism is
+// used with a parallel_for loop over cells and a parallel_scan performing a
+// prefix sum in each column to compute z from the bottom-most active layer to
+// the top-most active layer
+void VertCoord::computeGeomZHeight(
+    const Array2DReal &PseudoThickness, // [in] pseudo-thickness
+    const Array2DReal &SpecVol          // [in] specific volume
+) {
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocZInterf, GeomZInterface);
+   OMEGA_SCOPE(LocZMid, GeomZMid);
+   OMEGA_SCOPE(LocBotGeomDepth, BottomGeomDepth);
+   OMEGA_SCOPE(LocSshCell, SshCell);
+
+   parallelForOuter(
+       "computeGeomZHeight", {NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin   = LocMinLayerCell(ICell);
+          const I4 KMax   = LocMaxLayerCell(ICell);
+          const I4 KRange = vertRange(KMin, KMax);
+
+          LocZInterf(ICell, KMax + 1) = -LocBotGeomDepth(ICell);
+          parallelScanInner(
+              Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
+                 const I4 KLyr = KMax - K;
+                 Real DZ       = RhoSw * SpecVol(ICell, KLyr) *
+                           PseudoThickness(ICell, KLyr);
+                 Accum += DZ;
+                 if (IsFinal) {
+                    LocZInterf(ICell, KLyr) = -LocBotGeomDepth(ICell) + Accum;
+                    LocZMid(ICell, KLyr) =
+                        -LocBotGeomDepth(ICell) + Accum - 0.5 * DZ;
+                    if (KLyr == KMin) {
+                       LocSshCell(ICell) = LocZInterf(ICell, KLyr);
+                    }
+                 }
+              });
+       });
+} // end computeGeomZHeight
+
+//------------------------------------------------------------------------------
+// Compute geopotential given Zmid, TidalPotential, and SelfAttractionLoading.
+// Nested parallel_fors loop over all cells and all active layers in a column to
+// compute the geopotential at the midpoint of each layer. The tidal potential
+// and SAL are configurable, default-off features. When off these arrays will
+// just be zeroes.
+void VertCoord::computeGeopotential(
+    const Array1DReal &TidalPotential,       // [in] tidal potential
+    const Array1DReal &SelfAttractionLoading // [in] self attraction and loading
+) {
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocGeopotMid, GeopotentialMid);
+   OMEGA_SCOPE(LocZMid, GeomZMid);
+
+   parallelForOuter(
+       "computeGeopotential", {NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin    = LocMinLayerCell(ICell);
+          const I4 KMax    = LocMaxLayerCell(ICell);
+          const I4 NChunks = vertRangeChunked(KMin, KMax);
+          parallelForInner(
+              Team, NChunks, INNER_LAMBDA(const int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K             = KStart + KVec;
+                    LocGeopotMid(ICell, K) = Gravity * LocZMid(ICell, K) +
+                                             TidalPotential(ICell) +
+                                             SelfAttractionLoading(ICell);
+                 }
+              });
+       });
+} // end compute Geopotential
+
+//------------------------------------------------------------------------------
+// Compute the desired target thickness, given PressureInterface,
+// RefPseudoThickness, and VertCoordMovementWeights. Hierarchical parallelsim is
+// used with an outer parallel_for loop over cells, and 2 paralel_reduce
+// reductions and a parallel_for over the active layers within a column.
+void VertCoord::computeTargetThickness() {
+
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   OMEGA_SCOPE(LocPseudoThickTarget, PseudoThicknessTarget);
+   OMEGA_SCOPE(LocPressInterf, PressureInterface);
+   OMEGA_SCOPE(LocRefPseudoThick, RefPseudoThickness);
+   OMEGA_SCOPE(LocVertCoordMvmtWgts, VertCoordMovementWeights);
+
+   parallelForOuter(
+       "computeTargetThickness", {NCellsAll},
+       KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const I4 KMin = LocMinLayerCell(ICell);
+          const I4 KMax = LocMaxLayerCell(ICell);
+          Real Coeff =
+              (LocPressInterf(ICell, KMax + 1) - LocPressInterf(ICell, KMin)) /
+              (Gravity * RhoSw);
+
+          Real SumWh   = 0;
+          Real SumRefH = 0;
+          parallelReduceInner(
+              Team, Range{KMin, KMax},
+              INNER_LAMBDA(const int K, Real &LocalWh, Real &LocalSum) {
+                 const Real RefPseudoThick = LocRefPseudoThick(ICell, K);
+                 LocalWh += LocVertCoordMvmtWgts(K) * RefPseudoThick;
+                 LocalSum += RefPseudoThick;
+              },
+              SumWh, SumRefH);
+          Coeff -= SumRefH;
+
+          const I4 NChunks = vertRangeChunked(KMin, KMax);
+
+          parallelForInner(
+              Team, NChunks, INNER_LAMBDA(const int KChunk) {
+                 const I4 KStart = chunkStart(KChunk, KMin);
+                 const I4 KLen   = chunkLength(KChunk, KStart, KMax);
+                 for (int KVec = 0; KVec < KLen; ++KVec) {
+                    const I4 K = KStart + KVec;
+                    LocPseudoThickTarget(ICell, K) =
+                        LocRefPseudoThick(ICell, K) *
+                        (1._Real + Coeff * LocVertCoordMvmtWgts(K) / SumWh);
+                 }
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Perform deepCopy for each variable array from device to host
+void VertCoord::copyToHost() {
+
+   deepCopy(PressureInterfaceH, PressureInterface);
+   deepCopy(PressureMidH, PressureMid);
+   deepCopy(GeomZInterfaceH, GeomZInterface);
+   deepCopy(GeomZMidH, GeomZMid);
+   deepCopy(SshCellH, SshCell);
+   deepCopy(TotalPseudoThicknessH, TotalPseudoThickness);
+   deepCopy(GeopotentialMidH, GeopotentialMid);
+   deepCopy(PseudoThicknessTargetH, PseudoThicknessTarget);
+   deepCopy(RefPseudoThicknessH, RefPseudoThickness);
+   // SurfacePressure is only ever written on the device (see copyToDevice)
+   deepCopy(SurfacePressureH, SurfacePressure);
+}
+
+//------------------------------------------------------------------------------
+// Perform deepCopy for each variable array from host to device
+void VertCoord::copyToDevice() {
+
+   deepCopy(PressureInterface, PressureInterfaceH);
+   deepCopy(PressureMid, PressureMidH);
+   deepCopy(GeomZInterface, GeomZInterfaceH);
+   deepCopy(GeomZMid, GeomZMidH);
+   deepCopy(SshCell, SshCellH);
+   deepCopy(TotalPseudoThickness, TotalPseudoThicknessH);
+   deepCopy(GeopotentialMid, GeopotentialMidH);
+   deepCopy(PseudoThicknessTarget, PseudoThicknessTargetH);
+   deepCopy(RefPseudoThickness, RefPseudoThicknessH);
+   // Note the asymmetry with copyToHost, which does refresh SurfacePressureH:
+   // the device SurfacePressure is the authoritative copy (it is what
+   // Field::attachData registered and what computePressure reads) and is only
+   // ever written on the device, by the input stream read or by
+   // SfcCoupling::applyImportFields. SurfacePressureH is a read-only mirror of
+   // it, so copying it back here could only overwrite a newer device value.
+}
+
+//------------------------------------------------------------------------------
+// Get default VertCoord
+VertCoord *VertCoord::getDefault() { return VertCoord::DefaultVertCoord; }
+
+//------------------------------------------------------------------------------
+// Get VertCoord by name
+VertCoord *VertCoord::get(const std::string Name ///< [in] Name of VertCoord
+) {
+
+   // look for an instance of this name
+   auto it = AllVertCoords.find(Name);
+
+   // if found, return the VertCoord pointer
+   if (it != AllVertCoords.end()) {
+      return it->second.get();
+
+      // otherwise print error and return null pointer
+   } else {
+      LOG_ERROR("VertCoord::get: Attempt to retrieve non-existant VertCoord:");
+      LOG_ERROR("{} has not been defined or has been removed", Name);
+      return nullptr;
+   }
+
+} // end get VertCoord
+
+//------------------------------------------------------------------------------
+// Zero all layers in [MinLayerEdgeTop, MaxLayerEdgeBot] of an edge field.
+void VertCoord::zeroEdgeField(Array2DReal Arr, I4 NEdgesAll) const {
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KTop = LocMinLayerEdgeTop(IEdge);
+          const int KBot = Kokkos::max(0, LocMaxLayerEdgeBot(IEdge));
+          parallelForInner(
+              Team, Range{KTop, KBot},
+              INNER_LAMBDA(int K) { Arr(IEdge, K) = 0._Real; });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce masking on a cell field after IC or restart read.
+void VertCoord::applyCellLayerMask(Array2DReal Arr, I4 NCellsAll) const {
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin = LocMinLayerCell(ICell);
+          const int KMax = LocMaxLayerCell(ICell);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KMin || K > KMax)
+                    Arr(ICell, K) = FillValueReal;
+                 // else: active layer - keep IC/restart value
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce masking on a vertex field after IC or restart read.
+void VertCoord::applyVertexLayerMask(Array2DReal Arr, I4 NVerticesAll) const {
+   OMEGA_SCOPE(LocMinLayerVertexTop, MinLayerVertexTop);
+   OMEGA_SCOPE(LocMaxLayerVertexBot, MaxLayerVertexBot);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NVerticesAll}, KOKKOS_LAMBDA(int IVertex, const TeamMember &Team) {
+          const int KMin = LocMinLayerVertexTop(IVertex);
+          const int KMax = LocMaxLayerVertexBot(IVertex);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KMin || K > KMax)
+                    Arr(IVertex, K) = FillValueReal;
+                 // else: active layer - keep IC/restart value
+                 // Unlike edges, boundary vertices (those with one or more
+                 // active surrounding cells) hold valid, generally non-zero
+                 // data and are not zeroed.
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce 3-zone masking on an edge field after IC or restart read.
+void VertCoord::applyEdgeLayerMask(Array2DReal Arr, I4 NEdgesAll) const {
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KTop = LocMinLayerEdgeTop(IEdge);
+          const int KBot = Kokkos::max(0, LocMaxLayerEdgeBot(IEdge));
+          const int KMin = LocMinLayerEdgeBot(IEdge);
+          const int KMax = LocMaxLayerEdgeTop(IEdge);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KTop || K > KBot)
+                    Arr(IEdge, K) = FillValueReal;
+                 else if (K < KMin || K > KMax)
+                    Arr(IEdge, K) = 0._Real;
+                 // else: active layer - keep IC/restart value
+              });
+       });
+}
+
+} // end namespace OMEGA
+
+//===----------------------------------------------------------------------===//

@@ -425,7 +425,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
-      <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
+      <value compset="_DATM.*_SLND.*(MPAS|OMEGA)" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%u03-oi240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
@@ -560,7 +560,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_MPASO" grid="oi%oQU480">6</value>
-      <value compset="_MPASO" grid="oi%oQU240">12</value>
+      <value compset="_(MPASO|OMEGA)" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
       <value compset="_MPASO" grid="oi%u03-oi240">12</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
@@ -632,7 +632,7 @@
       <value compset=".+" grid="a%ne4np4">6</value>
       <value compset=".+" grid="a%ne11np4">6</value>
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
-      <value compset="_DATM.*_MPASO"           >$ATM_NCPL</value>
+      <value compset="_DATM.*_(MPASO|OMEGA)">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
