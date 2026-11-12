@@ -96,7 +96,7 @@ initialize_impl ()
     m_diagnostic_output.create_valid_mask();
   } else {
     // Masks with the same name must hold the same values, hence have the same layout (IO keys the
-    // avg count by the mask name, and checks it). So the name of the broadcast mask carries the
+    // valid count by the mask name, and checks it). So the name of the broadcast mask carries the
     // non-column dims, as for any field that is not (ncol): the (ncol) mask is aliased under that name
     // first, and then broadcast.
     auto index_mask = m_fields_in.at(m_index_name).get_valid_mask();
