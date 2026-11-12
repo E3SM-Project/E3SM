@@ -1,3 +1,14 @@
+execute_process(COMMAND uname -m
+  OUTPUT_VARIABLE CECH_HOST_ARCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if (NOT CECH_HOST_ARCH STREQUAL "aarch64")
+  message(FATAL_ERROR
+    "On cech, builds must run on aarch64 compute nodes (detected '${CECH_HOST_ARCH}' login node). "
+    "Pass '--batch-build' to create_test/case.build (or use batch-create-test.sh), or run inside a compute node allocation."
+  )
+endif()
+
 set(MPICC "mpicc")
 set(MPICXX "mpicxx")
 set(MPIFC "mpifort")

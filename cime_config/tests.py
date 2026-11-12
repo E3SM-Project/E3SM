@@ -295,7 +295,7 @@ _TESTS = {
         },
 
     "homme_integration" : {
-        "time"    : "0:120:00",
+        "time"    : "03:00:00",
         "tests"   : (
             "HOMME_P24.f19_g16_rx1.A",
             "HOMMEBFB.f19_g16_rx1.A",
