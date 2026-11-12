@@ -107,6 +107,26 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::host_mirror_type field_3d_int_cxx_host;
   field_3d_int_cxx_host = Kokkos::create_mirror_view(field_3d_int_cxx);
 
+  auto make_strided_field = [](const auto& field) {
+    using view_type = typename std::decay<decltype(field)>::type;
+    Kokkos::LayoutStride layout;
+    size_t stride = 2;
+    for (int dim = view_type::rank - 1; dim >= 0; --dim) {
+      layout.dimension[dim] = field.extent(dim);
+      layout.stride[dim] = stride;
+      stride = field.extent(dim)*stride + 3;
+    }
+    return BoundaryExchangeFieldView<typename view_type::data_type>("strided field", layout);
+  };
+  auto field_2d_strided = make_strided_field(field_2d_cxx);
+  auto field_3d_strided = make_strided_field(field_3d_cxx);
+  auto field_3d_int_strided = make_strided_field(field_3d_int_cxx);
+  auto field_4d_strided = make_strided_field(field_4d_cxx);
+  auto field_2d_strided_host = Kokkos::create_mirror_view(field_2d_strided);
+  auto field_3d_strided_host = Kokkos::create_mirror_view(field_3d_strided);
+  auto field_3d_int_strided_host = Kokkos::create_mirror_view(field_3d_int_strided);
+  auto field_4d_strided_host = Kokkos::create_mirror_view(field_4d_strided);
+
   // Get the buffers manager
   Context::singleton().create<MpiBuffersManagerMap>()[MPI_EXCHANGE];
   std::shared_ptr<MpiBuffersManager> buffers_manager = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
@@ -118,14 +138,18 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   std::shared_ptr<BoundaryExchange> be3 = std::make_shared<BoundaryExchange>(connectivity,buffers_manager_min_max);
 
   // Setup the be objects
-  be1->set_num_fields(0,num_scalar_fields_2d,DIM*num_vector_fields_3d);
+  be1->set_num_fields(0,2*num_scalar_fields_2d,2*DIM*num_vector_fields_3d);
   be1->register_field(field_2d_cxx,1,field_2d_idim);
   be1->register_field(field_4d_cxx,  field_4d_outer_idim,DIM,0);
+  be1->register_field(field_2d_strided,1,field_2d_idim);
+  be1->register_field(field_4d_strided,  field_4d_outer_idim,DIM,0);
   be1->registration_completed();
 
-  be2->set_num_fields(0,0,num_scalar_fields_3d,num_scalar_interface_fields_3d);
+  be2->set_num_fields(0,0,2*num_scalar_fields_3d,2*num_scalar_interface_fields_3d);
   be2->register_field(field_3d_cxx,1,field_3d_idim);
   be2->register_field(field_3d_int_cxx,1,field_3d_idim);
+  be2->register_field(field_3d_strided,1,field_3d_idim);
+  be2->register_field(field_3d_int_strided,1,field_3d_idim);
   be2->registration_completed();
 
   be3->set_num_fields(num_min_max_fields_1d,0,0);
@@ -161,6 +185,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
             field_2d_cxx_host(ie,itl,igp,jgp) = field_2d_f90(ie,itl,igp,jgp);
     }}}}
     Kokkos::deep_copy(field_2d_cxx, field_2d_cxx_host);
+    Kokkos::deep_copy(field_2d_strided, field_2d_cxx_host);
 
     genRandArray(field_3d_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
@@ -173,6 +198,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
               field_3d_cxx_host(ie,itl,igp,jgp,ilev)[ivec] = field_3d_f90(ie,itl,level,igp,jgp);
     }}}}}
     Kokkos::deep_copy(field_3d_cxx, field_3d_cxx_host);
+    Kokkos::deep_copy(field_3d_strided, field_3d_cxx_host);
 
     genRandArray(field_3d_int_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
@@ -185,6 +211,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
               field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec] = field_3d_int_f90(ie,itl,level,igp,jgp);
     }}}}}
     Kokkos::deep_copy(field_3d_int_cxx, field_3d_int_cxx_host);
+    Kokkos::deep_copy(field_3d_int_strided, field_3d_int_cxx_host);
 
     genRandArray(field_4d_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
@@ -198,6 +225,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
                 field_4d_cxx_host(ie,itl,idim,igp,jgp,ilev)[ivec] = field_4d_f90(ie,itl,idim,level,igp,jgp);
     }}}}}}
     Kokkos::deep_copy(field_4d_cxx, field_4d_cxx_host);
+    Kokkos::deep_copy(field_4d_strided, field_4d_cxx_host);
 
     // Perform boundary exchange
     boundary_exchange_test_f90(field_min_1d_f90.data(), field_max_1d_f90.data(),
@@ -222,6 +250,10 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
     Kokkos::deep_copy(field_3d_cxx_host,     field_3d_cxx);
     Kokkos::deep_copy(field_3d_int_cxx_host, field_3d_int_cxx);
     Kokkos::deep_copy(field_4d_cxx_host,     field_4d_cxx);
+    Kokkos::deep_copy(field_2d_strided_host,     field_2d_strided);
+    Kokkos::deep_copy(field_3d_strided_host,     field_3d_strided);
+    Kokkos::deep_copy(field_3d_int_strided_host, field_3d_int_strided);
+    Kokkos::deep_copy(field_4d_strided_host,     field_4d_strided);
 
     // Compare answers
     for (int ie=0; ie<num_elements; ++ie) {
@@ -253,6 +285,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
               std::cout << "cxx: " << field_2d_cxx_host(ie,itl,igp,jgp) << "\n";
             }
             REQUIRE(compare_answers(field_2d_f90(ie,itl,igp,jgp),field_2d_cxx_host(ie,itl,igp,jgp)) < test_tolerance);
+            REQUIRE(compare_answers(field_2d_f90(ie,itl,igp,jgp),field_2d_strided_host(ie,itl,igp,jgp)) < test_tolerance);
     }}}}
 
     for (int ie=0; ie<num_elements; ++ie) {
@@ -268,6 +301,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
                 std::cout << std::setprecision(17) << "cxx: " << field_3d_cxx_host(ie,itl,igp,jgp,ilev)[ivec] << "\n";
               }
               REQUIRE(compare_answers(field_3d_f90(ie,itl,level,igp,jgp),field_3d_cxx_host(ie,itl,igp,jgp,ilev)[ivec]) < test_tolerance);
+              REQUIRE(compare_answers(field_3d_f90(ie,itl,level,igp,jgp),field_3d_strided_host(ie,itl,igp,jgp,ilev)[ivec]) < test_tolerance);
     }}}}}
 
     for (int ie=0; ie<num_elements; ++ie) {
@@ -283,6 +317,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
                 std::cout << std::setprecision(17) << "cxx: " << field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec] << "\n";
               }
               REQUIRE(compare_answers(field_3d_int_f90(ie,itl,level,igp,jgp),field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec]) < test_tolerance);
+              REQUIRE(compare_answers(field_3d_int_f90(ie,itl,level,igp,jgp),field_3d_int_strided_host(ie,itl,igp,jgp,ilev)[ivec]) < test_tolerance);
     }}}}}
 
     for (int ie=0; ie<num_elements; ++ie) {
@@ -299,6 +334,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
                   std::cout << std::setprecision(17) << "cxx: " << field_4d_cxx_host(ie,itl,idim,igp,jgp,ilev)[ivec] << "\n";
                 }
                 REQUIRE(compare_answers(field_4d_f90(ie,itl,idim,level,igp,jgp),field_4d_cxx_host(ie,itl,idim,igp,jgp,ilev)[ivec]) < test_tolerance);
+                REQUIRE(compare_answers(field_4d_f90(ie,itl,idim,level,igp,jgp),field_4d_strided_host(ie,itl,idim,igp,jgp,ilev)[ivec]) < test_tolerance);
     }}}}}}
   }
 
