@@ -1,5 +1,51 @@
+# Our emulators all require Python at the moment. And specifically, they need Python running in an
+# appropriate virtual environment.
+
+set(Python3_FIND_VIRTUALENV ONLY)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+  RESULT_VARIABLE EMULATOR_NUMPY_MISSING
+  OUTPUT_QUIET
+  ERROR_QUIET
+)
+execute_process(COMMAND ${Python3_EXECUTABLE} -c "import site; print(':'.join(site.getsitepackages()))"
+  OUTPUT_VARIABLE EMULATOR_PYTHON_SITE_PACKAGES
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch"
+  RESULT_VARIABLE EMULATOR_PYTHON_TORCH_MISSING
+  OUTPUT_QUIET
+  ERROR_QUIET
+)
+if(EMULATOR_PYTHON_TORCH_MISSING)
+  message(FATAL_ERROR "Python interpreter (${Python3_EXECUTABLE}) does not have Torch installed.")
+endif()
+# A relocatable Python does not find its standard library when embedded
+execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sys; print(sys.base_prefix)"
+  OUTPUT_VARIABLE EMULATOR_PYTHON_HOME
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 enable_testing()
 # Common tests
+
+# Copy test data into a build directory counterpart that also holds generated files.
+set(EMULATOR_TEST_FIXTURE_DIR ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/fixtures DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+set(EMULATOR_COUPLING_FIXTURES
+  ${EMULATOR_TEST_FIXTURE_DIR}/forcing_emulator.pt
+  ${EMULATOR_TEST_FIXTURE_DIR}/land_emulator.pt
+)
+add_custom_command(
+  OUTPUT ${EMULATOR_COUPLING_FIXTURES}
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/make_coupling_fixtures.py ${EMULATOR_TEST_FIXTURE_DIR}
+  COMMENT "Generating emulator coupling fixtures..."
+)
+add_custom_target(emulator_coupling_test_fixtures DEPENDS ${EMULATOR_COUPLING_FIXTURES})
+
+#EMULATOR_TEST_HAVE_PYTHON AND EMULATOR_TEST_HAVE_LIBTORCH
+set(EMULATOR_TEST_HAVE_PYTHON  OFF)
+set(EMULATOR_TEST_HAVE_LIBTORCH OFF)
 
 # emulator_add_test(<target> <source> <test name> [LIBS <libs>...] [WITH_DATA_DIR])
 #   Builds a Catch2 test executable and registers it with ctest.
@@ -15,7 +61,7 @@ function(emulator_add_test target source test_name)
   target_link_libraries(${target} PRIVATE ${ARG_LIBS} Catch2)
   if(ARG_WITH_DATA_DIR)
     target_compile_definitions(${target} PRIVATE
-      TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+      TEST_DATA_DIR="${EMULATOR_TEST_FIXTURE_DIR}")
   endif()
 
   if(DEFINED ARG_MPI_RANKS)
@@ -57,10 +103,29 @@ emulator_add_test(test_emulator_config test_emulator_config.cpp test_emulator_co
 emulator_add_test(test_fpe_guard test_fpe_guard.cpp fpe_guard_tests
   LIBS emulator_inference emulator_common)
 
-#EMULATOR_TEST_HAVE_PYTHON AND EMULATOR_TEST_HAVE_LIBTORCH
-set(EMULATOR_TEST_HAVE_PYTHON  OFF)
-set(EMULATOR_TEST_HAVE_LIBTORCH OFF)
 
+# Test for PythonBackend
+#
+# The embedded interpreter needs numpy at run time. If it also has torch,
+# the test runs a torch.nn module as well.
+if(EMULATOR_ENABLE_PYTHON)
+  if(EMULATOR_NUMPY_MISSING)
+    message(WARNING "Skipping the Python backend test: "
+      "'${Python3_EXECUTABLE}' cannot import numpy.")
+  else()
+    emulator_add_test(test_inference_python_backend test_inference_python_backend.cpp
+      inference_python_backend_tests LIBS emulator_inference)
+    target_compile_definitions(test_inference_python_backend PRIVATE
+      EMULATOR_TEST_FIXTURE_DIR="${EMULATOR_TEST_FIXTURE_DIR}"
+      EMULATOR_TEST_SITE_PACKAGES="${EMULATOR_PYTHON_SITE_PACKAGES}")
+    target_compile_definitions(test_inference_python_backend PRIVATE
+      EMULATOR_TEST_HAVE_TORCH)
+    set_tests_properties(inference_python_backend_tests PROPERTIES
+      ENVIRONMENT "PYTHONHOME=${EMULATOR_PYTHON_HOME}")
+
+    set(EMULATOR_TEST_HAVE_PYTHON ON)
+  endif()
+endif()
 
 # Test for LibTorchBackend
 #
@@ -76,6 +141,7 @@ if(EMULATOR_ENABLE_LIBTORCH)
       "'${EMULATOR_TORCH_PYTHON}' cannot import torch. "
       "Set -DEMULATOR_TORCH_PYTHON=/path/to/python to enable it.")
   else()
+
     set(EMULATOR_TORCH_FIXTURE_DIR ${CMAKE_CURRENT_BINARY_DIR}/torch_fixtures)
     set(EMULATOR_TORCH_FIXTURES
       ${EMULATOR_TORCH_FIXTURE_DIR}/affine.pt
@@ -91,6 +157,7 @@ if(EMULATOR_ENABLE_LIBTORCH)
               ${EMULATOR_TORCH_FIXTURE_DIR}
       DEPENDS ${EMULATOR_TORCH_FIXTURE_SCRIPT}
       COMMENT "Writing the LibTorch test fixtures")
+
     add_custom_target(libtorch_test_fixtures DEPENDS ${EMULATOR_TORCH_FIXTURES})
 
     emulator_add_test(test_inference_libtorch_backend test_inference_libtorch_backend.cpp
@@ -99,47 +166,6 @@ if(EMULATOR_ENABLE_LIBTORCH)
     target_compile_definitions(test_inference_libtorch_backend PRIVATE
       EMULATOR_TEST_TORCH_FIXTURE_DIR="${EMULATOR_TORCH_FIXTURE_DIR}")
     set(EMULATOR_TEST_HAVE_LIBTORCH ON)
-  endif()
-endif()
-
-# Test for PythonBackend
-#
-# The embedded interpreter needs numpy at run time. If it also has torch,
-# the test runs a torch.nn module as well.
-if(EMULATOR_ENABLE_PYTHON)
-  find_package(Python3 REQUIRED COMPONENTS Interpreter)
-  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
-    RESULT_VARIABLE EMULATOR_NUMPY_MISSING OUTPUT_QUIET ERROR_QUIET)
-
-  if(EMULATOR_NUMPY_MISSING)
-    message(WARNING "Skipping the Python backend test: "
-      "'${Python3_EXECUTABLE}' cannot import numpy.")
-  else()
-    emulator_add_test(test_inference_python_backend test_inference_python_backend.cpp
-      inference_python_backend_tests LIBS emulator_inference)
-    execute_process(COMMAND ${Python3_EXECUTABLE} -c
-        "import site; print(':'.join(site.getsitepackages()))"
-      OUTPUT_VARIABLE EMULATOR_PYTHON_SITE_PACKAGES
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    target_compile_definitions(test_inference_python_backend PRIVATE
-      EMULATOR_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
-      EMULATOR_TEST_SITE_PACKAGES="${EMULATOR_PYTHON_SITE_PACKAGES}")
-
-    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch"
-      RESULT_VARIABLE EMULATOR_PYTHON_TORCH_MISSING OUTPUT_QUIET ERROR_QUIET)
-    if(NOT EMULATOR_PYTHON_TORCH_MISSING)
-      target_compile_definitions(test_inference_python_backend PRIVATE
-        EMULATOR_TEST_HAVE_TORCH)
-    endif()
-
-    # A relocatable Python does not find its standard library when embedded
-    execute_process(COMMAND ${Python3_EXECUTABLE} -c
-        "import sys; print(sys.base_prefix)"
-      OUTPUT_VARIABLE EMULATOR_PYTHON_HOME OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set_tests_properties(inference_python_backend_tests PROPERTIES
-      ENVIRONMENT "PYTHONHOME=${EMULATOR_PYTHON_HOME}")
-
-    set(EMULATOR_TEST_HAVE_PYTHON  ON)
   endif()
 endif()
 
@@ -166,22 +192,19 @@ if(EMULATOR_TEST_BACKENDS)
     WITH_DATA_DIR
     MPI_RANKS 1
   )
-
+  add_dependencies(test_emulator_coupling emulator_coupling_test_fixtures)
   target_compile_definitions(test_emulator_coupling PRIVATE
     "EMULATOR_TEST_BACKENDS=${EMULATOR_TEST_BACKEND_ARGS}"
   )
 
-  if(EMULATOR_TEST_HAVE_PYTHON)
-    target_compile_definitions(test_emulator_coupling PRIVATE
-      EMULATOR_TEST_HAVE_PYTHON
-      EMULATOR_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
-      EMULATOR_TEST_SITE_PACKAGES="${EMULATOR_PYTHON_SITE_PACKAGES}"
-    )
-
-    set_tests_properties(emulator_coupling PROPERTIES
-      ENVIRONMENT "PYTHONHOME=${EMULATOR_PYTHON_HOME}"
-    )
-  endif()
+  target_compile_definitions(test_emulator_coupling PRIVATE
+    EMULATOR_TEST_HAVE_PYTHON
+    EMULATOR_TEST_FIXTURE_DIR="${EMULATOR_TEST_FIXTURE_DIR}"
+    EMULATOR_TEST_SITE_PACKAGES="${EMULATOR_PYTHON_SITE_PACKAGES}"
+  )
+  set_tests_properties(emulator_coupling PROPERTIES
+    ENVIRONMENT "PYTHONHOME=${EMULATOR_PYTHON_HOME}"
+  )
 
   if(EMULATOR_TEST_HAVE_LIBTORCH)
     add_dependencies(test_emulator_coupling libtorch_test_fixtures)
