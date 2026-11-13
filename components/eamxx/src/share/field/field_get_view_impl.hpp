@@ -219,12 +219,12 @@ auto Field::get_ND_view () const
     EKAT_REQUIRE_MSG (idim==0 || idim==1,
         "Error! Subview dimension index is out of bounds.\n");
 
-    EKAT_REQUIRE_MSG (idim==0 || N>1,
-        "Error! Cannot subview a rank-2 (or less) view along 2nd dimension "
+    EKAT_REQUIRE_MSG (idim==0 || N+1==3,
+        "Error! Cannot subview a non-rank-3 view along 2nd dimension "
         "without losing LayoutRight.\n");
 
     // Use SFINAE-ed get_subview helper function to pick correct
-    // subview impl. If N+1<=2 and idim!=0, the code craps out in the check above.
+    // subview impl. If N+1!=3 and idim!=0, the code craps out in the check above.
     if (idim==0) {
       return ekat::subview(v_np1,k);
     } else {

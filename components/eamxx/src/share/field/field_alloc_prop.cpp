@@ -61,12 +61,12 @@ subview (const int idim, const int k, const bool dynamic) const {
 
   // LayoutRight is preserved if:
   //  - parent allows LayoutRight AND subview is at dim 0 (pointer shift, rest contiguous), OR
-  //  - parent allows LayoutRight AND subview is at dim 1 AND parent rank >= 3
-  //    (subview_1 returns ViewLR with non-trivial stride_0, but dims 1..N-1 remain contiguous), OR
+  //  - parent allows LayoutRight AND subview is at dim 1 AND parent rank == 3
+  //    (subview_1 returns view with LayoutRightPadded, which is a special case of LayoutRight), OR
   //  - parent rank == 1 (result is rank-0, no stride issues)
   props.m_allows_layout_right = m_layout.rank()==1
                                  || (m_allows_layout_right and idim==0)
-                                 || (m_allows_layout_right and idim==1 and m_layout.rank()>=3);
+                                 || (m_allows_layout_right and idim==1 and m_layout.rank()==3);
 
   props.m_subview_info = SubviewInfo(idim,k,m_layout.dim(idim),dynamic);
 

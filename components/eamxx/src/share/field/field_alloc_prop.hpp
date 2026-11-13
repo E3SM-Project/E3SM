@@ -157,10 +157,10 @@ public:
 
   // Whether this allocation can be accessed via a LayoutRight view (get_view).
   // This is true for freshly allocated fields, and remains true after a
-  // single-slice subview along dim 0 (any rank) or dim 1 (parent rank >= 3,
-  // i.e., result rank >= 2). It becomes false for multi-slice subviews, or
-  // for a dim-1 single-slice subview of a rank-2 field (which would yield a
-  // LayoutStride rank-1 result that get_ND_view explicitly rejects).
+  // single-slice subview along dim 0 (any rank) or dim 1 (parent rank = 3,
+  // i.e., result rank = 2). It becomes false for multi-slice subviews, or
+  // for a dim-1 single-slice subview of a non-rank-3 field (which would yield a
+  // LayoutStride result that get_ND_view explicitly rejects).
   bool allows_layout_right () const { return m_allows_layout_right; }
 
   // Size of the last extent in the alloction (i.e., number of scalars in it)
