@@ -648,6 +648,10 @@ _TESTS = {
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
+            # Physics packages exercised on a cheap grid (issue #8875)
+            "SMS_Ln22.ne4pg2_ne4pg2.F2010-SYN.eamxx-output-preset-5",
+            "SMS_Ln22.ne4pg2_ne4pg2.F2010-MES.eamxx-output-preset-5",
+            "SMS_Ln22.ne4pg2_ne4pg2.F2010-CGZ.eamxx-output-preset-5",
             )
     },
     "e3sm_eamxx_v1_lowres_debug" : {
