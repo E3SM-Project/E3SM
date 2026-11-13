@@ -275,7 +275,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer", "e3sm_omega_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480_rx1.A",
@@ -365,6 +365,7 @@ _TESTS = {
             "SMS_Vmct_D_Ld1.TL319_IcoswISC30E3r5_wQU225Icos30E3r5.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-CMIP7",
+            "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCLXX1850NS-OMEGA",
             )
         },
 
@@ -1019,6 +1020,39 @@ _TESTS = {
             "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
             )
     },
+
+    "e3sm_omega_developer" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            # --- C Cases (Data atm/ice forcing) ---
+            "ERS.T62_oQU240.COMEGA-IAF",
+            "PEM.T62_oQU240.COMEGA-IAF",
+            "SMS_D_Ld1.T62_oQU240.COMEGA-IAF",
+            "PEM_Ln9.TL319_EC30to60E2r2.COMEGA-JRA1p5.omega-jra_1958",
+
+            # --- G Cases (Active sea-ice MPASSI coupling) ---
+            "SMS_D_Ld1.T62_oQU240.GOMEGA-IAF",
+            "PEM.T62_oQU240.GOMEGA-IAF",
+            "ERS_Ln9.TL319_EC30to60E2r2.GOMEGA-JRA1p5.omega-jra_1958",
+
+            # --- B Cases (Fully coupled EAM/ELM/MOSART/MPASSI/OMEGA) ---
+            "SMS_D_Ld1.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA",
+            "ERS_Ld3.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA",
+            "PEM_D_Ld3.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA",
+        )
+    },
+
+    # Higher-res fully coupled tests, too expensive for the dev suite
+    "e3sm_omega_integration" : {
+        "time"  : "2:00:00",
+        "inherit" : ("e3sm_omega_developer"),
+        "tests" : (
+            # --- B Cases (Fully coupled EAM/ELM/MOSART/MPASSI/OMEGA) ---
+            "ERS_Ln9.ne30pg2_r05_EC30to60E2r2.WCYCLXX1850NS-OMEGA",
+            "PEM_Ln9.ne30pg2_r05_EC30to60E2r2.WCYCLXX1850NS-OMEGA",
+        )
+    },
+
     "e3sm_test_bless" : {
         "time"  : "10:00",
         "tests" : (

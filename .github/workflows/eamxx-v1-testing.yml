@@ -10,7 +10,15 @@ on:
       - 'cime_config/machines/config_machines.xml'
       - 'cime_config/machines/cmake_macros/ghci*.cmake'
       - 'components/eamxx/**'
-      - 'components/homme/**'
+      # Only the homme files that eamxx builds (not standalone-only stuff, like machine files or tests)
+      # NOTE: keep this homme list in sync with eamxx-sa-testing.yml and e3sm-gh-testing.yml
+      - 'components/homme/CMakeLists.txt'
+      - 'components/homme/src/**'
+      - 'components/homme/cmake/HommeMacros.cmake'
+      - 'components/homme/cmake/SetHostPaths.cmake'
+      - 'components/homme/cmake/homme_git_sha.h.in'
+      - 'components/homme/cmake/FindExtrae.cmake'
+      - 'components/homme/cmake/FindZoltan.cmake'
       - 'components/eam/src/physics/rrtmgp/**'
       - 'components/eam/src/physics/cosp2/**'
       - 'externals/ekat'
@@ -65,6 +73,7 @@ jobs:
           - {runner: gnu, name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97}
           - {runner: gnu, name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-small_kernels--eamxx-output-preset-5}
           - {runner: gnu, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72}
+          - {runner: cuda, name: ERS_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu-cuda.eamxx-L72}
           - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-output-prod}
           - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-output-prod}
           - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-cuda.eamxx-output-prod}

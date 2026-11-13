@@ -90,8 +90,6 @@ add_definitions(-DHOMMEXX_CONFIG_IS_CMAKE)
 
 SET (PERFORMANCE_PROFILE "" CACHE STRING "Whether to build and link with various profiler libraries")
 
-# Set up some directories to facilitate finding netcdf and pnetcdf
-INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
 # Debug statement, please leave here
@@ -225,11 +223,6 @@ IF (HOMME_USE_KOKKOS)
 
   # An option to allow workspace sharing on GPU
   OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
-
-  # For now, hommexx view usage is only compatible with Kokkos' lecacy view impl.
-  # FIXME: View usage in Hommexx will need to allow for Kokkos' MDSpan view implementation as the legacy
-  #        implementation will go away in the future, unannounced (it's an "impl" option => no deprecation).
-  OPTION (Kokkos_ENABLE_IMPL_VIEW_LEGACY "Currently, HOMME is only compatible with Kokkos' legacy view implementation." ON)
 ENDIF()
 
 ##############################################################################
@@ -547,19 +540,12 @@ IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(src/theta-l)
 ENDIF()
 
-IF(${BUILD_HOMME_PREQX_ACC})
-  ADD_SUBDIRECTORY(src/preqx_acc)
-ENDIF()
-
 IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
 ENDIF()
 
 IF(${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(src/theta-l_kokkos)
-ENDIF()
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(src/swim)
 ENDIF()
 
 IF(${BUILD_HOMME_TOOL})
@@ -576,8 +562,10 @@ IF (${HOMME_BUILD_EXECS})
   ADD_SUBDIRECTORY(dcmip_tests)
 ENDIF()
 
-# Create a "make clean-all" target to delete CMake cache and the cprnc build
-ADD_CUSTOM_TARGET(clean-all
-   COMMAND ${CMAKE_BUILD_TOOL} clean
-   COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
-)
+# Create a "make clean-all" target to delete CMake cache and the cprnc build.
+IF (HOMME_STANDALONE)
+  ADD_CUSTOM_TARGET(clean-all
+     COMMAND ${CMAKE_BUILD_TOOL} clean
+     COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
+  )
+ENDIF()
