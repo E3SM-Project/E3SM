@@ -4,6 +4,14 @@
 # since it depends on the GPU of the runner. Pass it via cmake options (see test_homme.py --cmake-opt).
 include (${CMAKE_CURRENT_LIST_DIR}/ghci.cmake)
 
+# Only build (and test) the kokkos dycores: the F90 executables run on the host, so their tests
+# are already covered by the CPU CI jobs, and they would take most of the test time on the GPU runners.
+# NOTE: with HOMMEXX_BFB_TESTING=ON, the F90 theta/preqx dycores are turned back on (for the cxx_vs_f90 tests).
+SET (BUILD_HOMME_THETA OFF CACHE BOOL "")
+SET (BUILD_HOMME_PREQX OFF CACHE BOOL "")
+SET (BUILD_HOMME_SWEQX OFF CACHE BOOL "")
+SET (BUILD_HOMME_TOOL  OFF CACHE BOOL "")
+
 # CUDA compilation requires nvcc_wrapper (from Kokkos) as the C++ backend compiler of the MPI wrapper.
 # NOTE: this cannot be done here, since env changes in this file only affect the cmake configure step,
 # not the later build step. Before configuring/building, set (e.g., in the CI workflow):
