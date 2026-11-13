@@ -93,7 +93,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/time_mod.F90
     ${SRC_SHARE_DIR}/vertremap_base.F90
     ${SRC_SHARE_DIR}/viscosity_base.F90
-    ${SRC_SHARE_DIR}/zoltan_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
     ${SRC_SHARE_DIR}/planar_mod.F90
     ${SRC_SHARE_DIR}/geometry_mod.F90

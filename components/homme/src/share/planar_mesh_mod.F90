@@ -19,41 +19,12 @@ module planar_mesh_mod
   ! ===============================
 
   public  :: MeshPlaneTopology   ! called afer MeshOpen
-  public  :: MeshPlaneTopologyCoords   ! called afer MeshOpen
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   public  :: PlaneMeshSetCoordinates ! called after MeshPlaneTopology
 #endif
 
 contains
-
-  subroutine MeshPlaneTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-
-  use parallel_mod,           only : abortmp
-  use coordinate_systems_mod, only : cartesian2D_t, cartesian3D_t, cube_face_number_from_cart, &
-                                     cube_face_number_from_sphere, cart2cubedsphere
-  use gridgraph_mod,          only : GridVertex_t
-  use gridgraph_mod,          only : GridEdge_t
-  use cube_mod,               only : CubeSetupEdgeIndex
-  use gridgraph_mod,          only : initgridedge, num_neighbors
-  use control_mod,            only : north, south, east, west, neast, seast, swest, nwest, partmethod, &
-                                     z2_map_method, coord_transform_method
-
-  use kinds, only : real_kind
-  use zoltan_mod, only : is_zoltan_partition, is_zoltan_task_mapping
-
-  implicit none
-  type (GridEdge_t),   intent(inout) :: GridEdge(:)
-  type (GridVertex_t), intent(inout) :: GridVertex(:)
-  real(kind=real_kind),allocatable, intent(inout) :: coord_dim1(:)
-  real(kind=real_kind),allocatable, intent(inout) :: coord_dim2(:)
-  real(kind=real_kind),allocatable, intent(inout) :: coord_dim3(:)
-  integer, intent(inout) :: coord_dimension
-
-  call abortmp('MeshPlaneTopologyCoords not yet implemented')
-
-  end subroutine MeshPlaneTopologyCoords
-
 
   !======================================================================
   ! subroutine MeshCubeTopology

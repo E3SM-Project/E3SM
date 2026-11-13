@@ -45,15 +45,6 @@
 /* Vertical OpenMP (within elements) */
 #cmakedefine COLUMN_OPENMP
 
-/* Zoltan partitioning library */
-#cmakedefine01 HAVE_ZOLTAN
-
-/* TRILINOS  library */
-#cmakedefine01 HAVE_TRILINOS
-
-/* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
-#cmakedefine01 TRILINOS_HAVE_ZOLTAN2
-
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
 
