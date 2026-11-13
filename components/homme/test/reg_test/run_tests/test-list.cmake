@@ -121,15 +121,11 @@ IF (BUILD_HOMME_THETA_KOKKOS)
   LIST(APPEND HOMME_TESTS
     thetanh-moist-bubble-kokkos.cmake
     thetanh-dry-bubble-kokkos.cmake
+    thetah-nhgw-kokkos.cmake
     thetanh-nhgw-kokkos.cmake
+    thetah-nhgw-slice-kokkos.cmake
     thetanh-nhgw-slice-kokkos.cmake)
   IF (HOMMEXX_BFB_TESTING)
-    # TODO: also create these in non-BFB builds, once the ForcingFunctor buffers are sized correctly:
-    #       with qsize=0 and 2+ threads, the hydrostatic kokkos runs overflow the functor buffers,
-    #       and crash at finalize (e.g., on the ghci intel runner).
-    LIST(APPEND HOMME_TESTS
-      thetah-nhgw-kokkos.cmake
-      thetah-nhgw-slice-kokkos.cmake)
     LIST(APPEND HOMME_ONEOFF_CVF_TESTS
       thetanh-moist-bubble
       thetanh-dry-bubble
