@@ -14,9 +14,6 @@ module namelist_mod
   use dyn_grid,   only: fv_nphys
 #endif
   use physical_constants, only: rearth, rrearth, omega
-#if (defined MODEL_THETA_L && defined ARKODE)
-  use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
-#endif
 use physical_constants, only : rearth, rrearth, DD_PI
 
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
@@ -420,13 +417,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       tol,           &
       debug_level
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-    namelist /arkode_nl/ &
-      rel_tol, &
-      abs_tol, &
-      calc_nonlinear_stats, &
-      use_column_solver
-#endif
 
 
     ! ==========================
@@ -701,11 +691,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        end do
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-       write(iulog,*)"reading arkode namelist..."
-       if (nl_unit /= input_unit) rewind(nl_unit)
-       read(nl_unit,nml=arkode_nl)
-#endif
 
 !=======================================================================================================!
 
@@ -914,12 +899,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(tool,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-    call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
-    call MPI_bcast(abs_tol, 1, MPIreal_t, par%root, par%comm, ierr)
-    call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
-    call MPI_bcast(use_column_solver, 1, MPIlogical_t, par%root, par%comm, ierr)
-#endif
 
     ! should we assume Q(:,:,:,1) has water vapor:
     use_moisture = ( moisture /= "dry") 
@@ -1282,13 +1261,6 @@ end if
        end do
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-       write(iulog,*)""
-       write(iulog,*)"arkode: rel_tol = ",rel_tol
-       write(iulog,*)"arkode: abs_tol = ",abs_tol
-       write(iulog,*)"arkode: calc_nonlinear_stats = ",calc_nonlinear_stats
-       write(iulog,*)"arkode: use_column_solver = ",use_column_solver
-#endif
 
        ! display physical constants for HOMME stand alone simulations
        write(iulog,*)""
