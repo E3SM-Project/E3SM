@@ -19,6 +19,16 @@ meshes:
     inputs:
       - file: omega.u01-oi6to18.20260811.teos10.20261022.nc
         streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+ 
+  u04-oi6to18:
+    inputs:
+      - file: omega.u04-oi6to18.20261020.teos10.20261110.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+
+  u05-oi6to18:
+    inputs:
+      - file: omega.u05-oi6to18.20261020.teos10.20261110.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
 
 # A mesh may list multiple ``inputs`` entries when its streams are split
 # across separate files:
