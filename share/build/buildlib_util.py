@@ -1,5 +1,7 @@
 
-from CIME.utils import run_cmd, run_bld_cmd_ensure_logging
+import os, shutil
+
+from CIME.utils import expect, run_cmd, run_bld_cmd_ensure_logging
 from CIME.build import get_standard_makefile_args
 from pathlib import Path
 
@@ -49,3 +51,172 @@ def config_if_not_configured(name, bldroot, cmd, log_obj, is_cmake=True):
         run_bld_cmd_ensure_logging(cmd, log_obj, from_dir=bldroot)
     else:
         log_obj.info(f"{name} appears to have been configured already in {bldroot}, skipping CMake")
+
+###############################################################################
+def get_kokkos_build_info(case):
+###############################################################################
+    """
+    Get from the case the compilers and the Kokkos options (from the macros, or
+    from the EKAT machine file). Returns a tuple (cc, cxx, kokkos_options), where
+    cc and cxx are strings of the form -DCMAKE_<LANG>_COMPILER=<path>, and
+    kokkos_options is a string of cmake options (possibly "-C <file>") for
+    configuring Kokkos.
+    """
+    mpilib = case.get_value("MPILIB")
+
+    # We want to get the compiler and kokkos_options from Macros.make
+    # (generated from cmake_macros), but we want to otherwise
+    # let kokkos control flags
+    macro_vals = extract_from_macros(case, "kokkos",
+                                     extra_vars=("KOKKOS_OPTIONS", "KOKKOS_USE_EKAT_MACH_FILE"))
+    cc, cxx, kokkos_options_raw, use_ekat_mach_file = \
+        macro_vals[4], macro_vals[5], macro_vals[-2], macro_vals[-1]
+    use_ekat_mach_file = True if use_ekat_mach_file.upper() == "TRUE" else False
+    if mpilib == "mpi-serial":
+        # Use serial compilers
+        cc, cxx = macro_vals[1], macro_vals[2]
+
+    # Use the ekat mach file if requested
+    if use_ekat_mach_file:
+        mach = case.get_value("MACH")
+        ekat_cmake_mach_file = os.path.join(case.get_value("SRCROOT"), "externals", "ekat",
+                                            "cmake", "machine-files", f"{mach}.cmake")
+        expect(os.path.exists(ekat_cmake_mach_file),
+               f"No KOKKOS_OPTIONS provided and no ekat machine file exists for {mach}")
+        kokkos_options = f"-C {ekat_cmake_mach_file}"
+    else:
+        kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
+
+    # Turn off threading for non-threaded cases
+    if not case.get_build_threaded():
+        kokkos_options += " -DKokkos_ENABLE_OPENMP=Off"
+
+    # We will take care of setting CMAKE_CXX_COMPILER unless user has explictly
+    # set one in their KOKKOS_OPTIONS.
+    if "DCMAKE_CXX_COMPILER" not in kokkos_options:
+        if "/" in cxx:
+            cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx)
+        else:
+            cxx_path = shutil.which(cxx)
+            expect(cxx_path is not None, "{} is not in PATH?".format(cxx))
+            cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx_path)
+
+    if "/" in cc:
+        cc = "-DCMAKE_C_COMPILER={}".format(cc)
+    else:
+        cc_path = shutil.which(cc)
+        expect(cc_path is not None, "{} is not in PATH?".format(cc))
+        cc = "-DCMAKE_C_COMPILER={}".format(cc_path)
+
+    return cc, cxx, kokkos_options
+
+###############################################################################
+def setup_intelgpu_nvcc_workaround(case, bldroot):
+###############################################################################
+    """
+    Workaround for NVCC 12.9 + Intel oneAPI 2025.3+ (Clang/21) incompatibility.
+    This is needed by anything that is compiled with nvcc_wrapper (e.g., Kokkos or EKAT).
+
+    NVCC's internal Clang (~LLVM 14) fails on Intel Clang/21 intrinsic headers
+    (e.g., avx512bitalgintrin.h uses __builtin_elementwise_popcount) when Intel's
+    icpx/CC is used as nvcc's ccbin. We must use g++ as ccbin instead.
+
+    However, EKAT's cmake (EkatSetCompilerFlags.cmake) detects IntelLLVM as the CXX
+    compiler and bakes Intel-specific CXX flags into cmake's flags.make files, including:
+      -qopenmp-simd  (Intel OpenMP SIMD; g++ equivalent is -fopenmp-simd)
+      -diag-disable=remark  (Intel diagnostic suppression; not recognized by g++)
+    A thin wrapper script is created that translates/strips these flags before calling
+    g++, making them compatible with the g++ ccbin.
+
+    kokkos_launch_compiler sets NVCC_WRAPPER_DEFAULT_COMPILER to the CXX compiler
+    (icpx/CC) if the env var is unset (bash `: ${var:=default}` semantics).
+    By setting it to our wrapper here, we ensure nvcc_wrapper uses g++ as ccbin,
+    which keeps Intel's Clang/21 include paths out of NVCC's internal preprocessing.
+
+    Note: CMAKE_CUDA_HOST_COMPILER in KOKKOS_OPTIONS does NOT fix this because
+    it only sets a cmake cache variable and never flows into the kokkos_launch_compiler
+    bash script where the actual ccbin is determined.
+    """
+    if case.get_value("COMPILER") != "intelgpu":
+        return
+
+    gcc_cxx = shutil.which("g++")
+    if gcc_cxx:
+        wrapper_path = os.path.join(bldroot, "intel_to_gcc_wrapper.sh")
+        with open(wrapper_path, "w") as wf:
+            wf.write(
+                "#!/bin/bash\n"
+                "# Wrapper around g++ for use as NVCC ccbin.\n"
+                "# Translates/strips Intel-specific CXX flags that g++ does not support.\n"
+                "# Created by buildlib.kokkos/buildlib.ekat: NVCC 12.9 + Intel oneAPI 2025.3+ workaround.\n"
+                "args=()\n"
+                "for arg in \"$@\"; do\n"
+                "  case \"$arg\" in\n"
+                "    -qopenmp-simd)\n"
+                "      args+=(\"-fopenmp-simd\")  # translate Intel -> GNU OpenMP SIMD flag\n"
+                "      ;;\n"
+                "    -diag-disable=*)\n"
+                "      ;;                       # drop Intel diagnostic suppression flags\n"
+                "    -Rno-*)\n"
+                "      ;;                       # drop Intel remark suppression flags (e.g. -Rno-debug-disables-optimization added by CMake for IntelLLVM Debug builds)\n"
+                "    *)\n"
+                "      args+=(\"$arg\")\n"
+                "      ;;\n"
+                "  esac\n"
+                "done\n"
+                f"exec {gcc_cxx} \"${{args[@]}}\"\n"
+            )
+        os.chmod(wrapper_path, 0o755)
+        previous_wrapper = os.environ.get("NVCC_WRAPPER_DEFAULT_COMPILER")
+        os.environ["NVCC_WRAPPER_DEFAULT_COMPILER"] = wrapper_path
+        if previous_wrapper and previous_wrapper != wrapper_path:
+            print(f"Overriding NVCC_WRAPPER_DEFAULT_COMPILER={previous_wrapper} "
+                  f"with {wrapper_path} "
+                  f"(NVCC + Intel 2025.3+ Clang/21 headers incompatibility workaround)")
+        else:
+            print(f"Setting NVCC_WRAPPER_DEFAULT_COMPILER={wrapper_path} "
+                  f"(NVCC + Intel 2025.3+ Clang/21 headers incompatibility workaround)")
+
+###############################################################################
+def use_trilinos_kokkos(case):
+###############################################################################
+    """
+    If the case uses Trilinos/Albany, we use its Kokkos: set Kokkos_ROOT, so that
+    get_external_lib_root("Kokkos") (and cmake) will find it.
+    """
+    if case.get_value("USE_ALBANY") or case.get_value("USE_TRILINOS"):
+        print ("case is using Trilinos and will use its Kokkos")
+
+        expect(os.environ.get("Trilinos_ROOT") is not None,
+               "USE_TRILINOS|USE_ALBANY is On, but Trilinos_ROOT is not set!")
+        os.environ["Kokkos_ROOT"] = os.environ.get("Trilinos_ROOT")
+
+###############################################################################
+def get_external_lib_root(libname):
+###############################################################################
+    """
+    If an installation of the library is provided from outside (by the user,
+    via the env var <libname>_ROOT, where libname is the name of the cmake package,
+    e.g., Kokkos), return its root. Otherwise return None.
+    """
+    root_var = f"{libname}_ROOT"
+    installed_dir = os.environ.get(root_var)
+    if installed_dir is None:
+        return None
+
+    # We are trying to use a pre-installed lib. Make sure it exists
+    lib_root = os.path.abspath(installed_dir)
+    expect (os.path.isdir(lib_root), f"Non-existent {libname} install dir '{lib_root}'")
+
+    print (f"Using pre-installed {root_var}: {lib_root}")
+    return lib_root
+
+###############################################################################
+def is_lib_installed(libname, installpath):
+###############################################################################
+    """
+    Check if the library is installed in installpath. This assumes the
+    library follows the standard layout for cmake packages, that is, it
+    installs <libname>Config.cmake in lib*/cmake/<libname>/
+    """
+    return any(Path(installpath).glob(f"lib*/cmake/{libname}/{libname}Config.cmake"))
