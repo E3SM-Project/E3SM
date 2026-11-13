@@ -68,9 +68,9 @@ set(CTEST_SOURCE_DIRECTORY "${HOMME_ROOT}")
 set(CTEST_BINARY_DIRECTORY "${BUILD_WORK_DIR}")
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 if (BFB_TESTING)
-  set(CTEST_BUILD_NAME "homme")
-else()
   set(CTEST_BUILD_NAME "homme-bfb")
+else()
+  set(CTEST_BUILD_NAME "homme")
 endif()
 
 if (DEFINED ENV{HOSTNAME})
@@ -91,6 +91,10 @@ if (NO_BASELINE)
   list(APPEND _configure_opts "-DHOMME_SKIP_BASELINE_COMPARE=ON")
 else()
   list(APPEND _configure_opts "-DHOMME_BASELINE_DIR=${BASELINE_DIR}")
+  if (GENERATE)
+    # Create tests that copy the outputs in the baselines dir (instead of comparing against them)
+    list(APPEND _configure_opts "-DHOMME_GENERATE_BASELINES=ON")
+  endif()
 endif()
 list(APPEND _configure_opts "-DCMAKE_VERBOSE_MAKEFILE=ON")
 
@@ -113,28 +117,27 @@ else()
   # -------------------------------------------------------------------------
   # Build
   # -------------------------------------------------------------------------
-  if (GENERATE)
-    # For generate, Homme uses 'make baseline', rather than rely on ctest labels.
-    # The target depends on all the test executables, so it builds them first, then runs the tests.
-    message(STATUS "HOMME ctest script: generate baselines")
-    set(_build_target "baseline")
-  else()
-    set(_build_target "test-execs")
-  endif()
-
   # With parallel make, --output-sync=target keeps each target's output together. Otherwise, interleaved
   # compiler output can confuse ctest's error/warning parsing, producing bogus "errors" in the build log.
   ctest_build(
-    TARGET "${_build_target}"
+    TARGET "test-execs"
     FLAGS "-j${BUILD_PARALLEL_LEVEL} --output-sync=target"
     RETURN_VALUE _bld_rv
   )
   if (_bld_rv)
     set(_had_failure TRUE)
-  elseif (NOT GENERATE)
-    message(STATUS "HOMME ctest script: compare against baselines")
+  else()
+    if (GENERATE)
+      # Run only the tests that generate baselines (they copy their outputs in BASELINE_DIR)
+      message(STATUS "HOMME ctest script: generate baselines")
+      set(_test_opts INCLUDE_LABEL baseline_gen)
+    else()
+      message(STATUS "HOMME ctest script: run tests")
+      set(_test_opts)
+    endif()
     ctest_test(
       PARALLEL_LEVEL ${RUN_PARALLEL_LEVEL}
+      ${_test_opts}
       RETURN_VALUE _test_rv
     )
     if (_test_rv)

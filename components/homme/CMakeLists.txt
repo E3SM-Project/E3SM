@@ -559,10 +559,6 @@ ENDIF()
 
 # Tests and execs only if this is a standalone build
 IF (${HOMME_BUILD_EXECS})
-  # Set a default value for USE_MPIEXEC.
-  # NOTE: if USE_MPIEXEC is already set, this line has no effect.
-  SET (USE_MPIEXEC "mpiexec" CACHE STRING "")
-
   ADD_SUBDIRECTORY(test_execs)
   ADD_SUBDIRECTORY(dcmip_tests)
 ENDIF()
