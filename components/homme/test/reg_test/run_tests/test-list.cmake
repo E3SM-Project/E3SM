@@ -156,14 +156,19 @@ IF (BUILD_HOMME_THETA_KOKKOS)
 
 
   SET(TESTS_WITHOUT_AUTO
-     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
      theta-fhs1
-     theta-fhs2
-     theta-fhs3
      theta-fdc12-test21
      theta-fdc12-test22
      theta-fdc12-test3
   )
+  # These use SL transport (transport_alg=12), which requires COMPOSE
+  IF (HOMME_ENABLE_COMPOSE)
+    LIST(APPEND TESTS_WITHOUT_AUTO
+       theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
+       theta-fhs2
+       theta-fhs3
+    )
+  ENDIF()
 
   #all tests that will be used for cxx-vs-F bfb testing
   SET(HOMME_THETA_TESTS_WITH_PROFILE_1
