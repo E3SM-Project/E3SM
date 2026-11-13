@@ -40,3 +40,17 @@ SET (ENABLE_HORIZ_OPENMP OFF CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 SET (BLAS_LIBRARIES   "$ENV{BLAS_ROOT}/lib/libopenblas.so" CACHE STRING "" FORCE)
 SET (LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/lib/libopenblas.so" CACHE STRING "" FORCE)
+
+# Cap the Hommexx team size to 8 warps (512 threads on AMD GPUs). With the default (16 warps, i.e., 1024 threads),
+# optimized builds (-DNDEBUG) abort at runtime with HSA_STATUS_ERROR_INVALID_ISA on our MI210 (gfx90a) runners:
+# with ROCm 6.4.2, some Hommexx kernels (e.g., Homme::DirkFunctorImpl::run_newton) end up needing more than the
+# 128 registers per thread available when launching 1024-thread workgroups on gfx90a.
+# The same cap is used in components/eamxx/cmake/machine-files/ghci-hip.cmake.
+# NOTE: Frontier (ROCm 6.2.4/7.2.0) uses 16, so this may no longer be needed with another ROCm version in the image.
+SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")
+
+# SetCompilerFlags.cmake picks the CXX optimization flags based on CMAKE_CXX_COMPILER_ID, and has no case
+# for Clang (which is what mpicxx->hipcc reports). Without this, C++/HIP code is compiled with no -O flag
+# (i.e., -O0 device code), which is not what we want to test (and it also aborts at runtime with
+# HSA_STATUS_ERROR_INVALID_ISA in the theta-l_kokkos tests). Use the same flags used for GNU.
+SET (OPT_CXXFLAGS "-O3 -DNDEBUG" CACHE STRING "")
