@@ -71,7 +71,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/ll_mod.F90
     ${SRC_SHARE_DIR}/mass_matrix_mod.F90
     ${SRC_SHARE_DIR}/mesh_mod.F90
-    ${SRC_SHARE_DIR}/metis_mod.F90
     ${SRC_SHARE_DIR}/metagraph_mod.F90
     ${SRC_SHARE_DIR}/namelist_mod.F90
     ${SRC_SHARE_DIR}/parallel_mod.F90

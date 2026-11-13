@@ -8,7 +8,7 @@
 module namelist_mod
 
   use kinds,      only: real_kind, iulog
-  use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
+  use params_mod, only: sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
 #if defined(CAM) && !defined(MODEL_CESM)
   use dyn_grid,   only: fv_nphys
@@ -25,7 +25,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
   use control_mod, only : &
     MAX_STRING_LEN,&
     MAX_FILE_LEN,  &
-    partmethod,    &       ! Mesh partitioning method (METIS)
+    partmethod,    &       ! Mesh partitioning method
     coord_transform_method,    &       !how to represent the coordinates.
     z2_map_method,    &       !zoltan2 how to perform mapping (network-topology aware)
     topology,      &       ! Mesh topology
@@ -537,10 +537,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #else
       read(nl_unit,nml=ctl_nl)
 #endif
-#ifndef _USEMETIS
-      ! override METIS options to SFCURVE
+      ! partmethod 0-3 were METIS partitioning methods, which are no longer supported: use SFCURVE
       if (partmethod>=0 .and. partmethod<=3) partmethod=SFCURVE
-#endif
        ! ========================
        ! if this is a restart run
        ! ========================
