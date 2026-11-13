@@ -28,6 +28,9 @@ public:
   template<typename T>
   using view_1d = view_Nd<T,1>;
 
+  template<typename T, int N>
+  using strided_view_Nd = typename KT::template sview<typename ekat::DataND<T, N>::type>;
+
   using pack_type = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
   PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
@@ -77,13 +80,14 @@ public:
 
   // A container structure to hold the physically-shaped views for the fields.
   // Notice that only one of the vNd will be set, while the others will be empty.
+  // For simplicity, we use strided views since some subviewed fields are needed.
   template<typename T>
   struct ViewsContainer {
-    view_Nd<T,1>   v1d;
-    view_Nd<T,2>   v2d;
-    view_Nd<T,3>   v3d;
-    view_Nd<T,4>   v4d;
-    view_Nd<T,5>   v5d;
+    strided_view_Nd<T,1>   v1d;
+    strided_view_Nd<T,2>   v2d;
+    strided_view_Nd<T,3>   v3d;
+    strided_view_Nd<T,4>   v4d;
+    strided_view_Nd<T,5>   v5d;
   };
 
   // A views repo contains a view of ViewsContainer (one per field)
@@ -111,25 +115,20 @@ protected:
   //       so we'll just force to call this as pack_view<const T>(v).
   template<typename NewValueT, typename OldViewT>
   KOKKOS_INLINE_FUNCTION
-  view_Nd<NewValueT,OldViewT::rank> pack_view (const OldViewT& v) const {
+  strided_view_Nd<NewValueT,OldViewT::rank> pack_view (const OldViewT& v) const {
     constexpr int N = OldViewT::rank;
-    Kokkos::LayoutRight kl;
-    for (int i=0; i<N; ++i) {
-      kl.dimension[i] = v.extent(i);
-    }
-    using OldValueT = typename OldViewT::traits::value_type;
-    auto pack_size = sizeof(NewValueT) / sizeof(OldValueT);
-    kl.dimension[N-1] /= pack_size;
-    auto ptr = reinterpret_cast<NewValueT*>(v.data());
 
-    // Naively, you would return tmp directly. However, if v is a
-    // subview of another view along the second extent, you need
-    // to fix the stride, since the ctor from ptr+layout would have
-    // no knowledge about that.
-    view_Nd<NewValueT,N> tmp (ptr,kl);
-    auto vm = tmp.impl_map();
-    vm.m_impl_offset.m_stride = v.impl_map().stride_0() / pack_size;
-    return view_Nd<NewValueT,N> (tmp.impl_track(),vm);
+    using OldValueT = typename OldViewT::traits::value_type;
+    auto pack_size = sizeof(NewValueT)/sizeof(OldValueT);
+
+    Kokkos::LayoutStride kl;
+    for (int i=0; i<N; ++i) {
+      kl.dimension[i] = (i==N-1 ? v.extent(i)/pack_size : v.extent(i));
+      kl.stride[i]    = (i==N-1 ? v.stride(i)           : v.stride(i)/pack_size);
+    }
+
+    auto ptr = reinterpret_cast<NewValueT*>(v.data());
+    return strided_view_Nd<NewValueT,N> (ptr,kl);
   }
 
   view_1d<Int> m_layout;

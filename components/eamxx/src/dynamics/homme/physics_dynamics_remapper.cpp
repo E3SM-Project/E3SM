@@ -20,20 +20,9 @@ namespace {
 
 // Utility function to convert a view from a Field into a Homme-compatible view
 template<typename DataType>
-::Homme::ExecViewUnmanaged<DataType>
-getHommeView(const scream::Field& f) {
-  auto p = f.get_header().get_parent();
-  auto scream_view = f.template get_view<DataType>();
-  using homme_view_t = ::Homme::ExecViewUnmanaged<DataType>;
-  if (p!=nullptr) {
-    // Need to fix the mapping stride, so that it can correctly map the subfield.
-    homme_view_t tmp(scream_view.data(),scream_view.layout());
-    auto vm = tmp.impl_map();
-    vm.m_impl_offset.m_stride = scream_view.impl_map().stride_0();
-    return homme_view_t(scream_view.impl_track(),vm);
-  } else {
-    return homme_view_t(scream_view.data(),scream_view.layout());
-  }
+auto getStridedHommeView(const scream::Field& f) {
+  auto scream_view = f.template get_strided_view<DataType>();
+  return ::Homme::BoundaryExchangeFieldView<DataType>(scream_view.data(),scream_view.layout());
 }
 
 } // anonymous namespace
@@ -89,19 +78,19 @@ initialize_device_variables()
     auto get_view = [&] (const int i, const Field& f) {
       const auto rank = f.get_header().get_identifier().get_layout().rank();
       switch (rank) {
-        case 1: repo.h_cviews[i].v1d = f.get_view<const Real*>();      break;
-        case 2: repo.h_cviews[i].v2d = f.get_view<const Real**>();     break;
-        case 3: repo.h_cviews[i].v3d = f.get_view<const Real***>();    break;
-        case 4: repo.h_cviews[i].v4d = f.get_view<const Real****>();   break;
-        case 5: repo.h_cviews[i].v5d = f.get_view<const Real*****>();  break;
+        case 1: repo.h_cviews[i].v1d = f.get_strided_view<const Real*>();      break;
+        case 2: repo.h_cviews[i].v2d = f.get_strided_view<const Real**>();     break;
+        case 3: repo.h_cviews[i].v3d = f.get_strided_view<const Real***>();    break;
+        case 4: repo.h_cviews[i].v4d = f.get_strided_view<const Real****>();   break;
+        case 5: repo.h_cviews[i].v5d = f.get_strided_view<const Real*****>();  break;
       }
       if (not f.is_read_only()) {
         switch (rank) {
-          case 1: repo.h_views[i].v1d = f.get_view<Real*>();      break;
-          case 2: repo.h_views[i].v2d = f.get_view<Real**>();     break;
-          case 3: repo.h_views[i].v3d = f.get_view<Real***>();    break;
-          case 4: repo.h_views[i].v4d = f.get_view<Real****>();   break;
-          case 5: repo.h_views[i].v5d = f.get_view<Real*****>();  break;
+          case 1: repo.h_views[i].v1d = f.get_strided_view<Real*>();      break;
+          case 2: repo.h_views[i].v2d = f.get_strided_view<Real**>();     break;
+          case 3: repo.h_views[i].v3d = f.get_strided_view<Real***>();    break;
+          case 4: repo.h_views[i].v4d = f.get_strided_view<Real****>();   break;
+          case 5: repo.h_views[i].v5d = f.get_strided_view<Real*****>();  break;
         }
       }
     };
@@ -184,19 +173,19 @@ update_subfields_views (std::map<int,SubviewInfo>& subfield_info,
   auto get_view = [&] (const int i, const Field& f) {
     const auto rank = f.get_header().get_identifier().get_layout().rank();
     switch (rank) {
-      case 1: repo.h_cviews[i].v1d = f.get_view<const Real*>();      break;
-      case 2: repo.h_cviews[i].v2d = f.get_view<const Real**>();     break;
-      case 3: repo.h_cviews[i].v3d = f.get_view<const Real***>();    break;
-      case 4: repo.h_cviews[i].v4d = f.get_view<const Real****>();   break;
-      case 5: repo.h_cviews[i].v5d = f.get_view<const Real*****>();  break;
+      case 1: repo.h_cviews[i].v1d = f.get_strided_view<const Real*>();      break;
+      case 2: repo.h_cviews[i].v2d = f.get_strided_view<const Real**>();     break;
+      case 3: repo.h_cviews[i].v3d = f.get_strided_view<const Real***>();    break;
+      case 4: repo.h_cviews[i].v4d = f.get_strided_view<const Real****>();   break;
+      case 5: repo.h_cviews[i].v5d = f.get_strided_view<const Real*****>();  break;
     }
     if (not f.is_read_only()) {
       switch (rank) {
-        case 1: repo.h_views[i].v1d = f.get_view<Real*>();      break;
-        case 2: repo.h_views[i].v2d = f.get_view<Real**>();     break;
-        case 3: repo.h_views[i].v3d = f.get_view<Real***>();    break;
-        case 4: repo.h_views[i].v4d = f.get_view<Real****>();   break;
-        case 5: repo.h_views[i].v5d = f.get_view<Real*****>();  break;
+        case 1: repo.h_views[i].v1d = f.get_strided_view<Real*>();      break;
+        case 2: repo.h_views[i].v2d = f.get_strided_view<Real**>();     break;
+        case 3: repo.h_views[i].v3d = f.get_strided_view<Real***>();    break;
+        case 4: repo.h_views[i].v4d = f.get_strided_view<Real****>();   break;
+        case 5: repo.h_views[i].v5d = f.get_strided_view<Real*****>();  break;
       }
     }
   };
@@ -399,23 +388,23 @@ setup_boundary_exchange () {
     const auto lt = layout.type();
     switch (lt) {
       case LayoutType::Scalar2D:
-        m_be->register_field(getHommeView<Real*[NP][NP]>(m_tgt_fields[i]));
+        m_be->register_field(getStridedHommeView<Real*[NP][NP]>(m_tgt_fields[i]));
         break;
       case LayoutType::Vector2D:
-        m_be->register_field(getHommeView<Real**[NP][NP]>(m_tgt_fields[i]),dims[1],0);
+        m_be->register_field(getStridedHommeView<Real**[NP][NP]>(m_tgt_fields[i]),dims[1],0);
         break;
       case LayoutType::Scalar3D:
         if (dims.back()==HOMMEXX_NUM_PHYSICAL_LEV) {
-          m_be->register_field(getHommeView<Scalar*[NP][NP][NLEV]>(m_tgt_fields[i]));
+          m_be->register_field(getStridedHommeView<Scalar*[NP][NP][NLEV]>(m_tgt_fields[i]));
         } else {
-          m_be->register_field(getHommeView<Scalar*[NP][NP][NINT]>(m_tgt_fields[i]));
+          m_be->register_field(getStridedHommeView<Scalar*[NP][NP][NINT]>(m_tgt_fields[i]));
         }
         break;
       case LayoutType::Vector3D:
         if (dims.back()==HOMMEXX_NUM_PHYSICAL_LEV) {
-          m_be->register_field(getHommeView<Scalar**[NP][NP][NLEV]>(m_tgt_fields[i]),dims[1],0);
+          m_be->register_field(getStridedHommeView<Scalar**[NP][NP][NLEV]>(m_tgt_fields[i]),dims[1],0);
         } else {
-          m_be->register_field(getHommeView<Scalar**[NP][NP][NINT]>(m_tgt_fields[i]),dims[1],0);
+          m_be->register_field(getStridedHommeView<Scalar**[NP][NP][NINT]>(m_tgt_fields[i]),dims[1],0);
         }
         break;
     default:
