@@ -910,6 +910,12 @@ function(check_transport_error_norms
   # available with some of these tests. This function encapsulates the setup
   # steps to add a check after a tracer transport test runs. See
   # TransportCheckErrorNorms.cmake.in for details.
+  # This is called from the test file, before the test is created (see createTest). If the
+  # executable of the test is not built, the test is not created, so don't create the check either.
+  list(FIND EXEC_LIST "${EXEC_NAME}" TCEN_EXEC_INDEX)
+  if (TCEN_EXEC_INDEX LESS 0)
+    return()
+  endif()
   configure_file(
     ${HOMME_SOURCE_DIR}/cmake/TransportCheckErrorNorms.cmake.in
     ${HOMME_BINARY_DIR}/tests/${TEST_NAME}/check.cmake
