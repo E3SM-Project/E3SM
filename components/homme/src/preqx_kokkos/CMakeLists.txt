@@ -4,14 +4,10 @@ MACRO(PREQX_KOKKOS_SETUP)
 
   SET (KOKKOS_TARGET TRUE)
 
-  INCLUDE_DIRECTORIES ( SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
-  LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
-
   SET(PREQX_SHARE_DIR       ${HOMME_SOURCE_DIR}/src/preqx/share)
   SET(TARGET_DIR            ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
   SET(SRC_DIR               ${HOMME_SOURCE_DIR}/src)
   SET(SRC_SHARE_DIR         ${HOMME_SOURCE_DIR}/src/share)
-  SET(TRILINOS_ZOLTAN_DIR   ${HOMME_SOURCE_DIR}/src/zoltan)
   SET(TEST_SRC_DIR          ${HOMME_SOURCE_DIR}/src/test_src)
 
   # Make INCLUDE_DIRS global so the tests can access it
@@ -74,9 +70,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/physical_constants.F90
     ${SRC_SHARE_DIR}/physics_mod.F90
     ${SRC_SHARE_DIR}/prim_advection_base.F90
-    ${SRC_SHARE_DIR}/prim_derived_type_mod.F90
     ${SRC_SHARE_DIR}/prim_driver_base.F90
-    ${SRC_SHARE_DIR}/prim_implicit_mod.F90
     ${SRC_SHARE_DIR}/prim_si_mod.F90
     ${SRC_SHARE_DIR}/quadrature_mod.F90
     ${SRC_SHARE_DIR}/reduction_mod.F90
@@ -89,7 +83,6 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/unit_tests_mod.F90
     ${SRC_SHARE_DIR}/vertremap_base.F90
     ${SRC_SHARE_DIR}/viscosity_base.F90
-    ${SRC_SHARE_DIR}/zoltan_mod.F90
     ${SRC_SHARE_DIR}/sl_advection.F90
     ${SRC_SHARE_DIR}/compose_mod.F90
     ${SRC_SHARE_DIR}/compose_test_mod.F90
@@ -182,11 +175,6 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/utilities/InternalDiagnostics.cpp
     ${SRC_SHARE_DIR}/cxx/utilities/Hash.cpp
   )
-
-  IF (HOMME_USE_TRILINOS)
-    SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
-    SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
-  ENDIF()
 
   # If the user specified a file for custom compiler options use those
   IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)

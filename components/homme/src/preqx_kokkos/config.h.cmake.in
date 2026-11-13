@@ -42,18 +42,9 @@
 /* Vertical OpenMP (within elements) */
 #cmakedefine COLUMN_OPENMP
 
-/* Zoltan partitioning library */
-#cmakedefine01 HAVE_ZOLTAN
-
 /* When doing BFB testing, we occasionally must use modified code. */
 /* Use this flag to protect such code. */
 #cmakedefine HOMMEXX_BFB_TESTING
-
-/* TRILINOS  library */
-#cmakedefine01 HAVE_TRILINOS
-
-/* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
-#cmakedefine01 TRILINOS_HAVE_ZOLTAN2
 
 /* Detect whether this is a kokkos target */
 #cmakedefine01 KOKKOS_TARGET

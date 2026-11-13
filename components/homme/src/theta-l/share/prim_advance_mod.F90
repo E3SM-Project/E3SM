@@ -45,10 +45,6 @@ module prim_advance_mod
 #endif
   use viscosity_theta,    only: biharmonic_wk_theta
 
-#ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize
-    use, intrinsic :: iso_c_binding
-#endif
  
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,        only: cxx_log, cxx_log_array
