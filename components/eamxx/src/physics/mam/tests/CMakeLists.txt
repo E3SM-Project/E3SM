@@ -1,6 +1,17 @@
 include(ScreamUtils)
 
 if (NOT SCREAM_ONLY_GENERATE_BASELINES)
+  CreateUnitTest(mam_gas_chemistry_test
+    SOURCES mam_gas_chemistry_test.cpp
+    LIBS mam
+    LABELS "mam;physics;gas_chemistry"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    THREADS 1 ${SCREAM_TEST_MAX_THREADS}
+  )
+  target_compile_definitions(mam_gas_chemistry_test PRIVATE
+    EAMXX_TEST_MAM_GAS_CHEMISTRY_SOLVER="${MAM4XX_GAS_CHEMISTRY_SOLVER}"
+  )
+
   CreateUnitTest(mam_photo_table_test
     SOURCES mam_photo_table_test.cpp
     LIBS mam eamxx_scorpio_interface eamxx_io ekat::YamlParser
