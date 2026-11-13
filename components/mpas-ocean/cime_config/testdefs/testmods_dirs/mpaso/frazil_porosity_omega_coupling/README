@@ -1,0 +1,23 @@
+This testdef is used to test variable frazil salinity coupling between
+mpaso and mpassi, a stealth feature introduced by PR #8957. It sets the
+following namelist options in mpaso to use porosity-based frazil salinity
+and pass all of the frazil salt to the sea ice:
+   config_use_frazil_ice_porosity = .true.
+   config_frazil_ice_porosity = 0.85
+   config_expel_excess_frazil_salt = .false.
+and the following namelist options in mpassi to turn on the omega-style
+frazil coupling with prognostic salt fluxes:
+   config_frazil_coupling_type = 'omega-fluxes'
+   config_ocean_surface_type = 'free'
+   config_salt_flux_coupling_type = 'prognostic'
+The mpaso settings conserve salt in the coupled system only when used with
+these mpassi settings. Use this testmod with a compset that has ice-shelf
+cavities and frazil under land ice (for example CRYO1850), so that frazil
+salt under land ice, which is always expelled back to the ocean, is also
+exercised.
+
+The conservation check analysis members are turned on in both components:
+   config_AM_conservationCheck_enable = .true.
+Their energy, mass and salt budgets are written to the mpaso and mpassi
+log files. Neither check aborts the run on a salt imbalance, so the logs
+should be inspected to confirm conservation.
