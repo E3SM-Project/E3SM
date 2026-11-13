@@ -12,6 +12,7 @@ module lnd_comp_mct
   use mct_mod          , only : mct_avect, mct_gsmap
   use decompmod        , only : bounds_type, ldecomp
   use lnd_import_export
+  use shr_bounds_mod   , only : shr_bounds_type
   use iso_c_binding
   use esmf, only: ESMF_clock
 
@@ -34,6 +35,9 @@ module lnd_comp_mct
   ! !private member functions:
   private :: lnd_setgsmap_mct ! set the land model mct gs map
   private :: lnd_domain_mct   ! set the land model domain information
+  private :: lnd_bounds_init   ! set up the bounds checks on coupler fields
+  private :: lnd_bounds_check  ! bounds-check an import or export array
+  private :: lnd_bounds_report ! write the bounds-check statistics
 
 #ifdef HAVE_MOAB
   private :: init_moab_land   ! create moab mesh (cloud of points)
@@ -49,6 +53,9 @@ module lnd_comp_mct
   integer  :: mpicom_lnd_moab ! used for iMOAB_RegisterApplication in init_moab_land
 
 #endif
+
+  type(shr_bounds_type), private :: bnd_x2l  ! bounds-check statistics on the import array
+  type(shr_bounds_type), private :: bnd_l2x  ! bounds-check statistics on the export array
   !---------------------------------------------------------------------------
 
 contains
@@ -322,6 +329,8 @@ contains
     lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
+
+    call lnd_bounds_init( bounds, mpicom_lnd )
 #ifdef HAVE_MOAB
     if (iac_present) then
       call endrun(msg=sub//'ERROR: EHC not supported with MOAB yet: '//errMsg(__FILE__, __LINE__))
@@ -381,6 +390,8 @@ contains
 #else
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
 #endif
+      ! Not bounds-checked: on a startup run some fields (e.g. Sl_tref) are
+      ! still 0 because elm has not run yet
     endif
 
     ! Fill in infodata settings
@@ -568,8 +579,10 @@ contains
     endif
     ! Create transpose of x2l_lm
     x2l_lm_t = transpose(x2l_lm)
+    call lnd_bounds_check(bnd_x2l, x2l_lm_t)
     call lnd_import( bounds, x2l_lm_t, atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars, lnd2atm_vars, iac2lnd_vars)
 #else
+    call lnd_bounds_check(bnd_x2l, x2l_l%rattr)
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars, lnd2atm_vars, iac2lnd_vars)
 #endif
     call t_stopf ('lc_lnd_import')
@@ -636,8 +649,10 @@ contains
        ent_type = 0 ! vertices only
        ierr = iMOAB_SetDoubleTagStorage(mlnid, tagname, totalmbls, ent_type, l2x_lm_t)
        if (ierr > 0) call endrun(sub//' Error: fail to set moab l2x '//trim(seq_flds_l2x_fields))
+       call lnd_bounds_check(bnd_l2x, l2x_lm)
 #else
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
+       call lnd_bounds_check(bnd_l2x, l2x_l%rattr)
 #endif
        call t_stopf ('lc_lnd_export')
 #endif
@@ -649,6 +664,8 @@ contains
        call t_stopf ('lc_elm2_adv_timestep')
 
     end do
+
+    call lnd_bounds_report( EClock )
 
     ! Check that internal clock is in sync with master clock
 
@@ -756,6 +773,106 @@ contains
     deallocate(gindex)
 
   end subroutine lnd_SetgsMap_mct
+
+  !====================================================================================
+
+  subroutine lnd_bounds_init( bounds, mpicom_lnd )
+    !
+    ! !DESCRIPTION:
+    ! Set up the bounds checks on the fields elm receives from and sends to
+    ! the coupler (limits in share/field_limits.yaml)
+    !
+    ! !USES:
+    use shr_bounds_mod , only : shr_bounds_init
+    use seq_flds_mod   , only : seq_flds_x2l_fields, seq_flds_l2x_fields
+    use seq_flds_mod   , only : bounds_check_component_fields
+    use domainMod      , only : ldomain
+    use elm_varctl     , only : iulog
+    !
+    ! !ARGUMENTS:
+    type(bounds_type) , intent(in) :: bounds     ! bounds
+    integer           , intent(in) :: mpicom_lnd ! MPI communicator for the elm land model
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: gindex(bounds%begg:bounds%endg) ! global index of each local grid cell
+    integer  :: g
+    !---------------------------------------------------------------------------
+
+    if (trim(bounds_check_component_fields) == 'off') return
+
+    do g = bounds%begg, bounds%endg
+       gindex(g) = ldecomp%gdc2glo(g)
+    end do
+    call shr_bounds_init(bnd_x2l, 'lnd', 'import', seq_flds_x2l_fields, gindex, &
+         ldomain%latc(bounds%begg:bounds%endg), ldomain%lonc(bounds%begg:bounds%endg), &
+         mpicom_lnd, iulog)
+    call shr_bounds_init(bnd_l2x, 'lnd', 'export', seq_flds_l2x_fields, gindex, &
+         ldomain%latc(bounds%begg:bounds%endg), ldomain%lonc(bounds%begg:bounds%endg), &
+         mpicom_lnd, iulog)
+
+  end subroutine lnd_bounds_init
+
+  !====================================================================================
+
+  subroutine lnd_bounds_check( bnd, values )
+    !
+    ! !DESCRIPTION:
+    ! Bounds-check an import or export array, laid out as (field, grid cell)
+    !
+    ! !USES:
+    use shr_bounds_mod , only : shr_bounds_check
+    use seq_flds_mod   , only : bounds_check_component_fields
+    use perf_mod       , only : t_startf, t_stopf
+    !
+    ! !ARGUMENTS:
+    type(shr_bounds_type) , intent(inout) :: bnd
+    real(r8)              , intent(in)    :: values(:,:)
+    !---------------------------------------------------------------------------
+
+    if (trim(bounds_check_component_fields) == 'off') return
+
+    call t_startf('lc_bounds_check')
+    call shr_bounds_check(bnd, values, field_major=.true., &
+         abort_on_violation=(trim(bounds_check_component_fields) == 'abort'))
+    call t_stopf('lc_bounds_check')
+
+  end subroutine lnd_bounds_check
+
+  !====================================================================================
+
+  subroutine lnd_bounds_report( EClock )
+    !
+    ! !DESCRIPTION:
+    ! Write the bounds-check statistics to the land log once per model day
+    ! and at the end of the run
+    !
+    ! !USES:
+    use shr_bounds_mod  , only : shr_bounds_report
+    use seq_flds_mod    , only : bounds_check_component_fields
+    use seq_timemgr_mod , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn
+    use spmdMod         , only : mpicom
+    use elm_varctl      , only : iulog
+    use perf_mod        , only : t_startf, t_stopf
+    use ESMF
+    !
+    ! !ARGUMENTS:
+    type(ESMF_Clock) , intent(inout) :: EClock ! synchronization clock from driver
+    !
+    ! !LOCAL VARIABLES:
+    integer :: ymd, tod
+    !---------------------------------------------------------------------------
+
+    if (trim(bounds_check_component_fields) == 'off') return
+
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=ymd, curr_tod=tod)
+    if (tod /= 0 .and. .not. seq_timemgr_StopAlarmIsOn(EClock)) return
+
+    call t_startf('lc_bounds_report')
+    call shr_bounds_report(bnd_x2l, ymd, tod, mpicom, iulog)
+    call shr_bounds_report(bnd_l2x, ymd, tod, mpicom, iulog)
+    call t_stopf('lc_bounds_report')
+
+  end subroutine lnd_bounds_report
 
   !====================================================================================
 
