@@ -4,7 +4,7 @@ set(pf_sources
 
 # Sources to test.
 set(sources_needed
-  shr_kind_mod.F90 shr_const_mod.F90 shr_wv_sat_mod.F90)
+  shr_kind_mod.F90 pcd_const.F90 shr_const_mod.F90 shr_wv_sat_mod.F90)
 extract_sources("${sources_needed}" "${share_sources}" test_sources)
 
 # Do source preprocessing and add the executable.
