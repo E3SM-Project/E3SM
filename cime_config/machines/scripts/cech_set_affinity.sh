@@ -13,13 +13,6 @@
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-# Disable buggy OpenMPI collective acceleration modules (HCOLL and UCC) that
-# crash (segfault in ml_setup_full_tree_data or ucc_cl_hier_team_create_test /
-# ibv_create_cq) on multi-node runs and sub-communicators. Standard coll/tuned
-# runs reliably over UCX point-to-point without slowdown.
-export OMPI_MCA_coll_hcoll_enable=${OMPI_MCA_coll_hcoll_enable:-0}
-export OMPI_MCA_coll_ucc_enable=${OMPI_MCA_coll_ucc_enable:-0}
-
 # Raise soft locked-memory limit (RLIMIT_MEMLOCK) to match the compute node's
 # unlimited hard limit in case Slurm propagated a low limit (e.g. 8192 KB) from
 # the login node, which otherwise causes UCX ibv_reg_mr() failures on multi-node runs.
