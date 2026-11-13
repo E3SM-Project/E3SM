@@ -6,6 +6,7 @@
 #include "share/data_managers/IOPDataManager.hpp"
 #include "share/data_managers/SCDataManager.hpp"
 #include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/field_init.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/field_request.hpp"
 #include "share/property_checks/property_check.hpp"
@@ -280,6 +281,11 @@ public:
   const strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data () const { return m_restart_extra_data; }
         strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
+  // The recipes to init the fields that this process owns, for the initial conditions.
+  // See field_init.hpp. The AD gives them to ModelInit.
+  // NOTE: the group overrides this, to also return the recipes of its processes.
+  virtual strmap_t<std::shared_ptr<FieldInit>> get_field_inits () const { return m_field_inits; }
+
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
   bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
@@ -457,6 +463,13 @@ protected:
   virtual void set_required_group_impl (const FieldGroup& /* group */) {}
   virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
+  // Provide a recipe to init a field that this process owns, for startup runs. The recipe is used
+  // only if the field is not overridden by the user, nor in the IC file, nor given a default constant.
+  // It runs after the IC file is read, and *before* any atm process is initialized (so, the recipe
+  // can init fields that the dynamics also needs, like tracers). Unlike initialize_impl, the
+  // recipe must be self-contained: see field_init.hpp. Typically called in create_requests.
+  void add_field_init (const std::shared_ptr<FieldInit>& init);
+
   // Adds a field to the list of internal fields, possibly adding it to the given groups
   void add_internal_field (const Field& f, const std::vector<std::string>& groups = {});
 
@@ -502,6 +515,9 @@ protected:
 
   // Extra data needed for restart
   strmap_t<std::shared_ptr<std::any>>  m_restart_extra_data;
+
+  // Recipes to init the fields owned by this process (name -> recipe)
+  strmap_t<std::shared_ptr<FieldInit>>  m_field_inits;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize

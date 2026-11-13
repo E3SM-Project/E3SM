@@ -964,8 +964,12 @@ void AtmosphereDriver::run_model_init ()
   auto model_init = m_grids_manager->create_model_init(params);
   if (restart) {
     model_init->set_restart_extra_data(m_atm_process_group->get_restart_extra_data());
-  } else if (m_iop_data_manager) {
-    model_init->set_iop_data_manager(m_iop_data_manager);
+  } else {
+    // Atm processes can provide recipes to init the fields they own
+    model_init->set_field_inits(m_atm_process_group->get_field_inits());
+    if (m_iop_data_manager) {
+      model_init->set_iop_data_manager(m_iop_data_manager);
+    }
   }
   model_init->run(m_field_mgr,m_current_ts,m_run_type);
 
