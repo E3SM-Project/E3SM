@@ -113,3 +113,25 @@ meshes:
       VelDiffTendencyEnable: false
       ViscDel4: 9.99e9
       TracerHyperDiffTendencyEnable: false
+
+  u04-oi6to18:
+    TimeIntegration:
+      TimeStep: "0000_00:05:00"
+      ModeSplitShare:
+        BtrTimeStep: 0000_00:00:10
+    Tendencies:
+      TracerDiffTendencyEnable: false
+      VelDiffTendencyEnable: false
+      ViscDel4: 9.99e9
+      TracerHyperDiffTendencyEnable: false
+
+  u05-oi6to18:
+    TimeIntegration:
+      TimeStep: "0000_00:05:00"
+      ModeSplitShare:
+        BtrTimeStep: 0000_00:00:10
+    Tendencies:
+      TracerDiffTendencyEnable: false
+      VelDiffTendencyEnable: false
+      ViscDel4: 9.99e9
+      TracerHyperDiffTendencyEnable: false
