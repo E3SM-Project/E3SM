@@ -110,6 +110,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
     internal_diagnostics_level, &
+    limiter_warnings, &
     timestep_make_subcycle_parameters_consistent
 
 !PLANAR setup
@@ -334,6 +335,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       theta_advect_form,     &
       vtheta_thresh,         &
       dp3d_thresh,         &
+      limiter_warnings,      &
       pgrad_correction,      &
       hv_ref_profiles,       &
       hv_theta_correction,   &
@@ -903,6 +905,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(se_fv_phys_remap_alg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(internal_diagnostics_level,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(limiter_warnings,1,MPIlogical_t,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -1218,6 +1221,7 @@ end if
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
        write(iulog,*)"readnl: vtheta_thresh     = ",vtheta_thresh
        write(iulog,*)"readnl: dp3d_thresh     = ",dp3d_thresh
+       write(iulog,*)"readnl: limiter_warnings  = ",limiter_warnings
        write(iulog,*)"readnl: pgrad_correction  = ",pgrad_correction
        write(iulog,*)"readnl: hv_ref_profiles   = ",hv_ref_profiles
        write(iulog,*)"readnl: hv_theta_correction= ",hv_theta_correction

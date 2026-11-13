@@ -219,6 +219,10 @@ module control_mod
   ! Hommexx-specific parameters
   integer, public :: internal_diagnostics_level = 0
 
+  ! Print a warning each time the dp3d/vtheta limiters are applied in CAAR.
+  ! Tests that hit the limiters on purpose can turn this off to avoid flooding the output
+  logical, public :: limiter_warnings = .true.
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

@@ -97,7 +97,7 @@ contains
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
                               pgrad_correction, dp3d_thresh, vtheta_thresh,            &
                               internal_diagnostics_level, do_3d_turbulence,            &
-                              tom_sponge_start
+                              tom_sponge_start, limiter_warnings
     !
     ! Input(s)
     !
@@ -112,6 +112,7 @@ contains
     character(len=MAX_STRING_LEN), target :: test_name
 
     integer :: disable_diagnostics_int, theta_hydrostatic_mode_int, use_moisture_int, do_3d_turbulence_int
+    integer :: limiter_warnings_int
 
     ! Initialize the C++ reference element structure (i.e., pseudo-spectral deriv matrix and ref element mass matrix)
     dvv = deriv1%dvv
@@ -129,6 +130,8 @@ contains
     if (theta_hydrostatic_mode) theta_hydrostatic_mode_int = 1
     do_3d_turbulence_int = 0
     if (do_3d_turbulence) do_3d_turbulence_int = 1
+    limiter_warnings_int = 0
+    if (limiter_warnings) limiter_warnings_int = 1
 
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
@@ -148,7 +151,8 @@ contains
                                    pgrad_correction,                                              &
                                    dp3d_thresh, vtheta_thresh, internal_diagnostics_level,        &
                                    do_3d_turbulence_int,                                          &
-                                   tom_sponge_start)
+                                   tom_sponge_start,                                              &
+                                   limiter_warnings_int)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)

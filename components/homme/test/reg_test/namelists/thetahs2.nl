@@ -41,6 +41,8 @@ tstep_type        = 10
 moisture          = 'notdry'
 dp3d_thresh       = 1.0
 vtheta_thresh     = 400
+! vtheta_thresh is set high on purpose, to exercise the limiter: don't print a warning every time
+limiter_warnings  = .false.
 /
 &solver_nl
 precon_method = "identity"
