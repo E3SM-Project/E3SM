@@ -29,6 +29,9 @@
 
 #cmakedefine HOMMEXX_CUDA_SHARE_BUFFER
 
+// Whether to skip printing a warning when the dp3d/vtheta limiters are applied
+#cmakedefine HOMMEXX_DISABLE_LIMITER_WARNINGS
+
 // Minimum and maximum number of warps to provide to a team
 #cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}
 #cmakedefine HOMMEXX_CUDA_MAX_WARP_PER_TEAM ${HOMMEXX_CUDA_MAX_WARP_PER_TEAM}
