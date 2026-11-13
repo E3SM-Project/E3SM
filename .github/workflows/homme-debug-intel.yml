@@ -1,0 +1,103 @@
+name: homme-debug-intel
+
+# THROWAWAY workflow (do not merge): debug the thetah-nhgw*-kokkos hang on the ghci intel runner.
+# On the intel (non-BFB) job, these tests finish all their timesteps, then all ranks abort with
+# "double free or corruption (out)" inside prim_finalize, and mpirun never returns.
+
+on:
+  push:
+    branches: [bartgol/homme/tmp-debug-intel-thetah]
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  debug:
+    runs-on: [self-hosted, e3sm, intel]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+      - name: Check out the submodules that homme needs
+        run: |
+          git -c url."https://github.com/".insteadOf=git@github.com: \
+              submodule update --init --recursive --depth=1 \
+              cime externals/ekat externals/scorpio
+      - name: Environment info
+        run: |
+          set -x
+          which mpirun mpicxx mpif90 gdb valgrind || true
+          mpicxx --version || true
+          mpif90 --version || true
+          mpirun --version || true
+          ldd --version | head -1 || true
+          nproc; free -g || true
+      - name: Configure and build theta-l-nlev10-native-kokkos (ghci-intel flags, plus -g)
+        working-directory: components/homme
+        run: |
+          cmake -C cmake/machineFiles/ghci-intel.cmake \
+                -DADD_CXX_FLAGS="-Wno-overriding-option -g" \
+                -DADD_C_FLAGS="-g" \
+                -DADD_Fortran_FLAGS="-g -traceback" \
+                -DHOMME_SKIP_BASELINE_COMPARE=ON \
+                -DUSE_NUM_PROCS=4 \
+                -S . -B bld 2>&1 | tail -40
+          make -C bld -j 32 theta-l-nlev10-native-kokkos 2>&1 | tail -20
+          grep -E "^(CMAKE_(CXX|Fortran)_FLAGS|ADD_.*FLAGS|CMAKE_BUILD_TYPE)" bld/CMakeCache.txt
+          grep -m1 -o "\-O[0-3]" bld/test_execs/theta-l-nlev10-native-kokkos/CMakeFiles/theta-l-nlev10-native-kokkos.dir/flags.make || true
+      - name: Run thetah-nhgw-slice (hydrostatic) and thetanh-nhgw-slice (nonhydrostatic) in several configs
+        working-directory: components/homme/bld/tests
+        run: |
+          exe=$PWD/../test_execs/theta-l-nlev10-native-kokkos/theta-l-nlev10-native-kokkos
+          export OMP_STACKSIZE=64M
+          ulimit -s unlimited 2>/dev/null || ulimit -s "$(ulimit -H -s)"
+          ulimit -c 0
+          run_case () {  # test ranks threads [extra env]
+            local t=$1 r=$2 th=$3; shift 3
+            ( cd $t && rm -f movies/* && \
+              env OMP_NUM_THREADS=$th "$@" timeout -k 10 180 mpirun -n $r $exe < ${t%-kokkos}.nl > run.out 2> run.err; echo "rc=$?" > rc )
+            echo "################ $t ranks=$r threads=$th env=[$*] -> $(cat $t/rc)"
+            echo "--- tail out"; tail -n 6 $t/run.out
+            echo "--- err (first 40 lines)"; head -n 40 $t/run.err
+          }
+          for t in thetah-nhgw-slice-kokkos thetanh-nhgw-slice-kokkos; do
+            run_case $t 4 2
+            run_case $t 4 1
+            run_case $t 1 1
+            run_case $t 1 2
+          done
+          # glibc heap checks: abort at the first inconsistency, with a message
+          run_case thetah-nhgw-slice-kokkos 1 1 MALLOC_CHECK_=3 MALLOC_PERTURB_=165
+          # Kokkos: disable the OpenMP backend at runtime, if the issue is thread-related
+          run_case thetah-nhgw-slice-kokkos 1 1 KOKKOS_NUM_THREADS=1
+      - name: Backtrace of the abort with gdb (1 rank, 1 thread)
+        if: always()
+        working-directory: components/homme/bld/tests/thetah-nhgw-slice-kokkos
+        run: |
+          exe=$PWD/../../test_execs/theta-l-nlev10-native-kokkos/theta-l-nlev10-native-kokkos
+          export OMP_NUM_THREADS=1 OMP_STACKSIZE=64M
+          ulimit -s unlimited 2>/dev/null || ulimit -s "$(ulimit -H -s)"
+          if command -v gdb > /dev/null; then
+            rm -f movies/*
+            timeout -k 10 300 mpirun -n 1 gdb -batch -ex "run < thetah-nhgw-slice.nl > gdb_run.out" \
+              -ex "bt" -ex "thread apply all bt 25" --args $exe 2>&1 | tail -n 150 || true
+          else
+            echo "gdb not available"
+          fi
+      - name: Valgrind (1 rank, 1 thread), if available
+        if: always()
+        working-directory: components/homme/bld/tests/thetah-nhgw-slice-kokkos
+        run: |
+          exe=$PWD/../../test_execs/theta-l-nlev10-native-kokkos/theta-l-nlev10-native-kokkos
+          export OMP_NUM_THREADS=1 OMP_STACKSIZE=64M
+          if command -v valgrind > /dev/null; then
+            rm -f movies/*
+            timeout -k 10 1500 mpirun -n 1 valgrind --error-limit=no --num-callers=30 --track-origins=yes \
+              $exe < thetah-nhgw-slice.nl > vg_run.out 2> vg.err || true
+            grep -v "^==[0-9]*== *$" vg.err | grep -B2 -A30 "Invalid \(write\|free\|read\)" | head -n 300
+            tail -n 30 vg.err
+          else
+            echo "valgrind not available"
+          fi
