@@ -9,4 +9,9 @@ SET (ADD_C_FLAGS       "-fp-model strict -O1" CACHE STRING "")
 # Also turn off annoying compiler warning (same as in the non-bfb file)
 SET (ADD_CXX_FLAGS     "-fp-model strict -O1 -Wno-overriding-option" CACHE STRING "")
 
+# The bfb CI jobs only run the cxx_vs_f90 comparisons (and the unit tests), and none of them uses the
+# sweqx or tool executables (see .github/workflows/homme-testing.yml), so don't build them.
+SET (BUILD_HOMME_SWEQX OFF CACHE BOOL "")
+SET (BUILD_HOMME_TOOL  OFF CACHE BOOL "")
+
 include (${CMAKE_CURRENT_LIST_DIR}/ghci-intel.cmake)

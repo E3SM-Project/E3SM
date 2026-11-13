@@ -36,6 +36,8 @@ if (NOT DEFINED SUBMIT)
   set(SUBMIT FALSE)
 endif()
 
+# LABELS: if set (a regex), only run the tests with a matching label (and the tests they need)
+
 if (NOT DEFINED dashboard_model)
   set(dashboard_model Experimental)
 endif()
@@ -132,6 +134,11 @@ else()
       # Run only the tests that generate baselines (they copy their outputs in BASELINE_DIR)
       message(STATUS "HOMME ctest script: generate baselines")
       set(_test_opts INCLUDE_LABEL baseline_gen)
+    elseif (DEFINED LABELS AND NOT LABELS STREQUAL "")
+      # Run only the tests with a label matching this regex. The tests they need (via fixtures,
+      # e.g., the runs compared by a cxx_vs_f90 test) are added by ctest.
+      message(STATUS "HOMME ctest script: run tests with labels matching '${LABELS}'")
+      set(_test_opts INCLUDE_LABEL "${LABELS}")
     else()
       message(STATUS "HOMME ctest script: run tests")
       set(_test_opts)

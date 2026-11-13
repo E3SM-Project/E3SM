@@ -78,6 +78,12 @@ def _parse_args(argv):
              "Cannot be used with --generate.",
     )
     parser.add_argument(
+        "--labels",
+        default="",
+        help="Only run the tests with a label matching this regex (e.g., 'cxx_vs_f90|unit'). The tests they "
+             "need (e.g., the runs compared by a cxx_vs_f90 test) are run too. Cannot be used with --generate.",
+    )
+    parser.add_argument(
         "--baseline-root",
         default=None,
         help="Baseline root directory.",
@@ -155,6 +161,8 @@ def ensure_paths(args,machine):
     """
     Ensures the root, work, and baseline dirs exist 
     """
+    expect(not (args.labels and args.generate),
+           "ERROR: --labels and --generate cannot be used together")
     expect(not (args.no_baseline and args.generate),
            "ERROR: --no-baseline and --generate cannot be used together")
 
@@ -235,6 +243,8 @@ def _build_ctest_cmd(args,root_dir,work_dir,baseline_dir,machine):
     cmd += f" -D BUILD_PARALLEL_LEVEL={make_j}"
     cmd += f" -D RUN_PARALLEL_LEVEL={ctest_j}"
     cmd += f" -D SUBMIT={_bool_str(args.submit)}"
+    if args.labels:
+        cmd += " -D " + shlex.quote(f"LABELS={args.labels}")
 
     if args.cprnc_dir:
         cmd += f" -D CPRNC_DIR={pathlib.Path(args.cprnc_dir).resolve()}"

@@ -11,4 +11,9 @@ SET (ADD_Fortran_FLAGS "-fbacktrace -O1 -ffp-contract=off" CACHE STRING "")
 SET (ADD_C_FLAGS       "-O1 -ffp-contract=off" CACHE STRING "")
 SET (ADD_CXX_FLAGS     "-O1 -ffp-contract=off" CACHE STRING "")
 
+# The bfb CI jobs only run the cxx_vs_f90 comparisons (and the unit tests), and none of them uses the
+# sweqx or tool executables (see .github/workflows/homme-testing.yml), so don't build them.
+SET (BUILD_HOMME_SWEQX OFF CACHE BOOL "")
+SET (BUILD_HOMME_TOOL  OFF CACHE BOOL "")
+
 include (${CMAKE_CURRENT_LIST_DIR}/ghci-gnu.cmake)
