@@ -27,7 +27,9 @@ set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}
 find_library(CSM_SHARE_LIB csm_share REQUIRED HINTS ${CSM_SHARE})
 
 set(CSM_LIBS  ${CSM_SHARE_LIB};mct;spio)
-set(CSM_INCLS ${CSM_SHARE})
+# C++ header of the Physical Constants Dictionary (pcd_const.h) lives in the source tree
+get_filename_component(CSM_SHARE_CXX_INC "${CMAKE_CURRENT_LIST_DIR}/../../../share/util_cxx" ABSOLUTE)
+set(CSM_INCLS ${CSM_SHARE} ${CSM_SHARE_CXX_INC})
 if (USE_MOAB)
   list(APPEND CSM_LIBS ${MOAB_LIBRARIES})
   list(APPEND CSM_INCLS ${MOAB_INCLUDE_DIRS})

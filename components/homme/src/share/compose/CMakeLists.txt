@@ -1,5 +1,6 @@
 include_directories (
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${HOMME_SOURCE_DIR}/../../share/util_cxx # for pcd_const.h (Physical Constants Dictionary)
   ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 if (ENABLE_HORIZ_OPENMP)
   add_definitions(-DHORIZ_OPENMP)
