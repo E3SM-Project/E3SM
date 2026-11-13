@@ -10784,6 +10784,7 @@ subroutine init_column_waves(domain)
          config_update_ocean_fluxes, &
          config_use_form_drag, &
          config_use_high_frequency_coupling, &
+         config_use_ice_atm_flux_reg, &
          config_use_ocean_mixed_layer, &
          config_calc_surface_stresses, &
          config_use_vertical_tracers, &
@@ -10829,6 +10830,9 @@ subroutine init_column_waves(domain)
          config_temp_change_snow_grain_radius_change, &
          config_max_melting_snow_grain_radius, &
          config_algae_absorption_coefficient, &
+         config_ice_atm_flux_eps, &
+         config_ice_atm_flux_damping, &
+         config_boundary_layer_iteration_tolerance, &
          config_ridging_efolding_scale, &
          config_ratio_ridging_work_to_PE, &
          config_snow_to_ice_transition_depth, &
@@ -11036,7 +11040,12 @@ subroutine init_column_waves(domain)
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_stresses", config_calc_surface_stresses)
     call MPAS_pool_get_config(domain % configs, "config_use_form_drag", config_use_form_drag)
     call MPAS_pool_get_config(domain % configs, "config_use_high_frequency_coupling", config_use_high_frequency_coupling)
+    call MPAS_pool_get_config(domain % configs, "config_use_ice_atm_flux_reg", config_use_ice_atm_flux_reg)
+    call MPAS_pool_get_config(domain % configs, "config_ice_atm_flux_eps", config_ice_atm_flux_eps)
+    call MPAS_pool_get_config(domain % configs, "config_ice_atm_flux_damping", config_ice_atm_flux_damping)
     call MPAS_pool_get_config(domain % configs, "config_boundary_layer_iteration_number", config_boundary_layer_iteration_number)
+    call MPAS_pool_get_config(domain % configs, "config_boundary_layer_iteration_tolerance", &
+                              config_boundary_layer_iteration_tolerance)
     call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
     call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
     call MPAS_pool_get_config(domain % configs, "config_itd_conversion_type", config_itd_conversion_type)
@@ -11465,8 +11474,11 @@ subroutine init_column_waves(domain)
          calc_strair_in          = config_calc_surface_stresses, &
          formdrag_in             = config_use_form_drag, &
          highfreq_in             = config_use_high_frequency_coupling, &
+         use_ice_atm_flux_reg_in = config_use_ice_atm_flux_reg, &
+         ice_atm_flux_eps_in     = config_ice_atm_flux_eps, &
+         ice_atm_flux_damping_in = config_ice_atm_flux_damping, &
          natmiter_in             = config_boundary_layer_iteration_number, &
-         !atmiter_conv_in         = , &        ! not yet implemented in MPAS-SI (stealth feature)
+         atmiter_conv_in         = config_boundary_layer_iteration_tolerance, &
          !calc_dragio_in          = , &        ! not yet implemented in MPAS-SI (stealth feature)
          tfrz_option_in          = config_sea_freezing_temperature_type, &
          kitd_in                 = config_itd_conversion_type_int, &
