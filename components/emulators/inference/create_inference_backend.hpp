@@ -6,9 +6,9 @@
 #ifndef E3SM_EMULATOR_CREATE_INFERENCE_BACKEND_HPP
 #define E3SM_EMULATOR_CREATE_INFERENCE_BACKEND_HPP
 
-#include <memory>
-
 #include "inference_backend.hpp"
+
+#include <memory>
 
 namespace e3sm::emulator::inference {
 

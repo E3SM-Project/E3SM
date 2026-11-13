@@ -1,14 +1,13 @@
 #include "moab_transport.hpp"
-#include "moab_adapter.hpp"
-#include <algorithm>
-#include <iterator>
-#include <limits>
+
 #include <moab/Types.hpp>
 #include <moab/iMOAB.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iostream>
+#include <limits>
 #include <ranges>
 #include <set>
 #include <stdexcept>

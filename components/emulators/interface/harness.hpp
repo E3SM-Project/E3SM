@@ -26,9 +26,10 @@
  * for configuring and running the process
  */
 
+#include "cpl7_component.hpp"
+
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
-#include <cpl7_component.hpp>
 #include <emulator_config.hpp>
 #include <grid_types.hpp>
 #include <process.hpp>

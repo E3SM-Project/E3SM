@@ -1,9 +1,10 @@
 #ifndef E3SM_COUPLER_DRIVER_HPP
 #define E3SM_COUPLER_DRIVER_HPP
 
-#include <coupler.hpp>
+#include "coupler.hpp"
+#include "process.hpp"
+
 #include <memory>
-#include <process.hpp>
 
 namespace e3sm::emulator::coupler {
 

@@ -3,16 +3,16 @@
  * @brief Implementation of the Emulator base class.
  */
 
-#include "create_inference_backend.hpp"
-#include "inference_backend.hpp"
-#include "inference_config.hpp"
-#include "moab_adapter.hpp"
+#include "emulator.hpp"
+#include "emulator_config.hpp"
+
 #include <coupler_driver.hpp>
-#include <emulator.hpp>
-#include <emulator_config.hpp>
-#include <field_registry.hpp>
-#include <memory>
+#include <create_inference_backend.hpp>
+#include <inference_backend.hpp>
+#include <inference_config.hpp>
+#include <moab_adapter.hpp>
 #include <process.hpp>
+#include <field_registry.hpp>
 
 #include <ekat_yaml.hpp>
 #include <moab/Types.hpp>
@@ -20,9 +20,9 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>

@@ -1,12 +1,14 @@
 #include "moab_adapter.hpp"
-#include "mpi.h"
-#include <cmath>
-#include <iostream>
-#include <limits>
 
 #include <moab/Types.hpp>
 #include <moab/iMOAB.h>
+#include <mpi.h>
+
+#include <cmath>
+#include <iostream>
+#include <limits>
 #include <stdexcept>
+
 namespace e3sm::emulator::coupler {
 
 namespace {

@@ -1,7 +1,8 @@
 #include "coupler.hpp"
+#include "coupler_driver.hpp"
 #include "process.hpp"
+
 #include <algorithm>
-#include <coupler_driver.hpp>
 #include <stdexcept>
 #include <string>
 

@@ -1,7 +1,8 @@
 #ifndef E3SM_EMULATOR_MOAB_TRANSPORT_HPP
 #define E3SM_EMULATOR_MOAB_TRANSPORT_HPP
 
-#include <moab_adapter.hpp>
+#include "moab_adapter.hpp"
+
 #include <mpi.h>
 #include <span>
 #include <string>

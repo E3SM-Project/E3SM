@@ -1,11 +1,13 @@
-#include "inference_backend.hpp"
+#include "emulator_config.hpp"
+
+#include <inference_backend.hpp>
+#include <field_registry.hpp>
+
+#include <ekat_yaml.hpp>
+
 #include <algorithm>
 #include <cctype>
-#include <ekat_yaml.hpp>
-#include <emulator_config.hpp>
-#include <field_registry.hpp>
 #include <filesystem>
-#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>

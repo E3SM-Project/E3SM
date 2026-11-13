@@ -2,6 +2,7 @@
 #define E3SM_EMULATOR_GRID_DESC_HPP
 
 #include <mpi.h>
+
 #include <string>
 #include <vector>
 

@@ -1,7 +1,9 @@
 #ifndef E3SM_COUPLER_API_PROCESS_HPP
 #define E3SM_COUPLER_API_PROCESS_HPP
+
 #include "coupler.hpp"
-#include <field_registry.hpp>
+#include "field_registry.hpp"
+
 #include <memory>
 #include <span>
 #include <stdexcept>

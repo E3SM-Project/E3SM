@@ -1,8 +1,6 @@
 #ifndef E3SM_EMULATOR_CAPI_TYPES_HPP
 #define E3SM_EMULATOR_CAPI_TYPES_HPP
 
-#include "grid_types.hpp"
-
 extern "C" {
 
 struct GridDesc_Ctype {

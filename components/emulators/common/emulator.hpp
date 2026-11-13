@@ -5,19 +5,20 @@
 #ifndef E3SM_EMULATOR_HPP
 #define E3SM_EMULATOR_HPP
 
-#include "moab_adapter.hpp"
-#include "moab_transport.hpp"
+#include "emulator_config.hpp"
+#include "grid_types.hpp"
+
 #include <coupler.hpp>
-#include <emulator_config.hpp>
 #include <field_registry.hpp>
 #include <inference_backend.hpp>
-#include <memory>
-#include <mpi.h>
-#include <optional>
+#include <moab_adapter.hpp>
 #include <process.hpp>
 
-#include "grid_types.hpp"
+#include <mpi.h>
+
 #include <cstddef>
+#include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>

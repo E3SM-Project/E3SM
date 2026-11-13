@@ -3,9 +3,8 @@
  * @brief Tensor and TensorMap implementation.
  */
 
-#include "tensor.hpp"
-
 #include "inference_error.hpp"
+#include "tensor.hpp"
 
 #include <utility>
 

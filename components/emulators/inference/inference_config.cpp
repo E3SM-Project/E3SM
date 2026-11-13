@@ -4,7 +4,6 @@
  */
 
 #include "inference_config.hpp"
-
 #include "inference_error.hpp"
 
 #include <cstddef>

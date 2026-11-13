@@ -1,8 +1,10 @@
 #include "harness.hpp"
-#include "coupler.hpp"
 #include "cpl7_component.hpp"
-#include "emulator.hpp"
-#include "process.hpp"
+
+#include <coupler.hpp>
+#include <emulator.hpp>
+#include <process.hpp>
+
 #include <cmath>
 #include <cstddef>
 #include <memory>

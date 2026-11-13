@@ -1,7 +1,7 @@
 #ifndef E3SM_EMULATOR_CONFIG_HPP
 #define E3SM_EMULATOR_CONFIG_HPP
 
-#include "inference_backend.hpp"
+#include <inference_backend.hpp>
 #include <field_registry.hpp>
 
 #include <filesystem>

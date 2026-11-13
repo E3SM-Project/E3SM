@@ -1,5 +1,7 @@
-#include "field_registry.hpp"
-#include <cpl7_component.hpp>
+#include "cpl7_component.hpp"
+
+#include <field_registry.hpp>
+
 #include <stdexcept>
 
 namespace e3sm::emulator {

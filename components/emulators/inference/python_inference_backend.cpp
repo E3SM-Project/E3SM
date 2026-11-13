@@ -3,13 +3,12 @@
  * @brief Python inference backend implementation.
  */
 
-// Python.h must come before any standard header
-#include <Python.h>
-
-#include "python_inference_backend.hpp"
-
 #include "fpe_guard.hpp"
 #include "inference_error.hpp"
+#include "python_inference_backend.hpp"
+
+// Python.h must come before any standard header
+#include <Python.h>
 
 #include <iostream>
 #include <sstream>

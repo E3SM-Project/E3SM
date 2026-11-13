@@ -2,6 +2,7 @@
 #define COUPLER_TYPES_HPP
 
 #include <cstddef>
+
 extern "C" {
 /**
  * @brief Configuration parameters for creating emulator instance.

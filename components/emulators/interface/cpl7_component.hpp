@@ -3,10 +3,12 @@
 
 #include <coupler.hpp>
 #include <field_registry.hpp>
-#include <ostream>
 #include <process.hpp>
+
+#include <ostream>
 #include <stdexcept>
 #include <string_view>
+
 namespace e3sm::emulator {
 using namespace coupler;
 

@@ -5,7 +5,6 @@
 
 #include "inference_backend.hpp"
 #include "inference_error.hpp"
-#include <memory>
 
 namespace e3sm::emulator::inference {
 

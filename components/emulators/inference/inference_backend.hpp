@@ -6,11 +6,10 @@
 #ifndef E3SM_EMULATOR_INFERENCE_BACKEND_HPP
 #define E3SM_EMULATOR_INFERENCE_BACKEND_HPP
 
-#include <memory>
-#include <string>
-
 #include "inference_config.hpp"
 #include "tensor.hpp"
+
+#include <string>
 
 namespace e3sm::emulator::inference {
 

@@ -1,11 +1,14 @@
 #ifndef E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #define E3SM_COUPLER_API_FIELD_REGISTRY_HPP
-#include <cstddef>
+
 #include <ekat_yaml.hpp>
+
+#include <cstddef>
 #include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
 namespace e3sm::emulator::coupler {
 
 enum class FieldRole {

@@ -6,7 +6,7 @@
 #ifndef E3SM_EMULATOR_INFERENCE_ERROR_HPP
 #define E3SM_EMULATOR_INFERENCE_ERROR_HPP
 
-#include <sstream>
+#include <sstream> // used in EMULATOR_INFER_REQUIRE
 #include <stdexcept>
 #include <string>
 
