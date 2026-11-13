@@ -50,7 +50,6 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic flux
     ! variables (except for gap-phase mortality and fire fluxes)
-      !$acc routine seq
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -428,7 +427,6 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for gap mortality
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -567,7 +565,6 @@ contains
     ! set the carbon isotopic fluxes for harvest mortality
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -711,7 +708,6 @@ contains
     !
     ! !DESCRIPTION:
     ! On the radiation time step, set the carbon isotopic fluxes for fire mortality
-      !$acc routine seq
     !
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -911,7 +907,6 @@ contains
     ! to the column level and assign them to the three litter pools
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)     , intent(in)    :: cnstate_vars
@@ -996,7 +991,6 @@ contains
      ! to the column level and assign them to the three litter pools (+ cwd pool)
      !
      ! !ARGUMENTS:
-      !$acc routine seq
      integer               , intent(in)    :: num_soilc         ! number of soil columns in filter
      integer               , intent(in)    :: filter_soilc(:)   ! soil column filter
      type(cnstate_type)    , intent(in)    :: cnstate_vars
@@ -1144,7 +1138,6 @@ contains
      ! to the column level and assign them to the litter, cwd, and wood product pools
      !
      ! !ARGUMENTS:
-      !$acc routine seq
      integer               , intent(in)    :: num_soilc         ! number of soil columns in filter
      integer               , intent(in)    :: filter_soilc(:)   ! soil column filter
      type(cnstate_type)    , intent(in)    :: cnstate_vars
@@ -1310,7 +1303,6 @@ contains
      ! variables (except for gap-phase mortality and fire fluxes)
      !
      ! !ARGUMENTS:
-      !$acc routine seq
      real(r8)         , intent(inout), pointer :: ciso_flux(:)  ! isoC flux
      real(r8)         , intent(in)   , pointer :: ctot_flux(:)  ! totC flux
      real(r8)         , intent(in)   , pointer :: ciso_state(:) ! isoC state, upstream pool

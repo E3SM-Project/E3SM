@@ -32,7 +32,6 @@ contains
     ! On the radiation time step, update annual summation variables
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only: secspday
     use SubgridAveMod   , only: p2c
     !

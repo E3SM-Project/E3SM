@@ -47,7 +47,6 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the radioactive decay of C14
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -171,7 +170,6 @@ contains
      ! for transient pulse simulation, impose a simplified bomb spike
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon       , only : c14ratio, secspday
      !
      ! !ARGUMENTS:

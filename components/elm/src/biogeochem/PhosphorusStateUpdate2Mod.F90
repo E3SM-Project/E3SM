@@ -39,7 +39,6 @@ contains
     ! no science equations. This increases readability and maintainability
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -120,7 +119,6 @@ contains
     ! no science equations. This increases readability and maintainability
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter

@@ -45,7 +45,6 @@ contains
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
     !
     ! !USES:
-      !$acc routine seq
     use landunit_varcon  , only : istice, istwet, istsoil, istice_mec, istcrop, istice
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use elm_varcon       , only : denh2o, denice, secspday, frac_to_downhill

@@ -222,7 +222,6 @@ contains
     ! Note: This subroutine is not called via FATES (RGK)
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : rgas, tfrz
     use elm_varctl     , only : carbon_only
     use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
@@ -977,7 +976,6 @@ contains
        atm2lnd_vars, cnstate_vars, canopystate_vars, photosyns_vars)
 
     ! Note: This subroutine is not called via FATES (RGK)
-    !$acc routine seq
     !
     ! Determine total photosynthesis
     !
@@ -1072,7 +1070,6 @@ contains
     ! limitation is taken into account in the CNAllocation module.
     !
     ! !ARGUMENTS:
-   !$acc routine seq
     type(bounds_type)     , intent(in   )    :: bounds
     integer               , intent(in   )    :: fn                   ! size of pft filter
     integer               , intent(in   )    :: filterp(fn)          ! patch filter
@@ -1157,7 +1154,6 @@ contains
     !!USES:
     !
     !! ARGUMENTS:
-      !$acc routine seq
     implicit none
     real(r8), intent(inout) :: x0              !initial guess and final value of the solution
     real(r8), intent(in) :: lmr_z              ! canopy layer: leaf maintenance respiration rate (umol CO2/m**2/s)
@@ -1260,7 +1256,6 @@ contains
   subroutine brent(x, x1,x2,f1, f2, tol, ip, iv, ic, it, gb_mol, je, cair, oair,&
        lmr_z, par_z, rh_can, gs_mol, &
        atm2lnd_vars, photosyns_vars)
-     !$acc routine seq
 
     !!DESCRIPTION:
     !Use Brent's method to find the root of a single variable function ci_func, which is known to exist between x1 and x2.
@@ -1373,7 +1368,6 @@ contains
 
   !-------------------------------------------------------------------------------
   function ft(tl, ha) result(ans)
-    !$acc routine seq
     !!DESCRIPTION:
     ! photosynthesis temperature response
     !
@@ -1398,7 +1392,6 @@ contains
 
   !-------------------------------------------------------------------------------
   function fth(tl,hd,se,scaleFactor) result(ans)
-    !$acc routine seq
     !!DESCRIPTION:
     !photosynthesis temperature inhibition
     !
@@ -1424,7 +1417,6 @@ contains
 
   !-------------------------------------------------------------------------------
   function fth25(hd,se)result(ans)
-    !$acc routine seq
     !!DESCRIPTION:
     ! scaling factor for photosynthesis temperature inhibition
     !
@@ -1450,7 +1442,6 @@ contains
   !------------------------------------------------------------------------------
   subroutine ci_func(ci, fval, p, iv, c, t, gb_mol, je, cair, oair, lmr_z, par_z,&
        rh_can, gs_mol, atm2lnd_vars, photosyns_vars)
-    !$acc routine seq
     !! DESCRIPTION:
     ! evaluate the function
     ! f(ci)=ci - (ca - (1.37rb+1.65rs))*patm*an
@@ -1592,7 +1583,6 @@ contains
     ! method
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon        , only : rgas, tfrz, rpi
     use elm_varctl        , only : carbon_only
     !use elm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt
@@ -2683,7 +2673,6 @@ contains
     !!USES:
     !
     !! ARGUMENTS:
-      !$acc routine seq
     implicit none
     real(r8), intent(inout) :: x0sun,x0sha              ! initial guess and final value of the solution for cisun/cisha
     integer , intent(in)    :: p                        ! pft index
@@ -2904,7 +2893,6 @@ contains
        rh_can, gs_mol_sun, gs_mol_sha, bsun, bsha, qsatl, qaf, atm2lnd_inst, photosyns_inst, &
        canopystate_inst,  soilstate_inst )
     !------------------------------------------------------------------------------
-      !$acc routine seq
     implicit none
     !
     !!DESCRIPTION:
@@ -3061,7 +3049,6 @@ contains
     !
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     implicit none
     !
@@ -3259,7 +3246,6 @@ contains
     ! calls spacF, spacA, and getvegwp
     !
     ! USES
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     use SimpleMathMod     , only : matvec_acc
@@ -3460,7 +3446,6 @@ contains
     ! example a LINPACK linear algebra solver.
     !
     ! USES
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     !
@@ -3612,7 +3597,6 @@ contains
     !  calculated for vegwp(p,:) as passed in via x
     !
     ! USES
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     use ColumnType        , only : col_pp
@@ -3693,7 +3677,6 @@ contains
     !
     ! !USES:
     ! calls getqflx
-      !$acc routine seq
     use elm_varpar  , only : nlevsoi
     use ColumnType  , only : col_pp
     implicit none
@@ -3793,7 +3776,6 @@ contains
     !  calculate sunlit and shaded transpiration using gb_MOL and gs_MOL
     ! !USES:
     !
-      !$acc routine seq
     use elm_varcon        , only : rgas
     implicit none
     !
@@ -3877,7 +3859,6 @@ contains
   function plc(x,p,c,level,plc_method)
     ! !DESCRIPTION
     ! Return value of vulnerability curve at x
-    !$acc routine seq
     ! !ARGUMENTS
     real(r8) , intent(in)  :: x             ! water potential input
     integer  , intent(in)  :: p             ! index for pft
@@ -3915,7 +3896,6 @@ contains
   function d1plc(x,p,c,level,plc_method)
     ! !DESCRIPTION
     ! Return 1st derivative of vulnerability curve at x
-    !$acc routine seq
     ! !ARGUMENTS
     real(r8) , intent(in) :: x                ! water potential input
     integer  , intent(in) :: p                ! index for pft

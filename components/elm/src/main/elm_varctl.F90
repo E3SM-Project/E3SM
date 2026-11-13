@@ -381,6 +381,9 @@ module elm_varctl
   logical, public :: use_vichydro        = .false.
   logical, public :: use_century_decomp  = .false.
   logical, public :: use_cn              = .false.
+  ! Set once the device data layer holds the model state: until then OpenACC compute
+  ! constructs (if(elm_device_ready)) run on the host, e.g. during the instance initialization
+  logical, public :: elm_device_ready = .false.
   logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
@@ -499,7 +502,6 @@ module elm_varctl
   !$acc declare copyin(pf_tmode     )
   !$acc declare copyin(pf_frzmode   )
   !$acc declare copyin(initth_pf2clm)
-  !$acc declare copyin(pf_clmnstep0 )
 
   !-----------------------------------------------------------------------
   ! N fixation parameters are assigned for individual pft
@@ -529,7 +531,6 @@ module elm_varctl
   !$acc declare copyin(glcmec_downscale_longwave, subgridflag)
   !$acc declare copyin(use_nofire         )
   !$acc declare copyin(use_lch4           )
-  !$acc declare copyin(use_nitrif_denitrif)
   !$acc declare copyin(use_vertsoilc      )
   !$acc declare copyin(use_extralakelayers)
   !$acc declare copyin(use_vichydro       )
