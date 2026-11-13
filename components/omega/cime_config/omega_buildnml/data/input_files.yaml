@@ -1,0 +1,46 @@
+# ``meshes``, keyed by mesh name, is currently the only key read from this file.
+# What feels like an unnecessary ``meshes``` key was intentional included to
+# leave room for the additional keys (e.g. ``experiments``) in the future.
+# For additional top-level keys to be supported, additional validation logic
+# will need to be added to `omega_buildnml/validate.py`
+
+meshes:
+  oQU240:
+    inputs:
+      - file: ocean.QU.240km.151209.teos10.20261019.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+
+  EC30to60E2r2:
+    inputs:
+      - file: ocean.EC30to60E2r2.200908.teos10.20261019.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+
+  u01-oi6to18:
+    inputs:
+      - file: omega.u01-oi6to18.20260811.teos10.20261022.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+
+# A mesh may list multiple ``inputs`` entries when its streams are split
+# across separate files:
+#
+# meshes:
+#   example_mesh:
+#     inputs:
+#       - file: example_mesh.horiz_mesh_and_vert_coord.nc
+#         streams: [HorzMeshIn, InitialVertCoord]
+#       - file: example_mesh.initial_condition.nc
+#         streams: [InitialState]
+
+# Sketch of what an experiments top-level key might look like.
+#
+# meshes:
+#   ...
+# experiments:
+#   example_spinup:
+#     when:
+#       mesh: example_mesh
+#       compset: EXAMPLE_COMPSET
+#
+#     inputs:
+#       - file: example_mesh.spinup_initial_condition.nc
+#         streams: [InitialState]

@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+
+"""
+Namelist creator for E3SM's omega component
+"""
+
+import sys
+from pathlib import Path
+
+from CIME.buildnml import parse_input
+from CIME.case import Case
+from CIME.utils import SharedArea, expect, safe_copy
+from omega_buildnml import (
+    build_omega_config,
+    build_runtime_overrides,
+    read_config_overrides,
+    read_default_config,
+    read_input_files_config,
+    read_user_overrides,
+    resolve_streams_files,
+    write_input_data_list,
+    write_yaml_mapping,
+)
+
+
+def buildnml(case, caseroot, compname):
+    """
+    Build the omega.yml config file based on case configuration
+
+    Additionally, writes an omega.input_data_list file so that any required
+    data missing from DIN_LOC_ROOT/ocn/omega will be automatically downloaded.
+
+    Parameters
+    ----------
+    case : Case
+        The case object containing the configuration for the current run.
+    caseroot : str
+        The root directory of the case.
+    compname : str
+        The name of the component (should be "omega" for this function).
+    """
+    expect(compname == "omega", compname)
+
+    run_dir = Path(case.get_value("RUNDIR"))
+    case_root = Path(case.get_value("CASEROOT"))
+    case_build = Path(case.get_value("CASEBUILD"))
+    omega_root = Path(case.get_value("SRCROOT")) / "components/omega"
+    din_loc_root = Path(case.get_value("DIN_LOC_ROOT"))
+
+    case_name = case.get_value("CASE")
+    calendar = case.get_value("CALENDAR")
+    mesh_name = case.get_value("OCN_GRID")
+    continue_run = case.get_value("CONTINUE_RUN")
+
+    # read input_files.yaml and find input files needed for this mesh
+    input_files = read_input_files_config(mesh_name=mesh_name)
+    streams_files = resolve_streams_files(
+        input_files=input_files, mesh_name=mesh_name, din_loc_root=din_loc_root
+    )
+
+    # read Omega's Defaults.yml, which serve as base configuration
+    defaults = read_default_config(omega_root / "configs/Default.yml")
+
+    # convert CIME case configuration options to Omega config snippets
+    runtime_overrides = build_runtime_overrides(
+        calendar=calendar,
+        continue_run=continue_run,
+        case_name=case_name,
+        streams_files=streams_files,
+        defaults=defaults,
+    )
+
+    # read coupled simulation and mesh-specific Omega config snippets
+    config_overrides = read_config_overrides(mesh_name=mesh_name)
+
+    # read user_nl_omega for any user-specified overrides
+    user_overrides = read_user_overrides(case_root / "user_nl_omega")
+
+    # Using the defaults and overrides, build the final Omega config dictionary
+    config = build_omega_config(
+        defaults=defaults,
+        coupled_overrides=config_overrides["coupled"],
+        mesh_overrides=config_overrides.get("meshes", {}).get(mesh_name, {}),
+        runtime_overrides=runtime_overrides,
+        user_overrides=user_overrides,
+    )
+
+    # write files within SharedArea context so correct file permissions are set
+    with SharedArea():
+        output_file = run_dir / "omega.yml"
+
+        # write the updated yaml file to the run directory
+        write_yaml_mapping(config, output_file)
+
+        # archive yaml file in CaseDocs
+        case_docs = case_root / "CaseDocs"
+        if case_docs.exists():
+            safe_copy(output_file, case_docs / "omega.yml")
+
+        # needs to be called within buildnml
+        write_input_data_list(streams_files, case_build)
+
+
+def _main_func():
+    """ """
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "omega")
+
+
+if __name__ == "__main__":
+    _main_func()
