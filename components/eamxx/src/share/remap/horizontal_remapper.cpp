@@ -89,6 +89,10 @@ HorizontalRemapper (const grid_ptr_type& grid,
       }
       const auto& src_data = m_src_grid->get_geometry_data(name);
       auto tgt_data = register_field_from_src(src_data);
+      using stratts_t = std::map<std::string,std::string>;
+      const auto& src_atts = src_data.get_header().get_extra_data<stratts_t>("io: string attributes");
+      auto& tgt_atts = tgt_data.get_header().get_extra_data<stratts_t>("io: string attributes");
+      tgt_atts = src_atts;
       m_tgt_grid->set_geometry_data(tgt_data);
     }
 
