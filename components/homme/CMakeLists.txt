@@ -176,13 +176,6 @@ IF (HOMME_USE_CXX)
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
-# Option to use ARKode package from SUNDIALS
-OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
-IF (${HOMME_USE_ARKODE})
-  MESSAGE(STATUS "Using ARKode, adding -DARKODE")
-  ADD_DEFINITIONS(-DARKODE)
-ENDIF ()
-
 IF (HOMME_USE_KOKKOS)
   ############################################
   # Selection of Kokkos execution space
@@ -323,13 +316,6 @@ IF (DEFINED EXTRAE_DIR)
   MESSAGE(STATUS "Building with Extrae")
   FIND_PACKAGE(Extrae REQUIRED)
   SET(HAVE_EXTRAE TRUE)
-ENDIF ()
-
-# this section is for linking to SUNDIALS/ARKODE as an external library
-IF (DEFINED SUNDIALS_DIR)
-  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib64)
-  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
-  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
 if (HOMME_STANDALONE OR NOT TARGET gptl)

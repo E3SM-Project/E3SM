@@ -76,13 +76,6 @@ contains
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
     use imex_mod, only: compute_stage_value_dirk
-#ifdef ARKODE
-    use arkode_mod,     only: parameter_list, evolve_solution, &
-                              calc_nonlinear_stats, update_nonlinear_stats, &
-                              rel_tol, abs_tol
-    use arkode_tables,  only: table_list, butcher_table_set, set_Butcher_tables
-    use iso_c_binding
-#endif
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -102,12 +95,6 @@ contains
     integer :: ie,nm1,n0,np1,nstep
     integer :: maxiter
 
-#ifdef ARKODE 
-    type(parameter_list)    :: arkode_parameters
-    type(table_list)        :: arkode_table_list
-    type(butcher_table_set) :: arkode_table_set
-    integer(C_INT)          :: ierr
-#endif
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -370,112 +357,9 @@ contains
 
 
 
-#ifdef ARKODE
-    else if (tstep_type==20) then ! ARKode RK2
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%RK2)
-
-    else if (tstep_type==21) then ! ARKode Kinnmark, Gray, Ullrich 3rd-order, 5-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%KGU35)
-
-    else if (tstep_type==22) then ! ARKode Ascher 2nd/2nd/2nd-order, 3-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARS232)
-
-    else if (tstep_type==23) then ! ARKode Candidate ARK453 Method
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARK453)
-
-    else if (tstep_type==24) then ! ARKode Ascher 2nd/2nd/2nd-order, 3-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARS222)
-
-    else if (tstep_type==25) then ! ARKode Ascher 3rd/4th/3rd-order, 3-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARS233)
-
-    else if (tstep_type==26) then ! ARKode Ascher 3rd/3rd/3rd-order, 4-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARS343)
-
-    else if (tstep_type==27) then ! ARKode Ascher 3rd/3rd/3rd-order, 5-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARS443)
-
-    else if (tstep_type==28) then ! ARKode Kennedy 3rd/3rd/3rd-order, 4-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARK324)
-
-    else if (tstep_type==29) then ! ARKode Kennedy 4th/4th/4th-order, 6-stage
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%ARK436)
-
-    else if (tstep_type==30) then ! ARKode Conde et al ssp3(3,3,3)a (renamed here)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%SSP3333B)
-
-    else if (tstep_type==31) then ! ARKode Conde et al ssp3(3,3,3)b (renamed here)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%SSP3333C)
-
-    else if (tstep_type==32) then ! ARKode IMKG 2nd-order, 4 stage (2 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG232)
-
-    else if (tstep_type==33) then ! ARKode IMKG 2nd-order, 5 stage (2 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG242)
-
-    else if (tstep_type==34) then ! ARKode IMKG 2nd-order, 5 stage (3 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG243)
-
-    else if (tstep_type==35) then ! ARKode IMKG 2nd-order, 6 stage (2 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG252)
-
-    else if (tstep_type==36) then ! ARKode IMKG 2nd-order, 6 stage (3 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG253)
-
-    else if (tstep_type==37) then ! ARKode IMKG 2nd-order, 6 stage (4 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG254)
-
-    else if (tstep_type==38) then ! ARKode IMKG 3rd-order, 5 stage (2 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG342)
-
-    else if (tstep_type==39) then ! ARKode IMKG 3rd-order, 5 stage (3 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG343)
-
-    else if (tstep_type==40) then ! ARKode IMKG 3rd-order, 6 stage (3 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG353)
-
-    else if (tstep_type==41) then ! ARKode IMKG 3rd-order, 6 stage (4 implicit)
-      call set_Butcher_tables(arkode_table_set, arkode_table_list%IMKG354)
-
     else 
        call abortmp('ERROR: bad choice of tstep_type')
     endif
-
-    ! Use ARKode to advance solution
-    if (tstep_type >= 20) then
-
-      ! If implicit solves are involved, set corresponding parameters
-      if (arkode_table_set%imex /= 1) then
-        ! Iteration tolerances (appear in WRMS array as rtol*|u_i| + atol_i)
-        arkode_parameters%rtol = rel_tol
-        if (abs_tol < 0.d0) then
-          arkode_parameters%atol(1) = 1.d1*arkode_parameters%rtol ! assumes u ~ 1e1
-          arkode_parameters%atol(2) = 1.d1*arkode_parameters%rtol ! assumes v ~ 1e1
-          arkode_parameters%atol(3) = 1.d1*arkode_parameters%rtol ! assumes w_i ~ 1e1
-          arkode_parameters%atol(4) = 1.d5*arkode_parameters%rtol ! assumes phinh_i ~ 1e5
-          arkode_parameters%atol(5) = 1.d6*arkode_parameters%rtol ! assumes vtheta_dp ~ 1e6
-          arkode_parameters%atol(6) = 1.d0*arkode_parameters%rtol ! assumes dp3d ~ 1e0
-        else
-          arkode_parameters%atol(:) = abs_tol
-        end if
-      end if
-
-      ! use ARKode solver to evolve solution
-      ierr = evolve_solution(elem, nets, nete, deriv, hvcoord, hybrid, &
-                             dt, eta_ave_w, n0, np1,  arkode_parameters, &
-                             arkode_table_set)
-      if (ierr /= 0) then
-        call abortmp('ARKode evolve failed')
-      endif
-      if (calc_nonlinear_stats) then
-        call update_nonlinear_stats()
-      end if
-    end if
-#else
-    else 
-       call abortmp('ERROR: bad choice of tstep_type')
-    endif
-#endif
 
 
     ! ==============================================

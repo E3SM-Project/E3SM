@@ -188,11 +188,6 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
 
-  IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${execName} sundials_farkode_mod)
-    TARGET_LINK_LIBRARIES(${execName} sundials_arkode)
-  ENDIF ()
-
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
 endmacro(createTestExec)
@@ -282,13 +277,6 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
 
   IF (HAVE_EXTRAE)
     TARGET_LINK_LIBRARIES(${libName} PUBLIC ${Extrae_LIBRARY})
-  ENDIF ()
-
-  IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_farkode)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_arkode)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_nvecserial)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_fnvecserial)
   ENDIF ()
 
 endmacro(createExecLib)
