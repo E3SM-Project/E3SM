@@ -82,6 +82,7 @@ jobs:
         test:
           - SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS
           - ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod
+          - SMS_Ld1.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA
     name: ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})
     env:
       IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.image.env }}
