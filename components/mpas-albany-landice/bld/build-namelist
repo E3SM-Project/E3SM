@@ -401,6 +401,7 @@ my $NCPL_BASE_PERIOD       = "$xmlvars{'NCPL_BASE_PERIOD'}";
 my $GLC_NCPL               = "$xmlvars{'GLC_NCPL'}";
 my $GLC_COUPLING           = "$xmlvars{'GLC_COUPLING'}";
 my $INFO_DBUG              = "$xmlvars{'INFO_DBUG'}";
+my $MALI_DECOMP_FILE_PREFIX = "$xmlvars{'MALI_DECOMP_FILE_PREFIX'}";
 my $RUN_TYPE               = "$xmlvars{'RUN_TYPE'}";
 my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
 my $START_TOD              = "$xmlvars{'START_TOD'}";
@@ -489,6 +490,13 @@ add_default($nl, 'config_uplift_method');
 add_default($nl, 'config_slm_coupling_interval');
 add_default($nl, 'config_MALI_to_SLM_weights_file');
 add_default($nl, 'config_SLM_to_MALI_weights_file');
+add_default($nl, 'config_fastisostasy_coupling_interval');
+add_default($nl, 'config_MALI_to_FASTISOSTASY_weights_file');
+add_default($nl, 'config_FASTISOSTASY_to_MALI_weights_file');
+add_default($nl, 'config_fastisostasy_grid_resolution');
+add_default($nl, 'config_fastisostasy_parameter_file');
+add_default($nl, 'config_fastisostasy_restart_file');
+add_default($nl, 'config_fastisostasy_bsl_restart_file');
 
 ###########################
 # Namelist group: calving #
@@ -504,6 +512,8 @@ if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_calving', 'val'=>"none");
 }
 add_default($nl, 'config_apply_calving_mask');
+add_default($nl, 'config_require_extensional_stresses_for_mask_calving');
+add_default($nl, 'config_calving_fracture_toughness');
 add_default($nl, 'config_use_Albany_flowA_eqn_for_vM');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
@@ -513,7 +523,11 @@ add_default($nl, 'config_calving_specified_source');
 add_default($nl, 'config_calving_velocity_const');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
-add_default($nl, 'config_restore_calving_front');
+if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+    add_default($nl, 'config_restore_calving_front');
+} else {
+    add_default($nl, 'config_restore_calving_front', 'val'=>".false.");
+}
 add_default($nl, 'config_restore_calving_front_prevent_retreat');
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
     add_default($nl, 'config_remove_icebergs');
@@ -562,7 +576,6 @@ add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
 add_default($nl, 'config_surface_air_temperature_source');
 add_default($nl, 'config_surface_air_temperature_value');
-add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_temp_diffusive_factor');
@@ -666,6 +679,7 @@ add_default($nl, 'config_adaptive_timestep_include_DCFL');
 add_default($nl, 'config_adaptive_timestep_include_calving');
 add_default($nl, 'config_adaptive_timestep_include_face_melting');
 add_default($nl, 'config_adaptive_timestep_force_interval');
+add_default($nl, 'config_timeaveraging_interval');
 
 ###################################
 # Namelist group: time_management #
@@ -705,7 +719,11 @@ add_default($nl, 'config_nISMIP6OceanLayers', 'val'=>"$GLC_NZOC");
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${decomp_date_stamp}.part.'");
+if ($MALI_DECOMP_FILE_PREFIX ne '') {
+	add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${MALI_DECOMP_FILE_PREFIX}'");
+} else {
+	add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${decomp_date_stamp}.part.'");
+}
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');

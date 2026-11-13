@@ -36,6 +36,7 @@ module mpas_stream_manager
               MPAS_stream_mgr_reset_alarms, &
               MPAS_stream_mgr_ringing_alarms, &
               MPAS_stream_mgr_add_att, &
+              MPAS_stream_mgr_get_att, &
               MPAS_stream_mgr_write, &
               MPAS_stream_mgr_block_write, &
               MPAS_stream_mgr_read, &
@@ -68,6 +69,14 @@ module mpas_stream_manager
         module procedure MPAS_stream_mgr_add_att_real
         module procedure MPAS_stream_mgr_add_att_char
         module procedure MPAS_stream_mgr_add_att_logical
+    end interface
+
+    interface MPAS_stream_mgr_get_att
+        module procedure MPAS_stream_mgr_get_att_int
+        module procedure MPAS_stream_mgr_get_att_int1d
+        module procedure MPAS_stream_mgr_get_att_real
+        module procedure MPAS_stream_mgr_get_att_real1d
+        module procedure MPAS_stream_mgr_get_att_char
     end interface
 
 
@@ -2712,6 +2721,263 @@ module mpas_stream_manager
         end if
 
     end subroutine MPAS_stream_mgr_add_att_logical!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_att_int
+    !
+    !> \brief Read a global integer attribute from the file(s) associated with a stream.
+    !> \details
+    !>  Reads a global integer attribute directly from the netCDF/PIO file(s)
+    !>  currently associated with the given stream in an MPAS stream manager.
+    !>  Unlike MPAS_stream_mgr_add_att(), which stages an attribute to be written
+    !>  the next time the stream is written, this routine reads a value that is
+    !>  already present on disk. The stream must have already been read or
+    !>  written at least once (i.e., its underlying file must be open) before
+    !>  calling this routine; this will normally be the case immediately after a
+    !>  call to MPAS_stream_mgr_read() for the same streamID.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_att_int(manager, streamID, attName, attValue, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_att_int'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        integer, intent(out) :: attValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        nullify(stream_cursor)
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        if ((.not. associated(stream_cursor % stream)) .or. (.not. stream_cursor % stream % isInitialized)) then
+            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' has not yet been read or written in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        call MPAS_readStreamAtt(stream_cursor % stream, attName, attValue, ierr=err_local)
+        if (err_local /= MPAS_STREAM_NOERR) then
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end if
+
+    end subroutine MPAS_stream_mgr_get_att_int!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_att_int1d
+    !
+    !> \brief Read a global 1-D integer attribute from the file(s) associated with a stream.
+    !> \details
+    !>  See MPAS_stream_mgr_get_att_int() for details.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_att_int1d(manager, streamID, attName, attValue, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_att_int1d'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        integer, dimension(:), intent(out) :: attValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer, dimension(:), pointer :: attValue_ptr
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        nullify(stream_cursor)
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        if ((.not. associated(stream_cursor % stream)) .or. (.not. stream_cursor % stream % isInitialized)) then
+            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' has not yet been read or written in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        nullify(attValue_ptr)
+        call MPAS_readStreamAtt(stream_cursor % stream, attName, attValue_ptr, ierr=err_local)
+        if (err_local /= MPAS_STREAM_NOERR) then
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        else if (associated(attValue_ptr)) then
+            attValue(1:min(size(attValue), size(attValue_ptr))) = attValue_ptr(1:min(size(attValue), size(attValue_ptr)))
+            deallocate(attValue_ptr)
+        end if
+
+    end subroutine MPAS_stream_mgr_get_att_int1d!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_att_real
+    !
+    !> \brief Read a global real attribute from the file(s) associated with a stream.
+    !> \details
+    !>  See MPAS_stream_mgr_get_att_int() for details.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_att_real(manager, streamID, attName, attValue, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_att_real'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        real (kind=RKIND), intent(out) :: attValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        nullify(stream_cursor)
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        if ((.not. associated(stream_cursor % stream)) .or. (.not. stream_cursor % stream % isInitialized)) then
+            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' has not yet been read or written in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        call MPAS_readStreamAtt(stream_cursor % stream, attName, attValue, ierr=err_local)
+        if (err_local /= MPAS_STREAM_NOERR) then
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end if
+
+    end subroutine MPAS_stream_mgr_get_att_real!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_att_real1d
+    !
+    !> \brief Read a global 1-D real attribute from the file(s) associated with a stream.
+    !> \details
+    !>  See MPAS_stream_mgr_get_att_int() for details.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_att_real1d(manager, streamID, attName, attValue, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_att_real1d'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        real (kind=RKIND), dimension(:), intent(out) :: attValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        real (kind=RKIND), dimension(:), pointer :: attValue_ptr
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        nullify(stream_cursor)
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        if ((.not. associated(stream_cursor % stream)) .or. (.not. stream_cursor % stream % isInitialized)) then
+            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' has not yet been read or written in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        nullify(attValue_ptr)
+        call MPAS_readStreamAtt(stream_cursor % stream, attName, attValue_ptr, ierr=err_local)
+        if (err_local /= MPAS_STREAM_NOERR) then
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        else if (associated(attValue_ptr)) then
+            attValue(1:min(size(attValue), size(attValue_ptr))) = attValue_ptr(1:min(size(attValue), size(attValue_ptr)))
+            deallocate(attValue_ptr)
+        end if
+
+    end subroutine MPAS_stream_mgr_get_att_real1d!}}}
+
+
+    !-----------------------------------------------------------------------
+    !  routine MPAS_stream_mgr_get_att_char
+    !
+    !> \brief Read a global text attribute from the file(s) associated with a stream.
+    !> \details
+    !>  See MPAS_stream_mgr_get_att_int() for details.
+    !
+    !-----------------------------------------------------------------------
+    subroutine MPAS_stream_mgr_get_att_char(manager, streamID, attName, attValue, ierr)!{{{
+
+        implicit none
+
+        character (len=*), parameter :: sub = 'MPAS_stream_mgr_get_att_char'
+
+        type (MPAS_streamManager_type), intent(inout) :: manager
+        character (len=*), intent(in) :: streamID
+        character (len=*), intent(in) :: attName
+        character (len=*), intent(out) :: attValue
+        integer, intent(out), optional :: ierr
+
+        type (MPAS_stream_list_type), pointer :: stream_cursor
+        integer :: err_local
+
+        STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_get_att()')
+
+        if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
+
+        nullify(stream_cursor)
+        if (.not. MPAS_stream_list_query(manager % streams, streamID, stream_cursor, ierr=err_local)) then
+            STREAM_ERROR_WRITE('No stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        if ((.not. associated(stream_cursor % stream)) .or. (.not. stream_cursor % stream % isInitialized)) then
+            STREAM_ERROR_WRITE('Stream '//trim(streamID)//' has not yet been read or written in call to MPAS_stream_mgr_get_att().')
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+            return
+        end if
+
+        call MPAS_readStreamAtt(stream_cursor % stream, attName, attValue, ierr=err_local)
+        if (err_local /= MPAS_STREAM_NOERR) then
+            if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
+        end if
+
+    end subroutine MPAS_stream_mgr_get_att_char!}}}
 
 
     !-----------------------------------------------------------------------

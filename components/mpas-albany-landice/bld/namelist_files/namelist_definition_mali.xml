@@ -70,9 +70,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_flowParamA_calculation" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file.
+Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  'PB1982' and 'CP2010' are for n=3; 'Fan2025' is for n=4 using parameters from Fan et al. (2025) low-strain recalibration as reported in Lilien et al. (2026) Table 1.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file.
 
-Valid values: 'constant', 'PB1982', 'CP2010'
+Valid values: 'constant', 'PB1982', 'CP2010', 'Fan2025'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -198,7 +198,7 @@ Default: Defined in namelist_defaults.xml
 	category="solidearth" group="solidearth">
 Selection of the method for bedrock uplift calculation.
 
-Valid values: 'none', 'data', 'sealevelmodel'
+Valid values: 'none', 'data', 'sealevelmodel', 'fastisostasy'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -226,6 +226,76 @@ Valid values: Any file name string
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_fastisostasy_coupling_interval" type="integer"
+	category="solidearth" group="solidearth">
+Time interval at which FastIsostasy is called by MALI. Only integer years are currently supported. The user needs to set config_adaptive_timestep_force_interval to divide evenly into config_fastisostasy_coupling_interval.
+
+Valid values: Any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_MALI_to_FASTISOSTASY_weights_file" type="char*1024"
+	category="solidearth" group="solidearth">
+File containing interpolation weights for regridding from MPAS mesh to the regular Cartesian grid used by FastIsostasy.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_FASTISOSTASY_to_MALI_weights_file" type="char*1024"
+	category="solidearth" group="solidearth">
+File containing interpolation weights for regridding from the regular Cartesian grid used by FastIsostasy to the MPAS mesh.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_fastisostasy_grid_resolution" type="real"
+	category="solidearth" group="solidearth">
+Physical grid spacing (dx=dy; FastIsostasy requires a square grid), in meters, of the regular Cartesian
+target grid that config_MALI_to_FASTISOSTASY_weights_file/config_FASTISOSTASY_to_MALI_weights_file remap
+between. The mapping files only define connectivity and interpolation weights, not the destination grid's
+physical spacing, but FastIsostasy needs a physical spacing to convert its own 'pad' namelist option
+(given in km) into a number of grid cells. This must be set to match whatever resolution was used to
+generate those mapping files; the default of 0.0 is a deliberate invalid sentinel that causes MALI to
+abort with an error if left unset, rather than silently assuming an incorrect spacing.
+
+Valid values: Any positive real number matching the resolution used to build the FastIsostasy mapping files
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_fastisostasy_parameter_file" type="char*1024"
+	category="solidearth" group="solidearth">
+Path to the FastIsostasy parameter namelist file containing the isostasy and barysealevel records.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_fastisostasy_restart_file" type="char*1024"
+	category="solidearth" group="solidearth">
+Base filename for FastIsostasy isostasy state restart files. On write, the current model time is
+automatically appended to create a timestamped filename matching MALI's restart stream pattern
+(e.g., 'fastisostasy_restart.2026-09-25_00.00.00.nc'). On read during a restart, the same timestamping
+logic constructs the filename to match the current restart time, ensuring FastIsostasy restart files
+automatically align with MALI restart files at the same model time. Specify only the base name here
+(without .nc extension or timestamp). For branching from an older restart, ensure the matching timestamped
+FastIsostasy restart files from that time are available.
+
+Valid values: Any base filename string (without .nc extension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_fastisostasy_bsl_restart_file" type="char*1024"
+	category="solidearth" group="solidearth">
+Base filename for FastIsostasy barystatic sea level restart files. Naming behavior matches
+config_fastisostasy_restart_file - automatic timestamping on both write and read ensures alignment
+with MALI restart files. Specify only the base name (without .nc extension or timestamp).
+
+Valid values: Any base filename string (without .nc extension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- calving -->
 
@@ -242,6 +312,22 @@ Default: Defined in namelist_defaults.xml
 Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_require_extensional_stresses_for_mask_calving" type="logical"
+	category="calving" group="calving">
+If true, then mask calving (config_apply_calving_mask) only removes floating ice at cells that are also vulnerable to hydrofracture based on the fracture-toughness stress criterion of Lai et al. (2020) and Reynolds and Nowicki (2026).  A cell is vulnerable where the resistive stress R_xx = 2*tauMax + tauMin exceeds a threshold that depends on config_calving_fracture_toughness.  If false, all masked floating cells calve regardless of stress state.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_fracture_toughness" type="real"
+	category="calving" group="calving">
+Ice fracture toughness (K_IC) used as the free parameter in the hydrofracture vulnerability criterion applied when config_require_extensional_stresses_for_mask_calving is true.  Plausible range is 1.0e5 to 4.0e5 Pa m^0.5 (van der Veen, 1998).
+
+Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -586,9 +672,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_surface_air_temperature_source" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate.
+Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler.
 
-Valid values: 'constant', 'file', 'lapse'
+Valid values: 'constant', 'file'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -597,14 +683,6 @@ Default: Defined in namelist_defaults.xml
 Constant value of the surface air temperature.
 
 Valid values: Any positive real value
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_surface_air_temperature_lapse_rate" type="real"
-	category="thermal_solver" group="thermal_solver">
-Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations.
-
-Valid values: Any real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1089,6 +1167,13 @@ Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in t
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_timeaveraging_interval" type="char*1024"
+	category="time_integration" group="time_integration">
+Interval at which time-averaging accumulators are reset.  If set to a zero interval, then time-averaging accumulators are never reset.  When running in E3SM, the zero interval should be used, because the GLC driver resets the accumulators every coupling interval.
+
+Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- time_management -->
 
@@ -1303,7 +1388,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_always_compute_fem_grid" type="logical"
 	category="debug" group="debug">
-Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.  As of June 2019 (and earlier) there is a bug which requires this to be set to true if there are ice shelves in the model domain.
+Always compute finite-element grid information for external dycores rather than only doing so when the masks it is computed from change.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

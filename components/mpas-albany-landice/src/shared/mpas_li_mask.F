@@ -46,6 +46,7 @@ module li_mask
    integer, parameter :: li_mask_ValueGroundingLine         = 256
       !< This is grounded cell that has a floating neighbor, or vertex/edge on that boundary
    integer, parameter :: li_mask_ValueDomainBoundary        = 512
+   integer, parameter :: li_mask_ValueGroundedFloatingFringe= 1024  ! Floating non-dynamic cells adjacent to grounded ice, only for cells
 
    !--------------------------------------------------------------------
    !
@@ -155,6 +156,17 @@ module li_mask
       module procedure li_mask_is_boundary_intout_1d
       module procedure li_mask_is_boundary_intout_0d
    end interface   
+
+
+   interface li_mask_is_grounded_floating_fringe_int
+      module procedure li_mask_is_grounded_floating_fringe_intout_1d
+      module procedure li_mask_is_grounded_floating_fringe_intout_0d
+   end interface
+
+   interface li_mask_is_grounded_floating_fringe
+      module procedure li_mask_is_grounded_floating_fringe_logout_1d
+      module procedure li_mask_is_grounded_floating_fringe_logout_0d
+   end interface
 !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -493,6 +505,20 @@ contains
                 cellMask(i) = ior(cellMask(i), li_mask_ValueDomainBoundary)
              endif
           enddo
+      enddo
+
+      ! Identify grounded-floating fringe cells
+      do i=1,nCells
+          if (li_mask_is_floating_ice(cellMask(i)) .and. .not. li_mask_is_dynamic_ice(cellMask(i))) then
+              do j=1,nEdgesOnCell(i)
+                 iCellNeighbor = cellsOnCell(j,i)
+                 if (li_mask_is_grounded_ice(cellMask(iCellNeighbor)) .and. &
+                     li_mask_is_dynamic_ice(cellMask(iCellNeighbor))) then
+                    cellMask(i) = ior(cellMask(i), li_mask_ValueGroundedFloatingFringe)
+                    exit  ! if we found a grounded neighbor, no need to look at additional neighbors
+                 endif
+              enddo
+          endif
       enddo
 
       !call mpas_timer_stop('calculate mask cell')
@@ -967,6 +993,34 @@ contains
 
       li_mask_is_boundary_intout_0d = iand(mask, li_mask_ValueDomainBoundary) / li_mask_ValueDomainBoundary
    end function li_mask_is_boundary_intout_0d
+
+   function li_mask_is_grounded_floating_fringe_intout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      integer, dimension(size(mask)) :: li_mask_is_grounded_floating_fringe_intout_1d
+
+      li_mask_is_grounded_floating_fringe_intout_1d = iand(mask, li_mask_ValueGroundedFloatingFringe) / li_mask_ValueGroundedFloatingFringe
+   end function li_mask_is_grounded_floating_fringe_intout_1d
+
+   function li_mask_is_grounded_floating_fringe_intout_0d(mask)
+      integer, intent(in) :: mask
+      integer :: li_mask_is_grounded_floating_fringe_intout_0d
+
+      li_mask_is_grounded_floating_fringe_intout_0d = iand(mask, li_mask_ValueGroundedFloatingFringe) / li_mask_ValueGroundedFloatingFringe
+   end function li_mask_is_grounded_floating_fringe_intout_0d
+
+   function li_mask_is_grounded_floating_fringe_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_grounded_floating_fringe_logout_1d
+
+      li_mask_is_grounded_floating_fringe_logout_1d = ( iand(mask, li_mask_ValueGroundedFloatingFringe) == li_mask_ValueGroundedFloatingFringe )
+   end function li_mask_is_grounded_floating_fringe_logout_1d
+
+   function li_mask_is_grounded_floating_fringe_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_grounded_floating_fringe_logout_0d
+
+      li_mask_is_grounded_floating_fringe_logout_0d = ( iand(mask, li_mask_ValueGroundedFloatingFringe) == li_mask_ValueGroundedFloatingFringe )
+   end function li_mask_is_grounded_floating_fringe_logout_0d
 !***********************************************************************
 ! Private subroutines:
 !***********************************************************************

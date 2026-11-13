@@ -50,6 +50,11 @@ ifeq "$(SLM)" "true"
     override CPPFLAGS += -DUSE_SEALEVELMODEL
 endif
 
+# Optional FastIsostasy model
+ifeq "$(FASTISOSTASY)" "true"
+    override CPPFLAGS += -DUSE_FASTISOSTASY
+endif
+
 # ===================================
 report_builds:
 	@echo "CORE=landice"

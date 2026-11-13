@@ -135,6 +135,7 @@ module li_time_integration_fe_rk
                                                   fluxAcrossGroundingLineOnCells, &
                                                   groundedToFloatingThickness, &
                                                   calvingThickness, &
+                                                  calvingThicknessGrounded, &
                                                   calvingVelocity, &
                                                   calvingThicknessFromThreshold
       real (kind=RKIND), dimension(:), allocatable :: sfcMassBalAccum, &
@@ -144,7 +145,8 @@ module li_time_integration_fe_rk
                                                       floatingBasalMassBalAccum, &
                                                       fluxAcrossGroundingLineAccum, &
                                                       fluxAcrossGroundingLineOnCellsAccum, &
-                                                      calvingThicknessAccum
+                                                      calvingThicknessAccum, &
+                                                      calvingThicknessGroundedAccum
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma, layerThicknessFractions
       integer, dimension(:), allocatable :: cellMaskPrev, edgeMaskPrev, vertexMaskPrev  ! cell mask before advection
       real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessPrev, &
@@ -202,12 +204,14 @@ module li_time_integration_fe_rk
       call mpas_pool_get_array(velocityPool, 'albanyVelocityError', albanyVelocityError)
       call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'calvingThicknessGrounded', calvingThicknessGrounded)
       call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
       call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
       ! Zero calving values here instead of in calving routine
       ! because we accumulate some calving thickness in the RK
       ! loop due to restore-calving before we call the main calving routine.
       calvingThickness(:) = 0.0_RKIND
+      calvingThicknessGrounded(:) = 0.0_RKIND
       calvingThicknessFromThreshold(:) = 0.0_RKIND
       calvingVelocity(:) = 0.0_RKIND
       albanyVelocityError = 0
@@ -232,6 +236,7 @@ module li_time_integration_fe_rk
       allocate(fluxAcrossGroundingLineAccum(nEdges+1))
       allocate(fluxAcrossGroundingLineOnCellsAccum(nCells+1))
       allocate(calvingThicknessAccum(nCells+1))
+      allocate(calvingThicknessGroundedAccum(nCells+1))
 
       temperaturePrev(:,:) = 0.0_RKIND
       waterFracPrev(:,:) = 0.0_RKIND
@@ -253,9 +258,13 @@ module li_time_integration_fe_rk
       fluxAcrossGroundingLineAccum(:) = 0.0_RKIND
       fluxAcrossGroundingLineOnCellsAccum(:) = 0.0_RKIND
       calvingThicknessAccum(:) = 0.0_RKIND
+      calvingThicknessGroundedAccum(:) = 0.0_RKIND
 
 ! === Prepare for advection (including CFL checks) ===========
 ! This has to come first currently, because it sets the time step!
+      call li_apply_atm_lapse_rate(domain, err_tmp)
+      err = ior(err, err_tmp)
+
       call mpas_timer_start("advection prep")
       call prepare_advection(domain, err_tmp)
       err = ior(err, err_tmp)
@@ -534,7 +543,9 @@ module li_time_integration_fe_rk
                call li_restore_calving_front(domain, err_tmp)
                err = ior(err, err_tmp)
                call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+               call mpas_pool_get_array(geometryPool, 'calvingThicknessGrounded', calvingThicknessGrounded)
                calvingThicknessAccum = calvingThicknessAccum + rkTendWeights(rkStage) * calvingThickness
+               calvingThicknessGroundedAccum = calvingThicknessGroundedAccum + rkTendWeights(rkStage) * calvingThicknessGrounded
             endif
             ! We need to remove icebergs between RK stages because the
             ! main calving routine is not called until after the RK loop.
@@ -568,7 +579,7 @@ module li_time_integration_fe_rk
 
       ! Calculate volume converted from grounded to floating
       ! This needs to be determined after SMB/BMB are applied because those can change floating/grounded state
-      call li_grounded_to_floating(cellMaskPrev, cellMask, thickness, groundedToFloatingThickness, nCells)
+      call li_grounded_to_floating(cellMaskPrev, cellMask, sum(layerThicknessPrev, 1), thickness, groundedToFloatingThickness, nCells)
 
       sfcMassBalApplied(:) = sfcMassBalAccum(:)
       groundedSfcMassBalApplied(:) = groundedSfcMassBalAccum(:)
@@ -578,6 +589,7 @@ module li_time_integration_fe_rk
       fluxAcrossGroundingLine(:) = fluxAcrossGroundingLineAccum(:)
       fluxAcrossGroundingLineOnCells(:) = fluxAcrossGroundingLineOnCellsAccum(:)
       calvingThickness(:) = calvingThicknessAccum(:)
+      calvingThicknessGrounded(:) = calvingThicknessGroundedAccum(:)
       ! Deallocate arrays for fct
       if ( (trim(config_thickness_advection) .eq. 'fct') .or. &
            (trim(config_tracer_advection) .eq. 'fct') ) then
@@ -672,9 +684,9 @@ module li_time_integration_fe_rk
       deallocate(fluxAcrossGroundingLineAccum)
       deallocate(fluxAcrossGroundingLineOnCellsAccum)
       deallocate(calvingThicknessAccum)
+      deallocate(calvingThicknessGroundedAccum)
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler_rungekutta
-
 
 
 !***********************************************************************

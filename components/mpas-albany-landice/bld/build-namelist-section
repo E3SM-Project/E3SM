@@ -36,6 +36,12 @@ add_default($nl, 'config_uplift_method');
 add_default($nl, 'config_slm_coupling_interval');
 add_default($nl, 'config_MALI_to_SLM_weights_file');
 add_default($nl, 'config_SLM_to_MALI_weights_file');
+add_default($nl, 'config_fastisostasy_coupling_interval');
+add_default($nl, 'config_MALI_to_FASTISOSTASY_weights_file');
+add_default($nl, 'config_FASTISOSTASY_to_MALI_weights_file');
+add_default($nl, 'config_fastisostasy_parameter_file');
+add_default($nl, 'config_fastisostasy_restart_file');
+add_default($nl, 'config_fastisostasy_bsl_restart_file');
 
 ###########################
 # Namelist group: calving #
@@ -43,6 +49,8 @@ add_default($nl, 'config_SLM_to_MALI_weights_file');
 
 add_default($nl, 'config_calving');
 add_default($nl, 'config_apply_calving_mask');
+add_default($nl, 'config_require_extensional_stresses_for_mask_calving');
+add_default($nl, 'config_calving_fracture_toughness');
 add_default($nl, 'config_use_Albany_flowA_eqn_for_vM');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
@@ -92,7 +100,6 @@ add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
 add_default($nl, 'config_surface_air_temperature_source');
 add_default($nl, 'config_surface_air_temperature_value');
-add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
 add_default($nl, 'config_temp_diffusive_factor');
@@ -167,6 +174,7 @@ add_default($nl, 'config_adaptive_timestep_include_DCFL');
 add_default($nl, 'config_adaptive_timestep_include_calving');
 add_default($nl, 'config_adaptive_timestep_include_face_melting');
 add_default($nl, 'config_adaptive_timestep_force_interval');
+add_default($nl, 'config_timeaveraging_interval');
 
 ###################################
 # Namelist group: time_management #
