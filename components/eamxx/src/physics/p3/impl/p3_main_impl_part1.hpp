@@ -61,6 +61,7 @@ void Functions<S,D>
   const uview_1d<Pack>& nr_incld,
   const uview_1d<Pack>& ni_incld,
   const uview_1d<Pack>& bm_incld,
+  const uview_1d<Pack>& qv2qc_aeroact,
   bool& nucleationPossible,
   bool& hydrometeorsPresent,
   const P3Runtime& runtime_options)
@@ -79,10 +80,12 @@ void Functions<S,D>
   constexpr Scalar inv_cp       = C::INV_CP.value;
   constexpr Scalar latvap       = C::LatVap.value;
   constexpr Scalar latice       = C::LatIce.value;
+  constexpr Scalar pi           = C::Pi;
 
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
-
+  const bool use_p3_condensation = runtime_options.use_p3_condensation;
+  Pack oldnc(0),deltaqc(0);
   nucleationPossible = false;
   hydrometeorsPresent = false;
   team.team_barrier();
@@ -140,12 +143,21 @@ void Functions<S,D>
         // This functional form accounts for "activation" of CCN into Nc
         // and it can be made sublinear (e.g., 2000 and 0.55).
         // First, scale by cld_frac_l to account for subgrid frac (if any)
-        auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
-        // Second, apply the exponent
-        nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
-        // Third, apply the factor, and retain the max
-        nc(k).set(not_drymass,
-                  max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
+        if(use_p3_condensation) {
+          oldnc=nc(k);  // With prognostic supersaturation, do nothing here.
+        } else {
+          // the SPA equation is of the form:
+          // Nc = max ( Nc , alpha * (nccn_prescribed / inv_cld_frac_l) ^ beta )
+          // where alpha and beta are the factor and exponent, respectively.
+          // This functional form accounts for "activation" of CCN into Nc
+          // and it can be made sublinear (e.g., 2000 and 0.55).
+          // First, scale by cld_frac_l to account for subgrid frac (if any)
+          auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
+          // Second, apply the exponent
+          nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
+          // Third, apply the factor, and retain the max
+          nc(k).set(not_drymass,max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
+        }
       } else if(predictNc) {
         nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {
@@ -154,6 +166,20 @@ void Functions<S,D>
       }
     }
 
+    if(use_p3_condensation) {
+      auto nccn_scaled = ekat::pow(nccn_prescribed(k) / inv_cld_frac_l(k),spa_ccn_to_nc_exponent);
+      auto actmask = qv(k) > qv_sat_l(k); // use gridscale qv
+      if (actmask.any()) {
+        auto oldnc = nc(k);
+        auto newnc = ekat::max(nc(k), spa_ccn_to_nc_factor * nccn_scaled);
+        nc(k).set(actmask, newnc);
+        deltaqc.set(actmask, ekat::max(nc(k) - oldnc, 0.0) * 4./3.*pi*1.e-15);
+        qc(k).set(actmask, qc(k) + deltaqc);
+        qv(k).set(actmask, qv(k) - deltaqc);
+        th_atm(k).set(actmask, th_atm(k) + exner(k) * latvap * inv_cp * deltaqc);
+        qv2qc_aeroact(k).set(actmask,deltaqc/dt);
+      }
+    }
     drymass = qr(k) < qsmall;
     not_drymass = !drymass && range_mask;
     qv(k).set(drymass, qv(k) + qr(k));

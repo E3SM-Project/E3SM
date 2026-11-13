@@ -118,6 +118,7 @@ struct UnitWrap {
     struct TestNiConservation;
     struct TestIceDepositionSublimation;
     struct TestPreventLiqSupersaturation;
+    struct TestPrognosticSupersat;
   };
 };
 
