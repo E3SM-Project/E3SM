@@ -45,7 +45,6 @@ module ocn_time_integration_split
    use ocn_vertical_remap
    use ocn_time_average_coupled
 
-   use ocn_effective_density_in_land_ice
    use ocn_surface_land_ice_fluxes
    use ocn_transport_tests
 
@@ -228,9 +227,6 @@ module ocn_time_integration_split
          lowFreqDivergenceCur,        &! low frq div    at current time
          lowFreqDivergenceNew,        &! low frq div    at new     time
          tracerGroupIdealAgeMask       ! mask for resetting surface ideal age
-
-      type (field1DReal), pointer :: &
-         effectiveDensityField         ! field pointer for halo update
 
       ! State/Tracer arrays, info
       real (kind=RKIND), dimension(:,:,:), pointer ::      &!
@@ -2680,11 +2676,6 @@ module ocn_time_integration_split
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
                                 scratchPool, tracersPool, 2)
 
-      ! Update the effective desnity in land ice if we're coupling to
-      ! land ice
-      call ocn_effective_density_in_land_ice_update(forcingPool, &
-                                                    statePool, err)
-
       call mpas_timer_start('se final mpas reconstruct', .false.)
 
 #ifdef MPAS_OPENACC
@@ -2791,14 +2782,6 @@ module ocn_time_integration_split
          call ocn_reconstruct_eddy_vectors(meshPool)
       end if
 
-      if (trim(config_land_ice_flux_mode) == 'coupled') then
-         call mpas_timer_start("se effective density halo")
-         call mpas_pool_get_field(statePool, &
-                                 'effectiveDensityInLandIce', &
-                                  effectiveDensityField, 2)
-         call mpas_dmpar_exch_halo_field(effectiveDensityField)
-         call mpas_timer_stop("se effective density halo")
-      end if
       deallocate(baroclinicThickness)
 
       call mpas_timer_stop('se fini')
