@@ -21,9 +21,6 @@
 // Whether the Default Kokkos exec space has been selected
 #cmakedefine HOMMEXX_DEFAULT_SPACE
 
-// Whether this is a standalone Homme build (as opposed to, e.g., EAMxx)
-#cmakedefine01 HOMME_STANDALONE
-
 // Whether the debug parts of cxx code should be compiled or not
 #cmakedefine HOMMEXX_DEBUG
 
@@ -31,6 +28,9 @@
 #cmakedefine01 HOMMEXX_MPI_ON_DEVICE
 
 #cmakedefine HOMMEXX_CUDA_SHARE_BUFFER
+
+// Whether to skip printing a warning when the dp3d/vtheta limiters are applied
+#cmakedefine HOMMEXX_DISABLE_LIMITER_WARNINGS
 
 // Minimum and maximum number of warps to provide to a team
 #cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}

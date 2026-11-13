@@ -24,6 +24,9 @@ SET (HOMMEXX_EXEC_SPACE HIP CACHE STRING "")
 # TODO: set to ON (or remove) once we have GPU-aware MPI
 SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 
+# Device printf is very expensive on HIP, and some tests (e.g., theta-fhs2) hit the limiters at every step
+SET (HOMMEXX_DISABLE_LIMITER_WARNINGS ON CACHE BOOL "")
+
 SET (Kokkos_ENABLE_OPENMP OFF CACHE BOOL "")
 # Compose (always) needs the Kokkos Serial backend. Kokkos disables it by default if another
 # host backend (e.g., OpenMP) is on, so we must enable it explicitly.

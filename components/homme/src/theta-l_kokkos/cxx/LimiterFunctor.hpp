@@ -25,14 +25,6 @@
 
 #include <assert.h>
 
-// Whether to print a warning when the dp3d/vtheta limiters are applied.
-//  - Never in BFB testing builds: unit tests use (semi-)random inputs, which are expected to hit them.
-//  - Not in standalone HIP builds: device printf is very expensive on HIP, and some standalone
-//    tests (e.g., theta-fhs2, with vtheta_thresh=400) hit the limiters at every step, on purpose.
-#if !defined(HOMMEXX_BFB_TESTING) && !(HOMME_STANDALONE && defined(KOKKOS_ENABLE_HIP))
-#define HOMMEXX_PRINT_LIMITER_WARNINGS
-#endif
-
 namespace Homme {
 
 struct LimiterFunctor {
@@ -141,7 +133,7 @@ struct LimiterFunctor {
       Kokkos::Min<Real,ExecSpace> reducer(min_diff);
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                               [&](const int k,Real& result) {
-#ifdef HOMMEXX_PRINT_LIMITER_WARNINGS
+#ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
         if(diff_as_real(k) < 0){
           Kokkos::printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f \n",
                          k+1,dp_as_real(k),dp0_as_real(k));
@@ -201,7 +193,7 @@ struct LimiterFunctor {
         // Note: another place where scream's masks could help
         for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
           if ( (vtheta_dp(ilev)[ivec] - m_vtheta_thresh*dp(ilev)[ivec]) < 0) {
-#ifdef HOMMEXX_PRINT_LIMITER_WARNINGS
+#ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
             Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
                            ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh);
 #endif
