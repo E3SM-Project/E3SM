@@ -6,7 +6,7 @@
 #include "share/data_managers/field_manager.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
 
@@ -46,12 +46,6 @@ public:
   std::string name () const override { return "Test grids manager"; }
   void build_grids () override {}
   void add (const std::shared_ptr<AbstractGrid>& g) { add_nonconst_grid(g); }
-
-protected:
-  remapper_ptr_type do_create_remapper (const grid_ptr_type, const grid_ptr_type) const override {
-    EKAT_ERROR_MSG ("Error! TestGridsManager does not offer any remapper.\n");
-    return nullptr;
-  }
 };
 
 // The unique gid of the gp (ie,ip,jp) on this rank. Elements form a strip,
