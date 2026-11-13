@@ -798,6 +798,16 @@ _TESTS = {
             )
     },
 
+	# these tests include the temporary SCREAM%BETA configuration for v4 development
+	"e3sm_eamxx_v4_beta" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Ld1.ne4pg2_oQU240.F2010xx-BETA.eamxx-output-preset-1",
+			"PET_Ld1.ne4pg2_oQU240.F2010xx-BETA",
+			"PEM_Ld1.ne4pg2_oQU240.F2010xx-BETA",
+            )
+    },
+
     "e3sm_moab_dev" : {
         "inherit" : ("e3sm_moab_ers",
                      "e3sm_moab_pem"),
