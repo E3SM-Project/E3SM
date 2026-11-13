@@ -565,7 +565,7 @@
 			possible_values="true or false"
 		/>
 		<nml_option name="config_frazil_coupling_type" type="character" default_value="external" units="unitless"
-			description="Type of frazil ice coupling. Coupled configurations support 'external' and 'omega-fluxes'. The 'omega-fluxes' option requires config_ocean_surface_type = 'free'."
+			description="Type of frazil ice coupling. Coupled configurations support 'external' and 'omega-fluxes'. The 'omega-fluxes' option requires config_ocean_surface_type = 'free' and config_thermodynamics_type = 'mushy'."
 			possible_values="'external', 'internal', 'fresh_ice_correction', 'omega-fluxes'"
 		/>
 		<nml_option name="config_include_pond_freshwater_feedback" type="logical" default_value="false" units="unitless"
@@ -5038,6 +5038,12 @@
 		     dimensions="nCells Time"
 		     units="m s-1"
                      description="Frazil ice formation"
+		/>
+		<var name="frazilSalt"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="kg m-2"
+		     description="Salt in new ice formed this time step, including lateral growth. Uses the new ice salinity with omega-fluxes frazil coupling or prognostic salt fluxes, and the reference salinity otherwise."
 		/>
 		<var name="frazilGrowthDiagnostic"
 		     type="real"
