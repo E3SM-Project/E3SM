@@ -48,8 +48,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& dt_remap_factor, const int& dt_tracer_factor,
                                const double& scale_factor, const double& laplacian_rigid_factor, const int& nsplit, const int& pgrad_correction,
                                const double& dp3d_thresh, const double& vtheta_thresh, const int& internal_diagnostics_level,
-                               const int& do_3d_turbulence, const Real& tom_sponge_start,
-                               const int& limiter_warnings)
+                               const int& do_3d_turbulence, const Real& tom_sponge_start)
 {
 
   // Check that the simulation options are supported. This helps us in the future, since we
@@ -135,7 +134,6 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.internal_diagnostics_level    = internal_diagnostics_level;
   params.do_3d_turbulence              = (bool)do_3d_turbulence;
   params.tom_sponge_start              = tom_sponge_start;
-  params.limiter_warnings              = (bool)limiter_warnings;
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit

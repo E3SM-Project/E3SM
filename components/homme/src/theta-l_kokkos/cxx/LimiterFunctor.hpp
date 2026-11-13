@@ -44,8 +44,7 @@ struct LimiterFunctor {
   ElementsGeometry    m_geometry;
   
   double              m_dp3d_thresh;
-  double              m_vtheta_thresh;
-  bool                m_print_warnings;
+  double              m_vtheta_thresh;           
 
   struct TagDp3dLimiter {};
 
@@ -70,7 +69,6 @@ struct LimiterFunctor {
       , m_geometry(elements.m_geometry)
       , m_dp3d_thresh(params.dp3d_thresh)
       , m_vtheta_thresh(params.vtheta_thresh)
-      , m_print_warnings(params.limiter_warnings)
       , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_dp3d_lim)
   {
@@ -136,7 +134,7 @@ struct LimiterFunctor {
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                               [&](const int k,Real& result) {
 #ifndef HOMMEXX_BFB_TESTING
-        if(m_print_warnings && diff_as_real(k) < 0){
+        if(diff_as_real(k) < 0){
           Kokkos::printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f \n",
                          k+1,dp_as_real(k),dp0_as_real(k));
         }
@@ -196,10 +194,8 @@ struct LimiterFunctor {
         for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
           if ( (vtheta_dp(ilev)[ivec] - m_vtheta_thresh*dp(ilev)[ivec]) < 0) {
 #ifndef HOMMEXX_BFB_TESTING
-            if (m_print_warnings) {
-              Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
-                             ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh);
-            }
+            Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
+                           ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh);
 #endif
              vtheta_dp(ilev)[ivec]=m_vtheta_thresh*dp(ilev)[ivec];
           }

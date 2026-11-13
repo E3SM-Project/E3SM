@@ -72,8 +72,6 @@ struct SimulationParams
 
   double    dp3d_thresh;
   double    vtheta_thresh;
-  // Whether to print a warning each time the dp3d/vtheta limiters are applied
-  bool      limiter_warnings = true;
 
   // Optionally run diagnostics and output information. Default is 0, none. Set
   // to >0 for diagnostics.
@@ -126,7 +124,6 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   laplacian_rigid_factor: " << laplacian_rigid_factor << "\n";
   out << "   dp3d_thresh: " << dp3d_thresh << "\n";
   out << "   vtheta_thresh: " << vtheta_thresh << "\n";
-  out << "   limiter_warnings: " << (limiter_warnings ? "yes" : "no") << "\n";
   out << "   internal_diagnostics_level: " << internal_diagnostics_level << "\n";
   out << "\n**********************************************************\n";
 }
