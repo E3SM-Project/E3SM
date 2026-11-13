@@ -951,11 +951,15 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
   // domain-wide convection level bounds (outputs not part of the F90 BFB comparison)
   Int ktm = d.pver - 1, kbm = d.pver - 1;
 
+  // c0 humidity scaling factor (disabled in these tests, so one everywhere)
+  view1dr_d c0_rh_fac_d("c0_rh_fac", d.pcols);
+  Kokkos::deep_copy(c0_rh_fac_d, 1);
+
   ZMF::zm_conv_main(
     init_cp,
     d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step,
     t_mid_d, q_mid_in_d, omega_d, p_mid_in_d, p_int_in_d, p_del_in_d,
-    geos_d, z_mid_in_d, z_int_in_d, pbl_hgt_d, tpert_d, landfrac_d,
+    geos_d, z_mid_in_d, z_int_in_d, pbl_hgt_d, tpert_d, landfrac_d, c0_rh_fac_d,
     t_star_d, q_star_d,
     msemax_klev_d, jctop_d, jcbot_d, jt_d, active_d, prec_d,
     heat_d, qtnd_d, cape_d, dcape_d,
@@ -1422,6 +1426,7 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
       s_int_c,
       q_mid_c,
       landfrac_d(i),
+      Real(1), // c0_rh_fac (c0 humidity scaling disabled)
       tpert_g_d(i),
       jb_d(i),
       lel_d(i),
