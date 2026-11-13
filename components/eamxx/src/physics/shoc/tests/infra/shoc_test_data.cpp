@@ -89,9 +89,12 @@ void isotropic_ts(IsotropicTsData& d)
   isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
 }
 
-void adv_sgs_tke(AdvSgsTkeData& d)
+void adv_sgs_tke(AdvSgsTkeData& d, Real* tkh)
 {
-  adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_1p5tke, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.brunt, d.tke, d.a_diss);
+  // The historical bridge data does not contain a separate heat diffusivity.
+  // Use tk for baseline tests, while allowing property tests to provide tkh.
+  adv_sgs_tke_host(d.nlev, d.shcol, d.dtime, d.shoc_1p5tke, d.shoc_mix, d.wthv_sec, d.sterm_zt,
+                   tkh ? tkh : d.tk, d.tk, d.brunt, d.tke, d.a_diss);
 }
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
@@ -1860,7 +1863,7 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5t
 }
 
 void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* shoc_mix, Real* wthv_sec,
-                   Real* sterm_zt, Real* tk, Real* brunt, Real* tke, Real* a_diss)
+                   Real* sterm_zt, Real* tkh, Real* tk, Real* brunt, Real* tke, Real* a_diss)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -1871,10 +1874,10 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
   using TPF        = ekat::TeamPolicyFactory<ExeSpace>;
   using MemberType = typename SHF::MemberType;
 
-  static constexpr Int num_arrays = 7;
+  static constexpr Int num_arrays = 8;
 
   std::vector<view_2d> temp_d(num_arrays);
-  std::vector<const Real*> ptr_array  = {shoc_mix, wthv_sec, sterm_zt, tk, brunt,    tke,   a_diss};
+  std::vector<const Real*> ptr_array  = {shoc_mix, wthv_sec, sterm_zt, tkh, tk, brunt, tke, a_diss};
 
   // Sync to device
   ekat::host_to_device(ptr_array, shcol, nlev, temp_d);
@@ -1884,11 +1887,12 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
     shoc_mix_d (temp_d[0]),
     wthv_sec_d (temp_d[1]),
     sterm_zt_d (temp_d[2]),
-    tk_d       (temp_d[3]),
-    brunt_d    (temp_d[4]),
+    tkh_d      (temp_d[3]),
+    tk_d       (temp_d[4]),
+    brunt_d    (temp_d[5]),
     //output
-    tke_d      (temp_d[4]), //inout
-    a_diss_d   (temp_d[5]); //out
+    tke_d      (temp_d[6]), //inout
+    a_diss_d   (temp_d[7]); //out
 
   const Int nk_pack = ekat::npack<Pack>(nlev);
   view_2d shear_strain3d_d("shear_strain3d_d", shcol, nk_pack);
@@ -1902,6 +1906,7 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
       const auto shoc_mix_s = ekat::subview(shoc_mix_d ,i);
       const auto wthv_sec_s = ekat::subview(wthv_sec_d ,i);
       const auto sterm_zt_s = ekat::subview(sterm_zt_d ,i);
+      const auto tkh_s      = ekat::subview(tkh_d, i);
       const auto tk_s       = ekat::subview(tk_d ,i);
       const auto brunt_s    = ekat::subview(brunt_d, i);
       const auto shear_strain3d_s = ekat::subview(shear_strain3d_d, i);
@@ -1910,7 +1915,7 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
       const bool do_3d_turb = false;
 
       SHF::adv_sgs_tke(team, nlev, dtime, shoc_1p5tke, do_3d_turb,
-                       shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, brunt_s,
+                       shoc_mix_s, wthv_sec_s, sterm_zt_s, tkh_s, tk_s, brunt_s,
                        shear_strain3d_s, tke_s, a_diss_s);
     });
 

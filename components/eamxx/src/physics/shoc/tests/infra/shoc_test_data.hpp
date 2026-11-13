@@ -985,7 +985,7 @@ void check_tke                                      (CheckTkeData& d);
 void shoc_tke                                       (ShocTkeData& d);
 void compute_shr_prod                               (ComputeShrProdData& d);
 void isotropic_ts                                   (IsotropicTsData& d);
-void adv_sgs_tke                                    (AdvSgsTkeData& d);
+void adv_sgs_tke                                    (AdvSgsTkeData& d, Real* tkh = nullptr);
 void eddy_diffusivities                             (EddyDiffusivitiesData& d);
 void shoc_length                                    (ShocLengthData& d);
 void compute_brunt_shoc_length                      (ComputeBruntShocLengthData& d);
@@ -1095,7 +1095,7 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5t
                                Real* tke, Real* dz_zt, Real* dz_zi, Real* zt_grid, Real* zi_grid,
                                Real* w3);
 void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* shoc_mix, Real* wthv_sec, Real* sterm_zt,
-                   Real* tk, Real* brunt, Real* tke, Real* a_diss);
+                   Real* tkh, Real* tk, Real* brunt, Real* tke, Real* a_diss);
 void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
                         Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
                         Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,
