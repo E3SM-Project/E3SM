@@ -125,6 +125,18 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 
   set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
+
+  // t0 counts the steps of whoever runs this process (e.g. the driver counts
+  // coupling steps). Since run() advances our time stamps once per subcycle,
+  // our step counter is m_num_subcycles times the caller's. Restore that here,
+  // so that on restart the counter (and anything keyed off of it, such as
+  // rad_frequency or cosp_frequency) picks up where it left off. For a group,
+  // the scaled counter is then passed down to the stored processes.
+  if (m_num_subcycles>1 && t0.get_num_steps()>0) {
+    const int nsteps = t0.get_num_steps()*m_num_subcycles;
+    m_start_of_step_ts.set_num_steps(nsteps);
+    m_end_of_step_ts.set_num_steps(nsteps);
+  }
   initialize_impl(run_type);
 
   log (LogLevel::info,"  Initializing " + name() + "... done!");
@@ -147,6 +159,26 @@ void AtmosphereProcess::run (const double dt) {
 
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
+
+  // TimeStamp snaps to the nearest second whenever its running fraction gets
+  // within 1ms of a whole second. For some (unusual) subcycle counts, a partial
+  // sum of substeps lands within 1ms of a whole second without being one, and
+  // the snapping makes our clock drift from the caller's. Catch that up front.
+  if (m_num_subcycles>1) {
+    auto ts_sub = m_end_of_step_ts;
+    auto ts_ref = m_end_of_step_ts;
+    for (int i=0; i<m_num_subcycles; ++i) {
+      ts_sub += dt_sub;
+    }
+    ts_ref += dt;
+    EKAT_REQUIRE_MSG (ts_sub==ts_ref,
+        "Error! Unsupported subcycling configuration for " + name() + ".\n"
+        "  Accumulating the substeps does not reproduce the full time step,\n"
+        "  due to TimeStamp rounding to 1ms. Choose a different number of subcycles.\n"
+        "  - dt            : " + std::to_string(dt) + "\n"
+        "  - num subcycles : " + std::to_string(m_num_subcycles) + "\n"
+        "  - dt_sub        : " + std::to_string(dt_sub) + "\n");
+  }
 
   // Init single step tendencies (if any) with current value of output field
   init_step_tendencies ();
