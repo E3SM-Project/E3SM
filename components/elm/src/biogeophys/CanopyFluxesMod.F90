@@ -15,6 +15,7 @@ module CanopyFluxesMod
   use abortutils            , only : endrun
   use elm_varctl            , only : iulog, use_cn, use_lch4, use_c13, use_c14, use_fates
   use elm_varctl            , only : use_hydrstress, use_finetop_rad
+  use elm_varctl            , only : use_cropman
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
   use elm_varcon            , only : mm_epsilon
@@ -39,7 +40,7 @@ module CanopyFluxesMod
   use GridcellType          , only : grc_pp
   use TopounitDataType      , only : top_as, top_af
   use ColumnType            , only : col_pp
-  use ColumnDataType        , only : col_es, col_ef, col_ws
+  use ColumnDataType        , only : col_cs, col_es, col_ef, col_ws
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
 
@@ -280,6 +281,7 @@ contains
     real(r8) :: ricsoilc                             ! modified transfer coefficient under dense canopy (unitless)
     real(r8) :: snow_depth_c                         ! critical snow depth to cover plant litter (m)
     real(r8) :: rdl                                  ! dry litter layer resistance for water vapor  (s/m)
+    real(r8) :: lai_dl_dyn                           ! (dry) plant litter area index (m2/m2) 
     real(r8) :: elai_dl                              ! exposed (dry) plant litter area index
     real(r8) :: fsno_dl                              ! effective snow cover over plant litter
     real(r8) :: dayl_factor(bounds%begp:bounds%endp) ! scalar (0-1) for daylength effect on Vcmax
@@ -385,6 +387,8 @@ contains
          z0qv                 => frictionvel_vars%z0qv_patch               , & ! Output: [real(r8) (:)   ]  roughness length over vegetation, latent heat [m]
          rb1                  => frictionvel_vars%rb1_patch                , & ! Output: [real(r8) (:)   ]  boundary layer resistance (s/m)
          num_iter             => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
+
+         fscov                => col_cs%fscov                , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -1039,7 +1043,12 @@ contains
             !Litter layer resistance. Added by K.Sakaguchi
             snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
             fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
-            elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
+            if (use_cropman) then
+               lai_dl_dyn = fscov(c)
+            else
+               lai_dl_dyn = lai_dl
+            end if
+            elai_dl = lai_dl_dyn*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
             rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(p)) ! dry litter layer resistance
 
             ! add litter resistance and Lee and Pielke 1992 beta
