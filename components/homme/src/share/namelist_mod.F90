@@ -216,6 +216,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     use mesh_mod, only : MeshOpen
 #endif
     use mpi
+    use iso_fortran_env, only: input_unit
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -228,6 +229,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: j
 #endif
     integer :: interp_type
+    character(len=MAX_FILE_LEN) :: nl_file, log_file
+    integer :: nl_unit, log_unit
 #endif
     integer  :: ierr
     real(kind=real_kind) :: dt_max, se_tstep
@@ -238,8 +241,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: se_ne_x, se_ne_y
     real(kind=real_kind) :: se_lx, se_ly
     integer :: unitn
-    character(len=*), parameter ::  subname = "homme:namelist_mod"
 #endif
+    character(len=*), parameter ::  subname = "homme:namelist_mod"
     ! ============================================
     ! Namelists
     ! ============================================
@@ -486,6 +489,36 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 !   write(iulog,*) "masterproc=",par%masterproc
 
     if (par%masterproc) then
+#if !defined(CAM) && !defined(SCREAM)
+       ! Standalone Homme: the 1st command line argument (if any) is the namelist file,
+       ! and the 2nd (if any) is the file where iulog writes to (from here on).
+       ! Without arguments, the namelists are read from standard input.
+       ! NOTE: open the namelist file first, so that we can check that the log file is not the same file
+       nl_unit = input_unit
+       if (command_argument_count() >= 1) then
+          call get_command_argument(1, nl_file, status=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not read the namelist file name (1st command line argument)')
+          open(newunit=nl_unit, file=trim(nl_file), status='old', action='read', iostat=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not open the namelist file '//trim(nl_file))
+          write(iulog,*) 'Reading the namelists from ',trim(nl_file)
+       else
+          write(iulog,*) 'Reading the namelists from standard input'
+       end if
+       if (command_argument_count() >= 2) then
+          call get_command_argument(2, log_file, status=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not read the log file name (2nd command line argument)')
+          ! Opening the log file would erase it, so make sure it is not the namelist file
+          ! (if it is, it is already connected to nl_unit)
+          inquire(file=trim(log_file), number=log_unit)
+          if (nl_unit /= input_unit .and. log_unit == nl_unit) then
+             call abortmp(subname//':: the log file and the namelist file are the same file: '//trim(log_file))
+          end if
+          open(newunit=log_unit, file=trim(log_file), status='replace', action='write', iostat=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not open the log file '//trim(log_file))
+          write(iulog,*) 'Writing the log to ',trim(log_file)
+          iulog = log_unit
+       end if
+#endif
        write(iulog,*)"reading ctl namelist..."
 #if defined(CAM) || defined(SCREAM)
        unitn=getunit()
@@ -501,12 +534,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        end do
        close( unitn )
        call freeunit( unitn )
-#elif defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       open(unit=7,file="input.nl",status="OLD")
-       read(unit=7,nml=ctl_nl)
 #else
-      print *, 'Reading namelist ctl_nl from standard input'
-      read(*,nml=ctl_nl)
+      read(nl_unit,nml=ctl_nl)
 #endif
 #ifndef _USEMETIS
       ! override METIS options to SFCURVE
@@ -585,11 +614,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
            test_case(1:4) == "asp_")  then
          write(iulog,*) "reading vertical namelist..."
 
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-         read(unit=7,nml=vert_nl)
-#else
-         read(*,nml=vert_nl)
-#endif
+         if (nl_unit /= input_unit) rewind(nl_unit)
+         read(nl_unit,nml=vert_nl)
          vfile_mid  = trim(adjustl(vfile_mid))
          vfile_int  = trim(adjustl(vfile_int))
 
@@ -643,11 +669,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"reading analysis namelist..."
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=analysis_nl)
-#else
-       read(*,nml=analysis_nl)
-#endif
+       if (nl_unit /= input_unit) rewind(nl_unit)
+       read(nl_unit,nml=analysis_nl)
 
       if (io_stride .eq.0 .and. num_io_procs .eq.0) then
          ! user did not set anything
@@ -697,18 +720,13 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 #if (defined MODEL_THETA_L && defined ARKODE)
        write(iulog,*)"reading arkode namelist..."
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=arkode_nl)
-#else
-       read(*,nml=arkode_nl)
-#endif
+       if (nl_unit /= input_unit) rewind(nl_unit)
+       read(nl_unit,nml=arkode_nl)
 #endif
 
 !=======================================================================================================!
 
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       close(unit=7)
-#endif
+       if (nl_unit /= input_unit) close(nl_unit)
 #endif
 ! ^ if !defined(CAM) && !defined(SCREAM)
        ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
