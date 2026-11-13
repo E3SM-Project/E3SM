@@ -351,9 +351,12 @@ void ZMDeepConvection::run_impl (const double dt)
         }
       }, qsat_sum);
       team.team_barrier();
-      // if the layer is empty (surface above c0_sf_p_top) fall back to saturation, i.e. no scaling
-      const Real sat_frac  = (qsat_sum > 0) ? q_sum / qsat_sum : Real(1);
-      const Real c0_rh_fac = zm_opts.calc_c0_rh_factor(sat_frac);
+      // if the layer is empty (surface above c0_sf_p_top) report saturation and
+      // apply no humidity scaling. The factor is set to one directly rather than
+      // passed through the ramp, since c0_sf_hi > 1 would otherwise still reduce c0
+      const bool sf_layer_empty = !(qsat_sum > 0);
+      const Real sat_frac  = sf_layer_empty ? Real(1) : q_sum / qsat_sum;
+      const Real c0_rh_fac = sf_layer_empty ? Real(1) : zm_opts.calc_c0_rh_factor(sat_frac);
       const Real c0_base   = zm_opts.calc_c0_base(loc_landfrac(i));
       Kokkos::single(Kokkos::PerTeam(team), [&] () {
         loc_zm_output_c0_sat_frac(i) = sat_frac;

@@ -18,6 +18,7 @@ set(ZM_TESTS_SRCS
   zm_calc_fractional_entrainment_tests.cpp
   zm_downdraft_properties_tests.cpp
   zm_cloud_properties_tests.cpp
+  zm_c0_scaling_tests.cpp
   zm_closure_tests.cpp
   zm_calc_output_tend_tests.cpp
 ) # ZM_TESTS_SRCS

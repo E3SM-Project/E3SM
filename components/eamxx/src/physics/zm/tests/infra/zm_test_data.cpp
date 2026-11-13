@@ -1320,6 +1320,11 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
 
 void zm_cloud_properties(ZmCloudPropertiesData& d)
 {
+  zm_cloud_properties(d, ZmC0ScalingTestOpts());
+}
+
+void zm_cloud_properties(ZmCloudPropertiesData& d, const ZmC0ScalingTestOpts& c0_opts)
+{
   zm_opts_init();
 
   // create device views and copy
@@ -1375,6 +1380,12 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
   WSM wsm(d.pverp, 20, policy);
 
+  // apply the optional c0 scaling settings (no-op for the legacy defaults)
+  init_cp.use_rh_scaling_c0   = c0_opts.use_rh_scaling_c0;
+  init_cp.use_temp_scaling_c0 = c0_opts.use_temp_scaling_c0;
+  if (c0_opts.c0_t_min_frac >= 0) init_cp.c0_t_min_frac = c0_opts.c0_t_min_frac;
+  const Real c0_rh_fac = c0_opts.c0_rh_fac;
+
   // unpack data scalars because we do not want the lambda to capture d
   const Int limcnv = d.limcnv;
   const Int msg = d.msg;
@@ -1426,7 +1437,7 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
       s_int_c,
       q_mid_c,
       landfrac_d(i),
-      Real(1), // c0_rh_fac (c0 humidity scaling disabled)
+      c0_rh_fac,
       tpert_g_d(i),
       jb_d(i),
       lel_d(i),

@@ -875,7 +875,17 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d);
 void zm_conv_evap(ZmConvEvapData& d);
 void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d);
 void zm_downdraft_properties(ZmDowndraftPropertiesData& d);
+// Optional autoconversion (c0) scaling settings for the zm_cloud_properties
+// wrapper. The defaults reproduce the legacy (scaling disabled) configuration.
+struct ZmC0ScalingTestOpts {
+  bool use_rh_scaling_c0   = false;
+  bool use_temp_scaling_c0 = false;
+  Real c0_rh_fac           = 1;   // column humidity factor passed to zm_cloud_properties
+  Real c0_t_min_frac       = -1;  // temperature factor floor, a negative value keeps the default
+};
+
 void zm_cloud_properties(ZmCloudPropertiesData& d);
+void zm_cloud_properties(ZmCloudPropertiesData& d, const ZmC0ScalingTestOpts& c0_opts);
 void zm_closure(ZmClosureData& d);
 void zm_calc_output_tend(ZmCalcOutputTendData& d);
 // End glue function decls
