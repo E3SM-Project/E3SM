@@ -1369,7 +1369,9 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
-  WSM wsm(d.pverp, 20, policy);
+  // Override the turbulent mixing knob from the test data (defaults to 0).
+  init_cp.frac_turb_mix = d.frac_turb_mix;
+  WSM wsm(d.pverp, 21, policy);
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int limcnv = d.limcnv;

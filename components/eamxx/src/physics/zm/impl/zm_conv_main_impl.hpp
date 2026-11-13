@@ -133,9 +133,9 @@ void Functions<S,D>::zm_conv_main(
     j0             ("j0",              ncol),
     jd             ("jd",              ncol);
 
-  // Workspace for sub-functions (max 20 arrays for zm_cloud_properties + entrainment)
+  // Workspace for sub-functions (max 21 arrays for zm_cloud_properties + entrainment)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ncol, pver);
-  WorkspaceManager wsm(pverp, 20, policy);
+  WorkspaceManager wsm(pverp, 21, policy);
   stop_timer("EAMxx::zm::main::allocation");
 
   //============================================================================

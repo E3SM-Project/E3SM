@@ -155,6 +155,7 @@ struct Functions {
       alfa                = params.get<Real>("alfa",                ZMC::alfa);
       ke                  = params.get<Real>("ke",                  ZMC::ke);
       dmpdz               = params.get<Real>("dmpdz",               ZMC::dmpdz);
+      frac_turb_mix       = params.get<Real>("frac_turb_mix",       0);
       tpert_fix           = params.get<bool>("tpert_fix",           true);
       tpert_fac           = params.get<Real>("tpert_fac",           2);
       tiedke_add          = params.get<Real>("tiedke_add",          ZMC::tiedke_add);
@@ -232,6 +233,7 @@ struct Functions {
       os << indent << "alfa            : " << alfa           << "\n";
       os << indent << "ke              : " << ke             << "\n";
       os << indent << "dmpdz           : " << dmpdz          << "\n";
+      os << indent << "frac_turb_mix   : " << frac_turb_mix  << "\n";
       os << indent << "tpert_fix       : " << tpert_fix      << "\n";
       os << indent << "tpert_fac       : " << tpert_fac      << "\n";
       os << indent << "tiedke_add      : " << tiedke_add     << "\n";
@@ -263,6 +265,7 @@ struct Functions {
     Real alfa;              // max downdraft mass flux fraction
     Real ke;                // evaporation efficiency
     Real dmpdz;             // fractional mass entrainment rate [1/m]
+    Real frac_turb_mix;     // turbulent fractional mixing rate added equally to updraft entrainment and detrainment [1/m]; positive increases mixing (0 disables)
     bool tpert_fix;         // flag to disable using applying tpert to PBL-rooted convection
     Real tpert_fac;         // tunable temperature perturbation factor
     Real tiedke_add;        // tunable temperature perturbation
