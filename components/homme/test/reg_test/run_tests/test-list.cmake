@@ -54,17 +54,21 @@ SET(HOMME_RUN_TESTS_DIR ${HOMME_SOURCE_DIR}/test/reg_test/run_tests)
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   # Lists of test files for the HOMME kokkos regression tests.
-  # These tests come in pairs, so that, besides checking
-  # performance, we can compare the kokkos output with the
+  # The kokkos tests are always created. With BFB testing, we also create their
+  # fortran counterparts, so that we can compare the kokkos output with the
   # fortran one later on.
   SET(HOMME_PREQX_TESTS_WITH_PROFILE
-    preqx-nlev26-dry-r0-samenu-consthv-lim8-q1.cmake
     preqx-nlev26-dry-r0-samenu-consthv-lim8-q1-kokkos.cmake
-    preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6.cmake
     preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6-kokkos.cmake
-    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1.cmake
     preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1-kokkos.cmake
   )
+  IF (HOMMEXX_BFB_TESTING)
+    LIST(APPEND HOMME_PREQX_TESTS_WITH_PROFILE
+      preqx-nlev26-dry-r0-samenu-consthv-lim8-q1.cmake
+      preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6.cmake
+      preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1.cmake
+    )
+  ENDIF ()
 
   #This list (COMPARE_F_C_TEST) contains tests for which
   #F vc C comparison will be run.
@@ -94,33 +98,38 @@ IF (BUILD_HOMME_THETA_KOKKOS)
   IF (HOMME_ENABLE_COMPOSE)
     LIST(APPEND HOMME_TESTS
       thetah-sl-testconv-3e-kokkos.cmake
-      planar-transport-a-etm-kokkos.cmake)
+      planar-transport-a-etm-kokkos.cmake
+      thetah-sl-test11conv-r0t1-cdr30-rrm-kokkos.cmake
+      thetanh-moist-bubble-sl-kokkos.cmake
+      thetanh-moist-bubble-sl-pg2-kokkos.cmake)
     IF (HOMMEXX_BFB_TESTING)
-      LIST(APPEND HOMME_TESTS
-        thetah-sl-test11conv-r0t1-cdr30-rrm-kokkos.cmake
-        thetanh-moist-bubble-sl-kokkos.cmake
-        thetanh-moist-bubble-sl-pg2-kokkos.cmake)
       LIST(APPEND HOMME_ONEOFF_CVF_TESTS
         thetah-sl-test11conv-r0t1-cdr30-rrm
         thetanh-moist-bubble-sl
         thetanh-moist-bubble-sl-pg2)
-      # QLT vertical_levels not yet supported on GPU (compose_cedr_qlt.cpp:182)
-      IF (NOT (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP))
-        LIST(APPEND HOMME_TESTS
-          thetah-sl-dcmip16_test1pg2-kokkos.cmake)
+    ENDIF()
+    # QLT vertical_levels not yet supported on GPU (compose_cedr_qlt.cpp:182)
+    IF (NOT (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP))
+      LIST(APPEND HOMME_TESTS
+        thetah-sl-dcmip16_test1pg2-kokkos.cmake)
+      IF (HOMMEXX_BFB_TESTING)
         LIST(APPEND HOMME_ONEOFF_CVF_TESTS
           thetah-sl-dcmip16_test1pg2)
       ENDIF()
     ENDIF()
   ENDIF()
+  LIST(APPEND HOMME_TESTS
+    thetanh-moist-bubble-kokkos.cmake
+    thetanh-dry-bubble-kokkos.cmake
+    thetanh-nhgw-kokkos.cmake
+    thetanh-nhgw-slice-kokkos.cmake)
   IF (HOMMEXX_BFB_TESTING)
+    # TODO: also create these in non-BFB builds, once the ForcingFunctor buffers are sized correctly:
+    #       with qsize=0 and 2+ threads, the hydrostatic kokkos runs overflow the functor buffers,
+    #       and crash at finalize (e.g., on the ghci intel runner).
     LIST(APPEND HOMME_TESTS
-      thetanh-moist-bubble-kokkos.cmake
-      thetanh-dry-bubble-kokkos.cmake
       thetah-nhgw-kokkos.cmake
-      thetanh-nhgw-kokkos.cmake
-      thetah-nhgw-slice-kokkos.cmake
-      thetanh-nhgw-slice-kokkos.cmake)
+      thetah-nhgw-slice-kokkos.cmake)
     LIST(APPEND HOMME_ONEOFF_CVF_TESTS
       thetanh-moist-bubble
       thetanh-dry-bubble
@@ -151,14 +160,19 @@ IF (BUILD_HOMME_THETA_KOKKOS)
 
 
   SET(TESTS_WITHOUT_AUTO
-     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
      theta-fhs1
-     theta-fhs2
-     theta-fhs3
      theta-fdc12-test21
      theta-fdc12-test22
      theta-fdc12-test3
   )
+  # These use SL transport (transport_alg=12), which requires COMPOSE
+  IF (HOMME_ENABLE_COMPOSE)
+    LIST(APPEND TESTS_WITHOUT_AUTO
+       theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
+       theta-fhs2
+       theta-fhs3
+    )
+  ENDIF()
 
   #all tests that will be used for cxx-vs-F bfb testing
   SET(HOMME_THETA_TESTS_WITH_PROFILE_1
@@ -167,10 +181,11 @@ IF (BUILD_HOMME_THETA_KOKKOS)
 
   set(HOMME_THETA_TESTS_WITH_PROFILE "")
   FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
-    LIST(APPEND HOMME_THETA_TESTS_WITH_PROFILE
-        ${JJ}.cmake
-        ${JJ}-kokkos.cmake
-    )
+    # The kokkos test is always created, the fortran one only with BFB testing (for the cxx-vs-F comparisons)
+    IF (HOMMEXX_BFB_TESTING)
+      LIST(APPEND HOMME_THETA_TESTS_WITH_PROFILE ${JJ}.cmake)
+    ENDIF ()
+    LIST(APPEND HOMME_THETA_TESTS_WITH_PROFILE ${JJ}-kokkos.cmake)
   ENDFOREACH()
   IF (HOMMEXX_BFB_TESTING)
     SET (THETA_COMPARE_F_C_TEST ${HOMME_THETA_TESTS_WITH_PROFILE_1})

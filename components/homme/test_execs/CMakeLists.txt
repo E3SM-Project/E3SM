@@ -286,7 +286,7 @@ INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
 
-IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_PREQX_KOKKOS)
+IF (BUILD_HOMME_PREQX_KOKKOS)
   MESSAGE("-- Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
@@ -298,7 +298,7 @@ IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_PREQX_KOKKOS)
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
 ENDIF()
-IF (HOMMEXX_BFB_TESTING AND BUILD_HOMME_THETA_KOKKOS)
+IF (BUILD_HOMME_THETA_KOKKOS)
   MESSAGE("-- Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
