@@ -178,6 +178,10 @@ protected:
   void report_res_dep_memory_footprint () const;
 
   void create_logger ();
+  // Init the fields with a ModelInit object (see share/data_managers/model_init.hpp)
+  void run_model_init ();
+
+  // Legacy init of the fields, still used for runs with the pg2 physics grid.
   void set_initial_conditions ();
   void restart_model ();
 
