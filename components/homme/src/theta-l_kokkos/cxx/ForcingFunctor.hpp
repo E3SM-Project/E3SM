@@ -21,6 +21,8 @@
 
 #include "utilities/BfbUtils.hpp"
 
+#include <algorithm>
+
 namespace Homme {
 
 class ForcingFunctor
@@ -145,8 +147,18 @@ public:
     is_setup = true;
   }
 
+  // The per-team buffers (m_Rstar, m_pi_i) are used by the tracers_pre, tracers, and
+  // tracers_post kernels, so they need enough slots for the largest of the three policies.
+  // Note: the three policies can have very different league sizes (e.g., if qsize=0,
+  // the tracers policy is empty), and therefore different numbers of slots.
+  int num_ws_slots () const {
+    return std::max({m_tu_tracers_pre.get_num_ws_slots(),
+                     m_tu_tracers.get_num_ws_slots(),
+                     m_tu_tracers_post.get_num_ws_slots()});
+  }
+
   int requested_buffer_size () const {
-    const int nslots = m_tu_tracers.get_num_ws_slots();
+    const int nslots = num_ws_slots();
     const int nelems = m_num_state_elems;
     constexpr int mid_size = NP*NP*NUM_LEV*VECTOR_SIZE;
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
@@ -156,8 +168,7 @@ public:
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
-    const int num_slots = std::max(m_tu_tracers_pre.get_num_ws_slots(),
-                                   m_tu_tracers.get_num_ws_slots());
+    const int num_slots = num_ws_slots();
 
     constexpr int mid_size = NP*NP*NUM_LEV;
 
