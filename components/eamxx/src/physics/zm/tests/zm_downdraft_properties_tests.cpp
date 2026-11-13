@@ -81,11 +81,11 @@ struct UnitWrap::UnitTest<D>::TestZmDowndraftProperties : public UnitWrap::UnitT
           REQUIRE(d_baseline.evp[k] == Approx(d_test.evp[k]).margin(margin));
         }
         REQUIRE(d_baseline.total(d_baseline.totevp) == d_test.total(d_test.totevp));
-        REQUIRE(d_baseline.total(d_baseline.totevp) == d_test.total(d_test.jt));
+        REQUIRE(d_baseline.total(d_baseline.totevp) == d_test.total(d_test.cldtop_klev));
         REQUIRE(d_baseline.total(d_baseline.totevp) == d_test.total(d_test.jd));
         for (Int k = 0; k < d_baseline.total(d_baseline.totevp); ++k) {
           REQUIRE(d_baseline.totevp[k] == Approx(d_test.totevp[k]).margin(margin));
-          REQUIRE(d_baseline.jt[k] == d_test.jt[k]);
+          REQUIRE(d_baseline.cldtop_klev[k] == d_test.cldtop_klev[k]);
           REQUIRE(d_baseline.jd[k] == d_test.jd[k]);
         }
       }

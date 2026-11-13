@@ -28,7 +28,7 @@ void Functions<S,D>::zm_transport_momentum(
   const uview_1d<const Real>& eu, // mass entraining from updraft
   const uview_1d<const Real>& ed, // mass entraining from downdraft
   const uview_1d<const Real>& dp, // gathered pressure delta between interfaces
-  const Int& jt, // index of cloud top for each column
+  const Int& cldtop_klev, // index of cloud top for each column
   const Int& mx, // index of max MSE (i.e. cloud base)
   const Int& ktm, // Highest top level for any column
   const Int& kbm, // Highest bottom level for any column
