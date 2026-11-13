@@ -28,7 +28,7 @@ void Functions<S,D>::zm_transport_tracer(
   const uview_1d<const Real>& eu,         // mass entraining from updraft
   const uview_1d<const Real>& ed,         // mass entraining from downdraft
   const uview_1d<const Real>& dp,         // delta pressure between interfaces
-  const Int& jt,                          // index of cloud top for this column
+  const Int& cldtop_klev,                          // index of cloud top for this column
   const Int& mx,                          // index of cloud bottom for this column
   const Int& ktm,                         // Highest top level for any column
   const Int& kbm,                         // Highest bottom level for any column
@@ -179,7 +179,7 @@ void Functions<S,D>::zm_transport_tracer(
 
     // Conservation check for ZM microphysics
     if (runtime_opt.zm_microp) {
-      for (Int k = jt; k <= mx; ++k) {
+      for (Int k = cldtop_klev; k <= mx; ++k) {
         if (dcondt(m, k) * dt + const_arr(m, k) < 0) {
           Real negadt = dcondt(m, k) + const_arr(m, k) / dt;
           dcondt(m, k) = -const_arr(m, k) / dt;
@@ -198,8 +198,8 @@ void Functions<S,D>::zm_transport_tracer(
             }
           }
 
-          // Try to redistribute to levels below (k-1 down to jt)
-          for (Int kk = k-1; kk >= jt; --kk) {
+          // Try to redistribute to levels below (k-1 down to cldtop_klev)
+          for (Int kk = k-1; kk >= cldtop_klev; --kk) {
             if (negadt < 0 && (dcondt(m, kk) * dt + const_arr(m, kk) > 0)) {
               const Real qtmp = dcondt(m, kk) + negadt * dptmp(m, k) / dptmp(m, kk);
               if (qtmp * dt + const_arr(m, kk) > 0) {
