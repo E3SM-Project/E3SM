@@ -1,5 +1,1 @@
-sweqx_setup()
-
-# Set the variables for this test executable
-#                          NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(swtcC sweqx  4   4    1   TRUE        FALSE   1 )
+homme_add_model_exec (swtcC MODEL sweqx NP 4 NC 4 PLEV 1 QSIZE_D 1 PIO)

@@ -1,6 +1,3 @@
 #_______________________________________________________________________
 # create executable needed by planar nhgw (native output)
-
-thetal_setup()
-#              name                 target NP  NC PLEV USE_PIO  WITH_ENERGY QSIZE_D
-createTestExec(theta-l-nlev10-native         theta-l  4   4  10   TRUE    TRUE       3       )
+homme_add_model_exec (theta-l-nlev10-native MODEL theta-l NP 4 NC 4 PLEV 10 QSIZE_D 3 PIO ENERGY)

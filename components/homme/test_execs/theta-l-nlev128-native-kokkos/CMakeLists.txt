@@ -1,3 +1,1 @@
-THETAL_KOKKOS_SETUP()
-#              name                         target         NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(theta-l-nlev128-native-kokkos theta-l_kokkos  4  4   128    TRUE       FALSE       3)
+homme_add_model_exec (theta-l-nlev128-native-kokkos MODEL theta-l_kokkos NP 4 NC 4 PLEV 128 QSIZE_D 3 PIO)

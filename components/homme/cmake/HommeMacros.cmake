@@ -47,19 +47,19 @@ MACRO (HommeConfigFile CONFIG_FILE_IN CONFIG_FILE_C CONFIG_FILE_F90)
 ENDMACRO (HommeConfigFile)
 
 # Macro to create the individual tests
+# Create an executable for the model execType (e.g., theta-l), with the given compile-time sizes.
+# NOTE: all the settings are target-scoped (including the config.h file, which is generated in
+#       ${CMAKE_CURRENT_BINARY_DIR}/${execName}_config), so that multiple executables can be
+#       created in the same directory.
+# Before calling this macro, be sure that these are set locally (e.g., by the model setup macro):
+#   EXEC_INCLUDE_DIRS
+#   EXEC_SOURCES
+# See also homme_add_model_exec, which also calls the model setup macro.
 macro(createTestExec execName execType macroNP macroNC
                      macroPLEV macroUSE_PIO macroWITH_ENERGY macroQSIZE_D)
 
-# before calling this macro, be sure that these are set locally:
-# EXEC_INCLUDE_DIRS
-# EXEC_SOURCES
-
-  # Set the include directories
   SET(EXEC_MODULE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${execName}_modules")
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                      ${EXEC_INCLUDE_DIRS}
-                      ${EXEC_MODULE_DIR}
-                      )
+  SET(EXEC_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}/${execName}_config")
 
   MESSAGE(STATUS "Building ${execName} derived from ${execType} with:")
   MESSAGE(STATUS "  NP = ${macroNP}")
@@ -100,15 +100,19 @@ macro(createTestExec execName execType macroNP macroNC
 
   # This is needed to compile the test executables with the correct options
   SET(THIS_CONFIG_IN ${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in)
-  SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
-  SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+  SET(THIS_CONFIG_HC ${EXEC_CONFIG_DIR}/config.h.c)
+  SET(THIS_CONFIG_H ${EXEC_CONFIG_DIR}/config.h)
 
   # First configure the file (which formats the file as C)
   HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
-  ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
+  TARGET_COMPILE_DEFINITIONS(${execName} PRIVATE HAVE_CONFIG_H)
+  TARGET_INCLUDE_DIRECTORIES(${execName} PRIVATE
+                             ${EXEC_CONFIG_DIR}
+                             ${CMAKE_CURRENT_BINARY_DIR}
+                             ${EXEC_INCLUDE_DIRS}
+                             ${EXEC_MODULE_DIR})
   # For SYCL builds it is suggested to use CXX linker with `-fortlib`
   # for mixed-language setups
   IF(Kokkos_ENABLE_SYCL)
@@ -188,9 +192,10 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_TRILINOS)
+    TARGET_INCLUDE_DIRECTORIES(${execName} SYSTEM PRIVATE ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
+    TARGET_LINK_DIRECTORIES(${execName} PRIVATE ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS})
     TARGET_LINK_LIBRARIES(${execName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
   ENDIF()
-
 
   IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
     TARGET_LINK_LIBRARIES(${execName} sundials_farkode_mod)
@@ -200,6 +205,73 @@ macro(createTestExec execName execType macroNP macroNC
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
 endmacro(createTestExec)
+
+# Create an executable for a Homme model, with the given compile-time sizes:
+#   homme_add_model_exec (<name>
+#     MODEL <model>             # One of sweqx, preqx, preqx_kokkos, theta-l, theta-l_kokkos, tool
+#     PLEV <n>                  # Number of vertical levels
+#     QSIZE_D <n>               # Max number of tracers
+#     [NP <n>]                  # Number of GLL points per element edge (default: 4)
+#     [NC <n>]                  # Number of physgrid points per element edge (default: 4)
+#     [PIO]                     # Native grid output (default: interpolated output)
+#     [ENERGY]                  # Compute energy diagnostics
+#     [COMPILE_DEFINITIONS <defs...>]
+#     [OUTPUT_DIR <dir>])       # Where to put the executable (default: CMAKE_CURRENT_BINARY_DIR)
+# Since this is a function, the variables set by the model setup macro do not leak into the
+# caller, so different executables (even of different models) can be created in the same directory.
+function (homme_add_model_exec name)
+  cmake_parse_arguments (PARSE_ARGV 1 hame "PIO;ENERGY" "MODEL;NP;NC;PLEV;QSIZE_D;OUTPUT_DIR" "COMPILE_DEFINITIONS")
+  if (hame_UNPARSED_ARGUMENTS)
+    message (FATAL_ERROR "homme_add_model_exec(${name}): unrecognized arguments: ${hame_UNPARSED_ARGUMENTS}")
+  endif()
+  foreach (arg IN ITEMS MODEL PLEV QSIZE_D)
+    if (NOT DEFINED hame_${arg})
+      message (FATAL_ERROR "homme_add_model_exec(${name}): missing required argument ${arg}")
+    endif()
+  endforeach()
+  if (NOT DEFINED hame_NP)
+    set (hame_NP 4)
+  endif()
+  if (NOT DEFINED hame_NC)
+    set (hame_NC 4)
+  endif()
+  if (hame_PIO)
+    set (hame_PIO TRUE)
+  else()
+    set (hame_PIO FALSE)
+  endif()
+  if (hame_ENERGY)
+    set (hame_ENERGY TRUE)
+  else()
+    set (hame_ENERGY FALSE)
+  endif()
+
+  # Set EXEC_SOURCES, EXEC_INCLUDE_DIRS, and other variables needed by the model
+  if (hame_MODEL STREQUAL "sweqx")
+    sweqx_setup()
+  elseif (hame_MODEL STREQUAL "preqx")
+    preqx_setup()
+  elseif (hame_MODEL STREQUAL "preqx_kokkos")
+    preqx_kokkos_setup()
+  elseif (hame_MODEL STREQUAL "theta-l")
+    thetal_setup()
+  elseif (hame_MODEL STREQUAL "theta-l_kokkos")
+    thetal_kokkos_setup()
+  elseif (hame_MODEL STREQUAL "tool")
+    tool_setup()
+  else()
+    message (FATAL_ERROR "homme_add_model_exec(${name}): unknown model '${hame_MODEL}'")
+  endif()
+
+  createTestExec (${name} ${hame_MODEL} ${hame_NP} ${hame_NC} ${hame_PLEV} ${hame_PIO} ${hame_ENERGY} ${hame_QSIZE_D})
+
+  if (hame_COMPILE_DEFINITIONS)
+    target_compile_definitions (${name} PRIVATE ${hame_COMPILE_DEFINITIONS})
+  endif()
+  if (hame_OUTPUT_DIR)
+    set_target_properties (${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${hame_OUTPUT_DIR})
+  endif()
+endfunction()
 
 # Create a library instead of an executable, so Homme can be used by
 # another cmake project as a dycore library
