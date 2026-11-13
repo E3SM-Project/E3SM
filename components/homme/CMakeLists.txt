@@ -223,6 +223,11 @@ IF (HOMME_USE_KOKKOS)
 
   # An option to allow workspace sharing on GPU
   OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
+
+  # Skip the (device) printf calls when the dp3d/vtheta limiters are applied. Device printf can be
+  # very expensive (e.g., on HIP), and some tests hit the limiters on purpose. Off by default,
+  # except in BFB testing builds, where unit tests use (semi-)random inputs that hit the limiters.
+  OPTION (HOMMEXX_DISABLE_LIMITER_WARNINGS "Whether to skip printing a warning when the dp3d/vtheta limiters are applied" ${HOMMEXX_BFB_TESTING})
 ENDIF()
 
 ##############################################################################
