@@ -3,13 +3,9 @@
 macro(preqx_setup)
 
 
-INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
-LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
-
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
-SET(TRILINOS_ZOLTAN_DIR ${HOMME_SOURCE_DIR}/src/zoltan)
 SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
 
 # Make INCLUDE_DIRS global so the tests can access it
@@ -38,11 +34,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/test_mod.F90
 )
 
-IF (${HOMME_USE_TRILINOS})
-SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
-SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
-ENDIF()
-
 IF (HOMMEXX_BFB_TESTING)
   # We need a couple more files/includes to correctly hook-up C routines
   SET(PREQX_SRCS_F90
@@ -69,7 +60,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${PREQX_SRCS_C} ${PREQX_SRCS_F90} ${PREQX_SRCS_ZOLTAN})
+SET(EXEC_SOURCES ${PREQX_SRCS_C} ${PREQX_SRCS_F90})
 
 # Set up defaults
 IF (NOT PREQX_NP)
