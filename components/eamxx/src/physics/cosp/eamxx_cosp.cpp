@@ -109,9 +109,11 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  // Create the masks for the cosp output fields. Each has its own mask, which is only updated
-  // when we run cosp (which may be less often than the sunlit mask is refreshed), so that the
-  // mask says where the data is valid. Initially, the masks are all invalid (cosp has not run yet)
+  // Create the masks for the cosp output fields. They are only updated when we run cosp
+  // (which may be less often than the sunlit mask is refreshed), so that the mask says where
+  // the data is valid. Initially, the mask is invalid (cosp has not run yet).
+  // All fields share ONE (ncol) mask; the 4d fields see it as a (read-only) broadcast, so that
+  // there is a single source of truth (and IO can keep a single count for all of them).
   FieldLayout scalar2d_cldtot ( {COL}, {m_num_cols}, {e2str(COL)});
   FieldLayout scalar4d_ctptau ( {COL,CMP,CMP},
                                 {m_num_cols,m_num_tau,m_num_ctp},
@@ -120,25 +122,18 @@ void Cosp::initialize_impl (const RunType /* run_type */)
                                 {m_num_cols,m_num_tau,m_num_cth},
                                 {e2str(COL), "cosp_tau", "cosp_cth"});
 
-  FieldIdentifier mcld_fid ("sunlit_mask_cldtot", scalar2d_cldtot, none, m_grid->name(), DataType::IntType);
-  FieldIdentifier mctp_fid ("sunlit_mask_ctptau", scalar4d_ctptau, none, m_grid->name(), DataType::IntType);
-  FieldIdentifier mcth_fid ("sunlit_mask_cthtau", scalar4d_cthtau, none, m_grid->name(), DataType::IntType);
-  Field mcld(mcld_fid,true);
-  Field mctp(mctp_fid,true);
-  Field mcth(mcth_fid,true);
+  FieldIdentifier mask_fid ("cosp_sunlit_mask", scalar2d_cldtot, none, m_grid->name(), DataType::IntType);
+  Field mask(mask_fid,true);
   std::map<std::string,Field> masks = {
-    {"isccp_cldtot", mcld},
-    {"isccp_ctptau", mctp},
-    {"modis_ctptau", mctp},
-    {"misr_cthtau",  mcth},
+    {"isccp_cldtot", mask},
+    {"isccp_ctptau", mask.broadcast_to(scalar4d_ctptau)},
+    {"modis_ctptau", mask.broadcast_to(scalar4d_ctptau)},
+    {"misr_cthtau",  mask.broadcast_to(scalar4d_cthtau)},
   };
   // Set the mask field for each of the cosp computed fields
-  std::list<std::string> vnames = {"isccp_cldtot", "isccp_ctptau", "modis_ctptau", "misr_cthtau"};
-  for (const auto& field_name : vnames) {
+  for (const auto& it : masks) {
     // the mask is the sunlit mask at the time cosp ran (night values are fill_value)
-    auto& f = get_field_out(field_name);
-
-    f.set_valid_mask(masks.at(field_name));
+    get_field_out(it.first).set_valid_mask(it.second);
   }
 
   using namespace ekat::units;
@@ -337,27 +332,9 @@ void Cosp::run_impl (const double dt)
     get_field_out("modis_ctptau").sync_to_dev();
     get_field_out("misr_cthtau").sync_to_dev();
 
-    // Update the masks of the output fields with the sunlit mask (broadcasting it for the 4d fields)
-    const auto& sunlit = get_field_in("sunlit_mask");
-    get_field_out("isccp_cldtot").get_valid_mask().deep_copy(sunlit);
-    auto& ctptau = get_field_out("isccp_ctptau").get_valid_mask();
-    auto& cthtau = get_field_out("misr_cthtau").get_valid_mask();
-
-    auto sunlit_v = sunlit.get_view<const int*>();
-    auto ctptau_v = ctptau.get_view<int***>();
-    auto cthtau_v = cthtau.get_view<int***>();
-    auto do_ctp = KOKKOS_LAMBDA (int icol, int itau, int ictp) {
-      ctptau_v(icol,itau,ictp) = sunlit_v(icol);
-    };
-    auto do_cth = KOKKOS_LAMBDA (int icol, int itau, int icth) {
-      cthtau_v(icol,itau,icth) = sunlit_v(icol);
-    };
-    using exec_space = typename DefaultDevice::execution_space;
-    using policy_t = Kokkos::MDRangePolicy<exec_space,Kokkos::Rank<3>>;
-    policy_t policy_ctp({0,0,0},{m_num_cols,m_num_tau,m_num_ctp});
-    policy_t policy_cth({0,0,0},{m_num_cols,m_num_tau,m_num_cth});
-    Kokkos::parallel_for(policy_ctp,do_ctp);
-    Kokkos::parallel_for(policy_cth,do_cth);
+    // Update the (shared) mask of the output fields with the sunlit mask. The masks of the
+    // 4d fields are broadcasts of this one, so they get updated automatically.
+    get_field_out("isccp_cldtot").get_valid_mask().deep_copy(get_field_in("sunlit_mask"));
   }
 }
 

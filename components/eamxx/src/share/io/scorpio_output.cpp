@@ -56,6 +56,13 @@ print_map_keys(const std::map<std::string, T> &map)
 namespace scream
 {
 
+// If a field is a broadcast of another one, return the original field
+static const Field& unbroadcast (const Field& f)
+{
+  return f.get_header().is_broadcast() ? f.get_header().get_extra_data<Field>("bcast_src") : f;
+}
+
+
 template <typename T>
 bool
 has_duplicates(const std::vector<T> &c)
@@ -549,7 +556,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
       auto field = fm_after_hr->get_field(fname);
 
       // Only masked fields have a count
-      count.update(field.get_valid_mask(),1,1);
+      count.update(unbroadcast(field.get_valid_mask()),1,1);
 
       // Handle writing the valid count variables to file
       if (is_write_step) {
@@ -645,6 +652,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
     if (output_step) {
       // Mask telling where f_out is valid (nullptr if it's valid everywhere)
       const Field* fill_mask = nullptr;
+      Field bcast_mask;
       if (m_avg_type==OutputAvgType::Instant) {
         // f_out holds a copy of f_in, mask included
         if (f_out.has_valid_mask()) {
@@ -658,12 +666,15 @@ run (const std::string& filename, const util::TimeStamp& ts,
         if (count_it!=m_field_to_valid_count.end()) {
           const auto& count = count_it->second;
 
-          // The output is valid where the count is sufficient (see the count update above)
-          fill_mask = &count.get_header().get_extra_data<Field>("sufficient_count_mask");
+          // The output is valid where the count is sufficient (see the count update above).
+          // The count may have fewer dims than the field (the mask is a broadcast): view it with the field layout
+          const auto& f_layout = f_out.get_header().get_identifier().get_layout();
+          bcast_mask = count.get_header().get_extra_data<Field>("sufficient_count_mask").broadcast_to(f_layout);
+          fill_mask = &bcast_mask;
 
           // Divide by the count only where the average is valid
           if (m_avg_type==OutputAvgType::Average) {
-            f_out.scale_inv(count,*fill_mask);
+            f_out.scale_inv(count.broadcast_to(f_layout),*fill_mask);
           }
         } else if (m_avg_type==OutputAvgType::Average) {
           // Divide by steps count only when the summation is complete
@@ -748,11 +759,16 @@ void AtmosphereOutput::set_valid_count_tracking(const Field& f)
 {
   // The count tells how many valid samples went into a masked field, so fields that share
   // a mask share the count, which is named after the mask.
+  // If the mask is a broadcast of another mask (e.g., an (ncol) mask seen as (ncol,nlev)),
+  // the count is keyed on (and has the layout of) the ORIGINAL mask, so all the fields that
+  // broadcast it share one count.
   // NOTE: masks with the same name MUST hold the same values, hence have the same layout.
   const auto& fid = f.get_header().get_identifier();
   const std::string& name = fid.name();
-  const auto& layout = fid.get_layout();
-  const auto& mask_name = f.get_valid_mask().name();
+  const auto& mask = unbroadcast(f.get_valid_mask());
+  const auto& mask_id = mask.get_header().get_identifier();
+  const auto& mask_name = mask_id.name();
+  const auto& layout = mask_id.get_layout();
 
   const auto it = m_mask_to_count.find(mask_name);
   if (it!=m_mask_to_count.end()) {
@@ -761,7 +777,7 @@ void AtmosphereOutput::set_valid_count_tracking(const Field& f)
         "[AtmosphereOutput::set_valid_count_tracking] Error! Fields with the same valid mask name have different layouts.\n"
         " - mask name   : " + mask_name + "\n"
         " - field name  : " + name + "\n"
-        " - field layout: " + layout.to_string() + "\n"
+        " - mask layout : " + layout.to_string() + "\n"
         " - other layout: " + count_layout.to_string() + "\n"
         "Masks with the same name must hold the same values, so the name must tell them apart.\n");
     m_field_to_valid_count[name] = it->second;
@@ -786,7 +802,7 @@ void AtmosphereOutput::set_valid_count_tracking(const Field& f)
   }
   m_vars_dims[valid_count_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
-  auto count_id = fid.clone(valid_count_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
+  auto count_id = mask_id.clone(valid_count_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
   Field count(count_id);
   count.allocate_view();
 
