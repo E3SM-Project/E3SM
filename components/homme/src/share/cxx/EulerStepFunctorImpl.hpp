@@ -698,12 +698,15 @@ private:
       [&] (const int loop_idx) {
         const int i = loop_idx / NP;
         const int j = loop_idx % NP;
-        auto f_dss_ptr = c.DSSopt==DSSOption::ETA
-                           ? &eta.impl_map().reference(kv.ie, i,j, 0)
-                           : (c.DSSopt==DSSOption::OMEGA
-                                 ? &omega.impl_map().reference(kv.ie,i,j,0)
-                                 : &divdp.impl_map().reference(kv.ie,i,j,0));
-        ExecViewUnmanaged<Scalar[NUM_LEV]> f_dss (f_dss_ptr);
+
+        const auto sub_levels = Kokkos::pair<int, int>(0, NUM_LEV);
+        ExecViewUnmanaged<Scalar[NUM_LEV]> f_dss =
+          c.DSSopt==DSSOption::ETA
+          ? Kokkos::subview(eta, kv.ie, i, j, sub_levels)
+          : (c.DSSopt==DSSOption::OMEGA
+            ? Kokkos::subview(omega, kv.ie, i, j, sub_levels)
+            : Kokkos::subview(divdp, kv.ie, i, j, sub_levels));
+
         Kokkos::parallel_for(
           Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
           [&] (const int& k) {
