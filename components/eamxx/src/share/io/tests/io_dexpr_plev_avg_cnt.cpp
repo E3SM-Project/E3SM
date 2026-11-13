@@ -96,7 +96,7 @@ create_test_fm (const std::shared_ptr<const GridsManager>& gm,
 
   Field X(FieldIdentifier("X",layout_mid,K,grid->name()));
   Field C(FieldIdentifier("C",layout_mid,K,grid->name()));
-  // FieldAtPressureLevel lists both p_mid and p_int as inputs, since it does
+  // FieldVerticalInterp lists both p_mid and p_int as inputs, since it does
   // not know which it needs until it sees the field's layout. Provide both.
   Field pm(FieldIdentifier("p_mid",layout_mid,Pa,grid->name()));
   Field pi(FieldIdentifier("p_int",layout_int,Pa,grid->name()));
