@@ -1,2 +1,0 @@
-# Special test for -DHOMME_WITHOUT_PIOLIBRARY (build only)
-homme_add_model_exec (stt MODEL theta-l NP 4 NC 4 PLEV 3 QSIZE_D 5 ENERGY COMPILE_DEFINITIONS HOMME_WITHOUT_PIOLIBRARY)

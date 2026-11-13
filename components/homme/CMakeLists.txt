@@ -499,9 +499,8 @@ IF (HOMME_USE_KOKKOS)
 
 ENDIF ()
 
-# This folder contains the CMake macro used to build cxx unit tests
-# Add unit tests for C++ code
-ADD_SUBDIRECTORY(test/unit_tests)
+# The CMake macros used to build cxx unit tests (the tests themselves are in test/unit)
+INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/test/unit/UnitTestUtils.cmake)
 
 # Add libcompose, consisting of just C++ files, so we can build it just once for
 # all exes. It does not depend on compile-time sizes.
@@ -559,8 +558,9 @@ ENDIF()
 
 # Tests and execs only if this is a standalone build
 IF (${HOMME_BUILD_EXECS})
-  ADD_SUBDIRECTORY(test_execs)
-  ADD_SUBDIRECTORY(dcmip_tests)
+  # The test executables, and the tests. Also, the hand-run cases (e.g., DCMIP)
+  LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/test/cmake)
+  ADD_SUBDIRECTORY(test)
 ENDIF()
 
 # Create a "make clean-all" target to delete CMake cache and the cprnc build

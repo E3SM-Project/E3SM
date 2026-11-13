@@ -8,8 +8,8 @@ sweqx, preqx, preqx_kokkos, theta-l, theta-l_kokkos, tool
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:
-  homme/test/sw_conservative/swtc[1256]ref.sh
-  homme/test/jw_baroclinic/baro.job
+  homme/test/cases/sw_conservative/swtc[1256]ref.sh
+  homme/test/cases/jw_baroclinic/baro.job
 
 A typical CMAKE command might look like:
 cd $WDIR
@@ -31,16 +31,16 @@ BUILD_HOMME_WITHOUT_PIOLIBRARY=ON.
 After running cmake with suitable command line options from a working directory WDIR,
 it will create 
 
-$WDIR/src/sweqx     directory containing user-configured sweqx executable
-$WDIR/test_execs/swtcA     directory for swtcA executable
-$WDIR/test_execs/swtcB     directory for swtcB executable
+$WDIR/src/sweqx          directory containing user-configured sweqx executable
+$WDIR/test/execs/swtcA   directory for swtcA executable (used by the tests)
+$WDIR/test/execs/swtcB   directory for swtcB executable (used by the tests)
 ...and similarly for the preqx and theta-l targets.
 
 $WDIR/utils         cprnc utility, and PIO and timing libraries
-$WDIR/tests     directory containing all the HOMME regression tests
+$WDIR/tests         directory where all the HOMME tests run
 
 HOMME has a large regression test suite.  For instructions on running and adding
-new tests, see homme/test/reg_test/README
+new tests, see homme/test/README.md
 
 HOMME's regression tests use "cprnc" to compute differences between NETCDF files. HOMME
 will attempt to build this from source (cime/tools/cprnc).  If you have trouble,
@@ -51,10 +51,10 @@ and set NETCDF_PATH, FC, and LDFLAGS=-L$(LIB_NETCDF) -lnetcdff -lnetcdf
 
 
 DCMIP tests provide a standard means for testing and comparing the HOMME dycore with other dycores
-both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory.
+both hydrostatic and nonhydrostatic. They have been placed in their own test/cases/dcmip directory.
 To run a DCMIP tests after configuring with cmake:
    1. navigate to the appropriate DCMIP working directory associated with the
-   test case and model version, e.g. $WDIR/dcmip_tests/dcmip2016_test1_baroclinic_wave/theta-l
+   test case and model version, e.g. $WDIR/test/cases/dcmip/dcmip2016_test1_baroclinic_wave/theta-l
    2. "make install" to install test scripts and namelists.
    3. "./build.sh" to compile the executable
    4. edit one of the example jobscripts for your platform and then run it
@@ -64,8 +64,5 @@ The CMAKE code could use some cleanup.
 - user configured variables should not need to be prefixed by the exectuable name
   (i.e. -DNP=4, instead of -DPREQX_NP=4).  This will make the cmake code a lot simpler
   to maintain.
-- the test cases are created after all the test executables are created. In keeping
-  with cmake's tree-like directory approach, the tests should be associated with their
-  test executable
 
 
