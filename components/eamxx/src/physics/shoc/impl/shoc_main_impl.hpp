@@ -88,6 +88,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                c_diag_3rd_mom,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
+  const Scalar&                Ck_sh,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const bool&                  extra_diags,
@@ -230,7 +231,7 @@ void Functions<S,D>::shoc_main_internal(
     // Advance the SGS TKE equation
     shoc_tke(team,nlev,nlevi,dtime,               // Input
 	     lambda_low,lambda_high,lambda_slope, // Runtime options
-	     lambda_thresh,Ckh,Ckm,shoc_1p5tke,   // Runtime options
+	     lambda_thresh,Ckh,Ckm,Ck_sh,shoc_1p5tke,   // Runtime options
              do_3d_turb,                          // Runtime options
 	     wthv_sec,shear_strain3d_components,  // Input
              shear_strain3d,                      // Input/Output
@@ -360,6 +361,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                c_diag_3rd_mom,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
+  const Scalar&                Ck_sh,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const bool&                  extra_diags,
@@ -506,7 +508,7 @@ void Functions<S,D>::shoc_main_internal(
 
     shoc_tke_disp(shcol,nlev,nlevi,dtime,               // Input
 	          lambda_low,lambda_high,lambda_slope,  // Runtime options
-		  lambda_thresh,Ckh,Ckm,shoc_1p5tke,    // Runtime options
+		  lambda_thresh,Ckh,Ckm,Ck_sh,shoc_1p5tke,    // Runtime options
                   do_3d_turb,                           // Runtime options
                   wthv_sec,shear_strain3d_components,   // Input
                   shear_strain3d,                       // Input/Output
@@ -643,6 +645,7 @@ Int Functions<S,D>::shoc_main(
   const Scalar c_diag_3rd_mom = shoc_runtime.c_diag_3rd_mom;
   const Scalar Ckh           = shoc_runtime.Ckh;
   const Scalar Ckm           = shoc_runtime.Ckm;
+  const Scalar Ck_sh         = shoc_runtime.Ck_sh;
   const bool   shoc_1p5tke   = shoc_runtime.shoc_1p5tke;
   const bool   extra_diags   = shoc_runtime.extra_diags;
   const bool   do_3d_turb    = shoc_runtime.do_3d_turb;
@@ -723,7 +726,7 @@ Int Functions<S,D>::shoc_main(
     shoc_main_internal(team, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-                       c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke,                 // Runtime options
+                       c_diag_3rd_mom, Ckh, Ckm, Ck_sh, shoc_1p5tke,          // Runtime options
                        do_3d_turb, extra_diags,                               // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
@@ -753,7 +756,7 @@ Int Functions<S,D>::shoc_main(
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, extra_diags,    // Runtime options
+    c_diag_3rd_mom, Ckh, Ckm, Ck_sh, shoc_1p5tke, do_3d_turb, extra_diags, // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
