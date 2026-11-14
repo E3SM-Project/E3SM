@@ -1,0 +1,17 @@
+fields:
+  state_out:
+    kind: state
+    name: state
+    merge_type: direct
+    sources:
+    - prognostic-emulator
+    destinations:
+    - cpl7
+  state_in:
+    kind: state
+    name: state
+    merge_type: direct
+    sources:
+    - cpl7
+    destinations:
+    - prognostic-emulator

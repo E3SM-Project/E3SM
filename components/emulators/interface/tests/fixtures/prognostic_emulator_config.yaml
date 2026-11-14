@@ -1,0 +1,26 @@
+emulator:
+  name: prognostic-emulator
+  type: component
+  model:
+    path: ''
+    input_layout: FeatureMajor
+    output_layout: FeatureMajor
+    backend: stub
+    options: {}
+sample_space:
+  dimensions:
+  - column
+input_order:
+- state
+output_order:
+- state
+inputs:
+  state:
+    name: state
+    dimensions:
+    - column
+outputs:
+  state:
+    name: state
+    dimensions:
+    - column

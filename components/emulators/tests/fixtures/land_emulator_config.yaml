@@ -1,0 +1,34 @@
+emulator:
+  name: lnd-emulator
+  type: component
+  model:
+    path: land_emulator.pt
+    input_layout: FeatureMajor
+    output_layout: FeatureMajor
+    backend: libtorch
+    options:
+      dtype: float64
+sample_space:
+  dimensions:
+  - column
+  - soil_levels
+input_order:
+- temperature
+- soil_moisture
+output_order:
+- surface_flux
+inputs:
+  temperature:
+    name: temperature
+    dimensions:
+    - column
+  soil_moisture:
+    name: soil_moisture
+    dimensions:
+    - column
+    - soil_levels
+outputs:
+  surface_flux:
+    name: surface_flux
+    dimensions:
+    - column

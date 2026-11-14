@@ -66,3 +66,4 @@ components/eamxx/src/python/dist
 components/emulators/build
 **/Testing/**
 **/.cache/**
+**/.cmake-deps/**
