@@ -25,7 +25,7 @@ module ocn_config
    public
    save
 
-#include "../inc/config_declare.inc"
+#include "config_declare.inc"
 
 !***********************************************************************
 
@@ -43,7 +43,7 @@ contains
    subroutine ocn_config_init(configPool)!{{{
        type (mpas_pool_type), pointer :: configPool
 
-#include "../inc/config_get.inc"
+#include "config_get.inc"
 
    end subroutine ocn_config_init!}}}
 

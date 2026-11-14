@@ -1,15 +1,20 @@
 
 # build_options.mk stuff handled here
-list(APPEND CPPDEFS "-DCORE_SEAICE" "-Dcoupled" "-DCCSMCOUPLED")
+list(APPEND CPPDEFS "-DCORE_SEAICE")
+if (MPAS_BUILD_MODE STREQUAL "E3SM")
+  list(APPEND CPPDEFS "-Dcoupled" "-DCCSMCOUPLED")
+endif()
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_seaice/icepack/columnphysics" "${CMAKE_BINARY_DIR}/core_seaice/column" "${CMAKE_BINARY_DIR}/core_seaice/shared" "${CMAKE_BINARY_DIR}/core_seaice/analysis_members" "${CMAKE_BINARY_DIR}/core_seaice/model_forward")
 
 
-# driver (files live in E3SM)
-list(APPEND RAW_SOURCES
-  ../../mpas-seaice/driver/ice_comp_mct.F
-  ../../mpas-seaice/driver/mpassi_cpl_indices.F
-  ../../mpas-seaice/driver/mpassi_mct_vars.F
-)
+# MCT driver (files live in E3SM, coupled builds only)
+if (MPAS_BUILD_MODE STREQUAL "E3SM")
+  list(APPEND RAW_SOURCES
+    ../../mpas-seaice/driver/ice_comp_mct.F
+    ../../mpas-seaice/driver/mpassi_cpl_indices.F
+    ../../mpas-seaice/driver/mpassi_mct_vars.F
+  )
+endif()
 
 # icepack
 list(APPEND RAW_SOURCES

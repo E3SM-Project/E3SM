@@ -13,10 +13,10 @@ module seaice_core_interface_structs
    
    contains
 
-#include "../inc/structs_and_variables.inc"
+#include "structs_and_variables.inc"
 
-#include "../inc/namelist_call.inc"
+#include "namelist_call.inc"
 
-#include "../inc/namelist_defines.inc"
+#include "namelist_defines.inc"
 
 end module seaice_core_interface_structs

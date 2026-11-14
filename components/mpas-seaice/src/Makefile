@@ -9,7 +9,7 @@ core_seaice: icepack shared analysis_members model_forward
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
-	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+	(cd inc; $(REG_PARSE) --namelist-suffix=$(NAMELIST_SUFFIX) --exe-name=$(EXE_NAME) --git-version=$(GIT_VERSION) < ../Registry_processed.xml )
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi

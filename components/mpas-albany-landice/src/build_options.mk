@@ -3,6 +3,9 @@ ifeq "$(ROOT_DIR)" ""
 endif
 EXE_NAME=landice_model
 NAMELIST_SUFFIX=landice
+# The registry parser writes the generated .inc files here
+CPPINCLUDES += -I$(ROOT_DIR)/inc
+FCINCLUDES += -I$(ROOT_DIR)/inc
 FCINCLUDES += -I$(ROOT_DIR)/mode_forward -I$(ROOT_DIR)/shared -I$(ROOT_DIR)/analysis_members
 override CPPFLAGS += -DCORE_LANDICE
 
