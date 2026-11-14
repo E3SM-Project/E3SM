@@ -101,7 +101,7 @@ field_names:
 ```yaml
 %YAML 1.1
 ---
-filename_prefix: conditional_sampling_outputs
+stream_name: conditional_sampling_outputs
 averaging_type: instant
 fields:
   physics_pg2:

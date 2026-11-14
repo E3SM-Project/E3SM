@@ -25,14 +25,20 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="scream" compclass="atm">
-    <rest_file_extension>r\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
-    <rest_file_extension>rhist\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
-    <!-- The following matches "hi.AVGTYPE.FREQUNITS_xFREQ.TIMESTAMP.nc"-->
-    <hist_file_extension>.*\.h\.(?!rhist\.).*\.nc$</hist_file_extension>
+  <comp_archive_spec compname="eamxx" compclass="atm">
+    <!-- Model restart files: eamxx.r.AVGTYPE.FREQ... -->
+    <rest_file_extension>\.r\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
+    <!-- History restart files: eamxx.rh.STREAM_NAME.AVGTYPE.FREQ... -->
+    <rest_file_extension>\.rh\..*\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
+    <!-- History output files: eamxx.h.STREAM_NAME.AVGTYPE.FREQ...
+         Matches .h. but not .rh. (history restart files are handled above) -->
+    <hist_file_extension>\.h\.(?!.*\.rh\.).*\.nc$</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.scream$NINST_STRING.r.$DATENAME.nc </rpointer_content>
+      <!-- EAMxx writes rpointer.atm itself, listing the model restart file plus one
+           line per history restart file, so there is nothing to synthesize here. -->
+      <rpointer_content>unset</rpointer_content>
     </rpointer>
   </comp_archive_spec>
 

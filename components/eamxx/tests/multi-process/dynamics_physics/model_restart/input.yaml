@@ -3,6 +3,9 @@
 driver_options:
   atmosphere_dag_verbosity_level: 5
 
+e3sm_parameters:
+  e3sm_casename: ${EAMXX_TEST_CASENAME}
+
 time_stepping:
   time_step: ${RUN_DT}
   number_of_steps: ${RUN_NSTEPS}

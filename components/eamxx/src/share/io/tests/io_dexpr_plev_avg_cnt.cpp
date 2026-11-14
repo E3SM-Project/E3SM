@@ -201,7 +201,7 @@ void run_and_check (const std::string& avg_type,
   const int dt = 1;
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix",prefix);
+  params.set<std::string>("stream_name",prefix);
   params.set<std::string>("averaging_type",avg_type);
   params.set<std::string>("floating_point_precision","real");
   auto& f_pl = params.sublist("fields").sublist(gname);
@@ -398,7 +398,7 @@ void run_vremap_and_check (const std::shared_ptr<const GridsManager>& gm,
     const int dt = 1;
 
     ekat::ParameterList params;
-    params.set<std::string>("filename_prefix",prefix);
+    params.set<std::string>("stream_name",prefix);
     params.set<std::string>("averaging_type",avg_type);
     params.set<std::string>("floating_point_precision","real");
     params.set<std::string>("vertical_remap_file",remap_file);

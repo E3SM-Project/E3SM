@@ -90,7 +90,7 @@ OutputDataLayout str2output_layout (const std::string& s);
 // Output streams MUST pass a valid control structure, cause we need to differentiate
 // between, e.g., streams with same filename prefix, but different output freq specs
 std::string find_filename_in_rpointer (
-    const std::string& filename_prefix,
+    const std::string& stream_name,
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0,
