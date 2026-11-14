@@ -5836,6 +5836,7 @@
         <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="kill-on-bad-exit"> --kill-on-bad-exit</arg>
         <arg name="thread_count">-c $SHELL{expr 144 / `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
         <arg name="binding"> --cpu-bind=cores</arg>
         <arg name="placement"> -m block:block</arg>
