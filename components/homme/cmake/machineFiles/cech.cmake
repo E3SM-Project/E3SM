@@ -1,19 +1,12 @@
 # CMake initial cache file for cech (NVIDIA GB200 Grace-Blackwell)
+#
+# Inherit common cech settings (aarch64 check, compilers, -tp=grace, -nonvmalloc)
+# from cime_config/machines/cmake_macros/cech.cmake.
+INCLUDE ("${CMAKE_CURRENT_LIST_DIR}/../../../../cime_config/machines/cmake_macros/cech.cmake")
 
-EXECUTE_PROCESS(COMMAND uname -m
-  OUTPUT_VARIABLE CECH_HOST_ARCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-IF(NOT CECH_HOST_ARCH STREQUAL "aarch64")
-  MESSAGE(FATAL_ERROR
-    "On cech, builds must run on aarch64 compute nodes (detected '${CECH_HOST_ARCH}' login node). "
-    "Pass '--batch-build' to create_test/case.build (or use batch-create-test.sh), or run inside a compute node allocation."
-  )
-ENDIF()
-
-SET (CMAKE_Fortran_COMPILER mpifort CACHE FILEPATH "")
-SET (CMAKE_C_COMPILER       mpicc   CACHE FILEPATH "")
-SET (CMAKE_CXX_COMPILER     mpicxx  CACHE FILEPATH "")
+SET (CMAKE_Fortran_COMPILER "${MPIFC}"  CACHE FILEPATH "")
+SET (CMAKE_C_COMPILER       "${MPICC}"  CACHE FILEPATH "")
+SET (CMAKE_CXX_COMPILER     "${MPICXX}" CACHE FILEPATH "")
 
 SET (NETCDF_DIR           "/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf"  CACHE FILEPATH "")
 SET (NetCDF_C_PATH        "/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf"  CACHE STRING   "")
@@ -36,10 +29,10 @@ SET (HOMME_TESTING_PROFILE    "short" CACHE STRING "")
 
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
-SET (ADD_Fortran_FLAGS "-i4 -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback -DCPRNVIDIA -DFORTRANUNDERSCORE -tp=grace -noacc -O2" CACHE STRING "")
-SET (ADD_C_FLAGS       "-DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA -tp=grace -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
-SET (ADD_CXX_FLAGS     "-DTHRUST_IGNORE_CUB_VERSION_CHECK -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA -tp=grace -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
-SET (ADD_LINKER_FLAGS  "-Wl,--allow-multiple-definition -lstdc++ -tp=grace -nonvmalloc -noacc -lacchost -L/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib -lhdf5_hl -lhdf5" CACHE STRING "")
+SET (ADD_Fortran_FLAGS "-i4 -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback -DCPRNVIDIA -DFORTRANUNDERSCORE${CMAKE_Fortran_FLAGS} -noacc -O2" CACHE STRING "")
+SET (ADD_C_FLAGS       "-DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA${CMAKE_C_FLAGS} -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
+SET (ADD_CXX_FLAGS     "-DTHRUST_IGNORE_CUB_VERSION_CHECK -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA${CMAKE_CXX_FLAGS} -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
+SET (ADD_LINKER_FLAGS  "-Wl,--allow-multiple-definition -lstdc++${CMAKE_EXE_LINKER_FLAGS} -noacc -lacchost -L/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib -lhdf5_hl -lhdf5" CACHE STRING "")
 
 # Prevent CMake's default NVHPC Debug flags (-g -O0 -Mbounds / -g -O0) from
 # being appended after ADD_*_FLAGS when CMAKE_BUILD_TYPE=Debug (HOMME_D).

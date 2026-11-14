@@ -1,23 +1,8 @@
-execute_process(COMMAND uname -m
-  OUTPUT_VARIABLE CECH_HOST_ARCH
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-if (NOT CECH_HOST_ARCH STREQUAL "aarch64")
-  message(FATAL_ERROR
-    "On cech, builds must run on aarch64 compute nodes (detected '${CECH_HOST_ARCH}' login node). "
-    "Pass '--batch-build' to create_test/case.build (or use batch-create-test.sh), or run inside a compute node allocation."
-  )
-endif()
-
-set(MPICC "mpicc")
-set(MPICXX "mpicxx")
-set(MPIFC "mpifort")
-set(SCC "nvc")
-set(SCXX "nvc++")
-set(SFC "nvfortran")
+# Common cech settings (architecture check, compilers, HOMME_QUAD_PREC,
+# -tp=grace, and -nonvmalloc) are defined in cech.cmake, which Macros.cmake
+# includes prior to this file.
 
 set(USE_CUDA "TRUE")
-set(HOMME_QUAD_PREC FALSE CACHE BOOL "") # nvidia does not support QUAD (real*16)
 string(APPEND CPPDEFS " -DGPU")
 # Revisit once Hommexx launch-bounds tuning (HOMMEXX_CUDA_MIN_BLOCKS) is in upstream source:
 # string(APPEND CPPDEFS " -DHOMMEXX_CUDA_MIN_BLOCKS=3")
@@ -25,11 +10,6 @@ if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
 endif()
 string(APPEND CPPDEFS " -DTHRUST_IGNORE_CUB_VERSION_CHECK")
-
-string(APPEND CMAKE_C_FLAGS       " -tp=grace")
-string(APPEND CMAKE_CXX_FLAGS     " -tp=grace")
-string(APPEND CMAKE_Fortran_FLAGS " -tp=grace")
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -tp=grace")
 
 if (MPAS_OPENACC)
   # OpenACC is enabled for Fortran only in MPAS components (mpas-ocean, mpas-seaice).
