@@ -50,9 +50,9 @@ private
   ! Currently, EAM does not use quad precision, while HommeStandalone/SCREAM can.
   integer (kind=4), public, parameter::  &
 #if HOMME_QUAD_PREC
-  longdouble_kind    = 16
+  longdouble_kind    = selected_real_kind(30)
 #else
-  longdouble_kind    = 8
+  longdouble_kind    = selected_real_kind(15)
 #endif
 
 end module kinds

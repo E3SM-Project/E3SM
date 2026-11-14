@@ -5,6 +5,7 @@
 module metis_mod
   use kinds, only : iulog
   use parallel_mod, only : abortmp
+  use iso_c_binding, only : c_float   ! METIS 4 API: partition weights are C float
   implicit none
   private 
   integer, parameter :: VertexWeight = 1000
@@ -39,8 +40,8 @@ contains
 
     type (GridVertex_t), allocatable   :: SubVertex(:)
 
-    real(kind=4), allocatable   :: tpwgts(:)
-    real(kind=4)                :: tmp
+    real(kind=c_float), allocatable   :: tpwgts(:)
+    real(kind=c_float)                :: tmp
 
     integer(kind=int_kind), allocatable          :: part(:)
     integer, allocatable          :: part_nl(:),local2global_nl(:)
@@ -51,7 +52,7 @@ contains
     integer                       :: nelem_nl,newPartition
     integer                       :: partitionmethod,numpartitions
     logical , parameter           :: Debug = .true.
-    real (kind=4)                 :: dummy(1) 
+    real (kind=c_float)                 :: dummy(1)
     nelem_edge = SIZE(GridEdge) 
 
     print *, "nelem = ", nelem
@@ -316,7 +317,7 @@ contains
     integer                               :: xadj(:),adjncy(:)
     integer                               :: vwgt(:),adjwgt(:)
     integer                               :: wgtflag,numflag,edgecut
-    real(kind=4)                          :: tpwgts(:)
+    real(kind=c_float)                          :: tpwgts(:)
     integer                               :: options(5)
     integer                               :: npart
     integer                               :: part(:)

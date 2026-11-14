@@ -192,9 +192,9 @@ contains
     avg_min_dx = global_shared_sum(2)/dble(nelem)
 
     ! Physical units for area
-    min_area = min_area*scale_factor*scale_factor/1000000_real_kind
-    max_area = max_area*scale_factor*scale_factor/1000000_real_kind
-    avg_area = avg_area*scale_factor*scale_factor/1000000_real_kind
+    min_area = min_area*scale_factor*scale_factor/1000000.0_real_kind
+    max_area = max_area*scale_factor*scale_factor/1000000.0_real_kind
+    avg_area = avg_area*scale_factor*scale_factor/1000000.0_real_kind
 
     ! for an equation du/dt = i c u, leapfrog is stable for |c u dt| < 1
     ! Consider a gravity wave at the equator, c=340m/s  
