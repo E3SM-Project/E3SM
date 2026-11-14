@@ -585,7 +585,7 @@ module ocn_time_integration_split
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
 
-      if (landIcePressureOn) then 
+      if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
@@ -621,6 +621,11 @@ module ocn_time_integration_split
          call mpas_timer_start('se loop')
 
          stage1_tend_time = min(splitExplicitStep,2)
+
+         ! Forcing time for time-dependent forcing
+         if (splitExplicitStep > 1) then
+            forcingTimeIncrement = 0.5_RKIND*dt
+         end if
 
          call mpas_pool_get_array(statePool, 'normalVelocity', &
                            normalVelocityCur, stage1_tend_time)
@@ -1718,7 +1723,7 @@ module ocn_time_integration_split
                   ! normalTransportVelocity = normalBarotropicVelocity
                   !                         + normalBaroclinicVelocity
                   !                         + normalGMBolusVelocity
-                  !                         + normalMLEvelocity 
+                  !                         + normalMLEvelocity
                   !                         + normalVelocityCorrection
                   ! This is the velocity used in advective terms for layerThickness
                   ! and tracers in tendency calls in stage 3.
@@ -1788,6 +1793,9 @@ module ocn_time_integration_split
          !$acc update host(vertAleTransportTop, normalTransportVelocity)
 #endif
          call mpas_timer_stop('thick vert trans vel top')
+
+         ! Forcing time for time-dependent forcing
+         forcingTimeIncrement = 0.5_RKIND*dt
 
          call ocn_tend_thick(tendPool, forcingPool)
 
@@ -2437,6 +2445,10 @@ module ocn_time_integration_split
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! END large iteration loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      ! Reset the forcing time
+      forcingTimeIncrement = 0.0_RKIND
 
       call mpas_timer_start("se implicit vert mix")
 
