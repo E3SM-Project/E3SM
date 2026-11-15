@@ -285,12 +285,37 @@ TEST_CASE("create_diag")
     REQUIRE (std::dynamic_pointer_cast<VertContract>(d3)!=nullptr);
     REQUIRE (d3->get_params().get<std::string>("contract_method")=="sum");
 
-    auto d4 = create_diagnostic("T_mid.mean('lev',weights='dp')",grid);
-    REQUIRE (d4->get_params().get<std::string>("weighting_method")=="dp");
+    // As in xarray: X.weighted(W).mean/sum(dim)
+    auto d4 = create_diagnostic("T_mid.weighted(pseudo_density).mean('lev')",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(d4)!=nullptr);
+    REQUIRE (d4->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d4->get_params().get<std::string>("weight_name")=="pseudo_density");
+    REQUIRE (d4->get_params().get<std::string>("contract_method")=="avg");
+    REQUIRE (not d4->get_params().isParameter("weighting_method"));
+
+    // The weight may be an expression; it goes down by name, like the receiver
+    auto d5 = create_diagnostic("(qc+qi).weighted(pseudo_density/gravit).sum('lev')",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(d5)!=nullptr);
+    REQUIRE (d5->get_params().get<std::string>("contract_method")=="sum");
+    REQUIRE (d5->get_params().get<std::string>("field_name").find("qi")!=std::string::npos);
+    REQUIRE (d5->get_params().get<std::string>("weight_name").find("gravit")!=std::string::npos);
+
+    auto d6 = create_diagnostic("T_mid.weighted(dz).sum('lev')",grid);
+    REQUIRE (d6->get_params().get<std::string>("weight_name")=="dz");
 
     REQUIRE_THROWS (create_diagnostic("T_mid.mean('time')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.sum('col')",grid));
-    REQUIRE_THROWS (create_diagnostic("T_mid.mean('col',weights='dp')",grid));
+    // 'col' is always area weighted
+    REQUIRE_THROWS (create_diagnostic("T_mid.weighted(pseudo_density).mean('col')",grid));
+    // weighted(..) only feeds mean/sum, and takes a field. Elsewhere, e.g. in
+    // X.weighted(W).isel(lev=3), it is an operand, which resolves (and throws)
+    // just as it does as a whole request:
+    REQUIRE_THROWS (create_diagnostic("T_mid.weighted(pseudo_density)",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.weighted(2).mean('lev')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.weighted().mean('lev')",grid));
+    // the keyword is gone
+    REQUIRE_THROWS (create_diagnostic("T_mid.mean('lev',weights='dp')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.sum('lev',weights='dz')",grid));
   }
 
   SECTION ("dexpr_where") {

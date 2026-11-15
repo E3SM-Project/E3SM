@@ -22,6 +22,10 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
   const int nlevs = l_in.dim(l_in.rank() - 1);
 
+  // Entries with zero weight are skipped, not added as 0*f: f need not be finite
+  // there (e.g., X/cldfrac where cldfrac is 0 and so is the weight). For finite f
+  // the result is the same, bit for bit.
+
   // A broadcasted version of weight, with same layout as f_in
   auto bweight = weight.broadcast_to(l_in);
 
@@ -38,7 +42,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       ST n = 0;
       auto reducer = Kokkos::Sum<ST>(n);
       auto accum = KOKKOS_LAMBDA(const int i, ST &acc) {
-        if (not is_masked or mask(i))
+        if ((not is_masked or mask(i)) and w_in(i)!=0)
           acc += w_in(i) * v_in(i);
       };
       Kokkos::parallel_reduce(f_out.name(), policy, accum, reducer);
@@ -58,7 +62,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
         const int i = tm.league_rank();
         ST n = 0;
         auto inner = [&](int j, ST &acc) {
-          if (not is_masked or mask(i,j)) {
+          if ((not is_masked or mask(i,j)) and w_in(i,j)!=0) {
             acc += w_in(i, j) * v_in(i, j);
           }
         };
@@ -86,7 +90,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
         const int j   = idx % d1;
         ST n = 0;
         auto inner = [&](int k, ST &acc) {
-          if (not is_masked or mask(i,j,k)) {
+          if ((not is_masked or mask(i,j,k)) and w_in(i,j,k)!=0) {
             acc += w_in(i, j, k) * v_in(i, j, k);
           }
         };

@@ -284,13 +284,18 @@ const dexpr::FunctionRegistry& eamxx_registry ()
     r.add({.name = "mean",
            .desc = "average over a dimension ('col' or 'lev')",
            .min_positional = 1, .max_positional = 1,
-           .keywords = {{"weights",false}},
-           .example = "T_mid.mean('lev',weights='dp')"});
+           .keywords = {},
+           .example = "T_mid.mean('lev')"});
     r.add({.name = "sum",
            .desc = "sum over a dimension ('lev')",
            .min_positional = 1, .max_positional = 1,
-           .keywords = {{"weights",false}},
-           .example = "T_mid.sum('lev',weights='dz')"});
+           .keywords = {},
+           .example = "T_mid.sum('lev')"});
+    r.add({.name = "weighted",
+           .desc = "weights for the mean(..) or sum(..) that must follow, as in xarray",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {},
+           .example = "T_mid.weighted(pseudo_density).mean('lev')"});
     r.add({.name = "broadcast_like",
            .desc = "value repeated along the dims of another field that it lacks",
            .min_positional = 1, .max_positional = 1,
@@ -403,14 +408,24 @@ void translate_call (const Call& call, const ast::Expression& self,
 
   if (call.name=="mean" or call.name=="sum") {
     const auto dim = string_arg(*call.positional[0],"the dimension");
-    const auto* weights = keyword(call,"weights");
+
+    // As in xarray, X.weighted(W).mean(dim): the weights come with the receiver,
+    // which is then X.weighted(W), not X.
+    Call w;
+    const bool weighted = as_method_call(*call.receiver,w) and w.name=="weighted";
+    if (weighted) {
+      EKAT_REQUIRE_MSG (not is_number(*w.positional[0]),
+          "Error! weighted() takes a field, not a number.\n"
+          " - expression: " + ast::to_string(self) + "\n");
+      params.set<std::string>("field_name",name_of(*w.receiver));
+    }
 
     if (dim=="col") {
       EKAT_REQUIRE_MSG (call.name=="mean",
           "Error! Only an average is available over 'col'.\n"
           " - expression: " + ast::to_string(self) + "\n");
-      EKAT_REQUIRE_MSG (weights==nullptr,
-          "Error! Averaging over 'col' is always area weighted; 'weights' does not apply.\n"
+      EKAT_REQUIRE_MSG (not weighted,
+          "Error! Averaging over 'col' is always area weighted; weighted(..) does not apply.\n"
           " - expression: " + ast::to_string(self) + "\n");
       diag_name = "HorizAvg";
       return;
@@ -424,10 +439,18 @@ void translate_call (const Call& call, const ast::Expression& self,
 
     diag_name = "VertContract";
     params.set<std::string>("contract_method",call.name=="mean" ? "avg" : "sum");
-    if (weights!=nullptr) {
-      params.set<std::string>("weighting_method",string_arg(*weights,"'weights'"));
+    if (weighted) {
+      // Like the receiver, the weight goes down by name
+      params.set<std::string>("weight_name",name_of(*w.positional[0]));
     }
     return;
+  }
+
+  if (call.name=="weighted") {
+    // Reached only when weighted(..) is not the receiver of mean/sum, which
+    // consume it above: it is the whole request, or feeds some other call.
+    unsupported("weighted(..) must be followed by .mean(..) or .sum(..), "
+                "as in T_mid.weighted(pseudo_density).mean('lev')",self);
   }
 
   if (call.name=="broadcast_like") {

@@ -32,6 +32,19 @@ VertContract(const ekat::Comm &comm,
       "Error! VertContract only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
       " - weighting_method: " + m_weighting_method + "\n");
 
+  // A weight field, as in xarray's X.weighted(W). It replaces weighting_method.
+  m_weight_name = m_params.get<std::string>("weight_name", "");
+  if (not m_weight_name.empty()) {
+    EKAT_REQUIRE_MSG(m_weighting_method == "none",
+        "Error! VertContract takes either weighting_method or weight_name, not both.\n"
+        " - weighting_method: " + m_weighting_method + "\n"
+        " - weight_name     : " + m_weight_name + "\n");
+    // X.weighted(X) is allowed; the field is then an input once
+    if (m_weight_name != m_field_name) {
+      m_field_in_names.push_back(m_weight_name);
+    }
+  }
+
   if (m_weighting_method == "dp") {
     m_field_in_names.push_back("pseudo_density");
   } else if (m_weighting_method == "dz") {
@@ -69,8 +82,32 @@ void VertContract::initialize_impl()
   auto diag_units = fid.get_units();
 
   auto w_units = none;
+  const bool by_field = not m_weight_name.empty();
   // set up the weighting field
-  if (m_weighting_method == "dp") {
+  if (by_field) {
+    const auto& w   = m_fields_in.at(m_weight_name);
+    const auto& wid = w.get_header().get_identifier();
+    const auto& wl  = wid.get_layout();
+    EKAT_REQUIRE_MSG(not w.has_valid_mask(),
+        "Error! VertContract cannot use a masked field as weight.\n"
+        "  As in xarray, weights cannot be missing; mask the weighted field instead.\n"
+        " - field name : " + fid.name() + "\n"
+        " - weight name: " + wid.name() + "\n");
+    EKAT_REQUIRE_MSG((wl.rank()==1 and wl.tags().back()==LEV and wl.dim(0)==layout.dim(vtag)) or
+                     wl.congruent(layout.clone().strip_dim(CMP,false)),
+        "Error! VertContract weight must be (lev) or the field's layout without its components.\n"
+        " - field name   : " + fid.name() + "\n"
+        " - field layout : " + layout.to_string() + "\n"
+        " - weight name  : " + wid.name() + "\n"
+        " - weight layout: " + wl.to_string() + "\n");
+    EKAT_REQUIRE_MSG(w.data_type() == f.data_type(),
+        "Error! VertContract weight and field must have the same data type.\n"
+        " - field name : " + fid.name() + "\n"
+        " - weight name: " + wid.name() + "\n");
+    // Read in place: the weight is another field, updated before this diag runs
+    m_weight = w;
+    w_units = wid.get_units();
+  } else if (m_weighting_method == "dp") {
     m_weight = m_fields_in.at("pseudo_density").clone("vert_contract_wts", CloneFlags::CopyData);
     constexpr auto g_units = physics::Constants<Real>::gravit.units;
     w_units = m_weight.get_header().get_identifier().get_units() / g_units;
@@ -93,15 +130,19 @@ void VertContract::initialize_impl()
   }
 
   auto diag_name = m_field_name + "_vert_" + m_contract_method;
-  if (m_weighting_method != "none")
+  if (by_field)
+    diag_name += "_weighted_by_" + m_weight_name;
+  else if (m_weighting_method != "none")
     diag_name += "_" + m_weighting_method + "_weighted";
 
   auto d_fid = fid.clone(diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
   m_diagnostic_output = Field(d_fid,true);
 
   // A masked input needs the contracted weight for both methods: avg divides by it,
-  // sum uses it to mask columns with no valid level
-  if (m_contract_method == "avg" or f.has_valid_mask()) {
+  // sum uses it to mask columns with no valid level. Except a sum weighted by a
+  // field, which follows xarray: a column with no valid level sums to 0.
+  const bool masked = f.has_valid_mask();
+  if (m_contract_method == "avg" or (masked and not by_field)) {
     // m_weight_sum must have the same layout as d (f's layout without vtag)
     // so that scale_inv(m_weight_sum) is valid regardless of input rank.
     auto wsum_fid = fid.clone("weight_sum")
@@ -114,10 +155,14 @@ void VertContract::initialize_impl()
     // produces the correct (COL[xCMP]) denominator for any input rank.
     m_ones = f.clone("ones");
     m_ones.deep_copy(1);
-    if (f.has_valid_mask()) {
+    if (masked) {
       // Share the valid_mask so the denominator honours the same masking
       m_ones.set_valid_mask(f.get_valid_mask());
-      // Output gets a valid_mask: 1 where at least one level was valid
+    }
+    // Output gets a valid_mask, 1 where the denominator is nonzero: with a masked
+    // input, where at least one level was valid; with a weight field, also where
+    // the weights do not all vanish (xarray's mean is NaN there)
+    if (masked or by_field) {
       m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
       m_diagnostic_output.get_header().set_may_be_filled(true);
     }
@@ -165,7 +210,7 @@ void VertContract::compute_impl()
   // Now do the contraction itself
   vert_contraction(d, f, m_weight);
 
-  if (m_contract_method == "avg" or d.has_valid_mask()) {
+  if (m_weight_sum.is_allocated()) {
     // Denominator: sum_lev(weight * 1 * mask); layout matches d
     vert_contraction(m_weight_sum, m_ones, m_weight);
     if (d.has_valid_mask()) {
