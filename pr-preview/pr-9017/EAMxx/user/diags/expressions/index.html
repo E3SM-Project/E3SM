@@ -5249,8 +5249,16 @@ is an honest analogue.</p>
 <td>vertical sum</td>
 </tr>
 <tr>
-<td><code>X.mean('lev', weights='dp')</code></td>
-<td>vertical mean weighted by <code>dp</code></td>
+<td><code>X.weighted(pseudo_density).mean('lev')</code></td>
+<td>vertical mean weighted by the layer's pressure thickness</td>
+</tr>
+<tr>
+<td><code>X.weighted(pseudo_density/gravit).sum('lev')</code></td>
+<td>vertical integral over mass (units of <code>X</code> times kg/m2)</td>
+</tr>
+<tr>
+<td><code>X.weighted(dz).sum('lev')</code></td>
+<td>vertical integral over height (units of <code>X</code> times m)</td>
 </tr>
 <tr>
 <td><code>X.where(qv&gt;0.01)</code></td>
@@ -5286,23 +5294,31 @@ is an honest analogue.</p>
 </tr>
 <tr>
 <td><code>p_mid.searchsorted(500, units='hPa')</code></td>
-<td>level indices bracketing 500 hPa</td>
+<td>index of the first level with pressure above 500 hPa</td>
 </tr>
 <tr>
-<td><code>X.aerocom('top')</code></td>
-<td><code>X</code> at cloud top (<code>'bot'</code>: at cloud bottom)</td>
+<td><code>z_mid.searchsorted(1000)</code></td>
+<td>index of the first level below 1000 m above sea level</td>
 </tr>
 <tr>
-<td><code>X.aerocom('top', phase='liq')</code></td>
-<td><code>X</code> at liquid cloud top (<code>'ice'</code>: at ice cloud top)</td>
-</tr>
-<tr>
-<td><code>mask.aerocom('top')</code></td>
-<td>the cloud fraction seen from above</td>
+<td><code>height_mid.searchsorted(100)</code></td>
+<td>index of the first level below 100 m above the surface</td>
 </tr>
 <tr>
 <td><code>cldfrac_tot.aerocom_weights('top')</code></td>
-<td>per level, the weights <code>aerocom</code> sums against</td>
+<td>per level, the probability that it is the cloud top (<code>'bot'</code>: bottom)</td>
+</tr>
+<tr>
+<td><code>X.weighted(cldfrac_tot.aerocom_weights('top')).sum('lev')</code></td>
+<td><code>X</code> at cloud top</td>
+</tr>
+<tr>
+<td><code>X.weighted(cldfrac_tot.aerocom_weights('top', phase='liq')).sum('lev')</code></td>
+<td><code>X</code> at liquid cloud top (<code>'ice'</code>: at ice cloud top)</td>
+</tr>
+<tr>
+<td><code>cldfrac_tot.aerocom_weights('top').sum('lev')</code></td>
+<td>the cloud fraction seen from above</td>
 </tr>
 </tbody>
 </table>
@@ -5349,8 +5365,23 @@ is an honest analogue.</p>
   stream, <code>(qv*T_mid).shift(time=1)</code> is rejected at setup, and so is
   <code>(qv*T_mid).tend()</code>; use an averaged stream. The shift of a model field
   (<code>T_mid.shift(time=1)</code>) is one model step in any stream.</li>
-<li><code>mean('col')</code> is always area weighted, so <code>weights</code> does not apply to it.
-  <code>weights</code> for <code>'lev'</code> is <code>'dp'</code> or <code>'dz'</code>.</li>
+<li><code>X.weighted(W)</code> is xarray's: it must be followed by <code>.mean('lev')</code> or
+  <code>.sum('lev')</code>. <code>W</code> is any field or expression on the levels of <code>X</code> (with
+  layout <code>(lev)</code>, or that of <code>X</code> without its components), and must not be
+  masked; xarray rejects missing weights too. As in xarray, the weighted sum
+  skips the invalid levels of <code>X</code>, so a column with no valid level sums to 0,
+  and the weighted mean divides by the sum of <code>W</code> over the valid levels only,
+  and is missing where that sum is 0 (including where <code>W</code> is 0 on every level).
+  Levels where <code>W</code> is 0 are not read, so <code>X</code> need not be finite there (xarray
+  gets there by treating NaN as missing).
+  The units are those of <code>X</code> times those of <code>W</code> for the sum, and those of <code>X</code>
+  for the mean. <code>mean('col')</code> is always area weighted, so <code>weighted(..)</code> does
+  not apply to it.</li>
+<li><code>weighted(..)</code> replaces the <code>weights=</code> keyword of <code>mean</code>/<code>sum</code>, which is
+  gone. <code>weights='dp'</code> weighted by <code>pseudo_density/gravit</code>, so
+  <code>X.sum('lev',weights='dp')</code> is now <code>X.weighted(pseudo_density/gravit).sum('lev')</code>;
+  for a mean the constant cancels, and <code>X.weighted(pseudo_density).mean('lev')</code>
+  is enough. <code>weights='dz'</code> is <code>weighted(dz)</code>.</li>
 <li><code>broadcast_like</code> repeats <code>X</code> along the dimensions of <code>Y</code> that <code>X</code> lacks, so that
   <code>X</code> can be combined with <code>Y</code>. E.g., <code>dp.broadcast_like(horiz_winds)</code> would produce
   a version of <code>dp</code> (call it <code>dp_bcast</code>) with layout <code>(ncol,2,lev)</code>, where
@@ -5364,7 +5395,8 @@ is an honest analogue.</p>
   levels are skipped, and a column with none left has no sum; it is written as
   missing rather than as 0. <code>mean('lev')</code> behaves the same way. This is
   xarray's <code>sum('lev', min_count=1)</code>, not its default <code>sum('lev')</code>, which
-  would give 0.</li>
+  would give 0. A weighted sum, <code>X.weighted(W).sum('lev')</code>, gives 0, as
+  xarray's does.</li>
 <li><strong>A scalar threshold is in the field's own units, as the model stores them.</strong>
   <code>T_mid.where(T_mid&lt;273.15)</code> is in kelvin, and <code>p_mid.where(p_mid&gt;85000)</code> in
   pascals, not hectopascals. A comparison between two <em>fields</em> is checked when
@@ -5372,11 +5404,9 @@ is an honest analogue.</p>
   differ. (A field that never declared its units is not checked.)</li>
 <li><strong><code>mask</code> and <code>lev</code> are placeholders, not fields.</strong> Neither exists in the field
   manager, and neither means anything on its own. <code>mask</code> is only legal as the
-  receiver of <code>.where(..)</code> or <code>.aerocom(..)</code>: <code>mask.where(cond)</code> is the 0/1
-  indicator of <code>cond</code> itself, rather than some field sampled by it, and
-  <code>mask.aerocom(..)</code> samples 1 (see <code>aerocom</code> below). <code>lev</code> is only legal as
-  the left operand of the comparison inside <code>where(..)</code>, where it means the
-  level index. So <code>mask.where(lev&gt;5)</code> is a request, while <code>mask</code>, <code>mask*1.0</code>,
+  receiver of <code>.where(..)</code>: <code>mask.where(cond)</code> is the 0/1 indicator of <code>cond</code>
+  itself, rather than some field sampled by it. <code>lev</code> is only legal as the left
+  operand of the comparison inside <code>where(..)</code>, where it means the level index. So <code>mask.where(lev&gt;5)</code> is a request, while <code>mask</code>, <code>mask*1.0</code>,
   <code>mask.mean('lev')</code> and <code>lev&gt;5</code> are not: each of those leaves <code>mask</code> or <code>lev</code>
   as an operand to be resolved on its own, and the run aborts with
   <code>The key 'mask' is not associated to any registered product</code>, since it is
@@ -5398,29 +5428,29 @@ is an honest analogue.</p>
   per the bullet above cannot be multiplied.</li>
 <li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
   the <code>over_dt</code> restriction above.</li>
-<li><code>searchsorted</code> gives, per column, the pair of level indices that bracket a
-  target pressure or height. Its receiver picks the coordinate: <code>p_mid</code>/<code>p_int</code> for a
-  pressure (<code>units</code> defaults to <code>Pa</code>), <code>z_mid</code>/<code>z_int</code> for a height above sea
-  level, and <code>height_mid</code>/<code>height_int</code> for a height above the surface (<code>units</code>
-  defaults to <code>m</code>). <code>interp(..)</code> is built on it, so fields interpolated to the
-  same target share one search. Its output has <code>int</code> data type, so like
-  <code>mask.where(..)</code> it cannot be written as is.</li>
-<li><code>aerocom</code> samples <code>X</code> at cloud top or bottom following the AeroCom
-  recommendation: per column, it sums <code>X</code> over the levels, each weighted by the
-  probability that it is the first cloudy level seen from above (or below),
-  under the maximum-random overlap assumption. With <code>phase='liq'</code> (<code>'ice'</code>),
-  each level is weighted also by the share of liquid (ice) in its condensate.
-  <code>X</code> must have layout <code>(ncol,lev)</code>, the result has the units of <code>X</code>, and it is
-  a weighted sum, not a mean. With <code>mask</code> as receiver, <code>X</code> is 1, so
-  <code>mask.aerocom('top', phase='liq')</code> is the liquid cloud fraction seen from
-  above. Levels with no weight are skipped, so <code>X</code> need not be finite there:
-  <code>(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).aerocom('top', phase='liq')</code>
-  is the in-cloud droplet number per volume at liquid cloud top, and the
-  <code>where(..)</code> keeps the division away from levels with no cloud. A masked <code>X</code>
-  counts only where it is valid. <code>aerocom_weights</code> gives the weights
-  themselves; its receiver must be <code>cldfrac_tot</code>. <code>aerocom(..)</code> is built on it,
-  so fields sampled at the same position and phase share one computation of
-  the weights. See <a href="../../../technical/aerocom_cldtop/">the AeroCom algorithm</a>.</li>
+<li><code>searchsorted</code> gives, per column, the index of the first level whose pressure is
+  above the target pressure (for a height, which decreases with the level index,
+  the first level below the target); the index is <code>nlevs</code> if there is none. That is
+  numpy's <code>searchsorted(side='right')</code> along the level dimension. Its receiver picks
+  the coordinate: <code>p_mid</code>/<code>p_int</code> for a pressure (<code>units</code> defaults to <code>Pa</code>),
+  <code>z_mid</code>/<code>z_int</code> for a height above sea level, and <code>height_mid</code>/<code>height_int</code> for a
+  height above the surface (<code>units</code> defaults to <code>m</code>). <code>interp(..)</code> is built on it, so
+  fields interpolated to the same target share one search. Its output has <code>int</code> data
+  type, so like <code>mask.where(..)</code> it cannot be written as is.</li>
+<li><code>aerocom_weights</code> gives, per level, the AeroCom cloud-top (<code>'top'</code>) or
+  cloud-bottom (<code>'bot'</code>) weights: the probability that the level is the first
+  cloudy level seen from above (or below), under the maximum-random overlap
+  assumption, times, with <code>phase='liq'</code> (<code>'ice'</code>), the share of liquid (ice) in
+  its condensate. Its receiver must be <code>cldfrac_tot</code>. A field at cloud top is
+  the sum weighted by them, <code>X.weighted(cldfrac_tot.aerocom_weights('top')).sum('lev')</code>
+  (a sum, not a mean), and their sum, <code>cldfrac_tot.aerocom_weights('top').sum('lev')</code>,
+  is the cloud fraction seen from above. Levels with zero weight are not read,
+  so <code>X</code> need not be finite there, but a division that <code>X</code> performs still is:
+  the in-cloud droplet number per volume at liquid cloud top is
+  <code>(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).weighted(cldfrac_tot.aerocom_weights('top', phase='liq')).sum('lev')</code>,
+  where the <code>where(..)</code> keeps the division away from levels with no cloud.
+  Fields sampled at the same position and phase share one computation of the
+  weights. See <a href="../../../technical/aerocom_cldtop/">the AeroCom algorithm</a>.</li>
 <li>Histogram bin edges are numbers in increasing order. They may be negative,
   and may be written with an exponent (<code>bins=[-1,0,1e-5,1e-4]</code>).</li>
 </ul>
@@ -5428,8 +5458,10 @@ is an honest analogue.</p>
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
 and so on.</p>
 <h3 id="where-this-departs-from-xarray">Where this departs from xarray</h3>
-<p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>where</code> and <code>shift</code> mean what they mean in
-xarray, on the same arguments. The rest have no xarray spelling we could adopt:</p>
+<p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>weighted</code>, <code>where</code> and <code>shift</code> mean what
+they mean in xarray, on the same arguments, except that <code>mean('col')</code> is area
+weighted (xarray would be <code>weighted(area).mean('col')</code>). The rest have no
+xarray spelling we could adopt:</p>
 <table>
 <thead>
 <tr>
@@ -5451,24 +5483,20 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 <td>no xarray equivalent</td>
 </tr>
 <tr>
-<td><code>mean('lev', weights=..)</code></td>
-<td>xarray would be <code>weighted(dp).mean('lev')</code>, again a chain</td>
-</tr>
-<tr>
 <td><code>searchsorted</code></td>
-<td>named after numpy's, but gives the pair of levels bracketing the target (-1 where out of range) rather than one insertion index, and takes <code>units</code></td>
+<td>named after numpy's (<code>side='right'</code>), but takes <code>units</code>, and for heights, which decrease with the level index, it looks for the first level below the target</td>
 </tr>
 <tr>
-<td><code>aerocom</code>, <code>aerocom_weights</code></td>
-<td>not in xarray; named after the AeroCom recommendation they follow</td>
+<td><code>aerocom_weights</code></td>
+<td>not in xarray; named after the AeroCom recommendation it follows</td>
 </tr>
 </tbody>
 </table>
-<p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, expressed as
-one diagnostic rather than as a graph of three.</p>
+<p><code>X.weighted(W).mean('lev')</code> is <code>(X*W).sum('lev')/W.sum('lev')</code> over the valid
+levels of <code>X</code>, computed as one diagnostic rather than as a graph of three.</p>
 <p>Two operand names have no xarray analogue at all, because they are not fields:
-<code>mask</code> and <code>lev</code>, legal only in <code>where(..)</code> and, for <code>mask</code>, <code>aerocom(..)</code>.
-See the note above for what they mean and where they may appear.</p>
+<code>mask</code> and <code>lev</code>, both legal only inside <code>where(..)</code>. See the note above for what they mean and where they may
+appear.</p>
 <h2 id="errors">Errors</h2>
 <p>An expression that does not parse, calls a function that does not exist, or
 uses an operator no diagnostic implements is rejected with a message pointing

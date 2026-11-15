@@ -4992,8 +4992,10 @@
 <h1 id="the-aerocom-algorithm">The AeroCom algorithm</h1>
 <p>The AeroCom recommendation is to compare cloud properties where a satellite
 sees them: at cloud top. In EAMxx, the <a href="../../user/diags/expressions/">expression</a>
-<code>X.aerocom('top')</code> gives, per column, a field <code>X</code> sampled at cloud top, and
-<code>X.aerocom('bot')</code> at cloud bottom. There are two parts to it: determining
+<code>cldfrac_tot.aerocom_weights('top')</code> gives, per column and layer, the
+probability that the layer is the cloud top, and
+<code>X.weighted(cldfrac_tot.aerocom_weights('top')).sum('lev')</code> a field <code>X</code> sampled
+at cloud top (<code>'bot'</code>: at cloud bottom). There are two parts to it: determining
 probabilistically where the cloud top is, and then weighting <code>X</code> by that
 probability.</p>
 <h2 id="where-the-cloud-top-is">Where the cloud top is</h2>
@@ -5019,8 +5021,11 @@ up.</p>
 <div class="arithmatex">\[x = \sum_{k} X_{k} \Phi_{k} w_{k},\]</div>
 <p>where <span class="arithmatex">\(\Phi_{k}\)</span> is <span class="arithmatex">\(1\)</span>, or the share of the condensate in one phase:</p>
 <div class="arithmatex">\[\Phi^{liq}_{k} = \frac{qc_{k}}{qc_{k} + qi_{k}}, \qquad \Phi^{ice}_{k} = 1 - \Phi^{liq}_{k}.\]</div>
-<p>The phase is the <code>phase</code> argument, and the cloud-top cloud fraction is <span class="arithmatex">\(X = 1\)</span>,
-written with the placeholder receiver <code>mask</code>. That makes a three by two matrix:</p>
+<p>The weights <span class="arithmatex">\(\Phi_{k} w_{k}\)</span> are <code>cldfrac_tot.aerocom_weights('top', phase=..)</code>,
+where the phase is the <code>phase</code> argument, and <span class="arithmatex">\(x\)</span> is the weighted sum of <span class="arithmatex">\(X\)</span>
+against them, as in xarray. With <span class="arithmatex">\(X = 1\)</span>, <span class="arithmatex">\(x\)</span> is the cloud fraction seen from
+above, which is the sum of the weights. Writing <code>W('top', ..)</code> for
+<code>cldfrac_tot.aerocom_weights('top', ..)</code>, that makes a three by two matrix:</p>
 <table>
 <thead>
 <tr>
@@ -5032,18 +5037,18 @@ written with the placeholder receiver <code>mask</code>. That makes a three by t
 <tbody>
 <tr>
 <td>none</td>
-<td><code>T_mid.aerocom('top')</code>: temperature at cloud top</td>
-<td><code>mask.aerocom('top')</code>: cloud fraction seen from above</td>
+<td><code>T_mid.weighted(W('top')).sum('lev')</code>: temperature at cloud top</td>
+<td><code>W('top').sum('lev')</code>: cloud fraction seen from above</td>
 </tr>
 <tr>
 <td><code>'liq'</code></td>
-<td><code>eff_radius_qc.aerocom('top', phase='liq')</code>: droplet radius at liquid cloud top</td>
-<td><code>mask.aerocom('top', phase='liq')</code>: liquid cloud fraction seen from above</td>
+<td><code>eff_radius_qc.weighted(W('top', phase='liq')).sum('lev')</code>: droplet radius at liquid cloud top</td>
+<td><code>W('top', phase='liq').sum('lev')</code>: liquid cloud fraction seen from above</td>
 </tr>
 <tr>
 <td><code>'ice'</code></td>
-<td><code>eff_radius_qi.aerocom('top', phase='ice')</code>: crystal radius at ice cloud top</td>
-<td><code>mask.aerocom('top', phase='ice')</code>: ice cloud fraction seen from above</td>
+<td><code>eff_radius_qi.weighted(W('top', phase='ice')).sum('lev')</code>: crystal radius at ice cloud top</td>
+<td><code>W('top', phase='ice').sum('lev')</code>: ice cloud fraction seen from above</td>
 </tr>
 </tbody>
 </table>
@@ -5053,7 +5058,7 @@ phase for a property of the air (e.g., <code>T_mid</code>, <code>p_mid</code>). 
 weighted <em>sum</em>, not a mean: it is not divided by the cloud fraction.</p>
 <p><span class="arithmatex">\(X\)</span> can be any expression. The in-cloud droplet number concentration at
 liquid cloud top, per volume of air, is</p>
-<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cdnc_top := (nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).aerocom('top', phase='liq')</span>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cdnc_top := (nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).weighted(cldfrac_tot.aerocom_weights('top', phase='liq')).sum('lev')</span>
 </code></pre></div>
 <p>where <code>pseudo_density/dz/gravit</code> is the air density, which turns <code>nc</code> (per
 mass of air) into a number per volume, and dividing by <code>cldfrac_tot</code> turns a
@@ -5062,11 +5067,10 @@ from layers with no cloud, where <code>cldfrac_tot</code> is zero and the divisi
 be by zero.</p>
 <p>Only the layers with a nonzero weight are summed, so <code>X</code> need not be finite
 anywhere else. If <code>X</code> is masked (e.g., it is the result of <code>where(..)</code>), its
-invalid layers are skipped too.</p>
-<p>The weights <span class="arithmatex">\(\Phi_{k} w_{k}\)</span> are available as an expression of their own,
-<code>cldfrac_tot.aerocom_weights('top', phase='liq')</code>. <code>X.aerocom(..)</code> is
-computed from them, so all fields sampled at the same position and with the
-same phase share one computation of the weights.</p>
+invalid layers are skipped too, and a column with no valid layer gives 0, as
+xarray's weighted sum does.</p>
+<p>The weights are a diagnostic of their own, so all fields sampled at the same
+position and with the same phase share one computation of them.</p>
 <p>Most studies in this topic refer a technical report by Tiedtke et al. (1979)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Another more recent general reference that may be of interest is that of Räisänen et al. (2004)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>.</p>
 <div class="footnote">
 <hr />
