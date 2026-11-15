@@ -3414,10 +3414,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#masks-and-avg-counts" class="md-nav__link">
+  <a href="#masks-and-valid-counts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Masks and avg counts
+        Masks and valid counts
       
     </span>
   </a>
@@ -5018,10 +5018,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#masks-and-avg-counts" class="md-nav__link">
+  <a href="#masks-and-valid-counts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Masks and avg counts
+        Masks and valid counts
       
     </span>
   </a>
@@ -5211,8 +5211,8 @@ in <code>src/share/diagnostics/abstract_diagnostic.hpp</code>.</p>
 <li>any other name is taken as the name of a registered class.</li>
 </ul>
 <h2 id="a-diagnostic-with-one-output">A diagnostic with one output</h2>
-<p>Most diagnostics compute one field, which they store in <code>m_diagnostic_output</code>,
-in the constructor if its layout is known there, or else in <code>initialize_impl</code>:</p>
+<p>Most diagnostics compute one field, which they declare with <code>add_output</code>, in
+the constructor if its layout is known there, or else in <code>initialize_impl</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">WaterPath</span><span class="o">::</span>
 <span class="nf">WaterPath</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">Comm</span><span class="o">&amp;</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">ParameterList</span><span class="o">&amp;</span><span class="w"> </span><span class="n">params</span><span class="p">,</span>
 <span class="w">           </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">AbstractGrid</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">grid</span><span class="p">)</span>
@@ -5223,12 +5223,14 @@ in the constructor if its layout is known there, or else in <code>initialize_imp
 <span class="w">  </span><span class="n">m_field_in_names</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">m_qname</span><span class="p">);</span>
 
 <span class="w">  </span><span class="n">FieldIdentifier</span><span class="w"> </span><span class="n">fid</span><span class="w"> </span><span class="p">(</span><span class="n">m_kind</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_2d_scalar_layout</span><span class="p">(),</span><span class="w"> </span><span class="n">kg</span><span class="o">/</span><span class="n">m2</span><span class="p">,</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">());</span>
-<span class="w">  </span><span class="n">m_diagnostic_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Field</span><span class="p">(</span><span class="n">fid</span><span class="p">);</span>
-<span class="w">  </span><span class="n">m_diagnostic_output</span><span class="p">.</span><span class="n">allocate_view</span><span class="p">();</span>
+<span class="w">  </span><span class="n">add_output</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="n">fid</span><span class="p">));</span>
+<span class="w">  </span><span class="n">output</span><span class="p">().</span><span class="n">allocate_view</span><span class="p">();</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><code>compute_impl</code> then reads the inputs from <code>m_fields_in</code> and writes into
-<code>m_diagnostic_output</code>. Customers get the output with <code>get()</code>.</p>
+<p><code>output()</code> is the declared field itself, not a copy, so it can be allocated,
+or given a mask, after <code>add_output</code>; it must be allocated by the time
+<code>initialize_impl</code> returns. <code>compute_impl</code> then reads the inputs from
+<code>m_fields_in</code> and writes into <code>output()</code>. Customers get the output with <code>get()</code>.</p>
 <p>A customer may also set the parameter <code>output_field_name</code>, in which case
 <code>initialize</code> renames the output to that name (e.g., the dexpr lowering names
 the output of an expression after the expression). The renamed field is an
@@ -5263,9 +5265,10 @@ constructor:</p>
 <li>all outputs must be declared in the constructor: an output stream needs all
   output names right after construction, to share one instance among requests
   of any of them (see below);</li>
-<li>each output must be allocated, be on the diagnostic grid, and have a name that
-  no other output has (case insensitive);</li>
-<li>a diagnostic sets <code>m_diagnostic_output</code> or calls <code>add_output</code>, not both;</li>
+<li>each output must be on the diagnostic grid, have a name that no other output
+  has (case insensitive), and be allocated by the end of <code>initialize_impl</code>;</li>
+<li><code>output()</code> errors out: keep a handle to each output for <code>compute_impl</code>, as
+  <code>NumberPath</code> does;</li>
 <li><code>get()</code> errors out: customers use <code>get(name)</code> (case insensitive), or
   <code>get_outputs()</code>, which lists the outputs in declaration order;</li>
 <li>the outputs cannot be renamed via <code>output_field_name</code>. Users who want an
@@ -5291,20 +5294,19 @@ output name, when the first of them is requested. Hence, requesting
 <code>NumberPath</code>, which computes all three paths in one evaluation.</p>
 <p>Each request adds only its own output to the stream. An output that is not
 requested is computed, but is not written, and does not affect the stream.</p>
-<h2 id="masks-and-avg-counts">Masks and avg counts</h2>
-<p>An output may have a valid mask (see <a href="../field/">Fields</a>). An averaged stream
-then counts, at each entry, the steps where the output is valid, and divides by
-that count. The count is shared by diagnostic outputs whose masks share a
-name:</p>
+<h2 id="masks-and-valid-counts">Masks and valid counts</h2>
+<p>An output may have a valid mask (see <a href="../field/">Fields</a>). An AVERAGE, MAX or
+MIN stream then counts, at each entry, the steps where the output is valid
+(and an AVERAGE stream divides by that count). The count is named after the
+mask, <code>nvalid_&lt;mask&gt;</code> (a trailing <code>_valid_mask</code> or <code>_mask</code> dropped), and the
+fields whose masks share a name share the count:</p>
 <ul>
 <li>a mask created with <code>create_valid_mask()</code> is named <code>&lt;output&gt;_valid_mask</code>,
-  and its output gets a count of its own;</li>
+  so its output gets a count of its own, <code>nvalid_&lt;output&gt;</code>;</li>
 <li>a mask with any other name says where a condition holds (e.g.,
-  <code>FieldAtPressureLevel</code> names it after the pressure level), and all
-  diagnostic outputs with a mask of that name share one count.</li>
+  <code>FieldAtPressureLevel</code> names it after the pressure level), and all fields
+  with a mask of that name share one count.</li>
 </ul>
-<p>A masked model field always gets a count of its own, whatever its mask is
-named.</p>
 <p>So outputs of one diagnostic can share a count by sharing a mask:</p>
 <div class="highlight"><pre><span></span><code><span class="n">m_a</span><span class="p">.</span><span class="n">create_valid_mask</span><span class="p">(</span><span class="s">"my_region_mask"</span><span class="p">);</span>
 <span class="n">m_z</span><span class="p">.</span><span class="n">set_valid_mask</span><span class="p">(</span><span class="n">m_a</span><span class="p">.</span><span class="n">get_valid_mask</span><span class="p">());</span>
@@ -5327,13 +5329,10 @@ also call <code>set_may_be_filled(true)</code> on its header.</p>
   output.</li>
 </ul>
 <h2 id="converting-a-diagnostic-to-several-outputs">Converting a diagnostic to several outputs</h2>
-<p>A diagnostic with one output may call <code>add_output</code> once (in the constructor or
-in <code>initialize_impl</code>) instead of setting <code>m_diagnostic_output</code>, with no change
-in behavior: replace <code>m_diagnostic_output = f</code> with <code>add_output(f)</code>, after
-allocating <code>f</code>, and keep a handle to <code>f</code> for <code>compute_impl</code>. To merge several
-diagnostics that share their inputs into one with several outputs, as was done
-for <code>NumberPath</code>, move the outputs to the constructor, and add their names to
-<code>named_variants</code>.</p>
+<p>To merge several diagnostics that share their inputs into one with several
+outputs, as <code>NumberPath</code> is: declare all the outputs in the
+constructor, keep a handle to each for <code>compute_impl</code> (in place of <code>output()</code>),
+and add their names to <code>named_variants</code>.</p>
 
 
 
