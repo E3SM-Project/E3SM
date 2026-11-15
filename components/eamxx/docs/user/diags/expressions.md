@@ -86,7 +86,7 @@ is an honest analogue.
 | `X.sum('lev')` | vertical sum |
 | `X.mean('lev', weights='dp')` | vertical mean weighted by `dp` |
 | `X.where(qv>0.01)` | `X` where `qv>0.01`, missing elsewhere |
-| `X.differentiate('p_mid')` | vertical derivative with respect to `p_mid` |
+| `X.derivative('p_mid')` | vertical derivative with respect to `p_mid` |
 | `X.histogram(bins=[0,1,2])` | counts of `X` in the bins `[0,1)` and `[1,2]` |
 | `X.zonal_mean(bins=20)` | zonal mean in 20 latitude bins |
 | `X.shift(time=1)` | `X` at the previous step |
@@ -197,14 +197,6 @@ Notes:
   height above the surface (`units` defaults to `m`). `interp(..)` is built on it, so
   fields interpolated to the same target share one search. Its output has `int` data
   type, so like `mask.where(..)` it cannot be written as is.
-- `differentiate` is xarray's: numpy's `gradient` along the level dimension,
-  using the values of the named coordinate (`p_mid` or `z_mid`) in each column.
-  Interior levels use second-order central differences on the (uneven) spacing,
-  and the top and bottom levels one-sided first-order differences, as xarray's
-  default `edge_order=1`. The derivative is with respect to the coordinate as
-  it stands, so `T_mid.differentiate('z_mid')` is negative where temperature
-  falls with height. Where `X` is masked, a level is valid only if every level
-  its difference reads is valid. See [Vertical derivative](vert_derivative.md).
 - `histogram` bins the way numpy's `histogram` and xhistogram do: n edges make
   n-1 bins, each bin includes its lower edge, the last bin also includes its
   upper edge, and values outside the edges are not counted. To count the tails,
@@ -220,13 +212,13 @@ and so on.
 
 ### Where this departs from xarray
 
-`isel`, `interp`, `mean`, `sum`, `where`, `shift` and `differentiate` mean
-what they mean in xarray, on the same arguments. The rest have no xarray
-spelling we could adopt:
+`isel`, `interp`, `mean`, `sum`, `where` and `shift` mean what they mean in
+xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 
 | | |
 | --- | --- |
 | `histogram` | not in xarray; it is [xhistogram](https://xhistogram.readthedocs.io)'s `histogram(X, bins=..)`, with the same binning, and always reduces over every dimension |
+| `derivative` | deliberately not xarray's `differentiate` (numpy's `gradient`): it is a finite-volume layer mean, built on the model's own layer thicknesses (see [Vertical derivative](vert_derivative.md)), so that, weighted by the layer thickness (`dp` or `dz`), the levels sum to the difference between the bottom and top values |
 | `zonal_mean` | xarray would be `groupby_bins('lat', 20).mean()`, a call chain we cannot represent |
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |

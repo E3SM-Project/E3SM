@@ -6,11 +6,8 @@
 namespace scream {
 
 /*
- * The derivative of a field X along the vertical, with respect to a coordinate
- * field on the same layout (e.g., p_mid or z_mid), computed in each column the
- * way xarray's differentiate (numpy's gradient, edge_order=1) computes it:
- * second-order central differences on the coordinate's (uneven) spacing at
- * interior levels, and one-sided first-order differences at the end levels.
+ * This diagnostic will calculate the derivative of a field X in
+ * the vertical direction such that dX/dp or dX/dz
  */
 
 class VertDerivative : public AbstractDiagnostic {
@@ -30,7 +27,9 @@ public:
   void initialize_impl();
 
   std::string m_field_name; // Input field name
-  std::string m_coord_name; // Coordinate field name (e.g., p_mid or z_mid)
+
+  // Name of derivative method (differential dp or dz)
+  std::string m_derivative_method;
 };
 
 } // namespace scream
