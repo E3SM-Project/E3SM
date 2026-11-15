@@ -1417,7 +1417,7 @@ process_requested_fields()
             init_diag(diag);
           }
           // Only the requested output goes in the FM: an unrequested output
-          // must not affect the stream (e.g., trigger avg count tracking)
+          // must not affect the stream (e.g., trigger valid count tracking)
           auto diag_field = diag->get(name);
           add_to_diag_group (diag_field);
           remove_these.insert(name);

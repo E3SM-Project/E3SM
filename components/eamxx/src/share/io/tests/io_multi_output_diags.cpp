@@ -25,8 +25,8 @@
  * A diag with several outputs, through output streams:
  *  - requests of any of its outputs, in one or more streams, share one instance,
  *    which is evaluated once per step
- *  - only the requested outputs reach the stream (and its avg counts)
- *  - outputs that share a mask share an avg count, whatever the request order
+ *  - only the requested outputs reach the stream (and its valid counts)
+ *  - outputs that share a mask share a valid count, whatever the request order
  *  - destroying the streams clears all its output names from the diag repo
  */
 
@@ -452,10 +452,10 @@ TEST_CASE ("multi_output_averaged")
 
     // The masked output gets its own count, and is filled where never valid
     scorpio::register_file(filename,scorpio::Read);
-    REQUIRE (scorpio::has_var(filename,"avg_count_MOT_masked_ncol"));
+    REQUIRE (scorpio::has_var(filename,"nvalid_MOT_masked"));
     CHECK (scorpio::has_attribute(filename,"MOT_masked","_FillValue"));
-    REQUIRE_FALSE (scorpio::has_var(filename,"avg_count_MOT_col_ncol"));
-    REQUIRE_FALSE (scorpio::has_var(filename,"avg_count_MOT_prof_ncol_lev"));
+    REQUIRE_FALSE (scorpio::has_var(filename,"nvalid_MOT_col"));
+    REQUIRE_FALSE (scorpio::has_var(filename,"nvalid_MOT_prof"));
     scorpio::release_file(filename);
 
     Field prof(FieldIdentifier("MOT_prof",grid->get_3d_scalar_layout(LEV),K,gname));
@@ -516,8 +516,8 @@ TEST_CASE ("multi_output_averaged")
     scorpio::register_file(filename_col,scorpio::Read);
     REQUIRE (scorpio::has_var(filename_col,"MOT_col"));
     REQUIRE_FALSE (scorpio::has_var(filename_col,"MOT_masked"));
-    REQUIRE_FALSE (scorpio::has_var(filename_col,"avg_count_ncol"));
-    REQUIRE_FALSE (scorpio::has_var(filename_col,"avg_count_MOT_masked_ncol"));
+    REQUIRE_FALSE (scorpio::has_var(filename_col,"nvalid_MOT_masked"));
+    REQUIRE_FALSE (scorpio::has_var(filename_col,"nvalid_MOT_col"));
     scorpio::release_file(filename_col);
 
     // Outputs sharing a mask share a count. Each must take it from the mask:
@@ -526,10 +526,9 @@ TEST_CASE ("multi_output_averaged")
         {"MOS_a","MOS_z"},gname,nsteps);
     const auto filename_shared = run_stream(params_shared,gm,comm);
     scorpio::register_file(filename_shared,scorpio::Read);
-    REQUIRE (scorpio::has_var(filename_shared,"avg_count_mo_region_ncol"));
-    REQUIRE_FALSE (scorpio::has_var(filename_shared,"avg_count_MOS_a_ncol"));
-    REQUIRE_FALSE (scorpio::has_var(filename_shared,"avg_count_MOS_z_ncol"));
-    REQUIRE_FALSE (scorpio::has_var(filename_shared,"avg_count_ncol"));
+    REQUIRE (scorpio::has_var(filename_shared,"nvalid_mo_region"));
+    REQUIRE_FALSE (scorpio::has_var(filename_shared,"nvalid_MOS_a"));
+    REQUIRE_FALSE (scorpio::has_var(filename_shared,"nvalid_MOS_z"));
     scorpio::release_file(filename_shared);
   }
 

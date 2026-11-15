@@ -144,21 +144,19 @@ output name, when the first of them is requested. Hence, requesting
 Each request adds only its own output to the stream. An output that is not
 requested is computed, but is not written, and does not affect the stream.
 
-## Masks and avg counts
+## Masks and valid counts
 
-An output may have a valid mask (see [Fields](field.md)). An averaged stream
-then counts, at each entry, the steps where the output is valid, and divides by
-that count. The count is shared by diagnostic outputs whose masks share a
-name:
+An output may have a valid mask (see [Fields](field.md)). An AVERAGE, MAX or
+MIN stream then counts, at each entry, the steps where the output is valid
+(and an AVERAGE stream divides by that count). The count is named after the
+mask, `nvalid_<mask>` (a trailing `_valid_mask` or `_mask` dropped), and the
+fields whose masks share a name share the count:
 
 - a mask created with `create_valid_mask()` is named `<output>_valid_mask`,
-  and its output gets a count of its own;
+  so its output gets a count of its own, `nvalid_<output>`;
 - a mask with any other name says where a condition holds (e.g.,
-  `FieldAtPressureLevel` names it after the pressure level), and all
-  diagnostic outputs with a mask of that name share one count.
-
-A masked model field always gets a count of its own, whatever its mask is
-named.
+  `FieldAtPressureLevel` names it after the pressure level), and all fields
+  with a mask of that name share one count.
 
 So outputs of one diagnostic can share a count by sharing a mask:
 

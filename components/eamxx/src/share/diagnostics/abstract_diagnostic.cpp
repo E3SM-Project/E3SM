@@ -67,7 +67,7 @@ void AbstractDiagnostic::initialize ()
     }
   }
 
-  // Outputs whose masks have the same name share an avg count in output streams,
+  // Outputs whose masks have the same name share a valid count in output streams,
   // and the horizontal remapper remaps such masks once: they must be the same mask.
   for (size_t i=0; i<m_outputs.size(); ++i) {
     for (size_t j=i+1; j<m_outputs.size(); ++j) {
