@@ -188,6 +188,6 @@ also call `set_may_be_filled(true)` on its header.
 ## Converting a diagnostic to several outputs
 
 To merge several diagnostics that share their inputs into one with several
-outputs, as was done for `NumberPath`: declare all the outputs in the
+outputs, as `NumberPath` is: declare all the outputs in the
 constructor, keep a handle to each for `compute_impl` (in place of `output()`),
 and add their names to `named_variants`.
