@@ -120,10 +120,18 @@ module li_core
       type (MPAS_stream_list_type), pointer :: stream_cursor
       type (MPAS_Alarm_type), pointer :: alarm_cursor
       character (len=StrKIND) :: actualWhen
+      integer :: streamErr
+      character (len=StrKIND), pointer :: config_fem_extension_method
+      character (len=StrKIND), pointer :: femExtensionMethod
+      character (len=StrKIND) :: resolvedFemExtensionMethod
+      character (len=StrKIND) :: meshStreamID
+      integer :: femExtAttErr
 
       err = 0
       err_tmp = 0
       globalErr = 0
+      streamErr = 0
+      femExtAttErr = 0
 
       call li_config_init(domain % configs)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
@@ -161,6 +169,50 @@ module li_core
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
       call mpas_timer_stop('reset_io_alarms')
+
+      !
+      ! Resolve config_fem_extension_method='auto' using the 'fem_extension_method'
+      ! global attribute from whichever mesh/restart file was just read above.  This
+      ! allows a run to automatically continue using whatever extension method was
+      ! used to produce its initial condition (e.g. a restart file written by an
+      ! earlier version of the model), rather than silently switching methods
+      ! mid-run-chain.  The resolved value (never 'auto') is stored in the
+      ! femExtensionMethod registry variable (below, once meshPool is available for
+      ! each block) rather than overwriting config_fem_extension_method, since the
+      ! latter should continue to reflect what the user actually requested.  The
+      ! resolved value is then (re-)written as a global attribute to all
+      ! subsequently-written restart and output files so that this provenance is
+      ! always self-documenting and 'auto' can be resolved consistently on any future
+      ! restart from those files.
+      call mpas_pool_get_config(domain % configs, 'config_fem_extension_method', config_fem_extension_method)
+      if (trim(config_fem_extension_method) == 'auto') then
+         meshStreamID = 'input'
+         if (config_do_restart) meshStreamID = 'restart'
+         call MPAS_stream_mgr_get_att(domain % streamManager, trim(meshStreamID), &
+            'fem_extension_method', resolvedFemExtensionMethod, ierr=femExtAttErr)
+         if ( (femExtAttErr /= MPAS_STREAM_MGR_NOERR) .or. &
+              ( (trim(resolvedFemExtensionMethod) /= 'ismip6-era') .and. (trim(resolvedFemExtensionMethod) /= 'ismip7-era') ) ) then
+            call mpas_log_write("config_fem_extension_method='auto' but a valid " // &
+               "'fem_extension_method' global attribute was not found in stream '" // &
+               trim(meshStreamID) // "'.  Defaulting to 'ismip6-era'.", MPAS_LOG_WARN)
+            resolvedFemExtensionMethod = 'ismip6-era'
+         end if
+         call mpas_log_write("config_fem_extension_method='auto' resolved to '" // &
+            trim(resolvedFemExtensionMethod) // "' from stream '" // trim(meshStreamID) // "'.")
+      else
+         resolvedFemExtensionMethod = trim(config_fem_extension_method)
+      end if
+      ! Record the resolved fem extension method as a global attribute on the 'restart'
+      ! and 'output' streams, so it can be recovered by a subsequent 'auto' run that
+      ! restarts from one of those files.  (These streams already exist by this point in
+      ! initialization, so an explicit streamID must be given for the attribute to take
+      ! effect; see MPAS_stream_mgr_add_att()'s documentation.)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'fem_extension_method', &
+         trim(resolvedFemExtensionMethod), streamID='restart', ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'fem_extension_method', &
+         trim(resolvedFemExtensionMethod), streamID='output', ierr=err_tmp)
+      err = ior(err, err_tmp)
 
       !
       ! Read time-varying inputs, if present (i.e., forcing)
@@ -261,6 +313,12 @@ module li_core
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          deltat = dtSeconds
 
+         ! Record the resolved (never 'auto') fem extension method, so
+         ! li_velocity_external_block_init (called below via li_velocity_init) can use
+         ! it without needing to know about 'auto' or re-resolve it itself.
+         call mpas_pool_get_array(meshPool, 'femExtensionMethod', femExtensionMethod)
+         femExtensionMethod = resolvedFemExtensionMethod
+
          block => block % next
       end do
 
@@ -322,9 +380,12 @@ module li_core
       call li_bedtopo_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
+      if (err>0) call mpas_log_write("Error detected in li_core_init (after li_bedtopo_init, before li_analysis_init)", MPAS_LOG_ERR)
+
       ! initialize analysis driver
       call li_analysis_init(domain, err_tmp)
       err = ior(err, err_tmp)
+      if (err>0) call mpas_log_write("Error detected after li_analysis_init", MPAS_LOG_ERR)
 
       ! initialize time averaging of fields sent to coupler
       call li_time_average_coupled_init(meshPool,timeAveragingPool)      
@@ -378,6 +439,8 @@ module li_core
       use li_setup
       use li_statistics
       use li_time_integration
+      use li_time_average_coupled, only: li_time_average_coupled_init
+      use li_bedtopo, only: li_bedtopo_write_restart
 
       implicit none
 
@@ -407,12 +470,14 @@ module li_core
       !-----------------------------------------------------------------
       integer, pointer :: timestepNumber
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, timeAveragingPool
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
+      character(len=StrKIND), pointer :: config_timeaveraging_interval
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
+      type (MPAS_TimeInterval_type) :: timeAveragingInterval
       character(len=StrKIND) :: timeStamp
       logical :: isRinging
       integer :: restartTimestampUnit
@@ -422,12 +487,14 @@ module li_core
 
       err = 0
       err_tmp = 0
+      err_tmp2 = 0
       globalErr = 0
 
       ! Get Pool stuff that will be needed
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_timeaveraging_interval', config_timeaveraging_interval)
 
       call mpas_timer_start("land ice core run")
 
@@ -475,6 +542,7 @@ module li_core
 
          call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
+         if (err_tmp > 0) call mpas_log_write('Error in li_timestep', MPAS_LOG_ERR)
 
          ! Write statistics at designated interval
          if (config_stats_interval > 0) then
@@ -506,10 +574,13 @@ module li_core
          ! (note: alarms and timers are handled by the analysis member code)
          call li_analysis_compute(domain, err_tmp)
          err = ior(err, err_tmp)
+         if (err_tmp > 0) call mpas_log_write('Error in li_analysis_compute', MPAS_LOG_ERR)
          call li_analysis_restart(domain, err_tmp)
          err = ior(err, err_tmp)
+         if (err_tmp > 0) call mpas_log_write('Error in li_analysis_restart', MPAS_LOG_ERR)
          call li_analysis_write(domain, err_tmp)
          err = ior(err, err_tmp)
+         if (err_tmp > 0) call mpas_log_write('Error in li_analysis_write', MPAS_LOG_ERR)
 
          ! ===
          ! === Write Output and/or Restart, if needed
@@ -564,6 +635,16 @@ module li_core
                   err = ior(err, err_tmp2)
                   close(restartTimestampUnit)
                   call mpas_release_unit(restartTimestampUnit)
+
+                  ! Keep any sub-model that carries its own prognostic, history-dependent
+                  ! state (currently just FastIsostasy) in lockstep with MALI's restart
+                  ! stream, so a subsequent restart can resume that state instead of
+                  ! silently re-initializing it (see li_bedtopo_write_restart).
+                  call li_bedtopo_write_restart(domain, err_tmp2)
+                  if (err_tmp2 > 0) then
+                     call mpas_log_write('Error writing FastIsostasy restart file.', MPAS_LOG_ERR)
+                  endif
+                  err = ior(err, err_tmp2)
                end if ! isRinging
             end if ! err_tmp==0
          end if ! master task
@@ -574,6 +655,23 @@ module li_core
          endif
          err = ior(err, err_tmp)
          call mpas_timer_stop("write streams")
+
+         ! === reset time-averaging accmulation if necessary
+         call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         if (mpas_is_alarm_ringing(domain % clock, 'timeAveragingInterval', ierr=err_tmp)) then
+            err = ior(err, err_tmp)
+            call mpas_log_write('Resetting coupled time averaging accumulation.')
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+               call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+               call li_time_average_coupled_init(meshPool, timeAveragingPool)
+               block => block % next
+            end do
+            call mpas_reset_clock_alarm(domain % clock, 'timeAveragingInterval', ierr=err_tmp)
+            err = ior(err, err_tmp)
+         endif
 
 
          ! === (end of output section) ===
@@ -593,7 +691,6 @@ module li_core
             call mpas_reset_clock_alarm(domain % clock, 'adaptiveTimestepForceInterval', ierr=err_tmp)
             err = ior(err, err_tmp)
          endif
-         err = ior(err, err_tmp)
 
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
@@ -754,11 +851,14 @@ module li_core
       type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
       logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_velocity_solver
+      character(len=StrKIND), pointer :: config_calving
+      character(len=StrKIND), pointer :: config_damage_calving_method
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       real(kind=RKIND), pointer :: deltat
       real(kind=RKIND) :: deltatTemp
+      logical :: calvingIsRateBased
 
       integer :: err, err_tmp, globalErr
       integer, pointer :: albanyVelocityError
@@ -776,6 +876,8 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_write_output_on_startup', config_write_output_on_startup)
       call mpas_pool_get_config(liConfigs, 'config_write_stats_on_startup', config_write_stats_on_startup)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
 
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
       err = ior(err, err_tmp)
@@ -823,13 +925,26 @@ module li_core
       err = ior(err, err_tmp)
 
       ! Initial calving solution
-      ! This is required for the calving CFL to work correctly
+      ! This is required for the calving CFL to work correctly for rate-based calving laws.
       ! For rate-based calving laws, no calving actually occurs because dt=0.
-      ! For threshold calving laws (e.g. thickness-based) calving *will* occur
+      ! For threshold calving laws, this call is unnecessary and should be skipped.
       ! Note that during a timestep, calving occurs before velocity, but because
       ! many calving laws require velocity-related fields, it needs to be called
       ! after velocity here.
-      if (.not. config_do_restart) then
+
+      ! Determine if a rate-based calving law is active
+      calvingIsRateBased = .false.
+      if (trim(config_calving) == 'eigencalving' .or. &
+          trim(config_calving) == 'specified_calving_velocity' .or. &
+          trim(config_calving) == 'specified_retreat_velocity' .or. &
+          trim(config_calving) == 'von_Mises_stress' .or. &
+          trim(config_calving) == 'ismip6_retreat' .or. &
+          (trim(config_calving) == 'damagecalving' .and. &
+          trim(config_damage_calving_method) == 'calving_rate')) then
+         calvingIsRateBased = .true.
+      endif
+
+      if (.not. config_do_restart .and. calvingIsRateBased) then
          ! Temporarily set dt to 0 to avoid actually calving anything for rate-based calving laws
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          deltatTemp = deltat
@@ -1118,10 +1233,13 @@ module li_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       type (MPAS_TimeInterval_type) :: adaptDtForceInterval
+      type (MPAS_TimeInterval_type) :: timeAveragingInterval
+      type (MPAS_TimeInterval_type) :: zeroInterval
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, &
-         config_output_interval, config_restart_interval ! MPAS standard configs
+         config_output_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
+      character (len=StrKIND), pointer :: config_timeaveraging_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND) :: restartTimeStamp !< string to be read from file
@@ -1142,6 +1260,7 @@ module li_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(configs, 'config_adaptive_timestep_force_interval', config_adaptive_timestep_force_interval)
+      call mpas_pool_get_config(configs, 'config_timeaveraging_interval', config_timeaveraging_interval)
       call mpas_pool_get_config(configs, 'config_slm_coupling_interval', config_slm_coupling_interval)
 
 
@@ -1205,6 +1324,24 @@ module li_core
          ierr = ior(ierr, err_tmp)
       endif
       ierr = ior(ierr, err_tmp)
+
+      ! Set up the timeAveragingInterval alarm.
+      call mpas_set_timeInterval(zeroInterval, dt = 0.0_RKIND, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      ! Only set up the alarm if the interval is greater than zero (i.e., if the user specified an interval for this)
+      if (timeAveragingInterval .gt. zeroInterval) then
+         call mpas_add_clock_alarm(core_clock, 'timeAveragingInterval', alarmTime=startTime, &
+                 alarmTimeInterval=timeAveragingInterval, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+         if (mpas_is_alarm_ringing(core_clock, 'timeAveragingInterval', ierr=err_tmp)) then
+            ierr = ior(ierr, err_tmp)
+            call mpas_reset_clock_alarm(core_clock, 'timeAveragingInterval', ierr=err_tmp)
+            ierr = ior(ierr, err_tmp)
+         endif
+         ierr = ior(ierr, err_tmp)
+      endif
 
       ! === error check
       if (ierr /= 0) then

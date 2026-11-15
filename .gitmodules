@@ -69,12 +69,16 @@
 [submodule "gcam"]
 	path = components/gcam/src
 	url = git@github.com:E3SM-Project/giac
-	branch = master 
-
+	branch = master
 [submodule "externals/mam4xx"]
 	path = externals/mam4xx
 	url = git@github.com:E3SM-Project/mam4xx.git
-
+[submodule "components/mpas-albany-landice/src/FastIsostasy"]
+	path = components/mpas-albany-landice/src/FastIsostasy
+	url = git@github.com:palma-ice/FastIsostasy.git
+[submodule "components/mpas-albany-landice/src/fesm-utils"]
+	path = components/mpas-albany-landice/src/fesm-utils
+	url = https://github.com/fesmc/fesm-utils
 [submodule "components/omega/external/yaml-cpp"]
 	path = components/omega/external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
