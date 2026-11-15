@@ -18,8 +18,8 @@ SurfaceUpwardLatentHeatFlux(const ekat::Comm& comm, const ekat::ParameterList& p
   auto diag_layout = m_grid->get_2d_scalar_layout();
   auto name = "surface_upward_latent_heat_flux";
   FieldIdentifier fid(name, diag_layout, W/m2, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(Field(fid));
+  output().allocate_view();
 }
 
 void SurfaceUpwardLatentHeatFlux::compute_impl()
@@ -31,7 +31,7 @@ void SurfaceUpwardLatentHeatFlux::compute_impl()
 
   const int ncols = m_grid->get_num_local_dofs();
   const auto& surf_evap = m_fields_in.at("surf_evap").get_view<const Real*>();
-  const auto& flux      = m_diagnostic_output.get_view<Real*>();
+  const auto& flux      = output().get_view<Real*>();
 
   typename KT::RangePolicy policy(0, ncols);
   auto lambda = KOKKOS_LAMBDA (const Int& icol) {

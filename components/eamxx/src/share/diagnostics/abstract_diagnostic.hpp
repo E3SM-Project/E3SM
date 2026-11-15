@@ -49,10 +49,11 @@ namespace scream
  *  - get: this can be used to retrieve the diagnostic field (can be called once, as the
  *         stored field is allocated once at initialization and reused at every step).
  *
- * Most diags have one output, which they store in m_diagnostic_output, and which
- * get() returns. A diag may instead compute several fields at once (e.g., NumberPath
- * computes the liquid, ice and rain number paths in one kernel). Such a diag declares
- * each output with add_output in its constructor, so that customers know all output
+ * A diag declares its output field(s) with add_output. Most diags have one output,
+ * which they declare in the constructor or in initialize_impl, reach with output(),
+ * and which get() returns. A diag may instead compute several fields at once (e.g.,
+ * NumberPath computes the liquid, ice and rain number paths in one kernel). Such a
+ * diag declares each output in its constructor, so that customers know all output
  * names right after construction (e.g., an output stream can then share one instance
  * among requests of different outputs). For such a diag:
  *  - get() errors out: use get(name), or get_outputs();
@@ -114,11 +115,17 @@ protected:
   // Derived classes implement this to compute the output from the inputs.
   virtual void compute_impl () = 0;
 
-  // Declare an output field. A diag with several outputs MUST call this in its
-  // constructor, once per output. The field must be allocated, on this diag's grid,
-  // and have a name that no other output has. A diag with one output may call this
-  // (once) instead of setting m_diagnostic_output, but not in addition to it.
+  // Declare an output field. A diag with one output calls this once, in its
+  // constructor or in initialize_impl; a diag with several outputs MUST call it
+  // in its constructor, once per output. The field must be on this diag's grid,
+  // have a name that no other output has, and be allocated by the time
+  // initialize_impl returns.
   void add_output (const Field& f);
+
+  // The output of a diag with one output, once declared with add_output.
+  // NOTE: the field itself, not a copy: allocate it, or create its mask, here.
+  Field& output ();
+  const Field& output () const;
 
   // MPI communicator
   ekat::Comm              m_comm;
@@ -128,10 +135,6 @@ protected:
 
   // The grid on which this diagnostic is defined (set via set_grid())
   std::shared_ptr<const AbstractGrid> m_grid;
-
-  // The output of a diag with one output (set in the ctor or in initialize_impl).
-  // Diags with several outputs use add_output instead.
-  Field m_diagnostic_output;
 
   // Timestamp of the last diag evaluation
   util::TimeStamp m_last_eval_ts;

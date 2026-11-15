@@ -69,7 +69,7 @@ initialize_impl ()
 
   // All good, create the diag output
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(Field(d_fid,true));
 
   m_pressure_name = tag==LEV ? "p_mid" : "p_int";
   m_index_name = tag==LEV ? m_index_name_mid : m_index_name_int;
@@ -82,7 +82,7 @@ initialize_impl ()
   // NOTE: masks with the same name must hold the same values (IO and the horizontal
   //       remapper rely on it); this is true by construction, as the data is shared.
   if (f.has_valid_mask()) {
-    m_diagnostic_output.create_valid_mask();
+    output().create_valid_mask();
   } else {
     // Masks with the same name must hold the same values, hence have the same layout (IO keys the
     // valid count by the mask name, and checks it). So the name of the broadcast mask carries the
@@ -101,16 +101,16 @@ initialize_impl ()
       }
       index_mask = index_mask.alias(mask_name + end);
     }
-    m_diagnostic_output.set_valid_mask(index_mask.broadcast_to(d_layout));
+    output().set_valid_mask(index_mask.broadcast_to(d_layout));
   }
-  m_diagnostic_output.get_header().set_may_be_filled(true);
+  output().get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
   const auto& src = m_fields_in.at(m_field_name);
   const auto& src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
-        auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+        auto& dst_atts = output().get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto& [name, val] : src_atts) {
     dst_atts[name] = val;
   }
@@ -154,8 +154,8 @@ void FieldAtPressureLevel::compute_impl()
   //       mask, which we don't need to compute. Otherwise, it's our own, and we do.
   if (rank==2) {
     auto policy = KT::RangePolicy(0,ncols);
-    auto diag = m_diagnostic_output.get_view<Real*>();
-    auto dmask = masked ? m_diagnostic_output.get_valid_mask().get_view<int*>() : dmask2d_t{};
+    auto diag = output().get_view<Real*>();
+    auto dmask = masked ? output().get_valid_mask().get_view<int*>() : dmask2d_t{};
     auto fmask = masked ? f.get_valid_mask().get_view<const int**>() : cmask2d_t{};
     auto f_v  = f.get_view<const Real**>();
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int icol) {
@@ -177,8 +177,8 @@ void FieldAtPressureLevel::compute_impl()
     // Let ekat pick the team size: ndims threads per team may be more than the
     // backend allows (e.g., OpenMP with one thread)
     auto policy = ekat::TeamPolicyFactory<KT::ExeSpace>::get_default_team_policy(ncols,ndims);
-    auto diag = m_diagnostic_output.get_view<Real**>();
-    auto dmask = masked ? m_diagnostic_output.get_valid_mask().get_view<int**>() : dmask3d_t{};
+    auto diag = output().get_view<Real**>();
+    auto dmask = masked ? output().get_valid_mask().get_view<int**>() : dmask3d_t{};
     auto fmask = masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
     auto f_v  = f.get_view<const Real***>();
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const MemberType& team) {
@@ -203,8 +203,8 @@ void FieldAtPressureLevel::compute_impl()
   }
 
   // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto& mask = m_diagnostic_output.get_valid_mask();
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
+  auto& mask = output().get_valid_mask();
+  output().deep_copy(constants::fill_value<Real>,mask,true);
 
 }
 

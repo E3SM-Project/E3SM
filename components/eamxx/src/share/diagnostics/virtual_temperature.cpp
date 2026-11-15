@@ -20,8 +20,8 @@ VirtualTemperature (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_field_in_names.push_back("qv");
 
   FieldIdentifier fid (name(), scalar3d, K, grid_name);
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(Field(fid));
+  output().allocate_view();
 }
 
 void VirtualTemperature::compute_impl()
@@ -30,7 +30,7 @@ void VirtualTemperature::compute_impl()
   using PF      = PhysicsFunctions<DefaultDevice>;
   using MDRange = Kokkos::MDRangePolicy<typename KT::ExeSpace,Kokkos::Rank<2>>;
 
-  const auto& virtualT = m_diagnostic_output.get_view<Real**>();
+  const auto& virtualT = output().get_view<Real**>();
   const auto& T_mid    = m_fields_in.at("T_mid").get_view<const Real**>();
   const auto& qv_mid   = m_fields_in.at("qv").get_view<const Real**>();
 

@@ -41,19 +41,19 @@ void HorizAvg::initialize_impl()
   const auto dname  = fname + "_horiz_avg";
 
   auto d_fid = fid.clone(dname).reset_layout(layout.clone().strip_dim(COL));
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(Field(d_fid,true));
 
   if (f.has_valid_mask()) {
     // Output valid_mask: 1 where den > 0 (i.e., at least one valid column)
-    m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
-    m_diagnostic_output.get_header().set_may_be_filled(true);
+    output().create_valid_mask(Field::MaskInit::None);
+    output().get_header().set_may_be_filled(true);
 
     // To use at runtime to compute sum(1*w) via horiz_avg (with f_in=1)
     m_ones = f.clone();
     m_ones.deep_copy(1);
     m_ones.set_valid_mask(f.get_valid_mask());
 
-    m_denom = m_diagnostic_output.clone("denom");
+    m_denom = output().clone("denom");
   } else {
     // Since area is constant and there is no masking, we can pre-compute
     // the area sum, and set weight = area/sum(area), so that we avoid
@@ -81,18 +81,18 @@ void HorizAvg::compute_impl()
   const auto &f = m_fields_in.at(m_field_in_names.front());
 
   // sum(w * f) possibly masked
-  horiz_contraction(m_diagnostic_output, f, m_area, m_comm);
+  horiz_contraction(output(), f, m_area, m_comm);
 
   if (f.has_valid_mask()) {
     // Denominator: sum(weight) masked
     horiz_contraction(m_denom, m_ones, m_area, m_comm);
 
-    auto& nonzero_denom = m_diagnostic_output.get_valid_mask();
+    auto& nonzero_denom = output().get_valid_mask();
     compute_mask(m_denom,0,Comparison::NE,nonzero_denom);
 
-    m_diagnostic_output.scale_inv(m_denom,nonzero_denom);
+    output().scale_inv(m_denom,nonzero_denom);
     // IO relies on fill_value for masked-out entries
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>,nonzero_denom,true);
+    output().deep_copy(constants::fill_value<Real>,nonzero_denom,true);
   }
 }
 

@@ -17,8 +17,8 @@ SeaLevelPressure (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   auto diag_layout = m_grid->get_2d_scalar_layout();
   FieldIdentifier fid (name(), diag_layout, Pa, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(Field(fid));
+  output().allocate_view();
 }
 
 void SeaLevelPressure::compute_impl()
@@ -26,7 +26,7 @@ void SeaLevelPressure::compute_impl()
   using RP = typename KokkosTypes<DefaultDevice>::RangePolicy;
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
-  const auto& psl   = m_diagnostic_output.get_view<Real*>();
+  const auto& psl   = output().get_view<Real*>();
   const auto& T_mid = m_fields_in.at("T_mid").get_view<const Real**>();
   const auto& p_mid = m_fields_in.at("p_mid").get_view<const Real**>();
   const auto& phis  = m_fields_in.at("phis").get_view<const Real*>();

@@ -60,12 +60,12 @@ void VertDerivative::initialize_impl()
 
   auto diag_name = m_field_name + "_" + m_derivative_method + "vert_derivative";
   auto d_fid = fid.clone(diag_name).reset_units(diag_units);
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
+  add_output(Field(d_fid));
+  output().allocate_view();
 
   if (f.has_valid_mask()) {
-    m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
+    output().create_valid_mask();
+    output().get_header().set_may_be_filled(true);
   }
 }
 
@@ -73,7 +73,7 @@ void VertDerivative::compute_impl()
 {
   // f: input field; o: output field; d: denominator field
   const auto& f  = m_fields_in.at(m_field_name);
-  const auto& o  = m_diagnostic_output;
+  const auto& o  = output();
   const auto& dp = m_fields_in.at("pseudo_density");
 
   // TODO: support higher-dimensioned input fields
@@ -93,8 +93,8 @@ void VertDerivative::compute_impl()
 
   auto d_v = (m_derivative_method == "z") ? m_fields_in.at("dz").get_view<Real **>() : dp2d;
 
-  bool masked = m_diagnostic_output.has_valid_mask();
-  auto d_mask = masked ? m_diagnostic_output.get_valid_mask().get_view<int**>() : mview_t{};
+  bool masked = output().has_valid_mask();
+  auto d_mask = masked ? output().get_valid_mask().get_view<int**>() : mview_t{};
   auto f_mask = masked ? f.get_valid_mask().get_view<const int**>() : cmview_t{};
   int last_lev = nlevs-1;
   constexpr auto fv = constants::fill_value<Real>;
@@ -137,7 +137,7 @@ void VertDerivative::compute_impl()
       }
     });
   };
-  Kokkos::parallel_for("Compute df / denominator for " + m_diagnostic_output.name(), policy, lambda);
+  Kokkos::parallel_for("Compute df / denominator for " + output().name(), policy, lambda);
 }
 
 } // namespace scream

@@ -33,10 +33,10 @@ void FieldOverDt::initialize_impl() {
   auto diag_units = fid.get_units() / s;
 
   FieldIdentifier d_fid(m_name + "_over_dt", layout.clone(), diag_units, gn);
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(Field(d_fid,true));
   if (f.has_valid_mask()) {
-    m_diagnostic_output.set_valid_mask(f.get_valid_mask());
-    m_diagnostic_output.get_header().set_may_be_filled(true);
+    output().set_valid_mask(f.get_valid_mask());
+    output().get_header().set_may_be_filled(true);
   }
 }
 
@@ -44,7 +44,7 @@ void FieldOverDt::init_timestep(const util::TimeStamp &start_of_step) {
   m_start_ts = start_of_step;
   EKAT_REQUIRE_MSG (m_start_ts.is_valid(),
       "Error! Initializing FieldOverDtDiag timestep with an invalid time stamp.\n"
-      " - diag field name: " + m_diagnostic_output.name() + "\n");
+      " - diag field name: " + output().name() + "\n");
 }
 
 void FieldOverDt::compute_impl()
@@ -54,7 +54,7 @@ void FieldOverDt::compute_impl()
   const auto &curr_ts = f.get_header().get_tracking().get_time_stamp();
   EKAT_REQUIRE_MSG (curr_ts.is_valid() and m_start_ts.is_valid(),
       "Error! FieldOverDtDiag does not work if you don't call init_timestep first.\n"
-      " - diag field name: " + m_diagnostic_output.name() + "\n");
+      " - diag field name: " + output().name() + "\n");
 
   const std::int64_t dt = curr_ts.seconds_from(m_start_ts);
 
@@ -67,11 +67,11 @@ void FieldOverDt::compute_impl()
   // diag = 0*diag + 1/dt*f
   const auto dt_inv = 1 / static_cast<Real>(dt);
   if (f.has_valid_mask()) {
-    m_diagnostic_output.update(f,dt_inv,0,f.get_valid_mask());
+    output().update(f,dt_inv,0,f.get_valid_mask());
     // TODO: remove when IO handles fill value internally
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>,f.get_valid_mask(),true);
+    output().deep_copy(constants::fill_value<Real>,f.get_valid_mask(),true);
   } else {
-    m_diagnostic_output.update(f,dt_inv,0);
+    output().update(f,dt_inv,0);
   }
 }
 

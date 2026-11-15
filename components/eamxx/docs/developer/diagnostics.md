@@ -46,8 +46,8 @@ Output streams map a requested name to a diagnostic in `create_diagnostic`
 
 ## A diagnostic with one output
 
-Most diagnostics compute one field, which they store in `m_diagnostic_output`,
-in the constructor if its layout is known there, or else in `initialize_impl`:
+Most diagnostics compute one field, which they declare with `add_output`, in
+the constructor if its layout is known there, or else in `initialize_impl`:
 
 ```cpp
 WaterPath::
@@ -60,13 +60,15 @@ WaterPath (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_field_in_names.push_back(m_qname);
 
   FieldIdentifier fid (m_kind + name(), m_grid->get_2d_scalar_layout(), kg/m2, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(Field(fid));
+  output().allocate_view();
 }
 ```
 
-`compute_impl` then reads the inputs from `m_fields_in` and writes into
-`m_diagnostic_output`. Customers get the output with `get()`.
+`output()` is the declared field itself, not a copy, so it can be allocated,
+or given a mask, after `add_output`; it must be allocated by the time
+`initialize_impl` returns. `compute_impl` then reads the inputs from
+`m_fields_in` and writes into `output()`. Customers get the output with `get()`.
 
 A customer may also set the parameter `output_field_name`, in which case
 `initialize` renames the output to that name (e.g., the dexpr lowering names
@@ -107,9 +109,10 @@ The rules for such a diagnostic are:
 - all outputs must be declared in the constructor: an output stream needs all
   output names right after construction, to share one instance among requests
   of any of them (see below);
-- each output must be allocated, be on the diagnostic grid, and have a name that
-  no other output has (case insensitive);
-- a diagnostic sets `m_diagnostic_output` or calls `add_output`, not both;
+- each output must be on the diagnostic grid, have a name that no other output
+  has (case insensitive), and be allocated by the end of `initialize_impl`;
+- `output()` errors out: keep a handle to each output for `compute_impl`, as
+  `NumberPath` does;
 - `get()` errors out: customers use `get(name)` (case insensitive), or
   `get_outputs()`, which lists the outputs in declaration order;
 - the outputs cannot be renamed via `output_field_name`. Users who want an
@@ -184,10 +187,7 @@ also call `set_may_be_filled(true)` on its header.
 
 ## Converting a diagnostic to several outputs
 
-A diagnostic with one output may call `add_output` once (in the constructor or
-in `initialize_impl`) instead of setting `m_diagnostic_output`, with no change
-in behavior: replace `m_diagnostic_output = f` with `add_output(f)`, after
-allocating `f`, and keep a handle to `f` for `compute_impl`. To merge several
-diagnostics that share their inputs into one with several outputs, as was done
-for `NumberPath`, move the outputs to the constructor, and add their names to
-`named_variants`.
+To merge several diagnostics that share their inputs into one with several
+outputs, as was done for `NumberPath`: declare all the outputs in the
+constructor, keep a handle to each for `compute_impl` (in place of `output()`),
+and add their names to `named_variants`.

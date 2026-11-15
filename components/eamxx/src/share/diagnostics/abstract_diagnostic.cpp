@@ -31,22 +31,20 @@ void AbstractDiagnostic::initialize ()
 
   initialize_impl();
 
-  if (m_outputs.empty()) {
-    EKAT_REQUIRE_MSG (m_diagnostic_output.is_allocated(),
+  EKAT_REQUIRE_MSG (not m_outputs.empty(),
+      "Error! A diagnostic did not declare its output field (see add_output).\n"
+      " - diag class: " + name() + "\n");
+  for (const auto& f : m_outputs) {
+    EKAT_REQUIRE_MSG (f.is_allocated(),
         "Error! A diagnostic did not allocate its output field during initialization.\n"
         " - diag class: " + name() + "\n"
-        " - diag output: " + m_diagnostic_output.name() + "\n");
-  } else {
-    EKAT_REQUIRE_MSG (not m_diagnostic_output.is_allocated(),
-        "Error! A diagnostic must either set m_diagnostic_output or call add_output, not both.\n"
-        " - diag class: " + name() + "\n"
-        " - diag outputs: " + outputs_names() + "\n");
-    EKAT_REQUIRE_MSG (m_outputs.size()==1 or m_outputs.size()==num_ctor_outputs,
-        "Error! A diagnostic with several outputs must declare them all in its constructor,\n"
-        "       so that customers can share it among requests of any of its outputs.\n"
-        " - diag class: " + name() + "\n"
-        " - diag outputs: " + outputs_names() + "\n");
+        " - diag output: " + f.name() + "\n");
   }
+  EKAT_REQUIRE_MSG (m_outputs.size()==1 or m_outputs.size()==num_ctor_outputs,
+      "Error! A diagnostic with several outputs must declare them all in its constructor,\n"
+      "       so that customers can share it among requests of any of its outputs.\n"
+      " - diag class: " + name() + "\n"
+      " - diag outputs: " + outputs_names() + "\n");
 
   // A diag names its output field from its params, e.g. BinaryOp builds
   // "<arg1>_<op>_<arg2>". That is not always what the customer asked for, and
@@ -63,14 +61,10 @@ void AbstractDiagnostic::initialize ()
         " - requested name: " + name + "\n"
         "Request an output by its own name. To write it under another name, use\n"
         "  <name> := <output>\n");
-    auto& f = m_outputs.empty() ? m_diagnostic_output : m_outputs.front();
+    auto& f = m_outputs.front();
     if (name!=f.name()) {
       f = f.alias(name);
     }
-  }
-
-  if (m_outputs.empty()) {
-    m_outputs.push_back(m_diagnostic_output);
   }
 
   // Outputs whose masks have the same name share an avg count in output streams,
@@ -102,10 +96,6 @@ void AbstractDiagnostic::add_output (const Field& f)
       "Error! Cannot add an output to a diagnostic after it is initialized.\n"
       " - diag class: " + name() + "\n"
       " - field name: " + f.name() + "\n");
-  EKAT_REQUIRE_MSG (f.is_allocated(),
-      "Error! The output of a diagnostic must be allocated before it is added.\n"
-      " - diag class: " + name() + "\n"
-      " - field name: " + f.name() + "\n");
   EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==m_grid->name(),
       "Error! The output of a diagnostic must be on the diagnostic grid.\n"
       " - diag class: " + name() + "\n"
@@ -120,6 +110,20 @@ void AbstractDiagnostic::add_output (const Field& f)
         " - diag outputs: " + outputs_names() + "\n");
   }
   m_outputs.push_back(f);
+}
+
+Field& AbstractDiagnostic::output ()
+{
+  EKAT_REQUIRE_MSG (m_outputs.size()==1,
+      "Error! output() is for a diagnostic with one output, once declared with add_output.\n"
+      " - diag class: " + name() + "\n"
+      " - diag outputs: " + outputs_names() + "\n");
+  return m_outputs.front();
+}
+
+const Field& AbstractDiagnostic::output () const
+{
+  return const_cast<AbstractDiagnostic*>(this)->output();
 }
 
 void AbstractDiagnostic::set_input_field (const Field& f)
@@ -139,22 +143,16 @@ Field AbstractDiagnostic::get () const
       " - diag class: " + name() + "\n"
       " - diag outputs: " + outputs_names() + "\n"
       "Use get(name) to get one of them.\n");
-  // Before initialize(), a diag with one output may not have added it to m_outputs yet
-  const auto& f = m_outputs.empty() ? m_diagnostic_output : m_outputs.front();
-  EKAT_REQUIRE_MSG (f.is_allocated(),
+  EKAT_REQUIRE_MSG (m_outputs.size()==1 and m_outputs.front().is_allocated(),
       "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
       "       We chose to throw an error, but if this is a legit use, please, contact developers.\n"
       " - diag class: " + name() + "\n"
-      " - diag field name: " + f.name() + "\n");
-  return f;
+      " - diag outputs: " + outputs_names() + "\n");
+  return m_outputs.front();
 }
 
 Field AbstractDiagnostic::get (const std::string& name) const
 {
-  // Before initialize(), a diag with one output may not have added it to m_outputs yet
-  if (m_outputs.empty() and ekat::caseInsensitiveEqualString(m_diagnostic_output.name(),name)) {
-    return get();
-  }
   auto it = std::find_if(m_outputs.begin(),m_outputs.end(),
                          [&](const Field& f) { return ekat::caseInsensitiveEqualString(f.name(),name); });
   EKAT_REQUIRE_MSG (it!=m_outputs.end(),
@@ -168,7 +166,7 @@ Field AbstractDiagnostic::get (const std::string& name) const
 std::string AbstractDiagnostic::outputs_names () const
 {
   if (m_outputs.empty()) {
-    return m_diagnostic_output.is_allocated() ? m_diagnostic_output.name() : "(none yet)";
+    return "(none yet)";
   }
   return ekat::join(m_outputs,[](const Field& f) { return f.name(); },", ");
 }

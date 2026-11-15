@@ -153,17 +153,17 @@ void ConditionalSampling::initialize_impl()
 {
   if (m_diag_is_mask) {
     if (m_lhs_is_lev) {
-      m_diagnostic_output = m_lev_mask.alias(m_diag_name);
+      add_output(m_lev_mask.alias(m_diag_name));
     } else {
       auto dfid = m_fields_in.at(m_condition_lhs).get_header().get_identifier().clone(m_diag_name);
       dfid.reset_dtype(DataType::IntType).reset_units(ekat::units::none);
-      m_diagnostic_output = Field(dfid,true);
+      add_output(Field(dfid,true));
     }
   } else {
-    m_diagnostic_output = m_fields_in.at(m_input_f).clone(m_diag_name);
-    m_diagnostic_output.create_valid_mask();
+    add_output(m_fields_in.at(m_input_f).clone(m_diag_name));
+    output().create_valid_mask();
     // Entries failing the condition hold the fill value, so averaging must skip them
-    m_diagnostic_output.get_header().set_may_be_filled(true);
+    output().get_header().set_may_be_filled(true);
   }
 
   // Comparing two fields requires same units, unless either never declared them
@@ -182,7 +182,7 @@ void ConditionalSampling::initialize_impl()
   // If lhs is "lev" but diag is not "mask", we can still precompute the diag mask by
   // broadcasting m_lev_mask
   if (m_lhs_is_lev and not m_diag_is_mask) {
-    auto mask = m_diagnostic_output.get_valid_mask();
+    auto mask = output().get_valid_mask();
     m_lev_mask_bcast = m_lev_mask.broadcast_like(mask);
     mask.deep_copy(m_lev_mask_bcast);
   }
@@ -191,7 +191,7 @@ void ConditionalSampling::initialize_impl()
 void ConditionalSampling::compute_impl()
 {
   // Compute the mask (unless lhs is "lev", in which case we already did)
-  auto& mask = m_diag_is_mask ? m_diagnostic_output : m_diagnostic_output.get_valid_mask();
+  auto& mask = m_diag_is_mask ? output() : output().get_valid_mask();
   if (not m_lhs_is_lev) {
     const auto& lhs = m_fields_in.at(m_condition_lhs);
     if (m_rhs_is_field) {
@@ -216,9 +216,9 @@ void ConditionalSampling::compute_impl()
       }
       mask.scale(f.get_valid_mask());
     }
-    m_diagnostic_output.deep_copy(f,mask);
+    output().deep_copy(f,mask);
     constexpr auto fv = constants::fill_value<Real>;
-    m_diagnostic_output.deep_copy(fv,mask,true);
+    output().deep_copy(fv,mask,true);
   }
 }
 

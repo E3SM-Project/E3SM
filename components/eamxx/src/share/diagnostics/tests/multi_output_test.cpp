@@ -75,7 +75,7 @@ protected:
   int m_num_evaluations = 0;
 };
 
-// A diag with one output, set the usual way (m_diagnostic_output in the ctor)
+// A diag with one output, declared in the ctor
 class SOTest : public AbstractDiagnostic
 {
 public:
@@ -85,15 +85,15 @@ public:
   {
     m_field_in_names = {"b"};
     FieldIdentifier fid("SOT",m_grid->get_2d_scalar_layout(),ekat::units::K,m_grid->name());
-    m_diagnostic_output = Field(fid,true);
-    m_diagnostic_output.create_valid_mask(Field::MaskInit::Valid);
+    add_output(Field(fid,true));
+    output().create_valid_mask(Field::MaskInit::Valid);
   }
 
   std::string name () const override { return "SOTest"; }
 
 protected:
   void compute_impl () override {
-    m_diagnostic_output.deep_copy(m_fields_in.at("b"));
+    output().deep_copy(m_fields_in.at("b"));
   }
 };
 
@@ -108,9 +108,6 @@ public:
     m_misuse = m_params.get<std::string>("misuse");
     if (m_misuse=="add_in_init") {
       add_output(make("x",m_grid));
-    } else if (m_misuse=="both") {
-      add_output(make("x",m_grid));
-      m_diagnostic_output = make("y",m_grid);
     } else if (m_misuse=="duplicate") {
       add_output(make("x",m_grid));
       add_output(make("X",m_grid));
@@ -283,14 +280,14 @@ TEST_CASE ("multi_output") {
     // Outputs must be valid and uniquely named
     REQUIRE_THROWS (create("duplicate"));
     REQUIRE_THROWS (create("wrong_grid"));
-    REQUIRE_THROWS (create("unallocated"));
+    // ... and allocated, at the latest by the end of initialization
+    REQUIRE_THROWS (create("unallocated")->initialize());
+    // A diag must declare an output
+    REQUIRE_THROWS (create("none")->initialize());
 
     // Several outputs must all be declared in the ctor
     REQUIRE_THROWS (create("add_in_init")->initialize());
     REQUIRE_THROWS (create("two_in_init")->initialize());
-
-    // Use add_output or m_diagnostic_output, not both
-    REQUIRE_THROWS (create("both")->initialize());
 
     // Masks with the same name must be the same mask
     REQUIRE_THROWS (create("unshared_mask")->initialize());
@@ -300,7 +297,7 @@ TEST_CASE ("multi_output") {
   SECTION ("one_output") {
     // A diag with one output works as it always did
     auto diag = std::make_shared<SOTest>(comm,params,grid);
-    REQUIRE (diag->get_outputs().empty());
+    REQUIRE (diag->get_outputs().size()==1);
     REQUIRE (diag->get().name()=="SOT");
     REQUIRE (diag->get("sot").name()=="SOT");
     diag->set_input_field(b);

@@ -81,7 +81,7 @@ initialize_impl ()
 
   // All good, create the diag output
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(Field(d_fid,true));
 
   // If the input is masked, the mask depends on the input's own mask, so we need a mask
   // of our own. Otherwise, the mask only says where the height is in range (a target above
@@ -93,7 +93,7 @@ initialize_impl ()
   // NOTE: masks with the same name must hold the same values (IO and the horizontal
   //       remapper rely on it); this is true by construction, as the data is shared.
   if (f.has_valid_mask()) {
-    m_diagnostic_output.create_valid_mask();
+    output().create_valid_mask();
   } else {
     // Masks with the same name must hold the same values, hence have the same layout (IO keys the
     // valid count by the mask name, and checks it). So the name of the broadcast mask carries the
@@ -112,16 +112,16 @@ initialize_impl ()
       }
       index_mask = index_mask.alias(mask_name + end);
     }
-    m_diagnostic_output.set_valid_mask(index_mask.broadcast_to(d_layout));
+    output().set_valid_mask(index_mask.broadcast_to(d_layout));
   }
-  m_diagnostic_output.get_header().set_may_be_filled(true);
+  output().get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
   const auto& src = m_fields_in.begin()->second;
   const auto& src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
-        auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+        auto& dst_atts = output().get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto& [name, val] : src_atts) {
     dst_atts[name] = val;
   }
@@ -157,8 +157,8 @@ void FieldAtHeight::compute_impl()
   bool f_masked = f.has_valid_mask();
   if (fl.rank()==2) {
     const auto f_view = f.get_view<const Real**>();
-    const auto d_view = m_diagnostic_output.get_view<Real*>();
-    const auto d_mask = f_masked ? m_diagnostic_output.get_valid_mask().get_view<int*>() : dmask2d_t{};
+    const auto d_view = output().get_view<Real*>();
+    const auto d_mask = f_masked ? output().get_valid_mask().get_view<int*>() : dmask2d_t{};
 
     const auto f_mask = f_masked ? f.get_valid_mask().get_view<const int**>() : cmask2d_t{};
 
@@ -190,8 +190,8 @@ void FieldAtHeight::compute_impl()
     });
   } else {
     const auto f_view = f.get_view<const Real***>();
-    const auto d_view = m_diagnostic_output.get_view<Real**>();
-    const auto d_mask = f_masked ? m_diagnostic_output.get_valid_mask().get_view<int**>() : dmask3d_t{};
+    const auto d_view = output().get_view<Real**>();
+    const auto d_mask = f_masked ? output().get_valid_mask().get_view<int**>() : dmask3d_t{};
 
     const auto f_mask = f_masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
 
@@ -228,8 +228,8 @@ void FieldAtHeight::compute_impl()
   }
 
   // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto& mask = m_diagnostic_output.get_valid_mask();
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
+  auto& mask = output().get_valid_mask();
+  output().deep_copy(constants::fill_value<Real>,mask,true);
 }
 
 } //namespace scream

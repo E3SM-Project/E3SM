@@ -100,10 +100,10 @@ initialize_impl ()
   // this is searchsorted's counterpart (with side='right') for a descending array.
   const auto col_layout = layout.clone().strip_dim(tag);
   FieldIdentifier d_fid (m_diag_name, col_layout, ekat::units::none, m_grid->name(), DataType::IntType);
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(Field(d_fid,true));
 
   // The mask of columns where the target height is valid
-  m_diagnostic_output.create_valid_mask(m_mask_name);
+  output().create_valid_mask(m_mask_name);
 }
 
 void HeightLevelIndex::compute_impl()
@@ -117,8 +117,8 @@ void HeightLevelIndex::compute_impl()
   const int nlevs = zl.dim(1);
 
   auto z_tgt = m_z;
-  auto idx = m_diagnostic_output.get_view<int*>();
-  auto mask = m_diagnostic_output.get_valid_mask().get_view<int*>();
+  auto idx = output().get_view<int*>();
+  auto mask = output().get_valid_mask().get_view<int*>();
   auto extrapolate_bottom = m_extrapolate_bottom;
 
   auto policy = KT::RangePolicy(0,ncols);
