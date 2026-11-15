@@ -5238,7 +5238,11 @@ is an honest analogue.</p>
 </tr>
 <tr>
 <td><code>X.mean('col')</code></td>
-<td>horizontal (area-weighted) mean</td>
+<td>horizontal mean, every column weighted equally</td>
+</tr>
+<tr>
+<td><code>X.weighted(area).mean('col')</code></td>
+<td>horizontal mean weighted by the cell area</td>
 </tr>
 <tr>
 <td><code>X.mean('lev')</code></td>
@@ -5349,23 +5353,23 @@ is an honest analogue.</p>
   stream, <code>(qv*T_mid).shift(time=1)</code> is rejected at setup, and so is
   <code>(qv*T_mid).tend()</code>; use an averaged stream. The shift of a model field
   (<code>T_mid.shift(time=1)</code>) is one model step in any stream.</li>
-<li><code>X.weighted(W)</code> is xarray's: it must be followed by <code>.mean('lev')</code> or
-  <code>.sum('lev')</code>. <code>W</code> is any field or expression on the levels of <code>X</code> (with
-  layout <code>(lev)</code>, or that of <code>X</code> without its components), and must not be
-  masked; xarray rejects missing weights too. As in xarray, the weighted sum
-  skips the invalid levels of <code>X</code>, so a column with no valid level sums to 0,
-  and the weighted mean divides by the sum of <code>W</code> over the valid levels only,
-  and is missing where that sum is 0 (including where <code>W</code> is 0 on every level).
-  Levels where <code>W</code> is 0 are not read, so <code>X</code> need not be finite there (xarray
-  gets there by treating NaN as missing).
-  The units are those of <code>X</code> times those of <code>W</code> for the sum, and those of <code>X</code>
-  for the mean. <code>mean('col')</code> is always area weighted, so <code>weighted(..)</code> does
-  not apply to it.</li>
-<li><code>weighted(..)</code> replaces the <code>weights=</code> keyword of <code>mean</code>/<code>sum</code>, which is
-  gone. <code>weights='dp'</code> weighted by <code>pseudo_density/gravit</code>, so
-  <code>X.sum('lev',weights='dp')</code> is now <code>X.weighted(pseudo_density/gravit).sum('lev')</code>;
-  for a mean the constant cancels, and <code>X.weighted(pseudo_density).mean('lev')</code>
-  is enough. <code>weights='dz'</code> is <code>weighted(dz)</code>.</li>
+<li><code>X.weighted(W)</code> is xarray's: it must be followed by <code>.mean(..)</code> or <code>.sum(..)</code>,
+  and <code>W</code> must not be masked (xarray rejects missing weights too).</li>
+<li>Over <code>'lev'</code>, <code>W</code> is any field or expression on the levels of <code>X</code>, with
+    layout <code>(lev)</code> or that of <code>X</code> without its components. The weighted sum
+    skips the invalid levels of <code>X</code>, so a column with no valid level sums to 0,
+    and the weighted mean divides by the sum of <code>W</code> over the valid levels only,
+    and is missing where that sum is 0 (including where <code>W</code> is 0 on every
+    level). Levels where <code>W</code> is 0 are not read, so <code>X</code> need not be finite there
+    (xarray gets there by treating NaN as missing). The units are those of <code>X</code>
+    times those of <code>W</code> for the sum, and those of <code>X</code> for the mean.</li>
+<li>Over <code>'col'</code>, only the mean is available. <code>W</code> is <code>area</code>, the grid's cell
+    area, or any field with layout <code>(ncol)</code>. As over <code>'lev'</code>, the mean divides
+    by the sum of <code>W</code> over the valid columns, and is missing where that sum
+    is 0.</li>
+<li><code>X.mean('col')</code> weights every column equally, as xarray does. On a grid
+  whose cells differ in size, the mean over the domain is
+  <code>X.weighted(area).mean('col')</code>.</li>
 <li><code>broadcast_like</code> repeats <code>X</code> along the dimensions of <code>Y</code> that <code>X</code> lacks, so that
   <code>X</code> can be combined with <code>Y</code>. E.g., <code>dp.broadcast_like(horiz_winds)</code> would produce
   a version of <code>dp</code> (call it <code>dp_bcast</code>) with layout <code>(ncol,2,lev)</code>, where
@@ -5430,9 +5434,8 @@ is an honest analogue.</p>
 and so on.</p>
 <h3 id="where-this-departs-from-xarray">Where this departs from xarray</h3>
 <p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>weighted</code>, <code>where</code> and <code>shift</code> mean what
-they mean in xarray, on the same arguments, except that <code>mean('col')</code> is area
-weighted (xarray would be <code>weighted(area).mean('col')</code>). The rest have no
-xarray spelling we could adopt:</p>
+they mean in xarray, on the same arguments. The rest have no xarray spelling we
+could adopt:</p>
 <table>
 <thead>
 <tr>
@@ -5459,8 +5462,8 @@ xarray spelling we could adopt:</p>
 </tr>
 </tbody>
 </table>
-<p><code>X.weighted(W).mean('lev')</code> is <code>(X*W).sum('lev')/W.sum('lev')</code> over the valid
-levels of <code>X</code>, computed as one diagnostic rather than as a graph of three.</p>
+<p><code>X.weighted(W).mean(dim)</code> is <code>(X*W).sum(dim)/W.sum(dim)</code> over the valid
+entries of <code>X</code>, computed as one diagnostic rather than as a graph of three.</p>
 <p>Two operand names have no xarray analogue at all, because they are not fields:
 <code>mask</code> and <code>lev</code>, both legal only inside <code>where(..)</code>. See the note above for what they mean and where they may
 appear.</p>

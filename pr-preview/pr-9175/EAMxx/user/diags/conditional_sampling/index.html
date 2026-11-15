@@ -5210,7 +5210,7 @@ reducing it does not help. The workaround is to promote it to <code>Real</code> 
 multiplying by 1.
 E.g., the fraction of the earth where the surface pressure is &gt; 1e5Pa:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet_frac := (mask.where(ps&gt;100000)*1.0).mean('col')</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet_frac := (mask.where(ps&gt;100000)*1.0).weighted(area).mean('col')</span>
 </code></pre></div>
 <h2 id="caveats">Caveats</h2>
 <ul>

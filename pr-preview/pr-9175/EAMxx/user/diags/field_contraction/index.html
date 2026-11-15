@@ -5081,19 +5081,19 @@ across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
 We can also automatically calculate zonal averages and histograms.
 All of these are written as <a href="../expressions/">expressions</a>, and compose:
-e.g., <code>X.weighted(pseudo_density).mean('lev').mean('col')</code>. If using weighted
-vertical reductions, do the vertical reduction first.</p>
+e.g., <code>X.weighted(pseudo_density).mean('lev').weighted(area).mean('col')</code>. If
+using weighted vertical reductions, do the vertical reduction first.</p>
 <h2 id="horizontal-reduction">Horizontal reduction</h2>
-<p>We currently offer only one horizontal reduction <span class="arithmatex">\(C\)</span>, and it is defined as</p>
+<p>The horizontal reduction <span class="arithmatex">\(C\)</span> is the weighted average across all columns,</p>
 <div class="arithmatex">\[
-C_{\dots k} = \sum_{i} w_{i} \cdot F_{i \dots k}
+C_{\dots k} = \frac{\sum_{i} w_{i} \cdot F_{i \dots k}}{\sum_{i} w_{i}}
 \]</div>
 <p>where <span class="arithmatex">\(F_\text{i...k}\)</span> is the field at column <span class="arithmatex">\(i\)</span> and level <span class="arithmatex">\(k\)</span>,
 and <span class="arithmatex">\(w_{i}\)</span> is the weight at column <span class="arithmatex">\(i\)</span>.
 We note that the field <span class="arithmatex">\(F\)</span> can have other dimensions (<span class="arithmatex">\(\dots\)</span>).
-The weight <span class="arithmatex">\(w\)</span> is defined as the area fraction in column <span class="arithmatex">\(i\)</span>,
-that is, the area in column <span class="arithmatex">\(i\)</span> divided by the total area in all columns.</p>
-<p>To select the horizontal reduction, request <code>X.mean('col')</code>.</p>
+As in xarray, <code>X.mean('col')</code> weights every column by 1, and
+<code>X.weighted(W).mean('col')</code> by <code>W</code>, where <code>W</code> is <code>area</code>, the grid's cell area,
+or any field with layout <code>(ncol)</code>:</p>
 <table>
 <thead>
 <tr>
@@ -5104,9 +5104,19 @@ that is, the area in column <span class="arithmatex">\(i\)</span> divided by the
 </thead>
 <tbody>
 <tr>
+<td><code>X.weighted(area).mean('col')</code></td>
+<td>Cell area</td>
+<td>Average over the domain</td>
+</tr>
+<tr>
 <td><code>X.mean('col')</code></td>
-<td>Area fraction</td>
-<td>Average across all columns</td>
+<td>1</td>
+<td>Average across all columns, each counted once</td>
+</tr>
+<tr>
+<td><code>X.weighted(W).mean('col')</code></td>
+<td><span class="arithmatex">\(W_{i}\)</span></td>
+<td>Average across all columns, weighted by any field <code>W</code></td>
 </tr>
 </tbody>
 </table>
@@ -5230,17 +5240,17 @@ of the bins. For example, the histogram specified by
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_col      := T_mid.mean('col')</span><span class="w">                       </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_col      := T_mid.weighted(area).mean('col')</span><span class="w">        </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dpavg    := T_mid.weighted(pseudo_density).mean('lev')</span><span class="w">        </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dpsum    := T_mid.weighted(pseudo_density/gravit).sum('lev')</span><span class="w">  </span><span class="c1"># K * kg / m2</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dzavg    := T_mid.weighted(dz).mean('lev')</span><span class="w">                    </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dzsum    := T_mid.weighted(dz).sum('lev')</span><span class="w">                     </span><span class="c1"># K * m</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vavg     := T_mid.mean('lev')</span><span class="w">                       </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vsum     := T_mid.sum('lev')</span><span class="w">                        </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vsum_col := T_mid.sum('lev').mean('col')</span><span class="w">            </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_col_vsum := T_mid.mean('col').sum('lev')</span><span class="w">            </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dz_col   := T_mid.weighted(dz).sum('lev').mean('col')</span><span class="w">              </span><span class="c1"># K * m</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dp_col   := T_mid.weighted(pseudo_density).mean('lev').mean('col')</span><span class="w"> </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vsum_col := T_mid.sum('lev').weighted(area).mean('col')</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_col_vsum := T_mid.weighted(area).mean('col').sum('lev')</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dz_col   := T_mid.weighted(dz).sum('lev').weighted(area).mean('col')</span><span class="w">              </span><span class="c1"># K * m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_dp_col   := T_mid.weighted(pseudo_density).mean('lev').weighted(area).mean('col')</span><span class="w"> </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_zon180   := T_mid.zonal_mean(bins=180)</span><span class="w">              </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_zon90    := T_mid.zonal_mean(bins=90)</span><span class="w">               </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_hist     := T_mid.histogram(bins=[250,270,290,310])</span><span class="w"> </span><span class="c1"># count</span>
