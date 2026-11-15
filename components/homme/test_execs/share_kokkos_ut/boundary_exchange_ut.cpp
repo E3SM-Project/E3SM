@@ -250,10 +250,18 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
     Kokkos::deep_copy(field_3d_cxx_host,     field_3d_cxx);
     Kokkos::deep_copy(field_3d_int_cxx_host, field_3d_int_cxx);
     Kokkos::deep_copy(field_4d_cxx_host,     field_4d_cxx);
-    Kokkos::deep_copy(field_2d_strided_host,     field_2d_strided);
-    Kokkos::deep_copy(field_3d_strided_host,     field_3d_strided);
-    Kokkos::deep_copy(field_3d_int_strided_host, field_3d_int_strided);
-    Kokkos::deep_copy(field_4d_strided_host,     field_4d_strided);
+    auto copy_strided_to_host = [](const auto& field, const auto& reference, const auto& host) {
+      using view_type = typename std::decay<decltype(reference)>::type;
+      ExecViewManaged<typename view_type::data_type> contiguous("contiguous result", reference.layout());
+      Kokkos::deep_copy(contiguous, field);
+      auto contiguous_host = Kokkos::create_mirror_view(contiguous);
+      Kokkos::deep_copy(contiguous_host, contiguous);
+      Kokkos::deep_copy(host, contiguous_host);
+    };
+    copy_strided_to_host(field_2d_strided, field_2d_cxx, field_2d_strided_host);
+    copy_strided_to_host(field_3d_strided, field_3d_cxx, field_3d_strided_host);
+    copy_strided_to_host(field_3d_int_strided, field_3d_int_cxx, field_3d_int_strided_host);
+    copy_strided_to_host(field_4d_strided, field_4d_cxx, field_4d_strided_host);
 
     // Compare answers
     for (int ie=0; ie<num_elements; ++ie) {
