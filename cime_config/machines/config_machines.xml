@@ -3687,9 +3687,13 @@
     </environment_variables>
     <environment_variables compiler="gnu.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="METIS_ROOT">$SHELL{if [ -z "$METIS_ROOT" ]; then echo /grand/E3SMinput/soft/parmetis/4.0.3/gcc14; else echo "$METIS_ROOT"; fi}</env>
+      <env name="PARMETIS_ROOT">$SHELL{if [ -z "$PARMETIS_ROOT" ]; then echo /grand/E3SMinput/soft/parmetis/4.0.3/gcc14; else echo "$PARMETIS_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia.*">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="METIS_ROOT">$SHELL{if [ -z "$METIS_ROOT" ]; then echo /grand/E3SMinput/soft/parmetis/4.0.3/nvc25.9; else echo "$METIS_ROOT"; fi}</env>
+      <env name="PARMETIS_ROOT">$SHELL{if [ -z "$PARMETIS_ROOT" ]; then echo /grand/E3SMinput/soft/parmetis/4.0.3/nvc25.9; else echo "$PARMETIS_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu">
       <env name="NVCC_WRAPPER_DEFAULT_COMPILER">CC</env>
