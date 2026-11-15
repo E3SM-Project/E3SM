@@ -14,3 +14,13 @@ if (NOT DEBUG)
     e3sm_add_flags("eam/src/physics/cosp2/optics/quickbeam_optics.F90" "-no-vec")
   endif()
 endif()
+
+# Turn off fast-math for ifx 2025.3+
+if (NOT DEBUG)
+  if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM" AND
+      CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.3")
+    # ifx: clear out -freciprocal-math/unsafe-fp-math from the default fast model; source first clears them
+    string(PREPEND CMAKE_Fortran_FLAGS " -fp-model=source")
+  endif()
+endif()
+
