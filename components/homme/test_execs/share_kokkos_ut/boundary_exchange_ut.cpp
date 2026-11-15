@@ -185,7 +185,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
             field_2d_cxx_host(ie,itl,igp,jgp) = field_2d_f90(ie,itl,igp,jgp);
     }}}}
     Kokkos::deep_copy(field_2d_cxx, field_2d_cxx_host);
-    Kokkos::deep_copy(field_2d_strided, field_2d_cxx_host);
+    Kokkos::deep_copy(field_2d_strided, field_2d_cxx);
 
     genRandArray(field_3d_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
@@ -198,7 +198,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
               field_3d_cxx_host(ie,itl,igp,jgp,ilev)[ivec] = field_3d_f90(ie,itl,level,igp,jgp);
     }}}}}
     Kokkos::deep_copy(field_3d_cxx, field_3d_cxx_host);
-    Kokkos::deep_copy(field_3d_strided, field_3d_cxx_host);
+    Kokkos::deep_copy(field_3d_strided, field_3d_cxx);
 
     genRandArray(field_3d_int_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
@@ -211,7 +211,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
               field_3d_int_cxx_host(ie,itl,igp,jgp,ilev)[ivec] = field_3d_int_f90(ie,itl,level,igp,jgp);
     }}}}}
     Kokkos::deep_copy(field_3d_int_cxx, field_3d_int_cxx_host);
-    Kokkos::deep_copy(field_3d_int_strided, field_3d_int_cxx_host);
+    Kokkos::deep_copy(field_3d_int_strided, field_3d_int_cxx);
 
     genRandArray(field_4d_f90,engine,dreal);
     for (int ie=0; ie<num_elements; ++ie) {
@@ -225,7 +225,7 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
                 field_4d_cxx_host(ie,itl,idim,igp,jgp,ilev)[ivec] = field_4d_f90(ie,itl,idim,level,igp,jgp);
     }}}}}}
     Kokkos::deep_copy(field_4d_cxx, field_4d_cxx_host);
-    Kokkos::deep_copy(field_4d_strided, field_4d_cxx_host);
+    Kokkos::deep_copy(field_4d_strided, field_4d_cxx);
 
     // Perform boundary exchange
     boundary_exchange_test_f90(field_min_1d_f90.data(), field_max_1d_f90.data(),
