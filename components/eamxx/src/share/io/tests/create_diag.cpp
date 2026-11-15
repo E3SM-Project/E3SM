@@ -300,7 +300,8 @@ TEST_CASE("create_diag")
     REQUIRE (d4->get_params().get<std::string>("field_name")=="T_mid");
     REQUIRE (d4->get_params().get<std::string>("weight_name")=="pseudo_density");
     REQUIRE (d4->get_params().get<std::string>("contract_method")=="avg");
-    REQUIRE (not d4->get_params().isParameter("weighting_method"));
+    // (the diag fills in its default weighting_method, which a weight replaces)
+    REQUIRE (d4->get_params().get<std::string>("weighting_method")=="none");
 
     // The weight may be an expression; it goes down by name, like the receiver
     auto d5 = create_diagnostic("(qc+qi).weighted(pseudo_density/gravit).sum('lev')",grid);
