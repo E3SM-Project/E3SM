@@ -77,7 +77,7 @@ E.g., the fraction of the earth where the surface pressure is > 1e5Pa:
 
 ```yaml
 field_names:
-  - wet_frac := (mask.where(ps>100000)*1.0).mean('col')
+  - wet_frac := (mask.where(ps>100000)*1.0).weighted(area).mean('col')
 ```
 
 ## Caveats

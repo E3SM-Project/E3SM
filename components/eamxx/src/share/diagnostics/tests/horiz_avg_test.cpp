@@ -5,6 +5,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -147,6 +148,96 @@ TEST_CASE("horiz_avg") {
     diag->compute(t0);
     tgt_mask.deep_copy(0);
     REQUIRE(views_are_equal(d_mask,tgt_mask));
+  }
+
+  SECTION ("weights") {
+    // As in xarray: weighting_method='none' is X.mean('col'), weight_name is
+    // X.weighted(W).mean('col'), and weight_name='area' is the grid's cell area
+    FieldLayout layout = grid->get_2d_scalar_layout();
+    Field x (FieldIdentifier("x", layout, ekat::units::K, grid->name()), true);
+    Field w (FieldIdentifier("w", layout, ekat::units::Pa, grid->name()), true);
+    for (auto f : {&x,&w}) {
+      f->get_header().get_tracking().update_time_stamp(t0);
+    }
+    randomize_uniform(x,seed++);
+    randomize_uniform(w,seed++,0.5,2.0);
+
+    auto make = [&](const std::string& key, const std::string& val) {
+      ekat::ParameterList params;
+      params.set("grid_name", grid->name());
+      params.set<std::string>("field_name", "x");
+      params.set<std::string>(key, val);
+      return diag_factory.create("HorizAvg", comm, params, grid);
+    };
+    auto run = [&](const std::shared_ptr<AbstractDiagnostic>& d) {
+      d->set_input_field(x);
+      if (d->get_params().isParameter("weight_name") and
+          d->get_params().get<std::string>("weight_name")=="w") {
+        d->set_input_field(w);
+      }
+      d->initialize();
+      d->compute(t0);
+      return d->get();
+    };
+    auto check = [&](const Field& diag_f, const Field& weight) {
+      auto num = diag_f.clone("num");
+      auto den = diag_f.clone("den");
+      auto ones = x.clone("ones");
+      ones.deep_copy(1);
+      horiz_contraction(num,x,weight,comm);
+      horiz_contraction(den,ones,weight,comm);
+      num.scale_inv(den);
+      auto diff = diag_f.clone(CloneFlags::CopyData);
+      diff.update(num,-1,1);
+      REQUIRE_THAT (inf_norm(diff,&comm).as<Real>(), Catch::WithinAbs(0,tol));
+    };
+
+    // Unweighted: the plain average over all columns
+    auto ones = w.clone("ones");
+    ones.deep_copy(1);
+    auto du = run(make("weighting_method","none"));
+    REQUIRE (not du.has_valid_mask());
+    check(du,ones);
+
+    // 'area' is the grid's area, which is not an input, and the default
+    auto da = make("weight_name","area");
+    REQUIRE (da->get_input_fields_names()==std::list<std::string>{"x"});
+    check(run(da),area);
+
+    // A weight field: sum(w*x)/sum(w), masked only where the weights sum to 0
+    auto dw = run(make("weight_name","w"));
+    REQUIRE (dw.has_valid_mask());
+    REQUIRE (dw.get_header().get_identifier().get_units()==ekat::units::K);
+    dw.get_valid_mask().sync_to_host();
+    REQUIRE (dw.get_valid_mask().get_internal_view_data<int,Host>()[0]==1);
+    check(dw,w);
+
+    w.deep_copy(0);
+    auto dz = run(make("weight_name","w"));
+    dz.sync_to_host();
+    dz.get_valid_mask().sync_to_host();
+    REQUIRE (dz.get_valid_mask().get_internal_view_data<int,Host>()[0]==0);
+    REQUIRE (dz.get_internal_view_data<Real,Host>()[0]==constants::fill_value<Real>);
+
+    // Rejected: a masked weight, a weight that is not (COL), both params, a bad method
+    auto wm = w.clone("wm");
+    wm.create_valid_mask();
+    auto dm = make("weight_name","wm");
+    dm->set_input_field(x);
+    dm->set_input_field(wm);
+    REQUIRE_THROWS (dm->initialize());
+    Field w3 (FieldIdentifier("w3", grid->get_3d_scalar_layout(LEV), ekat::units::Pa, grid->name()), true);
+    auto d3 = make("weight_name","w3");
+    d3->set_input_field(x);
+    d3->set_input_field(w3);
+    REQUIRE_THROWS (d3->initialize());
+    ekat::ParameterList both;
+    both.set("grid_name", grid->name());
+    both.set<std::string>("field_name", "x");
+    both.set<std::string>("weight_name", "w");
+    both.set<std::string>("weighting_method", "none");
+    REQUIRE_THROWS (diag_factory.create("HorizAvg", comm, both, grid));
+    REQUIRE_THROWS (make("weighting_method","dp"));
   }
 
   SECTION ("constant_x") {

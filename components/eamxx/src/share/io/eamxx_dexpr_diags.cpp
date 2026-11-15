@@ -424,10 +424,14 @@ void translate_call (const Call& call, const ast::Expression& self,
       EKAT_REQUIRE_MSG (call.name=="mean",
           "Error! Only an average is available over 'col'.\n"
           " - expression: " + ast::to_string(self) + "\n");
-      EKAT_REQUIRE_MSG (not weighted,
-          "Error! Averaging over 'col' is always area weighted; weighted(..) does not apply.\n"
-          " - expression: " + ast::to_string(self) + "\n");
+      // As in xarray, a plain mean is unweighted; X.weighted(area).mean('col')
+      // is the area-weighted one ('area' being the grid's cell area)
       diag_name = "HorizAvg";
+      if (weighted) {
+        params.set<std::string>("weight_name",name_of(*w.positional[0]));
+      } else {
+        params.set<std::string>("weighting_method","none");
+      }
       return;
     }
 

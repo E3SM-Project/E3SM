@@ -79,7 +79,8 @@ is an honest analogue.
 | `X.interp(p_mid=500, units='hPa')` | `X` interpolated to 500 hPa |
 | `X.interp(z_mid=10, reference='surface')` | `X` interpolated to 10 m above the surface |
 | `X.interp(z_mid=1000, reference='sealevel')` | `X` interpolated to 1000 m above sea level |
-| `X.mean('col')` | horizontal (area-weighted) mean |
+| `X.mean('col')` | horizontal mean, every column weighted equally |
+| `X.weighted(area).mean('col')` | horizontal mean weighted by the cell area |
 | `X.mean('lev')` | vertical mean |
 | `X.sum('lev')` | vertical sum |
 | `X.weighted(pseudo_density).mean('lev')` | vertical mean weighted by the layer's pressure thickness |
@@ -140,23 +141,23 @@ Notes:
   stream, `(qv*T_mid).shift(time=1)` is rejected at setup, and so is
   `(qv*T_mid).tend()`; use an averaged stream. The shift of a model field
   (`T_mid.shift(time=1)`) is one model step in any stream.
-- `X.weighted(W)` is xarray's: it must be followed by `.mean('lev')` or
-  `.sum('lev')`. `W` is any field or expression on the levels of `X` (with
-  layout `(lev)`, or that of `X` without its components), and must not be
-  masked; xarray rejects missing weights too. As in xarray, the weighted sum
-  skips the invalid levels of `X`, so a column with no valid level sums to 0,
-  and the weighted mean divides by the sum of `W` over the valid levels only,
-  and is missing where that sum is 0 (including where `W` is 0 on every level).
-  Levels where `W` is 0 are not read, so `X` need not be finite there (xarray
-  gets there by treating NaN as missing).
-  The units are those of `X` times those of `W` for the sum, and those of `X`
-  for the mean. `mean('col')` is always area weighted, so `weighted(..)` does
-  not apply to it.
-- `weighted(..)` replaces the `weights=` keyword of `mean`/`sum`, which is
-  gone. `weights='dp'` weighted by `pseudo_density/gravit`, so
-  `X.sum('lev',weights='dp')` is now `X.weighted(pseudo_density/gravit).sum('lev')`;
-  for a mean the constant cancels, and `X.weighted(pseudo_density).mean('lev')`
-  is enough. `weights='dz'` is `weighted(dz)`.
+- `X.weighted(W)` is xarray's: it must be followed by `.mean(..)` or `.sum(..)`,
+  and `W` must not be masked (xarray rejects missing weights too).
+  - Over `'lev'`, `W` is any field or expression on the levels of `X`, with
+    layout `(lev)` or that of `X` without its components. The weighted sum
+    skips the invalid levels of `X`, so a column with no valid level sums to 0,
+    and the weighted mean divides by the sum of `W` over the valid levels only,
+    and is missing where that sum is 0 (including where `W` is 0 on every
+    level). Levels where `W` is 0 are not read, so `X` need not be finite there
+    (xarray gets there by treating NaN as missing). The units are those of `X`
+    times those of `W` for the sum, and those of `X` for the mean.
+  - Over `'col'`, only the mean is available. `W` is `area`, the grid's cell
+    area, or any field with layout `(ncol)`. As over `'lev'`, the mean divides
+    by the sum of `W` over the valid columns, and is missing where that sum
+    is 0.
+- `X.mean('col')` weights every column equally, as xarray does. On a grid
+  whose cells differ in size, the mean over the domain is
+  `X.weighted(area).mean('col')`.
 - `broadcast_like` repeats `X` along the dimensions of `Y` that `X` lacks, so that
   `X` can be combined with `Y`. E.g., `dp.broadcast_like(horiz_winds)` would produce
   a version of `dp` (call it `dp_bcast`) with layout `(ncol,2,lev)`, where
@@ -223,9 +224,8 @@ and so on.
 ### Where this departs from xarray
 
 `isel`, `interp`, `mean`, `sum`, `weighted`, `where` and `shift` mean what
-they mean in xarray, on the same arguments, except that `mean('col')` is area
-weighted (xarray would be `weighted(area).mean('col')`). The rest have no
-xarray spelling we could adopt:
+they mean in xarray, on the same arguments. The rest have no xarray spelling we
+could adopt:
 
 | | |
 | --- | --- |
@@ -234,8 +234,8 @@ xarray spelling we could adopt:
 | `over_dt`, `tend` | no xarray equivalent |
 | `searchsorted` | named after numpy's (`side='right'`), but takes `units`, and for heights, which decrease with the level index, it looks for the first level below the target |
 
-`X.weighted(W).mean('lev')` is `(X*W).sum('lev')/W.sum('lev')` over the valid
-levels of `X`, computed as one diagnostic rather than as a graph of three.
+`X.weighted(W).mean(dim)` is `(X*W).sum(dim)/W.sum(dim)` over the valid
+entries of `X`, computed as one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
 `mask` and `lev`, both legal only inside `where(..)`. See the note above for what they mean and where they may

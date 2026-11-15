@@ -5,28 +5,29 @@ across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
 We can also automatically calculate zonal averages and histograms.
 All of these are written as [expressions](expressions.md), and compose:
-e.g., `X.weighted(pseudo_density).mean('lev').mean('col')`. If using weighted
-vertical reductions, do the vertical reduction first.
+e.g., `X.weighted(pseudo_density).mean('lev').weighted(area).mean('col')`. If
+using weighted vertical reductions, do the vertical reduction first.
 
 ## Horizontal reduction
 
-We currently offer only one horizontal reduction $C$, and it is defined as
+The horizontal reduction $C$ is the weighted average across all columns,
 
 $$
-C_{\dots k} = \sum_{i} w_{i} \cdot F_{i \dots k}
+C_{\dots k} = \frac{\sum_{i} w_{i} \cdot F_{i \dots k}}{\sum_{i} w_{i}}
 $$
 
 where $F_\text{i...k}$ is the field at column $i$ and level $k$,
 and $w_{i}$ is the weight at column $i$.
 We note that the field $F$ can have other dimensions ($\dots$).
-The weight $w$ is defined as the area fraction in column $i$,
-that is, the area in column $i$ divided by the total area in all columns.
-
-To select the horizontal reduction, request `X.mean('col')`.
+As in xarray, `X.mean('col')` weights every column by 1, and
+`X.weighted(W).mean('col')` by `W`, where `W` is `area`, the grid's cell area,
+or any field with layout `(ncol)`:
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X.mean('col')` | Area fraction | Average across all columns |
+| `X.weighted(area).mean('col')` | Cell area | Average over the domain |
+| `X.mean('col')` | 1 | Average across all columns, each counted once |
+| `X.weighted(W).mean('col')` | $W_{i}$ | Average across all columns, weighted by any field `W` |
 
 ## Vertical reduction
 
@@ -101,17 +102,17 @@ fields:
   physics_pg2:
     field_names:
       # in this example, we use T_mid in units of K
-      - T_col      := T_mid.mean('col')                       # K
+      - T_col      := T_mid.weighted(area).mean('col')        # K
       - T_dpavg    := T_mid.weighted(pseudo_density).mean('lev')        # K
       - T_dpsum    := T_mid.weighted(pseudo_density/gravit).sum('lev')  # K * kg / m2
       - T_dzavg    := T_mid.weighted(dz).mean('lev')                    # K
       - T_dzsum    := T_mid.weighted(dz).sum('lev')                     # K * m
       - T_vavg     := T_mid.mean('lev')                       # K
       - T_vsum     := T_mid.sum('lev')                        # K
-      - T_vsum_col := T_mid.sum('lev').mean('col')            # K
-      - T_col_vsum := T_mid.mean('col').sum('lev')            # K
-      - T_dz_col   := T_mid.weighted(dz).sum('lev').mean('col')              # K * m
-      - T_dp_col   := T_mid.weighted(pseudo_density).mean('lev').mean('col') # K
+      - T_vsum_col := T_mid.sum('lev').weighted(area).mean('col')  # K
+      - T_col_vsum := T_mid.weighted(area).mean('col').sum('lev')  # K
+      - T_dz_col   := T_mid.weighted(dz).sum('lev').weighted(area).mean('col')              # K * m
+      - T_dp_col   := T_mid.weighted(pseudo_density).mean('lev').weighted(area).mean('col') # K
       - T_zon180   := T_mid.zonal_mean(bins=180)              # K
       - T_zon90    := T_mid.zonal_mean(bins=90)               # K
       - T_hist     := T_mid.histogram(bins=[250,270,290,310]) # count

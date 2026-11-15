@@ -273,9 +273,18 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("dexpr_reductions") {
+    // As in xarray: a plain mean is unweighted, and the area-weighted one is explicit
     auto d1 = create_diagnostic("T_mid.mean('col')",grid);
     REQUIRE (std::dynamic_pointer_cast<HorizAvg>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("weighting_method")=="none");
+    auto d1a = create_diagnostic("T_mid.weighted(area).mean('col')",grid);
+    REQUIRE (std::dynamic_pointer_cast<HorizAvg>(d1a)!=nullptr);
+    REQUIRE (d1a->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d1a->get_params().get<std::string>("weight_name")=="area");
+    REQUIRE (d1a->get_input_fields_names()==std::list<std::string>{"T_mid"});
+    auto d1w = create_diagnostic("T_mid.weighted(ps).mean('col')",grid);
+    REQUIRE (d1w->get_params().get<std::string>("weight_name")=="ps");
 
     auto d2 = create_diagnostic("T_mid.mean('lev')",grid);
     REQUIRE (std::dynamic_pointer_cast<VertContract>(d2)!=nullptr);
@@ -305,15 +314,13 @@ TEST_CASE("create_diag")
 
     REQUIRE_THROWS (create_diagnostic("T_mid.mean('time')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.sum('col')",grid));
-    // 'col' is always area weighted
-    REQUIRE_THROWS (create_diagnostic("T_mid.weighted(pseudo_density).mean('col')",grid));
     // weighted(..) only feeds mean/sum, and takes a field. Elsewhere, e.g. in
     // X.weighted(W).isel(lev=3), it is an operand, which resolves (and throws)
     // just as it does as a whole request:
     REQUIRE_THROWS (create_diagnostic("T_mid.weighted(pseudo_density)",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.weighted(2).mean('lev')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.weighted().mean('lev')",grid));
-    // the keyword is gone
+    // weights is not a keyword
     REQUIRE_THROWS (create_diagnostic("T_mid.mean('lev',weights='dp')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.sum('lev',weights='dz')",grid));
   }
