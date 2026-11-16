@@ -401,14 +401,14 @@ protected:
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
+  template<typename ST, typename STX>
+  void update_impl (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
+  template<typename ST, typename STX>
+  void update_fill_aware (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
+  template<typename ST, typename STX>
+  void update_masked (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
