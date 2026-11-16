@@ -25,7 +25,6 @@ module ocn_equation_of_state_jm
 
    use mpas_kind_types
    use mpas_pool_routines
-   use ocn_config
 
    implicit none
    private
@@ -63,12 +62,6 @@ module ocn_equation_of_state_jm
 
    real (kind=RKIND), dimension(:), allocatable :: &
       ocnEqStatePRef   ! reference pressure at each layer
-
-   !*** whether to evaluate in-situ and relative-displaced density at the
-   !*** pressure of each layer's actual depth (-zMid) instead of
-   !*** ocnEqStatePRef; init mode uses ocnEqStatePRef
-
-   logical :: ocnEqStatePFromZMid
 
    !*** valid range of T,S for Jackett and McDougall
 
@@ -725,9 +718,9 @@ contains
 !>  layer kDisplaced, giving potential density.
 !>
 !>  The pressure of a displaced layer is that of its actual depth,
-!>  -zMid, with the layer limited to the column's active layers.  In
-!>  init mode, it is ocnEqStatePRef, the pressure at the layer's
-!>  reference depth.  Potential density always uses ocnEqStatePRef.
+!>  -zMid, with the layer limited to the column's active layers.
+!>  Potential density uses ocnEqStatePRef, the pressure at the
+!>  reference depth of layer kDisplaced.
 !
 !-----------------------------------------------------------------------
 
@@ -797,7 +790,7 @@ contains
          !$omp end parallel
 #endif
 
-      else if (ocnEqStatePFromZMid) then
+      else
 
          ! the pressure at the actual depth of the displaced layer, from
          ! the same formula as ocnEqStatePRef
@@ -817,27 +810,6 @@ contains
                  0.059808_RKIND  *(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
                + 0.100766_RKIND  *depth                                 &
                + 2.28405e-7_RKIND*depth**2
-         end do
-         end do
-#ifndef MPAS_OPENACC
-         !$omp end do
-         !$omp end parallel
-#endif
-
-      else
-
-         ! the pressure at the reference depth of the displaced layer
-#ifdef MPAS_OPENACC
-         !$acc parallel loop gang vector collapse(2) &
-         !$acc    present(p, ocnEqStatePRef)
-#else
-         !$omp parallel
-         !$omp do schedule(runtime) private(k, kRef)
-#endif
-         do iCell=1,nCells
-         do k=1,nVertLevels
-            kRef = max(min(k + kDisplaced, nVertLevels), 1)
-            p(k,iCell) = ocnEqStatePRef(kRef)
          end do
          end do
 #ifndef MPAS_OPENACC
@@ -909,8 +881,6 @@ contains
       !*** initialize error flag
 
       err = 0
-
-      ocnEqStatePFromZMid = trim(config_ocean_run_mode) /= 'init'
 
       !*** extract vertical mesh info for computing ref pressure
       !*** since vertical mesh info same for all blocks, only need first
