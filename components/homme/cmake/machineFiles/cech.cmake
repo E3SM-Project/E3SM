@@ -1,32 +1,22 @@
 # CMake initial cache file for cech (NVIDIA GB200 Grace-Blackwell)
+#
+# Inherit common cech settings (aarch64 check, compilers, -tp=grace, -nonvmalloc)
+# from cime_config/machines/cmake_macros/cech.cmake.
+INCLUDE ("${CMAKE_CURRENT_LIST_DIR}/../../../../cime_config/machines/cmake_macros/cech.cmake")
 
-SET (CMAKE_Fortran_COMPILER mpifort CACHE FILEPATH "")
-SET (CMAKE_C_COMPILER       mpicc   CACHE FILEPATH "")
-SET (CMAKE_CXX_COMPILER     mpicxx  CACHE FILEPATH "")
+SET (CMAKE_Fortran_COMPILER "${MPIFC}"  CACHE FILEPATH "")
+SET (CMAKE_C_COMPILER       "${MPICC}"  CACHE FILEPATH "")
+SET (CMAKE_CXX_COMPILER     "${MPICXX}" CACHE FILEPATH "")
 
-SET (WITH_PNETCDF FALSE CACHE BOOL "")
-
-EXECUTE_PROCESS(COMMAND nf-config --prefix
-  RESULT_VARIABLE NFCONFIG_RESULT
-  OUTPUT_VARIABLE NFCONFIG_OUTPUT
-  ERROR_VARIABLE  NFCONFIG_ERROR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-IF(NOT NFCONFIG_RESULT EQUAL 0)
-  MESSAGE(FATAL_ERROR "nf-config failed: ${NFCONFIG_ERROR}")
-ENDIF()
-SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "")
-
-EXECUTE_PROCESS(COMMAND nc-config --prefix
-  RESULT_VARIABLE NCCONFIG_RESULT
-  OUTPUT_VARIABLE NCCONFIG_OUTPUT
-  ERROR_VARIABLE  NCCONFIG_ERROR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-IF(NOT NCCONFIG_RESULT EQUAL 0)
-  MESSAGE(FATAL_ERROR "nc-config failed: ${NCCONFIG_ERROR}")
-ENDIF()
-SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
+SET (NETCDF_DIR           "/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf"  CACHE FILEPATH "")
+SET (NetCDF_C_PATH        "/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf"  CACHE STRING   "")
+SET (NetCDF_Fortran_PATH  "/global/homes/n/ndk/e3sm/3rdparty/compute/netcdf"  CACHE STRING   "")
+SET (PNETCDF_DIR          "/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf" CACHE FILEPATH "")
+SET (PnetCDF_C_PATH       "/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf" CACHE STRING   "")
+SET (PnetCDF_Fortran_PATH "/global/homes/n/ndk/e3sm/3rdparty/compute/pnetcdf" CACHE STRING   "")
+SET (HDF5_PATH            "/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5"    CACHE STRING   "")
+SET (WITH_PNETCDF         TRUE                                                CACHE BOOL     "")
+SET (WITH_HDF5            TRUE                                                CACHE BOOL     "")
 
 SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
@@ -39,10 +29,10 @@ SET (HOMME_TESTING_PROFILE    "short" CACHE STRING "")
 
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
-SET (ADD_Fortran_FLAGS "-i4 -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback -DCPRNVIDIA -DFORTRANUNDERSCORE -tp=grace -noacc -O2" CACHE STRING "")
-SET (ADD_C_FLAGS       "-DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA -tp=grace -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
-SET (ADD_CXX_FLAGS     "-DTHRUST_IGNORE_CUB_VERSION_CHECK -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA -tp=grace -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
-SET (ADD_LINKER_FLAGS  "-Wl,--allow-multiple-definition -lstdc++ -tp=grace -noacc -lacchost -L/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib -lhdf5_hl -lhdf5" CACHE STRING "")
+SET (ADD_Fortran_FLAGS "-i4 -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee -DHAVE_IEEE_ARITHMETIC -Mallocatable=03 -DNO_R16 -traceback -DCPRNVIDIA -DFORTRANUNDERSCORE${CMAKE_Fortran_FLAGS} -noacc -O2" CACHE STRING "")
+SET (ADD_C_FLAGS       "-DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA${CMAKE_C_FLAGS} -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
+SET (ADD_CXX_FLAGS     "-DTHRUST_IGNORE_CUB_VERSION_CHECK -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA${CMAKE_CXX_FLAGS} -noacc -Kieee -O2 -Mnovect" CACHE STRING "")
+SET (ADD_LINKER_FLAGS  "-Wl,--allow-multiple-definition -lstdc++${CMAKE_EXE_LINKER_FLAGS} -noacc -lacchost -L/global/homes/n/ndk/e3sm/3rdparty/compute/hdf5/lib -lhdf5_hl -lhdf5" CACHE STRING "")
 
 # Prevent CMake's default NVHPC Debug flags (-g -O0 -Mbounds / -g -O0) from
 # being appended after ADD_*_FLAGS when CMAKE_BUILD_TYPE=Debug (HOMME_D).
