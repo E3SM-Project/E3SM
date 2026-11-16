@@ -9,7 +9,7 @@ module pcd
     integer, parameter :: dp = selected_real_kind(12)
 
     ! pcd.yaml version and institution information
-    character(len=*), parameter :: pcdversion = "0.3.0"
+    character(len=*), parameter :: pcdversion = "0.4.0"
     character(len=*), parameter :: pcdinstitution = "E3SM Project"
 
     !mathematical constants
@@ -94,6 +94,7 @@ module pcd
 
     !earth_seawater constants
     real(dp), parameter :: seawater_density_reference = 1026.0_dp                   ! [kg m-3] Gill_1982
+    real(dp), parameter :: ice_shelf_seawater_density_reference = 1028.0_dp         ! [kg m-3] AsayDavis2016
     real(dp), parameter :: seawater_specific_heat_capacity_reference = 3996.0_dp    ! [J kg-1 K-1] Gill_1982
     real(dp), parameter :: seawater_specific_heat_capacity_teos10 = &
         &3991.86795711963_dp                                                        ! [J kg-1 K-1] TEOS10_2010
