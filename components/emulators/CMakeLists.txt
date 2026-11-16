@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(emulators LANGUAGES C CXX Fortran)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+
 if (DEFINED E3SM_SOURCE_DIR)
   set(STANDALONE_MODE OFF)
 else()
@@ -19,8 +21,10 @@ option(EMULATOR_ENABLE_TESTS "Build emulator unit tests" ${STANDALONE_MODE})
 # Sanitizers need the libasan/libubsan runtimes, which many toolchains lack.
 option(EMULATOR_ENABLE_SANITIZERS
        "Build coupler_api with AddressSanitizer and UBSan (Debug, GCC only)" OFF)
+
 if(EMULATOR_ENABLE_TESTS)
-  # Enable testing at the top level
+  include(configure_emulators)
+  configure_emulators()
   enable_testing()
 endif()
 
@@ -195,6 +199,8 @@ add_subdirectory(common)
 add_subdirectory(interface)
 add_subdirectory(inference)
 add_subdirectory(coupler_api)
+
 if(EMULATOR_ENABLE_TESTS)
-add_subdirectory(tests)
+  add_subdirectory(tests)
 endif()
+

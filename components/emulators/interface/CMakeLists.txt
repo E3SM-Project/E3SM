@@ -1,4 +1,3 @@
-enable_testing()
 if(EMULATOR_ENABLE_TESTS)
   add_subdirectory(tests)
 endif()
