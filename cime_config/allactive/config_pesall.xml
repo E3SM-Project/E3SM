@@ -726,8 +726,8 @@
   </grid>
   <grid name="a%ne30.+_oi%.*EC.*to">
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
-      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
-        <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 8 nodes, stacked layout, 128x1 4-5 sypd</comment>
+      <pes compset=".*EAM.+ELM.+MPASSI.+(?:MPASO|OMEGA).+MOSART.+SGLC" pesize="any">
+        <comment> pm-cpu: -compset WCYCL* -res ne30pg2_EC meshes with ocean on 8 nodes, stacked layout, 128x1 4-5 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
           <ntasks_atm>1024</ntasks_atm>
