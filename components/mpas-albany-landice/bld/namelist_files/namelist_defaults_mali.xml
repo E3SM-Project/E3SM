@@ -15,6 +15,9 @@
 <config_unrealistic_velocity>0.01592356685</config_unrealistic_velocity>
 <config_nonconvergence_error>.true.</config_nonconvergence_error>
 <config_effective_pressure_max>1.0e36</config_effective_pressure_max>
+<config_floating_ice_activation_reference_thickness_fraction>0.95</config_floating_ice_activation_reference_thickness_fraction>
+<config_floating_ice_deactivation_reference_thickness_fraction>0.85</config_floating_ice_deactivation_reference_thickness_fraction>
+<config_floating_ice_scale_mass_balance_by_reference_thickness>.true.</config_floating_ice_scale_mass_balance_by_reference_thickness>
 
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>

@@ -132,6 +132,30 @@ Valid values: Any positive, real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_floating_ice_activation_reference_thickness_fraction" type="real"
+	category="velocity_solver" group="velocity_solver">
+A non-dynamic floating cell becomes dynamic when its thickness exceeds the larger of config_dynamic_thickness and this fraction times its referenceThickness.  referenceThickness is the thickness of the thinnest dynamic cell (floating dynamic cells are preferred over grounded dynamic cells) in the nearest ring of neighbors containing dynamic ice, searching up to min(4, config_num_halos) rings outward through cells with ice.  Must be greater than or equal to config_floating_ice_deactivation_reference_thickness_fraction and no larger than 1.
+
+Valid values: Any real value between 0 and 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_floating_ice_deactivation_reference_thickness_fraction" type="real"
+	category="velocity_solver" group="velocity_solver">
+A dynamic floating cell at the ice margin (adjacent to an ice-free cell) becomes non-dynamic when its thickness falls below this fraction times its reference thickness (calculated as for config_floating_ice_activation_reference_thickness_fraction).  All cells also become non-dynamic when their thickness falls to config_dynamic_thickness or below.  A value of 0 disables deactivation based on reference thickness, so that floating cells, once dynamic, remain dynamic until their thickness falls to config_dynamic_thickness; this is not recommended with facemelting or rate-based calving laws, which act to deplete margin cells.  Must be less than or equal to config_floating_ice_activation_reference_thickness_fraction.
+
+Valid values: Any real value between 0 and config_floating_ice_activation_reference_thickness_fraction.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_floating_ice_scale_mass_balance_by_reference_thickness" type="logical"
+	category="velocity_solver" group="velocity_solver">
+If true, the surface and basal mass balance applied to non-dynamic floating cells is scaled by min(1, thickness/referenceThickness), treating the non-dynamic cell as partially ice-covered.  The scaling is not applied where referenceThickness is 0 (no dynamic ice found nearby).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 

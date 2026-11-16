@@ -15,6 +15,9 @@ add_default($nl, 'config_beta_thawed_only');
 add_default($nl, 'config_unrealistic_velocity');
 add_default($nl, 'config_nonconvergence_error');
 add_default($nl, 'config_effective_pressure_max');
+add_default($nl, 'config_floating_ice_activation_reference_thickness_fraction');
+add_default($nl, 'config_floating_ice_deactivation_reference_thickness_fraction');
+add_default($nl, 'config_floating_ice_scale_mass_balance_by_reference_thickness');
 
 #############################
 # Namelist group: advection #
