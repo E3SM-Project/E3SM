@@ -65,7 +65,8 @@ public:
   Harness& operator=(const Harness&) = delete;
   Harness& operator=(const Harness&&) = delete;
 
-  void transfer_bindings(ExternalBindings bindings);
+  // Sets bindings to those given. Pass in bindings using `std::move`.
+  void set_bindings(ExternalBindings bindings);
 
   void initialize(const std::filesystem::path& plan, RouteBufferMap external);
   void initialize(const std::filesystem::path& plan) {

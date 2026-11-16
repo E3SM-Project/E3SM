@@ -252,7 +252,7 @@ using namespace e3sm::emulator;
 Harness harness;
 
 // x2l and l2x spans are owned by the caller.
-harness.transfer_bindings(ExternalBindings{
+harness.set_bindings(ExternalBindings{
     .to_external = {{"surface_flux", flux}},
     .from_external = {{"temperature", temperature}, {"soil_moisture", moisture}},
 });
@@ -271,7 +271,7 @@ harness.run_process("lnd-emulator");   // import, run inference, export
 harness.import_to_external("cpl7");    // routes -> external buffers
 ```
 
-Call these in order: `transfer_bindings` and `add_process` must both come before `initialize`, because components can't be added afterwards.
+Call these in order: `set_bindings` and `add_process` must both come before `initialize`, because components can't be added afterwards.
 
 `initialize` also accepts a `RouteBufferMap`, which uses caller-owned storage for the named routes instead of allocating it.
 Each buffer must be the same size as the route's source field. See `interface/tests/test_harness.cpp` for a complete example.
@@ -335,7 +335,7 @@ The caller owns the field's storage. Bind the same span in both directions, and 
 ```cpp
 std::vector<double> t_0 = initial_t_0();
 
-harness.transfer_bindings(ExternalBindings{
+harness.set_bindings(ExternalBindings{
     .to_external = {{"T_0", t_0}},
     .from_external = {{"T_0", t_0}},
 });

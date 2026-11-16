@@ -5,7 +5,7 @@ add_library(coupler_api
   coupler.cpp
   coupler_driver.cpp
   moab_adapter.cpp
-  moab_transport.cpp
+  moab_exchange.cpp
   process.cpp
 )
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

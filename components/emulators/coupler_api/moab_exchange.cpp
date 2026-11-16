@@ -1,4 +1,4 @@
-#include "moab_transport.hpp"
+#include "moab_exchange.hpp"
 
 #include <moab/Types.hpp>
 #include <moab/iMOAB.h>
@@ -56,16 +56,15 @@ std::string colon_delimited_string(std::span<const std::string> fields) {
 
 } // namespace
 
-Transport::Transport(MPI_Comm coupling_comm) : coupling_comm_(coupling_comm) {
+Exchange::Exchange(MPI_Comm coupling_comm) : coupling_comm_(coupling_comm) {
   if (coupling_comm_ == MPI_COMM_NULL) {
-    throw std::invalid_argument("Transport needs a valid communicator");
+    throw std::invalid_argument("Exchange needs a valid communicator");
   }
 }
 
-void Transport::create_route_to_fields_map(
-    std::span<const TransportRoute> routes) {
+void Exchange::create_route_to_fields_map(std::span<const ExchangeRoute> routes) {
 
-  for (const TransportRoute& route : routes) {
+  for (const ExchangeRoute& route : routes) {
     const ConnectionKey key{.source = route.source_component,
                             .destination = route.destination_component};
 
@@ -94,10 +93,10 @@ void Transport::create_route_to_fields_map(
  *   which ranks hold which components
  */
 ComponentMap
-Transport::discover_components(std::span<const TransportRoute> routes) {
+Exchange::discover_components(std::span<const ExchangeRoute> routes) {
 
   ComponentMap components;
-  for (const TransportRoute& route : routes) {
+  for (const ExchangeRoute& route : routes) {
     components.try_emplace(route.source_component);
     components.try_emplace(route.destination_component);
   }
@@ -183,7 +182,7 @@ Transport::discover_components(std::span<const TransportRoute> routes) {
   return components;
 }
 
-MPI_Group Transport::make_mpi_group(std::span<const int> ranks) {
+MPI_Group Exchange::make_mpi_group(std::span<const int> ranks) {
 
   MPI_Group couple_group = MPI_GROUP_NULL;
   MPI_Group rank_group = MPI_GROUP_NULL;
@@ -201,14 +200,14 @@ MPI_Group Transport::make_mpi_group(std::span<const int> ranks) {
   return rank_group;
 }
 
-void Transport::initialize(std::span<MoabAdapter* const> local_adapters,
-                           std::span<const TransportRoute> routes) {
+void Exchange::initialize(std::span<MoabAdapter* const> local_adapters,
+                          std::span<const ExchangeRoute> routes) {
 
   if (initialized_) {
-    throw std::logic_error("Transport already initialized");
+    throw std::logic_error("Exchange already initialized");
   }
   if (routes.empty()) {
-    throw std::invalid_argument("Transport requires at least one route");
+    throw std::invalid_argument("Exchange requires at least one route");
   }
 
   for (MoabAdapter* adapter : local_adapters) {
@@ -274,10 +273,10 @@ void Transport::initialize(std::span<MoabAdapter* const> local_adapters,
   initialized_ = true;
 }
 
-void Transport::send_exports(std::string_view component) {
+void Exchange::send_exports(std::string_view component) {
 
   if (!initialized_) {
-    throw std::logic_error("Transport not initialized");
+    throw std::logic_error("Exchange not initialized");
   }
 
   const AdapterMap::const_iterator adapter =
@@ -307,9 +306,9 @@ void Transport::send_exports(std::string_view component) {
   }
 }
 
-void Transport::receive_imports(std::string_view component) {
+void Exchange::receive_imports(std::string_view component) {
   if (!initialized_) {
-    throw std::logic_error("Transport not initialized");
+    throw std::logic_error("Exchange not initialized");
   }
 
   const AdapterMap::const_iterator adapter =
@@ -333,9 +332,9 @@ void Transport::receive_imports(std::string_view component) {
   }
 }
 
-void Transport::complete_sends(std::string_view component) {
+void Exchange::complete_sends(std::string_view component) {
   if (!initialized_) {
-    throw std::logic_error("Transport not initialized");
+    throw std::logic_error("Exchange not initialized");
   }
 
   const AdapterMap::const_iterator adapter =
@@ -360,9 +359,9 @@ void Transport::complete_sends(std::string_view component) {
   }
 }
 
-Transport::~Transport() {
+Exchange::~Exchange() {
   // Outstanding sends must already be completed.
-  // Transport must be destroyed before MPI_Finalize().
+  // Exchange must be destroyed before MPI_Finalize().
   for (auto& [endpoints, connection] : connections_map_) {
     if (connection.source_group != MPI_GROUP_NULL) {
       MPI_Group_free(&connection.source_group);

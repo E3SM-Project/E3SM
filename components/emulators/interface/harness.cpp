@@ -13,10 +13,10 @@
 namespace e3sm::emulator {
 static_assert(CoupledProcess<CPL7Component>);
 
-void Harness::transfer_bindings(ExternalBindings bindings) {
+void Harness::set_bindings(ExternalBindings bindings) {
   if (external_component_ != nullptr) {
     throw std::runtime_error(
-        "Harness::transfer_bindings: bindings were already set");
+        "Harness::set_bindings: bindings were already set");
   }
 
   auto external = std::make_unique<CPL7Component>();
@@ -31,7 +31,7 @@ void Harness::transfer_bindings(ExternalBindings bindings) {
 void Harness::print_bindings(std::ostream& os) const {
   if (external_component_ == nullptr) {
     throw std::runtime_error(
-        "Harness::print_bindings: call transfer_bindings() first");
+        "Harness::print_bindings: call set_bindings() first");
   }
   external_component_->print_bindings(os);
 }

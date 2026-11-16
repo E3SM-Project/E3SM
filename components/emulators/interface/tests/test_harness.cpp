@@ -127,10 +127,10 @@ TEST_CASE("Harness reports misuse clearly", "[harness]") {
 
   std::ostringstream out;
   REQUIRE_THROWS_WITH(harness.print_bindings(out),
-                      Contains("transfer_bindings()"));
+                      Contains("set_bindings()"));
 
-  harness.transfer_bindings(ExternalBindings{});
-  REQUIRE_THROWS_WITH(harness.transfer_bindings(ExternalBindings{}),
+  harness.set_bindings(ExternalBindings{});
+  REQUIRE_THROWS_WITH(harness.set_bindings(ExternalBindings{}),
                       Contains("already set"));
 }
 
@@ -142,7 +142,7 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
   std::vector<double> state{10.0, 20.0};
 
   Harness harness;
-  harness.transfer_bindings(ExternalBindings{
+  harness.set_bindings(ExternalBindings{
       .to_external = {{"state", state}},
       .from_external = {{"state", state}},
   });
@@ -209,7 +209,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
 
   SECTION("runs on every third call") {
     Harness harness;
-    harness.transfer_bindings(bindings());
+    harness.set_bindings(bindings());
     harness.add_process(descriptor(3.f, 3));
     harness.initialize(plan);
     auto& emulator =
@@ -231,7 +231,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
 
   SECTION("rejects an interval below 1") {
     Harness harness;
-    harness.transfer_bindings(bindings());
+    harness.set_bindings(bindings());
     harness.add_process(descriptor(1.f, 0));
     REQUIRE_THROWS_WITH(harness.initialize(plan),
                         Contains("coupling_interval") &&
@@ -240,7 +240,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
 
   SECTION("rejects processes with different base steps") {
     Harness harness;
-    harness.transfer_bindings(bindings());
+    harness.set_bindings(bindings());
     harness.add_process(descriptor(6.f, 1));
     config.name = "other-emulator";
     harness.add_process(descriptor(120.f, 10));
@@ -256,7 +256,7 @@ TEST_CASE("Harness prints its external bindings on request", "[harness]") {
   std::vector<double> from_external{3.5};
 
   Harness harness;
-  harness.transfer_bindings(ExternalBindings{
+  harness.set_bindings(ExternalBindings{
       .to_external = {{"surface_flux", to_external}},
       .from_external = {{"temperature", from_external}},
   });
@@ -309,7 +309,7 @@ TEST_CASE("Harness preserves results across external buffer layouts",
           },
   };
 
-  direct.harness.transfer_bindings(bindings);
+  direct.harness.set_bindings(bindings);
   direct.harness.add_process(ProcessDescriptor{
       .run_opts = ProcessRunOpts{.dt = 1., .coupling_interval = 1},
       .grid = make_test_grid(),

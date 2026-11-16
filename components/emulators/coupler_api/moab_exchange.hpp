@@ -15,7 +15,7 @@ namespace e3sm::emulator::coupler {
   std::string source_component;
   std::string destination_component;
 */
-struct TransportRoute {
+struct ExchangeRoute {
   std::string field;
   std::string source_component;
   std::string destination_component;
@@ -30,24 +30,24 @@ struct ComponentInfo {
   std::vector<int> ranks;
 };
 using ComponentMap = std::map<std::string, ComponentInfo>;
-class Transport {
+class Exchange {
   using AdapterMap = std::map<std::string, MoabAdapter*>;
 
 public:
-  explicit Transport(MPI_Comm coupling_comm);
-  ~Transport();
-  Transport(const Transport&) = delete;
-  Transport& operator=(const Transport&) = delete;
-  Transport(Transport&&) = delete;
-  Transport& operator=(Transport&&) = delete;
+  explicit Exchange(MPI_Comm coupling_comm);
+  ~Exchange();
+  Exchange(const Exchange&) = delete;
+  Exchange& operator=(const Exchange&) = delete;
+  Exchange(Exchange&&) = delete;
+  Exchange& operator=(Exchange&&) = delete;
 
   void initialize(std::span<MoabAdapter* const> local_adapters,
-                  std::span<const TransportRoute> routes);
+                  std::span<const ExchangeRoute> routes);
 
   void send_exports(std::string_view component);
   void receive_imports(std::string_view component);
   void complete_sends(std::string_view component);
-  ComponentMap discover_components(std::span<const TransportRoute> routes);
+  ComponentMap discover_components(std::span<const ExchangeRoute> routes);
 
 private:
   struct ConnectionKey {
@@ -79,7 +79,7 @@ private:
     bool send_pending = false;
   };
 
-  void create_route_to_fields_map(std::span<const TransportRoute> routes);
+  void create_route_to_fields_map(std::span<const ExchangeRoute> routes);
   MPI_Group make_mpi_group(std::span<const int> ranks);
 
   MPI_Comm coupling_comm_ = MPI_COMM_NULL;

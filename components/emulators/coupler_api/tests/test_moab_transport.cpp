@@ -4,7 +4,7 @@
 #include <mpi.h>
 
 #include "moab_adapter.hpp"
-#include "moab_transport.hpp"
+#include "moab_exchange.hpp"
 
 #include <array>
 #include <cstddef>
@@ -100,20 +100,20 @@ TEST_CASE("Transport redistributes fields between component rank groups",
 
   std::array<MoabAdapter*, 1> local_adapters{&adapter};
 
-  const std::array<TransportRoute, 2> routes{
-      TransportRoute{
+  const std::array<ExchangeRoute, 2> routes{
+      ExchangeRoute{
           .field = "temperature",
           .source_component = "forcing",
           .destination_component = "land",
       },
-      TransportRoute{
+      ExchangeRoute{
           .field = "soil_moisture",
           .source_component = "forcing",
           .destination_component = "land",
       },
   };
 
-  Transport transport{MPI_COMM_WORLD};
+  Exchange transport{MPI_COMM_WORLD};
   transport.initialize(local_adapters, routes);
 
   // Integer-valued doubles make exact comparisons appropriate.
