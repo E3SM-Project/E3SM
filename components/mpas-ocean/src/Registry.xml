@@ -1515,12 +1515,6 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="eos_jm">
-		<nml_option name="config_eos_jm_pressure_from_zMid" type="logical" default_value=".false."
-					description="If true, the Jackett-McDougall equation of state evaluates each layer at the pressure of its actual depth (-zMid), rather than at a reference pressure computed once from refBottomDepth. Use it where layers sit far from their reference depths, as under ice shelves with z-star."
-					possible_values=".true. or .false."
-		/>
-	</nml_record>
 	<nml_record name="eos_wright">
 		<nml_option name="config_eos_wright_ref_pressure" type="real" default_value="0.0" units="N m^-2"
 					description="Reference pressure for potential density"

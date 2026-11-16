@@ -25,7 +25,6 @@ module ocn_equation_of_state_jm
 
    use mpas_kind_types
    use mpas_pool_routines
-   use mpas_log
    use ocn_config
 
    implicit none
@@ -67,7 +66,7 @@ module ocn_equation_of_state_jm
 
    !*** whether to evaluate in-situ and relative-displaced density at the
    !*** pressure of each layer's actual depth (-zMid) instead of
-   !*** ocnEqStatePRef (config_eos_jm_pressure_from_zMid)
+   !*** ocnEqStatePRef; init mode uses ocnEqStatePRef
 
    logical :: ocnEqStatePFromZMid
 
@@ -725,11 +724,10 @@ contains
 !>  'absolute'), every layer is evaluated at the reference pressure of
 !>  layer kDisplaced, giving potential density.
 !>
-!>  With config_eos_jm_pressure_from_zMid, the pressure of a displaced
-!>  layer is that of its actual depth, -zMid, with the layer limited to
-!>  the column's active layers.  Otherwise, it is ocnEqStatePRef, the
-!>  pressure at the layer's reference depth.  Potential density always
-!>  uses ocnEqStatePRef.
+!>  The pressure of a displaced layer is that of its actual depth,
+!>  -zMid, with the layer limited to the column's active layers.  In
+!>  init mode, it is ocnEqStatePRef, the pressure at the layer's
+!>  reference depth.  Potential density always uses ocnEqStatePRef.
 !
 !-----------------------------------------------------------------------
 
@@ -912,14 +910,7 @@ contains
 
       err = 0
 
-      ocnEqStatePFromZMid = config_eos_jm_pressure_from_zMid
-
-      ! init mode keeps its own layer depths and never diagnoses zMid
-      if (ocnEqStatePFromZMid .and. &
-          trim(config_ocean_run_mode) == 'init') then
-         call mpas_log_write('config_eos_jm_pressure_from_zMid is not ' // &
-            'supported in init mode', MPAS_LOG_CRIT)
-      end if
+      ocnEqStatePFromZMid = trim(config_ocean_run_mode) /= 'init'
 
       !*** extract vertical mesh info for computing ref pressure
       !*** since vertical mesh info same for all blocks, only need first
@@ -940,11 +931,8 @@ contains
       !***  integrating using hydrostatic balance.
       !*** Note this calculation uses refBottomDepth, so pressure on
       !***  top level does not include SSH contribution.
-      !*** Also note that this is only valid for case in which the
-      !***  vertical mesh does not vary significantly in time.  Where
-      !***  layers move far from their reference depths, as under ice
-      !***  shelves with z-star, config_eos_jm_pressure_from_zMid uses
-      !***  each layer's actual depth instead (see compute_jm_pressure)
+      !*** In-situ and relative-displaced density use each layer's
+      !***  actual depth instead (see compute_jm_pressure)
 
       allocate(ocnEqStatePRef(nVertLevels))
 
