@@ -159,7 +159,12 @@ module li_advection
            dynamicThickening,     & ! dynamic thickening rate
            groundedToFloatingThickness, & ! thickness changing from grounded to floating or vice versa
            fluxAcrossGroundingLine, &     ! magnitude of flux across GL
-           fluxAcrossGroundingLineOnCells ! magnitude of flux across GL, calculated on cells
+           fluxAcrossGroundingLineOnCells, & ! magnitude of flux across GL, calculated on cells
+           referenceThickness             ! reference thickness used for the dynamic state of floating ice
+
+      real (kind=RKIND), dimension(:), allocatable :: &
+           massBalScale,          & ! factor scaling the mass balance applied to each cell
+           referenceThicknessTemporary ! copy of referenceThickness before the mask update below
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
@@ -219,7 +224,8 @@ module li_advection
       logical, pointer :: &
            config_print_thickness_advection_info, &  !TODO - change to config_print_advection_info?
            config_print_thermal_info, &
-           config_thermal_calculate_bmb
+           config_thermal_calculate_bmb, &
+           config_floating_ice_scale_mass_balance_by_reference_thickness
 
       real (kind=RKIND), pointer :: &
            config_ice_density,    & ! rhoi
@@ -301,6 +307,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'dynamicThickening', dynamicThickening)
       call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
+      call mpas_pool_get_array(geometryPool, 'referenceThickness', referenceThickness)
 
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
@@ -320,6 +327,8 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
       call mpas_pool_get_config(liConfigs, 'config_thermal_calculate_bmb', config_thermal_calculate_bmb)
+      call mpas_pool_get_config(liConfigs, 'config_floating_ice_scale_mass_balance_by_reference_thickness', &
+              config_floating_ice_scale_mass_balance_by_reference_thickness)
       call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -389,6 +398,10 @@ module li_advection
       cellMaskTemporaryField % array(:) = cellMask(:)
       edgeMaskTemporaryField % array(:) = edgeMask(:)
       vertexMaskTemporaryField % array(:) = vertexMask(:)
+      ! referenceThickness is calculated with the masks, so it is preserved as well.
+      allocate(referenceThicknessTemporary(nCells+1))
+      referenceThicknessTemporary(:) = referenceThickness(:)
+      allocate(massBalScale(nCells+1))
 
       layerThicknessEdgeFlux(:,:) = 0.0_RKIND
 
@@ -605,6 +618,19 @@ module li_advection
             enddo
          endif
 
+         ! Scale the mass balance applied to non-dynamic floating cells by the ratio of
+         ! thickness to referenceThickness, treating the cell as partially ice-covered.
+         ! No scaling is applied where no dynamic ice was found nearby (referenceThickness = 0).
+         massBalScale(:) = 1.0_RKIND
+         if (config_floating_ice_scale_mass_balance_by_reference_thickness) then
+            do iCell = 1, nCells
+               if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) &
+                    .and. (referenceThickness(iCell) > 0.0_RKIND) ) then
+                  massBalScale(iCell) = min(1.0_RKIND, thickness(iCell) / referenceThickness(iCell))
+               endif
+            enddo
+         endif
+
          call apply_mass_balance(&
               dt,                  &
               config_ice_density,  &
@@ -616,6 +642,7 @@ module li_advection
               bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
               basalMassBal,        &
+              massBalScale,        &
               basalMassBalApplied, &
               groundedBasalMassBalApplied, &
               floatingBasalMassBalApplied, &
@@ -693,6 +720,7 @@ module li_advection
          cellMask(:) = cellMaskTemporaryField % array(:)
          edgeMask(:) = edgeMaskTemporaryField % array(:)
          vertexMask(:) = vertexMaskTemporaryField % array(:)
+         referenceThickness(:) = referenceThicknessTemporary(:)
 
          ! Remap tracers to the standard vertical sigma coordinate
          ! Note: If tracers are not being advected, then this subroutine simply restores the
@@ -756,6 +784,8 @@ module li_advection
       call mpas_deallocate_scratch_field(edgeMaskTemporaryField, .true.)
       call mpas_deallocate_scratch_field(vertexMaskTemporaryField, .true.)
       call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
+      deallocate(referenceThicknessTemporary)
+      deallocate(massBalScale)
 
       ! === error check
       if (err > 0) then
@@ -869,6 +899,7 @@ module li_advection
               bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
               basalMassBal,        &
+              massBalScale,        &
               basalMassBalApplied, &
               groundedBasalMassBalApplied, &
               floatingBasalMassBalApplied, &
@@ -891,7 +922,8 @@ module li_advection
            bedTopography,      & !< Input: bed elevation (m)
            sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
            sfcMassBalGradientCorrection, & !< Input: lapse rate correction to sfcMassBal (kg/m^2/s)
-           basalMassBal          !< Input: basal mass balance (kg/m^2/s)
+           basalMassBal,       & !< Input: basal mass balance (kg/m^2/s)
+           massBalScale          !< Input: factor by which surface and basal mass balance are scaled (unitless)
 
       real(kind=RKIND), dimension(:,:), intent(in) :: &
            surfaceTracers,     & !< Input: tracer values of new ice at upper surface
@@ -957,8 +989,8 @@ module li_advection
       ! If negative, then melt from the top down until the melting term is used up or the ice is gone
 
       ! Initialize applied SMB and BMB fields
-      sfcMassBalApplied(:) = sfcMassBal(:) + sfcMassBalGradientCorrection(:)
-      basalMassBalApplied(:) = basalMassBal(:)
+      sfcMassBalApplied(:) = (sfcMassBal(:) + sfcMassBalGradientCorrection(:)) * massBalScale(:)
+      basalMassBalApplied(:) = basalMassBal(:) * massBalScale(:)
 
       do iCell = 1, nCells
 
