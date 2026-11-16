@@ -49,6 +49,17 @@ void Functions<S,D>::zm_opts_init()
   // eamxx run overwrites s_zm_opts via load_runtime_options from XML.)
   s_zm_opts.mcsp_mom_coeff      = -0.05;
   s_zm_opts.mcsp_use_full_shear = true;
+  // autoconversion (c0) scaling parameters (disabled to match the legacy baselines)
+  s_zm_opts.use_rh_scaling_c0   = false;
+  s_zm_opts.use_temp_scaling_c0 = false;
+  s_zm_opts.c0_rh_min           = ZMC::c0_rh_min_default;
+  s_zm_opts.c0_sf_lo            = ZMC::c0_sf_lo_default;
+  s_zm_opts.c0_sf_hi            = ZMC::c0_sf_hi_default;
+  s_zm_opts.c0_sf_p_bot         = ZMC::c0_sf_p_bot_default;
+  s_zm_opts.c0_sf_p_top         = ZMC::c0_sf_p_top_default;
+  s_zm_opts.c0_t_lo             = ZMC::c0_t_lo_default;
+  s_zm_opts.c0_t_hi             = ZMC::c0_t_hi_default;
+  s_zm_opts.c0_t_min_frac       = ZMC::c0_t_min_frac_default;
 
   //
   // set up table values of saturation vapor pressure

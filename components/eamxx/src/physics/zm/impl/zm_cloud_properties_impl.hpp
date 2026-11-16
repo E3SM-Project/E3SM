@@ -30,6 +30,7 @@ void Functions<S,D>::zm_cloud_properties(
   const uview_1d<const Real>& s_int, // interface values of dry stat energy
   const uview_1d<const Real>& q_mid, // env specific humidity
   const Real& landfrac, // Land fraction
+  const Real& c0_rh_fac, // c0 humidity scaling factor (one if disabled)
   const Real& tpert_g, // PBL temperature perturbation
   const Int& jb, // updraft base level
   const Int& lel, // updraft parcel launch level
@@ -420,20 +421,25 @@ void Functions<S,D>::zm_cloud_properties(
     for (Int k = pver - 1; k >= msg + 1; --k) {
       rprd(k) = 0;
       if (k >= jt && k < jb && lambda_max > 0 && mflx_up(k) >= 0) {
+        // Per-level autoconversion coefficient, optionally scaled by column
+        // humidity and environmental temperature. The same value must be used
+        // for the ql sink and rain production so that the liquid budget closes.
+        // Identical to c0mask when both scalings are disabled.
+        const Real c0_k = runtime_opt.calc_c0(c0mask, c0_rh_fac, t_mid(k));
         if (mflx_up(k) > 0) {
           // Liquid water mass budget (without autoconversion sink)
           const Real ql1 = (mflx_up(k+1)*ql(k+1)
                             - dz(k)*detr_up(k)*ql(k+1)
                             + dz(k)*cu(k)) / mflx_up(k);
-          // Apply autoconversion sink (c0mask * dz)
-          ql(k) = ql1 / (1 + dz(k)*c0mask);
+          // Apply autoconversion sink (c0_k * dz)
+          ql(k) = ql1 / (1 + dz(k)*c0_k);
         } else {
           ql(k) = 0;
         }
         // Net column precipitation = condensation minus detrained liquid
         return_val += dz(k) * (cu(k) - detr_up(k)*ql(k+1));
         // Rain production rate by autoconversion
-        rprd(k) = c0mask * mflx_up(k) * ql(k);
+        rprd(k) = c0_k * mflx_up(k) * ql(k);
       }
     }
     val = return_val;

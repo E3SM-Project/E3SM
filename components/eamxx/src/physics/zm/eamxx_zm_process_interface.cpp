@@ -113,6 +113,11 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("evap_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("evap_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
 
+  // autoconversion (c0) scaling diagnostics (always computed, even if scaling is disabled)
+  add_field<Computed>("zm_c0_sat_frac",       scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_c0_rh_fac",         scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_c0_eff",            scalar3d_mid, 1/m,    grid_name, pack_size);
+
 } // ZMDeepConvection::create_requests
 
 /*------------------------------------------------------------------------------------------------*/
@@ -205,6 +210,10 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_output.evap_ds_out = get_field_out("evap_ds_out").get_view<Real**>();
   zm_output.evap_dq_out = get_field_out("evap_dq_out").get_view<Real**>();
 
+  zm_output.c0_sat_frac = get_field_out("zm_c0_sat_frac").get_view<Real*>();
+  zm_output.c0_rh_fac   = get_field_out("zm_c0_rh_fac")  .get_view<Real*>();
+  zm_output.c0_eff      = get_field_out("zm_c0_eff")     .get_view<Real**>();
+
   //----------------------------------------------------------------------------
   // initialize output buffer variables
   zm_output.init_all(m_ncol, nlev_mid);
@@ -266,6 +275,10 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_evap_ds_out      = zm_output.evap_ds_out;
   const auto loc_zm_output_evap_dq_out      = zm_output.evap_dq_out;
 
+  const auto loc_zm_output_c0_sat_frac      = zm_output.c0_sat_frac;
+  const auto loc_zm_output_c0_rh_fac        = zm_output.c0_rh_fac;
+  const auto loc_zm_output_c0_eff           = zm_output.c0_eff;
+
   const auto loc_zm_output_mflx_up          = zm_output.mflx_up;
   const auto loc_zm_output_entr_up          = zm_output.entr_up;
   const auto loc_zm_output_detr_up          = zm_output.detr_up;
@@ -310,6 +323,49 @@ void ZMDeepConvection::run_impl (const double dt)
   WSM wsm( nlev_int*nwind, 16, team_policy);
 
   //--------------------------------------------------------------------------
+  // calculate the column saturation fraction and the autoconversion (c0)
+  // scaling factors prior to zm_conv_main(). The saturation fraction is
+  // SF = sum(qv*dp) / sum(qsat*dp) over the layer c0_sf_p_top <= p_mid <= c0_sf_p_bot,
+  // using the same qsat formula as ZM. The c0 humidity factor is passed to
+  // zm_conv_main() and is exactly one when use_rh_scaling_c0=false. The
+  // effective c0 profile is a diagnostic only; ZM recomputes the same values
+  // internally where the updraft is active.
+  {
+    const auto loc_landfrac = zm_input.landfrac;
+    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+      const Int i = team.league_rank();
+      Real q_sum = 0;
+      Real qsat_sum = 0;
+      Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const Int& k, Real& val) {
+        const Real p_k = loc_zm_input_p_mid(i,k);
+        if (p_k >= zm_opts.c0_sf_p_top && p_k <= zm_opts.c0_sf_p_bot) {
+          val += loc_zm_input_qv(i,k) * loc_zm_input_p_del(i,k);
+        }
+      }, q_sum);
+      Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const Int& k, Real& val) {
+        const Real p_k = loc_zm_input_p_mid(i,k);
+        if (p_k >= zm_opts.c0_sf_p_top && p_k <= zm_opts.c0_sf_p_bot) {
+          Real es_k, qs_k;
+          ZMF::qsat_hPa(loc_zm_input_T_mid(i,k), p_k*ZMF::ZMC::pa_to_mb, es_k, qs_k);
+          val += qs_k * loc_zm_input_p_del(i,k);
+        }
+      }, qsat_sum);
+      team.team_barrier();
+      // if the layer is empty (surface above c0_sf_p_top) fall back to saturation, i.e. no scaling
+      const Real sat_frac  = (qsat_sum > 0) ? q_sum / qsat_sum : Real(1);
+      const Real c0_rh_fac = zm_opts.calc_c0_rh_factor(sat_frac);
+      const Real c0_base   = zm_opts.calc_c0_base(loc_landfrac(i));
+      Kokkos::single(Kokkos::PerTeam(team), [&] () {
+        loc_zm_output_c0_sat_frac(i) = sat_frac;
+        loc_zm_output_c0_rh_fac(i)   = c0_rh_fac;
+      });
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const Int& k) {
+        loc_zm_output_c0_eff(i,k) = zm_opts.calc_c0(c0_base, c0_rh_fac, loc_zm_input_T_mid(i,k));
+      });
+    });
+  }
+
+  //--------------------------------------------------------------------------
   // run the main ZM scheme
   start_timer("EAMxx::zm::main");
   ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
@@ -317,6 +373,7 @@ void ZMDeepConvection::run_impl (const double dt)
                     zm_input.p_mid, zm_input.p_int, zm_input.p_del,
                     zm_input.phis, zm_input.z_mid, zm_input.z_int,
                     zm_input.pblh, zm_input.tpert, zm_input.landfrac,
+                    zm_output.c0_rh_fac,
                     zm_input.t_prev, zm_input.q_prev,
                     zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
                     zm_output.activity,

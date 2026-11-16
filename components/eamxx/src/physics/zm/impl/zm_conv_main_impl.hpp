@@ -40,6 +40,7 @@ void Functions<S,D>::zm_conv_main(
   const uview_1d<const Real>& pbl_hgt,
   const uview_1d<const Real>& tpert,
   const uview_1d<const Real>& landfrac,
+  const uview_1d<const Real>& c0_rh_fac,
   const uview_2d<const Real>& t_star,
   const uview_2d<const Real>& q_star,
   // Outputs
@@ -371,7 +372,7 @@ void Functions<S,D>::zm_conv_main(
                         ekat::subview(z_int, i),
                         ekat::subview(t_mid, i), ekat::subview(s_mid, i),
                         ekat::subview(s_int, i), ekat::subview(q_mid, i),
-                        landfrac(i), tpert(i),
+                        landfrac(i), c0_rh_fac(i), tpert(i),
                         msemax_klev(i), lel(i),
                         jt(i), jlcl(i), j0(i), jd(i),
                         ekat::subview(mflx_up, i), ekat::subview(entr_up, i),

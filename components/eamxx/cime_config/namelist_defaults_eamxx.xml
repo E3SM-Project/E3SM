@@ -313,6 +313,17 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_q_coeff        type="real"    doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
       <mcsp_mom_coeff      type="real"    doc="MCSP momentum coefficient"       >0.0</mcsp_mom_coeff>
       <mcsp_use_full_shear type="logical" doc="MCSP flag to use full shear vector instead of zonal-only" >false</mcsp_use_full_shear>
+      <!-- scaling of the autoconversion coefficient (c0) by column saturation fraction and environmental temperature -->
+      <use_rh_scaling_c0   type="logical" doc="ZM flag to scale c0 by column saturation fraction (linear between c0_rh_min at c0_sf_lo and 1 at c0_sf_hi)">false</use_rh_scaling_c0>
+      <use_temp_scaling_c0 type="logical" doc="ZM flag to scale c0 by environmental temperature (linear between c0_t_min_frac at c0_t_lo and 1 at c0_t_hi)">false</use_temp_scaling_c0>
+      <c0_rh_min           type="real" doc="c0 humidity scaling: factor applied at or below c0_sf_lo">0.25</c0_rh_min>
+      <c0_sf_lo            type="real" doc="c0 humidity scaling: column saturation fraction where the ramp starts">0.5</c0_sf_lo>
+      <c0_sf_hi            type="real" doc="c0 humidity scaling: column saturation fraction where the ramp ends">0.85</c0_sf_hi>
+      <c0_sf_p_bot         type="real" doc="c0 humidity scaling: bottom (high pressure) bound of the saturation fraction layer [Pa]">850e2</c0_sf_p_bot>
+      <c0_sf_p_top         type="real" doc="c0 humidity scaling: top (low pressure) bound of the saturation fraction layer [Pa]">300e2</c0_sf_p_top>
+      <c0_t_lo             type="real" doc="c0 temperature scaling: temperature at or below which c0_t_min_frac is used [K]">253.15</c0_t_lo>
+      <c0_t_hi             type="real" doc="c0 temperature scaling: temperature at or above which the factor is 1 [K]">273.15</c0_t_hi>
+      <c0_t_min_frac       type="real" doc="c0 temperature scaling: factor applied at or below c0_t_lo">0.4</c0_t_min_frac>
     </zm>
 
     <!-- Water tracers -->
