@@ -1161,7 +1161,7 @@ module li_core
       endif
 
       ! Mask init identifies initial ice extent
-      call li_calculate_mask_init(geometryPool, err=err_tmp)
+      call li_calculate_mask_init(meshPool, geometryPool, err=err_tmp)
       err = ior(err, err_tmp)
 
       ! Initialize thicknessOld variable used to calculate dHdt

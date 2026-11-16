@@ -48,6 +48,15 @@ module li_mask
    integer, parameter :: li_mask_ValueDomainBoundary        = 512
    integer, parameter :: li_mask_ValueGroundedFloatingFringe= 1024  ! Floating non-dynamic cells adjacent to grounded ice, only for cells
 
+   ! Parameters for determining the dynamic state of floating ice
+   integer, parameter :: li_mask_refThkSearchMaxRings = 4
+      !< Max. number of rings of neighbors searched for dynamic ice when calculating referenceThickness.
+      !< The search is also limited to config_num_halos rings so that it does not go beyond the halo.
+   real (kind=RKIND), parameter :: li_mask_refThkSearchMinThickness = 0.001_RKIND
+      !< The referenceThickness search only follows cells thicker than this (m)
+   integer, parameter :: li_mask_floatingDynamicMaxIterations = 200
+      !< Max. number of passes for the iterative update of the dynamic state of floating ice
+
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -167,6 +176,9 @@ module li_mask
       module procedure li_mask_is_grounded_floating_fringe_logout_1d
       module procedure li_mask_is_grounded_floating_fringe_logout_0d
    end interface
+
+   private :: calculate_cell_ice_floating_margin, calculate_cell_dynamic_state, &
+              calculate_reference_thickness_cell
 !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -190,16 +202,24 @@ contains
 !> \date    25 June 2012
 !> \details
 !>  This routine Calculates masks for land ice for info needed from initial condition only.
+!>  On a cold start, it also initializes the dynamic state of the ice:
+!>  grounded ice and floating ice not at the ice margin are dynamic if thicker
+!>  than config_dynamic_thickness, and floating ice at the ice margin is non-dynamic.
+!>  (Margin cells that are thick enough relative to their dynamic neighbors
+!>  are activated by the first call to li_calculate_mask.)
+!>  On a restart, the dynamic state is taken from the cellMask in the restart file.
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_mask_init(geometryPool, err)
+   subroutine li_calculate_mask_init(meshPool, geometryPool, err)
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -221,27 +241,81 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      integer, pointer :: nCells
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell
       integer, dimension(:), pointer :: cellMask
-      real(KIND=RKIND), dimension(:), pointer :: thickness
+      real(KIND=RKIND), dimension(:), pointer :: thickness, bedTopography
       logical, pointer :: config_do_restart
       integer, pointer :: config_num_halos, config_number_of_blocks
+      real (kind=RKIND), pointer :: config_dynamic_thickness
+      real (kind=RKIND), pointer :: config_floating_ice_activation_reference_thickness_fraction
+      real (kind=RKIND), pointer :: config_floating_ice_deactivation_reference_thickness_fraction
+      character (len=StrKIND), pointer :: config_calving, config_front_mass_bal_grounded
+      integer :: iCell
       integer :: err_tmp
 
       err = 0
       err_tmp = 0
 
       ! Assign pointers and variables
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
+      call mpas_pool_get_config(liConfigs, 'config_number_of_blocks', config_number_of_blocks)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_floating_ice_activation_reference_thickness_fraction', &
+              config_floating_ice_activation_reference_thickness_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_floating_ice_deactivation_reference_thickness_fraction', &
+              config_floating_ice_deactivation_reference_thickness_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
 
       if (config_num_halos < 3) then
          call mpas_log_write("MALI requires that config_num_halos >= 3.  (edgeMask calculations require it.)", MPAS_LOG_ERR)
          err_tmp = 1
       endif
       err = ior(err,err_tmp)
+
+      ! li_calculate_mask performs halo updates and global reductions when determining
+      ! the dynamic state of floating ice, which requires one block per processor.
+      if (config_number_of_blocks /= 0) then
+         call mpas_log_write("MALI requires that config_number_of_blocks=0.  (li_calculate_mask requires it.)", MPAS_LOG_ERR)
+         err_tmp = 1
+      endif
+      err = ior(err,err_tmp)
+
+      if ( (config_floating_ice_deactivation_reference_thickness_fraction < 0.0_RKIND) .or. &
+           (config_floating_ice_deactivation_reference_thickness_fraction > &
+            config_floating_ice_activation_reference_thickness_fraction) .or. &
+           (config_floating_ice_activation_reference_thickness_fraction > 1.0_RKIND) ) then
+         call mpas_log_write("MALI requires that 0 <= config_floating_ice_deactivation_reference_thickness_fraction " // &
+            "<= config_floating_ice_activation_reference_thickness_fraction <= 1.", MPAS_LOG_ERR)
+         err_tmp = 1
+      endif
+      err = ior(err,err_tmp)
+
+      ! Without deactivation based on reference thickness, margin cells being depleted
+      ! by facemelting or a rate-based calving law remain dynamic until they reach config_dynamic_thickness.
+      if (config_floating_ice_deactivation_reference_thickness_fraction == 0.0_RKIND) then
+         if (trim(config_front_mass_bal_grounded) /= 'none') then
+            call mpas_log_write("config_floating_ice_deactivation_reference_thickness_fraction=0 is not recommended " // &
+               "with facemelting (config_front_mass_bal_grounded='" // trim(config_front_mass_bal_grounded) // "').", &
+               MPAS_LOG_WARN)
+         endif
+         select case (trim(config_calving))
+         case ('eigencalving', 'specified_calving_velocity', 'specified_retreat_velocity', 'von_Mises_stress', &
+               'damagecalving', 'ismip6_retreat')
+            call mpas_log_write("config_floating_ice_deactivation_reference_thickness_fraction=0 is not recommended " // &
+               "with the rate-based calving law config_calving='" // trim(config_calving) // "'.", MPAS_LOG_WARN)
+         end select
+      endif
 
       if (config_do_restart .eqv. .false.) then  ! We only want to set this bit of the mask when a new simulation starts,
                                                  ! but not during a restart.
@@ -250,6 +324,16 @@ contains
          where (thickness > 0.0_RKIND)
             cellMask = ior(cellMask, li_mask_ValueInitialIceExtent)
          end where
+
+         ! Initialize the dynamic state.  li_calculate_mask uses the dynamic bit from
+         ! the previous mask calculation to determine the dynamic state of floating ice.
+         call calculate_cell_ice_floating_margin(nCells, nEdgesOnCell, cellsOnCell, thickness, bedTopography, cellMask)
+         do iCell = 1, nCells
+            if ( (thickness(iCell) > config_dynamic_thickness) .and. &
+                 (li_mask_is_grounded_ice(cellMask(iCell)) .or. (.not. li_mask_is_margin(cellMask(iCell)))) ) then
+               cellMask(iCell) = ior(cellMask(iCell), li_mask_ValueDynamicIce)
+            endif
+         enddo
       endif
 
    !--------------------------------------------------------------------
@@ -267,6 +351,12 @@ contains
 !> \date    10 May 2012
 !> \details
 !>  This routine Calculates masks for land ice.
+!>  The dynamic state of floating ice depends on the dynamic bit of cellMask on input
+!>  (from the previous mask calculation); see calculate_cell_dynamic_state.
+!>  This routine also calculates referenceThickness.
+!>  Because it includes halo updates of cellMask and referenceThickness and global
+!>  reductions, it must be called the same number of times on all processors,
+!>  and it requires one block per processor.
 !
 !-----------------------------------------------------------------------
 
@@ -310,8 +400,7 @@ contains
       real(KIND=RKIND), dimension(:), pointer :: thickness, bedTopography
       integer, dimension(:), pointer :: nEdgesOnCell, cellMask, vertexMask, edgeMask
       integer, dimension(:,:), pointer :: cellsOnCell, cellsOnVertex, cellsOnEdge, dirichletVelocityMask
-      real (kind=RKIND), pointer :: config_ice_density, config_ocean_density, &
-            config_sea_level, config_dynamic_thickness
+      real (kind=RKIND), pointer :: config_sea_level
       character (len=StrKIND), pointer :: config_velocity_solver
 
       integer :: i, j, iCell
@@ -327,9 +416,9 @@ contains
       integer :: numCellsOnVertex
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
-      real (kind=RKIND) :: thinnestNeighborHeight
       integer :: iCellNeighbor
-      logical :: openOceanNeighbor
+      logical, dimension(:), allocatable :: wasDynamic
+      integer :: err_tmp
 
       call mpas_timer_start('calculate mask')
 
@@ -353,10 +442,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
-      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
-      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
-      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       if ( .not. ((trim(config_velocity_solver) == 'sia') .or. (trim(config_velocity_solver) == 'none')) ) then
@@ -368,67 +454,21 @@ contains
       ! ====
       !call mpas_log_write("Updating masks")  ! Disabled to avoid excessive logging from shared routine
       !call mpas_timer_start('calculate mask cell')
-      ! Set mask to 0 everywhere, but need to preserve bits the initial ice extent bit
-      do i=1, nCells
-        cellMask(i) = iand(cellMask(i), li_mask_ValueInitialIceExtent)
+      ! Save the dynamic bit from the previous mask calculation (previous time step or intermediate stage)
+      ! before the mask is reset, because the dynamic state of floating ice depends on it.
+      allocate(wasDynamic(nCells+1))
+      wasDynamic(:) = .false.
+      do i = 1, nCells
+         wasDynamic(i) = li_mask_is_dynamic_ice(cellMask(i))
       enddo
 
-      ! Identify cells with ice
-      where (thickness > 0)
-          cellMask = ior(cellMask, li_mask_ValueIce)
-      end where
+      ! Reset the mask and identify cells with ice, floating ice, and the margin
+      call calculate_cell_ice_floating_margin(nCells, nEdgesOnCell, cellsOnCell, thickness, bedTopography, cellMask)
 
-      ! Is it floating? (ice thickness equal to floatation is considered floating)
-      ! For now floating ice and grounded ice are mutually exclusive.
-      ! This may change if a grounding line parameterization is added.
-      where (  li_mask_is_ice(cellMask) .and. (config_ice_density / config_ocean_density * thickness) <= &
-               (config_sea_level - bedTopography) )
-          cellMask = ior(cellMask, li_mask_ValueFloating)
-      end where
-
-      ! Identify the margin
-      ! For a cell, we define the margin as the last cell with ice (the cell has ice and at least one neighbor is a non-ice cell)
-      do i=1,nCells
-          if (li_mask_is_ice(cellMask(i))) then
-              isMargin = .false.
-              do j=1,nEdgesOnCell(i) ! Check if any neighbors are non-ice
-                  if (cellsOnCell(j,i) <= nCells) then
-                     isMargin = ( isMargin .or. (.not. li_mask_is_ice(cellMask(cellsOnCell(j,i)))) )
-                  endif
-              enddo
-              if (isMargin) then
-                 cellMask(i) = ior(cellMask(i), li_mask_ValueMargin)
-              endif
-          endif
-      enddo
-
-      ! Identify cells where the ice is above the ice dynamics thickness limit
-      where ( thickness > config_dynamic_thickness )
-         cellMask = ior(cellMask, li_mask_ValueDynamicIce)
-      end where
-      ! Exclude floating margin cells that are thinner than all their non-margin neighbors
-       do i=1,nCells
-          if (li_mask_is_margin(cellMask(i)) .and. li_mask_is_floating_ice(cellMask(i))) then
-              openOceanNeighbor = .false.
-              thinnestNeighborHeight = 1.0e36_RKIND
-              do j=1,nEdgesOnCell(i) ! Find height of thickest neighbor
-                 iCellNeighbor = cellsOnCell(j,i)
-                 if (thickness(iCellNeighbor) > 0.0_RKIND .and. .not. li_mask_is_margin(cellMask(iCellNeighbor))) then
-                    thinnestNeighborHeight = min(thinnestNeighborHeight, thickness(iCellNeighbor))
-                 endif
-                 if ((bedTopography(iCellNeighbor) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(iCellNeighbor)))) then
-                    openOceanNeighbor = .true.
-                 endif
-              enddo
-              if ((openOceanNeighbor) .and. (thickness(i) < 0.95_RKIND * thinnestNeighborHeight)) then
-                 ! Consider this NOT dynamic if the ice shelf margin is not almost as tall as it's inland neighbors.
-                 ! Only do this for a non-dynamic cell adjacent to open ocean.
-                 ! (if the floating cell was marked as a margin because it is adjacent to ice-free land,
-                 !  we want to still consider it as dynamic)
-                 cellMask(i) = iand(cellMask(i), not(li_mask_ValueDynamicIce))  ! (turn off this bit)
-              endif
-          endif
-      enddo
+      ! Identify cells with dynamic ice
+      call calculate_cell_dynamic_state(meshPool, geometryPool, wasDynamic, err_tmp)
+      err = ior(err, err_tmp)
+      deallocate(wasDynamic)
 
       ! Identify cells that Albany would consider as active
       if ( (trim(config_velocity_solver) == 'L1L2') .or. &
@@ -1025,7 +1065,400 @@ contains
 ! Private subroutines:
 !***********************************************************************
 
-! - no private subroutines - (module is not declared private)
+!***********************************************************************
+!
+!  routine calculate_cell_ice_floating_margin
+!
+!> \brief   Resets cellMask and calculates the ice, floating, and margin bits
+!> \author  Matt Hoffman
+!> \date    November 2026
+!> \details
+!>  This routine resets cellMask, preserving only the initial ice extent bit,
+!>  and then sets the bits for cells with ice, floating ice, and the ice margin.
+!
+!-----------------------------------------------------------------------
+
+   subroutine calculate_cell_ice_floating_margin(nCells, nEdgesOnCell, cellsOnCell, thickness, bedTopography, cellMask)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      integer, intent(in) :: nCells
+      integer, dimension(:), intent(in) :: nEdgesOnCell
+      integer, dimension(:,:), intent(in) :: cellsOnCell
+      real(KIND=RKIND), dimension(:), intent(in) :: thickness, bedTopography
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      integer, dimension(:), intent(inout) :: cellMask
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), pointer :: config_ice_density, config_ocean_density, config_sea_level
+      integer :: i, j
+      logical :: isMargin
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+
+      ! Set mask to 0 everywhere, but need to preserve bits the initial ice extent bit
+      do i=1, nCells
+        cellMask(i) = iand(cellMask(i), li_mask_ValueInitialIceExtent)
+      enddo
+
+      ! Identify cells with ice
+      where (thickness > 0)
+          cellMask = ior(cellMask, li_mask_ValueIce)
+      end where
+
+      ! Is it floating? (ice thickness equal to floatation is considered floating)
+      ! For now floating ice and grounded ice are mutually exclusive.
+      ! This may change if a grounding line parameterization is added.
+      where (  li_mask_is_ice(cellMask) .and. (config_ice_density / config_ocean_density * thickness) <= &
+               (config_sea_level - bedTopography) )
+          cellMask = ior(cellMask, li_mask_ValueFloating)
+      end where
+
+      ! Identify the margin
+      ! For a cell, we define the margin as the last cell with ice (the cell has ice and at least one neighbor is a non-ice cell)
+      do i=1,nCells
+          if (li_mask_is_ice(cellMask(i))) then
+              isMargin = .false.
+              do j=1,nEdgesOnCell(i) ! Check if any neighbors are non-ice
+                  if (cellsOnCell(j,i) <= nCells) then
+                     isMargin = ( isMargin .or. (.not. li_mask_is_ice(cellMask(cellsOnCell(j,i)))) )
+                  endif
+              enddo
+              if (isMargin) then
+                 cellMask(i) = ior(cellMask(i), li_mask_ValueMargin)
+              endif
+          endif
+      enddo
+
+   end subroutine calculate_cell_ice_floating_margin
+
+
+!***********************************************************************
+!
+!  routine calculate_cell_dynamic_state
+!
+!> \brief   Calculates the dynamic bit of cellMask and referenceThickness
+!> \author  Matt Hoffman
+!> \date    November 2026
+!> \details
+!>  This routine sets the dynamic bit of cellMask and calculates referenceThickness.
+!>  It requires that the ice, floating, and margin bits of cellMask have been set.
+!>  The rules are:
+!>  * Grounded ice is dynamic if thicker than config_dynamic_thickness.
+!>  * Floating ice that was dynamic at the previous mask calculation (wasDynamic)
+!>    remains dynamic while thicker than config_dynamic_thickness, except that
+!>    a dynamic floating cell at the ice margin becomes non-dynamic if
+!>    thickness < config_floating_ice_deactivation_reference_thickness_fraction * reference thickness.
+!>  * A non-dynamic floating cell becomes dynamic if
+!>    thickness > max(config_dynamic_thickness,
+!>                    config_floating_ice_activation_reference_thickness_fraction * reference thickness).
+!>  The reference thickness of a floating cell is the thickness of the thinnest dynamic cell
+!>  in the nearest ring of neighbors containing dynamic ice (see calculate_reference_thickness_cell).
+!>  Deactivation and then activation are each iterated, with halo updates between passes,
+!>  until no more cells change, so that the result does not depend on how many times
+!>  the mask is calculated for a given geometry or on the domain decomposition.
+!>  Within a pass, all cells are evaluated before any are changed, so the result
+!>  does not depend on the order in which cells are evaluated.
+!>  Cells deactivated by this routine are not reactivated within the same call.
+!>  Requires one block per processor.
+!
+!-----------------------------------------------------------------------
+
+   subroutine calculate_cell_dynamic_state(meshPool, geometryPool, wasDynamic, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      logical, dimension(:), intent(in) :: &
+         wasDynamic        !< Input: dynamic state of each cell at the previous mask calculation
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(inout) :: &
+         geometryPool          !< Input/Output: geometry information
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer, pointer :: nCells, nCellsSolve
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell
+      integer, dimension(:), pointer :: cellMask
+      real(KIND=RKIND), dimension(:), pointer :: thickness, referenceThickness
+      type (field1DInteger), pointer :: cellMaskField
+      type (field1DReal), pointer :: thicknessField, referenceThicknessField
+      type (dm_info), pointer :: dminfo
+      real (kind=RKIND), pointer :: config_dynamic_thickness
+      real (kind=RKIND), pointer :: config_floating_ice_activation_reference_thickness_fraction
+      real (kind=RKIND), pointer :: config_floating_ice_deactivation_reference_thickness_fraction
+      integer, pointer :: config_num_halos
+
+      integer :: iCell, iPass, nRings, searchID
+      integer :: changedLocal, changedGlobal
+      logical :: converged
+      integer, dimension(:), allocatable :: visitedBy, currentRing, nextRing
+      logical, dimension(:), allocatable :: changeCell, lockedOff
+      real(KIND=RKIND), dimension(:), allocatable :: refThk
+
+      err = 0
+
+      call mpas_timer_start('calculate mask floating dynamic')
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+
+      call mpas_pool_get_field(geometryPool, 'cellMask', cellMaskField, timeLevel=1)
+      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
+      call mpas_pool_get_field(geometryPool, 'referenceThickness', referenceThicknessField)
+      cellMask => cellMaskField % array
+      thickness => thicknessField % array
+      referenceThickness => referenceThicknessField % array
+      dminfo => cellMaskField % block % domain % dminfo
+
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_floating_ice_activation_reference_thickness_fraction', &
+              config_floating_ice_activation_reference_thickness_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_floating_ice_deactivation_reference_thickness_fraction', &
+              config_floating_ice_deactivation_reference_thickness_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
+
+      ! Limit the search to the halo so that it gives the same result for any decomposition
+      nRings = min(li_mask_refThkSearchMaxRings, config_num_halos)
+
+      allocate(visitedBy(nCells+1), currentRing(nCells), nextRing(nCells))
+      allocate(changeCell(nCells+1), lockedOff(nCells+1), refThk(nCells+1))
+      visitedBy(:) = 0
+      searchID = 0
+      lockedOff(:) = .false.
+      refThk(:) = 0.0_RKIND
+
+      ! Note: The search uses the thickness of halo cells, so results are independent of the
+      ! decomposition only if thickness halos are up to date when li_calculate_mask is called.
+      ! The dynamic bit of halo cells is updated by halo updates of cellMask below.
+
+      ! Provisional state: grounded ice and ice that was previously dynamic are dynamic if
+      ! thicker than config_dynamic_thickness.
+      do iCell = 1, nCells
+         if ( (thickness(iCell) > config_dynamic_thickness) .and. &
+              (li_mask_is_grounded_ice(cellMask(iCell)) .or. wasDynamic(iCell)) ) then
+            cellMask(iCell) = ior(cellMask(iCell), li_mask_ValueDynamicIce)
+         endif
+      enddo
+
+      ! Deactivate dynamic floating ice-margin cells that are too thin relative to their reference thickness.
+      ! The dynamic set only shrinks, so this converges.
+      if (config_floating_ice_deactivation_reference_thickness_fraction > 0.0_RKIND) then
+         converged = .false.
+         do iPass = 1, li_mask_floatingDynamicMaxIterations
+            ! Halo update so that cells near the edge of the owned domain see the current state of their neighbors
+            call mpas_timer_start("halo updates")
+            call mpas_dmpar_exch_halo_field(cellMaskField)
+            call mpas_timer_stop("halo updates")
+
+            changeCell(:) = .false.
+            changedLocal = 0
+            do iCell = 1, nCellsSolve
+               if ( li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) .and. &
+                    li_mask_is_margin(cellMask(iCell)) ) then
+                  searchID = searchID + 1
+                  refThk(iCell) = calculate_reference_thickness_cell(iCell, searchID, nRings, nCells, nEdgesOnCell, &
+                     cellsOnCell, thickness, cellMask, visitedBy, currentRing, nextRing)
+                  if ( (refThk(iCell) > 0.0_RKIND) .and. &
+                       (thickness(iCell) < config_floating_ice_deactivation_reference_thickness_fraction * refThk(iCell)) ) then
+                     changeCell(iCell) = .true.
+                     changedLocal = 1
+                  endif
+               endif
+            enddo
+            do iCell = 1, nCellsSolve
+               if (changeCell(iCell)) then
+                  cellMask(iCell) = iand(cellMask(iCell), not(li_mask_ValueDynamicIce))
+                  lockedOff(iCell) = .true.
+               endif
+            enddo
+
+            call mpas_dmpar_max_int(dminfo, changedLocal, changedGlobal)
+            if (changedGlobal == 0) then
+               converged = .true.
+               exit
+            endif
+         enddo
+         if (.not. converged) then
+            call mpas_log_write("li_calculate_mask: deactivation of floating ice did not converge in $i passes.", &
+               MPAS_LOG_WARN, intArgs=(/li_mask_floatingDynamicMaxIterations/))
+         endif
+      endif
+
+      ! Activate non-dynamic floating cells that are thick enough relative to their reference thickness.
+      ! The dynamic set only grows, so this converges.
+      ! On the last pass, nothing changes, so refThk is consistent with the final state.
+      converged = .false.
+      do iPass = 1, li_mask_floatingDynamicMaxIterations
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_exch_halo_field(cellMaskField)
+         call mpas_timer_stop("halo updates")
+
+         changeCell(:) = .false.
+         changedLocal = 0
+         do iCell = 1, nCellsSolve
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
+               ! Calculate for locked-off cells too, because referenceThickness is needed for them
+               searchID = searchID + 1
+               refThk(iCell) = calculate_reference_thickness_cell(iCell, searchID, nRings, nCells, nEdgesOnCell, &
+                  cellsOnCell, thickness, cellMask, visitedBy, currentRing, nextRing)
+               if ( (.not. lockedOff(iCell)) .and. (refThk(iCell) > 0.0_RKIND) .and. &
+                    (thickness(iCell) > max(config_dynamic_thickness, &
+                       config_floating_ice_activation_reference_thickness_fraction * refThk(iCell))) ) then
+                  changeCell(iCell) = .true.
+                  changedLocal = 1
+               endif
+            endif
+         enddo
+         do iCell = 1, nCellsSolve
+            if (changeCell(iCell)) then
+               cellMask(iCell) = ior(cellMask(iCell), li_mask_ValueDynamicIce)
+            endif
+         enddo
+
+         call mpas_dmpar_max_int(dminfo, changedLocal, changedGlobal)
+         if (changedGlobal == 0) then
+            converged = .true.
+            exit
+         endif
+      enddo
+      if (.not. converged) then
+         call mpas_log_write("li_calculate_mask: activation of floating ice did not converge in $i passes.", &
+            MPAS_LOG_WARN, intArgs=(/li_mask_floatingDynamicMaxIterations/))
+         ! Make halos consistent with the changes made on the last pass
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_exch_halo_field(cellMaskField)
+         call mpas_timer_stop("halo updates")
+      endif
+
+      ! Calculate referenceThickness
+      do iCell = 1, nCells
+         if (.not. li_mask_is_ice(cellMask(iCell))) then
+            referenceThickness(iCell) = 0.0_RKIND
+         elseif (li_mask_is_grounded_ice(cellMask(iCell)) .or. li_mask_is_dynamic_ice(cellMask(iCell))) then
+            referenceThickness(iCell) = thickness(iCell)
+         else
+            ! floating, non-dynamic (only valid for owned cells; halo cells are updated below)
+            referenceThickness(iCell) = refThk(iCell)
+         endif
+      enddo
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_exch_halo_field(referenceThicknessField)
+      call mpas_timer_stop("halo updates")
+
+      deallocate(visitedBy, currentRing, nextRing)
+      deallocate(changeCell, lockedOff, refThk)
+
+      call mpas_timer_stop('calculate mask floating dynamic')
+
+   end subroutine calculate_cell_dynamic_state
+
+
+!***********************************************************************
+!
+!  function calculate_reference_thickness_cell
+!
+!> \brief   Calculates the reference thickness for a floating cell
+!> \author  Matt Hoffman
+!> \date    November 2026
+!> \details
+!>  This function searches outward from cell iCell, one ring of neighbors at a time,
+!>  following only cells thicker than li_mask_refThkSearchMinThickness.
+!>  In the first ring containing dynamic ice, it returns the thickness of the thinnest
+!>  floating dynamic cell, or, if there are no floating dynamic cells in that ring,
+!>  the thickness of the thinnest grounded dynamic cell.
+!>  It returns 0 if a ring has no cells with ice or no dynamic ice is found within nRings rings.
+!>  visitedBy is a work array that marks cells visited by the search with searchID,
+!>  which must be unique for each call, so that visitedBy never needs to be reset.
+!>  For an owned cell, nRings <= config_num_halos ensures the search does not go beyond the halo.
+!
+!-----------------------------------------------------------------------
+
+   function calculate_reference_thickness_cell(iCell, searchID, nRings, nCells, nEdgesOnCell, cellsOnCell, &
+                                               thickness, cellMask, visitedBy, currentRing, nextRing) result(refThk)
+
+      integer, intent(in) :: iCell     !< Input: cell to calculate reference thickness for
+      integer, intent(in) :: searchID  !< Input: unique ID for this search
+      integer, intent(in) :: nRings    !< Input: max number of rings to search
+      integer, intent(in) :: nCells
+      integer, dimension(:), intent(in) :: nEdgesOnCell
+      integer, dimension(:,:), intent(in) :: cellsOnCell
+      real(KIND=RKIND), dimension(:), intent(in) :: thickness
+      integer, dimension(:), intent(in) :: cellMask
+      integer, dimension(:), intent(inout) :: visitedBy   !< Work array of size nCells+1
+      integer, dimension(:), intent(inout) :: currentRing, nextRing  !< Work arrays of size nCells
+      real(KIND=RKIND) :: refThk
+
+      integer :: iRing, n, j, jCell, kCell, nCurrent, nNext
+      real(KIND=RKIND) :: minFloating, minGrounded
+      real(KIND=RKIND), parameter :: noValue = huge(1.0_RKIND)
+
+      refThk = 0.0_RKIND
+      visitedBy(iCell) = searchID
+      nCurrent = 1
+      currentRing(1) = iCell
+
+      do iRing = 1, nRings
+         nNext = 0
+         minFloating = noValue
+         minGrounded = noValue
+         do n = 1, nCurrent
+            jCell = currentRing(n)
+            do j = 1, nEdgesOnCell(jCell)
+               kCell = cellsOnCell(j, jCell)
+               if (kCell > nCells) cycle
+               if (visitedBy(kCell) == searchID) cycle
+               visitedBy(kCell) = searchID
+               if (thickness(kCell) <= li_mask_refThkSearchMinThickness) cycle
+               nNext = nNext + 1
+               nextRing(nNext) = kCell
+               if (li_mask_is_dynamic_ice(cellMask(kCell))) then
+                  if (li_mask_is_floating_ice(cellMask(kCell))) then
+                     minFloating = min(minFloating, thickness(kCell))
+                  else
+                     minGrounded = min(minGrounded, thickness(kCell))
+                  endif
+               endif
+            enddo
+         enddo
+
+         if (nNext == 0) exit  ! no more ice to search through
+         if (minFloating < noValue) then
+            refThk = minFloating
+            exit
+         elseif (minGrounded < noValue) then
+            refThk = minGrounded
+            exit
+         endif
+
+         currentRing(1:nNext) = nextRing(1:nNext)
+         nCurrent = nNext
+      enddo
+
+   end function calculate_reference_thickness_cell
 
 
 end module li_mask
