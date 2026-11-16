@@ -34,6 +34,7 @@ if (NOT TARGET csm_share)
 
   # "normal" sources
   list (APPEND CSM_SHARE_SOURCES
+    ${SHARE_DIR}/pcd_const.F90
     ${SHARE_DIR}/shr_abort_mod.F90
     ${SHARE_DIR}/shr_const_mod.F90
     ${SHARE_DIR}/shr_file_mod.F90

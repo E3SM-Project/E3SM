@@ -26,6 +26,7 @@ macro (CreateCsmShareTarget)
     # FORTRAN_SOURCE lists the source files we want to build that do NOT need to be run through the genf90
     # perl script. We will append to this list below with our processed genf90 files.
     set (FORTRAN_SOURCE
+        ${SCREAM_BASE_DIR}/../../share/util/pcd_const.F90
         ${SCREAM_BASE_DIR}/../../share/util/shr_abort_mod.F90
         ${SCREAM_BASE_DIR}/../../share/util/shr_const_mod.F90
         ${SCREAM_BASE_DIR}/../../share/util/shr_file_mod.F90
