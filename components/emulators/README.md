@@ -24,6 +24,7 @@ These names are a convention. The code takes the paths as arguments, so the file
 - `coupler_api/`: API layer for emulators to exchange data with other emulators.
 - `interface/`: implementation of the `Harness` to allow emulators to exchange with `CPL7`.
 - `scripts/`: python helpers for generating configuration files, along with other tools. See `scripts/README.md`.
+- `demos/`: examples that run real models through the package. Use `./run_demos` to run them, and see `demos/SamudrACE/README.md`.
 - `tests/`: tests for the emulator and inference layers, along with their fixtures. `coupler_api/` and `interface/` have their own `tests/` directories.
 
 ## Configuration
@@ -325,6 +326,8 @@ No configuration decides how fields cross between rates. It follows from the int
 
 All destinations of a route must be treated the same way, so a field going to processes at different rates needs a separate route for each.
 
+A process's prognostic fields need one extra step if it runs less often than the base step. `import_to_external` runs every base step, and would copy the process's empty `_out` route over its state before the process first runs. To avoid that, pass the state's span in a `RouteBufferMap` for both the `<name>_out` and `<name>_in` routes, so nothing is copied. See `demos/SamudrACE/samudrace_demo.cpp`.
+
 ### Prognostic fields
 
 A prognostic field is both an input and an output of an emulator, such as an atmosphere's `T_0`. Nothing copies an output back to its input automatically, so the field leaves through `cpl7` and returns on the next step, using two routes:
@@ -399,6 +402,7 @@ ctest --test-dir build --output-on-failure
 | `EMULATOR_ENABLE_TESTS` | `ON` | Build the tests. |
 | `EMULATOR_ENABLE_LIBTORCH` | `OFF` | Build the LibTorch backend. |
 | `EMULATOR_ENABLE_PYTHON` | `OFF` | Build the Python backend. Requires the Python development files. |
+| `EMULATOR_ENABLE_DEMOS` | `OFF` | Build the programs in `demos/`. |
 | `EMULATOR_TORCH_PYTHON` | `python3` | Interpreter used to locate LibTorch and write the test fixtures. |
 | `EMULATOR_LIBTORCH_VERSION` | `2.5.1` | LibTorch version to download. |
 | `EMULATOR_LIBTORCH_VARIANT` | `auto` | LibTorch build to download: `auto`, `cpu`, `cu118`, `cu121`, `cu124`, or `rocm6.2`. |
