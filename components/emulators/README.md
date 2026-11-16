@@ -352,6 +352,7 @@ The package builds standalone unless it is configured from E3SM, which defines `
 - C, C++20, and Fortran compilers
 - MPI
 - Network access on the first configure, to fetch EKAT and MOAB (and LibTorch if needed) into `downloads/`
+- The `uv_env.sh` helper script will use `uv` to create python environment needed for tests.
 
 ### Using the test script
 
@@ -384,6 +385,14 @@ ctest --test-dir build --output-on-failure
 
 CMake looks for LibTorch in `Torch_DIR` or `CMAKE_PREFIX_PATH`, then in the torch package of `EMULATOR_TORCH_PYTHON`, and otherwise downloads it.
 When using both backends, build against the torch that the Python backend will import, because loading two LibTorch versions in one process fails with symbol errors.
+
+#### Choosing a LibTorch
+
+- **Torch from Python:** use torch 2.7 or later. Earlier PyPI wheels use the old C++ ABI (`_GLIBCXX_USE_CXX11_ABI=0`). LibTorch passes that flag to every target that links it, and the package then fails to compile. Configure with the virtual environment active, so that `python3`, the embedded interpreter, and LibTorch all come from it. 
+- **Downloaded LibTorch:** the archives are built with the new C++ ABI. With `auto`, CMake picks `cu124` only if an NVIDIA driver is present (`/proc/driver/nvidia/version` or a working `nvidia-smi`), and `cpu` otherwise.
+- **CUDA builds** need a CUDA toolkit with the same major version at configure time, because `TorchConfig.cmake` runs `find_package(CUDAToolkit REQUIRED)`. CMake stops with an error if it can't find a matching one. With NVHPC, set `-DCUDAToolkit_ROOT=<nvhpc>/Linux_x86_64/<ver>/cuda/<cuda ver>`, and add `<nvhpc>/Linux_x86_64/<ver>/math_libs/<cuda ver>/lib64` to `CMAKE_LIBRARY_PATH`, because NVHPC keeps cuBLAS and the other math libraries there.
+
+Note: If you change the variant or URL, CMake deletes the previous download in `downloads/` and fetches the new one.
 
 ### Tests
 

@@ -117,9 +117,9 @@ struct LibTorchBackend::Impl {
 };
 
 LibTorchBackend::LibTorchBackend(const InferenceConfig &config)
-    : InferenceBackend(config), m_impl(new Impl()) {
-  m_impl->device = parse_device(config.get("device", "cpu"));
-  m_impl->dtype = parse_dtype(config.get("dtype", "float32"));
+    : InferenceBackend(config), impl_(new Impl()) {
+  impl_->device = parse_device(config.get("device", "cpu"));
+  impl_->dtype = parse_dtype(config.get("dtype", "float32"));
 
   const int num_threads = config.get_int("num_threads", 0);
   EMULATOR_INFER_REQUIRE(num_threads >= 0,
@@ -136,16 +136,16 @@ LibTorchBackend::LibTorchBackend(const InferenceConfig &config)
                          "The LibTorch backend needs model_path.");
   try {
     FpeGuard no_fpe;
-    m_impl->module = torch::jit::load(config.model_path, m_impl->device);
+    impl_->module = torch::jit::load(config.model_path, impl_->device);
   } catch (const std::exception &e) {
     throw InferenceError("Could not load the TorchScript module '" +
                          config.model_path + "':\n" + e.what());
   }
-  m_impl->module.eval();
+  impl_->module.eval();
 
   if (config.verbose) {
     std::cout << "[emulator::inference] LibTorch loaded "
-              << config.model_path << " on " << m_impl->device << " as "
+              << config.model_path << " on " << impl_->device << " as "
               << config.get("dtype", "float32") << "\n";
   }
 }
@@ -153,7 +153,7 @@ LibTorchBackend::LibTorchBackend(const InferenceConfig &config)
 LibTorchBackend::~LibTorchBackend() = default;
 
 bool LibTorchBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
-  EMULATOR_INFER_REQUIRE(m_impl, "The LibTorch backend was finalized.");
+  EMULATOR_INFER_REQUIRE(impl_, "The LibTorch backend was finalized.");
   EMULATOR_INFER_REQUIRE(inputs.size() > 0,
                          "The LibTorch backend was given no input tensors.");
 
@@ -163,12 +163,12 @@ bool LibTorchBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
   std::vector<torch::jit::IValue> args;
   args.reserve(inputs.size());
   for (const auto &tensor : inputs) {
-    args.emplace_back(to_torch(tensor, m_impl->device, m_impl->dtype));
+    args.emplace_back(to_torch(tensor, impl_->device, impl_->dtype));
   }
 
   torch::jit::IValue result;
   try {
-    result = m_impl->module.forward(args);
+    result = impl_->module.forward(args);
   } catch (const std::exception &e) {
     std::string shapes;
     for (const auto &tensor : inputs) {
@@ -192,6 +192,6 @@ bool LibTorchBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
   return true;
 }
 
-void LibTorchBackend::finalize() { m_impl.reset(); }
+void LibTorchBackend::finalize() { impl_.reset(); }
 
 } // namespace e3sm::emulator::inference

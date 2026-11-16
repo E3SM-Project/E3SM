@@ -210,7 +210,7 @@ struct PythonBackend::Impl {
 };
 
 PythonBackend::PythonBackend(const InferenceConfig &config)
-    : InferenceBackend(config), m_impl(new Impl()) {
+    : InferenceBackend(config), impl_(new Impl()) {
   const std::string module_name = config.get("python_module");
   const std::string factory_name =
       config.get("python_factory", "create_emulator");
@@ -225,7 +225,7 @@ PythonBackend::PythonBackend(const InferenceConfig &config)
   FpeGuard no_fpe;
 
   prepend_sys_path(config.get("python_path"));
-  m_impl->numpy = checked(PyImport_ImportModule("numpy"), "importing numpy");
+  impl_->numpy = checked(PyImport_ImportModule("numpy"), "importing numpy");
 
   PyRef module = checked(PyImport_ImportModule(module_name.c_str()),
                          "importing '" + module_name +
@@ -234,7 +234,7 @@ PythonBackend::PythonBackend(const InferenceConfig &config)
       checked(PyObject_GetAttrString(module.get(), factory_name.c_str()),
               "looking up " + module_name + "." + factory_name);
   PyRef settings = config_dict(config);
-  m_impl->model = checked(
+  impl_->model = checked(
       PyObject_CallFunctionObjArgs(factory.get(), settings.get(), nullptr),
       "calling " + module_name + "." + factory_name + "(config)");
 }
@@ -253,7 +253,7 @@ PythonBackend::~PythonBackend() {
 }
 
 bool PythonBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
-  EMULATOR_INFER_REQUIRE(m_impl, "The Python backend was finalized.");
+  EMULATOR_INFER_REQUIRE(impl_, "The Python backend was finalized.");
 
   GilGuard gil;
   FpeGuard no_fpe;
@@ -261,26 +261,26 @@ bool PythonBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
   PyRef in = checked(PyDict_New(), "building the inputs");
   for (const auto &tensor : inputs) {
     set_item(in, tensor.name(),
-             as_numpy(m_impl->numpy, tensor, tensor.cdata(), false));
+             as_numpy(impl_->numpy, tensor, tensor.cdata(), false));
   }
   PyRef out = checked(PyDict_New(), "building the outputs");
   for (auto &tensor : outputs) {
     set_item(out, tensor.name(),
-             as_numpy(m_impl->numpy, tensor, tensor.data(), true));
+             as_numpy(impl_->numpy, tensor, tensor.data(), true));
   }
 
-  checked(PyObject_CallMethod(m_impl->model.get(), "infer", "OO", in.get(),
+  checked(PyObject_CallMethod(impl_->model.get(), "infer", "OO", in.get(),
                               out.get()),
           "calling infer(inputs, outputs)");
   return true;
 }
 
 void PythonBackend::finalize() {
-  if (!m_impl) {
+  if (!impl_) {
     return;
   }
   // Dropping the model is what frees it, whether or not finalize() succeeds
-  const std::unique_ptr<Impl> impl = std::move(m_impl);
+  const std::unique_ptr<Impl> impl = std::move(impl_);
 
   GilGuard gil;
   if (PyObject_HasAttrString(impl->model.get(), "finalize") != 0) {

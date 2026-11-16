@@ -52,7 +52,7 @@ public:
 
 private:
   struct Impl; ///< Keeps torch headers out of this one
-  std::unique_ptr<Impl> m_impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 } // namespace e3sm::emulator::inference

@@ -66,7 +66,7 @@ public:
 
 private:
   struct Impl; ///< Keeps Python.h out of this header
-  std::unique_ptr<Impl> m_impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 } // namespace e3sm::emulator::inference
