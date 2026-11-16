@@ -40,7 +40,11 @@ public:
               const std::shared_ptr<const AbstractGrid>& tgt_grid,
               const std::string& map_file);
 
-  // Builds a tgt grid from map_file info, then calls the above one
+  // Builds a tgt grid from map_file info, then calls the above one.
+  // If the map file has dst_grid_rank=2, the generated grid is a structured grid, with
+  // layout (nx,ny)=dst_grid_dims (x being the fastest varying index). The grid is
+  // detected to be lat-lon if lat (lon) only depends on y (x), and curvilinear otherwise.
+  // The generated grid gets the geo data structured_dims=[ny,nx], which IO uses to write (lat,lon) dims.
   void build (const std::shared_ptr<const AbstractGrid>& grid,
               const std::string& map_file);
 
@@ -60,6 +64,7 @@ public:
   // This will be an overlap version of either the src or tgt grid, depending on whether
   // the remap is fine->coarse or coarse->fine
   std::shared_ptr<AbstractGrid> m_overlap_grid;
+
 private:
 
   // Read sparse matrix in triplets form. The triplets are split uniformly across ranks
@@ -69,8 +74,12 @@ private:
   // its local part of the mat-vec product
   std::vector<Triplet>  get_my_triplets (const std::vector<Triplet>& triplets);
 
-  void setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
-                         const std::string& map_file);
+  // Turn the grid into a structured grid with layout (nx,ny), by adding the proper geo data.
+  // If the grid has lat/lon geo data, detect whether the grid is lat-lon or curvilinear
+  // (see the comments in the implementation). For lat-lon grids, replace lat/lon
+  // with 1d coordinate arrays.
+  void setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
+                             const int nx, const int ny);
 
   void create_ov_grid (const std::vector<Triplet>& triplets);
 
