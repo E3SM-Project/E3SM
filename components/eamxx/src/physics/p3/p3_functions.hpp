@@ -961,7 +961,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                const uview_1d<Pack> &inv_cld_frac_l, const uview_1d<Pack> &inv_cld_frac_r,
                const uview_1d<Pack> &exner, const uview_1d<Pack> &T_atm,
                const uview_1d<Pack> &qv, const uview_1d<Pack> &inv_dz, Scalar &precip_liq_surf,
-               Scalar &precip_ice_surf, view_1d_ptr_array<Pack, 36> &zero_init);
+               Scalar &precip_ice_surf, view_1d_ptr_array<Pack, 38> &zero_init);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_init_disp(

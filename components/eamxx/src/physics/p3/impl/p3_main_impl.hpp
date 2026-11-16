@@ -43,7 +43,7 @@ void Functions<S,D>
   const uview_1d<Pack>& inv_dz,
   Scalar& precip_liq_surf,
   Scalar& precip_ice_surf,
-  view_1d_ptr_array<Pack, 36>& zero_init)
+  view_1d_ptr_array<Pack, 38>& zero_init)
 {
   precip_liq_surf = 0;
   precip_ice_surf = 0;
@@ -235,13 +235,14 @@ Int Functions<S,D>
     bool &nucleationPossible  = bools(0);
     bool &hydrometeorsPresent = bools(1);
 
-    view_1d_ptr_array<Pack, 36> zero_init = {
+    view_1d_ptr_array<Pack, 38> zero_init = {
       &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
       &qc_incld, &qr_incld, &qi_incld, &qm_incld,
       &nc_incld, &nr_incld, &ni_incld, &bm_incld,
       &inv_rho, &prec, &rho, &rhofacr, &rhofaci, &acn, &qv_sat_l, &qv_sat_i, &sup, &qv_supersat_i,
       &tmparr1, &qtend_ignore, &ntend_ignore,
-      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &oprecip_total_tend, &onevapr, &oprecip_liq_flux, &oprecip_ice_flux
+      &mu_c, &lamc, &orho_qi, &oqv2qi_depos_tend, &oprecip_total_tend, &onevapr, &oprecip_liq_flux, &oprecip_ice_flux,
+      &oqv2qc_aeroact, &oqv2qc_condevap
     };
 
     // initialize

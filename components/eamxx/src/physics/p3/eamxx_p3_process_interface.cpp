@@ -226,7 +226,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   using spack_2d_view_t = decltype(m_buffer.inv_exner);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
     &m_buffer.inv_exner, &m_buffer.th_atm, &m_buffer.cld_frac_l, &m_buffer.cld_frac_i,
-    &m_buffer.dz, &m_buffer.qv2qi_depos_tend, &m_buffer.rho_qi, &m_buffer.unused
+    &m_buffer.dz, &m_buffer.qv2qi_depos_tend, &m_buffer.rho_qi,
+    &m_buffer.qv2qc_condevap, &m_buffer.unused
 #ifdef SCREAM_P3_SMALL_KERNELS
     , &m_buffer.mu_r, &m_buffer.T_atm, &m_buffer.lamr, &m_buffer.logn0r, &m_buffer.nu,
     &m_buffer.cdist, &m_buffer.cdist1, &m_buffer.cdistr, &m_buffer.inv_cld_frac_i,
@@ -462,7 +463,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.qc_sed = m_buffer.unused;
     history_only.qi_sed = m_buffer.unused;
     history_only.qv2qc_aeroact = m_buffer.unused;
-    history_only.qv2qc_condevap = m_buffer.unused;
+    history_only.qv2qc_condevap = m_buffer.qv2qc_condevap;
   }
 #ifdef SCREAM_P3_SMALL_KERNELS
   // Temporaries

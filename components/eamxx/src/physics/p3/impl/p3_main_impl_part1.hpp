@@ -85,7 +85,7 @@ void Functions<S,D>
   const Scalar spa_ccn_to_nc_factor = runtime_options.spa_ccn_to_nc_factor;
   const Scalar spa_ccn_to_nc_exponent = runtime_options.spa_ccn_to_nc_exponent;
   const bool use_p3_condensation = runtime_options.use_p3_condensation;
-  Pack oldnc(0),deltaqc(0);
+  Pack deltaqc(0);
   nucleationPossible = false;
   hydrometeorsPresent = false;
   team.team_barrier();
@@ -142,15 +142,7 @@ void Functions<S,D>
         // where alpha and beta are the factor and exponent, respectively.
         // This functional form accounts for "activation" of CCN into Nc
         // and it can be made sublinear (e.g., 2000 and 0.55).
-        // First, scale by cld_frac_l to account for subgrid frac (if any)
-        if(use_p3_condensation) {
-          oldnc=nc(k);  // With prognostic supersaturation, do nothing here.
-        } else {
-          // the SPA equation is of the form:
-          // Nc = max ( Nc , alpha * (nccn_prescribed / inv_cld_frac_l) ^ beta )
-          // where alpha and beta are the factor and exponent, respectively.
-          // This functional form accounts for "activation" of CCN into Nc
-          // and it can be made sublinear (e.g., 2000 and 0.55).
+        if(!use_p3_condensation) {
           // First, scale by cld_frac_l to account for subgrid frac (if any)
           auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
           // Second, apply the exponent
@@ -166,9 +158,13 @@ void Functions<S,D>
       }
     }
 
-    if(use_p3_condensation) {
+    // This activation treatment diagnoses newly activated droplets from the
+    // prescribed CCN field. When CCN is not prescribed, nccn_prescribed is
+    // an unused buffer and droplet-number activation is supplied through
+    // nc_nuceat_tend above instead.
+    if(use_p3_condensation && do_prescribed_CCN) {
       auto nccn_scaled = ekat::pow(nccn_prescribed(k) / inv_cld_frac_l(k),spa_ccn_to_nc_exponent);
-      auto actmask = qv(k) > qv_sat_l(k); // use gridscale qv
+      auto actmask = (qv(k) > qv_sat_l(k)) && range_mask; // use gridscale qv
       if (actmask.any()) {
         auto oldnc = nc(k);
         auto newnc = ekat::max(nc(k), spa_ccn_to_nc_factor * nccn_scaled);

@@ -8,6 +8,8 @@
 
 #include <ekat_team_policy_utils.hpp>
 
+#include <limits>
+
 namespace scream {
 namespace p3 {
 namespace unit_test {
@@ -74,7 +76,8 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
   //-----------------------------------------------------------------------
   Part1Result run_part1(bool use_p3_condensation,
                          Real T_atm_in, Real pres_in, Real qv_in, Real qc_in, Real nc_in,
-                         Real nccn_prescribed_in, Real aeroact_sentinel = 0)
+                         Real nccn_prescribed_in, Real aeroact_sentinel = 0,
+                         bool do_prescribed_CCN = true)
   {
     constexpr Scalar g   = C::gravit.value;
     const Int nk         = Pack::n;
@@ -127,12 +130,10 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
 
     view_1d<bool> bools_d("bools", 2);
 
-    // do_predict_nc = false, do_prescribed_CCN = false: droplet number in the
-    // (unmodified) "else" leg of p3_main_part1 comes from a fixed nccnst, so
-    // that leg's behavior is independent of the condensation scheme and lets
-    // us isolate the effect of the new activation block cleanly.
+    // With do_predict_nc=false, non-prescribed droplet number comes from the
+    // fixed nccnst value. Tests can select whether the prescribed CCN view is
+    // active so both integration paths are covered.
     const bool do_predict_nc     = false;
-    const bool do_prescribed_CCN = false;
 
     auto policy = TPF::get_default_team_policy(1, nk_pack);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -372,17 +373,16 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
       REQUIRE(off.qv2qc_aeroact == 0.0);
     }
 
-    // --- Feature on + sub-saturated: activation should not trigger, and
-    //     the resulting state must match the "feature off" run exactly
-    //     (do_predict_nc=do_prescribed_CCN=false makes the rest of
-    //     p3_main_part1 independent of the condensation scheme). ---
+    // --- Feature on + sub-saturated: activation should not trigger. The
+    //     off path prescribes nc immediately, while the prognostic path waits
+    //     for supersaturation, so only the mass/temperature state should
+    //     remain identical. ---
     {
       auto off        = run_part1(false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, nccn_prescribed_in);
       auto on_subsat   = run_part1(true,  T_atm_in, pres_in, qv_subsat, qc_in, nc_in, nccn_prescribed_in);
       REQUIRE(on_subsat.qv2qc_aeroact == 0.0);
       REQUIRE(on_subsat.qc     == off.qc);
       REQUIRE(on_subsat.qv     == off.qv);
-      REQUIRE(on_subsat.nc     == off.nc);
       REQUIRE(on_subsat.th_atm == off.th_atm);
     }
 
@@ -410,8 +410,25 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
       REQUIRE(delta_th == Approx(latvap * inv_cp * delta_qc).epsilon(1e-8));
 
       // activation can only add cloud water/number, never remove it
-      REQUIRE(on.nc >= off.nc);
+      REQUIRE(on.nc == off.nc);
       REQUIRE(on.qc >= off.qc);
+    }
+
+    // --- When prescribed CCN is disabled, its view is an unused buffer and
+    //     must never be read. A NaN sentinel makes an accidental read visible
+    //     in all of the returned prognostic fields. ---
+    {
+      const Real unused_nccn = std::numeric_limits<Real>::quiet_NaN();
+      auto off = run_part1(false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in,
+                           unused_nccn, 0, false);
+      auto on  = run_part1(true,  T_atm_in, pres_in, qv_supersat, qc_in, nc_in,
+                           unused_nccn, 0, false);
+
+      REQUIRE(on.qv2qc_aeroact == 0.0);
+      REQUIRE(on.qc     == off.qc);
+      REQUIRE(on.qv     == off.qv);
+      REQUIRE(on.nc     == off.nc);
+      REQUIRE(on.th_atm == off.th_atm);
     }
   }
 
