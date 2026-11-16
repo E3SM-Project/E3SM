@@ -1,0 +1,165 @@
+#!/bin/bash
+#
+# Sets up, builds, and runs the emulator demos. Safe to rerun: it reuses the
+# environment, downloads, and build that already exist.
+#
+# Requires uv, CMake 3.28+, MPI, and C, C++20, and Fortran compilers.
+#
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/scripts/shell/colors.sh"
+
+HF_REPO="mahf708/e3smv3-lr-hist-samudrace"
+HF_REVISION="rc1"
+FLAVOR="C1A0"
+YEAR="1985"
+
+WORK_DIR="${SCRIPT_DIR}/demo_data/SamudrACE"
+BUILD_DIR="${SCRIPT_DIR}/build-demo"
+N_COUPLED_STEPS=2
+
+usage() {
+    cat <<USAGE
+Usage: $0 [OPTIONS]
+
+Runs the SamudrACE demo and compares its results with fme's own rollout.
+The first run uses about 9 GB of disk for the model, its data, and PyTorch.
+
+Options:
+  --work-dir DIR   Python environment, model data, and results
+                   (default: demo_data/SamudrACE)
+  --build-dir DIR  CMake build directory (default: build-demo)
+  --n-coupled-steps N
+                   Coupled steps to run, each 20 atmosphere steps and 1 ocean
+                   step, or about 3 minutes on a CPU (default: ${N_COUPLED_STEPS})
+  --help           Show this help message
+USAGE
+}
+
+fail() {
+    print_error "$1" >&2
+    exit 1
+}
+
+need_value() {
+    [[ $# -ge 2 ]] || fail "$1 needs a value"
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --work-dir) need_value "$@"; WORK_DIR="$(realpath -m "$2")"; shift 2 ;;
+        --build-dir) need_value "$@"; BUILD_DIR="$(realpath -m "$2")"; shift 2 ;;
+        --n-coupled-steps) need_value "$@"; N_COUPLED_STEPS="$2"; shift 2 ;;
+        --help|-h) usage; exit 0 ;;
+        *) usage >&2; fail "Unknown option: $1" ;;
+    esac
+done
+
+check_tools() {
+    command -v uv >/dev/null ||
+        fail "uv not found. Install it from https://docs.astral.sh/uv/getting-started/installation/"
+    command -v cmake >/dev/null || fail "cmake not found. CMake 3.28+ is required."
+    command -v mpicc >/dev/null || fail "mpicc not found. Install or load an MPI library."
+
+    local version
+    version="$(cmake --version | head -n 1 | awk '{print $3}')"
+    if [[ "$(printf '%s\n3.28\n' "${version}" | sort -V | head -n 1)" != "3.28" ]]; then
+        fail "CMake 3.28+ is required, but found ${version}."
+    fi
+}
+
+# Use uv's own Python, which always includes the headers and library needed to
+# embed it. A system Python often doesn't.
+setup_environment() {
+    print_status "Setting up the Python environment..."
+    UV_PROJECT_ENVIRONMENT="${WORK_DIR}/.venv" UV_PYTHON_PREFERENCE=only-managed \
+        uv sync --project "${SCRIPT_DIR}/demos/SamudrACE" --locked --no-install-project
+    PYTHON="${WORK_DIR}/.venv/bin/python"
+}
+
+download_data() {
+    local data_dir="${WORK_DIR}/e3smv3"
+    local files=(
+        "checkpoints/${FLAVOR}.tar"
+        "initial_conditions/restart-ic-1985-2015_atmosphere.nc"
+        "initial_conditions/restart-ic-1985-2015_ocean.nc"
+        "forcing_data/atmosphere-forcing-${YEAR}.nc"
+        "forcing_data/ocean-forcing-${YEAR}.nc"
+    )
+    local missing=()
+    local file
+    for file in "${files[@]}"; do
+        [[ -s "${data_dir}/${file}" ]] || missing+=("${file}")
+    done
+    if [[ ${#missing[@]} -eq 0 ]]; then
+        print_status "Model data is already downloaded."
+        return
+    fi
+
+    print_status "Downloading ${#missing[@]} file(s) from ${HF_REPO}..."
+    "${WORK_DIR}/.venv/bin/hf" download "${HF_REPO}" --revision "${HF_REVISION}" \
+        --local-dir "${data_dir}" "${missing[@]}"
+}
+
+extract_fields() {
+    FIELDS="${WORK_DIR}/fields_${FLAVOR}.yaml"
+    [[ -s "${FIELDS}" ]] && return
+    print_status "Extracting the model's fields..."
+    "${PYTHON}" "${SCRIPT_DIR}/scripts/config/extract_fme_fields.py" \
+        "${WORK_DIR}/e3smv3/checkpoints/${FLAVOR}.tar" -o "${FIELDS}"
+}
+
+build_demo() {
+    print_status "Building the demo..."
+    # CMake keeps the libpython it found first, even given a new interpreter, and
+    # the driver would then embed the wrong Python. So record which Python this
+    # build was configured for, and reconfigure from clean if that changes.
+    local marker="${BUILD_DIR}/demo_python.txt"
+    local python_id
+    python_id="$("${PYTHON}" -c 'import sys; print(sys.executable, sys.base_prefix, sys.version)')"
+    local fresh=()
+    if [[ -f "${BUILD_DIR}/CMakeCache.txt" && "$(cat "${marker}" 2>/dev/null)" != "${python_id}" ]]; then
+        print_status "The Python environment changed, so reconfiguring from clean."
+        rm -f "${marker}"
+        fresh=(--fresh)
+    fi
+
+    # The demo gets torch from fme: two LibTorch versions in one process fail
+    # with symbol errors, so the LibTorch backend stays off.
+    cmake "${fresh[@]}" -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Release \
+        -DEMULATOR_ENABLE_TESTS=OFF -DEMULATOR_ENABLE_LIBTORCH=OFF \
+        -DEMULATOR_ENABLE_PYTHON=ON -DEMULATOR_ENABLE_DEMOS=ON \
+        -DPython3_EXECUTABLE="${PYTHON}"
+    echo "${python_id}" > "${marker}"
+    cmake --build "${BUILD_DIR}" --parallel
+}
+
+run_samudrace() {
+    local run_dir="${WORK_DIR}/run"
+    # Don't mix results with those of an earlier run
+    rm -rf "${run_dir}"
+
+    print_status "Preparing inputs and reference results..."
+    "${PYTHON}" "${SCRIPT_DIR}/demos/SamudrACE/prepare_demo.py" \
+        --data-dir "${WORK_DIR}/e3smv3" --fields "${FIELDS}" --run-dir "${run_dir}" \
+        --flavor "${FLAVOR}" --year "${YEAR}" --n-coupled-steps "${N_COUPLED_STEPS}"
+
+    print_status "Running the demo..."
+    # An embedded Python has to be told where its standard library is
+    PYTHONHOME="$("${PYTHON}" -c 'import sys; print(sys.base_prefix)')" \
+        "${BUILD_DIR}/demos/SamudrACE/samudrace_demo" "${run_dir}"
+
+    print_status "Comparing with fme's own rollout..."
+    "${PYTHON}" "${SCRIPT_DIR}/demos/SamudrACE/compare_demo.py" "${run_dir}"
+    print_status "Results are in ${run_dir}"
+}
+
+check_tools
+mkdir -p "${WORK_DIR}"
+setup_environment
+download_data
+extract_fields
+build_demo
+run_samudrace
