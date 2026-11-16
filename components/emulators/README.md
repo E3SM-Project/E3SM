@@ -80,7 +80,7 @@ CouplingPlan(
 
 To regenerate the test configurations, run `python scripts/config/create_coupling_test_files.py`. The files are written to the current directory.
 
-A field that an emulator both reads and writes needs a `PrognosticField`, 
+A field that an emulator both reads and writes needs a `PrognosticField`,
 which creates the plan entries described in [Prognostic fields](#prognostic-fields).
 `prognostic_fields` finds those fields in a config. The `cpl7` config must list each one in both its inputs and outputs:
 
@@ -217,7 +217,7 @@ in `output_order`. Output shapes must match the configured dimensions exactly.
 ### Python
 
 The backend imports `python_module` and calls its factory with a dict holding the configuration (`model_path`, `input_channels`,
-`output_channels`, `verbose`, and every option as a string). 
+`output_channels`, `verbose`, and every option as a string).
 The factory returns an object with an `infer` method and, optionally, a `finalize` method:
 
 ```python
@@ -341,7 +341,7 @@ harness.set_bindings(ExternalBindings{
 });
 ```
 
-The usual coupling step then advances the field: 
+The usual coupling step then advances the field:
 `export_from_external` passes the span's values to the emulator's input,
 `run_process` writes the new output, and `import_to_external` copies that output back to the span.
 
