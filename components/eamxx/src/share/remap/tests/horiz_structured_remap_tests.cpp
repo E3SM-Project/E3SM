@@ -279,7 +279,10 @@ TEST_CASE ("horiz_structured_remap")
     const int nlon = 4;
     const int nlat = 3;
     for (bool lat_major : {true,false}) {
-      const std::string fname = std::string("latlon_map_") + (lat_major ? "lat_major" : "lon_major") + ".nc";
+      // Note: the tests with different np are run concurrently by ctest, so the file name must be
+      //       unique for each np, to avoid that one test overwrites the file while another is reading it.
+      const std::string fname = std::string("latlon_map_") + (lat_major ? "lat_major" : "lon_major")
+                              + "_np" + std::to_string(comm.size()) + ".nc";
       create_latlon_map(fname,nlon,nlat,lat_major);
 
       auto grid = create_point_grid("src",nlon*nlat+1,nlevs,comm,1);
