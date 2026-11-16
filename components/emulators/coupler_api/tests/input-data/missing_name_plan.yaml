@@ -1,0 +1,8 @@
+fields:
+  temperature:
+    kind: state
+    merge_type: direct
+    sources:
+      - atm
+    destinations:
+      - lnd

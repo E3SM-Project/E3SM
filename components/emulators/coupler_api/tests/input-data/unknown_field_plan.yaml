@@ -1,0 +1,9 @@
+fields:
+  not_a_field:
+    kind: state
+    name: not_a_field
+    merge_type: direct
+    sources:
+      - atm
+    destinations:
+      - lnd

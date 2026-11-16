@@ -10,8 +10,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build"
 
 # Source utilities
-source "${SCRIPT_DIR}/scripts/colors.sh"
-source "${SCRIPT_DIR}/scripts/parse_args.sh"
+source "${SCRIPT_DIR}/scripts/shell/colors.sh"
+source "${SCRIPT_DIR}/scripts/shell/parse_args.sh"
 
 # Parse command line arguments
 parse_test_args "$@"
@@ -26,17 +26,30 @@ fi
 
 # Create build directory
 mkdir -p "${BUILD_DIR}"
-cd "${BUILD_DIR}"
 
-# Configure (only if needed)
-if [ ! -f "CMakeCache.txt" ]; then
+# Configure (only if needed, or to apply new -D options to an existing build)
+if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
     print_status "Configuring CMake..."
-        cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_EMULATOR_TESTS=ON -DSTANDALONE_MODE=ON "${CMAKE_ARGS[@]}"
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE=Debug  \
+    -DEMULATOR_ENABLE_TESTS=ON \
+    -DSTANDALONE_MODE=ON \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DFETCHCONTENT_BASE_DIR="$SCRIPT_DIR/downloads" \
+    -DEMULATOR_ENABLE_LIBTORCH=ON \
+    -DEMULATOR_ENABLE_PYTHON=ON \
+    "${CMAKE_ARGS[@]}" || {
+    # Remove the partial cache so that the next run configures again
+    rm -f "${BUILD_DIR}/CMakeCache.txt"
+    exit 1
+    }
+elif [ "${#CMAKE_ARGS[@]}" -gt 0 ]; then
+    print_status "Reconfiguring CMake..."
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" "${CMAKE_ARGS[@]}"
 fi
 
 # Build
 print_status "Building..."
-cmake --build . --parallel
+cmake --build "${BUILD_DIR}" --parallel
 
 # Build only mode - exit before running tests
 if [ "$BUILD_ONLY" = true ]; then
@@ -46,10 +59,13 @@ fi
 
 # Run tests
 print_status "Running tests..."
+ctest_args=(--test-dir "${BUILD_DIR}" --output-on-failure)
 if [ "$VERBOSE" = true ]; then
-    ctest --output-on-failure --verbose
-else
-    ctest --output-on-failure
+    ctest_args+=(--verbose)
 fi
+if [ -n "$TEST_REGEX" ]; then
+    ctest_args+=(-R "$TEST_REGEX")
+fi
+ctest "${ctest_args[@]}"
 
 print_status "All tests passed!"
