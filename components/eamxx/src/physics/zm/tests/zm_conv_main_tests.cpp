@@ -77,9 +77,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.rliq));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.gather_index));
         REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.msemax_klev));
-        REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jctop));
-        REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jcbot));
-        REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.jt));
+        REQUIRE(d_baseline.total(d_baseline.prec) == d_test.total(d_test.cldtop_klev));
         for (Int k = 0; k < d_baseline.total(d_baseline.prec); ++k) {
           const bool active_col = actives[i][k];
           REQUIRE(d_baseline.prec[k] == Approx(d_test.prec[k]).margin(margin));
@@ -90,9 +88,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
           if (active_col) {
             REQUIRE(d_baseline.dsubcld[k] == Approx(d_test.dsubcld[k]).margin(margin));
             REQUIRE(d_baseline.msemax_klev[k] == d_test.msemax_klev[k]);
-            REQUIRE(d_baseline.jt[k] == d_test.jt[k]);
-            REQUIRE(d_baseline.jctop[k] == d_test.jctop[k]);
-            REQUIRE(d_baseline.jcbot[k] == d_test.jcbot[k]);
+            REQUIRE(d_baseline.cldtop_klev[k] == d_test.cldtop_klev[k]);
           }
         }
         REQUIRE(d_baseline.total(d_baseline.heat) == d_test.total(d_test.heat));

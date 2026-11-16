@@ -120,7 +120,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   ekat::host_to_device({d.dqdt, d.fracis, d.q}, d.pcols, d.pver, d.ncnst, vec3dr_in);
 
   std::vector<view1di_d> vec1di_in(3);
-  ekat::host_to_device({d.ideep, d.jt, d.mx}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.ideep, d.cldtop_klev, d.mx}, d.pcols, vec1di_in);
 
   std::vector<view1db_d> vec1db_in(1);
   ekat::host_to_device({d.doconvtran}, d.ncnst, vec1db_in);
@@ -141,7 +141,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
 
   view1di_d
     ideep_d(vec1di_in[0]),
-    jt_d(vec1di_in[1]),
+    cldtop_klev_d(vec1di_in[1]),
     mx_d(vec1di_in[2]);
 
   view1db_d
@@ -162,8 +162,8 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   Int ktm, kbm;
   Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
   Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
-    if (jt_d(i) < update) {
-      update = jt_d(i);
+    if (cldtop_klev_d(i) < update) {
+      update = cldtop_klev_d(i);
     }
   }, Kokkos::Min<Int>(ktm));
 
@@ -203,7 +203,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
       eu_c,
       ed_c,
       dp_c,
-      jt_d(i),
+      cldtop_klev_d(i),
       mx_d(i),
       ktm,
       kbm,
@@ -232,7 +232,7 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
   ekat::host_to_device({d.icwd, d.icwu, d.pgdall, d.pguall, d.wind_in, d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_in);
 
   std::vector<view1di_d> vec1di_in(2);
-  ekat::host_to_device({d.jt, d.mx}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.cldtop_klev, d.mx}, d.pcols, vec1di_in);
 
   view2dr_d
     dp_d(vec2dr_in[0]),
@@ -253,7 +253,7 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
     wind_tend_d(vec3dr_in[5]);
 
   view1di_d
-    jt_d(vec1di_in[0]),
+    cldtop_klev_d(vec1di_in[0]),
     mx_d(vec1di_in[1]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
@@ -272,8 +272,8 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
   Int ktm, kbm;
   Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
   Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
-    if (jt_d(i) < update) {
-      update = jt_d(i);
+    if (cldtop_klev_d(i) < update) {
+      update = cldtop_klev_d(i);
     }
   }, Kokkos::Min<Int>(ktm));
 
@@ -337,7 +337,7 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
       eu_c,
       ed_c,
       dp_c,
-      jt_d(i),
+      cldtop_klev_d(i),
       mx_d(i),
       ktm,
       kbm,
@@ -796,7 +796,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
   ekat::host_to_device({d.mcsp_dq_out, d.mcsp_ds_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v, d.ptend_zm_q, d.ptend_zm_s, d.state_pdel, d.state_pint, d.state_pmid, d.state_q, d.state_s, d.state_u, d.state_v}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(1);
-  ekat::host_to_device({d.jctop}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.cldtop_klev}, d.pcols, vec1di_in);
 
   view1dr_d
     mcsp_freq_d(vec1dr_in[0]),
@@ -823,7 +823,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
     state_v_d(vec2dr_in[16]);
 
   view1di_d
-    jctop_d(vec1di_in[0]);
+    cldtop_klev_d(vec1di_in[0]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
@@ -865,7 +865,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
       pver,
       pverp,
       ztodt,
-      jctop_d(i),
+      cldtop_klev_d(i),
       state_pmid_c,
       state_pint_c,
       state_pdel_c,
@@ -938,10 +938,9 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
             geos_d(vec1dr[3]), landfrac_d(vec1dr[4]), pbl_hgt_d(vec1dr[5]),
             prec_d(vec1dr[6]), rliq_d(vec1dr[7]), tpert_d(vec1dr[8]);
 
-  std::vector<view1di_d> vec1di(4);
-  ekat::host_to_device({d.jcbot, d.jctop, d.jt, d.msemax_klev}, d.pcols, vec1di);
-  view1di_d jcbot_d(vec1di[0]), jctop_d(vec1di[1]), jt_d(vec1di[2]),
-            msemax_klev_d(vec1di[3]);
+  std::vector<view1di_d> vec1di(2);
+  ekat::host_to_device({d.cldtop_klev, d.msemax_klev}, d.pcols, vec1di);
+  view1di_d cldtop_klev_d(vec1di[0]), msemax_klev_d(vec1di[1]);
 
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
@@ -957,7 +956,7 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
     t_mid_d, q_mid_in_d, omega_d, p_mid_in_d, p_int_in_d, p_del_in_d,
     geos_d, z_mid_in_d, z_int_in_d, pbl_hgt_d, tpert_d, landfrac_d,
     t_star_d, q_star_d,
-    msemax_klev_d, jctop_d, jcbot_d, jt_d, active_d, prec_d,
+    msemax_klev_d, cldtop_klev_d, active_d, prec_d,
     heat_d, qtnd_d, cape_d, dcape_d,
     mcon_d, pflx_d, zdu_d, mflx_up_d, entr_up_d, detr_up_d,
     mflx_dn_d, entr_dn_d, p_del_d, dsubcld_d, ql_d, rliq_d, rprd_d, dlf_d,
@@ -995,8 +994,8 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
                          d.mflx_dn, d.mflx_up, d.p_del, d.pflx, d.ql, d.qtnd, d.rprd, d.zdu},
                         out0, out1, vec2dr_out);
 
-  std::vector<view1di_d> vec1di_out = {gather_index_d, jcbot_d, jctop_d, jt_d, msemax_klev_d};
-  ekat::device_to_host({d.gather_index, d.jcbot, d.jctop, d.jt, d.msemax_klev},
+  std::vector<view1di_d> vec1di_out = {gather_index_d, cldtop_klev_d, msemax_klev_d};
+  ekat::device_to_host({d.gather_index, d.cldtop_klev, d.msemax_klev},
                         d.pcols, vec1di_out);
 
   zm_finalize_cxx();
@@ -1116,7 +1115,7 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
   ekat::host_to_device({d.dz, d.h_env, d.h_env_sat, d.lambda, d.z_int, d.z_mid}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(3);
-  ekat::host_to_device({d.j0, d.jb, d.jt}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.j0, d.jb, d.cldtop_klev}, d.pcols, vec1di_in);
 
   view1dr_d
     h_env_min_d(vec1dr_in[0]),
@@ -1133,7 +1132,7 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
   view1di_d
     j0_d(vec1di_in[0]),
     jb_d(vec1di_in[1]),
-    jt_d(vec1di_in[2]);
+    cldtop_klev_d(vec1di_in[2]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
@@ -1163,7 +1162,7 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
       pverp,
       msg,
       jb_d(i),
-      jt_d(i),
+      cldtop_klev_d(i),
       j0_d(i),
       z_mid_c,
       z_int_c,
@@ -1202,7 +1201,7 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
   ekat::host_to_device({d.dz, d.entr_dn, d.evp, d.gamhat, d.h_dnd, d.h_env, d.hsthat, d.lambda, d.mflx_dn, d.mflx_up, d.q_dnd, d.q_dnd_sat, d.q_mid, d.qsthat, d.rprd, d.s_dnd, d.s_mid, d.z_int}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(4);
-  ekat::host_to_device({d.j0, d.jb, d.jd, d.jt}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.j0, d.jb, d.jd, d.cldtop_klev}, d.pcols, vec1di_in);
 
   view1dr_d
     lambda_max_d(vec1dr_in[0]),
@@ -1232,7 +1231,7 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
     j0_d(vec1di_in[0]),
     jb_d(vec1di_in[1]),
     jd_d(vec1di_in[2]),
-    jt_d(vec1di_in[3]);
+    cldtop_klev_d(vec1di_in[3]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
@@ -1275,7 +1274,7 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
       pverp,
       msg,
       jb_d(i),
-      jt_d(i),
+      cldtop_klev_d(i),
       j0_d(i),
       jd_d(i),
       z_int_c,
@@ -1308,8 +1307,8 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
   std::vector<view2dr_d> vec2dr_out = {entr_dn_d, evp_d, h_dnd_d, mflx_dn_d, q_dnd_d, q_dnd_sat_d, s_dnd_d};
   ekat::device_to_host({d.entr_dn, d.evp, d.h_dnd, d.mflx_dn, d.q_dnd, d.q_dnd_sat, d.s_dnd}, d.pcols, d.pver, vec2dr_out);
 
-  std::vector<view1di_d> vec1di_out = {jd_d, jt_d};
-  ekat::device_to_host({d.jd, d.jt}, d.pcols, vec1di_out);
+  std::vector<view1di_d> vec1di_out = {jd_d, cldtop_klev_d};
+  ekat::device_to_host({d.jd, d.cldtop_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
 }
@@ -1328,7 +1327,7 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
   ekat::host_to_device({d.cu, d.detr_up, d.entr_dn, d.entr_up, d.evp, d.mflx_dn, d.mflx_net, d.mflx_up, d.p_mid, d.pflx, d.q_dnd, d.q_mid, d.q_upd, d.ql, d.qst, d.rprd, d.s_dnd, d.s_int, d.s_mid, d.s_upd, d.t_mid, d.z_int, d.z_mid}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(6);
-  ekat::host_to_device({d.j0, d.jb, d.jd, d.jlcl, d.jt, d.lel}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.j0, d.jb, d.jd, d.jlcl, d.cldtop_klev, d.lel}, d.pcols, vec1di_in);
 
   view1dr_d
     landfrac_d(vec1dr_in[0]),
@@ -1364,7 +1363,7 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
     jb_d(vec1di_in[1]),
     jd_d(vec1di_in[2]),
     jlcl_d(vec1di_in[3]),
-    jt_d(vec1di_in[4]),
+    cldtop_klev_d(vec1di_in[4]),
     lel_d(vec1di_in[5]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
@@ -1425,7 +1424,7 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
       tpert_g_d(i),
       jb_d(i),
       lel_d(i),
-      jt_d(i),
+      cldtop_klev_d(i),
       jlcl_d(i),
       j0_d(i),
       jd_d(i),
@@ -1453,8 +1452,8 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
   std::vector<int> vec2dr_out_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver};
   ekat::device_to_host({d.cu, d.detr_up, d.entr_dn, d.entr_up, d.evp, d.mflx_dn, d.mflx_net, d.mflx_up, d.pflx, d.q_dnd, d.q_upd, d.ql, d.qst, d.rprd, d.s_dnd, d.s_upd}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
 
-  std::vector<view1di_d> vec1di_out = {j0_d, jd_d, jlcl_d, jt_d};
-  ekat::device_to_host({d.j0, d.jd, d.jlcl, d.jt}, d.pcols, vec1di_out);
+  std::vector<view1di_d> vec1di_out = {j0_d, jd_d, jlcl_d, cldtop_klev_d};
+  ekat::device_to_host({d.j0, d.jd, d.jlcl, d.cldtop_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
 }
@@ -1473,7 +1472,7 @@ void zm_closure(ZmClosureData& d)
   ekat::host_to_device({d.detr_up, d.mflx_dn, d.mflx_net, d.mflx_up, d.p_del, d.p_mid, d.q_dnd, d.q_int, d.q_mid, d.q_pcl_sat, d.q_upd, d.ql, d.qs, d.s_dnd, d.s_int, d.s_mid, d.s_upd, d.t_mid, d.t_pcl, d.z_int, d.z_mid}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(4);
-  ekat::host_to_device({d.jt, d.lcl, d.lel, d.mx}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.cldtop_klev, d.lcl, d.lel, d.mx}, d.pcols, vec1di_in);
 
   view1dr_d
     cape_d(vec1dr_in[0]),
@@ -1505,7 +1504,7 @@ void zm_closure(ZmClosureData& d)
     z_mid_d(vec2dr_in[20]);
 
   view1di_d
-    jt_d(vec1di_in[0]),
+    cldtop_klev_d(vec1di_in[0]),
     lcl_d(vec1di_in[1]),
     lel_d(vec1di_in[2]),
     mx_d(vec1di_in[3]);
@@ -1558,7 +1557,7 @@ void zm_closure(ZmClosureData& d)
       cape_threshold_in,
       lcl_d(i),
       lel_d(i),
-      jt_d(i),
+      cldtop_klev_d(i),
       mx_d(i),
       dsubcld_d(i),
       z_mid_c,
@@ -1606,7 +1605,7 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
   ekat::host_to_device({d.cu, d.detr_up, d.dl, d.dqdt, d.dsdt, d.evp, d.mflx_dn, d.mflx_up, d.p_del, d.q_dnd, d.q_int, d.q_upd, d.ql, d.s_dnd, d.s_int, d.s_upd}, d.pcols, d.pver, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(2);
-  ekat::host_to_device({d.jt, d.mx}, d.pcols, vec1di_in);
+  ekat::host_to_device({d.cldtop_klev, d.mx}, d.pcols, vec1di_in);
 
   view1dr_d
     dsubcld_d(vec1dr_in[0]);
@@ -1630,7 +1629,7 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
     s_upd_d(vec2dr_in[15]);
 
   view1di_d
-    jt_d(vec1di_in[0]),
+    cldtop_klev_d(vec1di_in[0]),
     mx_d(vec1di_in[1]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
@@ -1638,8 +1637,8 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
   Int ktm, kbm;
   Kokkos::RangePolicy<ExeSpace> rpolicy(0, d.pcols);
   Kokkos::parallel_reduce("FindMinJt", rpolicy, KOKKOS_LAMBDA(const int i, Int& update) {
-    if (jt_d(i) < update) {
-      update = jt_d(i);
+    if (cldtop_klev_d(i) < update) {
+      update = cldtop_klev_d(i);
     }
   }, Kokkos::Min<Int>(ktm));
 
@@ -1681,7 +1680,7 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
       pver,
       pverp,
       msg,
-      jt_d(i),
+      cldtop_klev_d(i),
       mx_d(i),
       ktm,
       kbm,
