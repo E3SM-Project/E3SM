@@ -80,7 +80,9 @@ CouplingPlan(
 
 To regenerate the test configurations, run `python scripts/config/create_coupling_test_files.py`. The files are written to the current directory.
 
-A field that an emulator both reads and writes needs a `PrognosticField`, which creates the plan entries described in [Prognostic fields](#prognostic-fields). `prognostic_fields` finds those fields in a config. The `cpl7` config must list each one in both its inputs and outputs:
+A field that an emulator both reads and writes needs a `PrognosticField`, 
+which creates the plan entries described in [Prognostic fields](#prognostic-fields).
+`prognostic_fields` finds those fields in a config. The `cpl7` config must list each one in both its inputs and outputs:
 
 ```python
 from create_emulator_config_files import PrognosticField, prognostic_fields
@@ -215,7 +217,8 @@ in `output_order`. Output shapes must match the configured dimensions exactly.
 ### Python
 
 The backend imports `python_module` and calls its factory with a dict holding the configuration (`model_path`, `input_channels`,
-`output_channels`, `verbose`, and every option as a string). The factory returns an object with an `infer` method and, optionally, a `finalize` method:
+`output_channels`, `verbose`, and every option as a string). 
+The factory returns an object with an `infer` method and, optionally, a `finalize` method:
 
 ```python
 def create_emulator(config):
@@ -273,7 +276,8 @@ Call these in order: `transfer_bindings` and `add_process` must both come before
 `initialize` also accepts a `RouteBufferMap`, which uses caller-owned storage for the named routes instead of allocating it.
 Each buffer must be the same size as the route's source field. See `interface/tests/test_harness.cpp` for a complete example.
 
-Destroying the `Harness` finalizes its emulators, including calling the Python model's `finalize` method. A failure there is logged to stderr, because destructors can't throw.
+Destroying the `Harness` finalizes its emulators, including calling the Python model's `finalize` method.
+A failure there is logged to stderr, because destructors can't throw.
 
 To couple emulators without `CPL7`, or to add another kind of component, use `CouplerDriver` directly.
 Any class that satisfies the `CoupledProcess` concept in `coupler_api/include/process.hpp` can be added with `add_component`.
@@ -302,7 +306,9 @@ All destinations of a route must be treated the same way, so a field going to pr
 
 ### Prognostic fields
 
-A prognostic field is both an input and an output of an emulator, such as an atmosphere's `T_0`. Nothing copies an output back to its input automatically, so the field leaves through `cpl7` and returns on the next step, using two routes:
+A prognostic field is both an input and an output of an emulator, such as an atmosphere's `T_0`.
+Nothing copies an output back to its input automatically, so the field leaves through `cpl7` and
+returns on the next step, using two routes:
 
 ```yaml
 fields:
@@ -335,11 +341,15 @@ harness.transfer_bindings(ExternalBindings{
 });
 ```
 
-The usual coupling step then advances the field: `export_from_external` passes the span's values to the emulator's input, `run_process` writes the new output, and `import_to_external` copies that output back to the span.
+The usual coupling step then advances the field: 
+`export_from_external` passes the span's values to the emulator's input,
+`run_process` writes the new output, and `import_to_external` copies that output back to the span.
 
 These fields don't need to exist in the real `CPL7` coupler, because the span is only storage on the caller's side.
 
-A name that is both an input and an output is ambiguous in `Emulator::get_field(name)`, which throws. Use `get_field(name, ModelFieldRole::Input)` or `ModelFieldRole::Output`. `use_moab` doesn't support these fields yet, because a MOAB tag name can only be defined once.
+A name that is both an input and an output is ambiguous in `Emulator::get_field(name)`, which throws.
+Use `get_field(name, ModelFieldRole::Input)` or `ModelFieldRole::Output`.
+`use_moab` doesn't support these fields yet, because a MOAB tag name can only be defined once.
 
 ## Building and testing
 
@@ -350,6 +360,20 @@ The package builds standalone unless it is configured from E3SM, which defines `
 - MPI
 - Network access on the first configure, to fetch EKAT and MOAB (and LibTorch if needed) into `downloads/`
 - The `uv_env.sh` helper script will use `uv` to create python environment needed for tests.
+
+  ```bash
+  Usage: uv_setup.sh [options]
+
+  Options:
+    --backend <name>   Torch build: auto (default), cpu, cu126, cu128, ...
+                       'auto' lets uv pick from the installed GPU driver.
+    --torch <spec>     Torch requirement (default: 'torch==2.7.1')
+    --python <ver>     Python version (default: 3.12)
+    --venv <dir>       Environment directory (default: /home/me/climate-projects/emulator_E3SM/components/emulators/.venv)
+    --force            Recreate the environment if it already exists
+    -h, --help         Show this help
+
+    ```
 
 ### Using the test script
 
@@ -384,7 +408,7 @@ When using both backends, build against the torch that the Python backend will i
 
 #### Choosing a LibTorch
 
-- **Torch from Python:** use torch 2.7 or later. Earlier PyPI wheels use the old C++ ABI (`_GLIBCXX_USE_CXX11_ABI=0`). LibTorch passes that flag to every target that links it, and the package then fails to compile. Configure with the virtual environment active, so that `python3`, the embedded interpreter, and LibTorch all come from it. 
+- **Torch from Python:** use torch 2.7 or later. Earlier PyPI wheels use the old C++ ABI (`_GLIBCXX_USE_CXX11_ABI=0`). LibTorch passes that flag to every target that links it, and the package then fails to compile. Configure with the virtual environment active, so that `python3`, the embedded interpreter, and LibTorch all come from it.
 - **Downloaded LibTorch:** the archives are built with the new C++ ABI. With `auto`, CMake picks `cu124` only if an NVIDIA driver is present (`/proc/driver/nvidia/version` or a working `nvidia-smi`), and `cpu` otherwise.
 - **CUDA builds** need a CUDA toolkit with the same major version at configure time, because `TorchConfig.cmake` runs `find_package(CUDAToolkit REQUIRED)`. CMake stops with an error if it can't find a matching one. With NVHPC, set `-DCUDAToolkit_ROOT=<nvhpc>/Linux_x86_64/<ver>/cuda/<cuda ver>`, and add `<nvhpc>/Linux_x86_64/<ver>/math_libs/<cuda ver>/lib64` to `CMAKE_LIBRARY_PATH`, because NVHPC keeps cuBLAS and the other math libraries there.
 
