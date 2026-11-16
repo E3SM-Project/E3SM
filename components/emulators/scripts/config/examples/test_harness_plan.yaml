@@ -1,0 +1,25 @@
+fields:
+  temperature:
+    kind: state
+    name: temperature
+    merge_type: direct
+    sources:
+    - cpl7
+    destinations:
+    - lnd-emulator
+  soil_moisture:
+    kind: state
+    name: soil_moisture
+    merge_type: direct
+    sources:
+    - cpl7
+    destinations:
+    - lnd-emulator
+  surface_flux:
+    kind: flux
+    name: surface_flux
+    merge_type: direct
+    sources:
+    - lnd-emulator
+    destinations:
+    - cpl7
