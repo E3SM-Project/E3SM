@@ -19,7 +19,8 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.plenest             = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
   s_zm_opts.tau                 = 3600;
   s_zm_opts.alfa                = ZMC::alfa;
-  s_zm_opts.ke                  = ZMC::ke;
+  s_zm_opts.evap_efficiency_min = ZMC::evap_efficiency_min;
+  s_zm_opts.evap_efficiency_max = ZMC::evap_efficiency_max;
   s_zm_opts.dmpdz               = ZMC::dmpdz;
   s_zm_opts.tpert_fix           = true;
   s_zm_opts.tpert_fac           = 2;
@@ -49,6 +50,15 @@ void Functions<S,D>::zm_opts_init()
   // eamxx run overwrites s_zm_opts via load_runtime_options from XML.)
   s_zm_opts.mcsp_mom_coeff      = -0.05;
   s_zm_opts.mcsp_use_full_shear = true;
+  // shear scaling parameters (disabled to match the legacy baselines)
+  s_zm_opts.use_shear_scaling_mcsp = false;
+  s_zm_opts.use_shear_scaling_evap = false;
+  s_zm_opts.mcsp_shear_min         = ZMC::MCSP_shear_min_default;
+  s_zm_opts.mcsp_shear_optimal_min = ZMC::MCSP_shear_optimal_min_default;
+  s_zm_opts.mcsp_shear_optimal_max = ZMC::MCSP_shear_optimal_max_default;
+  s_zm_opts.mcsp_shear_max         = ZMC::MCSP_shear_max_default;
+  s_zm_opts.evap_shear_min         = ZMC::evap_shear_min_default;
+  s_zm_opts.evap_shear_max         = ZMC::evap_shear_max_default;
 
   //
   // set up table values of saturation vapor pressure

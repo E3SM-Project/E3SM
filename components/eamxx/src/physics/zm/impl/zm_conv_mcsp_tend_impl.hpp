@@ -29,6 +29,8 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   const uview_1d<const Real>& state_q, // physics state specific humidity
   const uview_1d<const Real>& state_u, // physics state u momentum
   const uview_1d<const Real>& state_v, // physics state v momentum
+  const Real& shear_u, // zonal component of storm-relative shear
+  const Real& shear_v, // meridional component of storm-relative shear
   const uview_1d<const Real>& ptend_zm_s, // input ZM tendency for dry energy (DSE)
   const uview_1d<const Real>& ptend_zm_q, // input ZM tendency for specific humidity (qv)
   // Inputs/Outputs
@@ -88,21 +90,34 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   team.team_barrier();
 
   //----------------------------------------------------------------------------
-  // calculate shear vector and derive the scalar metric used for gating/scaling
+  // derive the scalar shear metric used for gating/scaling
 
-  Real shear_u = 0; // zonal component of storm-relative shear
-  Real shear_v = 0; // meridional component of storm-relative shear
-  zm_conv_mcsp_calculate_shear(team, pver, state_pmid, state_u, state_v, shear_u, shear_v);
-
+  // The shear vector is computed by zm_conv_mcsp_calculate_shear() prior to
+  // zm_conv_main() so that it can also be used to scale the evaporation
+  // efficiency in zm_conv_evap().
   // The momentum forcing always follows the (u,v) shear vector (du~shear_u,
   // dv~shear_v). The mcsp_use_full_shear option only controls the scalar shear
   // used for the activation threshold and diagnostic: the full shear magnitude,
   // or the legacy signed zonal shear (which reproduces E3SMv3, since the same
   // shear also gates the T/q tendencies). The gate below uses abs(mcsp_shear),
   // which equals the magnitude either way.
-  mcsp_shear = runtime_opt.mcsp_use_full_shear
-             ? std::sqrt(shear_u * shear_u + shear_v * shear_v)
-             : shear_u;
+  mcsp_shear = runtime_opt.calc_shear_metric(shear_u, shear_v);
+
+  // With use_shear_scaling_mcsp the hard shear gate is replaced by a trapezoid
+  // function of the shear that scales the T/q coefficients (MCSP is inactive
+  // wherever the scaling is zero). Otherwise the legacy hard gate between
+  // mcsp_shear_min and mcsp_shear_max is used and the coefficients are not modified.
+  Real shear_scaling = 1;
+  bool shear_active  = false;
+  if (runtime_opt.use_shear_scaling_mcsp) {
+    shear_scaling = runtime_opt.calc_mcsp_shear_scaling(mcsp_shear);
+    shear_active  = (shear_scaling > 0);
+  } else {
+    shear_active  = (std::abs(mcsp_shear) >= runtime_opt.mcsp_shear_min &&
+                     std::abs(mcsp_shear) <  runtime_opt.mcsp_shear_max);
+  }
+  const Real mcsp_t_coeff = shear_scaling * runtime_opt.mcsp_t_coeff;
+  const Real mcsp_q_coeff = shear_scaling * runtime_opt.mcsp_q_coeff;
 
   //----------------------------------------------------------------------------
   // calculate mass weighted column average tendencies from ZM
@@ -144,8 +159,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
     // check that ZM provided a non-zero column total heating
     if (zm_avg_tend_s > 0) {
       // check that there is sufficient wind shear to justify coherent organization
-      if (std::abs(mcsp_shear) >= ZMC::MCSP_shear_min &&
-          std::abs(mcsp_shear) < ZMC::MCSP_shear_max) {
+      if (shear_active) {
         // Calculate tendencies and integrate them using parallel reduce
         Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
           [&] (const Int& k, Real& avg_s, Real& avg_q, Real& avg_k) {
@@ -155,8 +169,8 @@ void Functions<S,D>::zm_conv_mcsp_tend(
             const Real pdepth_total = state_pint(pver) - state_pmid(jctop);
 
             // specify the assumed vertical structure
-            if (do_mcsp_t) mcsp_tend_s(k) = -1 * runtime_opt.mcsp_t_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
-            if (do_mcsp_q) mcsp_tend_q(k) = -1 * runtime_opt.mcsp_q_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
+            if (do_mcsp_t) mcsp_tend_s(k) = -1 * mcsp_t_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
+            if (do_mcsp_q) mcsp_tend_q(k) = -1 * mcsp_q_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
             // Momentum tendencies are scaled by the storm-relative shear vector so
             // mcsp_mom_coeff is a dimensionless O(0.01-0.1) fraction rather than a
             // raw acceleration. The resulting wind tendency is
