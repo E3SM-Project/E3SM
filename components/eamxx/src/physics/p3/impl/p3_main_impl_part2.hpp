@@ -393,23 +393,7 @@ void Functions<S,D>
           ssatqv_l.set(condmask, qv(k)-qv_sat_l(k));
           esl.set(condmask, 610.78 * ekat::exp(17.2694 * (T_atm(k) - T_zerodegc) / ((T_atm(k) - T_zerodegc) + 237.3)));
           factorA.set(condmask, -qv_sat_l(k)*rho(k)*gravit*grid_w/(pres(k)-esl) - dqsdt * (-grid_w * gravit * inv_cp));
-
-          // Write the semi-analytic solution in terms of
-          //   weight = (1-exp(-epsc*dt))/(epsc*dt).
-          // This form avoids factorA/epsc and has the correct weight=1
-          // limit when epsc*dt is zero. Using expm1 also avoids cancellation
-          // when the liquid relaxation timescale is long relative to dt.
-          const auto nonzero_epsc = (epsc != 0) && condmask;
-          Pack epsc_dt(1);
-          epsc_dt.set(nonzero_epsc, epsc * dt);
-          Pack relaxation_weight(1);
-          relaxation_weight.set(nonzero_epsc, -ekat::expm1(-epsc_dt) / epsc_dt);
-          Pack relaxation_rate(0);
-          relaxation_rate.set(nonzero_epsc, -ekat::expm1(-epsc_dt) * inv_dt);
-          qv2qc_condevap(k).set(
-              condmask,
-              (factorA * (1 - relaxation_weight) +
-               ssatqv_l * relaxation_rate) / ab);
+          qv2qc_condevap(k).set(condmask, (factorA + (ssatqv_l - factorA * (1./epsc)) * inv_dt * (1.0 - ekat::exp(-epsc * dt))) / ab);
           qv2qc_condevap(k).set(condmask, ekat::max(-qc_incld(k) / dt, qv2qc_condevap(k)));
           qc(k).set(condmask, qc(k) + qv2qc_condevap(k) * cld_frac_l(k) * dt);
           qv(k).set(condmask, qv(k) - cld_frac_l(k) * qv2qc_condevap(k) * dt);
