@@ -178,7 +178,7 @@ struct LimiterFunctor {
         // with dp_ref the hybrid coordinate reference thickness for this column.
         // Then clamp it to the range spanned by the nearest layers above and
         // below that did not need limiting (widened by theta_tol).
-        {
+        Kokkos::single(Kokkos::PerThread(kv.team), [&] () {
           constexpr Real theta_tol = 0.05;
           auto vtheta_as_real     = Homme::viewAsReal(vtheta_dp);
           auto dp_old_as_real     = Homme::viewAsReal(Homme::subview(m_state.m_dp3d,kv.ie,m_nold,igp,jgp));
@@ -242,7 +242,7 @@ struct LimiterFunctor {
               vtheta_as_real(k) = th;
             }
           }
-        }
+        });
 
         // Gotta apply vertical mixing, to prevent levels from getting too thin.
         Real mass = 0.0;
@@ -284,7 +284,7 @@ struct LimiterFunctor {
       // above and below that pass the check (the smaller of the two), instead
       // of resetting it to vtheta_thresh. Only if no layer in the column passes
       // the check do we fall back to vtheta_thresh.
-      {
+      Kokkos::single(Kokkos::PerThread(kv.team), [&] () {
         auto vtheta_dp_as_real = Homme::viewAsReal(vtheta_dp);
         for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
           if ( (vtheta_dp_as_real(k) - m_vtheta_thresh*dp_as_real(k)) < 0) {
@@ -315,7 +315,7 @@ struct LimiterFunctor {
             vtheta_dp_as_real(k) = th*dp_as_real(k);
           }
         }
-      }
+      });
     });
     kv.team_barrier();
   }
