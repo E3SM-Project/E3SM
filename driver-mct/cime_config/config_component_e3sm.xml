@@ -944,6 +944,20 @@
       maps are not needed, while ice-shelf coupling is unchanged.</desc>
   </entry>
 
+  <entry id="GLC2OCN_SHELF_MASK">
+    <type>char</type>
+    <valid_values>below_sea_level,ungrounded</valid_values>
+    <default_value>below_sea_level</default_value>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>The mask glc applies to the ice-shelf geometry it sends the ocean:
+      'below_sea_level' (default) includes grounded ice below sea level, as
+      when grounded cells are part of the ocean (e.g. with a subglacial thin
+      film); 'ungrounded' excludes grounded ice, to match initial conditions
+      made that way (e.g. compass's ocean_includes_grounded = False).  Only
+      the geometry is affected; ice-shelf fluxes are unchanged.</desc>
+  </entry>
+
   <entry id="OCN_GLC_ISMF_COUPLING">
     <type>char</type>
     <valid_values>none,data_mpaso,data_mali,internal_mpaso,tf,coupler</valid_values>

@@ -100,6 +100,7 @@ module glc_comp_mct
   integer :: glcLogUnit ! unit number for glc log
 
   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+  logical  :: shelfMaskUngrounded    ! .true.  => ice-shelf geometry sent to ocn excludes grounded ice
 
   ! MPAS Datatypes
   !type (dm_info), pointer :: dminfo
@@ -199,6 +200,7 @@ contains
     integer (kind=I8KIND) :: numDivs
     character(len=StrKIND) :: start_timestamp
     character(len=StrKIND) :: iotype
+    character(len=StrKIND) :: glc2ocn_shelf_mask ! mask for the ice-shelf geometry sent to ocn
     logical :: streamsExists
     integer :: mesh_iotype
 
@@ -562,6 +564,18 @@ contains
 
     ! Determine if ocn to glc thermal forcing coupling is on
     call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
+
+    ! Determine the mask applied to the ice-shelf geometry sent to the ocean
+    call seq_infodata_GetData(infodata, glc2ocn_shelf_mask=glc2ocn_shelf_mask)
+    select case (trim(glc2ocn_shelf_mask))
+    case ('below_sea_level')
+       shelfMaskUngrounded = .false.
+    case ('ungrounded')
+       shelfMaskUngrounded = .true.
+    case default
+       call mpas_log_write('glc_comp_mct ERROR: unknown glc2ocn_shelf_mask: ' // &
+                           trim(glc2ocn_shelf_mask), MPAS_LOG_CRIT)
+    end select
 
     ! Initialize the MALI core
     ierr = domain % core % core_init(domain, timeStamp)
@@ -1890,10 +1904,17 @@ contains
 
             ! Fields for ice-shelf coupling with the ocean.  They are masked by
             ! where the bed is below sea level (where ocean can be present) so the
-            ! ocean can renormalize them by the remapped mask.
+            ! ocean can renormalize them by the remapped mask.  With
+            ! glc2ocn_shelf_mask = 'ungrounded', grounded ice is excluded from the
+            ! mask, so the ocean sees only floating ice in partially grounded cells.
+            ! Floating ice is always in the mask, so the floating mask (and the
+            ! ice-shelf fluxes normalized by it) is the same either way.
             if (bedTopography(i) <= config_sea_level) then
                belowSeaLevelMask = 1.0_RKIND
             else
+               belowSeaLevelMask = 0.0_RKIND
+            endif
+            if (shelfMaskUngrounded .and. li_mask_is_grounded_ice(cellMask(i))) then
                belowSeaLevelMask = 0.0_RKIND
             endif
             g2x_g(index_g2x_Sg_below_sea_level_mask, n) = belowSeaLevelMask
