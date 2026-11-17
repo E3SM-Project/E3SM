@@ -876,7 +876,6 @@ if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
 
 add_default($nl, 'config_use_land_ice_pressure');
 add_default($nl, 'config_land_ice_draft_mode');
-add_default($nl, 'config_land_ice_rho_ocean');
 
 ###################################
 # Namelist group: land_ice_fluxes #
