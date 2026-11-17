@@ -52,6 +52,21 @@ The MPAS-seaice driver for Icepack is
 
 and the mapping between the names of Icepack's namelist options and those in MPAS-seaice can be found in subroutine ``init_icepack_package_configs`` (see the argument list for calls to subroutine ``icepack_init_parameters`` and comments at the end of ``init_icepack_package_configs``.
 
+### Zero-Salinity Mushy Thermodynamics
+
+E3SM enables Icepack's zero-salinity mushy phase closure by default using the
+namelist option ``config_use_mushy_zero_salinity = true`` in the
+``thermodynamics`` group, which is passed to Icepack as
+``mushy_zero_salinity``.  This closure derives temperature and liquid fraction
+from enthalpy when the bulk salinity of the ice is exactly zero, where the
+mushy liquidus relation is undefined; positive-salinity ice is unaffected.  The
+option requires mushy thermodynamics (``config_thermodynamics_type =
+'mushy'``) and the model will abort during initialization if it is enabled
+with any other thermodynamics type.  See the
+[Technical Guide](../tech-guide/index.md#thermodynamics) and
+[E3SM-Project/Icepack pull request #56](https://github.com/E3SM-Project/Icepack/pull/56)
+for details.
+
 ## Configuring Model Input and Output
 
 The reading and writing of model fields in MPAS is handled by user-configurable streams. A stream represents a fixed set of model fields, together with dimensions and attributes, that are all written or read together to or from the same file or set of files. Besides these default streams, users may define new streams to, e.g., write certain diagnostic fields at a higher temporal frequency than the usual model history fields.
