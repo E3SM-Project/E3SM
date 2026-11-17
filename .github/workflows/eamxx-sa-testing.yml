@@ -69,18 +69,62 @@ jobs:
         id: gpu
         if: ${{ matrix.runner == 'cuda' || matrix.runner == 'hip' }}
         uses: e3sm-project/automation/gpu-arch@v1
-      - name: Run tests
+      - name: "[HUNT] Info on the shared baseline dir and the runner"
+        run: |
+          set +e
+          echo "host: $(hostname)  date: $(date -u)"
+          echo "--- mount info for /projects"
+          df -h /projects/e3sm/data/baselines/scream/ghci-hip 2>&1 | head -5
+          mount | grep -E " /projects| /projects/e3sm" | head -5
+          for d in /projects/e3sm/data/baselines/scream/ghci-hip/*/; do
+            echo "=== $d"
+            ls -la --time-style=full-iso "$d" | head -8
+            echo -n "baseline_git_sha: "; cat "$d/baseline_git_sha" 2>/dev/null; echo
+            ls -la --time-style=full-iso "$d/data" 2>/dev/null | grep -i "shoc_tests\|shoc_unit" | head -5
+          done
+          echo "--- gpu"
+          rocminfo 2>/dev/null | grep -c "Name: *gfx" || true
+          env | grep -E "HIP_|ROCR_|OMP_|HSA_" || true
+      - name: "[HUNT] 1/3 GENERATE a local baseline (shoc_tests only)"
         uses: ./.github/actions/test-all-eamxx
         env:
-          # [HUNT] see components/eamxx/cmake/ctest_script.cmake
+          SCREAM_BASELINE_DIR: LOCAL
+          SCREAM_BUILD_TARGET: shoc_tests
+          SCREAM_TEST_REGEX: '^shoc_tests$'
+          SCREAM_TEST_REPEAT: 1
+        with:
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-${{ matrix.runner }}
+          generate: 'true'
+          submit: 'false'
+          cmake-configs: ${{ matrix.cmake_configs }};${{ steps.gpu.outputs.cmake-configs }}
+          tag: -1-gen-local
+      - name: "[HUNT] 2/3 COMPARE against the local baseline, N times"
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/test-all-eamxx
+        env:
+          SCREAM_BASELINE_DIR: LOCAL
           SCREAM_BUILD_TARGET: shoc_tests
           SCREAM_TEST_REGEX: '^shoc_tests_omp1$'
           SCREAM_TEST_REPEAT: ${{ inputs.repeats }}
         with:
           build_type: ${{ matrix.build_type }}
           machine: ghci-${{ matrix.runner }}
-          generate: ${{ env.generate }}
-          submit: ${{ env.submit }}
+          generate: 'false'
+          submit: 'false'
           cmake-configs: ${{ matrix.cmake_configs }};${{ steps.gpu.outputs.cmake-configs }}
-          ekat: ${{ env.ekat }}
-          kokkos_develop: ${{ env.kokkos_dev_test }}
+          tag: -2-cmp-local
+      - name: "[HUNT] 3/3 COMPARE against the shared (AUTO) baseline, N times"
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/test-all-eamxx
+        env:
+          SCREAM_BUILD_TARGET: shoc_tests
+          SCREAM_TEST_REGEX: '^shoc_tests_omp1$'
+          SCREAM_TEST_REPEAT: ${{ inputs.repeats }}
+        with:
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-${{ matrix.runner }}
+          generate: 'false'
+          submit: 'false'
+          cmake-configs: ${{ matrix.cmake_configs }};${{ steps.gpu.outputs.cmake-configs }}
+          tag: -3-cmp-shared

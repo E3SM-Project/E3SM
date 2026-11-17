@@ -41,6 +41,10 @@ inputs:
     description: 'Semicolon-separated list of key=value pairs for CMake to pass to test-all-eamxx'
     required: false
     default: ''
+  tag:
+    description: '[HUNT] suffix for the log artifact name (to allow multiple invocations in one job)'
+    required: false
+    default: ''
   kokkos_develop:
     description: 'Whether or not this is a test using Kokkos develop branch'
     required: false
@@ -83,7 +87,7 @@ runs:
     - name: Run test-all-eamxx
       working-directory: components/eamxx
       run: |
-        cmd="./scripts/test-all-eamxx -m ${{ inputs.machine }} -t ${{inputs.build_type}} --baseline-dir AUTO -c EKAT_DISABLE_TPL_WARNINGS=ON"
+        cmd="./scripts/test-all-eamxx -m ${{ inputs.machine }} -t ${{inputs.build_type}} --baseline-dir ${SCREAM_BASELINE_DIR:-AUTO} -c EKAT_DISABLE_TPL_WARNINGS=ON"  # [HUNT] SCREAM_BASELINE_DIR overrides AUTO
         if [ "${{ inputs.generate }}" = "true" ]; then
           cmd+=" -g"
         elif [ "${{ inputs.submit }}" = "true" ]; then
@@ -119,7 +123,7 @@ runs:
       if: always()
       uses: actions/upload-artifact@v7
       with:
-        name: log-files-${{ inputs.build_type }}-${{ inputs.machine }}
+        name: log-files-${{ inputs.build_type }}-${{ inputs.machine }}${{ inputs.tag }}
         path: |
           components/eamxx/ctest-build/**/ctest_resource_file.json
           components/eamxx/ctest-build/**/CMakeCache.txt

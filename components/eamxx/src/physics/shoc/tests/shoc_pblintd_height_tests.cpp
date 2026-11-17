@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <unistd.h>
 
 namespace scream {
 namespace shoc {
@@ -176,8 +177,14 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
     // [HUNT] print the raw libc rand() value, to see if it varies from run to run
     const int hunt_rand_raw = rand();
     Int npbl_rand = hunt_rand_raw%72 + 1;
-    std::cout << "[HUNT] pblintd_height_bfb: rand()=" << hunt_rand_raw << " RAND_MAX=" << RAND_MAX
-              << " npbl_rand=" << npbl_rand << std::endl;
+    {
+      char hn[256] = "?"; gethostname(hn, sizeof(hn));
+      const char* omp = getenv("OMP_NUM_THREADS");
+      std::cout << "[HUNT] pblintd_height_bfb: mode=" << (this->m_baseline_action==COMPARE ? "COMPARE" : (this->m_baseline_action==GENERATE ? "GENERATE" : "NONE"))
+                << " rand()=" << hunt_rand_raw << " RAND_MAX=" << RAND_MAX
+                << " npbl_rand=" << npbl_rand << " host=" << hn
+                << " OMP_NUM_THREADS=" << (omp ? omp : "unset") << std::endl;
+    }
 
     PblintdHeightData baseline_data[] = {
       PblintdHeightData(10, 72, 1),
