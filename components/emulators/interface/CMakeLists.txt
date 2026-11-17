@@ -1,6 +1,3 @@
-if(EMULATOR_ENABLE_TESTS)
-  add_subdirectory(tests)
-endif()
 # NOTE: for now, we assume an atmosphere emulator. Let's find a better place for this.
 set(COMPONENT atm)
 set(EMULATOR_NAME ace2)
@@ -11,15 +8,17 @@ configure_file(
   @ONLY
 )
 
-set(CPL7_INTERFACE_CXX_SOURCES
-  cpl7_component.cpp
-  harness.cpp)
+set(EXTERNAL_INTERFACE_CXX_SOURCES
+  external_process.cpp
+  harness.cpp
+  hook.cpp
+)
 
-set(CPL7_INTERFACE_F90_SOURCES)
+set(EXTERNAL_INTERFACE_F90_SOURCES)
 
 add_library(emulator_interface
-          ${CPL7_INTERFACE_CXX_SOURCES}
-          ${CPL7_INTERFACE_F90_SOURCES})
+          ${EXTERNAL_INTERFACE_CXX_SOURCES}
+          ${EXTERNAL_INTERFACE_F90_SOURCES})
 
 target_compile_features(emulator_interface PUBLIC cxx_std_20)
 

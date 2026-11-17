@@ -4,7 +4,7 @@ fields:
     name: temperature
     merge_type: direct
     sources:
-    - cpl7
+    - ext
     destinations:
     - lnd-emulator
   soil_moisture:
@@ -12,7 +12,7 @@ fields:
     name: soil_moisture
     merge_type: direct
     sources:
-    - cpl7
+    - ext
     destinations:
     - lnd-emulator
   surface_flux:
@@ -22,4 +22,4 @@ fields:
     sources:
     - lnd-emulator
     destinations:
-    - cpl7
+    - ext

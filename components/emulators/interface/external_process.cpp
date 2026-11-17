@@ -1,23 +1,28 @@
-#include "cpl7_component.hpp"
+#include "external_process.hpp"
 
 #include <field_registry.hpp>
 
+#include <algorithm>
+#include <iterator>
 #include <stdexcept>
 
 namespace e3sm::emulator {
-void CPL7Component::attach_fields(ExternalBindings bindings) {
-  if (initialized_) {
-    throw std::runtime_error("CPL7Component: fields were already attached");
-  }
-  bindings_ = std::move(bindings);
-  initialized_ = true;
+void ExternalProcess::attach_fields(ExternalBindings bindings) {
+
+  std::ranges::move(bindings.to_external,
+                    std::back_inserter(bindings_.to_external));
+
+  std::ranges::move(bindings.from_external,
+                    std::back_inserter(bindings_.from_external));
 }
 
-void CPL7Component::populate_registry(FieldRegistry& registry) {
-  if (!initialized_) {
+void ExternalProcess::populate_registry(FieldRegistry& registry) {
+
+  if (bindings_.from_external.empty() or bindings_.to_external.empty()) {
     throw std::runtime_error(
-        "CPL7Component: attach fields before populating the registry");
+        "ExternalProcess: attach fields before populating the registry");
   }
+
   for (auto& field : bindings_.to_external) {
     coupling_.register_coupled_field(
         registry,
@@ -27,6 +32,7 @@ void CPL7Component::populate_registry(FieldRegistry& registry) {
                         .size = field.data.size()},
         field.data);
   }
+
   for (auto& field : bindings_.from_external) {
     coupling_.register_coupled_field(
         registry,
@@ -38,8 +44,8 @@ void CPL7Component::populate_registry(FieldRegistry& registry) {
   }
 }
 
-void CPL7Component::print_binding(std::ostream& os,
-                                  const ExternalField& field) const {
+void ExternalProcess::print_binding(std::ostream& os,
+                                    const ExternalField& field) const {
 
   os << "      " << "::" << field.name << " ["
      << " size=" << field.data.size()
@@ -52,7 +58,7 @@ void CPL7Component::print_binding(std::ostream& os,
   os << "]\n";
 }
 
-void CPL7Component::print_bindings(std::ostream& os) const {
+void ExternalProcess::print_bindings(std::ostream& os) const {
   os << " ---- to_external ----- \n";
   for (const auto& binding : bindings_.to_external) {
     print_binding(os, binding);

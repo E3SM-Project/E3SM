@@ -127,11 +127,11 @@ TEST_CASE("Harness reports misuse clearly", "[harness]") {
 
   std::ostringstream out;
   REQUIRE_THROWS_WITH(harness.print_bindings(out),
-                      Contains("set_bindings()"));
+                      Contains("add_bindings()"));
 
-  harness.set_bindings(ExternalBindings{});
-  REQUIRE_THROWS_WITH(harness.set_bindings(ExternalBindings{}),
-                      Contains("already set"));
+  // harness.add_bindings(ExternalBindings{});
+  // REQUIRE_THROWS_WITH(harness.add_bindings(ExternalBindings{}),
+  //                     Contains("already set"));
 }
 
 TEST_CASE("Harness carries a prognostic field through shared storage",
@@ -142,7 +142,7 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
   std::vector<double> state{10.0, 20.0};
 
   Harness harness;
-  harness.set_bindings(ExternalBindings{
+  harness.add_bindings(ExternalBindings{
       .to_external = {{"state", state}},
       .from_external = {{"state", state}},
   });
@@ -159,9 +159,9 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
                       Contains("'state'") && Contains("ModelFieldRole"));
 
   const auto step = [&] {
-    harness.export_from_external("cpl7");
+    harness.export_from_external();
     harness.run_process(config.name);
-    harness.import_to_external("cpl7");
+    harness.import_to_external();
   };
   const auto values = [](std::span<const double> span) {
     return std::vector<double>(span.begin(), span.end());
@@ -209,7 +209,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
 
   SECTION("runs on every third call") {
     Harness harness;
-    harness.set_bindings(bindings());
+    harness.add_bindings(bindings());
     harness.add_process(descriptor(3.f, 3));
     harness.initialize(plan);
     auto& emulator =
@@ -220,7 +220,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
       return Doubles(span.begin(), span.end());
     };
 
-    harness.export_from_external("cpl7");
+    harness.export_from_external();
     REQUIRE_FALSE(harness.run_process(config.name));
     REQUIRE_FALSE(harness.run_process(config.name));
     REQUIRE(input() == Doubles{0.0, 0.0}); // hasn't imported yet
@@ -231,7 +231,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
 
   SECTION("rejects an interval below 1") {
     Harness harness;
-    harness.set_bindings(bindings());
+    harness.add_bindings(bindings());
     harness.add_process(descriptor(1.f, 0));
     REQUIRE_THROWS_WITH(harness.initialize(plan),
                         Contains("coupling_interval") &&
@@ -240,7 +240,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
 
   SECTION("rejects processes with different base steps") {
     Harness harness;
-    harness.set_bindings(bindings());
+    harness.add_bindings(bindings());
     harness.add_process(descriptor(6.f, 1));
     config.name = "other-emulator";
     harness.add_process(descriptor(120.f, 10));
@@ -256,7 +256,7 @@ TEST_CASE("Harness prints its external bindings on request", "[harness]") {
   std::vector<double> from_external{3.5};
 
   Harness harness;
-  harness.set_bindings(ExternalBindings{
+  harness.add_bindings(ExternalBindings{
       .to_external = {{"surface_flux", to_external}},
       .from_external = {{"temperature", from_external}},
   });
@@ -309,7 +309,7 @@ TEST_CASE("Harness preserves results across external buffer layouts",
           },
   };
 
-  direct.harness.set_bindings(bindings);
+  direct.harness.add_bindings(bindings);
   direct.harness.add_process(ProcessDescriptor{
       .run_opts = ProcessRunOpts{.dt = 1., .coupling_interval = 1},
       .grid = make_test_grid(),
@@ -330,9 +330,9 @@ TEST_CASE("Harness preserves results across external buffer layouts",
     CAPTURE(step);
 
     direct.set_forcing(temperature, moisture);
-    direct.harness.export_from_external("cpl7");
+    direct.harness.export_from_external();
     direct.run(p_name);
-    direct.harness.import_to_external("cpl7");
+    direct.harness.import_to_external();
 
     const auto direct_flux = direct.surface_flux();
 

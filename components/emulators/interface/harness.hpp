@@ -1,10 +1,10 @@
-#ifndef E3SM_EMULATOR_CPL7_HARNESS_HPP
-#define E3SM_EMULATOR_CPL7_HARNESS_HPP
+#ifndef E3SM_EMULATOR_HARNESS_HPP
+#define E3SM_EMULATOR_HARNESS_HPP
 
 /**
  * @file: harness.hpp
- * @brief: Implements `Harness` class for bridging external processes to processes
- * owned by the CouplerDriver.
+ * @brief: Implements `Harness` class for bridging external processes to
+ * processes owned by the CouplerDriver.
  *
  * Design:
  *  ____________          ___________         ___________
@@ -26,7 +26,7 @@
  * for configuring and running the process
  */
 
-#include "cpl7_component.hpp"
+#include "external_process.hpp"
 
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
@@ -42,7 +42,6 @@ using namespace coupler;
   // ProcessRunOpts run_opts;
   // GridDesc grid;
   // EmulatorConfig emulator_config;
-  //
 */
 struct ProcessDescriptor {
   ProcessRunOpts run_opts;
@@ -66,19 +65,20 @@ public:
   Harness& operator=(const Harness&&) = delete;
 
   // Sets bindings to those given. Pass in bindings using `std::move`.
-  void set_bindings(ExternalBindings bindings);
+  void add_bindings(ExternalBindings bindings);
 
   void initialize(const std::filesystem::path& plan, RouteBufferMap external);
   void initialize(const std::filesystem::path& plan) {
     initialize(plan, RouteBufferMap{});
   }
-  /// Call once per base step. A process with a coupling_interval of N imports,
-  /// runs, and exports on every Nth call.
+  /// Call once per base step.
+  /// A process with a coupling_interval of N imports, runs, and exports on
+  /// every Nth call.
   /// @return whether the process ran
   bool run_process(std::string_view name);
   void add_process(ProcessDescriptor desc);
-  void import_to_external(std::string_view name);
-  void export_from_external(std::string_view name);
+  void import_to_external();
+  void export_from_external();
 
   /// Diagnostic: writes every value of every external binding to os.
   void print_bindings(std::ostream& os) const;
@@ -90,7 +90,7 @@ public:
 private:
   ProcessMap processes_;
   CouplerDriver driver_;
-  CPL7Component* external_component_ = nullptr;
+  ExternalProcess* external_component_ = nullptr;
   bool initialized_ = false;
 };
 
