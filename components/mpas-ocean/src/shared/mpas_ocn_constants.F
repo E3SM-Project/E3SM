@@ -26,6 +26,7 @@ module ocn_constants
 #ifdef MPAS_ESM_SHR_CONST
    use shr_kind_mod, only: SHR_KIND_R8
    use shr_const_mod
+   use pcd, only: ice_shelf_seawater_density_reference
 #endif
 
    implicit none
@@ -45,6 +46,7 @@ module ocn_constants
       rho_fw                ,&! density of fresh water (kg/m^3)
       rho_sw                ,&! density of salt water (kg/m^3)
       rho_ice               ,&! density of sea ice (kg/m^3)
+      rho_sw_floatation     ,&! density of seawater used to determine land ice floatation (kg/m^3)
       cp_land_ice           ,&! specific heat of land ice (J/kg/K)
       cp_sw                 ,&! specific heat salt water (J/kg/K)
       cp_air                ,&! heat capacity of air (J/kg/K)
@@ -106,12 +108,14 @@ contains
 
        real (kind=RKIND), pointer :: config_density0
        real (kind=RKIND), pointer :: config_land_ice_flux_cp_ice
+       real (kind=RKIND), pointer :: config_land_ice_rho_ocean
 
        ocnConfigs => configPool
        ocnPackages => packagePool
 
        call mpas_pool_get_config(configPool, 'config_density0', config_density0)
        call mpas_pool_get_config(configPool, 'config_land_ice_flux_cp_ice', config_land_ice_flux_cp_ice)
+       call mpas_pool_get_config(configPool, 'config_land_ice_rho_ocean', config_land_ice_rho_ocean)
 
        !-----------------------------------------------------------------------
        !
@@ -127,6 +131,7 @@ contains
        rho_sw    = config_density0            ! density of salt water (kg/m^3)
        rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
        rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
+       rho_sw_floatation = config_land_ice_rho_ocean ! density of seawater used to determine land ice floatation (kg/m^3)
        cp_land_ice = config_land_ice_flux_cp_ice ! specific heat of land ice (J/kg/K)
        cp_sw     = 3.996e3_RKIND              ! specific heat salt water
        cp_air    = 1005.0_RKIND               ! heat capacity of air (J/kg/K)
@@ -174,6 +179,7 @@ contains
        rho_sw                 = SHR_CONST_RHOSW         ! kg/m^3
        rho_fw                 = SHR_CONST_RHOFW         ! kg/m^3
        rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
+       rho_sw_floatation      = ice_shelf_seawater_density_reference ! kg/m^3, from the Physical Constants Dictionary
        cp_land_ice            = SHR_CONST_CPICE         ! J/kg/K, as in MALI
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
