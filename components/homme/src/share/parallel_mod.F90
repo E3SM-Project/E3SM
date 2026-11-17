@@ -36,9 +36,6 @@ module parallel_mod
   integer,      public, allocatable    :: Rrequest(:)
   integer,      public, allocatable    :: Srequest(:)
 
-  real(kind=4), public,allocatable :: FrameWeight(:)
-  integer,      public,allocatable :: FrameIndex(:)
-  integer,      public,allocatable :: FrameCount(:)
 
   ! ==================================================
   ! Define type parallel_t for distributed memory info
@@ -60,8 +57,8 @@ module parallel_mod
   type (parallel_t)    :: par              ! parallel structure for distributed memory programming
 #endif
   integer, parameter :: nrepro_vars=MAX(12,nlev*qsize_d)
-  real(kind=8), public, allocatable :: global_shared_buf(:,:)
-  real(kind=8), public :: global_shared_sum(nrepro_vars)
+  real(kind=real_kind), public, allocatable :: global_shared_buf(:,:)
+  real(kind=real_kind), public :: global_shared_sum(nrepro_vars)
 
   ! ===================================================
   ! Module Interfaces
@@ -273,7 +270,7 @@ contains
 #endif
 #endif
     character*(*) string
-    call flush(iulog)
+    flush(iulog)
 #ifdef CAM
     call endrun(string)
 #else
