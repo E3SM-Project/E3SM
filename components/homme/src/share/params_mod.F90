@@ -6,11 +6,9 @@ module params_mod
    integer, public, parameter :: INTERNAL_EDGE  = 0
    integer, public, parameter :: EXTERNAL_EDGE  = 1
 
-   integer, public, parameter :: RECURSIVE  = 0, &   ! Type of partitioning methods 
-                                 KWAY       = 1, &
-                                 VOLUME     = 2, &
-                                 WRECURSIVE = 3, &
-                                 SFCURVE    = 4, &
+   ! Type of partitioning methods. Values 0-3 were METIS methods, which are no longer
+   ! supported (namelist_mod maps them to SFCURVE).
+   integer, public, parameter :: SFCURVE    = 4, &
                                  ZOLTAN2_1PHASEMAP       = 5, & !Zoltan2 Single Phase Mapper&Partitioner.
                                  ZOLTAN2RCB    = 6, &           !Geometric Recursive Bisection
                                  ZOLTAN2MJ    = 7, &            !Geometric Multijagged
