@@ -7,6 +7,8 @@
 
 #include "shoc_unit_tests_common.hpp"
 
+#include <iostream>
+
 namespace scream {
 namespace shoc {
 namespace unit_test {
@@ -138,7 +140,9 @@ struct UnitWrap::UnitTest<D>::TestPblintd : public UnitWrap::UnitTest<D>::Base {
   {
     auto engine = Base::get_engine();
 
-    Int npbl_rand = rand()%71 + 1;
+    const int hunt_rand_raw = rand();  // [HUNT]
+    Int npbl_rand = hunt_rand_raw%71 + 1;
+    std::cout << "[HUNT] pblintd_bfb: rand()=" << hunt_rand_raw << " npbl_rand=" << npbl_rand << std::endl;
 
     PblintdData baseline_data[] = {
       PblintdData(10, 71, 72, 71),

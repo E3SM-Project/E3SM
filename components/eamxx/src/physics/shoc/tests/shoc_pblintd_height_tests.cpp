@@ -7,6 +7,9 @@
 
 #include "shoc_unit_tests_common.hpp"
 
+#include <iostream>
+#include <cstdlib>
+
 namespace scream {
 namespace shoc {
 namespace unit_test {
@@ -170,7 +173,11 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
   {
     auto engine = Base::get_engine();
 
-    Int npbl_rand = rand()%72 + 1;
+    // [HUNT] print the raw libc rand() value, to see if it varies from run to run
+    const int hunt_rand_raw = rand();
+    Int npbl_rand = hunt_rand_raw%72 + 1;
+    std::cout << "[HUNT] pblintd_height_bfb: rand()=" << hunt_rand_raw << " RAND_MAX=" << RAND_MAX
+              << " npbl_rand=" << npbl_rand << std::endl;
 
     PblintdHeightData baseline_data[] = {
       PblintdHeightData(10, 72, 1),
@@ -197,6 +204,16 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
       PblintdHeightData(baseline_data[5]),
     };
 
+    // [HUNT] pristine copies of the (regenerated) inputs, to rerun the kernel on identical inputs
+    PblintdHeightData orig_data[] = {
+      PblintdHeightData(baseline_data[0]),
+      PblintdHeightData(baseline_data[1]),
+      PblintdHeightData(baseline_data[2]),
+      PblintdHeightData(baseline_data[3]),
+      PblintdHeightData(baseline_data[4]),
+      PblintdHeightData(baseline_data[5]),
+    };
+
     // Assume all data is in C layout
 
     // Read baseline data
@@ -209,6 +226,67 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
     // Get data from cxx
     for (auto& d : cxx_data) {
       pblintd_height(d);
+    }
+
+    // [HUNT] diagnostics (host side only). Note: the baseline file stores the data ARRAYS only, not
+    // the scalar dims (shcol, nlev, npbl). So after read(), baseline_data holds the arrays from the
+    // generation run (inputs and outputs), while cxx_data/orig_data hold the regenerated inputs.
+    if (this->m_baseline_action == COMPARE) {
+      auto ndiff = [](const Real* a, const Real* b, Int n) {
+        Int nd = 0;
+        for (Int k=0; k<n; ++k) { if (a[k]!=b[k]) ++nd; }
+        return nd;
+      };
+      auto ndiff_b = [](const bool* a, const bool* b, Int n) {
+        Int nd = 0;
+        for (Int k=0; k<n; ++k) { if (a[k]!=b[k]) ++nd; }
+        return nd;
+      };
+      static constexpr Int hunt_nsets = sizeof(baseline_data) / sizeof(PblintdHeightData);
+      for (Int i = 0; i < hunt_nsets; ++i) {
+        auto& b = baseline_data[i];
+        auto& c = cxx_data[i];
+        const Int nc = c.total(c.pblh);
+        const Int nl = c.total(c.z);
+        // Inputs: file vs regenerated. If these differ, the inputs generation (engine/seed) differs.
+        const Int d_in = ndiff(b.z,c.z,nl) + ndiff(b.u,c.u,nl) + ndiff(b.v,c.v,nl) + ndiff(b.thv,c.thv,nl)
+                       + ndiff(b.ustar,c.ustar,nc) + ndiff(b.thv_ref,c.thv_ref,nc);
+        // Outputs: file vs cxx
+        const Int d_pblh  = ndiff(b.pblh,c.pblh,nc);
+        const Int d_check = ndiff_b(b.check,c.check,nc);
+        const Int d_rino  = ndiff(b.rino,c.rino,nl);
+        // Determinism: rerun the kernel (same npbl) on identical inputs a few times
+        Int d_rerun = 0;
+        for (int r=0; r<5; ++r) {
+          PblintdHeightData t(orig_data[i]);
+          pblintd_height(t);
+          d_rerun += ndiff(t.pblh,c.pblh,nc) + ndiff_b(t.check,c.check,nc) + ndiff(t.rino,c.rino,nl);
+        }
+        std::cout << "[HUNT] set " << i << " (shcol,nlev,npbl_cxx)=(" << c.shcol << "," << c.nlev << "," << c.npbl << ")"
+                  << " input_diffs(file vs regen)=" << d_in
+                  << " pblh_diffs=" << d_pblh << " check_diffs=" << d_check << " rino_diffs=" << d_rino
+                  << " kernel_rerun_diffs(5 reruns)=" << d_rerun << std::endl;
+        if (d_pblh>0 || d_check>0) {
+          // Which npbl reproduces the baseline outputs, given the regenerated inputs?
+          std::cout << "[HUNT]   set " << i << ": npbl values reproducing the baseline pblh/check:";
+          int nmatch = 0;
+          for (Int np=1; np<=c.nlev; ++np) {
+            PblintdHeightData t(orig_data[i]);
+            t.npbl = np;
+            pblintd_height(t);
+            if (ndiff(t.pblh,b.pblh,nc)==0 && ndiff_b(t.check,b.check,nc)==0) {
+              std::cout << " " << np;
+              ++nmatch;
+            }
+          }
+          std::cout << (nmatch==0 ? " NONE" : "") << std::endl;
+          for (Int k=0; k<nc && k<3; ++k) {
+            std::cout << "[HUNT]   set " << i << " col " << k << ": ustar=" << c.ustar[k] << " thv_ref=" << c.thv_ref[k]
+                      << " pblh(file)=" << b.pblh[k] << " pblh(cxx)=" << c.pblh[k]
+                      << " check(file)=" << b.check[k] << " check(cxx)=" << c.check[k] << std::endl;
+          }
+        }
+      }
     }
 
     // Verify BFB results, all data should be in C layout

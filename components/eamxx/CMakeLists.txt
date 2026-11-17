@@ -548,9 +548,10 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   add_subdirectory(tpls)
   add_subdirectory(src)
 
-  if (NOT SCREAM_LIB_ONLY)
-    add_subdirectory(tests)
-  endif()
+  # [HUNT] skip the top-level tests folder (shoc_tests lives in src/physics/shoc/tests)
+  # if (NOT SCREAM_LIB_ONLY)
+  #   add_subdirectory(tests)
+  # endif()
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder

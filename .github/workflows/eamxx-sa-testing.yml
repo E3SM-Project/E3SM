@@ -1,63 +1,36 @@
 name: eamxx-sa
 
 on:
-  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    paths:
-      # first, yes to these
-      - '.github/workflows/eamxx-sa-testing.yml'
-      - '.github/actions/test-all-eamxx/**'
-      - 'cime_config/machines/config_machines.xml'
-      - 'components/eamxx/**'
-      # Only the homme files that eamxx builds (not standalone-only stuff, like machine files or tests)
-      # NOTE: keep this homme list in sync with eamxx-v1-testing.yml and e3sm-gh-testing.yml
-      - 'components/homme/CMakeLists.txt'
-      - 'components/homme/src/**'
-      - 'components/homme/cmake/HommeMacros.cmake'
-      - 'components/homme/cmake/SetHostPaths.cmake'
-      - 'components/homme/cmake/homme_git_sha.h.in'
-      - 'components/homme/cmake/FindExtrae.cmake'
-      - 'components/homme/cmake/FindZoltan.cmake'
-      - 'components/eam/src/physics/cosp2/external/**'
-      - 'components/eam/src/physics/rrtmgp/**'
-      - 'externals/ekat'
-      - 'externals/mam4xx'
-      - 'externals/haero'
-      - 'externals/scorpio'
-      # second, no to these
-      - '!components/eamxx/.clang-format'
-      - '!components/eamxx/docs/**'
-      - '!components/eamxx/mkdocs.yml'
-      - '!components/eamxx/cime_config/**'
-
-  # Manual run is used to bless
+  # [HUNT] throwaway branch: manual dispatch only
   workflow_dispatch:
     inputs:
       bless:
-        description: 'Generate baselines'
+        description: 'Generate baselines (keep false!)'
         required: true
         type: boolean
+        default: false
       submit:
         description: 'Force cdash submission'
         required: true
         type: boolean
+        default: false
       use_kokkos_dev:
         description: 'Run with Kokkos develop branch'
         required: true
         type: boolean
-
-  # Add schedule trigger for nightly runs at midnight MT (Standard Time)
-  schedule:
-    - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
-    - cron: '0 7 * * 1'  # Weekly run every Monday at 7 AM UTC (using Kokkos develop branch)
+        default: false
+      repeats:
+        description: 'How many times to run shoc_tests_omp1 within each job'
+        required: false
+        type: string
+        default: '20'
 
 concurrency:
   # Two runs are in the same group if they are testing the same git ref
   #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
   #  - for other triggers, the ref is the branch tested
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
@@ -80,17 +53,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: gnu-openmp, runner: gnu, build_type: sp, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
-          - {name: gnu-openmp, runner: gnu, build_type: dbg, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
-          - {name: gnu-openmp, runner: gnu, build_type: fpe, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
-          - {name: gnu-openmp, runner: gnu, build_type: opt, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
-          - {name: intel-openmp, runner: intel, build_type: opt, cmake_configs: 'Kokkos_ENABLE_OPENMP=ON'}
-          - {name: gnu-cuda, runner: cuda, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
-          - {name: gnu-cuda, runner: cuda, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
-          - {name: gnu-cuda, runner: cuda, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
           - {name: gnu-hip, runner: hip, build_type: sp, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
           - {name: gnu-hip, runner: hip, build_type: dbg, cmake_configs: 'SCREAM_SMALL_KERNELS=ON'}
-          - {name: gnu-hip, runner: hip, build_type: opt, cmake_configs: 'SCREAM_SMALL_KERNELS=OFF'}
     name: ${{ matrix.name }} / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
@@ -107,6 +71,11 @@ jobs:
         uses: e3sm-project/automation/gpu-arch@v1
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
+        env:
+          # [HUNT] see components/eamxx/cmake/ctest_script.cmake
+          SCREAM_BUILD_TARGET: shoc_tests
+          SCREAM_TEST_REGEX: '^shoc_tests_omp1$'
+          SCREAM_TEST_REPEAT: ${{ inputs.repeats }}
         with:
           build_type: ${{ matrix.build_type }}
           machine: ghci-${{ matrix.runner }}
