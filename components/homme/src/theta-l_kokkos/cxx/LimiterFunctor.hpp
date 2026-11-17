@@ -24,6 +24,7 @@
 #include "ErrorDefs.hpp"
 
 #include <assert.h>
+#include <limits>
 
 namespace Homme {
 
@@ -35,6 +36,8 @@ struct LimiterFunctor {
   };
 
   int                 m_np1;
+  int                 m_nstep = -1;
+  Real                m_step_start_seconds = -1;
   const int           m_num_elems;
   const bool          m_theta_hydrostatic_mode;
 
@@ -115,6 +118,15 @@ struct LimiterFunctor {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
+      const bool has_latlon = m_geometry.m_sphere_latlon.size() != 0;
+      constexpr Real rad_to_deg = 57.2957795130823208768;
+      const Real lat = has_latlon
+        ? m_geometry.m_sphere_latlon(kv.ie,igp,jgp,0)*rad_to_deg
+        : std::numeric_limits<Real>::quiet_NaN();
+      const Real lon = has_latlon
+        ? m_geometry.m_sphere_latlon(kv.ie,igp,jgp,1)*rad_to_deg
+        : std::numeric_limits<Real>::quiet_NaN();
+
       const auto& spheremp = m_geometry.m_spheremp(kv.ie,igp,jgp);
 
       // Check if the minimum dp3d in this column is blow a certain threshold
@@ -135,8 +147,9 @@ struct LimiterFunctor {
                               [&](const int k,Real& result) {
 #ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
         if(diff_as_real(k) < 0){
-          Kokkos::printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f \n",
-                         k+1,dp_as_real(k),dp0_as_real(k));
+          Kokkos::printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f, "
+                         "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
+                         k+1,dp_as_real(k),dp0_as_real(k),lat,lon,m_nstep,m_step_start_seconds);
         }
 #endif
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
@@ -194,8 +207,10 @@ struct LimiterFunctor {
         for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
           if ( (vtheta_dp(ilev)[ivec] - m_vtheta_thresh*dp(ilev)[ivec]) < 0) {
 #ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
-            Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
-                           ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh);
+            Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter, "
+                           "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
+                           ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh,
+                           lat,lon,m_nstep,m_step_start_seconds);
 #endif
              vtheta_dp(ilev)[ivec]=m_vtheta_thresh*dp(ilev)[ivec];
           }

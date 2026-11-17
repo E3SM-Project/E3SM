@@ -45,6 +45,10 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   // Get simulation params
   SimulationParams& params = context.get<SimulationParams>();
 
+  auto& limiter = context.get<LimiterFunctor>();
+  limiter.m_nstep = tl.nstep;
+  limiter.m_step_start_seconds = tl.nstep*dt;
+
   // Determine the tracers time level
   tl.update_tracers_levels(params.dt_tracer_factor);
 
