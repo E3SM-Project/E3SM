@@ -23,6 +23,13 @@
 #include "ExecSpaceDefs.hpp"
 #include "Types.hpp"
 
+#ifdef start_timer
+#undef start_timer
+#endif
+#ifdef stop_timer
+#undef stop_timer
+#endif
+
 // Scream includes
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "share/remap/unique_grid_remapper.hpp"
