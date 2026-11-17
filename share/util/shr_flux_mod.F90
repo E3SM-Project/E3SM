@@ -759,8 +759,29 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                            ((qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny))**2 + &
                            ((u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny))**2) > flux_con_tol)) exit
             if (iter > flux_con_max_iter) then
-               write(s_logunit,*) vmag,thbot(n),ts(n),zbot(n),qbot(n),ssq,ustar,ustar_prev, &
-                                  tstar,tstar_prev,qstar,qstar_prev,flux_con_tol,flux_con_max_iter
+               write(s_logunit,*) 'wind speed: ', vmag
+               write(s_logunit,*) 'air temp: ', thbot(n)
+               write(s_logunit,*) 'surface temp: ', ts(n)
+               write(s_logunit,*) 'level height: ', zbot(n)
+               write(s_logunit,*) 'air humidity: ', qbot(n)
+               write(s_logunit,*) 'surface humidity: ', ssq
+               write(s_logunit,*) 'ustar: ', ustar
+               write(s_logunit,*) 'tstar: ', tstar
+               write(s_logunit,*) 'qstar: ', qstar
+               write(s_logunit,*) 'u10n: ', u10n
+               write(s_logunit,*) 'ustar residual: ', &
+                  (ustar_next - ustar_prev)/(abs(ustar_prev) + ustar_tiny)
+               write(s_logunit,*) 'tstar residual: ', &
+                  (tstar_next - tstar_prev)/(abs(tstar_prev) + tstar_tiny)
+               write(s_logunit,*) 'qstar residual: ', &
+                  (qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny)
+               write(s_logunit,*) 'u10n residual: ', &
+                  (u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny)
+               write(s_logunit,*) 'convergence tolerance: ', flux_con_tol
+               write(s_logunit,*) 'max iterations: ', flux_con_max_iter
+               write(s_logunit,*) 'regularization enabled: ', use_ocn_atm_flux_reg
+               write(s_logunit,*) 'regularization width: ', ocn_atm_flux_eps
+               write(s_logunit,*) 'damping factor: ', ocn_atm_flux_damping
                call shr_sys_abort('MAX ITERS REACHED WITHOUT OCN-ATM ITERATION CONVERGING ' // errMsg(sourcefile, __LINE__))
                exit
             end if
