@@ -3357,7 +3357,9 @@ contains
     end if
 
     ! glc->ocn ice-shelf coupling: masked by where the bed is below sea level so
-    ! the ocean can renormalize by the remapped Sg_below_sea_level_mask
+    ! the ocean can renormalize by the remapped Sg_below_sea_level_mask.  With
+    ! glc2ocn_shelf_mask = 'ungrounded', the mask (and so Sg_below_sea_level_mask)
+    ! also excludes grounded ice.
 
     name = 'Sg_lithop'
     call seq_flds_add(g2x_states,trim(name))

@@ -853,6 +853,33 @@
     </values>
   </entry>
 
+  <entry id="glc2ocn_shelf_mask" modify_via_xml="GLC2OCN_SHELF_MASK">
+    <type>char</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <valid_values>below_sea_level,ungrounded</valid_values>
+    <desc>
+      The mask glc applies to the ice-shelf geometry it sends the ocean (the
+      lithostatic pressure and the floating and grounded ice masks), sent as
+      Sg_below_sea_level_mask so the ocean can renormalize by it.
+      'below_sea_level': where the bed is below sea level, grounded ice
+      included, as needed when grounded cells are part of the ocean (e.g. with
+      a subglacial thin film).
+      'ungrounded': where the bed is below sea level and the ice is not
+      grounded, so partially grounded cells see only the pressure of the
+      floating ice.  This matches initial conditions made with this
+      weighting (e.g. compass's ocean_includes_grounded = False).  In
+      partially grounded cells, the ocean's floating fraction then exceeds
+      glc's, so the ocean melts over more area than glc has floating ice;
+      the melt is still conserved because it is exchanged over glc's own
+      floating fraction.
+      Only the geometry is affected; ice-shelf fluxes are unchanged.
+    </desc>
+    <values>
+      <value>$GLC2OCN_SHELF_MASK</value>
+    </values>
+  </entry>
+
   <entry id="wall_time_limit">
     <type>real</type>
     <category>control</category>

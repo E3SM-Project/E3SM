@@ -3377,7 +3377,9 @@ contains
     end if
 
     ! glc->ocn ice-shelf coupling: masked by where the bed is below sea level so
-    ! the ocean can renormalize by the remapped Sg_below_sea_level_mask.  The
+    ! the ocean can renormalize by the remapped Sg_below_sea_level_mask.  With
+    ! glc2ocn_shelf_mask = 'ungrounded', the mask (and so Sg_below_sea_level_mask)
+    ! also excludes grounded ice.  The
     ! geometry states are mapped with the glc2ocn state map, which may smooth
     ! them; the fluxes and a copy of the floating mask that the ocean uses to
     ! conserve them are mapped with the conservative glc2ocn flux map.
