@@ -18,7 +18,7 @@ module prim_advance_mod
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
     theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, pgrad_correction,&
-    vtheta_thresh, dp3d_thresh, laplace_scaling
+    vtheta_thresh, dp3d_thresh, laplace_scaling, internal_diagnostics_level
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -1947,8 +1947,10 @@ contains
                       if (th > th_hi) th = th_hi
                    endif
 #ifndef HOMMEXX_BFB_TESTING
-                   write(iulog,*) 'WARNING:CAAR: theta in limited layer. k,theta_raw,theta_old,theta_new: ',&
-                        k,th_raw,th_old,th
+                   if (internal_diagnostics_level > 0) then
+                      write(iulog,*) 'WARNING:CAAR: theta in limited layer. k,theta_raw,theta_old,theta_new: ',&
+                           k,th_raw,th_old,th
+                   endif
 #endif
                    vtheta_dp(i,j,k) = th
                 endif

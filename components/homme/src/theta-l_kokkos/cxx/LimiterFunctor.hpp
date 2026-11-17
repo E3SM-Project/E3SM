@@ -41,6 +41,7 @@ struct LimiterFunctor {
   Real                m_step_start_seconds = -1;
   const int           m_num_elems;
   const bool          m_theta_hydrostatic_mode;
+  const int           m_diagnostics_level;
 
   HybridVCoord        m_hvcoord;
   ElementsState       m_state;
@@ -68,6 +69,7 @@ struct LimiterFunctor {
   LimiterFunctor(const Elements &elements, const HybridVCoord &hvcoord, const SimulationParams& params)
       : m_num_elems(elements.num_elems())
       , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
+      , m_diagnostics_level(params.internal_diagnostics_level)
       , m_hvcoord(hvcoord)
       , m_state(elements.m_state)
       , m_geometry(elements.m_geometry)
@@ -238,11 +240,13 @@ struct LimiterFunctor {
                 if (th > th_hi) th = th_hi;
               }
 #ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
-              Kokkos::printf("WARNING:CAAR: theta in limited layer. k=%d, theta_raw=%f, theta_old=%f, theta_new=%f, "
-                             "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
-                             k+1,th_raw,th_old,th,
-                             latlon_deg(kv.ie,igp,jgp,0),latlon_deg(kv.ie,igp,jgp,1),
-                             m_nstep,m_step_start_seconds);
+              if (m_diagnostics_level > 0) {
+                Kokkos::printf("WARNING:CAAR: theta in limited layer. k=%d, theta_raw=%f, theta_old=%f, theta_new=%f, "
+                               "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
+                               k+1,th_raw,th_old,th,
+                               latlon_deg(kv.ie,igp,jgp,0),latlon_deg(kv.ie,igp,jgp,1),
+                               m_nstep,m_step_start_seconds);
+              }
 #endif
               vtheta_as_real(k) = th;
             }
