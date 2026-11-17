@@ -284,38 +284,50 @@ struct LimiterFunctor {
       // above and below that pass the check (the smaller of the two), instead
       // of resetting it to vtheta_thresh. Only if no layer in the column passes
       // the check do we fall back to vtheta_thresh.
-      Kokkos::single(Kokkos::PerThread(kv.team), [&] () {
-        auto vtheta_dp_as_real = Homme::viewAsReal(vtheta_dp);
-        for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
-          if ( (vtheta_dp_as_real(k) - m_vtheta_thresh*dp_as_real(k)) < 0) {
-            int ka = -1;
-            int kb = -1;
-            for (int j=k-1; j>=0; --j) {
-              if ( (vtheta_dp_as_real(j) - m_vtheta_thresh*dp_as_real(j)) >= 0) { ka = j; break; }
-            }
-            for (int j=k+1; j<NUM_PHYSICAL_LEV; ++j) {
-              if ( (vtheta_dp_as_real(j) - m_vtheta_thresh*dp_as_real(j)) >= 0) { kb = j; break; }
-            }
-            Real th = m_vtheta_thresh;
-            if (ka>=0 && kb>=0) {
-              const Real th_a = vtheta_dp_as_real(ka)/dp_as_real(ka);
-              const Real th_b = vtheta_dp_as_real(kb)/dp_as_real(kb);
-              th = th_a < th_b ? th_a : th_b;
-            } else if (ka>=0) {
-              th = vtheta_dp_as_real(ka)/dp_as_real(ka);
-            } else if (kb>=0) {
-              th = vtheta_dp_as_real(kb)/dp_as_real(kb);
-            }
-#ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
-            Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter, theta_new=%f, "
-                           "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
-                           k+1,vtheta_dp_as_real(k)/dp_as_real(k),m_vtheta_thresh,th,
-                           lat,lon,m_nstep,m_step_start_seconds);
-#endif
-            vtheta_dp_as_real(k) = th*dp_as_real(k);
-          }
+      // The neighbour search is serial, so first check in parallel whether any
+      // level needs it; usually none does.
+      auto vtheta_dp_as_real = Homme::viewAsReal(vtheta_dp);
+      int num_low = 0;
+      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+                              [&](const int k, int& count) {
+        if ( (vtheta_dp_as_real(k) - m_vtheta_thresh*dp_as_real(k)) < 0) {
+          ++count;
         }
-      });
+      }, num_low);
+
+      if (num_low>0) {
+        Kokkos::single(Kokkos::PerThread(kv.team), [&] () {
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            if ( (vtheta_dp_as_real(k) - m_vtheta_thresh*dp_as_real(k)) < 0) {
+              int ka = -1;
+              int kb = -1;
+              for (int j=k-1; j>=0; --j) {
+                if ( (vtheta_dp_as_real(j) - m_vtheta_thresh*dp_as_real(j)) >= 0) { ka = j; break; }
+              }
+              for (int j=k+1; j<NUM_PHYSICAL_LEV; ++j) {
+                if ( (vtheta_dp_as_real(j) - m_vtheta_thresh*dp_as_real(j)) >= 0) { kb = j; break; }
+              }
+              Real th = m_vtheta_thresh;
+              if (ka>=0 && kb>=0) {
+                const Real th_a = vtheta_dp_as_real(ka)/dp_as_real(ka);
+                const Real th_b = vtheta_dp_as_real(kb)/dp_as_real(kb);
+                th = th_a < th_b ? th_a : th_b;
+              } else if (ka>=0) {
+                th = vtheta_dp_as_real(ka)/dp_as_real(ka);
+              } else if (kb>=0) {
+                th = vtheta_dp_as_real(kb)/dp_as_real(kb);
+              }
+#ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
+              Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter, theta_new=%f, "
+                             "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
+                             k+1,vtheta_dp_as_real(k)/dp_as_real(k),m_vtheta_thresh,th,
+                             lat,lon,m_nstep,m_step_start_seconds);
+#endif
+              vtheta_dp_as_real(k) = th*dp_as_real(k);
+            }
+          }
+        });
+      } // end of num_low > 0
     });
     kv.team_barrier();
   }
