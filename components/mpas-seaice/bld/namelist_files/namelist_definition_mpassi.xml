@@ -2506,6 +2506,14 @@ Valid values: 'BL99', or 'mushy'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_mushy_zero_salinity" type="logical"
+	category="thermodynamics" group="thermodynamics">
+If true, use the enthalpy-based mushy phase closure for exactly zero-salinity ice. Requires 'mushy' thermodynamics.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_heat_conductivity_type" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
 Thermal conductivity type for BL99 thermodynamics. Options are Maykut and Untersteiner 1971 form (with Wettlaufer 1991 constants), or Pringle et al JGR 2007 'bubbly brine'

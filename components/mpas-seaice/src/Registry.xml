@@ -1765,6 +1765,11 @@
 			possible_values="'BL99', or 'mushy'"
 			icepack_name="ktherm"
 		/>
+		<nml_option name="config_use_mushy_zero_salinity" type="logical" default_value="true" units="unitless"
+			description="If true, use the enthalpy-based mushy phase closure for exactly zero-salinity ice. Requires 'mushy' thermodynamics."
+			possible_values="true or false"
+			icepack_name="mushy_zero_salinity"
+		/>
 		<nml_option name="config_heat_conductivity_type" type="character" default_value="bubbly" units="unitless"
 			description="Thermal conductivity type for BL99 thermodynamics. Options are Maykut and Untersteiner 1971 form (with Wettlaufer 1991 constants), or Pringle et al JGR 2007 'bubbly brine'"
 			possible_values="'MU71' or 'bubbly'"
