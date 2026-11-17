@@ -3792,7 +3792,7 @@ contains
 
       elseif ( trim(config_land_ice_draft_mode) == "pressure-dependent" ) then
 
-         rho_floatation = config_land_ice_rho_ocean
+         rho_floatation = rho_sw_floatation
 
 #ifdef MPAS_OPENACC
          !$acc parallel loop present(landIceDraftForSsh, landIcePressure)
