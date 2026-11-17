@@ -16,7 +16,30 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Bas
 
   void run_property()
   {
-    // Should property tests be created?
+    ComputeTMSData d(2, 2);
+    for (int i = 0; i < d.ncols; ++i) {
+      d.sgh[i] = 100;
+      d.landfrac[i] = 1;
+      d.ksrf[i] = d.taux[i] = d.tauy[i] = 0;
+      for (int k = 0; k < d.nlevs; ++k) {
+        const int idx = i*d.nlevs + k;
+        d.u_wind[idx] = k == 0 ? 11 : 10;
+        d.v_wind[idx] = 0;
+        d.exner[idx] = k == 0 ? 0.9 : 1;
+        const Real theta = k == 0 ? (i == 0 ? 301 : 299) : 300;
+        d.t_mid[idx] = theta*d.exner[idx];
+        d.p_mid[idx] = k == 0 ? 90000 : 100000;
+        d.z_mid[idx] = k == 0 ? 100 : 10;
+      }
+    }
+
+    compute_tms(d);
+
+    // Stable stratification has Ri > 1; unstable stratification retains drag.
+    REQUIRE(d.ksrf[0] == 0);
+    REQUIRE(d.taux[0] == 0);
+    REQUIRE(d.ksrf[1] > 0);
+    REQUIRE(d.taux[1] < 0);
   } // run_property
 
   void run_bfb()
