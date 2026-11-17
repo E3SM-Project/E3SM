@@ -111,18 +111,79 @@ struct UnitWrap::UnitTest<D>::TestZmC0Scaling : public UnitWrap::UnitTest<D>::Ba
   } // run_factors
 
   //----------------------------------------------------------------------------
+  // Fill d with a deterministic, conditionally unstable tropical sounding so
+  // that zm_cloud_properties produces an active updraft with liquid water and
+  // rain production. Uniform layers of thickness dz from the surface to z_top,
+  // a 6.5 K/km lapse rate up to an isothermal stratosphere, and relative
+  // humidity decreasing from 90% near the surface to 30% aloft. Columns differ
+  // in surface temperature and land fraction. k=0 is the model top.
+  static void set_convecting_sounding(ZmCloudPropertiesData& d)
+  {
+    const Real grav  = 9.80616, cpair = 1004.64, rdair = 287.042;
+    const Real z_top = 20000, dz = z_top / d.pver;
+    for (Int i = 0; i < d.pcols; ++i) {
+      const Real t_sfc = 300 + Real(0.5)*i;
+      d.landfrac[i] = d.pcols > 1 ? Real(i) / (d.pcols - 1) : Real(0);
+      d.tpert_g[i]  = 0.5;
+      for (Int k = 0; k < d.pverp; ++k) {
+        d.z_int[i*d.pverp + k] = (d.pverp - 1 - k) * dz;
+      }
+      // integrate the hypsometric equation upward from the surface
+      Real p_below = 1000; // [mb]
+      Real z_below = 0;
+      for (Int k = d.pver - 1; k >= 0; --k) {
+        const Int  n  = i*d.pver + k;
+        const Real z  = Real(0.5) * (d.z_int[i*d.pverp + k] + d.z_int[i*d.pverp + k + 1]);
+        const Real t  = std::max(t_sfc - Real(6.5e-3)*z, t_sfc - Real(6.5e-3)*15000);
+        const Real p  = p_below * std::exp(-grav * (z - z_below) / (rdair * t));
+        const Real rh = z < 2000 ? Real(0.9) : (z < 10000 ? Real(0.9) - Real(0.6)*(z - 2000)/8000 : Real(0.3));
+        // saturation specific humidity from Bolton (1980)
+        const Real es = Real(6.112) * std::exp(Real(17.67)*(t - Real(273.15)) / (t - Real(29.65)));
+        const Real qs = Real(0.622) * es / std::max(p - Real(0.378)*es, es);
+        d.z_mid[n] = z;
+        d.t_mid[n] = t;
+        d.p_mid[n] = p;
+        d.q_mid[n] = rh * qs;
+        d.s_mid[n] = t + grav / cpair * z;
+        p_below = p;
+        z_below = z;
+      }
+      // interface dry static energy: mean of the adjacent layers
+      for (Int k = 0; k < d.pver; ++k) {
+        const Int n = i*d.pver + k;
+        d.s_int[n] = k == 0 ? d.s_mid[n] : Real(0.5) * (d.s_mid[n-1] + d.s_mid[n]);
+      }
+      // updraft base in the second layer above the surface, launch level near 13 km
+      d.jb[i]  = d.pver - 2;
+      d.lel[i] = Int(d.pver * (z_top - 13000) / z_top);
+    }
+  }
+
+  //----------------------------------------------------------------------------
   // zm_cloud_properties with the scaling enabled
   void run_cloud_properties()
   {
     auto engine = Base::get_engine();
 
-    ZmCloudPropertiesData base_data[] = {
-      //                    pcols, ncol, pver, pverp, msg, limcnv
-      ZmCloudPropertiesData(    4,    4,   72,    73,  10,  40),
-      ZmCloudPropertiesData(    4,    4,  128,   129,  30,  60),
+    // The deterministic sounding must exercise the rain production and liquid
+    // budget checks with non-neutral scaling, the random data only has to pass
+    // them where it happens to convect
+    struct DataSet {
+      ZmCloudPropertiesData d;
+      bool require_active;
     };
-    for (auto& d : base_data) {
-      d.randomize(engine);
+    std::vector<DataSet> base_data = {
+      //                     pcols, ncol, pver, pverp, msg, limcnv
+      {ZmCloudPropertiesData(    4,    4,   40,    41,   2,   3), true},
+      {ZmCloudPropertiesData(    4,    4,   72,    73,  10,  40), false},
+      {ZmCloudPropertiesData(    4,    4,  128,   129,  30,  60), false},
+    };
+    for (auto& ds : base_data) {
+      if (ds.require_active) {
+        set_convecting_sounding(ds.d);
+      } else {
+        ds.d.randomize(engine);
+      }
     }
 
     struct Case {
@@ -142,7 +203,8 @@ struct UnitWrap::UnitTest<D>::TestZmC0Scaling : public UnitWrap::UnitTest<D>::Ba
       c.t_on  = c.c0.use_temp_scaling_c0;
     }
 
-    for (auto& d0 : base_data) {
+    for (const auto& ds : base_data) {
+      const auto& d0 = ds.d;
       const Int pcols = d0.pcols, pver = d0.pver, pverp = d0.pverp;
 
       // reference run with the scaling disabled
@@ -175,7 +237,7 @@ struct UnitWrap::UnitTest<D>::TestZmC0Scaling : public UnitWrap::UnitTest<D>::Ba
         // tolerance for host recomputation of device results
         const Real rtol = ekat::is_single_precision<Real>::value ? 1e-4 : 1e-10;
 
-        Int n_active = 0;
+        Int n_active = 0, n_scaled = 0;
         for (Int i = 0; i < pcols; ++i) {
           // updraft properties upstream of the liquid budget must not depend on c0
           REQUIRE(d.jt[i] == d_off.jt[i]);
@@ -192,6 +254,7 @@ struct UnitWrap::UnitTest<D>::TestZmC0Scaling : public UnitWrap::UnitTest<D>::Ba
             if (rprd_auto > 0 && d.mflx_up[n] > 0 && k+1 < pver) {
               ++n_active;
               const Real c0_k = opts.calc_c0(c0_base, c.c0.c0_rh_fac, d.t_mid[n]);
+              if (c0_k < c0_base * (1 - rtol)) ++n_scaled;
               // rain production uses the scaled c0
               const Real rprd_expect = c0_k * d.mflx_up[n] * d.ql[n];
               REQUIRE(std::abs(rprd_auto - rprd_expect) <= rtol * (std::abs(rprd_expect) + std::abs(d.evp[n])));
@@ -209,9 +272,10 @@ struct UnitWrap::UnitTest<D>::TestZmC0Scaling : public UnitWrap::UnitTest<D>::Ba
             }
           }
         }
-        if (n_active == 0) {
-          WARN("zm_cloud_properties_c0_scaling: no active updraft levels in random data, "
-               "the budget checks were not exercised");
+        if (ds.require_active) {
+          // fail rather than pass silently if the enabled path was not exercised
+          REQUIRE(n_active > 0);
+          REQUIRE(n_scaled > 0);
         }
       }
     }
