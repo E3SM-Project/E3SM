@@ -6,12 +6,12 @@ fields:
     sources:
     - prognostic-emulator
     destinations:
-    - cpl7
+    - ext
   state_in:
     kind: state
     name: state
     merge_type: direct
     sources:
-    - cpl7
+    - ext
     destinations:
     - prognostic-emulator

@@ -23,8 +23,6 @@ option(EMULATOR_ENABLE_SANITIZERS
        "Build coupler_api with AddressSanitizer and UBSan (Debug, GCC only)" OFF)
 
 if(EMULATOR_ENABLE_TESTS)
-  include(configure_emulators)
-  configure_emulators()
   enable_testing()
 endif()
 
@@ -95,6 +93,13 @@ set(EMULATOR_TORCH_PYTHON "python3" CACHE STRING
 if(EMULATOR_ENABLE_LIBTORCH)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmulatorLibTorch.cmake)
   emulator_find_libtorch()   # defines emulator::torch
+endif()
+
+# Test fixtures are generated after the LibTorch option is known, since
+# EMULATOR_ENABLE_LIBTORCH decides whether the .pt files are written.
+if(EMULATOR_ENABLE_TESTS)
+  include(configure_emulators)
+  configure_emulators()
 endif()
 
 if (STANDALONE_MODE)

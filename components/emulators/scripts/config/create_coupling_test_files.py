@@ -1,4 +1,7 @@
-from create_emulator_config_files import (
+import sys
+from pathlib import Path
+
+from emulator_config_api import (
     CoupledField,
     CouplingPlan,
     EmulatorConfig,
@@ -21,6 +24,9 @@ surface_flux = Field(
     dimensions=["column"],
 )
 
+# Output directory; the build passes its fixture dir. Defaults to the cwd.
+fixture_dir = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
+
 
 def test_emulator_coupling():
     forcing = EmulatorConfig(
@@ -42,8 +48,8 @@ def test_emulator_coupling():
         outputs=[surface_flux],
     )
 
-    print(forcing.write("forcing_emulator_config.yaml"))
-    print(land.write("land_emulator_config.yaml"))
+    print(forcing.write(f"{fixture_dir}/forcing_emulator_config.yaml"))
+    print(land.write(f"{fixture_dir}/land_emulator_config.yaml"))
 
     plan = CouplingPlan(
         fields=[
@@ -61,7 +67,7 @@ def test_emulator_coupling():
             ),
         ]
     )
-    plan.write("test_coupling_plan.yaml")
+    plan.write(f"{fixture_dir}/test_coupling_plan.yaml")
 
 
 def test_harness():
@@ -75,30 +81,30 @@ def test_harness():
         outputs=[surface_flux],
     )
     no_model = Model(backend="", path="")
-    cpl7 = EmulatorConfig(
-        name="cpl7",
+    external = EmulatorConfig(
+        name="ext",
         model=no_model,
         dimensions=[],
         inputs=[surface_flux],
-        outputs=[temperature,soil_moisture],
+        outputs=[temperature, soil_moisture],
     )
     plan = CouplingPlan(
         fields=[
             CoupledField(
-                field=temperature, kind="state", sources=[cpl7], destinations=[land]
+                field=temperature, kind="state", sources=[external], destinations=[land]
             ),
             CoupledField(
                 field=soil_moisture,
                 kind="state",
-                sources=[cpl7],
+                sources=[external],
                 destinations=[land],
             ),
             CoupledField(
-                field=surface_flux, kind="flux", sources=[land], destinations=[cpl7]
+                field=surface_flux, kind="flux", sources=[land], destinations=[external]
             ),
         ]
     )
-    plan.write("test_harness_plan.yaml")
+    plan.write(f"{fixture_dir}/test_harness_plan.yaml")
 
 
 def test_prognostic():
@@ -110,21 +116,21 @@ def test_prognostic():
         inputs=[state],
         outputs=[state],
     )
-    cpl7 = EmulatorConfig(
-        name="cpl7",
+    external = EmulatorConfig(
+        name="ext",
         model=Model(backend="stub"),
         dimensions=[],
         inputs=[state],
         outputs=[state],
     )
-    emulator.write("prognostic_emulator_config.yaml")
+    emulator.write(f"{fixture_dir}/prognostic_emulator_config.yaml")
     plan = CouplingPlan(
         fields=[
-            PrognosticField(field=item, component=emulator, external=cpl7)
+            PrognosticField(field=item, component=emulator, external=external)
             for item in prognostic_fields(emulator)
         ]
     )
-    plan.write("test_prognostic_plan.yaml")
+    plan.write(f"{fixture_dir}/test_prognostic_plan.yaml")
 
 
 if __name__ == "__main__":

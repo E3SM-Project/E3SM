@@ -1,5 +1,5 @@
 #include "harness.hpp"
-#include "cpl7_component.hpp"
+#include "external_process.hpp"
 
 #include <coupler.hpp>
 #include <emulator.hpp>
@@ -11,39 +11,46 @@
 #include <stdexcept>
 
 namespace e3sm::emulator {
-static_assert(CoupledProcess<CPL7Component>);
+static_assert(CoupledProcess<ExternalProcess>);
 
-void Harness::set_bindings(ExternalBindings bindings) {
-  if (external_component_ != nullptr) {
+namespace {
+
+coupler::ComponentIntervals calc_coupling_intervals() {}
+
+} // namespace
+
+void Harness::add_bindings(ExternalBindings bindings) {
+  if (initialized_) {
     throw std::runtime_error(
-        "Harness::set_bindings: bindings were already set");
+        "Harness::add_bindings: cannot attach fields after initialize()");
   }
-
-  auto external = std::make_unique<CPL7Component>();
-  CPL7Component* view = external.get();
-
-  external->attach_fields(std::move(bindings));
-  driver_.add_component(std::move(external));
-
-  external_component_ = view;
+  // Create an external process if none exists
+  if (external_component_ == nullptr) {
+    auto external = std::make_unique<ExternalProcess>();
+    ExternalProcess* view = external.get();
+    external_component_ = view;
+    driver_.add_component(std::move(external));
+  }
+  external_component_->attach_fields(std::move(bindings));
 }
 
 void Harness::print_bindings(std::ostream& os) const {
   if (external_component_ == nullptr) {
     throw std::runtime_error(
-        "Harness::print_bindings: call set_bindings() first");
+        "Harness::print_bindings: call add_bindings() first");
   }
   external_component_->print_bindings(os);
 }
 
 void Harness::initialize(const std::filesystem::path& plan,
-                         RouteBufferMap external) {
+                         RouteBufferMap route_map) {
   if (initialized_) {
     throw std::runtime_error("Harness::initialize: already initialized");
   }
 
-  // Every process's time step interval must be a whole number of the same base step
-  ComponentIntervals intervals;
+  // Every process's time step interval must be a whole number of the same base
+  // step
+  coupler::ComponentIntervals intervals;
   const std::string* base_process = nullptr;
 
   double base_step = 0.0;
@@ -69,7 +76,7 @@ void Harness::initialize(const std::filesystem::path& plan,
     }
   }
 
-  driver_.initialize(plan, external, intervals);
+  driver_.initialize(plan, route_map, intervals);
   initialized_ = true;
 }
 
@@ -109,11 +116,11 @@ bool Harness::run_process(std::string_view name) {
   return true;
 }
 
-void Harness::import_to_external(std::string_view name) {
-  driver_.import_component(name);
+void Harness::import_to_external() {
+  driver_.import_component(external_component_->name());
 }
-void Harness::export_from_external(std::string_view name) {
-  driver_.export_component(name);
+void Harness::export_from_external() {
+  driver_.export_component(external_component_->name());
 }
 
 } // namespace e3sm::emulator

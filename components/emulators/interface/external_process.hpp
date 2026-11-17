@@ -1,5 +1,5 @@
-#ifndef E3SM_EMULATOR_CPL7_COMPONENT_HPP
-#define E3SM_EMULATOR_CPL7_COMPONENT_HPP
+#ifndef E3SM_EMULATOR_EXTERNAL_COMPONENT_HPP
+#define E3SM_EMULATOR_EXTERNAL_COMPONENT_HPP
 
 #include <coupler.hpp>
 #include <field_registry.hpp>
@@ -26,12 +26,12 @@ struct ExternalBindings {
   std::vector<ExternalField> from_external;
 };
 
-class CPL7Component {
+class ExternalProcess {
 public:
   //
   // Satisfy AnyComponent
   //
-  static constexpr std::string_view name() { return "cpl7"; }
+  static constexpr std::string_view name() { return "ext"; }
   void populate_registry(FieldRegistry&);
 
   void configure_coupling(const ActiveCouplingFields& plan) {
@@ -48,7 +48,7 @@ public:
 
   void run(const ProcessRunOpts opts) {
     throw std::runtime_error(
-        "CPL7Component::run: cpl7 only exchanges external buffers and cannot "
+        "ExternalComponent::run: External only exchanges external buffers and cannot "
         "be run");
   }
   std::span<const int> get_local_gids() { return coupling_.get_local_gids(); }
