@@ -369,7 +369,7 @@ struct CaarFunctorImpl {
       GPTLstop("caar compute");
     }
 
-    limiter.run(data.np1);
+    limiter.run(data.np1, data.nm1);
 
   }
 

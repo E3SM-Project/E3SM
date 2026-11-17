@@ -317,7 +317,7 @@ void ttype9_imex_timestep(const TimeLevel& tl,
     }
   }
   Kokkos::fence();
-  limiter.run(np1);
+  limiter.run(np1, n0);
 
   Real a1 = 5.0*dt_dyn/18.0;
   Real a2 = dt_dyn/36.0;
