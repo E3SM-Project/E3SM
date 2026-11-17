@@ -280,12 +280,9 @@ void unpack_scalar_impl (const Field& src, const Field& tgt, const UniqueGridUnp
     case 1: unpack_scalar_impl<K,1>(src,kernel,num_imports); break;
     case 2: unpack_scalar_impl<K,2>(src,kernel,num_imports); break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank in UniqueGridRemapper.
-"
-          " - field: " + tgt.name() + "
-"
-          " - rank : " + std::to_string(tgt.rank()) + "
-");
+      EKAT_ERROR_MSG ("Error! Unsupported field rank in UniqueGridRemapper.\n"
+          " - field: " + tgt.name() + "\n"
+          " - rank : " + std::to_string(tgt.rank()) + "\n");
   }
 }
 
@@ -334,103 +331,6 @@ remap_bwd_impl ()
     check_mpi_call(MPI_Waitall(m_requests->send.size(),m_requests->send.data(), MPI_STATUSES_IGNORE),
                    "[UniqueGridRemapper] waiting on persistent send requests.\n");
   }
-}
-
-void UniqueGridRemapper::
-setup_bwd ()
-{
-  using gid_type = AbstractGrid::gid_type;
-
-  const auto& comm = m_src_grid->get_comm();
-  const int nranks = comm.size();
-
-  // Group the local source dofs by unique gid. Each unique gid is a "column" of the overlap grid
-  auto unique_gids_f = m_src_grid->get_unique_grid_gids();
-  unique_gids_f.sync_to_host();
-  auto src_gids_h = unique_gids_f.get_view<const gid_type*,Host>();
-
-  const int num_src_dofs = m_src_grid->get_num_local_dofs();
-  std::map<gid_type,std::vector<int>> gid2dofs;
-  for (int i=0; i<num_src_dofs; ++i) {
-    gid2dofs[src_gids_h(i)].push_back(i);
-  }
-  const int num_ov_cols = gid2dofs.size();
-
-  auto ov_grid = std::make_shared<PointGrid>("unique_grid_overlap",num_ov_cols,m_tgt_grid->get_num_vertical_levels(),comm);
-  auto ov_gids = ov_grid->get_dofs_gids();
-  auto ov_gids_h = ov_gids.get_view<gid_type*,Host>();
-
-  m_u2src_offsets = view_1d<int>("u2src_offsets",num_ov_cols+1);
-  m_u2src_dofs    = view_1d<int>("u2src_dofs",num_src_dofs);
-  auto offsets_h = Kokkos::create_mirror_view(m_u2src_offsets);
-  auto dofs_h    = Kokkos::create_mirror_view(m_u2src_dofs);
-  int u = 0;
-  int pos = 0;
-  offsets_h(0) = 0;
-  for (const auto& [gid,dofs] : gid2dofs) {
-    ov_gids_h(u) = gid;
-    for (auto dof : dofs) {
-      dofs_h(pos++) = dof;
-    }
-    offsets_h(++u) = pos;
-  }
-  ov_gids.sync_to_dev();
-  Kokkos::deep_copy(m_u2src_offsets,offsets_h);
-  Kokkos::deep_copy(m_u2src_dofs,dofs_h);
-
-  // Figure out who owns the unique grid columns we need. Every source gid must be found among the unique grid gids.
-  GridImportExport imp_exp (m_tgt_grid,ov_grid);
-  m_num_imports = imp_exp.num_imports();
-  m_num_exports = imp_exp.num_exports();
-  m_imp_pids    = imp_exp.import_pids();
-  m_imp_lids    = imp_exp.import_lids();
-  m_imp_offsets = imp_exp.import_pid_offsets();
-  m_exp_pids    = imp_exp.export_pids();
-  m_exp_lids    = imp_exp.export_lids();
-  m_exp_offsets = imp_exp.export_pid_offsets();
-
-  // Compute the size of a column of each field, as well as of all fields spliced together
-  using namespace ShortFieldTagsNames;
-  m_f_col_size.resize(m_num_fields);
-  m_f_col_offset.resize(m_num_fields);
-  m_total_col_size = 0;
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& fl = m_tgt_fields[i].get_header().get_identifier().get_layout();
-    m_f_col_size[i]   = fl.clone().strip_dim(COL).size();
-    m_f_col_offset[i] = m_total_col_size;
-    m_total_col_size += m_f_col_size[i];
-  }
-
-  // Create the send/recv buffers
-  m_send_buffer = view_1d<Real>("UniqueGridRemapper::send_buf",m_num_exports*m_total_col_size);
-  m_recv_buffer = view_1d<Real>("UniqueGridRemapper::recv_buf",m_num_imports*m_total_col_size);
-  m_mpi_send_buffer = Kokkos::create_mirror_view(typename decltype(m_mpi_send_buffer)::execution_space(),m_send_buffer);
-  m_mpi_recv_buffer = Kokkos::create_mirror_view(typename decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
-
-  // Create the persistent requests
-  m_requests = std::make_shared<MpiRequests>();
-  auto imp_offsets_h = imp_exp.import_pid_offsets_h();
-  auto exp_offsets_h = imp_exp.export_pid_offsets_h();
-  const auto mpi_comm = comm.mpi_comm();
-  const auto mpi_real = ekat::get_mpi_type<Real>();
-  for (int pid=0; pid<nranks; ++pid) {
-    const int ncols_send = exp_offsets_h(pid+1)-exp_offsets_h(pid);
-    if (ncols_send>0) {
-      auto send_ptr = m_mpi_send_buffer.data() + exp_offsets_h(pid)*m_total_col_size;
-      auto& req = m_requests->send.emplace_back();
-      check_mpi_call(MPI_Send_init(send_ptr,ncols_send*m_total_col_size,mpi_real,pid,0,mpi_comm,&req),
-                     "[UniqueGridRemapper] creating persistent send request.\n");
-    }
-    const int ncols_recv = imp_offsets_h(pid+1)-imp_offsets_h(pid);
-    if (ncols_recv>0) {
-      auto recv_ptr = m_mpi_recv_buffer.data() + imp_offsets_h(pid)*m_total_col_size;
-      auto& req = m_requests->recv.emplace_back();
-      check_mpi_call(MPI_Recv_init(recv_ptr,ncols_recv*m_total_col_size,mpi_real,pid,0,mpi_comm,&req),
-                     "[UniqueGridRemapper] creating persistent recv request.\n");
-    }
-  }
-
-  m_bwd_setup_done = true;
 }
 
 void UniqueGridRemapper::
@@ -610,12 +510,9 @@ pack_scalar (const int i, const int c)
     case 1: launch(std::integral_constant<int,1>()); break;
     case 2: launch(std::integral_constant<int,2>()); break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank in UniqueGridRemapper.
-"
-          " - field: " + tgt.name() + "
-"
-          " - rank : " + std::to_string(tgt.rank()) + "
-");
+      EKAT_ERROR_MSG ("Error! Unsupported field rank in UniqueGridRemapper.\n"
+          " - field: " + tgt.name() + "\n"
+          " - rank : " + std::to_string(tgt.rank()) + "\n");
   }
 }
 
