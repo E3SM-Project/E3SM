@@ -116,6 +116,16 @@ struct LimiterFunctor {
     GPTLstop("caar limiter");
   }
 
+  // Latitude (d=0) or longitude (d=1) of a GLL point in degrees, for warnings.
+  // NaN if the geometry has no lat/lon.
+  KOKKOS_INLINE_FUNCTION
+  Real latlon_deg (const int ie, const int igp, const int jgp, const int d) const {
+    constexpr Real rad_to_deg = 57.2957795130823208768;
+    return m_geometry.m_sphere_latlon.size() != 0
+      ? m_geometry.m_sphere_latlon(ie,igp,jgp,d)*rad_to_deg
+      : std::numeric_limits<Real>::quiet_NaN();
+  }
+
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
     KernelVariables kv(team, m_tu);
@@ -124,15 +134,6 @@ struct LimiterFunctor {
                          [&](const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
-
-      const bool has_latlon = m_geometry.m_sphere_latlon.size() != 0;
-      constexpr Real rad_to_deg = 57.2957795130823208768;
-      const Real lat = has_latlon
-        ? m_geometry.m_sphere_latlon(kv.ie,igp,jgp,0)*rad_to_deg
-        : std::numeric_limits<Real>::quiet_NaN();
-      const Real lon = has_latlon
-        ? m_geometry.m_sphere_latlon(kv.ie,igp,jgp,1)*rad_to_deg
-        : std::numeric_limits<Real>::quiet_NaN();
 
       const auto& spheremp = m_geometry.m_spheremp(kv.ie,igp,jgp);
 
@@ -156,7 +157,9 @@ struct LimiterFunctor {
         if(diff_as_real(k) < 0){
           Kokkos::printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f, "
                          "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
-                         k+1,dp_as_real(k),dp0_as_real(k),lat,lon,m_nstep,m_step_start_seconds);
+                         k+1,dp_as_real(k),dp0_as_real(k),
+                         latlon_deg(kv.ie,igp,jgp,0),latlon_deg(kv.ie,igp,jgp,1),
+                         m_nstep,m_step_start_seconds);
         }
 #endif
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
@@ -237,7 +240,9 @@ struct LimiterFunctor {
 #ifndef HOMMEXX_DISABLE_LIMITER_WARNINGS
               Kokkos::printf("WARNING:CAAR: theta in limited layer. k=%d, theta_raw=%f, theta_old=%f, theta_new=%f, "
                              "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
-                             k+1,th_raw,th_old,th,lat,lon,m_nstep,m_step_start_seconds);
+                             k+1,th_raw,th_old,th,
+                             latlon_deg(kv.ie,igp,jgp,0),latlon_deg(kv.ie,igp,jgp,1),
+                             m_nstep,m_step_start_seconds);
 #endif
               vtheta_as_real(k) = th;
             }
@@ -321,7 +326,8 @@ struct LimiterFunctor {
               Kokkos::printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter, theta_new=%f, "
                              "lat_deg=%.8f, lon_deg=%.8f, dyn_step=%d, step_start_seconds=%.9f \n",
                              k+1,vtheta_dp_as_real(k)/dp_as_real(k),m_vtheta_thresh,th,
-                             lat,lon,m_nstep,m_step_start_seconds);
+                             latlon_deg(kv.ie,igp,jgp,0),latlon_deg(kv.ie,igp,jgp,1),
+                             m_nstep,m_step_start_seconds);
 #endif
               vtheta_dp_as_real(k) = th*dp_as_real(k);
             }
