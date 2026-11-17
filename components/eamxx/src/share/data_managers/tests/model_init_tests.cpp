@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/data_managers/model_init.hpp"
-#include "share/data_managers/library_grids_manager.hpp"
+#include "share/grid/library_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/physics/physics_constants.hpp"
