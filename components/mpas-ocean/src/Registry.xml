@@ -1165,7 +1165,7 @@
 					possible_values="'data', 'pressure-dependent'"
 		/>
 		<nml_option name="config_land_ice_rho_ocean" type="real" default_value="1028.0" units="kg m^-3"
-					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. Not used in E3SM, where MPAS-Ocean uses ice_shelf_seawater_density_reference from the Physical Constants Dictionary."
+					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. Not used in E3SM, where MPAS-Ocean uses SHR_CONST_RHOSW_ICE_SHELF."
 					possible_values="Any positive real number"
 		/>
 	</nml_record>

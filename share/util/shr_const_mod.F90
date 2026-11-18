@@ -27,6 +27,7 @@ MODULE shr_const_mod
                    pcd_tkfrz     => pure_water_freezing_temperature_reference,       &
                    pcd_rhofw     => pure_water_density_reference,                    &
                    pcd_rhosw     => seawater_density_reference,                      &
+                   pcd_rhoswis   => ice_shelf_seawater_density_reference,            &
                    pcd_rhoice    => sea_ice_density_reference,                       &
                    pcd_cpdair    => dry_air_specific_heat_capacity_reference,        &
                    pcd_cpwv      => water_vapor_specific_heat_capacity_reference,    &
@@ -51,7 +52,7 @@ MODULE shr_const_mod
    private :: R8
    private :: pcd_pi, pcd_omega, pcd_cday, pcd_rearth, pcd_g, pcd_stebol, pcd_boltz, pcd_avogad,  &
               pcd_mwdair, pcd_mwwv, pcd_mwc, pcd_mwo, pcd_mwco2, pcd_mwfe, pcd_pstd, pcd_pdb,   &
-              pcd_tktrip, pcd_tkfrz, pcd_rhofw, pcd_rhosw, pcd_rhoice, pcd_cpdair, pcd_cpwv, pcd_cpfw,      &
+              pcd_tktrip, pcd_tkfrz, pcd_rhofw, pcd_rhosw, pcd_rhoswis, pcd_rhoice, pcd_cpdair, pcd_cpwv, pcd_cpfw,      &
               pcd_cpsw, pcd_cpice, pcd_latice, pcd_latvap, pcd_condice, pcd_ocn_sal,          &
               pcd_ice_sal, pcd_v18o, pcd_v17o, pcd_v16o, pcd_vd, pcd_vt, pcd_vh
    public
@@ -89,6 +90,7 @@ MODULE shr_const_mod
                          SHR_CONST_PSTD/(SHR_CONST_RDAIR*SHR_CONST_TKFRZ)
    real(R8),parameter :: SHR_CONST_RHOFW   = pcd_rhofw      ! density of fresh water     ~ kg/m^3
    real(R8),parameter :: SHR_CONST_RHOSW   = pcd_rhosw      ! density of sea water       ~ kg/m^3
+   real(R8),parameter :: SHR_CONST_RHOSW_ICE_SHELF = pcd_rhoswis ! density of sea water for ice-shelf floatation ~ kg/m^3
    real(R8),parameter :: SHR_CONST_RHOICE  = pcd_rhoice      ! density of ice             ~ kg/m^3
    real(R8),parameter :: SHR_CONST_CPDAIR  = pcd_cpdair    ! specific heat of dry air   ~ J/kg/K
    real(R8),parameter :: SHR_CONST_CPWV    = pcd_cpwv      ! specific heat of water vap ~ J/kg/K
