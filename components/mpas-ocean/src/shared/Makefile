@@ -1,6 +1,9 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_init_routines.o \
+OBJS = pcd_const.o \
+	   shr_kind_mod.o \
+	   shr_const_mod.o \
+	   mpas_ocn_init_routines.o \
 	   mpas_ocn_gm.o \
 	   mpas_ocn_eddy_parameterization_helpers.o \
 	   mpas_ocn_submesoscale_eddies.o \
@@ -240,6 +243,12 @@ mpas_ocn_stokes_drift.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnos
 mpas_ocn_manufactured_solution.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o 
 
 mpas_ocn_subgrid.o: mpas_ocn_diagnostics_variables.o mpas_ocn_config.o mpas_ocn_constants.o
+
+shr_kind_mod.o:
+
+pcd_const.o:
+
+shr_const_mod.o: shr_kind_mod.o pcd_const.o
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
