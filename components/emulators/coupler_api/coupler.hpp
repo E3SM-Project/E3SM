@@ -31,6 +31,9 @@ struct CoupledFieldEntry {
   std::vector<std::string> destinations;
 };
 
+std::vector<CoupledFieldEntry>
+read_coupling_fields_from_yaml(const std::filesystem::path& filename);
+
 std::string to_string(const CoupledFieldEntry& entry);
 
 inline std::ostream& operator<<(std::ostream& os,
@@ -95,7 +98,6 @@ struct ComponentBuffers {
  * - routes_: The active routes of source fields to destination fields
  * Functions:
  * - build_routes: create routes from CoupledFieldEntry list
- * - read_coupling_fields_from_yaml: generate CoupledFieldEntry list from yaml
  * config file
  */
 using RouteBufferMap = std::unordered_map<std::string, std::span<double>>;
@@ -118,7 +120,7 @@ public:
   const FieldRegistry& registry() const noexcept { return registry_; }
 
   // methods to construct routes and attach buffers used for import/export
-  void build_routes(const std::filesystem::path& filename);
+  void build_routes(const std::vector<CoupledFieldEntry> &coupling_fields);
   void build_buffers(RouteBufferMap external_buffers,
                      const ComponentIntervals& intervals = {});
 
@@ -154,9 +156,6 @@ private:
   std::unordered_map<std::string, ComponentBuffers> buffers_;
 
   ComponentBuffers& component_buffers(std::string_view component_name);
-
-  std::vector<CoupledFieldEntry>
-  read_coupling_fields_from_yaml(const std::filesystem::path& filename);
 };
 
 } // namespace e3sm::emulator::coupler

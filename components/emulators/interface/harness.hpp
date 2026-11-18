@@ -67,10 +67,11 @@ public:
   // Sets bindings to those given. Pass in bindings using `std::move`.
   void add_bindings(ExternalBindings bindings);
 
-  void initialize(const std::filesystem::path& plan, RouteBufferMap external);
-  void initialize(const std::filesystem::path& plan) {
-    initialize(plan, RouteBufferMap{});
+  void initialize(const std::vector<CoupledFieldEntry>& coupled_fields, RouteBufferMap external);
+  void initialize(const std::vector<CoupledFieldEntry>& coupled_fields) {
+    initialize(coupled_fields, RouteBufferMap{});
   }
+
   /// Call once per base step.
   /// A process with a coupling_interval of N imports, runs, and exports on
   /// every Nth call.
