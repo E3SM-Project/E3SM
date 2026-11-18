@@ -56,7 +56,7 @@ def generate_empty_yaml(filename,overwrite):
         yaml.dump(data,fd,Dumper=yaml.SafeDumper,explicit_start=True,explicit_end=True,version=(1,2))
 
 ###############################################################################
-def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
+def edit_output_stream_impl(filename,stream_name=None,generate=False,overwrite=False,
                             avg_type=None,skip_t0_output=False,freq_units=None,freq=None,
                             grid=None,fields=[],reset=None,output_data_layout=None,
                             horiz_remap_file=None,vertical_remap_file=None):
@@ -65,7 +65,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     Apply the requested changes to the output stream yaml file
     >>> fname = '__test__.yaml'
     >>> # Create the file
-    >>> edit_output_stream_impl(fname,generate=True,prefix='foo')
+    >>> edit_output_stream_impl(fname,generate=True,stream_name='foo')
     >>> # Set some basic options, and then check
     >>> edit_output_stream_impl(fname,avg_type='max',freq_units='ndays',freq=10)
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
@@ -153,8 +153,8 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                     if len(data["fields"][grid])==1 and len(data["fields"][grid]["field_names"])==0:
                         del data["fields"][grid]
 
-    if prefix is not None:
-        data["stream_name"] = prefix
+    if stream_name is not None:
+        data["stream_name"] = stream_name
 
     if avg_type is not None:
         data["averaging_type"] = avg_type

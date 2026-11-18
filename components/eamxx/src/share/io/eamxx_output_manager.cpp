@@ -167,18 +167,17 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     auto& restart_pl = m_params.sublist("restart");
     auto hist_restart_stream_name = restart_pl.get("stream_name",m_stream_name);
 
-    // Build the full prefix for history restart search
+    // Prefix of the history restart file: [<case>.]<model name>.
     // Skip case name if it's "UNSET" (unit tests)
-    std::string hist_restart_prefix;
+    std::string hist_restart_prefix = eamxx_model_name();
     if (m_casename != "UNSET") {
-      hist_restart_prefix = m_casename + "." + eamxx_model_name() + "." + hist_restart_stream_name;
-    } else {
-      hist_restart_prefix = eamxx_model_name() + "." + hist_restart_stream_name;
+      hist_restart_prefix = m_casename + "." + hist_restart_prefix;
     }
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
     auto rhist_file = find_filename_in_rpointer(hist_restart_prefix,false,m_io_comm,m_run_t0,
-                                                skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
+                                                skip_restart_if_rhist_not_found,m_avg_type,m_output_control,
+                                                hist_restart_stream_name);
 
     if (rhist_file=="") {
       m_atm_logger->warn("[OutputManager::setup] The rhist file not found in rpointer.atm.\n"

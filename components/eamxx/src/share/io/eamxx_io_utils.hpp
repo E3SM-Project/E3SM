@@ -88,15 +88,19 @@ OutputDataLayout str2output_layout (const std::string& s);
 // The AD will pass a default constructed control, since it doesn't know the values
 // of REST_N/REST_OPTION used in the previous run
 // Output streams MUST pass a valid control structure, cause we need to differentiate
-// between, e.g., streams with same filename prefix, but different output freq specs
+// between, e.g., streams with same name, but different output freq specs.
+// The file name layout is <prefix>.{r|rh}[.<stream_name>].<avg>.<freq>[...].<timestamp>.nc, where
+// prefix is [<case>.]<model name>. The stream_name is needed (and only used) for history restart
+// files (model_restart=false), since model restart files do not contain it.
 std::string find_filename_in_rpointer (
-    const std::string& stream_name,
+    const std::string& prefix,
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0,
     const bool allow_not_found = false,
     const OutputAvgType avg_type = OutputAvgType::Instant,
-    const IOControl& control = {});
+    const IOControl& control = {},
+    const std::string& stream_name = "");
 
 // Create a diagnostic from a string representation of it: an expression,
 // e.g. "T_mid.interp(p_mid=500,units='hPa')", or a diag name, e.g. "LiqWaterPath".

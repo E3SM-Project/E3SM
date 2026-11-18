@@ -16,19 +16,27 @@
 namespace scream {
 
 std::string find_filename_in_rpointer (
-    const std::string& stream_name,
+    const std::string& prefix,
     const bool model_restart,
     const ekat::Comm& comm,
     const util::TimeStamp& run_t0,
     const bool allow_not_found,
     const OutputAvgType avg_type,
-    const IOControl& control)
+    const IOControl& control,
+    const std::string& stream_name)
 {
+  // Escape regex special chars, so that e.g. stream names can contain any character
+  auto escape = [](const std::string& s) {
+    static const std::regex special (R"([.^$|()\[\]{}*+?\\])");
+    return std::regex_replace(s, special, R"(\$&)");
+  };
+
   std::string filename;
   bool found = false;
   std::string content;
   std::string suffix = model_restart ? ".r." : ".rh.";
-  std::string pattern_str = stream_name + suffix;
+  // File name layout: <prefix>.{r|rh}.[<stream_name>.]<avg>.<freq>...
+  std::string pattern_str = "(^|/)" + escape(prefix) + escape(suffix);
 
   // The AD will pass a default constructed control, since it doesn't know the values
   // of REST_N/REST_OPTION used in the previous run. Also, model restart is *always* INSTANT.
@@ -40,14 +48,18 @@ std::string find_filename_in_rpointer (
   } else {
     EKAT_REQUIRE_MSG (control.output_enabled(),
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
-        " - restart file prefix: " + stream_name + "\n");
-    // For history restart, the stream_name is already included in the prefix
+        " - restart file prefix: " + prefix + "\n"
+        " - stream name: " + stream_name + "\n");
+    EKAT_REQUIRE_MSG (stream_name!="",
+        "Error! A stream name is required to look for a history restart file.\n"
+        " - restart file prefix: " + prefix + "\n");
+    pattern_str += escape(stream_name) + ".";
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
   }
   if (is_scream_standalone()) {
     pattern_str += ".np" + std::to_string(comm.size());
   }
-  pattern_str += "." + run_t0.to_string() + ".nc";
+  pattern_str += "\\." + run_t0.to_string() + "\\.nc$";
   std::regex pattern (pattern_str);
 
   if (comm.am_i_root()) {
@@ -80,14 +92,16 @@ std::string find_filename_in_rpointer (
     if (model_restart) {
       EKAT_ERROR_MSG (
           "Error! Restart requested, but no model restart file found in 'rpointer.atm'.\n"
-          "   restart file prefix: " + stream_name + "\n"
+          "   restart file prefix: " + prefix + "\n"
+          "   stream name: " + stream_name + "\n"
           "   restart file pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   rpointer content:\n" + content + "\n\n");
     } else {
       EKAT_ERROR_MSG (
           "Error! Restart requested, but no history restart file found in 'rpointer.atm'.\n"
-          "   restart file prefix: " + stream_name + "\n"
+          "   restart file prefix: " + prefix + "\n"
+          "   stream name: " + stream_name + "\n"
           "   restart file pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   avg_type         : " + e2str(avg_type) + "\n"

@@ -31,7 +31,7 @@ $YAML_EDIT_SCRIPT -g \
  --avg-type INSTANT               \
  --freq HIST_N                    \
  --freq-units HIST_OPTION         \
- --prefix ${CASE}.scream.diags.h  \
+ --stream_name diags  \
  --grid "physics_${PGTYPE}"       \
  --fields ${FIELDS}
 
