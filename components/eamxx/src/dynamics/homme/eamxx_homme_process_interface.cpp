@@ -287,6 +287,12 @@ void HommeDynamics::create_requests ()
       m_p2d_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_phys_grid,m_dyn_grid);
     }
     m_d2p_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+
+    // Give them a name, and enable their timers (to compare implementations)
+    m_p2d_remapper->set_name("homme_p2d");
+    m_d2p_remapper->set_name("homme_d2p");
+    m_p2d_remapper->toggle_timers(true);
+    m_d2p_remapper->toggle_timers(true);
   }
 
   // Layout for 2D (1d horiz X 1d vertical) variable
@@ -784,7 +790,9 @@ void HommeDynamics::homme_post_process (const double dt) {
   }
 
   // Remap outputs to ref grid
+  start_timer("homme::d2p_remap");
   m_d2p_remapper->remap_fwd();
+  stop_timer("homme::d2p_remap");
 
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;

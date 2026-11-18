@@ -22,6 +22,33 @@ KokkosTypes<DefaultDevice>::view_1d<int>
 compute_unique_grid_dof_map (const AbstractGrid& grid,
                              const AbstractGrid& unique_grid);
 
+// Describes how to access, in a kernel, the data of one "entry" of the remapper (a scalar field,
+// or a component of a vector field), both on the source grid and on the unique (target) grid.
+// All entries are stored in a (device) table, so that a single kernel can handle all of them.
+// The pointers and strides are extracted from the field views at every remap (a subfield can
+// change its subview info at runtime), while the other members are set once.
+//
+//  - Unique grid field: (col[,lev]). tgt_s[0]/tgt_s[1] are the strides of the col/lev dims.
+//  - Source grid field: (dof[,lev]) if the dofs are addressed with 1 index, (e,g1,g2[,lev]) if
+//    with 3 indices. src_s[0..2] are the strides of the dof indices (only src_s[0] if 1 index),
+//    and src_s[3] is the stride of the lev dim.
+// NOTE: for 2d entries, there is no lev dim: nlev=1 and the lev strides are unused.
+struct UniqueGridEntryDesc {
+  Real*      tgt_ptr = nullptr;
+  Real*      src_ptr = nullptr;
+  long long  tgt_s[2] = {0,0};
+  long long  src_s[4] = {0,0,0,0};
+  int        nlev = 1;
+
+  // Where this entry sits in the send/recv buffers (only used by remap_bwd)
+  //  - field_off:  offset of the field in the chunk of a column (all fields on the same column are spliced)
+  //  - col_size:   size of the whole column of the field (all components)
+  //  - comp_off:   offset of this component within the column of the field
+  int        field_off = 0;
+  int        col_size  = 0;
+  int        comp_off  = 0;
+};
+
 /*
  * A remapper from a grid to its unique grid
  *
@@ -86,8 +113,12 @@ protected:
   void setup_bwd ();
   void pack_and_send ();
   void recv_and_unpack ();
-  void pack_scalar (const int i, const int c);
-  void unpack_scalar (const int i, const int c);
+  void launch_pack ();
+  void launch_unpack (const int first, const int count, const int skip_beg, const int skip_cnt);
+
+  // Fill (on host) the pointers and strides of the entries table from the current views of the
+  // fields, and copy the table to device.
+  void update_entries ();
 
   // Re-target the component subfields of the i-th field (if it is a vector field) to the c-th component
   void set_component (const int i, const int c);
@@ -109,6 +140,13 @@ protected:
   std::vector<int>    m_ncomp;
   std::vector<Field>  m_src_scalar;
   std::vector<Field>  m_tgt_scalar;
+
+  // One entry for each (field,component). The kernels work on all entries at once.
+  int                                                 m_num_entries = 0;
+  std::vector<int>                                    m_entry_field;
+  std::vector<int>                                    m_entry_comp;
+  KT::view_ND<UniqueGridEntryDesc,1>                  m_entries;
+  typename KT::view_ND<UniqueGridEntryDesc,1>::host_mirror_type  m_entries_h;
 
   // ----- unique->grid data structures ----- //
 
@@ -135,6 +173,13 @@ protected:
   // All arrays are sorted by pid, and the offsets (size nranks+1) tell us where each pid starts.
   int m_num_imports = 0;
   int m_num_exports = 0;
+
+  // The columns that this rank owns and also needs (dyn dofs). No comm needed for those:
+  // we copy them directly from the send to the recv buffer (their position among the
+  // imports/exports of this rank is given by the offsets of this rank's pid)
+  int m_self_imp_beg = 0;
+  int m_self_exp_beg = 0;
+  int m_self_cnt     = 0;
   view_1d<int>  m_imp_pids;
   view_1d<int>  m_imp_lids;
   view_1d<int>  m_imp_offsets;
