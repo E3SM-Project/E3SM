@@ -170,7 +170,10 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
   {
     auto engine = Base::get_engine();
 
-    Int npbl_rand = rand()%72 + 1;
+    // Draw npbl from the seeded engine (not libc rand()), so that it is the same
+    // when baselines are generated and when they are compared. Note: the baseline
+    // file does not store npbl, only the data arrays.
+    Int npbl_rand = static_cast<Int>(engine()%72) + 1;
 
     PblintdHeightData baseline_data[] = {
       PblintdHeightData(10, 72, 1),
