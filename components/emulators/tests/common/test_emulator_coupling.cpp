@@ -122,10 +122,13 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
 
   // Illustrative API: construct using the already-parsed configuration.
 
+  auto coupled_fields =
+    coupler::read_coupling_fields_from_yaml(TEST_DATA_DIR "/test_coupling_plan.yaml");
+
   CouplerDriver driver;
   driver.add_component(std::make_unique<Emulator>(grid, forcing_config));
   driver.add_component(std::make_unique<Emulator>(grid, land_config));
-  driver.initialize(TEST_DATA_DIR "/test_coupling_plan.yaml");
+  driver.initialize(coupled_fields);
   Emulator& forcing_emulator = driver.get_component_as<Emulator>(forcing_name);
   Emulator& land_emulator = driver.get_component_as<Emulator>(lnd_name);
 

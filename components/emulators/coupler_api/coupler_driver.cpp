@@ -7,7 +7,7 @@
 #include <string>
 
 namespace e3sm::emulator::coupler {
-void CouplerDriver::initialize(const std::string& filename,
+void CouplerDriver::initialize(const std::vector<CoupledFieldEntry>& coupled_fields,
                                RouteBufferMap external_buffers,
                                const ComponentIntervals& intervals) {
   if (initialized_) {
@@ -17,7 +17,7 @@ void CouplerDriver::initialize(const std::string& filename,
     component.populate_registry(coupler_.registry());
   }
 
-  coupler_.build_routes(filename);
+  coupler_.build_routes(coupled_fields);
   coupler_.build_buffers(external_buffers, intervals);
 
   for (auto& component : components_) {

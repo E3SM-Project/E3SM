@@ -62,7 +62,7 @@ void require_unique_components(const CoupledFieldEntry& field,
  *         cannot be parsed.
  */
 std::vector<CoupledFieldEntry>
-Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
+read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
 
   if (!std::filesystem::exists(filename)) {
     throw std::runtime_error("Coupling plan file not found: " +
@@ -136,9 +136,7 @@ std::string to_string(const CoupledFieldEntry& entry) {
   return out.str();
 }
 
-void Coupler::build_routes(const std::filesystem::path& filename) {
-  auto fields = read_coupling_fields_from_yaml(filename);
-
+void Coupler::build_routes(const std::vector<CoupledFieldEntry>& fields) {
   routes_.clear();
   routes_.reserve(fields.size());
 

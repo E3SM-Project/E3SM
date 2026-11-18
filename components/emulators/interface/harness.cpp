@@ -42,7 +42,7 @@ void Harness::print_bindings(std::ostream& os) const {
   external_component_->print_bindings(os);
 }
 
-void Harness::initialize(const std::filesystem::path& plan,
+void Harness::initialize(const std::vector<CoupledFieldEntry>& coupled_fields,
                          RouteBufferMap route_map) {
   if (initialized_) {
     throw std::runtime_error("Harness::initialize: already initialized");
@@ -76,7 +76,7 @@ void Harness::initialize(const std::filesystem::path& plan,
     }
   }
 
-  driver_.initialize(plan, route_map, intervals);
+  driver_.initialize(coupled_fields, route_map, intervals);
   initialized_ = true;
 }
 

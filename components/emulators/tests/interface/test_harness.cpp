@@ -151,7 +151,8 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
       .grid = make_test_grid(),
       .emulator_config = config,
   });
-  harness.initialize(TEST_DATA_DIR "/test_prognostic_plan.yaml");
+  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/test_prognostic_plan.yaml");
+  harness.initialize(coupled_fields);
 
   auto& emulator = harness.get_process<Emulator>(std::string_view(config.name));
 
@@ -206,12 +207,13 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
     };
   };
   const auto plan = TEST_DATA_DIR "/test_prognostic_plan.yaml";
+  auto coupled_fields = read_coupling_fields_from_yaml(plan);
 
   SECTION("runs on every third call") {
     Harness harness;
     harness.add_bindings(bindings());
     harness.add_process(descriptor(3.f, 3));
-    harness.initialize(plan);
+    harness.initialize(coupled_fields);
     auto& emulator =
         harness.get_process<Emulator>(std::string_view(config.name));
 
@@ -233,7 +235,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
     Harness harness;
     harness.add_bindings(bindings());
     harness.add_process(descriptor(1.f, 0));
-    REQUIRE_THROWS_WITH(harness.initialize(plan),
+    REQUIRE_THROWS_WITH(harness.initialize(coupled_fields),
                         Contains("coupling_interval") &&
                             Contains("at least 1"));
   }
@@ -244,7 +246,7 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
     harness.add_process(descriptor(6.f, 1));
     config.name = "other-emulator";
     harness.add_process(descriptor(120.f, 10));
-    REQUIRE_THROWS_WITH(harness.initialize(plan),
+    REQUIRE_THROWS_WITH(harness.initialize(coupled_fields),
                         Contains("dt / coupling_interval") &&
                             Contains("other-emulator"));
   }
@@ -276,6 +278,7 @@ TEST_CASE("Harness preserves results across external buffer layouts",
   auto land_config =
       read_emulator_config(TEST_DATA_DIR "/land_emulator_config.yaml");
   auto plan = TEST_DATA_DIR "/test_harness_plan.yaml";
+  auto coupled_fields = read_coupling_fields_from_yaml(plan);
 
   auto p_name = land_config.name;
   FieldDim x2l_dims{ncols, ncols * nlevels};
@@ -315,10 +318,10 @@ TEST_CASE("Harness preserves results across external buffer layouts",
       .grid = make_test_grid(),
       .emulator_config = land_config,
   });
-  direct.harness.initialize(
-      plan, RouteBufferMap{{"surface_flux", direct.surface_flux()},
-                           {"temperature", direct.temperature()},
-                           {"soil_moisture", direct.moisture()}});
+  direct.harness.initialize(coupled_fields,
+      RouteBufferMap{{"surface_flux", direct.surface_flux()},
+                     {"temperature", direct.temperature()},
+                     {"soil_moisture", direct.moisture()}});
 
   Emulator& land_emu =
       direct.harness.get_process<Emulator>(std::string_view(p_name));
