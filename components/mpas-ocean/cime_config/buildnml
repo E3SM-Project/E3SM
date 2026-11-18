@@ -122,7 +122,7 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'oQU480':
         decomp_date = '230422'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
-        ic_date = '151209'
+        ic_date = '20261118'
         ic_prefix = 'ocean.QU.480km'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
@@ -131,7 +131,7 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'oQU240':
         decomp_date = '230422'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
-        ic_date = '151209'
+        ic_date = '20261118'
         ic_prefix = 'ocean.QU.240km'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
@@ -155,7 +155,7 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'oQU120':
         decomp_date = '230424'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
-        ic_date = '160318'
+        ic_date = '20261118'
         ic_prefix = 'ocean.QU.120km'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
