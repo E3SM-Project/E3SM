@@ -29,7 +29,6 @@ my @groups = qw(run_modes
                 bottom_drag
                 rayleigh_damping
                 vegetation_drag
-                ocean_constants
                 pressure_gradient
                 eos
                 eos_linear

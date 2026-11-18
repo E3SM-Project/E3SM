@@ -969,12 +969,6 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 add_default($nl, 'config_use_vegetation_drag');
 add_default($nl, 'config_vegetation_drag_coefficient');
 
-###################################
-# Namelist group: ocean_constants #
-###################################
-
-add_default($nl, 'config_density0');
-
 #####################################
 # Namelist group: pressure_gradient #
 #####################################
@@ -1948,7 +1942,6 @@ my @groups = qw(run_modes
                 bottom_drag
                 rayleigh_damping
                 vegetation_drag
-                ocean_constants
                 pressure_gradient
                 eos
                 eos_linear

@@ -101,12 +101,8 @@ contains
        type (mpas_pool_type), pointer :: configPool
        type (mpas_pool_type), pointer :: packagePool
 
-       real (kind=RKIND), pointer :: config_density0
-
        ocnConfigs => configPool
        ocnPackages => packagePool
-
-       call mpas_pool_get_config(configPool, 'config_density0', config_density0)
 
        !-----------------------------------------------------------------------
        !
@@ -119,7 +115,7 @@ contains
        T0_Kelvin = real(SHR_CONST_TKFRZ, RKIND) ! zero point for Celsius
        pi        = real(SHR_CONST_PI, RKIND)  ! pi
        rho_air   = 1.2_RKIND                  ! ambient air density (kg/m^3)
-       rho_sw    = config_density0            ! density of salt water (kg/m^3)
+       rho_sw    = real(SHR_CONST_RHOSW, RKIND) ! density of salt water (kg/m^3)
        rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
        rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
        cp_sw     = 3.996e3_RKIND              ! specific heat salt water
@@ -164,7 +160,6 @@ contains
        cp_sw                  = SHR_CONST_CPSW          ! erg/g/K
        cp_air                 = SHR_CONST_CPDAIR        ! J/kg/K
        rho_air                = SHR_CONST_RHODAIR       ! kg/m^3
-       rho_sw                 = SHR_CONST_RHOSW         ! kg/m^3
        rho_fw                 = SHR_CONST_RHOFW         ! kg/m^3
        rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
        vonkar                 = SHR_CONST_KARMAN

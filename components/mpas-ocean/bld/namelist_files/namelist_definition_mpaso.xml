@@ -2287,17 +2287,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- ocean_constants -->
-
-<entry id="config_density0" type="real"
-	category="ocean_constants" group="ocean_constants">
-Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation.
-
-Valid values: any positive real, but typically 1000-1035
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- pressure_gradient -->
 
 <entry id="config_pressure_gradient_type" type="char*1024"

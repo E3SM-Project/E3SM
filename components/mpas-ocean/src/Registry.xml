@@ -1419,12 +1419,6 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="ocean_constants">
-		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^-3"
-					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation."
-					possible_values="any positive real, but typically 1000-1035"
-		/>
-	</nml_record>
 	<nml_record name="lts" mode="forward">
 		<nml_option name="config_dt_scaling_LTS" type="integer" default_value="1"
 					description="The ratio between the dt on the coarse region and the dt on the fine region. Specifically, it is the positive integer M that defines dtFine for LTS, dtFine = dt / M."

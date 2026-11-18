@@ -2032,7 +2032,7 @@ contains
       logical, intent(in) :: onASphere
       integer, intent(in) :: nLayers, nCells, nEdges
       type (mpas_pool_type), intent(in) :: meshPool
-      real (kind=RKIND), intent(in) :: rho0 ! config_density0
+      real (kind=RKIND), intent(in) :: rho0 ! reference density, rho_sw
       real (kind=RKIND), dimension(:), intent(in) :: buoyancyMidRef
       real (kind=RKIND), dimension(:,:), intent(in) :: sigmaEA
       real (kind=RKIND), dimension(:,:), intent(in) :: buoyancyMaskEA
