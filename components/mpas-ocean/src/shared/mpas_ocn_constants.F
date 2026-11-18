@@ -128,7 +128,7 @@ contains
        latent_heat_fusion = 3.34e6_RKIND      ! lat heat of fusion (erg/kg)
        latent_heat_fusion_mks = real(SHR_CONST_LATICE, RKIND) ! lat heat of fusion (J/kg)
        sea_ice_salinity   =  4.0_RKIND        ! (psu)
-       ocn_ref_salinity   = 34.7_RKIND        ! (psu)
+       ocn_ref_salinity   = real(SHR_CONST_OCN_REF_SAL, RKIND) ! (psu)
        atm_ref_pressure   = real(SHR_CONST_PSTD, RKIND) ! (Pa)
        molecular_weight_C = 12.0107_RKIND     ! molecular weight carbon
        molecular_weight_O2 = 15.9994_RKIND    ! molecular weight oxygen
@@ -163,7 +163,6 @@ contains
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
-       ocn_ref_salinity       = SHR_CONST_OCN_REF_SAL   ! psu
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
        molecular_weight_C     = SHR_CONST_MWC           ! molecular weight carbon
        molecular_weight_O2    = SHR_CONST_MWO           ! molecular weight oxygen
