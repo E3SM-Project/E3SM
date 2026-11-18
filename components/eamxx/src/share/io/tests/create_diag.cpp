@@ -416,6 +416,46 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("p_mid.searchsorted()",grid));
   }
 
+  SECTION ("dexpr_aerocom") {
+    // A field at cloud top is a sum weighted by the AeroCom weights
+    const std::string w_top = "cldfrac_tot.aerocom_weights('top')";
+    auto d1 = create_diagnostic("T_mid.sum('lev', weights=" + w_top + ")",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("contract_method")=="sum");
+
+    // The weights go down by name, and that name builds them
+    const auto& d1_in = d1->get_input_fields_names();
+    const auto w_name = d1->get_params().get<std::string>("weight_name");
+    REQUIRE (std::find(d1_in.begin(),d1_in.end(),w_name)!=d1_in.end());
+    auto w = create_diagnostic(w_name,grid);
+    REQUIRE (std::dynamic_pointer_cast<AeroComWeights>(w)!=nullptr);
+    REQUIRE (w->get_params().get<std::string>("position")=="top");
+    REQUIRE (w->get_params().get<std::string>("phase")=="none");
+    REQUIRE (w->get_input_fields_names()==std::list<std::string>{"cldfrac_tot","qc","qi"});
+
+    // Two fields at the same position and phase ask for the same weights
+    auto d2 = create_diagnostic("nc.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))",grid);
+    auto d3 = create_diagnostic("(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0))"
+                                ".sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))",grid);
+    REQUIRE (d2->get_params().get<std::string>("weight_name")==d3->get_params().get<std::string>("weight_name"));
+    auto w2 = create_diagnostic(d2->get_params().get<std::string>("weight_name"),grid);
+    REQUIRE (w2->get_params().get<std::string>("phase")=="liq");
+
+    // The cloud fraction seen from below is the sum of the weights
+    auto d4 = create_diagnostic("cldfrac_tot.aerocom_weights('bot', phase='ice').sum('lev')",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(d4)!=nullptr);
+    // unweighted: the diag fills in an empty weight_name
+    REQUIRE (d4->get_params().get<std::string>("weight_name").empty());
+    REQUIRE (d4->get_params().get<std::string>("field_name").find("aerocom_weights")!=std::string::npos);
+
+    REQUIRE_THROWS (create_diagnostic("cldfrac_tot.aerocom_weights('middle')",grid));
+    REQUIRE_THROWS (create_diagnostic("cldfrac_tot.aerocom_weights('top',phase='water')",grid));
+    REQUIRE_THROWS (create_diagnostic("cldfrac_tot.aerocom_weights(top)",grid));
+    REQUIRE_THROWS (create_diagnostic("cldfrac_tot.aerocom_weights()",grid));
+    REQUIRE_THROWS (create_diagnostic("qc.aerocom_weights('top')",grid));
+  }
+
   SECTION ("dexpr_rejects") {
     // Unknown function: the message names what IS available
     REQUIRE_THROWS (create_diagnostic("T_mid.iselect(lev=1)",grid));

@@ -326,6 +326,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"units",false}},
            .example = "p_mid.searchsorted(500,units='hPa')"});
+    r.add({.name = "aerocom_weights",
+           .desc = "per level, the AeroCom cloud-top ('top') or cloud-bottom ('bot') weights, for a 'phase' if given",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"phase",false}},
+           .example = "cldfrac_tot.aerocom_weights('top')"});
     r.add({.name = "over_dt",
            .desc = "value divided by the time step",
            .min_positional = 0, .max_positional = 0,
@@ -564,6 +569,21 @@ void translate_call (const Call& call, const ast::Expression& self,
           units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
       params.set<std::string>("surface_reference",coord=="z" ? "sealevel" : "surface");
     }
+    return;
+  }
+
+  if (call.name=="aerocom_weights") {
+    // AeroCom cloud-top/bottom weights. A field is sampled at cloud top as
+    // X.sum('lev',weights=cldfrac_tot.aerocom_weights('top')), so all fields
+    // sampled at the same position and phase share one weights diag.
+    const auto* phase = keyword(call,"phase");
+    params.set<std::string>("position",string_arg(*call.positional[0],"the position"));
+    params.set<std::string>("phase",
+        phase==nullptr ? std::string("none") : string_arg(*phase,"'phase'"));
+    EKAT_REQUIRE_MSG (operand=="cldfrac_tot",
+        "Error! aerocom_weights() needs cldfrac_tot as receiver.\n"
+        " - expression: " + ast::to_string(self) + "\n");
+    diag_name = "AeroComWeights";
     return;
   }
 

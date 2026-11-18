@@ -97,6 +97,10 @@ is an honest analogue.
 | `p_mid.searchsorted(500, units='hPa')` | index of the first level with pressure above 500 hPa |
 | `z_mid.searchsorted(1000)` | index of the first level below 1000 m above sea level |
 | `height_mid.searchsorted(100)` | index of the first level below 100 m above the surface |
+| `cldfrac_tot.aerocom_weights('top')` | per level, the probability that it is the cloud top (`'bot'`: bottom) |
+| `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))` | `X` at cloud top |
+| `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))` | `X` at liquid cloud top (`'ice'`: at ice cloud top) |
+| `cldfrac_tot.aerocom_weights('top').sum('lev')` | the cloud fraction seen from above |
 
 Notes:
 
@@ -208,6 +212,20 @@ Notes:
   they may be negative, and may be written with an exponent
   (`bins=[-1,0,1e-5,1e-4]`). The counts are over every entry of `X` on every
   rank, as with xhistogram's default `dim=None`.
+- `aerocom_weights` gives, per level, the AeroCom cloud-top (`'top'`) or
+  cloud-bottom (`'bot'`) weights: the probability that the level is the first
+  cloudy level seen from above (or below), under the maximum-random overlap
+  assumption, times, with `phase='liq'` (`'ice'`), the share of liquid (ice) in
+  its condensate. Its receiver must be `cldfrac_tot`. A field at cloud top is
+  the sum weighted by them, `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))`
+  (a sum, not a mean), and their sum, `cldfrac_tot.aerocom_weights('top').sum('lev')`,
+  is the cloud fraction seen from above. Levels with zero weight are not read,
+  so `X` need not be finite there, but a division that `X` performs still is:
+  the in-cloud droplet number per volume at liquid cloud top is
+  `(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))`,
+  where the `where(..)` keeps the division away from levels with no cloud.
+  Fields sampled at the same position and phase share one computation of the
+  weights. See [the AeroCom algorithm](../../technical/aerocom_cldtop.md).
 
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,
@@ -226,6 +244,7 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(W).mean('lev')`, again a chain |
 | `searchsorted` | named after numpy's (`side='right'`), but takes `units`, and for heights, which decrease with the level index, it looks for the first level below the target |
+| `aerocom_weights` | not in xarray; named after the AeroCom recommendation it follows |
 
 `X.mean('lev', weights=W)` is `(X*W).sum('lev')/W.sum('lev')` over the valid
 entries of `X`, computed as one diagnostic rather than as a graph of three.
