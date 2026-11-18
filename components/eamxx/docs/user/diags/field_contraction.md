@@ -40,7 +40,8 @@ where $F_{\dots k}$ is the field at level $k$,
 and $w_{k}$ is the weight at level $k$.
 
 To select the vertical reduction, request `X.mean('lev')` or `X.sum('lev')`,
-optionally with `weights='dp'` or `weights='dz'`.
+optionally with `weights='dp'`, `weights='dz'`, or `weights=W`, where `W` is
+any field or expression on the same levels.
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
@@ -48,6 +49,8 @@ optionally with `weights='dp'` or `weights='dz'`.
 | `X.sum('lev',weights='dp')` | $\Delta p_{k}$ | Sum across all levels, weighted by $\Delta p_{k}$ |
 | `X.mean('lev',weights='dz')` | $\Delta z_{k}$ | Average across all levels, weighted by $\Delta z_{k}$ |
 | `X.sum('lev',weights='dz')` | $\Delta z_{k}$ | Sum across all levels, weighted by $\Delta z_{k}$ |
+| `X.mean('lev',weights=W)` | $W_{k}$ | Average across all levels, weighted by any field `W` |
+| `X.sum('lev',weights=W)` | $W_{k}$ | Sum across all levels, weighted by any field `W` |
 | `X.mean('lev')` | 1 | Average across all levels |
 | `X.sum('lev')` | 1 | Sum across all levels |
 
@@ -55,6 +58,8 @@ The supported weighting options for now are
 
 - `pseudo_density` field in EAMxx, $\Delta p_{k}$, in units of Pa;
 - `dz` field in EAMxx, $\Delta z_{k}$, in units of m;
+- any field or expression `W`, e.g. `cldfrac_tot`, with layout `(lev)` or
+  that of `X` without its components; `W` must not be masked;
 - and no weighting, which is equivalent to using a weight of 1.
 
 In the case of `pseudo_density`, the weighting is scaled by 1/g,
@@ -63,6 +68,11 @@ where g is the gravitational acceleration, in units of m/s$^2$.
 It is important to note that in the case of dp- and dz-weighted
 reductions, the field provided to the reduction utility must be
 at least 2 in rank, e.g., (ncol, nlev).
+
+With a field `W` as weights, the reduction follows xarray's weighted
+reductions when `X` is masked: the sum skips invalid levels, so a column with
+none gives 0, and the mean divides by the sum of `W` over the valid levels
+only, and is missing where that is 0.
 
 ## Zonal reduction
 

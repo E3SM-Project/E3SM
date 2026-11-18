@@ -286,10 +286,27 @@ TEST_CASE("create_diag")
 
     auto d4 = create_diagnostic("T_mid.mean('lev',weights='dp')",grid);
     REQUIRE (d4->get_params().get<std::string>("weighting_method")=="dp");
+    REQUIRE (d4->get_params().get<std::string>("weight_name","").empty());
+
+    // The weights may be a field or an expression; they go down by name, like the receiver
+    auto d5 = create_diagnostic("T_mid.mean('lev',weights=cldfrac_tot)",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(d5)!=nullptr);
+    REQUIRE (d5->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d5->get_params().get<std::string>("weight_name")=="cldfrac_tot");
+    REQUIRE (d5->get_params().get<std::string>("contract_method")=="avg");
+    REQUIRE (d5->get_params().get<std::string>("weighting_method","none")=="none");
+
+    auto d6 = create_diagnostic("(qc+qi).sum('lev',weights=pseudo_density/gravit)",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(d6)!=nullptr);
+    REQUIRE (d6->get_params().get<std::string>("contract_method")=="sum");
+    REQUIRE (d6->get_params().get<std::string>("field_name").find("qi")!=std::string::npos);
+    REQUIRE (d6->get_params().get<std::string>("weight_name").find("gravit")!=std::string::npos);
 
     REQUIRE_THROWS (create_diagnostic("T_mid.mean('time')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.sum('col')",grid));
     REQUIRE_THROWS (create_diagnostic("T_mid.mean('col',weights='dp')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.mean('col',weights=pseudo_density)",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.sum('lev',weights=2)",grid));
   }
 
   SECTION ("dexpr_where") {

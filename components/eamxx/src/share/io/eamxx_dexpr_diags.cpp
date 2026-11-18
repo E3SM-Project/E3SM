@@ -282,12 +282,12 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .keywords = {{"p_mid",false},{"z_mid",false},{"units",false},{"reference",false}},
            .example = "T_mid.interp(p_mid=500,units='hPa')"});
     r.add({.name = "mean",
-           .desc = "average over a dimension ('col' or 'lev')",
+           .desc = "average over a dimension ('col' or 'lev'); over 'lev', weights 'dp', 'dz' or a field",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
            .example = "T_mid.mean('lev',weights='dp')"});
     r.add({.name = "sum",
-           .desc = "sum over a dimension ('lev')",
+           .desc = "sum over a dimension ('lev'); weights 'dp', 'dz' or a field",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
            .example = "T_mid.sum('lev',weights='dz')"});
@@ -425,7 +425,16 @@ void translate_call (const Call& call, const ast::Expression& self,
     diag_name = "VertContract";
     params.set<std::string>("contract_method",call.name=="mean" ? "avg" : "sum");
     if (weights!=nullptr) {
-      params.set<std::string>("weighting_method",string_arg(*weights,"'weights'"));
+      if (as<ast::StringLiteral>(*weights)!=nullptr) {
+        // 'dp' or 'dz': the layer's mass (dp/g) or thickness
+        params.set<std::string>("weighting_method",string_arg(*weights,"'weights'"));
+      } else {
+        // A field or expression. Like the receiver, it goes down by name.
+        EKAT_REQUIRE_MSG (not is_number(*weights),
+            "Error! 'weights' takes 'dp', 'dz', or a field, not a number.\n"
+            " - expression: " + ast::to_string(self) + "\n");
+        params.set<std::string>("weight_name",name_of(*weights));
+      }
     }
     return;
   }

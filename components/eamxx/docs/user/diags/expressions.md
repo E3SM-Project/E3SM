@@ -85,6 +85,7 @@ is an honest analogue.
 | `X.mean('lev')` | vertical mean |
 | `X.sum('lev')` | vertical sum |
 | `X.mean('lev', weights='dp')` | vertical mean weighted by `dp` |
+| `X.sum('lev', weights=W)` | vertical sum weighted by the field `W` |
 | `X.where(qv>0.01)` | `X` where `qv>0.01`, missing elsewhere |
 | `X.derivative('p_mid')` | vertical derivative with respect to `p_mid` |
 | `X.histogram(bins=[0,1,2])` | counts of `X` in the bins `[0,1)` and `[1,2]` |
@@ -141,7 +142,8 @@ Notes:
   `(qv*T_mid).tend()`; use an averaged stream. The shift of a model field
   (`T_mid.shift(time=1)`) is one model step in any stream.
 - `mean('col')` is always area weighted, so `weights` does not apply to it.
-  `weights` for `'lev'` is `'dp'` or `'dz'`.
+  `weights` for `'lev'` is `'dp'`, `'dz'`, or a field or expression `W`, such
+  as `cldfrac_tot`. `W` must not be masked.
 - `broadcast_like` repeats `X` along the dimensions of `Y` that `X` lacks, so that
   `X` can be combined with `Y`. E.g., `dp.broadcast_like(horiz_winds)` would produce
   a version of `dp` (call it `dp_bcast`) with layout `(ncol,2,lev)`, where
@@ -155,7 +157,8 @@ Notes:
   levels are skipped, and a column with none left has no sum; it is written as
   missing rather than as 0. `mean('lev')` behaves the same way. This is
   xarray's `sum('lev', min_count=1)`, not its default `sum('lev')`, which
-  would give 0.
+  would give 0. A sum weighted by a field, `X.sum('lev', weights=W)`, gives 0,
+  as xarray's weighted sum does.
 - **A scalar threshold is in the field's own units, as the model stores them.**
   `T_mid.where(T_mid<273.15)` is in kelvin, and `p_mid.where(p_mid>85000)` in
   pascals, not hectopascals. A comparison between two *fields* is checked when
@@ -221,11 +224,11 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 | `derivative` | deliberately not xarray's `differentiate` (numpy's `gradient`): it is a finite-volume layer mean, built on the model's own layer thicknesses (see [Vertical derivative](vert_derivative.md)), so that, weighted by the layer thickness (`dp` or `dz`), the levels sum to the difference between the bottom and top values |
 | `zonal_mean` | xarray would be `groupby_bins('lat', 20).mean()`, a call chain we cannot represent |
 | `over_dt`, `tend` | no xarray equivalent |
-| `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
+| `mean('lev', weights=..)` | xarray would be `weighted(W).mean('lev')`, again a chain |
 | `searchsorted` | named after numpy's (`side='right'`), but takes `units`, and for heights, which decrease with the level index, it looks for the first level below the target |
 
-`X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, expressed as
-one diagnostic rather than as a graph of three.
+`X.mean('lev', weights=W)` is `(X*W).sum('lev')/W.sum('lev')` over the valid
+entries of `X`, computed as one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
 `mask` and `lev`, both legal only inside `where(..)`. See the note above for what they mean and where they may
