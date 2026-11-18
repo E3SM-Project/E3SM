@@ -319,8 +319,7 @@ Default: Defined in namelist_defaults.xml
 	category="initialize" group="initialize">
 Earth radius in m
 
-Valid values: Any positive real number, or -1 to use the shared Earth radius
-in coupled builds.
+Valid values: Any positive real number, or -1 to use the shared Earth radius in coupled builds.
 Default: Defined in namelist_defaults.xml
 </entry>
 
