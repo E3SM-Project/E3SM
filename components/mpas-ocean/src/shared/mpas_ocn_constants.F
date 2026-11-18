@@ -133,7 +133,7 @@ contains
        latent_heat_fusion_mks = 3.337e5_RKIND ! lat heat of fusion (J/kg)
        sea_ice_salinity   =  4.0_RKIND        ! (psu)
        ocn_ref_salinity   = 34.7_RKIND        ! (psu)
-       atm_ref_pressure   = 101325.0_RKIND    ! (Pa)
+       atm_ref_pressure   = real(SHR_CONST_PSTD, RKIND) ! (Pa)
        molecular_weight_C = 12.0107_RKIND     ! molecular weight carbon
        molecular_weight_O2 = 15.9994_RKIND    ! molecular weight oxygen
        molecular_weight_Fe = 55.845_RKIND     ! molecular weight iron
