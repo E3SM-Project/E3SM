@@ -339,7 +339,7 @@ contains
   !
   ! !USES:
     use elm_time_manager    , only : get_nstep
-    use elm_varcon          , only : grav
+    use shr_const_mod       , only : SHR_CONST_G
 
 
   ! !ARGUMENTS:
@@ -419,7 +419,7 @@ contains
   !
   ! !USES:
     use elm_time_manager    , only : get_nstep
-    use elm_varcon          , only : grav
+    use shr_const_mod       , only : SHR_CONST_G
 
 
   ! !ARGUMENTS:

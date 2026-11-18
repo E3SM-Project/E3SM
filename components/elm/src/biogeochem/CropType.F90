@@ -644,7 +644,7 @@ contains
     !
     ! !USES:
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
-    use elm_varcon       , only : secspday, tfrz
+    use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use elm_time_manager , only : get_step_size, get_nstep
     use pftvarcon        , only : nwcereal, nwcerealirrig, mxtmp, baset
     use TemperatureType  , only : temperature_type
@@ -687,8 +687,8 @@ contains
        if (this%croplive_patch(p)) then ! relative to planting date
           ivt = veg_pp%itype(p)
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
-               veg_es%t_ref2m(p)-(tfrz + baset(ivt)))) &
-               * dtime/secspday
+               veg_es%t_ref2m(p)-(SHR_CONST_TKFRZ + baset(ivt)))) &
+               * dtime/SHR_CONST_CDAY
           ! Modified based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
           if ((ivt == nwcereal .or. ivt == nwcerealirrig) .and. this%cphase_patch(p) > 1) then
              rbufslp(p) = rbufslp(p)*this%vf_patch(p)
@@ -711,7 +711,7 @@ contains
           rbufslp(p) = max(0._r8, min(mxtmp(ivt), &
                ((col_es%t_soisno(c,1)*col_pp%dz(c,1) + &
                col_es%t_soisno(c,2)*col_pp%dz(c,2))/(col_pp%dz(c,1)+col_pp%dz(c,2))) - &
-               (tfrz + baset(ivt)))) * dtime/secspday
+               (SHR_CONST_TKFRZ + baset(ivt)))) * dtime/SHR_CONST_CDAY
           ! Removed rbufslp modification based on Yaqiong Lu et al., 2017 in Geosci. Model Dev.
           ! Removed the vf control on gddtsoil, because the vernalization
           ! occurs after leaf emerge and end at flowering

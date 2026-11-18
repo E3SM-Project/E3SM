@@ -7,7 +7,7 @@ module VegetationDataType
   !
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_infnan_mod  , only : isnan => shr_infnan_isnan
-  use elm_varcon      , only : pdb
+  use shr_const_mod   , only : SHR_CONST_PDB
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc
   use abortutils      , only : endrun
@@ -1409,7 +1409,7 @@ module VegetationDataType
     ! !USES
     use accumulMod       , only : init_accum_field
     use elm_time_manager , only : get_step_size
-    use elm_varcon       , only : secspday, tfrz
+    use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     !
     ! !ARGUMENTS:
     class(vegetation_energy_state) :: this
@@ -1425,7 +1425,7 @@ module VegetationDataType
     ! The following is a running mean. The accumulation period is set to -10 for a 10-day running mean.
     call init_accum_field (name='T10', units='K', &
          desc='10-day running mean of 2-m temperature', accum_type='runmean', accum_period=-10, &
-         subgrid_type='pft', numlev=1,init_value=tfrz+20._r8)
+         subgrid_type='pft', numlev=1,init_value=SHR_CONST_TKFRZ+20._r8)
 
     call init_accum_field(name='TREFAV', units='K', &
          desc='average over an hour of 2-m temperature', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
@@ -1452,11 +1452,11 @@ module VegetationDataType
     if ( crop_prog )then
        call init_accum_field (name='TDM10', units='K', &
             desc='10-day running mean of min 2-m temperature', accum_type='runmean', accum_period=-10, &
-            subgrid_type='pft', numlev=1, init_value=tfrz)
+            subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
 
        call init_accum_field (name='TDM5', units='K', &
             desc='5-day running mean of min 2-m temperature', accum_type='runmean', accum_period=-5, &
-            subgrid_type='pft', numlev=1, init_value=tfrz)
+            subgrid_type='pft', numlev=1, init_value=SHR_CONST_TKFRZ)
 
        ! All GDD summations are relative to the planting date (Kucharik & Brye 2003)
        call init_accum_field (name='GDD0', units='K', &
@@ -1568,7 +1568,7 @@ module VegetationDataType
   subroutine update_acc_vars_veg_es (this, bounds)
     !
     ! USES
-    use elm_varcon       , only : secspday, tfrz
+    use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
     use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     use pftvarcon        , only: nwcereal, nwcerealirrig
@@ -1709,7 +1709,7 @@ module VegetationDataType
 
        do p = begp,endp
           rbufslp(p) = min(this%t_ref2m_min(p),this%t_ref2m_min_inst(p))
-          if (rbufslp(p) > 1.e30_r8) rbufslp(p) = tfrz !and were 'min'&
+          if (rbufslp(p) > 1.e30_r8) rbufslp(p) = SHR_CONST_TKFRZ !and were 'min'&
        end do                                                     !'min_inst' not initialized?
        call update_accum_field  ('TDM10', rbufslp, nstep)
        call extract_accum_field ('TDM10', this%t_a10min, nstep)
@@ -1718,7 +1718,7 @@ module VegetationDataType
 
        do p = begp,endp
           rbufslp(p) = min(this%t_ref2m_min(p),this%t_ref2m_min_inst(p))
-          if (rbufslp(p) > 1.e30_r8) rbufslp(p) = tfrz !and were 'min'&
+          if (rbufslp(p) > 1.e30_r8) rbufslp(p) = SHR_CONST_TKFRZ !and were 'min'&
        end do                                         !'min_inst' not initialized?
        call update_accum_field  ('TDM5', rbufslp, nstep)
        call extract_accum_field ('TDM5', this%t_a5min, nstep)
@@ -1737,7 +1737,7 @@ module VegetationDataType
                 rbufslp(p) = accumResetVal ! reset gdd
              else if (( month > 8 .or. month < 7 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                       ((month > 3 .and. month < 10) .and. grc_pp%latdeg(g) <  0._r8)) then
-                rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-tfrz)) * dtime/secspday
+                rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
              else
                 rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg,through Dec in NH)
              end if
@@ -1746,7 +1746,7 @@ module VegetationDataType
                 rbufslp(p) = accumResetVal ! reset gdd
              else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                       ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
-                rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-tfrz)) * dtime/secspday
+                rbufslp(p) = max(0._r8, min(26._r8, this%t_ref2m(p)-SHR_CONST_TKFRZ)) * dtime/SHR_CONST_CDAY
              else
                 rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
              end if
@@ -1764,7 +1764,7 @@ module VegetationDataType
           else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                    ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(30._r8, &
-                  this%t_ref2m(p)-(tfrz + 8._r8))) * dtime/secspday
+                  this%t_ref2m(p)-(SHR_CONST_TKFRZ + 8._r8))) * dtime/SHR_CONST_CDAY
           else
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if
@@ -1781,7 +1781,7 @@ module VegetationDataType
           else if (( month > 3 .and. month < 10 .and. grc_pp%latdeg(g) >= 0._r8) .or. &
                    ((month > 9 .or.  month < 4) .and. grc_pp%latdeg(g) <  0._r8)     ) then
              rbufslp(p) = max(0._r8, min(30._r8, &
-                  this%t_ref2m(p)-(tfrz + 10._r8))) * dtime/secspday
+                  this%t_ref2m(p)-(SHR_CONST_TKFRZ + 10._r8))) * dtime/SHR_CONST_CDAY
           else
              rbufslp(p) = 0._r8      ! keeps gdd unchanged at other times (eg, through Dec in NH)
           end if
@@ -2802,9 +2802,9 @@ module VegetationDataType
           if ( .not. is_restart() .and. get_nstep() == 1 ) then
              c3_del13c = -28._r8
              c4_del13c = -13._r8
-             c3_r1 = pdb + ((c3_del13c*pdb)/1000._r8)
+             c3_r1 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
              c3_r2 = c3_r1/(1._r8 + c3_r1)
-             c4_r1 = pdb + ((c4_del13c*pdb)/1000._r8)
+             c4_r1 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
              c4_r2 = c4_r1/(1._r8 + c4_r1)
 
              do i = bounds%begp,bounds%endp

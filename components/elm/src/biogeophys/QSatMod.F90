@@ -71,8 +71,7 @@ contains
     !
     ! !USES:
     use shr_kind_mod , only: r8 => shr_kind_r8
-    use elm_varcon, only: tfrz
-    use elm_varcon   , only: mm_epsilon
+    use shr_const_mod, only: SHR_CONST_TKFRZ
     !
     ! !ARGUMENTS:
     implicit none
@@ -88,7 +87,7 @@ contains
     real(r8) :: td,vp,vp1,vp2
     !-----------------------------------------------------------------------
 
-    T_limit = T - tfrz
+    T_limit = T - SHR_CONST_TKFRZ
     if (T_limit > 100.0_r8) T_limit=100.0_r8
     if (T_limit < -75.0_r8) T_limit=-75.0_r8
 
@@ -114,8 +113,8 @@ contains
     esdT  = esdT  * 100._r8            ! pa/K
 
     
-    vp    = 1.0_r8   / (p - (1._r8 - mm_epsilon)*es)
-    vp1   = mm_epsilon * vp
+    vp    = 1.0_r8   / (p - 0.378_r8*es)
+    vp1   = 0.622_r8 * vp
     vp2   = vp1   * vp
 
     qs    = es    * vp1             ! kg/kg
@@ -131,7 +130,7 @@ contains
     ! compute the saturated vapor pressure density and its derivative against the temperature
     ! jyt
     use elm_varcon,    only: rwat
-    use elm_varcon, only: tfrz
+    use shr_const_mod, only: SHR_CONST_TKFRZ
 
     implicit none
     real(r8)           , intent(in)  :: T
@@ -144,7 +143,7 @@ contains
     real(r8) :: T_limit
     real(r8) :: td, es, esdT
 
-    T_limit = T - tfrz
+    T_limit = T - SHR_CONST_TKFRZ
     if (T_limit > 100.0_r8) T_limit=100.0_r8
     if (T_limit < -75.0_r8) T_limit=-75.0_r8
 
