@@ -13,7 +13,7 @@ module FireMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8, CL => shr_kind_CL
-  use shr_const_mod          , only : SHR_CONST_PI,SHR_CONST_TKFRZ
+  use elm_varcon             , only : rpi, tfrz
   use shr_infnan_mod         , only : shr_infnan_isnan
   use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
   use shr_strdata_mod        , only : shr_strdata_advance
@@ -429,14 +429,14 @@ contains
                           if( woody(veg_pp%itype(p)) == 2.0_r8 .or. &
                               graminoid(veg_pp%itype(p)) == 1 )then      !for shurb and grass
                              lgdp_col(c)  = lgdp_col(c) + (0.1_r8 + 0.9_r8*    &
-                                  exp(-1._r8*SHR_CONST_PI* &
+                                  exp(-1._r8*rpi* &
                                   (gdp_lf(c)/8._r8)**0.5_r8))*veg_pp%wtcol(p) &
                                   /(1.0_r8 - cropf_col(c))
                              lgdp1_col(c) = lgdp1_col(c) + (0.2_r8 + 0.8_r8*   &
-                                  exp(-1._r8*SHR_CONST_PI* &
+                                  exp(-1._r8*rpi* &
                                   (gdp_lf(c)/7._r8)))*veg_pp%wtcol(p)/lfwt(c)
                              lpop_col(c)  = lpop_col(c) + (0.2_r8 + 0.8_r8*    &
-                                  exp(-1._r8*SHR_CONST_PI* &
+                                  exp(-1._r8*rpi* &
                                   (hdmlf/450._r8)**0.5_r8))*veg_pp%wtcol(p)/lfwt(c)
                           else if (woody(veg_pp%itype(p)) == 1.0_r8) then  ! for trees
                              if( gdp_lf(c)  >  20._r8 )then
@@ -454,7 +454,7 @@ contains
                                 end if
                              end if
                              lpop_col(c) = lpop_col(c) + (0.4_r8 + 0.6_r8*    &
-                                  exp(-1._r8*SHR_CONST_PI* &
+                                  exp(-1._r8*rpi* &
                                   (hdmlf/125._r8)))*veg_pp%wtcol(p)/lfwt(c)
                           end if
                        end if
@@ -513,16 +513,16 @@ contains
            if (pi <=  col_pp%npfts(c)) then
               p = col_pp%pfti(c) + pi - 1
               ! For crop
-              if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. &
+              if( forc_t(t)  >=  tfrz .and. &
                   (crop(veg_pp%itype(p)) == 1 .or. iscft(veg_pp%itype(p))) .and.  &
                    kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
                  ! calculate human density impact on ag. fire
-                 fhd = 0.04_r8+0.96_r8*exp(-1._r8*SHR_CONST_PI*(hdmlf/350._r8)**0.5_r8)
+                 fhd = 0.04_r8+0.96_r8*exp(-1._r8*rpi*(hdmlf/350._r8)**0.5_r8)
 
                  ! calculate impact of GDP on ag. fire
-                 fgdp = 0.01_r8+0.99_r8*exp(-1._r8*SHR_CONST_PI*(gdp_lf(c)/10._r8))
+                 fgdp = 0.01_r8+0.99_r8*exp(-1._r8*rpi*(gdp_lf(c)/10._r8))
 
                  ! calculate burned area
                  fb   = max(0.0_r8,min(1.0_r8,(fuelc_crop(c)-lfuel)/(ufuel-lfuel)))
@@ -549,8 +549,8 @@ contains
                 min(1._r8,(4.0_r8-prec60(t)*secspday)/ &
                 4.0_r8))**2*peatf_lf(c)*(1._r8-fsat(c))
         else
-           baf_peatf(c) = boreal_peatfire_c/secsphr*exp(-SHR_CONST_PI*(max(wf2(c),0._r8)/0.3_r8))* &
-                max(0._r8,min(1._r8,(tsoi17(c)-SHR_CONST_TKFRZ)/10._r8))*peatf_lf(c)* &
+           baf_peatf(c) = boreal_peatfire_c/secsphr*exp(-rpi*(max(wf2(c),0._r8)/0.3_r8))* &
+                max(0._r8,min(1._r8,(tsoi17(c)-tfrz)/10._r8))*peatf_lf(c)* &
                 (1._r8-fsat(c))
         end if
      end do
@@ -598,9 +598,9 @@ contains
               fuelc(c) = fuelc(c)/(1._r8-cropf_col(c))
               fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
               m        = max(0._r8,wf(c))
-              fire_m   = exp(-SHR_CONST_PI *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
+              fire_m   = exp(-rpi *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
                    min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8))))*  &
-                   min(1._r8,exp(SHR_CONST_PI*(forc_t(t)-SHR_CONST_TKFRZ)/10._r8))
+                   min(1._r8,exp(rpi*(forc_t(t)-tfrz)/10._r8))
               lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
               ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c))
@@ -615,7 +615,7 @@ contains
               end if
               farea_burned(c) = min(1._r8,(g0*spread_m*fsr_col(c)* &
                    fd_col(c)/1000._r8)**2*lgdp1_col(c)* &
-                   lpop_col(c)*nfire(c)*SHR_CONST_PI*Lb_lf+ &
+                   lpop_col(c)*nfire(c)*rpi*Lb_lf+ &
                    baf_crop(c)+baf_peatf(c))  ! fraction (0-1) per sec
            end if
            !

@@ -9,7 +9,7 @@ module SurfaceResistanceMod
   !
   ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8
-  use shr_const_mod , only : SHR_CONST_TKFRZ
+  use elm_varcon    , only : tfrz
   use elm_varctl    , only : iulog
   use SoilStateType , only : soilstate_type
   use WaterStateType, only : waterstate_type
@@ -57,7 +57,7 @@ contains
      !
       !$acc routine seq
      use shr_kind_mod  , only : r8 => shr_kind_r8
-     use shr_const_mod , only : SHR_CONST_PI
+     use elm_varcon    , only : rpi
      use decompMod     , only : bounds_type
      use ColumnType    , only : col_pp
      use LandunitType  , only : lun_pp
@@ -101,7 +101,7 @@ contains
      ! USES
       !$acc routine seq
      use shr_kind_mod    , only : r8 => shr_kind_r8
-     use shr_const_mod   , only : SHR_CONST_PI
+     use elm_varcon      , only : rpi
      use decompMod       , only : bounds_type
      use elm_varcon      , only : denh2o, denice
      use landunit_varcon , only : istice, istice_mec, istwet, istsoil, istcrop
@@ -150,7 +150,7 @@ contains
                    fac_fc  = max( fac_fc, 0.01_r8 )
                    ! modify soil beta by snow cover. soilbeta for snow surface is one
                    soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
-                        *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
+                        *0.25_r8*(1._r8 - cos(rpi*fac_fc))**2._r8 &
                         + frac_sno(c)+ frac_h2osfc(c)
                 else   !when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
@@ -216,7 +216,7 @@ contains
 
      !compute the kinetic viscosity
      mu      = mu0 * (T0+C)/(temp+C) * (temp/T0)**(1.5)/rho !m^2 s^-1
-     diffh2o = 0.229e-4_r8*(temp/273.15_r8)**1.75_r8        !m^2 s^-1
+     diffh2o = 0.229e-4_r8*(temp/tfrz)**1.75_r8        !m^2 s^-1
      sc      = mu/diffh2o                                   !schmidt number
 
      cc      = 2._r8/vkc*(Sc/Prandtl)**(2._r8/3._r8)
