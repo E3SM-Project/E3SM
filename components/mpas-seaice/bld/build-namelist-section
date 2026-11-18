@@ -408,6 +408,7 @@ add_default($nl, 'config_sealevel_pond_equilibrium_fraction');
 ##################################
 
 add_default($nl, 'config_thermodynamics_type');
+add_default($nl, 'config_use_mushy_zero_salinity');
 add_default($nl, 'config_heat_conductivity_type');
 add_default($nl, 'config_rapid_mode_channel_radius');
 add_default($nl, 'config_rapid_model_critical_Ra');
