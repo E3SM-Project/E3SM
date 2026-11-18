@@ -46,7 +46,7 @@ std::string
 describe(const scream::AbstractDiagnostic& diag)
 {
   std::vector<std::string> names;
-  for (const auto& f : diag.get_outputs()) {
+  for (const auto& [n,f] : diag.get_outputs()) {
     names.push_back(f.name());
   }
   return " - diag class: " + diag.name() + "\n"
@@ -310,13 +310,10 @@ AtmosphereOutput::
   //       we are likely at finalization. This static var is only needed at init,
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
-  // NOTE: erase by value, since a diag with several outputs is stored under each
-  //       of its output names
-  for (auto it=m_diag_repo.begin(); it!=m_diag_repo.end(); ) {
-    if (ekat::contains(m_diagnostics,it->second)) {
-      it = m_diag_repo.erase(it);
-    } else {
-      ++it;
+  // NOTE: a diag with several outputs is stored under each of its output names
+  for (auto d : m_diagnostics) {
+    for (const auto& [n,f] : d->get_outputs()) {
+      m_diag_repo.erase(f.name());
     }
   }
 }
@@ -1126,7 +1123,7 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
       diag->compute(ts);
     }
 
-    for (auto d : diag->get_outputs()) {
+    for (auto& [n,d] : diag->get_outputs()) {
       bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
       EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
@@ -1360,23 +1357,11 @@ process_requested_fields()
         // A diag with several outputs is stored under each output name, so that
         // a request of any of them, in any stream, finds the same instance
         const auto& outputs = diag->get_outputs();
-        std::vector<std::string> keys = {name};
-        if (outputs.size()>1) {
-          const bool is_output = std::any_of(outputs.begin(),outputs.end(),
-              [&](const Field& f) { return ekat::caseInsensitiveEqualString(f.name(),name); });
-          EKAT_REQUIRE_MSG (is_output,
-              "Error! The request is not an output of the diagnostic it resolved to.\n"
-              " - stream name: " + m_stream_name + "\n"
-              " - request: " + name + "\n" +
-              describe(*diag));
-        }
+        std::vector<std::string> keys;
         if (it==m_diag_repo.end() and outputs.size()>1) {
-          // Just created: store it under its other outputs too
-          for (const auto& f : outputs) {
+          // Just created: store it under all its outputs
+          for (const auto& [key,f] : outputs) {
             const auto& n = f.name();
-            if (n==name) {
-              continue;
-            }
             // NOTE: an alias of this stream may have the name of an output it does
             //       not request: the alias is local to the stream, and wins in it
             EKAT_REQUIRE_MSG (model_fields.count(n)==0,
@@ -1393,11 +1378,12 @@ process_requested_fields()
                 describe(*other->second));
             keys.push_back(n);
           }
+        } else if (it==m_diag_repo.end()) {
+          keys = {name};
         }
+        // Only a diag we just created goes in the repo
         for (const auto& k : keys) {
-          if (m_diag_repo.count(k)==0) {
-            repo_guard.added.push_back(k);
-          }
+          repo_guard.added.push_back(k);
           m_diag_repo[k] = diag;
         }
         // Add its deps to the list of fields to process (if not already in fm_model)

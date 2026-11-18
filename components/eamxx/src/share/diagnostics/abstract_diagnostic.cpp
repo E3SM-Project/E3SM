@@ -26,7 +26,9 @@ void AbstractDiagnostic::initialize ()
       "Error! Diagnostic was already initialized.\n"
       " - diag class: " + name() + "\n");
 
-  // A diag with several outputs declares them all in its constructor (see add_output)
+  // A diag with several outputs declares them all in its constructor, since output
+  // streams store it under all its output names before initializing it (see the
+  // class documentation in the header)
   const auto num_ctor_outputs = m_outputs.size();
 
   initialize_impl();
@@ -34,7 +36,7 @@ void AbstractDiagnostic::initialize ()
   EKAT_REQUIRE_MSG (not m_outputs.empty(),
       "Error! A diagnostic did not declare its output field (see add_output).\n"
       " - diag class: " + name() + "\n");
-  for (const auto& f : m_outputs) {
+  for (const auto& [n,f] : m_outputs) {
     EKAT_REQUIRE_MSG (f.is_allocated(),
         "Error! A diagnostic did not allocate its output field during initialization.\n"
         " - diag class: " + name() + "\n"
@@ -61,36 +63,17 @@ void AbstractDiagnostic::initialize ()
         " - requested name: " + name + "\n"
         "Request an output by its own name. To write it under another name, use\n"
         "  <name> := <output>\n");
-    auto& f = m_outputs.front();
+    auto f = m_outputs.begin()->second;
     if (name!=f.name()) {
-      f = f.alias(name);
-    }
-  }
-
-  // Outputs whose masks have the same name share a valid count in output streams,
-  // and the horizontal remapper remaps such masks once: they must be the same mask.
-  for (size_t i=0; i<m_outputs.size(); ++i) {
-    for (size_t j=i+1; j<m_outputs.size(); ++j) {
-      const auto& fi = m_outputs[i];
-      const auto& fj = m_outputs[j];
-      if (not fi.has_valid_mask() or not fj.has_valid_mask() or
-          fi.get_valid_mask().name()!=fj.get_valid_mask().name()) {
-        continue;
-      }
-      EKAT_REQUIRE_MSG (fi.get_valid_mask().is_aliasing(fj.get_valid_mask()) and
-                        fi.get_header().get_identifier().get_layout()==
-                        fj.get_header().get_identifier().get_layout(),
-          "Error! Outputs with masks of the same name must share the mask, and have the same layout.\n"
-          " - diag class: " + name() + "\n"
-          " - outputs: " + fi.name() + ", " + fj.name() + "\n"
-          " - mask name: " + fi.get_valid_mask().name() + "\n");
+      m_outputs.clear();
+      m_outputs.emplace(name,f.alias(name));
     }
   }
 
   m_is_initialized = true;
 }
 
-void AbstractDiagnostic::add_output (const Field& f)
+Field& AbstractDiagnostic::add_output (const Field& f)
 {
   EKAT_REQUIRE_MSG (not m_is_initialized,
       "Error! Cannot add an output to a diagnostic after it is initialized.\n"
@@ -102,28 +85,24 @@ void AbstractDiagnostic::add_output (const Field& f)
       " - field name: " + f.name() + "\n"
       " - field grid: " + f.get_header().get_identifier().get_grid_name() + "\n"
       " - diag grid: " + m_grid->name() + "\n");
-  for (const auto& o : m_outputs) {
-    EKAT_REQUIRE_MSG (not ekat::caseInsensitiveEqualString(o.name(),f.name()),
-        "Error! A diagnostic cannot have two outputs with the same name.\n"
-        " - diag class: " + name() + "\n"
-        " - field name: " + f.name() + "\n"
-        " - diag outputs: " + outputs_names() + "\n");
-  }
-  m_outputs.push_back(f);
-}
-
-Field& AbstractDiagnostic::output ()
-{
-  EKAT_REQUIRE_MSG (m_outputs.size()==1,
-      "Error! output() is for a diagnostic with one output, once declared with add_output.\n"
+  auto [it,inserted] = m_outputs.emplace(f.name(),f);
+  EKAT_REQUIRE_MSG (inserted,
+      "Error! A diagnostic cannot have two outputs with the same name.\n"
       " - diag class: " + name() + "\n"
+      " - field name: " + f.name() + "\n"
       " - diag outputs: " + outputs_names() + "\n");
-  return m_outputs.front();
+  return it->second;
 }
 
-const Field& AbstractDiagnostic::output () const
+Field& AbstractDiagnostic::add_output (const FieldIdentifier& fid)
 {
-  return const_cast<AbstractDiagnostic*>(this)->output();
+  return add_output(Field(fid,true));
+}
+
+Field& AbstractDiagnostic::add_output (const std::string& name, const FieldLayout& layout,
+                                       const ekat::units::Units& units, const DataType dt)
+{
+  return add_output(FieldIdentifier(name,layout,units,m_grid->name(),dt));
 }
 
 void AbstractDiagnostic::set_input_field (const Field& f)
@@ -143,24 +122,21 @@ Field AbstractDiagnostic::get () const
       " - diag class: " + name() + "\n"
       " - diag outputs: " + outputs_names() + "\n"
       "Use get(name) to get one of them.\n");
-  EKAT_REQUIRE_MSG (m_outputs.size()==1 and m_outputs.front().is_allocated(),
-      "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
-      "       We chose to throw an error, but if this is a legit use, please, contact developers.\n"
-      " - diag class: " + name() + "\n"
-      " - diag outputs: " + outputs_names() + "\n");
-  return m_outputs.front();
+  EKAT_REQUIRE_MSG (m_outputs.size()==1,
+      "Error! The diagnostic has not declared its output yet (see add_output).\n"
+      " - diag class: " + name() + "\n");
+  return m_outputs.begin()->second;
 }
 
 Field AbstractDiagnostic::get (const std::string& name) const
 {
-  auto it = std::find_if(m_outputs.begin(),m_outputs.end(),
-                         [&](const Field& f) { return ekat::caseInsensitiveEqualString(f.name(),name); });
+  auto it = m_outputs.find(name);
   EKAT_REQUIRE_MSG (it!=m_outputs.end(),
       "Error! The diagnostic has no output with the requested name.\n"
       " - diag class: " + this->name() + "\n"
       " - requested output: " + name + "\n"
       " - available outputs: " + outputs_names() + "\n");
-  return *it;
+  return it->second;
 }
 
 std::string AbstractDiagnostic::outputs_names () const
@@ -168,7 +144,7 @@ std::string AbstractDiagnostic::outputs_names () const
   if (m_outputs.empty()) {
     return "(none yet)";
   }
-  return ekat::join(m_outputs,[](const Field& f) { return f.name(); },", ");
+  return ekat::join(m_outputs,[](const auto& it) { return it.second.name(); },", ");
 }
 
 void AbstractDiagnostic::compute (const util::TimeStamp& ts)
@@ -198,7 +174,7 @@ void AbstractDiagnostic::compute (const util::TimeStamp& ts)
   stop_timer(timer_name);
 
   // Update timestamp info
-  for (auto& f : m_outputs) {
+  for (auto& [n,f] : m_outputs) {
     f.get_header().get_tracking().update_time_stamp(ts);
   }
   m_last_eval_ts = ts;

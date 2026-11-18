@@ -41,9 +41,9 @@ void run()
   auto diag = diag_factory.create("NumberPath", comm, params, grid);
   const auto& outs = diag->get_outputs();
   REQUIRE(outs.size() == 3);
-  REQUIRE(outs[0].name() == "LiqNumberPath");
-  REQUIRE(outs[1].name() == "IceNumberPath");
-  REQUIRE(outs[2].name() == "RainNumberPath");
+  for (const std::string o : {"LiqNumberPath","IceNumberPath","RainNumberPath"}) {
+    REQUIRE (outs.count(o)==1);
+  }
   REQUIRE_THROWS(diag->get());  // Several outputs: must pick one by name
 
   // Set the required fields for the diagnostic.
@@ -97,7 +97,7 @@ void run()
 
     // Compute & sync
     diag->compute(t0);
-    for(const auto &f : diag->get_outputs()) {
+    for(const auto &[n,f] : diag->get_outputs()) {
       f.sync_to_host();
     }
 

@@ -50,12 +50,16 @@ namespace scream
  *         stored field is allocated once at initialization and reused at every step).
  *
  * A diag declares its output field(s) with add_output. Most diags have one output,
- * which they declare in the constructor or in initialize_impl, reach with output(),
- * and which get() returns. A diag may instead compute several fields at once (e.g.,
- * NumberPath computes the liquid, ice and rain number paths in one kernel). Such a
- * diag declares each output in its constructor, so that customers know all output
- * names right after construction (e.g., an output stream can then share one instance
- * among requests of different outputs). For such a diag:
+ * which they declare in the constructor or in initialize_impl, and which get()
+ * returns. A diag may instead compute several fields at once (e.g., NumberPath
+ * computes the liquid, ice and rain number paths in one kernel). Such a diag
+ * declares each output in its constructor, so that customers know all output names
+ * right after construction. An output stream relies on that: it stores a newly
+ * created diag under all its output names before it can initialize it (which waits
+ * until the diag inputs exist), so that a request of another output, in the same
+ * stream or in another, finds the same instance rather than creating a second one.
+ * A diag with one output is stored under the requested name, so it may wait until
+ * initialize_impl. For a diag with several outputs:
  *  - get() errors out: use get(name), or get_outputs();
  *  - the outputs cannot be renamed via 'output_field_name' (customers can alias
  *    the one they want instead);
@@ -93,16 +97,20 @@ public:
   // we need to compute tendencies, or accumulated stuff)
   virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
 
+  // The output fields, keyed by name (case insensitive)
+  using outputs_map_t = std::map<ekat::CaseInsensitiveString,Field>;
+
   // Returns the diagnostic output field. Errors out if the diag has several outputs.
+  // NOTE: Field is a handle: the copy shares data, header and mask with the output.
   Field get () const;
 
   // Returns the output field with the given name (case insensitive)
   Field get (const std::string& name) const;
 
-  // The output fields, in the order they were declared. A diag with several outputs
-  // declares them in its constructor, so this is complete right after construction.
-  // For a diag with one output, this may be empty until initialize() is called.
-  const std::vector<Field>& get_outputs () const { return m_outputs; }
+  // The output fields. A diag with several outputs declares them in its constructor,
+  // so this is complete right after construction. For a diag with one output, this
+  // may be empty until initialize() is called.
+  const outputs_map_t& get_outputs () const { return m_outputs; }
 
   // Compute the diagnostic (skips if inputs have not changed since last call)
   void compute (const util::TimeStamp& ts);
@@ -117,15 +125,16 @@ protected:
 
   // Declare an output field. A diag with one output calls this once, in its
   // constructor or in initialize_impl; a diag with several outputs MUST call it
-  // in its constructor, once per output. The field must be on this diag's grid,
-  // have a name that no other output has, and be allocated by the time
-  // initialize_impl returns.
-  void add_output (const Field& f);
+  // in its constructor, once per output (see above). The field must be on this
+  // diag's grid, have a name that no other output has, and be allocated by the
+  // time initialize_impl returns. Returns the stored field, which stays valid.
+  Field& add_output (const Field& f);
 
-  // The output of a diag with one output, once declared with add_output.
-  // NOTE: the field itself, not a copy: allocate it, or create its mask, here.
-  Field& output ();
-  const Field& output () const;
+  // Create and allocate the output field
+  Field& add_output (const FieldIdentifier& fid);
+  Field& add_output (const std::string& name, const FieldLayout& layout,
+                     const ekat::units::Units& units = ekat::units::none,
+                     const DataType dt = DataType::RealType);
 
   // MPI communicator
   ekat::Comm              m_comm;
@@ -151,8 +160,8 @@ private:
   // A string listing the outputs, for error messages
   std::string outputs_names () const;
 
-  // All output fields, in declaration order (see get_outputs)
-  std::vector<Field> m_outputs;
+  // All output fields (see get_outputs)
+  outputs_map_t m_outputs;
 };
 
 // Factory for atmosphere diagnostics

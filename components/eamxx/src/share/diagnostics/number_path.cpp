@@ -21,11 +21,7 @@ NumberPath(const ekat::Comm &comm,
   auto m2 = pow(m,2);
   auto diag_layout = m_grid->get_2d_scalar_layout();
   auto create = [&](const std::string& kind) {
-    FieldIdentifier fid(kind + name(), diag_layout, kg/(kg*m2), m_grid->name());
-    Field f(fid);
-    f.allocate_view();
-    add_output(f);
-    return f;
+    return add_output(kind + name(), diag_layout, kg/(kg*m2));
   };
   m_liq  = create("Liq");
   m_ice  = create("Ice");

@@ -85,15 +85,15 @@ public:
   {
     m_field_in_names = {"b"};
     FieldIdentifier fid("SOT",m_grid->get_2d_scalar_layout(),ekat::units::K,m_grid->name());
-    add_output(Field(fid,true));
-    output().create_valid_mask(Field::MaskInit::Valid);
+    add_output(fid);
+    get().create_valid_mask(Field::MaskInit::Valid);
   }
 
   std::string name () const override { return "SOTest"; }
 
 protected:
   void compute_impl () override {
-    output().deep_copy(m_fields_in.at("b"));
+    get().deep_copy(m_fields_in.at("b"));
   }
 };
 
@@ -118,17 +118,6 @@ public:
     } else if (m_misuse=="unallocated") {
       FieldIdentifier fid("x",m_grid->get_2d_scalar_layout(),ekat::units::none,m_grid->name());
       add_output(Field(fid));
-    } else if (m_misuse=="unshared_mask" or m_misuse=="shared_mask") {
-      auto x = make("x",m_grid);
-      auto y = make("y",m_grid);
-      x.create_valid_mask("region_mask");
-      if (m_misuse=="shared_mask") {
-        y.set_valid_mask(x.get_valid_mask());
-      } else {
-        y.create_valid_mask("region_mask");
-      }
-      add_output(x);
-      add_output(y);
     }
   }
 
@@ -185,19 +174,19 @@ TEST_CASE ("multi_output") {
   SECTION ("several_outputs") {
     auto diag = std::make_shared<MOTest>(comm,params,grid);
 
-    // All outputs are known right after construction, in declaration order
+    // All outputs are known right after construction
     REQUIRE (diag->get_outputs().size()==3);
-    REQUIRE (diag->get_outputs()[0].name()=="MOT_prof");
-    REQUIRE (diag->get_outputs()[1].name()=="MOT_col");
-    REQUIRE (diag->get_outputs()[2].name()=="MOT_masked");
+    for (const std::string n : {"MOT_prof","MOT_col","MOT_masked"}) {
+      REQUIRE (diag->get_outputs().count(n)==1);
+    }
 
     // get() is for diags with one output, and the error lists the outputs
     REQUIRE_THROWS_WITH (diag->get(),
-        Catch::Contains("MOT_prof, MOT_col, MOT_masked") and Catch::Contains("get(name)"));
+        Catch::Contains("MOT_col, MOT_masked, MOT_prof") and Catch::Contains("get(name)"));
     REQUIRE (diag->get("mot_col").name()=="MOT_col");
     REQUIRE_THROWS_WITH (diag->get("nope"),
         Catch::Contains("requested output: nope") and
-        Catch::Contains("available outputs: MOT_prof, MOT_col, MOT_masked"));
+        Catch::Contains("available outputs: MOT_col, MOT_masked, MOT_prof"));
 
     diag->set_input_field(a);
     diag->set_input_field(b);
@@ -209,7 +198,7 @@ TEST_CASE ("multi_output") {
     // One compute evaluates all outputs, and stamps them all
     diag->compute(t0);
     REQUIRE (diag->get_num_evaluations()==1);
-    for (const auto& f : diag->get_outputs()) {
+    for (const auto& [n,f] : diag->get_outputs()) {
       REQUIRE (f.get_header().get_tracking().get_time_stamp()==t0);
     }
 
@@ -220,7 +209,7 @@ TEST_CASE ("multi_output") {
     b.get_header().get_tracking().update_time_stamp(t1);
     diag->compute(t1);
     REQUIRE (diag->get_num_evaluations()==2);
-    for (const auto& f : diag->get_outputs()) {
+    for (const auto& [n,f] : diag->get_outputs()) {
       REQUIRE (f.get_header().get_tracking().get_time_stamp()==t1);
     }
 
@@ -288,10 +277,6 @@ TEST_CASE ("multi_output") {
     // Several outputs must all be declared in the ctor
     REQUIRE_THROWS (create("add_in_init")->initialize());
     REQUIRE_THROWS (create("two_in_init")->initialize());
-
-    // Masks with the same name must be the same mask
-    REQUIRE_THROWS (create("unshared_mask")->initialize());
-    REQUIRE_NOTHROW (create("shared_mask")->initialize());
   }
 
   SECTION ("one_output") {
@@ -303,7 +288,7 @@ TEST_CASE ("multi_output") {
     diag->set_input_field(b);
     diag->initialize();
     REQUIRE (diag->get_outputs().size()==1);
-    REQUIRE (diag->get_outputs()[0].is_aliasing(diag->get()));
+    REQUIRE (diag->get_outputs().at("SOT").is_aliasing(diag->get()));
 
     diag->compute(t0);
     REQUIRE (diag->get().get_header().get_tracking().get_time_stamp()==t0);
@@ -315,7 +300,7 @@ TEST_CASE ("multi_output") {
     renamed->set_input_field(b);
     renamed->initialize();
     REQUIRE (renamed->get_outputs().size()==1);
-    REQUIRE (renamed->get_outputs()[0].name()=="foo");
+    REQUIRE (renamed->get_outputs().begin()->second.name()=="foo");
     REQUIRE (renamed->get().name()=="foo");
     REQUIRE (renamed->get("FOO").name()=="foo");
     REQUIRE (renamed->get().get_valid_mask().name()=="SOT_valid_mask");

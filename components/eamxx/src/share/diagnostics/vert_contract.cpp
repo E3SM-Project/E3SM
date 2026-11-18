@@ -97,7 +97,7 @@ void VertContract::initialize_impl()
     diag_name += "_" + m_weighting_method + "_weighted";
 
   auto d_fid = fid.clone(diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
-  add_output(Field(d_fid,true));
+  add_output(d_fid);
 
   // A masked input needs the contracted weight for both methods: avg divides by it,
   // sum uses it to mask columns with no valid level
@@ -118,8 +118,8 @@ void VertContract::initialize_impl()
       // Share the valid_mask so the denominator honours the same masking
       m_ones.set_valid_mask(f.get_valid_mask());
       // Output gets a valid_mask: 1 where at least one level was valid
-      output().create_valid_mask(Field::MaskInit::None);
-      output().get_header().set_may_be_filled(true);
+      get().create_valid_mask(Field::MaskInit::None);
+      get().get_header().set_may_be_filled(true);
     }
   }
 }
@@ -127,7 +127,7 @@ void VertContract::initialize_impl()
 void VertContract::compute_impl()
 {
   const auto &f = m_fields_in.at(m_field_name);
-  auto& d = output();
+  auto d = get();
 
   // Update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
@@ -151,7 +151,7 @@ void VertContract::compute_impl()
     auto tm_v = m_fields_in.at("T_mid").get_view<const Real **>();
     auto qv_v = m_fields_in.at("qv").get_view<const Real **>();
     Kokkos::parallel_for(
-        "Compute dz for " + output().name(), policy, KOKKOS_LAMBDA(const MT &team) {
+        "Compute dz for " + get().name(), policy, KOKKOS_LAMBDA(const MT &team) {
           const int icol = team.league_rank();
           auto dz_icol   = ekat::subview(dz_v, icol);
           auto dp_icol   = ekat::subview(dp_v, icol);

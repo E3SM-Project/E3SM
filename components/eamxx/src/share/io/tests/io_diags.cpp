@@ -50,10 +50,10 @@ public:
 
     auto layout = m_grid->get_3d_scalar_layout(LEV);
 
-    // We have to initialize the output():
+    // We have to initialize the get():
     FieldIdentifier fid ("MyDiag", layout, ekat::units::none, m_grid->name());
-    add_output(Field(fid,true));
-    m_one = output().clone("one");
+    add_output(fid);
+    m_one = get().clone("one");
     m_one.deep_copy(1.0);
   }
   std::string name() const override { return "MyDiag"; }
@@ -70,14 +70,14 @@ protected:
     const auto& ts = f_in.get_header().get_tracking().get_time_stamp();
     const double dt = ts - m_t_beg;
 
-    output().deep_copy(f_in);
-    output().update(m_one,dt,2.0);
+    get().deep_copy(f_in);
+    get().update(m_one,dt,2.0);
 
     ++m_num_evaluations;
   }
 
   void initialize_impl () override {
-    output().get_header().get_tracking().update_time_stamp(util::TimeStamp());
+    get().get_header().get_tracking().update_time_stamp(util::TimeStamp());
   }
 
   // No finalize_impl in AbstractDiagnostic

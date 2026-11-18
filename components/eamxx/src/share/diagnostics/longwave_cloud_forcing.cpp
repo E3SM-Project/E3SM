@@ -18,8 +18,7 @@ LongwaveCloudForcing (const ekat::Comm& comm, const ekat::ParameterList& params,
   auto diag_layout = m_grid->get_2d_scalar_layout();
   FieldIdentifier diag_fid(name(),diag_layout,W/m2,m_grid->name());
 
-  add_output(Field(diag_fid));
-  output().allocate_view();
+  add_output(diag_fid);
 }
 
 void LongwaveCloudForcing::compute_impl()
@@ -28,7 +27,7 @@ void LongwaveCloudForcing::compute_impl()
 
   const int ncols = m_grid->get_num_local_dofs();
 
-  const auto& LWCF              = output().get_view<Real*>();
+  const auto& LWCF              = get().get_view<Real*>();
   const auto& LW_flux_up        = m_fields_in.at("LW_flux_up").get_view<const Real**>();
   const auto& LW_clrsky_flux_up = m_fields_in.at("LW_clrsky_flux_up").get_view<const Real**>();
 

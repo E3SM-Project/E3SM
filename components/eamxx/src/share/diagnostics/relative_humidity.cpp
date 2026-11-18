@@ -25,9 +25,9 @@ RelativeHumidity (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   auto diag_layout = m_grid->get_3d_scalar_layout(LEV);
   FieldIdentifier fid (name(), diag_layout, none, m_grid->name());
-  add_output(Field(fid));
-  output().get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-  output().allocate_view();
+  auto& rh = add_output(Field(fid));
+  rh.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+  rh.allocate_view();
 }
 
 void RelativeHumidity::compute_impl()
@@ -37,13 +37,13 @@ void RelativeHumidity::compute_impl()
   using physics = scream::physics::Functions<Real, DefaultDevice>;
   using Pack    = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
-  auto theta     = output().get_view<Pack**>();
+  auto theta     = get().get_view<Pack**>();
   auto T_mid     = m_fields_in.at("T_mid").get_view<const Pack**>();
   auto p_dry_mid = m_fields_in.at("p_dry_mid").get_view<const Pack**>();
   auto dp_wet    = m_fields_in.at("pseudo_density").get_view<const Pack**>();
   auto dp_dry    = m_fields_in.at("pseudo_density_dry").get_view<const Pack**>();
   auto qv_mid    = m_fields_in.at("qv").get_view<const Pack**>();
-  auto RH        = output().get_view<Pack**>();
+  auto RH        = get().get_view<Pack**>();
 
   const int nlevs = m_grid->get_num_vertical_levels();
   const int ncols = m_grid->get_num_local_dofs();

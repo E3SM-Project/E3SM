@@ -630,7 +630,7 @@ TEST_CASE ("multi_output_sharing")
   SECTION ("errors") {
     // A name that resolves to MOTest, but is not one of its outputs
     REQUIRE_THROWS_WITH (OutputTester(comm,params_for({"MOT_other"}),fm,gname),
-        Catch::Contains("not an output") and Catch::Contains("MOT_masked"));
+        Catch::Contains("no output with the requested name") and Catch::Contains("MOT_masked"));
     REQUIRE_FALSE (in_repo("MOT_other"));
     REQUIRE_FALSE (in_repo("MOT_prof"));
 

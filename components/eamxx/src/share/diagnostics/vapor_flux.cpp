@@ -35,8 +35,7 @@ VaporFlux (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   auto diag_layout = m_grid->get_2d_scalar_layout();
   FieldIdentifier fid (m_name, m_grid->get_2d_scalar_layout(), kg/m/s, m_grid->name());
-  add_output(Field(fid));
-  output().allocate_view();
+  add_output(fid);
 }
 
 void VaporFlux::compute_impl()
@@ -48,7 +47,7 @@ void VaporFlux::compute_impl()
 
   constexpr Real g = PC::gravit.value;
 
-  const auto diag  = output().get_view<Real*>();
+  const auto diag  = get().get_view<Real*>();
   const auto qv    = m_fields_in.at("qv").get_view<const Real**>();
   const auto rho   = m_fields_in.at("pseudo_density").get_view<const Real**>();
   const auto wind  = m_fields_in.at("horiz_winds").get_component(m_component).get_view<const Real**>();

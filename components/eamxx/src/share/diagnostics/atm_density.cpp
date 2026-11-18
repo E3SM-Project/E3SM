@@ -25,15 +25,14 @@ void AtmDensity::initialize_impl()
   // Construct and allocate the diagnostic field
   const auto& T = m_fields_in.at("T_mid");
   auto fid = T.get_header().get_identifier().clone(name()).reset_units(kg/(m*m*m));
-  add_output(Field(fid));
-  output().allocate_view();
+  add_output(fid);
 }
 
 void AtmDensity::compute_impl()
 {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
-  const auto atm_dens = output().get_view<Real**>();
+  const auto atm_dens = get().get_view<Real**>();
   const auto T    = m_fields_in.at("T_mid").get_view<const Real**>();
   const auto p    = m_fields_in.at("p_mid").get_view<const Real**>();
   const auto qv   = m_fields_in.at("qv").get_view<const Real**>();

@@ -39,9 +39,7 @@ WaterPath (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   auto m2 = pow (m,2);
   auto diag_layout = m_grid->get_2d_scalar_layout();
-  FieldIdentifier fid (m_kind + name(), diag_layout, kg/m2, m_grid->name());
-  add_output(Field(fid));
-  output().allocate_view();
+  add_output(m_kind + name(), diag_layout, kg/m2);
 }
 
 void WaterPath::compute_impl()
@@ -53,7 +51,7 @@ void WaterPath::compute_impl()
 
   constexpr Real g = PC::gravit.value;
 
-  const auto wp     = output().get_view<Real*>();
+  const auto wp     = get().get_view<Real*>();
   const auto q      = m_fields_in.at(m_qname).get_view<const Real**>();
   const auto rho    = m_fields_in.at("pseudo_density").get_view<const Real**>();
 

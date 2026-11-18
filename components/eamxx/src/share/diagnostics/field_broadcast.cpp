@@ -39,31 +39,31 @@ void FieldBroadcast::initialize_impl ()
   // NOTE: most diags ASSUME `get_view` works, but for a broadcasted field it does NOT work.
   //       Hence, we must deep_copy at run time. If we ever make other diags check whether
   //       get_view or get_strided_view can be used (or if we switch to ALWAYS strided view)
-  //       we can change output() to be the same as m_broadcasted
+  //       we can change get() to be the same as m_broadcasted
   FieldIdentifier d_fid(m_name + "_broadcast_to_" + m_tgt_name, tl, fid.get_units(),
                         fid.get_grid_name(), fid.data_type());
-  add_output(Field(d_fid,true));
+  add_output(d_fid);
   if (f.has_valid_mask()) {
-    output().create_valid_mask();
-    output().get_header().set_may_be_filled(true);
+    get().create_valid_mask();
+    get().get_header().set_may_be_filled(true);
   }
 }
 
 void FieldBroadcast::compute_impl ()
 {
-  // See comment above: remove when output() aliases m_broadcasted
+  // See comment above: remove when get() aliases m_broadcasted
   if (m_broadcasted.has_valid_mask()) {
     const auto& mask = m_broadcasted.get_valid_mask();
-    output().get_valid_mask().deep_copy(mask);
-    output().deep_copy(m_broadcasted,mask);
+    get().get_valid_mask().deep_copy(mask);
+    get().deep_copy(m_broadcasted,mask);
     // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-    if (output().data_type()==DataType::IntType) {
-      output().deep_copy(constants::fill_value<int>,mask,true);
+    if (get().data_type()==DataType::IntType) {
+      get().deep_copy(constants::fill_value<int>,mask,true);
     } else {
-      output().deep_copy(constants::fill_value<Real>,mask,true);
+      get().deep_copy(constants::fill_value<Real>,mask,true);
     }
   } else {
-    output().deep_copy(m_broadcasted);
+    get().deep_copy(m_broadcasted);
   }
 }
 

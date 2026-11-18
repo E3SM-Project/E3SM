@@ -68,9 +68,9 @@ TEST_CASE("create_diag")
       REQUIRE (std::dynamic_pointer_cast<NumberPath>(d)!=nullptr);
       const auto& outs = d->get_outputs();
       REQUIRE (outs.size()==3);
-      REQUIRE (outs[0].name()=="LiqNumberPath");
-      REQUIRE (outs[1].name()=="IceNumberPath");
-      REQUIRE (outs[2].name()=="RainNumberPath");
+      for (const std::string o : {"LiqNumberPath","IceNumberPath","RainNumberPath"}) {
+        REQUIRE (outs.count(o)==1);
+      }
     }
   }
 

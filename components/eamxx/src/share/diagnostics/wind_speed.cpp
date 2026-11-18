@@ -18,8 +18,7 @@ WindSpeed (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_field_in_names.push_back("horiz_winds");
 
   FieldIdentifier fid (name(), scalar3d, m/s, grid_name);
-  add_output(Field(fid));
-  output().allocate_view();
+  add_output(fid);
 }
 
 void WindSpeed::compute_impl()
@@ -28,7 +27,7 @@ void WindSpeed::compute_impl()
   using MDRange = Kokkos::MDRangePolicy<typename KT::ExeSpace,Kokkos::Rank<2>>;
 
   const auto uv = m_fields_in.at("horiz_winds").get_view<const Real***>();
-  const auto ws = output().get_view<Real**>();
+  const auto ws = get().get_view<Real**>();
 
   const int ncols = m_grid->get_num_local_dofs();
   const int nlevs = m_grid->get_num_vertical_levels();

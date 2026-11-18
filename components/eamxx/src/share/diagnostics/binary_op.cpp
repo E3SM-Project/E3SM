@@ -276,17 +276,17 @@ void BinaryOp::initialize_impl()
   auto gn = m_params.get<std::string>("grid_name");
   auto diag_name = m_arg1_name + "_" + m_binary_op_str + "_" + m_arg2_name;
   FieldIdentifier d_fid(diag_name, dl, diag_units, gn);
-  add_output(Field(d_fid,true));
+  add_output(d_fid);
 
   if (not m_arg1_is_field and not m_arg2_is_field) {
     // We can pre-compute the diag now
-    apply_binary_op(output(), m_arg1_value, m_arg2_value, m_binary_op_code);
+    apply_binary_op(get(), m_arg1_value, m_arg2_value, m_binary_op_code);
   } else {
     m_arg1_has_mask = m_arg1_is_field and m_fields_in.at(m_arg1_name).has_valid_mask();
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
     if (m_arg1_has_mask or m_arg2_has_mask) {
-      output().create_valid_mask();
-      output().get_header().set_may_be_filled(true);
+      get().create_valid_mask();
+      get().get_header().set_may_be_filled(true);
     }
   }
 }
@@ -295,31 +295,31 @@ void BinaryOp::compute_impl()
 {
   // First, if one (or both) the args are masked, compute the diag mask
   if (m_arg1_has_mask) {
-    output().get_valid_mask().deep_copy(m_fields_in.at(m_arg1_name).get_valid_mask());
+    get().get_valid_mask().deep_copy(m_fields_in.at(m_arg1_name).get_valid_mask());
     if (m_arg2_has_mask)
-      output().get_valid_mask().scale(m_fields_in.at(m_arg2_name).get_valid_mask());
+      get().get_valid_mask().scale(m_fields_in.at(m_arg2_name).get_valid_mask());
   } else if (m_arg2_has_mask) {
-    output().get_valid_mask().deep_copy(m_fields_in.at(m_arg2_name).get_valid_mask());
+    get().get_valid_mask().deep_copy(m_fields_in.at(m_arg2_name).get_valid_mask());
   }
 
   // Note the case where m_arg1_is_field=m_arg2_is_field=false was handled in the initialize method
   if (m_arg1_is_field and m_arg2_is_field) {
     const auto& f1 = m_fields_in.at(m_arg1_name);
     const auto& f2 = m_fields_in.at(m_arg2_name);
-    apply_binary_op(output(), f1, f2, m_binary_op_code);
+    apply_binary_op(get(), f1, f2, m_binary_op_code);
   } else if (m_arg1_is_field) {
     const auto& f1 = m_fields_in.at(m_arg1_name);
-    apply_binary_op(output(), f1, m_arg2_value, m_binary_op_code);
+    apply_binary_op(get(), f1, m_arg2_value, m_binary_op_code);
   } else if (m_arg2_is_field) {
     // We can do scale/scale_inv for * and /, but for + and - we must deep copy arg2 first
     const auto& f2 = m_fields_in.at(m_arg2_name);
-    apply_binary_op(output(), m_arg1_value, f2, m_binary_op_code);
+    apply_binary_op(get(), m_arg1_value, f2, m_binary_op_code);
   }
 
   // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid
-  if (output().has_valid_mask()) {
+  if (get().has_valid_mask()) {
     constexpr auto fv = constants::fill_value<Real>;
-    output().deep_copy(fv,output().get_valid_mask(),true);
+    get().deep_copy(fv,get().get_valid_mask(),true);
   }
 }
 

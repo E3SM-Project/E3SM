@@ -59,16 +59,24 @@ WaterPath (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_field_in_names.push_back("pseudo_density");
   m_field_in_names.push_back(m_qname);
 
-  FieldIdentifier fid (m_kind + name(), m_grid->get_2d_scalar_layout(), kg/m2, m_grid->name());
-  add_output(Field(fid));
-  output().allocate_view();
+  add_output(m_kind + name(), m_grid->get_2d_scalar_layout(), kg/m2);
 }
 ```
 
-`output()` is the declared field itself, not a copy, so it can be allocated,
-or given a mask, after `add_output`; it must be allocated by the time
-`initialize_impl` returns. `compute_impl` then reads the inputs from
-`m_fields_in` and writes into `output()`. Customers get the output with `get()`.
+`add_output` comes in three forms:
+
+- `add_output(name, layout, units, data_type)` creates and allocates the field
+  on the diagnostic grid (units default to `none`, the data type to `Real`);
+- `add_output(fid)` does the same from a `FieldIdentifier`;
+- `add_output(field)` takes a field built by the diagnostic (e.g., an alias of
+  an input, or a field whose allocation properties must be set before it is
+  allocated); it must be allocated by the time `initialize_impl` returns.
+
+Each returns a reference to the stored output, which stays valid, so the diag
+may give it a mask, or allocate it, right away. `compute_impl` reads the inputs
+from `m_fields_in` and writes into `get()`, which customers use too. A `Field`
+is a handle, so the copy that `get()` returns shares data, header and mask with
+the output.
 
 A customer may also set the parameter `output_field_name`, in which case
 `initialize` renames the output to that name (e.g., the dexpr lowering names
@@ -92,11 +100,7 @@ NumberPath (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_field_in_names = {"pseudo_density","qc","nc","qi","ni","qr","nr"};
 
   auto create = [&](const std::string& kind) {
-    FieldIdentifier fid(kind + name(), m_grid->get_2d_scalar_layout(), kg/(kg*m2), m_grid->name());
-    Field f(fid);
-    f.allocate_view();
-    add_output(f);
-    return f;
+    return add_output(kind + name(), m_grid->get_2d_scalar_layout(), kg/(kg*m2));
   };
   m_liq  = create("Liq");
   m_ice  = create("Ice");
@@ -106,15 +110,15 @@ NumberPath (const ekat::Comm& comm, const ekat::ParameterList& params,
 
 The rules for such a diagnostic are:
 
-- all outputs must be declared in the constructor: an output stream needs all
-  output names right after construction, to share one instance among requests
-  of any of them (see below);
+- all outputs must be declared in the constructor: an output stream stores a
+  new diagnostic under all its output names right after construction, before
+  it can initialize it (initialization waits until the inputs exist), so that
+  a request of another output finds the same instance (see below);
 - each output must be on the diagnostic grid, have a name that no other output
   has (case insensitive), and be allocated by the end of `initialize_impl`;
-- `output()` errors out: keep a handle to each output for `compute_impl`, as
-  `NumberPath` does;
-- `get()` errors out: customers use `get(name)` (case insensitive), or
-  `get_outputs()`, which lists the outputs in declaration order;
+- `get()` errors out: keep a handle to each output for `compute_impl`, as
+  `NumberPath` does; customers use `get(name)` (case insensitive), or
+  `get_outputs()`, a map from name to output;
 - the outputs cannot be renamed via `output_field_name`. Users who want an
   output under another name write `<name> := <output>`;
 - one `compute` evaluates all outputs, and stamps them all.
@@ -166,9 +170,8 @@ m_z.set_valid_mask(m_a.get_valid_mask());
 ```
 
 Masks with the same name must hold the same values, since the stream updates
-the count once, and the horizontal remapper remaps such masks once. Hence
-`initialize` requires that outputs whose masks have the same name share the
-mask and have the same layout. An output that may contain fill values must
+the count once, and the horizontal remapper remaps such masks once; sharing
+the mask, as above, is the way to ensure it. An output that may contain fill values must
 also call `set_may_be_filled(true)` on its header.
 
 ## Testing
@@ -187,5 +190,5 @@ also call `set_may_be_filled(true)` on its header.
 
 To merge several diagnostics that share their inputs into one with several
 outputs, as `NumberPath` is: declare all the outputs in the
-constructor, keep a handle to each for `compute_impl` (in place of `output()`),
+constructor, keep a handle to each for `compute_impl` (in place of `get()`),
 and add their names to `named_variants`.

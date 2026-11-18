@@ -43,7 +43,7 @@ class VertContract : public AbstractDiagnostic {
   // Weight field (dp/g, dz, or all-ones depending on weighting_method)
   Field m_weight;
 
-  // For avg mode: denominator scratch field (same layout as output()).
+  // For avg mode: denominator scratch field (same layout as get()).
   Field m_weight_sum;
 
   // Ones field with the same layout as the weight field (for "avg" only)
