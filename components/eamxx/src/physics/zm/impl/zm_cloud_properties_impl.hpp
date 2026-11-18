@@ -452,14 +452,19 @@ void Functions<S,D>::zm_cloud_properties(
   // =========================================================================
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, msg + 1, pver), [&] (const Int& k) {
     if (lambda_max > 0 && k >= cldtop_klev && k < jb) {
-      // Condensation = latent heat release implied by DSE flux divergence.
+      // Condensation = latent heat release implied by DSE flux divergence
+      cu(k) = ((mflx_up(k)*s_upd(k) - mflx_up(k+1)*s_upd(k+1))/dz(k)
+               - (entr_up(k) - detr_up(k))*s_mid(k))
+              / (latvap/cpair);
       // The dynamic detrainment leaves with s_mid (folded into the (E-D)*s_mid
       // term), while turbulent detrainment exports s_upd, so the difference
-      // detr_turb*(s_upd-s_mid) must also be supplied by condensation.
-      cu(k) = ((mflx_up(k)*s_upd(k) - mflx_up(k+1)*s_upd(k+1))/dz(k)
-               - (entr_up(k) - detr_up(k))*s_mid(k)
-               + detr_turb(k)*(s_upd(k) - s_mid(k)))
-              / (latvap/cpair);
+      // detr_turb*(s_upd-s_mid) must also be supplied by condensation. This is
+      // kept as a separate guarded update (rather than folded into the
+      // expression above) so that frac_turb_mix=0 stays BFB with compilers
+      // that contract the original expression into FMAs.
+      if (detr_turb(k) > 0) {
+        cu(k) += detr_turb(k)*(s_upd(k) - s_mid(k)) / (latvap/cpair);
+      }
       if (k == cldtop_klev) cu(k) = 0;                           // No condensation at cloud top
       cu(k) = Kokkos::max(Real(0), cu(k));           // Condensation must be non-negative
     }
