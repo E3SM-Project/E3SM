@@ -121,7 +121,7 @@ contains
        cp_sw     = real(SHR_CONST_CPSW, RKIND) ! specific heat salt water (J/kg/K)
        cp_air    = 1005.0_RKIND               ! heat capacity of air (J/kg/K)
        sound     = 1.5e2_RKIND                ! speed of sound (m/s)
-       vonkar    = 0.4_RKIND                  ! von Karman constant
+       vonkar    = real(SHR_CONST_KARMAN, RKIND) ! von Karman constant
        emissivity         = 1.0_RKIND         !
        stefan_boltzmann   = 5.670374419e-8_RKIND   !  W/m^2/K^4
        latent_heat_vapor_mks  = 2.5e6_RKIND   ! lat heat of vaporization (J/kg)
@@ -160,7 +160,6 @@ contains
        cp_air                 = SHR_CONST_CPDAIR        ! J/kg/K
        rho_air                = SHR_CONST_RHODAIR       ! kg/m^3
        rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
-       vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
