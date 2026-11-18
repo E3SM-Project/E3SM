@@ -3268,6 +3268,7 @@ contains
 
       character(len=strKIND), pointer   :: config_thermodynamics_type
       character(len=strKIND), pointer   :: config_column_physics_type
+      logical, pointer :: config_use_mushy_zero_salinity
 
 !EOP
 !BOC
@@ -3284,6 +3285,7 @@ contains
 
    call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
+   call MPAS_pool_get_config(domain % configs, "config_use_mushy_zero_salinity", config_use_mushy_zero_salinity)
 
    if (freezingPotential > 0.0_RKIND) then
 
@@ -3296,7 +3298,14 @@ contains
 
 !         if (trim(config_column_physics_type) == "icepack") then
             Ti = icepack_liquidus_temperature(Si0new/seaiceFrazilIcePorosity)
-            qi0new = icepack_enthalpy_mush(Ti, Si0new)
+   ! Apply the zero-salinity mushy closure by preserving the configured
+   ! frazil liquid fraction on the freshwater melting plateau.
+            if (config_use_mushy_zero_salinity .and. seaSurfaceSalinity == 0.0_RKIND) then
+               qi0new = -(1.0_RKIND - seaiceFrazilIcePorosity) * &
+                        seaiceDensityIce * seaiceLatentHeatMelting
+            else
+               qi0new = icepack_enthalpy_mush(Ti, Si0new)
+            endif
 !         endif ! config_column_physics_type
 
       else

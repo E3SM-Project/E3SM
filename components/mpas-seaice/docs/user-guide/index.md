@@ -62,10 +62,10 @@ from enthalpy when the bulk salinity of the ice is exactly zero, where the
 mushy liquidus relation is undefined; positive-salinity ice is unaffected.  The
 option requires mushy thermodynamics (``config_thermodynamics_type =
 'mushy'``) and the model will abort during initialization if it is enabled
-with any other thermodynamics type.  See the
-[Technical Guide](../tech-guide/index.md#thermodynamics) and
-[E3SM-Project/Icepack pull request #56](https://github.com/E3SM-Project/Icepack/pull/56)
-for details.
+with any other thermodynamics type.  With
+``config_frazil_coupling_type = 'external'``, the frazil-mass correction also
+honors the zero-salinity mushy closure: at exactly zero sea surface salinity,
+it retains the configured initial liquid fraction of frazil.
 
 ## Configuring Model Input and Output
 
