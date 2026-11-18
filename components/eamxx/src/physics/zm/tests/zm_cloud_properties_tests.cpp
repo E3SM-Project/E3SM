@@ -282,7 +282,7 @@ struct UnitWrap::UnitTest<D>::TestZmCloudProperties : public UnitWrap::UnitTest<
     zm_cloud_properties(mix);
 
     const Int jb   = mix.jb[0];
-    const Int jt   = mix.jt[0];
+    const Int jt   = mix.cldtop_klev[0];
 
     // The plume must survive at least a few levels above cloud base,
     // otherwise this check would be vacuous.
