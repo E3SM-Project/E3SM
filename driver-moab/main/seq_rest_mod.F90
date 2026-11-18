@@ -75,6 +75,8 @@ module seq_rest_mod
 
   use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields
+   use seq_flds_mod, only: seq_flds_w2x_fields
+   use seq_comm_mct, only: mbwxid
 
   use prep_rof_mod, only: prep_rof_get_o2racc_om ! return a pointer to a moab matrix
 
@@ -125,6 +127,7 @@ module seq_rest_mod
   logical     :: rofocn_prognostic      ! .true.  => rof comp expects ocn input
   logical     :: glc_present            ! .true.  => glc is present
   logical     :: wav_present            ! .true.  => wav is present
+   integer     :: wav_nx, wav_ny         ! full WW3 grid extent, including non-sea points
   logical     :: esp_present            ! .true.  => esp is present
   logical     :: iac_present            ! .true.  => iac is present
 
@@ -220,6 +223,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
          ocn_present=ocn_present,        &
          glc_present=glc_present,        &
          wav_present=wav_present,        &
+         wav_nx=wav_nx, wav_ny=wav_ny,    &
          esp_present=esp_present,        &
          iac_present=iac_present,        &
          atm_prognostic=atm_prognostic,      &
@@ -365,11 +369,10 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 !           call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
 !           call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx')
 !        endif
-!        if (wav_present) then
-!           gsmap => component_get_gsmap_cx(wav(1))
-!           call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
-!           call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
-!        endif
+   if (wav_present .and. len_trim(seq_flds_w2x_fields) > 0) then
+      call seq_io_read(moab_rest_file, mbwxid, 'w2x_wx', trim(seq_flds_w2x_fields), &
+       nx=wav_nx*wav_ny)
+   endif
 !        if (iac_present) then
 !           gsmap => component_get_gsmap_cx(iac(1))
 !           call seq_io_read(rest_file, gsmap, fractions_zx, 'fractions_zx')
@@ -509,6 +512,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
          ocn_present=ocn_present,        &
          glc_present=glc_present,        &
          wav_present=wav_present,        &
+         wav_nx=wav_nx, wav_ny=wav_ny,    &
          esp_present=esp_present,        &
          iac_present=iac_present,        &
          atm_prognostic=atm_prognostic,      &
@@ -789,13 +793,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 !              call seq_io_write(rest_file, glc, 'c2x', 'g2x_gx', &
 !                   whead=whead, wdata=wdata)
 !           endif
-!           if (wav_present) then
-!              gsmap  => component_get_gsmap_cx(wav(1))
-!              call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, wav, 'c2x', 'w2x_wx', &
-!                   whead=whead, wdata=wdata)
-!           endif
+    if (wav_present .and. len_trim(seq_flds_w2x_fields) > 0) then
+       ! GLOBAL_ID = ix + (iy-1)*nx; sea-point IDs are not necessarily
+       ! contiguous. Size the file by the full grid, not the sea count.
+       call seq_io_write(rest_file, mbwxid, 'w2x_wx', trim(seq_flds_w2x_fields), &
+       nx=wav_nx*wav_ny, ny=1, whead=whead, wdata=wdata)
+    endif
 !           if (iac_present) then
 !              gsmap  => component_get_gsmap_cx(iac(1))
 !              call seq_io_write(rest_file, gsmap, fractions_zx, 'fractions_zx', &

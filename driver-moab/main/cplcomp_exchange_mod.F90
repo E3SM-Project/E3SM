@@ -16,7 +16,10 @@ module cplcomp_exchange_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2l_fields !
   use seq_flds_mod, only: seq_flds_r2x_fields, seq_flds_x2r_fields, seq_flds_r2x_fluxes
+   use seq_flds_mod, only: seq_flds_w2x_fields, seq_flds_x2w_fields
+   use seq_comm_mct, only : mwwid, mbwxid  ! WW3 component and coupler MOAB apps
   use seq_comm_mct, only: cplid, logunit
+   use seq_comm_mct, only: num_inst_wav, num_inst_atm, num_inst_ocn, num_inst_ice
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use cplcomp_moab_helpers_mod, only: moab_register_app, moab_send_mesh, moab_receive_mesh, &
      moab_load_mesh, moab_free_sender_buffers, moab_define_global_id_tag, moab_define_double_tag
@@ -60,6 +63,7 @@ module cplcomp_exchange_mod
     private :: cplcomp_moab_init_lnd
       private :: cplcomp_moab_init_ice
    private :: cplcomp_moab_init_rof
+      private :: cplcomp_moab_init_wav
     private :: cplcomp_moab_resolve_comm_types
     private :: cplcomp_moab_compute_comm_graph
     private :: cplcomp_moab_atm_phys_cid
@@ -182,6 +186,7 @@ subroutine  copy_aream_from_area(mbappid)
             arrSize  = nvert(1) ! vertices (point cloud)
             ent_type = 0 ! vertices
          endif
+         if (arrSize == 0) return
          allocate(tagValues(arrSize))
          ierr  = iMOAB_GetDoubleTagStorage( mbappid, 'area'//C_NULL_CHAR, arrsize , ent_type, tagValues )
          ierr  = iMOAB_SetDoubleTagStorage( mbappid, 'aream'//C_NULL_CHAR, arrsize , ent_type, tagValues )
@@ -1023,7 +1028,7 @@ subroutine  copy_aream_from_area(mbappid)
 
       character(len=*),parameter :: subname = "(cplcomp_moab_Init) "
 
-      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID
+      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID, maxMW
       integer                  :: partMethod
       logical                  :: dead_comps
 
@@ -1035,6 +1040,15 @@ subroutine  copy_aream_from_area(mbappid)
 
       partMethod = 2 ! RCB partitioning (requires MOAB_HAVE_ZOLTAN)
 
+      ! Wave MOAB applications and field tags are currently single-instance.
+      ! Reject ensembles before registering/migrating meshes; sharing these
+      ! scalar handles would overwrite one instance with another's fields.
+      if (comp%oneletterid == 'w') then
+         if (num_inst_wav /= 1 .or. num_inst_atm /= 1 .or. num_inst_ocn /= 1 .or. num_inst_ice /= 1) then
+            call shr_sys_abort(subname//' Wave MOAB coupling requires one WAV/ATM/OCN/ICE instance')
+         endif
+      endif
+
       call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
       call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
       call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
@@ -1044,6 +1058,11 @@ subroutine  copy_aream_from_area(mbappid)
       call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
       call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
       call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.)
+      call shr_mpi_max(mwwid, maxMW, mpicom_join, all=.true.)
+
+      if (comp%oneletterid == 'w' .and. maxMW == -1) then
+         call shr_sys_abort(subname//' WW3 is active but its MOAB component mesh is not registered')
+      endif
 
       if (seq_comm_iamroot(CPLID) ) then
          write(logunit, *) "MOAB coupling for ", comp%oneletterid,' ', comp%ntype
@@ -1078,7 +1097,124 @@ subroutine  copy_aream_from_area(mbappid)
          call cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
       endif ! end for rof coupler set up
 
+!!!!!!!!!!!!!!!! WAVE
+      if (comp%oneletterid == 'w' .and. maxMW /= -1) then
+         call cplcomp_moab_init_wav(comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, &
+               subname)
+      endif
+
    end subroutine cplcomp_moab_Init
+
+   subroutine cplcomp_moab_init_wav(comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, subname)
+      use iMOAB, only: iMOAB_GetMeshInfo
+      use iMOAB, only: iMOAB_SetDoubleTagStorage
+      use iso_c_binding, only: C_NULL_CHAR
+      type(component_type), intent(inout) :: comp
+      integer, intent(in) :: id_old, id_join, mpicom_old, mpicom_new, mpicom_join
+      character(len=*), intent(in) :: subname
+      integer :: ierr, mpigrp_cplid, mpigrp_old
+      integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      integer :: nfields
+      integer :: min_points, max_points
+      integer, parameter :: wave_partition_method = 0
+      logical :: root_cpl, root_comp
+      real(R8), allocatable :: zero_fields(:,:)
+      type(mct_list) :: field_list
+      character(len=32) :: appname
+
+      call seq_comm_getinfo(CPLID, mpigrp=mpigrp_cplid)
+      call seq_comm_getinfo(CPLID, iamroot=root_cpl)
+      call seq_comm_getinfo(id_old, mpigrp=mpigrp_old)
+      root_comp = comp%iamin_compid .and. comp%iamroot_compid
+
+      call wave_init_stage('enter; initial mesh transfer uses partition method 0')
+
+      if (mpicom_old /= MPI_COMM_NULL) then
+         call wave_init_stage('inspect component mesh: begin')
+         ierr = iMOAB_GetMeshInfo(mwwid, nvert, nvise, nbl, nsurf, nvisBC)
+         if (ierr /= 0) call shr_sys_abort(subname//' cannot inspect WW3 component mesh')
+         comp%mbApCCid = mwwid
+         comp%mbGridType = 0
+         comp%mblsize = nvert(1)
+         call wave_init_stage('inspect component mesh: complete; reduce sender point counts: begin')
+         call MPI_Allreduce(nvert(1), min_points, 1, MPI_INTEGER, MPI_MIN, mpicom_old, ierr)
+         if (ierr /= MPI_SUCCESS) call shr_sys_abort(subname//' cannot reduce Wave minimum point count')
+         call MPI_Allreduce(nvert(1), max_points, 1, MPI_INTEGER, MPI_MAX, mpicom_old, ierr)
+         if (ierr /= MPI_SUCCESS) call shr_sys_abort(subname//' cannot reduce Wave maximum point count')
+         if (root_comp) then
+            write(logunit,*) '(Wave MOAB init) component points per rank min/max:', min_points, max_points
+            call shr_sys_flush(logunit)
+         endif
+         ! Geometric repartitioning can skip empty sender ranks before its
+         ! collectives. The count-based transfer includes every sender rank
+         ! and is sufficient for a point cloud with precomputed weight files.
+         call wave_init_stage('send component mesh: begin')
+         call moab_send_mesh(mwwid, mpicom_join, mpigrp_cplid, id_join, wave_partition_method, subname)
+         call wave_init_stage('send component mesh: complete')
+      endif
+
+      if (mpicom_new /= MPI_COMM_NULL) then
+         appname = 'COUPLE_WAV'
+         call wave_init_stage('register coupler mesh: begin')
+         call moab_register_app(appname, mpicom_new, id_join, mbwxid, subname)
+         call wave_init_stage('register coupler mesh: complete; receive mesh: begin')
+         call moab_receive_mesh(mbwxid, mpicom_join, mpigrp_old, id_old, subname)
+         call wave_init_stage('receive mesh: complete; initialize tags: begin')
+             if (len_trim(seq_flds_x2w_fields) > 0) &
+                call moab_define_double_tag(mbwxid, trim(seq_flds_x2w_fields), subname)
+             if (len_trim(seq_flds_w2x_fields) > 0) &
+                call moab_define_double_tag(mbwxid, trim(seq_flds_w2x_fields), subname)
+         call moab_define_double_tag(mbwxid, trim(seq_flds_dom_fields)//':norm8wt:drv2mdl:mdl2drv', subname)
+         ierr = iMOAB_GetMeshInfo(mbwxid, nvert, nvise, nbl, nsurf, nvisBC)
+         if (ierr /= 0) call shr_sys_abort(subname//' cannot inspect migrated Wave mesh')
+         call mct_list_init(field_list, trim(seq_flds_x2w_fields))
+         nfields = mct_list_nitem(field_list)
+         call mct_list_clean(field_list)
+         if (nfields > 0 .and. nvert(1) > 0) then
+            allocate(zero_fields(nvert(1),nfields))
+            zero_fields = 0.0_R8
+            ierr = iMOAB_SetDoubleTagStorage(mbwxid, trim(seq_flds_x2w_fields)//C_NULL_CHAR, &
+                 nvert(1)*nfields, 0, zero_fields)
+            if (ierr /= 0) call shr_sys_abort(subname//' cannot initialize Wave input tags')
+            deallocate(zero_fields)
+         endif
+         call mct_list_init(field_list, trim(seq_flds_w2x_fields))
+         nfields = mct_list_nitem(field_list)
+         call mct_list_clean(field_list)
+         if (nfields > 0 .and. nvert(1) > 0) then
+            allocate(zero_fields(nvert(1),nfields))
+            zero_fields = 0.0_R8
+            ierr = iMOAB_SetDoubleTagStorage(mbwxid, trim(seq_flds_w2x_fields)//C_NULL_CHAR, &
+                 nvert(1)*nfields, 0, zero_fields)
+            if (ierr /= 0) call shr_sys_abort(subname//' cannot initialize Wave output tags')
+            deallocate(zero_fields)
+         endif
+         call wave_init_stage('initialize tags: complete')
+      endif
+
+      call wave_init_stage('release mesh sender buffers: begin')
+      if (mwwid >= 0) call moab_free_sender_buffers(mwwid, id_join, subname)
+      call wave_init_stage('release mesh sender buffers: complete; build component/coupler graph: begin')
+
+      call cplcomp_moab_compute_comm_graph(mwwid, mbwxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+           .false., .false., id_old, id_join, subname, 'wave model')
+      call wave_init_stage('build component/coupler graph: complete; exchange domain tags: begin')
+      call moab_exchange_domain_tags(comp, mwwid, mbwxid, 'lat:lon:area:frac:mask', 'domw')
+      call wave_init_stage('exchange domain tags: complete; Wave mesh initialization finished')
+
+   contains
+
+      subroutine wave_init_stage(stage)
+         character(len=*), intent(in) :: stage
+         if (root_cpl .or. root_comp) then
+            write(logunit,*) '(Wave MOAB init) ', trim(stage), &
+                 ' component app=', mwwid, ' coupler app=', mbwxid, &
+                 ' contexts=', id_old, id_join
+            call shr_sys_flush(logunit)
+         endif
+      end subroutine wave_init_stage
+
+   end subroutine cplcomp_moab_init_wav
 
 
   !===============================================================================
@@ -1186,7 +1322,7 @@ subroutine  copy_aream_from_area(mbappid)
       end if
     end if
 
-    if (comp%iamin_cplcompid) then
+   if (comp%iamin_cplcompid .and. len_trim(fields) > 0) then
        if (present(timer_map_exch)) then
           call t_drvstartf (trim(timer_map_exch), barrier=comp%mpicom_cplcompid)
        end if

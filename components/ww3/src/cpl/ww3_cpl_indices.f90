@@ -66,27 +66,36 @@ contains
     call mct_aVect_init(x2w, rList=seq_flds_x2w_fields, lsize=1)
     call mct_aVect_init(w2x, rList=seq_flds_w2x_fields, lsize=1)
 
-    index_x2w_Sa_u       = mct_avect_indexra(x2w,'Sa_u')       ! Zonal wind at lowest level (this should probably be at 10m)
-    index_x2w_Sa_v       = mct_avect_indexra(x2w,'Sa_v')       ! Meridional wind at lowest level (see above)
-    index_x2w_Sa_tbot    = mct_avect_indexra(x2w,'Sa_tbot')    ! Temperature at lowest level
-    index_x2w_Si_ifrac   = mct_avect_indexra(x2w,'Si_ifrac')   ! Fractional sea ice coverage 
-    index_x2w_Si_ithick  = mct_avect_indexra(x2w,'Si_ithick')  ! Sea ice thickness
+      if (wav_atm_coup .ne. 'none') then
+       index_x2w_Sa_u       = mct_avect_indexra(x2w,'Sa_u')       ! Zonal wind at lowest level
+       index_x2w_Sa_v       = mct_avect_indexra(x2w,'Sa_v')       ! Meridional wind at lowest level
+      ! Reserved interface state; thermal stability feedback is not enabled.
+      index_x2w_Sa_tbot    = mct_avect_indexra(x2w,'Sa_tbot')
+    endif
+    if (wav_ice_coup .ne. 'none') then
+       index_x2w_Si_ifrac   = mct_avect_indexra(x2w,'Si_ifrac')   ! Fractional sea ice coverage
+       index_x2w_Si_ithick  = mct_avect_indexra(x2w,'Si_ithick')  ! Sea ice thickness
+    endif
     if (wav_ice_coup .eq. 'twoway') then
        index_x2w_Si_ifloe   = mct_avect_indexra(x2w,'Si_ifloe')   ! Sea ice floe size
     endif
-    index_x2w_So_t       = mct_avect_indexra(x2w,'So_t')       ! Sea surface temperature
-    index_x2w_So_u       = mct_avect_indexra(x2w,'So_u')       ! Zonal sea surface water velocity
-    index_x2w_So_v       = mct_avect_indexra(x2w,'So_v')       ! Meridional sea surface water velocity
-    index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Boundary layer depth
-    index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height 
+    if (wav_ocn_coup .ne. 'none') then
+      index_x2w_So_t       = mct_avect_indexra(x2w,'So_t')       ! Reserved thermal stability input
+       index_x2w_So_u       = mct_avect_indexra(x2w,'So_u')       ! Zonal sea surface water velocity
+       index_x2w_So_v       = mct_avect_indexra(x2w,'So_v')       ! Meridional sea surface water velocity
+      index_x2w_So_bldepth = mct_avect_indexra(x2w,'So_bldepth') ! Reserved; no active WW3 consumer
+       index_x2w_So_ssh     = mct_avect_indexra(x2w,'So_ssh')     ! Sea surface height
+    endif
 
     if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
        index_w2x_Sw_Charn     = mct_avect_indexra(w2x,'Sw_Charn') ! Charnock coeff accounting for the wave stress (Janssen 1989, 1991)
        index_w2x_Sw_Ustar     = mct_avect_indexra(w2x,'Sw_Ustar') ! Friction velocity
        index_w2x_Sw_Z0        = mct_avect_indexra(w2x,'Sw_Z0')    ! Roughness length
     endif
-    if (wav_ocn_coup .eq. 'twoway') then
+      if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
        index_w2x_Sw_Hs = mct_avect_indexra(w2x,'Sw_Hs') ! Significant wave height
+      endif
+      if (wav_ocn_coup .eq. 'twoway') then
        index_w2x_Sw_Fp = mct_avect_indexra(w2x,'Sw_Fp') ! Peak wave freqency  
        index_w2x_Sw_Dp = mct_avect_indexra(w2x,'Sw_Dp') ! Peak wave direction
        index_w2x_Faww_Tawx    = mct_avect_indexra(w2x,'Faww_Tawx')  ! Zonal Wave supported stress (Stress from atmosphere to waves)

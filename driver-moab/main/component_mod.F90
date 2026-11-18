@@ -618,9 +618,9 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
-         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
-         if (ierr .ne. 0) then
-           call shr_sys_abort(subname//' cannot get areas  ')
+             if (lsize > 0) then
+                  ierr = iMOAB_GetDoubleTagStorage(mbccid, tagname, arrsize, comp(1)%mbGridType, areas(1,1))
+                  if (ierr /= 0) call shr_sys_abort(subname//' cannot get areas')
          endif
          if (.not.samegrid) then  ! only correct if not monogrid (SCM case)
            ! now compute the factors
@@ -652,14 +652,18 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
            call shr_sys_abort(subname//' cannot define correction tags')
          endif
          arrsize = 2 * lsize
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors(1,1))
-         if (ierr .ne. 0) then
-           call shr_sys_abort(subname//' cannot set correction area factors  ')
+             if (lsize > 0) then
+                  ierr = iMOAB_SetDoubleTagStorage(mbccid, tagname, arrsize, comp(1)%mbGridType, factors(1,1))
+                  if (ierr /= 0) call shr_sys_abort(subname//' cannot set correction area factors')
          endif
 
 ! print the computed values for area factors
-         rmin1 = minval(factors(:,1))
-         rmax1 = maxval(factors(:,1))
+         rmin1 = huge(1.0_r8)
+         rmax1 = -huge(1.0_r8)
+         if (lsize > 0) then
+            rmin1 = minval(factors(:,1))
+            rmax1 = maxval(factors(:,1))
+         endif
          mpicom = comp(1)%mpicom_compid
          iamroot= comp(1)%iamroot_compid
          call shr_mpi_min(rmin1,rmin,mpicom)
@@ -667,8 +671,12 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          comment = 'areafact_'//trim(comp(1)%name)
          if (iamroot) write(logunit,F0R) trim(subname),' : min/max mdl2drv ',rmin,rmax,trim(comment)
 
-         rmin1 = minval(factors(:,2))
-         rmax1 = maxval(factors(:,2))
+         rmin1 = huge(1.0_r8)
+         rmax1 = -huge(1.0_r8)
+         if (lsize > 0) then
+            rmin1 = minval(factors(:,2))
+            rmax1 = maxval(factors(:,2))
+         endif
          call shr_mpi_min(rmin1,rmin,mpicom)
          call shr_mpi_max(rmax1,rmax,mpicom)
          if (iamroot) write(logunit,F0R) trim(subname),' : min/max drv2mdl ',rmin,rmax,trim(comment)
@@ -683,6 +691,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          call mct_list_clean(temp_list)
 
          lsize = comp(1)%mblsize
+         if (nfields > 0 .and. lsize > 0) then
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
@@ -704,14 +713,17 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
          if (ierr .ne. 0) then
             call shr_sys_abort(subname//' cannot set new flux values  ')
          endif
+         deallocate(vals)
+         endif
 
          deallocate(factors)
          deallocate(areas)
-         deallocate(vals)
 
       endif
       ! send area corrected data to coupler.
-      call component_exch_moab(comp(1), mbccid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='aftareacor')
+      if (len_trim(seq_flds_c2x_fields) > 0) then
+         call component_exch_moab(comp(1), mbccid, mbcxid, 'c2x', seq_flds_c2x_fields, context_exch='aftareacor')
+      endif
    endif
 
   end subroutine component_init_areacor_moab
@@ -1074,6 +1086,9 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
       real (kind=r8) , allocatable ::  factors(:)
       logical     :: lmspval        ! local mask spval
       character(*), parameter :: subname = '(factor_moab_comp)'
+
+      ! Wave forcing has states only; some coupling modes also export no fluxes.
+      if (len_trim(seq_flds_fluxes) == 0 .or. comp%mblsize == 0) return
 
       lmspval = .false.
       if (present(mask_spval)) then

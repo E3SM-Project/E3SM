@@ -234,7 +234,8 @@ module seq_comm_mct
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
   integer, public :: mbintxia ! iMOAB id for intersection mesh between ice and atmosphere
-  integer, public :: mbwxid   ! iMOAB id for wave mesh on coupler pes (aliased to existing migrated mesh)
+   integer, public :: mbwxid   ! iMOAB id for WW3 mesh migrated to coupler pes
+   integer, public :: mwwid    ! iMOAB id for WW3 component mesh
   integer, public :: mbintxaw ! iMOAB id for intersection mesh between atm and wave
   integer, public :: mbintxwa ! iMOAB id for intersection mesh between wave and atm
   integer, public :: mbintxow ! iMOAB id for intersection mesh between ocean and wave
@@ -696,6 +697,7 @@ contains
     mbixid = -1   ! iMOAB for sea-ice migrated to coupler
     mbintxia = -1 ! iMOAB id for ice intx with atm on coupler pes
     mbwxid = -1   ! iMOAB id for wave mesh on coupler pes
+    mwwid = -1    ! iMOAB id for WW3 component mesh
     mbintxaw = -1 ! iMOAB id for intx mesh between atm and wave
     mbintxwa = -1 ! iMOAB id for intx mesh between wave and atm
     mbintxow = -1 ! iMOAB id for intx mesh between ocean and wave

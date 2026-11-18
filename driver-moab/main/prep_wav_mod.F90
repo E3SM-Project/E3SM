@@ -1,9 +1,12 @@
 module prep_wav_mod
+   use cplcomp_moab_helpers_mod, only: moab_mesh_discretization
 
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
-  use shr_kind_mod    , only: cl => SHR_KIND_CL
+   use shr_kind_mod    , only: cl => SHR_KIND_CL
+   use shr_kind_mod    , only: CXX => SHR_KIND_CXX
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
+  use shr_string_mod  , only: shr_string_listIntersect, shr_string_listGetIndexF
   use seq_comm_mct    , only: num_inst_atm, num_inst_ice, num_inst_ocn
   use seq_comm_mct    , only: num_inst_wav, num_inst_frc
   use seq_comm_mct    , only: CPLID, WAVID, logunit
@@ -52,6 +55,11 @@ module prep_wav_mod
   type(seq_map), pointer :: mapper_so2w
   type(seq_map), pointer :: mapper_si2w
 
+  ! atm/ocn/ice exports WW3 imports, as in the MCT x2w merge; set in prep_wav_init
+  character(CXX) :: a2w_states_fldlist = ''
+  character(CXX) :: o2w_states_fldlist = ''
+  character(CXX) :: i2w_states_fldlist = ''
+
   ! attribute vectors
   type(mct_aVect), pointer :: o2x_wx(:) ! Ocn export, wav grid, cpl pes
   type(mct_aVect), pointer :: i2x_wx(:) ! Ice export, wav grid, cpl pes
@@ -70,7 +78,7 @@ contains
 
   subroutine prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
-      use iMOAB, only: iMOAB_RegisterApplication
+      use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ComputeCommGraph
 
     !---------------------------------------------------------------
     ! Description
@@ -97,8 +105,8 @@ contains
     character(CL)               :: ice_gnam      ! ice grid
     character(CL)               :: wav_gnam      ! wav grid
     type(mct_avect) , pointer   :: w2x_wx
-    integer                     :: ierr, idintx
-    integer                     :: type1, arearead
+   integer                     :: ierr, idintx
+   integer                     :: type1, arearead, src_type, mpigrp_CPLID
     character*32                :: appname
     character*32                :: wgtIdSa2w, wgtIdSo2w, wgtIdSi2w
     character(*)    , parameter :: subname = '(prep_wav_init)'
@@ -124,6 +132,7 @@ contains
     if (wav_present) then
 
        call seq_comm_getData(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+      call seq_comm_getdata(CPLID, mpigrp=mpigrp_CPLID)
 
        w2x_wx => component_get_c2x_cx(wav(1))
        lsize_w = mct_aVect_lsize(w2x_wx)
@@ -151,12 +160,13 @@ contains
        if (trim(atm_gnam) /= trim(wav_gnam)) samegrid_aw = .false.
        if (trim(ice_gnam) /= trim(wav_gnam)) samegrid_iw = .false.
 
-       if (atm_c2_wav) then
+      if (atm_c2_wav .and. wav_atm_coup /= 'none') then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2w'
           end if
           call seq_map_mapinit(mapper_Sa2w, mpicom_CPLID)
+          call shr_string_listIntersect(seq_flds_a2x_fields, seq_flds_x2w_fields, a2w_states_fldlist)
           if ( (mbaxid .ge. 0) .and. (mbwxid .ge. 0) ) then
              mapper_Sa2w%src_mbid = mbaxid
              mapper_Sa2w%tgt_mbid = mbwxid
@@ -167,6 +177,10 @@ contains
                 mapper_Sa2w%rearrange_only = .true.
                 mapper_Sa2w%strategy = "rearrange"
                 mapper_Sa2w%intx_context = wav(1)%cplcompid
+                src_type = moab_mesh_discretization(mbaxid)
+                ierr = iMOAB_ComputeCommGraph(mbaxid, mbwxid, mpicom_CPLID, &
+                     mpigrp_CPLID, mpigrp_CPLID, src_type, 2, atm(1)%cplcompid, wav(1)%cplcompid)
+                if (ierr /= 0) call shr_sys_abort(subname//' cannot create same-grid ATM-WAV graph')
              else
                 if (mbintxaw < 0) then
                    appname = "ATM_WAV_COU"
@@ -183,17 +197,21 @@ contains
                 arearead = 0
                 call moab_map_init_rcfile(mapper_Sa2w, type1, &
                      'seq_maps.rc', 'atm2wav_smapname:', 'atm2wav_smaptype:', samegrid_aw, &
-                     arearead, wgtIdSa2w, 'mapper_Sa2w MOAB initialization', esmf_map_flag)
+                   arearead, wgtIdSa2w, 'mapper_Sa2w MOAB initialization', esmf_map_flag, &
+                   source_discretization_type=moab_mesh_discretization(mbaxid), &
+                   target_discretization_type=2)
+                   call seq_map_setup_coverage(mapper_Sa2w)
              endif
           endif
        endif
        call shr_sys_flush(logunit)
-       if (ocn_c2_wav) then
+      if (ocn_c2_wav .and. wav_ocn_coup /= 'none') then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_So2w'
           end if
           call seq_map_mapinit(mapper_So2w, mpicom_CPLID)
+          call shr_string_listIntersect(seq_flds_o2x_fields, seq_flds_x2w_fields, o2w_states_fldlist)
           if ( (mboxid .ge. 0) .and. (mbwxid .ge. 0) ) then
              mapper_So2w%src_mbid = mboxid
              mapper_So2w%tgt_mbid = mbwxid
@@ -204,6 +222,10 @@ contains
                 mapper_So2w%rearrange_only = .true.
                 mapper_So2w%strategy = "rearrange"
                 mapper_So2w%intx_context = wav(1)%cplcompid
+                src_type = moab_mesh_discretization(mboxid)
+                ierr = iMOAB_ComputeCommGraph(mboxid, mbwxid, mpicom_CPLID, &
+                     mpigrp_CPLID, mpigrp_CPLID, src_type, 2, ocn(1)%cplcompid, wav(1)%cplcompid)
+                if (ierr /= 0) call shr_sys_abort(subname//' cannot create same-grid OCN-WAV graph')
              else
                 if (mbintxow < 0) then
                    appname = "OCN_WAV_COU"
@@ -220,17 +242,26 @@ contains
                 arearead = 0
                 call moab_map_init_rcfile(mapper_So2w, type1, &
                      'seq_maps.rc', 'ocn2wav_smapname:', 'ocn2wav_smaptype:', samegrid_ow, &
-                     arearead, wgtIdSo2w, 'mapper_So2w MOAB initialization', esmf_map_flag)
+                   arearead, wgtIdSo2w, 'mapper_So2w MOAB initialization', esmf_map_flag, &
+                   source_discretization_type=moab_mesh_discretization(mboxid), &
+                   target_discretization_type=2)
+                   call seq_map_setup_coverage(mapper_So2w)
              endif
           endif
        endif
        call shr_sys_flush(logunit)  !TODO ??? is this in Tony's code
-       if (ice_c2_wav) then
+      if (ice_c2_wav .and. wav_ice_coup /= 'none') then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Si2w'
           end if
           call seq_map_mapinit(mapper_Si2w, mpicom_CPLID)
+          ! Ice states WW3 imports; Si_ifloe is included only for two-way coupling
+          call shr_string_listIntersect(seq_flds_i2x_fields, seq_flds_x2w_fields, i2w_states_fldlist)
+          ! WW3 needs the ice fraction for both one-way and two-way coupling
+          if (shr_string_listGetIndexF(i2w_states_fldlist, 'Si_ifrac') == 0) then
+             call shr_sys_abort(subname//' ERROR Si_ifrac missing from ice to wave fields')
+          endif
           if ( (mbixid .ge. 0) .and. (mbwxid .ge. 0) ) then
              mapper_Si2w%src_mbid = mbixid
              mapper_Si2w%tgt_mbid = mbwxid
@@ -241,6 +272,10 @@ contains
                 mapper_Si2w%rearrange_only = .true.
                 mapper_Si2w%strategy = "rearrange"
                 mapper_Si2w%intx_context = wav(1)%cplcompid
+                src_type = moab_mesh_discretization(mbixid)
+                ierr = iMOAB_ComputeCommGraph(mbixid, mbwxid, mpicom_CPLID, &
+                     mpigrp_CPLID, mpigrp_CPLID, src_type, 2, ice(1)%cplcompid, wav(1)%cplcompid)
+                if (ierr /= 0) call shr_sys_abort(subname//' cannot create same-grid ICE-WAV graph')
              else
                 if (mbintxiw < 0) then
                    appname = "ICE_WAV_COU"
@@ -257,7 +292,10 @@ contains
                 arearead = 0
                 call moab_map_init_rcfile(mapper_Si2w, type1, &
                      'seq_maps.rc', 'ice2wav_smapname:', 'ice2wav_smaptype:', samegrid_iw, &
-                     arearead, wgtIdSi2w, 'mapper_Si2w MOAB initialization', esmf_map_flag)
+                   arearead, wgtIdSi2w, 'mapper_Si2w MOAB initialization', esmf_map_flag, &
+                   source_discretization_type=moab_mesh_discretization(mbixid), &
+                   target_discretization_type=2)
+                   call seq_map_setup_coverage(mapper_Si2w)
              endif
           endif
        endif
@@ -405,7 +443,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eai = 1,num_inst_atm
        a2x_ax => component_get_c2x_cx(atm(eai))
-       call seq_map_map(mapper_Sa2w, a2x_ax, a2x_wx(eai), norm=.true.)
+       if (len_trim(a2w_states_fldlist) > 0) &
+            call seq_map_map(mapper_Sa2w, a2x_ax, a2x_wx(eai), fldlist=trim(a2w_states_fldlist), norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_wav_calc_a2x_wx
@@ -429,7 +468,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
        o2x_ox => component_get_c2x_cx(ocn(eoi))
-       call seq_map_map(mapper_So2w, o2x_ox, o2x_wx(eoi), norm=.true.)
+       if (len_trim(o2w_states_fldlist) > 0) &
+            call seq_map_map(mapper_So2w, o2x_ox, o2x_wx(eoi), fldlist=trim(o2w_states_fldlist), norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_wav_calc_o2x_wx
@@ -453,7 +493,8 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eii = 1,num_inst_ice
        i2x_ix => component_get_c2x_cx(ice(eii))
-       call seq_map_map(mapper_Si2w, i2x_ix, i2x_wx(eii), norm=.true.)
+       if (len_trim(i2w_states_fldlist) > 0) &
+            call seq_map_map(mapper_Si2w, i2x_ix, i2x_wx(eii), fldlist=trim(i2w_states_fldlist), norm=.true.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_wav_calc_i2x_wx

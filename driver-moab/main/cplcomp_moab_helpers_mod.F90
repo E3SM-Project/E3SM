@@ -14,8 +14,21 @@ module cplcomp_moab_helpers_mod
   public :: moab_send_mesh
   public :: moab_receive_mesh
   public :: moab_free_sender_buffers
+  public :: moab_mesh_discretization
 
 contains
+
+  integer function moab_mesh_discretization(appid) result(discretization)
+    use iMOAB, only: iMOAB_GetGlobalInfo
+    integer, intent(in) :: appid
+    integer :: ierr, global_vertices, global_elements
+
+    ierr = iMOAB_GetGlobalInfo(appid, global_vertices, global_elements)
+    if (ierr /= 0) call shr_sys_abort('(moab_mesh_discretization) cannot inspect mesh')
+    ! Use global counts so empty local partitions still use the correct type.
+    discretization = 2 ! point cloud
+    if (global_elements > 0) discretization = 3 ! finite-volume cells
+  end function moab_mesh_discretization
 
   subroutine moab_register_app(appname, mpicom, id_join, appid, subctx)
     use iMOAB, only: iMOAB_RegisterApplication

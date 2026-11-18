@@ -1501,8 +1501,9 @@ contains
 
   subroutine cime_init()
     use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields, seq_flds_l2x_fields, &
-     seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
-    use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
+       seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields, seq_flds_w2x_fluxes, seq_flds_w2x_fields
+    use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid, &
+         mwwid, mbwxid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
 
     integer :: nfields, numpts
@@ -2254,6 +2255,10 @@ contains
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor_moab(ice, areafact_samegrid, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
+
+      call mpi_barrier(mpicom_GLOID,ierr)
+      if (wav_present) call component_init_areacor_moab(wav, areafact_samegrid, mwwid, mbwxid, &
+             seq_flds_w2x_fluxes, seq_flds_w2x_fields)
 
     ! MOAB TODO: convert these to moab
     call mpi_barrier(mpicom_GLOID,ierr)
@@ -4172,9 +4177,6 @@ contains
        if (lnd_c2_atm) then
           call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:atmprep_lnd2atm')
        endif
-       if (wav_c2_atm) then
-          call prep_atm_calc_w2x_ax(timer='CPL:atmprep_wav2atm')
-       endif
        if (iac_c2_atm) then
           call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:atmprep_iac2atm')
        endif
@@ -4425,6 +4427,7 @@ contains
   !----------------------------------------------------------------------------------
 
   subroutine cime_run_atmocn_setup(hashint)
+      use seq_flds_mod, only: wav_atm_coup
     integer, intent(inout) :: hashint(:)
 
     if (iamin_CPLID) then
@@ -4438,12 +4441,19 @@ contains
             call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
 
           endif
-          if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
        end if
+
+       ! Wave roughness is needed on the flux grid even with a data ocean.
+       ! Do not gate this mapping solely on the ocean being prognostic.
+       if (wav_present .and. ocn_present) then
+          if (wav_c2_ocn .or. (trim(aoflux_grid) == 'ocn' .and. wav_atm_coup == 'twoway')) then
+             call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
+          endif
+       endif
 
        ! For AO fluxes on the atm grid, make sure wave fields are mapped to atm
        ! before cime_run_atmocn_fluxes consumes w2x_ax.
-       if (trim(aoflux_grid) == 'atm' .and. wav_c2_atm) then
+      if (trim(aoflux_grid) == 'atm' .and. wav_present .and. wav_atm_coup == 'twoway') then
           call prep_atm_calc_w2x_ax(timer='CPL:atmocnp_wav2atm')
        endif
 
@@ -4900,6 +4910,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_wav_setup_send()
+      use seq_comm_mct, only: mbwxid, mwwid
+      use seq_flds_mod, only: seq_flds_x2w_fields
 
     !----------------------------------------------------------
     ! wav prep-merge
@@ -4914,7 +4926,8 @@ contains
        if (ocn_c2_wav) call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
        if (ice_c2_wav) call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
 
-       call prep_wav_mrg_moab(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
+      ! The input-state mappings above write the merged x2w fields directly
+      ! to the dedicated Wave MOAB mesh; WAV_RUN imports those tags to MCT.
 
        call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
             info_debug=info_debug, timer_diag='CPL:wavprep_diagav')
@@ -4927,7 +4940,7 @@ contains
     ! cpl -> wav
     !----------------------------------------------------------
     if (iamin_CPLALLWAVID .and. wav_prognostic) then
-       call component_exch(wav, flow='x2c', &
+      call component_exch_moab(wav(1), mbwxid, mwwid, 'x2c', seq_flds_x2w_fields, &
             infodata=infodata, infodata_string='cpl2wav_run', &
             mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2W_BARRIER', timer_comp_exch='CPL:C2W', &
@@ -4939,12 +4952,15 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_wav_recv_post()
+      use seq_comm_mct, only: mbwxid, mwwid
+      use seq_flds_mod, only: seq_flds_w2x_fields
 
     !----------------------------------------------------------
     ! wav -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLWAVID) then
-       call component_exch(wav, flow='c2x', infodata=infodata, infodata_string='wav2cpl_run', &
+        call component_exch_moab(wav(1), mwwid, mbwxid, 'c2x', seq_flds_w2x_fields, &
+           infodata=infodata, infodata_string='wav2cpl_run', &
             mpicom_barrier=mpicom_CPLALLWAVID, run_barriers=run_barriers, &
             timer_barrier='CPL:W2C_BARRIER', timer_comp_exch='CPL:W2C', &
             timer_map_exch='CPL:w2c_wavw2wavx', timer_infodata_exch='CPL:w2c_infoexch')

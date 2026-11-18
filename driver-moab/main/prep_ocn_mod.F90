@@ -5,6 +5,7 @@ module prep_ocn_mod
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
+  use shr_string_mod,   only: shr_string_listIntersect
   use seq_comm_mct,     only: num_inst_atm, num_inst_rof, num_inst_ice
   use seq_comm_mct,     only: num_inst_glc, num_inst_wav, num_inst_ocn
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc
@@ -41,6 +42,7 @@ module prep_ocn_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
+   use cplcomp_moab_helpers_mod, only: moab_define_double_tag, moab_mesh_discretization
   use iso_c_binding
 
   implicit none
@@ -93,6 +95,7 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Sg2o
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
+  public :: prep_ocn_get_mapper_Fw2o
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -115,6 +118,11 @@ module prep_ocn_mod
   type(seq_map), pointer :: mapper_Fg2o
   type(seq_map), pointer :: mapper_Sg2o
   type(seq_map), pointer :: mapper_Sw2o
+  type(seq_map), pointer :: mapper_Fw2o
+
+  ! wave fields mapped to the ocean mesh, split by mapper; set in prep_ocn_init
+  character(CXX) :: w2o_states_fldlist = ''
+  character(CXX) :: w2o_fluxes_fldlist = ''
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_ox(:) ! Atm export, ocn grid, cpl pes
@@ -248,7 +256,7 @@ contains
     ! MOAB stuff
    integer                  :: ierr, idintx, rank
    character*32             :: appname, outfile, wopts, lnum
-   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2ol, wgtIdFr2oi, wgtIdFr2o, wgtIdFa2o, wgtIdSa2o, wgtIdVa2o, wgtIdSw2o
+   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2ol, wgtIdFr2oi, wgtIdFr2o, wgtIdFa2o, wgtIdSa2o, wgtIdVa2o, wgtIdSw2o, wgtIdFw2o
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
    integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -300,6 +308,7 @@ contains
     wgtIdSa2o = 'bilinear_a2o'
     wgtIdVa2o = 'vector_a2o'
     wgtIdSw2o = 'scalar_w2o'
+    wgtIdFw2o = 'flux_w2o'
     wgtIdFr2ol = 'flux_r2o_liq'
     wgtIdFr2oi = 'flux_r2o_ice'
     wgtIdFr2o = 'flux_r2o'
@@ -317,6 +326,7 @@ contains
     allocate(mapper_Sg2o)
     allocate(mapper_Fg2o)
     allocate(mapper_Sw2o)
+    allocate(mapper_Fw2o)
 
     if (ocn_present) then
 
@@ -999,7 +1009,7 @@ contains
        endif
        call shr_sys_flush(logunit)
 
-       if (wav_c2_ocn) then
+      if (wav_present .and. (wav_ocn_coup == 'twoway' .or. wav_atm_coup == 'twoway')) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sw2o'
@@ -1009,17 +1019,26 @@ contains
              mapper_Sw2o%rearrange_only = .true.
              mapper_Sw2o%strategy = "rearrange"
           endif
+          ! Wave states use the state map; wave stresses go to the ocean only
+          ! and use the conservative flux map, as in the MCT driver.
+          if (wav_ocn_coup == 'twoway') then
+             call shr_string_listIntersect(seq_flds_w2x_states, seq_flds_x2o_fields, w2o_states_fldlist)
+             call shr_string_listIntersect(seq_flds_w2x_fluxes, seq_flds_x2o_fields, w2o_fluxes_fldlist)
+             if (iamroot_CPLID) then
+                write(logunit,F00) 'Initializing mapper_Fw2o'
+             end if
+             call seq_map_mapinit(mapper_Fw2o, mpicom_CPLID)
+             if (samegrid_ow) then
+                mapper_Fw2o%rearrange_only = .true.
+                mapper_Fw2o%strategy = "rearrange"
+             endif
+          else
+             w2o_states_fldlist = 'Sw_Charn:Sw_Ustar:Sw_Z0'
+             w2o_fluxes_fldlist = ''
+          endif
        endif
 
-       if (wav_present) then
-
-          if (mbwxid < 0) then
-             if (trim(wav_gnam) == trim(ocn_gnam)) then
-                mbwxid = mboxid
-             else if (trim(wav_gnam) == trim(atm_gnam)) then
-                mbwxid = mbaxid
-             end if
-          end if
+      if (wav_present .and. (wav_ocn_coup == 'twoway' .or. wav_atm_coup == 'twoway')) then
 
           if ((mboxid .ge. 0) .and. (mbwxid .ge. 0)) then
 
@@ -1033,6 +1052,9 @@ contains
           mapper_Sw2o%src_context = wav(1)%cplcompid
           mapper_Sw2o%weight_identifier = wgtIdSw2o
           mapper_Sw2o%mbname = 'mapper_Sw2o'
+          if (wav_atm_coup == 'twoway' .and. wav_ocn_coup /= 'twoway') then
+             call moab_define_double_tag(mboxid, 'Sw_Charn:Sw_Ustar:Sw_Z0', subname)
+          endif
           if (.not. samegrid_ow) then
              appname = "WAV_OCN_COU"
              idintx = 100*wav(1)%cplcompid + ocn(1)%cplcompid
@@ -1050,12 +1072,44 @@ contains
              arearead = 0
              call moab_map_init_rcfile(mapper_Sw2o, type1, &
                   'seq_maps.rc', 'wav2ocn_smapname:', 'wav2ocn_smaptype:', samegrid_ow, &
-                  arearead, wgtIdSw2o, 'mapper_Sw2o MOAB initialization', esmf_map_flag)
+                  arearead, wgtIdSw2o, 'mapper_Sw2o MOAB initialization', esmf_map_flag, &
+                  source_discretization_type=2, &
+                  target_discretization_type=moab_mesh_discretization(mboxid))
           endif
 
           if (samegrid_ow) then
              mapper_Sw2o%intx_context = ocn(1)%cplcompid
+               call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
+                type1 = moab_mesh_discretization(mboxid)
+               ierr = iMOAB_ComputeCommGraph(mbwxid, mboxid, mpicom_CPLID, &
+                  mpigrp_CPLID, mpigrp_CPLID, 2, type1, wav(1)%cplcompid, ocn(1)%cplcompid)
+               if (ierr /= 0) call shr_sys_abort(subname//' cannot create same-grid WAV-OCN graph')
           endif
+
+          if (wav_ocn_coup == 'twoway') then
+             ! Fw2o shares the Sw2o map app, coverage mesh and comm graph
+             ! (or same-grid graph); only the weight set differs.
+             mapper_Fw2o%src_mbid = mapper_Sw2o%src_mbid
+             mapper_Fw2o%tgt_mbid = mapper_Sw2o%tgt_mbid
+             mapper_Fw2o%intx_mbid = mapper_Sw2o%intx_mbid
+             mapper_Fw2o%src_context = mapper_Sw2o%src_context
+             mapper_Fw2o%intx_context = mapper_Sw2o%intx_context
+             mapper_Fw2o%weight_identifier = wgtIdFw2o
+             mapper_Fw2o%mbname = 'mapper_Fw2o'
+             if (.not. samegrid_ow) then
+                type1 = 3
+                arearead = 0
+                call moab_map_init_rcfile(mapper_Fw2o, type1, &
+                     'seq_maps.rc', 'wav2ocn_fmapname:', 'wav2ocn_fmaptype:', samegrid_ow, &
+                     arearead, wgtIdFw2o, 'mapper_Fw2o MOAB initialization', esmf_map_flag, &
+                     source_discretization_type=2, &
+                     target_discretization_type=moab_mesh_discretization(mboxid))
+             endif
+          endif
+
+          ! Migrate the wave coverage mesh and build the graph only after every
+          ! weight set is loaded into WAV_OCN_COU (same order as PR #8661 l2g).
+          if (.not. samegrid_ow) call seq_map_setup_coverage(mapper_Sw2o)
 
           endif
        endif
@@ -2090,14 +2144,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
        end do
     end do
 
-    if (wav_ocn_coup == 'twoway') then
-       w2x_o => w2x_ox(1)
-       do i=1,w2x_SharedIndices%shared_real%num_indices
-          i1=w2x_SharedIndices%shared_real%aVindices1(i)
-          o1=w2x_SharedIndices%shared_real%aVindices2(i)
-          x2o_om(:,o1) = w2x_o%rAttr(i1,:)
-       enddo
-    endif
+    ! Wave fields were mapped directly onto mboxid and read into x2o_om
+    ! above. Preserve them: the MCT wave vector contains metadata only.
 
    ! after we are done, set x2o_om to the mboxid
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
@@ -2341,7 +2389,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do ewi = 1,num_inst_wav
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi), norm=.true.)
+       if (len_trim(w2o_states_fldlist) > 0) then
+          call seq_map_map(mapper_Sw2o, w2x_wx, w2x_ox(ewi), &
+               fldlist=trim(w2o_states_fldlist), norm=.true.)
+       endif
+       if (len_trim(w2o_fluxes_fldlist) > 0) then
+          call seq_map_map(mapper_Fw2o, w2x_wx, w2x_ox(ewi), &
+               fldlist=trim(w2o_fluxes_fldlist), norm=.true.)
+       endif
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_calc_w2x_ox
@@ -2442,6 +2497,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
+
+  function prep_ocn_get_mapper_Fw2o()
+    type(seq_map), pointer :: prep_ocn_get_mapper_Fw2o
+    prep_ocn_get_mapper_Fw2o => mapper_Fw2o
+  end function prep_ocn_get_mapper_Fw2o
   function prep_ocn_get_x2oacc_om()
     real(R8), DIMENSION(:, :), pointer :: prep_ocn_get_x2oacc_om
     prep_ocn_get_x2oacc_om => x2oacc_om

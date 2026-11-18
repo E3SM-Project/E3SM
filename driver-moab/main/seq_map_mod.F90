@@ -23,6 +23,7 @@ module seq_map_mod
   use seq_map_type_mod
   use seq_nlmap_mod
   use shr_moab_mod
+   use cplcomp_moab_helpers_mod, only: moab_mesh_discretization
 
   implicit none
   save
@@ -34,6 +35,7 @@ module seq_map_mod
 
   public :: seq_map_init_rcfile     ! cpl pes
   public :: moab_map_init_rcfile    ! cpl pes
+   public :: seq_map_setup_coverage ! cpl pes, after loading a Wave map
   public :: seq_map_initvect_moab   ! cpl pes
   public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
@@ -177,7 +179,8 @@ contains
 
   subroutine moab_map_init_rcfile( mapper, discretization_type, &
                    maprcfile, maprcname, maprctype, samegrid, arearead, map_identifier, &
-                   description_string, esmf_map, fallback_map_identifier )
+                   description_string, esmf_map, fallback_map_identifier, &
+                   source_discretization_type, target_discretization_type )
 
     use iMOAB, only: iMOAB_LoadMapFile
     use iso_c_binding, only: C_NULL_CHAR
@@ -187,7 +190,7 @@ contains
     ! Arguments
     !
     type(seq_map)        ,intent(inout)         :: mapper  ! mapper being initialized (src_mbid, tgt_mbid, intx_mbid must be set)
-    type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
+   integer              ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV
     ! type(component_type) ,intent(inout)         :: comp_s
     ! type(component_type) ,intent(inout)         :: comp_d
     character(len=*)     ,intent(in)            :: maprcfile
@@ -199,6 +202,8 @@ contains
     character(len=*)     ,intent(in),optional   :: description_string
     logical              ,intent(in),optional   :: esmf_map
     character(len=*)     ,intent(in),optional   :: fallback_map_identifier
+   integer, intent(in), optional :: source_discretization_type
+   integer, intent(in), optional :: target_discretization_type
     !
     ! Local Variables
     !
@@ -214,6 +219,7 @@ contains
     logical                     :: nl_found
     integer                     :: ierr
     integer                     :: null_pos
+   integer                     :: source_type, target_type
 
     character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
     !-----------------------------------------------------
@@ -223,6 +229,11 @@ contains
     endif
 
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
+
+   source_type = discretization_type
+   target_type = discretization_type
+   if (present(source_discretization_type)) source_type = source_discretization_type
+   if (present(target_discretization_type)) target_type = target_discretization_type
 
     ! --- Initialize Smatp
     call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
@@ -244,8 +255,8 @@ contains
         write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile)
     endif
 
-    ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
-                                 discretization_type, arearead, trim(map_identifier)//C_NULL_CHAR, mapfile_term)
+   ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, source_type, &
+                         target_type, arearead, trim(map_identifier)//C_NULL_CHAR, mapfile_term)
     if (ierr .ne. 0) then
        write(logunit,*) subname,' error in loading map file - ' // mapfile
        call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
@@ -271,8 +282,8 @@ contains
          end if
          mapper%howeight_identifier = nlmap_id
          mapfile_term = trim(nl_mapfile)//CHAR(0)
-         ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
-                                 discretization_type, 0, trim(nlmap_id)//C_NULL_CHAR, mapfile_term)
+         ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, source_type, &
+                                 target_type, 0, trim(nlmap_id)//C_NULL_CHAR, mapfile_term)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in loading nlmap file - ' // nl_mapfile
            call shr_sys_abort(subname//' ERROR in loading nlmap file - ' // nl_mapfile)
@@ -291,6 +302,29 @@ contains
     endif
 
   end subroutine moab_map_init_rcfile
+
+  subroutine seq_map_setup_coverage(mapper)
+    use iMOAB, only: iMOAB_MigrateMapMesh, iMOAB_ComputeCommGraph
+      type(seq_map), intent(inout) :: mapper
+    integer :: ierr, mpigrp, source_type
+    character(len=*), parameter :: subname = '(seq_map_setup_coverage) '
+
+    if (mapper%copy_only .or. mapper%rearrange_only) return
+    if (mapper%src_mbid < 0 .or. mapper%tgt_mbid < 0 .or. mapper%intx_mbid < 0) then
+     call shr_sys_abort(subname//'invalid mesh IDs for '//trim(mapper%mbname))
+    endif
+
+    call seq_comm_setptrs(CPLID, mpigrp=mpigrp)
+    source_type = moab_mesh_discretization(mapper%src_mbid)
+    ! LoadMapFile supplies the weights. Migrate the source coverage mesh and
+    ! construct the second-hop graph used by seq_map_map's tag send/receive.
+    ierr = iMOAB_MigrateMapMesh(mapper%src_mbid, mapper%intx_mbid, mapper%mpicom, &
+       mpigrp, mpigrp, source_type, mapper%src_context, mapper%intx_context)
+    if (ierr /= 0) call shr_sys_abort(subname//'cannot migrate coverage for '//trim(mapper%mbname))
+    ierr = iMOAB_ComputeCommGraph(mapper%src_mbid, mapper%intx_mbid, mapper%mpicom, &
+       mpigrp, mpigrp, source_type, source_type, mapper%src_context, mapper%intx_context)
+    if (ierr /= 0) call shr_sys_abort(subname//'cannot construct graph for '//trim(mapper%mbname))
+  end subroutine seq_map_setup_coverage
 
   !=======================================================================
 
@@ -355,6 +389,7 @@ contains
     logical         ,intent(in),optional :: omit_nonlinear
     logical  :: valid_moab_context
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
+   integer  :: src_tag_entity_type, tgt_tag_entity_type
     character(len=CXX) :: fldlist_moab
     character(len=CXX) :: fldlist_data    ! data fields only (no norm8wt) for nlmap CAAS path
     character(len=CXX) :: fldlist_caas    ! non-excluded data fields → dual-map CAAS
@@ -397,6 +432,9 @@ contains
     endif
 
     mbnorm = lnorm
+   ! A same-grid copy/rearrangement does not apply projection weights, so it
+   ! must not exchange or normalize a synthetic norm8wt tag.
+   if (mapper%copy_only .or. mapper%rearrange_only) mbnorm = .false.
 
     if (present(avwtsfld_s)) then
        mbpresent = .true.
@@ -430,6 +468,15 @@ contains
        valid_moab_context = .FALSE.
     else
        valid_moab_context = .TRUE.
+    endif
+
+    src_tag_entity_type = mapper%tag_entity_type
+    tgt_tag_entity_type = mapper%tag_entity_type
+    if (valid_moab_context) then
+       src_tag_entity_type = 0
+       tgt_tag_entity_type = 0
+       if (moab_mesh_discretization(mapper%src_mbid) == 3) src_tag_entity_type = 1
+       if (moab_mesh_discretization(mapper%tgt_mbid) == 3) tgt_tag_entity_type = 1
     endif
 
     !*** MOAB: Build field list for MOAB operations
@@ -565,7 +612,11 @@ contains
                 write(logunit,*) subname,' error getting mesh info for ', mapper%mbname
                 call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
              endif
-             lsize_src = nvise(1) ! number of active cells
+             if (src_tag_entity_type == 1) then
+                lsize_src = nvise(1)
+             else
+                lsize_src = nvert(1)
+             endif
 
              !*** MOAB: Initialize norm8wt tag to 1.0 on all source cells
              !*** This tag will be mapped along with the data fields.
@@ -574,7 +625,9 @@ contains
              wghts = 1.0_r8
              tagname = "norm8wt"
              !*** MOAB: iMOAB_SetDoubleTagStorage - Set tag values on mesh elements
-             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(tagname)//C_NULL_CHAR, lsize_src , mapper%tag_entity_type, wghts)
+               ierr = 0
+               if (lsize_src > 0) ierr = iMOAB_SetDoubleTagStorage(mapper%src_mbid, &
+                  trim(tagname)//C_NULL_CHAR, lsize_src, src_tag_entity_type, wghts)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
                 call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
@@ -592,7 +645,9 @@ contains
              if(mbpresent) then
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get weight field values
                 tagname = trim(avwtsfld_s)
-                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, trim(tagname)//C_NULL_CHAR, lsize_src , mapper%tag_entity_type, wghts)
+                ierr = 0
+                if (lsize_src > 0) ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, &
+                   trim(tagname)//C_NULL_CHAR, lsize_src, src_tag_entity_type, wghts)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
                    call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
@@ -605,9 +660,11 @@ contains
                 arrsize_src=lsize_src*(nfields)
 
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get current field values
-                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_src , mapper%tag_entity_type, targtags)
+                ierr = 0
+                if (arrsize_src > 0) ierr = iMOAB_GetDoubleTagStorage(mapper%src_mbid, &
+                   trim(fldlist_moab)//C_NULL_CHAR, arrsize_src, src_tag_entity_type, targtags)
                 if (ierr .ne. 0) then
-                   write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, mapper%tag_entity_type
+                   write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, src_tag_entity_type
                    call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
                 endif
 
@@ -630,7 +687,9 @@ contains
 #endif
                 !*** MOAB: iMOAB_SetDoubleTagStorage - Store weighted values back to source
                 !*** These weighted values will be sent and mapped to the target grid.
-                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_src , mapper%tag_entity_type, targtags)
+                ierr = 0
+                if (arrsize_src > 0) ierr = iMOAB_SetDoubleTagStorage(mapper%src_mbid, &
+                   trim(fldlist_moab)//C_NULL_CHAR, arrsize_src, src_tag_entity_type, targtags)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
                    call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
@@ -766,14 +825,20 @@ contains
                 call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
              endif
 
-             lsize_tgt = nvise(1) ! number of active cells
+             if (tgt_tag_entity_type == 1) then
+                lsize_tgt = nvise(1)
+             else
+                lsize_tgt = nvert(1)
+             endif
              tagname = "norm8wt"
              allocate(wghts(lsize_tgt))
              wghts = 0.0_r8   ! defensive zero-init: iMOAB_GetDoubleTagStorage may leave some entries untouched
                               ! if the tag was never set on those cells; this avoids reading uninitialised memory below.
 
              !*** MOAB: Get mapped normalization weights on target grid
-             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, trim(tagname)//C_NULL_CHAR, lsize_tgt , mapper%tag_entity_type, wghts)
+               ierr = 0
+               if (lsize_tgt > 0) ierr = iMOAB_GetDoubleTagStorage(mapper%tgt_mbid, &
+                  trim(tagname)//C_NULL_CHAR, lsize_tgt, tgt_tag_entity_type, wghts)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
                 call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
@@ -783,7 +848,9 @@ contains
              allocate(targtags(lsize_tgt,nfields))
              targtags = 0.0_r8   ! defensive zero-init: see above for wghts
              arrsize_tgt=lsize_tgt*(nfields)
-             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_tgt , mapper%tag_entity_type, targtags)
+               ierr = 0
+               if (arrsize_tgt > 0) ierr = iMOAB_GetDoubleTagStorage(mapper%tgt_mbid, &
+                  trim(fldlist_moab)//C_NULL_CHAR, arrsize_tgt, tgt_tag_entity_type, targtags)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                 call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -802,7 +869,9 @@ contains
              enddo
 
              !*** MOAB: Store normalized field values back to target mesh
-             ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_tgt , mapper%tag_entity_type, targtags)
+               ierr = 0
+               if (arrsize_tgt > 0) ierr = iMOAB_SetDoubleTagStorage(mapper%tgt_mbid, &
+                  trim(fldlist_moab)//C_NULL_CHAR, arrsize_tgt, tgt_tag_entity_type, targtags)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                 call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -820,7 +889,9 @@ contains
                 endif
 #endif
                 !*** MOAB: Restore original values to source mesh
-                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_src , mapper%tag_entity_type, targtags_ini)
+                ierr = 0
+                if (arrsize_src > 0) ierr = iMOAB_SetDoubleTagStorage(mapper%src_mbid, &
+                   trim(fldlist_moab)//C_NULL_CHAR, arrsize_src, src_tag_entity_type, targtags_ini)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error setting source tag values ', mapper%mbname
                    call shr_sys_abort(subname//' ERROR setting source tag values') ! serious enough

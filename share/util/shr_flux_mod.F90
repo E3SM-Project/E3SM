@@ -224,6 +224,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8),parameter :: zpbl =700.0_R8 ! PBL depth [m] for gustiness parametriz.
 
    real(R8),parameter :: tiny = 1.0e-12_R8 
+   logical     :: use_wav ! apply WW3 roughness/ustar (Large-Yeager scheme only)
    !--- local variables --------------------------------
    integer(IN) :: n      ! vector loop index
    integer(IN) :: iter
@@ -334,6 +335,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 !!                         = 2 : UA algorithm (separate subroutine)
 !!.................................................................
 
+   ! Wave inputs are optional: each is applied only when the caller passes it,
+   ! so runs without an active WW3 (or without wave args) use bulk formulas.
+   use_wav = wav_atm_coup .eq. 'twoway' .and. present(z0wav) .and. present(ustarwav)
+
    ! Default flux scheme.
    if (ocn_surface_flux_scheme .eq. 0) then
 
@@ -369,7 +374,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !------------------------------------------------------------
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
-        if (wav_atm_coup .eq. 'twoway') then
+        if (use_wav) then
            if (z0wav(n) .lt. tiny) then 
               ! z0wav == 0 for cold-start-WW3 situations   
               cdn_wav = cdn_wave(loc_karman,zref,tiny)
@@ -386,7 +391,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         ren    = 0.0346_R8 !cexcd
 
         !--- ustar, tstar, qstar ---
-        if (wav_atm_coup .eq. 'twoway') then
+        if (use_wav) then
            if (ustarwav(n) .lt. tiny) then 
               ustar = tiny ! set to tiny to avoid a divide by zero error  
            else
@@ -431,7 +436,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
            psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
  
-           if (wav_atm_coup .ne. 'twoway') then
+           if (.not. use_wav) then
               !--- shift wind speed using old coefficient ---
               rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
               u10n = vmag * rd / rdn
@@ -467,7 +472,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
         enddo
         
-        if (wav_atm_coup .eq. 'twoway') then
+        if (use_wav) then
            u10n = vmag * rd / rdn 
         endif
         
@@ -573,7 +578,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
             endif
          endif
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
-        if (wav_atm_coup .eq. 'twoway') then 
+        if (present(charnockSeaState)) then 
            call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
                  & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params
                  & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
@@ -2703,7 +2708,7 @@ zrt=zrft ! reference height for st.diagn.T,q
     tsr = (dt-dter*jcool)*von/(log(zt/zot10)-psit_30(zt/L10))
     qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10))
 
-    if (wav_atm_coup .eq. 'twoway') then
+    if (present(charnsea)) then
        charn = charnsea !use Charnock coefficient from active wave model (Janssen 1989, 1991)
     else
        ! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)

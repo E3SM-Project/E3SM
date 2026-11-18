@@ -1,9 +1,11 @@
 module prep_ice_mod
+   use cplcomp_moab_helpers_mod, only: moab_mesh_discretization
 
   use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
+  use shr_string_mod  , only: shr_string_listIntersect
   use seq_comm_mct    , only: num_inst_atm, num_inst_ocn, num_inst_glc
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
   use seq_comm_mct    , only: num_inst_wav
@@ -75,6 +77,9 @@ module prep_ice_mod
   type(seq_map), pointer :: mapper_Fg2i
   type(seq_map), pointer :: mapper_Rr2i
   type(seq_map), pointer :: mapper_Sw2i
+
+  ! wave states mapped to the ice mesh; set in prep_ice_init
+  character(CXX) :: w2i_states_fldlist = ''
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_ix(:) ! Atm export, ice grid, cpl pes - allocated in driver
@@ -342,7 +347,7 @@ contains
        endif
        call shr_sys_flush(logunit)
 
-       if (wav_c2_ice) then
+      if (wav_present .and. wav_ice_coup == 'twoway') then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sw2i'
@@ -352,17 +357,11 @@ contains
              mapper_Sw2i%rearrange_only = .true.
              mapper_Sw2i%strategy = "rearrange"
           endif
+          ! As in the MCT driver, map the wave states (no wave fluxes go to ice)
+          call shr_string_listIntersect(seq_flds_w2x_states, seq_flds_x2i_fields, w2i_states_fldlist)
        endif
 
-       if (wav_present) then
-
-          if (mbwxid < 0) then
-             if (trim(wav_gnam) == trim(ice_gnam)) then
-                mbwxid = mbixid
-             else if (trim(wav_gnam) == trim(ocn_gnam)) then
-                mbwxid = mboxid
-             end if
-          end if
+      if (wav_present .and. wav_ice_coup == 'twoway') then
 
           if ((mbixid .ge. 0) .and. (mbwxid .ge. 0)) then
 
@@ -393,11 +392,19 @@ contains
              arearead = 0
              call moab_map_init_rcfile(mapper_Sw2i, type1, &
                   'seq_maps.rc', 'wav2ice_smapname:', 'wav2ice_smaptype:', samegrid_iw, &
-                  arearead, wgtIdSw2i, 'mapper_Sw2i MOAB initialization', esmf_map_flag)
+                  arearead, wgtIdSw2i, 'mapper_Sw2i MOAB initialization', esmf_map_flag, &
+                  source_discretization_type=2, &
+                  target_discretization_type=moab_mesh_discretization(mbixid))
+                    call seq_map_setup_coverage(mapper_Sw2i)
           endif
 
           if (samegrid_iw) then
              mapper_Sw2i%intx_context = ice(1)%cplcompid
+               call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
+                type1 = moab_mesh_discretization(mbixid)
+               ierr = iMOAB_ComputeCommGraph(mbwxid, mbixid, mpicom_CPLID, &
+                  mpigrp_CPLID, mpigrp_CPLID, 2, type1, wav(1)%cplcompid, ice(1)%cplcompid)
+               if (ierr /= 0) call shr_sys_abort(subname//' cannot create same-grid WAV-ICE graph')
           endif
 
           endif
@@ -661,13 +668,8 @@ contains
       call shr_sys_abort(subname//' error in getting r2x_im array ')
     endif
 
-    if (wav_ice_coup == 'twoway') then
-       do i=1,w2x_SharedIndices%shared_real%num_indices
-          i1=w2x_SharedIndices%shared_real%aVindices1(i)
-          o1=w2x_SharedIndices%shared_real%aVindices2(i)
-          x2i_im(:,o1) = w2x_i%rAttr(i1,:)
-       enddo
-    endif
+    ! Wave states were mapped directly onto mbixid and read into x2i_im
+    ! above. Do not overwrite them with the metadata-only MCT wave vector.
 
     ! Merge total snow and precip for ice input
     ! Scale total precip and runoff by flux_epbalfact
@@ -900,7 +902,10 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do ewi = 1,num_inst_wav
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       call seq_map_map(mapper_Sw2i, w2x_wx, w2x_ix(ewi), fldlist=seq_flds_w2x_states, norm=.true.)
+       if (len_trim(w2i_states_fldlist) > 0) then
+          call seq_map_map(mapper_Sw2i, w2x_wx, w2x_ix(ewi), &
+               fldlist=trim(w2i_states_fldlist), norm=.true.)
+       endif
     enddo
     call t_drvstopf  (trim(timer))
 

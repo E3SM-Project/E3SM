@@ -453,12 +453,12 @@ CONTAINS
 
       inflags1 = .false.
 
-      inflags1(1)  = .true. ! water levels
-      inflags1(2)  = .true. ! currents
-      inflags1(3)  = .true. ! winds
-      inflags1(4)  = .true. ! ice concentration
-      inflags1(-7) = .true. ! ice thickness
-      inflags1(-3) = .true. ! ice floe size
+      inflags1(1)  = wav_ocn_coup /= 'none' ! water levels
+      inflags1(2)  = wav_ocn_coup /= 'none' ! currents
+      inflags1(3)  = wav_atm_coup /= 'none' ! winds
+      inflags1(4)  = wav_ice_coup /= 'none' ! ice concentration
+      inflags1(-7) = wav_ice_coup /= 'none' ! ice thickness
+      inflags1(-3) = wav_ice_coup == 'twoway' ! ice floe size
 
       inflags2 = inflags1
 
@@ -856,6 +856,16 @@ CONTAINS
       call mct_avect_init(x2w_w, rlist=seq_flds_x2w_fields, lsize=lsize)
       call mct_avect_zero(x2w_w)
 
+#ifdef HAVE_MOAB
+      call wav_init_moab(cdata, x2w_w, w2x_w)
+  if (iaproc == napout) then
+     if (wav_atm_coup /= 'none' .or. wav_ocn_coup /= 'none') then
+    write(stdout,*) 'WW3 coupling: Sa_tbot, So_t, and So_bldepth are reserved interface states.'
+    write(stdout,*) 'WW3 coupling: thermal stability and boundary-layer-depth feedback are not enabled.'
+     endif
+  endif
+#endif
+
       ! add call to gptl timer
 
       if ( iaproc .eq. napout ) then
@@ -1074,6 +1084,9 @@ CONTAINS
       endif
 
       ! this is the global fill
+#ifdef HAVE_MOAB
+      call wav_moab_tags_to_av(x2w_w)
+#endif
       call seq_cdata_setptrs(cdata_w,gsmap=gsmap,mpicom=mpi_comm)
       call mct_aVect_gather(x2w_w,x2w0,gsmap,0,mpi_comm)
       call mct_aVect_bcast(x2w0,0,mpi_comm)
@@ -1127,17 +1140,17 @@ CONTAINS
 
             ! Fill wavenumber and group velocity arrays
             ISEA = MAPFS(IY,IX)
-            WLV(ISEA) = WLEV(IX,IY)
-            WLVeff=WLV(ISEA)
-            DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
             IF (ISEA.GT.0) THEN 
+              WLV(ISEA) = WLEV(IX,IY)
+              WLVeff=WLV(ISEA)
+              DW(ISEA) = MAX ( 0. , WLVeff-ZB(ISEA) )
               DEPTH  = MAX ( DMIN , DW(ISEA) )
+              DO IK=0, NK+1
+                CALL WAVNU1(SIG(IK),DEPTH,WN(IK,ISEA),CG(IK,ISEA))
+              END DO
             ELSE 
               DEPTH = DMIN 
             END IF 
-            DO IK=0, NK+1 
-              CALL WAVNU1(SIG(IK),DEPTH,WN(IK,ISEA),CG(IK,ISEA))
-            END DO
          endif
 
          if (inflags1(2)) then
@@ -1152,8 +1165,9 @@ CONTAINS
             WXN(IX,IY)  = WX0(IX,IY)
             WY0(IX,IY)  = WY(gindex) 
             WYN(IX,IY)  = WY0(IX,IY)
-            !DT0(IX,IY)  = x2w0%rattr(index_x2w_sa_tbot,gindex) - x2w0%rattr(index_x2w_so_t,gindex)
-            !DTN(IX,IY)  = DT0(IX,IY)
+            ! Sa_tbot/So_t are retained in x2w for interface compatibility.
+            ! Keep the existing neutral-stability forcing (DT0/DTN = 0);
+            ! enabling thermal feedback is a physics change, not a MOAB map fix.
          endif
 
          if (inflags1(4)) then
@@ -1194,8 +1208,10 @@ CONTAINS
                w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = USTAR2(jsea) ! Friction velocity
                w2x_w%rattr(index_w2x_Sw_Z0,jsea) = Z0(jsea) ! Z0 surface roughness length
             endif
-            if (wav_ocn_coup .eq. 'twoway') then
+            if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
+            endif
+            if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
 
@@ -1236,8 +1252,10 @@ CONTAINS
                w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = 0.0
                w2x_w%rattr(index_w2x_Sw_Z0,jsea) = 0.0
             endif
-            if (wav_ocn_coup .eq. 'twoway') then
+            if (wav_ocn_coup .eq. 'twoway' .or. wav_ice_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0
+            endif
+            if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = 0.0
                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = 0.0
             
@@ -1301,7 +1319,210 @@ CONTAINS
       if (inflags1(2) .and. allocated(cx)) deallocate(cx, cy)
       if (inflags1(3) .and. allocated(wx)) deallocate(wx, wy)
 
+#ifdef HAVE_MOAB
+      call wav_moab_av_to_tags(w2x_w)
+#endif
+
     END SUBROUTINE WAV_RUN_MCT
+
+#ifdef HAVE_MOAB
+    subroutine wav_init_moab(cdata, x2w_w, w2x_w)
+      use shr_kind_mod, only: CXX => shr_kind_CXX, r8 => shr_kind_r8
+      use mct_mod
+      use seq_flds_mod, only: seq_flds_x2w_fields, seq_flds_w2x_fields
+      use w3gdatmd, only: nx, nseal, mapsf, mapsta, xgrd, ygrd
+      use w3odatmd, only: naproc, iaproc
+      use wmscrpmd, only: grid_area
+      use iMOAB, only: iMOAB_RegisterApplication, iMOAB_CreateVertices, &
+          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+          iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
+      use iso_c_binding, only: C_NULL_CHAR
+      use seq_cdata_mod, only: seq_cdata, seq_cdata_setptrs
+      use seq_comm_mct, only: mwwid, num_inst_wav, num_inst_atm, num_inst_ocn, num_inst_ice
+      use shr_const_mod, only: SHR_CONST_PI
+
+      type(seq_cdata), intent(inout) :: cdata
+      type(mct_aVect), intent(in) :: x2w_w, w2x_w
+      integer :: compid, mpi_comm, ierr, tagindex, tagtype, numco, ent_type
+      integer :: jsea, isea, ix, iy, nattrs, ifield
+      integer, allocatable :: global_id(:)
+      real(r8), allocatable :: xyz(:), vals(:)
+      real(r8), parameter :: deg2rad = SHR_CONST_PI/180.0_r8
+      character(len=32) :: appname
+      character(CXX) :: taglist
+
+      call seq_cdata_setptrs(cdata, id=compid, mpicom=mpi_comm)
+      if (num_inst_wav /= 1 .or. num_inst_atm /= 1 .or. num_inst_ocn /= 1 .or. num_inst_ice /= 1) then
+        call shr_sys_abort('(wav_init_moab) Wave MOAB coupling requires one WAV/ATM/OCN/ICE instance')
+      endif
+      appname = 'WW3'
+      ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpi_comm, compid, mwwid)
+      if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot register WW3 MOAB app')
+
+      allocate(global_id(nseal), xyz(3*nseal), vals(nseal))
+      do jsea = 1,nseal
+        isea = iaproc + (jsea-1)*naproc
+        ix = mapsf(isea,1)
+        iy = mapsf(isea,2)
+        global_id(jsea) = ix + (iy-1)*nx
+        xyz(3*jsea-2) = cos(ygrd(iy,ix)*deg2rad)*cos(xgrd(iy,ix)*deg2rad)
+        xyz(3*jsea-1) = cos(ygrd(iy,ix)*deg2rad)*sin(xgrd(iy,ix)*deg2rad)
+        xyz(3*jsea  ) = sin(ygrd(iy,ix)*deg2rad)
+        vals(jsea) = grid_area(ix)*deg2rad**2
+      enddo
+      if (nseal > 0) then
+        ierr = iMOAB_CreateVertices(mwwid, 3*nseal, 3, xyz)
+        if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot create WW3 MOAB vertices')
+      endif
+
+      tagtype = 0
+      numco = 1
+      ent_type = 0
+      taglist = 'GLOBAL_ID'//C_NULL_CHAR
+      ierr = iMOAB_DefineTagStorage(mwwid, taglist, tagtype, numco, tagindex)
+      if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot define GLOBAL_ID')
+      if (nseal > 0) then
+        ierr = iMOAB_SetIntTagStorage(mwwid, taglist, nseal, ent_type, global_id)
+        if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot set GLOBAL_ID')
+      endif
+      ierr = iMOAB_ResolveSharedEntities(mwwid, nseal, global_id)
+      if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot resolve WW3 vertices')
+      ierr = iMOAB_UpdateMeshInfo(mwwid)
+      if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot update WW3 mesh info')
+
+      tagtype = 1
+      if (len_trim(seq_flds_x2w_fields) > 0) then
+         ierr = iMOAB_DefineTagStorage(mwwid, trim(seq_flds_x2w_fields)//C_NULL_CHAR, &
+              tagtype, numco, tagindex)
+         if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot define x2w tags')
+      endif
+      if (len_trim(seq_flds_w2x_fields) > 0) then
+         ierr = iMOAB_DefineTagStorage(mwwid, trim(seq_flds_w2x_fields)//C_NULL_CHAR, &
+              tagtype, numco, tagindex)
+         if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot define w2x tags')
+      endif
+      taglist = 'lat:lon:area:aream:frac:mask:norm8wt:drv2mdl:mdl2drv'
+      ierr = iMOAB_DefineTagStorage(mwwid, trim(taglist)//C_NULL_CHAR, tagtype, numco, tagindex)
+      if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot define WW3 domain tags')
+      if (nseal > 0) then
+          vals = 0.0_r8
+        ierr = iMOAB_SetDoubleTagStorage(mwwid, 'norm8wt'//C_NULL_CHAR, nseal, ent_type, &
+            [(1.0_r8, ifield=1,nseal)])
+        if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot initialize norm8wt')
+        nattrs = mct_aVect_nRattr(x2w_w)
+        do ifield = 1,nattrs
+          taglist = trim(mct_aVect_getRList2c(ifield,x2w_w))//C_NULL_CHAR
+          ierr = iMOAB_SetDoubleTagStorage(mwwid, taglist, nseal, ent_type, vals)
+          if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot initialize x2w tags')
+        enddo
+        nattrs = mct_aVect_nRattr(w2x_w)
+        do ifield = 1,nattrs
+          taglist = trim(mct_aVect_getRList2c(ifield,w2x_w))//C_NULL_CHAR
+          ierr = iMOAB_SetDoubleTagStorage(mwwid, taglist, nseal, ent_type, vals)
+          if (ierr /= 0) call shr_sys_abort('(wav_init_moab) cannot initialize w2x tags')
+        enddo
+        call wav_set_domain_tags(mwwid, nseal, vals)
+      endif
+      deallocate(global_id, xyz, vals)
+     end subroutine wav_init_moab
+
+    subroutine wav_set_domain_tags(appid, npoints, work)
+      use iMOAB, only: iMOAB_SetDoubleTagStorage
+      use iso_c_binding, only: C_NULL_CHAR
+      use w3gdatmd, only: nseal, mapsf, mapsta, xgrd, ygrd
+      use w3odatmd, only: naproc, iaproc
+      use wmscrpmd, only: grid_area
+      use shr_kind_mod, only: r8 => shr_kind_r8
+      use shr_const_mod, only: SHR_CONST_PI
+      integer, intent(in) :: appid, npoints
+      real(r8), intent(inout) :: work(:)
+      integer :: ierr, jsea, isea, ix, iy
+      real(r8), parameter :: deg2rad = SHR_CONST_PI/180.0_r8
+
+      do jsea = 1,npoints
+        isea = iaproc + (jsea-1)*naproc
+        ix = mapsf(isea,1)
+        iy = mapsf(isea,2)
+        work(jsea) = xgrd(iy,ix)
+      enddo
+      ierr = iMOAB_SetDoubleTagStorage(appid, 'lon'//C_NULL_CHAR, npoints, 0, work)
+      if (ierr /= 0) call shr_sys_abort('(wav_set_domain_tags) cannot set lon')
+      do jsea = 1,npoints
+        isea = iaproc + (jsea-1)*naproc
+        ix = mapsf(isea,1)
+        iy = mapsf(isea,2)
+        work(jsea) = ygrd(iy,ix)
+      enddo
+      ierr = iMOAB_SetDoubleTagStorage(appid, 'lat'//C_NULL_CHAR, npoints, 0, work)
+      if (ierr /= 0) call shr_sys_abort('(wav_set_domain_tags) cannot set lat')
+      do jsea = 1,npoints
+        isea = iaproc + (jsea-1)*naproc
+        ix = mapsf(isea,1)
+        iy = mapsf(isea,2)
+        work(jsea) = merge(1.0_r8,0.0_r8,mapsta(iy,ix) /= 0)
+      enddo
+      ierr = iMOAB_SetDoubleTagStorage(appid, 'mask:frac'//C_NULL_CHAR, 2*npoints, 0, &
+          reshape([work,work],[2*npoints]))
+      if (ierr /= 0) call shr_sys_abort('(wav_set_domain_tags) cannot set mask/fraction')
+      do jsea = 1,npoints
+        isea = iaproc + (jsea-1)*naproc
+        ix = mapsf(isea,1)
+         work(jsea) = grid_area(ix)*deg2rad**2
+      enddo
+      ierr = iMOAB_SetDoubleTagStorage(appid, 'area'//C_NULL_CHAR, npoints, 0, work)
+      if (ierr /= 0) call shr_sys_abort('(wav_set_domain_tags) cannot set area')
+      ierr = iMOAB_SetDoubleTagStorage(appid, 'aream'//C_NULL_CHAR, npoints, 0, work)
+      if (ierr /= 0) call shr_sys_abort('(wav_set_domain_tags) cannot set aream')
+     end subroutine wav_set_domain_tags
+
+     subroutine wav_moab_tags_to_av(av)
+      use shr_kind_mod, only: CXX => shr_kind_CXX, r8 => shr_kind_r8
+      use mct_mod
+      use w3gdatmd, only: nseal
+      use iMOAB, only: iMOAB_GetDoubleTagStorage
+      use iso_c_binding, only: C_NULL_CHAR
+      use seq_comm_mct, only: mwwid
+      type(mct_aVect), intent(inout) :: av
+      integer :: nfields, ifield, ierr
+      real(r8), allocatable :: values(:)
+      character(CXX) :: field
+
+      if (nseal == 0) return
+      allocate(values(nseal))
+      nfields = mct_aVect_nRattr(av)
+      do ifield = 1,nfields
+        field = trim(mct_aVect_getRList2c(ifield,av))//C_NULL_CHAR
+        ierr = iMOAB_GetDoubleTagStorage(mwwid, field, nseal, 0, values)
+        if (ierr /= 0) call shr_sys_abort('(wav_moab_tags_to_av) cannot read '//trim(field))
+        av%rAttr(ifield,:) = values
+      enddo
+      deallocate(values)
+     end subroutine wav_moab_tags_to_av
+
+     subroutine wav_moab_av_to_tags(av)
+      use shr_kind_mod, only: CXX => shr_kind_CXX, r8 => shr_kind_r8
+      use mct_mod
+      use w3gdatmd, only: nseal
+      use iMOAB, only: iMOAB_SetDoubleTagStorage
+      use iso_c_binding, only: C_NULL_CHAR
+      use seq_comm_mct, only: mwwid
+      type(mct_aVect), intent(in) :: av
+      integer :: nfields, ifield, ierr
+      real(r8), allocatable :: values(:)
+      character(CXX) :: field
+
+      if (nseal == 0) return
+      allocate(values(nseal))
+      nfields = mct_aVect_nRattr(av)
+      do ifield = 1,nfields
+        field = trim(mct_aVect_getRList2c(ifield,av))//C_NULL_CHAR
+        values = av%rAttr(ifield,:)
+        ierr = iMOAB_SetDoubleTagStorage(mwwid, field, nseal, 0, values)
+        if (ierr /= 0) call shr_sys_abort('(wav_moab_av_to_tags) cannot write '//trim(field))
+      enddo
+      deallocate(values)
+     end subroutine wav_moab_av_to_tags
+#endif
 
 !=====================================================================
 !=====================================================================

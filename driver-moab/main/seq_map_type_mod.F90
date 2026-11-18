@@ -164,6 +164,7 @@ contains
 
     mapper%copy_only      = .false.
     mapper%rearrange_only = .false.
+   mapper%nl_available   = .false.
     mapper%mpicom         = mpicom
     mapper%strategy       = "undefined"
     mapper%mapfile        = "undefined"
@@ -171,6 +172,8 @@ contains
     mapper%src_mbid  = -1
     mapper%tgt_mbid  = -1
     mapper%intx_mbid = -1
+   mapper%src_context = -1
+   mapper%intx_context = -1
     mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
     mapper%howeight_identifier = "undefined"

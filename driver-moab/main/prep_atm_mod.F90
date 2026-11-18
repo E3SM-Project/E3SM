@@ -17,6 +17,7 @@ module prep_atm_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: atm, lnd, ocn, ice, wav
+   use cplcomp_moab_helpers_mod, only: moab_define_double_tag, moab_mesh_discretization
 
   use shr_mpi_mod,  only:  shr_mpi_commrank
   use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
@@ -795,7 +796,7 @@ contains
          endif
       endif
 
-      if (wav_c2_atm) then
+      if (wav_present .and. wav_atm_coup == 'twoway') then
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sw2a'
@@ -807,15 +808,7 @@ contains
          endif
       endif
 
-      if (wav_present) then
-
-         if (mbwxid < 0) then
-            if (trim(wav_gnam) == trim(atm_gnam)) then
-               mbwxid = mbaxid
-            else if (trim(wav_gnam) == trim(ocn_gnam)) then
-               mbwxid = mboxid
-            end if
-         end if
+      if (wav_present .and. wav_atm_coup == 'twoway') then
 
          if ((mbaxid .ge. 0) .and. (mbwxid .ge. 0)) then
 
@@ -829,6 +822,10 @@ contains
             mapper_Sw2a%src_context = wav(1)%cplcompid
             mapper_Sw2a%weight_identifier = wgtIdSw2a
             mapper_Sw2a%mbname = 'mapper_Sw2a'
+
+            if (wav_atm_coup == 'twoway') then
+               call moab_define_double_tag(mbaxid, 'Sw_Charn:Sw_Ustar:Sw_Z0', subname)
+            endif
 
             if (.not. samegrid_aw) then
                appname = "WAV_ATM_COU"
@@ -847,11 +844,19 @@ contains
                arearead = 0
                call moab_map_init_rcfile(mapper_Sw2a, type1, &
                     'seq_maps.rc', 'wav2atm_smapname:', 'wav2atm_smaptype:', samegrid_aw, &
-                    arearead, wgtIdSw2a, 'mapper_Sw2a MOAB initialization', esmf_map_flag)
+                  arearead, wgtIdSw2a, 'mapper_Sw2a MOAB initialization', esmf_map_flag, &
+                  source_discretization_type=2, &
+                  target_discretization_type=moab_mesh_discretization(mbaxid))
+                  call seq_map_setup_coverage(mapper_Sw2a)
             endif
 
             if (samegrid_aw) then
                mapper_Sw2a%intx_context = atm(1)%cplcompid
+               call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
+               type1 = moab_mesh_discretization(mbaxid)
+               ierr = iMOAB_ComputeCommGraph(mbwxid, mbaxid, mpicom_CPLID, &
+                  mpigrp_CPLID, mpigrp_CPLID, 2, type1, wav(1)%cplcompid, atm(1)%cplcompid)
+               if (ierr /= 0) call shr_sys_abort(subname//' cannot create same-grid WAV-ATM graph')
             endif
 
          endif
@@ -1706,25 +1711,34 @@ contains
     character(len=*), optional, intent(in) :: timer
     !
     ! Local Variables
-    integer :: efi, emi, ewi
+      integer :: efi, emi, ewi
     type(mct_aVect) , pointer :: w2x_wx
+      character(CXX) :: w2x_fldlist
     character(*), parameter   :: subname = '(prep_atm_calc_w2x_ax)'
     character(*), parameter   :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    w2x_fldlist = ''
+    if (wav_atm_coup == 'twoway') then
+       call seq_flds_add(w2x_fldlist, 'Sw_Charn')
+       call seq_flds_add(w2x_fldlist, 'Sw_Ustar')
+       call seq_flds_add(w2x_fldlist, 'Sw_Z0')
+    endif
     do emi = 1,num_inst_wav
        ewi = mod((emi-1),num_inst_wav) + 1
        efi = mod((emi-1),num_inst_frc) + 1
 
        w2x_wx => component_get_c2x_cx(wav(ewi))
-       if (present(fractions_wx)) then
-          call seq_map_map(mapper_Sw2a, w2x_wx, w2x_ax(ewi),&
-               fldlist=seq_flds_w2x_states,norm=.true., &
-               avwts_s=fractions_wx(efi),avwtsfld_s='wfrac')
-       else
-          call seq_map_map(mapper_Sw2a, w2x_wx, w2x_ax(ewi),&
-               fldlist=seq_flds_w2x_states,norm=.true.)
+       if (len_trim(w2x_fldlist) > 0) then
+          if (present(fractions_wx)) then
+             call seq_map_map(mapper_Sw2a, w2x_wx, w2x_ax(ewi),&
+                  fldlist=trim(w2x_fldlist),norm=.true., &
+                  avwts_s=fractions_wx(efi),avwtsfld_s='wfrac')
+          else
+             call seq_map_map(mapper_Sw2a, w2x_wx, w2x_ax(ewi),&
+                  fldlist=trim(w2x_fldlist),norm=.true.)
+          endif
        endif
     enddo
     call t_drvstopf  (trim(timer))

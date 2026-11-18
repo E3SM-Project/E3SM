@@ -185,9 +185,6 @@ module seq_flux_mct
   integer :: index_o2x_So_t
   integer :: index_o2x_So_u
   integer :: index_o2x_So_v
-  integer :: index_w2x_Sw_Charn
-  integer :: index_w2x_Sw_Z0
-  integer :: index_w2x_Sw_Ustar
   integer :: index_o2x_So_fswpen
   integer :: index_o2x_So_s
   integer :: index_o2x_So_roce_16O
@@ -1555,7 +1552,7 @@ contains
     logical     :: flux_albav   ! flux avg option
     logical     :: dead_comps   ! .true.  => dead components are used
     integer     :: n            ! indices
-    integer     :: nloc, nloca, nloco, nlocw    ! number of gridcells
+      integer     :: nloc, nloca, nloco    ! number of gridcells
     logical,save:: first_call = .true.
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     logical     :: read_restart    ! .true. => continue run
@@ -1583,6 +1580,7 @@ contains
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal, &
          ocn_surface_flux_scheme=ocn_surface_flux_scheme)
+
 
     cold_start = .false.   ! use restart data or data from last timestep
 
@@ -1677,14 +1675,6 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
-       if (wav_ocn_coup == 'twoway' .or. wav_atm_coup == 'twoway') then
-          if (.not. present(w2x)) then
-             call shr_sys_abort(trim(subname)//' ERROR wave coupling active but w2x is not present')
-          endif
-          index_w2x_Sw_Charn = mct_aVect_indexRA(w2x,'Sw_Charn')
-          index_w2x_Sw_Z0 = mct_aVect_indexRA(w2x,'Sw_Z0')
-          index_w2x_Sw_Ustar = mct_aVect_indexRA(w2x,'Sw_Ustar')
-       endif
        call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
             flux_convergence_max_iteration=flux_max_iteration, &
             coldair_outbreak_mod=coldair_outbreak_mod)
@@ -1699,12 +1689,6 @@ contains
     nloc = mbGetnCells(mbid)
     nloca = mct_aVect_lsize(a2x)
     nloco = mct_aVect_lsize(o2x)
-    if (present(w2x)) then
-       nlocw = mct_aVect_lsize(w2x)
-    else
-       nlocw = nloc
-    endif
-
     nlocf = mbGetnCells(mbfid)
 
     if (nloc /= nlocf) then
@@ -1830,6 +1814,15 @@ contains
          ! TODO:  Finish with more diun if we're keeping that option
        endif
 
+         ! Sw_Charn, Sw_Ustar, and Sw_Z0 are wave state fields. They have already
+         ! been mapped onto this MOAB mesh by the Sw2a/Sw2o state mapper; read
+         ! them in the same mesh and cell ordering as the other mapped states.
+       if (wav_atm_coup == 'twoway') then
+          call mbGetCellTagVals(mbid, 'Sw_Charn', charnsea, nloc)
+          call mbGetCellTagVals(mbid, 'Sw_Ustar', ustarwav, nloc)
+          call mbGetCellTagVals(mbid, 'Sw_Z0', z0wav, nloc)
+       endif
+
        do n = 1,nloc
           nInc(n) = 0._r8 ! needed for minval/maxval calculation
 
@@ -1837,14 +1830,7 @@ contains
           if (mask(n) /= 0) then
              uGust(n) = 0.0_r8
              prec(n)  = rainc(n)+rainl(n)+snowc(n)+snowl(n)
-             if (wav_atm_coup == 'twoway') then
-                if (.not. present(w2x)) then
-                   call shr_sys_abort(trim(subname)//' ERROR wav_atm_coup twoway but w2x is not present')
-                endif
-                charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn,n)
-                ustarwav(n) = w2x%rAttr(index_w2x_Sw_Ustar,n)
-                z0wav(n) = w2x%rAttr(index_w2x_Sw_Z0,n)
-             else
+             if (wav_atm_coup /= 'twoway') then
                 charnsea(n) = 0.0_r8
                 ustarwav(n) = 0.0_r8
                 z0wav(n) = 0.0_r8
@@ -1943,7 +1929,9 @@ contains
                ocn_surface_flux_scheme, &
                duu10n, u10res, ustar, re  , ssq, &
                wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm, &
-               z0wav=z0wav, ustarwav=ustarwav, charnockSeaState=charnsea)
+               z0wav=z0wav, ustarwav=ustarwav)
+          ! Waves modify only the default scheme; COARE keeps its bulk Charnock,
+          ! and the diurnal and UA schemes ignore waves, as in the MCT driver.
        else
           call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
                shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
