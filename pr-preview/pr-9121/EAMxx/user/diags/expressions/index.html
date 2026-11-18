@@ -5259,7 +5259,7 @@ is an honest analogue.</p>
 <td><code>X</code> where <code>qv&gt;0.01</code>, missing elsewhere</td>
 </tr>
 <tr>
-<td><code>X.differentiate('p_mid')</code></td>
+<td><code>X.derivative('p_mid')</code></td>
 <td>vertical derivative with respect to <code>p_mid</code></td>
 </tr>
 <tr>
@@ -5288,7 +5288,15 @@ is an honest analogue.</p>
 </tr>
 <tr>
 <td><code>p_mid.searchsorted(500, units='hPa')</code></td>
-<td>level indices bracketing 500 hPa</td>
+<td>index of the first level with pressure above 500 hPa</td>
+</tr>
+<tr>
+<td><code>z_mid.searchsorted(1000)</code></td>
+<td>index of the first level below 1000 m above sea level</td>
+</tr>
+<tr>
+<td><code>height_mid.searchsorted(100)</code></td>
+<td>index of the first level below 100 m above the surface</td>
 </tr>
 </tbody>
 </table>
@@ -5383,21 +5391,15 @@ is an honest analogue.</p>
   per the bullet above cannot be multiplied.</li>
 <li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
   the <code>over_dt</code> restriction above.</li>
-<li><code>searchsorted</code> gives, per column, the pair of level indices that bracket a
-  target pressure or height. Its receiver picks the coordinate: <code>p_mid</code>/<code>p_int</code> for a
-  pressure (<code>units</code> defaults to <code>Pa</code>), <code>z_mid</code>/<code>z_int</code> for a height above sea
-  level, and <code>height_mid</code>/<code>height_int</code> for a height above the surface (<code>units</code>
-  defaults to <code>m</code>). <code>interp(..)</code> is built on it, so fields interpolated to the
-  same target share one search. Its output has <code>int</code> data type, so like
-  <code>mask.where(..)</code> it cannot be written as is.</li>
-<li><code>differentiate</code> is xarray's: numpy's <code>gradient</code> along the level dimension,
-  using the values of the named coordinate (<code>p_mid</code> or <code>z_mid</code>) in each column.
-  Interior levels use second-order central differences on the (uneven) spacing,
-  and the top and bottom levels one-sided first-order differences, as xarray's
-  default <code>edge_order=1</code>. The derivative is with respect to the coordinate as
-  it stands, so <code>T_mid.differentiate('z_mid')</code> is negative where temperature
-  falls with height. Where <code>X</code> is masked, a level is valid only if every level
-  its difference reads is valid. See <a href="../vert_derivative/">Vertical derivative</a>.</li>
+<li><code>searchsorted</code> gives, per column, the index of the first level whose pressure is
+  above the target pressure (for a height, which decreases with the level index,
+  the first level below the target); the index is <code>nlevs</code> if there is none. That is
+  numpy's <code>searchsorted(side='right')</code> along the level dimension. Its receiver picks
+  the coordinate: <code>p_mid</code>/<code>p_int</code> for a pressure (<code>units</code> defaults to <code>Pa</code>),
+  <code>z_mid</code>/<code>z_int</code> for a height above sea level, and <code>height_mid</code>/<code>height_int</code> for a
+  height above the surface (<code>units</code> defaults to <code>m</code>). <code>interp(..)</code> is built on it, so
+  fields interpolated to the same target share one search. Its output has <code>int</code> data
+  type, so like <code>mask.where(..)</code> it cannot be written as is.</li>
 <li><code>histogram</code> bins the way numpy's <code>histogram</code> and xhistogram do: n edges make
   n-1 bins, each bin includes its lower edge, the last bin also includes its
   upper edge, and values outside the edges are not counted. To count the tails,
@@ -5411,9 +5413,8 @@ is an honest analogue.</p>
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
 and so on.</p>
 <h3 id="where-this-departs-from-xarray">Where this departs from xarray</h3>
-<p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>where</code>, <code>shift</code> and <code>differentiate</code> mean
-what they mean in xarray, on the same arguments. The rest have no xarray
-spelling we could adopt:</p>
+<p><code>isel</code>, <code>interp</code>, <code>mean</code>, <code>sum</code>, <code>where</code> and <code>shift</code> mean what they mean in
+xarray, on the same arguments. The rest have no xarray spelling we could adopt:</p>
 <table>
 <thead>
 <tr>
@@ -5425,6 +5426,10 @@ spelling we could adopt:</p>
 <tr>
 <td><code>histogram</code></td>
 <td>not in xarray; it is <a href="https://xhistogram.readthedocs.io">xhistogram</a>'s <code>histogram(X, bins=..)</code>, with the same binning, and always reduces over every dimension</td>
+</tr>
+<tr>
+<td><code>derivative</code></td>
+<td>deliberately not xarray's <code>differentiate</code> (numpy's <code>gradient</code>): it is a finite-volume layer mean, built on the model's own layer thicknesses (see <a href="../vert_derivative/">Vertical derivative</a>), so that, weighted by the layer thickness (<code>dp</code> or <code>dz</code>), the levels sum to the difference between the bottom and top values</td>
 </tr>
 <tr>
 <td><code>zonal_mean</code></td>
@@ -5440,7 +5445,7 @@ spelling we could adopt:</p>
 </tr>
 <tr>
 <td><code>searchsorted</code></td>
-<td>named after numpy's, but gives the pair of levels bracketing the target (-1 where out of range) rather than one insertion index, and takes <code>units</code></td>
+<td>named after numpy's (<code>side='right'</code>), but takes <code>units</code>, and for heights, which decrease with the level index, it looks for the first level below the target</td>
 </tr>
 </tbody>
 </table>

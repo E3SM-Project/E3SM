@@ -2294,10 +2294,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#algorithm" class="md-nav__link">
+  <a href="#brief-description-of-algorithm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Algorithm
+        Brief description of algorithm
       
     </span>
   </a>
@@ -4867,10 +4867,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#algorithm" class="md-nav__link">
+  <a href="#brief-description-of-algorithm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Algorithm
+        Brief description of algorithm
       
     </span>
   </a>
@@ -5010,43 +5010,49 @@
 
 
 <h1 id="vertical-derivative-diagnostics">Vertical derivative diagnostics</h1>
-<p>We can calculate the vertical derivative of a field with respect to a vertical
-coordinate, pressure or height, by requesting the
-<a href="../expressions/">expression</a> <code>X.differentiate('p_mid')</code> or
-<code>X.differentiate('z_mid')</code> in the output yaml files. The name and the numbers
-are xarray's: the result is what <code>X.differentiate('p_mid')</code> gives in xarray on
-one column whose level coordinate is that column's <code>p_mid</code>.</p>
-<h2 id="algorithm">Algorithm</h2>
-<p>For simplicity, the field <code>X</code> can only have two dimensions (column and level).
-This covers most fields of interest, but notably does not cover
-higher-dimensioned fields in radiation and MAM. <code>X</code> and the coordinate <code>x</code>
-(<code>p_mid</code> or <code>z_mid</code>) are both on midpoints.</p>
-<p>In each column, the derivative is numpy's <code>gradient</code> of <code>X</code> with respect to
-the values of <code>x</code>, which is what xarray's <code>differentiate</code> computes. At an
-interior level <span class="arithmatex">\(k\)</span>, with <span class="arithmatex">\(h_1 = x_k - x_{k-1}\)</span> and <span class="arithmatex">\(h_2 = x_{k+1} - x_k\)</span>, it is
-second-order accurate on uneven spacing:</p>
+<p>We can automatically calculate the vertical derivative of a given field
+with respect to a vertical coordinate (pressure or height).
+In other words, the vertical derivative is the derivative of the field
+along a vertical coordinate.
+To automatically get the derivative of a field X, we can request the
+<a href="../expressions/">expression</a> <code>X.derivative('p_mid')</code> or <code>X.derivative('z_mid')</code>
+in the output yaml files.</p>
+<p><em>WARNING: support for the dz-based derivative is experimental!</em></p>
+<h2 id="brief-description-of-algorithm">Brief description of algorithm</h2>
+<p>For simplicity, the field <code>X</code> can only have two dimensions
+(column and level). This covers most fields of interest, but
+notably does not cover higher-dimensioned fields in radiation and MAM.
+We calculate the derivative by finding the difference in the
+input field <code>X</code>, which must be provided on midpoints, by interpolating
+its values at interfaces weighted by the pressure differential.
+That is, for a pressure-based derivative</p>
 <div class="arithmatex">\[
-\left.\frac{\partial X}{\partial x}\right|_k =
-  \frac{-h_2}{h_1 (h_1+h_2)} X_{k-1}
-+ \frac{h_2 - h_1}{h_1 h_2} X_k
-+ \frac{h_1}{h_2 (h_1+h_2)} X_{k+1}
+\nabla_{p} X = \frac{\Delta X}{\Delta p}
 \]</div>
-<p>and at the top and bottom levels it is one-sided and first-order, as with
-xarray's default <code>edge_order=1</code>:</p>
+<p>and for height-based derivative</p>
 <div class="arithmatex">\[
-\left.\frac{\partial X}{\partial x}\right|_0 = \frac{X_1 - X_0}{x_1 - x_0},
-\qquad
-\left.\frac{\partial X}{\partial x}\right|_{n-1} = \frac{X_{n-1} - X_{n-2}}{x_{n-1} - x_{n-2}}.
+\nabla_{p} X = \frac{\Delta X}{\Delta z}
 \]</div>
-<p>The derivative is with respect to the coordinate as it stands. Level indices
-increase downward, so <code>p_mid</code> increases with <span class="arithmatex">\(k\)</span> and <code>z_mid</code> decreases: in a
-troposphere where temperature falls with height, <code>T_mid.differentiate('p_mid')</code>
-is positive and <code>T_mid.differentiate('z_mid')</code> negative.</p>
-<p>If <code>X</code> is masked (e.g., <code>X.where(..)</code>), a level of the result is valid only if
-every level its difference reads is valid (<span class="arithmatex">\(k-1\)</span>, <span class="arithmatex">\(k\)</span>, <span class="arithmatex">\(k+1\)</span> inside; the two
-levels used at the top and bottom), which is where xarray would not propagate
-a NaN. Elsewhere it is missing.</p>
-<p>The units of the result are those of <code>X</code> divided by those of the coordinate.</p>
+<p>where</p>
+<div class="arithmatex">\[
+\Delta X = \tilde{X}_{i,k+1} - \tilde{X}_{i,k}
+\]</div>
+<div class="arithmatex">\[
+\tilde{X}_{i,k+1} = \frac{\left(
+    X_{i,k} \times \Delta p_{i,k+1} +
+    X_{i,k+1} \times \Delta p_{i,k}
+  \right)}
+  {\left(
+    \Delta p_{i,k+1} + \Delta p_{i,k}
+  \right)}
+\]</div>
+<p>Here, <span class="arithmatex">\(\Delta p\)</span> is the "pseudo density" pressure differential in Pa;
+and <span class="arithmatex">\(\Delta z\)</span> is the height of the layer in m</p>
+<p>Note that the definition <span class="arithmatex">\(\tilde{X}_{i,k+1}\)</span> assumes that all
+fields are weighted by the pressure differential, which is a
+prognostic parameter of the dynamics core solver. Also note that
+when <span class="arithmatex">\(\Delta p_{i,k+1} \gg \Delta p_{i,k}\)</span>,
+<span class="arithmatex">\(\tilde{X}_{i,k+1}\)</span> is closer to <span class="arithmatex">\(X_{i,k}\)</span> than <span class="arithmatex">\(X_{i,k+1}\)</span>.</p>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -5057,8 +5063,8 @@ a NaN. Elsewhere it is missing.</p>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dTdp := T_mid.differentiate('p_mid')</span><span class="w">  </span><span class="c1"># K / Pa</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dTdz := T_mid.differentiate('z_mid')</span><span class="w">  </span><span class="c1"># K / m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dTdp := T_mid.derivative('p_mid')</span><span class="w">  </span><span class="c1"># K / Pa</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dTdz := T_mid.derivative('z_mid')</span><span class="w">  </span><span class="c1"># K / m</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
