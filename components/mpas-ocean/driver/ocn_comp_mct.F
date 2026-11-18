@@ -2695,7 +2695,7 @@ contains
              riverFluxSiO3(i) = riverFluxSiO3(i)*riverFactor/28.085_RKIND
              riverFluxDOC(i)  = riverFluxDOC(i)*riverFactor/12.001_RKIND
              riverFluxDIC(i)  = riverFluxDIC(i)*riverFactor/12.001_RKIND
-             riverFluxFe(i)   = riverFluxFe(i)*riverFactor/55.845_RKIND
+             riverFluxFe(i)   = riverFluxFe(i)*riverFactor/molecular_weight_Fe
 
              riverFluxALK(i)  = riverFluxDIC(i)
            endif

@@ -130,9 +130,9 @@ contains
        sea_ice_salinity   =  4.0_RKIND        ! (psu)
        ocn_ref_salinity   = real(SHR_CONST_OCN_REF_SAL, RKIND) ! (psu)
        atm_ref_pressure   = real(SHR_CONST_PSTD, RKIND) ! (Pa)
-       molecular_weight_C = 12.0107_RKIND     ! molecular weight carbon
+       molecular_weight_C = real(SHR_CONST_MWC, RKIND)  ! molecular weight carbon
        molecular_weight_O2 = 15.9994_RKIND    ! molecular weight oxygen
-       molecular_weight_Fe = 55.845_RKIND     ! molecular weight iron
+       molecular_weight_Fe = real(SHR_CONST_MWFE, RKIND) ! molecular weight iron
 
 
        !-----------------------------------------------------------------------
@@ -163,9 +163,7 @@ contains
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
-       molecular_weight_C     = SHR_CONST_MWC           ! molecular weight carbon
        molecular_weight_O2    = SHR_CONST_MWO           ! molecular weight oxygen
-       molecular_weight_Fe    = SHR_CONST_MWFE          ! molecular weight iron
 #endif
 
 !#ifdef ZERO_SEA_ICE_REF_SAL
