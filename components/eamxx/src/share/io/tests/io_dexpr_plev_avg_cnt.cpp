@@ -211,6 +211,8 @@ void run_and_check (const std::string& avg_type,
   });
   f_pl.set<std::vector<std::string>>("field_names",{
       "X_at_500hPa := X.interp(p_mid=500,units='hPa')",
+      // The same level as the line above, spelled in Pa
+      "X_at_50000Pa := X.interp(p_mid=50000)",
       "C500 := C.interp(p_mid=500,units='hPa')",
       "Xmasked_at_500hPa := Xmasked.interp(p_mid=500,units='hPa')",
       // NOTE: the alias sorts before its target, and is processed first
@@ -275,6 +277,10 @@ void run_and_check (const std::string& avg_type,
   CHECK (scorpio::get_attribute<std::string>(filename,"nvalid_500hPa","cell_methods")=="time: sum");
   CHECK (scorpio::has_attribute(filename,"nvalid_500hPa","long_name"));
   CHECK_FALSE (scorpio::has_var(filename,"nvalid_X_at_500hPa"));
+  // ... also when the level is spelled in other units: all share the count named after the level in hPa
+  REQUIRE (scorpio::has_var(filename,"X_at_50000Pa"));
+  CHECK_FALSE (scorpio::has_var(filename,"nvalid_50000Pa"));
+  CHECK_FALSE (scorpio::has_var(filename,"nvalid_X_at_50000Pa"));
   CHECK_FALSE (scorpio::has_var(filename,"nvalid_C500"));
   CHECK_FALSE (scorpio::has_var(filename,"nvalid_ncol"));
   // ... while the field with a masked input has its own
