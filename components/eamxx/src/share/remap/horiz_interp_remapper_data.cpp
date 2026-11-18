@@ -7,6 +7,7 @@
 #include "share/util/eamxx_alltoallv.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -171,7 +172,7 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
   // If this is a remap TO a structured grid, setup some geo data that our output classes
   // will use to write to file using (lat,lon) layout rather than (ncol)
   if (structured) {
-    setup_structured_data(gen_grid,layout[0],layout[1]);
+    setup_structured_data(gen_grid,layout[0],layout[1],map_file);
   }
 
   if (built_from_src) {
@@ -383,7 +384,8 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
 
 void HorizRemapperData::
 setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
-                      const int nx, const int ny)
+                      const int nx, const int ny,
+                      const std::string& map_file)
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
@@ -403,16 +405,19 @@ setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
   // the same on all ranks, all ranks reach the same verdict, with no need for further communication
   // (and no rank can bail out early, leaving the others stuck in a collective).
   // The size of the message is 2*(nx+ny), independent of the number of points/ranks.
-  bool latlon = grid->has_geometry_data("lat") and grid->has_geometry_data("lon");
-  std::vector<Real> lats(ny), lons(nx);
-  if (latlon) {
+  // If swap_latlon=true, we test the hypothesis that lat (instead of lon) is the fastest varying index.
+  // If the check passes, slow_vals/fast_vals store the values of the quantity that depends on y/x.
+  const bool has_latlon = grid->has_geometry_data("lat") and grid->has_geometry_data("lon");
+  auto factors = [&](const bool swap_latlon, std::vector<Real>& slow_vals, std::vector<Real>& fast_vals) {
     auto pt_lat_h = grid->get_geometry_data("lat").get_view<const Real*,Host>();
     auto pt_lon_h = grid->get_geometry_data("lon").get_view<const Real*,Host>();
+    auto pt_slow_h = swap_latlon ? pt_lon_h : pt_lat_h;
+    auto pt_fast_h = swap_latlon ? pt_lat_h : pt_lon_h;
 
     constexpr Real sentinel = std::numeric_limits<Real>::lowest();
     constexpr Real tol = 1e-3;
 
-    // Slots 0..ny-1 are for lats, slots ny..ny+nx-1 for lons.
+    // Slots 0..ny-1 are for the quantity that depends on y, slots ny..ny+nx-1 for the one that depends on x.
     const int nslots = ny+nx;
     std::vector<Real> my_vals(2*nslots,sentinel), all_vals(2*nslots);
     Real* my_max     = my_vals.data();
@@ -423,8 +428,8 @@ setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
     };
     for (int i=0; i<ncols; ++i) {
       const auto pos = gids_h(i) - min_gid;
-      update(pos / nx,pt_lat_h(i));
-      update(ny + pos % nx,pt_lon_h(i));
+      update(pos / nx,pt_slow_h(i));
+      update(ny + pos % nx,pt_fast_h(i));
     }
     grid->get_comm().all_reduce(my_vals.data(),all_vals.data(),2*nslots,MPI_MAX);
 
@@ -433,13 +438,32 @@ setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
       const Real vmin = -all_vals[nslots+k];
       // A slot that nobody filled (not expected) cannot be part of a lat-lon grid
       if (vmax==sentinel or (vmax-vmin)>tol) {
-        latlon = false;
-        break;
+        return false;
       }
     }
-    if (latlon) {
-      std::copy_n(all_vals.data(),ny,lats.data());
-      std::copy_n(all_vals.data()+ny,nx,lons.data());
+    slow_vals.resize(ny);
+    fast_vals.resize(nx);
+    std::copy_n(all_vals.data(),ny,slow_vals.data());
+    std::copy_n(all_vals.data()+ny,nx,fast_vals.data());
+    return true;
+  };
+
+  std::vector<Real> lats, lons;
+  bool latlon = has_latlon and factors(false,lats,lons);
+
+  if (has_latlon and not latlon) {
+    // If lat were the fastest varying index, the grid would be lat-lon. Treating it as curvilinear
+    // still produces a valid (and self-consistent) output, but the dims named lat/lon would not be
+    // the lat/lon axes. Since this is likely an error in the map file, warn the user.
+    // Note: all ranks participate in the (collective) check, but only the root prints
+    std::vector<Real> dummy_slow, dummy_fast;
+    if (factors(true,dummy_slow,dummy_fast) and grid->get_comm().am_i_root()) {
+      console_logger(ekat::logger::LogLevel::warn)->warn(
+        "[HorizRemapperData] Warning! The tgt grid in the map file looks like a lat-lon grid, but with lat as the fastest varying index.\n"
+        "  EAMxx requires x (lon) to be the fastest varying index for lat-lon grids, so the grid will be treated as curvilinear.\n"
+        "  The dims named lat/lon in the output file will have length ny=" + std::to_string(ny) + " and nx=" + std::to_string(nx) + ",\n"
+        "  and lat/lon will be 2d variables. If this is not what you want, check the map file.\n"
+        "   - map file: " + map_file + "\n");
     }
   }
 

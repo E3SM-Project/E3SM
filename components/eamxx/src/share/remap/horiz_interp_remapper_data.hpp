@@ -78,8 +78,10 @@ private:
   // If the grid has lat/lon geo data, detect whether the grid is lat-lon or curvilinear
   // (see the comments in the implementation). For lat-lon grids, replace lat/lon
   // with 1d coordinate arrays.
+  // The map file name is only used for messages.
   void setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
-                             const int nx, const int ny);
+                             const int nx, const int ny,
+                             const std::string& map_file);
 
   void create_ov_grid (const std::vector<Triplet>& triplets);
 

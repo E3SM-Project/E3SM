@@ -51,7 +51,9 @@ std::vector<T> read_full_var (const std::string& filename, const std::string& va
 // The first nx*ny src points are mapped to the tgt points with weight 1. The tgt points
 // are lat-lon, with lat_j=-60+20*j and lon_i=10+30*i, but they are stored with either
 //  - lon fastest (lat-major): gid = j*nx + i (standard, a lat-lon grid)
-//  - lat fastest (lon-major): gid = i*ny + j (this breaks the assumption that x is the fastest index)
+//  - lat fastest (lon-major): gid = i*ny + j (this breaks the assumption that x (lon) is the fastest index).
+//    In this case, dst_grid_dims is [ny,nx], consistently with lat being the fastest index.
+// The remapper must treat the lon-major grid as curvilinear (and, on the root rank, log a warning).
 void create_latlon_map (const std::string& filename, const int nx, const int ny, const bool lat_major)
 {
   const int n_b = nx*ny;
@@ -84,7 +86,7 @@ void create_latlon_map (const std::string& filename, const int nx, const int ny,
   for (int i=0; i<n_b; ++i) {
     row[i] = col[i] = i+1;
   }
-  int dims[2] = {nx,ny};
+  int dims[2] = {lat_major ? nx : ny, lat_major ? ny : nx};
   scorpio::write_var(filename,"dst_grid_dims",dims);
   scorpio::write_var(filename,"xc_b",lon.data());
   scorpio::write_var(filename,"yc_b",lat.data());
@@ -275,7 +277,7 @@ TEST_CASE ("horiz_structured_remap")
 
   SECTION ("latlon_ordering") {
     // A lat-lon grid stored with lat as the fastest varying index cannot be seen as an (nx,ny) lat-lon
-    // grid. We still get a valid grid: a curvilinear one, with lat/lon being col-dependent fields.
+    // grid (with x=lon). We still get a valid grid: a curvilinear one, with lat/lon being col-dependent fields.
     const int nlon = 4;
     const int nlat = 3;
     for (bool lat_major : {true,false}) {
@@ -291,10 +293,12 @@ TEST_CASE ("horiz_structured_remap")
 
       REQUIRE (tgt_grid->has_geometry_data("structured_dims"));
       const auto dims = get_structured_dims(*tgt_grid);
-      // The dims have the same sizes for lat-lon and curvilinear grids
-      REQUIRE (dims.ny==nlat);
-      REQUIRE (dims.nx==nlon);
-      check_ordering(*tgt_grid,nlon,nlat);
+      // The dims are taken from dst_grid_dims=[nx,ny], which is [nlon,nlat] for lat-major maps, and [nlat,nlon] for lon-major maps
+      const int exp_nx = lat_major ? nlon : nlat;
+      const int exp_ny = lat_major ? nlat : nlon;
+      REQUIRE (dims.ny==exp_ny);
+      REQUIRE (dims.nx==exp_nx);
+      check_ordering(*tgt_grid,exp_nx,exp_ny);
       // What differs is the layout of lat/lon: 1d coordinate arrays vs col-dependent fields
       if (lat_major) {
         REQUIRE (tgt_grid->get_geometry_data("lat").get_header().get_identifier().get_layout().size()==nlat);
