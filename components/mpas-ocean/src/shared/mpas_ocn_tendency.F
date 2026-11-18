@@ -1571,8 +1571,8 @@ contains
       !
 
       ! Convert restore time from days to seconds
-      thickness_filter_timescale_sec = config_thickness_filter_timescale*86400.0_RKIND
-      highFreqThick_restore_time_sec = config_highFreqThick_restore_time*86400.0_RKIND
+      thickness_filter_timescale_sec = config_thickness_filter_timescale*seconds_per_day
+      highFreqThick_restore_time_sec = config_highFreqThick_restore_time*seconds_per_day
 
       allocate(div_hu(nVertLevels))
 

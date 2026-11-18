@@ -275,8 +275,8 @@ contains
       err = 0
       if (tidalPotentialOff) return
 
-      t = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement
-      ramp = tanh((2.0_RKIND*t/86400.0_RKIND)/tidalPotRamp)
+      t = daysSinceStartOfSim*seconds_per_day + forcingTimeIncrement
+      ramp = tanh((2.0_RKIND*t/seconds_per_day)/tidalPotRamp)
 
       do iCell = 1, nCellsAll
          tidalPotEta(iCell) = 0.0_RKIND

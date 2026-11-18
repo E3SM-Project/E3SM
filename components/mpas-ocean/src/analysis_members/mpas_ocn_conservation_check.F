@@ -732,7 +732,7 @@ contains
             A = earthAreaE3SM
             call mpas_log_write('Conversion factors:')
             write(m,"('Earth area in E3SM:          A = ',es24.16,' m^2')") A; call mpas_log_write(m)
-            write(m,"('Averaging time interval:    dt = ',f12.4,' s, ',f12.4,' days')") dtAvg, dtAvg/86400._RKIND; call mpas_log_write(m)
+            write(m,"('Averaging time interval:    dt = ',f12.4,' s, ',f12.4,' days')") dtAvg, dtAvg/seconds_per_day; call mpas_log_write(m)
             write(m,"('Number of time steps         N = ',i12)") accumulatedFluxCounter; call mpas_log_write(m)
             write(m,"('density salt water      rho_sw = ',f12.4,' kg/m^3')") rho_sw; call mpas_log_write(m)
             write(m,"('specific heat salt water cp_sw = ',f12.4,' J/kg/K')") cp_sw; call mpas_log_write(m)
@@ -1562,7 +1562,7 @@ end if
                                 'diagnostics', diagnosticsPool)
       call mpas_pool_get_array(diagnosticsPool, &
                                 "daysSinceStartOfSim", daysSinceStartOfSim)
-      totalTimeSteps = int((daysSinceStartOfSim*86400.0_RKIND + 1.e-6)/dt)
+      totalTimeSteps = int((daysSinceStartOfSim*seconds_per_day + 1.e-6)/dt)
 
       call MPAS_pool_get_subpool(domain % blocklist % structs, "conservationCheckCarbonAM", conservationCheckCarbonAMPool)
 

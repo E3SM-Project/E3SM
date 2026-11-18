@@ -66,6 +66,7 @@ module ocn_constants
       pi               ,&! pi
       mpercm           ,&! meters per m
       cmperm           ,&! m per meter
+      seconds_per_day  ,&! seconds per day
       days_per_second  ,&! days per second
       salt_to_ppt      ,&! salt (kg/kg) to ppt
       ppt_to_salt      ,&! salt ppt to kg/kg
@@ -144,7 +145,8 @@ contains
        !
        !-----------------------------------------------------------------------
 
-       days_per_second = 1._RKIND/86400._RKIND     ! days per second
+       seconds_per_day = real(SHR_CONST_CDAY, RKIND) ! seconds per day
+       days_per_second = 1._RKIND/seconds_per_day    ! days per second
        salt_to_ppt   = 1000._RKIND        ! salt (kg/kg) to ppt
        ppt_to_salt   = 1.e-3_RKIND        ! salt ppt to kg/kg
        mass_to_Sv    = 1.0e-12_RKIND      ! mass flux to Sverdrups

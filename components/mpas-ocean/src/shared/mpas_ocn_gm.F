@@ -1699,7 +1699,7 @@ contains
 
             ! Eddy energy dissipation rate
             dissipationRate = 1.0_RKIND / &
-                             (config_GM_geometric_dissipation*86400.0_RKIND)
+                             (config_GM_geometric_dissipation*seconds_per_day)
          else
             call mpas_log_write('Invalid choice of config_GM_closure.', MPAS_LOG_CRIT)
             err = 1
