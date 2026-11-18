@@ -629,7 +629,7 @@ contains
         character(len=StrKIND) :: loadLoveFile
         integer :: mmax, mres, layout, norm
         integer :: nphi, nlat
-        real(dp),parameter :: pi=acos(-1.0_dp)
+        real(dp),parameter :: pi=real(pii, dp)
         real(dp), pointer :: cosTheta(:), sinTheta(:)
         real(dp) :: eps_polar
         real(dp), allocatable :: Sh(:,:), Sh_init(:,:)

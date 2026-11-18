@@ -63,7 +63,7 @@ module ocn_transport_tests
   ! Private module variables
   !
   !--------------------------------------------------------------------
-  real(kind=RKIND), parameter :: pi = 3.141592653589793d0, &
+  real(kind=RKIND), parameter :: pi = pii, &
                                  two_pi = 2.0_RKIND*pi, &
                                  one_day = 86400.0_RKIND, &
                                  twelve_days = 12.0_RKIND*one_day
