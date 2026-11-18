@@ -18,6 +18,8 @@ module ocn_gm
    use ocn_diagnostics_variables
    use ocn_submesoscale_eddies
 
+   use shr_const_mod, only: SHR_CONST_OMEGA
+
    implicit none
    private
    save
@@ -1592,7 +1594,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime)
          do iEdge=1,nEdges
-            betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
+            betaEdge(iEdge) = 2.0_RKIND*real(SHR_CONST_OMEGA, RKIND)*cos(latEdge(iEdge)) / sphere_radius
          end do
          !$omp end do
          !$omp end parallel

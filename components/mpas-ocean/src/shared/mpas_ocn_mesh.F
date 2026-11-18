@@ -35,6 +35,8 @@ module ocn_mesh
    use ocn_config
    use ocn_constants
 
+   use shr_const_mod, only: SHR_CONST_REARTH, SHR_CONST_OMEGA
+
    implicit none
    private
 
@@ -171,8 +173,21 @@ module ocn_mesh
    public :: &
       ocn_meshCreate, &
       ocn_meshUpdateFields, &
-      ocn_meshDestroy
+      ocn_meshDestroy, &
+      ocn_meshCheckSphereRadius, &
+      ocn_meshComputeCoriolis
    !}}}
+
+   !----------------------------------------------------------------------------
+   !
+   ! Private module parameters
+   !
+   !----------------------------------------------------------------------------
+
+   ! relative tolerance for comparing the mesh sphere_radius with
+   ! SHR_CONST_REARTH
+   real (kind=RKIND), parameter :: &
+      sphereRadiusRelTol = 1.0e-10_RKIND
 
 !***********************************************************************
 
@@ -281,6 +296,15 @@ contains
                                            on_a_sphere)
       call mpas_pool_get_config(meshPool, 'sphere_radius', &
                                            sphere_radius)
+
+      ! On the sphere, the mesh must use the E3SM Earth radius and the
+      ! Coriolis parameter is always computed from the E3SM rotation rate
+      ! (any values read from the mesh or initial condition are replaced).
+      ! On planar meshes, the Coriolis parameter is read from the file.
+      if (on_a_sphere) then
+         call ocn_meshCheckSphereRadius(sphere_radius)
+         call ocn_meshComputeCoriolis(meshPool)
+      endif
 
       ! set all mesh dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', &
@@ -1831,6 +1855,120 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_meshScaling !}}}
+
+!***********************************************************************
+!
+!  ocn_meshCheckSphereRadius
+!
+!> \brief Check that a spherical mesh uses the E3SM Earth radius
+!> \author Xylar Asay-Davis
+!> \date   18 Nov 2026
+!> \details
+!> MPAS-Ocean uses the Earth radius from the shared E3SM constants
+!> (SHR_CONST_REARTH, from the Physical Constants Dictionary). Spherical
+!> meshes must have been created with the same radius, as recorded in
+!> the sphere_radius global attribute. A critical error is raised if
+!> they differ.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_meshCheckSphereRadius(sphereRadiusIn) !{{{
+
+      real (kind=RKIND), intent(in) :: &
+         sphereRadiusIn       !< [in] sphere_radius attribute from the mesh
+
+      real (kind=RKIND) :: &
+         earthRadius          ! E3SM Earth radius
+
+      earthRadius = real(SHR_CONST_REARTH, RKIND)
+
+      if (abs(sphereRadiusIn - earthRadius) > &
+          sphereRadiusRelTol*earthRadius) then
+         call mpas_log_write( &
+            'The sphere_radius of the mesh ($r m) does not match the ' // &
+            'E3SM Earth radius SHR_CONST_REARTH ($r m).', &
+            MPAS_LOG_ERR, realArgs=(/ sphereRadiusIn, earthRadius /))
+         call mpas_log_write( &
+            'Spherical meshes and initial conditions must be ' // &
+            'created with the Earth radius from the Physical ' // &
+            'Constants Dictionary.', MPAS_LOG_ERR)
+         call mpas_log_write( &
+            'A sphere_radius of 1.0 usually means the attribute is ' // &
+            'missing or is not stored as a floating-point number.', &
+            MPAS_LOG_ERR)
+         call mpas_log_write( &
+            'ocn_meshCheckSphereRadius: mesh sphere_radius does not ' // &
+            'match SHR_CONST_REARTH', MPAS_LOG_CRIT)
+      endif
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_meshCheckSphereRadius !}}}
+
+!***********************************************************************
+!
+!  ocn_meshComputeCoriolis
+!
+!> \brief Compute the Coriolis parameter on a spherical mesh
+!> \author Xylar Asay-Davis
+!> \date   18 Nov 2026
+!> \details
+!> Computes fCell, fEdge and fVertex as 2 Omega sin(latitude), where
+!> Omega is the Earth's rotation rate from the shared E3SM constants
+!> (SHR_CONST_OMEGA, from the Physical Constants Dictionary). Values are
+!> computed on all cells, edges and vertices, including halos, so no
+!> halo exchange is needed. This routine works on the mesh pool so that
+!> it can be used in init mode as well as forward and analysis modes.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_meshComputeCoriolis(meshPool) !{{{
+
+      type(mpas_pool_type), intent(inout) :: &
+         meshPool             !< [inout] mesh pool for a block
+
+      integer, pointer :: &
+         nCellsTmp, nEdgesTmp, nVerticesTmp
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         latCellTmp, latEdgeTmp, latVertexTmp, &
+         fCellTmp, fEdgeTmp, fVertexTmp
+
+      real (kind=RKIND) :: &
+         twoOmega             ! twice the Earth's rotation rate
+
+      integer :: &
+         iCell, iEdge, iVertex
+
+      twoOmega = 2.0_RKIND*real(SHR_CONST_OMEGA, RKIND)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCellsTmp)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesTmp)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVerticesTmp)
+
+      call mpas_pool_get_array(meshPool, 'latCell', latCellTmp)
+      call mpas_pool_get_array(meshPool, 'latEdge', latEdgeTmp)
+      call mpas_pool_get_array(meshPool, 'latVertex', latVertexTmp)
+
+      call mpas_pool_get_array(meshPool, 'fCell', fCellTmp)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdgeTmp)
+      call mpas_pool_get_array(meshPool, 'fVertex', fVertexTmp)
+
+      do iCell = 1, nCellsTmp
+         fCellTmp(iCell) = twoOmega*sin(latCellTmp(iCell))
+      end do
+
+      do iEdge = 1, nEdgesTmp
+         fEdgeTmp(iEdge) = twoOmega*sin(latEdgeTmp(iEdge))
+      end do
+
+      do iVertex = 1, nVerticesTmp
+         fVertexTmp(iVertex) = twoOmega*sin(latVertexTmp(iVertex))
+      end do
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_meshComputeCoriolis !}}}
 
 !***********************************************************************
 

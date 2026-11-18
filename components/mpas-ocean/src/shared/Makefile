@@ -92,7 +92,7 @@ mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_equation_of_state.o mpas_o
 
 mpas_ocn_diagnostics_variables.o: mpas_ocn_config.o
 
-mpas_ocn_mesh.o: mpas_ocn_config.o
+mpas_ocn_mesh.o: mpas_ocn_config.o mpas_ocn_constants.o shr_const_mod.o
 
 mpas_ocn_thick_ale.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
@@ -104,7 +104,7 @@ mpas_ocn_thick_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_thick_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
-mpas_ocn_gm.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_submesoscale_eddies.o
+mpas_ocn_gm.o:  shr_const_mod.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_submesoscale_eddies.o
 
 mpas_ocn_submesoscale_eddies.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o
 
