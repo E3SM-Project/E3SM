@@ -35,10 +35,6 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 {
   GPTLstart("tl-ae prim_advance_exp");
 
-#ifdef ARKODE
-  Errors::runtime_abort("'ARKODE' support not yet available in C++ build.\n",
-                         Errors::err_not_implemented);
-#endif
 
   auto& context = Context::singleton();
 
