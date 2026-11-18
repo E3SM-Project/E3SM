@@ -57,28 +57,47 @@ TEST_CASE("height_level_index")
   z_mid.get_header().get_tracking().update_time_stamp(t0);
   z_mid.sync_to_dev();
 
+  // Compute the diag, and return its (host) index and range mask
+  auto run = [&](const Real z_tgt, const std::string& surf_ref) {
+    auto diag = get_index_diag(z_mid,grid,"mid",z_tgt,surf_ref);
+    diag->initialize();
+    diag->compute(t0);
+    auto out = diag->get();
+    out.sync_to_host();
+    auto mask_f = out.get_valid_mask();
+    mask_f.sync_to_host();
+    return std::make_pair(out,mask_f);
+  };
+
+  // Check the same index and mask in all columns (the test heights are the same in all columns)
+  auto check = [&](const Real z_tgt, const std::string& surf_ref,
+                   const int k_expected, const int mask_expected) {
+    auto [out,mask_f] = run(z_tgt,surf_ref);
+    auto idx = out.get_view<const int*,Host>();
+    auto mask = mask_f.get_view<const int*,Host>();
+    for (int icol=0; icol<ncols; ++icol) {
+      REQUIRE(idx(icol)==k_expected);
+      REQUIRE(mask(icol)==mask_expected);
+    }
+  };
+
+  // The index is the first level with height below the target (z is descending
+  // with level index), so the target is between the levels k-1 and k.
   auto check_in_range = [&](const std::string& surf_ref) {
     auto engine = scream::setup_random_test(&comm);
     std::uniform_real_distribution<Real> pdf(dz,z_top-dz);
     for (int itest=0; itest<10; ++itest) {
       Real z_tgt = pdf(engine);
-      auto diag = get_index_diag(z_mid,grid,"mid",z_tgt,surf_ref);
-      diag->initialize();
-      diag->compute(t0);
-      auto out = diag->get();
-      out.sync_to_host();
-      auto idx = out.get_view<const int**,Host>();
+      auto [out,mask_f] = run(z_tgt,surf_ref);
+      auto idx = out.get_view<const int*,Host>();
+      auto mask = mask_f.get_view<const int*,Host>();
       for (int icol=0; icol<ncols; ++icol) {
-        auto k0 = idx(icol,0);
-        auto k1 = idx(icol,1);
-        if (k0==k1) {
-          REQUIRE(z_mid_h(icol,k0)==z_tgt);
-        } else {
-          REQUIRE(k1==k0+1);
-          // z is descending with level index, so k0 (smaller index) has the larger z.
-          REQUIRE(z_mid_h(icol,k0)>=z_tgt);
-          REQUIRE(z_mid_h(icol,k1)<=z_tgt);
-        }
+        const int k = idx(icol);
+        REQUIRE(mask(icol)==1);
+        REQUIRE(k>=1);
+        REQUIRE(k<=nlevs-1);
+        REQUIRE(z_mid_h(icol,k-1)>=z_tgt);
+        REQUIRE(z_mid_h(icol,k)<z_tgt);
       }
     }
   };
@@ -94,63 +113,29 @@ TEST_CASE("height_level_index")
   // A target above the top entry is always flagged as invalid, regardless
   // of the surface reference (matches PressureLevelIndex at the model top).
   SECTION ("top_invalid_surface") {
-    Real z_tgt = 2*z_top;
-    auto diag = get_index_diag(z_mid,grid,"mid",z_tgt,"surface");
-    diag->initialize();
-    diag->compute(t0);
-    auto out = diag->get();
-    out.sync_to_host();
-    auto idx = out.get_view<const int**,Host>();
-    for (int icol=0; icol<ncols; ++icol) {
-      REQUIRE(idx(icol,0)==-1);
-      REQUIRE(idx(icol,1)==-1);
-    }
+    check(2*z_top,"surface",0,0);
   }
 
   SECTION ("top_invalid_sealevel") {
-    Real z_tgt = 2*z_top;
-    auto diag = get_index_diag(z_mid,grid,"mid",z_tgt,"sealevel");
-    diag->initialize();
-    diag->compute(t0);
-    auto out = diag->get();
-    out.sync_to_host();
-    auto idx = out.get_view<const int**,Host>();
-    for (int icol=0; icol<ncols; ++icol) {
-      REQUIRE(idx(icol,0)==-1);
-      REQUIRE(idx(icol,1)==-1);
-    }
+    check(2*z_top,"sealevel",0,0);
+  }
+
+  // A target equal to the top entry is in range
+  SECTION ("top_equal_is_valid") {
+    check(z_mid_h(0,0),"sealevel",1,1);
+    check(z_mid_h(0,0),"surface",1,1);
   }
 
   // A target below the bottom entry extrapolates for "above surface"
-  // heights (always well defined near the surface)...
+  // heights (always well defined near the surface): the index is nlevs, and the mask is 1...
   SECTION ("bottom_extrapolates_for_surface") {
-    Real z_tgt = 0;
-    auto diag = get_index_diag(z_mid,grid,"mid",z_tgt,"surface");
-    diag->initialize();
-    diag->compute(t0);
-    auto out = diag->get();
-    out.sync_to_host();
-    auto idx = out.get_view<const int**,Host>();
-    for (int icol=0; icol<ncols; ++icol) {
-      REQUIRE(idx(icol,0)==nlevs-1);
-      REQUIRE(idx(icol,1)==nlevs-1);
-    }
+    check(0,"surface",nlevs,1);
   }
 
   // ...but is flagged as invalid for "above sealevel" heights (e.g. a
   // target elevation below a mountain's surface is not well defined).
   SECTION ("bottom_invalid_for_sealevel") {
-    Real z_tgt = 0;
-    auto diag = get_index_diag(z_mid,grid,"mid",z_tgt,"sealevel");
-    diag->initialize();
-    diag->compute(t0);
-    auto out = diag->get();
-    out.sync_to_host();
-    auto idx = out.get_view<const int**,Host>();
-    for (int icol=0; icol<ncols; ++icol) {
-      REQUIRE(idx(icol,0)==-1);
-      REQUIRE(idx(icol,1)==-1);
-    }
+    check(0,"sealevel",nlevs,0);
   }
 }
 

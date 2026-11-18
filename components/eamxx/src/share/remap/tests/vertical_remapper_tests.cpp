@@ -586,4 +586,180 @@ TEST_CASE ("vertical_remapper") {
   print ("Testing vertical remapper ... done!\n",comm);
 }
 
+// A tgt level interpolated from a filled src level must be filled (and masked
+// out), while all other tgt levels must be interpolated as usual.
+TEST_CASE ("vertical_remapper_filled_src") {
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int ncols = 2;
+  const int nlevs_src = 2*SCREAM_PACK_SIZE + 2;
+  // Every src midpoint, and every point halfway between two of them
+  const int nlevs_tgt = 2*nlevs_src - 1;
+
+  auto src_grid = build_grid(comm, ncols, nlevs_src);
+  auto tgt_grid = src_grid->clone("tgt",true);
+  tgt_grid->reset_vertical_configuration(nlevs_tgt, AbstractGrid::VKind::Pressure);
+
+  // p_int = 50,150,..., so that p_mid = 100,200,...; p_tgt = 100,150,200,...
+  auto create_p = [&](const std::string& name, const std::shared_ptr<const AbstractGrid>& grid,
+                      const FieldTag tag, const Real p0, const Real dp) {
+    FieldIdentifier fid(name,grid->get_vertical_layout(tag),ekat::units::Pa,grid->name());
+    Field p(fid);
+    p.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    p.allocate_view();
+    auto pv = p.get_view<Real*,Host>();
+    for (int k=0; k<fid.get_layout().dims().back(); ++k) {
+      pv(k) = p0 + dp*k;
+    }
+    p.sync_to_dev();
+    return p;
+  };
+  auto pmid_src = create_p("p_mid",src_grid,LEV, 100,100);
+  auto pint_src = create_p("p_int",src_grid,ILEV, 50,100);
+  auto p_tgt    = create_p("p_int",tgt_grid,LEVP,100, 50);
+
+  // The filled src entries: one level in col 0 (and, for vectors, not in the last cmp).
+  // Filling the second to last level checks that the last tgt level, which
+  // coincides with the last src level, is not filled. Masked fields use the
+  // mirrored level, so that a tgt mask shared with a filled field would show.
+  int kfill;
+  auto is_filled = [&](const std::string& name, const int icol, const int icmp, const int k) {
+    const bool masked = name=="masked" or name=="vec_m";
+    return icol==0 and icmp<vec_dim-1 and k==(masked ? nlevs_src-1-kfill : kfill);
+  };
+
+  // Set a src field, and its invalid entries: masked out if it has a mask
+  // (in which case the value is left alone), set to fill_value otherwise
+  auto fill_src = [&](const Field& f, const Field& p) {
+    compute_field(f,p);
+    const bool vec = f.rank()==3;
+    const int nlevs = f.get_header().get_identifier().get_layout().dims().back();
+    const bool masked = f.has_valid_mask();
+    if (masked) f.get_valid_mask().sync_to_host();
+    for (int i=0; i<ncols; ++i) {
+      for (int j=0; j<(vec ? vec_dim : 1); ++j) {
+        for (int k=0; k<nlevs; ++k) {
+          if (not is_filled(f.name(),i,j,k)) continue;
+          if (masked) {
+            if (vec) f.get_valid_mask().get_view<int***,Host>()(i,j,k) = 0;
+            else     f.get_valid_mask().get_view<int**, Host>()(i,k)   = 0;
+          } else {
+            if (vec) f.get_view<Real***,Host>()(i,j,k) = fill_val;
+            else     f.get_view<Real**, Host>()(i,k)   = fill_val;
+          }
+        }
+      }
+    }
+    f.sync_to_dev();
+    if (masked) f.get_valid_mask().sync_to_dev();
+  };
+
+  // Check a tgt field, given the src pressure and whether the src had filled entries
+  auto check = [&](const Field& f, const Field& p_src, const bool src_filled, const bool tgt_masked) {
+    const bool vec = f.rank()==3;
+    const int nlevs = p_src.get_header().get_identifier().get_layout().dims().back();
+    auto ps = p_src.get_view<const Real*,Host>();
+    auto pt = p_tgt.get_view<const Real*,Host>();
+    f.sync_to_host();
+    REQUIRE (f.has_valid_mask()==tgt_masked);
+    if (tgt_masked) {
+      f.get_valid_mask().sync_to_host();
+    }
+    const Real tol = 100*std::numeric_limits<Real>::epsilon();
+    int num_filled = 0;
+    for (int i=0; i<ncols; ++i) {
+      for (int j=0; j<(vec ? vec_dim : 1); ++j) {
+        for (int k=0; k<nlevs_tgt; ++k) {
+          const Real x = pt(k);
+          // All tgt levels are within the src range, by construction
+          REQUIRE ((x>=ps(0) and x<=ps(nlevs-1)));
+          // A src level has nonzero weight iff x is strictly between its neighbors
+          bool expect_fill = false;
+          for (int ks=0; ks<nlevs; ++ks) {
+            const bool weighted = (ks==0 or x>ps(ks-1)) and (ks==nlevs-1 or x<ps(ks+1));
+            expect_fill |= src_filled and weighted and is_filled(f.name(),i,j,ks);
+          }
+          const Real val = vec ? f.get_view<const Real***,Host>()(i,j,k)
+                               : f.get_view<const Real**,Host>()(i,k);
+          CAPTURE (f.name(),i,j,k,x,val);
+          if (expect_fill) {
+            REQUIRE (val==fill_val);
+            ++num_filled;
+          } else {
+            const Real expected = data_func(i,vec ? j : 0,x);
+            REQUIRE (std::abs(val-expected)<=tol*expected);
+          }
+          if (tgt_masked) {
+            const int m = vec ? f.get_valid_mask().get_view<const int***,Host>()(i,j,k)
+                              : f.get_valid_mask().get_view<const int**,Host>()(i,k);
+            REQUIRE (m==(expect_fill ? 0 : 1));
+          }
+        }
+      }
+    }
+    // One filled src level spoils 3 tgt levels: itself, and one on each side
+    REQUIRE (num_filled==(src_filled ? 3*(vec ? vec_dim-1 : 1) : 0));
+  };
+
+  for (int k : {1, nlevs_src-2}) {
+    kfill = k;
+    CAPTURE (kfill);
+    for (auto etype : {Mask, P0}) {
+      // A src that may be filled, a src with a valid mask, and a src with neither
+      auto src_filled = create_field("filled",src_grid,false,false,false,LEV, 1);
+      auto src_masked = create_field("masked",src_grid,true ,false,false,LEV, 1);
+      auto src_plain  = create_field("plain", src_grid,false,false,false,LEV, 1);
+      // Vector fields on interfaces, with packs
+      auto src_vec    = create_field("vec",   src_grid,false,false,true ,ILEV,SCREAM_PACK_SIZE);
+      auto src_vec_m  = create_field("vec_m", src_grid,true ,false,true ,ILEV,SCREAM_PACK_SIZE);
+      src_filled.get_header().set_may_be_filled(true);
+      src_vec.get_header().set_may_be_filled(true);
+
+      auto tgt_filled = create_field("filled",tgt_grid,false,false,false,LEVP,1);
+      auto tgt_masked = create_field("masked",tgt_grid,false,false,false,LEVP,1);
+      auto tgt_plain  = create_field("plain", tgt_grid,false,false,false,LEVP,1);
+      auto tgt_vec    = create_field("vec",   tgt_grid,false,false,true ,LEVP,SCREAM_PACK_SIZE);
+      auto tgt_vec_m  = create_field("vec_m", tgt_grid,false,false,true ,LEVP,SCREAM_PACK_SIZE);
+
+      auto remap = std::make_shared<VerticalRemapper>(src_grid,tgt_grid);
+      remap->set_source_pressure (pmid_src);
+      remap->set_source_pressure (pint_src);
+      remap->set_target_pressure (p_tgt);
+      remap->set_extrapolation_type(etype);
+
+      remap->register_field(src_filled,tgt_filled);
+      remap->register_field(src_masked,tgt_masked);
+      remap->register_field(src_plain, tgt_plain);
+      remap->register_field(src_vec,   tgt_vec);
+      remap->register_field(src_vec_m, tgt_vec_m);
+      remap->registration_ends();
+
+      fill_src(src_filled,pmid_src);
+      fill_src(src_masked,pmid_src);
+      compute_field(src_plain,pmid_src);
+      fill_src(src_vec,pint_src);
+      fill_src(src_vec_m,pint_src);
+
+      remap->remap_fwd();
+
+      // The tgt of a filled src may be filled, whatever the extrapolation type
+      REQUIRE (tgt_filled.get_header().may_be_filled());
+      REQUIRE (tgt_masked.get_header().may_be_filled());
+      REQUIRE (tgt_vec.get_header().may_be_filled());
+      REQUIRE (tgt_vec_m.get_header().may_be_filled());
+
+      // There are masks only if we mask when extrapolating
+      const bool has_masks = etype==Mask;
+      check(tgt_filled,pmid_src,true ,has_masks);
+      check(tgt_masked,pmid_src,true ,has_masks);
+      check(tgt_vec,   pint_src,true ,has_masks);
+      check(tgt_vec_m, pint_src,true ,has_masks);
+      // The plain field has the layout of the filled ones, but must not get their mask
+      check(tgt_plain, pmid_src,false,has_masks);
+    }
+  }
+}
+
 } // namespace scream

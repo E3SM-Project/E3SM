@@ -25,11 +25,7 @@ SEGrid (const std::string& grid_name,
   // Create dof_gids and lid2idx fields
   create_dof_fields (get_2d_scalar_layout().rank());
 
-  // Create the cg dofs field
   using namespace ShortFieldTagsNames;
-  m_cg_dofs_gids = Field(FieldIdentifier("cg_gids",FieldLayout({CMP},{get_num_local_dofs()}),ekat::units::none,this->name(),DataType::IntType));
-  m_cg_dofs_gids.allocate_view();
-
   m_partitioned_dim_gids = Field(FieldIdentifier("el_gids",FieldLayout({EL},{m_num_local_elem}),ekat::units::none,this->name(),DataType::IntType));
   m_partitioned_dim_gids.allocate_view();
 }
@@ -135,14 +131,6 @@ std::shared_ptr<AbstractGrid> SEGrid::clone (const std::string& clone_name, cons
   auto grid = std::make_shared<SEGrid>(clone_name,m_num_local_elem,m_num_gp,get_num_vertical_levels(),get_comm());
 
   grid->copy_data(*this,shallow);
-
-  if (m_cg_dofs_gids.is_allocated()) {
-    if (shallow) {
-      grid->m_cg_dofs_gids = m_cg_dofs_gids;
-    } else {
-      grid->m_cg_dofs_gids = m_cg_dofs_gids.clone(CloneFlags::CopyData);
-    }
-  }
 
   return grid;
 }

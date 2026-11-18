@@ -52,7 +52,12 @@ if (NOT EXISTS "${_machine_file}")
   message(FATAL_ERROR "Machine file not found: ${_machine_file}")
 endif()
 
-if (NOT DEFINED BASELINE_DIR)
+if (NO_BASELINE)
+  # Tests will not be compared against baselines (only against each other, e.g., f90 vs cxx)
+  if (GENERATE)
+    message (FATAL_ERROR "Cannot generate baselines when NO_BASELINE is TRUE")
+  endif()
+elseif (NOT DEFINED BASELINE_DIR)
   message (FATAL_ERROR "BASELINE_DIR was not specified")
 endif()
 
@@ -82,7 +87,11 @@ ctest_start(${dashboard_model} TRACK ${dashboard_track})
 # Configure
 # ---------------------------------------------------------------------------
 set(_configure_opts "-C${_machine_file}")
-list(APPEND _configure_opts "-DHOMME_BASELINE_DIR=${BASELINE_DIR}")
+if (NO_BASELINE)
+  list(APPEND _configure_opts "-DHOMME_SKIP_BASELINE_COMPARE=ON")
+else()
+  list(APPEND _configure_opts "-DHOMME_BASELINE_DIR=${BASELINE_DIR}")
+endif()
 list(APPEND _configure_opts "-DCMAKE_VERBOSE_MAKEFILE=ON")
 
 if (DEBUG)

@@ -17,6 +17,7 @@ module lnd_import_export
   use elm_cpl_indices
   use mct_mod
   use seq_flds_mod    , only : rof_sed
+  use ImportExportStatsMod, only : ImportExportStats_Accum, dir_x2l, dir_l2x
   !
   implicit none
   !===============================================================================
@@ -429,7 +430,7 @@ contains
             end if
   
             ierr = nf90_open(trim(metdata_bypass) // '/' // trim(metdata_fname), NF90_NOWRITE, met_ncids(v))
-            if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file' )
+            if (ierr .ne. 0) call endrun(msg=' ERROR: Failed to open cpl_bypass input meteorology file ' // trim(metdata_bypass) // '/' // trim(metdata_fname))
        
             !get timestep information
             ierr = nf90_inq_dimid(met_ncids(v), 'DTIME', dimid)
@@ -1400,6 +1401,10 @@ contains
     atm2lnd_vars%loaded_bypassdata = 1
 #endif
 
+    ! Statistics of every field received from the coupler. No-op unless
+    ! do_import_export_stats is set.
+    call ImportExportStats_Accum(dir_x2l, bounds, x2l)
+
   end subroutine lnd_import
 
   !===============================================================================
@@ -1560,6 +1565,10 @@ contains
           l2x(index_l2x_Sl_cdd,i)           = lnd2iac_vars%cdd(g)
        end if
     end do
+
+    ! Statistics of every field sent to the coupler. No-op unless
+    ! do_import_export_stats is set, and skipped on the initialization call.
+    call ImportExportStats_Accum(dir_l2x, bounds, l2x)
 
   end subroutine lnd_export
 

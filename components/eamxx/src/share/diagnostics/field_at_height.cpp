@@ -35,12 +35,12 @@ FieldAtHeight (const ekat::Comm& comm, const ekat::ParameterList& params,
   m_field_in_names.push_back(m_z_name+"_mid");
   m_field_in_names.push_back(m_z_name+"_int");
 
-  // Depend on the (shared) bracket-index diagnostics, so the search for
-  // the level indices bracketing this height is only done once, even if
+  // Depend on the (shared) level-index diagnostics, so the search for
+  // the level index of this height is only done once, even if
   // multiple fields are requested at this same height.
   // We don't know yet which one (mid/int) we need.
-  m_index_name_mid = "lev_at_" + z_val + units + "_above_" + surf_ref + "_mid";
-  m_index_name_int = "lev_at_" + z_val + units + "_above_" + surf_ref + "_int";
+  m_index_name_mid = m_z_name + "_mid.searchsorted(" + z_val + ",units='" + units + "')";
+  m_index_name_int = m_z_name + "_int.searchsorted(" + z_val + ",units='" + units + "')";
   m_field_in_names.push_back(m_index_name_mid);
   m_field_in_names.push_back(m_index_name_int);
 }
@@ -62,8 +62,8 @@ initialize_impl ()
       "Error! Field rank not supported by FieldAtHeight.\n"
       " - field name: " + fid.name() + "\n"
       " - field layout: " + layout.to_string() + "\n"
-      "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
-      "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
+      "NOTE: if you requested something like 'X.mean('col').interp(..)',\n"
+      "      you can avoid this error by requesting 'X.interp(..).mean('col')' instead.\n");
   const auto tag = layout.tags().back();
   EKAT_REQUIRE_MSG (tag==LEV || tag==ILEV,
       "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
@@ -74,32 +74,45 @@ initialize_impl ()
   m_z_suffix = tag==LEV ? "_mid" : "_int";
   m_index_name = tag==LEV ? m_index_name_mid : m_index_name_int;
 
+  EKAT_REQUIRE_MSG (layout.dim(layout.rank()-1)>=2,
+      "Error! FieldAtHeight needs at least 2 levels to interpolate.\n"
+      " - field name  : " + fid.name() + "\n"
+      " - field layout: " + layout.to_string() + "\n");
+
   // All good, create the diag output
   auto d_fid = fid.clone(m_diag_name).reset_layout(layout.clone().strip_dim(tag));
   m_diagnostic_output = Field(d_fid,true);
 
-  // Always create our own valid mask: a target above the model top is
-  // always flagged as invalid by the height-index diag we depend on
-  // (see HeightLevelIndex), regardless of the surface reference, and a
-  // target below the bottom entry is too for "above sealevel" heights;
-  // plus the input field itself may carry its own mask.
-  // Unless the input is masked (or may be filled), the mask only says where the
-  // height is in range, so all diags at this height and layer have the same
-  // mask. Name it after the height, so that they share an avg count in IO.
+  // If the input is masked, the mask depends on the input's own mask, so we need a mask
+  // of our own. Otherwise, the mask only says where the height is in range (a target above
+  // the model top is always flagged as invalid by the HeightLevelIndex diag we depend on,
+  // regardless of the surface reference, and a target below the bottom entry is too for
+  // "above sealevel" heights), so it is the same for any field (and any component of a vector
+  // field) at this height and layer: we use the one computed by HeightLevelIndex, broadcast
+  // to the layout of the diagnostic.
   // NOTE: masks with the same name must hold the same values (IO and the horizontal
-  //       remapper rely on it), so the name also carries any vector dimension.
-  if (f.has_valid_mask() or f.get_header().may_be_filled()) {
+  //       remapper rely on it); this is true by construction, as the data is shared.
+  if (f.has_valid_mask()) {
     m_diagnostic_output.create_valid_mask();
   } else {
-    auto mask_name = m_params.get<std::string>("height_value")
-                   + m_params.get<std::string>("height_units")
-                   + "_above_" + m_params.get<std::string>("surface_reference")
-                   + (tag==ILEV ? "_int" : "");
+    // Masks with the same name must hold the same values, hence have the same layout (IO keys the
+    // valid count by the mask name, and checks it). So the name of the broadcast mask carries the
+    // non-column dims, as for any field that is not (ncol): the (ncol) mask is aliased under that name
+    // first, and then broadcast.
+    auto index_mask = m_fields_in.at(m_index_name).get_valid_mask();
     const auto& d_layout = d_fid.get_layout();
-    for (int i=1; i<d_layout.rank(); ++i) {
-      mask_name += "_" + d_layout.names()[i] + std::to_string(d_layout.dim(i));
+    if (d_layout.rank()>1) {
+      auto mask_name = index_mask.name();
+      const std::string end = "_mask";
+      if (mask_name.size()>end.size() and mask_name.compare(mask_name.size()-end.size(),end.size(),end)==0) {
+        mask_name.erase(mask_name.size()-end.size());
+      }
+      for (int i=1; i<d_layout.rank(); ++i) {
+        mask_name += "_" + d_layout.names()[i] + std::to_string(d_layout.dim(i));
+      }
+      index_mask = index_mask.alias(mask_name + end);
     }
-    m_diagnostic_output.create_valid_mask(mask_name + "_mask");
+    m_diagnostic_output.set_valid_mask(index_mask.broadcast_to(d_layout));
   }
   m_diagnostic_output.get_header().set_may_be_filled(true);
 
@@ -120,44 +133,51 @@ void FieldAtHeight::compute_impl()
   const Field& f = m_fields_in.at(m_field_name);
   const auto& fl = f.get_header().get_identifier().get_layout();
 
-  // The pair of level indices bracketing the target height in each column
-  // (computed once, and shared across all diags targeting this same
-  // height, by the HeightLevelIndex diagnostic).
+  // The index of the first level below the target height in each column, and the mask
+  // of columns where the target is valid (both computed once, and shared across all
+  // diags targeting this same height, by the HeightLevelIndex diagnostic).
+  // The interpolation uses the levels (k-1,k), with k clamped to [1,nlevs-1]. If k==nlevs
+  // (valid only for "above surface" heights), we extrapolate with the bottom level.
+  // Where the mask is 0, the levels are still valid, so we can access data with them,
+  // even if we then ignore it.
   const Field& idx_f = m_fields_in.at(m_index_name);
-  const auto idx_v = idx_f.get_view<const int**>();
+  const auto idx_v = idx_f.get_view<const int*>();
+  const auto idx_mask = idx_f.get_valid_mask().get_view<const int*>();
 
   using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
   using cmask2d_t = Field::view_dev_t<const int**>;
   using cmask3d_t = Field::view_dev_t<const int***>;
+  using dmask2d_t = Field::view_dev_t<int*>;
+  using dmask3d_t = Field::view_dev_t<int**>;
 
   auto z_tgt = m_z;
-  constexpr auto fval = constants::fill_value<Real>;
-  // Whether the INPUT field has its own mask (our own output mask
-  // always exists, see initialize_impl, so no need to track that here).
+  const int nlevs = z_view.extent(1);
+  // Whether the INPUT field has its own mask. If not, the mask of our output is the
+  // (read-only) shared range mask, which we don't need to compute.
   bool f_masked = f.has_valid_mask();
   if (fl.rank()==2) {
     const auto f_view = f.get_view<const Real**>();
     const auto d_view = m_diagnostic_output.get_view<Real*>();
-    const auto d_mask = m_diagnostic_output.get_valid_mask().get_view<int*>();
+    const auto d_mask = f_masked ? m_diagnostic_output.get_valid_mask().get_view<int*>() : dmask2d_t{};
 
     const auto f_mask = f_masked ? f.get_valid_mask().get_view<const int**>() : cmask2d_t{};
 
     RangePolicy policy (0,fl.dims()[0]);
     Kokkos::parallel_for(policy,
         KOKKOS_LAMBDA(const int i) {
-        auto k0 = idx_v(i,0);
-        if (k0<0) {
-          // Out of range, and not extrapolating (see HeightLevelIndex).
-          d_view(i) = fval;
-          d_mask(i) = 0;
-          return;
+        const int k  = idx_v(i);
+        const int k1 = k<1 ? 1 : (k>nlevs-1 ? nlevs-1 : k);
+        const int k0 = k1-1;
+        const bool extrapolate = k>=nlevs;
+        const bool valid = idx_mask(i) and (not f_masked or
+                           (f_mask(i,k1)!=0 and (extrapolate or f_mask(i,k0)!=0)));
+        if (f_masked) {
+          d_mask(i) = valid;
         }
-        auto k1 = idx_v(i,1);
-        if (not f_masked or
-            (f_mask(i,k0)!=0 and f_mask(i,k1)!=0)) {
-          if (k0==k1) {
+        if (valid) {
+          if (extrapolate) {
             // We just extrapolate with the boundary entry
-            d_view(i) = f_view(i,k0);
+            d_view(i) = f_view(i,k1);
           } else {
             auto z0 = z_view(i,k0);
             auto z1 = z_view(i,k1);
@@ -166,15 +186,12 @@ void FieldAtHeight::compute_impl()
 
             d_view(i) = ( (z_tgt-z0)*f1 + (z1-z_tgt)*f0 ) / (z1-z0);
           }
-          d_mask(i) = 1;
-        } else {
-          d_mask(i) = 0;
         }
     });
   } else {
     const auto f_view = f.get_view<const Real***>();
     const auto d_view = m_diagnostic_output.get_view<Real**>();
-    const auto d_mask = m_diagnostic_output.get_valid_mask().get_view<int**>();
+    const auto d_mask = f_masked ? m_diagnostic_output.get_valid_mask().get_view<int**>() : dmask3d_t{};
 
     const auto f_mask = f_masked ? f.get_valid_mask().get_view<const int***>() : cmask3d_t{};
 
@@ -185,19 +202,19 @@ void FieldAtHeight::compute_impl()
         KOKKOS_LAMBDA(const int idx2) {
         const int i = idx2 / dim1;
         const int j = idx2 % dim1;
-        auto k0 = idx_v(i,0);
-        if (k0<0) {
-          // Out of range, and not extrapolating (see HeightLevelIndex).
-          d_view(i,j) = fval;
-          d_mask(i,j) = 0;
-          return;
+        const int k  = idx_v(i);
+        const int k1 = k<1 ? 1 : (k>nlevs-1 ? nlevs-1 : k);
+        const int k0 = k1-1;
+        const bool extrapolate = k>=nlevs;
+        const bool valid = idx_mask(i) and (not f_masked or
+                           (f_mask(i,j,k1)!=0 and (extrapolate or f_mask(i,j,k0)!=0)));
+        if (f_masked) {
+          d_mask(i,j) = valid;
         }
-        auto k1 = idx_v(i,1);
-        if (not f_masked or
-            (f_mask(i,j,k0)!=0 and f_mask(i,j,k1)!=0)) {
-          if (k0==k1) {
+        if (valid) {
+          if (extrapolate) {
             // We just extrapolate with the boundary entry
-            d_view(i,j) = f_view(i,j,k0);
+            d_view(i,j) = f_view(i,j,k1);
           } else {
             auto z0 = z_view(i,k0);
             auto z1 = z_view(i,k1);
@@ -206,9 +223,6 @@ void FieldAtHeight::compute_impl()
 
             d_view(i,j) = ( (z_tgt-z0)*f1 + (z1-z_tgt)*f0 ) / (z1-z0);
           }
-          d_mask(i,j) = 1;
-        } else {
-          d_mask(i,j) = 0;
         }
     });
   }

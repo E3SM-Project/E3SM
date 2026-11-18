@@ -10,7 +10,7 @@
 #
 
 physical_constants_dictionary:
-  version_number: 0.2.0
+  version_number: 0.4.0
   institution: E3SM Project
   description: Community-based dictionary for consistent physical constant sets
   contact: E3SM Project
@@ -142,6 +142,14 @@ physical_constants_dictionary:
         Intergovernmental Oceanographic Commission, Manuals and Guides No. 56,
         UNESCO (English), 196 pp., 2010.
       "
+    AsayDavis2016:
+      description: "Marine ice sheet-ocean intercomparison protocol specifying ice-ocean coupling constants"
+      citation: "
+        Asay-Davis, X. S., et al., Experimental design for three interrelated
+        marine ice sheet and ocean model intercomparison projects:
+        MISMIP v. 3 (MISMIP+), ISOMIP v. 2 (ISOMIP+) and MISOMIP v. 1 (MISOMIP1),
+        Geosci. Model Dev., 9, 2471-2497, doi:10.5194/gmd-9-2471-2016, 2016.
+      "
 
   set:
     - mathematical:
@@ -218,6 +226,22 @@ physical_constants_dictionary:
             reference: ASHandbook1964
             description: "
               Square root of 3.
+            "
+    - unit_conversions:
+        description: "
+          Exact conversions between SI units and accepted non-SI units.
+        "
+        entries:
+          - name: seconds_per_day
+            value: 86400
+            units: s
+            prec: double
+            type: strict
+            uncertainty: exact
+            reference: SI2019
+            description: "
+              Duration of the day unit: 1 d = 24 h = 86400 s exactly.
+              Not a sidereal day or a UTC day containing a leap second.
             "
     - universal_physical:
         description: "
@@ -359,6 +383,17 @@ physical_constants_dictionary:
             reference: IUPAC1997
             description: "
               Reference molar mass of elemental oxygen.
+            "
+          - name: iron_molar_mass_reference
+            value: 0.055845
+            units: kg mol-1
+            prec: double
+            type: strict
+            uncertainty: 2.0E-06
+            reference: IUPAC1997
+            description: "
+              Reference molar mass of naturally occurring elemental iron,
+              corresponding to the IUPAC standard atomic weight 55.845(2).
             "
           - name: carbon_dioxide_molar_mass_reference
             formula: carbon_molar_mass_reference + 2 * oxygen_molar_mass_reference
@@ -707,6 +742,17 @@ physical_constants_dictionary:
             description: "
               Canonical reference-scale seawater density; model adopts
               1026 kg m-3.
+            "
+          - name: ice_shelf_seawater_density_reference
+            value: 1028.0
+            units: kg m-3
+            prec: double
+            type: strict
+            reference: AsayDavis2016
+            description: "
+               Conventional seawater density for land-ice flotation and 
+               ice-shelf draft. Distinct from seawater_density_reference, 
+               which is more representative of the ocean surface.
             "
           - name: seawater_specific_heat_capacity_reference
             value: 3996.0

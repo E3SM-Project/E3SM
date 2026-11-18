@@ -16,10 +16,10 @@ fields:
       - qt := qc+qv
     field_names:
       # --- Operators -------------------------------------------------------
-      # Grouping is what the underscore syntax cannot express.
+      # Grouping is explicit.
       - q_flux    := (qc+qv)*p_mid
       # An operand may be a numeric literal...
-      - p_hPa     := p_mid/100
+      - p_scaled  := p_mid/100
       - T_scaled  := T_mid*0.5
       # ...a named physical constant...
       - p_ratio   := p_mid/P0
@@ -27,6 +27,9 @@ fields:
       - dry_air   := p_mid - qv*p_mid
       # Negation: no diagnostic negates a field, so this goes through (-1)*X.
       - neg_T     := -T_mid
+      # A negative literal, on either side.
+      - neg_l     := -2*T_mid
+      - neg_r     := T_mid*(-2)
       # A ':=' alias declared in 'aliases' is usable as an operand.
       - qt_flux   := qt*p_mid
 
@@ -46,10 +49,17 @@ fields:
       - T_hist    := T_mid.histogram(bins=[200,250,300])
       - T_zonal   := T_mid.zonal_mean(bins=20)
       - T_prev    := T_mid.shift(time=1)
+      - T_bcast   := T_mid.mean('lev').broadcast_like(T_mid)
+      # The int index pair is promoted to Real, since IO writes only Real fields.
+      - p500_idx  := p_mid.searchsorted(500, units='hPa')*1.0
 
       # --- Composition ------------------------------------------------------
-      # No unambiguous underscore spelling exists for this one.
       - cold_T    := T_mid.where(T_mid<273.15).mean('lev')
+
+      # --- Notes -------------------------------------------------------------
+      # A negative threshold, and bin edges that are negative or have an exponent.
+      - w_up      := omega.where(omega<=-0.1)
+      - qv_hist   := qv.histogram(bins=[-1,0,1e-5,1e-4])
 
       # NOTE: 'over_dt' and 'tend' are NOT here on purpose. They divide by the
       #       time elapsed since the start of the step, and an INSTANT stream

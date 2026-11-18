@@ -7,7 +7,7 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/data_managers/library_grids_manager.hpp"
+#include "share/grid/library_grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 #include <ekat_parameter_list.hpp>

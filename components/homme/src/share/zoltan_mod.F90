@@ -333,7 +333,6 @@ contains
     use gridgraph_mod, only : GridVertex_t, GridEdge_t, freegraph, createsubgridgraph, printgridvertex
     use dimensions_mod , only : npart, nelem
     !use control_mod, only:  partmethod
-    !use params_mod, only : wrecursive
     use, intrinsic :: iso_c_binding, only : C_CHAR, C_NULL_CHAR
     use control_mod, only : partmethod, z2_map_method
 

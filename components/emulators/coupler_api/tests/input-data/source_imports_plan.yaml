@@ -1,0 +1,9 @@
+fields:
+  surface_flux:
+    kind: flux
+    name: surface_flux
+    merge_type: direct
+    sources:
+      - atm
+    destinations:
+      - lnd

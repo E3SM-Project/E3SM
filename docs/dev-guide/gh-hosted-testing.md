@@ -22,7 +22,7 @@ Two tests so far:
 
 - `SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS`, the coupled case on the MOAB driver, which
   puts every active component through the coupler.
-- `ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod`, an exact restart test of EAMxx with its
+- `ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod`, an exact restart test of EAMxx with its
   production settings.
 
 With no `_P` option, CIME gives these grids one node, which the image's machine defines
@@ -39,7 +39,10 @@ by CPU, and GitHub's x86 runners come with different CPU models. Without further
 same commit and image both matched and differed from intel baselines on different runs. So
 for intel only, the workflow appends `-fp-model=consistent -fimf-arch-consistency=true` to
 the C, C++ and Fortran flags, in the job's copy of `e3sm-container_intel.cmake` in `~/.cime`,
-and sets `MKL_CBWR=COMPATIBLE`. This is meant to make the answers independent of the CPU, at some
+and sets `MKL_CBWR=COMPATIBLE`. These are not enough: Intel's `libimf` still gives different
+results for scalar math functions on Intel and AMD CPUs, so the job also sets
+`LD_PRELOAD=/lib64/libm.so.6`, which makes glibc's libm take their place. Together, they are
+meant to make the answers independent of the CPU, at some
 cost in speed, and it is for testing only: the image and E3SM's `intel.cmake` are unchanged, so
 users of the image do not get these flags. As a consequence, the intel job does not test
 the exact flags users get. Each job summary shows the runner's CPU model, to help tell a

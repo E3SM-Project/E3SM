@@ -32,8 +32,8 @@ namespace Homme
 // 7/C++14 internal error.
 template <typename A, typename B>
 static void alloc3d (A& a, B& b, int ne, int a2, int b2) {
-  a = ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV]>**>("3d fields", ne, a2);
-  b = ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV_P]>**>("3d interface fields", ne, b2);
+  a = ExecViewManaged<BoundaryExchangeFieldView<Scalar[NP][NP][NUM_LEV]>**>("3d fields", ne, a2);
+  b = ExecViewManaged<BoundaryExchangeFieldView<Scalar[NP][NP][NUM_LEV_P]>**>("3d interface fields", ne, b2);
 }
 
 BoundaryExchange::BoundaryExchange()
@@ -363,7 +363,7 @@ void BoundaryExchange::exchange_min_max ()
 static void
 pack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> ucon,
       const ExecViewUnmanaged<const int*> ucon_ptr,
-      const ExecViewUnmanaged<ExecViewManaged<Real[NP][NP]>**> fields_2d,
+      const ExecViewUnmanaged<BoundaryExchangeFieldView<Real[NP][NP]>**> fields_2d,
       const ExecViewUnmanaged<ExecViewUnmanaged<Real*>**> send_2d_buffers,
       const int num_elems, const int num_2d_fields) {
   HOMMEXX_STATIC const ConnectionHelpers helpers;
@@ -389,7 +389,7 @@ template <int NUM_LEV_PACKS, bool partial_column=false>
 static void
 pack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> ucon,
       const ExecViewUnmanaged<const int*> ucon_ptr,
-      const ExecViewUnmanaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV_PACKS]>**> fields_3d,
+      const ExecViewUnmanaged<BoundaryExchangeFieldView<Scalar[NP][NP][NUM_LEV_PACKS]>**> fields_3d,
       const ExecViewUnmanaged<ExecViewUnmanaged<Scalar**>**> send_3d_buffers,
       const int num_elems, const int num_3d_fields,
       ExecViewManaged<int*>* nlev_packs_ = nullptr) {
@@ -449,12 +449,16 @@ pack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> uco
           const auto& sb = send_3d_buffers(ifield, buffer_iconn);
           assert(info.local_lid == ie);
           const auto& f3 = fields_3d(ie, ifield);
+          const auto level_stride = f3.stride(2);
           Kokkos::parallel_for(
             Kokkos::TeamThreadRange(kv.team, helpers.CONNECTION_SIZE[info.kind]),
             [&] (const int& k) {
               auto* const sbp = &sb(k, 0);
               const auto* const f3p = &f3(pts[k].ip, pts[k].jp, 0);
-              Kokkos::parallel_for(tvr, [&] (const int& ilev) { sbp[ilev] = f3p[ilev]; });
+              if (level_stride == 1)
+                Kokkos::parallel_for(tvr, [&] (const int& ilev) { sbp[ilev] = f3p[ilev]; });
+              else
+                Kokkos::parallel_for(tvr, [&] (const int& ilev) { sbp[ilev] = f3p[ilev*level_stride]; });
             });
         }
       });
@@ -533,7 +537,7 @@ void BoundaryExchange::recv_and_unpack () {
 static void
 unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> ucon,
         const ExecViewUnmanaged<const int*> ucon_ptr,
-        const ExecViewUnmanaged<ExecViewManaged<Real[NP][NP]>**> fields_2d,
+        const ExecViewUnmanaged<BoundaryExchangeFieldView<Real[NP][NP]>**> fields_2d,
         const ExecViewUnmanaged<ExecViewUnmanaged<Real*>**> recv_2d_buffers,
         const ExecViewUnmanaged<const Real * [NP][NP]>* rspheremp,
         const int num_elems, const int num_2d_fields) {
@@ -558,7 +562,7 @@ unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> u
            helpers.CONNECTION_PTS_FWD[dir][0].jp)
           += recv_2d_buffers(ifield, iconn)(0);
       }
-    });  
+    });
   if (rspheremp) {
     Kokkos::fence();
     const auto rsmp = *rspheremp;
@@ -579,7 +583,7 @@ template <int NUM_LEV_PACKS, bool partial_column=false>
 static void
 unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> ucon,
         const ExecViewUnmanaged<const int*> ucon_ptr,
-        const ExecViewUnmanaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV_PACKS]>**> fields_3d,
+        const ExecViewUnmanaged<BoundaryExchangeFieldView<Scalar[NP][NP][NUM_LEV_PACKS]>**> fields_3d,
         const ExecViewUnmanaged<ExecViewUnmanaged<Scalar**>**> recv_3d_buffers,
         const ExecViewUnmanaged<const Real * [NP][NP]>* rspheremp,
         const int num_elems, const int num_3d_fields,
@@ -627,6 +631,8 @@ unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> u
           const int i = (it / (NP*NUM_LEV_PACKS)) % NP;
           const int j = (it / NUM_LEV_PACKS) % NP;
           const int ilev = it % NUM_LEV_PACKS;
+          if (partial_column && ilev >= nlev_packs(ifield))
+            return;
           fields_3d(ie, ifield)(i, j, ilev) *= rsmp(ie, i, j);
         });
     }
@@ -642,12 +648,16 @@ unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> u
         const auto tvr = Kokkos::ThreadVectorRange(
           kv.team, partial_column ? nlev_packs(ifield) : NUM_LEV_PACKS);
         const auto& f3 = fields_3d(ie, ifield);
+        const auto level_stride = f3.stride(2);
         const auto iconn_beg = ucon_ptr(ie), iconn_end = ucon_ptr(ie+1);
         const auto ef = [&] (const int& iedge, const int& k, const int& ip, const int& jp) {
           const auto& r3 = recv_3d_buffers(ifield, iconn_beg + iedge);
           auto* const f3p = &f3(ip, jp, 0);
           const auto* const r3p = &r3(k, 0);
-          Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev] += r3p[ilev]; });
+          if (level_stride == 1)
+            Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev] += r3p[ilev]; });
+          else
+            Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev*level_stride] += r3p[ilev]; });
         };
         for (int k = 0; k < NP; ++k) {
           ef(0, k, 0,    k   );
@@ -662,14 +672,20 @@ unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> u
                                 helpers.CONNECTION_PTS_FWD[dir][0].jp, 0);
           assert(r3.size() > 0);
           const auto* const r3p = &r3(0, 0);
-          Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev] += r3p[ilev]; });
+          if (level_stride == 1)
+            Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev] += r3p[ilev]; });
+          else
+            Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev*level_stride] += r3p[ilev]; });
         }
         if (rspheremp) {
           for (int i = 0; i < NP; ++i)
             for (int j = 0; j < NP; ++j) {
               auto* const f3p = &f3(i, j, 0);
               const auto& rsmp = (*rspheremp)(ie, i, j);
-              Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev] *= rsmp; });
+              if (level_stride == 1)
+                Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev] *= rsmp; });
+              else
+                Kokkos::parallel_for(tvr, [&] (const int& ilev) { f3p[ilev*level_stride] *= rsmp; });
             }
         }
       });
@@ -689,7 +705,7 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
 
   // I am not sure why and if we could have this scenario, but just in case. I
   // think MPI *may* go bananas in this case
-  if (m_num_2d_fields+m_num_3d_fields==0) {
+  if (m_num_2d_fields+m_num_3d_fields+m_num_3d_int_fields==0) {
     return;
   }
 
@@ -1052,7 +1068,7 @@ void BoundaryExchange::build_buffer_views_and_requests()
 
   const auto& ucon = m_connectivity->get_h_ucon();
   const size_t nconn = ucon.size();
-  
+
   m_send_1d_buffers = decltype(m_send_1d_buffers)("1d send buffer", m_num_1d_fields, nconn);
   m_recv_1d_buffers = decltype(m_recv_1d_buffers)("1d recv buffer", m_num_1d_fields, nconn);
   m_send_2d_buffers = decltype(m_send_2d_buffers)("2d send buffer", m_num_2d_fields, nconn);

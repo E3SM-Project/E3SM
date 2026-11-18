@@ -1,0 +1,216 @@
+//===-- ocn/CustomTendencyTerms.cpp - Custom tendency terms -----*- C++ -*-===//
+//
+// The customized tendency terms can be added to the tendency terms based
+// based on an option 'UseCustomTendency' in Tendencies Config group.
+// This file contains functions for initializing customized tendency terms.
+//
+//===----------------------------------------------------------------------===//
+
+#include "CustomTendencyTerms.h"
+#include "Config.h"
+#include "GlobalConstants.h"
+#include "TimeStepper.h"
+#include "VertCoord.h"
+
+namespace OMEGA {
+
+//===-----------------------------------------------------------------------===/
+// Initialize the manufactured solution tendency terms.
+//===-----------------------------------------------------------------------===/
+void ManufacturedSolution::init() {
+   Error Err; // error code
+
+   // Get ManufacturedSolConfig group
+   Config *OmegaConfig = Config::getOmegaConfig();
+   OMEGA_REQUIRE(OmegaConfig,
+                 "Null OmegaConfig pointer in ManufacturedSolution::init");
+   Config ManufacturedSolConfig("ManufacturedSolution");
+   Err += OmegaConfig->get(ManufacturedSolConfig);
+   CHECK_ERROR_ABORT(
+       Err,
+       "ManufacturedSolution: ManufacturedSolution group not found in Config");
+
+   // Get TendConfig group
+   Config TendConfig("Tendencies");
+   Err += OmegaConfig->get(TendConfig);
+   CHECK_ERROR_ABORT(
+       Err, "ManufacturedSolution: Tendencies group not found in Config");
+
+   // Get manufactured solution parameters from Config
+   R8 WavelengthX;
+   R8 WavelengthY;
+   R8 Amplitude;
+
+   Err += ManufacturedSolConfig.get("WavelengthX", WavelengthX);
+   CHECK_ERROR_ABORT(
+       Err,
+       "ManufacturedSolution: WavelengthX not found in ManufacturedSolConfig");
+
+   Err += ManufacturedSolConfig.get("WavelengthY", WavelengthY);
+   CHECK_ERROR_ABORT(
+       Err,
+       "ManufacturedSolution: WavelengthY not found in ManufacturedSolConfig");
+
+   Err += ManufacturedSolConfig.get("Amplitude", Amplitude);
+   CHECK_ERROR_ABORT(
+       Err,
+       "ManufacturedSolution: Amplitude not found in ManufacturedSolConfig");
+
+   // Get Tendendices parameters for del2 and del4 source terms
+   Err += TendConfig.get("VelDiffTendencyEnable",
+                         ManufacturedVelTend.VelDiffTendencyEnable);
+   Err += TendConfig.get("VelHyperDiffTendencyEnable",
+                         ManufacturedVelTend.VelHyperDiffTendencyEnable);
+   Err += TendConfig.get("ViscDel2", ManufacturedVelTend.ViscDel2);
+   Err += TendConfig.get("ViscDel4", ManufacturedVelTend.ViscDel4);
+
+   CHECK_ERROR_ABORT(
+       Err,
+       "ManufacturedSolution: Could not find del2, del4 parameters in Config");
+
+   // Get the reference time to compute the model elapsed time
+   /// Get model clock from time stepper
+   TimeStepper *DefStepper             = TimeStepper::getDefault();
+   Clock *ModelClock                   = DefStepper->getClock();
+   ManufacturedThickTend.ReferenceTime = ModelClock->getCurrentTime();
+   ManufacturedVelTend.ReferenceTime   = ManufacturedThickTend.ReferenceTime;
+
+   // Get BottomGeomDepth for the resting thickness
+   /// This test case assumes that the restingThickness is horizontally uniform
+   /// and that only one vertical level is used so only one set of indices is
+   /// used here.
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   R8 H0                = DefVCoord->BottomGeomDepthH(0);
+
+   // Define and compute common constants
+   R8 Kx      = TwoPi / WavelengthX;                      // Wave in X-dir
+   R8 Ky      = TwoPi / WavelengthY;                      // Wave in Y-dir
+   R8 AngFreq = sqrt(H0 * Gravity * (Kx * Kx + Ky * Ky)); // Angular frequency
+
+   // Assign constants for thickness tendency function
+   ManufacturedThickTend.H0      = H0;
+   ManufacturedThickTend.Eta0    = Amplitude;
+   ManufacturedThickTend.Kx      = Kx;
+   ManufacturedThickTend.Ky      = Ky;
+   ManufacturedThickTend.AngFreq = AngFreq;
+
+   // Assign constants for velocity tendency function
+   ManufacturedVelTend.Grav    = Gravity;
+   ManufacturedVelTend.Eta0    = Amplitude;
+   ManufacturedVelTend.Kx      = Kx;
+   ManufacturedVelTend.Ky      = Ky;
+   ManufacturedVelTend.AngFreq = AngFreq;
+
+} // end ManufacturedSolution init
+
+//===--------------------------------------------------------------------===/
+// Manufactured tendency term for the thickness equation
+//===--------------------------------------------------------------------===/
+void ManufacturedSolution::ManufacturedThicknessTendency::operator()(
+    Array2DReal ThicknessTend, const OceanState *State,
+    const AuxiliaryState *AuxState, int ThickTimeLevel, int VelTimeLevel,
+    TimeInstant Time) const {
+
+   // Get elapsed time since reference time
+   R8 ElapsedTimeSec;
+   TimeInterval ElapsedTimeInterval = Time - ReferenceTime;
+   ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
+
+   auto *Mesh       = HorzMesh::getDefault();
+   auto NVertLayers = ThicknessTend.extent_int(1);
+
+   Array1DReal XCell = Mesh->XCell;
+   Array1DReal YCell = Mesh->YCell;
+
+   OMEGA_SCOPE(LocH0, H0);
+   OMEGA_SCOPE(LocEta0, Eta0);
+   OMEGA_SCOPE(LocKx, Kx);
+   OMEGA_SCOPE(LocKy, Ky);
+   OMEGA_SCOPE(LocAngFreq, AngFreq);
+
+   parallelFor(
+       {Mesh->NCellsAll, NVertLayers}, KOKKOS_LAMBDA(int ICell, int KLevel) {
+          R8 X     = XCell(ICell);
+          R8 Y     = YCell(ICell);
+          R8 Phase = LocKx * X + LocKy * Y - LocAngFreq * ElapsedTimeSec;
+          ThicknessTend(ICell, KLevel) +=
+              LocEta0 *
+              (-LocH0 * (LocKx + LocKy) * sin(Phase) - LocAngFreq * cos(Phase) +
+               LocEta0 * (LocKx + LocKy) * cos(2.0_Real * Phase));
+       });
+
+} // end void ManufacturedThicknessTendency
+
+//===--------------------------------------------------------------------===/
+// Manufactured tendency term for the momentum equation
+//===--------------------------------------------------------------------===/
+void ManufacturedSolution::ManufacturedVelocityTendency::operator()(
+    Array2DReal NormalVelTend, const OceanState *State,
+    const AuxiliaryState *AuxState, int ThickTimeLevel, int VelTimeLevel,
+    TimeInstant Time) const {
+
+   // Get elapsed time since reference time
+   R8 ElapsedTimeSec;
+   TimeInterval ElapsedTimeInterval = Time - ReferenceTime;
+   ElapsedTimeInterval.get(ElapsedTimeSec, TimeUnits::Seconds);
+
+   auto *Mesh       = HorzMesh::getDefault();
+   auto NVertLayers = NormalVelTend.extent_int(1);
+
+   Array1DReal FEdge     = Mesh->FEdge;
+   Array1DReal XEdge     = Mesh->XEdge;
+   Array1DReal YEdge     = Mesh->YEdge;
+   Array1DReal AngleEdge = Mesh->AngleEdge;
+
+   OMEGA_SCOPE(LocGrav, Gravity);
+   OMEGA_SCOPE(LocEta0, Eta0);
+   OMEGA_SCOPE(LocKx, Kx);
+   OMEGA_SCOPE(LocKy, Ky);
+   OMEGA_SCOPE(LocAngFreq, AngFreq);
+   OMEGA_SCOPE(LocViscDel2, ViscDel2);
+   OMEGA_SCOPE(LocViscDel4, ViscDel4);
+   OMEGA_SCOPE(LocVelDiffTendencyEnable, VelDiffTendencyEnable);
+   OMEGA_SCOPE(LocVelHyperDiffTendencyEnable, VelHyperDiffTendencyEnable);
+
+   R8 LocKx2 = LocKx * LocKx;
+   R8 LocKy2 = LocKy * LocKy;
+   R8 LocKx4 = LocKx2 * LocKx2;
+   R8 LocKy4 = LocKy2 * LocKy2;
+
+   parallelFor(
+       {Mesh->NEdgesAll, NVertLayers}, KOKKOS_LAMBDA(int IEdge, int KLevel) {
+          R8 X = XEdge(IEdge);
+          R8 Y = YEdge(IEdge);
+
+          R8 Phase       = LocKx * X + LocKy * Y - LocAngFreq * ElapsedTimeSec;
+          R8 SourceTerm0 = LocAngFreq * sin(Phase) - 0.5_Real * LocEta0 *
+                                                         (LocKx + LocKy) *
+                                                         sin(2.0_Real * Phase);
+
+          R8 U = LocEta0 *
+                 ((-FEdge(IEdge) + LocGrav * LocKx) * cos(Phase) + SourceTerm0);
+          R8 V = LocEta0 *
+                 ((FEdge(IEdge) + LocGrav * LocKy) * cos(Phase) + SourceTerm0);
+
+          // Del2 and del4 source terms
+          if (LocVelDiffTendencyEnable) {
+             U += LocViscDel2 * LocEta0 * (LocKx2 + LocKy2) * cos(Phase);
+             V += LocViscDel2 * LocEta0 * (LocKx2 + LocKy2) * cos(Phase);
+          }
+          if (LocVelHyperDiffTendencyEnable) {
+             U -= LocViscDel4 * LocEta0 *
+                  ((LocKx4 + LocKy4 + LocKx2 * LocKy2) * cos(Phase));
+             V -= LocViscDel4 * LocEta0 *
+                  ((LocKx4 + LocKy4 + LocKx2 * LocKy2) * cos(Phase));
+          }
+
+          R8 NormalCompSourceTerm =
+              cos(AngleEdge(IEdge)) * U + sin(AngleEdge(IEdge)) * V;
+          NormalVelTend(IEdge, KLevel) += NormalCompSourceTerm;
+       });
+
+} // end void ManufacturedVelocityTendency
+
+} // end namespace OMEGA
+
+//=-------------------------------------------------------------------------===/

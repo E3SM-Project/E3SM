@@ -247,7 +247,7 @@ contains
 
   subroutine seq_flux_init(comp, fractions, mbid)
 
-    use shr_moab_mod,     only: mbGetnCells
+    use shr_moab_mod,     only: mbGetnCells, mbGetEntityType
 
     !-----------------------------------------------------------------------
     !
@@ -514,7 +514,7 @@ contains
     allocate(rmask(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate rmask',ier)
 
-    ent_type = 1
+    ent_type = mbGetEntityType(mbid)
     tagname = "lat"//C_NULL_CHAR
     ier = iMOAB_GetDoubleTagStorage (mbid, tagname, nloc , ent_type, lats)
     tagname = "lon"//C_NULL_CHAR
@@ -855,7 +855,7 @@ contains
 
   subroutine seq_flux_ocnalb( infodata, ocn, a2x_o, fractions_o, xao_o )
 
-    use shr_moab_mod,     only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
+    use shr_moab_mod,     only: mbGetnCells, mbGetEntityType, mbGetCellTagVals, mbSetCellTagVals
     !-----------------------------------------------------------------------
     !
     ! Arguments
@@ -1007,7 +1007,7 @@ contains
        endif
 
     endif
-    ent_type = 1 ! cells for mpas ocean
+    ent_type = mbGetEntityType(mboxid)
 
     if (flux_albav) then
 
@@ -1120,7 +1120,7 @@ contains
        ! copy here fractions ifrad and ofrad to moab tags
        if (mboxid > 0 ) then
          tagname = 'ifrac:ofrac'//C_NULL_CHAR
-         ent_type = 1 ! cells for ocean mesh
+         ent_type = mbGetEntityType(mboxid)
          ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in getting ifrac, ofrac  '

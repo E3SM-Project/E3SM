@@ -47,6 +47,7 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/control_mod.F90
     ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
     ${SRC_SHARE_DIR}/cube_mod.F90
+    ${SRC_SHARE_DIR}/metric_mod.F90
     ${SRC_SHARE_DIR}/derivative_mod.F90
     ${SRC_SHARE_DIR}/dimensions_mod.F90
     ${SRC_SHARE_DIR}/dof_mod.F90
@@ -67,7 +68,6 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/mesh_mod.F90
     ${SRC_SHARE_DIR}/sort_mod.F90
     ${SRC_SHARE_DIR}/metagraph_mod.F90
-    ${SRC_SHARE_DIR}/metis_mod.F90
     ${SRC_SHARE_DIR}/namelist_mod.F90
     ${SRC_SHARE_DIR}/parallel_mod.F90
     ${SRC_SHARE_DIR}/params_mod.F90
@@ -227,7 +227,5 @@ MACRO(PREQX_KOKKOS_SETUP)
   IF (PREQX_QSIZE_D)      
     SET (QSIZE_D ${PREQX_QSIZE_D})
   ENDIF ()
-
-  SET(USE_OPENACC FALSE)
 
 ENDMACRO(PREQX_KOKKOS_SETUP)

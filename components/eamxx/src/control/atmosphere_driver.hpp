@@ -3,7 +3,7 @@
 
 #include "control/surface_coupling_utils.hpp"
 #include "share/data_managers/field_manager.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/io/eamxx_output_manager.hpp"
@@ -183,6 +183,11 @@ protected:
 
   void initialize_time_stamps ();
   void set_initialization_groups (const Field& f);
+
+  // Allocate the memory buffer shared by all atm procs, and hand it to them.
+  // Must be called after all fields/groups are set in the atm procs, since
+  // buffer sizes may depend on them (e.g., number of tracers).
+  void allocate_buffers ();
 
   template<typename T>
   using strmap_t = std::map<std::string,T>;

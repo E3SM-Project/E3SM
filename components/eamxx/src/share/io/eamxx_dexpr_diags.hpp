@@ -13,17 +13,14 @@ namespace scream {
 /*
  * The expression front end for diagnostics.
  *
- * An alternative to the regex patterns in create_diagnostic(), not a layer on
- * top: it parses with share/dexpr and drives the diagnostic factory from the
- * AST. It neither produces nor consumes legacy underscore names, so the two
- * front ends evolve independently.
+ * Parses with share/dexpr and drives the diagnostic factory from the AST.
+ * create_diagnostic() sends every request here first; only a plain name
+ * (a field, or a diag class like LiqWaterPath) comes back unresolved.
  *
  * Composition is by field name, as always. A diag declares its operands by
  * their canonical expression string, and the customer resolving dependencies
  * feeds those back through create_diagnostic(): '(qc+qv)*p_mid' gives
- * BinaryOp{arg1="(qc+qv)", arg2="p_mid"}, and '(qc+qv)' comes back here. Those
- * names carry parentheses and quotes, which no legacy pattern matches, so they
- * cannot be intercepted by a regex on the way back in.
+ * BinaryOp{arg1="(qc+qv)", arg2="p_mid"}, and '(qc+qv)' comes back here.
  *
  * Diags built here carry two extra params:
  *   - 'output_field_name': the expression, so the output field is named after

@@ -70,19 +70,19 @@ fields:
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
       # Diagnostics
-      - T_mid_at_lev_2
-      - T_mid_at_model_top
-      - T_mid_at_model_bot
-      - T_mid_at_500mb
-      - T_mid_at_500hPa
-      - T_mid_at_50000Pa
+      - T_mid_at_lev_2 := T_mid.isel(lev=2)
+      - T_mid_at_model_top := T_mid.isel(lev=0)
+      - T_mid_at_model_bot := T_mid.isel(lev=-1)
+      - T_mid_at_500mb := T_mid.interp(p_mid=500,units='mb')
+      - T_mid_at_500hPa := T_mid.interp(p_mid=500,units='hPa')
+      - T_mid_at_50000Pa := T_mid.interp(p_mid=50000)
       - PotentialTemperature
       - AtmosphereDensity
       - Exner
       - VirtualTemperature
       - z_int
-      - geopotential_int_at_lev_2
-      - z_mid_at_500mb
+      - geopotential_int_at_lev_2 := geopotential_int.isel(lev=2)
+      - z_mid_at_500mb := z_mid.interp(p_mid=500,units='mb')
       - geopotential_mid
       - dz
       - DryStaticEnergy
@@ -97,8 +97,8 @@ fields:
       - RelativeHumidity
       - ZonalVapFlux
       - MeridionalVapFlux
-      - PotentialTemperature_at_model_top
-      - PotentialTemperature_at_500mb
+      - PotentialTemperature_at_model_top := PotentialTemperature.isel(lev=0)
+      - PotentialTemperature_at_500mb := PotentialTemperature.interp(p_mid=500,units='mb')
 
 output_control:
   frequency: ${NUM_STEPS}

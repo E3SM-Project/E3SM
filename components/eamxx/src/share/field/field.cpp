@@ -671,25 +671,25 @@ update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha,
   bool fill_aware = x.get_header().may_be_filled();
 
   if (data_type()==DataType::IntType) {
-    return fill_aware ? update_fill_aware<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
-                      : update_impl<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
+    return fill_aware ? update_fill_aware<int,int>(CM,x,alpha.as<int>(),beta.as<int>(),gamma.as<int>())
+                      : update_impl<int,int>(CM,x,alpha.as<int>(),beta.as<int>(),gamma.as<int>());
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
-                        : update_impl<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+      return fill_aware ? update_fill_aware<float,float>(CM,x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<float,float>(CM,x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
     else
-      return fill_aware ? update_fill_aware<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
-                        : update_impl<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
+      return fill_aware ? update_fill_aware<float,int>(CM,x,alpha.as<float>(),beta.as<float>(),gamma.as<float>())
+                        : update_impl<float,int>(CM,x,alpha.as<float>(),beta.as<float>(),gamma.as<float>());
   } else if (data_type()==DataType::DoubleType) {
     if (x.data_type()==DataType::DoubleType)
-      return fill_aware ? update_fill_aware<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return fill_aware ? update_fill_aware<double,double>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<double,double>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else if (x.data_type()==DataType::FloatType)
-      return fill_aware ? update_fill_aware<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return fill_aware ? update_fill_aware<double,float>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<double,float>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
     else
-      return fill_aware ? update_fill_aware<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
-                        : update_impl<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
+      return fill_aware ? update_fill_aware<double,int>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>())
+                        : update_impl<double,int>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>());
   }
 }
 
@@ -701,19 +701,19 @@ update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha,
   update_checks(caller,*this,x,alpha,beta,gamma,&mask);
 
   if (data_type()==DataType::IntType) {
-    return update_masked<CM,int,int>(x,alpha.as<int>(),beta.as<int>(),gamma.as<int>(),mask);
+    return update_masked<int,int>(CM,x,alpha.as<int>(),beta.as<int>(),gamma.as<int>(),mask);
   } else if (data_type()==DataType::FloatType) {
     if (x.data_type()==DataType::FloatType)
-      return update_masked<CM,float,float>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
+      return update_masked<float,float>(CM,x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
     else
-      return update_masked<CM,float,int>(x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
+      return update_masked<float,int>(CM,x,alpha.as<float>(),beta.as<float>(),gamma.as<float>(),mask);
   } else if (data_type()==DataType::DoubleType) {
     if (x.data_type()==DataType::DoubleType)
-      return update_masked<CM,double,double>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
+      return update_masked<double,double>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
     else if (x.data_type()==DataType::FloatType)
-      return update_masked<CM,double,float>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
+      return update_masked<double,float>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
     else
-      return update_masked<CM,double,int>(x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
+      return update_masked<double,int>(CM,x,alpha.as<double>(),beta.as<double>(),gamma.as<double>(),mask);
   }
 }
 

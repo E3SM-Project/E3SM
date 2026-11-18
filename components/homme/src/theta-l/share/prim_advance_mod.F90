@@ -51,7 +51,7 @@ module prim_advance_mod
 #endif
  
 #ifdef HOMMEXX_BFB_TESTING
-  use bfb_mod,        only: cxx_log
+  use bfb_mod,        only: cxx_log, cxx_log_array
 #endif
 
   implicit none
@@ -1059,6 +1059,9 @@ contains
   real (kind=real_kind) :: pnh(np,np,nlev)               ! nh (nonydro) pressure
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)         ! exner nh pressure
+#ifdef HOMMEXX_BFB_TESTING
+  real (kind=real_kind) :: log_exner(np,np,nlev)
+#endif
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)    ! dpnh / dp3d at interfaces
   real (kind=real_kind) :: eta_dot_dpdn(np,np,nlevp)  ! vertical velocity at interfaces
   real (kind=real_kind) :: KE(np,np,nlev)             ! Kinetic energy
@@ -1460,15 +1463,13 @@ contains
         if (pgrad_correction==1) then
            T0 = TREF-tref_lapse_rate*TREF*Cp/g     ! = 97  
 #ifdef HOMMEXX_BFB_TESTING
-           ! For BFB testing, calculate log(exner) using cxx_log()
+           ! For BFB testing, calculate log(exner) using cxx_log_array()
            ! and then call gradient sphere.
-           do j=1,np
-             do i=1,np
-               temp(i,j,k) = cxx_log(exner(i,j,k))
-             end do
-           end do
+           if (k==1) then
+             call cxx_log_array(np*np*nlev, exner, log_exner)
+           end if
 
-           vtemp(:,:,:,k)=gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
+           vtemp(:,:,:,k)=gradient_sphere(log_exner(:,:,k),deriv,elem(ie)%Dinv)
 #else
            vtemp(:,:,:,k)=gradient_sphere(log(exner(:,:,k)),deriv,elem(ie)%Dinv)
 #endif

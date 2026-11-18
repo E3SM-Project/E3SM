@@ -1,0 +1,334 @@
+Omega:
+  Timing:
+    Level: 2
+    AutoFence: true
+    TimingBarriers: false
+    PrintAllRanks: false
+  TimeIntegration:
+    CalendarType: No Leap
+    TimeStepper: Forward-Backward
+    TimeStep: 0000_00:10:00
+    StartType: StartUp
+    StartTime: 0001-01-01_00:00:00
+    StopType: AtTime
+    StopCriterion: 0001-01-01_02:00:00
+    ModeSplitShare:
+      BtrTimeStepper: Predictor-Corrector
+      BtrTimeStep: 0000_00:00:20
+      NTimeStepIteration: 2
+      NBclCoriolisIteration: 2
+      ReinitSplitVelocity: false
+  Decomp:
+    HaloWidth: 3
+    DecompMethod: MetisKWay
+  IO:
+    IOTasks:  1
+    IOStride: 1
+    IOBaseTask: 0
+    IORearranger: box
+    IODefaultFormat: pnetcdf
+  State:
+    NTimeLevels: 2
+    PrescribeThicknessType: None
+    PrescribeVelocityType: None
+    Validation:
+      AbortOnOOB: false
+      AbortOnNan: true
+  Advection:
+    Coef3rdOrder: 0.25
+    FluxThicknessType: Center
+    HorzTracerFluxOrder: 3
+    VerticalTracerFluxLimiterEnable: true
+    HorzTracerFluxLimiterEnable: true
+    HorzTracerFluxLimiterBudgetsEnable: false
+    HorzTracerFluxLimiterMonotonicityCheckEnable: false
+    VerticalTracerFluxOrder: 3
+  SfcStress:
+    InterpType: Isotropic
+  SurfaceRestoring:
+    TracersToRestore: [Temperature, Salinity]
+    PistonVelocity: 1.585e-5
+  PressureGrad:
+    # Centered | FiniteVolume
+    PressureGradType: FiniteVolume
+    # The remaining options apply to the FiniteVolume scheme only
+    # edge stencil width; only 2 (two-cell) is implemented
+    HorzOrder: 2
+    # reconstruction in pressure; only 'linear' is implemented
+    VerticalReconstruction: linear
+    # quadrature points per edge layer; an accuracy setting only
+    QuadraturePoints: 2
+  Tendencies:
+    ThicknessFluxTendencyEnable: true
+    PVTendencyEnable: true
+    KETendencyEnable: true
+    # Only appropriate for shallow water (Omega v0) simulations
+    SSHTendencyEnable: false
+    VelDiffTendencyEnable: true
+    ViscDel2: 1.0e3
+    VelHyperDiffTendencyEnable: true
+    ViscDel4: 1.2e11
+    DivFactor: 1.0
+    SfcStressForcingTendencyEnable: false
+    SurfaceTracerRestoringEnable: false
+    BottomDragTendency:
+      Enable: true
+      Mode: Implicit
+      Type: Constant
+      BottomDragCoeff: 1.0e-3
+    SfcThicknessForcingTendencyEnable: false
+    SfcTracerForcingTendencyEnable: false
+    PenetratingShortwaveTendency:
+      Enable: false
+      NearIrFraction: 0.58
+      NearIrCoeff: 2.86
+      BlueFraction: 0.21
+      RedFraction: 0.21
+    TracerHorzAdvTendencyEnable: true
+    TracerDiffTendencyEnable: true
+    EddyDiff2: 10.0
+    TracerHyperDiffTendencyEnable: true
+    EddyDiff4: 0.0
+    UseCustomTendency: false
+    ManufacturedSolutionTendency: false
+    ThicknessVertAdvTendencyEnable: true
+    VelocityVertAdvTendencyEnable: true
+    TracerVertAdvTendencyEnable: true
+    PressureGradTendencyEnable: true
+    FrazilTendencyEnable: false
+    VelVertMixTendencyEnable: true
+    TracerVertMixTendencyEnable: true
+    KPPNonLocalTracerFluxTendencyEnable: true
+    KPPNonLocalTracerDiagnosticsEnable: false
+  HorzMesh:
+    MeshScalingEnable: true
+  ManufacturedSolution:
+    WavelengthX: 5.0e6
+    WavelengthY: 4.33013e6
+    Amplitude: 1.0
+  Tracers:
+    Base: [Temperature, Salinity]
+    Debug: []
+  Eos:
+    EosType: teos10
+    Linear:
+      DRhoDT: -0.2
+      DRhoDS: 0.8
+      RhoT0S0: 1000.0
+  Frazil:
+    FrazilType: teos10
+    LayerMassFracMax: 0.1
+    Phi: 0.75
+    DepthLimit: -1.0
+    ConservationCheck: false
+  Submeso:
+    Enable: false
+    Tau: 172800.0
+    Ce: 0.08
+    LfMin: 1.0e3
+    DsMax: 100.0e3
+  VertMix:
+    Background:
+      Diffusivity: 1.0e-5
+      Viscosity: 1.0e-4
+    Convective:
+      Enable: true
+      Diffusivity: 1.0
+      TriggerBVF: 0.0
+    Shear:
+      Enable: true
+      BaseShearValue: 0.005
+      RiCrit: 0.7
+      Exponent: 3.0
+      RiSmoothLoops: 2
+    KPP:
+      Enable: true
+      UseOSBLSmoothing: true
+      UseLangmuirTurbulence: true
+      CriticalBulkRichardsonNumber: 0.25
+      SurfaceLayerExtent: 0.1
+      # SimpleShapes or MatchBoth
+      MatchTechnique: SimpleShapes
+      InterpType2: LMD94
+      UseEnhancedDiffusion: true
+      IceFractionThresholdForLangmuir: 0.05
+      IceFractionThresholdForMinimumOSBL: 0.15
+      MinimumOSBLUnderSeaIce: 5.0
+      DebugDiagnostics: false
+  RayleighDamping:
+    Enable: false
+    DampingCoeff: 1.0e-4
+  IOStreams:
+    HorzMeshIn:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - HorzMeshIn
+    InitialVertCoord:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - InitVertCoord
+    # InitialState is only read if the StartType is StartUp so this should
+    # reflect that case with FreqUnits "OnStartup"
+    InitialState:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - State
+        - Base
+    # Forcing is the external forcing in standalone mode.
+    # It contains the surface stress, surface fluxes
+    # and the surface restoring target files (if appl.).
+    Forcing:
+      UsePointerFile: false
+      Filename: forcing.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: Never
+      UseStartEnd: false
+      Contents:
+        - Forcing
+    ShortwaveExtinctionIn:
+      UsePointerFile: false
+      Filename: shortwave_extinction_coeffs.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - ShortwaveExtinction
+    # Restarts are used to initialize for all job submissions after the very
+    # first startup job. This stream is only read if the StartType requires a
+    # restart (Continue or Branch) and this stream is ignored otherwise
+    RestartRead:
+      UsePointerFile: true
+      PointerFilename: ocn.pointer
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - Restart
+    RestartWrite:
+      UsePointerFile: true
+      PointerFilename: ocn.pointer
+      Filename: restart.$Y-$M-$D_$h.$m.$s.nc
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 6
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Restart
+    History:
+      UsePointerFile: false
+      Filename: history.$Y-$M.nc
+      Mode: write
+      IfExists: replace
+      Precision: double
+      Freq: 1
+      FreqUnits: months
+      UseStartEnd: false
+      Contents:
+        - Tracers
+        - State
+        - SshCell
+        - GeomZMid
+        - GeomZInterface
+    Highfreq:
+      UsePointerFile: false
+      Filename: highfreq.$Y-$M.nc
+      Mode: write
+      IfExists: append
+      Precision: single
+      Freq: 10
+      FreqUnits: Never
+      FileFreq: 1
+      FileFreqUnits: months
+      UseStartEnd: true
+      StartTime: 0001-06-01_00:00:00
+      EndTime: 0001-07-31_00:00:00
+      Contents:
+        - Tracers
+  Analysis:
+    # Each group below unless otherwise noted supports two output modes:
+    #   ReductionPeriod - time-averaged output over a window (reduction)
+    #   SnapshotPeriod  - instantaneous snapshots at a fixed cadence
+    # Either or both may be used; an empty list ([]) disables that mode.
+    # SamplingInterval (reductions only) sets the accumulation cadence
+    # as "<n>steps", "<n>perPeriod", or a TimeInterval (e.g. 6Hours).
+    # The default "dt" means the accumulation occurs every timestep.
+    GlobalStats:
+      Enable: false
+      # Global Statistics (GlobalStats) analysis group
+      # Computes spatial reduction statistics (Mean, Min, Max, StdDev)
+      # for a set of ocean fields.
+      Fields: [NormalVelocity, PseudoThickness, Temperature, Salinity,
+          KineticEnergyCell, SshCell]
+                                # List of field names to compute statistics for
+      SpatialStats: [Max, Min, Mean, StdDev]
+                                # Spatial statistics to compute (one per field)
+      ReductionPeriod: []       # Temporal reduction periods
+      SamplingInterval: dt      # Accumulation cadence of the reductions
+      SnapshotPeriod: [1Day]    # Instantaneous snapshot output intervals
+      Filename: global.stats.$Y.nc
+      Stream:
+        FileFreq: 1
+        FileFreqUnits: years
+    MOC:
+      Enable: false
+      # Meridional Overturning Circulation (MOC) streamfunction analysis group
+      # Computes MOC as a function of latitude and depth for regions,
+      # and as a function of depth for transects
+      NumBins: 180              # Number of latitude bins (default: 180, ~1 degree)
+      MinLat: -90.0             # Minimum latitude in degrees (default: -90.0)
+      MaxLat: 90.0              # Maximum latitude in degrees (default: 90.0)
+      Regions: [Global]         # List of region names for regional MOC
+                                # NOTE: Region masks not yet implemented
+      Transects: []             # List of transect names for transect-based MOC
+                                # NOTE: Transect masks not yet implemented
+      ReductionPeriod: [1Month] # Temporal reduction periods
+      SamplingInterval: dt      # Accumulation cadence of the reductions
+      SnapshotPeriod: []        # Instantaneous output periods
+      Filename: moc.$Y-$M.nc
+      Stream:
+        FileFreq: 1
+        FileFreqUnits: months
+    MonthlyAverages:
+      Enable: false
+      # Monthly Averages (MonthlyAverages) analysis group
+      # Reduction-only: computes time averages of the requested global fields
+      # (SnapshotPeriod is discarded if set). Each field is averaged over a
+      # temporal window. The averaging period defaults to one month but can be
+      # overridden with the optional ReductionPeriod parameter.
+      # Output is written to the stream MonthlyAverages_<Period>TimeStats
+      # (e.g., MonthlyAverages_1MonthTimeStats).
+      Fields: [Temperature, Salinity, PseudoThickness, SpecVol, GeomZMid,
+          GeomZInterface, SshCell, NormalVelocity, KineticEnergyCell]
+                                # List of global fields to average
+      ReductionPeriod: [1Month] # Optional; averaging period(s)
+      SamplingInterval: dt      # Accumulation cadence of the reductions
+      Filename: monthly.averages.$Y-$M.nc
+      Stream:
+        FileFreq: 1
+        FileFreqUnits: months

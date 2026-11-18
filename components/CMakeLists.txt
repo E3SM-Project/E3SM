@@ -15,9 +15,10 @@ cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0079 NEW) # Remove once scorpio in a better state
 set(CMAKE_CXX_STANDARD 17)
 
-# Turn on wrapper
-set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
-set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+# Turn on wrapper. You can change this to e3sm_compile_wrap_mem to measure
+# memory in addition to time.
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm_compile_wrap ")
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
@@ -108,6 +109,7 @@ endforeach()
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_omega.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_eamxx.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_emulator_comps.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
@@ -132,6 +134,9 @@ set(BUILDCONF ${CASEROOT}/Buildconf)
 
 build_mpas_models()
 
+# omega manages its own build
+build_omega()
+
 # Set global cmake settings
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
@@ -144,7 +149,7 @@ endif()
 # Build E3SM components
 set(IDX 0)
 set(COMP_CLASSES cpl atm lnd ice ocn rof glc wav iac esp)
-set(SKIP_COMPS "scream" "mpaso" "mpassi" "mali")
+set(SKIP_COMPS "scream" "omega" "mpaso" "mpassi" "mali")
 # Append emulator components (set by build_emulator_comps.cmake)
 if(EMULATOR_COMP_NAMES)
   list(APPEND SKIP_COMPS ${EMULATOR_COMP_NAMES})

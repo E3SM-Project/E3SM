@@ -239,7 +239,7 @@ public:
   // perform masked manipulations.
   // The default mask name, <field name>_valid_mask, says the mask is this field's
   // own. Any other name says where a condition holds, and masks with the same
-  // name must hold the same values: e.g., IO gives one avg count to the diags
+  // name must hold the same values: e.g., IO gives one valid count to the diags
   // whose masks share a name, and the horizontal remapper remaps such masks once.
 
   enum class MaskInit { Valid, Invalid, None };
@@ -401,14 +401,14 @@ protected:
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
+  template<typename ST, typename STX>
+  void update_impl (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
+  template<typename ST, typename STX>
+  void update_fill_aware (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
+  template<typename ST, typename STX>
+  void update_masked (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&

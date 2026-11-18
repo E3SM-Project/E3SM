@@ -1,0 +1,207 @@
+#include "emulator_config.hpp"
+
+#include <inference_backend.hpp>
+#include <field_registry.hpp>
+
+#include <ekat_yaml.hpp>
+
+#include <algorithm>
+#include <cctype>
+#include <filesystem>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+namespace e3sm::emulator {
+namespace {
+
+constexpr std::string TABS = "  ";
+
+TensorLayout get_layout_from_string(std::string layout) {
+  if (layout == "SampleMajor") {
+    return TensorLayout::SampleMajor;
+  } else if (layout == "FeatureMajor") {
+    return TensorLayout::FeatureMajor;
+  }
+  throw std::runtime_error("Unknown tensor layout '" + layout +
+                           "' (expected 'FeatureMajor' or 'SampleMajor')");
+}
+
+inference::BackendType get_backend_type_from_string(std::string type) {
+
+  auto op = [](const unsigned char c) { return std::tolower(c); };
+  std::ranges::transform(type, type.begin(), op);
+  if (type == "python") {
+    return inference::BackendType::PYTHON;
+  } else if (type == "libtorch") {
+    return inference::BackendType::LIBTORCH;
+  } else if (type == "stub") {
+    return inference::BackendType::STUB;
+  }
+  throw std::runtime_error("Unknown inference backend '" + type +
+                           "' (expected 'libtorch', 'python', or 'stub')");
+}
+
+std::string to_string(TensorLayout layout) {
+  if (layout == TensorLayout::FeatureMajor) {
+    return "FeatureMajor";
+  } else if (layout == TensorLayout::SampleMajor) {
+    return "SampleMajor";
+  } else {
+    throw std::runtime_error("Unknown Layout");
+  }
+}
+
+std::vector<FieldConfig> read_fields(const ekat::ParameterList& params,
+                                     std::string label) {
+  const auto& input_list = params.sublist(label);
+  const auto& field_names = input_list.sublist_names();
+  std::vector<FieldConfig> fields;
+  fields.reserve(field_names.size());
+
+  for (const auto& field_name : field_names) {
+    const auto& field_list = input_list.sublist(field_name);
+    auto dimensions = field_list.get<std::vector<std::string>>("dimensions");
+
+    fields.emplace_back(
+        FieldConfig{.name = field_name, .dimensions = std::move(dimensions)});
+  }
+
+  return fields;
+}
+std::string filepath_to_absolute(const std::filesystem::path& parent_dir,
+                                 std::filesystem::path in_path) {
+  if (!in_path.empty()) {
+    if (in_path.is_relative()) {
+      in_path = parent_dir / in_path;
+    }
+    in_path = in_path.lexically_normal();
+  }
+  return in_path.string();
+}
+} // namespace
+
+/**
+ * @brief Parses a emulator_config.yaml file into
+ */
+EmulatorConfig read_emulator_config(const std::filesystem::path& filename) {
+  if (!std::filesystem::exists(filename)) {
+    throw std::runtime_error("Emulator configuration file not found: " +
+                             filename.string());
+  }
+
+  try {
+    const ekat::ParameterList params = ekat::parse_yaml_file(filename.string());
+    EmulatorConfig cfg;
+
+    const auto& attrs = params.sublist("emulator");
+    cfg.name = attrs.get<std::string>("name");
+    // cfg.type = attrs.get<std::string>("type");
+
+    // Get Model network configuration
+    const auto config_dir = std::filesystem::absolute(filename).parent_path();
+
+    const auto& model_attrs = attrs.sublist("model");
+
+    // get model path and convert to absolute
+    cfg.model.path =
+        filepath_to_absolute(config_dir, model_attrs.get<std::string>("path"));
+
+    cfg.model.output_layout =
+        get_layout_from_string(model_attrs.get<std::string>("output_layout"));
+    cfg.model.input_layout =
+        get_layout_from_string(model_attrs.get<std::string>("input_layout"));
+    cfg.model.backend_type =
+        get_backend_type_from_string(model_attrs.get<std::string>("backend"));
+
+    const auto& backend_options = model_attrs.sublist("options");
+    const auto& labels = backend_options.param_names();
+    for (const auto& label : labels) {
+      cfg.model.options[label] = backend_options.get<std::string>(label);
+    }
+    // Check that the python module name is specified
+    if (!cfg.model.options.contains("python_module") and
+        cfg.model.backend_type == inference::BackendType::PYTHON) {
+      throw std::runtime_error(
+          "the python backend requires the 'python_module' option");
+    }
+
+    // Get Sample Space Information
+    const auto& sample_info = params.sublist("sample_space");
+    cfg.dimensions = sample_info.get<std::vector<std::string>>("dimensions");
+
+    cfg.input_order = params.get<std::vector<std::string>>("input_order");
+    cfg.output_order = params.get<std::vector<std::string>>("output_order");
+    // Get inputs
+    cfg.inputs = read_fields(params, "inputs");
+    // Get outputs
+    cfg.outputs = read_fields(params, "outputs");
+    return cfg;
+  } catch (const std::exception& e) {
+    throw std::runtime_error("Failed to read emulator configuration '" +
+                             filename.string() + "': " + e.what());
+  }
+}
+
+std::string to_string(const ModelConfig& cfg) {
+  std::ostringstream out_str;
+  out_str << "| Model Config: \n";
+  out_str << '|' << TABS << "path: " << cfg.path << '\n';
+  out_str << '|' << TABS << "Input Layout: " << to_string(cfg.input_layout)
+          << ", Output Layout: " << to_string(cfg.output_layout) << '\n';
+
+  return out_str.str();
+}
+
+std::string to_string(const FieldConfig& cfg) {
+  std::ostringstream out_str;
+  out_str << '|' << TABS << cfg.name << "[ ";
+  for (auto& dim : cfg.dimensions) {
+    out_str << dim << ", ";
+  }
+  out_str << "]\n";
+  return out_str.str();
+}
+
+std::string to_string(const EmulatorConfig& cfg) {
+  std::ostringstream out_string;
+  out_string << "| Emulator Configuration for: " << cfg.name << '\n';
+  out_string << to_string(cfg.model);
+  out_string << "| Sample Space dimensions: [ ";
+  for (const auto& dim : cfg.dimensions) {
+    out_string << dim << ", ";
+  }
+  out_string << "]\n";
+
+  out_string << "| input_order: [ ";
+  for (const auto& name : cfg.input_order) {
+    out_string << name << ", ";
+  }
+  out_string << "]\n";
+  out_string << "| output_order: [ ";
+  for (const auto& name : cfg.output_order) {
+    out_string << name << ", ";
+  }
+  out_string << "]\n";
+
+  out_string << "| Inputs: \n";
+  for (const auto& field : cfg.inputs) {
+    out_string << to_string(field);
+  }
+  out_string << "| Outputs: \n";
+  for (const auto& field : cfg.outputs) {
+    out_string << to_string(field);
+  }
+
+  return out_string.str();
+}
+
+std::string to_string(const EmulatorFieldDesc& desc) {
+  std::ostringstream out;
+  auto role = (desc.role == ModelFieldRole::Input) ? "input" : "output";
+  out << "Field: \n"
+      << to_string(desc.config) << "\n role: " << role
+      << "\n Offset/size: " << desc.offset << " / " << desc.size;
+  return out.str();
+}
+} // namespace e3sm::emulator
