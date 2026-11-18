@@ -91,10 +91,10 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
         analysis_mask_file = 'oEC60to30v3_Atlantic_region_and_southern_transect.nc'
-        ic_date = '170905'
+        ic_date = '20261118'
         ic_prefix = 'oEC60to30v3_60layer'
         if ocn_ic_mode == 'spunup':
-            ic_date = '200927'
+            ic_date = '20261118'
             ic_prefix = 'oEC60to30v3.restartFrom_anvilG'
 
     elif ocn_grid == 'oEC60to30v3wLI':
@@ -241,14 +241,14 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file = 'EC30to60E2r2_mocBasinsAndTransects20210623.nc'
-        ic_date = '210210'
+        ic_date = '20261118'
         ic_prefix = 'ocean.EC30to60E2r2'
         if ocn_ic_mode == 'spunup':
-            ic_date = '201001'
+            ic_date = '20261118'
             ic_prefix = 'mpaso.EC30to60E2r2.rstFromG-anvil'
         #  modify initial condition file if ocean BGC is turned on
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
-            ic_date = '211030'
+            ic_date = '20261118'
             ic_prefix = 'ocean.EC30to60E2r2.210210+MARBL_ICfromOMIP+ecoAux+5xFESED'
             eco_forcing_file = 'ecoForcingSurfaceMonthly.EC30to60E2r2.20201221.nc'
 
@@ -405,7 +405,7 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.RRSwISC6to18E3r5.20240327.nc'
         analysis_mask_file = 'RRSwISC6to18E3r5_mocBasinsAndTransects20210623mg.20250325.nc'
-        ic_date = '20260922'
+        ic_date = '20261118'
         ic_prefix = 'mpaso.RRSwISC6to18E3r5'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
@@ -418,10 +418,10 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.SOwISC12to30E3r3.20240829.nc'
         analysis_mask_file = 'SOwISC12to30E3r3_mocBasinsAndTransects20210623.nc'
-        ic_date = '20240829'
+        ic_date = '20261118'
         ic_prefix = 'mpaso.SOwISC12to30E3r3'
         if ocn_ic_mode == 'spunup':
-            ic_date = '20240829'
+            ic_date = '20261118'
             ic_prefix = 'mpaso.SOwISC12to30E3r3.rstFromG-chrysalis'
         if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r3.20241017.nc'
