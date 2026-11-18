@@ -118,7 +118,7 @@ contains
        rho_sw    = real(SHR_CONST_RHOSW, RKIND) ! density of salt water (kg/m^3)
        rho_fw    = real(SHR_CONST_RHOFW, RKIND) ! density of fresh water (kg/m^3)
        rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
-       cp_sw     = 3.996e3_RKIND              ! specific heat salt water
+       cp_sw     = real(SHR_CONST_CPSW, RKIND) ! specific heat salt water (J/kg/K)
        cp_air    = 1005.0_RKIND               ! heat capacity of air (J/kg/K)
        sound     = 1.5e2_RKIND                ! speed of sound (m/s)
        vonkar    = 0.4_RKIND                  ! von Karman constant
@@ -157,7 +157,6 @@ contains
        !-----------------------------------------------------------------------
 
 #ifdef MPAS_ESM_SHR_CONST
-       cp_sw                  = SHR_CONST_CPSW          ! erg/g/K
        cp_air                 = SHR_CONST_CPDAIR        ! J/kg/K
        rho_air                = SHR_CONST_RHODAIR       ! kg/m^3
        rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
