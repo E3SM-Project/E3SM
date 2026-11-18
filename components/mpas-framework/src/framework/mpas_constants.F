@@ -21,10 +21,15 @@
 module mpas_constants
 
    use mpas_kind_types
+   use shr_const_mod, only: SHR_CONST_PI, SHR_CONST_REARTH, SHR_CONST_OMEGA
 
-   real (kind=RKIND), parameter :: pii     = 3.141592653589793   !< Constant: Pi
-   real (kind=RKIND), parameter :: a       = 6371229.0           !< Constant: Spherical Earth radius [m]
-   real (kind=RKIND), parameter :: omega   = 7.29212e-5          !< Constant: Angular rotation rate of the Earth [s-1]
+   private :: SHR_CONST_PI, SHR_CONST_REARTH, SHR_CONST_OMEGA
+
+   ! Physical reference values come from E3SM's shared constants, which take
+   ! them from the PhysicalConstantsDictionary (PCD).
+   real (kind=RKIND), parameter :: pii     = real(SHR_CONST_PI, RKIND)     !< Constant: Pi
+   real (kind=RKIND), parameter :: a       = real(SHR_CONST_REARTH, RKIND) !< Constant: Spherical Earth radius [m]
+   real (kind=RKIND), parameter :: omega   = real(SHR_CONST_OMEGA, RKIND)  !< Constant: Angular rotation rate of the Earth [s-1]
    real (kind=RKIND), parameter :: gravity = 9.80616             !< Constant: Acceleration due to gravity [m s-2]
    real (kind=RKIND), parameter :: rgas    = 287.0               !< Constant: Gas constant for dry air [J kg-1 K-1]
    real (kind=RKIND), parameter :: rv      = 461.6               !< Constant: Gas constant for water vapor [J kg-1 K-1]

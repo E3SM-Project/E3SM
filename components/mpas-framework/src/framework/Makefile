@@ -72,7 +72,7 @@ shr_const_mod.o: shr_kind_mod.o pcd_const.o
 
 mpas_moabmesh.o: shr_const_mod.o
 
-mpas_constants.o: mpas_kind_types.o
+mpas_constants.o: mpas_kind_types.o shr_const_mod.o
 
 mpas_log.o: mpas_derived_types.o mpas_io_units.o mpas_abort.o mpas_threading.o mpas_c_interfacing.o
 
