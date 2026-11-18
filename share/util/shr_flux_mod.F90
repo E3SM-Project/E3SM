@@ -661,6 +661,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
       real(R8) :: tau_diff ! stress difference for implicit-stress convergence (Pa)
       real(R8) :: prev_tau_diff ! previous stress difference (Pa)
       real(R8) :: wind_adj ! wind speed adjusted by implicit stress (m/s)
+      real(R8) :: wind_adj_prev ! previous adjusted wind speed (m/s)
+      real(R8) :: wind_adj_next ! undamped adjusted wind speed for regularized convergence (m/s)
       real(R8) :: vmag ! wind magnitude including gustiness and minimum wind (m/s)
 
       character(len=*),parameter :: subname='(flux_iteration_with_stability_atmocn)'
@@ -744,6 +746,10 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
       else
          tau_diff = 0._R8
       end if
+      if (use_ocn_atm_flux_reg .and. present(wsresp) .and. present(tau_est)) then
+         wind_adj_next = wind_adj*2.0_R8
+         wind_adj_prev = wind_adj
+      end if
 
       !------------------------------------------------------------
       ! iterate to converge on Z/L, ustar, tstar and qstar
@@ -753,11 +759,21 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
          if (use_ocn_atm_flux_reg) then
             ! Regularized scheme checks the residual of the entire system of equations. This
             ! requires storing the previous iteration x_n (i.e. _prev) as well as the function
-            ! evaluation f(x_n) (i.e. _next) for the convergence check.
-            if (.not. (sqrt(((ustar_next - ustar_prev)/(abs(ustar_prev) + ustar_tiny))**2 + &
-                           ((tstar_next - tstar_prev)/(abs(tstar_prev) + tstar_tiny))**2 + &
-                           ((qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny))**2 + &
-                           ((u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny))**2) > flux_con_tol)) exit
+            ! evaluation f(x_n) (i.e. _next) for the convergence check. When implicit stress is
+            ! active, adjusted wind speed must also be included in the convergence check.
+            if (present(wsresp) .and. present(tau_est)) then
+               if (.not. (sqrt(((ustar_next - ustar_prev)/(abs(ustar_prev) + ustar_tiny))**2 + &
+                              ((tstar_next - tstar_prev)/(abs(tstar_prev) + tstar_tiny))**2 + &
+                              ((qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny))**2 + &
+                              ((u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny))**2 + &
+                              ((wind_adj_next - wind_adj_prev)/(abs(wind_adj_prev) + u10n_tiny))**2) &
+                              > flux_con_tol)) exit
+            else
+               if (.not. (sqrt(((ustar_next - ustar_prev)/(abs(ustar_prev) + ustar_tiny))**2 + &
+                              ((tstar_next - tstar_prev)/(abs(tstar_prev) + tstar_tiny))**2 + &
+                              ((qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny))**2 + &
+                              ((u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny))**2) > flux_con_tol)) exit
+            end if
             if (iter > flux_con_max_iter) then
                write(s_logunit,*) 'wind speed: ', vmag
                write(s_logunit,*) 'air temp: ', thbot(n)
@@ -777,6 +793,11 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
                   (qstar_next - qstar_prev)/(abs(qstar_prev) + qstar_tiny)
                write(s_logunit,*) 'u10n residual: ', &
                   (u10n_next - u10n_prev)/(abs(u10n_prev) + u10n_tiny)
+               if (present(wsresp) .and. present(tau_est)) then
+                  write(s_logunit,*) 'adjusted wind: ', wind_adj
+                  write(s_logunit,*) 'adjusted wind residual: ', &
+                     (wind_adj_next - wind_adj_prev)/(abs(wind_adj_prev) + u10n_tiny)
+               end if
                write(s_logunit,*) 'convergence tolerance: ', flux_con_tol
                write(s_logunit,*) 'max iterations: ', flux_con_max_iter
                write(s_logunit,*) 'regularization enabled: ', use_ocn_atm_flux_reg
@@ -798,6 +819,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
             tstar_prev = tstar
             qstar_prev = qstar
             u10n_prev = u10n
+            if (present(wsresp) .and. present(tau_est)) wind_adj_prev = wind_adj
          end if
          !--- compute stability & evaluate all stability functions ---
          hol  = loc_karman*loc_g*zbot(n)*  &
@@ -869,8 +891,17 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
          if (present(wsresp) .and. present(tau_est)) then
             ! Update stress and magnitude of mean wind.
             tau = rbot(n) * ustar * rd * wind_adj
-            call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
-                  tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+            if (use_ocn_atm_flux_reg) then
+               ! When regularization is active, wind_adj needs to be updated with damping to be
+               ! consistent with the other unknowns.
+               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                     tau, prev_tau, tau_diff, prev_tau_diff, wind_adj_next)
+               wind_adj = ocn_atm_flux_damping * wind_adj_next + &
+                          (1.0_R8 - ocn_atm_flux_damping) * wind_adj_prev
+            else
+               call shr_flux_update_stress(wind0, wsresp(n), tau_est(n), &
+                     tau, prev_tau, tau_diff, prev_tau_diff, wind_adj)
+            end if
             vmag = wind_adj
             if (present(ugust)) then
                vmag = sqrt(vmag**2 + ugust(n)**2)
