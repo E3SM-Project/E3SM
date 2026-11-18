@@ -24,6 +24,7 @@ void compute_tendencies(
     const MAMDryDep::const_view_2d fraction_landuse_,
     const MAMDryDep::const_view_3d dgncur_awet_,
     const MAMDryDep::const_view_3d wet_dens_,
+    const mam_coupling::WetAtmosphere wet_atm,
     const mam_coupling::DryAtmosphere dry_atm,
     const mam_coupling::AerosolState dry_aero,
 
@@ -71,7 +72,7 @@ void compute_tendencies(
         team.team_barrier();
 
         // Create atm and progs objects
-        mam4::Atmosphere atm    = atmosphere_for_column(dry_atm, icol);
+        mam4::Atmosphere atm    = atmosphere_for_column(wet_atm, dry_atm, icol);
         mam4::Prognostics progs = aerosols_for_column(dry_aero, icol);
 
         // Extract column data (or 1d view) from 2d views of data

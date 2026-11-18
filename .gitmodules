@@ -74,3 +74,16 @@
 [submodule "externals/mam4xx"]
 	path = externals/mam4xx
 	url = git@github.com:E3SM-Project/mam4xx.git
+
+[submodule "components/omega/external/yaml-cpp"]
+	path = components/omega/external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "components/omega/external/GSW-C"]
+	path = components/omega/external/GSW-C
+	url = git@github.com:E3SM-Project/GSW-C.git
+[submodule "components/omega/external/cpptrace"]
+	path = components/omega/external/cpptrace
+	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "components/omega/external/spdlog"]
+	path = components/omega/external/spdlog
+	url = git@github.com:gabime/spdlog.git

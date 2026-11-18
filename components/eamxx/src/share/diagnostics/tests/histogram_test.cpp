@@ -173,6 +173,24 @@ TEST_CASE("histogram") {
   diag3->compute(t0);
   auto diag3_field = diag3->get();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));
+
+  // The diag reads each edge as a number, so edges can be negative and can have an
+  // exponent (the dexpr histogram() passes them down in that form)
+  params.set<std::string>("bin_configuration", "-5e1_0_2.5e+01");
+  auto diag4 = diag_factory.create("Histogram", comm, params, grid);
+  // All entries in [-50,0), i.e., the second of the 4 bins
+  qc1.deep_copy(sp(-25.0));
+  qc1.get_header().get_tracking().update_time_stamp(t0+2);
+  diag4->set_input_field(qc1);
+  diag4->initialize();
+  diag4->compute(t0+2);
+  auto diag4_field = diag4->get();
+  REQUIRE(diag4_field.get_header().get_identifier().get_layout().dim(0) == 4);
+  diag4_field.sync_to_host();
+  auto diag4_view_host = diag4_field.get_view<const Real *, Host>();
+  for (int bin_i = 0; bin_i < 4; bin_i++) {
+    REQUIRE(diag4_view_host(bin_i) == Real(bin_i==1 ? ngcols : 0));
+  }
 }
 
 } // namespace scream

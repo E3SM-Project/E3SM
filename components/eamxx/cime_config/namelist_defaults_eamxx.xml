@@ -334,7 +334,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <use_gw_orographic type="logical" doc="Flag for orographic GWD">true</use_gw_orographic>
       <use_gw_convect type="logical" doc="Flag for convective GWD">true</use_gw_convect>
       <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
-      <gw_drag_file type="string" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
+      <gw_drag_file type="file" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
       <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
       <tau_0_ubc type="logical" doc="flag to enforce an upper boundary condition of tau=0">false</tau_0_ubc>
@@ -463,7 +463,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_optics>
 
     <!-- MAM4xx-Wetscav -->
-    <mam4_wetscav inherit="mam4_atm_proc_base" />
+    <mam4_wetscav inherit="mam4_atm_proc_base">
+      <!-- Convective transport -->
+      <convproc_do_aer type="logical" doc="Flag to enable convective transport of aerosols">false</convproc_do_aer>
+      <convproc_do_gas type="logical" doc="Flag to enable convective transport of gases">false</convproc_do_gas>
+    </mam4_wetscav>
 
     <!-- MAM4xx-Surface-Emissions -->
     <mam4_srf_online_emiss inherit="mam4_atm_proc_base">
@@ -655,6 +659,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <fixed_total_solar_irradiance>-9999.0</fixed_total_solar_irradiance>
       <fixed_total_solar_irradiance COMPSET=".*SCREAM%RCE.*">551.58</fixed_total_solar_irradiance>
 
+      <rad_frequency type="integer" constraints="gt 0" doc="Frequency (in number of timesteps) at which to call the radiation code">1</rad_frequency>
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne32np4">2</rad_frequency>
@@ -694,7 +699,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">shoc,cld_fraction,spa,p3</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">tms,shoc,cld_fraction,spa,p3</atm_procs_list>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne32np4">12</number_of_subcycles>
@@ -727,11 +732,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <roughness_length_max    type="real" doc="Maximum effective roughness length">100.0</roughness_length_max>
       <ri_shear_sqr_min        type="real" doc="Minimum squared wind shear between the lowest two levels for TMS Richardson number [m2/s2]">0.01</ri_shear_sqr_min>
       <drag_scaling_factor     type="real" doc="Scaling factor for TMS drag coefficient and stress">1.0</drag_scaling_factor>
+      <drag_scaling_factor COMPSET=".*SCREAM%BETA.*">0.1</drag_scaling_factor>
     </tms>
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp,cosp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,gw,mac_aero_mic,spc,rrtmgp,cosp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>

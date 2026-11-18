@@ -6,8 +6,7 @@
 !  model specific initialization code called from prim_init2
 !  (threaded initialization code)
 !
-!  most models do nothing.  introduced for preqx_acc to initialize
-!  GPU related data
+!  most models do nothing.
 !
 module model_init_mod
   use element_mod,    only: element_t

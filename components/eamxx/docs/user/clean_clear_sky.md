@@ -26,10 +26,10 @@ max_snapshots_per_file: 1
 fields:
   physics_pg2:
     field_names:
-    - SW_clnclrsky_flux_up_at_model_top
-    - LW_clnclrsky_flux_up_at_model_top
-    - SW_clnsky_flux_up_at_model_top
-    - LW_clnsky_flux_up_at_model_top
+    - SW_clnclrsky_flux_up_at_model_top := SW_clnclrsky_flux_up.isel(lev=0)
+    - LW_clnclrsky_flux_up_at_model_top := LW_clnclrsky_flux_up.isel(lev=0)
+    - SW_clnsky_flux_up_at_model_top := SW_clnsky_flux_up.isel(lev=0)
+    - LW_clnsky_flux_up_at_model_top := LW_clnsky_flux_up.isel(lev=0)
 output_control:
   frequency: 1
   frequency_units: nmonths

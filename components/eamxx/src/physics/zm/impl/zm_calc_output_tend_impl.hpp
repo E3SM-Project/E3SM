@@ -19,9 +19,9 @@ void Functions<S,D>::zm_calc_output_tend(
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Int& msg, // number of levels to ignore at model top
-  const Int& jt, // level index of updraft top
+  const Int& cldtop_klev, // level index of updraft top
   const Int& mx, // level index of updraft base
-  const Int& ktm, // min jt over all columns
+  const Int& ktm, // min cldtop_klev over all columns
   const Int& kbm, // min mx over all columns
   const Real& dsubcld, // sub-cloud layer thickness
   const uview_1d<const Real>& p_del, // pressure thickness

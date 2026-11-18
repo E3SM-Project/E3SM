@@ -6,8 +6,7 @@
 !  model specific initialization code called from prim_init2
 !  (threaded initialization code)
 !
-!  most models do nothing.  introduced for preqx_acc to initialize
-!  GPU related data
+!  most models do nothing.
 !
 !  2018/10 MT: adding TOM pressure-based sponge layer dissipation from P. Lauritzen
 !

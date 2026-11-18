@@ -1,0 +1,10 @@
+# We'll use defaults from the LLVM style, with 3 columns indentation.
+BasedOnStyle: LLVM
+IndentWidth: 3
+
+Language: Cpp
+AlignConsecutiveAssignments: true
+AlignConsecutiveBitFields: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: true
+AlignTrailingComments: true

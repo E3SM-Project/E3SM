@@ -1,7 +1,7 @@
 # CMake initial cache file for our GitHub CI (ghci) self-hosted runners
 #
 # Common settings for all ghci images. Compiler-specific settings
-# are in ghci-gnu.cmake, ghci-intel.cmake, and ghci-cuda.cmake
+# are in ghci-gnu.cmake, ghci-intel.cmake, ghci-cuda.cmake, and ghci-hip.cmake
 # (the latter are picked up by test_homme.py via the --machine-file flag)
 SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER       mpicc  CACHE FILEPATH "")

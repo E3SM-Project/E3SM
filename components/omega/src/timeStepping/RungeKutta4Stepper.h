@@ -1,0 +1,60 @@
+#ifndef OMEGA_TSRK4_H
+#define OMEGA_TSRK4_H
+//===-- RungeKutta4Stepper.h - 4th-order Runge Kutta time step --*- C++ -*-===//
+//
+/// \file
+/// \brief Contains the class for the classic fourth order Runge Kutta scheme
+//
+//===----------------------------------------------------------------------===//
+
+#include "TimeStepper.h"
+
+namespace OMEGA {
+
+class RungeKutta4Stepper : public TimeStepper {
+ public:
+   /// Constructor creates an instance of a fourth order Runge Kutta stepper and
+   /// fills with some time information. Data pointers are added later.
+   RungeKutta4Stepper(
+       const std::string &InName,              ///< [in] name of time stepper
+       const TimeInterval &InTimeStep,         ///< [in] time step
+       const TimeStepperStartType InStartType, ///< [in] option for starting
+       const TimeInstant &InStartTime,         ///< [in] start time for full sim
+       const TimeStepperStopType InStopType,   ///< [in] option for stopping
+       std::optional<TimeInstant> InStopTime,  ///< [in] stop time if AtTime
+       std::optional<TimeInterval> InDuration  ///< [in] duration if AfterDur
+   );
+
+   /// Advance the state by one step of the fourth-order Runge Kutta scheme
+   void doStep(OceanState *State,   ///< [inout] model state
+               TimeInstant &SimTime ///< [inout] current simulation time
+   ) const override;
+
+ protected:
+   /// Performs some additional initialization for provisional fields
+   void finalizeInit() override;
+
+ private:
+   /// Number of stages
+   static constexpr int NStages = 4;
+
+   /// Provisional state
+   OceanState *ProvisState;
+
+   /// Provisional tracers
+   Array3DReal ProvisTracers;
+
+   /// Runge-Kutta coefficients
+   Real RKA[NStages];
+   Real RKB[NStages];
+   Real RKC[NStages];
+
+   // Projection factors for each RK stage. These are the RKC coefficients
+   // shifted by one RK stage and represent the fraction of the timestep over
+   // which fields are projected from the old state to the state at the end of a
+   // RK stage.
+   Real RKProj[NStages];
+};
+
+} // namespace OMEGA
+#endif

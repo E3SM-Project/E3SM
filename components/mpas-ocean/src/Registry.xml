@@ -1130,6 +1130,10 @@
 					description="Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_expel_excess_frazil_salt" type="logical" default_value=".true."
+					description="If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^-1 C^-1"
 					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
@@ -2301,6 +2305,7 @@
 			<var name="accumulatedFrazilIceMass"/>
 			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedFrazilIceSalinity"/>
+			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedLandIceMass"/>
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
@@ -2674,11 +2679,11 @@
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceEnergy" type="real" dimensions="nCells Time" units="J m^-2"
-			 description="Energy added to the ocean per unit area from frazil ice production. Reset to zero at each coupling interval"
+			 description="Accumulated frazil ice energy per unit area. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
-			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 description="Salt mass per unit area associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
@@ -4529,7 +4534,7 @@
 			 packages="frazilIce"
 		/>
 		<var name="lowSalinityFrazilIce" type="real" dimensions="nCells Time" units="kg m^-2"
-			 description="min(0,AccumulatedFrazilIceMass * reference salinity - accumulatedFrazilIceSalinity), non-zero indicates possible non-conservation"
+			 description="Salt mass deficit per unit area of newly formed frazil relative to the reference salinity; positive indicates insufficient salt"
 			 packages="frazilIce"
 		/>
 		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"

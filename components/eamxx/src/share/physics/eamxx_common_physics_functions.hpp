@@ -243,7 +243,7 @@ struct PhysicsFunctions
   //   dz             is the vertical layer thickness, [m]
   //   pseudo_density is the pressure level thickness, [Pa]
   //   T_virtual      is the virtual temperature - calculated using a separate function from this suite, [K]
-  //   p_mid          is the avgerage atmosphere pressure over the level, [Pa]
+  //   p_mid          is the average atmosphere pressure over the level, [Pa]
   //   g              is the graviational constant, [m s-2]
   //   Rd             is the universal gas constant for dry air, [J/kg/K]
   //   T_mid          is the atmospheric temperature, [K] - needed for T_virtual

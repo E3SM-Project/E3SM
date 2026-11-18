@@ -105,7 +105,7 @@ set (P3_TABLES
 
 include (ScreamUtils)
 foreach (file IN ITEMS ${P3_TABLES})
-  GetInputFile(${file})
+  GetInputFile(${file} TARGETS ${P3_LIBS})
 endforeach()
 
 if (NOT SCREAM_LIB_ONLY)

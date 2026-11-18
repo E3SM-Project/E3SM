@@ -728,6 +728,7 @@ contains
 
   subroutine nf_close(ncdf)
     type(nf_handle), intent(inout) :: ncdf
+    integer :: id
     ! Close netCDF file
 
     !$OMP SINGLE
@@ -735,6 +736,16 @@ contains
     if(ncdf%state>0) then              
        call PIO_closeFile(ncdf%FileID)
        ncdf%state=-1
+       ! Free the io decomps of this stream. This must happen after the file is closed (closing
+       ! flushes pending writes that still need the decomps), and before MPI_Finalize (otherwise
+       ! their MPI datatypes would be freed after MPI is finalized).
+       if(associated(ncdf%decomplist)) then
+          do id=1,size(ncdf%decomplist)
+             call PIO_freedecomp(PIOFS, ncdf%decomplist(id)%iodesc)
+          end do
+          deallocate(ncdf%decomplist)
+          nullify(ncdf%decomplist)
+       end if
        if(associated(ncdf%varlist)) then
           deallocate(ncdf%varlist)
        end if

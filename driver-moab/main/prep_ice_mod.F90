@@ -4,6 +4,7 @@ module prep_ice_mod
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
+  use shr_moab_mod    , only: mbGetnCells, mbGetEntityType
   use seq_comm_mct    , only: num_inst_atm, num_inst_ocn, num_inst_glc
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
   use seq_comm_mct    , only: num_inst_wav
@@ -356,7 +357,7 @@ contains
 
   subroutine prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg)
     use iMOAB , only : iMOAB_GetDoubleTagStorage, &
-    iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh, iMOAB_GetMeshInfo
+    iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
 
     !-----------------------------------------------------------------------
     !
@@ -401,7 +402,6 @@ contains
     logical, save :: first_time = .true.
     logical       :: iamroot
 
-    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname, mct_field
     character(CL),allocatable :: mrgstr(:)   ! temporary string
 
@@ -430,13 +430,9 @@ contains
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
- ! find out the number of local elements in moab mesh seaice instance on coupler
-    ierr  = iMOAB_GetMeshInfo ( mbixid, nvert, nvise, nbl, nsurf, nvisBC );
-    if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in getting info '
-         call shr_sys_abort(subname//' error in getting info ')
-    endif
-    lsize = nvise(1) ! number of active cells
+    ! SCM data ice is represented by vertices, while regular sea-ice meshes
+    ! store fields on elements. Use the shared helpers for both cases.
+    lsize = mbGetnCells(mbixid)
 
     if (first_time) then
       a2x_i => a2x_ix(1)
@@ -564,7 +560,7 @@ contains
     !call mct_aVect_copy(aVin=g2x_i, aVout=x2i_i, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
 
     ! get data that needs custom merges
-    ent_type = 1
+    ent_type = mbGetEntityType(mbixid)
 
    ! git the x2i_im field which has been mostly filled out by mapping calls.
     tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR

@@ -1,0 +1,8 @@
+This testdef is ued to test a stealth feature in mpassi introduced by
+PR #8957. It uses mpassi namelist variables to turn on the omega-style
+frazil coupling model:
+   config_frazil_coupling_type = 'omega-fluxes'
+   config_ocean_surface_type = 'free'
+   config_salt_flux_coupling_type = 'prognostic'
+Note that all settings are required. It will have an impact on all
+mpassi runs.

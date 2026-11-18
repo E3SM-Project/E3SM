@@ -1,22 +1,26 @@
 name: homme
 
 # Standalone testing of Homme (components/homme), via components/homme/utils/test_homme.py, on the
-# self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change.
+# self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change,
+# and every night on master.
 #
-# Jobs (matrix): runner in {gnu, intel, cuda}.
-#  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>.cmake
-#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnugpu.
+# Jobs (matrix): runner in {gnu, intel, cuda, hip} x bfb in {false, true} (no gpu bfb yet).
+#  - The runner label is also the name of the machine file: cmake/machineFiles/ghci-<runner>[-bfb].cmake
+#    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnu-cuda,
+#    and for the hip runner is gnu-hip.
+#  - bfb jobs set HOMMEXX_BFB_TESTING=ON (with strict fp flags), to compare the cxx and f90 builds
+#    against each other within the same build. They do not compare against baselines (--no-baseline).
 #  - Only the submodules that Homme needs (cime, ekat, scorpio) are checked out.
 #
 # Resources: Homme tests do not reserve cpus/gpus, so the 'Set test resources' step splits the node:
 #  max ranks per test (USE_NUM_PROCS) x threads per rank x number of concurrent tests (--run-parallel-level)
 #  must fit in the node (MAX_MPITASKS_PER_NODE in CIME's config_machines.xml).
 #
-# Baselines: the jobs compare against baselines in <BASELINE_ROOT of ghci>/<compiler>/master/homme
+# Baselines: non-bfb jobs compare against baselines in <BASELINE_ROOT of ghci>/<compiler>/master/homme
 # (i.e., /projects/e3sm/data/baselines/ghci/<compiler>/master/homme). They must be generated first:
 # run this workflow manually (workflow_dispatch) with 'bless' set, on the branch whose results should become the
-# baselines (normally master). Until then, the tests that compare against baselines fail (the unit tests are
-# not affected).
+# baselines (normally master). Until then, the tests that compare against baselines fail (the unit tests and the
+# bfb jobs are not affected).
 
 on:
   # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
@@ -24,11 +28,15 @@ on:
     types: [opened, synchronize, ready_for_review, reopened]
     paths:
       - '.github/workflows/homme-testing.yml'
-      - '.github/actions/get-cuda-arch/**'
       - 'cime_config/machines/config_machines.xml'
       - 'components/homme/**'
       - 'externals/ekat'
       - 'externals/scorpio'
+
+  # Nightly run on master, to catch changes of results (or breakages) that come in through PRs that do not
+  # touch homme. The time is in UTC: 10 AM UTC is 3 AM MT during Standard Time (4 AM during Daylight Saving Time).
+  schedule:
+    - cron: '0 10 * * *'
 
   # Manual run is used to bless
   workflow_dispatch:
@@ -41,9 +49,11 @@ on:
 concurrency:
   # Two runs are in the same group if they are testing the same git ref
   #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
-  #  - for other triggers, the ref is the branch tested
+  #  - for other triggers, the ref is the branch tested (master, for the nightly run)
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Only a new push to a PR cancels the previous run. A manual run (e.g., to bless) and the nightly run both
+  # use master, and must not cancel each other: the later one waits for the earlier one to finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
@@ -54,13 +64,21 @@ defaults:
 
 jobs:
   tests:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
       fail-fast: false
       matrix:
-        # The runner label is also the name of the compiler config: machine file is ghci-<runner>.cmake
-        runner: [gnu, intel, cuda]
-    name: ${{ matrix.runner }}
+        # The runner label is also the name of the compiler config: machine file is ghci-<runner>[-bfb].cmake
+        runner: [gnu, intel, cuda, hip]
+        # BFB (cxx vs f90) testing: separate build, with HOMMEXX_BFB_TESTING=ON and strict fp flags.
+        # The bfb jobs do not use baselines (they cannot be used with -g), so skip them when blessing.
+        bfb: ${{ fromJSON(inputs.bless && '[false]' || '[false, true]') }}
+        exclude:
+          # TODO: add a cuda/hip bfb job (cpu vs gpu bfb), comparing against a baseline from the cpu bfb build
+          - {runner: cuda, bfb: true}
+          - {runner: hip, bfb: true}
+    name: ${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -77,19 +95,22 @@ jobs:
               submodule update --init --recursive --depth=1 \
               cime externals/ekat externals/scorpio
       - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Get CUDA Arch
-        if: ${{ matrix.runner == 'cuda' }}
-        uses: ./.github/actions/get-cuda-arch
+        uses: e3sm-project/automation/show-trigger@v1
+      - name: Get GPU Arch
+        id: gpu
+        if: ${{ matrix.runner == 'cuda' || matrix.runner == 'hip' }}
+        uses: e3sm-project/automation/gpu-arch@v1
       - name: Set test resources
+        env:
+          GPU_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
           # Homme tests do not reserve cpus/gpus, so we must make sure to not oversubscribe the node.
           # Here we figure out the compiler (as CIME calls it), and how to split the node between ranks
           # per test, threads per rank, and number of tests running at the same time.
           # The results are set in the env, for the next steps.
-          if [ -n "${CUDA_CMAKE_CONFIGS:-}" ]; then
-            # GPU runner (get-cuda-arch has set the cuda arch)
-            compiler=gnugpu
+          if [ "${{ matrix.runner }}" = "cuda" ]; then
+            # GPU runner (the gpu-arch step detected the cuda arch)
+            compiler=gnu-cuda
             ranks=2    # one rank per GPU (2 GPUs per node)
             threads=1
 
@@ -100,6 +121,18 @@ jobs:
               echo "NVCC_WRAPPER_DEFAULT_COMPILER=${NVCC_WRAPPER_DEFAULT_COMPILER:-g++}"
               echo "OMPI_CXX=${OMPI_CXX:-$nvcc_wrapper}"
               echo "MPICH_CXX=${MPICH_CXX:-$nvcc_wrapper}"
+            } >> "$GITHUB_ENV"
+          elif [ "${{ matrix.runner }}" = "hip" ]; then
+            # GPU runner (the gpu-arch step detected the hip arch)
+            compiler=gnu-hip
+            ranks=2    # one rank per GPU (2 GPUs per node)
+            threads=1
+
+            # The MPI wrappers must use hipcc as backend compiler, both when configuring and
+            # when building (so this must be in the env of the next step). Honor any pre-existing setting.
+            {
+              echo "OMPI_CXX=${OMPI_CXX:-hipcc}"
+              echo "MPICH_CXX=${MPICH_CXX:-hipcc}"
             } >> "$GITHUB_ENV"
           else
             compiler=${{ matrix.runner }}
@@ -142,21 +175,34 @@ jobs:
           echo "HOMME_RANKS=$ranks" >> "$GITHUB_ENV"
       - name: Run test_homme.py
         working-directory: components/homme
+        env:
+          GPU_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
-          # CUDA_CMAKE_CONFIGS (set by get-cuda-arch) is a semicolon-separated list of key=val
-          # (empty tokens are ignored, so this is a no-op for non-cuda runners)
+          # BFB jobs use the machine file ghci-<runner>-bfb.cmake (via --bfb), and only care about cxx vs f90
+          # comparisons within the same build, so they do not compare against baselines.
+          bfb_flag=()
+          if [ "${{ matrix.bfb }}" = "true" ]; then
+            bfb_flag=(--bfb --no-baseline)
+          fi
+
+          # GPU_CMAKE_CONFIGS (from the gpu-arch step outputs) is a semicolon-separated list of key=val
+          # (empty tokens are ignored, so this is a no-op for non-gpu runners)
           cuda_flags=()
-          IFS=';' read -ra configs <<< "${CUDA_CMAKE_CONFIGS:-}"
+          IFS=';' read -ra configs <<< "${GPU_CMAKE_CONFIGS:-}"
           for config in "${configs[@]}"; do
             if [ -n "$config" ]; then
               cuda_flags+=(--cmake-opt "$config")
             fi
           done
 
-          # Each runner has its own machine file (ghci-<runner>.cmake).
+          # Each runner has its own machine file (ghci-<runner>[-bfb].cmake).
+          # The ctest timeout per test is 10 minutes by default, but the runners' hosts are shared (e.g., other
+          # users running builds), so some tests take twice as long as usual. Use Homme's own limit
+          # (HOMME_TESTING_TIMELIMIT in ghci.cmake). NOTE: the value must be separated by a space, since
+          # ctest silently ignores '--timeout=1800'.
           cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
-               "${cuda_flags[@]}")
+               --ctest-arg="--timeout 1800" "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then
             cmd+=(-g)
           fi
@@ -169,63 +215,13 @@ jobs:
           # Print the full command, then run it
           echo "test_homme call: ${cmd[*]}"
           "${cmd[@]}"
-      - name: Show stderr/stdout of failed tests
-        if: failure()
-        working-directory: components/homme/ctest-build/tests
-        run: |
-          # The ctest log only says "check out/err files", so show (a few of) them here.
-          # First, the list of failed tests (lines are '<num>:<name>')
-          shopt -s nullglob
-          # (in dashboard mode, ctest appends a timestamp to the name: use the latest)
-          failed_list=""
-          candidates=(../Testing/Temporary/LastTestsFailed*.log)
-          if [ "${#candidates[@]}" -gt 0 ]; then
-            failed_list=$(ls -t "${candidates[@]}" | head -n 1)
-          fi
-          echo "=============== failed tests"
-          if [ -n "$failed_list" ]; then
-            cat "$failed_list"
-          fi
-
-          # Then, stderr/stdout of the first few failed tests that are not cxx-vs-f90 comparisons (which have
-          # no files of their own: their output is in the log). If we cannot tell, just show the first few.
-          names=()
-          if [ -n "$failed_list" ] && [ -s "$failed_list" ]; then
-            while IFS=: read -r _ name; do
-              case "$name" in
-                *_cxx_vs_f90) ;;
-                *) names+=("$name") ;;
-              esac
-            done < "$failed_list"
-          fi
-          if [ "${#names[@]}" -eq 0 ]; then
-            names=(*)
-          fi
-          n=0
-          for name in "${names[@]}"; do
-            for f in "$name"/*.err; do
-              [ -s "$f" ] || continue
-              # Skip the lines of stack traces, which hide the actual error message
-              echo "=============== $f (first 30 lines, without stack frames)"
-              grep -v -E '^[^ ]+ +[0-9A-Fa-f]{16} |^\[0x' "$f" | head -n 30 || true
-              out="${f%.err}.out"
-              if [ -s "$out" ]; then
-                echo "--------------- $out (last 15 lines)"
-                tail -n 15 "$out"
-              fi
-              n=$(( n + 1 ))
-              break
-            done
-            if [ "$n" -ge 4 ]; then
-              break
-            fi
-          done
       - name: Upload ctest logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: log-files-${{ matrix.runner }}
+          name: log-files-${{ matrix.runner }}${{ matrix.bfb && '-bfb' || '' }}
           path: |
             components/homme/ctest-build/CMakeCache.txt
             components/homme/ctest-build/Testing/**
             components/homme/ctest-build/tests/**/*.err
+            components/homme/ctest-build/tests/**/*.out

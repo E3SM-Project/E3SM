@@ -1,0 +1,24 @@
+# ----------------------------------------------------------------------------
+# Users should add all user specific configuration changes after these
+# comments, as a YAML snippet mirroring the structure of Omega's default
+# configuration (components/omega/configs/Default.yml). Only the options
+# being changed need to be listed. For example:
+#
+#   Omega:
+#     TimeIntegration:
+#       TimeStep: "0000_00:10:00"
+#     IOStreams:
+#       History:
+#         Freq: 1
+#         FreqUnits: months
+#
+# *** THE FOLLOWING CANNOT BE CHANGED ***
+# They are set from the case configuration, or by the coupler at runtime:
+#   1. TimeIntegration: StartTime, StopTime, RunDuration, CalendarType
+#   2. IOStreams: HorzMeshIn, InitialVertCoord, InitialState, Forcing,
+#      RestartRead, and RestartWrite. The History and Highfreq streams may
+#      be changed, as may any new stream you define.
+#
+# To preview the configuration, invoke $CASEROOT/preview_namelists and look
+# at $CASEROOT/CaseDocs/omega.yml
+# ----------------------------------------------------------------------------

@@ -121,6 +121,27 @@
     </test_file_names>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="omega" compclass="ocn" exclude_testing="true">
+    <rest_file_extension>r</rest_file_extension>
+    <hist_file_extension>(?!r\.).*\.nc$</hist_file_extension>
+    <!-- Needed because CIME baseline comparisons default to \w+, which truncates names with embedded dots -->
+    <hist_file_ext_regex>global\.stats\w*</hist_file_ext_regex>
+    <hist_file_ext_regex>monthly\.averages\w*</hist_file_ext_regex>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
+      <rpointer_content>$CASE.omega.r.$DATENAME.nc</rpointer_content>
+    </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">rpointer.ocn</tfile>
+      <tfile disposition="copy">casename.omega.r.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.omega.history.1976-01-01.nc</tfile>
+      <tfile disposition="move">casename.omega.global.stats_1DayInstants.1976.nc</tfile>
+      <tfile disposition="move">casename.omega.moc_1MonthTimeStats.1976-01.nc</tfile>
+      <tfile disposition="move">casename.omega.monthly.averages_1MonthTimeStats.1976-01.nc</tfile>
+    </test_file_names>
+  </comp_archive_spec>
+
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>

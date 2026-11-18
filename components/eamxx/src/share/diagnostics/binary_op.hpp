@@ -11,12 +11,12 @@ namespace scream {
  * This diagnostic will perform binary ops
  * like +, -, *, ÷ on two inputs, which can be fields or known physical constants.
  *
- * When requesting the diag in a IO yaml file, the syntax may look like the following:
+ * It is requested as an expression, e.g.:
  *
- *  - T_mid_over_p_mid
- *  - qc_plus_qr
- *  - Rgas_times_T_mid
- *  - cp_minus_Rgas
+ *  - T_mid/p_mid
+ *  - qc+qr
+ *  - Rgas*T_mid
+ *  - cp-Rgas
  */
 
 class BinaryOp : public AbstractDiagnostic {

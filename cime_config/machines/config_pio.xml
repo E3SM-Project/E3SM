@@ -27,6 +27,7 @@
   <entry id="PIO_STRIDE">
     <values>
       <value>$MAX_MPITASKS_PER_NODE</value>
+      <value mach="cech">1</value>
     </values>
   </entry>
 

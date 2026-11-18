@@ -46,7 +46,7 @@ struct EntropyData : public PhysicsTestData {
 struct ZmTransportTracerData : public PhysicsTestData {
   // Inputs
   Int pcols, pver, ncnst, il1g, il2g;
-  Int *jt, *mx, *ideep;
+  Int *cldtop_klev, *mx, *ideep;
   Real dt;
   Real *q, *mu, *md, *du, *eu, *ed, *dp, *fracis, *dpdry;
   bool *doconvtran;
@@ -66,7 +66,7 @@ struct ZmTransportTracerData : public PhysicsTestData {
       {&mu, &md, &du, &eu, &ed, &dp, &dpdry}
     },
     {
-      {&jt, &mx, &ideep}
+      {&cldtop_klev, &mx, &ideep}
     },
     {
       {&doconvtran}
@@ -94,10 +94,10 @@ struct ZmTransportTracerData : public PhysicsTestData {
       ideep[i] = i;
     }
 
-    // We don't want jt or mx to be random. Those represent cloud tops and bottoms within pver
+    // We don't want cldtop_klev or mx to be random. Those represent cloud tops and bottoms within pver
     for (Int i = 0; i < pcols; ++i) {
-      jt[i] = i + 1;
-      mx[i] = jt[i] + pver / 2;
+      cldtop_klev[i] = i + 1;
+      mx[i] = cldtop_klev[i] + pver / 2;
       assert(mx[i] < pver);
     }
   }
@@ -106,7 +106,7 @@ struct ZmTransportTracerData : public PhysicsTestData {
 struct ZmTransportMomentumData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp, nwind, il1g, il2g;
-  Int *jt, *mx, *ideep;
+  Int *cldtop_klev, *mx, *ideep;
   Real dt;
   Real *wind_in, *mu, *md, *du, *eu, *ed, *dp;
 
@@ -124,7 +124,7 @@ struct ZmTransportMomentumData : public PhysicsTestData {
       {&mu, &md, &du, &eu, &ed, &dp, &seten}
     },
     {
-      {&jt, &mx, &ideep}
+      {&cldtop_klev, &mx, &ideep}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), nwind(nwind_), il1g(il1g_), il2g(il2g_), dt(dt_)
   {}
@@ -149,10 +149,10 @@ struct ZmTransportMomentumData : public PhysicsTestData {
       ideep[i] = i;
     }
 
-    // We don't want jt or mx to be random. Those represent cloud tops and bottoms within pver
+    // We don't want cldtop_klev or mx to be random. Those represent cloud tops and bottoms within pver
     for (Int i = 0; i < pcols; ++i) {
-      jt[i] = i + 1;
-      mx[i] = jt[i] + pver / 2;
+      cldtop_klev[i] = i + 1;
+      mx[i] = cldtop_klev[i] + pver / 2;
       assert(mx[i] < pver);
     }
   }
@@ -376,7 +376,7 @@ struct ZmConvMcspCalculateShearData : public PhysicsTestData {
 struct ZmConvMcspTendData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp;
-  Int *jctop;
+  Int *cldtop_klev;
   Real ztodt;
   Real *state_pmid, *state_pint, *state_pdel, *state_s, *state_q, *state_u, *state_v, *ptend_zm_s, *ptend_zm_q;
 
@@ -399,7 +399,7 @@ struct ZmConvMcspTendData : public PhysicsTestData {
       {&mcsp_freq, &mcsp_shear, &zm_depth}
     },
     {
-      {&jctop}
+      {&cldtop_klev}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), ztodt(ztodt_)
   {}
@@ -428,7 +428,7 @@ struct ZmConvMainData : public PhysicsTestData {
 
   // Outputs
   Int lengath;
-  Int *gather_index, *msemax_klev, *jctop, *jcbot, *jt;
+  Int *gather_index, *msemax_klev, *cldtop_klev;
   Real *prec, *heat, *qtnd, *cape, *dcape, *mcon, *pflx, *zdu, *mflx_up, *entr_up, *detr_up, *mflx_dn, *entr_dn, *p_del, *dsubcld, *ql, *rliq, *rprd, *dlf;
 
   ZmConvMainData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real time_step_, bool is_first_step_, Int lengath_) :
@@ -444,7 +444,7 @@ struct ZmConvMainData : public PhysicsTestData {
       {&geos, &pbl_hgt, &tpert, &landfrac, &prec, &cape, &dcape, &dsubcld, &rliq}
     },
     {
-      {&gather_index, &msemax_klev, &jctop, &jcbot, &jt}
+      {&gather_index, &msemax_klev, &cldtop_klev}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), time_step(time_step_), is_first_step(is_first_step_), lengath(lengath_)
   {}
@@ -531,7 +531,7 @@ struct ZmConvEvapData : public PhysicsTestData {
 struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp, msg;
-  Int *jb, *jt;
+  Int *jb, *cldtop_klev;
   Real *z_mid, *z_int, *dz, *h_env, *h_env_sat;
 
   // Inputs/Outputs
@@ -554,7 +554,7 @@ struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
       {&h_env_min, &lambda_max}
     },
     {
-      {&jb, &jt, &j0}
+      {&jb, &cldtop_klev, &j0}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_)
   {}
@@ -575,9 +575,9 @@ struct ZmCalcFractionalEntrainmentData : public PhysicsTestData {
       {lambda_max,{0.0,    0.0002}},    // max fractional entrainment [1/m]
     });
 
-    // jb (cloud base) > j0 (detrainment onset) > jt (cloud top)
+    // jb (cloud base) > j0 (detrainment onset) > cldtop_klev (cloud top)
     for (Int i = 0; i < pcols; ++i) {
-      jt[i] = pver / 4 + i % (pver / 8);
+      cldtop_klev[i] = pver / 4 + i % (pver / 8);
       j0[i] = pver / 3;
       jb[i] = 3 * pver / 4;
     }
@@ -597,7 +597,7 @@ struct ZmDowndraftPropertiesData : public PhysicsTestData {
   Real *z_int, *dz, *s_mid, *q_mid, *h_env, *lambda, *lambda_max, *qsthat, *hsthat, *gamhat, *rprd, *mflx_up;
 
   // Inputs/Outputs
-  Int *jt, *jd;
+  Int *cldtop_klev, *jd;
   Real *mflx_dn, *entr_dn, *s_dnd, *q_dnd, *h_dnd, *q_dnd_sat, *evp, *totevp;
 
   ZmDowndraftPropertiesData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_) :
@@ -613,7 +613,7 @@ struct ZmDowndraftPropertiesData : public PhysicsTestData {
       {&lambda_max, &totevp}
     },
     {
-      {&jb, &jt, &j0, &jd}
+      {&jb, &cldtop_klev, &j0, &jd}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_)
   {}
@@ -646,11 +646,11 @@ struct ZmDowndraftPropertiesData : public PhysicsTestData {
       {totevp,    {0.0,    0.1}},       // total evaporation
     });
 
-    // jb (cloud base) >= jd (downdraft init) >= j0 (detrainment onset) >= jt (cloud top)
+    // jb (cloud base) >= jd (downdraft init) >= j0 (detrainment onset) >= cldtop_klev (cloud top)
     for (Int i = 0; i < pcols; ++i) {
-      jt[i] = pver / 4 + i % (pver / 8);
+      cldtop_klev[i] = pver / 4 + i % (pver / 8);
       j0[i] = pver / 3;
-      jd[i] = jt[i] + 1;
+      jd[i] = cldtop_klev[i] + 1;
       jb[i] = 3 * pver / 4;
     }
 
@@ -668,7 +668,7 @@ struct ZmCloudPropertiesData : public PhysicsTestData {
   Real *p_mid, *z_mid, *z_int, *t_mid, *s_mid, *s_int, *q_mid, *landfrac, *tpert_g;
 
   // Outputs
-  Int *jt, *jlcl, *j0, *jd;
+  Int *cldtop_klev, *jlcl, *j0, *jd;
   Real *mflx_up, *entr_up, *detr_up, *mflx_dn, *entr_dn, *mflx_net, *s_upd, *q_upd, *ql, *s_dnd, *q_dnd, *qst, *cu, *evp, *pflx, *rprd;
 
   ZmCloudPropertiesData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Int msg_, Int limcnv_) :
@@ -684,7 +684,7 @@ struct ZmCloudPropertiesData : public PhysicsTestData {
       {&landfrac, &tpert_g}
     },
     {
-      {&jb, &lel, &jt, &jlcl, &j0, &jd}
+      {&jb, &lel, &cldtop_klev, &jlcl, &j0, &jd}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_), limcnv(limcnv_)
   {}
@@ -731,7 +731,7 @@ struct ZmCloudPropertiesData : public PhysicsTestData {
 struct ZmClosureData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp, msg;
-  Int *lcl, *lel, *jt, *mx;
+  Int *lcl, *lel, *cldtop_klev, *mx;
   Real cape_threshold_in;
   Real *dsubcld, *z_mid, *z_int, *p_mid, *p_del, *t_mid, *s_mid, *q_mid, *qs, *ql, *s_int, *q_int, *t_pcl_lcl, *t_pcl, *q_pcl_sat, *s_upd, *q_upd, *mflx_net, *detr_up, *mflx_up, *mflx_dn, *q_dnd, *s_dnd, *cape;
 
@@ -751,7 +751,7 @@ struct ZmClosureData : public PhysicsTestData {
       {&z_int}
     },
     {
-      {&lcl, &lel, &jt, &mx}
+      {&lcl, &lel, &cldtop_klev, &mx}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_), cape_threshold_in(cape_threshold_in_)
   {}
@@ -788,10 +788,10 @@ struct ZmClosureData : public PhysicsTestData {
       {dsubcld,    {50.0,   200.0}},    // sub-cloud thickness [mb]
     });
 
-    // level indices must be valid: jt (cloud top) < j0 < lel < lcl < mx (cloud base)
+    // level indices must be valid: cldtop_klev (cloud top) < j0 < lel < lcl < mx (cloud base)
     for (Int i = 0; i < pcols; ++i) {
-      jt[i]  = pver / 4 + i % (pver / 8);
-      lel[i] = jt[i] + 1;
+      cldtop_klev[i]  = pver / 4 + i % (pver / 8);
+      lel[i] = cldtop_klev[i] + 1;
       lcl[i] = 3 * pver / 4 - 2;
       mx[i]  = 3 * pver / 4;
     }
@@ -808,7 +808,7 @@ struct ZmClosureData : public PhysicsTestData {
 struct ZmCalcOutputTendData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp, msg;
-  Int *jt, *mx;
+  Int *cldtop_klev, *mx;
   Real *dsubcld, *p_del, *s_int, *q_int, *s_upd, *q_upd, *mflx_up, *detr_up, *mflx_dn, *s_dnd, *q_dnd, *ql, *evp, *cu;
 
   // Outputs
@@ -825,7 +825,7 @@ struct ZmCalcOutputTendData : public PhysicsTestData {
       {&p_del, &s_int, &q_int, &s_upd, &q_upd, &mflx_up, &detr_up, &mflx_dn, &s_dnd, &q_dnd, &ql, &evp, &cu, &dsdt, &dqdt, &dl}
     },
     {
-      {&jt, &mx}
+      {&cldtop_klev, &mx}
     }),
     pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), msg(msg_)
   {}
@@ -852,9 +852,9 @@ struct ZmCalcOutputTendData : public PhysicsTestData {
       {dsubcld, {50.0,  200.0}},   // sub-cloud pressure thickness [mb]
     });
 
-    // jt (cloud top) and mx (cloud base) must be valid level indices with jt < mx
+    // cldtop_klev (cloud top) and mx (cloud base) must be valid level indices with cldtop_klev < mx
     for (Int i = 0; i < pcols; ++i) {
-      jt[i] = pver / 4 + i % (pver / 4);
+      cldtop_klev[i] = pver / 4 + i % (pver / 4);
       mx[i] = 3 * pver / 4;
     }
   }

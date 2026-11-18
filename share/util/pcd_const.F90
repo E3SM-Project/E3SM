@@ -9,7 +9,7 @@ module pcd
     integer, parameter :: dp = selected_real_kind(12)
 
     ! pcd.yaml version and institution information
-    character(len=*), parameter :: pcdversion = "0.2.0"
+    character(len=*), parameter :: pcdversion = "0.4.0"
     character(len=*), parameter :: pcdinstitution = "E3SM Project"
 
     !mathematical constants
@@ -20,6 +20,9 @@ module pcd
     real(dp), parameter :: degree = 0.017453292519943295_dp                         ! [rad] ASHandbook1964
     real(dp), parameter :: square_root_of_2 = 1.4142135623730951_dp                 ! [rad] ASHandbook1964
     real(dp), parameter :: square_root_of_3 = 1.7320508075688772_dp                 ! [rad] ASHandbook1964
+
+    !unit_conversions constants
+    real(dp), parameter :: seconds_per_day = 86400_dp                               ! [s] SI2019
 
     !universal_physical constants
     real(dp), parameter :: speed_of_light_in_vacuum = 299792458_dp                  ! [m s-1] NIST_CODATA2022
@@ -37,6 +40,7 @@ module pcd
     !chemical_molar_masses constants
     real(dp), parameter :: carbon_molar_mass_reference = 0.0120107_dp               ! [kg mol-1] IUPAC1997
     real(dp), parameter :: oxygen_molar_mass_reference = 0.0159994_dp               ! [kg mol-1] IUPAC1997
+    real(dp), parameter :: iron_molar_mass_reference = 0.055845_dp                  ! [kg mol-1] IUPAC1997
     real(dp), parameter :: carbon_dioxide_molar_mass_reference = &
         &(carbon_molar_mass_reference + (2.0_dp * oxygen_molar_mass_reference))     ! [kg mol-1]
 
@@ -90,6 +94,7 @@ module pcd
 
     !earth_seawater constants
     real(dp), parameter :: seawater_density_reference = 1026.0_dp                   ! [kg m-3] Gill_1982
+    real(dp), parameter :: ice_shelf_seawater_density_reference = 1028.0_dp         ! [kg m-3] AsayDavis2016
     real(dp), parameter :: seawater_specific_heat_capacity_reference = 3996.0_dp    ! [J kg-1 K-1] Gill_1982
     real(dp), parameter :: seawater_specific_heat_capacity_teos10 = &
         &3991.86795711963_dp                                                        ! [J kg-1 K-1] TEOS10_2010

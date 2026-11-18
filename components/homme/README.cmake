@@ -4,7 +4,7 @@
 12/2019 MT  document some common cmake options
 
 The CMAKE build system supports a number of user-configurable targets:
-sweqx, preqx, preqx_acc, theta-l, swim, prim
+sweqx, preqx, preqx_kokkos, theta-l, theta-l_kokkos, tool
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:
@@ -13,7 +13,7 @@ targets, see:
 
 A typical CMAKE command might look like:
 cd $WDIR
-cmake -C ~/e3sm/components/homme/cmake/machineFiles/edison.cmake \
+cmake -C ~/e3sm/components/homme/cmake/machineFiles/pm-cpu.cmake \
     -DPREQX_PLEV=30 -DPREQX_NP=4 ~/acme/components/homme
 
 The -C argument is machine specific settings. See the machineFile directory                   
@@ -25,8 +25,8 @@ Some commonly used cmake options: (for both preqx and theta targets):
                           (default is interpolated lat/lon output)                            
                                                                                               
 For performance testing, the model can be built without file output.  This                    
-removes the need to link with PIO and netcdf.  See the astra.cmake machine                    
-file and variable BUILD_HOMME_WITHOUT_PIOLIBRARY.                                             
+removes the need to link with PIO and netcdf: set the cmake variable
+BUILD_HOMME_WITHOUT_PIOLIBRARY=ON.                                             
                                                           
 After running cmake with suitable command line options from a working directory WDIR,
 it will create 
@@ -34,7 +34,7 @@ it will create
 $WDIR/src/sweqx     directory containing user-configured sweqx executable
 $WDIR/test_execs/swtcA     directory for swtcA executable
 $WDIR/test_execs/swtcB     directory for swtcB executable
-...and similarly for the preqx and preqx_acc targets.
+...and similarly for the preqx and theta-l targets.
 
 $WDIR/utils         cprnc utility, and PIO and timing libraries
 $WDIR/tests     directory containing all the HOMME regression tests

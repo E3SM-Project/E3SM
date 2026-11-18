@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
-// Test that the _atm_backtend built-in alias produces numerically identical
-// results to the former standalone AtmBackTendDiag.  The alias expands to
-// X_minus_X_prev_over_dt, which chains FieldPrev → BinaryOp → FieldOverDt.
+// Test that X.tend() produces numerically identical results to the former
+// standalone AtmBackTendDiag. It expands to (X-X.shift(time=1)).over_dt(),
+// which chains FieldPrev → BinaryOp → FieldOverDt.
 
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/diagnostics/field_prev.hpp"

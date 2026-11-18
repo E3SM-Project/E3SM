@@ -4,6 +4,14 @@
 # since it depends on the GPU of the runner. Pass it via cmake options (see test_homme.py --cmake-opt).
 include (${CMAKE_CURRENT_LIST_DIR}/ghci.cmake)
 
+# Only build (and test) the kokkos dycores: the F90 executables run on the host, so their tests
+# are already covered by the CPU CI jobs, and they would take most of the test time on the GPU runners.
+# NOTE: with HOMMEXX_BFB_TESTING=ON, the F90 theta/preqx dycores are turned back on (for the cxx_vs_f90 tests).
+SET (BUILD_HOMME_THETA OFF CACHE BOOL "")
+SET (BUILD_HOMME_PREQX OFF CACHE BOOL "")
+SET (BUILD_HOMME_SWEQX OFF CACHE BOOL "")
+SET (BUILD_HOMME_TOOL  OFF CACHE BOOL "")
+
 # CUDA compilation requires nvcc_wrapper (from Kokkos) as the C++ backend compiler of the MPI wrapper.
 # NOTE: this cannot be done here, since env changes in this file only affect the cmake configure step,
 # not the later build step. Before configuring/building, set (e.g., in the CI workflow):
@@ -16,6 +24,11 @@ SET (HOMMEXX_EXEC_SPACE CUDA CACHE STRING "")
 # Our runners' MPI is not cuda-aware, so stage comms buffers through host memory
 # TODO: set to ON (or remove) once we have cuda-aware MPI
 SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
+
+# Cap the Hommexx team size to 8 warps. With the default (16 warps), some preqx_kokkos kernels
+# (e.g., in HyperviscosityFunctorImpl) need too many registers, and abort at runtime with
+# "Requested too large team size. Requested: 16, Maximum: 8". Same cap as in ghci-hip.cmake.
+SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")
 
 SET (Kokkos_ENABLE_OPENMP OFF CACHE BOOL "")
 # Compose (always) needs the Kokkos Serial backend. Kokkos disables it by default if another
