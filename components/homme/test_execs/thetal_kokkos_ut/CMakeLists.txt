@@ -200,33 +200,63 @@ IF (HOMMEXX_BFB_TESTING)
   cxx_unit_test (forcing_ut "${FORCING_UT_F90_SRCS}" "${FORCING_UT_CXX_SRCS}" "${FORCING_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
   TARGET_LINK_LIBRARIES(forcing_ut thetal_kokkos_ut_lib)
 
-  # ### Caar functor unit test
+  IF (HOMMEXX_ENABLE_CAAR_OPT)
+    # ### Caar opt functor unit test
 
-  SET (CAAR_UT_CXX_SRCS
-    ${THETA_UT_DIR}/caar_ut.cpp
-    )
+    SET (CAAR_OPT_UT_CXX_SRCS
+      ${THETA_UT_DIR}/caar_opt_ut.cpp
+      )
 
-  SET (CAAR_UT_F90_SRCS
-    ${THETA_UT_DIR}/caar_interface.F90
-    ${THETA_UT_DIR}/thetal_test_interface.F90
-    ${SHARE_UT_DIR}/geometry_interface.F90
-    )
+    SET (CAAR_OPT_UT_F90_SRCS
+      ${THETA_UT_DIR}/caar_interface.F90
+      ${THETA_UT_DIR}/thetal_test_interface.F90
+      ${SHARE_UT_DIR}/geometry_interface.F90
+      )
 
-  SET (CAAR_UT_INCLUDE_DIRS
-    ${SRC_THETA_DIR}/cxx
-    ${SRC_SHARE_DIR}
-    ${SRC_SHARE_DIR}/cxx
-    ${THETA_UT_DIR}
-    ${THETA_LIB_MODULE_DIR}
-    ${UTILS_TIMING_SRC_DIR}
-    ${UTILS_TIMING_BIN_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/src/share/cxx
-    )
+    SET (CAAR_OPT_UT_INCLUDE_DIRS
+      ${SRC_THETA_DIR}/cxx
+      ${SRC_SHARE_DIR}
+      ${SRC_SHARE_DIR}/cxx
+      ${THETA_UT_DIR}
+      ${THETA_LIB_MODULE_DIR}
+      ${UTILS_TIMING_SRC_DIR}
+      ${UTILS_TIMING_BIN_DIR}
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_BINARY_DIR}/src/share/cxx
+      )
 
-  set_mpi_num_cpus()
-  cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-  TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
+    set_mpi_num_cpus()
+    cxx_unit_test (caar_opt_ut "${CAAR_OPT_UT_F90_SRCS}" "${CAAR_OPT_UT_CXX_SRCS}" "${CAAR_OPT_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+    TARGET_LINK_LIBRARIES(caar_opt_ut thetal_kokkos_ut_lib)
+  ELSE ()
+    # ### Caar functor unit test
+
+    SET (CAAR_UT_CXX_SRCS
+      ${THETA_UT_DIR}/caar_ut.cpp
+      )
+
+    SET (CAAR_UT_F90_SRCS
+      ${THETA_UT_DIR}/caar_interface.F90
+      ${THETA_UT_DIR}/thetal_test_interface.F90
+      ${SHARE_UT_DIR}/geometry_interface.F90
+      )
+
+    SET (CAAR_UT_INCLUDE_DIRS
+      ${SRC_THETA_DIR}/cxx
+      ${SRC_SHARE_DIR}
+      ${SRC_SHARE_DIR}/cxx
+      ${THETA_UT_DIR}
+      ${THETA_LIB_MODULE_DIR}
+      ${UTILS_TIMING_SRC_DIR}
+      ${UTILS_TIMING_BIN_DIR}
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_BINARY_DIR}/src/share/cxx
+      )
+
+    set_mpi_num_cpus()
+    cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+    TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
+  ENDIF ()
 
   # ### Remap functor unit test
 
