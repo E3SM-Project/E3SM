@@ -10,7 +10,7 @@ ifdef MPAS_TOOL_DIR
 	(cp $(MPAS_TOOL_DIR)/input_gen/streams_gen input_gen/)
 else
 	@echo "*** Building MPAS tools from source ***"
-	(cd input_gen; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(CC)" CFLAGS="$(CFLAGS)")
+	(cd input_gen && $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(CC)" CFLAGS="$(CFLAGS)")
 endif
 
 build_registry:
@@ -19,9 +19,9 @@ ifdef MPAS_TOOL_DIR
 	(cp $(MPAS_TOOL_DIR)/registry/parse registry/)
 else
 	@echo "*** Building MPAS tools from source ***"
-	(cd registry; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(CC)" CFLAGS="$(CFLAGS)")
+	(cd registry && $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(CC)" CFLAGS="$(CFLAGS)")
 endif
 
 clean:
-	(cd input_gen; $(MAKE) clean)
-	(cd registry; $(MAKE) clean)
+	(cd input_gen && $(MAKE) clean)
+	(cd registry && $(MAKE) clean)
