@@ -1030,8 +1030,12 @@ contains
   !
   ! This subroutine was orgininally called to compute a leapfrog timestep
   ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
-  ! accomodated.  For example, setting nm1=np1=n0 this routine will
-  ! take a forward euler step, overwriting the input with the output.
+  ! accomodated.
+  !
+  ! np1 must not be the same time level as nm1 when scale3 /= 0. The dp3d
+  ! limiter, applied at the end, uses u(nm1) as the state before the update
+  ! to rebuild theta in limited layers, and if np1=nm1, u(nm1) would already
+  ! have been overwritten by the update and the DSS. np1=n0 is allowed.
   !
   ! ===================================
 
@@ -1812,15 +1816,11 @@ contains
 #endif
      endif
      if (scale3 /= 0) then
-       if (nm1 /= np1) then
-          ! the state before the update, u(nm1), is used to rebuild theta in limited layers
-          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-               elem(ie)%spheremp,hvcoord,&
-               elem(ie)%state%dp3d(:,:,:,nm1),elem(ie)%state%vtheta_dp(:,:,:,nm1))
-       else
-          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-               elem(ie)%spheremp,hvcoord)
-       endif
+       ! the state before the update, u(nm1), is used to rebuild theta in
+       ! limited layers. This requires np1 /= nm1 (see comment at the top).
+       call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+            elem(ie)%spheremp,hvcoord,&
+            elem(ie)%state%dp3d(:,:,:,nm1),elem(ie)%state%vtheta_dp(:,:,:,nm1))
      endif
   end do
   call t_stopf('compute_andor_apply_rhs')
