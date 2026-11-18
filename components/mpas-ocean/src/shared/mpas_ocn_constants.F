@@ -26,7 +26,6 @@ module ocn_constants
 #ifdef MPAS_ESM_SHR_CONST
    use shr_kind_mod, only: SHR_KIND_R8
    use shr_const_mod
-   use pcd, only: ice_shelf_seawater_density_reference
 #endif
 
    implicit none
@@ -179,7 +178,7 @@ contains
        rho_sw                 = SHR_CONST_RHOSW         ! kg/m^3
        rho_fw                 = SHR_CONST_RHOFW         ! kg/m^3
        rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
-       rho_sw_floatation      = ice_shelf_seawater_density_reference ! kg/m^3, from the Physical Constants Dictionary
+       rho_sw_floatation      = SHR_CONST_RHOSW_ICE_SHELF ! kg/m^3
        cp_land_ice            = SHR_CONST_CPICE         ! J/kg/K, as in MALI
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
