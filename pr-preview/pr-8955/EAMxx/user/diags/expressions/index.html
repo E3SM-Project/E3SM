@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -5286,7 +5286,15 @@ is an honest analogue.</p>
 </tr>
 <tr>
 <td><code>p_mid.searchsorted(500, units='hPa')</code></td>
-<td>level indices bracketing 500 hPa</td>
+<td>index of the first level with pressure above 500 hPa</td>
+</tr>
+<tr>
+<td><code>z_mid.searchsorted(1000)</code></td>
+<td>index of the first level below 1000 m above sea level</td>
+</tr>
+<tr>
+<td><code>height_mid.searchsorted(100)</code></td>
+<td>index of the first level below 100 m above the surface</td>
 </tr>
 </tbody>
 </table>
@@ -5381,13 +5389,15 @@ is an honest analogue.</p>
   per the bullet above cannot be multiplied.</li>
 <li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
   the <code>over_dt</code> restriction above.</li>
-<li><code>searchsorted</code> gives, per column, the pair of level indices that bracket a
-  target pressure or height. Its receiver picks the coordinate: <code>p_mid</code>/<code>p_int</code> for a
-  pressure (<code>units</code> defaults to <code>Pa</code>), <code>z_mid</code>/<code>z_int</code> for a height above sea
-  level, and <code>height_mid</code>/<code>height_int</code> for a height above the surface (<code>units</code>
-  defaults to <code>m</code>). <code>interp(..)</code> is built on it, so fields interpolated to the
-  same target share one search. Its output has <code>int</code> data type, so like
-  <code>mask.where(..)</code> it cannot be written as is.</li>
+<li><code>searchsorted</code> gives, per column, the index of the first level whose pressure is
+  above the target pressure (for a height, which decreases with the level index,
+  the first level below the target); the index is <code>nlevs</code> if there is none. That is
+  numpy's <code>searchsorted(side='right')</code> along the level dimension. Its receiver picks
+  the coordinate: <code>p_mid</code>/<code>p_int</code> for a pressure (<code>units</code> defaults to <code>Pa</code>),
+  <code>z_mid</code>/<code>z_int</code> for a height above sea level, and <code>height_mid</code>/<code>height_int</code> for a
+  height above the surface (<code>units</code> defaults to <code>m</code>). <code>interp(..)</code> is built on it, so
+  fields interpolated to the same target share one search. Its output has <code>int</code> data
+  type, so like <code>mask.where(..)</code> it cannot be written as is.</li>
 <li>Histogram bin edges are numbers in increasing order. They may be negative,
   and may be written with an exponent (<code>bins=[-1,0,1e-5,1e-4]</code>).</li>
 </ul>
@@ -5423,7 +5433,7 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 </tr>
 <tr>
 <td><code>searchsorted</code></td>
-<td>named after numpy's, but gives the pair of levels bracketing the target (-1 where out of range) rather than one insertion index, and takes <code>units</code></td>
+<td>named after numpy's (<code>side='right'</code>), but takes <code>units</code>, and for heights, which decrease with the level index, it looks for the first level below the target</td>
 </tr>
 </tbody>
 </table>
@@ -5544,7 +5554,7 @@ them in step with this page: an example added here belongs in one of those.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../../../../javascript/mathjax.js"></script>
       
