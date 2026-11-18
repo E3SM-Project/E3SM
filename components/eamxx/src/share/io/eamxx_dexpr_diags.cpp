@@ -379,24 +379,28 @@ void translate_call (const Call& call, const ast::Expression& self,
         "Error! interp() takes exactly one of 'p_mid' or 'z_mid'.\n"
         " - expression: " + ast::to_string(self) + "\n");
 
+    diag_name = "FieldVerticalInterp";
+    const auto* units = keyword(call,"units");
     if (plev!=nullptr) {
-      const auto* units = keyword(call,"units");
       EKAT_REQUIRE_MSG (keyword(call,"reference")==nullptr,
           "Error! 'reference' applies to interp(z_mid=..), not interp(p_mid=..).\n"
           " - expression: " + ast::to_string(self) + "\n");
-      diag_name = "FieldAtPressureLevel";
-      params.set<std::string>("pressure_value",literal_str(*plev));
-      params.set<std::string>("pressure_units",
+      params.set<std::string>("vertical_coordinate","p");
+      params.set<std::string>("value",literal_str(*plev));
+      params.set<std::string>("units",
           units==nullptr ? std::string("Pa") : string_arg(*units,"'units'"));
     } else {
-      const auto* units = keyword(call,"units");
-      const auto* ref   = keyword(call,"reference");
-      diag_name = "FieldAtHeight";
-      params.set<std::string>("height_value",literal_str(*z));
-      params.set<std::string>("height_units",
+      const auto* ref = keyword(call,"reference");
+      const auto reference = ref==nullptr ? std::string("sealevel") : string_arg(*ref,"'reference'");
+      EKAT_REQUIRE_MSG (reference=="sealevel" or reference=="surface",
+          "Error! Invalid reference in interp(z_mid=..).\n"
+          " - expression: " + ast::to_string(self) + "\n"
+          " - reference: " + reference + "\n"
+          " - valid options: sealevel, surface\n");
+      params.set<std::string>("vertical_coordinate",reference=="sealevel" ? "z" : "height");
+      params.set<std::string>("value",literal_str(*z));
+      params.set<std::string>("units",
           units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
-      params.set<std::string>("surface_reference",
-          ref==nullptr ? std::string("sealevel") : string_arg(*ref,"'reference'"));
     }
     return;
   }
@@ -541,19 +545,12 @@ void translate_call (const Call& call, const ast::Expression& self,
         " - valid receivers: p_mid, p_int, z_mid, z_int, height_mid, height_int\n");
     const auto value = literal_str(*call.positional[0]);
     const auto* units = keyword(call,"units");
+    diag_name = "VerticalLevelIndex";
     params.set<std::string>("vertical_layer",layer);
-    if (coord=="p") {
-      diag_name = "PressureLevelIndex";
-      params.set<std::string>("pressure_value",value);
-      params.set<std::string>("pressure_units",
-          units==nullptr ? std::string("Pa") : string_arg(*units,"'units'"));
-    } else {
-      diag_name = "HeightLevelIndex";
-      params.set<std::string>("height_value",value);
-      params.set<std::string>("height_units",
-          units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
-      params.set<std::string>("surface_reference",coord=="z" ? "sealevel" : "surface");
-    }
+    params.set<std::string>("vertical_coordinate",coord);
+    params.set<std::string>("value",value);
+    params.set<std::string>("units",
+        units==nullptr ? std::string(coord=="p" ? "Pa" : "m") : string_arg(*units,"'units'"));
     return;
   }
 

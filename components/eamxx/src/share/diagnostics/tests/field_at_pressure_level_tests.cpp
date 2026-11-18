@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
-#include "share/diagnostics/field_at_pressure_level.hpp"
-#include "share/diagnostics/pressure_level_index.hpp"
+#include "share/diagnostics/field_vertical_interp.hpp"
+#include "share/diagnostics/vertical_level_index.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -32,7 +32,7 @@ struct PressureBnds
 std::map<std::string,Field>
 create_fields(std::shared_ptr<const AbstractGrid> grid);
 
-std::shared_ptr<FieldAtPressureLevel>
+std::shared_ptr<FieldVerticalInterp>
 get_test_diag(const std::map<std::string,Field>& fields,
               std::shared_ptr<const AbstractGrid> grid,
               const std::string& type, const Real plevel,
@@ -68,7 +68,7 @@ TEST_CASE("field_at_pressure_level_p2")
  
   // Get a diagnostic factory
   auto& diag_factory = DiagnosticFactory::instance();
-  diag_factory.register_product("FieldAtPressureLevel",&create_diagnostic<FieldAtPressureLevel>);
+  diag_factory.register_product("FieldVerticalInterp",&create_diagnostic<FieldVerticalInterp>);
 
   {
     // Test 1: Take a slice at a random value for variable defined at midpoint.
@@ -190,7 +190,7 @@ create_fields(std::shared_ptr<const AbstractGrid> grid)
   return fields;
 }
 /*===================================================================================================*/
-std::shared_ptr<FieldAtPressureLevel>
+std::shared_ptr<FieldVerticalInterp>
 get_test_diag(const std::map<std::string,Field>& fields,
               std::shared_ptr<const AbstractGrid> grid,
               const std::string& type, const Real plevel,
@@ -199,23 +199,25 @@ get_test_diag(const std::map<std::string,Field>& fields,
   std::string fname = "V_"+type;
   ekat::ParameterList params;
   params.set("field_name",fname);
-  params.set("pressure_value",std::to_string(plevel));
-  params.set("pressure_units",std::string("Pa"));
+  params.set("vertical_coordinate",std::string("p"));
+  params.set("value",std::to_string(plevel));
+  params.set("units",std::string("Pa"));
   const auto& comm = grid->get_comm();
-  auto diag = std::make_shared<FieldAtPressureLevel>(comm,params,grid);
+  auto diag = std::make_shared<FieldVerticalInterp>(comm,params,grid);
 
-  // FieldAtPressureLevel now depends on the (mid/int) bracket-index fields
-  // computed by PressureLevelIndex. Since this test builds the diag by hand
+  // FieldVerticalInterp now depends on the (mid/int) level-index fields
+  // computed by VerticalLevelIndex. Since this test builds the diag by hand
   // (rather than through the io-stream machinery, which resolves such
   // dependencies automatically), compute both variants here and add them
   // to a local, augmented field map.
   auto all_fields = fields;
   for (const std::string layer : {"mid","int"}) {
     ekat::ParameterList idx_params;
-    idx_params.set("pressure_value",std::to_string(plevel));
-    idx_params.set("pressure_units",std::string("Pa"));
+    idx_params.set("vertical_coordinate",std::string("p"));
+    idx_params.set("value",std::to_string(plevel));
+    idx_params.set("units",std::string("Pa"));
     idx_params.set("vertical_layer",layer);
-    auto idx_diag = std::make_shared<PressureLevelIndex>(comm,idx_params,grid);
+    auto idx_diag = std::make_shared<VerticalLevelIndex>(comm,idx_params,grid);
     for (const auto& fn : idx_diag->get_input_fields_names()) {
       idx_diag->set_input_field(fields.at(fn));
     }

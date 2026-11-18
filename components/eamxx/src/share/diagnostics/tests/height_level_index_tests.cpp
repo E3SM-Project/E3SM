@@ -1,24 +1,24 @@
 #include "catch2/catch.hpp"
 
-#include "share/diagnostics/height_level_index.hpp"
+#include "share/diagnostics/vertical_level_index.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 namespace scream {
 
-std::shared_ptr<HeightLevelIndex>
+std::shared_ptr<VerticalLevelIndex>
 get_index_diag (const Field& z, std::shared_ptr<const AbstractGrid> grid,
                 const std::string& layer, const Real height,
                 const std::string& surf_ref)
 {
   ekat::ParameterList params;
-  params.set("surface_reference",surf_ref);
-  params.set("height_value",std::to_string(height));
-  params.set("height_units",std::string("m"));
+  params.set("vertical_coordinate",std::string(surf_ref=="sealevel" ? "z" : "height"));
+  params.set("value",std::to_string(height));
+  params.set("units",std::string("m"));
   params.set("vertical_layer",layer);
   const auto& comm = grid->get_comm();
-  auto diag = std::make_shared<HeightLevelIndex>(comm,params,grid);
+  auto diag = std::make_shared<VerticalLevelIndex>(comm,params,grid);
   // The diag expects its input field to be named "z_<layer>" (sealevel) or
   // "height_<layer>" (surface); present the (single) input data under
   // whichever name is needed for this surf_ref, rather than requiring the
@@ -111,7 +111,7 @@ TEST_CASE("height_level_index")
   }
 
   // A target above the top entry is always flagged as invalid, regardless
-  // of the surface reference (matches PressureLevelIndex at the model top).
+  // of the surface reference (matches VerticalLevelIndex at the model top).
   SECTION ("top_invalid_surface") {
     check(2*z_top,"surface",0,0);
   }
