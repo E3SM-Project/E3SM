@@ -373,13 +373,13 @@ def buildnml(case, caseroot, compname):
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC2_monthlyClimatology.IcoswISC30E3r5.20231120.nc'
         analysis_mask_file = 'IcoswISC30E3r5_mocBasinsAndTransects20210623.nc'
-        ic_date = '20231120'
+        ic_date = '20261118'
         ic_prefix = 'mpaso.IcoswISC30E3r5'
         if ocn_ic_mode == 'spunup':
-            ic_date = '20231121'
+            ic_date = '20261118'
             ic_prefix = 'mpaso.IcoswISC30E3r5.rstFromG-chrysalis'
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
-            ic_date = '20231215'
+            ic_date = '20261118'
             ic_prefix = 'mpaso.IcoswISC30E3r5.20231120+MARBL_ICfromOMIP_64levels'
             eco_forcing_file = 'ecoForcingSurfaceMonthly+WetDryDustSolFrac+CAM6-PD.IcoswISC30E3r5.20251030.nc'
         if ocn_glc_ismf_coupling == 'data_mpaso':
