@@ -349,6 +349,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     constexpr Scalar latvap = C::LatVap.value;
     constexpr Scalar inv_cp = C::INV_CP.value;
     const Scalar dt = 1800.0;
+    const Real comparison_tol = 100 * std::numeric_limits<Real>::epsilon();
 
     const Real T_atm_in = 285.0;
     const Real pres_in  = 90000.0;
@@ -396,18 +397,16 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
       REQUIRE(off.qv2qc_aeroact == 0.0);
       REQUIRE(on.qv2qc_aeroact > 0.0); // supersaturated + nccn_prescribed >> nc => nc increases => qc gained
 
-      const Real delta_qc = on.qc - off.qc;
-      const Real delta_qv = on.qv - off.qv;
-      const Real delta_th = on.th_atm - off.th_atm;
+      const Real delta_qc = on.qv2qc_aeroact * dt;
 
       // qv2qc_aeroact(k) = deltaqc/dt, and qc += deltaqc while qv -= deltaqc
-      REQUIRE(delta_qc == Approx(on.qv2qc_aeroact * dt).epsilon(1e-10));
+      REQUIRE(on.qc == Approx(off.qc + delta_qc).epsilon(comparison_tol));
       // total water (qv+qc) is conserved by the activation step
-      REQUIRE(delta_qv == Approx(-delta_qc).epsilon(1e-10));
+      REQUIRE(on.qv == Approx(off.qv - delta_qc).epsilon(comparison_tol));
       // th_atm change is consistent with condensational latent heating
       // (exner = 1 in run_part1's inputs, so th_atm delta reduces to
       // latvap*inv_cp*delta_qc)
-      REQUIRE(delta_th == Approx(latvap * inv_cp * delta_qc).epsilon(1e-8));
+      REQUIRE(on.th_atm == Approx(off.th_atm + latvap * inv_cp * delta_qc).epsilon(comparison_tol));
 
       // activation can only add cloud water/number, never remove it
       REQUIRE(on.nc == off.nc);
@@ -441,6 +440,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
     const Scalar dt = 1800.0;
     constexpr Scalar latvap = C::LatVap.value;
     constexpr Scalar inv_cp = C::INV_CP.value;
+    const Real comparison_tol = 100 * std::numeric_limits<Real>::epsilon();
 
     const Real T_atm_in = 285.0;
     const Real pres_in  = 90000.0;
@@ -480,11 +480,11 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
       REQUIRE(on.qv2qc_condevap > 0.0);
 
       auto off = run_part2(false, T_atm_in, pres_in, qv_supersat, qc_in, nc_in, omega_mp_in, tke_mp_in);
-      const Real delta_qv = on.qv - off.qv;
+      const Real phase_change = on.qv2qc_condevap * dt;
 
       // The qv decrement happens directly in the new block, unaffected by
       // any downstream physics, so this holds exactly.
-      REQUIRE(delta_qv == Approx(-(on.qv2qc_condevap * dt)).epsilon(1e-8));
+      REQUIRE(on.qv == Approx(off.qv - phase_change).epsilon(comparison_tol));
       // Net effect: turning on condensation can only add (not remove)
       // cloud water/number relative to the "off" run, even after
       // downstream autoconversion/accretion partially consumes it.
@@ -496,8 +496,7 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
       // is now updated using qv2qc_condevap (the same quantity used for
       // qc/qv), so the latent-heat release is exact given exner=1,
       // cld_frac_l=1 in this setup.
-      const Real delta_th_atm = on.th_atm - off.th_atm;
-      REQUIRE(delta_th_atm == Approx(latvap * inv_cp * on.qv2qc_condevap * dt).epsilon(1e-8));
+      REQUIRE(on.th_atm == Approx(off.th_atm + latvap * inv_cp * phase_change).epsilon(comparison_tol));
     }
 
     // --- Subsaturated: qc_incld >= qsmall still makes condmask true (it
@@ -511,8 +510,8 @@ struct UnitWrap::UnitTest<D>::TestPrognosticSupersat : public UnitWrap::UnitTest
       REQUIRE(on.qv2qc_condevap <= 0.0);
 
       auto off = run_part2(false, T_atm_in, pres_in, qv_subsat, qc_in, nc_in, omega_mp_in, tke_mp_in);
-      const Real delta_qv = on.qv - off.qv;
-      REQUIRE(delta_qv == Approx(-(on.qv2qc_condevap * dt)).epsilon(1e-8));
+      const Real phase_change = on.qv2qc_condevap * dt;
+      REQUIRE(on.qv == Approx(off.qv - phase_change).epsilon(comparison_tol));
       REQUIRE(on.qc <= off.qc);
     }
   }
