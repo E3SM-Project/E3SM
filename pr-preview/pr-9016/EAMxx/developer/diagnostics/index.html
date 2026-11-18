@@ -5222,15 +5222,23 @@ the constructor if its layout is known there, or else in <code>initialize_impl</
 <span class="w">  </span><span class="n">m_field_in_names</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="s">"pseudo_density"</span><span class="p">);</span>
 <span class="w">  </span><span class="n">m_field_in_names</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">m_qname</span><span class="p">);</span>
 
-<span class="w">  </span><span class="n">FieldIdentifier</span><span class="w"> </span><span class="n">fid</span><span class="w"> </span><span class="p">(</span><span class="n">m_kind</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_2d_scalar_layout</span><span class="p">(),</span><span class="w"> </span><span class="n">kg</span><span class="o">/</span><span class="n">m2</span><span class="p">,</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">());</span>
-<span class="w">  </span><span class="n">add_output</span><span class="p">(</span><span class="n">Field</span><span class="p">(</span><span class="n">fid</span><span class="p">));</span>
-<span class="w">  </span><span class="n">output</span><span class="p">().</span><span class="n">allocate_view</span><span class="p">();</span>
+<span class="w">  </span><span class="n">add_output</span><span class="p">(</span><span class="n">m_kind</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_2d_scalar_layout</span><span class="p">(),</span><span class="w"> </span><span class="n">kg</span><span class="o">/</span><span class="n">m2</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><code>output()</code> is the declared field itself, not a copy, so it can be allocated,
-or given a mask, after <code>add_output</code>; it must be allocated by the time
-<code>initialize_impl</code> returns. <code>compute_impl</code> then reads the inputs from
-<code>m_fields_in</code> and writes into <code>output()</code>. Customers get the output with <code>get()</code>.</p>
+<p><code>add_output</code> comes in three forms:</p>
+<ul>
+<li><code>add_output(name, layout, units, data_type)</code> creates and allocates the field
+  on the diagnostic grid (units default to <code>none</code>, the data type to <code>Real</code>);</li>
+<li><code>add_output(fid)</code> does the same from a <code>FieldIdentifier</code>;</li>
+<li><code>add_output(field)</code> takes a field built by the diagnostic (e.g., an alias of
+  an input, or a field whose allocation properties must be set before it is
+  allocated); it must be allocated by the time <code>initialize_impl</code> returns.</li>
+</ul>
+<p>Each returns a reference to the stored output, which stays valid, so the diag
+may give it a mask, or allocate it, right away. <code>compute_impl</code> reads the inputs
+from <code>m_fields_in</code> and writes into <code>get()</code>, which customers use too. A <code>Field</code>
+is a handle, so the copy that <code>get()</code> returns shares data, header and mask with
+the output.</p>
 <p>A customer may also set the parameter <code>output_field_name</code>, in which case
 <code>initialize</code> renames the output to that name (e.g., the dexpr lowering names
 the output of an expression after the expression). The renamed field is an
@@ -5249,11 +5257,7 @@ constructor:</p>
 <span class="w">  </span><span class="n">m_field_in_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="s">"pseudo_density"</span><span class="p">,</span><span class="s">"qc"</span><span class="p">,</span><span class="s">"nc"</span><span class="p">,</span><span class="s">"qi"</span><span class="p">,</span><span class="s">"ni"</span><span class="p">,</span><span class="s">"qr"</span><span class="p">,</span><span class="s">"nr"</span><span class="p">};</span>
 
 <span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">create</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">kind</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">FieldIdentifier</span><span class="w"> </span><span class="n">fid</span><span class="p">(</span><span class="n">kind</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_2d_scalar_layout</span><span class="p">(),</span><span class="w"> </span><span class="n">kg</span><span class="o">/</span><span class="p">(</span><span class="n">kg</span><span class="o">*</span><span class="n">m2</span><span class="p">),</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">());</span>
-<span class="w">    </span><span class="n">Field</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">fid</span><span class="p">);</span>
-<span class="w">    </span><span class="n">f</span><span class="p">.</span><span class="n">allocate_view</span><span class="p">();</span>
-<span class="w">    </span><span class="n">add_output</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">add_output</span><span class="p">(</span><span class="n">kind</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_2d_scalar_layout</span><span class="p">(),</span><span class="w"> </span><span class="n">kg</span><span class="o">/</span><span class="p">(</span><span class="n">kg</span><span class="o">*</span><span class="n">m2</span><span class="p">));</span>
 <span class="w">  </span><span class="p">};</span>
 <span class="w">  </span><span class="n">m_liq</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">create</span><span class="p">(</span><span class="s">"Liq"</span><span class="p">);</span>
 <span class="w">  </span><span class="n">m_ice</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">create</span><span class="p">(</span><span class="s">"Ice"</span><span class="p">);</span>
@@ -5262,15 +5266,15 @@ constructor:</p>
 </code></pre></div>
 <p>The rules for such a diagnostic are:</p>
 <ul>
-<li>all outputs must be declared in the constructor: an output stream needs all
-  output names right after construction, to share one instance among requests
-  of any of them (see below);</li>
+<li>all outputs must be declared in the constructor: an output stream stores a
+  new diagnostic under all its output names right after construction, before
+  it can initialize it (initialization waits until the inputs exist), so that
+  a request of another output finds the same instance (see below);</li>
 <li>each output must be on the diagnostic grid, have a name that no other output
   has (case insensitive), and be allocated by the end of <code>initialize_impl</code>;</li>
-<li><code>output()</code> errors out: keep a handle to each output for <code>compute_impl</code>, as
-  <code>NumberPath</code> does;</li>
-<li><code>get()</code> errors out: customers use <code>get(name)</code> (case insensitive), or
-  <code>get_outputs()</code>, which lists the outputs in declaration order;</li>
+<li><code>get()</code> errors out: keep a handle to each output for <code>compute_impl</code>, as
+  <code>NumberPath</code> does; customers use <code>get(name)</code> (case insensitive), or
+  <code>get_outputs()</code>, a map from name to output;</li>
 <li>the outputs cannot be renamed via <code>output_field_name</code>. Users who want an
   output under another name write <code>&lt;name&gt; := &lt;output&gt;</code>;</li>
 <li>one <code>compute</code> evaluates all outputs, and stamps them all.</li>
@@ -5312,9 +5316,8 @@ fields whose masks share a name share the count:</p>
 <span class="n">m_z</span><span class="p">.</span><span class="n">set_valid_mask</span><span class="p">(</span><span class="n">m_a</span><span class="p">.</span><span class="n">get_valid_mask</span><span class="p">());</span>
 </code></pre></div>
 <p>Masks with the same name must hold the same values, since the stream updates
-the count once, and the horizontal remapper remaps such masks once. Hence
-<code>initialize</code> requires that outputs whose masks have the same name share the
-mask and have the same layout. An output that may contain fill values must
+the count once, and the horizontal remapper remaps such masks once; sharing
+the mask, as above, is the way to ensure it. An output that may contain fill values must
 also call <code>set_may_be_filled(true)</code> on its header.</p>
 <h2 id="testing">Testing</h2>
 <ul>
@@ -5331,7 +5334,7 @@ also call <code>set_may_be_filled(true)</code> on its header.</p>
 <h2 id="converting-a-diagnostic-to-several-outputs">Converting a diagnostic to several outputs</h2>
 <p>To merge several diagnostics that share their inputs into one with several
 outputs, as <code>NumberPath</code> is: declare all the outputs in the
-constructor, keep a handle to each for <code>compute_impl</code> (in place of <code>output()</code>),
+constructor, keep a handle to each for <code>compute_impl</code> (in place of <code>get()</code>),
 and add their names to <code>named_variants</code>.</p>
 
 
