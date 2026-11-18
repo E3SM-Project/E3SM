@@ -24,6 +24,7 @@ module ocn_sediment_transport
    use mpas_timekeeping
    use mpas_stream_manager
 
+   use mpas_constants, only: gravity
    use ocn_constants
    use ocn_diagnostics_variables
 
@@ -179,7 +180,7 @@ contains
       real tau_tide, tau_wave, tau_mean, theta_mean, theta_wave, theta_ce,theta_sf,za
       real velXb, velYb, velXm, velYm
       real phi_x1, phi_x2, phi_x, phi_y
-      real, parameter :: g = 9.81_RKIND
+      real, parameter :: g = gravity
       real, parameter :: eps = 1.0E-14_RKIND
       real zCell
       err = 0
