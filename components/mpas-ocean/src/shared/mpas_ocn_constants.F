@@ -238,23 +238,13 @@ contains
 
        !-----------------------------------------------------------------------
        !
-       !  convert salt flux (kg/m^2/s) to salt flux (psu*m/s):
-       !  -----------------------------------------------------
-       !    density of freshwater rho_fw = 1.0e3 (kg/m^3)
-       !    salt_flux_kg in (kg/m^2/s) = 1.0e2 (kg/m^2/s)
-       !
-       !    salt_flux            = - h2o_flux * ocn_ref_salinity / rho_fw
-       !    salt_flux (msu*cm/s) = salt_flux_kg (kg/m^2/s)
-       !                           * 1.0e2 (kg/m^2/s)/(kg/m^2/s)
-       !                           / 1.0e3 (kg/m^3)
-       !                         = salt_flux_kg (kg/m^2/s)
-       !                           * sflux_factor (psu*m/s)/(kg/m^2/s)
-       !
-       !    ==>  sflux_factor = 1.0
+       !  convert salt flux (kg/m^2/s) to salt flux (psu*m/s)
+       !  using reference seawater density and the numerical psu = g/kg convention:
+       !    sflux_factor = 1 / (rho_sw * ppt_to_salt)
        !
        !-----------------------------------------------------------------------
 
-       sflux_factor = 1.0_RKIND
+       sflux_factor = 1.0_RKIND / (rho_sw * ppt_to_salt)
 
        !-----------------------------------------------------------------------
        !
