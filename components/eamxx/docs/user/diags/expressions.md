@@ -226,6 +226,17 @@ Notes:
   where the `where(..)` keeps the division away from levels with no cloud.
   Fields sampled at the same position and phase share one computation of the
   weights. See [the AeroCom algorithm](../../technical/aerocom_cldtop.md).
+  In an output yaml, the `aliases:` section saves typing the weights in full
+  for every field:
+
+  ```yaml
+  aliases:
+    - liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')
+    - icetop := cldfrac_tot.aerocom_weights('top', phase='ice')
+  field_names:
+    - rel_liqtop := eff_radius_qc.sum('lev', weights=liqtop)
+    - rei_icetop := eff_radius_qi.sum('lev', weights=icetop)
+  ```
 
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,

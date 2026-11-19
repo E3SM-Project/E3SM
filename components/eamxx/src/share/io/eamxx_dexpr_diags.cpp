@@ -282,15 +282,15 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .keywords = {{"p_mid",false},{"z_mid",false},{"units",false},{"reference",false}},
            .example = "T_mid.interp(p_mid=500,units='hPa')"});
     r.add({.name = "mean",
-           .desc = "average over a dimension ('col' or 'lev'); over 'lev', weights 'dp', 'dz' or a field",
+           .desc = "average over 'col' (area weighted) or 'lev'; over 'lev', optionally weighted by a field",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
-           .example = "T_mid.mean('lev',weights='dp')"});
+           .example = "T_mid.mean('lev',weights=pseudo_density)"});
     r.add({.name = "sum",
-           .desc = "sum over a dimension ('lev'); weights 'dp', 'dz' or a field",
+           .desc = "sum over 'lev', optionally weighted by a field",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
-           .example = "T_mid.sum('lev',weights='dz')"});
+           .example = "T_mid.sum('lev',weights=dz)"});
     r.add({.name = "broadcast_like",
            .desc = "value repeated along the dims of another field that it lacks",
            .min_positional = 1, .max_positional = 1,

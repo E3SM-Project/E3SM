@@ -14,6 +14,8 @@ fields:
     aliases:
       # An intermediate: usable as an operand below, but never written.
       - qt := qc+qv
+      # The AeroCom weights, used by name as weights= below.
+      - liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')
     field_names:
       # --- Operators -------------------------------------------------------
       # Grouping is explicit.
@@ -64,6 +66,8 @@ fields:
       - liq_cldtop  := cldfrac_tot.aerocom_weights('top', phase='liq').sum('lev')
       - ice_cldtop  := cldfrac_tot.aerocom_weights('top', phase='ice').sum('lev')
       - w_cldtop    := cldfrac_tot.aerocom_weights('top')
+      # An 'aliases' entry as the weights.
+      - rel_liqtop  := eff_radius_qc.sum('lev', weights=liqtop)
 
       # --- Composition ------------------------------------------------------
       - cold_T    := T_mid.where(T_mid<273.15).mean('lev')

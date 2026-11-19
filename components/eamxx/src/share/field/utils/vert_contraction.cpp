@@ -22,9 +22,10 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
   const int nlevs = l_in.dim(l_in.rank() - 1);
 
-  // Entries with zero weight are skipped, not added as 0*f: f need not be finite
-  // there (e.g., X/cldfrac where cldfrac is 0 and so is the weight). For finite f
-  // the result is the same, bit for bit.
+  // Entries with zero weight are skipped, not added as 0*f, so that a non-finite
+  // f there (e.g., X/cldfrac where cldfrac is 0 and so is the weight) does not
+  // turn the sum into NaN. This is about the result, not speed: the entries are
+  // still loaded. For finite f the result is the same, bit for bit.
 
   // A broadcasted version of weight, with same layout as f_in
   auto bweight = weight.broadcast_to(l_in);
