@@ -1,0 +1,7 @@
+./xmlchange GLC2OCN_SHELF_MASK=ungrounded
+# Pin the MALI initial condition the ocean initial condition was built from
+glc_grid=$(./xmlquery --value GLC_GRID)
+case "$glc_grid" in
+  mpas.ais4to20km) ./xmlchange MALI_IC_FILE=ais_4to20km.20250625.nc ;;
+  mpas.ais8to30km) ./xmlchange MALI_IC_FILE=ais_8to30km.20250625.nc ;;
+esac
