@@ -58,6 +58,20 @@
       DATA updates ice thickness from an input file at a specified frequency.</desc>
   </entry>
 
+  <entry id="MALI_IC_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_component_mali</group>
+    <file>env_run.xml</file>
+    <desc>Name of the MALI initial-condition file in
+      $DIN_LOC_ROOT/glc/mpasli/$GLC_GRID.  Empty (the default) uses the
+      standard file for GLC_GRID.  Set it to pin a specific file, e.g. so
+      that an ocean initial condition built from that MALI geometry stays
+      consistent when the default changes.  Ignored for hybrid and branch
+      runs, which start from a restart file.</desc>
+  </entry>
+
   <entry id="GLC_SMB">
     <type>logical</type>
     <valid_values>true,false</valid_values>
