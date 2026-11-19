@@ -1766,7 +1766,7 @@
 			icepack_name="ktherm"
 		/>
 		<nml_option name="config_use_mushy_zero_salinity" type="logical" default_value="true" units="unitless"
-			description="If true, use the enthalpy-based mushy phase closure for exactly zero-salinity ice. Requires 'mushy' thermodynamics."
+			description="If true, use the enthalpy-based mushy phase closure for exactly zero-salinity ice. Requires 'mushy' thermodynamics. Must be true when config_frazil_coupling_type = 'omega-fluxes'."
 			possible_values="true or false"
 			icepack_name="mushy_zero_salinity"
 		/>

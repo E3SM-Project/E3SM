@@ -11209,6 +11209,18 @@ subroutine init_column_waves(domain)
             messageType=MPAS_LOG_CRIT)
     endif
 
+    ! omega-fluxes takes the new ice salinity from the ocean frazil salt and mass
+    ! fluxes without a min_salin floor, so the frazil can be fresh. Require the
+    ! zero-salinity mushy closure so that fresh ice has a consistent phase state
+    ! and the mushy salinity floors do not add salt.
+    if (trim(config_frazil_coupling_type) == "omega-fluxes" .and. &
+        .not. config_use_mushy_zero_salinity) then
+       call mpas_log_write(&
+            "init_icepack_package_configs: config_frazil_coupling_type = 'omega-fluxes' "// &
+            "requires config_use_mushy_zero_salinity = true", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
     config_ice_strength_formulation_int = config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation)
     config_ridging_participation_function_int = config_cice_int("config_ridging_participation_function", config_ridging_participation_function)
     config_ridging_redistribution_function_int = config_cice_int("config_ridging_redistribution_function", config_ridging_redistribution_function)

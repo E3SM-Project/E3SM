@@ -2508,7 +2508,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_mushy_zero_salinity" type="logical"
 	category="thermodynamics" group="thermodynamics">
-If true, use the enthalpy-based mushy phase closure for exactly zero-salinity ice. Requires 'mushy' thermodynamics.
+If true, use the enthalpy-based mushy phase closure for exactly zero-salinity ice. Requires 'mushy' thermodynamics. Must be true when config_frazil_coupling_type = 'omega-fluxes'.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
