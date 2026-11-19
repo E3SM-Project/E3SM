@@ -184,7 +184,7 @@ jobs:
                 printf "%s\n" \
                   "# CI only: results independent of the CPU, so baselines can be compared" \
                   "foreach(lang C CXX Fortran)" \
-                  "  string(APPEND CMAKE_\${lang}_FLAGS \" -fp-model=consistent -fimf-arch-consistency=true\")" \
+                  "  string(APPEND CMAKE_\${lang}_FLAGS \" -fimf-arch-consistency=true\")" \
                   "endforeach()" >> ~/.cime/e3sm-container_intel.cmake
               fi &&
               cd /projects/e3sm/work/E3SM/cime/scripts &&
