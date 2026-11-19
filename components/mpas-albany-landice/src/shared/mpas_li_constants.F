@@ -55,6 +55,10 @@ module li_constants
    real (kind=RKIND), parameter, public :: kin_visc_water = 1.793e-6_RKIND  !< kinematic viscosity of freshwater at 0 deg C (m^2 s^-1)
    real (kind=RKIND), parameter, public :: idealGasConstant = 8.314_RKIND  !< ideal gas constant (J mol^-1 K^-1)
    real (kind=RKIND), parameter, public :: iceConductivity = 2.1_RKIND  !< thermal conductivity of ice (W m^-1 K^-1)
+   !> haline contraction coefficient of seawater near the freezing point (PSU^-1),
+   !> used by the ISMIP7 local quadratic ice-shelf melt parameterization
+   !> (Burgard et al. 2022, following Lazeroms et al. 2019)
+   real (kind=RKIND), parameter, public :: haline_contraction_coeff = 7.86e-4_RKIND
 
    real (kind=RKIND), parameter, public :: &
         oceanFreezingTempSurface = -1.92_RKIND,  &  !< Freezing temperature of seawater (deg C) at surface pressure,
