@@ -665,10 +665,9 @@ contains
             ! layerTendency is scaled so that mass of ice created == mass of ocean water removed
 
             ! layer thickness decreased due to creation of frazil
-            ! note: -- this has to be density (not rho_sw) to keep buoyancy equal
-            frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_density / density(k,iCell) / dt
+            frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_density / rho_sw / dt
             ! salt is extracted with the frazil
-            frazilSalinityTendency(k,iCell) = - newThicknessWeightedSaltContent / dt
+            frazilSalinityTendency(k,iCell) = - newThicknessWeightedSaltContent * sflux_factor / dt
 
             ! ocean fluid temperature is warmed due to creation of frazil
             frazilTemperatureTendency(k,iCell) =  newFrazilEnergy / config_specific_heat_sea_water / rho_sw / dt
@@ -705,12 +704,11 @@ contains
               ! compute tendency to thickness, temperature and salinity
 
               ! layer thickness increases due to melting of frazil
-              ! note -- scaling by local ocean density to mimimize surface pressure forcing errors
               frazilLayerThicknessTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_ice_density &
-                                                    / density(k,iCell) / dt
+                                                    / rho_sw / dt
 
               ! salt is released into ocean with the melting frazil
-              frazilSalinityTendency(k,iCell) = + meltedThicknessWeightedSaltContent/ dt
+              frazilSalinityTendency(k,iCell) = + meltedThicknessWeightedSaltContent * sflux_factor / dt
 
               frazilTemperatureTendency(k,iCell) = - meltedFrazilEnergy / (rho_sw * config_specific_heat_sea_water) / dt
 
@@ -762,7 +760,7 @@ contains
            else
             !salt expelled at the surface
             frazilSalinityTendency(minLevelCell(iCell),iCell) = frazilSalinityTendency(minLevelCell(iCell),iCell) + &
-                max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) / dt
+                max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) * sflux_factor / dt
             accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + newThicknessWeightedSaltContent
            endif
          endif ! if frazil ice is formed
