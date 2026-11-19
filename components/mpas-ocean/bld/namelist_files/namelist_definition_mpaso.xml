@@ -1764,27 +1764,11 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_frazil_heat_of_fusion" type="real"
-	category="frazil_ice" group="frazil_ice">
-Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM.
-
-Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_use_frazil_ice_porosity" type="logical"
 	category="frazil_ice" group="frazil_ice">
 If true, use an internal porosity to set internal frazil salinity and that of specified passive tracers.
 
 Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_frazil_ice_density" type="real"
-	category="frazil_ice" group="frazil_ice">
-Assumed density of frazil. NOTE: test and make consistent with E3SM.
-
-Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1820,25 +1804,9 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_specific_heat_sea_water" type="real"
-	category="frazil_ice" group="frazil_ice">
-Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM.
-
-Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_frazil_maximum_depth" type="real"
 	category="frazil_ice" group="frazil_ice">
 maximum depth for the formation of frazil
-
-Valid values: Any positive real number.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_frazil_sea_ice_reference_salinity" type="real"
-	category="frazil_ice" group="frazil_ice">
-assumed salinity of frazil ice in the open ocean. Land ice frazil salinity is always 0.
 
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
@@ -1927,14 +1895,6 @@ Default: Defined in namelist_defaults.xml
 The for horizontal neighbors used to horizontally smooth boundary layer T and S.
 
 Valid values: Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell).
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_land_ice_flux_cp_ice" type="real"
-	category="land_ice_fluxes" group="land_ice_fluxes">
-The specific heat capacity for ice.
-
-Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 

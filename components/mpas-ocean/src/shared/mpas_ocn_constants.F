@@ -44,9 +44,11 @@ module ocn_constants
       rho_fw                ,&! density of fresh water (kg/m^3)
       rho_sw                ,&! density of salt water (kg/m^3)
       cp_sw                 ,&! specific heat salt water (J/kg/K)
+      cp_ice                ,&! specific heat fresh ice (J/kg/K)
       vonkar                ,&! von Karman constant
       latent_heat_fusion_mks,&! lat heat of fusion (J/kg)
       ocn_ref_salinity      ,&! ocean reference salinity (psu)
+      ice_ref_salinity      ,&! sea ice reference salinity (psu)
       atm_ref_pressure      ,&! standard sea level pressure (Pa)
       molecular_weight_C    ,&! molecular weight carbon
       molecular_weight_Fe   ,&! molecular weight iron
@@ -96,9 +98,11 @@ contains
        rho_sw    = real(SHR_CONST_RHOSW, RKIND)   ! density of salt water (kg/m^3)
        rho_fw    = real(SHR_CONST_RHOFW, RKIND)   ! density of fresh water (kg/m^3)
        cp_sw     = real(SHR_CONST_CPSW, RKIND)    ! specific heat salt water (J/kg/K)
+       cp_ice    = real(SHR_CONST_CPICE, RKIND)   ! specific heat fresh ice (J/kg/K)
        vonkar    = real(SHR_CONST_KARMAN, RKIND)  ! von Karman constant
        latent_heat_fusion_mks = real(SHR_CONST_LATICE, RKIND)    ! lat heat of fusion (J/kg)
        ocn_ref_salinity       = real(SHR_CONST_OCN_REF_SAL, RKIND) ! (psu)
+       ice_ref_salinity       = real(SHR_CONST_ICE_REF_SAL, RKIND) ! (psu)
        atm_ref_pressure       = real(SHR_CONST_PSTD, RKIND)      ! (Pa)
        molecular_weight_C     = real(SHR_CONST_MWC, RKIND)       ! molecular weight carbon
        molecular_weight_Fe    = real(SHR_CONST_MWFE, RKIND)      ! molecular weight iron

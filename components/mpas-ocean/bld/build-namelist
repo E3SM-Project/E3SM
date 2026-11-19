@@ -847,16 +847,12 @@ add_default($nl, 'config_self_attraction_and_loading_beta');
 
 add_default($nl, 'config_use_frazil_ice_formation');
 add_default($nl, 'config_frazil_in_open_ocean');
-add_default($nl, 'config_frazil_heat_of_fusion');
 add_default($nl, 'config_use_frazil_ice_porosity');
-add_default($nl, 'config_frazil_ice_density');
 add_default($nl, 'config_frazil_ice_porosity');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_include_sensible_heat_frazil');
 add_default($nl, 'config_expel_excess_frazil_salt');
-add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
-add_default($nl, 'config_frazil_sea_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
@@ -908,7 +904,6 @@ add_default($nl, 'config_land_ice_flux_useHollandJenkinsAdvDiff');
 add_default($nl, 'config_land_ice_flux_attenuation_coefficient');
 add_default($nl, 'config_land_ice_flux_boundaryLayerThickness');
 add_default($nl, 'config_land_ice_flux_boundaryLayerNeighborWeight');
-add_default($nl, 'config_land_ice_flux_cp_ice');
 add_default($nl, 'config_land_ice_flux_rho_ice');
 add_default($nl, 'config_land_ice_flux_explicit_topDragCoeff');
 add_default($nl, 'config_land_ice_flux_ISOMIP_gammaT');

@@ -1106,17 +1106,9 @@
 					description="If frazil formation is used, controls if frazil fluxes are computed under land ice."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frazil_heat_of_fusion" type="real" default_value="3.34e5" units="J kg^-1"
-					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM."
-					possible_values="Any positive real number."
-		/>
 		<nml_option name="config_use_frazil_ice_porosity" type="logical" default_value=".false."
 					description="If true, use an internal porosity to set internal frazil salinity and that of specified passive tracers."
 					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_frazil_ice_density" type="real" default_value="1000.0" units="kg m^-3"
-					description="Assumed density of frazil. NOTE: test and make consistent with E3SM."
-					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_ice_porosity" type="real" default_value="1.0" units="1"
 					description="If frazil porosity is used, sets the porosity of internal ocean frazil ice."
@@ -1134,16 +1126,8 @@
 					description="If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^-1 C^-1"
-					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM."
-					possible_values="Any positive real number."
-		/>
 		<nml_option name="config_frazil_maximum_depth" type="real" default_value="100.0" units="m"
 					description="maximum depth for the formation of frazil"
-					possible_values="Any positive real number."
-		/>
-		<nml_option name="config_frazil_sea_ice_reference_salinity" type="real" default_value="4.0" units="1.e-3"
-					description="assumed salinity of frazil ice in the open ocean. Land ice frazil salinity is always 0."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_maximum_freezing_temperature" type="real" default_value="0.0" units="C"
@@ -1189,10 +1173,6 @@
 		<nml_option name="config_land_ice_flux_boundaryLayerNeighborWeight" type="real" default_value="0.0"
 					description="The for horizontal neighbors used to horizontally smooth boundary layer T and S."
 					possible_values="Most likely a value between 0 (no smoothing) and 1 (neighbors get same weight as this cell)."
-		/>
-		<nml_option name="config_land_ice_flux_cp_ice" type="real" default_value="2.009e3" units="J C^-1 kg^-1"
-					description="The specific heat capacity for ice."
-					possible_values="Any positive real number"
 		/>
 		<nml_option name="config_land_ice_flux_rho_ice" type="real" default_value="918" units="kg m^-3"
 					description="The density of land ice."

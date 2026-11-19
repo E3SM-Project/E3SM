@@ -502,16 +502,12 @@
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>
 <config_frazil_under_land_ice>.false.</config_frazil_under_land_ice>
-<config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
 <config_use_frazil_ice_porosity>.false.</config_use_frazil_ice_porosity>
-<config_frazil_ice_density>1000.0</config_frazil_ice_density>
 <config_frazil_ice_porosity>1.0</config_frazil_ice_porosity>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
 <config_include_sensible_heat_frazil>.true.</config_include_sensible_heat_frazil>
 <config_expel_excess_frazil_salt>.true.</config_expel_excess_frazil_salt>
-<config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
-<config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
@@ -551,7 +547,6 @@
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
 <config_land_ice_flux_boundaryLayerThickness>10.0</config_land_ice_flux_boundaryLayerThickness>
 <config_land_ice_flux_boundaryLayerNeighborWeight>0.0</config_land_ice_flux_boundaryLayerNeighborWeight>
-<config_land_ice_flux_cp_ice>2.009e3</config_land_ice_flux_cp_ice>
 <config_land_ice_flux_rho_ice>918</config_land_ice_flux_rho_ice>
 <config_land_ice_flux_explicit_topDragCoeff>2.5e-3</config_land_ice_flux_explicit_topDragCoeff>
 <config_land_ice_flux_explicit_topDragCoeff ocn_grid="oEC60to30v3wLI">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
