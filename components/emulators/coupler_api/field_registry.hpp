@@ -1,6 +1,8 @@
 #ifndef E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #define E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 
+#include "field_types.hpp"
+
 #include <ekat_yaml.hpp>
 
 #include <cstddef>
@@ -45,24 +47,27 @@ std::string to_string(const RegisteredFieldAttributes& attr,
 
 using FieldID = std::size_t;
 
-template <typename T> struct FieldBuffer {
+template <typename View> struct FieldBuffer {
   FieldID id;
-  std::span<T> data;
+  View data;
+  ScalarType type = ScalarType::Real64;
 };
 
-using ImportBuffer = FieldBuffer<const double>;
-using ExportBuffer = FieldBuffer<double>;
+using ImportBuffer = FieldBuffer<ConstFieldView>;
+using ExportBuffer = FieldBuffer<FieldView>;
 
 /**
   FieldRole role;
   std::string component;
   std::string name;
+  ScalarType type = ScalarType::Real64;
   std::size_t size = 0;
  */
 struct RegisteredField {
   FieldRole role;
   std::string component;
   std::string name;
+  ScalarType type = ScalarType::Real64;
   std::size_t size = 0;
 };
 
@@ -91,6 +96,8 @@ public:
 
   std::string to_string() const;
 
+  ScalarType get_field_type(FieldID id) const;
+
 private:
   struct RegistryKey {
     std::string component;
@@ -115,7 +122,6 @@ private:
   std::vector<RegisteredField> fields_;
   std::unordered_map<RegistryKey, FieldID, RegistryKeyHash> lookup_;
 };
-
 
 } // namespace e3sm::emulator::coupler
 #endif

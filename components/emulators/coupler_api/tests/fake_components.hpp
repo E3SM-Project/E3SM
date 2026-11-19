@@ -2,6 +2,7 @@
 #define E3SM_COUPLER_TESTS_FAKE_COMPONENTS_HPP
 
 #include "coupler.hpp"
+#include "field_types.hpp"
 #include <field_registry.hpp>
 #include <process.hpp>
 #include <string_view>
@@ -21,13 +22,12 @@ public:
 
     coupling_.register_coupled_field(registry,
                                      RegisteredField{
-
                                          .role = FieldRole::Export,
                                          .component = "atm",
                                          .name = "temperature",
                                          .size = temperature_.size(),
                                      },
-                                     temperature_);
+                                     FieldView{temperature_});
 
     coupling_.register_coupled_field(registry,
                                      {
@@ -36,7 +36,7 @@ public:
                                          .name = "precipitation",
                                          .size = precipitation_.size(),
                                      },
-                                     precipitation_);
+                                     FieldView{precipitation_});
 
     coupling_.register_coupled_field(registry,
                                      {
@@ -45,7 +45,7 @@ public:
                                          .name = "surface_flux",
                                          .size = surface_flux_.size(),
                                      },
-                                     surface_flux_);
+                                     FieldView{surface_flux_});
   }
 
   void configure_coupling(const ActiveCouplingFields& plan) {
@@ -66,9 +66,7 @@ public:
       precipitation_[i] = 0.1 * static_cast<double>(i);
     }
   }
-  std::span<const int> get_local_gids(){
-    return coupling_.get_local_gids();
-  }
+  std::span<const int> get_local_gids() { return coupling_.get_local_gids(); }
 
   const std::vector<double>& temperature() const noexcept {
     return temperature_;
@@ -105,7 +103,7 @@ public:
                                          .name = "temperature",
                                          .size = temperature_.size(),
                                      },
-                                     temperature_);
+                                     FieldView{std::span{temperature_}});
 
     coupling_.register_coupled_field(registry,
                                      {
@@ -114,7 +112,7 @@ public:
                                          .name = "precipitation",
                                          .size = precipitation_.size(),
                                      },
-                                     precipitation_);
+                                     FieldView{std::span{precipitation_}});
 
     coupling_.register_coupled_field(registry,
                                      {
@@ -123,7 +121,7 @@ public:
                                          .name = "surface_flux",
                                          .size = surface_flux_.size(),
                                      },
-                                     surface_flux_);
+                                     FieldView{std::span{surface_flux_}});
   }
 
   void run(const ProcessRunOpts) {
@@ -143,9 +141,7 @@ public:
   void import_fields(std::span<const ImportBuffer> buffers) {
     coupling_.import_fields(buffers);
   }
-  std::span<const int> get_local_gids(){
-    return coupling_.get_local_gids();
-  }
+  std::span<const int> get_local_gids() { return coupling_.get_local_gids(); }
 
   const std::vector<double>& temperature() const noexcept {
     return temperature_;
@@ -158,7 +154,6 @@ public:
   const std::vector<double>& surface_flux() const noexcept {
     return surface_flux_;
   }
-
 
 private:
   std::vector<double> temperature_;

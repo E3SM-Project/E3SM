@@ -30,7 +30,7 @@ namespace e3sm::emulator::inference {
  *             outputs["dT"][:] = self.net(inputs["T"])
  * @endcode
  *
- * `inputs` and `outputs` are dicts of float64 numpy arrays, keyed by tensor
+ * `inputs` and `outputs` are dicts of numpy arrays, keyed by tensor
  * name, that view the tensors' memory: nothing is copied, inputs are
  * read-only, and the model writes its results in place.
  *

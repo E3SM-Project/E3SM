@@ -32,4 +32,4 @@ target_include_directories(emulator_interface PUBLIC
                           ${CMAKE_CURRENT_SOURCE_DIR}/../coupler_api
 )
 
-target_link_libraries(emulator_interface PUBLIC E3SM::coupler_api emulator_common)
+target_link_libraries(emulator_interface PUBLIC E3SM::coupler_api emulator_common emulator_field_types)

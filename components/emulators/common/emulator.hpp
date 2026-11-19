@@ -7,8 +7,10 @@
 
 #include "emulator_config.hpp"
 #include "grid_types.hpp"
+#include <field_types.hpp>
 
 #include <coupler.hpp>
+#include <cstdint>
 #include <field_registry.hpp>
 #include <inference_backend.hpp>
 #include <moab_adapter.hpp>
@@ -21,6 +23,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace e3sm::emulator {
@@ -35,6 +38,7 @@ using namespace coupler;
  * emulator-specific behavior.
  */
 class Emulator {
+
 public:
   Emulator(const GridDesc grid, const EmulatorConfig emu_config);
   /// The backend and MOAB adapter clean up after themselves. Call finalize()
@@ -61,7 +65,7 @@ public:
   int id() const { return component_id_; }
   int moab_app_id() const { return moab_app_id_; }
   bool is_initialized() const { return m_initialized; }
-  int step_count() const { return m_step_count; }
+  int step_count() const { return step_count_; }
   void print_info(std::ostream& os) const;
 
   // Common coupling interface
@@ -97,25 +101,34 @@ public:
   // These throw if the name is both an input and an output; pass a role
   // instead.
   const EmulatorFieldDesc& get_field_descriptor(std::string_view name) const;
-  std::span<const double> get_field(std::string_view name);
-
   const EmulatorFieldDesc& get_field_descriptor(std::string_view name,
                                                 ModelFieldRole role) const;
-  std::span<const double> get_field(std::string_view name, ModelFieldRole role);
-  std::span<double> input_fields() { return std::span<double>{input_fields_}; };
-  std::span<double> output_fields() {
-    return std::span<double>{output_fields_};
-  };
 
-protected:
+  ConstFieldView get_field(std::string_view name);
+  ConstFieldView get_field(std::string_view name, ModelFieldRole role);
+
+  // Helpers to avoid get_field.as<double>()
+  template <FieldScalar T> std::span<const T> get_field(std::string_view name) {
+    return get_field(name).as<T>();
+  }
+  template <FieldScalar T>
+  std::span<const T> get_field(std::string_view name, ModelFieldRole role) {
+    return get_field(name,role).as<T>();
+  }
+
+  FieldView input_fields() { return input_fields_.view(); };
+  FieldView output_fields() { return output_fields_.view(); };
+
   template <typename Container>
   void register_import_field(FieldRegistry& registry, RegisteredField field,
                              Container& storage) {
+
     field.role = FieldRole::Import;
     field.component = name_;
     field.size = storage.size();
+    FieldView data{std::span{storage}};
 
-    coupling_.register_coupled_field(registry, std::move(field), storage);
+    coupling_.register_coupled_field(registry, std::move(field), data);
   }
   template <typename Container>
   void register_export_field(FieldRegistry& registry, RegisteredField field,
@@ -124,12 +137,14 @@ protected:
     field.component = name_;
     field.size = storage.size();
 
-    coupling_.register_coupled_field(registry, std::move(field), storage);
+    FieldView data{std::span{storage}};
+
+    coupling_.register_coupled_field(registry, std::move(field), data);
   }
 
   // Returns a view to part of the flat buffer that holds the field's data
-  std::span<double> field_view(const EmulatorFieldDesc& field);
-  std::span<double> field_view(std::string_view name);
+  FieldView field_view(const EmulatorFieldDesc& field);
+  FieldView field_view(std::string_view name);
 
   // Call this to register the emulator as an application with MOAB
   void register_with_moab();
@@ -147,7 +162,7 @@ private:
 
   bool m_initialized = false;
   bool m_finalized = false;
-  int m_step_count = 0;
+  int step_count_ = 0;
 
   // dimensions_ holds the domain info over which the emulator needs to be
   // allocated.
@@ -163,8 +178,8 @@ private:
 
   MoabTagDescriptor make_moab_tag(const EmulatorFieldDesc& desc) const;
   // Flat Buffers for inputs and outputs
-  std::vector<double> input_fields_;
-  std::vector<double> output_fields_;
+  FieldStorage input_fields_;
+  FieldStorage output_fields_;
 
   std::unique_ptr<inference::InferenceBackend> backend_;
 };

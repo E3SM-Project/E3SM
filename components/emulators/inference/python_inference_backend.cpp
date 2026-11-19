@@ -3,9 +3,9 @@
  * @brief Python inference backend implementation.
  */
 
+#include "python_inference_backend.hpp"
 #include "fpe_guard.hpp"
 #include "inference_error.hpp"
-#include "python_inference_backend.hpp"
 
 // Python.h must come before any standard header
 #include <Python.h>
@@ -23,8 +23,8 @@ class GilGuard {
 public:
   GilGuard() : m_state(PyGILState_Ensure()) {}
   ~GilGuard() { PyGILState_Release(m_state); }
-  GilGuard(const GilGuard &) = delete;
-  GilGuard &operator=(const GilGuard &) = delete;
+  GilGuard(const GilGuard&) = delete;
+  GilGuard& operator=(const GilGuard&) = delete;
 
 private:
   PyGILState_STATE m_state;
@@ -34,13 +34,13 @@ private:
 class PyRef {
 public:
   PyRef() = default;
-  explicit PyRef(PyObject *obj) : m_obj(obj) {}
+  explicit PyRef(PyObject* obj) : m_obj(obj) {}
   ~PyRef() { reset(); }
 
-  PyRef(const PyRef &) = delete;
-  PyRef &operator=(const PyRef &) = delete;
-  PyRef(PyRef &&other) noexcept : m_obj(other.m_obj) { other.m_obj = nullptr; }
-  PyRef &operator=(PyRef &&other) noexcept {
+  PyRef(const PyRef&) = delete;
+  PyRef& operator=(const PyRef&) = delete;
+  PyRef(PyRef&& other) noexcept : m_obj(other.m_obj) { other.m_obj = nullptr; }
+  PyRef& operator=(PyRef&& other) noexcept {
     if (this != &other) {
       reset();
       m_obj = other.m_obj;
@@ -49,7 +49,7 @@ public:
     return *this;
   }
 
-  PyObject *get() const { return m_obj; }
+  PyObject* get() const { return m_obj; }
   explicit operator bool() const { return m_obj != nullptr; }
 
 private:
@@ -61,12 +61,12 @@ private:
     m_obj = nullptr;
   }
 
-  PyObject *m_obj = nullptr;
+  PyObject* m_obj = nullptr;
 };
 
-std::string to_string(PyObject *obj) {
+std::string to_string(PyObject* obj) {
   PyRef str(obj != nullptr ? PyObject_Str(obj) : nullptr);
-  const char *utf8 = str ? PyUnicode_AsUTF8(str.get()) : nullptr;
+  const char* utf8 = str ? PyUnicode_AsUTF8(str.get()) : nullptr;
   if (utf8 == nullptr) {
     PyErr_Clear();
     return "";
@@ -96,7 +96,7 @@ std::string take_error() {
   PyRef trace_obj(PyException_GetTraceback(value.get()));
   PyRef lines(module ? PyObject_CallMethod(
                            module.get(), "format_exception", "OOO",
-                           reinterpret_cast<PyObject *>(Py_TYPE(value.get())),
+                           reinterpret_cast<PyObject*>(Py_TYPE(value.get())),
                            value.get(), trace_obj ? trace_obj.get() : Py_None)
                      : nullptr);
   PyRef empty(PyUnicode_FromString(""));
@@ -108,21 +108,21 @@ std::string take_error() {
 }
 
 /// Own a new reference, or throw the pending Python exception.
-PyRef checked(PyObject *obj, const std::string &doing) {
+PyRef checked(PyObject* obj, const std::string& doing) {
   if (obj == nullptr) {
     throw InferenceError("Python error while " + doing + ":\n" + take_error());
   }
   return PyRef(obj);
 }
 
-void set_item(const PyRef &dict, const std::string &key, const PyRef &value) {
+void set_item(const PyRef& dict, const std::string& key, const PyRef& value) {
   if (PyDict_SetItemString(dict.get(), key.c_str(), value.get()) != 0) {
     throw InferenceError("Python error while setting '" + key + "':\n" +
                          take_error());
   }
 }
 
-PyRef py_string(const std::string &s) {
+PyRef py_string(const std::string& s) {
   return checked(PyUnicode_FromString(s.c_str()), "converting a string");
 }
 
@@ -131,7 +131,7 @@ PyRef py_int(long long value) {
 }
 
 /// Prepend colon-separated directories to sys.path; the first one wins.
-void prepend_sys_path(const std::string &paths) {
+void prepend_sys_path(const std::string& paths) {
   std::vector<std::string> entries;
   std::istringstream stream(paths);
   for (std::string entry; std::getline(stream, entry, ':');) {
@@ -139,7 +139,7 @@ void prepend_sys_path(const std::string &paths) {
       entries.push_back(entry);
     }
   }
-  PyObject *sys_path = PySys_GetObject("path"); // borrowed
+  PyObject* sys_path = PySys_GetObject("path"); // borrowed
   EMULATOR_INFER_REQUIRE(sys_path != nullptr, "Python has no sys.path.");
   for (auto it = entries.rbegin(); it != entries.rend(); ++it) {
     PyRef entry = py_string(*it);
@@ -150,9 +150,9 @@ void prepend_sys_path(const std::string &paths) {
 }
 
 /// The dict handed to the factory.
-PyRef config_dict(const InferenceConfig &config) {
+PyRef config_dict(const InferenceConfig& config) {
   PyRef dict = checked(PyDict_New(), "building the config");
-  for (const auto &option : config.options) {
+  for (const auto& option : config.options) {
     set_item(dict, option.first, py_string(option.second));
   }
   set_item(dict, "model_path", py_string(config.model_path));
@@ -163,10 +163,11 @@ PyRef config_dict(const InferenceConfig &config) {
 }
 
 /// A numpy array that views (does not copy) a tensor's memory.
-PyRef as_numpy(const PyRef &numpy, const Tensor &tensor, const double *data,
+PyRef as_numpy(const PyRef& numpy, const Tensor& tensor, const void* data,
                bool writable) {
+
   const std::string doing = "wrapping tensor '" + tensor.name() + "'";
-  const auto &dims = tensor.dims();
+  const auto& dims = tensor.dims();
 
   PyRef shape =
       checked(PyTuple_New(static_cast<Py_ssize_t>(dims.size())), doing);
@@ -189,12 +190,12 @@ PyRef as_numpy(const PyRef &numpy, const Tensor &tensor, const double *data,
   }
 
   // PyBUF_READ is what makes the array read-only, despite the cast
-  PyRef memory = checked(
-      PyMemoryView_FromMemory(
-          const_cast<char *>(reinterpret_cast<const char *>(data)),
-          static_cast<Py_ssize_t>(tensor.size() * sizeof(double)),
-          writable ? PyBUF_WRITE : PyBUF_READ),
-      doing);
+  PyRef memory =
+      checked(PyMemoryView_FromMemory(
+                  const_cast<char*>(reinterpret_cast<const char*>(data)),
+                  static_cast<Py_ssize_t>(tensor.size() * sizeof(double)),
+                  writable ? PyBUF_WRITE : PyBUF_READ),
+              doing);
   PyRef flat = checked(PyObject_CallMethod(numpy.get(), "frombuffer", "Os",
                                            memory.get(), "float64"),
                        doing);
@@ -209,7 +210,7 @@ struct PythonBackend::Impl {
   PyRef model; ///< What the factory returned
 };
 
-PythonBackend::PythonBackend(const InferenceConfig &config)
+PythonBackend::PythonBackend(const InferenceConfig& config)
     : InferenceBackend(config), impl_(new Impl()) {
   const std::string module_name = config.get("python_module");
   const std::string factory_name =
@@ -246,25 +247,25 @@ PythonBackend::~PythonBackend() {
   }
   try {
     finalize();
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     // Destructors must not throw, and this can run during stack unwinding
     std::cerr << e.what() << std::endl;
   }
 }
 
-bool PythonBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
+bool PythonBackend::infer(const TensorMap& inputs, TensorMap& outputs) {
   EMULATOR_INFER_REQUIRE(impl_, "The Python backend was finalized.");
 
   GilGuard gil;
   FpeGuard no_fpe;
 
   PyRef in = checked(PyDict_New(), "building the inputs");
-  for (const auto &tensor : inputs) {
+  for (const auto& tensor : inputs) {
     set_item(in, tensor.name(),
              as_numpy(impl_->numpy, tensor, tensor.cdata(), false));
   }
   PyRef out = checked(PyDict_New(), "building the outputs");
-  for (auto &tensor : outputs) {
+  for (auto& tensor : outputs) {
     set_item(out, tensor.name(),
              as_numpy(impl_->numpy, tensor, tensor.data(), true));
   }

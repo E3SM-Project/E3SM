@@ -1,5 +1,6 @@
 #include "harness.hpp"
 #include "external_process.hpp"
+#include "field_registry.hpp"
 
 #include <coupler.hpp>
 #include <emulator.hpp>
@@ -9,13 +10,25 @@
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace e3sm::emulator {
 static_assert(CoupledProcess<ExternalProcess>);
 
 namespace {
 
-coupler::ComponentIntervals calc_coupling_intervals() {}
+ExternalBindings make_bindings_from_hook(Hook& hook) {
+  ExternalBindings bindings;
+
+  for (auto& field : hook.fields) {
+    auto& buffer = (field.desc.role == FieldRole::Export)
+                       ? bindings.to_external
+                       : bindings.from_external;
+    buffer.emplace_back(field.desc.name, field.data);
+  }
+
+  return bindings;
+}
 
 } // namespace
 
@@ -42,8 +55,43 @@ void Harness::print_bindings(std::ostream& os) const {
   external_component_->print_bindings(os);
 }
 
-void Harness::initialize(const std::vector<CoupledFieldEntry>& coupled_fields,
-                         RouteBufferMap route_map) {
+void Harness::add_hook(Hook hook) {
+  if (initialized_) {
+    throw std::runtime_error(
+        "Cannot add hook after initialize has been called");
+  }
+
+  const std::string name = hook.process_desc.emulator_config.name;
+
+  if (processes_.contains(name)) {
+    throw std::runtime_error("Process " + name + " already added to Harness");
+  }
+
+  add_process(hook.process_desc);
+  add_bindings(make_bindings_from_hook(hook));
+
+  ProcessState& state = processes_.at(name);
+
+  for (HookedField& field : hook.fields) {
+    state.ops.emplace_back(std::move(field.mask), std::move(field.pack),
+                           std::move(field.unpack));
+  }
+}
+
+RouteBufferMap Harness::create_route_buffers() const {
+  RouteBufferMap map;
+  ExternalBindings& b = external_component_->get_bindings();
+
+  for (auto& f : b.from_external) {
+    map[f.name] = f.data;
+  }
+  for (auto& f : b.to_external) {
+    map[f.name] = f.data;
+  }
+  return map;
+}
+
+void Harness::initialize(const std::vector<CoupledFieldEntry>& coupled_fields) {
   if (initialized_) {
     throw std::runtime_error("Harness::initialize: already initialized");
   }
@@ -76,7 +124,7 @@ void Harness::initialize(const std::vector<CoupledFieldEntry>& coupled_fields,
     }
   }
 
-  driver_.initialize(coupled_fields, route_map, intervals);
+  driver_.initialize(coupled_fields, create_route_buffers(), intervals);
   initialized_ = true;
 }
 

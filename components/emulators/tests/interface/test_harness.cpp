@@ -1,14 +1,16 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include <algorithm>
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <emulator_config.hpp>
-#include <filesystem>
 #include <harness.hpp>
+#include <hook.hpp>
 #include <process.hpp>
+
+#include <algorithm>
+#include <filesystem>
 #include <sstream>
 #include <string_view>
 
@@ -17,6 +19,7 @@ enum class Layout {
   Contiguous,
 };
 using namespace e3sm::emulator;
+
 static constexpr double sentinel = -999;
 static constexpr std::size_t ncols = 2;
 static constexpr std::size_t nlevels = 3;
@@ -82,6 +85,7 @@ struct FakeExt {
   std::span<double> temperature();
   std::span<double> moisture();
 
+  Hook make_hook(ProcessDescriptor);
   Layout layout;
   std::vector<double> x2l;
   std::vector<double> l2x;
@@ -117,6 +121,21 @@ std::span<double> FakeExt::surface_flux() {
   return std::span<double>{l2x.data() + indices[2].offset, indices[2].extent};
 }
 
+Hook FakeExt::make_hook(ProcessDescriptor desc) {
+
+  Hook hook{
+      .name = desc.emulator_config.name,
+      .process_desc = std::move(desc),
+      .fields = {},
+  };
+
+  // Roles are relative to the emulator.
+  hook.add_field({"temperature", FieldRole::Import}, temperature());
+  hook.add_field({"soil_moisture", FieldRole::Import}, moisture());
+  hook.add_field({"surface_flux", FieldRole::Export}, surface_flux());
+  return hook;
+}
+
 TEST_CASE("Harness reports misuse clearly", "[harness]") {
   using Catch::Contains;
   Harness harness;
@@ -126,8 +145,7 @@ TEST_CASE("Harness reports misuse clearly", "[harness]") {
                           Contains("before initialize()"));
 
   std::ostringstream out;
-  REQUIRE_THROWS_WITH(harness.print_bindings(out),
-                      Contains("add_bindings()"));
+  REQUIRE_THROWS_WITH(harness.print_bindings(out), Contains("add_bindings()"));
 
   // harness.add_bindings(ExternalBindings{});
   // REQUIRE_THROWS_WITH(harness.add_bindings(ExternalBindings{}),
@@ -151,7 +169,8 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
       .grid = make_test_grid(),
       .emulator_config = config,
   });
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/test_prognostic_plan.yaml");
+  auto coupled_fields = read_coupling_fields_from_yaml(
+      TEST_DATA_DIR "/test_prognostic_plan.yaml");
   harness.initialize(coupled_fields);
 
   auto& emulator = harness.get_process<Emulator>(std::string_view(config.name));
@@ -171,18 +190,24 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
 
   // The stub backend leaves outputs unchanged, so set what the model would
   // write
-  std::ranges::copy(Doubles{11.0, 21.0}, emulator.output_fields().begin());
+  std::ranges::copy(Doubles{11.0, 21.0},
+                    emulator.output_fields().as<double>().begin());
+
   step();
-  REQUIRE(values(emulator.get_field("state", ModelFieldRole::Input)) ==
+
+  REQUIRE(values(emulator.get_field<double>("state", ModelFieldRole::Input)) ==
           Doubles{10.0, 20.0});
-  REQUIRE(values(emulator.get_field("state", ModelFieldRole::Output)) ==
+
+  REQUIRE(values(emulator.get_field<double>("state", ModelFieldRole::Output)) ==
           Doubles{11.0, 21.0});
+
   REQUIRE(state == Doubles{11.0, 21.0});
 
   // The next step reads back the previous output
-  std::ranges::copy(Doubles{12.0, 22.0}, emulator.output_fields().begin());
+  std::ranges::copy(Doubles{12.0, 22.0},
+                    emulator.output_fields().as<double>().begin());
   step();
-  REQUIRE(values(emulator.get_field("state", ModelFieldRole::Input)) ==
+  REQUIRE(values(emulator.get_field<double>("state", ModelFieldRole::Input)) ==
           Doubles{11.0, 21.0});
   REQUIRE(state == Doubles{12.0, 22.0});
 }
@@ -218,7 +243,8 @@ TEST_CASE("Harness runs a process every coupling_interval calls", "[harness]") {
         harness.get_process<Emulator>(std::string_view(config.name));
 
     const auto input = [&emulator] {
-      const auto span = emulator.get_field("state", ModelFieldRole::Input);
+      const auto span =
+          emulator.get_field<double>("state", ModelFieldRole::Input);
       return Doubles(span.begin(), span.end());
     };
 
@@ -284,7 +310,6 @@ TEST_CASE("Harness preserves results across external buffer layouts",
   FieldDim x2l_dims{ncols, ncols * nlevels};
   FieldDim l2x_dims{ncols};
   FakeExt direct{Layout::Contiguous, x2l_dims, l2x_dims};
-  // FakeExt strided{Layout::Strided};
 
   REQUIRE(direct.x2l.size() == ncols * (1 + nlevels));
   REQUIRE(direct.l2x.size() == ncols);
@@ -300,28 +325,12 @@ TEST_CASE("Harness preserves results across external buffer layouts",
     }
   }
 
-  ExternalBindings bindings{
-      .to_external =
-          {
-              {"surface_flux", direct.surface_flux()},
-          },
-      .from_external =
-          {
-              {"temperature", direct.temperature()},
-              {"soil_moisture", direct.moisture()},
-          },
-  };
-
-  direct.harness.add_bindings(bindings);
-  direct.harness.add_process(ProcessDescriptor{
+  direct.harness.add_hook(direct.make_hook(ProcessDescriptor{
       .run_opts = ProcessRunOpts{.dt = 1., .coupling_interval = 1},
       .grid = make_test_grid(),
       .emulator_config = land_config,
-  });
-  direct.harness.initialize(coupled_fields,
-      RouteBufferMap{{"surface_flux", direct.surface_flux()},
-                     {"temperature", direct.temperature()},
-                     {"soil_moisture", direct.moisture()}});
+  }));
+  direct.harness.initialize(coupled_fields);
 
   Emulator& land_emu =
       direct.harness.get_process<Emulator>(std::string_view(p_name));
@@ -341,7 +350,7 @@ TEST_CASE("Harness preserves results across external buffer layouts",
 
     REQUIRE(direct_flux.size() == ncols);
 
-    auto land_flux = land_emu.get_field("surface_flux");
+    auto land_flux = land_emu.get_field<double>("surface_flux");
     // NOTE: This should relfect what the libtorch model actually calculates!!
     //      return 2.0 * temperature + 100.0 * soil_moisture.mean(dim=1)
     for (std::size_t column = 0; column < ncols; ++column) {

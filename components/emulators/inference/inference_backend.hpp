@@ -9,6 +9,8 @@
 #include "inference_config.hpp"
 #include "tensor.hpp"
 
+#include <field_types.hpp>
+
 #include <string>
 
 namespace e3sm::emulator::inference {
@@ -34,13 +36,13 @@ enum class BackendType {
  */
 class InferenceBackend {
 public:
-  explicit InferenceBackend(const InferenceConfig &config) : config_(config) {}
+  explicit InferenceBackend(const InferenceConfig& config) : config_(config) {}
   virtual ~InferenceBackend() = default;
 
   /**
    * @brief Access the configuration for this backend.
    */
-  const InferenceConfig &config() const { return config_; }
+  const InferenceConfig& config() const { return config_; }
 
   /**
    * @brief Run inference.
@@ -49,7 +51,7 @@ public:
    * @return true if inference succeeded
    * @throws InferenceError on misuse, e.g. a shape mismatch
    */
-  virtual bool infer(const TensorMap &inputs, TensorMap &outputs) = 0;
+  virtual bool infer(const TensorMap& inputs, TensorMap& outputs) = 0;
 
   /**
    * @brief Run inference on flat arrays.
@@ -62,7 +64,7 @@ public:
    * @param batch_size Number of samples in the batch
    * @return true if inference succeeded
    */
-  bool infer(const double *inputs, double *outputs, int batch_size = 1);
+  bool infer(ConstFieldView inputs, FieldView outputs, int batch_size = 1);
 
   /**
    * @brief Release resources and finalize the backend.
@@ -78,6 +80,6 @@ private:
   InferenceConfig config_; ///< Backend configuration
 };
 
-} // namespace emulator::inference
+} // namespace e3sm::emulator::inference
 
 #endif // E3SM_EMULATOR_INFERENCE_BACKEND_HPP

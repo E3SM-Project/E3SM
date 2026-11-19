@@ -24,7 +24,7 @@ These names are a convention. The code takes the paths as arguments, so the file
 - `coupler_api/`: API layer for emulators to exchange data with other emulators.
 - `interface/`: implementation of the `Harness` to allow emulators to exchange with `CPL7`.
 - `scripts/`: python helpers for generating configuration files, along with other tools. See `scripts/README.md`.
-- `tests/`: tests for the emulator and inference layers, along with their fixtures. `coupler_api/` and `interface/` have their own `tests/` directories.
+- `tests/`: tests for the emulator, inference, and interface layers, along with their fixtures. `coupler_api/` has their own `tests/` directories.
 
 ## Configuration
 

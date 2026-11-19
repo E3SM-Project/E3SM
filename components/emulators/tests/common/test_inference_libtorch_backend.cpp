@@ -1,4 +1,5 @@
 // Catch2 v2 single header
+#include "field_types.hpp"
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
@@ -19,13 +20,13 @@ using Dims = std::vector<std::int64_t>;
 const Dims kDims{1, 3, 2, 4};
 
 // Fixtures are written at build time by fixtures/make_libtorch_fixture.py
-InferenceConfig fixture(const std::string &name) {
+InferenceConfig fixture(const std::string& name) {
   InferenceConfig config;
   config.model_path = std::string(EMULATOR_TEST_TORCH_FIXTURE_DIR) + "/" + name;
   return config;
 }
 
-std::shared_ptr<InferenceBackend> create(const InferenceConfig &config) {
+std::shared_ptr<InferenceBackend> create(const InferenceConfig& config) {
   return create_backend(BackendType::LIBTORCH, config);
 }
 
@@ -36,12 +37,12 @@ std::vector<double> ramp(std::size_t n = 24) {
   return v;
 }
 
-bool infer(InferenceBackend &backend, const std::vector<double> &x,
-           const Dims &x_dims, std::vector<double> &y, const Dims &y_dims) {
+bool infer(InferenceBackend& backend, std::span<const double> x,
+           const Dims& x_dims, std::span<double> y, const Dims& y_dims) {
   TensorMap inputs;
-  inputs.wrap("x", x.data(), x_dims);
+  inputs.wrap("x", x, x_dims);
   TensorMap outputs;
-  outputs.wrap("y", y.data(), y_dims);
+  outputs.wrap("y", FieldView{y}, y_dims);
   return backend.infer(inputs, outputs);
 }
 
@@ -76,7 +77,7 @@ TEST_CASE("LibTorchBackend flat-array inference", "[libtorch]") {
   const auto x = ramp(6);
   std::vector<double> y(6, 0.0);
 
-  REQUIRE(backend->infer(x.data(), y.data(), 2));
+  REQUIRE(backend->infer(x, y, 2));
   REQUIRE(y[5] == 13.0);
 }
 
@@ -112,10 +113,10 @@ TEST_CASE("LibTorchBackend fills several outputs in order", "[libtorch]") {
   std::vector<double> b(24, 0.0);
 
   TensorMap inputs;
-  inputs.wrap("x", x.data(), kDims);
+  inputs.wrap("x", x, kDims);
   TensorMap outputs;
-  outputs.wrap("a", a.data(), kDims);
-  outputs.wrap("b", b.data(), kDims);
+  outputs.wrap("a", FieldView{a}, kDims);
+  outputs.wrap("b", FieldView{b}, kDims);
 
   REQUIRE(backend->infer(inputs, outputs));
   REQUIRE(a[23] == 2.0 * x[23] + 1.0);
@@ -123,7 +124,7 @@ TEST_CASE("LibTorchBackend fills several outputs in order", "[libtorch]") {
 
   SECTION("and refuses a different number of outputs") {
     TensorMap one_output;
-    one_output.wrap("a", a.data(), kDims);
+    one_output.wrap("a", FieldView{a}, kDims);
     REQUIRE_THROWS_WITH(backend->infer(inputs, one_output),
                         Catch::Contains("2 tensor(s) but 1 output(s)"));
   }
@@ -207,7 +208,7 @@ TEST_CASE("LibTorchBackend never swaps CUDA for the CPU", "[libtorch]") {
   std::shared_ptr<InferenceBackend> backend;
   try {
     backend = create(config);
-  } catch (const InferenceError &e) {
+  } catch (const InferenceError& e) {
     REQUIRE_THAT(e.what(), Catch::Contains("no CUDA device"));
     return;
   }

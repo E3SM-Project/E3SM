@@ -1,14 +1,18 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
+
+#include "fake_components.hpp"
+
+#include <coupler.hpp>
+#include <coupler_driver.hpp>
+#include <field_types.hpp>
+
 #include <functional>
 #include <memory>
 
-#include "fake_components.hpp"
-#include <coupler.hpp>
-#include <coupler_driver.hpp>
-
 using namespace e3sm::emulator::coupler;
 using namespace e3sm::emulator::coupler::test;
+using e3sm::emulator::FieldView;
 
 static_assert(CoupledProcess<FakeAtmosphere>);
 static_assert(CoupledProcess<FakeLand>);
@@ -96,13 +100,13 @@ public:
                                       .component = "external",
                                       .name = "state",
                                       .size = state_.size()},
-                                     state_);
+                                     FieldView{state_});
     coupling_.register_coupled_field(registry,
                                      {.role = FieldRole::Export,
                                       .component = "external",
                                       .name = "state",
                                       .size = state_.size()},
-                                     state_);
+                                     FieldView{state_});
   }
   void configure_coupling(const ActiveCouplingFields& plan) {
     coupling_.configure(plan);
@@ -135,14 +139,18 @@ public:
 
   std::string_view name() const { return name_; }
   void populate_registry(FieldRegistry& registry) {
-    coupling_.register_coupled_field(
-        registry,
-        {.role = FieldRole::Import, .component = name_, .name = input_name_, .size = 1},
-        input_);
-    coupling_.register_coupled_field(
-        registry,
-        {.role = FieldRole::Export, .component = name_, .name = output_name_, .size = 1},
-        output_);
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Import,
+                                      .component = name_,
+                                      .name = input_name_,
+                                      .size = 1},
+                                     input_);
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Export,
+                                      .component = name_,
+                                      .name = output_name_,
+                                      .size = 1},
+                                     output_);
   }
   void configure_coupling(const ActiveCouplingFields& plan) {
     coupling_.configure(plan);
@@ -200,7 +208,8 @@ TEST_CASE("CouplerDriver rejects an unknown merge type") {
 TEST_CASE("A prognostic field advances through external storage") {
   std::vector<double> state{10.0, 20.0};
 
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/prognostic_plan.yaml");
+  auto coupled_fields =
+      read_coupling_fields_from_yaml(TEST_DATA_DIR "/prognostic_plan.yaml");
 
   CouplerDriver driver{};
   driver.add_component(std::make_unique<StatefulComponent>(state.size()));
@@ -222,12 +231,14 @@ TEST_CASE("A prognostic field advances through external storage") {
 TEST_CASE("A route into a slower component delivers a time mean") {
   using Catch::Matchers::Contains;
 
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/rate_plan.yaml");
+  auto coupled_fields =
+      read_coupling_fields_from_yaml(TEST_DATA_DIR "/rate_plan.yaml");
 
   CouplerDriver driver{};
   driver.add_component(make_fast());
   driver.add_component(make_slow());
-  driver.initialize(coupled_fields, RouteBufferMap{}, ComponentIntervals{{"fast", 1}, {"slow", 3}});
+  driver.initialize(coupled_fields, RouteBufferMap{},
+                    ComponentIntervals{{"fast", 1}, {"slow", 3}});
   auto& fast = driver.get_component_as<RateComponent>("fast");
   auto& slow = driver.get_component_as<RateComponent>("slow");
   const ProcessRunOpts opts{1.0, 1};
@@ -257,7 +268,8 @@ TEST_CASE("A route into a slower component delivers a time mean") {
 
 TEST_CASE("Routes deliver the latest value unless the destination is slower") {
   const auto final_slow_input = [](const ComponentIntervals& intervals) {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/rate_plan.yaml");
+    auto coupled_fields =
+        read_coupling_fields_from_yaml(TEST_DATA_DIR "/rate_plan.yaml");
 
     CouplerDriver driver{};
     driver.add_component(make_fast());
@@ -284,7 +296,8 @@ TEST_CASE("Routes deliver the latest value unless the destination is slower") {
 TEST_CASE("One route cannot deliver both a mean and the latest value") {
   using Catch::Matchers::Contains;
 
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/mixed_rate_plan.yaml");
+  auto coupled_fields =
+      read_coupling_fields_from_yaml(TEST_DATA_DIR "/mixed_rate_plan.yaml");
 
   CouplerDriver driver{};
   driver.add_component(make_fast());
@@ -293,8 +306,9 @@ TEST_CASE("One route cannot deliver both a mean and the latest value") {
       "sibling", "flux", "other", [](double input, int) { return input; }));
 
   REQUIRE_THROWS_WITH(
-      driver.initialize(coupled_fields, RouteBufferMap{},
-                        ComponentIntervals{{"fast", 1}, {"slow", 3}, {"sibling", 1}}),
+      driver.initialize(
+          coupled_fields, RouteBufferMap{},
+          ComponentIntervals{{"fast", 1}, {"slow", 3}, {"sibling", 1}}),
       Contains("'flux'") && Contains("separate routes"));
 }
 
@@ -302,7 +316,8 @@ TEST_CASE("Two routes cannot deliver to the same input") {
   using Catch::Matchers::Contains;
 
   std::vector<double> state(2, 0.0);
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/double_delivery_plan.yaml");
+  auto coupled_fields = read_coupling_fields_from_yaml(
+      TEST_DATA_DIR "/double_delivery_plan.yaml");
 
   CouplerDriver driver{};
   driver.add_component(std::make_unique<StatefulComponent>(state.size()));
@@ -327,16 +342,19 @@ TEST_CASE("FieldRegistry identifies a field by component, name, and role") {
   REQUIRE(registry.get_id("c", "f", FieldRole::Export) == export_id);
   REQUIRE(registry.get("c", "f", FieldRole::Export).size == 2);
 
-  REQUIRE_THROWS_WITH(
-      registry.register_field(
-          {.role = FieldRole::Export, .component = "c", .name = "f", .size = 2}),
-      Contains("'f'") && Contains("Export") && Contains("twice"));
+  REQUIRE_THROWS_WITH(registry.register_field({.role = FieldRole::Export,
+                                               .component = "c",
+                                               .name = "f",
+                                               .size = 2}),
+                      Contains("'f'") && Contains("Export") &&
+                          Contains("twice"));
 }
 
 TEST_CASE("CouplerDriver errors name the problem") {
   using Catch::Matchers::Contains;
   constexpr std::size_t ncols = 4;
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/fake_coupling.yaml");
+  auto coupled_fields =
+      read_coupling_fields_from_yaml(TEST_DATA_DIR "/fake_coupling.yaml");
 
   CouplerDriver driver{};
   driver.add_component(std::make_unique<FakeAtmosphere>(ncols));
@@ -351,56 +369,57 @@ TEST_CASE("CouplerDriver errors name the problem") {
   }
 
   SECTION("source that imports the field") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/source_imports_plan.yaml");
-    REQUIRE_THROWS_WITH(
-        driver.initialize(coupled_fields),
-        Contains("'surface_flux'") && Contains("'atm'") &&
-            Contains("Sources must export"));
+    auto coupled_fields = read_coupling_fields_from_yaml(
+        TEST_DATA_DIR "/source_imports_plan.yaml");
+    REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
+                        Contains("'surface_flux'") && Contains("'atm'") &&
+                            Contains("Sources must export"));
   }
 
   SECTION("destination that exports the field") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/destination_exports_plan.yaml");
-    REQUIRE_THROWS_WITH(
-        driver.initialize(coupled_fields),
-        Contains("'temperature'") && Contains("'atm'") &&
-            Contains("Destinations must import"));
+    auto coupled_fields = read_coupling_fields_from_yaml(
+        TEST_DATA_DIR "/destination_exports_plan.yaml");
+    REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
+                        Contains("'temperature'") && Contains("'atm'") &&
+                            Contains("Destinations must import"));
   }
 
   SECTION("component listed twice for a field") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/duplicate_destination_plan.yaml");
-    REQUIRE_THROWS_WITH(
-        driver.initialize(coupled_fields),
-        Contains("'temperature'") && Contains("'lnd'") &&
-            Contains("more than once"));
+    auto coupled_fields = read_coupling_fields_from_yaml(
+        TEST_DATA_DIR "/duplicate_destination_plan.yaml");
+    REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
+                        Contains("'temperature'") && Contains("'lnd'") &&
+                            Contains("more than once"));
   }
 
   SECTION("field with no destinations") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/no_destinations_plan.yaml");
-    REQUIRE_THROWS_WITH(
-        driver.initialize(coupled_fields),
-        Contains("'temperature'") && Contains("no destinations"));
+    auto coupled_fields = read_coupling_fields_from_yaml(
+        TEST_DATA_DIR "/no_destinations_plan.yaml");
+    REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
+                        Contains("'temperature'") &&
+                            Contains("no destinations"));
   }
 
   SECTION("route without a field name") {
     std::vector<CoupledFieldEntry> coupled_fields;
-    REQUIRE_THROWS_WITH(
-        coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/missing_name_plan.yaml"),
-        Contains("missing_name_plan.yaml") && Contains("name"));
+    REQUIRE_THROWS_WITH(coupled_fields = read_coupling_fields_from_yaml(
+                            TEST_DATA_DIR "/missing_name_plan.yaml"),
+                        Contains("missing_name_plan.yaml") && Contains("name"));
   }
 
   SECTION("field the component did not register") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/unknown_field_plan.yaml");
-    REQUIRE_THROWS_WITH(
-        driver.initialize(coupled_fields),
-        Contains("'not_a_field'") && Contains("'atm'") &&
-            Contains("temperature"));
+    auto coupled_fields = read_coupling_fields_from_yaml(
+        TEST_DATA_DIR "/unknown_field_plan.yaml");
+    REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
+                        Contains("'not_a_field'") && Contains("'atm'") &&
+                            Contains("temperature"));
   }
 
   SECTION("component that was never added") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/unknown_component_plan.yaml");
-    REQUIRE_THROWS_WITH(
-        driver.initialize(coupled_fields),
-        Contains("'ocn'") && Contains("added to the driver"));
+    auto coupled_fields = read_coupling_fields_from_yaml(
+        TEST_DATA_DIR "/unknown_component_plan.yaml");
+    REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
+                        Contains("'ocn'") && Contains("added to the driver"));
   }
 
   SECTION("exchange before initialize") {
@@ -411,11 +430,12 @@ TEST_CASE("CouplerDriver errors name the problem") {
   }
 
   SECTION("unknown component name") {
-    auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/fake_coupling.yaml");
+    auto coupled_fields =
+        read_coupling_fields_from_yaml(TEST_DATA_DIR "/fake_coupling.yaml");
     driver.initialize(coupled_fields);
-    REQUIRE_THROWS_WITH(driver.get_component("ocn"),
-                        Contains("'ocn'") && Contains("atm") &&
-                            Contains("lnd"));
+    REQUIRE_THROWS_WITH(driver.get_component("ocn"), Contains("'ocn'") &&
+                                                         Contains("atm") &&
+                                                         Contains("lnd"));
   }
 }
 
@@ -426,7 +446,8 @@ TEST_CASE("CouplerDriver rejects destinations of a different size") {
   driver.add_component(std::make_unique<FakeAtmosphere>(4));
   driver.add_component(std::make_unique<FakeLand>(5));
 
-  auto coupled_fields = read_coupling_fields_from_yaml(TEST_DATA_DIR "/fake_coupling.yaml");
+  auto coupled_fields =
+      read_coupling_fields_from_yaml(TEST_DATA_DIR "/fake_coupling.yaml");
   REQUIRE_THROWS_WITH(driver.initialize(coupled_fields),
                       Contains("value(s)") && Contains("'atm'") &&
                           Contains("'lnd'"));
@@ -457,7 +478,7 @@ TEST_CASE("CouplerDriver registers and couples fake components") {
   REQUIRE(atm.precipitation().size() == ncols);
 
   // Create Run Opt
-  const ProcessRunOpts opts{3600.0,1};
+  const ProcessRunOpts opts{3600.0, 1};
 
   SECTION("atmosphere fields are exchanged to land") {
     driver.run_component(atm.name(), opts);

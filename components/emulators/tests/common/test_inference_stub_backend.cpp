@@ -28,8 +28,8 @@ TEST_CASE("StubBackend lifecycle", "[stub_backend]") {
   auto backend = create_backend(BackendType::STUB, config);
 
   // Run inference (no-op: outputs unchanged)
-  double inputs[4] = {1, 2, 3, 4};
-  double outputs[2] = {99, 99};
+  const std::vector<double> inputs{1, 2, 3, 4};
+  std::vector<double> outputs{99, 99};
 
   REQUIRE(backend->infer(inputs, outputs));
 
@@ -47,9 +47,9 @@ TEST_CASE("StubBackend tensor inference", "[stub_backend]") {
   std::vector<double> dT(12, -1.0);
 
   TensorMap inputs;
-  inputs.wrap("T", T.data(), {4, 3});
+  inputs.wrap("T", T, {4, 3});
   TensorMap outputs;
-  outputs.wrap("dT", dT.data(), {4, 3});
+  outputs.wrap("dT", FieldView{dT}, {4, 3});
 
   REQUIRE(backend->infer(inputs, outputs));
   REQUIRE(dT[0] == -1.0);
@@ -58,8 +58,8 @@ TEST_CASE("StubBackend tensor inference", "[stub_backend]") {
 TEST_CASE("Flat-array inference needs channel counts", "[stub_backend]") {
   auto backend = create_backend(BackendType::STUB, InferenceConfig());
 
-  const double inputs[4] = {1, 2, 3, 4};
-  double outputs[2] = {99, 99};
+  const std::vector<double> inputs{1, 2, 3, 4};
+  std::vector<double> outputs{99, 99};
 
   REQUIRE_THROWS_AS(backend->infer(inputs, outputs), InferenceError);
 }
