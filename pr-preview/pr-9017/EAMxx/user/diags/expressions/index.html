@@ -5433,10 +5433,19 @@ is an honest analogue.</p>
   <code>(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))</code>,
   where the <code>where(..)</code> keeps the division away from levels with no cloud.
   Fields sampled at the same position and phase share one computation of the
-  weights. See <a href="../../../technical/aerocom_cldtop/">the AeroCom algorithm</a>.</li>
-<li>Histogram bin edges are numbers in increasing order. They may be negative,
-  and may be written with an exponent (<code>bins=[-1,0,1e-5,1e-4]</code>).</li>
+  weights. See <a href="../../../technical/aerocom_cldtop/">the AeroCom algorithm</a>.
+  In an output yaml, the <code>aliases:</code> section saves typing the weights in full
+  for every field:</li>
 </ul>
+<p><div class="highlight"><pre><span></span><code><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">icetop := cldfrac_tot.aerocom_weights('top', phase='ice')</span>
+<span class="nt">field_names</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rel_liqtop := eff_radius_qc.sum('lev', weights=liqtop)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rei_icetop := eff_radius_qi.sum('lev', weights=icetop)</span>
+</code></pre></div>
+- Histogram bin edges are numbers in increasing order. They may be negative,
+  and may be written with an exponent (<code>bins=[-1,0,1e-5,1e-4]</code>).</p>
 <p>Named quantities are not operations, and stay plain names in an expression:
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
 and so on.</p>
