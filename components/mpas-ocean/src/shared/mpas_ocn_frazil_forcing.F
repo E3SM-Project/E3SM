@@ -765,7 +765,7 @@ contains
             frazilSalinityTendency(minLevelCell(iCell),iCell) = frazilSalinityTendency(minLevelCell(iCell),iCell) + &
                 max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) / rho_sw / dt
             accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
-                                                     newThicknessWeightedSaltContent * ppt_to_salt
+                                                     newThicknessWeightedSaltContent * ppt_to_salt ! in kg/m^2 for coupling
            endif
          endif ! if frazil ice is formed
       enddo   ! do iCell = 1, nCells
