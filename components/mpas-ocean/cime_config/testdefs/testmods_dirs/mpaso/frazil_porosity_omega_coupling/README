@@ -16,6 +16,14 @@ cavities and frazil under land ice (for example CRYO1850), so that frazil
 salt under land ice, which is always expelled back to the ocean, is also
 exercised.
 
+Frazil porosity is not supported with active land-ice thermodynamics, so
+the testmod also sets
+   config_land_ice_flux_mode = 'pressure_only'
+CRYO1850 otherwise uses 'standalone'. With 'pressure_only' the ice-shelf
+cavities and their pressure loading are kept, but melt fluxes are off.
+Frazil still forms under land ice (config_frazil_under_land_ice is .true.
+for CRYO1850).
+
 The conservation check analysis members are turned on in both components:
    config_AM_conservationCheck_enable = .true.
 Their energy, mass and salt budgets are written to the mpaso and mpassi

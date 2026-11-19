@@ -228,6 +228,13 @@ always applied under land ice, regardless of
 land ice, all of the extracted salt is returned to the top ocean layer of the
 cavity column, and none is added to ``accumulatedFrazilIceSalinity``.
 
+Frazil porosity is not supported with active land-ice thermodynamics. When
+``config_use_frazil_ice_porosity = .true.``, MPAS-Ocean stops with a critical
+error unless ``config_land_ice_flux_mode`` is ``'off'`` or
+``'pressure_only'``. With ``'pressure_only'``, ice-shelf cavities and their
+pressure loading are kept and frazil can still form under land ice, but there
+are no melt fluxes.
+
 As part of this change, the salt content in the frazil routine was made
 dimensionally consistent: salt mass is now computed as thickness times
 salinity times ice density times ``ppt_to_salt`` (kg m\ :sup:`-2`), in both
@@ -495,14 +502,18 @@ options, plus the following in ``user_nl_mpaso``:
    config_use_frazil_ice_porosity = .true.
    config_frazil_ice_porosity = 0.85
    config_expel_excess_frazil_salt = .false.
+   config_land_ice_flux_mode = 'pressure_only'
 
 A porosity below 1 is used so that the frazil salinity, :math:`0.85 \, S_k`,
 is lower than the ocean salinity. This exercises a variable frazil salinity
 that differs from both the ocean salinity and the fixed reference salinity.
 
 The test uses the CRYO1850 compset, which has ice-shelf cavities with frazil
-under land ice, so the land-ice exception is also exercised. The testmod
-turns on
+under land ice, so the land-ice exception is also exercised. CRYO1850
+defaults to ``config_land_ice_flux_mode = 'standalone'``, which is not
+supported with frazil porosity, so the testmod sets ``'pressure_only'``.
+This keeps the cavities and frazil under land ice but turns off melt fluxes.
+The testmod also turns on
 the conservation check analysis members in both MPAS-Ocean and MPAS-Seaice
 (``config_AM_conservationCheck_enable = .true.``). Their energy, mass and
 salt budgets are written to the component log files. Neither check stops the
