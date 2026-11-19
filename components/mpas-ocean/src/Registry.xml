@@ -2884,13 +2884,13 @@
 			 description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
 		<var name="fEdge" type="real" dimensions="nEdges" units="radians s^-1"
-			 description="Coriolis parameter at edges. On spherical meshes, computed at initialization as 2 Omega sin(lat) using SHR_CONST_OMEGA from the E3SM shared constants (values in the input file are ignored). On planar meshes, read from the input file."
+			 description="Coriolis parameter at edges."
 		/>
 		<var name="fVertex" type="real" dimensions="nVertices" units="radians s^-1"
-			 description="Coriolis parameter at vertices. On spherical meshes, computed at initialization as 2 Omega sin(lat) using SHR_CONST_OMEGA from the E3SM shared constants (values in the input file are ignored). On planar meshes, read from the input file."
+			 description="Coriolis parameter at vertices."
 		/>
 		<var name="fCell" type="real" dimensions="nCells" units="radians s^-1"
-			 description="Coriolis parameter at cell centers. On spherical meshes, computed at initialization as 2 Omega sin(lat) using SHR_CONST_OMEGA from the E3SM shared constants (values in the input file are ignored). On planar meshes, read from the input file."
+			 description="Coriolis parameter at cell centers."
 		/>
 		<var name="bed_elevation" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as negative distance from sea level. Used as input to replace topography input file."
