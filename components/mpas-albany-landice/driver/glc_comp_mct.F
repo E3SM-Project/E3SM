@@ -42,7 +42,6 @@ module glc_comp_mct
   use mpas_timekeeping
   use mpas_bootstrapping
   use mpas_dmpar
-  use mpas_constants
   use mpas_log
 
   use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -1388,7 +1387,7 @@ contains
 !
 ! !INPUT/OUTPUT PARAMETERS:
 
-    use shr_const_mod, only: SHR_CONST_PI
+    use shr_const_mod, only: SHR_CONST_PI, SHR_CONST_REARTH
 
     implicit none
     integer        , intent(in)    :: lsize
@@ -1516,7 +1515,8 @@ contains
 
       do i = 1, nCellsSolve
         n = n + 1
-        data(n) = areaCell(i) * 0.24635127E-13_RKIND  ! This is the conversion factor to rad^2
+        ! Convert m^2 to rad^2 with the same radius the coupler uses to convert back
+        data(n) = areaCell(i) / SHR_CONST_REARTH**2
       end do
       block_ptr => block_ptr % next
     end do
@@ -1547,7 +1547,7 @@ contains
 !  Set the domain tags (lat, lon, area, mask, frac) on the MOAB mesh for MALI;
 !  same values as the mct domain set by glc_domain_mct
 
-    use shr_const_mod, only: SHR_CONST_PI
+    use shr_const_mod, only: SHR_CONST_PI, SHR_CONST_REARTH
     use iMOAB, only: iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo
 
     implicit none
@@ -1621,7 +1621,8 @@ contains
       ! Note: only supporting planar meshes, same as glc_domain_mct
       do i = 1, nCellsSolve
         n = n + 1
-        data(n) = areaCell(i) * 0.24635127E-13_RKIND  ! This is the conversion factor to rad^2
+        ! Convert m^2 to rad^2 with the same radius the coupler uses to convert back
+        data(n) = areaCell(i) / SHR_CONST_REARTH**2
       end do
       block_ptr => block_ptr % next
     end do
@@ -1782,6 +1783,7 @@ contains
   subroutine glc_export_mct(g2x_g, errorCode)
 
    use li_mask
+   use shr_const_mod, only: SHR_CONST_TKFRZ, SHR_CONST_G
 
    !-------------------------------------------------------------------
 
@@ -1798,6 +1800,7 @@ contains
    type (block_type), pointer :: block
 
    real (kind=RKIND), pointer :: config_sea_level
+   real (kind=RKIND), pointer :: config_ice_density
    character(len=StrKIND), pointer :: config_basal_mass_bal_float
 
    type (mpas_pool_type), pointer :: meshPool
@@ -1824,6 +1827,7 @@ contains
     block => domain % blocklist
 
     call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
+    call mpas_pool_get_config(domain % configs, 'config_ice_density', config_ice_density)
     call mpas_pool_get_config(domain % configs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
     do while (associated(block))
@@ -1866,10 +1870,10 @@ contains
             endif
 
             g2x_g(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
-            g2x_g(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
+            g2x_g(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKFRZ  ! K to deg C
             ! layerThickness is not populated on init, so calculating like this instead:
             g2x_g(index_g2x_Sg_dztbot, n) = layerThicknessFractions(nVertLevels) * thickness(i) / 2.0
-            g2x_g(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
+            g2x_g(index_g2x_Sg_lithop, n) = Thickness(i)*config_ice_density*SHR_CONST_G  ! MALI's ice density
 
             !!!Mask configurations
             g2x_g(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
