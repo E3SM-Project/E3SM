@@ -1,4 +1,5 @@
 // Catch2 v2 single header
+#include "field_types.hpp"
 #include <memory>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
@@ -29,7 +30,7 @@ InferenceConfig fixture() {
   return config;
 }
 
-std::unique_ptr<InferenceBackend> create(const InferenceConfig &config) {
+std::unique_ptr<InferenceBackend> create(const InferenceConfig& config) {
   return create_backend(BackendType::PYTHON, config);
 }
 
@@ -46,10 +47,10 @@ TEST_CASE("PythonBackend runs a Python model in place", "[python]") {
   std::vector<double> row_sum(2, 0.0);
 
   TensorMap inputs;
-  inputs.wrap("x", x.data(), {2, 3});
+  inputs.wrap("x", ConstFieldView{x}, {2, 3});
   TensorMap outputs;
-  outputs.wrap("y", y.data(), {2, 3});
-  outputs.wrap("row_sum", row_sum.data(), {2});
+  outputs.wrap("y", FieldView{y}, {2, 3});
+  outputs.wrap("row_sum", FieldView{row_sum}, {2});
 
   // y = scale * x + step
   REQUIRE(backend->infer(inputs, outputs));
@@ -78,9 +79,9 @@ TEST_CASE("PythonBackend runs a torch.nn module", "[python][torch]") {
   std::vector<double> y(4, -999.0);
 
   TensorMap inputs;
-  inputs.wrap("x", x.data(), {2, 3});
+  inputs.wrap("x", x, {2, 3});
   TensorMap outputs;
-  outputs.wrap("y", y.data(), {2, 2});
+  outputs.wrap("y", FieldView{y}, {2, 2});
 
   // W = [[1,2,3],[4,5,6]], b = [0.5,-0.5]; the second row is clipped by ReLU
   REQUIRE(backend->infer(inputs, outputs));
@@ -99,10 +100,10 @@ TEST_CASE("PythonBackend accepts empty tensors", "[python]") {
   std::vector<double> row_sum;
 
   TensorMap inputs;
-  inputs.wrap("x", x.data(), {0, 3});
+  inputs.wrap("x", x, {0, 3});
   TensorMap outputs;
-  outputs.wrap("y", y.data(), {0, 3});
-  outputs.wrap("row_sum", row_sum.data(), {0});
+  outputs.wrap("y", FieldView{y}, {0, 3});
+  outputs.wrap("row_sum", FieldView{row_sum}, {0});
 
   REQUIRE(backend->infer(inputs, outputs));
 }
@@ -112,9 +113,9 @@ TEST_CASE("PythonBackend refuses a read-only output", "[python]") {
 
   const std::vector<double> x(3, 1.0);
   TensorMap inputs;
-  inputs.wrap("x", x.data(), {1, 3});
+  inputs.wrap("x", x, {1, 3});
   TensorMap outputs;
-  outputs.wrap("y", x.data(), {1, 3});
+  outputs.wrap("y", x, {1, 3});
 
   REQUIRE_THROWS_WITH(backend->infer(inputs, outputs),
                       Catch::Contains("read-only"));
@@ -153,9 +154,9 @@ TEST_CASE("PythonBackend reports Python errors with a traceback", "[python]") {
     const std::vector<double> x(3, 1.0);
     std::vector<double> y(3, 0.0);
     TensorMap inputs;
-    inputs.wrap("x", x.data(), {1, 3});
+    inputs.wrap("x", x, {1, 3});
     TensorMap outputs;
-    outputs.wrap("y", y.data(), {1, 3});
+    outputs.wrap("y", FieldView{y}, {1, 3});
 
     REQUIRE_THROWS_WITH(backend->infer(inputs, outputs),
                         Catch::Contains("deliberate failure in infer"));

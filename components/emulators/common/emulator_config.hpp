@@ -1,8 +1,9 @@
 #ifndef E3SM_EMULATOR_CONFIG_HPP
 #define E3SM_EMULATOR_CONFIG_HPP
 
-#include <inference_backend.hpp>
 #include <field_registry.hpp>
+#include <inference_backend.hpp>
+#include <field_types.hpp>
 
 #include <filesystem>
 #include <string>
@@ -17,7 +18,7 @@ enum class TensorLayout { SampleMajor, FeatureMajor };
  * @brief Enumeration of emulator types in E3SM.
  */
 enum class EmulatorType {
-  Process = 0, ///< Process emulator
+  Process = 0,  ///< Process emulator
   Component = 1 ///<
 };
 
@@ -44,7 +45,7 @@ struct ModelConfig {
 
 /**
  * @brief: Struct to hold information needed to allocate an emulator's
- * input/output field 
+ * input/output field
  *
  * @fields:
    - name
@@ -104,11 +105,11 @@ struct EmulatorFieldDesc {
   FieldConfig config;
   std::size_t offset;
   std::size_t size;
+  ScalarType type = ScalarType::Real64;
 };
 
 std::string to_string(const EmulatorFieldDesc& desc);
 
-
-} // namespace emulator
+} // namespace e3sm::emulator
 
 #endif

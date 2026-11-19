@@ -5,14 +5,15 @@
 
 #include "emulator.hpp"
 #include "emulator_config.hpp"
+#include "field_types.hpp"
 
 #include <coupler_driver.hpp>
 #include <create_inference_backend.hpp>
+#include <field_registry.hpp>
 #include <inference_backend.hpp>
 #include <inference_config.hpp>
 #include <moab_adapter.hpp>
 #include <process.hpp>
-#include <field_registry.hpp>
 
 #include <ekat_yaml.hpp>
 #include <moab/Types.hpp>
@@ -37,6 +38,7 @@ Emulator::make_registered_field(const EmulatorFieldDesc& field) {
       .role = role,
       .component = name_,
       .name = field.config.name,
+      .type = field.type,
       .size = field.size,
   };
 }
@@ -108,13 +110,12 @@ std::span<const EmulatorFieldDesc> Emulator::field_descriptors() const {
   return field_descriptors_;
 }
 
-std::span<const double> Emulator::get_field(std::string_view name) {
+ConstFieldView Emulator::get_field(std::string_view name) {
   const auto& desc = get_field_descriptor(name);
   return field_view(desc);
 }
 
-std::span<const double> Emulator::get_field(std::string_view name,
-                                            ModelFieldRole role) {
+ConstFieldView Emulator::get_field(std::string_view name, ModelFieldRole role) {
   const auto& desc = get_field_descriptor(name, role);
   return field_view(desc);
 }
@@ -130,9 +131,9 @@ std::size_t Emulator::local_field_size(const FieldConfig& field) const {
   for (const auto& dim_name : field.dimensions) {
     const auto& desc = dimension(dim_name);
     if (desc.local_extent == 0) {
-      throw std::runtime_error(
-          "Emulator '" + name_ + "': dimension '" + dim_name +
-          "' of field '" + field.name + "' has zero local extent");
+      throw std::runtime_error("Emulator '" + name_ + "': dimension '" +
+                               dim_name + "' of field '" + field.name +
+                               "' has zero local extent");
     }
     if (size > std::numeric_limits<std::size_t>::max() / desc.local_extent) {
       throw std::runtime_error("Inappropriate dimensions for field:\n" +
@@ -152,9 +153,10 @@ std::size_t Emulator::append_fields(std::span<const std::string> order,
   for (const std::string& field_name : order) {
     auto field = std::ranges::find(fields, field_name, &FieldConfig::name);
     if (field == fields.end()) {
-      const auto* order_key = role == ModelFieldRole::Input ? "input" : "output";
-      throw std::runtime_error("Emulator '" + name_ + "': field '" + field_name +
-                               "' is listed in " + order_key +
+      const auto* order_key =
+          role == ModelFieldRole::Input ? "input" : "output";
+      throw std::runtime_error("Emulator '" + name_ + "': field '" +
+                               field_name + "' is listed in " + order_key +
                                "_order but not defined in " + order_key + "s");
     }
     const auto field_size = local_field_size(*field);
@@ -177,14 +179,14 @@ std::size_t Emulator::append_fields(std::span<const std::string> order,
   return next_offset;
 }
 
-std::span<double> Emulator::field_view(const EmulatorFieldDesc& field) {
+FieldView Emulator::field_view(const EmulatorFieldDesc& field) {
   auto& buffer =
       field.role == ModelFieldRole::Input ? input_fields_ : output_fields_;
 
-  return std::span<double>{buffer.data() + field.offset, field.size};
+  return buffer.view().subspan(field.offset, field.size);
 }
 
-std::span<double> Emulator::field_view(std::string_view name) {
+FieldView Emulator::field_view(std::string_view name) {
   const auto& desc = get_field_descriptor(name);
   return field_view(desc);
 }
@@ -192,16 +194,16 @@ std::span<double> Emulator::field_view(std::string_view name) {
 Emulator::Emulator(const GridDesc grid, const EmulatorConfig emu_cfg)
     : config_path_("temp"), grid_(grid), emulator_config_(emu_cfg),
       component_id_(grid.id), moab_app_id_(-1), m_initialized(false),
-      m_step_count(0) {
+      step_count_(0) {
 
   if (grid.use_moab) {
     moab_.emplace(emu_cfg.name, component_id_,
-                   MoabPartition{
-                       .comm = grid_.comm,
-                       .global_ids = std::span<int>{grid_.col_gids},
-                       .latitudes = std::span<double>{grid_.lat},
-                       .longitudes = std::span<double>{grid_.lon},
-                   });
+                  MoabPartition{
+                      .comm = grid_.comm,
+                      .global_ids = std::span<int>{grid_.col_gids},
+                      .latitudes = std::span<double>{grid_.lat},
+                      .longitudes = std::span<double>{grid_.lon},
+                  });
   }
   initialize();
 }
@@ -227,9 +229,9 @@ void Emulator::apply_config(const EmulatorConfig& config) {
     backend_ = inference::create_backend(emulator_config_.model.backend_type,
                                          infer_config);
   } catch (const std::exception& e) {
-    throw std::runtime_error("Emulator '" + name_ +
-                             "': failed to create the inference backend: " +
-                             e.what());
+    throw std::runtime_error(
+        "Emulator '" + name_ +
+        "': failed to create the inference backend: " + e.what());
   }
 }
 
@@ -258,7 +260,7 @@ void Emulator::populate_registry(FieldRegistry& registry) {
 
   for (const auto& field : field_descriptors_) {
     coupling_.register_coupled_field(registry, make_registered_field(field),
-                                      field_view(field));
+                                     field_view(field));
   }
 }
 
@@ -267,7 +269,6 @@ void Emulator::run(const ProcessRunOpts opts) {
     throw std::runtime_error("Emulator '" + name_ +
                              "': run() called after finalize()");
   }
-
   // wrap input/output fields in tensor maps
   inference::TensorMap inputs = {}, outputs = {};
   for (const EmulatorFieldDesc& field : field_descriptors()) {
@@ -278,10 +279,9 @@ void Emulator::run(const ProcessRunOpts opts) {
       dims.push_back(static_cast<std::int64_t>(dim_desc.local_extent));
     }
     if (field.role == ModelFieldRole::Input) {
-      const double* data = values.data();
-      inputs.wrap(field.config.name, data, dims);
+      inputs.wrap(field.config.name, ConstFieldView{values}, dims);
     } else { // field_desc.role == ModelFieldRole::Output
-      outputs.wrap(field.config.name, values.data(), dims);
+      outputs.wrap(field.config.name, values, dims);
     }
   }
   try {
@@ -289,11 +289,12 @@ void Emulator::run(const ProcessRunOpts opts) {
       throw std::runtime_error("the backend reported a failure");
     }
   } catch (const std::exception& e) {
-    throw std::runtime_error("Emulator '" + name_ + "': inference failed at step " +
-                             std::to_string(m_step_count) + ": " + e.what());
+    throw std::runtime_error("Emulator '" + name_ +
+                             "': inference failed at step " +
+                             std::to_string(step_count_) + ": " + e.what());
   }
 
-  m_step_count++;
+  step_count_++;
 }
 
 void Emulator::finalize() {
@@ -330,7 +331,7 @@ void Emulator::print_info(std::ostream& os) const {
   os << "Emulator '" << name_ << "'\n";
   os << "  id            : " << component_id_ << "\n";
   os << "  initialized   : " << std::boolalpha << m_initialized << "\n";
-  os << "  step_count    : " << m_step_count << "\n";
+  os << "  step_count    : " << step_count_ << "\n";
 
   // Grid summary
   int nx = get_nx();

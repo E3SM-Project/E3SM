@@ -3,6 +3,7 @@
 
 #include <coupler.hpp>
 #include <field_registry.hpp>
+#include <field_types.hpp>
 #include <process.hpp>
 
 #include <ostream>
@@ -14,7 +15,7 @@ using namespace coupler;
 
 struct ExternalField {
   std::string name;
-  std::span<double> data;
+  FieldView data;
 };
 
 /**
@@ -47,9 +48,9 @@ public:
   }
 
   void run(const ProcessRunOpts opts) {
-    throw std::runtime_error(
-        "ExternalComponent::run: External only exchanges external buffers and cannot "
-        "be run");
+    throw std::runtime_error("ExternalComponent::run: External only exchanges "
+                             "external buffers and cannot "
+                             "be run");
   }
   std::span<const int> get_local_gids() { return coupling_.get_local_gids(); }
 
@@ -57,6 +58,8 @@ public:
 
   /// Diagnostic: writes every value of every bound field to os.
   void print_bindings(std::ostream& os) const;
+
+  ExternalBindings& get_bindings();
 
 private:
   ExternalBindings bindings_;

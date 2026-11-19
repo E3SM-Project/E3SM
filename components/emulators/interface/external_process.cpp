@@ -7,11 +7,11 @@
 #include <stdexcept>
 
 namespace e3sm::emulator {
+
 void ExternalProcess::attach_fields(ExternalBindings bindings) {
 
   std::ranges::move(bindings.to_external,
                     std::back_inserter(bindings_.to_external));
-
   std::ranges::move(bindings.from_external,
                     std::back_inserter(bindings_.from_external));
 }
@@ -48,15 +48,13 @@ void ExternalProcess::print_binding(std::ostream& os,
                                     const ExternalField& field) const {
 
   os << "      " << "::" << field.name << " ["
-     << " size=" << field.data.size()
-     << ", addr=" << static_cast<const void*>(field.data.data()) << "]\n";
+     << " size=" << field.data.size() << ", addr=" << field.data.addr()
+     << "]\n";
 
-  os << "       [ ";
-  for (std::size_t i = 0; i < field.data.size(); i++) {
-    os << field.data[i] << ", ";
-  }
-  os << "]\n";
+  os << field.data.print(10).str();
 }
+
+ExternalBindings& ExternalProcess::get_bindings() { return bindings_; }
 
 void ExternalProcess::print_bindings(std::ostream& os) const {
   os << " ---- to_external ----- \n";

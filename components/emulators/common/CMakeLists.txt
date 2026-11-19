@@ -30,5 +30,5 @@ target_include_directories(emulator_common PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 
-target_link_libraries(emulator_common PUBLIC E3SM::coupler_api)
+target_link_libraries(emulator_common PUBLIC E3SM::coupler_api emulator_field_types)
 

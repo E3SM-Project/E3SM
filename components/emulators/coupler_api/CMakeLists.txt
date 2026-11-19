@@ -53,7 +53,7 @@ target_include_directories(coupler_api
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-target_link_libraries(coupler_api PUBLIC ekat::YamlParser MOAB)
+target_link_libraries(coupler_api PUBLIC ekat::YamlParser MOAB emulator_field_types)
 
 target_compile_features(coupler_api PUBLIC cxx_std_20)
 

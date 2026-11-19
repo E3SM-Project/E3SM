@@ -2,6 +2,7 @@
 #define E3SM_COUPLER_HPP
 
 #include "field_registry.hpp"
+#include "field_types.hpp"
 
 #include <filesystem>
 #include <ostream>
@@ -11,8 +12,6 @@
 #include <unordered_map>
 
 namespace e3sm::emulator::coupler {
-
-using CouplingBuffer = FieldBuffer<double>;
 
 /**
  * @brief Holds yaml entries for active coupled fields
@@ -60,16 +59,21 @@ struct CouplingRoute {
   MergeType merge_type;
   std::string name;
   std::string field_name;
-  std::vector<FieldID> sources;
+  std::vector<FieldID> sources; 
   std::vector<FieldID> destinations;
-  std::vector<double> owned_buffer;
-  std::span<double> buffer;
+
+
+  FieldStorage owned_buffer;
+  FieldView buffer;
+
   std::string source_component;
   std::vector<std::string> destination_components;
+
+  // Accmulator details
   bool averages = false;
-  std::vector<double> accumulator;
   std::size_t n_samples = 0;
-  std::vector<double> mean;
+  FieldStorage accumulator;
+  FieldStorage mean;
 };
 
 /**
@@ -84,6 +88,9 @@ struct ActiveCouplingFields {
 
 /**
  * @brief Non-owning mapping to export and import buffers per component
+ * fields:
+  std::vector<ExportBuffer> exports;
+  std::vector<ImportBuffer> imports;
  */
 struct ComponentBuffers {
   std::vector<ExportBuffer> exports;
@@ -100,7 +107,7 @@ struct ComponentBuffers {
  * - build_routes: create routes from CoupledFieldEntry list
  * config file
  */
-using RouteBufferMap = std::unordered_map<std::string, std::span<double>>;
+using RouteBufferMap = std::unordered_map<std::string, FieldView>;
 
 /// How many base steps pass between runs of each component. A component that
 /// isn't listed, such as an external one, doesn't take part in averaging.
@@ -145,8 +152,9 @@ public:
   }
 
   void print_coupling_plan(std::ostream& os) const;
+
   void print_field_buffer(std::ostream& os, FieldID id,
-                          const std::span<const double> buffer,
+                          const ConstFieldView buffer,
                           std::size_t count = 0) const;
 
 private:
@@ -157,6 +165,8 @@ private:
 
   ComponentBuffers& component_buffers(std::string_view component_name);
 };
+
+
 
 } // namespace e3sm::emulator::coupler
 #endif

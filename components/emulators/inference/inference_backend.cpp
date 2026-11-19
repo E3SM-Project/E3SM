@@ -6,9 +6,11 @@
 #include "inference_backend.hpp"
 #include "inference_error.hpp"
 
+#include <field_types.hpp>
+
 namespace e3sm::emulator::inference {
 
-bool InferenceBackend::infer(const double *inputs, double *outputs, int batch_size) {
+bool InferenceBackend::infer(ConstFieldView inputs, FieldView outputs, int batch_size) {
   EMULATOR_INFER_REQUIRE(
       config_.input_channels > 0 && config_.output_channels > 0,
       "The flat-array infer() needs input_channels and output_channels, got "

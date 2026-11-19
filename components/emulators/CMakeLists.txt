@@ -154,6 +154,12 @@ if (STANDALONE_MODE)
 endif()
 
 
+add_library(emulator_field_types INTERFACE)
+
+target_include_directories(emulator_field_types INTERFACE
+  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>")
+
 # Add subdirectories
 add_subdirectory(common)
 add_subdirectory(interface)

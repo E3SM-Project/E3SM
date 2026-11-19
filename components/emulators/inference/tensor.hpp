@@ -6,6 +6,8 @@
 #ifndef E3SM_EMULATOR_INFERENCE_TENSOR_HPP
 #define E3SM_EMULATOR_INFERENCE_TENSOR_HPP
 
+#include <field_types.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -13,6 +15,7 @@
 
 namespace e3sm::emulator::inference {
 
+using SType = e3sm::emulator::ScalarType;
 /**
  * @brief A named, shaped, row-major buffer of doubles.
  *
@@ -25,56 +28,71 @@ namespace e3sm::emulator::inference {
  *
  * Move-only, so a large field is never copied by accident.
  */
+
+using Buffer = std::variant<FieldStorage,  // Owned, writable storage
+                            FieldView,     // Borrowed, writable storage
+                            ConstFieldView // Borrowed, read-only storage
+                            >;
 class Tensor {
+
 public:
-  /// @brief Allocate a zero-filled tensor.
-  Tensor(std::string name, std::vector<std::int64_t> dims);
+  /// @brief Allocate a zero-filled owned tensor.
+  Tensor(std::string name, std::vector<std::int64_t> dims,
+         SType type = SType::Real64);
 
   /// @brief View writable memory owned by the caller.
-  static Tensor view(std::string name, double *data,
-                     std::vector<std::int64_t> dims);
+  static Tensor from_view(std::string name, FieldView data,
+                          std::vector<std::int64_t> dims);
 
   /// @brief View read-only memory owned by the caller.
-  static Tensor const_view(std::string name, const double *data,
-                           std::vector<std::int64_t> dims);
+  static Tensor from_const_view(std::string name, ConstFieldView data,
+                                std::vector<std::int64_t> dims);
 
-  Tensor(const Tensor &) = delete;
-  Tensor &operator=(const Tensor &) = delete;
-  Tensor(Tensor &&) = default;
-  Tensor &operator=(Tensor &&) = default;
+  Tensor(const Tensor&) = delete;
+  Tensor& operator=(const Tensor&) = delete;
+  Tensor(Tensor&&) = default;
+  Tensor& operator=(Tensor&&) = default;
 
-  const std::string &name() const { return m_name; }
-  const std::vector<std::int64_t> &dims() const { return m_dims; }
+  FieldView view();
+  ConstFieldView view() const;
+
+  bool writable() const {
+    return !std::holds_alternative<ConstFieldView>(data_);
+  }
+
+  ScalarType scalar_type() const { return view().scalar_type(); }
+
+  const std::string& name() const { return name_; }
+  std::span<const std::int64_t> dims() const { return dims_; }
 
   /// @brief Total element count (product of dims).
-  std::int64_t size() const { return m_size; }
-
-  bool writable() const { return m_writable; }
-
-  /**
-   * @brief Writable pointer to the data (null if the tensor is empty).
-   * @throws InferenceError if this is a read-only view
-   */
-  double *data();
-
-  /// @brief Read-only pointer to the data (null if the tensor is empty).
-  const double *cdata() const { return m_data; }
+  std::int64_t size() const { return size_; }
 
   /// @brief "name[d0,d1,...]", for messages.
   std::string to_string() const;
 
+  const void* cdata() const { return view().addr(); }
+  void* data() {
+    return view().visit(
+        [](auto values) { return static_cast<void*>(values.data()); });
+  }
+
+  // More ergonomic access of elements for read/write:
+  //  Example:  Tensor x; x.as<double>()[1] = 2.0
+  template <FieldScalar T> std::span<T> as() { return view().template as<T>(); }
+
+  template <FieldScalar T> std::span<const T> as() const {
+    return view().template as<T>();
+  }
+
 private:
-  Tensor() = default;
+  // Constructor of view from external buffer
+  Tensor(std::string name, std::vector<std::int64_t> dims, Buffer buffer);
 
-  static Tensor make_view(std::string name, const double *data,
-                          std::vector<std::int64_t> dims, bool writable);
-
-  std::string m_name;
-  std::vector<std::int64_t> m_dims;
-  std::int64_t m_size = 0;
-  std::vector<double> m_storage; ///< Used only when the tensor owns its data
-  const double *m_data = nullptr;
-  bool m_writable = false;
+  std::string name_;
+  std::vector<std::int64_t> dims_;
+  std::int64_t size_ = 0;
+  Buffer data_;
 };
 
 /**
@@ -92,24 +110,21 @@ public:
   void add(Tensor tensor);
 
   /// @brief Append a view of writable caller memory.
-  void wrap(const std::string &name, double *data,
-            std::vector<std::int64_t> dims);
+  void wrap(const std::string& name, FieldView, std::vector<std::int64_t> dims);
 
   /// @brief Append a view of read-only caller memory.
-  void wrap(const std::string &name, const double *data,
+  void wrap(const std::string& name, ConstFieldView,
             std::vector<std::int64_t> dims);
 
-  std::size_t size() const { return m_tensors.size(); }
+  std::size_t size() const { return tensors_.size(); }
 
-  std::vector<Tensor>::iterator begin() { return m_tensors.begin(); }
-  std::vector<Tensor>::iterator end() { return m_tensors.end(); }
-  std::vector<Tensor>::const_iterator begin() const {
-    return m_tensors.begin();
-  }
-  std::vector<Tensor>::const_iterator end() const { return m_tensors.end(); }
+  std::vector<Tensor>::iterator begin() { return tensors_.begin(); }
+  std::vector<Tensor>::iterator end() { return tensors_.end(); }
+  std::vector<Tensor>::const_iterator begin() const { return tensors_.begin(); }
+  std::vector<Tensor>::const_iterator end() const { return tensors_.end(); }
 
 private:
-  std::vector<Tensor> m_tensors;
+  std::vector<Tensor> tensors_;
 };
 
 } // namespace e3sm::emulator::inference

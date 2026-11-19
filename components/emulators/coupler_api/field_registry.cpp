@@ -50,6 +50,10 @@ const RegisteredField& FieldRegistry::get(FieldID id) const {
   return fields_[id];
 }
 
+ ScalarType FieldRegistry::get_field_type(FieldID id) const {
+  return get(id).type;
+}
+
 FieldID FieldRegistry::get_id(const std::string& component,
                               const std::string& field_name,
                               FieldRole role) const {

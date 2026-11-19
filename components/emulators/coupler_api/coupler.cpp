@@ -1,5 +1,6 @@
 #include "coupler.hpp"
 #include "field_registry.hpp"
+#include "field_types.hpp"
 
 #include <ekat_yaml.hpp>
 
@@ -7,6 +8,7 @@
 #include <filesystem>
 #include <functional>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -153,7 +155,9 @@ void Coupler::build_routes(const std::vector<CoupledFieldEntry>& fields) {
     CouplingRoute route{.merge_type = field.merge_type,
                         .name = field.id,
                         .field_name = field.field_name};
+
     for (const auto& component : field.sources) {
+
       if (!registry_.contains(component, field.field_name, FieldRole::Export) &&
           registry_.contains(component, field.field_name, FieldRole::Import)) {
         throw std::runtime_error("Route '" + field.id + "': '" + component +
@@ -162,11 +166,13 @@ void Coupler::build_routes(const std::vector<CoupledFieldEntry>& fields) {
                                  "', but it only imports this field. Sources "
                                  "must export the field.");
       }
+
       const auto id =
           registry_.get_id(component, field.field_name, FieldRole::Export);
       route.sources.push_back(id);
       coupling_plans_[component].export_ids.push_back(id);
     }
+
     for (const auto& component : field.destinations) {
       if (!registry_.contains(component, field.field_name, FieldRole::Import) &&
           registry_.contains(component, field.field_name, FieldRole::Export)) {
@@ -236,12 +242,14 @@ void Coupler::build_buffers(RouteBufferMap external_buffers,
                                std::to_string(route.sources.size()) +
                                " are listed");
     }
+
+    // Create or bind storage for the coupling buffers
     const auto source_id = route.sources.front();
     const auto& source_field = registry_.get(source_id);
     RouteBufferMap::iterator it = external_buffers.find(route.name);
     if (it == external_buffers.end()) {
       route.owned_buffer.resize(source_field.size);
-      route.buffer = std::span(route.owned_buffer);
+      route.buffer = route.owned_buffer.view();
     } else {
       route.buffer = it->second;
       if (route.buffer.size() != source_field.size) {
@@ -253,6 +261,9 @@ void Coupler::build_buffers(RouteBufferMap external_buffers,
       }
     }
 
+    // Go through the coupling intervals of the source and destinations.
+    // If the source has any slower destination, it is given an accumulator pool
+    // so the destination will import the mean rather than the instaneous value
     route.source_component = source_field.component;
     route.destination_components.clear();
     route.averages = false;
@@ -270,6 +281,7 @@ void Coupler::build_buffers(RouteBufferMap external_buffers,
         ++n_slower_destinations;
       }
     }
+
     if (n_slower_destinations > 0) {
       if (n_slower_destinations != route.destinations.size()) {
         throw std::runtime_error(
@@ -279,10 +291,13 @@ void Coupler::build_buffers(RouteBufferMap external_buffers,
             "' and others don't, so they'd need different values. Use separate "
             "routes.");
       }
-      route.averages = true;
-      route.accumulator.assign(route.buffer.size(), 0.0);
-      route.mean.assign(route.buffer.size(), 0.0);
-      route.n_samples = 0;
+
+      if (registry_.get_field_type(source_id) == ScalarType::Real64) {
+        route.averages = true;
+        route.accumulator = FieldStorage::like(route.buffer);
+        route.mean = FieldStorage::like(route.buffer);
+        route.n_samples = 0;
+      }
     }
 
     auto& source_buffers = buffers_[source_field.component];
@@ -304,8 +319,7 @@ void Coupler::build_buffers(RouteBufferMap external_buffers,
 
       dest_buffer.imports.push_back({
           .id = dest_id,
-          .data = route.averages ? std::span<const double>(route.mean)
-                                 : std::span<const double>(route.buffer),
+          .data = route.averages ? route.mean.view() : route.buffer,
       });
     }
   } // routes loop
@@ -316,8 +330,12 @@ void Coupler::accumulate_exports(std::string_view component_name) {
     if (!route.averages || route.source_component != component_name) {
       continue;
     }
-    std::ranges::transform(route.accumulator, route.buffer,
-                           route.accumulator.begin(), std::plus<>{});
+
+    visit_matching(
+        route.accumulator.view(), route.buffer, [](auto sums, auto values) {
+          std::ranges::transform(sums, values, sums.begin(), std::plus<>{});
+        });
+
     ++route.n_samples;
   }
 }
@@ -336,29 +354,36 @@ void Coupler::prepare_imports(std::string_view component_name) {
           "' has exported nothing since the last import");
     }
     const auto n_samples = static_cast<double>(route.n_samples);
-    std::ranges::transform(route.accumulator, route.mean.begin(),
-                           [n_samples](double sum) { return sum / n_samples; });
-    std::ranges::fill(route.accumulator, 0.0);
+
+    // Calculate the mean and reset the accumulator
+    route.accumulator.view().visit([&](auto sums) {
+      using T = typename decltype(sums)::value_type;
+      if constexpr (std::is_floating_point_v<T>) {
+        auto means = route.mean.view().as<T>();
+
+        for (std::size_t i = 0; i < sums.size(); ++i) {
+          means[i] = sums[i] / n_samples;
+          sums[i] = T{0};
+        }
+      } else {
+        throw std::runtime_error("Averaging requires floating point types");
+      }
+    });
+
     route.n_samples = 0;
   }
 }
 
 void Coupler::print_field_buffer(std::ostream& os, FieldID id,
-                                 const std::span<const double> buffer,
+                                 const ConstFieldView buffer,
                                  std::size_t count) const {
   const auto& field = registry_.get(id);
 
   os << "      " << field.component << "::" << field.name << " [id=" << id
      << ", size=" << field.size << ", buffer_size=" << buffer.size()
-     << ", buffer=" << static_cast<const void*>(buffer.data()) << "]\n";
+     << ", buffer=" << buffer.addr() << "]\n";
 
-  if (count > 0) {
-    os << "       [ ";
-    for (std::size_t i = 0; i < std::min(count, buffer.size()); i++) {
-      os << buffer[i] << ", ";
-    }
-    os << "]\n";
-  }
+  os << buffer.print(count).str();
 }
 
 void Coupler::print_coupling_plan(std::ostream& os) const {

@@ -1,8 +1,16 @@
+/**
+ * @file: hook.hpp
+ *
+ */
 #ifndef E3SM_EMULATOR_HOOK_HPP
 #define E3SM_EMULATOR_HOOK_HPP
 
 #include "external_process.hpp"
-#include "harness.hpp"
+#include "field_registry.hpp"
+
+#include <emulator_config.hpp>
+#include <grid_types.hpp>
+#include <process.hpp>
 
 #include <cstdint>
 #include <filesystem>
@@ -13,12 +21,38 @@
 #include <vector>
 
 namespace e3sm::emulator {
+using namespace coupler;
 
 using RealField = std::span<double>;
 using IntField = std::span<int>;
+
+/**
+  // ProcessRunOpts run_opts
+  // GridDesc grid
+  // EmulatorConfig emulator_config
+*/
+struct ProcessDescriptor {
+  ProcessRunOpts run_opts;
+  GridDesc grid;
+  EmulatorConfig emulator_config;
+};
+
+// info needed to add a field to the hook
+//   name - field name
+//   Role - external binding field to look into.
+struct HookedFieldDesc {
+  std::string name;
+  FieldRole role;
+};
+
+using MaskType = std::vector<std::uint8_t>;
+using CallbackType = std::function<void(MaskType)>;
+
 struct HookedField {
 
-  std::string field_name;
+  HookedFieldDesc desc;
+
+  std::span<double> data;
 
   // mask is vector instead of span to allow temporary masks
   // but then there needs to be a way to update them via the api.
@@ -26,24 +60,32 @@ struct HookedField {
   // the same lifetime as the hook.
   std::vector<std::uint8_t> mask;
 
-  // using a variant here to make std::vector<HookedField> more ergonomic
-  // std::variant<RealField, IntField> data;
-
-  ExternalBindings bindings;
-
   // API decision:  for runtime dynamic masks (or other use cases)
   // we should make these functions take a HookContext struct as an argument.
   // but only if the needed is more common than not.
-  std::function<void()> pack;
-  std::function<void()> unpack;
+  std::function<void(MaskType)> pack;
+  std::function<void(MaskType)> unpack;
 };
 
+/**
+ * Hook:
+ * - std::string name;
+ * - ProcessDescriptor process_desc;
+ * - std::vector<HookedField> fields;
+ */
 struct Hook {
   std::string name;
-  ProcessDescriptor process;
-  std::filesystem::path emulator_config_file;
-  std::filesystem::path coupling_config_file;
+  ProcessDescriptor process_desc;
   std::vector<HookedField> fields;
+
+  void add_field(HookedFieldDesc desc, std::span<double> data, MaskType mask,
+                 CallbackType pack, CallbackType unpack);
+
+  // Convenient overloads:
+  void add_field(HookedFieldDesc desc, std::span<double> data) {
+    add_field(
+        std::move(desc), data, {}, [](MaskType mask) {}, [](MaskType mask) {});
+  }
 };
 
 } // namespace e3sm::emulator

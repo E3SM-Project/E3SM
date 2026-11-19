@@ -3,8 +3,9 @@
  * @brief Tensor and TensorMap implementation.
  */
 
-#include "inference_error.hpp"
 #include "tensor.hpp"
+#include "inference_error.hpp"
+#include <field_types.hpp>
 
 #include <utility>
 
@@ -12,7 +13,7 @@ namespace e3sm::emulator::inference {
 
 namespace {
 
-std::int64_t product(const std::vector<std::int64_t> &dims) {
+std::int64_t product(const std::vector<std::int64_t>& dims) {
   std::int64_t n = 1;
   for (std::int64_t d : dims) {
     EMULATOR_INFER_REQUIRE(
@@ -24,68 +25,89 @@ std::int64_t product(const std::vector<std::int64_t> &dims) {
 
 } // namespace
 
-Tensor::Tensor(std::string name, std::vector<std::int64_t> dims)
-    : m_name(std::move(name)), m_dims(std::move(dims)),
-      m_size(product(m_dims)), m_writable(true) {
-  m_storage.assign(static_cast<std::size_t>(m_size), 0.0);
-  m_data = m_storage.data();
+Tensor::Tensor(std::string name, std::vector<std::int64_t> dims, Buffer buffer)
+    : name_(std::move(name)), dims_(std::move(dims)), size_(product(dims_)),
+      data_(std::move(buffer)) {
+
+  const auto values = std::as_const(*this).view();
+
+  EMULATOR_INFER_REQUIRE(values.size() == static_cast<std::size_t>(size_),
+                         "Tensor '" << name_ << "': shape requires " << size_
+                                    << " elements, but buffer has "
+                                    << values.size() << ".");
+}
+Tensor::Tensor(std::string name, std::vector<std::int64_t> dims,
+               ScalarType type)
+    : Tensor(
+          std::move(name), dims,
+          Buffer{FieldStorage{type, static_cast<std::size_t>(product(dims))}}) {
 }
 
-Tensor Tensor::make_view(std::string name, const double *data,
-                         std::vector<std::int64_t> dims, bool writable) {
-  Tensor t;
-  t.m_name = std::move(name);
-  t.m_dims = std::move(dims);
-  t.m_size = product(t.m_dims);
-  EMULATOR_INFER_REQUIRE(data != nullptr || t.m_size == 0,
-                         "Null pointer for non-empty tensor view '" << t.m_name
-                                                                    << "'.");
-  t.m_data = data;
-  t.m_writable = writable;
-  return t;
+// Return the underlying View in the Buffer variant
+FieldView Tensor::view() {
+  return std::visit(
+      [](auto& buffer) -> FieldView {
+        using B = std::remove_cvref_t<decltype(buffer)>;
+
+        if constexpr (std::same_as<B, FieldStorage>) {
+          return buffer.view();
+        } else if constexpr (std::same_as<B, FieldView>) {
+          return buffer;
+        } else {
+          throw InferenceError("Tensor is a read-only view");
+        }
+      },
+      data_);
 }
 
-Tensor Tensor::view(std::string name, double *data,
-                    std::vector<std::int64_t> dims) {
-  return make_view(std::move(name), data, std::move(dims), true);
-}
+ConstFieldView Tensor::view() const {
+  return std::visit(
+      [](const auto& buffer) -> ConstFieldView {
+        using B = std::remove_cvref_t<decltype(buffer)>;
 
-Tensor Tensor::const_view(std::string name, const double *data,
-                          std::vector<std::int64_t> dims) {
-  return make_view(std::move(name), data, std::move(dims), false);
-}
-
-double *Tensor::data() {
-  EMULATOR_INFER_REQUIRE(m_writable,
-                         "Tensor '" << m_name << "' is a read-only view.");
-  // Writable tensors are only ever built from non-const memory.
-  return const_cast<double *>(m_data);
+        if constexpr (std::same_as<B, FieldStorage>) {
+          return buffer.view();
+        } else {
+          return buffer;
+        }
+      },
+      data_);
 }
 
 std::string Tensor::to_string() const {
-  std::string s = m_name + "[";
-  for (std::size_t i = 0; i < m_dims.size(); ++i) {
-    s += (i > 0 ? "," : "") + std::to_string(m_dims[i]);
+  std::string s = name_ + "[";
+  for (std::size_t i = 0; i < dims_.size(); ++i) {
+    s += (i > 0 ? "," : "") + std::to_string(dims_[i]);
   }
   return s + "]";
 }
 
 void TensorMap::add(Tensor tensor) {
-  for (const auto &t : m_tensors) {
+  for (const auto& t : tensors_) {
     EMULATOR_INFER_REQUIRE(t.name() != tensor.name(),
                            "Duplicate tensor name '" << tensor.name() << "'.");
   }
-  m_tensors.push_back(std::move(tensor));
+  tensors_.push_back(std::move(tensor));
 }
 
-void TensorMap::wrap(const std::string &name, double *data,
-                     std::vector<std::int64_t> dims) {
-  add(Tensor::view(name, data, std::move(dims)));
+Tensor Tensor::from_view(std::string name, FieldView data,
+                         std::vector<std::int64_t> dims) {
+  return Tensor(std::move(name), dims, Buffer{data});
 }
 
-void TensorMap::wrap(const std::string &name, const double *data,
+Tensor Tensor::from_const_view(std::string name, ConstFieldView data,
+                               std::vector<std::int64_t> dims) {
+  return Tensor(std::move(name), dims, Buffer{data});
+}
+
+void TensorMap::wrap(const std::string& name, FieldView data,
                      std::vector<std::int64_t> dims) {
-  add(Tensor::const_view(name, data, std::move(dims)));
+  add(Tensor::from_view(name, data, std::move(dims)));
+}
+
+void TensorMap::wrap(const std::string& name, ConstFieldView data,
+                     std::vector<std::int64_t> dims) {
+  add(Tensor::from_const_view(name, data, std::move(dims)));
 }
 
 } // namespace e3sm::emulator::inference

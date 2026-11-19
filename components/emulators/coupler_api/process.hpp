@@ -3,6 +3,7 @@
 
 #include "coupler.hpp"
 #include "field_registry.hpp"
+#include "field_types.hpp"
 
 #include <memory>
 #include <span>
@@ -116,25 +117,33 @@ private:
 };
 
 // helper class for implementing processes / components
+using FieldBufferList = std::vector<ExportBuffer>;
 class CouplingAdapter {
 public:
   void register_coupled_field(FieldRegistry& registry, RegisteredField metadata,
-                              std::span<double> data);
+                              FieldView data);
 
   void configure(const ActiveCouplingFields& plan);
 
-  void export_fields(std::span<ExportBuffer> buffers) const;
+  struct CopyLog {
+    FieldID id;
+    std::size_t bytes;
+    FieldRole role;
+  };
+  mutable std::vector<CopyLog> copies;
 
+  void export_fields(std::span<ExportBuffer> buffers) const;
   void import_fields(std::span<const ImportBuffer> buffers);
+
   std::span<const int> get_local_gids() const;
   void set_local_gids(std::vector<int> gids);
 
-  std::vector<FieldBinding> resolve(std::span<const FieldID> ids) const;
+  FieldBufferList resolve(std::span<const FieldID> ids) const;
+  FieldBufferList fields;
+  FieldBufferList active_exports;
+  FieldBufferList active_imports;
 
-  std::vector<FieldBinding> fields_;
-  std::vector<FieldBinding> active_exports_;
-  std::vector<FieldBinding> active_imports_;
-  std::vector<int> local_gids_;
+  std::vector<int> local_gids;
 };
 } // namespace e3sm::emulator::coupler
 #endif

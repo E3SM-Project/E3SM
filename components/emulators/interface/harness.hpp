@@ -27,6 +27,7 @@
  */
 
 #include "external_process.hpp"
+#include "hook.hpp"
 
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
@@ -34,26 +35,26 @@
 #include <grid_types.hpp>
 #include <process.hpp>
 
+#include <optional>
+
 namespace e3sm::emulator {
 
 using namespace coupler;
 
-/**
-  // ProcessRunOpts run_opts;
-  // GridDesc grid;
-  // EmulatorConfig emulator_config;
-*/
-struct ProcessDescriptor {
-  ProcessRunOpts run_opts;
-  GridDesc grid;
-  EmulatorConfig emulator_config;
-};
-
 class Harness {
+
+  struct FieldOps {
+    MaskType mask;
+    CallbackType pack;
+    CallbackType unpack;
+  };
+
   struct ProcessState {
     ProcessRunOpts run_opts;
     int calls_since_run = 0;
+    std::vector<FieldOps> ops;
   };
+
   using ProcessMap = std::map<std::string, ProcessState>;
 
 public:
@@ -66,11 +67,9 @@ public:
 
   // Sets bindings to those given. Pass in bindings using `std::move`.
   void add_bindings(ExternalBindings bindings);
+  void add_hook(Hook hook);
 
-  void initialize(const std::vector<CoupledFieldEntry>& coupled_fields, RouteBufferMap external);
-  void initialize(const std::vector<CoupledFieldEntry>& coupled_fields) {
-    initialize(coupled_fields, RouteBufferMap{});
-  }
+  void initialize(const std::vector<CoupledFieldEntry>& coupled_fields);
 
   /// Call once per base step.
   /// A process with a coupling_interval of N imports, runs, and exports on
@@ -83,6 +82,7 @@ public:
 
   /// Diagnostic: writes every value of every external binding to os.
   void print_bindings(std::ostream& os) const;
+  RouteBufferMap create_route_buffers() const;
 
   template <CoupledProcess C> C& get_process(std::string_view name) {
     return driver_.get_component_as<C>(name);

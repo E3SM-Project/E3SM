@@ -136,15 +136,15 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
   driver.run_component(forcing_emulator.name(), opts);
   driver.run_component(land_emulator.name(), opts);
 
-  REQUIRE(std::ranges::equal(forcing_emulator.get_field("temperature"),
-                             land_emulator.get_field("temperature")));
+  REQUIRE(std::ranges::equal(forcing_emulator.get_field<double>("temperature"),
+                             land_emulator.get_field<double>("temperature")));
 
-  REQUIRE(std::ranges::equal(forcing_emulator.get_field("soil_moisture"),
-                             land_emulator.get_field("soil_moisture")));
+  REQUIRE(std::ranges::equal(forcing_emulator.get_field<double>("soil_moisture"),
+                             land_emulator.get_field<double>("soil_moisture")));
 
   const auto temperature = land_emulator.get_field("temperature");
   const auto moisture = land_emulator.get_field("soil_moisture");
-  const auto flux = land_emulator.get_field("surface_flux");
+  const auto flux = land_emulator.field_view("surface_flux");
 
   REQUIRE(!temperature.empty());
   REQUIRE(moisture.size() % temperature.size() == 0);
@@ -156,11 +156,11 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
   for (std::size_t column = 0; column < temperature.size(); ++column) {
     double mean = 0.0;
     for (std::size_t level = 0; level < nlevels; ++level) {
-      mean += moisture[column * nlevels + level];
+      mean += moisture.as<double>()[column * nlevels + level];
     }
     mean /= static_cast<double>(nlevels);
 
-    REQUIRE(flux[column] == Approx(2.0 * temperature[column] + 100.0 * mean));
+    REQUIRE(flux.as<double>()[column] == Approx(2.0 * temperature.as<double>()[column] + 100.0 * mean));
   }
 }
 } // namespace e3sm::emulator::tests
