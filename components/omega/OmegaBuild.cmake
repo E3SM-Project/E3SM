@@ -187,6 +187,40 @@ macro(read_cime_config)
 
 endmacro()
 
+# Collect the machine's compiler and linker flags for Omega's own code. They go
+# on the OmegaLibFlags target, not into CMAKE_CXX_FLAGS, so they do not reach the
+# third-party projects under external/ or configure-time try_compile probes.
+macro(omega_collect_machine_flags)
+
+  # Omega's own C++ flags, whatever the architecture.
+  if(OMEGA_CXX_FLAGS)
+    string(APPEND OMEGA_MACHINE_CXX_FLAGS " ${OMEGA_CXX_FLAGS}")
+  endif()
+
+  # OMEGA_<ARCH>_FLAGS are always collected. Of CIME's <ARCH>_FLAGS only SYCL's
+  # are: for SYCL the C++ compiler is the device compiler, while CUDA_FLAGS are nvcc's.
+  foreach(_OmegaArch CUDA HIP SYCL)
+    if("${OMEGA_ARCH}" STREQUAL "${_OmegaArch}")
+
+      if(${_OmegaArch}_FLAGS AND "${_OmegaArch}" STREQUAL "SYCL")
+        set(OMEGA_${_OmegaArch}_FLAGS
+            "${OMEGA_${_OmegaArch}_FLAGS} ${${_OmegaArch}_FLAGS}")
+      endif()
+
+      if(OMEGA_${_OmegaArch}_FLAGS)
+        string(APPEND OMEGA_MACHINE_CXX_FLAGS " ${OMEGA_${_OmegaArch}_FLAGS}")
+      endif()
+
+      if(OMEGA_${_OmegaArch}_EXE_LINKER_FLAGS)
+        string(APPEND OMEGA_MACHINE_LINK_FLAGS
+               " ${OMEGA_${_OmegaArch}_EXE_LINKER_FLAGS}")
+      endif()
+
+    endif()
+  endforeach()
+
+endmacro()
+
 # Collect machine and compiler info from CIME
 # and detect OMEGA_ARCH and compilers
 macro(init_standalone_build)
@@ -373,9 +407,8 @@ macro(init_standalone_build)
   set(CMAKE_C_COMPILER ${OMEGA_C_COMPILER})
   set(CMAKE_Fortran_COMPILER ${OMEGA_Fortran_COMPILER})
 
-  if(OMEGA_CXX_FLAGS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_CXX_FLAGS}")
-  endif()
+  # Machine flags for Omega's own targets; see omega_collect_machine_flags().
+  omega_collect_machine_flags()
 
   # set CXX compiler *before* calling CMake project()
   if("${OMEGA_ARCH}" STREQUAL "CUDA")
@@ -397,11 +430,9 @@ macro(init_standalone_build)
     set(CMAKE_CXX_COMPILER ${OMEGA_CUDA_COMPILER})
     set(CMAKE_CUDA_HOST_COMPILER ${OMEGA_CXX_COMPILER})
 
-    if(OMEGA_CUDA_FLAGS)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_CUDA_FLAGS}")
-    endif()
-
-    string(FIND "${CMAKE_CXX_FLAGS}" "--ccbin" pos)
+    # -ccbin stays in CMAKE_CXX_FLAGS: nvcc_wrapper also compiles external/ and
+    # needs a host compiler named. Match the one-dash form the machine files use.
+    string(FIND "${CMAKE_CXX_FLAGS}" "-ccbin" pos)
     if(${pos} EQUAL -1)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ccbin ${CMAKE_CUDA_HOST_COMPILER}")
     endif()
@@ -434,10 +465,6 @@ macro(init_standalone_build)
     set(CMAKE_HIP_COMPILER ${OMEGA_HIP_COMPILER})
     set(CMAKE_CXX_COMPILER ${OMEGA_CXX_COMPILER})
 
-    if(OMEGA_HIP_FLAGS)
-      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OMEGA_HIP_FLAGS}")
-    endif()
-
     if("${MPILIB}" STREQUAL "mpich")
       if(NOT $ENV{MPICH_CXX})
         set(ENV{MPICH_CXX} ${OMEGA_HIP_COMPILER})
@@ -459,17 +486,6 @@ macro(init_standalone_build)
 
   elseif("${OMEGA_ARCH}" STREQUAL "SYCL")
     set(CMAKE_CXX_COMPILER ${OMEGA_CXX_COMPILER})
-
-    # add flags from upstream-E3SM
-    if(SYCL_FLAGS)
-      set(OMEGA_SYCL_FLAGS "${OMEGA_SYCL_FLAGS} ${SYCL_FLAGS}")
-    endif()
-    if(OMEGA_SYCL_FLAGS)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_SYCL_FLAGS}")
-    endif()
-    if(OMEGA_SYCL_EXE_LINKER_FLAGS)
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OMEGA_SYCL_EXE_LINKER_FLAGS}")
-    endif()
 
   else()
     set(CMAKE_CXX_COMPILER ${OMEGA_CXX_COMPILER})
@@ -502,6 +518,8 @@ macro(init_standalone_build)
   message(STATUS "CMAKE_CXX_COMPILER     = ${CMAKE_CXX_COMPILER}")
   message(STATUS "CMAKE_CXX_FLAGS        = ${CMAKE_CXX_FLAGS}")
   message(STATUS "CMAKE_EXE_LINKER_FLAGS = ${CMAKE_EXE_LINKER_FLAGS}")
+  message(STATUS "OMEGA_MACHINE_CXX_FLAGS  = ${OMEGA_MACHINE_CXX_FLAGS}")
+  message(STATUS "OMEGA_MACHINE_LINK_FLAGS = ${OMEGA_MACHINE_LINK_FLAGS}")
 
 endmacro()
 
@@ -538,13 +556,32 @@ function(omega_read_e3sm_macros)
 
   set(KOKKOS_OPTIONS "${KOKKOS_OPTIONS}" PARENT_SCOPE)
 
-  # USE_SYCL must come from here too.
+  # E3SM forwards USE_CUDA and USE_HIP out of its own Macros.cmake scope
+  # (components/CMakeLists.txt, set_compilers_e3sm) but not USE_SYCL.
   set(USE_SYCL "${USE_SYCL}" PARENT_SCOPE)
 
-  if(USE_SYCL)
-    set(SYCL_FLAGS "${SYCL_FLAGS}" PARENT_SCOPE)
-    set(OMEGA_SYCL_EXE_LINKER_FLAGS "${OMEGA_SYCL_EXE_LINKER_FLAGS}" PARENT_SCOPE)
-  endif()
+  # The machine's per-architecture flags. A machine file may set
+  # OMEGA_<ARCH>_FLAGS or OMEGA_<ARCH>_EXE_LINKER_FLAGS -- aurora_intelgpu
+  # sets OMEGA_SYCL_EXE_LINKER_FLAGS today -- and CIME sets the bare
+  # <ARCH>_FLAGS. None of them survives set_compilers_e3sm's function scope.
+  #
+  # Only SYCL's bare spelling is forwarded, because it is the only one
+  # omega_collect_machine_flags() reads; see the census there for why CUDA_FLAGS
+  # and HIP_FLAGS are the device compiler's rather than the C++ compiler's.
+  # Forwarding a variable nothing reads would put nvcc's flags into this
+  # directory's scope under a name that looks like it applies.
+  foreach(_OmegaArch CUDA HIP SYCL)
+    set(_OmegaVars OMEGA_${_OmegaArch}_FLAGS
+                   OMEGA_${_OmegaArch}_EXE_LINKER_FLAGS)
+    if("${_OmegaArch}" STREQUAL "SYCL")
+      list(APPEND _OmegaVars ${_OmegaArch}_FLAGS)
+    endif()
+    foreach(_OmegaVar ${_OmegaVars})
+      if(DEFINED ${_OmegaVar})
+        set(${_OmegaVar} "${${_OmegaVar}}" PARENT_SCOPE)
+      endif()
+    endforeach()
+  endforeach()
 
 endfunction()
 
@@ -584,32 +621,8 @@ macro(setup_e3sm_build)
     endif()
   endif()
 
-  # NOTE:The following is intended as a temporary fix.
-  #
-  # The machine's SYCL settings reach Omega only through omega_read_e3sm_macros above.
-  # Apply only the part Kokkos does not already provide.
-  #
-  # Kokkos puts -fsycl, -fsycl-targets=spir64_gen and the matching
-  # -Xsycl-target-backend "-device ..." on every target that links it, through
-  # KOKKOS_COMPILE_OPTIONS -- which covers Omega's own sources. Putting the machine's
-  # copies into CMAKE_CXX_FLAGS instead reaches this whole subtree and breaks two
-  # unrelated things in it:
-  #   - configure-time try_compile probes inherit -fsycl-targets=spir64_gen with no
-  #     device, and ocloc fails with "Error: Device name missing."
-  #   - scorpio appends -std=c++14 to CMAKE_CXX_FLAGS (src/clib/CMakeLists.txt:363), so
-  #     its sources compile as "-fsycl -std=c++14" and fail the SYCL headers' C++17
-  #     static assert.
-  # What survives the filter is what Omega actually needs: on Aurora, -mlong-double-64,
-  # without which Omega's user-defined literals do not compile for spir64_gen.
-  if("${OMEGA_ARCH}" STREQUAL "SYCL")
-    if(SYCL_FLAGS)
-      string(REGEX REPLACE "(^| )-fsycl[^ ]*" " " OMEGA_MACHINE_SYCL_FLAGS " ${SYCL_FLAGS}")
-      string(STRIP "${OMEGA_MACHINE_SYCL_FLAGS}" OMEGA_MACHINE_SYCL_FLAGS)
-      if(OMEGA_MACHINE_SYCL_FLAGS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMEGA_MACHINE_SYCL_FLAGS}")
-      endif()
-    endif()
-  endif()
+  # Machine flags for Omega's own targets; see omega_collect_machine_flags().
+  omega_collect_machine_flags()
 
   set(OMEGA_BUILD_MODE "E3SM")
 
@@ -617,6 +630,8 @@ macro(setup_e3sm_build)
   message(STATUS "OMEGA_ARCH = ${OMEGA_ARCH}")
   message(STATUS "OMEGA_CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
   message(STATUS "OMEGA_KOKKOS_OPTIONS = ${KOKKOS_OPTIONS}")
+  message(STATUS "OMEGA_MACHINE_CXX_FLAGS = ${OMEGA_MACHINE_CXX_FLAGS}")
+  message(STATUS "OMEGA_MACHINE_LINK_FLAGS = ${OMEGA_MACHINE_LINK_FLAGS}")
 
 endmacro()
 
