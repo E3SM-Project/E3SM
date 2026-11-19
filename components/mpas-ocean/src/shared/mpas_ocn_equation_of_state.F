@@ -513,7 +513,7 @@ contains
          + coeff_S * salinity &
          + coeff_p * pressure &
          + coeff_pS * pressure * salinity &
-         + coeff_mushy * salinity / (1.0_RKIND - salinity / 1e3_RKIND)
+         + coeff_mushy * salinity / (1.0_RKIND - salinity / salt_to_ppt)
 
     end function ocn_freezing_temperature!}}}
 
@@ -552,7 +552,7 @@ contains
       end if
 
       ocn_freezing_temperature_salinity_deriv = coeff_S + coeff_pS * pressure &
-         + coeff_mushy / (1.0_RKIND - salinity/1e3_RKIND)**2
+         + coeff_mushy / (1.0_RKIND - salinity/salt_to_ppt)**2
 
     end function ocn_freezing_temperature_salinity_deriv!}}}
 

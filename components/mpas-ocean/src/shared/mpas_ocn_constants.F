@@ -70,8 +70,8 @@ module ocn_constants
       mpercm           ,&! meters per m
       cmperm           ,&! m per meter
       days_per_second  ,&! days per second
-      salt_to_ppt      ,&! salt (kg/kg) to ppt
-      ppt_to_salt      ,&! salt ppt to kg/kg
+      salt_to_ppt      ,&! salt mass fraction (kg/kg) to g/kg (ppt by mass)
+      ppt_to_salt      ,&! salt g/kg (ppt by mass) to mass fraction (kg/kg)
       mass_to_Sv       ,&! mass flux to Sverdrups
       heat_to_PW       ,&! heat flux to Petawatts
       salt_to_Svppt    ,&! salt flux to Sv*ppt
@@ -148,8 +148,8 @@ contains
        !-----------------------------------------------------------------------
 
        days_per_second = 1._RKIND/86400._RKIND     ! days per second
-       salt_to_ppt   = 1000._RKIND        ! salt (kg/kg) to ppt
-       ppt_to_salt   = 1.e-3_RKIND        ! salt ppt to kg/kg
+       salt_to_ppt   = 1000._RKIND        ! salt mass fraction (kg/kg) to g/kg (ppt by mass)
+       ppt_to_salt   = 1.e-3_RKIND        ! salt g/kg (ppt by mass) to mass fraction (kg/kg)
        mass_to_Sv    = 1.0e-12_RKIND      ! mass flux to Sverdrups
        heat_to_PW    = 4.186e-15_RKIND    ! heat flux to Petawatts
        salt_to_Svppt = 1.0e-9_RKIND       ! salt flux to Sv*ppt
@@ -240,11 +240,11 @@ contains
        !
        !  convert salt flux (kg/m^2/s) to salt flux (psu*m/s)
        !  using reference seawater density and the numerical psu = g/kg convention:
-       !    sflux_factor = 1 / (rho_sw * ppt_to_salt)
+       !    sflux_factor = salt_to_ppt / rho_sw
        !
        !-----------------------------------------------------------------------
 
-       sflux_factor = 1.0_RKIND / (rho_sw * ppt_to_salt)
+       sflux_factor = salt_to_ppt / rho_sw
 
        !-----------------------------------------------------------------------
        !
