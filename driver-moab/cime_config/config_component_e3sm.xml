@@ -941,6 +941,9 @@
     <type>char</type>
     <valid_values>below_sea_level,ungrounded</valid_values>
     <default_value>below_sea_level</default_value>
+    <values match="last">
+      <value grid="oi%SOwISC12to30E3r4.+g%mpas.ais4to20km">ungrounded</value>
+    </values>
     <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>The mask glc applies to the ice-shelf geometry it sends the ocean:
@@ -948,7 +951,9 @@
       when grounded cells are part of the ocean (e.g. with a subglacial thin
       film); 'ungrounded' excludes grounded ice, to match initial conditions
       made that way (e.g. compass's ocean_includes_grounded = False).  Only
-      the geometry is affected; ice-shelf fluxes are unchanged.</desc>
+      the geometry is affected; ice-shelf fluxes are unchanged.  Grids whose
+      ocean initial condition was built from glc's geometry without grounded
+      ice default to 'ungrounded'.</desc>
   </entry>
 
   <entry id="OCN_GLC_ISMF_COUPLING">
