@@ -453,12 +453,12 @@ CONTAINS
 
       inflags1 = .false.
 
-      inflags1(1)  = wav_ocn_coup /= 'none' ! water levels
-      inflags1(2)  = wav_ocn_coup /= 'none' ! currents
-      inflags1(3)  = wav_atm_coup /= 'none' ! winds
-      inflags1(4)  = wav_ice_coup /= 'none' ! ice concentration
-      inflags1(-7) = wav_ice_coup /= 'none' ! ice thickness
-      inflags1(-3) = wav_ice_coup == 'twoway' ! ice floe size
+      inflags1(1)  = .true. ! water levels
+      inflags1(2)  = .true. ! currents
+      inflags1(3)  = .true. ! winds
+      inflags1(4)  = .true. ! ice concentration
+      inflags1(-7) = .true. ! ice thickness
+      inflags1(-3) = .true. ! ice floe size
 
       inflags2 = inflags1
 
