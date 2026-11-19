@@ -1016,7 +1016,7 @@ Default: Defined in namelist_defaults.xml
 	category="physical_parameters" group="physical_parameters">
 ocean density to use for calculating floatation (assumed constant and uniform)
 
-Valid values: Any positive real value
+Valid values: Any positive real value, or a negative value to use the shared ice-shelf seawater density
 Default: Defined in namelist_defaults.xml
 </entry>
 

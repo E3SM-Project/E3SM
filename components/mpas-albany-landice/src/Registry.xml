@@ -586,9 +586,9 @@
 		            description="ice density to use (assumed constant and uniform)"
 		            possible_values="Any positive real value, or a negative value to use the shared ice density"
 		/>
-		<nml_option name="config_ocean_density" type="real" default_value="1028.0" units="kg m^-3"
+		<nml_option name="config_ocean_density" type="real" default_value="-1.0" units="kg m^-3"
 		            description="ocean density to use for calculating floatation (assumed constant and uniform)"
-		            possible_values="Any positive real value"
+		            possible_values="Any positive real value, or a negative value to use the shared ice-shelf seawater density"
 		/>
 		<nml_option name="config_sea_level" type="real" default_value="0.0" units="m above datum"
 		            description="sea level to use for calculating floatation (assumed constant and uniform)"

@@ -138,6 +138,7 @@ module li_core
 
       ! A negative density in the namelist means: use the shared (E3SM) value
       call resolve_shared_density(domain, 'config_ice_density', rho_ice)
+      call resolve_shared_density(domain, 'config_ocean_density', rho_iceshelf_seawater)
 
       !
       ! Initialize config option settings as needed
