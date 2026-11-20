@@ -5,10 +5,8 @@
 #include <ekat_units.hpp>
 
 #include <algorithm>
-#include <cerrno>
+#include <charconv>
 #include <cmath>
-#include <cstdlib>
-#include <limits>
 
 namespace scream {
 
@@ -91,15 +89,18 @@ struct MaskedPowKernel {
   }
 };
 
-// Parses all of s as an integer. An out-of-range one is rejected, rather than
-// accepted as the saturated value strtoll returns.
-bool str2int (const std::string& s, long long& value)
+// Parses all of s as a number of type T (int or floating point).
+// NOTE: from_chars rather than strto*/sto*: it does not depend on the locale, it
+//       does not skip whitespace or take a '+', and it reports an out-of-range
+//       value, where strtoll saturates (which would silently be another exponent).
+//       dexpr already needs its floating point overload, to read literals.
+template<typename T>
+bool str2num (const std::string& s, T& value)
 {
-  if (s.empty()) return false;
-  char* end;
-  errno = 0;
-  value = std::strtoll(s.c_str(),&end,10);
-  return *end=='\0' and errno!=ERANGE;
+  const char* first = s.data();
+  const char* last  = first + s.size();
+  const auto [ptr,ec] = std::from_chars(first,last,value);
+  return ec==std::errc{} and ptr==last;
 }
 
 // A unit is raised to a rational power, which a decimal exponent is not.
@@ -142,15 +143,13 @@ FieldPow (const ekat::Comm &comm,
   // NOTE: everything about the exponent (zero, integer, which fast path, the fraction
   //       for the units) is decided here in double, from the string, so that narrowing
   //       to Real (which can round 2+2^-24 to 2, in single precision) changes none of it.
-  // NOTE: strtod because from_chars for floating point is missing on some
-  //       compilers we support (e.g. compy).
   const auto& s = m_exponent_str;
   const auto slash = s.find('/');
   double p;
   bool is_int;
   long long int_value = 0;
   if (slash!=std::string::npos) {
-    EKAT_REQUIRE_MSG (str2int(s.substr(0,slash),m_num) and str2int(s.substr(slash+1),m_den) and m_den>0,
+    EKAT_REQUIRE_MSG (str2num(s.substr(0,slash),m_num) and str2num(s.substr(slash+1),m_den) and m_den>0,
         "Error! FieldPow's 'exponent' must be a fraction of two integers (with a positive denominator) or a number.\n"
         " - input: '" + s + "'\n");
     p = static_cast<double>(m_num)/static_cast<double>(m_den);
@@ -158,9 +157,7 @@ FieldPow (const ekat::Comm &comm,
     is_int = m_num % m_den == 0;
     int_value = m_num / m_den;
   } else {
-    char* end;
-    p = std::strtod(s.c_str(),&end);
-    EKAT_REQUIRE_MSG (not s.empty() and *end=='\0' and std::isfinite(p),
+    EKAT_REQUIRE_MSG (str2num(s,p) and std::isfinite(p),
         "Error! FieldPow's 'exponent' must be a fraction of two integers or a finite number.\n"
         " - input: '" + s + "'\n");
     m_has_fraction = decimal_to_fraction(p,m_num,m_den);

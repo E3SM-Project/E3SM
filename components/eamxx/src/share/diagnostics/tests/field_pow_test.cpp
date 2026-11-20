@@ -93,7 +93,9 @@ TEST_CASE("field_pow") {
       REQUIRE_NOTHROW (factory.create("FieldPow",comm,make_params(gn,"q",good),grid));
     }
     // ...and anything else is not. Note that 0 is not a valid exponent: 0^0 is not defined.
-    for (std::string bad : {"", "two", "2x", "nan", "inf", "0", "0.0", "1e-400", "0/3", "1/0", "1/", "/2", "1/2/3", "0.5/2", "1.5/2",
+    for (std::string bad : {"", "two", "2x", "nan", "inf", "0", "0.0", "1e-400", "1e400",
+                            " 2", "2 ", "+2", "+1/2", "1/ 2", "1 /2",   // no whitespace, no '+'
+ "0/3", "1/0", "1/", "/2", "1/2/3", "0.5/2", "1.5/2",
                             "1/-2",   // the sign goes on the numerator
                             // Out of range: strtoll would saturate these, which would be a different exponent
                             "18446744073709551614/9223372036854775807", "9223372036854775808/1", "1/99999999999999999999"}) {
