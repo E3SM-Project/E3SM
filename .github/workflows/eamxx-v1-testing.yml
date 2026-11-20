@@ -71,15 +71,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {runner: gnu, name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci_gnu.eamxx-output-preset-2--eamxx-L72}
-          - {runner: gnu, name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97}
-          - {runner: gnu, name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-small_kernels--eamxx-output-preset-5}
-          - {runner: gnu, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72}
-          - {runner: cuda, name: ERS_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu-cuda.eamxx-L72}
-          - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-output-prod}
+          - {runner: intel, name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-L72--eamxx-internal_diagnostics_level}
           - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-output-prod}
+          - {runner: intel, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_intel.eamxx-L72}
+          - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-output-prod}
+          - {runner: gnu, name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97}
+          - {runner: cuda, name: ERS_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu-cuda.eamxx-L72--eamxx-small_kernels}
           - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-cuda.eamxx-output-prod}
-          - {runner: hip, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-hip.eamxx-output-prod}
+          - {runner: hip, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu-hip.eamxx-output-prod--eamxx-small_kernels}
     name: ${{ matrix.name }}
     steps:
       - name: Check out the repository
