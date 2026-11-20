@@ -87,3 +87,9 @@
 [submodule "components/omega/external/spdlog"]
 	path = components/omega/external/spdlog
 	url = git@github.com:gabime/spdlog.git
+[submodule "components/mpas-albany-landice/src/FastIsostasy"]
+	path = components/mpas-albany-landice/src/FastIsostasy
+	url = git@github.com:palma-ice/FastIsostasy.git
+[submodule "components/mpas-albany-landice/src/fesm-utils"]
+	path = components/mpas-albany-landice/src/fesm-utils
+	url = https://github.com/fesmc/fesm-utils

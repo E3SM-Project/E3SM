@@ -458,7 +458,7 @@ module li_statistics
 !!              diagnosticThickness = sum(layerThickness(:,iCell))
               diagnosticThickness = thickness(iCell)
               diagnosticBedTopography = bedTopography(iCell)
-              diagnosticSfcMassBal = sfcMassBal(iCell) * scyr / 1000.0_RKIND   ! convert from kg/m^2/s to m/yr
+              diagnosticSfcMassBal = sfcMassBal(iCell) * scyr / rho_water   ! convert from kg/m^2/s to m/yr
               diagnosticSurfaceTemperature = surfaceTemperature(iCell)
               diagnosticBasalTemperature = basalTemperature(iCell)
               iEdge = edgesOnCell(1,iCell)  ! arbitrarily choose edge #1 for velocity diagnostics

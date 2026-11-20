@@ -17,6 +17,11 @@ endif()
 # Albany can only solve FO at present
 if (ALBANY)
   list(APPEND CPPDEFS "-DUSE_EXTERNAL_FIRSTORDER" "-DMPAS_LI_BUILD_INTERFACE")
+  # On by default; needs Albany with sandialabs/Albany#1241.
+  # Configure with -DALBANY_ADDITIONAL_PHYS_PARAMS=OFF for an older Albany.
+  if (NOT DEFINED ALBANY_ADDITIONAL_PHYS_PARAMS OR ALBANY_ADDITIONAL_PHYS_PARAMS)
+    list(APPEND CPPDEFS "-DMPAS_LI_ALBANY_ADDITIONAL_PHYS_PARAMS")
+  endif()
 endif()
 
 if (LIFEV AND ALBANY)

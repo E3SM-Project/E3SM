@@ -127,6 +127,7 @@ contains
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
 
+      err_tmp = 0
       err = 0
 
       call mpas_pool_create_pool(analysisMemberList)
@@ -208,6 +209,7 @@ contains
       type (MPAS_Time_Type) :: referenceTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
+      err_tmp = 0
       err = 0
 
       call mpas_timer_start('analysis_init', .false.)
@@ -223,6 +225,7 @@ contains
             call mpas_timer_start(timerName, .false.)
             call li_init_analysis_members(domain, poolItr % memberName, err_tmp)
             err = ior(err, err_tmp)
+            if (err>0) call mpas_log_write("error in li_init_analysis_members", MPAS_LOG_ERR)
 
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
             call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
@@ -321,6 +324,7 @@ contains
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
 
+      err_tmp = 0
       err = 0
 
       call mpas_timer_start('analysis_compute', .false.)
@@ -418,6 +422,7 @@ contains
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
 
+      err_tmp = 0
       err = 0
 
       call mpas_timer_start('analysis_compute', .false.)
@@ -511,6 +516,7 @@ contains
       logical, pointer :: config_AM_enable
       integer :: nameLength
 
+      err_tmp = 0
       err = 0
 
       call mpas_timer_start('analysis_restart', .false.)
@@ -585,6 +591,7 @@ contains
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
 
+      err_tmp = 0
       err = 0
 
       call mpas_timer_start('analysis_write', .false.)
@@ -665,6 +672,7 @@ contains
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
 
+      err_tmp = 0
       err = 0
 
       call mpas_timer_start('analysis_finalize', .false.)
@@ -700,6 +708,7 @@ contains
 !>  This private routine calls the correct init routine for each analysis member.
 !
 !-----------------------------------------------------------------------
+
    subroutine li_init_analysis_members(domain, analysisMemberName, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
@@ -708,15 +717,18 @@ contains
       integer :: nameLength, err_tmp
 
       iErr = 0
+      err_tmp = 0
 
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
         call li_init_global_stats(domain, analysisMemberName, err_tmp)
       end if
+      if (err_tmp>0) call mpas_log_write("error in li_init_global_stats", MPAS_LOG_ERR)
       if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
         call li_init_regional_stats(domain, analysisMemberName, err_tmp)
       end if
+      if (err_tmp>0) call mpas_log_write("error in li_init_regional_stats", MPAS_LOG_ERR)
 
       iErr = ior(iErr, err_tmp)
 
@@ -743,19 +755,23 @@ contains
       integer :: nameLength, err_tmp
 
       iErr = 0
+      err_tmp = 0
 
       nameLength = len_trim(analysisMemberName)
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
         call li_compute_global_stats(domain, analysisMemberName, timeLevel, err_tmp)
+        if (err_tmp>0) call mpas_log_write("Error in li_compute_global_stats", MPAS_LOG_ERR)
       end if
       if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
         call li_compute_regional_stats(domain, analysisMemberName, timeLevel, err_tmp)
+        if (err_tmp>0) call mpas_log_write("Error in li_compute_regional_stats", MPAS_LOG_ERR)
       end if
       if ( analysisMemberName(1:nameLength) == 'fluxGates' ) then
         call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nFluxGates', nFluxGates)
         call li_compute_flux_across_gates(domain, analysisMemberName, timeLevel, nFluxGates, err_tmp)
-      endif
+        if (err_tmp>0) call mpas_log_write("Error in li_compute_flux_across_gates", MPAS_LOG_ERR)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -779,6 +795,7 @@ contains
 
       integer :: nameLength, err_tmp
 
+      err_tmp = 0
       iErr = 0
 
       nameLength = len_trim(analysisMemberName)
@@ -812,6 +829,7 @@ contains
 
       integer :: nameLength, err_tmp
 
+      err_tmp = 0
       iErr = 0
 
       nameLength = len_trim(analysisMemberName)

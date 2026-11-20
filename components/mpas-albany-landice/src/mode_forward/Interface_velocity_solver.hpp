@@ -76,7 +76,9 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                         double const* clausius_clapeyron_coeff,
                         double const* thermal_thickness_limit_F,
                         int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
-                        bool const* use_GLP_F);
+                        int const* use_GLP_F, int const* use_ISMIP7_extension_F,
+                        double const* melting_temperature_F, double const* seconds_per_year_F,
+                        double const* gas_constant_F);
 
 void velocity_solver_init_l1l2(double const* levelsRatio);
 
@@ -90,7 +92,7 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double * beta_F, double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
-    double const* effecPress_F, double const* muFriction_F,
+    double* effecPress_F, double const* muFriction_F, double const* bedRoughnessRC_F, double const* bulkFriction_F, double const* basalDebris_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0, double* bodyForce_F = 0, double* dissipation_heat_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0,
@@ -134,6 +136,7 @@ void write_ascii_mesh(int const* indexToCellID_F,
     double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
     double const* stiffnessFactor_F,
     double const* effecPress_F, double const* muFriction_F,
+    double const* bedRoughnessRC_F, double const* bulkFriction_F, double const* basalDebris_F, 
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -149,6 +152,13 @@ extern void velocity_solver_finalize__();
 extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
                         double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff); 
 
+#ifdef MPAS_LI_ALBANY_ADDITIONAL_PHYS_PARAMS
+// Overload added in sandialabs/Albany#1241
+extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA,
+                        double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff,
+                        double const& meltingTemperature, double const& secondsPerYear, double const& gasConstant);
+#endif
+
 extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     int nGlobalTriangles, bool ordering, bool first_time_step,
     const std::vector<int>& indexToVertexID,
@@ -161,8 +171,11 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& bedTopographyData,
     const std::vector<double>& smbData,
     const std::vector<double>& stiffnessFactorData,
-    const std::vector<double>& effecPressData,
+          std::vector<double>& effecPressData,
     const std::vector<double>& muFrictionData,
+    const std::vector<double>& bedRoughnessData,
+    const std::vector<double>& bulkFrictionData,
+    const std::vector<double>& basalDebrisData,
     const std::vector<double>& temperatureDataOnPrisms,
     std::vector<double>& bodyForceOnBasalCell,
     std::vector<double>& dissipationHeatOnPrisms,
@@ -207,7 +220,8 @@ void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
                 double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* muFriction_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
+    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* muFriction_F = 0, double const* bedRoughness_F = 0,
+    double const* bulkFriction_F = 0, double const* basalDebris_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
 void import2DFieldsObservations(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
             double const * lowerSurface_F, 
@@ -231,6 +245,7 @@ std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 void exportDissipationHeat(double * dissipationHeat_F);
 void exportBodyForce(double * bodyForce_F);
 void exportBeta(double * beta_F);
+void exportEffectivePressure(double * effecPress_F);
 
 void get_prism_velocity_on_FEdges(double* uNormal,
     const std::vector<double>& velocityOnCells,
