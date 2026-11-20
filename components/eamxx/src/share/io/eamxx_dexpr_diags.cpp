@@ -45,33 +45,38 @@ const Node* as (const ast::Expression& e) {
   throw std::logic_error("unreachable"); // EKAT_ERROR_MSG already threw
 }
 
-// A method call parses as a FuncExpression whose 'function' is a Dot binary
-// expression, so the receiver and method name have to be dug back out.
+// A call is a FuncExpression. Its 'function' is an Identifier for 'f(..)',
+// and a Dot binary expression for a method call 'X.f(..)', in which case the
+// receiver and method name have to be dug back out.
 struct Call {
-  const ast::Expression* receiver = nullptr;
+  const ast::Expression* receiver = nullptr; // nullptr for 'f(..)'
   std::string name;
   std::vector<const ast::Expression*> positional;
   std::map<std::string,const ast::Expression*> keywords;
 };
 
-// Returns false if 'e' is not a method call at all.
-bool as_method_call (const ast::Expression& e, Call& call)
+// Returns false if 'e' is not a call (of either form) at all.
+bool as_call (const ast::Expression& e, Call& call)
 {
   const auto* fn = as<ast::FuncExpression>(e);
   if (fn==nullptr) {
     return false;
   }
-  const auto* dot = as<ast::BinaryExpression>(*fn->function);
-  if (dot==nullptr or dot->op!=TokenTypes::Dot) {
-    return false;
-  }
-  const auto* name = as<ast::Identifier>(*dot->right);
-  if (name==nullptr) {
-    return false;
+  if (const auto* name = as<ast::Identifier>(*fn->function)) {
+    call.name = name->value;
+  } else {
+    const auto* dot = as<ast::BinaryExpression>(*fn->function);
+    if (dot==nullptr or dot->op!=TokenTypes::Dot) {
+      return false;
+    }
+    const auto* method = as<ast::Identifier>(*dot->right);
+    if (method==nullptr) {
+      return false;
+    }
+    call.receiver = dot->left.get();
+    call.name     = method->value;
   }
 
-  call.receiver = dot->left.get();
-  call.name     = name->value;
   for (const auto& arg : fn->args) {
     // A keyword argument is an Assign whose lhs is a name. Anything else is
     // positional, including 'f(1=2)', which validate_calls() rejects on arity.
@@ -157,6 +162,36 @@ const ast::Expression* keyword (const Call& call, const std::string& name)
   return it==call.keywords.end() ? nullptr : it->second;
 }
 
+// A quoted string among a fixed set of choices
+std::string choice_arg (const ast::Expression& e, const std::string& ctx,
+                        const std::vector<std::string>& choices)
+{
+  const auto value = string_arg(e,ctx);
+  std::string valid;
+  for (const auto& c : choices) {
+    if (c==value) {
+      return value;
+    }
+    valid += (valid.empty() ? "'" : ", '") + c + "'";
+  }
+  unsupported(ctx + " must be one of " + valid,e);
+}
+
+// pow(X,p) and X**p. The exponent must be a number: UnaryMath raises a field
+// to a scalar power, and needs it to work out the output units.
+void translate_pow (const ast::Expression& base, const ast::Expression& exponent,
+                    const ast::Expression& self, std::string& diag_name,
+                    ekat::ParameterList& params)
+{
+  if (not is_number(exponent)) {
+    unsupported("the exponent of a power must be a number",self);
+  }
+  diag_name = "UnaryMath";
+  params.set<std::string>("op","pow");
+  params.set<std::string>("field_name",operand_name(base));
+  params.set<std::string>("exponent",operand_name(exponent));
+}
+
 // ---------------------------------------------------------------------------
 // Translation: one AST node -> one diagnostic
 // ---------------------------------------------------------------------------
@@ -219,9 +254,14 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
   //   field_names: [T_mid<273]      -> root is BinaryExpression{LessThan}
   //   field_names: [T_mid.mean]     -> root is BinaryExpression{Dot}
   // Both parse; neither names something we can compute. Note a comparison
-  // written where it belongs, inside where(..), is consumed by translate_call
+  // written where it belongs, inside where(..), is consumed by translate_method
   // and never reaches this function -- which is why the error below can safely
   // say the comparison is in the wrong place.
+  if (e.op==TokenTypes::Exp) {
+    translate_pow(*e.left,*e.right,self,diag_name,params);
+    return;
+  }
+
   const auto op = binary_op_to_diag_op(e.op);
   if (op=="") {
     if (comparison_to_cmp(e.op)!="") {
@@ -248,23 +288,26 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
 // Named after xarray where there is an honest analogue. Lives here, not in
 // share/dexpr: dexpr owns the grammar, we own the vocabulary.
 //
-// Sits above translate_call() because the two are a pair -- every entry here
+// Sits above translate_function/method() because the two are a pair -- every entry here
 // needs a case there. Nothing enforces that, so an entry added without its case
 // is caught only when a user first writes that function, as the "registered but
-// not translated" error at the end of translate_call().
+// not translated" error at the end of translate_function/method().
 //
 // Each entry is a dexpr::FunctionSpec, whose fields are:
-//   name            the method name, as written in 'X.name(..)'
+//   name            the name, as written in 'X.name(..)' or 'name(..)'
 //   desc            one line, shown in error messages and by the dexpr tool
-//   min/max_positional  how many POSITIONAL args the call takes. The receiver
-//                   X is not one of them, so 'X.mean("lev")' has one.
+//   min/max_positional  how many POSITIONAL args the call takes. A method's
+//                   receiver X is not one of them, so 'X.mean("lev")' has one,
+//                   while 'log(X)' has one too.
 //   keywords        the accepted 'kw=value' arguments, as {name,required}
 //                   pairs. 'true' means the call is invalid without it;
 //                   'false' means optional. A keyword not listed here is
 //                   rejected, so this doubles as the spell-checker.
 //   example         a call that must parse and match this spec.
 //                   validate_registry() runs it, so a spec cannot lie about
-//                   its own arity or keywords.
+//                   its own form, arity or keywords.
+//   form            Method ('X.f(..)', the default) or Function ('f(..)').
+//                   Each name takes one form only, and the other is rejected.
 // TODO: Let's rethink how a vocab shall be introduced and maintained ... below is fugly
 const dexpr::FunctionRegistry& eamxx_registry ()
 {
@@ -337,6 +380,40 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .keywords = {},
            .example = "T_mid.tend()"});
 
+    // Elementwise math, written as functions: f(X), not X.f().
+    // 'invalid' and 'units' are documented in UnaryMath's header.
+    using dexpr::CallForm;
+    r.add({.name = "log",
+           .desc = "natural logarithm of a dimensionless field",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"invalid",false},{"units",false}},
+           .example = "log(qv,invalid='mask')",
+           .form = CallForm::Function});
+    r.add({.name = "exp",
+           .desc = "exponential of a dimensionless field",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"units",false}},
+           .example = "exp(-qv)",
+           .form = CallForm::Function});
+    r.add({.name = "sqrt",
+           .desc = "square root",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"invalid",false}},
+           .example = "sqrt(qv)",
+           .form = CallForm::Function});
+    r.add({.name = "abs",
+           .desc = "absolute value",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {},
+           .example = "abs(omega)",
+           .form = CallForm::Function});
+    r.add({.name = "pow",
+           .desc = "field to a numeric power, same as X**p",
+           .min_positional = 2, .max_positional = 2,
+           .keywords = {{"invalid",false},{"units",false}},
+           .example = "pow(p_mid/P0,0.2857)",
+           .form = CallForm::Function});
+
     // Each example must parse, match the spec that declared it, and call it.
     // A wrong arity or keyword fails here, not when a user first writes it.
     dexpr::validate_registry(r);
@@ -345,8 +422,38 @@ const dexpr::FunctionRegistry& eamxx_registry ()
   return reg;
 }
 
-void translate_call (const Call& call, const ast::Expression& self,
-                     std::string& diag_name, ekat::ParameterList& params)
+// A call written 'f(..)'. validate_calls() checked the form, arity and keywords.
+void translate_function (const Call& call, const ast::Expression& self,
+                         std::string& diag_name, ekat::ParameterList& params)
+{
+  if (call.name=="log" or call.name=="exp" or call.name=="sqrt" or
+      call.name=="abs" or call.name=="pow") {
+    if (call.name=="pow") {
+      translate_pow(*call.positional[0],*call.positional[1],self,diag_name,params);
+    } else {
+      diag_name = "UnaryMath";
+      params.set<std::string>("op",call.name);
+      params.set<std::string>("field_name",operand_name(*call.positional[0]));
+    }
+    if (const auto* invalid = keyword(call,"invalid")) {
+      params.set<std::string>("invalid",choice_arg(*invalid,"'invalid'",{"nan","mask"}));
+    }
+    if (const auto* units = keyword(call,"units")) {
+      params.set<std::string>("units",choice_arg(*units,"'units'",{"check","ignore"}));
+    }
+    return;
+  }
+
+  // validate_calls() rejects unknown names, so this means the registry and the
+  // cases above have drifted apart.
+  EKAT_ERROR_MSG (
+      "Error! Internal error: '" + call.name + "' is registered but not translated.\n"
+      " - expression: " + ast::to_string(self) + "\n");
+}
+
+// A call written 'X.f(..)'. validate_calls() checked the form, arity and keywords.
+void translate_method (const Call& call, const ast::Expression& self,
+                       std::string& diag_name, ekat::ParameterList& params)
 {
   const auto operand = name_of(*call.receiver);
   params.set<std::string>("field_name",operand);
@@ -610,14 +717,16 @@ dexpr_create_diagnostic (const std::string& expr,
   ekat::ParameterList params(expr);
   params.set("grid_name",grid->name());
 
-  if (Call call; as_method_call(*root,call)) {
-    translate_call(call,*root,diag_name,params);
+  if (Call call; as_call(*root,call)) {
+    if (call.receiver==nullptr) {
+      translate_function(call,*root,diag_name,params);
+    } else {
+      translate_method(call,*root,diag_name,params);
+    }
   } else if (const auto* bin = as<ast::BinaryExpression>(*root)) {
     translate_binary(*bin,*root,diag_name,params);
   } else if (const auto* un = as<ast::UnaryExpression>(*root)) {
     translate_unary(*un,*root,diag_name,params);
-  } else if (as<ast::FuncExpression>(*root)) {
-    unsupported("EAMxx functions are written as methods, X.f(..), not f(X)",*root);
   } else {
     unsupported("this is neither a diagnostic name nor an operation on a field",*root);
   }

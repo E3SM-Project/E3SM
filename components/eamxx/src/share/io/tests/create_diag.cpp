@@ -407,7 +407,6 @@ TEST_CASE("create_diag")
     // Free-standing spelling of a method
     REQUIRE_THROWS (create_diagnostic("mean(T_mid,'lev')",grid));
     // Operators with no diagnostic behind them
-    REQUIRE_THROWS (create_diagnostic("T_mid**2",grid));
     REQUIRE_THROWS (create_diagnostic("!T_mid",grid));
     // Attribute access with no call
     REQUIRE_THROWS (create_diagnostic("T_mid.prev",grid));
@@ -416,6 +415,92 @@ TEST_CASE("create_diag")
     // A non-name on the lhs of '=' is not a keyword argument, so it counts
     // against the positional arity rather than dereferencing a null name
     REQUIRE_THROWS (create_diagnostic("T_mid.isel(1=2)",grid));
+  }
+
+  SECTION ("dexpr_math_functions") {
+    auto get = [](const std::shared_ptr<AbstractDiagnostic>& d, const std::string& p) {
+      return d->get_params().get<std::string>(p);
+    };
+
+    for (std::string op : {"log","exp","sqrt","abs"}) {
+      auto d = create_diagnostic(op + "(qv)",grid);
+      REQUIRE (std::dynamic_pointer_cast<UnaryMath>(d)!=nullptr);
+      REQUIRE (get(d,"op")==op);
+      REQUIRE (get(d,"field_name")=="qv");
+      REQUIRE_FALSE (d->get_params().isParameter("invalid"));
+      REQUIRE_FALSE (d->get_params().isParameter("units"));
+      REQUIRE (get(d,"output_field_name")==op + "(qv)");
+    }
+
+    // The keywords go down as they are
+    auto d1 = create_diagnostic("log(T_mid,invalid='mask',units='ignore')",grid);
+    REQUIRE (get(d1,"invalid")=="mask");
+    REQUIRE (get(d1,"units")=="ignore");
+    auto d2 = create_diagnostic("sqrt(qv,invalid='nan')",grid);
+    REQUIRE (get(d2,"invalid")=="nan");
+    auto d3 = create_diagnostic("exp(qv,units='check')",grid);
+    REQUIRE (get(d3,"units")=="check");
+    // ...but only the values each one takes
+    REQUIRE_THROWS (create_diagnostic("log(qv,invalid='zero')",grid));
+    REQUIRE_THROWS (create_diagnostic("log(qv,invalid=1)",grid));
+    REQUIRE_THROWS (create_diagnostic("log(qv,units='K')",grid));
+    // ...and only where they apply
+    REQUIRE_THROWS (create_diagnostic("exp(qv,invalid='mask')",grid));
+    REQUIRE_THROWS (create_diagnostic("sqrt(qv,units='ignore')",grid));
+    REQUIRE_THROWS (create_diagnostic("abs(qv,invalid='mask')",grid));
+
+    // pow(X,p) and X**p are the same diag. The exponent is passed down as dexpr
+    // renders it, with a negative one as a number.
+    auto p1 = create_diagnostic("pow(T_mid,2)",grid);
+    REQUIRE (std::dynamic_pointer_cast<UnaryMath>(p1)!=nullptr);
+    REQUIRE (get(p1,"op")=="pow");
+    REQUIRE (get(p1,"field_name")=="T_mid");
+    REQUIRE (get(p1,"exponent")=="2");
+    auto p2 = create_diagnostic("T_mid**2",grid);
+    REQUIRE (std::dynamic_pointer_cast<UnaryMath>(p2)!=nullptr);
+    REQUIRE (get(p2,"op")=="pow");
+    REQUIRE (get(p2,"field_name")=="T_mid");
+    REQUIRE (get(p2,"exponent")=="2");
+    auto p3 = create_diagnostic("pow(qv,-0.5,invalid='mask')",grid);
+    REQUIRE (get(p3,"exponent")=="-0.5");
+    REQUIRE (get(p3,"invalid")=="mask");
+    auto p4 = create_diagnostic("qv**(-1)",grid);
+    REQUIRE (get(p4,"exponent")=="-1");
+    // '**' binds tighter than '*', and is right associative
+    auto p5 = create_diagnostic("2*qv**2",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(p5)!=nullptr);
+    REQUIRE (get(p5,"arg2")=="(qv**2)");
+    REQUIRE_THROWS (create_diagnostic("qv**2**3",grid)); // qv**(2**3): not a number
+    // The exponent must be a number
+    REQUIRE_THROWS (create_diagnostic("pow(qv,T_mid)",grid));
+    REQUIRE_THROWS (create_diagnostic("qv**T_mid",grid));
+    REQUIRE_THROWS (create_diagnostic("pow(qv,'2')",grid));
+
+    // Operands go down by name, and come back around
+    auto c1 = create_diagnostic("log(qv+qc)",grid);
+    REQUIRE (get(c1,"field_name")=="(qv+qc)");
+    auto c2 = create_diagnostic("pow(p_mid/P0,0.25)",grid);
+    REQUIRE (get(c2,"field_name")=="(p_mid/P0)");
+    REQUIRE (get(c2,"exponent")=="0.25");
+    // ...and compose with methods, either way around
+    auto c3 = create_diagnostic("log(qv).mean('lev')",grid);
+    REQUIRE (std::dynamic_pointer_cast<VertContract>(c3)!=nullptr);
+    REQUIRE (get(c3,"field_name")=="log(qv)");
+    auto c4 = create_diagnostic("log(qv.mean('lev'))",grid);
+    REQUIRE (std::dynamic_pointer_cast<UnaryMath>(c4)!=nullptr);
+    REQUIRE (get(c4,"field_name")=="qv.mean('lev')");
+
+    // One spelling each: functions are not methods, and methods are not functions
+    REQUIRE_THROWS_WITH (create_diagnostic("qv.log()",grid),
+                         Catch::Contains("'log' is a function, not a method"));
+    REQUIRE_THROWS_WITH (create_diagnostic("mean(T_mid,'lev')",grid),
+                         Catch::Contains("'mean' is a method, not a function"));
+    // Arity
+    REQUIRE_THROWS (create_diagnostic("log()",grid));
+    REQUIRE_THROWS (create_diagnostic("log(qv,qc)",grid));
+    REQUIRE_THROWS (create_diagnostic("pow(qv)",grid));
+    // A callee that is not a name
+    REQUIRE_THROWS (create_diagnostic("(qv+qc)(2)",grid));
   }
 
   SECTION ("dexpr_negative_literals") {

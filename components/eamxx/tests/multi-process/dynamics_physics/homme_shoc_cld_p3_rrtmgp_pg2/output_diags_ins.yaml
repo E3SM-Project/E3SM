@@ -53,8 +53,20 @@ fields:
       # The int index pair is promoted to Real, since IO writes only Real fields.
       - p500_idx  := p_mid.searchsorted(500, units='hPa')*1.0
 
+      # --- Math functions ---------------------------------------------------
+      # qv may be 0 (or slightly negative), so mask log/sqrt where invalid: with
+      # FPEs enabled, the default invalid='nan' would stop the run there.
+      - log_qv    := log(qv, invalid='mask')
+      - exp_qv    := exp(-qv)
+      - sqrt_qv   := sqrt(qv, invalid='mask')
+      - abs_w     := abs(omega)
+      - exner     := pow(p_mid/P0, 0.2857)
+      - log_T     := log(T_mid, units='ignore')
+      - qt_sq     := (qc+qv)**2
+
       # --- Composition ------------------------------------------------------
       - cold_T    := T_mid.where(T_mid<273.15).mean('lev')
+      - log_qv_vavg := log(qv, invalid='mask').mean('lev')
 
       # --- Notes -------------------------------------------------------------
       # A negative threshold, and bin edges that are negative or have an exponent.
