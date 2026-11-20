@@ -1009,9 +1009,9 @@ void HommeDynamics::restart_homme_state () {
 
   // Restart end-of-homme-step Q as Qdp/dp. That's what Homme does at the end of the timestep,
   // and by writing/loading only Qdp in the restart file, we save space.
-  auto Qdp_dyn_view = get_internal_field("Qdp_dyn",dgn).get_view<Pack*****>();
+  auto Qdp_dyn_view = get_internal_field("Qdp_dyn",dgn).get_strided_view<Pack*****>();
   auto Q_dyn_view = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
-  auto dp_dyn_view = get_internal_field("dp3d_dyn",dgn).get_view<Pack****>();
+  auto dp_dyn_view = get_internal_field("dp3d_dyn",dgn).get_strided_view<Pack****>();
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0,nelem*qsize*NGP*NGP*npacks),
                        KOKKOS_LAMBDA (const int idx) {
     const int ie =  idx / (qsize*NGP*NGP*npacks);
