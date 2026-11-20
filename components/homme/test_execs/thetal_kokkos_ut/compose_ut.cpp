@@ -409,6 +409,8 @@ TEST_CASE ("compose_transport_testing") {
     unsigned int cedr_seed = s.r.gen_seed();
     MPI_Bcast(&cedr_seed, 1, MPI_UNSIGNED, 0, s.get_comm().mpi_comm());
     compose::test::set_cedr_urand_seed(cedr_seed);
+    if (s.get_comm().root())
+      printf("CEDR unit tests seed: %u (to reproduce, rerun with --rng-seed %u)\n", cedr_seed, cedr_seed);
   }
   REQUIRE(compose::test::slmm_unittest() == 0);
   REQUIRE(compose::test::cedr_unittest() == 0);
