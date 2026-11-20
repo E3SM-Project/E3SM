@@ -402,6 +402,14 @@ TEST_CASE ("compose_transport_testing") {
   }
 
   // unit tests
+  {
+    // Seed the CEDR unit tests' random numbers with the session seed, so that a failure
+    // can be reproduced with --rng-seed <seed>. The seed may differ across ranks (if
+    // drawn from std::random_device), so use the one of rank 0 everywhere.
+    unsigned int cedr_seed = s.r.gen_seed();
+    MPI_Bcast(&cedr_seed, 1, MPI_UNSIGNED, 0, s.get_comm().mpi_comm());
+    compose::test::set_cedr_urand_seed(cedr_seed);
+  }
   REQUIRE(compose::test::slmm_unittest() == 0);
   REQUIRE(compose::test::cedr_unittest() == 0);
   REQUIRE(compose::test::interpolate_unittest() == 0);

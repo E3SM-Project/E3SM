@@ -18,8 +18,15 @@ T square (const T& x) { return x*x; }
 
 bool eq(const std::string& a, const char* const b1, const char* const b2 = 0);
 
-// Uniform rand in [0, 1).
+// Uniform rand in [0, 1), for the unit tests.
+//   The draws come from CEDR's own engine (std::mt19937_64), not from libc's rand():
+// other libraries in the process may use (and reseed) libc's global PRNG. E.g., on
+// HIP machines, the ROCm code object manager does, so rand() gives different numbers
+// on every run. The engine has a fixed default seed, so the draws are the same on
+// every run (and on every MPI rank) unless set_urand_seed is called.
 Real urand();
+// Reseed the engine used by urand. Use the same seed on all ranks.
+void set_urand_seed(const unsigned int seed);
 
 #define pr(m) do {                                      \
     int _pid_ = 0;                                      \

@@ -11,6 +11,8 @@ namespace compose {
 namespace test {
 
 int slmm_unittest();
+// Set the seed of the random numbers used by the CEDR unit tests. Use the same seed on all ranks.
+void set_cedr_urand_seed(unsigned int seed);
 int cedr_unittest();
 int cedr_unittest(MPI_Comm comm);
 int interpolate_unittest();
