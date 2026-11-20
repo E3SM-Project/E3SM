@@ -113,3 +113,53 @@ def test_driver_owned_io_options_are_rejected(option, defaults):
 
     with pytest.raises(ValueError, match="cannot be overridden"):
         validate_user_overrides(user_overrides, defaults)
+
+
+@pytest.mark.parametrize("stream", ["InitialState", "InitialVertCoord"])
+def test_initial_condition_filename_is_allowed(stream, defaults):
+    user_overrides = {"IOStreams": {stream: {"Filename": "/path/to/ic.nc"}}}
+
+    validated = validate_user_overrides(user_overrides, defaults)
+
+    assert validated == user_overrides
+
+
+@pytest.mark.parametrize("option", ["FreqUnits", "Contents", "Mode"])
+def test_other_initial_state_options_are_rejected(option, defaults):
+    user_overrides = {
+        "IOStreams": {
+            "InitialState": {"Filename": "/path/to/ic.nc", option: "Never"}
+        }
+    }
+
+    with pytest.raises(
+        ValueError, match=rf"IOStreams\.InitialState\.{option}.*cannot be"
+    ):
+        validate_user_overrides(user_overrides, defaults)
+
+
+@pytest.mark.parametrize(
+    "stream", ["HorzMeshIn", "Forcing", "RestartRead", "RestartWrite"]
+)
+def test_other_cime_owned_filenames_are_rejected(stream, defaults):
+    user_overrides = {"IOStreams": {stream: {"Filename": "/path/to/x.nc"}}}
+
+    with pytest.raises(ValueError, match="cannot be overridden"):
+        validate_user_overrides(user_overrides, defaults)
+
+
+@pytest.mark.parametrize(
+    ("filename", "message"),
+    [
+        ("ic.nc", "must be an absolute path"),
+        ("", "must be a non-empty string"),
+        (3, "must be a non-empty string"),
+    ],
+)
+def test_bad_initial_condition_filenames_are_rejected(
+    filename, message, defaults
+):
+    user_overrides = {"IOStreams": {"InitialState": {"Filename": filename}}}
+
+    with pytest.raises(ValueError, match=message):
+        validate_user_overrides(user_overrides, defaults)

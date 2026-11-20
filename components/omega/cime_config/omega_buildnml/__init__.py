@@ -3,6 +3,7 @@ from .config import (
     build_runtime_overrides,
     resolve_streams_files,
 )
+from .input_check import check_user_input_files, get_user_input_files
 from .read_write import (
     read_config_overrides,
     read_default_config,
@@ -15,6 +16,8 @@ from .read_write import (
 __all__ = [
     "build_omega_config",
     "build_runtime_overrides",
+    "check_user_input_files",
+    "get_user_input_files",
     "read_config_overrides",
     "read_default_config",
     "read_input_files_config",

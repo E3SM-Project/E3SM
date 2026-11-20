@@ -62,6 +62,16 @@ BLOCKED_OPTIONS = frozenset(
     }
 )
 
+#: IOStreams whose input file a user may replace in ``user_nl_omega``. The
+#: mesh (``HorzMeshIn``) always comes from ``input_files.yaml``, and a
+#: replacement file is checked against it by ``omega_buildnml.input_check``.
+USER_INPUT_STREAMS = ("InitialState", "InitialVertCoord")
+
+#: Options below a blocked section that a user may still set
+USER_SETTABLE_OPTIONS = frozenset(
+    f"IOStreams.{stream}.Filename" for stream in USER_INPUT_STREAMS
+)
+
 
 def validate_input_files_config(
     input_files: YamlMapping,
@@ -257,10 +267,52 @@ def validate_user_overrides(
 
     errors = validate_overrides(user_overrides, defaults, "user overrides")
     errors.extend(validate_blocked_options(user_overrides, "user overrides"))
+    errors.extend(_validate_user_input_filenames(user_overrides))
 
     _raise(errors, "user_nl_omega")
 
     return user_overrides
+
+
+def _validate_user_input_filenames(user_overrides: YamlMapping) -> list[str]:
+    """
+    Validate the input filenames a user may set in ``user_nl_omega``.
+
+    Only the form of the path is checked here. Whether the file matches the
+    case's mesh is checked by ``omega_buildnml.input_check`` in buildnml.
+
+    Parameters:
+    -----------
+    user_overrides : dict[str, Any]
+        Parsed content of the case's ``user_nl_omega``.
+
+    Returns:
+    --------
+    list[str]
+        Error messages describing any problems found.
+    """
+    io_streams = user_overrides.get("IOStreams")
+    if not isinstance(io_streams, dict):
+        return []
+
+    errors: list[str] = []
+
+    for stream in USER_INPUT_STREAMS:
+        config = io_streams.get(stream)
+        if not isinstance(config, dict) or "Filename" not in config:
+            continue
+
+        filename = config["Filename"]
+        option = f"IOStreams.{stream}.Filename"
+
+        if not isinstance(filename, str) or not filename.strip():
+            errors.append(f"{option} must be a non-empty string.")
+        elif not filename.startswith("/"):
+            errors.append(
+                f"{option} must be an absolute path, got '{filename}'."
+            )
+
+    return errors
 
 
 def _raise(errors: list[str], config_path: str) -> None:
@@ -603,7 +655,20 @@ def _blocked_override_options(
         option = f"{prefix}{key}"
 
         if option in BLOCKED_OPTIONS:
-            blocked_options.append(option)
+            settable = {
+                settable_option
+                for settable_option in USER_SETTABLE_OPTIONS
+                if settable_option.startswith(f"{option}.")
+            }
+            if settable and isinstance(value, dict):
+                # only the options listed in USER_SETTABLE_OPTIONS may be set
+                blocked_options.extend(
+                    f"{option}.{sub_key}"
+                    for sub_key in value
+                    if f"{option}.{sub_key}" not in settable
+                )
+            else:
+                blocked_options.append(option)
         elif isinstance(value, dict):
             blocked_options.extend(
                 _blocked_override_options(value, f"{option}.")
