@@ -5,3 +5,9 @@ It sets GLC2OCN_SHELF_MASK=ungrounded and pins the MALI initial condition
 (MALI_IC_FILE) to the file the ocean initial condition was built from, so
 the imported geometry matches the ocean initial condition even if MALI's
 default initial condition changes.
+
+It also pins MALI's ice and ocean densities (config_ice_density = 910.0,
+config_ocean_density = 1028.0) to the values that MALI initial condition and
+the ocean initial condition were built with, so MALI's floatation and
+lithostatic pressure match the ocean initial condition even if MALI's
+defaults change.
