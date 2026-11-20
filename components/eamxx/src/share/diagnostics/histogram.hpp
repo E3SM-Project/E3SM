@@ -11,10 +11,12 @@ namespace scream {
  *
  * Examples:
  *  - If the input field is T_mid(ncol,nlev) and the bin configuration string is 100_200_300_400_500,
- *    the diag will have layout (cmp), with extent 5 (5 bins). diag(1) will count
- *    the number of (icol,ilev) entries where 200<T_mid<300.
+ *    the diag will have layout (cmp), with extent 4 (4 bins). diag(1) will count
+ *    the number of (icol,ilev) entries where 200<=T_mid<300.
  * Notes:
- *  - we do add a bin (-inf,100) and (500,inf)  before/after the provided ones, to catch the tails.
+ *  - the binning is numpy's (and xhistogram's): n edges make n-1 bins, each bin includes
+ *    its lower edge, the last bin also includes its upper edge, and values outside the
+ *    edges are not counted. To count the tails, add very large edges at either end.
  *  - the bins endpoints MUST be listed in strictly increasing order (we error out if they are not).
  */
 

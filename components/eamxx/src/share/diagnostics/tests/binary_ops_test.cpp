@@ -154,4 +154,74 @@ TEST_CASE("binary_op_constants_do_not_shadow_fields")
   REQUIRE (std::find(inputs.begin(),inputs.end(),"qv")!=inputs.end());
 }
 
+TEST_CASE("binary_op_literals")
+{
+  // A numeric literal has no units of its own: in a sum or difference it takes
+  // the other operand's, in a product or ratio it is a pure number. A named
+  // constant keeps its units in every case.
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
+  auto grid = create_point_grid("physics",16,8,comm);
+  auto &diag_factory = DiagnosticFactory::instance();
+  register_diagnostics();
+
+  const auto lay = grid->get_3d_scalar_layout(LEV);
+  Field T (FieldIdentifier("T_mid", lay, K,     grid->name()), true);
+  Field qv(FieldIdentifier("qv",    lay, kg/kg, grid->name()), true);
+  for (auto f : {&T,&qv}) f->get_header().get_tracking().update_time_stamp(t0);
+  int seed = get_random_test_seed();
+  randomize_uniform(T,  seed++, 200, 300);
+  randomize_uniform(qv, seed++, 0, 0.02);
+
+  auto make = [&](const std::string& a1, const std::string& op, const std::string& a2) {
+    ekat::ParameterList p;
+    p.set("grid_name", grid->name());
+    p.set<std::string>("arg1",a1);
+    p.set<std::string>("arg2",a2);
+    p.set<std::string>("binary_op",op);
+    auto d = diag_factory.create("BinaryOp",comm,p,grid);
+    for (const auto& n : d->get_input_fields_names()) {
+      d->set_input_field(n=="T_mid" ? T : qv);
+    }
+    d->initialize();
+    return d;
+  };
+  auto units_of = [&](const std::string& a1, const std::string& op, const std::string& a2) {
+    return make(a1,op,a2)->get().get_header().get_identifier().get_units();
+  };
+
+  // Literals in a sum or difference take the field's units, on either side
+  REQUIRE (units_of("T_mid","minus","273.15")==K);
+  REQUIRE (units_of("273.15","plus","T_mid")==K);
+  REQUIRE (units_of("300","minus","T_mid")==K);
+  REQUIRE (units_of("qv","plus","-1e-3")==kg/kg);
+  // ...and are pure numbers in a product or ratio
+  REQUIRE (units_of("T_mid","times","2")==K);
+  REQUIRE (units_of("T_mid","over","100")==K);
+  REQUIRE (units_of("2","over","T_mid")==none/K);
+  // Two literals have no units to take
+  REQUIRE (units_of("2","plus","3")==none);
+
+  // Named constants keep their units: Tmelt is in K
+  REQUIRE (units_of("T_mid","minus","Tmelt")==K);
+  REQUIRE_THROWS (make("qv","minus","Tmelt"));
+  REQUIRE_THROWS (make("Tmelt","plus","qv"));
+  // ...and a literal next to a named constant takes the constant's units
+  REQUIRE (units_of("Tmelt","minus","40")==K);
+
+  // The value is unchanged by the units bookkeeping
+  auto d = make("T_mid","minus","273.15");
+  d->compute(t0);
+  Field expected = T.clone("expected");
+  expected.update(T,1,0,-273.15);
+  REQUIRE (views_are_equal(d->get(),expected));
+  auto d2 = make("300","minus","T_mid");
+  d2->compute(t0);
+  expected.update(T,-1,0,300);
+  REQUIRE (views_are_equal(d2->get(),expected));
+}
+
 }  // namespace scream
