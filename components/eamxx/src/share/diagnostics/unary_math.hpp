@@ -21,7 +21,8 @@ namespace scream {
  *                        traps: use it when X is not expected to be invalid.
  *                  mask  the entry is masked out (and set to the fill value)
  *  - units:      (log/exp only)
- *                  check   (default) X must be dimensionless
+ *                  check   (default) X must be dimensionless and unscaled (kg/kg
+ *                          is, g/kg is not)
  *                  ignore  X's units are not checked, and the output is unitless
  *
  * Output units: none for log/exp; sqrt(u) for sqrt; u for abs.

@@ -149,10 +149,13 @@ void UnaryMath::initialize_impl()
   const auto& u = fid.get_units();
   Units diag_units = none;
   if (m_op==Op::Log or m_op==Op::Exp) {
-    EKAT_REQUIRE_MSG (units=="ignore" or u.is_dimensionless(),
-        "Error! UnaryMath: " + m_op_str + " requires a dimensionless input.\n"
+    // NOTE: is_dimensionless() ignores the scale: g/kg has no dimension, but its
+    //       values are 1000 times the quantity, so log/exp of them is not log/exp of it.
+    EKAT_REQUIRE_MSG (units=="ignore" or u==none,
+        "Error! UnaryMath: " + m_op_str + " requires a dimensionless, unscaled input.\n"
         " - field name: " + fid.name() + "\n"
         " - field units: " + u.to_string() + "\n"
+        " - kg/kg is fine, but g/kg or K are not.\n"
         " - to apply it to the field's values regardless, use units='ignore'.\n");
   } else if (m_op==Op::Sqrt) {
     diag_units = sqrt(u);

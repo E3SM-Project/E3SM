@@ -134,6 +134,17 @@ TEST_CASE("unary_math") {
       REQUIRE (make_diag(p_pm,pm,grid)->get().get_header().get_identifier().get_units()==none);
     }
 
+    // ...which includes the scale: g/kg has no dimension, but is not the quantity itself
+    Field qg (FieldIdentifier("qg",scalar3d,g/kg,gn), true);
+    qg.get_header().get_tracking().update_time_stamp(t0);
+    randomize_uniform(qg,seed++,1,2);
+    for (std::string op : {"log","exp"}) {
+      auto p_qg = make_params(gn,"qg",op);
+      REQUIRE_THROWS (make_diag(p_qg,qg,grid));
+      p_qg.set<std::string>("units","ignore");
+      REQUIRE (make_diag(p_qg,qg,grid)->get().get_header().get_identifier().get_units()==none);
+    }
+
     auto units_of = [&](const std::string& op) {
       auto p = make_params(gn,"pm",op);
       return make_diag(p,pm,grid)->get().get_header().get_identifier().get_units();
