@@ -9,12 +9,14 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
 #include <ekat_units.hpp>
 
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <map>
 #include <set>
@@ -435,8 +437,29 @@ TEST_CASE ("io_with_math_functions")
   util::TimeStamp t0({2023,1,1},{0,0,0});
   auto fm = create_test_fm(gm,grid,t0);
 
-  const int nlocal = grid->get_num_local_dofs();
+  // A pressure, constant in time, to compare pow(..) with the Exner diag
   const auto layout3d = grid->get_3d_scalar_layout(LEV);
+  const int nlocal = grid->get_num_local_dofs();
+  auto p_of = [](const int i, const int k) { return Real(50000 + 1000*(i+k)); };
+  {
+    Field p_mid (FieldIdentifier("p_mid",layout3d,Pa,gname));
+    p_mid.allocate_view();
+    auto p_h = p_mid.get_view<Real**,Host>();
+    for (int i=0; i<nlocal; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        p_h(i,k) = p_of(i,k);
+      }
+    }
+    p_mid.sync_to_dev();
+    p_mid.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(p_mid);
+  }
+
+  // Rd/cp, written with enough digits to round trip
+  using C = physics::Constants<Real>;
+  const double kappa = static_cast<double>(C::RD.value*C::INV_CP.value);
+  char kappa_str[64];
+  std::snprintf(kappa_str,sizeof(kappa_str),"%.17g",kappa);
 
   const std::string prefix = "io_dexpr_math";
   const int dt = 1;
@@ -445,6 +468,7 @@ TEST_CASE ("io_with_math_functions")
   // The output names, and what each one is
   const std::vector<std::string> names = {
     "lq", "eq", "sq", "aT", "lT", "rt_exp", "rt_sqrt", "lq_avg", "avg_lq",
+    "T2", "T2p", "cbrt", "ex", "ex_hand", "ex_ref",
   };
   auto params = output_params(prefix,gname,
       {
@@ -460,6 +484,15 @@ TEST_CASE ("io_with_math_functions")
         // Functions compose with each other and with operators: round trips
         "rt_exp := exp(log(qv))",
         "rt_sqrt := sqrt(qv)*sqrt(qv)",
+        // Powers: the operator and the function are the same diag. A cube root
+        // is the exponent as a fraction.
+        "T2 := T_mid**2",
+        "T2p := pow(T_mid,2)",
+        "cbrt := qv**(1/3)",
+        // Exner, three ways: as a power, as exp(kappa*log(..)), and as the diag itself
+        std::string("ex := pow(p_mid/P0,") + kappa_str + ")",
+        std::string("ex_hand := exp(") + kappa_str + "*log(p_mid/P0))",
+        "ex_ref := Exner",
         // Functions and methods compose, either way around
         "lq_avg := log(qv).mean('lev')",
         "avg_lq := log(qv.mean('lev'))",
@@ -482,6 +515,7 @@ TEST_CASE ("io_with_math_functions")
     calc_fields(qv,T_mid,n);
     qv.get_header().get_tracking().update_time_stamp(t);
     T_mid.get_header().get_tracking().update_time_stamp(t);
+    fm->get_field("p_mid").get_header().get_tracking().update_time_stamp(t);
 
     om.run(t);
   }
@@ -543,6 +577,13 @@ TEST_CASE ("io_with_math_functions")
         }
         REQUIRE (v2("rt_exp")(i,k)==Approx(qv_v));
         REQUIRE (v2("rt_sqrt")(i,k)==Approx(qv_v));
+        REQUIRE (v2("T2")(i,k)==Approx(T_v*T_v));
+        REQUIRE (v2("T2p")(i,k)==v2("T2")(i,k));
+        REQUIRE (v2("cbrt")(i,k)==Approx(std::cbrt(qv_v)));
+        // The three Exners agree, and match the formula
+        REQUIRE (v2("ex")(i,k)==Approx(v2("ex_ref")(i,k)));
+        REQUIRE (v2("ex_hand")(i,k)==Approx(v2("ex_ref")(i,k)));
+        REQUIRE (v2("ex")(i,k)==Approx(std::pow(p_of(i,k)/C::P0.value,kappa)));
       }
       REQUIRE (v1("lq_avg")(i)==Approx(lq_col_sum/nlevs));
       REQUIRE (v1("avg_lq")(i)==Approx(std::log(qv_col_sum/nlevs)));
