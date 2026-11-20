@@ -231,6 +231,51 @@ TEST_CASE("unary_math") {
     }
   }
 
+  SECTION ("wind_speed") {
+    // sqrt(U*U+V*V), with U and V the components of horiz_winds, is what the wind_speed
+    // diag computes: an early check of sqrt against a diag that does it by hand
+    const auto uv_layout = grid->get_3d_vector_layout(LEV,2,"cmp");
+    Field winds (FieldIdentifier("horiz_winds",uv_layout,m/s,gn), true);
+    winds.get_header().get_tracking().update_time_stamp(t0);
+    randomize_uniform(winds,seed++,-10,10);
+    const auto U = winds.get_component(0);
+    const auto V = winds.get_component(1);
+
+    const auto speed2 = (m/s)*(m/s);
+    Field s2 (FieldIdentifier("s2",scalar3d,speed2,gn), true);
+    Field v2 (FieldIdentifier("v2",scalar3d,speed2,gn), true);
+    s2.get_header().get_tracking().update_time_stamp(t0);
+    s2.deep_copy(U);
+    s2.scale(U);
+    v2.deep_copy(V);
+    v2.scale(V);
+    s2.update(v2,1,1);
+
+    auto sqrt_diag = make_diag(make_params(gn,"s2","sqrt"),s2,grid);
+    sqrt_diag->compute(t0);
+
+    ekat::ParameterList ws_params;
+    ws_params.set<std::string>("grid_name",gn);
+    auto ws_diag = factory.create("wind_speed",comm,ws_params,grid);
+    ws_diag->set_input_field(winds);
+    ws_diag->initialize();
+    ws_diag->compute(t0);
+
+    auto sq = sqrt_diag->get();
+    auto ws = ws_diag->get();
+    REQUIRE (sq.get_header().get_identifier().get_units()==m/s);
+    REQUIRE (sq.get_header().get_identifier().get_units()==ws.get_header().get_identifier().get_units());
+    sq.sync_to_host();
+    ws.sync_to_host();
+    const auto sq_h = sq.get_view<const Real**,Host>();
+    const auto ws_h = ws.get_view<const Real**,Host>();
+    for (int icol=0; icol<grid->get_num_local_dofs(); ++icol) {
+      for (int ilev=0; ilev<nlevs; ++ilev) {
+        REQUIRE (sq_h(icol,ilev)==Approx(ws_h(icol,ilev)));
+      }
+    }
+  }
+
   SECTION ("masked_input") {
     // Masked entries of X are not computed, so they may hold anything, e.g.
     // the fill value, whose exp overflows.
