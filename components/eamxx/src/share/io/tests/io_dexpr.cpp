@@ -455,6 +455,34 @@ TEST_CASE ("io_with_math_functions")
     fm->add_field(p_mid);
   }
 
+  // A wind, constant in time, to compare wind_speed with sqrt(u**2+v**2). Expressions cannot
+  // index a component, so the components are also fields of their own, with the same values.
+  auto u_of = [](const int i, const int k) { return Real(3 + i - 0.5*k); };
+  auto v_of = [](const int i, const int k) { return Real(-4 + 0.25*i + k); };
+  {
+    const auto layout_uv = grid->get_3d_vector_layout(LEV,2,"cmp");
+    Field winds (FieldIdentifier("horiz_winds",layout_uv,m/s,gname));
+    Field uwind (FieldIdentifier("uwind",layout3d,m/s,gname));
+    Field vwind (FieldIdentifier("vwind",layout3d,m/s,gname));
+    for (auto* f : {&winds,&uwind,&vwind}) {
+      f->allocate_view();
+    }
+    auto w_h = winds.get_view<Real***,Host>();
+    auto u_h = uwind.get_view<Real**,Host>();
+    auto v_h = vwind.get_view<Real**,Host>();
+    for (int i=0; i<nlocal; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        w_h(i,0,k) = u_h(i,k) = u_of(i,k);
+        w_h(i,1,k) = v_h(i,k) = v_of(i,k);
+      }
+    }
+    for (auto* f : {&winds,&uwind,&vwind}) {
+      f->sync_to_dev();
+      f->get_header().get_tracking().update_time_stamp(t0);
+      fm->add_field(*f);
+    }
+  }
+
   // Rd/cp, written with enough digits to round trip
   using C = physics::Constants<Real>;
   const double kappa = static_cast<double>(C::RD.value*C::INV_CP.value);
@@ -468,7 +496,7 @@ TEST_CASE ("io_with_math_functions")
   // The output names, and what each one is
   const std::vector<std::string> names = {
     "lq", "eq", "sq", "aT", "lT", "rt_exp", "rt_sqrt", "lq_avg", "avg_lq",
-    "T2", "T2p", "cbrt", "ex", "ex_hand", "ex_ref",
+    "T2", "T2p", "cbrt", "ex", "ex_hand", "ex_ref", "ws_hand", "ws_ref",
   };
   auto params = output_params(prefix,gname,
       {
@@ -493,6 +521,9 @@ TEST_CASE ("io_with_math_functions")
         std::string("ex := pow(p_mid/P0,") + kappa_str + ")",
         std::string("ex_hand := exp(") + kappa_str + "*log(p_mid/P0))",
         "ex_ref := Exner",
+        // The wind speed diag, and the same by hand: units (m/s)^2 and back
+        "ws_hand := sqrt(uwind**2+vwind**2)",
+        "ws_ref := wind_speed",
         // Functions and methods compose, either way around
         "lq_avg := log(qv).mean('lev')",
         "avg_lq := log(qv.mean('lev'))",
@@ -516,6 +547,9 @@ TEST_CASE ("io_with_math_functions")
     qv.get_header().get_tracking().update_time_stamp(t);
     T_mid.get_header().get_tracking().update_time_stamp(t);
     fm->get_field("p_mid").get_header().get_tracking().update_time_stamp(t);
+    for (const auto& name : {"horiz_winds","uwind","vwind"}) {
+      fm->get_field(name).get_header().get_tracking().update_time_stamp(t);
+    }
 
     om.run(t);
   }
@@ -584,6 +618,9 @@ TEST_CASE ("io_with_math_functions")
         REQUIRE (v2("ex")(i,k)==Approx(v2("ex_ref")(i,k)));
         REQUIRE (v2("ex_hand")(i,k)==Approx(v2("ex_ref")(i,k)));
         REQUIRE (v2("ex")(i,k)==Approx(std::pow(p_of(i,k)/C::P0.value,kappa)));
+        // The hand-rolled wind speed matches the diag, and the formula
+        REQUIRE (v2("ws_hand")(i,k)==Approx(v2("ws_ref")(i,k)));
+        REQUIRE (v2("ws_hand")(i,k)==Approx(std::sqrt(u_of(i,k)*u_of(i,k) + v_of(i,k)*v_of(i,k))));
       }
       REQUIRE (v1("lq_avg")(i)==Approx(lq_col_sum/nlevs));
       REQUIRE (v1("avg_lq")(i)==Approx(std::log(qv_col_sum/nlevs)));
