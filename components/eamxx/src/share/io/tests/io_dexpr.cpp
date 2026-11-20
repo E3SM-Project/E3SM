@@ -9,14 +9,12 @@
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
-#include "share/physics/physics_constants.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
 #include <ekat_units.hpp>
 
 #include <cmath>
-#include <cstdio>
 #include <fstream>
 #include <map>
 #include <set>
@@ -424,8 +422,6 @@ TEST_CASE ("io_with_math_functions")
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using C = physics::Constants<Real>;
-
   register_diagnostics();
 
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -439,28 +435,8 @@ TEST_CASE ("io_with_math_functions")
   util::TimeStamp t0({2023,1,1},{0,0,0});
   auto fm = create_test_fm(gm,grid,t0);
 
-  // A pressure, constant in time, to compare pow(..) with the Exner diag
-  const auto layout3d = grid->get_3d_scalar_layout(LEV);
   const int nlocal = grid->get_num_local_dofs();
-  auto p_of = [](const int i, const int k) { return Real(50000 + 1000*(i+k)); };
-  {
-    Field p_mid (FieldIdentifier("p_mid",layout3d,Pa,gname));
-    p_mid.allocate_view();
-    auto p_h = p_mid.get_view<Real**,Host>();
-    for (int i=0; i<nlocal; ++i) {
-      for (int k=0; k<nlevs; ++k) {
-        p_h(i,k) = p_of(i,k);
-      }
-    }
-    p_mid.sync_to_dev();
-    p_mid.get_header().get_tracking().update_time_stamp(t0);
-    fm->add_field(p_mid);
-  }
-
-  // Rd/cp, written with enough digits to round trip
-  char kappa_str[64];
-  std::snprintf(kappa_str,sizeof(kappa_str),"%.17g",
-                static_cast<double>(C::RD.value*C::INV_CP.value));
+  const auto layout3d = grid->get_3d_scalar_layout(LEV);
 
   const std::string prefix = "io_dexpr_math";
   const int dt = 1;
@@ -468,7 +444,7 @@ TEST_CASE ("io_with_math_functions")
 
   // The output names, and what each one is
   const std::vector<std::string> names = {
-    "lq", "eq", "sq", "aT", "T2", "T2p", "lT", "ex", "ex_ref", "lq_avg", "avg_lq",
+    "lq", "eq", "sq", "aT", "lT", "rt_exp", "rt_sqrt", "lq_avg", "avg_lq",
   };
   auto params = output_params(prefix,gname,
       {
@@ -479,14 +455,11 @@ TEST_CASE ("io_with_math_functions")
         "sq := sqrt(qv)",
         // T_mid takes both signs
         "aT := abs(T_mid)",
-        // The operator and the function are the same diag class
-        "T2 := T_mid**2",
-        "T2p := pow(T_mid,2)",
         // T_mid has units and invalid entries; both are dealt with by keywords
         "lT := log(T_mid,invalid='mask',units='ignore')",
-        // Exner, two ways
-        std::string("ex := pow(p_mid/P0,") + kappa_str + ")",
-        "ex_ref := Exner",
+        // Functions compose with each other and with operators: round trips
+        "rt_exp := exp(log(qv))",
+        "rt_sqrt := sqrt(qv)*sqrt(qv)",
         // Functions and methods compose, either way around
         "lq_avg := log(qv).mean('lev')",
         "avg_lq := log(qv.mean('lev'))",
@@ -509,7 +482,6 @@ TEST_CASE ("io_with_math_functions")
     calc_fields(qv,T_mid,n);
     qv.get_header().get_tracking().update_time_stamp(t);
     T_mid.get_header().get_tracking().update_time_stamp(t);
-    fm->get_field("p_mid").get_header().get_tracking().update_time_stamp(t);
 
     om.run(t);
   }
@@ -564,16 +536,13 @@ TEST_CASE ("io_with_math_functions")
         REQUIRE (v2("eq")(i,k)==Approx(std::exp(-qv_v)));
         REQUIRE (v2("sq")(i,k)==Approx(std::sqrt(qv_v)));
         REQUIRE (v2("aT")(i,k)==std::abs(T_v));
-        REQUIRE (v2("T2")(i,k)==Approx(T_v*T_v));
-        REQUIRE (v2("T2p")(i,k)==v2("T2")(i,k));
         if (T_v>0) {
           REQUIRE (v2("lT")(i,k)==Approx(std::log(T_v)));
         } else {
           REQUIRE (v2("lT")(i,k)==fv);
         }
-        REQUIRE (v2("ex")(i,k)==Approx(v2("ex_ref")(i,k)));
-        REQUIRE (v2("ex")(i,k)==Approx(std::pow(p_of(i,k)/C::P0.value,
-                                                C::RD.value*C::INV_CP.value)));
+        REQUIRE (v2("rt_exp")(i,k)==Approx(qv_v));
+        REQUIRE (v2("rt_sqrt")(i,k)==Approx(qv_v));
       }
       REQUIRE (v1("lq_avg")(i)==Approx(lq_col_sum/nlevs));
       REQUIRE (v1("avg_lq")(i)==Approx(std::log(qv_col_sum/nlevs)));

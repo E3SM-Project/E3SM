@@ -60,9 +60,7 @@ fields:
       - exp_qv    := exp(-qv)
       - sqrt_qv   := sqrt(qv, invalid='mask')
       - abs_w     := abs(omega)
-      - exner     := pow(p_mid/P0, 0.2857)
       - log_T     := log(T_mid, units='ignore')
-      - qt_sq     := (qc+qv)**2
 
       # --- Composition ------------------------------------------------------
       - cold_T    := T_mid.where(T_mid<273.15).mean('lev')

@@ -36,7 +36,6 @@ diagnostics use but that are not written), need no name of their own.
 | -------- | ------- |
 | `a + b`, `a - b`, `a * b`, `a / b` | element-wise arithmetic |
 | `-a` | negation, shorthand for `(-1)*a` |
-| `a ** p` | `a` to the power `p`, a number; same as `pow(a, p)` |
 | `>`, `>=`, `<`, `<=`, `==`, `!=` | comparison, **only** inside `where(..)` |
 | `( )` | grouping |
 
@@ -61,8 +60,8 @@ Adding a number to, or subtracting it from, a field with units is rejected when
 the stream is set up, since `+` and `-` need operands with the same units:
 `T_mid - 273.15` is an error.
 
-Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`, and
-`2*qv**2` is `2*(qv**2)`. When in doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
+Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. When in
+doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
 adds a mixing ratio to a pressure, and is rejected at run time for incompatible
 units, while `(qc+qv)*p_mid` is fine.)
 
@@ -210,41 +209,32 @@ Notes:
 | `exp(X)` | exponential | none |
 | `sqrt(X)` | square root | `sqrt(u)` |
 | `abs(X)` | absolute value | `u` |
-| `pow(X, p)`, `X**p` | `X` to the power `p` | `u^p` |
 
 ```yaml
 field_names:
   - log_qv   := log(qv, invalid='mask')
-  - exner    := pow(p_mid/P0, 0.2857)
   - log_T    := log(T_mid, units='ignore')
-  - qt_sq    := (qc+qv)**2
 ```
 
 Two keywords control what happens where the math does not:
 
-- **`invalid='nan'` or `'mask'`** (`log`, `sqrt`, `pow`): what an entry outside
-  the function's domain becomes. That is `X<=0` for `log`, `X<0` for `sqrt`, and
-  for `pow`, `X<0` with a non-integer `p`, or `X==0` with a negative `p`.
+- **`invalid='nan'` or `'mask'`** (`log`, `sqrt`): what an entry outside the
+  function's domain becomes. That is `X<=0` for `log`, and `X<0` for `sqrt`.
   - `'nan'`, the default, computes it anyway, giving NaN (or `-inf` for
     `log(0)`). Use it when you do not expect any: with floating point exceptions
     enabled, the run stops right there, which is the point.
   - `'mask'` leaves it out: the entry is missing (the fill value) in the output,
     as `where(..)` would make it.
-- **`units='check'` or `'ignore'`** (`log`, `exp`, `pow`): with `'check'`, the
-  default, `log` and `exp` take a dimensionless `X` only (`kg/kg` is fine, `K`
-  is not), and `pow` needs `p` to be a fraction `n/d` with `d<=12` (like `2`,
-  `0.5` or `-1.5`), so that the units `u^p` exist, unless `X` is dimensionless.
-  `'ignore'` skips the check, and the output is unitless: `log(T_mid,
-  units='ignore')` is the log of the number in kelvin.
+- **`units='check'` or `'ignore'`** (`log`, `exp`): with `'check'`, the default,
+  `X` must be dimensionless (`kg/kg` is fine, `K` is not). `'ignore'` skips
+  the check, and the output is unitless: `log(T_mid, units='ignore')` is the
+  log of the number in kelvin.
 
 Notes:
 
-- The exponent `p` must be a number, not a field or an expression: `qv**2` and
-  `qv**(-1)` are fine, `qv**T_mid` and `qv**(1/3)` are not (write `qv**0.3333`
-  with `units='ignore'`, or on a dimensionless `qv`).
-- `pow(X, 2)` and `X**2` compute the same thing, but are two expressions, so
-  requesting both computes it twice.
 - Entries that are already missing in `X` stay missing, and are not computed.
+- There is no `pow` (or `**`) yet. A square is `X*X`, and `sqrt(X)` is the
+  square root.
 
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,
@@ -278,8 +268,8 @@ at the offending part. Unknown function names come back with the list of
 available ones.
 
 ```text
-Error! Unsupported expression: no diagnostic implements the unary operator '!'.
- - subexpression: (!T_mid)
+Error! Unsupported expression: no diagnostic implements the operator '**'.
+ - subexpression: (T_mid**2)
 ```
 
 ## Worked example

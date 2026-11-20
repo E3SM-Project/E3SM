@@ -177,21 +177,6 @@ std::string choice_arg (const ast::Expression& e, const std::string& ctx,
   unsupported(ctx + " must be one of " + valid,e);
 }
 
-// pow(X,p) and X**p. The exponent must be a number: UnaryMath raises a field
-// to a scalar power, and needs it to work out the output units.
-void translate_pow (const ast::Expression& base, const ast::Expression& exponent,
-                    const ast::Expression& self, std::string& diag_name,
-                    ekat::ParameterList& params)
-{
-  if (not is_number(exponent)) {
-    unsupported("the exponent of a power must be a number",self);
-  }
-  diag_name = "UnaryMath";
-  params.set<std::string>("op","pow");
-  params.set<std::string>("field_name",operand_name(base));
-  params.set<std::string>("exponent",operand_name(exponent));
-}
-
 // ---------------------------------------------------------------------------
 // Translation: one AST node -> one diagnostic
 // ---------------------------------------------------------------------------
@@ -257,11 +242,6 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
   // written where it belongs, inside where(..), is consumed by translate_method
   // and never reaches this function -- which is why the error below can safely
   // say the comparison is in the wrong place.
-  if (e.op==TokenTypes::Exp) {
-    translate_pow(*e.left,*e.right,self,diag_name,params);
-    return;
-  }
-
   const auto op = binary_op_to_diag_op(e.op);
   if (op=="") {
     if (comparison_to_cmp(e.op)!="") {
@@ -407,12 +387,6 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .keywords = {},
            .example = "abs(omega)",
            .form = CallForm::Function});
-    r.add({.name = "pow",
-           .desc = "field to a numeric power, same as X**p",
-           .min_positional = 2, .max_positional = 2,
-           .keywords = {{"invalid",false},{"units",false}},
-           .example = "pow(p_mid/P0,0.2857)",
-           .form = CallForm::Function});
 
     // Each example must parse, match the spec that declared it, and call it.
     // A wrong arity or keyword fails here, not when a user first writes it.
@@ -426,15 +400,10 @@ const dexpr::FunctionRegistry& eamxx_registry ()
 void translate_function (const Call& call, const ast::Expression& self,
                          std::string& diag_name, ekat::ParameterList& params)
 {
-  if (call.name=="log" or call.name=="exp" or call.name=="sqrt" or
-      call.name=="abs" or call.name=="pow") {
-    if (call.name=="pow") {
-      translate_pow(*call.positional[0],*call.positional[1],self,diag_name,params);
-    } else {
-      diag_name = "UnaryMath";
-      params.set<std::string>("op",call.name);
-      params.set<std::string>("field_name",operand_name(*call.positional[0]));
-    }
+  if (call.name=="log" or call.name=="exp" or call.name=="sqrt" or call.name=="abs") {
+    diag_name = "UnaryMath";
+    params.set<std::string>("op",call.name);
+    params.set<std::string>("field_name",operand_name(*call.positional[0]));
     if (const auto* invalid = keyword(call,"invalid")) {
       params.set<std::string>("invalid",choice_arg(*invalid,"'invalid'",{"nan","mask"}));
     }

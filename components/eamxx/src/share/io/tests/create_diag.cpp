@@ -407,6 +407,7 @@ TEST_CASE("create_diag")
     // Free-standing spelling of a method
     REQUIRE_THROWS (create_diagnostic("mean(T_mid,'lev')",grid));
     // Operators with no diagnostic behind them
+    REQUIRE_THROWS (create_diagnostic("T_mid**2",grid));
     REQUIRE_THROWS (create_diagnostic("!T_mid",grid));
     // Attribute access with no call
     REQUIRE_THROWS (create_diagnostic("T_mid.prev",grid));
@@ -427,13 +428,11 @@ TEST_CASE("create_diag")
       REQUIRE (std::dynamic_pointer_cast<UnaryMath>(d)!=nullptr);
       REQUIRE (get(d,"op")==op);
       REQUIRE (get(d,"field_name")=="qv");
-      // The defaults (UnaryMath stores them as it reads them)
-      if (op!="exp" and op!="abs") {
+      // 'invalid' defaults to 'nan' (UnaryMath stores it as it reads it)
+      if (op=="log" or op=="sqrt") {
         REQUIRE (get(d,"invalid")=="nan");
       }
-      if (op!="sqrt" and op!="abs") {
-        REQUIRE (get(d,"units")=="check");
-      }
+      REQUIRE_FALSE (d->get_params().isParameter("units"));
       REQUIRE (get(d,"output_field_name")==op + "(qv)");
     }
 
@@ -454,39 +453,11 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("sqrt(qv,units='ignore')",grid));
     REQUIRE_THROWS (create_diagnostic("abs(qv,invalid='mask')",grid));
 
-    // pow(X,p) and X**p are the same diag. The exponent is passed down as dexpr
-    // renders it, with a negative one as a number.
-    auto p1 = create_diagnostic("pow(T_mid,2)",grid);
-    REQUIRE (std::dynamic_pointer_cast<UnaryMath>(p1)!=nullptr);
-    REQUIRE (get(p1,"op")=="pow");
-    REQUIRE (get(p1,"field_name")=="T_mid");
-    REQUIRE (get(p1,"exponent")=="2");
-    auto p2 = create_diagnostic("T_mid**2",grid);
-    REQUIRE (std::dynamic_pointer_cast<UnaryMath>(p2)!=nullptr);
-    REQUIRE (get(p2,"op")=="pow");
-    REQUIRE (get(p2,"field_name")=="T_mid");
-    REQUIRE (get(p2,"exponent")=="2");
-    auto p3 = create_diagnostic("pow(qv,-0.5,invalid='mask')",grid);
-    REQUIRE (get(p3,"exponent")=="-0.5");
-    REQUIRE (get(p3,"invalid")=="mask");
-    auto p4 = create_diagnostic("qv**(-1)",grid);
-    REQUIRE (get(p4,"exponent")=="-1");
-    // '**' binds tighter than '*', and is right associative
-    auto p5 = create_diagnostic("2*qv**2",grid);
-    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(p5)!=nullptr);
-    REQUIRE (get(p5,"arg2")=="(qv**2)");
-    REQUIRE_THROWS (create_diagnostic("qv**2**3",grid)); // qv**(2**3): not a number
-    // The exponent must be a number
-    REQUIRE_THROWS (create_diagnostic("pow(qv,T_mid)",grid));
-    REQUIRE_THROWS (create_diagnostic("qv**T_mid",grid));
-    REQUIRE_THROWS (create_diagnostic("pow(qv,'2')",grid));
-
     // Operands go down by name, and come back around
     auto c1 = create_diagnostic("log(qv+qc)",grid);
     REQUIRE (get(c1,"field_name")=="(qv+qc)");
-    auto c2 = create_diagnostic("pow(p_mid/P0,0.25)",grid);
+    auto c2 = create_diagnostic("sqrt(p_mid/P0)",grid);
     REQUIRE (get(c2,"field_name")=="(p_mid/P0)");
-    REQUIRE (get(c2,"exponent")=="0.25");
     // ...and compose with methods, either way around
     auto c3 = create_diagnostic("log(qv).mean('lev')",grid);
     REQUIRE (std::dynamic_pointer_cast<VertContract>(c3)!=nullptr);
@@ -503,7 +474,10 @@ TEST_CASE("create_diag")
     // Arity
     REQUIRE_THROWS (create_diagnostic("log()",grid));
     REQUIRE_THROWS (create_diagnostic("log(qv,qc)",grid));
-    REQUIRE_THROWS (create_diagnostic("pow(qv)",grid));
+    REQUIRE_THROWS (create_diagnostic("sqrt(qv,qc)",grid));
+    // pow is not available (yet), as a function or as an operator
+    REQUIRE_THROWS (create_diagnostic("pow(qv,2)",grid));
+    REQUIRE_THROWS (create_diagnostic("qv**2",grid));
     // A callee that is not a name
     REQUIRE_THROWS (create_diagnostic("(qv+qc)(2)",grid));
   }
