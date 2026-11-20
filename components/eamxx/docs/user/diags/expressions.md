@@ -226,7 +226,7 @@ Two keywords control what happens where the math does not:
   - `'mask'` leaves it out: the entry is missing (the fill value) in the output,
     as `where(..)` would make it.
 - **`units='check'` or `'ignore'`** (`log`, `exp`): with `'check'`, the default,
-  `X` must be dimensionless (`kg/kg` is fine, `K` is not). `'ignore'` skips
+  `X` must be dimensionless and unscaled (`kg/kg` is fine, `g/kg` and `K` are not). `'ignore'` skips
   the check, and the output is unitless: `log(T_mid, units='ignore')` is the
   log of the number in kelvin.
 
