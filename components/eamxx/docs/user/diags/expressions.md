@@ -67,9 +67,12 @@ units, while `(qc+qv)*p_mid` is fine.)
 
 ## Functions
 
-Functions are written as methods on the field they act on, `X.f(..)`, and are
-named after their [xarray](https://docs.xarray.dev) counterparts wherever there
-is an honest analogue.
+Most functions are written as methods on the field they act on, `X.f(..)`, and
+are named after their [xarray](https://docs.xarray.dev) counterparts wherever
+there is an honest analogue. Elementwise math is written as plain functions,
+`f(X)`, as in numpy; see [Math functions](#math-functions). Each function has
+one spelling only: `X.log()` and `mean(X, 'lev')` are rejected, with a message
+saying how to write them.
 
 | Expression | Meaning |
 | ---------- | ------- |
@@ -198,6 +201,41 @@ Notes:
 - Histogram bin edges are numbers in increasing order. They may be negative,
   and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
 
+### Math functions
+
+| Expression | Meaning | Output units |
+| ---------- | ------- | ------------ |
+| `log(X)` | natural logarithm | none |
+| `exp(X)` | exponential | none |
+| `sqrt(X)` | square root | `sqrt(u)` |
+| `abs(X)` | absolute value | `u` |
+
+```yaml
+field_names:
+  - log_qv   := log(qv, invalid='mask')
+  - log_T    := log(T_mid, units='ignore')
+```
+
+Two keywords control what happens where the math does not:
+
+- **`invalid='nan'` or `'mask'`** (`log`, `sqrt`): what an entry outside the
+  function's domain becomes. That is `X<=0` for `log`, and `X<0` for `sqrt`.
+  - `'nan'`, the default, computes it anyway, giving NaN (or `-inf` for
+    `log(0)`). Use it when you do not expect any: with floating point exceptions
+    enabled, the run stops right there, which is the point.
+  - `'mask'` leaves it out: the entry is missing (the fill value) in the output,
+    as `where(..)` would make it.
+- **`units='check'` or `'ignore'`** (`log`, `exp`): with `'check'`, the default,
+  `X` must be dimensionless and unscaled (`kg/kg` is fine, `g/kg` and `K` are not). `'ignore'` skips
+  the check, and the output is unitless: `log(T_mid, units='ignore')` is the
+  log of the number in kelvin.
+
+Notes:
+
+- Entries that are already missing in `X` stay missing, and are not computed.
+- There is no `pow` (or `**`) yet. A square is `X*X`, and `sqrt(X)` is the
+  square root.
+
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,
 and so on.
@@ -266,8 +304,9 @@ fails fast rather than at the moment a user first writes it.
 
 - `dexpr::validate_registry`, called where the registry is built, proves the
   example parses, matches the spec that declared it (arity, keyword names,
-  required keywords), and really calls that function. Declare `mean` as taking
-  no positional arguments while writing `T_mid.mean('lev')` and this catches it.
+  required keywords, and whether it is written `X.f(..)` or `f(..)`), and really
+  calls that function. Declare `mean` as taking no positional arguments while
+  writing `T_mid.mean('lev')` and this catches it.
 - The `dexpr_every_registered_function_is_buildable` case in
   `src/share/io/tests/create_diag.cpp` runs every example through
   `create_diagnostic`, so a function registered without a translator case is

@@ -14,7 +14,9 @@
 #include <ekat_parameter_list.hpp>
 #include <ekat_units.hpp>
 
+#include <cmath>
 #include <fstream>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -411,6 +413,142 @@ TEST_CASE ("io_with_expressions")
     om_cst.initialize(comm,cst,t0,false);
     REQUIRE_NOTHROW (om_cst.setup(fm,gm->get_grid_names()));
     om_cst.finalize();
+  }
+
+  scorpio::finalize_subsystem();
+}
+
+TEST_CASE ("io_with_math_functions")
+{
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+  register_diagnostics();
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ncols);
+  gm->build_grids();
+  auto grid = gm->get_grid("point_grid");
+  const auto gname = grid->name();
+
+  util::TimeStamp t0({2023,1,1},{0,0,0});
+  auto fm = create_test_fm(gm,grid,t0);
+
+  const int nlocal = grid->get_num_local_dofs();
+  const auto layout3d = grid->get_3d_scalar_layout(LEV);
+
+  const std::string prefix = "io_dexpr_math";
+  const int dt = 1;
+  const int nsteps = 2;
+
+  // The output names, and what each one is
+  const std::vector<std::string> names = {
+    "lq", "eq", "sq", "aT", "lT", "rt_exp", "rt_sqrt", "lq_avg", "avg_lq",
+  };
+  auto params = output_params(prefix,gname,
+      {
+        // qv>=1, so these are all in their domain. qv is in kg/kg, so it is
+        // dimensionless, as log and exp require
+        "lq := log(qv)",
+        "eq := exp(-qv)",
+        "sq := sqrt(qv)",
+        // T_mid takes both signs
+        "aT := abs(T_mid)",
+        // T_mid has units and invalid entries; both are dealt with by keywords
+        "lT := log(T_mid,invalid='mask',units='ignore')",
+        // Functions compose with each other and with operators: round trips
+        "rt_exp := exp(log(qv))",
+        "rt_sqrt := sqrt(qv)*sqrt(qv)",
+        // Functions and methods compose, either way around
+        "lq_avg := log(qv).mean('lev')",
+        "avg_lq := log(qv.mean('lev'))",
+      });
+
+  // NOTE: scoped, so the stream (and the diags it owns) are gone before Kokkos
+  //       is finalized
+  auto t = t0;
+  {
+  OutputManager om;
+  om.initialize(comm,params,t0,false);
+  om.setup(fm,gm->get_grid_names());
+
+  for (int n=1; n<=nsteps; ++n) {
+    om.init_timestep(t,dt);
+    t += dt;
+
+    auto qv    = fm->get_field("qv");
+    auto T_mid = fm->get_field("T_mid");
+    calc_fields(qv,T_mid,n);
+    qv.get_header().get_tracking().update_time_stamp(t);
+    T_mid.get_header().get_tracking().update_time_stamp(t);
+
+    om.run(t);
+  }
+  om.finalize();
+  }
+
+  const auto filename = prefix + ".INSTANT.nsteps_x1.np" +
+                        std::to_string(comm.size()) + "." + (t0+dt).to_string() + ".nc";
+  scorpio::register_file(filename,scorpio::Read);
+  for (const auto& name : names) {
+    REQUIRE (scorpio::has_var(filename,name));
+  }
+  scorpio::release_file(filename);
+
+  // NOTE: scoped, so the fields are gone before Kokkos is finalized
+  {
+  const auto layout2d = grid->get_2d_scalar_layout();
+  std::map<std::string,Field> f;
+  std::vector<Field> to_read;
+  for (const auto& name : names) {
+    const bool is2d = name=="lq_avg" or name=="avg_lq";
+    f[name] = Field(FieldIdentifier(name,is2d ? layout2d : layout3d,none,gname));
+    f[name].allocate_view();
+    f[name].get_header().get_tracking().update_time_stamp(t0);
+    to_read.push_back(f[name]);
+  }
+
+  FieldReader reader;
+  reader.set_file_specs(filename);
+  reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
+  reader.set_fields(to_read);
+
+  constexpr auto fv = constants::fill_value<Real>;
+  for (int n=1; n<=nsteps; ++n) {
+    reader.read(n-1);
+    for (auto& it : f) {
+      it.second.sync_to_host();
+    }
+    auto v2 = [&](const std::string& name) { return f.at(name).get_view<const Real**,Host>(); };
+    auto v1 = [&](const std::string& name) { return f.at(name).get_view<const Real*,Host>(); };
+
+    for (int i=0; i<nlocal; ++i) {
+      Real qv_col_sum = 0;
+      Real lq_col_sum = 0;
+      for (int k=0; k<nlevs; ++k) {
+        const Real qv_v = n + i*(k+1);
+        const Real T_v  = n - i*(k+1);
+        qv_col_sum += qv_v;
+        lq_col_sum += std::log(qv_v);
+
+        REQUIRE (v2("lq")(i,k)==Approx(std::log(qv_v)));
+        REQUIRE (v2("eq")(i,k)==Approx(std::exp(-qv_v)));
+        REQUIRE (v2("sq")(i,k)==Approx(std::sqrt(qv_v)));
+        REQUIRE (v2("aT")(i,k)==std::abs(T_v));
+        if (T_v>0) {
+          REQUIRE (v2("lT")(i,k)==Approx(std::log(T_v)));
+        } else {
+          REQUIRE (v2("lT")(i,k)==fv);
+        }
+        REQUIRE (v2("rt_exp")(i,k)==Approx(qv_v));
+        REQUIRE (v2("rt_sqrt")(i,k)==Approx(qv_v));
+      }
+      REQUIRE (v1("lq_avg")(i)==Approx(lq_col_sum/nlevs));
+      REQUIRE (v1("avg_lq")(i)==Approx(std::log(qv_col_sum/nlevs)));
+    }
+  }
+  reader.clean_up();
   }
 
   scorpio::finalize_subsystem();
