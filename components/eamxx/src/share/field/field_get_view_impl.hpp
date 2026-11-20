@@ -141,10 +141,6 @@ get_strided_view_type<DT, HD> {
     // Check if this field is a subview of another field
     const auto parent = m_header->get_parent();
     if (parent != nullptr) {
-      // Parent field has correct layout to reinterpret the view into N+1-dim view,
-      // for single-slice subfield, and N-dim view for multi-slice subfield.
-      // So create the parent field on the fly, use it to get the N+{1,0}-dim view,
-      // then subview it.
       Field f(parent, m_data, m_is_read_only);
 
       // get subview info to determine whether we are single- or multi-slicing
@@ -156,19 +152,25 @@ get_strided_view_type<DT, HD> {
 
       // k_end has not been set by a multi-slice subfield function
       if (k_end == -1) {
-        // Take an (n + 1)-dimensional == DstRank (== 2D, in practice) view
-        // with normal LayoutRight
-        auto v_np1 = f.get_ND_view<HD, DstValueType, DstRank + 1>();
-
         // As of now, we can only single-slice subview at first or second dimension.
         EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
                         "Error! Subview dimension index is out of bounds.\n");
 
-        // Use correct subview utility
-        if (idim == 0) {
-          return DstView(ekat::subview(v_np1, k));
+        if constexpr (DstRank < MaxRank) {
+          auto subview_helper = [&](const auto& parent_view) -> DstView {
+            if (idim == 0) {
+              return ekat::subview(parent_view, k);
+            } else {
+              return ekat::subview_1(parent_view, k);
+            }
+          };
+          if (parent->get_alloc_properties().allows_layout_right()) {
+            return subview_helper(f.get_ND_view<HD, DstValueType, DstRank + 1>());
+          } else {
+            return subview_helper(f.get_strided_view<data_nd_t<DstValueType, DstRank + 1>, HD>());
+          }
         } else {
-          return DstView(ekat::subview_1(v_np1, k));
+          EKAT_ERROR_MSG("Error! Cannot single-slice a field beyond MaxRank.\n");
         }
       // k_end has been set, so we're multi-slicing
       } else if (k_end > 0) {
@@ -176,10 +178,15 @@ get_strided_view_type<DT, HD> {
         EKAT_REQUIRE_MSG(DstRank == fl.rank(),
                         "Error! Destination view rank must be equal to parent "
                         "field's rank for multi-sliced subview.\n");
-        auto v_fullsize = f.get_ND_view<HD, DstValueType, DstRank>();
-
-        return DstView(ekat::subview(
-            v_fullsize, Kokkos::make_pair<int, int>(k, k_end), idim));
+        if (parent->get_alloc_properties().allows_layout_right()) {
+          return ekat::subview(f.get_ND_view<HD, DstValueType, DstRank>(),
+                               Kokkos::make_pair<int, int>(k, k_end),
+                               idim);
+        } else {
+          return ekat::subview(f.get_strided_view<data_nd_t<DstValueType, DstRank>, HD>(),
+                               Kokkos::make_pair<int, int>(k, k_end),
+                               idim);
+        }
       }
     }
   }
@@ -207,6 +214,15 @@ auto Field::get_ND_view () const
     // Parent field has correct layout to reinterpret the view into N+1-dim view
     // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
     Field f(parent, m_data, m_is_read_only);
+
+    // Special case where parent view is not LayoutRight and we are requesting a 0-D view
+    if constexpr (N==0) {
+      if (not parent->get_alloc_properties().allows_layout_right()) {
+        const auto& info = m_header->get_alloc_properties().get_subview_info();
+        auto parent_view = f.get_strided_view<data_nd_t<T,1>,HD>();
+        return get_view_type<data_nd_t<T,N>,HD>(ekat::subview(parent_view,info.slice_idx));
+      }
+    }
 
     auto v_np1 = f.get_ND_view<HD,T,N+1>();
 
