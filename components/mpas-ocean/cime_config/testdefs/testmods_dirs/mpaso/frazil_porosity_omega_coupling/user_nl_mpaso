@@ -1,0 +1,5 @@
+ config_use_frazil_ice_porosity = .true.
+ config_frazil_ice_porosity = 0.85
+ config_expel_excess_frazil_salt = .false.
+ config_AM_conservationCheck_enable = .true.
+ config_land_ice_flux_mode = 'pressure_only'

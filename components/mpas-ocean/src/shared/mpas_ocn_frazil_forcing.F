@@ -22,6 +22,7 @@ module ocn_frazil_forcing
    use mpas_kind_types
    use mpas_constants
    use mpas_derived_types
+   use mpas_log, only : mpas_log_write
    use mpas_pool_routines
    use mpas_timekeeping
    use mpas_timer
@@ -751,8 +752,10 @@ contains
            frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
-        !Determine salt expelled in the upper layer to if using fixed frazil salinity sea ice coupling
-        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. config_expel_excess_frazil_salt) then
+        !Determine salt expelled in the upper layer if using fixed frazil salinity sea ice coupling,
+        !or always under land ice, where frazil salinity is assumed to be 0
+        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. &
+            (config_expel_excess_frazil_salt .or. underLandIce)) then
            newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity &
               * config_frazil_ice_density * ppt_to_salt
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
@@ -1095,6 +1098,14 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
+
+      if (config_use_frazil_ice_porosity .and. &
+          trim(config_land_ice_flux_mode) /= 'off' .and. &
+          trim(config_land_ice_flux_mode) /= 'pressure_only') then
+         call mpas_log_write('config_use_frazil_ice_porosity cannot be enabled with ' // &
+                             'config_land_ice_flux_mode = ' // trim(config_land_ice_flux_mode), &
+                             MPAS_LOG_CRIT)
+      end if
 
       frazilFormationOn = .false.
 
