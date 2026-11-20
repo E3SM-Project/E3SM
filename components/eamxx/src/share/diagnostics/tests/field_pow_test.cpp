@@ -47,9 +47,10 @@ const int* host_mask (const Field& f) {
   return f.get_internal_view_data<const int,Host>();
 }
 
-// Whether x^p is defined (the exponent is never 0)
-bool in_domain (const Real x, const Real p) {
-  return x>0 or (x==0 and p>0) or (x<0 and p==std::round(p));
+// Whether x^p is defined (the exponent is never 0). Whether p is an integer is passed in,
+// since it is a property of the exponent as written, not of its (maybe rounded) value
+bool in_domain (const Real x, const double p, const bool p_is_int) {
+  return x>0 or (x==0 and p>0) or (x<0 and p_is_int);
 }
 
 } // anonymous namespace
@@ -88,11 +89,14 @@ TEST_CASE("field_pow") {
     REQUIRE_THROWS (factory.create("FieldPow",comm,params,grid)); // No exponent
 
     // Numbers and fractions are fine...
-    for (std::string good : {"2", "-1", "0.5", "-1.5", "1e-3", "1/3", "-2/3", "7/2", "4/2"}) {
+    for (std::string good : {"2", "-1", "0.5", "-1.5", "1e-3", "1e20", "1/3", "-2/3", "7/2", "4/2"}) {
       REQUIRE_NOTHROW (factory.create("FieldPow",comm,make_params(gn,"q",good),grid));
     }
     // ...and anything else is not. Note that 0 is not a valid exponent: 0^0 is not defined.
-    for (std::string bad : {"", "two", "2x", "nan", "inf", "0", "0.0", "0/3", "1/0", "1/", "/2", "1/2/3", "0.5/2", "1.5/2"}) {
+    for (std::string bad : {"", "two", "2x", "nan", "inf", "0", "0.0", "1e-400", "0/3", "1/0", "1/", "/2", "1/2/3", "0.5/2", "1.5/2",
+                            "1/-2",   // the sign goes on the numerator
+                            // Out of range: strtoll would saturate these, which would be a different exponent
+                            "18446744073709551614/9223372036854775807", "9223372036854775808/1", "1/99999999999999999999"}) {
       REQUIRE_THROWS (factory.create("FieldPow",comm,make_params(gn,"q",bad),grid));
     }
 
@@ -133,11 +137,14 @@ TEST_CASE("field_pow") {
     REQUIRE (units_of("1/3","")==pow(Pa,ekat::RationalConstant(1,3)));
     REQUIRE (units_of("2/6","")==pow(Pa,ekat::RationalConstant(1,3)));
     REQUIRE (units_of("-5/17","")==pow(Pa,ekat::RationalConstant(-5,17)));  // d>12 is fine as a fraction
+    REQUIRE (units_of("0.2","")==pow(Pa,ekat::RationalConstant(1,5)));   // even if Real is a float
     // A decimal that is not a fraction with a small denominator has no units...
     REQUIRE_THROWS (units_of("0.2857",""));
     REQUIRE_THROWS (units_of("0.3333333",""));
+    REQUIRE_THROWS (units_of("1e20",""));                  // too large for a numerator
     // ...unless we say so
     REQUIRE (units_of("0.2857","ignore")==none);
+    REQUIRE (units_of("1e20",  "ignore")==none);
     REQUIRE (units_of("2",     "ignore")==none);   // 'ignore' always gives none
 
     // A dimensionless, unscaled input stays so, for any exponent
@@ -169,11 +176,24 @@ TEST_CASE("field_pow") {
     const bool trap = (fpes & (FE_INVALID | FE_DIVBYZERO))!=0;
 
     constexpr auto fv = constants::fill_value<Real>;
-    // The exponents with a fast path (2, 3, -1) and the general ones, integer or not
-    for (std::string expo : {"2","3","-1","-2","4","0.5","1.5","-1.5","1/3","-2/3","1"}) {
-      const Real p = expo.find('/')==std::string::npos
-                   ? static_cast<Real>(std::stod(expo))
-                   : static_cast<Real>(std::stod(expo.substr(0,expo.find('/')))/std::stod(expo.substr(expo.find('/')+1)));
+
+    // The exponents with a fast path (2, 3, -1) and the general ones, integer or not. The last
+    // one is not an integer, but rounds to 2 in a float: it must not take the square's path, nor be
+    // seen as an integer. Then what a negative x^p gives with invalid='nan' depends on the precision.
+    struct Expo {
+      std::string s;
+      double      p;
+      bool        is_int;
+      bool        nan_is_not_finite;
+    };
+    const std::vector<Expo> expos = {
+      {"2",2,true,true}, {"3",3,true,true}, {"-1",-1,true,true}, {"-2",-2,true,true},
+      {"4",4,true,true}, {"0.5",0.5,false,true}, {"1.5",1.5,false,true}, {"-1.5",-1.5,false,true},
+      {"1/3",1.0/3,false,true}, {"-2/3",-2.0/3,false,true}, {"1",1,true,true},
+      {"4/2",2,true,true}, {"33554433/16777216",2.0+1.0/16777216,false,false},
+    };
+    for (const auto& e : expos) {
+      const Real p = static_cast<Real>(e.p);
       for (auto x : {q,v}) {
         const auto n = x.get_header().get_identifier().get_layout().size();
         const auto x_h = host_data(x);
@@ -182,13 +202,13 @@ TEST_CASE("field_pow") {
           if (invalid=="nan" and trap) {
             bool any_invalid = false;
             for (int i=0; i<n; ++i) {
-              any_invalid |= not in_domain(x_h[i],p);
+              any_invalid |= not in_domain(x_h[i],e.p,e.is_int);
             }
             if (any_invalid) {
               continue;
             }
           }
-          auto params = make_params(gn,x.name(),expo);
+          auto params = make_params(gn,x.name(),e.s);
           params.set<std::string>("invalid",invalid);
 
           auto diag = make_diag(params,x,grid);
@@ -206,7 +226,7 @@ TEST_CASE("field_pow") {
           }
 
           for (int i=0; i<n; ++i) {
-            const bool valid = in_domain(x_h[i],p);
+            const bool valid = in_domain(x_h[i],e.p,e.is_int);
             if (masked) {
               REQUIRE (m_h[i]==(valid ? 1 : 0));
             }
@@ -214,7 +234,7 @@ TEST_CASE("field_pow") {
               REQUIRE (d_h[i]==Approx(std::pow(x_h[i],p)));
             } else if (masked) {
               REQUIRE (d_h[i]==fv);
-            } else {
+            } else if (e.nan_is_not_finite) {
               // Whatever the math library gives, NaN or inf
               REQUIRE (not std::isfinite(d_h[i]));
             }

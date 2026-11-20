@@ -58,6 +58,7 @@ public:
   std::string m_field_name;
   std::string m_exponent_str;
   Real        m_exponent = 0;
+  bool        m_exponent_is_int = false;  // decided from the exact exponent, not from the Real one
   Kind        m_kind = Kind::General;
 
   // The exponent as the fraction num/den, if it is known to be one

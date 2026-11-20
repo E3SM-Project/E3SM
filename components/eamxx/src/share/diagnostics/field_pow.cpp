@@ -5,8 +5,10 @@
 #include <ekat_units.hpp>
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 
 namespace scream {
 
@@ -89,13 +91,15 @@ struct MaskedPowKernel {
   }
 };
 
-// Parses all of s as an integer
+// Parses all of s as an integer. An out-of-range one is rejected, rather than
+// accepted as the saturated value strtoll returns.
 bool str2int (const std::string& s, long long& value)
 {
   if (s.empty()) return false;
   char* end;
+  errno = 0;
   value = std::strtoll(s.c_str(),&end,10);
-  return *end=='\0';
+  return *end=='\0' and errno!=ERANGE;
 }
 
 // A unit is raised to a rational power, which a decimal exponent is not.
@@ -103,12 +107,14 @@ bool str2int (const std::string& s, long long& value)
 // (The match is to 1e-12, relative, so 0.5 and -1.5 do, but 0.2857 does not.)
 // An exponent written as 'n/d' does not go through this.
 constexpr int max_den = 12;
-bool decimal_to_fraction (const Real p, long long& n, long long& d)
+bool decimal_to_fraction (const double p, long long& n, long long& d)
 {
+  // A numerator past this cannot be a long long (and the cast would be undefined)
+  constexpr double max_num = 9.0e18;
   for (d=1; d<=max_den; ++d) {
-    const double pd = static_cast<double>(p)*d;
+    const double pd = p*d;
     const double r  = std::round(pd);
-    if (std::abs(pd-r) <= 1e-12*std::max(1.0,std::abs(pd))) {
+    if (std::abs(r)<max_num and std::abs(pd-r) <= 1e-12*std::max(1.0,std::abs(pd))) {
       n = static_cast<long long>(r);
       return true;
     }
@@ -133,33 +139,49 @@ FieldPow (const ekat::Comm &comm,
   m_exponent_str = m_params.get<std::string>("exponent");
 
   // An exponent is a fraction 'n/d', or a decimal number.
+  // NOTE: everything about the exponent (zero, integer, which fast path, the fraction
+  //       for the units) is decided here in double, from the string, so that narrowing
+  //       to Real (which can round 2+2^-24 to 2, in single precision) changes none of it.
   // NOTE: strtod because from_chars for floating point is missing on some
   //       compilers we support (e.g. compy).
   const auto& s = m_exponent_str;
   const auto slash = s.find('/');
+  double p;
+  bool is_int;
+  long long int_value = 0;
   if (slash!=std::string::npos) {
-    EKAT_REQUIRE_MSG (str2int(s.substr(0,slash),m_num) and str2int(s.substr(slash+1),m_den) and m_den!=0,
-        "Error! FieldPow's 'exponent' must be a fraction of two integers (with a non-zero denominator) or a number.\n"
+    EKAT_REQUIRE_MSG (str2int(s.substr(0,slash),m_num) and str2int(s.substr(slash+1),m_den) and m_den>0,
+        "Error! FieldPow's 'exponent' must be a fraction of two integers (with a positive denominator) or a number.\n"
         " - input: '" + s + "'\n");
-    m_exponent     = static_cast<Real>(static_cast<double>(m_num)/static_cast<double>(m_den));
+    p = static_cast<double>(m_num)/static_cast<double>(m_den);
     m_has_fraction = true;
+    is_int = m_num % m_den == 0;
+    int_value = m_num / m_den;
   } else {
     char* end;
-    const double p = std::strtod(s.c_str(),&end);
+    p = std::strtod(s.c_str(),&end);
     EKAT_REQUIRE_MSG (not s.empty() and *end=='\0' and std::isfinite(p),
         "Error! FieldPow's 'exponent' must be a fraction of two integers or a finite number.\n"
         " - input: '" + s + "'\n");
-    m_exponent     = static_cast<Real>(p);
-    m_has_fraction = decimal_to_fraction(m_exponent,m_num,m_den);
+    m_has_fraction = decimal_to_fraction(p,m_num,m_den);
+    is_int = p==std::round(p);
+    if (is_int and std::abs(p)<9.0e18) {
+      int_value = static_cast<long long>(p);
+    }
   }
-  EKAT_REQUIRE_MSG (m_exponent!=0,
-      "Error! FieldPow's 'exponent' cannot be 0: x^0 is 1, and 0^0 is not defined.\n"
+  m_exponent        = static_cast<Real>(p);
+  m_exponent_is_int = is_int;
+
+  EKAT_REQUIRE_MSG (p!=0 and m_exponent!=0,
+      "Error! FieldPow's 'exponent' cannot be 0 (or so small that it is, as a Real): "
+      "x^0 is 1, and 0^0 is not defined.\n"
       " - input: '" + s + "'\n");
 
-  if      (m_exponent==2)  m_kind = Kind::Square;
-  else if (m_exponent==3)  m_kind = Kind::Cube;
-  else if (m_exponent==-1) m_kind = Kind::Inverse;
-  else                     m_kind = Kind::General;
+  // The fast paths are for these exact integers only
+  if      (is_int and int_value==2)  m_kind = Kind::Square;
+  else if (is_int and int_value==3)  m_kind = Kind::Cube;
+  else if (is_int and int_value==-1) m_kind = Kind::Inverse;
+  else                               m_kind = Kind::General;
 
   const auto invalid = m_params.get<std::string>("invalid","nan");
   EKAT_REQUIRE_MSG (invalid=="nan" or invalid=="mask",
@@ -231,7 +253,7 @@ void FieldPow::compute_impl()
   const auto& f = m_fields_in.at(m_field_name);
   const auto  d = get();
 
-  const PowSpec spec{m_kind,m_exponent,m_exponent==std::round(m_exponent)};
+  const PowSpec spec{m_kind,m_exponent,m_exponent_is_int};
 
   if (not m_out_masked) {
     field_pfor(PowKernel{spec},
