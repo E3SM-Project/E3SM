@@ -477,6 +477,7 @@ void translate_call (const Call& call, const ast::Expression& self,
     EKAT_REQUIRE_MSG (bins!=nullptr and bins->elements.size()>=2,
         "Error! histogram() takes 'bins', an array of at least two edges.\n"
         " - expression: " + ast::to_string(self) + "\n");
+    // As in numpy and xhistogram, n edges make n-1 bins, the last one closed.
     // The diag splits the edges on '_' and reads each one as a number, so
     // signs and exponents are fine as dexpr renders them (e.g., -2, 1e-05)
     std::string config;

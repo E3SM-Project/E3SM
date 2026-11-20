@@ -44,6 +44,7 @@ class BinaryOp : public AbstractDiagnostic {
   // Meaningless (and NaN) when the corresponding operand IS a field.
   Real m_arg1_value = std::numeric_limits<Real>::quiet_NaN();
   Real m_arg2_value = std::numeric_limits<Real>::quiet_NaN();
+  // Units of a non-field operand; invalid for a numeric literal, which has none of its own
   ekat::units::Units m_arg1_units = ekat::units::Units::invalid();
   ekat::units::Units m_arg2_units = ekat::units::Units::invalid();
 
