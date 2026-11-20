@@ -25,17 +25,16 @@ AODVis(const ekat::Comm &comm, const ekat::ParameterList &params,
 
   // Construct and allocate the aodvis field
   FieldIdentifier fid(name(), m_grid->get_2d_scalar_layout(), none, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(fid);
 }
 
 void AODVis::initialize_impl() {
   // The sunlit mask, under a name of our own: IO shares a valid count between diags
   // whose masks have the same name, and that is for diags masked the same way by design
   const auto& sunlit = m_fields_in.at("sunlit_mask");
-  m_diagnostic_output.set_valid_mask(sunlit.alias(m_diagnostic_output.name()+"_valid_mask"));
+  get().set_valid_mask(sunlit.alias(get().name()+"_valid_mask"));
   // Night columns hold the fill value, so averaging must skip them
-  m_diagnostic_output.get_header().set_may_be_filled(true);
+  get().get_header().set_may_be_filled(true);
 }
 
 void AODVis::compute_impl()
@@ -47,7 +46,7 @@ void AODVis::compute_impl()
 
   constexpr auto fill_value = constants::fill_value<Real>;
 
-  const auto aod     = m_diagnostic_output.get_view<Real *>();
+  const auto aod     = get().get_view<Real *>();
   const auto tau_vis = m_fields_in.at("aero_tau_sw")
                            .subfield(1, m_vis_bnd)
                            .get_view<const Real **>();
@@ -57,7 +56,7 @@ void AODVis::compute_impl()
   const auto ncols = m_grid->get_num_local_dofs();
   const auto policy   = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(
-      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + get().name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         if(sunlit(icol)) {
           auto tau_icol = ekat::subview(tau_vis, icol);

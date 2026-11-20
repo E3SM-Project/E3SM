@@ -66,14 +66,12 @@ AeroComCld(const ekat::Comm &comm,
   m_dz = Field(m_dz_fid,true);
 
   // Construct and allocate the output field
-  FieldIdentifier fid(name() + m_topbot, vector2d, none, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  auto& d = add_output(name() + m_topbot, vector2d);
 
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
   auto &metadata =
-      m_diagnostic_output.get_header().get_extra_data<stratt_t>("io: string attributes");
+      d.get_header().get_extra_data<stratt_t>("io: string attributes");
   for(const auto &it : m_index_map) {
     metadata[it.first] =
         std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
@@ -121,7 +119,7 @@ void AeroComCld::compute_impl()
   const int nlevs = m_grid->get_num_vertical_levels();
   const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
-  const auto out = m_diagnostic_output.get_view<Real **>();
+  const auto out = get().get_view<Real **>();
 
   // zero out the outputs
   Kokkos::deep_copy(out, 0.0);
@@ -141,7 +139,7 @@ void AeroComCld::compute_impl()
   auto o_cldfrac_tot   = ekat::subview_1(out, m_index_map["cldfrac_tot"]);
 
   Kokkos::parallel_for(
-      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + get().name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         // Subview the inputs at icol
         auto tmid_icol = ekat::subview(tmid, icol);

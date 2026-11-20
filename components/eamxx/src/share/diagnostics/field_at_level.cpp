@@ -68,17 +68,17 @@ initialize_impl ()
   // All good, create the diag output
   auto diag_name = m_field_name + "_at_" + location;
   auto d_fid = fid.clone(diag_name).reset_layout(layout.clone().strip_dim(tag));
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(d_fid);
   if (f.has_valid_mask()) {
-    m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
+    get().create_valid_mask();
+    get().get_header().set_may_be_filled(true);
   }
 
   using stratts_t = std::map<std::string,std::string>;
 
   // Propagate any io string attribute from input field to diag field
   const auto& src_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
-        auto& dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+        auto& dst_atts = get().get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto& [name, val] : src_atts) {
     dst_atts[name] = val;
   }
@@ -89,23 +89,23 @@ void FieldAtLevel::compute_impl()
   const auto& f = m_fields_in.at(m_field_name);
 
   auto ALL = Kokkos::ALL;
-  bool masked = m_diagnostic_output.has_valid_mask();
+  bool masked = get().has_valid_mask();
   switch (f.rank()) {
     case 1:
       {
         if (f.data_type()==DataType::IntType) {
           auto fv = f.get_view<const int*>();
-          auto dv = m_diagnostic_output.get_view<int>();
+          auto dv = get().get_view<int>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,m_field_level));
         } else if (f.data_type()==DataType::RealType) {
           auto fv = f.get_view<const Real*>();
-          auto dv = m_diagnostic_output.get_view<Real>();
+          auto dv = get().get_view<Real>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,m_field_level));
         }
 
         if (masked) {
           auto fmv = f.get_valid_mask().get_view<const int*>();
-          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int>();
+          auto dmv = get().get_valid_mask().get_view<int>();
           Kokkos::deep_copy(dmv,Kokkos::subview(fmv,m_field_level));
         }
       } break;
@@ -113,17 +113,17 @@ void FieldAtLevel::compute_impl()
       {
         if (f.data_type()==DataType::IntType) {
           auto fv = f.get_view<const int**>();
-          auto dv = m_diagnostic_output.get_view<int*>();
+          auto dv = get().get_view<int*>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,m_field_level));
         } else if (f.data_type()==DataType::RealType) {
           auto fv = f.get_view<const Real**>();
-          auto dv = m_diagnostic_output.get_view<Real*>();
+          auto dv = get().get_view<Real*>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,m_field_level));
         }
 
         if (masked) {
           auto fmv = f.get_valid_mask().get_view<const int**>();
-          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int*>();
+          auto dmv = get().get_valid_mask().get_view<int*>();
           Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,m_field_level));
         }
       } break;
@@ -131,17 +131,17 @@ void FieldAtLevel::compute_impl()
       {
         if (f.data_type()==DataType::IntType) {
           auto fv = f.get_view<const int***>();
-          auto dv = m_diagnostic_output.get_view<int**>();
+          auto dv = get().get_view<int**>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,m_field_level));
         } else if (f.data_type()==DataType::RealType) {
           auto fv = f.get_view<const Real***>();
-          auto dv = m_diagnostic_output.get_view<Real**>();
+          auto dv = get().get_view<Real**>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,m_field_level));
         }
 
         if (masked) {
           auto fmv = f.get_valid_mask().get_view<const int***>();
-          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int**>();
+          auto dmv = get().get_valid_mask().get_view<int**>();
           Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,m_field_level));
         }
       } break;
@@ -149,17 +149,17 @@ void FieldAtLevel::compute_impl()
       {
         if (f.data_type()==DataType::IntType) {
           auto fv = f.get_view<const int****>();
-          auto dv = m_diagnostic_output.get_view<int***>();
+          auto dv = get().get_view<int***>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,m_field_level));
         } else if (f.data_type()==DataType::RealType) {
           auto fv = f.get_view<const Real****>();
-          auto dv = m_diagnostic_output.get_view<Real***>();
+          auto dv = get().get_view<Real***>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,m_field_level));
         }
 
         if (masked) {
           auto fmv = f.get_valid_mask().get_view<const int****>();
-          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int***>();
+          auto dmv = get().get_valid_mask().get_view<int***>();
           Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,ALL,m_field_level));
         }
       } break;
@@ -167,17 +167,17 @@ void FieldAtLevel::compute_impl()
       {
         if (f.data_type()==DataType::IntType) {
           auto fv = f.get_view<const int*****>();
-          auto dv = m_diagnostic_output.get_view<int****>();
+          auto dv = get().get_view<int****>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,m_field_level));
         } else if (f.data_type()==DataType::RealType) {
           auto fv = f.get_view<const Real*****>();
-          auto dv = m_diagnostic_output.get_view<Real****>();
+          auto dv = get().get_view<Real****>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,m_field_level));
         }
 
         if (masked) {
           auto fmv = f.get_valid_mask().get_view<const int*****>();
-          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int****>();
+          auto dmv = get().get_valid_mask().get_view<int****>();
           Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,ALL,ALL,m_field_level));
         }
       } break;
@@ -185,17 +185,17 @@ void FieldAtLevel::compute_impl()
       {
         if (f.data_type()==DataType::IntType) {
           auto fv = f.get_view<const int******>();
-          auto dv = m_diagnostic_output.get_view<int*****>();
+          auto dv = get().get_view<int*****>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,ALL,m_field_level));
         } else if (f.data_type()==DataType::RealType) {
           auto fv = f.get_view<const Real******>();
-          auto dv = m_diagnostic_output.get_view<Real*****>();
+          auto dv = get().get_view<Real*****>();
           Kokkos::deep_copy(dv,Kokkos::subview(fv,ALL,ALL,ALL,ALL,ALL,m_field_level));
         }
 
         if (masked) {
           auto fmv = f.get_valid_mask().get_view<const int******>();
-          auto dmv = m_diagnostic_output.get_valid_mask().get_view<int*****>();
+          auto dmv = get().get_valid_mask().get_view<int*****>();
           Kokkos::deep_copy(dmv,Kokkos::subview(fmv,ALL,ALL,ALL,ALL,ALL,m_field_level));
         }
       } break;
@@ -210,7 +210,7 @@ void FieldAtLevel::compute_impl()
   if (masked) {
     const auto fv = f.data_type()==DataType::RealType ? constants::fill_value<Real>
                                                       : constants::fill_value<int>;
-    m_diagnostic_output.deep_copy(fv,m_diagnostic_output.get_valid_mask(),true);
+    get().deep_copy(fv,get().get_valid_mask(),true);
   }
 }
 

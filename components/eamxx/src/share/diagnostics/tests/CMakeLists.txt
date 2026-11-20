@@ -182,4 +182,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES histogram_test.cpp
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
+
+  # Test a diag with several outputs, and the base class rules for it
+  CreateDiagTest(multi_output
+    SOURCES multi_output_test.cpp
+  )
 endif()

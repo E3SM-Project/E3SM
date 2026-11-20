@@ -218,7 +218,7 @@ void ZonalAvg::initialize_impl()
   auto diag_name = m_field_name + "_zonal_avg_" + std::to_string(m_num_zonal_bins) + "_bins";
   auto diagnostic_layout = field_layout.clone().strip_dim(COL).prepend_dim(CMP, m_num_zonal_bins, "bin");
   auto diagnostic_id = field_id.clone(diag_name).reset_layout(diagnostic_layout);
-  m_diagnostic_output = Field(diagnostic_id,true);
+  add_output(diagnostic_id);
 
   if (not field.has_valid_mask()) {
     m_ones = m_area.clone("ones");
@@ -246,9 +246,9 @@ void ZonalAvg::initialize_impl()
     m_ones = field.clone("ones");
     m_ones.deep_copy(1);
     m_ones.set_valid_mask(field.get_valid_mask());
-    m_zonal_area = m_diagnostic_output.clone("zonal_area");
-    m_diagnostic_output.create_valid_mask();
-    m_diagnostic_output.get_header().set_may_be_filled(true);
+    m_zonal_area = get().clone("zonal_area");
+    get().create_valid_mask();
+    get().get_header().set_may_be_filled(true);
   }
 }
 
@@ -258,18 +258,18 @@ void ZonalAvg::compute_impl()
 
   if (field.has_valid_mask()) {
     // Compute masked field zonal sum, masked area zonal sum, and divide
-    compute_zonal_sum(m_diagnostic_output, field, m_area, m_bin_to_cols, &m_comm);
+    compute_zonal_sum(get(), field, m_area, m_bin_to_cols, &m_comm);
     compute_zonal_sum(m_zonal_area,m_ones,m_area,m_bin_to_cols,&m_comm);
 
-    auto& dmask = m_diagnostic_output.get_valid_mask();
+    auto dmask = get().get_valid_mask();
     compute_mask(m_zonal_area,0,Comparison::NE,dmask);
-    m_diagnostic_output.scale_inv(m_zonal_area,dmask);
+    get().scale_inv(m_zonal_area,dmask);
 
     // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-    m_diagnostic_output.deep_copy(constants::fill_value<Real>,dmask,true);
+    get().deep_copy(constants::fill_value<Real>,dmask,true);
   } else {
     // Compute field zonal sum using scaled area as weight
-    compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_bin_to_cols, &m_comm);
+    compute_zonal_sum(get(), field, m_scaled_area, m_bin_to_cols, &m_comm);
   }
 }
 

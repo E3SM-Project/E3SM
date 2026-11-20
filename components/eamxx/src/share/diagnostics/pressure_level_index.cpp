@@ -57,10 +57,10 @@ initialize_impl ()
   // than the target, in each column (numpy's searchsorted, with side='right').
   const auto col_layout = layout.clone().strip_dim(tag);
   FieldIdentifier d_fid (m_diag_name, col_layout, ekat::units::none, m_grid->name(), DataType::IntType);
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(d_fid);
 
   // The mask of columns where the target pressure is in range
-  m_diagnostic_output.create_valid_mask(m_mask_name);
+  get().create_valid_mask(m_mask_name);
 }
 
 void PressureLevelIndex::compute_impl()
@@ -75,8 +75,8 @@ void PressureLevelIndex::compute_impl()
 
   auto p_tgt = m_pressure_level;
 
-  auto idx  = m_diagnostic_output.get_view<int*>();
-  auto mask = m_diagnostic_output.get_valid_mask().get_view<int*>();
+  auto idx  = get().get_view<int*>();
+  auto mask = get().get_valid_mask().get_view<int*>();
 
   auto policy = KT::RangePolicy(0,ncols);
   Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int icol) {
