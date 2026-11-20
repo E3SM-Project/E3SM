@@ -84,21 +84,23 @@ TEST_CASE("unary_math") {
     params.set<std::string>("field_name","q");
     REQUIRE_THROWS (factory.create("UnaryMath",comm,params,grid)); // No op
 
-    auto p = make_params(gn,"q","sin");
-    REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid)); // Unknown op
+    // NOTE: ekat::ParameterList::operator= merges into the existing entries
+    //       (it does not drop them), so each case below uses a fresh list.
+    auto p_sin = make_params(gn,"q","sin");
+    REQUIRE_THROWS (factory.create("UnaryMath",comm,p_sin,grid)); // Unknown op
 
-    p = make_params(gn,"q","pow");
-    REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid)); // pow needs an exponent
+    auto p_pow = make_params(gn,"q","pow");
+    REQUIRE_THROWS (factory.create("UnaryMath",comm,p_pow,grid)); // pow needs an exponent
     for (std::string bad : {"", "two", "2x", "nan", "inf"}) {
-      p.set<std::string>("exponent",bad);
-      REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid));
+      p_pow.set<std::string>("exponent",bad);
+      REQUIRE_THROWS (factory.create("UnaryMath",comm,p_pow,grid));
     }
-    p.set<std::string>("exponent","2");
-    REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p,grid));
+    p_pow.set<std::string>("exponent","2");
+    REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p_pow,grid));
 
-    p = make_params(gn,"q","log");
-    p.set<std::string>("exponent","2");
-    REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid)); // exponent is only for pow
+    auto p_log = make_params(gn,"q","log");
+    p_log.set<std::string>("exponent","2");
+    REQUIRE_THROWS (factory.create("UnaryMath",comm,p_log,grid)); // exponent is only for pow
 
     for (std::string op : {"log","exp","sqrt","abs","pow"}) {
       const bool has_invalid = op=="log" or op=="sqrt" or op=="pow";
@@ -111,24 +113,24 @@ TEST_CASE("unary_math") {
         }
         return pp;
       };
-      p = make();
-      p.set<std::string>("invalid","zero");
-      REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid));
-      p.set<std::string>("invalid","mask");
+      auto p_inv = make();
+      p_inv.set<std::string>("invalid","zero");
+      REQUIRE_THROWS (factory.create("UnaryMath",comm,p_inv,grid));
+      p_inv.set<std::string>("invalid","mask");
       if (has_invalid) {
-        REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p,grid));
+        REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p_inv,grid));
       } else {
-        REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid));
+        REQUIRE_THROWS (factory.create("UnaryMath",comm,p_inv,grid));
       }
 
-      p = make();
-      p.set<std::string>("units","none");
-      REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid));
-      p.set<std::string>("units","ignore");
+      auto p_units = make();
+      p_units.set<std::string>("units","none");
+      REQUIRE_THROWS (factory.create("UnaryMath",comm,p_units,grid));
+      p_units.set<std::string>("units","ignore");
       if (has_units) {
-        REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p,grid));
+        REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p_units,grid));
       } else {
-        REQUIRE_THROWS (factory.create("UnaryMath",comm,p,grid));
+        REQUIRE_THROWS (factory.create("UnaryMath",comm,p_units,grid));
       }
     }
   }
@@ -136,13 +138,13 @@ TEST_CASE("unary_math") {
   SECTION ("units") {
     // log/exp need a dimensionless input, unless units='ignore'
     for (std::string op : {"log","exp"}) {
-      auto p = make_params(gn,"q",op);
-      REQUIRE (make_diag(p,q,grid)->get().get_header().get_identifier().get_units()==none);
+      auto p_q = make_params(gn,"q",op);
+      REQUIRE (make_diag(p_q,q,grid)->get().get_header().get_identifier().get_units()==none);
 
-      p = make_params(gn,"pm",op);
-      REQUIRE_THROWS (make_diag(p,pm,grid));
-      p.set<std::string>("units","ignore");
-      REQUIRE (make_diag(p,pm,grid)->get().get_header().get_identifier().get_units()==none);
+      auto p_pm = make_params(gn,"pm",op);
+      REQUIRE_THROWS (make_diag(p_pm,pm,grid));
+      p_pm.set<std::string>("units","ignore");
+      REQUIRE (make_diag(p_pm,pm,grid)->get().get_header().get_identifier().get_units()==none);
     }
 
     auto units_of = [&](const std::string& op, const std::string& expo,
@@ -174,7 +176,7 @@ TEST_CASE("unary_math") {
 
   SECTION ("values") {
     // A rank-2 and a rank-3 layout, so that field_pfor is exercised on different ranks
-    const auto vector3d = grid->get_3d_vector_layout(LEV,ncmps);
+    const auto vector3d = grid->get_3d_vector_layout(LEV,ncmps,"cmp");
     Field v(FieldIdentifier("v",vector3d,kg/kg,gn), true);
     v.get_header().get_tracking().update_time_stamp(t0);
     randomize_uniform(v,seed++,-2,2);
