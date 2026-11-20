@@ -177,6 +177,11 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES binary_ops_test.cpp
   )
 
+  # Test elementwise math functions (log, exp, sqrt, abs, pow)
+  CreateDiagTest(unary_math
+    SOURCES unary_math_test.cpp
+  )
+
   # Test histogram
   CreateDiagTest(histogram
     SOURCES histogram_test.cpp
