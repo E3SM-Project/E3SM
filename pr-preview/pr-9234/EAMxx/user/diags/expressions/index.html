@@ -5228,15 +5228,10 @@ units of <code>p_mid</code>, which are Pa; nothing converts units for you. A nam
 constant keeps its units: <code>T_mid - Tmelt</code> is in K, while <code>qv + Tmelt</code> is
 rejected when the stream is set up, since <code>+</code> and <code>-</code> need operands with the
 same units.</p>
-<p>An operation on constants alone is a constant too, and can be used wherever a
-constant can: <code>T_mid*(Rair/Cpair)</code> is <code>T_mid</code> times a number, and so is
-<code>T_mid*kappa</code>, with <code>kappa := Rair/Cpair</code> in <code>aliases:</code>. Its units are worked out
-as for any operation (<code>Rair/Cpair</code> has none), except that an operation on numeric
-literals alone, like <code>2+3</code>, is still a literal, so <code>T_mid+(2+3)</code> is in K. Only
-constants are scalars. A rank-0 field that comes from anything else, like
-<code>ps.mean('col')</code>, is not, and is rejected next to a field with another layout: if
-you mean to use it for every column, say so with <code>broadcast_like</code>, as in
-<code>ps - ps.mean('col').broadcast_like(ps)</code>.</p>
+<p>An operation on constants alone is a constant too: <code>T_mid*(Rair/Cpair)</code> works, and
+so does <code>T_mid*kappa</code> with <code>kappa := Rair/Cpair</code> in <code>aliases:</code>. Literals alone stay
+literals, so <code>T_mid+(2+3)</code> is in K. Other rank-0 fields, like <code>ps.mean('col')</code>, are
+not scalars: use <code>ps - ps.mean('col').broadcast_like(ps)</code>.</p>
 <p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. When in
 doubt, parenthesize. (That example only illustrates grouping: <code>qc+(qv*p_mid)</code>
 adds a mixing ratio to a pressure, and is rejected at run time for incompatible
