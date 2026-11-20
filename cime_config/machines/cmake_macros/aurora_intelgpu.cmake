@@ -23,3 +23,8 @@ string(APPEND CMAKE_C_FLAGS_DEBUG   " -fno-system-debug")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -fno-system-debug")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " --offload-compress")
 
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM" AND CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.3")
+  # ifx: clear out -freciprocal-math/unsafe-fp-math from the default fast model; source first clears them
+  string(PREPEND CMAKE_Fortran_FLAGS " -fp-model=source")
+endif()
+
