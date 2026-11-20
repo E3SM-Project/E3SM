@@ -758,7 +758,7 @@ contains
                mct_gsmap_ngseg(gsmapo)/msizeo,mct_gsmap_ngseg(gsmapo)/apeso
           write(logunit,102) trim(subname),'   nlseg/maxnlsegs    = ', &
                mct_gsmap_nlseg(gsmapo,0),mct_gsmap_maxnlseg(gsmapo)
-102       format(2A,2I8)
+102       format(2A,2I12)
        endif
 
        !       if (.not. mct_gsmap_increasing(gsmapo) ) then

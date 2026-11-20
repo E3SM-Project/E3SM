@@ -2623,10 +2623,10 @@ contains
     character(len=28)     :: c_mprof_file
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
-102 format( A, i10.8, i8, A, 8L3 )
+102 format( A, i10.8, i8, A, 9L3 )
 103 format( 5A )
 104 format( A, i10.8, i8)
-105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i5, A, A)
+105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i8, A, A)
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
 110 format( A,   999999999(:, A8,  i0, A8,  i0) )
@@ -2953,7 +2953,7 @@ contains
        if (iamroot_CPLID) then
           if (loglevel > 1) then
              write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
-                  ' aliogrw run alarms = ',  atmrun_alarm, lndrun_alarm, &
+                  ' aliogrwei run alarms = ',  atmrun_alarm, lndrun_alarm, &
                   icerun_alarm, ocnrun_alarm, glcrun_alarm, &
                   rofrun_alarm, wavrun_alarm, esprun_alarm, iacrun_alarm
              write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &

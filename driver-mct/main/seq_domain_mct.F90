@@ -841,7 +841,7 @@ contains
           endif
        end if
     end do
-150 format('seq_domain_check_grid - n:',I3,' d1:',F12.6,' d2:',F12.6,' diff:',F18.14,' eps:',F18.14)
+150 format('seq_domain_check_grid - n:',I8,' d1:',F12.6,' d2:',F12.6,' diff:',F18.14,' eps:',F18.14)
 
     call mpi_reduce(max_diff,tot_diff,1,MPI_REAL8,MPI_MAX,0,mpicom,ier)
     if (iamroot) then
