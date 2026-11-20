@@ -17,10 +17,10 @@ TEST_CASE("field", "") {
 
   // Subfields
   SECTION("subfield") {
-    std::vector<FieldTag> t1 = {COL, CMP, CMP, LEV};
-    std::vector<int> d1 = {3, 10, 2, 24};
+    std::vector<FieldTag> t1 = {COL, CMP, LEV};
+    std::vector<int> d1 = {3, 10, 24};
 
-    FieldIdentifier fid1("4d", {t1, d1}, m / s, "some_grid");
+    FieldIdentifier fid1("3d", {t1, d1}, m / s, "some_grid");
 
     Field f1(fid1);
     f1.allocate_view();
@@ -31,21 +31,21 @@ TEST_CASE("field", "") {
 
     auto f2 = f1.subfield(idim, ivar);
 
-    // A single-slice subfield along dim1 of a rank>=3 parent is not contiguous,
-    // but is still LayoutRight-compatible (Kokkos allows non-trivial stride in dim0).
+    // A single-slice subfield along dim1 of a rank==3 parent is not contiguous,
+    // but is still LayoutRight-compatible (Kokkos has special LayoutRightPadded
+    // for this specific case).
     REQUIRE(f2.get_header().get_alloc_properties().contiguous() == false);
     REQUIRE(f2.get_header().get_alloc_properties().allows_layout_right() == true);
 
     // Wrong rank for the subfield f2
-    REQUIRE_THROWS(f2.get_view<Real****>());
+    REQUIRE_THROWS(f2.get_view<Real***>());
 
-    auto v4d_h = f1.get_view<Real****, Host>();
-    auto v3d_h = f2.get_view<Real***, Host>();
+    auto v3d_h = f1.get_view<Real***, Host>();
+    auto v2d_h = f2.get_view<Real**, Host>();
     for (int i = 0; i < d1[0]; ++i)
-      for (int j = 0; j < d1[2]; ++j)
-        for (int k = 0; k < d1[3]; ++k) {
-          REQUIRE(v4d_h(i, ivar, j, k) == v3d_h(i, j, k));
-        }
+      for (int k = 0; k < d1[2]; ++k) {
+        REQUIRE(v3d_h(i, ivar, k) == v2d_h(i, k));
+      }
 
     // Check that the mask is kept in sync
     auto mask = f1.create_valid_mask();
@@ -57,6 +57,63 @@ TEST_CASE("field", "") {
     auto f3_mask = f3.get_valid_mask();
     auto mask_sf = mask.subfield(idim,ivar);
     REQUIRE (views_are_equal(f3_mask,mask_sf));
+  }
+
+  SECTION("nested strided subfields") {
+    // This tests check that nested strided subfields correctly access the correct view types
+    constexpr int ncol = 4, ncmp0 = 5, ncmp1 = 3, nlev = 6;
+    FieldIdentifier fid("nested", {{COL,CMP,CMP,LEV}, {ncol,ncmp0,ncmp1,nlev}}, m/s, "some_grid");
+    Field field(fid);
+    field.get_header().get_alloc_properties().request_allocation(4);
+    field.allocate_view();
+    randomize_uniform(field, seed++, 0.01, 0.99);
+    auto root = field.get_view<Real****,Host>();
+
+    constexpr int idim_1 = 1, ivar_1 = 2;
+    constexpr int idim_multislice = 2, sl_beg = 1, sl_end = 3;
+
+    auto sub3d = field.subfield(idim_1, ivar_1);
+    auto sub3d_multislice = sub3d.subfield(idim_multislice, sl_beg, sl_end);
+
+    auto sub3d_v = sub3d.get_strided_view<Real***,Host>();
+    auto sub3d_multislice_v = sub3d_multislice.get_strided_view<Real***,Host>();
+    REQUIRE(sub3d_v.extent_int(0)==ncol);
+    REQUIRE(sub3d_v.extent_int(1)==root.extent_int(2));
+    REQUIRE(sub3d_v.extent_int(2)==root.extent_int(3));
+    REQUIRE(sub3d_multislice_v.extent_int(0)==ncol);
+    REQUIRE(sub3d_multislice_v.extent_int(1)==root.extent_int(2));
+    REQUIRE(sub3d_multislice_v.extent_int(2)==sl_end-sl_beg);
+    for (int col=0; col<ncol; ++col) {
+      for (int cmp1=0; cmp1<ncmp1; ++cmp1) {
+        for (int lev=0; lev<nlev; ++lev) {
+          REQUIRE(sub3d_v(col,cmp1,lev)==root(col,ivar_1,cmp1,lev));
+          if (lev>sl_beg && lev<sl_end) {
+            REQUIRE(sub3d_multislice_v(col,cmp1,lev-sl_beg)==root(col,ivar_1,cmp1,lev));
+          }
+        }
+      }
+    }
+
+    constexpr int idim_2 = 1, ivar_2 = 1;
+    auto sub2d = sub3d.subfield(idim_2, ivar_2);
+    auto sub2d_v = sub2d.get_strided_view<Real**,Host>();
+    for (int col=0; col<ncol; ++col) {
+      for (int lev=0; lev<nlev; ++lev) {
+        REQUIRE(sub2d_v(col,lev)==root(col,ivar_1,ivar_2,lev));
+      }
+    }
+
+    constexpr int idim_3 = 0, ivar_3 = 3;
+    auto sub1d = sub2d.subfield(idim_3, ivar_3);
+    auto sub1d_v = sub1d.get_strided_view<Real*,Host>();
+    for (int lev=0; lev<nlev; ++lev) {
+      REQUIRE(sub1d_v(lev)==root(ivar_3,ivar_1,ivar_2,lev));
+    }
+
+    constexpr int idim_4 = 0, ivar_4 = 4;
+    auto sub0d = sub1d.subfield(idim_4, ivar_4);
+    auto sub0d_v = sub0d.get_view<Real,Host>();
+    REQUIRE(sub0d_v() == root(ivar_3, ivar_1, ivar_2, ivar_4));
   }
 
   SECTION("multi-sliced subfield") {
@@ -386,7 +443,7 @@ TEST_CASE("field", "") {
       REQUIRE(f2_ap.get_subview_info().slice_idx == ivar_dyn);
 
       auto v4d_h = f1.get_view<Real****, Host>();
-      auto v3d_h = f2.get_view<Real***, Host>();
+      auto v3d_h = f2.get_strided_view<Real***, Host>();
       for (int i = 0; i < d1[0]; ++i)
         for (int j = 0; j < d1[2]; ++j)
           for (int k = 0; k < d1[3]; ++k) {
