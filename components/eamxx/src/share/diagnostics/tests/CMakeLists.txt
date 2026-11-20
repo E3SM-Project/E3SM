@@ -182,6 +182,11 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES unary_math_test.cpp
   )
 
+  # Test raising a field to a constant power
+  CreateDiagTest(field_pow
+    SOURCES field_pow_test.cpp
+  )
+
   # Test histogram
   CreateDiagTest(histogram
     SOURCES histogram_test.cpp
