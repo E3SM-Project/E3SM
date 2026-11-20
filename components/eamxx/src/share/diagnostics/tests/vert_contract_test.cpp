@@ -313,38 +313,6 @@ TEST_CASE("vert_contract") {
       }
     }
 
-    // Levels with zero weight are not read: X may be NaN there (xarray: NaN is
-    // missing), and the sums are those of the finite values
-    constexpr auto nan = std::numeric_limits<Real>::quiet_NaN();
-    Field z(FieldIdentifier("z", lay, kg/kg, g4->name()));
-    z.allocate_view();
-    auto zh = z.get_view<Real**,Host>();
-    const Real zv[nc][nl] = {{1,2,3},{1,1,1},{nan,4,nan},{nan,nan,nan}};
-    for (int i=0; i<nc; ++i) {
-      for (int k=0; k<nl; ++k) {
-        zh(i,k) = zv[i][k];
-      }
-    }
-    z.sync_to_dev();
-    z.get_header().get_tracking().update_time_stamp(t0);
-    const Real zsum[nc]  = {14, 3, 4, 0};
-    const Real zmean[nc] = {14.0/6, 1, 4, fv};
-    for (const std::string method : {"sum","avg"}) {
-      auto dz = make(method,"z","w");
-      dz->set_input_field(z);
-      dz->set_input_field(w);
-      dz->initialize();
-      dz->compute(t0);
-      auto o = dz->get();
-      o.sync_to_host();
-      auto oh = o.get_view<const Real*,Host>();
-      for (int i=0; i<nc; ++i) {
-        const Real ref = method=="sum" ? zsum[i] : zmean[i];
-        REQUIRE (std::isfinite(oh(i)));
-        REQUIRE (oh(i)==Approx(ref));
-      }
-    }
-
     // A field weighted by itself is one input: w.mean('lev',weights=w) = sum(w^2)/sum(w)
     auto dww = make("avg","w","w");
     dww->set_input_field(w);

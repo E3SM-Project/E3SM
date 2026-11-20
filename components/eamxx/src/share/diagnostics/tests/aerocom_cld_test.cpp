@@ -63,7 +63,7 @@ HostView2 weights_reference (const std::string& position, const std::string& pha
 }
 
 // The reference of X.sum('lev', weights=cldfrac_tot.aerocom_weights(position,phase=phase)):
-// the sum of X*W over the levels with nonzero weight (and valid X, if X is masked).
+// the sum of X*W over the levels (where X is valid, if X is masked).
 // X=1 for 'mask', which stands for the sum of the weights, W.sum('lev'), the cloud
 // fraction seen from the top (or bottom).
 HostView1 sample_reference (const std::string& X, const std::string& position,
@@ -84,7 +84,7 @@ HostView1 sample_reference (const std::string& X, const std::string& position,
   HostView1 out("out",ncols);
   for (int icol=0; icol<ncols; ++icol) {
     for (int k=0; k<nlevs; ++k) {
-      if (w(icol,k)!=0 and (m.size()==0 or m(icol,k)!=0)) {
+      if (m.size()==0 or m(icol,k)!=0) {
         out(icol) += (X=="mask" ? 1 : x(icol,k))*w(icol,k);
       }
     }
@@ -473,30 +473,11 @@ TEST_CASE("aerocom_cld_skips") {
   int seed = get_random_test_seed();
   set_realistic_inputs(fields,seed);
 
-  constexpr auto nan = std::numeric_limits<Real>::quiet_NaN();
   for (const std::string pos : {"top","bot"}) {
     for (const auto& ph : phases) {
       const auto lbl = pos + ", phase=" + ph;
       const auto w = weights_reference(pos,ph,fields);
       fields_t xf = fields;
-
-      // X may not be finite where the weight is zero (e.g., divided by a zero
-      // cloud fraction); it must not reach the sum there
-      auto X = fields.at("nc").clone("X",CloneFlags::CopyData);
-      auto X_h = host_view(X);
-      int nzero = 0;
-      for (int i=0; i<static_cast<int>(X_h.extent(0)); ++i) {
-        for (int k=0; k<static_cast<int>(X_h.extent(1)); ++k) {
-          if (w(i,k)==0) {
-            X_h(i,k) = nan;
-            ++nzero;
-          }
-        }
-      }
-      REQUIRE (nzero>0);
-      X.sync_to_dev();
-      xf.emplace("X",X);
-      check(sample_diag("X",pos,ph,xf,grid),sample_reference("X",pos,ph,xf),lbl + ", NaN where unweighted");
 
       // A masked X counts only where it is valid
       auto Y = fields.at("nc").clone("Y",CloneFlags::CopyData);

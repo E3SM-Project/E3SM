@@ -75,10 +75,10 @@ grid mean into an in-cloud value. The `where(..)` keeps that division away
 from layers with no cloud, where `cldfrac_tot` is zero and the division would
 be by zero.
 
-Only the layers with a nonzero weight are summed, so `X` need not be finite
-anywhere else. If `X` is masked (e.g., it is the result of `where(..)`), its
-invalid layers are skipped too, and a column with no valid layer gives 0, as
-xarray's weighted sum does.
+Every layer is summed, including those with zero weight, so `X` must be
+finite everywhere: 0 times NaN is NaN. If `X` is masked (e.g., it is the
+result of `where(..)`), its invalid layers are skipped, and a column with no
+valid layer gives 0, as xarray's weighted sum does.
 
 The weights are a diagnostic of their own, so all fields sampled at the same
 position and with the same phase share one computation of them.

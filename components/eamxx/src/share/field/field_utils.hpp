@@ -55,7 +55,6 @@ void perturb (const Field& f,
 // or
 //   f_out[j] = sum_i( weight[i] * f_in[i,j] * mask[i,j] )
 // where mask = f_in.get_valid_mask() (IntType, 0=invalid) if present.
-// vert_contraction skips entries with zero weight, so f_in need not be finite there.
 // Here, the weight is ASSUMED to be:
 //  - a 1d (ncol) field for horiz_contraction
 //  - either a 1d (nlev) or 2d (ncol,nlev) field for vert_contraction
