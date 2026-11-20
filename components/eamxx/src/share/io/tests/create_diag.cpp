@@ -427,8 +427,13 @@ TEST_CASE("create_diag")
       REQUIRE (std::dynamic_pointer_cast<UnaryMath>(d)!=nullptr);
       REQUIRE (get(d,"op")==op);
       REQUIRE (get(d,"field_name")=="qv");
-      REQUIRE_FALSE (d->get_params().isParameter("invalid"));
-      REQUIRE_FALSE (d->get_params().isParameter("units"));
+      // The defaults (UnaryMath stores them as it reads them)
+      if (op!="exp" and op!="abs") {
+        REQUIRE (get(d,"invalid")=="nan");
+      }
+      if (op!="sqrt" and op!="abs") {
+        REQUIRE (get(d,"units")=="check");
+      }
       REQUIRE (get(d,"output_field_name")==op + "(qv)");
     }
 
