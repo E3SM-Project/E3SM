@@ -4,6 +4,11 @@
 #include "share/remap/abstract_remapper.hpp"
 #include "share/core/eamxx_config.hpp"
 
+#include "share/grid/grid_import_export.hpp"
+
+#include <mpi.h>
+#include <memory>
+
 #include <vector>
 
 namespace scream
@@ -16,6 +21,33 @@ namespace scream
 KokkosTypes<DefaultDevice>::view_1d<int>
 compute_unique_grid_dof_map (const AbstractGrid& grid,
                              const AbstractGrid& unique_grid);
+
+// Describes how to access, in a kernel, the data of one "entry" of the remapper (a scalar field,
+// or a component of a vector field), both on the source grid and on the unique (target) grid.
+// All entries are stored in a (device) table, so that a single kernel can handle all of them.
+// The pointers and strides are extracted from the field views at every remap (a subfield can
+// change its subview info at runtime), while the other members are set once.
+//
+//  - Unique grid field: (col[,lev]). tgt_s[0]/tgt_s[1] are the strides of the col/lev dims.
+//  - Source grid field: (dof[,lev]) if the dofs are addressed with 1 index, (e,g1,g2[,lev]) if
+//    with 3 indices. src_s[0..2] are the strides of the dof indices (only src_s[0] if 1 index),
+//    and src_s[3] is the stride of the lev dim.
+// NOTE: for 2d entries, there is no lev dim: nlev=1 and the lev strides are unused.
+struct UniqueGridEntryDesc {
+  Real*      tgt_ptr = nullptr;
+  Real*      src_ptr = nullptr;
+  long long  tgt_s[2] = {0,0};
+  long long  src_s[4] = {0,0,0,0};
+  int        nlev = 1;
+
+  // Where this entry sits in the send/recv buffers (only used by remap_bwd)
+  //  - field_off:  offset of the field in the chunk of a column (all fields on the same column are spliced)
+  //  - col_size:   size of the whole column of the field (all components)
+  //  - comp_off:   offset of this component within the column of the field
+  int        field_off = 0;
+  int        col_size  = 0;
+  int        comp_off  = 0;
+};
 
 /*
  * A remapper from a grid to its unique grid
@@ -31,8 +63,16 @@ compute_unique_grid_dof_map (const AbstractGrid& grid,
  * addressed with 1 index per dof. Every column of the target grid must have a
  * replica among the source grid dofs on the same rank.
  *
- * Only the forward direction is supported, since the opposite direction would require
- * communication across ranks. Fields can be subfields of other fields, possibly with a
+ * The forward direction (grid->unique grid) is a local gather: each column of the unique
+ * grid must have a replica among the dofs of the source grid on the same rank.
+ *
+ * The backward direction (unique grid->grid) sets each dof of the source grid to the value
+ * of the unique grid column with the same gid. The column may be owned by another rank, so
+ * this direction involves p2p communication. The comm schedule is created at the first
+ * call of remap_bwd (it's a collective operation).
+ * Every dof of the source grid must correspond to a column of the unique grid (on some rank).
+ *
+ * Fields can be subfields of other fields, possibly with a
  * dynamic subview info (the views are extracted at every remap).
  */
 
@@ -67,6 +107,18 @@ protected:
 
   void registration_ends_impl () override;
   void remap_fwd_impl () override;
+  void remap_bwd_impl () override;
+
+  // unique->grid requires communication. These methods set up/perform it.
+  void setup_bwd ();
+  void pack_and_send ();
+  void recv_and_unpack ();
+  void launch_pack ();
+  void launch_unpack (const int first, const int count, const int skip_beg, const int skip_cnt);
+
+  // Fill (on host) the pointers and strides of the entries table from the current views of the
+  // fields, and copy the table to device.
+  void update_entries ();
 
   // Re-target the component subfields of the i-th field (if it is a vector field) to the c-th component
   void set_component (const int i, const int c);
@@ -88,6 +140,76 @@ protected:
   std::vector<int>    m_ncomp;
   std::vector<Field>  m_src_scalar;
   std::vector<Field>  m_tgt_scalar;
+
+  // One entry for each (field,component). The kernels work on all entries at once.
+  int                                                 m_num_entries = 0;
+  std::vector<int>                                    m_entry_field;
+  std::vector<int>                                    m_entry_comp;
+  KT::view_ND<UniqueGridEntryDesc,1>                  m_entries;
+  typename KT::view_ND<UniqueGridEntryDesc,1>::host_mirror_type  m_entries_h;
+
+  // ----- unique->grid data structures ----- //
+
+  static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
+
+  template<typename T>
+  using view_1d = typename KT::template view_ND<T,1>;
+  template<typename T>
+  using hview_1d = typename view_1d<T>::host_mirror_type;
+
+  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
+  template<typename T>
+  using mpi_view_1d = std::conditional_t<MpiOnDev,view_1d<T>,hview_1d<T>>;
+
+  bool m_bwd_setup_done = false;
+
+  // For each unique local gid (the "overlap" grid), the list of local source dofs with such gid.
+  // The dofs for the u-th unique gid are m_u2src_dofs[m_u2src_offsets[u]...m_u2src_offsets[u+1]-1]
+  view_1d<int>  m_u2src_offsets;
+  view_1d<int>  m_u2src_dofs;
+
+  // The imports/exports tell us which pid we get/send unique grid columns from/to.
+  // Imports are indexed by the unique local gid. Exports by the local unique grid column.
+  // All arrays are sorted by pid, and the offsets (size nranks+1) tell us where each pid starts.
+  int m_num_imports = 0;
+  int m_num_exports = 0;
+
+  // The columns that this rank owns and also needs (dyn dofs). No comm needed for those:
+  // we copy them directly from the send to the recv buffer (their position among the
+  // imports/exports of this rank is given by the offsets of this rank's pid)
+  int m_self_imp_beg = 0;
+  int m_self_exp_beg = 0;
+  int m_self_cnt     = 0;
+  view_1d<int>  m_imp_pids;
+  view_1d<int>  m_imp_lids;
+  view_1d<int>  m_imp_offsets;
+  view_1d<int>  m_exp_pids;
+  view_1d<int>  m_exp_lids;
+  view_1d<int>  m_exp_offsets;
+
+  // Size of one column of each field (and of all fields together), and offset of each field in the latter.
+  int m_total_col_size = 0;
+  std::vector<int>  m_f_col_size;
+  std::vector<int>  m_f_col_offset;
+
+  // The send/recv buffers for pack/unpack operations
+  view_1d<Real> m_send_buffer;
+  view_1d<Real> m_recv_buffer;
+
+  // The send/recv buf to feed to MPI (alias the above two if MpiOnDev=true)
+  mpi_view_1d<Real> m_mpi_send_buffer;
+  mpi_view_1d<Real> m_mpi_recv_buffer;
+
+  // Send/recv persistent requests
+  // NOTE: this class is used as a functor in Kokkos kernels, so it gets copied (and destroyed) around.
+  //       Hence, the requests cannot be freed in the destructor of this class. Instead, we store them in
+  //       a struct that is shared among copies, and that frees the requests when the last copy goes away.
+  struct MpiRequests {
+    ~MpiRequests ();
+    std::vector<MPI_Request>  send;
+    std::vector<MPI_Request>  recv;
+  };
+  std::shared_ptr<MpiRequests>  m_requests;
 };
 
 } // namespace scream

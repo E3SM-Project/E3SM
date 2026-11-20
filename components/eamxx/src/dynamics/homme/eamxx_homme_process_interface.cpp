@@ -23,9 +23,17 @@
 #include "ExecSpaceDefs.hpp"
 #include "Types.hpp"
 
+#ifdef start_timer
+#undef start_timer
+#endif
+#ifdef stop_timer
+#undef stop_timer
+#endif
+
 // Scream includes
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "share/remap/unique_grid_remapper.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
@@ -83,6 +91,14 @@ void HommeDynamics::create_requests ()
   m_dyn_grid = m_grids_manager->get_grid(dgn);
   m_phys_grid = m_grids_manager->get_grid("physics");
   m_cgll_grid = m_grids_manager->get_grid("physics_gll");
+
+  m_p2d_via_bwd = m_params.get<bool>("use_unique_grid_remapper_for_p2d",false);
+  if (m_p2d_via_bwd) {
+    const auto unique_grid = m_dyn_grid->get_unique_grid();
+    EKAT_REQUIRE_MSG (m_cgll_grid->get_num_local_dofs()==unique_grid->get_num_local_dofs() and
+                      m_cgll_grid->get_num_global_dofs()==unique_grid->get_num_global_dofs(),
+        "Error! use_unique_grid_remapper_for_p2d requires physics_gll to be the unique grid of the dynamics grid.\n");
+  }
 
   fv_phys_set_grids();
 
@@ -261,8 +277,22 @@ void HommeDynamics::create_requests ()
     // is more convenient to use two different remappers: the pd remapper will
     // remap into Homme's forcing views, while the dp remapper will remap from
     // Homme's states.
-    m_p2d_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_phys_grid,m_dyn_grid);
+    if (m_p2d_via_bwd) {
+      const auto unique_grid = m_dyn_grid->get_unique_grid();
+      EKAT_REQUIRE_MSG (m_phys_grid->get_num_local_dofs()==unique_grid->get_num_local_dofs() and
+                        m_phys_grid->get_num_global_dofs()==unique_grid->get_num_global_dofs(),
+          "Error! use_unique_grid_remapper_for_p2d requires the physics grid to be the unique grid of the dynamics grid.\n");
+      m_p2d_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+    } else {
+      m_p2d_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_phys_grid,m_dyn_grid);
+    }
     m_d2p_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+
+    // Give them a name, and enable their timers (to compare implementations)
+    m_p2d_remapper->set_name("homme_p2d");
+    m_d2p_remapper->set_name("homme_d2p");
+    m_p2d_remapper->toggle_timers(true);
+    m_d2p_remapper->toggle_timers(true);
   }
 
   // Layout for 2D (1d horiz X 1d vertical) variable
@@ -451,14 +481,22 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // ftype!=FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
     // Remap Q directly into FQ, tendency computed in pre_process step
-    m_p2d_remapper->register_field(get_group_out("Q",pgn).monolithic_field(),m_helper_fields.at("FQ_dyn"));
-    m_p2d_remapper->register_field(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
+    // NOTE: with the bwd remapper, the "source" is the dyn field and the "target" is the phys one
+    auto register_p2d = [&](const Field& phys, const Field& dyn) {
+      if (m_p2d_via_bwd) {
+        m_p2d_remapper->register_field(dyn,phys);
+      } else {
+        m_p2d_remapper->register_field(phys,dyn);
+      }
+    };
+    register_p2d(get_group_out("Q",pgn).monolithic_field(),m_helper_fields.at("FQ_dyn"));
+    register_p2d(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
 
     // FM has 3 components on dyn grid, but only 2 on phys grid
     auto& FM_phys = m_helper_fields.at("FM_phys");
     auto& FM_dyn  = m_helper_fields.at("FM_dyn");
-    m_p2d_remapper->register_field(FM_phys.get_component(0),FM_dyn.get_component(0));
-    m_p2d_remapper->register_field(FM_phys.get_component(1),FM_dyn.get_component(1));
+    register_p2d(FM_phys.get_component(0),FM_dyn.get_component(0));
+    register_p2d(FM_phys.get_component(1),FM_dyn.get_component(1));
 
     // NOTE: for states, if/when we can remap subfields, we can remap the corresponding internal fields,
     //       which are subviews of the corresponding helper field at time slice np1
@@ -471,8 +509,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
     if (params.do_3d_turbulence) {
       // Remap SHOC eddy diffusivities from physics grid to dynamics grid.
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom_horiz",pgn),m_helper_fields.at("Km_dyn"));
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat_horiz",pgn),m_helper_fields.at("Kh_dyn"));
+      register_p2d(get_field_in("eddy_diff_mom_horiz",pgn),m_helper_fields.at("Km_dyn"));
+      register_p2d(get_field_in("eddy_diff_heat_horiz",pgn),m_helper_fields.at("Kh_dyn"));
 
       // Remap horizontal/local strain tensor components from dynamics to physics grid.
       m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
@@ -673,7 +711,13 @@ void HommeDynamics::homme_pre_process (const double dt) {
     fv_phys_pre_process();
   } else {
     // Remap FT, FM, and Q->FQ
-    m_p2d_remapper->remap_fwd();
+    start_timer("homme::p2d_remap");
+    if (m_p2d_via_bwd) {
+      m_p2d_remapper->remap_bwd();
+    } else {
+      m_p2d_remapper->remap_fwd();
+    }
+    stop_timer("homme::p2d_remap");
   }
 
   auto& tl = c.get<TimeLevel>();
@@ -746,7 +790,9 @@ void HommeDynamics::homme_post_process (const double dt) {
   }
 
   // Remap outputs to ref grid
+  start_timer("homme::d2p_remap");
   m_d2p_remapper->remap_fwd();
+  stop_timer("homme::d2p_remap");
 
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
@@ -1119,7 +1165,9 @@ void HommeDynamics::restart_homme_state () {
     *qv_prev_ref = m_helper_fields.at("qv_prev_phys");
   }
   m_ic_remapper->registration_ends();
+  start_timer("homme::ic_remap");
   m_ic_remapper->remap_fwd();
+  stop_timer("homme::ic_remap");
   m_ic_remapper = nullptr; // Can clean up the IC remapper now.
 
   // Now that we have dp_ref, we can recompute pressure
@@ -1204,15 +1252,34 @@ void HommeDynamics::initialize_homme_state () {
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
-  m_ic_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid,m_dyn_grid);
-  m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),get_internal_field("v_dyn"));
-  m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),get_internal_field("dp3d_dyn"));
-  m_ic_remapper->register_field(get_field_in("ps",rgn),get_internal_field("ps_dyn"));
-  m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
-  m_ic_remapper->register_field(get_field_in("T_mid",rgn),get_internal_field("vtheta_dp_dyn"));
-  m_ic_remapper->register_field(get_group_in("tracers",rgn).monolithic_field(),m_helper_fields.at("Q_dyn"));
+  // NOTE: with the bwd remapper (see use_unique_grid_remapper_for_p2d), the "source" is the dyn field
+  //       and the "target" is the ref grid one
+  if (m_p2d_via_bwd) {
+    m_ic_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+  } else {
+    m_ic_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid,m_dyn_grid);
+  }
+  auto register_ic = [&](const Field& ref, const Field& dyn) {
+    if (m_p2d_via_bwd) {
+      m_ic_remapper->register_field(dyn,ref);
+    } else {
+      m_ic_remapper->register_field(ref,dyn);
+    }
+  };
+  register_ic(get_field_in("horiz_winds",rgn),get_internal_field("v_dyn"));
+  register_ic(get_field_out("pseudo_density",rgn),get_internal_field("dp3d_dyn"));
+  register_ic(get_field_in("ps",rgn),get_internal_field("ps_dyn"));
+  register_ic(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
+  register_ic(get_field_in("T_mid",rgn),get_internal_field("vtheta_dp_dyn"));
+  register_ic(get_group_in("tracers",rgn).monolithic_field(),m_helper_fields.at("Q_dyn"));
   m_ic_remapper->registration_ends();
-  m_ic_remapper->remap_fwd();
+  start_timer("homme::ic_remap");
+  if (m_p2d_via_bwd) {
+    m_ic_remapper->remap_bwd();
+  } else {
+    m_ic_remapper->remap_fwd();
+  }
+  stop_timer("homme::ic_remap");
 
   // Wheter w_int is computed or not, Homme still does some global reduction on w_int when
   // printing the state, so we need to make sure it doesn't contain NaNs

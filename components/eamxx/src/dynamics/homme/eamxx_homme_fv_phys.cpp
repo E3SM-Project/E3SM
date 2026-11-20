@@ -8,11 +8,21 @@
 #include "ElementsForcing.hpp"
 #include "GllFvRemap.hpp"
 
+// Homme defines macros with the same names as the EAMxx timing functions
+#ifdef start_timer
+#undef start_timer
+#endif
+#ifdef stop_timer
+#undef stop_timer
+#endif
+
 // Scream includes
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 // Ekat includes
 #include <ekat_assert.hpp>
@@ -284,7 +294,11 @@ void HommeDynamics
     // restart file.
     add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), mol/mol, pgn, ps);
   }
-  trace_gases_workaround.set_remapper(std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid, m_dyn_grid));
+  if (m_p2d_via_bwd) {
+    trace_gases_workaround.set_remapper(std::make_shared<UniqueGridRemapper>(m_dyn_grid));
+  } else {
+    trace_gases_workaround.set_remapper(std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid, m_dyn_grid));
+  }
 }
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
@@ -309,10 +323,22 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap (const RunType run_type) {
       for (const auto& e : trace_gases_workaround.get_active_gases())
         create_helper_field(e, {EL,GP,GP,LEV}, {nelem,NGP,NGP,nlev}, dgn);
       auto r = trace_gases_workaround.get_remapper();
-      for (const auto& e : trace_gases_workaround.get_active_gases())
-        r->register_field(get_field_in(e, rgn), m_helper_fields.at(e));
+      for (const auto& e : trace_gases_workaround.get_active_gases()) {
+        // NOTE: with the bwd remapper, the "source" is the dyn field and the "target" is the CGLL one
+        if (m_p2d_via_bwd) {
+          r->register_field(m_helper_fields.at(e), get_field_in(e, rgn));
+        } else {
+          r->register_field(get_field_in(e, rgn), m_helper_fields.at(e));
+        }
+      }
       r->registration_ends();
-      r->remap_fwd();
+      start_timer("homme::trace_gases_remap");
+      if (m_p2d_via_bwd) {
+        r->remap_bwd();
+      } else {
+        r->remap_fwd();
+      }
+      stop_timer("homme::trace_gases_remap");
       trace_gases_workaround.erase_remapper();
     }
     { // DGLL -> PGN

@@ -149,6 +149,9 @@ protected:
   std::shared_ptr<AbstractRemapper>   m_d2p_remapper;
   std::shared_ptr<AbstractRemapper>   m_ic_remapper;
 
+  // If true, the p2d remap is done with UniqueGridRemapper::remap_bwd (instead of PhysicsDynamicsRemapper)
+  bool m_p2d_via_bwd = false;
+
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid> m_dyn_grid;  // Dynamics DGLL
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid

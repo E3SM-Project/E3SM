@@ -197,6 +197,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <moisture>moist</moisture>
+      <!-- EXPERIMENTAL: if true, remap physics->dynamics with UniqueGridRemapper::remap_bwd (p2p comm),
+           instead of PhysicsDynamicsRemapper (BoundaryExchange). Only for physics grid = physics_gll. -->
+      <use_unique_grid_remapper_for_p2d type="logical">false</use_unique_grid_remapper_for_p2d>
       <!-- This value is synchronized with ctl_nl::do_3d_turbulence by
            eamxx_buildnml.py and forwarded by the driver to SHOC. -->
       <do_3d_turbulence_homme type="logical" locked="true">false</do_3d_turbulence_homme>
