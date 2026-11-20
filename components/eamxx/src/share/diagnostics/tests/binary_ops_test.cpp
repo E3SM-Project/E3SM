@@ -224,4 +224,109 @@ TEST_CASE("binary_op_literals")
   REQUIRE (views_are_equal(d2->get(),expected));
 }
 
+TEST_CASE("binary_op_constant_fields")
+{
+  // An operation on constants alone is a rank-0 field that other operations use as a scalar
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+  using C = physics::Constants<Real>;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
+  auto grid = create_point_grid("physics",16,8,comm);
+  auto &diag_factory = DiagnosticFactory::instance();
+  register_diagnostics();
+
+  const auto lay = grid->get_3d_scalar_layout(LEV);
+  Field T (FieldIdentifier("T_mid", lay, K, grid->name()), true);
+  T.get_header().get_tracking().update_time_stamp(t0);
+  randomize_uniform(T, get_random_test_seed(), 200, 300);
+  // Rank 0, but not made of constants (think ps.mean('col'))
+  Field s (FieldIdentifier("s", FieldLayout({},{}), K, grid->name()), true);
+  s.get_header().get_tracking().update_time_stamp(t0);
+  s.deep_copy(100000);
+
+  auto make = [&](const std::string& a1, const std::string& op, const std::string& a2,
+                  const std::vector<Field>& inputs) {
+    ekat::ParameterList p;
+    p.set("grid_name", grid->name());
+    p.set<std::string>("arg1",a1);
+    p.set<std::string>("arg2",a2);
+    p.set<std::string>("binary_op",op);
+    auto d = diag_factory.create("BinaryOp",comm,p,grid);
+    for (const auto& n : d->get_input_fields_names()) {
+      for (const auto& f : inputs) {
+        if (f.name()==n) d->set_input_field(f);
+      }
+    }
+    d->initialize();
+    return d;
+  };
+  // The Quantity<Real> in the header of a constant (key as in binary_op.cpp), if any
+  auto constant_of = [](const Field& f) {
+    const auto& h = f.get_header();
+    const bool is = h.has_extra_data("constant_value");
+    return std::make_pair(is,is ? h.get_extra_data<Quantity<Real>>("constant_value") : Quantity<Real>());
+  };
+
+  // Rair/Cpair: a constant, with units (none here)
+  auto kappa = make("Rair","over","Cpair",{})->get();
+  const Real kappa_v = C::Rair.value / C::Cpair.value;
+  REQUIRE (kappa.get_header().get_identifier().get_layout().rank()==0);
+  auto [is_const,q] = constant_of(kappa);
+  REQUIRE (is_const);
+  REQUIRE (q.value==Approx(kappa_v));
+  REQUIRE (q.units==none);
+  REQUIRE_FALSE (constant_of(s).first);
+
+  // It is a scalar for others, on either side
+  Field expected = T.clone("expected");
+  auto d1 = make("T_mid","times",kappa.name(),{T,kappa});
+  d1->compute(t0);
+  expected.deep_copy(T);
+  expected.scale(kappa_v);
+  REQUIRE (views_are_equal(d1->get(),expected));
+  auto d2 = make(kappa.name(),"over","T_mid",{T,kappa});
+  d2->compute(t0);
+  expected.deep_copy(kappa_v);
+  expected.scale_inv(T);
+  REQUIRE (views_are_equal(d2->get(),expected));
+  REQUIRE (d2->get().get_header().get_identifier().get_units()==none/K);
+
+  // A constant keeps its units, unlike a literal
+  REQUIRE_THROWS (make("T_mid","plus",kappa.name(),{T,kappa}));
+  // A constant of constants is a constant
+  auto kappa2 = make(kappa.name(),"times","2",{kappa})->get();
+  REQUIRE (constant_of(kappa2).second.value==Approx(2*kappa_v));
+
+  // Literals alone make a literal: invalid units in the header, none on the field. So T_mid+(2+3) is in K.
+  auto five = make("2","plus","3",{})->get();
+  REQUIRE (constant_of(five).second.value==5);
+  REQUIRE (constant_of(five).second.units==Units::invalid());
+  REQUIRE (five.get_header().get_identifier().get_units()==none);
+  auto d3 = make("T_mid","plus",five.name(),{T,five});
+  d3->compute(t0);
+  expected.deep_copy(T);
+  expected.update(T,1,0,5);
+  REQUIRE (views_are_equal(d3->get(),expected));
+  REQUIRE (d3->get().get_header().get_identifier().get_units()==K);
+  // With a named constant, it is not a literal
+  REQUIRE (constant_of(make("Tmelt","plus","3",{})->get()).second.units==K);
+
+  // Next to a non-constant field with the same layout, a constant stays a field: s/kappa is a true
+  // division, not s*(1/kappa), which differs in the last digits for s=100000
+  auto d4 = make("s","over",kappa.name(),{s,kappa});
+  d4->compute(t0);
+  Field expected0 = s.clone("expected0");
+  expected0.deep_copy(s);
+  expected0.scale_inv(kappa);
+  REQUIRE (views_are_equal(d4->get(),expected0));
+  REQUIRE_FALSE (constant_of(d4->get()).first);
+
+  // A rank-0 field that is not a constant is not a scalar
+  REQUIRE_THROWS_WITH (make("T_mid","plus","s",{T,s}), Catch::Contains("broadcast_like"));
+  REQUIRE_THROWS_WITH (make("s","times","T_mid",{T,s}), Catch::Contains("broadcast_like"));
+  REQUIRE_THROWS_WITH (make("1","over","0",{}), Catch::Contains("Division by zero"));
+}
+
 }  // namespace scream

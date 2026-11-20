@@ -16,6 +16,9 @@ namespace {
 namespace scream {
 
 namespace {
+// Key, in the header of a rank-0 field made of constants alone, of its Quantity<Real>
+constexpr auto constant_key = "constant_value";
+
 // A non-field operand is a named physical constant (Rgas, P0, ...) or a numeric
 // literal. Only expressions can write a literal -- (qc+qv)*2 -- but accept both.
 // NOTE: strtod because from_chars for floating point is missing on some
@@ -207,7 +210,11 @@ Quantity<Real> scalar_op(const Quantity<Real>& a, const Quantity<Real>& b, const
     case OP_PLUS:  return Quantity<Real>(a.value+b.value,units);
     case OP_MINUS: return Quantity<Real>(a.value-b.value,units);
     case OP_TIMES: return Quantity<Real>(a.value*b.value,units);
-    case OP_OVER:  return Quantity<Real>(a.value/b.value,units);
+    case OP_OVER:
+      EKAT_REQUIRE_MSG (b.value!=0,
+          "Error! Division by zero in an operation on constants.\n"
+          " - lhs: " + std::to_string(a.value) + "\n");
+      return Quantity<Real>(a.value/b.value,units);
     default:
       EKAT_ERROR_MSG("Error! Unrecognized/unsupported binary op code (" + std::to_string(op_code) + ")\n");
   }
@@ -242,17 +249,39 @@ BinaryOp(const ekat::Comm &comm,
 
 void BinaryOp::initialize_impl()
 {
+  auto fid = [&](const std::string& name) -> const FieldIdentifier& {
+    return m_fields_in.at(name).get_header().get_identifier();
+  };
+  auto constant_of = [&](const std::string& name) -> const Quantity<Real>* {
+    const auto& h = m_fields_in.at(name).get_header();
+    return h.has_extra_data(constant_key) ? &h.get_extra_data<Quantity<Real>>(constant_key) : nullptr;
+  };
+
+  // A rank-0 field made of constants alone is a scalar (it is still an input, so computed first).
+  // Next to a non-constant field with the same layout it stays a field, as before (so, bfb).
+  const auto* c1 = m_arg1_scalar ? nullptr : constant_of(m_arg1_name);
+  const auto* c2 = m_arg2_scalar ? nullptr : constant_of(m_arg2_name);
+  const bool keep_fields = not m_arg1_scalar and not m_arg2_scalar and (c1==nullptr)!=(c2==nullptr) and
+                           fid(m_arg1_name).get_layout()==fid(m_arg2_name).get_layout();
+  if (c1 and not keep_fields) m_arg1_scalar = *c1;
+  if (c2 and not keep_fields) m_arg2_scalar = *c2;
+
   if (not m_arg1_scalar and not m_arg2_scalar) {
     const auto& fid1   = m_fields_in.at(m_arg1_name).get_header().get_identifier();
     const auto& fid2   = m_fields_in.at(m_arg2_name).get_header().get_identifier();
 
     // Must be on same layout, same datatype, same grid
+    const bool rank0_vs_not = (fid1.get_layout().rank()==0) != (fid2.get_layout().rank()==0);
     EKAT_REQUIRE_MSG (fid1.get_layout() == fid2.get_layout(),
       "Error! BinaryOp requires both input fields to have the same layout.\n"
       " - field 1 name: " + fid1.name() + "\n"
       " - field 1 layout: " + fid1.get_layout().to_string() + "\n"
       " - field 2 name: " + fid2.name() + "\n"
-      " - field 2 layout: " + fid2.get_layout().to_string() + "\n");
+      " - field 2 layout: " + fid2.get_layout().to_string() + "\n" +
+      (rank0_vs_not
+        ? " - note: a rank-0 field is a scalar operand only if it is made of constants alone\n"
+          "   (e.g., Rair/Cpair). Any other must be broadcast explicitly, as in X.broadcast_like(Y).\n"
+        : ""));
     EKAT_REQUIRE_MSG (fid1.data_type() == fid2.data_type(),
       "Error! BinaryOp requires both input fields to have the same data type.\n"
       " - field 1 name: " + fid1.name() + "\n"
@@ -268,9 +297,6 @@ void BinaryOp::initialize_impl()
   }
 
   // All good, create the diag output
-  auto fid = [&](const std::string& name) -> const FieldIdentifier& {
-    return m_fields_in.at(name).get_header().get_identifier();
-  };
   auto dl = m_arg1_scalar ? (m_arg2_scalar ? FieldLayout({},{}) : fid(m_arg2_name).get_layout())
                           : fid(m_arg1_name).get_layout();
   auto u1 = m_arg1_scalar ? m_arg1_scalar->units : fid(m_arg1_name).get_units();
@@ -286,9 +312,10 @@ void BinaryOp::initialize_impl()
   add_output(d_fid);
 
   if (m_arg1_scalar and m_arg2_scalar) {
-    // We can pre-compute the diag now
+    // We can pre-compute the diag now. It is a constant, which others use as a scalar.
     const auto q = scalar_op(*m_arg1_scalar, *m_arg2_scalar, m_binary_op_code);
     get().deep_copy(q.value);
+    get().get_header().set_extra_data(constant_key,q);
   } else {
     m_arg1_has_mask = not m_arg1_scalar and m_fields_in.at(m_arg1_name).has_valid_mask();
     m_arg2_has_mask = not m_arg2_scalar and m_fields_in.at(m_arg2_name).has_valid_mask();
