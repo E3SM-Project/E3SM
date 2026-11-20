@@ -5,6 +5,7 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_reader.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -163,10 +164,15 @@ TEST_CASE ("io_with_expressions")
         "neg_r := T_mid*(-2)",
         // ...and a legal threshold
         "T_pos := T_mid.where(T_mid>-1)",
+        // Constants alone make a constant, usable as a scalar (also as an alias)
+        "kap := T_mid*(Rair/Cpair)",
+        "kap_alias := T_mid*kappa",
+        "T_plus5 := T_mid+(2+3)",
       },
       {
         // An intermediate: resolved and usable by name, but not written
         "qvT := qv*T_mid",
+        "kappa := Rair/Cpair",
       });
 
   // NOTE: scoped, so the stream (and the diags it owns) are gone before Kokkos
@@ -210,6 +216,9 @@ TEST_CASE ("io_with_expressions")
   REQUIRE (scorpio::has_var(filename,"neg_l"));
   REQUIRE (scorpio::has_var(filename,"neg_r"));
   REQUIRE (scorpio::has_var(filename,"T_pos"));
+  REQUIRE (scorpio::has_var(filename,"kap"));
+  REQUIRE (scorpio::has_var(filename,"kap_alias"));
+  REQUIRE (scorpio::has_var(filename,"T_plus5"));
   // An 'aliases' entry is an intermediate: resolved, used, but not written
   REQUIRE_FALSE (scorpio::has_var(filename,"qvT"));
   // The file records where the numbers came from
@@ -231,7 +240,10 @@ TEST_CASE ("io_with_expressions")
   Field neg_l   (FieldIdentifier("neg_l",  layout3d, K, gname));
   Field neg_r   (FieldIdentifier("neg_r",  layout3d, K, gname));
   Field T_pos   (FieldIdentifier("T_pos",  layout3d, K, gname));
-  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos}) {
+  Field kap     (FieldIdentifier("kap",    layout3d, K, gname));
+  Field kap_alias (FieldIdentifier("kap_alias", layout3d, K, gname));
+  Field T_plus5 (FieldIdentifier("T_plus5",layout3d, K, gname));
+  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos,&kap,&kap_alias,&T_plus5}) {
     f->allocate_view();
     f->get_header().get_tracking().update_time_stamp(t0);
   }
@@ -239,7 +251,7 @@ TEST_CASE ("io_with_expressions")
   FieldReader reader;
   reader.set_file_specs(filename);
   reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos});
+  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos,kap,kap_alias,T_plus5});
 
   const int nlocal = grid->get_num_local_dofs();
   for (int n=1; n<=nsteps; ++n) {
@@ -253,9 +265,15 @@ TEST_CASE ("io_with_expressions")
     neg_l.sync_to_host();
     neg_r.sync_to_host();
     T_pos.sync_to_host();
+    kap.sync_to_host();
+    kap_alias.sync_to_host();
+    T_plus5.sync_to_host();
     auto neg_l_h    = neg_l.get_view<const Real**,Host>();
     auto neg_r_h    = neg_r.get_view<const Real**,Host>();
     auto T_pos_h    = T_pos.get_view<const Real**,Host>();
+    auto kap_h      = kap.get_view<const Real**,Host>();
+    auto kap_alias_h = kap_alias.get_view<const Real**,Host>();
+    auto T_plus5_h  = T_plus5.get_view<const Real**,Host>();
     auto prod_h     = prod.get_view<const Real**,Host>();
     auto shifted_h  = shifted.get_view<const Real**,Host>();
     auto half_h     = half.get_view<const Real**,Host>();
@@ -284,6 +302,11 @@ TEST_CASE ("io_with_expressions")
         } else {
           REQUIRE (T_pos_h(i,k)==constants::fill_value<Real>);
         }
+        using C = physics::Constants<Real>;
+        const Real kappa_v = C::Rair.value / C::Cpair.value;
+        REQUIRE (kap_h(i,k)==Approx(T_v*kappa_v));
+        REQUIRE (kap_alias_h(i,k)==Approx(T_v*kappa_v));
+        REQUIRE (T_plus5_h(i,k)==T_v+5);
       }
       REQUIRE (col_qv_h(i)==qv_col_sum/nlevs);
       for (int k=0; k<nlevs; ++k) {

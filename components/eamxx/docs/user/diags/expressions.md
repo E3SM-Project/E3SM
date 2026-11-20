@@ -62,6 +62,11 @@ constant keeps its units: `T_mid - Tmelt` is in K, while `qv + Tmelt` is
 rejected when the stream is set up, since `+` and `-` need operands with the
 same units.
 
+An operation on constants alone is a constant too: `T_mid*(Rair/Cpair)` works, and
+so does `T_mid*kappa` with `kappa := Rair/Cpair` in `aliases:`. Literals alone stay
+literals, so `T_mid+(2+3)` is in K. Other rank-0 fields, like `ps.mean('col')`, are
+not scalars: use `ps - ps.mean('col').broadcast_like(ps)`.
+
 Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. When in
 doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
 adds a mixing ratio to a pressure, and is rejected at run time for incompatible
