@@ -94,6 +94,21 @@ meshes:
       MOC:
         NumBins: 60
 
+  u03-oi240:
+    TimeIntegration:
+      TimeStep: "0000_01:00:00"
+      ModeSplitShare:
+        BtrTimeStep: 0000_00:03:00
+    Tendencies:
+      VelDiffTendencyEnable: false
+      ViscDel4: 2.0e14
+    HorzMesh:
+      MeshScalingEnable: false
+
+    Analysis:
+      MOC:
+        NumBins: 60
+
   EC30to60E2r2:
     TimeIntegration:
       TimeStep: "0000_00:30:00"

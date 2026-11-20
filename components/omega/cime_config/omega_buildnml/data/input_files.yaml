@@ -10,6 +10,11 @@ meshes:
       - file: ocean.QU.240km.151209.teos10.20261019.nc
         streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
 
+  u03-oi240:
+    inputs:
+      - file: omega.u03-oi240.20260811.nc
+        streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
+
   EC30to60E2r2:
     inputs:
       - file: ocean.EC30to60E2r2.200908.teos10.20261019.nc
