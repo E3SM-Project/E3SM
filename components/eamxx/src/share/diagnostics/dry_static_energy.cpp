@@ -29,8 +29,7 @@ DryStaticEnergy (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar3d, m2/s2, grid_name);
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(fid);
 }
 
 void DryStaticEnergy::compute_impl()
@@ -42,7 +41,7 @@ void DryStaticEnergy::compute_impl()
   const int ncols = m_grid->get_num_local_dofs();
   const int nlevs = m_grid->get_num_vertical_levels();
 
-  const auto& dse   = m_diagnostic_output.get_view<Real**>();
+  const auto& dse   = get().get_view<Real**>();
   const auto& T_mid = m_fields_in.at("T_mid").get_view<const Real**>();
   const auto& h_mid = m_fields_in.at("height_mid").get_view<const Real**>();
   const auto& phis  = m_fields_in.at("phis").get_view<const Real*>();

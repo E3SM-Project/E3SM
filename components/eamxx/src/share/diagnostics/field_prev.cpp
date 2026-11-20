@@ -36,16 +36,16 @@ void FieldPrev::initialize_impl() {
 
   // Output has the same layout and units as the input field
   FieldIdentifier d_fid(m_name + "_prev", layout.clone(), fid.get_units(), gn);
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(d_fid);
 
   // NOTE: even if the input field is masked, we must use a different one, since
   // at the first timestep, the field may have not been computed yet (but it's not masked per se)
-  auto mask = m_diagnostic_output.create_valid_mask();
-  m_diagnostic_output.get_header().set_may_be_filled(true);
+  auto mask = get().create_valid_mask();
+  get().get_header().set_may_be_filled(true);
   mask.deep_copy(0);
 
   // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  m_diagnostic_output.deep_copy(constants::fill_value<Real>);
+  get().deep_copy(constants::fill_value<Real>);
 }
 
 void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
@@ -57,17 +57,17 @@ void FieldPrev::init_timestep(const util::TimeStamp &start_of_step)
   if (prev_ts.is_valid()) {
     // Field was inited/computed at least once, so it makes sense to copy it
     if (f_prev.has_valid_mask()) {
-      const auto& mask = m_diagnostic_output.get_valid_mask();
+      const auto mask = get().get_valid_mask();
       mask.deep_copy(f_prev.get_valid_mask());
-      m_diagnostic_output.deep_copy(f_prev,mask);
+      get().deep_copy(f_prev,mask);
       // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-      m_diagnostic_output.deep_copy(constants::fill_value<Real>,mask,true);
+      get().deep_copy(constants::fill_value<Real>,mask,true);
     } else {
-      m_diagnostic_output.deep_copy(f_prev);
-      m_diagnostic_output.get_valid_mask().deep_copy(1);
+      get().deep_copy(f_prev);
+      get().get_valid_mask().deep_copy(1);
     }
   } else {
-    m_diagnostic_output.get_valid_mask().deep_copy(0);
+    get().get_valid_mask().deep_copy(0);
   }
 }
 

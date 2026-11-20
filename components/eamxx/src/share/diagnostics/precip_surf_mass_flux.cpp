@@ -34,8 +34,7 @@ PrecipSurfMassFlux (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   auto diag_layout = m_grid->get_2d_scalar_layout();
   FieldIdentifier fid(m_name, diag_layout, m/s, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(fid);
 }
 
 void PrecipSurfMassFlux::compute_impl()
@@ -79,12 +78,12 @@ void PrecipSurfMassFlux::compute_impl()
     // which always outputs fields at t=0. To avoid FPE's, we simply return,
     // setting the time stamp of the diag to invalid to signal that we did
     // not successfully compute it.
-    m_diagnostic_output.get_header().get_tracking().invalidate_time_stamp();
+    get().get_header().get_tracking().invalidate_time_stamp();
     return;
   }
 
   Real rhodt = PC::RHO_H2O.value*dt;
-  const auto& flux_view  = m_diagnostic_output.get_view<Real*>();
+  const auto& flux_view  = get().get_view<Real*>();
 
   const int ncols = m_grid->get_num_local_dofs();
   auto lambda = KOKKOS_LAMBDA(const Int& icol) {

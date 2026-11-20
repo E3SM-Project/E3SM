@@ -48,7 +48,7 @@ void Histogram::initialize_impl()
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
   FieldIdentifier diagnostic_id(diag_name, diagnostic_layout,
                                 ekat::units::none, field_id.get_grid_name());
-  m_diagnostic_output = Field(diagnostic_id,true);
+  add_output(diagnostic_id);
 
   // allocate field for bin values
   FieldLayout bin_values_layout({CMP}, {num_bins+1}, {"bin"});
@@ -68,11 +68,11 @@ void Histogram::compute_impl()
 {
   const auto& field = m_fields_in.at(m_field_name);
   auto field_layout = field.get_header().get_identifier().get_layout();
-  auto histogram_layout = m_diagnostic_output.get_header().get_identifier().get_layout();
+  auto histogram_layout = get().get_header().get_identifier().get_layout();
   const int num_bins = histogram_layout.dim(0);
 
   auto bin_values_view = m_bin_values.get_view<Real *>();
-  auto histogram_view = m_diagnostic_output.get_view<Real *>();
+  auto histogram_view = get().get_view<Real *>();
   using KT         = ekat::KokkosTypes<DefaultDevice>;
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
@@ -159,10 +159,10 @@ void Histogram::compute_impl()
   // TODO: the dev ptr causes problems; revisit this later
   // TODO: doing cuda-aware MPI allreduce would be ~10% faster
   Kokkos::fence();
-  m_diagnostic_output.sync_to_host();
-  m_comm.all_reduce(m_diagnostic_output.template get_internal_view_data<Real, Host>(),
+  get().sync_to_host();
+  m_comm.all_reduce(get().template get_internal_view_data<Real, Host>(),
                       histogram_layout.size(), MPI_SUM);
-  m_diagnostic_output.sync_to_dev();
+  get().sync_to_dev();
 }
 
 } // namespace scream

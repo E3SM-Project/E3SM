@@ -18,15 +18,14 @@ void Exner::initialize_impl()
 
   // Construct and allocate the diagnostic field
   auto fid = p.get_header().get_identifier().clone(name()).reset_units(ekat::units::none);
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(fid);
 }
 
 void Exner::compute_impl()
 {
   using PF = PhysicsFunctions<DefaultDevice>;
 
-  const auto& exner = m_diagnostic_output.get_view<Real**>();
+  const auto& exner = get().get_view<Real**>();
   const auto& p_mid = m_fields_in.at("p_mid").get_view<const Real**>();
 
   int nlevs = m_grid->get_num_vertical_levels();
