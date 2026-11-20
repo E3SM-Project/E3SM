@@ -171,8 +171,7 @@ m_z.set_valid_mask(m_a.get_valid_mask());
 
 Masks with the same name must hold the same values, since the stream updates
 the count once, and the horizontal remapper remaps such masks once; sharing
-the mask, as above, is the way to ensure it. An output that may contain fill values must
-also call `set_may_be_filled(true)` on its header.
+the mask, as above, is the way to ensure it.
 
 ## Testing
 

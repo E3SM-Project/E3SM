@@ -71,7 +71,6 @@ initialize_impl ()
   add_output(d_fid);
   if (f.has_valid_mask()) {
     get().create_valid_mask();
-    get().get_header().set_may_be_filled(true);
   }
 
   using stratts_t = std::map<std::string,std::string>;
@@ -204,13 +203,6 @@ void FieldAtLevel::compute_impl()
           "[FieldAtLevel] Unexpected field rank. You should have gotten an error before though.\n"
           " - field name: " + f.name() + "\n"
           " - field rank: " + std::to_string(f.rank()) + "\n");
-  }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  if (masked) {
-    const auto fv = f.data_type()==DataType::RealType ? constants::fill_value<Real>
-                                                      : constants::fill_value<int>;
-    get().deep_copy(fv,get().get_valid_mask(),true);
   }
 }
 

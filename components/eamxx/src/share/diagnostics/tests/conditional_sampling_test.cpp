@@ -316,8 +316,7 @@ TEST_CASE("conditional_sampling") {
         mask1.scale(mask2);
         REQUIRE (views_are_equal(d2.get_valid_mask(),mask1));
 
-        // Where the mask is 0, the diag is fill_value. Compare entries one by one,
-        // since views_are_equal skips the entries that d2 masks out
+        // Where the mask is 1, the diag is x (entries where the mask is 0 are unspecified)
         d2.sync_to_host();
         x.sync_to_host();
         mask1.sync_to_host();
@@ -326,7 +325,9 @@ TEST_CASE("conditional_sampling") {
         auto m1_h = mask1.get_view<const int**,Host>();
         for (int i=0; i<ncols; ++i) {
           for (int k=0; k<nlevs; ++k) {
-            REQUIRE (d2_h(i,k)==(m1_h(i,k)==1 ? x_h(i,k) : fv));
+            if (m1_h(i,k)==1) {
+              REQUIRE (d2_h(i,k)==x_h(i,k));
+            }
           }
         }
       }

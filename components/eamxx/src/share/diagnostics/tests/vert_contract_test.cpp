@@ -182,7 +182,6 @@ TEST_CASE("vert_contract") {
 
     // The sum of a masked field is masked where no level is valid
     REQUIRE(diag_f.has_valid_mask());
-    REQUIRE(diag_f.get_header().may_be_filled());
 
     diag_f.sync_to_host();
     diag_f.get_valid_mask().sync_to_host();
@@ -194,7 +193,6 @@ TEST_CASE("vert_contract") {
     for (int i=0; i<nlocal; ++i) {
       if (i==0) {
         REQUIRE(m_h(i)==0);
-        REQUIRE(d_h(i)==constants::fill_value<Real>);
       } else {
         Real ref = 0;
         for (int k=(i==1 ? 3 : 0); k<nlevs; ++k) ref += f_h(i,k);
