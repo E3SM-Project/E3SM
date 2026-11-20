@@ -455,32 +455,27 @@ TEST_CASE ("io_with_math_functions")
     fm->add_field(p_mid);
   }
 
-  // A wind, constant in time, to compare wind_speed with sqrt(u**2+v**2). Expressions cannot
-  // index a component, so the components are also fields of their own, with the same values.
+  // A wind, constant in time, to compare wind_speed with sqrt(U**2+V**2). Expressions cannot
+  // index a component, so U and V are fields of their own, subfields of horiz_winds, as the
+  // atmosphere driver makes them.
   auto u_of = [](const int i, const int k) { return Real(3 + i - 0.5*k); };
   auto v_of = [](const int i, const int k) { return Real(-4 + 0.25*i + k); };
   {
     const auto layout_uv = grid->get_3d_vector_layout(LEV,2,"cmp");
     Field winds (FieldIdentifier("horiz_winds",layout_uv,m/s,gname));
-    Field uwind (FieldIdentifier("uwind",layout3d,m/s,gname));
-    Field vwind (FieldIdentifier("vwind",layout3d,m/s,gname));
-    for (auto* f : {&winds,&uwind,&vwind}) {
-      f->allocate_view();
-    }
+    winds.allocate_view();
     auto w_h = winds.get_view<Real***,Host>();
-    auto u_h = uwind.get_view<Real**,Host>();
-    auto v_h = vwind.get_view<Real**,Host>();
     for (int i=0; i<nlocal; ++i) {
       for (int k=0; k<nlevs; ++k) {
-        w_h(i,0,k) = u_h(i,k) = u_of(i,k);
-        w_h(i,1,k) = v_h(i,k) = v_of(i,k);
+        w_h(i,0,k) = u_of(i,k);
+        w_h(i,1,k) = v_of(i,k);
       }
     }
-    for (auto* f : {&winds,&uwind,&vwind}) {
-      f->sync_to_dev();
-      f->get_header().get_tracking().update_time_stamp(t0);
-      fm->add_field(*f);
-    }
+    winds.sync_to_dev();
+    winds.get_header().get_tracking().update_time_stamp(t0);
+    fm->add_field(winds);
+    fm->add_field(winds.get_component(0).alias("U"));
+    fm->add_field(winds.get_component(1).alias("V"));
   }
 
   // Rd/cp, written with enough digits to round trip
@@ -522,7 +517,7 @@ TEST_CASE ("io_with_math_functions")
         std::string("ex_hand := exp(") + kappa_str + "*log(p_mid/P0))",
         "ex_ref := Exner",
         // The wind speed diag, and the same by hand: units (m/s)^2 and back
-        "ws_hand := sqrt(uwind**2+vwind**2)",
+        "ws_hand := sqrt(U**2+V**2)",
         "ws_ref := wind_speed",
         // Functions and methods compose, either way around
         "lq_avg := log(qv).mean('lev')",
@@ -547,7 +542,7 @@ TEST_CASE ("io_with_math_functions")
     qv.get_header().get_tracking().update_time_stamp(t);
     T_mid.get_header().get_tracking().update_time_stamp(t);
     fm->get_field("p_mid").get_header().get_tracking().update_time_stamp(t);
-    for (const auto& name : {"horiz_winds","uwind","vwind"}) {
+    for (const auto& name : {"horiz_winds","U","V"}) {
       fm->get_field(name).get_header().get_tracking().update_time_stamp(t);
     }
 
