@@ -744,6 +744,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_geometric_source" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Source of the parameterized eddy energy: 'localSlope' uses kappa*M^4/N^2 at cell centers; 'bolusWork' uses the work done by the GM bolus transport
+
+Valid values: 'localSlope', 'bolusWork'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_horizontal_taper" type="char*1024"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007

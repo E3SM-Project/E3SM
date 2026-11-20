@@ -482,6 +482,10 @@
                 <nml_option name="config_GM_geometric_maximumEddyEnergy" type="real" default_value="1000.0" units="m^3 s^-2"
                                         description="Maximum total depth-integrated parameterized eddy energy"
                 />
+                <nml_option name="config_GM_geometric_source" type="character" default_value="localSlope"
+                                        description="Source of the parameterized eddy energy: 'localSlope' uses kappa*M^4/N^2 at cell centers; 'bolusWork' uses the work done by the GM bolus transport"
+                                        possible_values="'localSlope', 'bolusWork'"
+                />
 		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"

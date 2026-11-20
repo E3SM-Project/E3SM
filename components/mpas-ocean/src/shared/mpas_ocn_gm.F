@@ -61,6 +61,7 @@ module ocn_gm
    real(kind=RKIND) :: local_config_GM_constant_bclModeSpeed
    real(kind=RKIND) :: gm_minBclModeSpeed_constant, gm_minBclModeSpeed_compute_on
    real(kind=RKIND) :: N2min, dissipationRate
+   logical :: local_config_GM_geometric_bolusWork = .false.
 
 !***********************************************************************
 
@@ -1205,6 +1206,7 @@ contains
        !-----------------------------------------------------------------
 
        real(kind=RKIND), dimension(:), allocatable :: tangentialFlux, advVertex
+       real(kind=RKIND), dimension(:), allocatable :: bolusWorkEdge
 
        real(kind=RKIND), dimension(:,:), pointer :: layerThickness
        real(kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, kiteAreasOnVertex
@@ -1231,7 +1233,7 @@ contains
        real(kind=RKIND) :: invAreaCell, invAreaTriangle, r_tmp_div
        real(kind=RKIND) :: gmKappaCell, flux, wgtNorm, gradBuoyCell
        real(kind=RKIND) :: slopeCell, sourceTerm, advectionTerm, stratInv
-       real(kind=RKIND) :: gravityInvRho0
+       real(kind=RKIND) :: gravityInvRho0, dzTopEdge
 
        integer :: nCells, nEdges, nVertices, timeLevel
        integer :: i, j, k, iCell, iEdge, iVertex, cell1, cell2
@@ -1353,6 +1355,26 @@ contains
           end do
        end do
 
+       !-------------------------------------------------------------------------
+       ! 2. Work done by the GM bolus transport ('bolusWork' source):
+       !    release of available potential energy, taper * sum_k psi * d_n b * dz
+       !-------------------------------------------------------------------------
+       if (local_config_GM_geometric_bolusWork) then
+          allocate(bolusWorkEdge(nEdgesArray(size(nEdgesArray))))
+          bolusWorkEdge(:) = 0.0_RKIND
+          do iEdge = 1, nEdgesArray(2)
+             if ((maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)) < 2) cycle
+             do k = minLevelEdgeBot(iEdge) + 1, maxLevelEdgeTop(iEdge)
+                dzTopEdge = 0.5_RKIND*(layerThickEdgeMean(k - 1, iEdge) + &
+                                       layerThickEdgeMean(k, iEdge))
+                bolusWorkEdge(iEdge) = bolusWorkEdge(iEdge) - &
+                                       gmStreamFuncTopOfEdge(k, iEdge) * gravityInvRho0 * &
+                                       gradDensityEddy(k, iEdge) * dzTopEdge
+             end do
+             bolusWorkEdge(iEdge) = gmHorizontalTaper(iEdge) * bolusWorkEdge(iEdge)
+          end do
+       end if
+
 
        do iCell = 1, nCells
           invAreaCell = 1.0_RKIND/areaCell(iCell)
@@ -1364,107 +1386,121 @@ contains
           !and not valid for minLevelCell, so properties for the top layer
           !rely on the values at (minLevelCell+1).
 
-          ! Surface level
-          k = minLevelCell(iCell)
-          hML = layerThickness(k,iCell)
+          if (local_config_GM_geometric_bolusWork) then
+             ! Edge work (2.) split between the two cells of each edge
+             sourceTerm = 0.0_RKIND
+             do i = 1, nEdgesOnCell(iCell)
+                iEdge = edgesOnCell(i, iCell)
+                sourceTerm = sourceTerm + 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * &
+                                          bolusWorkEdge(iEdge)
+             end do
+             sourceTerm = sourceTerm * invAreaCell
 
-          ! Top homogeneity
-          BruntVaisalaFreq1 = max(BruntVaisalaFreqTop(k+1,iCell), N2min)
+          else ! localSlope: kappa * M^4 / N^2 from cell-averaged quantities
 
-          ! M^2
-          wgtNorm      = N2min
-          gmKappaCell  = 0.0_RKIND
-          gradBuoyCell = 0.0_RKIND
-
-          ! Interp edge to cell
-          do i = 1, nEdgesOnCell(iCell)
-             iEdge = edgesOnCell(i, iCell)
-             if (maxLevelEdgeTop(iEdge).eq.0) cycle
-
-             kEdge = minLevelEdgeBot(iEdge)
-             wgt = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * edgeMask(kEdge,iEdge)
-             wgtNorm = wgtNorm + wgt
-
-             gradBuoyCell = gradBuoyCell + wgt * abs(gradDensityEddy(kEdge+1,iEdge))
-
-             ! GM Kappa
-             gmKappaCell  = gmKappaCell &
-                          + wgt * gmKappaScaling(kEdge,iEdge) &
-                          * gmBolusKappa(iEdge)
-          end do ! i
-
-          gmKappaCell  = gmKappaCell / wgtNorm
-          gradBuoyCell = (gradBuoyCell*gravityInvRho0) / wgtNorm
-          slopeCell = gradBuoyCell / BruntVaisalaFreq1 ! M^2 / N^2
-          slopeCell = min(slopeCell, config_redi_maximum_slope)
-
-          ! M^4 / N^2 : Inverse stratification
-          stratInv = slopeCell**2.0_RKIND * BruntVaisalaFreq1 ! M^4/N^2
-          sourceTerm = (gmKappaCell * stratInv) * hML
-
-          do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
+             ! Surface level
+             k = minLevelCell(iCell)
              hML = layerThickness(k,iCell)
 
-             wgtNorm      = 1.0E-14_RKIND
+             ! Top homogeneity
+             BruntVaisalaFreq1 = max(BruntVaisalaFreqTop(k+1,iCell), N2min)
+
+             ! M^2
+             wgtNorm      = N2min
              gmKappaCell  = 0.0_RKIND
              gradBuoyCell = 0.0_RKIND
 
-             if ( k == maxLevelCell(iCell) ) then
-                ! Bottom half
-                BruntVaisalaFreq1 = &
-                   max(0.5_RKIND * BruntVaisalaFreqTop(k,iCell), N2min)
+             ! Interp edge to cell
+             do i = 1, nEdgesOnCell(iCell)
+                iEdge = edgesOnCell(i, iCell)
+                if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
-                ! Interp edge to cell
-                do i = 1, nEdgesOnCell(iCell)
-                   iEdge = edgesOnCell(i, iCell)
-                   if (maxLevelEdgeTop(iEdge).eq.0) cycle
+                kEdge = minLevelEdgeBot(iEdge)
+                wgt = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * edgeMask(kEdge,iEdge)
+                wgtNorm = wgtNorm + wgt
 
-                   wgt = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * edgeMask(k,iEdge)
-                   wgtNorm = wgtNorm + wgt
+                gradBuoyCell = gradBuoyCell + wgt * abs(gradDensityEddy(kEdge+1,iEdge))
 
-                   ! Bottom half
-                   gradBuoyCell = gradBuoyCell + wgt * &
-                                  0.5_RKIND * abs(gradDensityEddy(k,iEdge))
-                   ! GM Kappa
-                   gmKappaCell = gmKappaCell &
-                               + wgt * gmKappaScaling(k,iEdge) &
-                               * gmBolusKappa(iEdge)
-                end do ! i
-
-             else ! k
-
-                BruntVaisalaFreq1 = &
-                   0.5_RKIND*(max(BruntVaisalaFreqTop(k  ,iCell),N2min) + &
-                              max(BruntVaisalaFreqTop(k+1,iCell),N2min) )
-
-                ! Interp edge to cell
-                do i = 1, nEdgesOnCell(iCell)
-                   iEdge = edgesOnCell(i, iCell)
-                   if (maxLevelEdgeTop(iEdge).eq.0) cycle
-
-                   wgt = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * edgeMask(k,iEdge)
-                   wgtNorm = wgtNorm + wgt
-                   gradBuoyCell = gradBuoyCell + wgt * &
-                                  0.5_RKIND * ( abs(gradDensityEddy(k  ,iEdge)) + &
-                                               +abs(gradDensityEddy(k+1,iEdge)) )
-                   ! GM Kappa
-                   gmKappaCell = gmKappaCell &
-                               + wgt * gmKappaScaling(k,iEdge) &
-                               * gmBolusKappa(iEdge)
-                end do ! i
-
-             endif ! k
+                ! GM Kappa
+                gmKappaCell  = gmKappaCell &
+                             + wgt * gmKappaScaling(kEdge,iEdge) &
+                             * gmBolusKappa(iEdge)
+             end do ! i
 
              gmKappaCell  = gmKappaCell / wgtNorm
              gradBuoyCell = (gradBuoyCell*gravityInvRho0) / wgtNorm
              slopeCell = gradBuoyCell / BruntVaisalaFreq1 ! M^2 / N^2
              slopeCell = min(slopeCell, config_redi_maximum_slope)
 
-             ! M^4 / N^2 = slopeCell^2 (=M^4/N^4) x BruntVaisalaFreq1 (N^2)
-             stratInv   = slopeCell**2.0_RKIND * BruntVaisalaFreq1 ! M^4 / N^2
-             sourceTerm = sourceTerm + (gmKappaCell * stratInv) * hML
+             ! M^4 / N^2 : Inverse stratification
+             stratInv = slopeCell**2.0_RKIND * BruntVaisalaFreq1 ! M^4/N^2
+             sourceTerm = (gmKappaCell * stratInv) * hML
 
-          end do ! k
+             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
+                hML = layerThickness(k,iCell)
+
+                wgtNorm      = 1.0E-14_RKIND
+                gmKappaCell  = 0.0_RKIND
+                gradBuoyCell = 0.0_RKIND
+
+                if ( k == maxLevelCell(iCell) ) then
+                   ! Bottom half
+                   BruntVaisalaFreq1 = &
+                      max(0.5_RKIND * BruntVaisalaFreqTop(k,iCell), N2min)
+
+                   ! Interp edge to cell
+                   do i = 1, nEdgesOnCell(iCell)
+                      iEdge = edgesOnCell(i, iCell)
+                      if (maxLevelEdgeTop(iEdge).eq.0) cycle
+
+                      wgt = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * edgeMask(k,iEdge)
+                      wgtNorm = wgtNorm + wgt
+
+                      ! Bottom half
+                      gradBuoyCell = gradBuoyCell + wgt * &
+                                     0.5_RKIND * abs(gradDensityEddy(k,iEdge))
+                      ! GM Kappa
+                      gmKappaCell = gmKappaCell &
+                                  + wgt * gmKappaScaling(k,iEdge) &
+                                  * gmBolusKappa(iEdge)
+                   end do ! i
+
+                else ! k
+
+                   BruntVaisalaFreq1 = &
+                      0.5_RKIND*(max(BruntVaisalaFreqTop(k  ,iCell),N2min) + &
+                                 max(BruntVaisalaFreqTop(k+1,iCell),N2min) )
+
+                   ! Interp edge to cell
+                   do i = 1, nEdgesOnCell(iCell)
+                      iEdge = edgesOnCell(i, iCell)
+                      if (maxLevelEdgeTop(iEdge).eq.0) cycle
+
+                      wgt = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * edgeMask(k,iEdge)
+                      wgtNorm = wgtNorm + wgt
+                      gradBuoyCell = gradBuoyCell + wgt * &
+                                     0.5_RKIND * ( abs(gradDensityEddy(k  ,iEdge)) + &
+                                                  +abs(gradDensityEddy(k+1,iEdge)) )
+                      ! GM Kappa
+                      gmKappaCell = gmKappaCell &
+                                  + wgt * gmKappaScaling(k,iEdge) &
+                                  * gmBolusKappa(iEdge)
+                   end do ! i
+
+                endif ! k
+
+                gmKappaCell  = gmKappaCell / wgtNorm
+                gradBuoyCell = (gradBuoyCell*gravityInvRho0) / wgtNorm
+                slopeCell = gradBuoyCell / BruntVaisalaFreq1 ! M^2 / N^2
+                slopeCell = min(slopeCell, config_redi_maximum_slope)
+
+                ! M^4 / N^2 = slopeCell^2 (=M^4/N^4) x BruntVaisalaFreq1 (N^2)
+                stratInv   = slopeCell**2.0_RKIND * BruntVaisalaFreq1 ! M^4 / N^2
+                sourceTerm = sourceTerm + (gmKappaCell * stratInv) * hML
+
+             end do ! k
+
+          end if ! local_config_GM_geometric_bolusWork
 
           tendTotalParamEddyEnergy(iCell) = &
              tendTotalParamEddyEnergy(iCell) + sourceTerm
@@ -1506,6 +1542,7 @@ contains
 
        deallocate(advVertex)
        deallocate(tangentialFlux)
+       if (allocated(bolusWorkEdge)) deallocate(bolusWorkEdge)
 
        call mpas_timer_stop('gm compute geometric tendency')
 
@@ -1698,6 +1735,17 @@ contains
             ! Eddy energy dissipation rate
             dissipationRate = 1.0_RKIND / &
                              (config_GM_geometric_dissipation*86400.0_RKIND)
+
+            ! Source term of the eddy energy budget
+            if (config_GM_geometric_source == 'localSlope') then
+               local_config_GM_geometric_bolusWork = .false.
+            else if (config_GM_geometric_source == 'bolusWork') then
+               local_config_GM_geometric_bolusWork = .true.
+            else
+               call mpas_log_write('Invalid choice of config_GM_geometric_source.', MPAS_LOG_CRIT)
+               err = 1
+               call mpas_dmpar_finalize(domain%dminfo)
+            end if
          else
             call mpas_log_write('Invalid choice of config_GM_closure.', MPAS_LOG_CRIT)
             err = 1
