@@ -187,9 +187,10 @@ macro(read_cime_config)
 
 endmacro()
 
-# Collect the machine's compiler and linker flags for Omega's own code. They go
-# on the OmegaLibFlags target, not into CMAKE_CXX_FLAGS, so they do not reach the
-# third-party projects under external/ or configure-time try_compile probes.
+# Collect Omega's own and the architecture's compiler and linker flags. They go on
+# the OmegaLibFlags target, not into CMAKE_CXX_FLAGS, so they stay out of external/
+# and try_compile probes. CMAKE_<LANG>_FLAGS still carry the machine's general flags
+# from Macros.cmake into both, and would carry an architecture flag put there too.
 macro(omega_collect_machine_flags)
 
   # Omega's own C++ flags, whatever the architecture.
@@ -548,57 +549,12 @@ macro(setup_standalone_build)
 
 endmacro()
 
-# Recover per-machine settings from the case's Macros.cmake that E3SM does not
-# make visible to Omega.
-function(omega_read_e3sm_macros)
-
-  include("${CASEROOT}/Macros.cmake")
-
-  set(KOKKOS_OPTIONS "${KOKKOS_OPTIONS}" PARENT_SCOPE)
-
-  # E3SM forwards USE_CUDA and USE_HIP out of its own Macros.cmake scope
-  # (components/CMakeLists.txt, set_compilers_e3sm) but not USE_SYCL.
-  set(USE_SYCL "${USE_SYCL}" PARENT_SCOPE)
-
-  # The machine's per-architecture flags. A machine file may set
-  # OMEGA_<ARCH>_FLAGS or OMEGA_<ARCH>_EXE_LINKER_FLAGS -- aurora_intelgpu
-  # sets OMEGA_SYCL_EXE_LINKER_FLAGS today -- and CIME sets the bare
-  # <ARCH>_FLAGS. None of them survives set_compilers_e3sm's function scope.
-  #
-  # Only SYCL's bare spelling is forwarded, because it is the only one
-  # omega_collect_machine_flags() reads; see the census there for why CUDA_FLAGS
-  # and HIP_FLAGS are the device compiler's rather than the C++ compiler's.
-  # Forwarding a variable nothing reads would put nvcc's flags into this
-  # directory's scope under a name that looks like it applies.
-  foreach(_OmegaArch CUDA HIP SYCL)
-    set(_OmegaVars OMEGA_${_OmegaArch}_FLAGS
-                   OMEGA_${_OmegaArch}_EXE_LINKER_FLAGS)
-    if("${_OmegaArch}" STREQUAL "SYCL")
-      list(APPEND _OmegaVars ${_OmegaArch}_FLAGS)
-    endif()
-    foreach(_OmegaVar ${_OmegaVars})
-      if(DEFINED ${_OmegaVar})
-        set(${_OmegaVar} "${${_OmegaVar}}" PARENT_SCOPE)
-      endif()
-    endforeach()
-  endforeach()
-
-endfunction()
-
 # set build-control-variables for e3sm build
 macro(setup_e3sm_build)
 
   set(OMEGA_BUILD_TYPE ${E3SM_DEFAULT_BUILD_TYPE})
 
   set(OMEGA_CXX_COMPILER ${CMAKE_CXX_COMPILER})
-
-  # Recover the per-machine settings that E3SM does not propagate into this
-  # scope (KOKKOS_OPTIONS, USE_SYCL). This must run BEFORE the arch detection
-  # below, which reads USE_SYCL. CASEROOT here is the real case root CIME passed
-  # in with -DCASEROOT=.
-  if(CASEROOT AND EXISTS "${CASEROOT}/Macros.cmake")
-    omega_read_e3sm_macros()
-  endif()
 
   # Detect OMEGA_ARCH from the E3SM/CIME build variables when not provided.
   # USE_CUDA/USE_HIP/USE_SYCL are set by the GPU machine cmake_macros
