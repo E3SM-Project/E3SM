@@ -5065,10 +5065,10 @@ mass of air) into a number per volume, and dividing by <code>cldfrac_tot</code> 
 grid mean into an in-cloud value. The <code>where(..)</code> keeps that division away
 from layers with no cloud, where <code>cldfrac_tot</code> is zero and the division would
 be by zero.</p>
-<p>Only the layers with a nonzero weight are summed, so <code>X</code> need not be finite
-anywhere else. If <code>X</code> is masked (e.g., it is the result of <code>where(..)</code>), its
-invalid layers are skipped too, and a column with no valid layer gives 0, as
-xarray's weighted sum does.</p>
+<p>Every layer is summed, including those with zero weight, so <code>X</code> must be
+finite everywhere: 0 times NaN is NaN. If <code>X</code> is masked (e.g., it is the
+result of <code>where(..)</code>), its invalid layers are skipped, and a column with no
+valid layer gives 0, as xarray's weighted sum does.</p>
 <p>The weights are a diagnostic of their own, so all fields sampled at the same
 position and with the same phase share one computation of them.</p>
 <p>Most studies in this topic refer a technical report by Tiedtke et al. (1979)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Another more recent general reference that may be of interest is that of Räisänen et al. (2004)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>.</p>

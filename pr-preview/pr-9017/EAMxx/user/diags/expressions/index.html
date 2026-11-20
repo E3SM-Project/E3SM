@@ -5427,11 +5427,11 @@ is an honest analogue.</p>
   its condensate. Its receiver must be <code>cldfrac_tot</code>. A field at cloud top is
   the sum weighted by them, <code>X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))</code>
   (a sum, not a mean), and their sum, <code>cldfrac_tot.aerocom_weights('top').sum('lev')</code>,
-  is the cloud fraction seen from above. Levels with zero weight are not read,
-  so <code>X</code> need not be finite there, but a division that <code>X</code> performs still is:
-  the in-cloud droplet number per volume at liquid cloud top is
+  is the cloud fraction seen from above. <code>X</code> must be finite at every level,
+  including those with zero weight, since 0 times NaN is NaN. The in-cloud
+  droplet number per volume at liquid cloud top is
   <code>(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))</code>,
-  where the <code>where(..)</code> keeps the division away from levels with no cloud.
+  where the <code>where(..)</code> masks the levels with no cloud, which the sum skips.
   Fields sampled at the same position and phase share one computation of the
   weights. See <a href="../../../technical/aerocom_cldtop/">the AeroCom algorithm</a>.
   In an output yaml, the <code>aliases:</code> section saves typing the weights in full
