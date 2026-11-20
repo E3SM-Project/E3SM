@@ -157,17 +157,11 @@ get_strided_view_type<DT, HD> {
                         "Error! Subview dimension index is out of bounds.\n");
 
         if constexpr (DstRank < MaxRank) {
-          auto subview_helper = [&](const auto& parent_view) -> DstView {
-            if (idim == 0) {
-              return ekat::subview(parent_view, k);
-            } else {
-              return ekat::subview_1(parent_view, k);
-            }
-          };
-          if (parent->get_alloc_properties().allows_layout_right()) {
-            return subview_helper(f.get_ND_view<HD, DstValueType, DstRank + 1>());
+          auto parent_view = f.get_strided_view<data_nd_t<DstValueType, DstRank + 1>, HD>();
+          if (idim == 0) {
+            return ekat::subview(parent_view, k);
           } else {
-            return subview_helper(f.get_strided_view<data_nd_t<DstValueType, DstRank + 1>, HD>());
+            return ekat::subview_1(parent_view, k);
           }
         } else {
           EKAT_ERROR_MSG("Error! Cannot single-slice a field beyond MaxRank.\n");
@@ -178,15 +172,9 @@ get_strided_view_type<DT, HD> {
         EKAT_REQUIRE_MSG(DstRank == fl.rank(),
                         "Error! Destination view rank must be equal to parent "
                         "field's rank for multi-sliced subview.\n");
-        if (parent->get_alloc_properties().allows_layout_right()) {
-          return ekat::subview(f.get_ND_view<HD, DstValueType, DstRank>(),
-                               Kokkos::make_pair<int, int>(k, k_end),
-                               idim);
-        } else {
-          return ekat::subview(f.get_strided_view<data_nd_t<DstValueType, DstRank>, HD>(),
-                               Kokkos::make_pair<int, int>(k, k_end),
-                               idim);
-        }
+
+        auto parent_view = f.get_strided_view<data_nd_t<DstValueType, DstRank>, HD>();
+        return ekat::subview(parent_view, Kokkos::make_pair<int, int>(k, k_end), idim);
       }
     }
   }
