@@ -3,7 +3,9 @@
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
-#include <limits>
+#include "share/util/eamxx_quantity.hpp"
+
+#include <optional>
 
 namespace scream {
 
@@ -37,16 +39,9 @@ class BinaryOp : public AbstractDiagnostic {
   std::string m_binary_op_str;
   int         m_binary_op_code;
 
-  bool m_arg1_is_field;
-  bool m_arg2_is_field;
-
-  // Value/units of a non-field operand, resolved once in the constructor.
-  // Meaningless (and NaN) when the corresponding operand IS a field.
-  Real m_arg1_value = std::numeric_limits<Real>::quiet_NaN();
-  Real m_arg2_value = std::numeric_limits<Real>::quiet_NaN();
-  // Units of a non-field operand; invalid for a numeric literal, which has none of its own
-  ekat::units::Units m_arg1_units = ekat::units::Units::invalid();
-  ekat::units::Units m_arg2_units = ekat::units::Units::invalid();
+  // Value and units (invalid for a literal) of an operand that is not a field. Empty for a field.
+  std::optional<Quantity<Real>> m_arg1_scalar;
+  std::optional<Quantity<Real>> m_arg2_scalar;
 
   bool m_arg1_has_mask = false;
   bool m_arg2_has_mask = false;
