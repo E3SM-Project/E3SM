@@ -12,7 +12,7 @@ meshes:
 
   u03-oi240:
     inputs:
-      - file: omega.u03-oi240.20260811.nc
+      - file: omega.u03-oi240.converted_from_mpaso.20260811.nc
         streams: [HorzMeshIn, InitialVertCoord, InitialState, ShortwaveExtinctionIn]
 
   EC30to60E2r2:
