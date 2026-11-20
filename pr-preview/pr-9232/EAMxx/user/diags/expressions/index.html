@@ -5515,11 +5515,11 @@ saying how to write them.</p>
 <li><code>'mask'</code> leaves it out: the entry is missing (the fill value) in the output,
     as <code>where(..)</code> would make it.</li>
 <li><strong><code>units='check'</code> or <code>'ignore'</code></strong> (<code>log</code>, <code>exp</code>, <code>pow</code>): with <code>'check'</code>, the
-  default, <code>log</code> and <code>exp</code> take a dimensionless <code>X</code> only (<code>kg/kg</code> is fine, <code>K</code>
-  is not), and the units of <code>pow(X, p)</code> are <code>u^p</code>, which needs <code>p</code> to be a
-  fraction (see below), unless <code>X</code> is dimensionless. <code>'ignore'</code> skips the
-  check, and the output is unitless: <code>log(T_mid, units='ignore')</code> is the log of
-  the number in kelvin.</li>
+  default, <code>log</code> and <code>exp</code> take a dimensionless, unscaled <code>X</code> only (<code>kg/kg</code> is
+  fine, <code>g/kg</code> and <code>K</code> are not), and the units of <code>pow(X, p)</code> are <code>u^p</code>, which
+  needs <code>p</code> to be a fraction (see below), unless <code>X</code> is dimensionless. <code>'ignore'</code>
+  skips the check, and the output is unitless: <code>log(T_mid, units='ignore')</code> is
+  the log of the number in kelvin.</li>
 </ul>
 <p>Notes:</p>
 <ul>
