@@ -929,9 +929,9 @@ _TESTS = {
         "time"    : "1:00:00",
         "tests"   : (
             "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
-            "ERS.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
-            "PEM_P480.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
-            "PET.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
+            "ERS_Ld3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
+            "PEM_P960.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
+            "PET_Ld1.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
             "SMS_D_Ln3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
             "SMS_D_Ln3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL2010-WW3",
             )
