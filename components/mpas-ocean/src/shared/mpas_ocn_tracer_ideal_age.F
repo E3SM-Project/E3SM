@@ -180,7 +180,7 @@ contains
 !
 !> \brief   Sets the ideal-age forcing mask from the land-ice mask
 !> \details
-!>  Called at initialization and whenever the land-ice mask changes.
+!>  Called at initialization.
 !
 !-----------------------------------------------------------------------
 

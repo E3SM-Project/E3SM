@@ -1530,7 +1530,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_glc_ice_shelf_coupling_ramp_land_ice_pressure" type="logical"
 	category="coupling" group="coupling">
-If .true. and land-ice geometry is imported from GLC (config_glc_ice_shelf_coupling_import_geometry), the land-ice pressure ramps linearly from its value when a new GLC geometry arrives to GLC's over the following GLC coupling interval (config_glc_ice_shelf_coupling_interval).  Land-ice fractions and the land-ice mask follow GLC at once, so the fluxes exchanged with GLC are unchanged.  If .false., the land-ice pressure follows GLC at once.
+If .true. and land-ice geometry is imported from GLC (config_glc_ice_shelf_coupling_import_geometry), the land-ice pressure ramps linearly from its value when a new GLC geometry arrives to GLC's over the following GLC coupling interval (config_glc_ice_shelf_coupling_interval).  Land-ice fractions follow GLC at once, so the fluxes exchanged with GLC are unchanged.  If .false., the land-ice pressure follows GLC at once.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
