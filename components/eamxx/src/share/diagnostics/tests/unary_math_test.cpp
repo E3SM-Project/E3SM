@@ -89,31 +89,16 @@ TEST_CASE("unary_math") {
     auto p_sin = make_params(gn,"q","sin");
     REQUIRE_THROWS (factory.create("UnaryMath",comm,p_sin,grid)); // Unknown op
 
+    // pow is not a unary op
     auto p_pow = make_params(gn,"q","pow");
-    REQUIRE_THROWS (factory.create("UnaryMath",comm,p_pow,grid)); // pow needs an exponent
-    for (std::string bad : {"", "two", "2x", "nan", "inf"}) {
-      p_pow.set<std::string>("exponent",bad);
-      REQUIRE_THROWS (factory.create("UnaryMath",comm,p_pow,grid));
-    }
     p_pow.set<std::string>("exponent","2");
-    REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p_pow,grid));
+    REQUIRE_THROWS (factory.create("UnaryMath",comm,p_pow,grid));
 
-    auto p_log = make_params(gn,"q","log");
-    p_log.set<std::string>("exponent","2");
-    REQUIRE_THROWS (factory.create("UnaryMath",comm,p_log,grid)); // exponent is only for pow
+    for (std::string op : {"log","exp","sqrt","abs"}) {
+      const bool has_invalid = op=="log" or op=="sqrt";
+      const bool has_units   = op=="log" or op=="exp";
 
-    for (std::string op : {"log","exp","sqrt","abs","pow"}) {
-      const bool has_invalid = op=="log" or op=="sqrt" or op=="pow";
-      const bool has_units   = op=="log" or op=="exp"  or op=="pow";
-
-      auto make = [&]() {
-        auto pp = make_params(gn,"q",op);
-        if (op=="pow") {
-          pp.set<std::string>("exponent","2");
-        }
-        return pp;
-      };
-      auto p_inv = make();
+      auto p_inv = make_params(gn,"q",op);
       p_inv.set<std::string>("invalid","zero");
       REQUIRE_THROWS (factory.create("UnaryMath",comm,p_inv,grid));
       p_inv.set<std::string>("invalid","mask");
@@ -123,14 +108,16 @@ TEST_CASE("unary_math") {
         REQUIRE_THROWS (factory.create("UnaryMath",comm,p_inv,grid));
       }
 
-      auto p_units = make();
+      // NOTE: 'units' is read when the diag is initialized
+      auto p_units = make_params(gn,"q",op);
       p_units.set<std::string>("units","none");
-      REQUIRE_THROWS (factory.create("UnaryMath",comm,p_units,grid));
-      p_units.set<std::string>("units","ignore");
+      REQUIRE_THROWS (make_diag(p_units,q,grid));
+      auto p_ignore = make_params(gn,"q",op);
+      p_ignore.set<std::string>("units","ignore");
       if (has_units) {
-        REQUIRE_NOTHROW (factory.create("UnaryMath",comm,p_units,grid));
+        REQUIRE_NOTHROW (make_diag(p_ignore,q,grid));
       } else {
-        REQUIRE_THROWS (factory.create("UnaryMath",comm,p_units,grid));
+        REQUIRE_THROWS (make_diag(p_ignore,q,grid));
       }
     }
   }
@@ -147,31 +134,12 @@ TEST_CASE("unary_math") {
       REQUIRE (make_diag(p_pm,pm,grid)->get().get_header().get_identifier().get_units()==none);
     }
 
-    auto units_of = [&](const std::string& op, const std::string& expo,
-                        const std::string& units) {
+    auto units_of = [&](const std::string& op) {
       auto p = make_params(gn,"pm",op);
-      if (expo!="") {
-        p.set<std::string>("exponent",expo);
-      }
-      if (units!="") {
-        p.set<std::string>("units",units);
-      }
       return make_diag(p,pm,grid)->get().get_header().get_identifier().get_units();
     };
-    REQUIRE (units_of("sqrt","",  "")==sqrt(Pa));
-    REQUIRE (units_of("abs", "",  "")==Pa);
-    REQUIRE (units_of("pow", "2", "")==Pa*Pa);
-    REQUIRE (units_of("pow", "-1","")==1/Pa);
-    REQUIRE (units_of("pow", "0.5","")==sqrt(Pa));
-    REQUIRE (units_of("pow", "1.5","")==pow(Pa,ekat::RationalConstant(3,2)));
-    REQUIRE_THROWS (units_of("pow","0.2857",""));        // Not n/d with d<=12
-    REQUIRE (units_of("pow","0.2857","ignore")==none);
-    REQUIRE (units_of("pow","2",     "ignore")==none);   // 'ignore' always gives none
-
-    // A dimensionless, unscaled input stays so, for any exponent
-    auto p = make_params(gn,"q","pow");
-    p.set<std::string>("exponent","0.2857");
-    REQUIRE (make_diag(p,q,grid)->get().get_header().get_identifier().get_units()==none);
+    REQUIRE (units_of("sqrt")==sqrt(Pa));
+    REQUIRE (units_of("abs")==Pa);
   }
 
   SECTION ("values") {
@@ -197,19 +165,14 @@ TEST_CASE("unary_math") {
 
     struct Case {
       std::string op;
-      std::string expo;
       std::function<Real(Real)> ref;
       std::function<bool(Real)> valid;
     };
     const std::vector<Case> cases = {
-      {"log", "",    [](Real x){ return std::log(x);    }, [](Real x){ return x>0; }},
-      {"exp", "",    [](Real x){ return std::exp(x);    }, [](Real)  { return true; }},
-      {"sqrt","",    [](Real x){ return std::sqrt(x);   }, [](Real x){ return x>=0; }},
-      {"abs", "",    [](Real x){ return std::abs(x);    }, [](Real)  { return true; }},
-      {"pow", "3",   [](Real x){ return std::pow(x,Real(3));   }, [](Real)  { return true; }},
-      {"pow", "-2",  [](Real x){ return std::pow(x,Real(-2));  }, [](Real x){ return x!=0; }},
-      {"pow", "0.5", [](Real x){ return std::pow(x,Real(0.5)); }, [](Real x){ return x>=0; }},
-      {"pow", "-1.5",[](Real x){ return std::pow(x,Real(-1.5));}, [](Real x){ return x>0; }},
+      {"log", [](Real x){ return std::log(x);    }, [](Real x){ return x>0; }},
+      {"exp", [](Real x){ return std::exp(x);    }, [](Real)  { return true; }},
+      {"sqrt", [](Real x){ return std::sqrt(x);   }, [](Real x){ return x>=0; }},
+      {"abs", [](Real x){ return std::abs(x);    }, [](Real)  { return true; }},
     };
 
     constexpr auto fv = constants::fill_value<Real>;
@@ -217,7 +180,7 @@ TEST_CASE("unary_math") {
       const auto n = x.get_header().get_identifier().get_layout().size();
       const auto x_h = host_data(x);
       for (const auto& c : cases) {
-        const bool has_invalid = c.op=="log" or c.op=="sqrt" or c.op=="pow";
+        const bool has_invalid = c.op=="log" or c.op=="sqrt";
         for (std::string invalid : {"nan","mask"}) {
           if (invalid=="mask" and not has_invalid) {
             continue;
@@ -233,9 +196,6 @@ TEST_CASE("unary_math") {
             }
           }
           auto p = make_params(gn,x.name(),c.op);
-          if (c.expo!="") {
-            p.set<std::string>("exponent",c.expo);
-          }
           p.set<std::string>("invalid",invalid);
 
           auto diag = make_diag(p,x,grid);
@@ -273,7 +233,7 @@ TEST_CASE("unary_math") {
 
   SECTION ("masked_input") {
     // Masked entries of X are not computed, so they may hold anything, e.g.
-    // the fill value, whose cube overflows.
+    // the fill value, whose exp overflows.
     Field x = q.clone("x",CloneFlags::CopyData);
     x.get_header().get_tracking().update_time_stamp(t0);
     x.create_valid_mask();
@@ -295,9 +255,11 @@ TEST_CASE("unary_math") {
     const auto x_h = host_data(x);
 
     for (std::string invalid : {"nan","mask"}) {
-      auto p = make_params(gn,"x","pow");
-      p.set<std::string>("exponent","3");
+      auto p = make_params(gn,"x","log");
       p.set<std::string>("invalid",invalid);
+      if (invalid=="nan") {
+        p = make_params(gn,"x","exp");
+      }
       auto diag = make_diag(p,x,grid);
       diag->compute(t0);
       auto d = diag->get();
@@ -307,17 +269,19 @@ TEST_CASE("unary_math") {
       const auto d_h = host_data(d);
       const auto m_h = host_mask(d.get_valid_mask());
       for (int i=0; i<n; ++i) {
-        REQUIRE (m_h[i]==xm_h[i]);
-        if (xm_h[i]) {
-          REQUIRE (d_h[i]==Approx(std::pow(x_h[i],Real(3))));
+        const bool valid = xm_h[i]!=0 and (invalid=="nan" or x_h[i]>0);
+        REQUIRE (m_h[i]==(valid ? 1 : 0));
+        if (valid) {
+          const auto ref = invalid=="nan" ? std::exp(x_h[i]) : std::log(x_h[i]);
+          REQUIRE (d_h[i]==Approx(ref));
         } else {
           REQUIRE (d_h[i]==fv);
         }
       }
     }
 
-    // With invalid='mask', the output mask is X's mask AND the domain
-    auto p = make_params(gn,"x","log");
+    // sqrt, with invalid='mask'
+    auto p = make_params(gn,"x","sqrt");
     p.set<std::string>("invalid","mask");
     auto diag = make_diag(p,x,grid);
     diag->compute(t0);
@@ -327,10 +291,10 @@ TEST_CASE("unary_math") {
     const auto d_h = host_data(d);
     const auto m_h = host_mask(d.get_valid_mask());
     for (int i=0; i<n; ++i) {
-      const bool valid = xm_h[i]!=0 and x_h[i]>0;
+      const bool valid = xm_h[i]!=0 and x_h[i]>=0;
       REQUIRE (m_h[i]==(valid ? 1 : 0));
       if (valid) {
-        REQUIRE (d_h[i]==Approx(std::log(x_h[i])));
+        REQUIRE (d_h[i]==Approx(std::sqrt(x_h[i])));
       } else {
         REQUIRE (d_h[i]==fv);
       }
