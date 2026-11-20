@@ -21,10 +21,8 @@ std::mt19937_64& urand_engine () {
 }
 
 Real urand () {
-  // Use the top 53 bits of the draw, rather than std::uniform_real_distribution, whose
-  // results depend on the standard library implementation (std::mt19937_64 is fully
-  // specified, so the draws are the same everywhere).
-  return (urand_engine()() >> 11) * (1.0/9007199254740992.0); // 2^-53
+  std::uniform_real_distribution<Real> pdf(0, 1);
+  return pdf(urand_engine());
 }
 
 void set_urand_seed (const unsigned int seed) { urand_engine().seed(seed); }
