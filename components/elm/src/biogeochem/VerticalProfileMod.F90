@@ -53,7 +53,7 @@ contains
     ! !USES:
     use elm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use elm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot
+    use elm_varctl  , only : use_vertsoilc, iulog, use_dynroot, use_fates
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:
@@ -130,7 +130,7 @@ contains
          col_cinput_rootfr(begc:endc, :) = 0._r8
 
          if ( exponential_rooting_profile ) then
-            if ( .not. pftspecific_rootingprofile ) then
+            if ( .not. pftspecific_rootingprofile .or. use_fates ) then
                ! define rooting profile from exponential parameters
                do j = 1, nlevdecomp
                   do fp = 1,num_soilp

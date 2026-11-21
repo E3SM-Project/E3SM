@@ -1431,20 +1431,6 @@ contains
 
    ! ====================================================================================
 
-   !subroutine WrapFatesNutrientSources(this,bounds_clump)
-
-
-     ! Add in any N source from FATES
-     !sminn_vr(c,:)    = sminn_vr(c,:) + alm_fates(ci)%bc_out(s)%source_nh4(:)
-     !smin_nh4_vr(c,:) = smin_nh4_vr(c,:) + alm_fates(ci)%bc_out(s)%source_nh4(:)
-
-
-    ! return
-   !end subroutine WrapFatesNutrientSources
-
-
-   ! ====================================================================================
-
    subroutine UpdateLitterFluxes(this,bounds_clump)
 
       implicit none
