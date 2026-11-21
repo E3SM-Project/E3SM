@@ -13,7 +13,8 @@ module CropType
   use decompMod           , only : bounds_type
   use elm_varcon          , only : spval
   use elm_varpar          , only : crop_prog
-  use elm_varctl          , only : iulog, use_crop
+  use elm_varctl          , only : iulog, use_crop, use_cropman
+  use topounit_varcon     , only : max_topounits
   use ColumnDataType      , only : col_es
   use VegetationDataType  , only : veg_es
   use GridcellType        , only : grc_pp
@@ -37,6 +38,7 @@ module CropType
      integer , pointer :: nyrs_crop_active_patch  (:)   ! number of years this crop patch has been active (0 for non-crop patches)
      logical , pointer :: croplive_patch          (:)   ! patch Flag, true if planted, not harvested
      logical , pointer :: cropplant_patch         (:)   ! patch Flag, true if planted
+     logical , pointer :: istilled_patch          (:)   ! patch Flag, true if tillage performed
      integer , pointer :: harvdate_patch          (:)   ! patch harvest date
      real(r8), pointer :: rateh_patch             (:)   ! increase of tolerance caused by cold hardening index
      real(r8), pointer :: rated_patch             (:)   ! loss of tolerance caused by dehardening
@@ -48,6 +50,9 @@ module CropType
      real(r8), pointer :: countfsurv_patch        (:)   ! count of accumulated winter wheat survival rate
      real(r8), pointer :: wdd_patch               (:)   ! winter wheat weighted cumulated degree days
      real(r8), pointer :: tcrown_patch            (:)   ! crown temperature
+     integer , pointer :: tilldate_patch          (:)   ! patch tillage date
+     real(r8), pointer :: conservag_patch         (:)   ! patch conservation agriculture fraction
+     real(r8), pointer :: tilleffic_patch         (:)   ! patch tillage efficiency (0 to 1) 
      real(r8), pointer :: fertnitro_patch         (:)   ! patch fertilizer nitrogen
      real(r8), pointer :: fertphosp_patch         (:)   ! patch fertilizer phosphorus
      real(r8), pointer :: gddplant_patch          (:)   ! patch accum gdd past planting date for crop       (ddays)
@@ -137,6 +142,7 @@ contains
     allocate(this%nyrs_crop_active_patch (begp:endp)) ; this%nyrs_crop_active_patch (:) = 0
     allocate(this%croplive_patch         (begp:endp)) ; this%croplive_patch         (:) = .false.
     allocate(this%cropplant_patch        (begp:endp)) ; this%cropplant_patch        (:) = .false.
+    allocate(this%istilled_patch         (begp:endp)) ; this%istilled_patch         (:) = .false.
     allocate(this%harvdate_patch         (begp:endp)) ; this%harvdate_patch         (:) = huge(1) 
     allocate(this%rateh_patch            (begp:endp)) ; this%rateh_patch            (:) = spval
     allocate(this%rated_patch            (begp:endp)) ; this%rated_patch            (:) = spval
@@ -148,6 +154,9 @@ contains
     allocate(this%countfsurv_patch       (begp:endp)) ; this%countfsurv_patch       (:) = spval
     allocate(this%wdd_patch              (begp:endp)) ; this%wdd_patch              (:) = spval
     allocate(this%tcrown_patch           (begp:endp)) ; this%tcrown_patch           (:) = spval
+    allocate(this%tilldate_patch         (begp:endp)) ; this%tilldate_patch         (:) = huge(1)
+    allocate(this%conservag_patch        (begp:endp)) ; this%conservag_patch        (:) = spval
+    allocate(this%tilleffic_patch        (begp:endp)) ; this%tilleffic_patch        (:) = spval
     allocate(this%fertnitro_patch        (begp:endp)) ; this%fertnitro_patch        (:) = spval
     allocate(this%fertphosp_patch        (begp:endp)) ; this%fertphosp_patch        (:) = spval
     allocate(this%gddplant_patch         (begp:endp)) ; this%gddplant_patch         (:) = spval
@@ -314,16 +323,35 @@ contains
     use landunit_varcon, only : istcrop
     use VegetationType,  only : veg_pp
     use GridcellType,    only : grc_pp
+    use elm_varcon,      only : grlnd
+    use elm_varctl,      only : fsurdat
     use elm_varsur,      only : fert_cft, fert_p_cft
+    use fileutils,       only : getfil
+    use ncdio_pio,       only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
     ! !ARGUMENTS:
     class(crop_type),  intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: t, c, l, g, p, m, topi, ti ! indices
+    logical            :: readvar
+    type(file_desc_t)  :: ncid
+    character(len=256) :: locfn
+    real(r8), pointer  :: conservag2d       (:,:)      ! read in 
 
     character(len=*), parameter :: subname = 'InitCold'
     if (use_crop) then
+       allocate(conservag2d(bounds%begg:bounds%endg,max_topounits))
+
+       conservag2d(:,:) = 0._r8
+       if (use_cropman) then
+          call getfil (fsurdat, locfn, 0)
+          call ncd_pio_openfile (ncid, locfn, 0)
+          call ncd_io(ncid=ncid, varname='Tillage', flag='read', data=conservag2d, dim1name=grlnd, readvar=readvar)
+          if (.not. readvar) conservag2d(:,:) = 0._r8
+          call ncd_pio_closefile(ncid)
+       end if
+
        do p= bounds%begp,bounds%endp
           g = veg_pp%gridcell(p)
           l = veg_pp%landunit(p)
@@ -334,10 +362,14 @@ contains
           if (lun_pp%itype(l) == istcrop) then
              ti = t - topi + 1
              m  = veg_pp%itype(p)
-             this%fertnitro_patch(p) = fert_cft(g,ti,m)
-             this%fertphosp_patch(p) = fert_p_cft(g,ti,m)
+             this%fertnitro_patch(p)  = fert_cft(g,ti,m)
+             this%fertphosp_patch(p)  = fert_p_cft(g,ti,m)
+             this%conservag_patch(p)  = conservag2d(g,ti)
+             this%tilleffic_patch(p)  = 0.95_r8 * (1.0_r8 - this%conservag_patch(p)) 
           end if
        end do
+
+       deallocate(conservag2d)
     end if
 
   end subroutine InitCold
@@ -532,9 +564,42 @@ contains
        end if
        deallocate(temp1d)
 
+       if (use_cropman) then
+         allocate(temp1d(bounds%begp:bounds%endp))
+         if (flag == 'write') then
+            do p= bounds%begp,bounds%endp
+               if (this%istilled_patch(p)) then
+                  temp1d(p) = 1
+               else
+                  temp1d(p) = 0
+               end if
+            end do
+         end if
+         call restartvar(ncid=ncid, flag=flag,  varname='istilled', xtype=ncd_log,  &
+              dim1name='pft', &
+              long_name='Flag that tillage performed' , &
+              interpinic_flag='interp', readvar=readvar, data=temp1d)
+         if (flag == 'read') then
+            do p= bounds%begp,bounds%endp
+               if (temp1d(p) == 1) then
+                  this%istilled_patch(p) = .true.
+               else
+                  this%istilled_patch(p) = .false.
+               end if
+            end do
+         end if
+         deallocate(temp1d) 
+       end if
+
        call restartvar(ncid=ncid, flag=flag,  varname='harvdate', xtype=ncd_int,  &
             dim1name='pft', long_name='harvest date', units='jday', nvalid_range=(/1,366/), & 
             interpinic_flag='interp', readvar=readvar, data=this%harvdate_patch)
+
+       if (use_cropman) then
+         call restartvar(ncid=ncid, flag=flag,  varname='tilldate', xtype=ncd_int,  &
+              dim1name='pft', long_name='tillage date', units='jday', nvalid_range=(/1,366/), &
+              interpinic_flag='interp', readvar=readvar, data=this%tilldate_patch)
+       end if
 
        call restartvar(ncid=ncid, flag=flag,  varname='vf', xtype=ncd_double,  &
             dim1name='pft', long_name='vernalization factor', units='', &

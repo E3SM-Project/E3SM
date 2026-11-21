@@ -7,6 +7,7 @@ module PhosphorusStateUpdate2Mod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use elm_varpar          , only : nlevsoi, nlevdecomp
+  use elm_varctl          , only : use_cropman
   use elm_varpar          , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl          , only : iulog
   !use PhosphorusStateType , only : phosphorusstate_type
@@ -160,6 +161,19 @@ contains
                  col_ps%decomp_ppools_vr(c,j,i_cwd)     + col_pf%harvest_p_to_cwdp(c,j)       * dt
          end do
       end do
+
+      if (use_cropman) then
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)         
+         ! update residue pools
+         col_ps%residue_ppools(c,i_met_lit) = col_ps%residue_ppools(c,i_met_lit) + &
+              col_pf%harvest_p_to_residue_met_p(c) * dt
+         col_ps%residue_ppools(c,i_cel_lit) = col_ps%residue_ppools(c,i_cel_lit) + &
+              col_pf%harvest_p_to_residue_cel_p(c) * dt
+         col_ps%residue_ppools(c,i_lig_lit) = col_ps%residue_ppools(c,i_lig_lit) + &
+              col_pf%harvest_p_to_residue_lig_p(c) * dt
+      end do
+      end if
       endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
 

@@ -471,7 +471,11 @@ module elm_varctl
   logical, public :: use_erosion    = .false.   ! switch for turning on the soil erosion model
   logical, public :: ero_ccycle     = .false.   ! switch for turning on soil C, N and P loss by erosion (only valid when user_erosion = .true.)
 
+  ! Cropland management (stealth feature)
+  logical, public :: use_cropman    = .false.   ! switch for turning on the cropland management (residue) model
+
   !$acc declare copyin(use_pheno_flux_limiter)
+  !$acc declare copyin(use_cropman)
   !$acc declare copyin(use_erosion)
   !$acc declare copyin(ero_ccycle )
   !-----------------------------------------------------------------------
