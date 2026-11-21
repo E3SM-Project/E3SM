@@ -36,7 +36,7 @@ void run_caar_f90 (const int& nm1, const int& n0, const int& np1,
                    Real*& phi_i_ptr, Real*& v_ptr,
                    Real*& vn0_ptr, Real*& etadot_dpdn_ptr, Real*& omega_p_ptr);
 
-void run_limiter_f90 (const int& np1, Real*& dp_ptr, Real*& vtheta_dp_ptr);
+void run_limiter_f90 (const int& np1, const int& nold, Real*& dp_ptr, Real*& vtheta_dp_ptr);
 void cleanup_f90();
 } // extern "C"
 
@@ -475,11 +475,14 @@ TEST_CASE("caar", "caar_testing") {
     data.np1 = np1;
     caar.set_rk_stage_data(data);
 
+    // Time level holding the "old" state, used to rebuild theta in limited layers
+    const int nold = (np1+1)%NUM_TIME_LEVELS;
+
     // Run cxx limiter
-    limiter.run(np1);
+    limiter.run(np1, nold);
 
     // Run f90 limiter
-    run_limiter_f90(np1+1, dp3d_ptr, vtheta_dp_ptr);
+    run_limiter_f90(np1+1, nold+1, dp3d_ptr, vtheta_dp_ptr);
 
     // Compare answers
     auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);

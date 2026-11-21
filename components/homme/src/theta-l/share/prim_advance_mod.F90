@@ -18,7 +18,7 @@ module prim_advance_mod
   use control_mod,        only: dcmip16_mu, dcmip16_mu_s, hypervis_order, hypervis_subcycle,&
     integration, nu, nu_div, nu_p, nu_s, nu_top, prescribed_wind, qsplit, rsplit, test_case,&
     theta_hydrostatic_mode, tstep_type, theta_advect_form, hypervis_subcycle_tom, pgrad_correction,&
-    vtheta_thresh, dp3d_thresh, laplace_scaling
+    vtheta_thresh, dp3d_thresh, laplace_scaling, internal_diagnostics_level
   use derivative_mod,     only: derivative_t, divergence_sphere, gradient_sphere, laplace_sphere_wk,&
     laplace_z, vorticity_sphere, vlaplace_sphere_wk 
   use derivative_mod,     only: subcell_div_fluxes, subcell_dss_fluxes
@@ -305,7 +305,8 @@ contains
           elem(ie)%state%phinh_i(:,:,1:nlev,np1)=elem(ie)%state%phinh_i(:,:,1:nlev,np1)+&
                (elem(ie)%state%phinh_i(:,:,1:nlev,nm1)-elem(ie)%state%phinh_i(:,:,1:nlev,n0))/4
           call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-               elem(ie)%spheremp,hvcoord%dp0)
+               elem(ie)%spheremp,hvcoord,&
+               elem(ie)%state%dp3d(:,:,:,n0),elem(ie)%state%vtheta_dp(:,:,:,n0))
        enddo
 
        !  n0          nm1       np1 
@@ -909,8 +910,12 @@ contains
   !
   ! This subroutine was orgininally called to compute a leapfrog timestep
   ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
-  ! accomodated.  For example, setting nm1=np1=n0 this routine will
-  ! take a forward euler step, overwriting the input with the output.
+  ! accomodated.
+  !
+  ! np1 must not be the same time level as nm1 when scale3 /= 0. The dp3d
+  ! limiter, applied at the end, uses u(nm1) as the state before the update
+  ! to rebuild theta in limited layers, and if np1=nm1, u(nm1) would already
+  ! have been overwritten by the update and the DSS. np1=n0 is allowed.
   !
   ! ===================================
 
@@ -1691,8 +1696,11 @@ contains
 #endif
      endif
      if (scale3 /= 0) then
+       ! the state before the update, u(nm1), is used to rebuild theta in
+       ! limited layers. This requires np1 /= nm1 (see comment at the top).
        call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-            elem(ie)%spheremp,hvcoord%dp0)
+            elem(ie)%spheremp,hvcoord,&
+            elem(ie)%state%dp3d(:,:,:,nm1),elem(ie)%state%vtheta_dp(:,:,:,nm1))
      endif
   end do
   call t_stopf('compute_andor_apply_rhs')
@@ -1700,7 +1708,7 @@ contains
   end subroutine compute_andor_apply_rhs
 
 
-  subroutine limiter_dp3d_k(dp3d,vtheta_dp,spheremp,dp0)
+  subroutine limiter_dp3d_k(dp3d,vtheta_dp,spheremp,hvcoord,dp3d_old,vtheta_dp_old)
   ! mass conserving column limiter (1D only)
   !
   ! if dp3d < dp3d_thresh*hvcoord%dp0 then apply vertical mixing 
@@ -1709,27 +1717,41 @@ contains
   ! This is rarely triggered and is mostly for safety when using 
   ! long remap timesteps
   !
+  ! In the layers that get limited, dp3d can be close to zero or negative, so
+  ! vtheta_dp/dp3d is unreliable. If the state before the update is given
+  ! (dp3d_old,vtheta_dp_old), theta in those layers is rebuilt from it:
+  !    theta = theta_old + (vtheta_dp - theta_old*dp3d)/max(dp3d_old,dp_ref)
+  ! with dp_ref the hybrid coordinate reference thickness for the column.
+  ! It is then clamped to the range spanned by the nearest layers above and
+  ! below that did not need limiting (widened by theta_tol).
+  !
   implicit none
   real (kind=real_kind), intent(inout) :: dp3d(np,np,nlev)
   real (kind=real_kind), intent(inout) :: vtheta_dp(np,np,nlev)
-  real (kind=real_kind), intent(in) :: dp0(nlev)
   real (kind=real_kind), intent(in) :: spheremp(np,np)  !  density
+  type (hvcoord_t),      intent(in) :: hvcoord
+  real (kind=real_kind), intent(in), optional :: dp3d_old(np,np,nlev)
+  real (kind=real_kind), intent(in), optional :: vtheta_dp_old(np,np,nlev)
 
   ! local
   real (kind=real_kind) :: Qcol(nlev)
   real (kind=real_kind) :: mass,mass_new
-  logical :: warn
-  integer i,j,k
+  real (kind=real_kind), parameter :: theta_tol = 0.05d0
+  real (kind=real_kind) :: ps,th,th_raw,th_old,th_lo,th_hi,dp_ref,denom
+  logical :: warn,have_old
+  integer i,j,k,kk,ka,kb
+
+  have_old = present(dp3d_old) .and. present(vtheta_dp_old)
 
   ! first check if limter is needed, and print warning
   warn=.false. 
   do k=1,nlev
-     if ( minval(dp3d(:,:,k)) < dp3d_thresh*dp0(k)) then
+     if ( minval(dp3d(:,:,k)) < dp3d_thresh*hvcoord%dp0(k)) then
 #ifndef HOMMEXX_BFB_TESTING
         ! In bfb unit tests, we use (semi-)random inputs, so we expect to hit this.
         ! Still, we don't want to fill up the console output
         write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
-        write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(dp3d(:,:,k)),dp0(k)
+        write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(dp3d(:,:,k)),hvcoord%dp0(k)
 #endif
         warn=.true.
      endif
@@ -1741,12 +1763,79 @@ contains
 #endif
     do j = 1 , np
        do i = 1 , np
-          if ( minval(dp3d(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+          if ( minval(dp3d(i,j,:) - dp3d_thresh*hvcoord%dp0(:)) < 0 ) then
 #ifdef HOMMEXX_BFB_TESTING
              vtheta_dp(i,j,:)=vtheta_dp(i,j,:)/dp3d(i,j,:)
 #endif
              ! subtract min, multiply in by weights
-             Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
+             Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*hvcoord%dp0(:))*spheremp(i,j)
+
+             ! rebuild theta in the layers below the threshold (Qcol<0).
+             ! here vtheta_dp(i,j,:) holds theta = vtheta_dp/dp3d
+             ps = hvcoord%hyai(1)*hvcoord%ps0
+             do k = 1,nlev
+                ps = ps + dp3d(i,j,k)
+             enddo
+             do k = 1,nlev
+                if ( Qcol(k) < 0 ) then
+                   th_raw = vtheta_dp(i,j,k)
+                   th_old = th_raw
+                   th = th_raw
+                   if (have_old) then
+                      if (dp3d_old(i,j,k) > 0) then
+                         th_old = vtheta_dp_old(i,j,k)/dp3d_old(i,j,k)
+                         dp_ref = (hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 + &
+                                  (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps
+                         denom = max(dp3d_old(i,j,k),dp_ref)
+                         if (dp3d(i,j,k) /= 0) then
+                            th = th_old + dp3d(i,j,k)*(th_raw - th_old)/denom
+                         else
+                            th = th_old
+                         endif
+                      endif
+                   endif
+
+                   ! nearest layers above (ka) and below (kb) that were not limited
+                   ka = 0
+                   kb = 0
+                   do kk = k-1,1,-1
+                      if ( Qcol(kk) >= 0 ) then
+                         ka = kk
+                         exit
+                      endif
+                   enddo
+                   do kk = k+1,nlev
+                      if ( Qcol(kk) >= 0 ) then
+                         kb = kk
+                         exit
+                      endif
+                   enddo
+                   if (ka>0 .or. kb>0) then
+                      if (ka>0 .and. kb>0) then
+                         th_lo = min(vtheta_dp(i,j,ka),vtheta_dp(i,j,kb))
+                         th_hi = max(vtheta_dp(i,j,ka),vtheta_dp(i,j,kb))
+                      else if (ka>0) then
+                         th_lo = vtheta_dp(i,j,ka)
+                         th_hi = vtheta_dp(i,j,ka)
+                      else
+                         th_lo = vtheta_dp(i,j,kb)
+                         th_hi = vtheta_dp(i,j,kb)
+                      endif
+                      th_lo = th_lo*(1-theta_tol)
+                      th_hi = th_hi*(1+theta_tol)
+                      if (th < th_lo) th = th_lo
+                      if (th > th_hi) th = th_hi
+                   endif
+#ifndef HOMMEXX_BFB_TESTING
+                   if (internal_diagnostics_level > 0) then
+                      write(iulog,*) 'WARNING:CAAR: theta in limited layer. k,theta_raw,theta_old,theta_new: ',&
+                           k,th_raw,th_old,th
+                   endif
+#endif
+                   vtheta_dp(i,j,k) = th
+                endif
+             enddo
+
              mass = 0
              do k = 1,nlev
                 mass = mass + Qcol(k)
@@ -1767,7 +1856,7 @@ contains
              if ( mass_new > 0 ) Qcol(:) = Qcol(:) * (abs(mass) / mass_new)
              if ( mass     < 0 ) Qcol(:) = -Qcol(:)
              !
-             dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
+             dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*hvcoord%dp0(:)
 #ifdef HOMMEXX_BFB_TESTING
              vtheta_dp(i,j,:)=vtheta_dp(i,j,:)*dp3d(i,j,:)
 #endif
@@ -1794,14 +1883,39 @@ contains
      endif
   enddo
   if (warn) then
-    do k=1,nlev
-      do j = 1 , np
-         do i = 1 , np
-            if ( (vtheta_dp(i,j,k) - vtheta_thresh*dp3d(i,j,k)) < 0 ) then
-               vtheta_dp(i,j,k)=vtheta_thresh*dp3d(i,j,k)
-            endif
-         enddo
-      enddo
+    ! take theta from the nearest layers above and below that pass the check
+    ! (the smaller of the two), instead of resetting it to vtheta_thresh.
+    ! only if no layer in the column passes do we fall back to vtheta_thresh
+    do j = 1 , np
+       do i = 1 , np
+          do k = 1,nlev
+             if ( (vtheta_dp(i,j,k) - vtheta_thresh*dp3d(i,j,k)) < 0 ) then
+                ka = 0
+                kb = 0
+                do kk = k-1,1,-1
+                   if ( (vtheta_dp(i,j,kk) - vtheta_thresh*dp3d(i,j,kk)) >= 0 ) then
+                      ka = kk
+                      exit
+                   endif
+                enddo
+                do kk = k+1,nlev
+                   if ( (vtheta_dp(i,j,kk) - vtheta_thresh*dp3d(i,j,kk)) >= 0 ) then
+                      kb = kk
+                      exit
+                   endif
+                enddo
+                th = vtheta_thresh
+                if (ka>0 .and. kb>0) then
+                   th = min(vtheta_dp(i,j,ka)/dp3d(i,j,ka),vtheta_dp(i,j,kb)/dp3d(i,j,kb))
+                else if (ka>0) then
+                   th = vtheta_dp(i,j,ka)/dp3d(i,j,ka)
+                else if (kb>0) then
+                   th = vtheta_dp(i,j,kb)/dp3d(i,j,kb)
+                endif
+                vtheta_dp(i,j,k) = th*dp3d(i,j,k)
+             endif
+          enddo
+       enddo
     enddo
   endif
 #endif

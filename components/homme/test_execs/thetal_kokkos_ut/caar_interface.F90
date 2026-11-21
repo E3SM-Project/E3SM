@@ -117,7 +117,7 @@ contains
 
   end subroutine run_caar_f90
 
-  subroutine run_limiter_f90 (np1, dp_ptr, vtheta_dp_ptr) bind(c)
+  subroutine run_limiter_f90 (np1, nold, dp_ptr, vtheta_dp_ptr) bind(c)
     use iso_c_binding,          only: c_ptr, c_f_pointer, c_int, c_bool
     use control_mod,            only: theta_hydrostatic_mode, theta_advect_form, rsplit
     use dimensions_mod,         only: nelemd, nlev, np
@@ -128,7 +128,7 @@ contains
     !
     ! Input(s)
     !
-    integer (kind=c_int),  intent(in) :: np1
+    integer (kind=c_int),  intent(in) :: np1, nold
     type (c_ptr),          intent(in) :: dp_ptr, vtheta_dp_ptr
     !
     ! Locals
@@ -141,7 +141,8 @@ contains
     call c_f_pointer(vtheta_dp_ptr, vtheta_dp, [np,np,  nlev,  timelevels, nelemd])
 
     do ie=1,nelemd
-      call limiter_dp3d_k(dp(:,:,:,np1,ie),vtheta_dp(:,:,:,np1,ie),elem(ie)%spheremp,hvcoord%dp0)
+      call limiter_dp3d_k(dp(:,:,:,np1,ie),vtheta_dp(:,:,:,np1,ie),elem(ie)%spheremp,hvcoord,&
+                          dp(:,:,:,nold,ie),vtheta_dp(:,:,:,nold,ie))
     enddo
 
   end subroutine run_limiter_f90
