@@ -61,10 +61,6 @@ HommeGridsManager::~HommeGridsManager()
 HommeGridsManager::model_init_ptr_type
 HommeGridsManager::do_create_model_init (const ekat::ParameterList& params) const
 {
-  // NOTE: runs with the pg2 physics grid are not supported by HommeModelInit yet
-  if (fvphyshack) {
-    return GridsManager::do_create_model_init(params);
-  }
   return std::make_shared<HommeModelInit>(params);
 }
 
