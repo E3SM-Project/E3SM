@@ -5220,12 +5220,14 @@ vertical pressure velocity field.</p>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dry_air    := p_mid - qv*p_mid</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_ratio    := p_mid / P0</span>
 </code></pre></div>
-<p>A numeric literal has no units. Multiplying or dividing by one keeps the
-units of the field, so <code>p_mid/100</code> holds the pressure in hPa, but is written
-with the units of <code>p_mid</code>, which are Pa; nothing converts units for you.
-Adding a number to, or subtracting it from, a field with units is rejected when
-the stream is set up, since <code>+</code> and <code>-</code> need operands with the same units:
-<code>T_mid - 273.15</code> is an error.</p>
+<p>A numeric literal has no units of its own. Added to or subtracted from a
+field, it takes the field's units, so <code>T_mid - 273.15</code> is in K (and holds the
+temperature in degrees Celsius). Multiplying or dividing by one keeps the units
+of the field, so <code>p_mid/100</code> holds the pressure in hPa, but is written with the
+units of <code>p_mid</code>, which are Pa; nothing converts units for you. A named
+constant keeps its units: <code>T_mid - Tmelt</code> is in K, while <code>qv + Tmelt</code> is
+rejected when the stream is set up, since <code>+</code> and <code>-</code> need operands with the
+same units.</p>
 <p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. When in
 doubt, parenthesize. (That example only illustrates grouping: <code>qc+(qv*p_mid)</code>
 adds a mixing ratio to a pressure, and is rejected at run time for incompatible
@@ -5296,7 +5298,7 @@ is an honest analogue.</p>
 </tr>
 <tr>
 <td><code>X.histogram(bins=[0,1,2])</code></td>
-<td>histogram of <code>X</code> over the given bin edges</td>
+<td>counts of <code>X</code> in the bins <code>[0,1)</code> and <code>[1,2]</code></td>
 </tr>
 <tr>
 <td><code>X.zonal_mean(bins=20)</code></td>
@@ -5450,6 +5452,14 @@ is an honest analogue.</p>
   height above the surface (<code>units</code> defaults to <code>m</code>). <code>interp(..)</code> is built on it, so
   fields interpolated to the same target share one search. Its output has <code>int</code> data
   type, so like <code>mask.where(..)</code> it cannot be written as is.</li>
+<li><code>histogram</code> bins the way numpy's <code>histogram</code> and xhistogram do: n edges make
+  n-1 bins, each bin includes its lower edge, the last bin also includes its
+  upper edge, and values outside the edges are not counted. To count the tails,
+  add edges beyond any value the field takes, e.g.
+  <code>bins=[-1e30,0,1e-5,1e-4,1e30]</code>. Bin edges are numbers in increasing order;
+  they may be negative, and may be written with an exponent
+  (<code>bins=[-1,0,1e-5,1e-4]</code>). The counts are over every entry of <code>X</code> on every
+  rank, as with xhistogram's default <code>dim=None</code>.</li>
 <li><code>aerocom_weights</code> gives, per level, the AeroCom cloud-top (<code>'top'</code>) or
   cloud-bottom (<code>'bot'</code>) weights: the probability that the level is the first
   cloudy level seen from above (or below), under the maximum-random overlap
@@ -5474,10 +5484,6 @@ is an honest analogue.</p>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rel_liqtop := eff_radius_qc.sum('lev', weights=liqtop)</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rei_icetop := eff_radius_qi.sum('lev', weights=icetop)</span>
 </code></pre></div>
-<ul>
-<li>Histogram bin edges are numbers in increasing order. They may be negative,
-  and may be written with an exponent (<code>bins=[-1,0,1e-5,1e-4]</code>).</li>
-</ul>
 <p>Named quantities are not operations, and stay plain names in an expression:
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
 and so on.</p>
@@ -5494,7 +5500,11 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 <tbody>
 <tr>
 <td><code>histogram</code></td>
-<td>not in xarray; the keyword follows <a href="https://xhistogram.readthedocs.io">xhistogram</a></td>
+<td>not in xarray; it is <a href="https://xhistogram.readthedocs.io">xhistogram</a>'s <code>histogram(X, bins=..)</code>, with the same binning, and always reduces over every dimension</td>
+</tr>
+<tr>
+<td><code>derivative</code></td>
+<td>deliberately not xarray's <code>differentiate</code> (numpy's <code>gradient</code>): it is a finite-volume layer mean, built on the model's own layer thicknesses (see <a href="../vert_derivative/">Vertical derivative</a>), so that, weighted by the layer thickness (<code>dp</code> or <code>dz</code>), the levels sum to the difference between the bottom and top values</td>
 </tr>
 <tr>
 <td><code>zonal_mean</code></td>
