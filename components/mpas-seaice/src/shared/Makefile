@@ -30,7 +30,7 @@ OBJS = 	mpas_seaice_time_integration.o \
 
 all: $(OBJS)
 
-mpas_seaice_constants.o: 
+mpas_seaice_constants.o:
 
 mpas_seaice_error.o:
 

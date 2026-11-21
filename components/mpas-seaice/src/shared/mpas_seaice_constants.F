@@ -23,7 +23,8 @@ module seaice_constants
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
        pi                              = SHR_CONST_PI     ,&! pi
-       seaiceSecondsPerDay             = SHR_CONST_CDAY     ! seconds in calendar day
+       seaiceSecondsPerDay             = SHR_CONST_CDAY   ,&! seconds in calendar day
+       omega                           = SHR_CONST_OMEGA    ! angular rotation rate of Earth [s-1]
 
       real (kind=RKIND), public :: &
        seaiceGravity                   = SHR_CONST_G      ,&! gravitational acceleration (m/s^2)
@@ -52,15 +53,17 @@ module seaice_constants
        seaiceReferenceSalinity         = SHR_CONST_ICE_REF_SAL,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.005_RKIND      ,&! parameter for fractional snow area (m)
 
-       gramsIronPerMolIron             = SHR_CONST_MWFE     ! molecular weight of Iron
-!         R_gC2molC = SHR_CONST_MWC    ,&! molar mass of carbon
+       gramsIronPerMolIron             = SHR_CONST_MWFE   ,&! molecular weight of Iron
+       gramsCarbonPerMolCarbon         = SHR_CONST_MWC    ,&! g carbon per mol carbon
+       seaiceFreshIceConductivity      = SHR_CONST_CONDICE  ! ice thermal conductivity (W/m/deg); unused by mushy thermo
 
 #else
       real (kind=RKIND), parameter, public :: &
   ! fundamental constants
        pi                              = 3.14159265358979323846_RKIND, &
-       seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND
- 
+       seaiceSecondsPerDay             = 24.0_RKIND * 3600.0_RKIND, &
+       omega                           = 7.29212e-5_RKIND ! angular rotation rate of Earth [s-1]
+
       real (kind=RKIND), public :: &
        seaiceGravity                   = 9.80616_RKIND ,&! gravitational acceleration (m/s^2)
 
@@ -79,7 +82,7 @@ module seaice_constants
        seaiceZvir                      = 0.606_RKIND   ,&! rh2o/rair - 1.0
        seaiceLatentHeatSublimation     = 2.835e6_RKIND ,&! latent heat, sublimation freshwater (J/kg)
        seaiceIceSurfaceMeltingTemperature  = 0.0_RKIND ,&! melting temperature, ice top surface  (C)
-       seaiceSnowSurfaceMeltingTemperature = 0.0_RKIND ,&! melting temperature, snow top surface  (C)
+       seaiceSnowSurfaceMeltingTemperature = 0.0_RKIND ,&! melting temperature, snow top surface (C)
        seaiceVonKarmanConstant         = 0.4_RKIND     ,&! von Karman constant
        seaiceSeaWaterSpecificHeat      = 4218._RKIND   ,&! specific heat of ocn    (J/kg/K)
                                                          ! freshwater value needed for enthalpy
@@ -90,8 +93,9 @@ module seaice_constants
        seaiceReferenceSalinity         = 4._RKIND      ,&! ice reference salinity (ppt)
        seaiceSnowPatchiness            = 0.02_RKIND    ,&! parameter for fractional snow area (m)
 
-       gramsIronPerMolIron             = 55.845_RKIND    ! molecular weight of Iron
-!         R_gC2molC = 12.0107_RKIND, & ! molar mass of carbon
+       gramsIronPerMolIron             = 55.845_RKIND   ,&! molecular weight of Iron
+       gramsCarbonPerMolCarbon         = 12.0107_RKIND  ,&! g carbon per mol carbon
+       seaiceFreshIceConductivity      = 2.03_RKIND       ! ice thermal conductivity (W/m/deg); unused by mushy thermo
 #endif
 
   ! fundamental constants
@@ -99,7 +103,7 @@ module seaice_constants
        pii                                = pi, &    ! replace pii with seaicePi elsewhere (might need to be parameter)
        seaiceDegreesToRadians             = pi / 180.0_RKIND, &
        seaiceRadiansToDegrees             = 180.0_RKIND / pi, &
-       seaiceSecondsPerYear               = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, & ! incorrect for leap years
+       seaiceSecondsPerYear               = seaiceSecondsPerDay * 365.0_RKIND, & ! fixed 365-day year
        seaiceDaysPerSecond                = 1.0_RKIND/seaiceSecondsPerDay
 
   real (kind=RKIND), public :: &
@@ -110,10 +114,6 @@ module seaice_constants
 
   real(kind=RKIND), public :: &
        seaicePuny                         = 1.0e-11_RKIND   ! a small value
-
-  ! physical constants
-  real (kind=RKIND), parameter, public :: &
-       omega                              = 7.29212e-5_RKIND ! angular rotation rate of the Earth [s-1]
 
   real(kind=RKIND), public :: &
        seaiceDensitySnow                  = 330.0_RKIND     ! density of snow (kg/m^3)
@@ -150,8 +150,6 @@ module seaice_constants
                                                             ! as Tsfcn for open water only when 
                                                             ! tfrz_option is 'minus1p8' or null
        seaiceExtinctionCoef              = 1.4_RKIND    , & ! vis extnctn coef in ice, wvlngth<700nm (1/m)
-       seaiceFreshIceConductivity        = 2.03_RKIND   , & ! thermal conductivity of fresh ice(W/m/deg)
-                                                            ! (kice) is not used for mushy thermo
        seaiceSnowMinimumThickness        = 1.e-4_RKIND  , & ! min snow thickness for computing zTsn (m)
        ! weights for albedos for history and diagnostics
        ! 4 Jan 2007 BPB  Following are appropriate for complete cloud
@@ -185,7 +183,6 @@ module seaice_constants
   ! biogeochemistry constants
   real(kind=RKIND), public :: &
        skeletalLayerThickness             = 0.03_RKIND    , & ! (m) skeletal layer thickness
-       gramsCarbonPerMolCarbon            = 12.0107_RKIND , & ! g carbon per mol carbon
        microgramsPerKilograms             = 1.0e9_RKIND       ! kg to ug conversion
 
   ! ocean biogeochemistry ISPOL values
