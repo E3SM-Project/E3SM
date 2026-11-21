@@ -313,8 +313,8 @@ contains
          endif
       end do
       ! find the closest downhill neighbor for each topounit
-      dn_index = -1  ! value of -1 indicates no downhill neighbor
       do t1 = begt, endt
+         dn_index = -1  ! value of -1 indicates no downhill neighbor; reset for each topounit
          t1_elev = top_pp%elevation(t1)
          dn_elev = min_elev
          do t2 = begt, endt
