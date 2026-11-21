@@ -8,15 +8,12 @@
 module namelist_mod
 
   use kinds,      only: real_kind, iulog
-  use params_mod, only: sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
+  use params_mod, only: sfcurve
   use cube_mod,   only: rotate_grid
 #if defined(CAM) && !defined(MODEL_CESM)
   use dyn_grid,   only: fv_nphys
 #endif
   use physical_constants, only: rearth, rrearth, omega
-#if (defined MODEL_THETA_L && defined ARKODE)
-  use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
-#endif
 use physical_constants, only : rearth, rrearth, DD_PI
 
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
@@ -26,8 +23,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     MAX_STRING_LEN,&
     MAX_FILE_LEN,  &
     partmethod,    &       ! Mesh partitioning method
-    coord_transform_method,    &       !how to represent the coordinates.
-    z2_map_method,    &       !zoltan2 how to perform mapping (network-topology aware)
     topology,      &       ! Mesh topology
     geometry,      &       ! Mesh geometry
     test_case,     &       ! test case
@@ -248,8 +243,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     ! ============================================
 
     namelist /ctl_nl/ PARTMETHOD,                &         ! mesh partitioning method
-                      COORD_TRANSFORM_METHOD,    &         ! Zoltan2 coordinate transformation method.
-                      Z2_MAP_METHOD,             &         ! Zoltan2 processor mapping (network-topology aware) method.
                       TOPOLOGY,                  &         ! mesh topology
                       GEOMETRY,                  &         ! mesh geometry
 #if defined(CAM) || defined(SCREAM)
@@ -271,8 +264,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       omega,                   &   ! scaled rotation rate
       rearth,                  &   ! scaled earth radius
 #endif
-      COORD_TRANSFORM_METHOD, &
-      Z2_MAP_METHOD,  &
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
       numnodes,      &
@@ -426,21 +417,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       tol,           &
       debug_level
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-    namelist /arkode_nl/ &
-      rel_tol, &
-      abs_tol, &
-      calc_nonlinear_stats, &
-      use_column_solver
-#endif
 
 
     ! ==========================
     ! Set the default partmethod
     ! ==========================
     PARTMETHOD    = SFCURVE
-    COORD_TRANSFORM_METHOD = SPHERE_COORDS
-    Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
     se_tstep=-1
 #if !defined(CAM) && !defined(SCREAM)
@@ -566,18 +548,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        nEndStep = nmax
 #endif
 
-       if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
-                    (integration .ne. "full_imp")) then
-          call abortmp('integration must be explicit, full_imp, or runge_kutta')
+       if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
+          call abortmp('integration must be explicit or runge_kutta')
        end if
-
-       if (integration == "full_imp") then
-          if (tstep_type<10) then
-             ! namelist did not set a valid tstep_type. pick one:
-             tstep_type=11   ! backward euler
-             !tstep_type=12  ! BDF2 with BE bootstrap
-          endif
-       endif
 
 #if !defined(CAM) && !defined(SCREAM)
 
@@ -716,11 +689,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        end do
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-       write(iulog,*)"reading arkode namelist..."
-       if (nl_unit /= input_unit) rewind(nl_unit)
-       read(nl_unit,nml=arkode_nl)
-#endif
 
 !=======================================================================================================!
 
@@ -761,8 +729,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
     ! Broadcast namelist variables to all MPI processes
 
-    call MPI_bcast(Z2_MAP_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(COORD_TRANSFORM_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(geometry,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
@@ -905,12 +871,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
 
-    if (integration == "full_imp") then
-       call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
-       call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
-       call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    end if
-
     call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
@@ -937,12 +897,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(tool,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-    call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
-    call MPI_bcast(abs_tol, 1, MPIreal_t, par%root, par%comm, ierr)
-    call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
-    call MPI_bcast(use_column_solver, 1, MPIlogical_t, par%root, par%comm, ierr)
-#endif
 
     ! should we assume Q(:,:,:,1) has water vapor:
     use_moisture = ( moisture /= "dry") 
@@ -1185,8 +1139,6 @@ else if (topology == "plane") then
   write(iulog,*)"readnl: ne_x,ne_y,np         = ",ne_x,ne_y,np
 end if
        write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
-       write(iulog,*)"readnl: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
-       write(iulog,*)"readnl: Z2_MAP_METHOD    = ",Z2_MAP_METHOD
 
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
        write(iulog,*)"readnl: vthreads      = ",vthreads
@@ -1307,13 +1259,6 @@ end if
        end do
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-       write(iulog,*)""
-       write(iulog,*)"arkode: rel_tol = ",rel_tol
-       write(iulog,*)"arkode: abs_tol = ",abs_tol
-       write(iulog,*)"arkode: calc_nonlinear_stats = ",calc_nonlinear_stats
-       write(iulog,*)"arkode: use_column_solver = ",use_column_solver
-#endif
 
        ! display physical constants for HOMME stand alone simulations
        write(iulog,*)""

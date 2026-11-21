@@ -8,24 +8,12 @@ SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
 SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
-SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS})
 
 # Find F90 files in share and test directories
 FILE(GLOB TARGET_F90 ${TARGET_DIR}/share/*.F90 ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${TEST_SRC_DIR}/*.F90)
-
-IF (HOMME_USE_ARKODE)
-  SET(TARGET_F90
-    ${TARGET_F90}
-    ${ARKODE_DIR}/arkode_tables.F90
-    ${ARKODE_DIR}/homme_sunlinsol.F90
-    ${ARKODE_DIR}/theta-l/arkode_interface.F90
-    ${ARKODE_DIR}/theta-l/arkode_mod.F90
-    ${ARKODE_DIR}/theta-l/homme_nvector.F90
-  )
-ENDIF ()
 
 SET(THETAL_SRCS_F90
   ${TARGET_F90}
@@ -44,15 +32,6 @@ SET(THETAL_SRCS_F90
   ${SRC_DIR}/surfaces_mod.F90
   ${SRC_DIR}/test_mod.F90
 )
-
-IF (HOMME_USE_ARKODE)
-  SET(THETAL_SRCS_C
-    ${ARKODE_DIR}/nvector_external.h
-    ${ARKODE_DIR}/nvector_external.c
-    ${ARKODE_DIR}/column_linsol.h
-    ${ARKODE_DIR}/column_linsol.c
-  )
-ENDIF ()
 
 IF (HOMMEXX_BFB_TESTING)
   # We need a couple more files/includes to correctly hook-up C routines

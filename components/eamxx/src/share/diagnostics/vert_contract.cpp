@@ -97,7 +97,7 @@ void VertContract::initialize_impl()
     diag_name += "_" + m_weighting_method + "_weighted";
 
   auto d_fid = fid.clone(diag_name).reset_layout(layout.clone().strip_dim(LEV)).reset_units(diag_units);
-  m_diagnostic_output = Field(d_fid,true);
+  add_output(d_fid);
 
   // A masked input needs the contracted weight for both methods: avg divides by it,
   // sum uses it to mask columns with no valid level
@@ -118,8 +118,7 @@ void VertContract::initialize_impl()
       // Share the valid_mask so the denominator honours the same masking
       m_ones.set_valid_mask(f.get_valid_mask());
       // Output gets a valid_mask: 1 where at least one level was valid
-      m_diagnostic_output.create_valid_mask(Field::MaskInit::None);
-      m_diagnostic_output.get_header().set_may_be_filled(true);
+      get().create_valid_mask(Field::MaskInit::None);
     }
   }
 }
@@ -127,7 +126,7 @@ void VertContract::initialize_impl()
 void VertContract::compute_impl()
 {
   const auto &f = m_fields_in.at(m_field_name);
-  auto& d = m_diagnostic_output;
+  auto d = get();
 
   // Update the weights; if weighting by dp, we need to scale by 1/g
   if (m_weighting_method == "dp") {
@@ -151,7 +150,7 @@ void VertContract::compute_impl()
     auto tm_v = m_fields_in.at("T_mid").get_view<const Real **>();
     auto qv_v = m_fields_in.at("qv").get_view<const Real **>();
     Kokkos::parallel_for(
-        "Compute dz for " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
+        "Compute dz for " + get().name(), policy, KOKKOS_LAMBDA(const MT &team) {
           const int icol = team.league_rank();
           auto dz_icol   = ekat::subview(dz_v, icol);
           auto dp_icol   = ekat::subview(dp_v, icol);
@@ -169,14 +168,12 @@ void VertContract::compute_impl()
     // Denominator: sum_lev(weight * 1 * mask); layout matches d
     vert_contraction(m_weight_sum, m_ones, m_weight);
     if (d.has_valid_mask()) {
-      // Mark where denominator is nonzero, then divide (avg only), then fill elsewhere
+      // Mark where denominator is nonzero, then divide (avg only, and only where valid)
       auto& valid_out = d.get_valid_mask();
       compute_mask(m_weight_sum, 0, Comparison::NE, valid_out);
       if (m_contract_method == "avg") {
         d.scale_inv(m_weight_sum, valid_out);
       }
-      // IO relies on fill_value for masked-out entries
-      d.deep_copy(constants::fill_value<Real>, valid_out, true);
     } else {
       d.scale_inv(m_weight_sum);
     }

@@ -115,8 +115,6 @@ MAMWetscav::create_requests()
 
     //----------- Variables from ZM convection scheme -------------
     // Convective mass fluxes and entrainment/detrainment rates
-    add_field<Required>("zm_mflx_up", scalar3d_mid, kg / m2 / s, grid_name);  // Updraft mass flux
-    add_field<Required>("zm_mflx_dn", scalar3d_mid, kg / m2 / s, grid_name);  // Downdraft mass flux
     add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft entrainment rate
     add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft detrainment rate
     add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);         // Downdraft entrainment rate
@@ -369,10 +367,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Temporary view for pressure thickness in mb (converted from Pa)
   dp_tmp_    = view_2d("dp_tmp", ncol_, nlev_);
   dpdry_tmp_ = view_2d("dpdry_tmp", ncol_, nlev_);
-
-  // Temporary views for ZM mass fluxes converted from kg/m2/s to mb/s
-  mflx_up_tmp_ = view_2d("mflx_up_tmp", ncol_, nlev_);
-  mflx_dn_tmp_ = view_2d("mflx_dn_tmp", ncol_, nlev_);
   
   calcsize_data_.initialize();
   // wetscav uses update_mmr=true;
@@ -582,8 +576,6 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &aero_config = aero_config_;
   const auto &dp_tmp = dp_tmp_;
   const auto &dpdry_tmp = dpdry_tmp_;
-  const auto &mflx_up_tmp = mflx_up_tmp_;
-  const auto &mflx_dn_tmp = mflx_dn_tmp_;
  
   // Check if convection processing is enabled
   const bool convproc_do_aer = convproc_do_aer_;
@@ -593,7 +585,7 @@ void MAMWetscav::run_impl(const double dt) {
   // Convection processing variables - only retrieve if enabled
   // These are passed to aero_model_wetdep but only used when do_convproc is true
   const_view_1d zm_cldtop_klev_in, zm_msemax_klev_in, zm_activity_in;
-  const_view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
+  const_view_2d zm_entr_up, zm_detr_up, zm_entr_dn;
   const_view_1d_int species_class;
   const_view_1d_int mmtoo_prevap_resusp;
   
@@ -605,9 +597,7 @@ void MAMWetscav::run_impl(const double dt) {
     // Get convection activity flag
     zm_activity_in = get_field_in("zm_activity").get_view<const Real *>();
     
-    // Convection mass fluxes and rates from ZM scheme
-    zm_mflx_up = get_field_in("zm_mflx_up").get_view<const Real **>();
-    zm_mflx_dn = get_field_in("zm_mflx_dn").get_view<const Real **>();
+    // Convection rates from ZM scheme
     zm_entr_up = get_field_in("zm_entr_up").get_view<const Real **>();
     zm_detr_up = get_field_in("zm_detr_up").get_view<const Real **>();
     zm_entr_dn = get_field_in("zm_entr_dn").get_view<const Real **>();
@@ -688,29 +678,17 @@ void MAMWetscav::run_impl(const double dt) {
           // Get pressure thickness and remaining convproc variables
           // These are always needed, but some are only meaningful when do_convproc is true
           constexpr Real pa_to_mb = 0.01;
-          // mam4 convproc expects the updraft/downdraft mass fluxes in [mb/s],
-          // but ZM provides them in [kg/m2/s]; convert back via mb/s = kg/m2/s * g/100.
-          constexpr Real kgm2s_to_mbs = mam4::Constants::gravity * pa_to_mb; // = g/100
           const auto p_del_icol = ekat::subview(dry_atm.p_del, icol);
           auto dp_tmp_icol = ekat::subview(dp_tmp, icol);
           auto dpdry_tmp_icol = ekat::subview(dpdry_tmp, icol);
-          auto mflx_up_tmp_icol = ekat::subview(mflx_up_tmp, icol);
-          auto mflx_dn_tmp_icol = ekat::subview(mflx_dn_tmp, icol);
-          const auto zm_mflx_up_icol = ekat::subview(zm_mflx_up, icol);
-          const auto zm_mflx_dn_icol = ekat::subview(zm_mflx_dn, icol);
           const auto pseudo_density_dry_icol = ekat::subview(pseudo_density_dry, icol);
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
             dpdry_tmp_icol(kk) = pseudo_density_dry_icol(kk) * pa_to_mb;
             dp_tmp_icol(kk) = p_del_icol(kk) * pa_to_mb;
-            mflx_up_tmp_icol(kk) = zm_mflx_up_icol(kk) * kgm2s_to_mbs;
-            mflx_dn_tmp_icol(kk) = zm_mflx_dn_icol(kk) * kgm2s_to_mbs;
           });
           team.team_barrier();
           dp_icol = dp_tmp_icol;
           p_del_dry_icol = dpdry_tmp_icol;
-          // Convection mass flux fields from ZM scheme, converted to [mb/s]
-          mu_icol = mflx_up_tmp_icol;
-          md_icol = mflx_dn_tmp_icol;
           ktop = Kokkos::round(zm_cldtop_klev_in(icol));
           kbot = Kokkos::round(zm_msemax_klev_in(icol))+1;
           // Get deep convection activity flag (1 = active, 0 = inactive)
@@ -733,9 +711,11 @@ void MAMWetscav::run_impl(const double dt) {
             aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol,
            // output: convective aerosol wet deposition (interstitial)
            aerdepwetis_convproc_icol,
-           // Convection mass flux parameters
+           // Convection parameters
            scratch1Dviews,
-           mu_icol, md_icol, du_icol, eu_icol, ed_icol,
+           // Required but unused by the pinned MAM4xx interface; empty views suffice.
+           mu_icol, md_icol,
+           du_icol, eu_icol, ed_icol,
            dp_icol, p_del_dry_icol,
            ktop, kbot,
            convproc_do_aer, convproc_do_gas,

@@ -869,7 +869,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
 
     enddo   ! phase
 
-107 format( 3A, 2i8, A, f12.4, A, f12.4 )
+107 format( 3A, 2i8, A, f12.4, A, f12.4, A, i4 )
 
   end subroutine component_run
 

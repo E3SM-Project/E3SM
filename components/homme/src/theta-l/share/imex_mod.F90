@@ -344,7 +344,7 @@ contains
 #ifdef NEWTONCOND
        min_rcond=min(rcond,min_rcond)
 #endif
-       itererr=min(max_reserr,max_deltaerr) ! passed back to ARKODE
+       itererr=min(max_reserr,max_deltaerr)
 
 
        if (itercount >= maxiter) then

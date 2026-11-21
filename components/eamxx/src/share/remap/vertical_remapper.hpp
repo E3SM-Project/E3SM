@@ -116,7 +116,7 @@ protected:
   //         li_vtag defaults to LEVP.
   struct FType {
     bool packs_supported = false;
-    bool fill_aware      = false; // The src field has a mask, or may be filled
+    bool src_masked      = false; // The src field has a mask
     FieldTag li_vtag  = FieldTag::Invalid;
     FieldTag src_vtag = FieldTag::Invalid;
     FieldTag tgt_vtag = FieldTag::Invalid;

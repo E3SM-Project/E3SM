@@ -58,11 +58,10 @@ void VerticalLayer::initialize_impl ()
   const auto vtag  = m_is_interface_layout ? ILEV : LEV;
   auto diag_layout = m_grid->get_3d_scalar_layout(vtag);
   FieldIdentifier fid (m_diag_name, diag_layout, m_geopotential ? m2/s2 : m, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(fid);
 
   using stratts_t = std::map<std::string,std::string>;
-  auto& io_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto& io_atts = get().get_header().get_extra_data<stratts_t>("io: string attributes");
   auto& long_name = io_atts["long_name"];
   if (m_diag_name=="dz") {
     long_name = "level thickness";
@@ -82,18 +81,18 @@ void VerticalLayer::initialize_impl ()
 
   // Initialize temporary views based on need. Can alias the diag if a temp is not needed
   if (m_diag_name == "dz") {
-    m_tmp_midpoint = m_diagnostic_output;
-    m_tmp_interface = m_diagnostic_output; // Not really used
+    m_tmp_midpoint = get();
+    m_tmp_interface = get(); // Not really used
   } else if (m_is_interface_layout) {
     auto fl = m_grid->get_3d_scalar_layout(LEV);
     FieldIdentifier fid ("tmp_mid",fl,none,m_grid->name());
     m_tmp_midpoint = Field(fid,true);
-    m_tmp_interface = m_diagnostic_output;
+    m_tmp_interface = get();
   } else {
     auto fl = m_grid->get_3d_scalar_layout(ILEV);
     FieldIdentifier fid ("tmp_int",fl,none,m_grid->name());
     m_tmp_interface = Field(fid,true);
-    m_tmp_midpoint = m_diagnostic_output;
+    m_tmp_midpoint = get();
   }
 }
 

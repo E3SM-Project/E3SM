@@ -14,7 +14,7 @@ namespace scream {
  *
  * If the input field has a valid_mask, entries with mask==0 are excluded from
  * both numerator and denominator.  Output entries where the denominator is zero
- * are filled with fill_value and the output field's valid_mask is set to 0.
+ * are invalid: the output field's valid_mask is set to 0 at those locations.
  */
 
 class VertContract : public AbstractDiagnostic {
@@ -43,7 +43,7 @@ class VertContract : public AbstractDiagnostic {
   // Weight field (dp/g, dz, or all-ones depending on weighting_method)
   Field m_weight;
 
-  // For avg mode: denominator scratch field (same layout as m_diagnostic_output).
+  // For avg mode: denominator scratch field (same layout as get()).
   Field m_weight_sum;
 
   // Ones field with the same layout as the weight field (for "avg" only)

@@ -13,9 +13,11 @@ on:
     - cron: '0 7 * * *'  # Runs at 7 AM UTC, which is midnight MT during Standard Time
 
 concurrency:
-  # Two runs are in the same group if they are testing the same git ref
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Two runs are in the same group if they have the same trigger and test the same git ref
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # Only PR pushes supersede older runs. Cancelling scheduled/dispatched runs would let
+  # e.g. the nightly cron kill a manual (possibly bless) run on master.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch

@@ -2750,7 +2750,7 @@ contains
 102 format( A, i10.8, i8, A, 10L3 )
 103 format( 5A )
 104 format( A, i10.8, i8)
-105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i5, A, A)
+105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i8, A, A)
 108 format( A, f10.2, A, i8.8)
 109 format( A, 2f10.3)
 110 format( A,   999999999(:, A8,  i0, A8,  i0) )

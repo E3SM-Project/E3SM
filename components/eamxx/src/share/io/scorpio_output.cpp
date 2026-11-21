@@ -14,6 +14,7 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_units.hpp>
 
+#include <algorithm>
 #include <numeric>
 
 namespace
@@ -39,6 +40,20 @@ std::string
 get_transposed_helper_name(const scream::FieldLayout& layout, const scream::DataType data_type)
 {
   return "transposed_" + layout.transpose().to_string() + "_" + e2str(data_type);
+}
+
+// Helper function to describe a diag in error messages: its class does not say which
+// field it computes (e.g., two BinaryOp diags may have the same deps)
+std::string
+describe(const scream::AbstractDiagnostic& diag)
+{
+  std::vector<std::string> names;
+  for (const auto& [n,f] : diag.get_outputs()) {
+    names.push_back(f.name());
+  }
+  return " - diag class: " + diag.name() + "\n"
+         " - diag field(s): " + (names.empty() ? std::string("(not initialized)")
+                                               : ekat::join(names,", ")) + "\n";
 }
 
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
@@ -294,9 +309,11 @@ AtmosphereOutput::
   //       we are likely at finalization. This static var is only needed at init,
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
+  // NOTE: a diag with several outputs is stored under each of its output names
   for (auto d : m_diagnostics) {
-    const auto& name = d->get().name();
-    m_diag_repo.erase(name);
+    for (const auto& [n,f] : d->get_outputs()) {
+      m_diag_repo.erase(f.name());
+    }
   }
 }
 
@@ -621,11 +638,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
     start_timer("EAMxx::IO::accumulate");
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  // Note: if f_in aliases f_out, this is a no-op
-        if (masked) {
-          f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
-        }
-        break;
+        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op. Otherwise, it also copies the mask
       case OutputAvgType::Max:
         masked ? f_out.max(f_in,f_in.get_valid_mask())
                : f_out.max(f_in);
@@ -1096,31 +1109,34 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
 
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
-        " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->get().name() + "\n"
+        " - stream name: " + m_stream_name + "\n" +
+        describe(*diag) +
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get();
     if (computable) {
       diag->compute(ts);
     }
 
-    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+    for (auto& [n,d] : diag->get_outputs()) {
+      bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
-    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
-      "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get().name() + "\n");
+      EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - stream name: " + m_stream_name + "\n" +
+        describe(*diag) +
+        " - output: " + d.name() + "\n");
 
-    if (not computed) {
-      // The diag was either not computable or it may have failed to compute
-      // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=fill_value
-      // (of the right type, since the diag may be an int mask)
-      if (d.data_type()==DataType::IntType) {
-        d.deep_copy(constants::fill_value<int>);
-      } else {
-        d.deep_copy(constants::fill_value<float>);
+      if (not computed) {
+        // The diag was either not computable or it may have failed to compute
+        // (e.g., t=0 output with a flux-like diag).
+        // If we're allowing invalid fields, then we should simply set diag=fill_value
+        // (of the right type, since the diag may be an int mask)
+        if (d.data_type()==DataType::IntType) {
+          d.deep_copy(constants::fill_value<int>);
+        } else {
+          d.deep_copy(constants::fill_value<float>);
+        }
       }
     }
   }
@@ -1221,10 +1237,8 @@ process_requested_fields()
     diag->initialize();
   };
 
-  auto add_to_diag_group = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
-    // Set the diag field in the FM
-    auto diag_field = diag->get();
-
+  // Only the requested output of a diag goes in the group (see where it is called)
+  auto add_to_diag_group = [&](Field& diag_field) {
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
   };
@@ -1253,6 +1267,13 @@ process_requested_fields()
     bool armed = true;
     ~RepoGuard () { if (armed) for (const auto& n : added) repo.erase(n); }
   } repo_guard{m_diag_repo,{}};
+
+  // The loop below adds aliases and diags to fm_model, so keep the names of the
+  // model fields: only those can be shadowed by the output of a diag
+  std::set<ekat::CaseInsensitiveString> model_fields;
+  for (const auto& [n,f] : fm_model->get_repo()) {
+    model_fields.insert(n);
+  }
 
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   // m_fields_names now holds exactly the variables that reach the nc file:
@@ -1328,10 +1349,38 @@ process_requested_fields()
               "Use an averaged stream, which evaluates every step, or write every step.\n");
         }
 
-        if (m_diag_repo.count(name)==0) {
-          repo_guard.added.push_back(name);
+        // A diag with several outputs is stored under each output name, so that
+        // a request of any of them, in any stream, finds the same instance
+        const auto& outputs = diag->get_outputs();
+        std::vector<std::string> keys;
+        if (it==m_diag_repo.end() and outputs.size()>1) {
+          // Just created: store it under all its outputs
+          for (const auto& [key,f] : outputs) {
+            const auto& n = f.name();
+            // NOTE: an alias of this stream may have the name of an output it does
+            //       not request: the alias is local to the stream, and wins in it
+            EKAT_REQUIRE_MSG (model_fields.count(n)==0,
+                "Error! An output of a diagnostic has the name of a model field.\n"
+                " - stream name: " + m_stream_name + "\n"
+                " - field name: " + n + "\n" +
+                describe(*diag));
+            auto other = m_diag_repo.find(n);
+            EKAT_REQUIRE_MSG (other==m_diag_repo.end(),
+                "Error! Two diagnostics produce a field with the same name.\n"
+                " - stream name: " + m_stream_name + "\n"
+                " - field name: " + n + "\n" +
+                describe(*diag) +
+                describe(*other->second));
+            keys.push_back(n);
+          }
+        } else if (it==m_diag_repo.end()) {
+          keys = {name};
         }
-        m_diag_repo[name] = diag;
+        // Only a diag we just created goes in the repo
+        for (const auto& k : keys) {
+          repo_guard.added.push_back(k);
+          m_diag_repo[k] = diag;
+        }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
         for (const auto& dep_name : diag->get_input_fields_names()) {
@@ -1348,10 +1397,16 @@ process_requested_fields()
           if (not diag->is_initialized()) {
             init_diag(diag);
           }
-          add_to_diag_group (diag);
+          // Only the requested output goes in the FM: an unrequested output
+          // must not affect the stream (e.g., trigger valid count tracking)
+          auto diag_field = diag->get(name);
+          add_to_diag_group (diag_field);
           remove_these.insert(name);
-          fm_model->add_field(diag->get());
-          m_diagnostics.push_back(diag);
+          fm_model->add_field(diag_field);
+          // Requests of other outputs of this diag reuse it: evaluate it once
+          if (not ekat::contains(m_diagnostics,diag)) {
+            m_diagnostics.push_back(diag);
+          }
         }
       }
     }

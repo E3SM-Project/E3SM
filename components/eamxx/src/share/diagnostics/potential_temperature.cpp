@@ -38,8 +38,7 @@ PotentialTemperature (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Construct and allocate the diagnostic field
   auto diag_layout = m_grid->get_3d_scalar_layout(LEV);
   FieldIdentifier fid (m_ptype, diag_layout, K, m_grid->name());
-  m_diagnostic_output = Field(fid);
-  m_diagnostic_output.allocate_view();
+  add_output(fid);
 }
 
 void PotentialTemperature::compute_impl()
@@ -50,7 +49,7 @@ void PotentialTemperature::compute_impl()
 
   bool is_liq = (m_ptype=="LiqPotentialTemperature");
 
-  auto theta = m_diagnostic_output.get_view<Real**>();
+  auto theta = get().get_view<Real**>();
   auto T_mid = m_fields_in.at("T_mid").get_view<const Real**>();
   auto p_mid = m_fields_in.at("p_mid").get_view<const Real**>();
   auto q_mid = is_liq ? m_fields_in.at("qc").get_view<const Real**>() : decltype(p_mid){};

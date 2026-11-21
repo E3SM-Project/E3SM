@@ -126,10 +126,6 @@ OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpi
 SET(HOMME_USE_CXX FALSE)
 SET(HOMME_USE_KOKKOS FALSE)
 
-#if trilinos is needed, we need cxx
-IF (HOMME_USE_TRILINOS)
-  SET (HOMME_USE_CXX TRUE)
-ENDIF()
 #if kokkos is needed, then so is cxx
 SET (HOMME_USE_KOKKOS FALSE)
 SET (HOMME_BUILD_KOKKOS_DYCORE FALSE)
@@ -178,13 +174,6 @@ ENDIF ()
 IF (HOMME_USE_CXX)
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
-ENDIF ()
-
-# Option to use ARKode package from SUNDIALS
-OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
-IF (${HOMME_USE_ARKODE})
-  MESSAGE(STATUS "Using ARKode, adding -DARKODE")
-  ADD_DEFINITIONS(-DARKODE)
 ENDIF ()
 
 IF (HOMME_USE_KOKKOS)
@@ -286,23 +275,6 @@ ELSE()
   ENDIF()
 ENDIF()
 
-IF (${HOMME_USE_TRILINOS})
-  MESSAGE(STATUS "This configuration of requires Trilinos")
-  FIND_PACKAGE(Trilinos REQUIRED)
-  SET(HAVE_TRILINOS TRUE)
-  IF("${Trilinos_PACKAGE_LIST}"  MATCHES ".*Zoltan2*.")
-    MESSAGE(STATUS "Trilinos is compiled with Zoltan2 Trilinos_PACKAGE_LIST:${Trilinos_PACKAGE_LIST}")
-    MESSAGE(STATUS "ENABLING ZOLTAN2")
-    SET(TRILINOS_HAVE_ZOLTAN2 TRUE)
-  ENDIF ()
-
-  add_definitions(${Trilinos_CXX_COMPILER_FLAGS})
-  include_directories(${Trilinos_TPL_INCLUDE_DIRS})
-  include_directories(${Trilinos_INCLUDE_DIRS})
-  link_directories(${Trilinos_LIBRARY_DIRS})
-  link_directories(${Trilinos_TPL_LIBRARY_DIRS})
-ENDIF ()
-
 MESSAGE(STATUS "Fortran Flags = ${CMAKE_Fortran_FLAGS}")
 MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
@@ -340,24 +312,10 @@ CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/cmake/homme_git_sha.h.in ${HOMME_BIN
 
 
 ##############################################################################
-# Zoltan partitioning library
-IF (DEFINED ZOLTAN_DIR)
-  MESSAGE(STATUS "Building with Zoltan")
-  FIND_PACKAGE(Zoltan REQUIRED)
-  SET(HAVE_ZOLTAN TRUE)
-ENDIF ()
-
 IF (DEFINED EXTRAE_DIR)
   MESSAGE(STATUS "Building with Extrae")
   FIND_PACKAGE(Extrae REQUIRED)
   SET(HAVE_EXTRAE TRUE)
-ENDIF ()
-
-# this section is for linking to SUNDIALS/ARKODE as an external library
-IF (DEFINED SUNDIALS_DIR)
-  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib64)
-  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
-  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
 if (HOMME_STANDALONE OR NOT TARGET gptl)
