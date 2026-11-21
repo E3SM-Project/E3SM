@@ -1,9 +1,4 @@
-PREQX_KOKKOS_SETUP()
-
-# Set the variables for this test executable
-#                          NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(preqx-nlev26-kokkos preqx_kokkos 4 4 26 FALSE FALSE 4)
-
+homme_add_model_exec (preqx-nlev26-kokkos MODEL preqx_kokkos NP 4 NC 4 PLEV 26 QSIZE_D 4)
 # Setting HOMME_TESTS_* variables, so the namelist.nl file in the exec 
 # directory is usable. Since that namelist should be used for development
 # and/or debugging purposes only, we make the test 'small' (ne=2, ndays=1),
