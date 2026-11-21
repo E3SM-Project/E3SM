@@ -1,0 +1,3 @@
+./xmlchange ELM_BLDNML_OPTS="-irrig .true." -append
+./xmlchange DATM_CLMNCEP_YR_END=1902
+./xmlchange REST_N=3
