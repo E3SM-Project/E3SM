@@ -314,10 +314,6 @@
                                         description="Non-dimensional Leith del4 closure divergence scaler"
                                         possible_values="any positive real"
                 />
-                <nml_option name="config_Leith_dx" type="real" default_value="30000.0" units="m"
-                                        description="Characteristic length scale, usually the smallest dx in the mesh"
-                                        possible_values="any positive real"
-                />
                 <nml_option name="config_Leith_visc2_max" type="real" default_value="1.0e3" units="m^2 s^-1"
                                         description="Upper bound on the allowable value of Leith-computed viscosity"
                                         possible_values="any positive real"
