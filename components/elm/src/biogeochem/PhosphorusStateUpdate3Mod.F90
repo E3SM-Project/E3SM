@@ -65,6 +65,7 @@ contains
    real(r8):: ks_sorption_c ! parameter(gP/m2), empirical constant for sorbed P in equilibrium with solution P
    real(r8):: flux_mineralization(bounds%begc:bounds%endc,1:nlevdecomp)   !! local temperary variable
    real(r8):: temp_solutionp(bounds%begc:bounds%endc,1:nlevdecomp)
+   real(r8):: old_secondp_flux, old_leached_flux, total_sink_flux, available_p
    real(r8):: aa,bb,cc ! solve quadratic function
 
     !-----------------------------------------------------------------------
@@ -173,30 +174,21 @@ contains
 
                  if (temp_solutionp(c,j) < 0.0_r8) then
 
-                    if( abs(col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j)) >1.e-20_r8 )then
-                       
-                       col_pf%labilep_to_secondp_vr(c,j) = col_pf%labilep_to_secondp_vr(c,j)/ &
-                            (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
-                            (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
-                       
-                       col_pf%sminp_leached_vr(c,j) = col_pf%sminp_leached_vr(c,j)/ &
-                            (col_pf%labilep_to_secondp_vr(c,j)+col_pf%sminp_leached_vr(c,j))* &
-                            (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
+                    ! Use the original fluxes for both shares. Updating one flux
+                    ! before calculating the other changes the mass being split.
+                    old_secondp_flux = col_pf%labilep_to_secondp_vr(c,j)
+                    old_leached_flux = col_pf%sminp_leached_vr(c,j)
+                    total_sink_flux = old_secondp_flux + old_leached_flux
+                    available_p = temp_solutionp(c,j) + old_secondp_flux*dt + old_leached_flux*dt
+                    if (abs(total_sink_flux) > 1.e-20_r8) then
+                       col_pf%labilep_to_secondp_vr(c,j) = old_secondp_flux/total_sink_flux * available_p/dt
+                       col_pf%sminp_leached_vr(c,j) = old_leached_flux/total_sink_flux * available_p/dt
                     else
-                       ! If there is nothing there to drive proportions, just split it
-                       col_pf%labilep_to_secondp_vr(c,j) = 0.5_r8 * &
-                            (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
-                       
-                       col_pf%sminp_leached_vr(c,j) = 0.5_r8 * &
-                            (temp_solutionp(c,j) + col_pf%labilep_to_secondp_vr(c,j)*dt + &
-                            col_pf%sminp_leached_vr(c,j)*dt) /dt
-                       
+                       ! If there is nothing there to drive proportions, just split it.
+                       col_pf%labilep_to_secondp_vr(c,j) = 0.5_r8 * available_p/dt
+                       col_pf%sminp_leached_vr(c,j) = 0.5_r8 * available_p/dt
                     end if
-                       
-                       
+
                     temp_solutionp(c,j) = 0.0_r8
                     col_ps%solutionp_vr(c,j) = 0.0_r8
                     col_ps%labilep_vr(c,j) = 0.0_r8

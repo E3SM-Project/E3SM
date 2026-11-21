@@ -51,7 +51,7 @@ module EcosystemBalanceCheckMod
 
   ! This corersponds to namelist variable bgc_balance_check_tolerance
   real(r8), public  :: balance_check_tolerance = 1e-7_r8
-
+  real(r8), public  :: balance_check_rel_tolerance = 1e-9_r8
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: BeginColCBalance
@@ -282,7 +282,7 @@ contains
          end if
 
          ! check for significant errors
-         if (abs(col_errcb(c)) > balance_check_tolerance) then
+         if (abs(col_errcb(c)) > balance_check_tolerance .and. abs(col_errcb(c))>balance_check_rel_tolerance*MAX(col_endcb(c),col_begcb(c))) then
             err_found = .true.
             err_index = c
          end if
@@ -495,7 +495,7 @@ contains
             ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
          end if
 
-         if (abs(col_errnb(c)) > balance_check_tolerance) then
+         if (abs(col_errnb(c)) > balance_check_tolerance .and. abs(col_errnb(c))>balance_check_rel_tolerance*MAX(col_endnb(c),col_begnb(c))) then
             err_found = .true.
             err_index = c
          end if
@@ -617,6 +617,7 @@ contains
 
       ! set time steps
       dt = dtime_mod
+      nstep = get_nstep()
       kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
       err_found = .false.
 
@@ -728,7 +729,7 @@ contains
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
 
-         if (abs(col_errpb(c)) > balance_check_tolerance) then
+         if (abs(col_errpb(c)) > balance_check_tolerance .and. abs(col_errpb(c))>balance_check_rel_tolerance*MAX(col_endpb(c),col_begpb(c))) then
             err_found = .true.
             err_index = c
          end if
@@ -738,7 +739,7 @@ contains
       if (err_found .and. nstep>1) then
 #ifndef _OPENACC
          c = err_index
-         write(iulog,*)'column pbalance error = ', col_errpb(c), c
+         write(iulog,*)'column pbalance error = ', col_errpb(c), c, get_nstep()
          write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
          write(iulog,*)'begpb       = ',col_begpb(c)
          write(iulog,*)'endpb       = ',col_endpb(c)
