@@ -3786,15 +3786,13 @@ contains
 
       !-----------------------------------------------------------------
 
-      if ( trim(config_land_ice_flux_mode) == "off" ) return
-
       if ( trim(config_land_ice_draft_mode) == "data" ) then
 
          landIceDraftForSsh = landIceDraft
 
       elseif ( trim(config_land_ice_draft_mode) == "pressure-dependent" ) then
 
-         rho_floatation = config_land_ice_rho_ocean
+         rho_floatation = rho_sw_floatation
 
 #ifdef MPAS_OPENACC
          !$acc parallel loop present(landIceDraftForSsh, landIcePressure)
@@ -3811,7 +3809,7 @@ contains
 #endif
       endif
 
-      if ( trim(config_land_ice_flux_mode) == "pressure_only") return
+      if ( trim(config_land_ice_flux_mode) == "off") return
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
