@@ -101,12 +101,14 @@ void run_bfb_p3_main_part1()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
+    std::vector<Real> qv2qc_aeroact(d.kte, 0.0);
     p3_main_part1_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.do_prescribed_CCN, d.dt,
                     d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.nccn_prescribed, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
                     d.inv_cld_frac_r,
                     d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
                     d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
                     d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
+                    qv2qc_aeroact.data(),
                     &d.is_nucleat_possible, &d.is_hydromet_present);
   }
 
@@ -179,6 +181,7 @@ void run_bfb_p3_main_part2()
   std::vector<Real> qr2qv_evap(72,0.0), qi2qv_sublim(72,0.0), qc2qr_accret(72,0.0), qc2qr_autoconv(72,0.0), qv2qi_vapdep(72,0.0),
     qc2qi_berg(72,0.0), qc2qr_ice_shed(72,0.0), qc2qi_collect(72,0.0), qr2qi_collect(72,0.0), qc2qi_hetero_freeze(72,0.0),
     qr2qi_immers_freeze(72,0.0), qi2qr_melt(72,0.0);
+  std::vector<Real> omega_mp(72,0.0), tke_mp(72,0.0), qv2qc_condevap(72,0.0);
   static constexpr Int num_runs = sizeof(isds_baseline) / sizeof(P3MainPart2Data);
 
   for (auto& d : isds_baseline) {
@@ -221,6 +224,8 @@ void run_bfb_p3_main_part2()
       hetfrz_immersion_nucleation_tend.data(), hetfrz_contact_nucleation_tend.data(), hetfrz_deposition_nucleation_tend.data(),
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.inv_exner, d.exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r, d.qv_prev, d.t_prev,
+      omega_mp.data(), tke_mp.data(),
+      qv2qc_condevap.data(),
       d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th_atm, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.qv2qi_depos_tend, d.precip_total_tend,
