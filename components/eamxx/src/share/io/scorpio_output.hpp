@@ -248,7 +248,10 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_latlon_output = false;
+  // If true, the io grid is structured (it has the geo data structured_dims=[ny,nx]), and the COL dim
+  // is replaced by 2 dims in the file, (lat,lon), of length ny and nx. For lat-lon grids, lat/lon
+  // are 1d coordinate variables, while for curvilinear grids they are 2d variables over (lat,lon).
+  bool m_structured_output = false;
   std::string m_decomp_dimname = "";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =
