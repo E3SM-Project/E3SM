@@ -3,8 +3,6 @@
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "dynamics/homme/homme_model_init.hpp"
 
-#include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
-
 #ifndef NDEBUG
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_nan_check.hpp"
@@ -188,10 +186,6 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance)
   // Build only if not built yet
   if (has_grid(name)) {
     return;
-  }
-
-  if (type=="pg2") {
-    fvphyshack = true;
   }
 
   // Get the grid pg_type
