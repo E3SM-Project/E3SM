@@ -23,12 +23,12 @@ ifneq "$(EXCLUDE_INIT_MODE)" "true"
 endif
 
 all: shared libcvmix analysis_members libBGC libMARBL libgotm libfftw libshtns libppr
-	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
-	(cd mode_analysis; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
+	(cd mode_forward && $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
+	(cd mode_analysis && $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 ifneq "$(EXCLUDE_INIT_MODE)" "true"
-	(cd mode_init; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
+	(cd mode_init && $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 endif
-	(cd driver; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
+	(cd driver && $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" all )
 	if [ -e libdycore.a ]; then \
 		($(RM) libdycore.a) \
 	fi
@@ -39,21 +39,21 @@ core_reg:
 
 core_input_gen:
 	if [ ! -e default_inputs ]; then  mkdir default_inputs; fi
-	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean )
-	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.forward mode=forward )
-	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.analysis mode=analysis )
-	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean stream_list.ocean. mutable )
-	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
-	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
+	(cd default_inputs && $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean )
+	(cd default_inputs && $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.forward mode=forward )
+	(cd default_inputs && $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.analysis mode=analysis )
+	(cd default_inputs && $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean stream_list.ocean. mutable )
+	(cd default_inputs && $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.forward stream_list.ocean.forward. mutable mode=forward )
+	(cd default_inputs && $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.analysis stream_list.ocean.analysis. mutable mode=analysis )
 ifneq "$(EXCLUDE_INIT_MODE)" "true"
-	(cd default_inputs; $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.init mode=init )
-	(cd default_inputs; $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.init stream_list.ocean.init. mutable mode=init )
+	(cd default_inputs && $(NL_GEN) ../../../mpas-ocean/src/Registry_processed.xml namelist.ocean.init mode=init )
+	(cd default_inputs && $(ST_GEN) ../../../mpas-ocean/src/Registry_processed.xml streams.ocean.init stream_list.ocean.init. mutable mode=init )
 endif
 
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
-	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+	(cd inc && $(REG_PARSE) < ../Registry_processed.xml )
 
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
@@ -71,21 +71,21 @@ endif
 
 libcvmix:
 	if [ -e cvmix/.git ]; then \
-		(cd cvmix/src/shared; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd cvmix/src/shared && make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
 		(pwd ; echo "Missing mpas-ocean/src/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 libBGC:
 	if [ -e BGC/.git ]; then \
-		(cd BGC; make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd BGC && make all FC="$(FC)" FCFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	else \
 		(echo "Missing mpas-ocean/src/BGC/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 libMARBL:
 	if [ -e MARBL/.git ]; then \
-		(cd MARBL/src; make OBJ_DIR=../tests/obj depends; make ../lib/libmarbl.a USE_DEPS="TRUE" FC="$(FC)" FCFLAGS="$(FFLAGS)" OBJ_DIR="../tests/obj" INC_DIR="../include" ) \
+		(cd MARBL/src && { make OBJ_DIR=../tests/obj depends; make ../lib/libmarbl.a USE_DEPS="TRUE" FC="$(FC)" FCFLAGS="$(FFLAGS)" OBJ_DIR="../tests/obj" INC_DIR="../include"; } ) \
 	else \
 		(echo "Missing mpas-ocean/src/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
@@ -93,9 +93,9 @@ libMARBL:
 libgotm:
 	if [ -e gotm/.git ]; then \
 		if [ -e gotm/build/Makefile ]; then \
-			(cd gotm/build; make) \
+			(cd gotm/build && make) \
 		else \
-			(cd gotm/build; cmake ../src $(GOTM_CMAKE_FLAGS); make) \
+			(cd gotm/build && { cmake ../src $(GOTM_CMAKE_FLAGS); make; }) \
 		fi \
 	else \
 		(pwd ; echo "Missing mpas-ocean/src/gotm/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
@@ -106,9 +106,9 @@ libshtns: libfftw
 	if [ -e SHTNS/.git ]; then \
         if [ ! -e SHTNS/libshtns.a ]; then \
     		if [ "$(OPENMP)" == "true" ]; then \
-    			(echo "Compiling shtns with OPENMP"; cd SHTNS; export CPP=cpp; ./configure --enable-openmp --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
+    			(echo "Compiling shtns with OPENMP"; cd SHTNS && { export CPP=cpp; ./configure --enable-openmp --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional'; }) \
     		else \
-    			(echo "Compiling shtns without OPENMP"; cd SHTNS; export CPP=cpp; ./configure --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
+    			(echo "Compiling shtns without OPENMP"; cd SHTNS && { export CPP=cpp; ./configure --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional'; }) \
     		fi \
         fi \
         else \
@@ -121,9 +121,9 @@ libfftw:
 	if [ -e FFTW/.git ]; then \
         if [ ! -e SHTNS/lib/libfftw3.a ]; then \
     		if [ "$(OPENMP)" == "true" ]; then \
-    			(echo "Compiling fftw with OPENMP"; cd FFTW; export CPP=cpp; ./configure --enable-openmp --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
+    			(echo "Compiling fftw with OPENMP"; cd FFTW && { export CPP=cpp; ./configure --enable-openmp --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional'; }) \
     		else \
-    			(echo "Compiling fftw without OPENMP"; cd FFTW; export CPP=cpp; ./configure --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional';) \
+    			(echo "Compiling fftw without OPENMP"; cd FFTW && { export CPP=cpp; ./configure --prefix=$(SHTNS_DIR); make; make install; export CPP='cpp -P -traditional'; }) \
     		fi \
         fi \
 	else \
@@ -133,44 +133,44 @@ libfftw:
 
 libppr:
 	if [ -e ppr/.git ]; then \
-		(cd ppr/src; $(CPP) $(CPPFLAGS) $(CPPINCLUDES) ppr_1d.F90 > ppr_1d.F; $(FC) $(FFLAGS) -c ppr_1d.F -o ppr_1d.o) \
+		(cd ppr/src && { $(CPP) $(CPPFLAGS) $(CPPINCLUDES) ppr_1d.F90 > ppr_1d.F; $(FC) $(FFLAGS) -c ppr_1d.F -o ppr_1d.o; }) \
 	else \
 		(pwd ; echo "Missing core_ocean/ppr/.git, did you forget to 'git submodule update --init --recursive' ?"; exit 1) \
 	fi
 
 shared: libcvmix libBGC libMARBL libgotm libshtns libfftw libppr
-	(cd shared; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)")
+	(cd shared && $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)")
 
 analysis_members: libcvmix shared libgotm
-	( cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all )
+	( cd analysis_members && $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all )
 
 clean:
 	if [ -e cvmix/.git ]; then \
-		(cd cvmix/src/shared; make clean) \
+		(cd cvmix/src/shared && make clean) \
 	fi
 	if [ -d inc ]; then \
 		($(RM) -r inc) \
 	fi
 	if [ -e BGC/.git ]; then \
-		(cd BGC; make clean) \
+		(cd BGC && make clean) \
 	fi
 	if [ -e MARBL/.git ]; then \
-		(cd MARBL/src; make clean OBJ_DIR="../tests/obj" INC_DIR="../include") \
+		(cd MARBL/src && make clean OBJ_DIR="../tests/obj" INC_DIR="../include") \
 	fi
 	if [ -e gotm/.git ]; then \
-		(cd gotm; git clean -dfx) \
+		(cd gotm && git clean -dfx) \
         fi
 	if [ -e SHTNS/.git ]; then \
-		(cd SHTNS; make clean; rm -f lib/libshtns.a) \
+		(cd SHTNS && { make clean; rm -f lib/libshtns.a; }) \
 	fi
 	if [ -e FFTW/.git ]; then \
-		(cd FFTW; make clean; rm -f $(SHTNS_DIR)/lib/libfftw3*) \
+		(cd FFTW && { make clean; rm -f $(SHTNS_DIR)/lib/libfftw3*; }) \
 	fi
-	(cd mode_forward; $(MAKE) clean)
-	(cd mode_analysis; $(MAKE) clean)
-	(cd mode_init; $(MAKE) clean)
-	(cd driver; $(MAKE) clean)
-	(cd analysis_members; $(MAKE) clean)
-	(cd shared; $(MAKE) clean)
+	(cd mode_forward && $(MAKE) clean)
+	(cd mode_analysis && $(MAKE) clean)
+	(cd mode_init && $(MAKE) clean)
+	(cd driver && $(MAKE) clean)
+	(cd analysis_members && $(MAKE) clean)
+	(cd shared && $(MAKE) clean)
 	($(RM) *.mod libdycore.a Registry_processed.xml)
 	$(RM) -r default_inputs

@@ -1013,9 +1013,9 @@ endif
 dycore: $(AUTOCLEAN_DEPS) framework
 	@echo "Auto-detected core from path: " $(CORE)
 	@echo "START DYCORE: $(PWD)"
-	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(FWPATH)/tools/registry/parse" gen_includes )
-	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(FWPATH)/tools/input_gen/namelist_gen" ST_GEN="$(FWPATH)/tools/input_gen/streams_gen" core_input_gen )
-	( cd src; $(MAKE) \
+	( cd src && $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(FWPATH)/tools/registry/parse" gen_includes )
+	( cd src && $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(FWPATH)/tools/input_gen/namelist_gen" ST_GEN="$(FWPATH)/tools/input_gen/streams_gen" core_input_gen )
+	( cd src && $(MAKE) \
 	         FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
@@ -1038,7 +1038,7 @@ dycore: $(AUTOCLEAN_DEPS) framework
 
 
 drver:  $(AUTOCLEAN_DEPS) framework dycore
-	( cd $(FWPATH)/driver; $(MAKE) COREPATH="$(COREPATH)" \
+	( cd $(FWPATH)/driver && $(MAKE) COREPATH="$(COREPATH)" \
                  FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
@@ -1064,7 +1064,7 @@ mpas: $(AUTOCLEAN_DEPS) framework dycore drver
 	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) $(FWPATH)/driver/*.o -L$(FWPATH) -Lsrc -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L$(FWPATH)/external/esmf_time_f90 -lesmf_time
 
 framework:
-	cd $(FWPATH); $(MAKE) \
+	cd $(FWPATH) && $(MAKE) \
                  FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
@@ -1092,7 +1092,7 @@ endif
 
 	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
-	( cd src; $(MAKE) ROOT_DIR="$(PWD)" post_build )
+	( cd src && $(MAKE) ROOT_DIR="$(PWD)" post_build )
 	@echo "*******************************************************************************"
 	@echo $(PRECISION_MESSAGE)
 	@echo $(DEBUG_MESSAGE)
@@ -1124,8 +1124,8 @@ ifeq "$(USE_MOAB)" "true"
 endif
 	@echo "*******************************************************************************"
 clean:
-	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
-	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
+	cd $(FWPATH) && $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
+	cd src && $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) .mpas_core_*
 	$(RM) $(EXE_NAME)
 	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
