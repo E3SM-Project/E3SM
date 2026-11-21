@@ -176,8 +176,20 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- The list of atm processes for the atm as a whole -->
     <eamxx inherit="atm_proc_group">
-      <atm_procs_list>sc_import,homme,physics,sc_export</atm_procs_list>
+      <atm_procs_list>sc_import,atm_step,sc_export</atm_procs_list>
     </eamxx>
+
+    <!-- Dynamics+physics step. This group runs at the physics time step
+         dt_phys = (atm coupling dt) / number_of_subcycles, while surface
+         coupling (sc_import/sc_export) stays at the coupling frequency.
+         Set number_of_subcycles > 1 (e.g. per hgrid, or via
+         `atmchange atm_step::number_of_subcycles=N`) to run the atmosphere
+         at a finer (possibly fractional) time step than the coupling step.
+         The default of 1 reproduces the previous flat sc_import,homme,physics,
+         sc_export ordering with no change in behavior. -->
+    <atm_step inherit="atm_proc_group">
+      <atm_procs_list>homme,physics</atm_procs_list>
+    </atm_step>
 
     <!-- Surface coupling (import and export) -->
     <sc_import inherit="atm_proc_base"/>

@@ -239,6 +239,19 @@ void RRTMGPRadiation::create_requests() {
   add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
   add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
 
+  // Sums (and number of samples) of the surface fluxes above over the current
+  // coupling interval. The driver resets ACCUMULATED fields at the start of
+  // each coupling step, so when radiation is subcycled within the coupling
+  // step, the surface coupling exporter can export the interval mean rather
+  // than the instantaneous flux from the last subcycle.
+  add_field<Computed>("sfc_flux_dir_nir_cpl_accum", scalar2d, W/m2, grid_name, "ACCUMULATED");
+  add_field<Computed>("sfc_flux_dir_vis_cpl_accum", scalar2d, W/m2, grid_name, "ACCUMULATED");
+  add_field<Computed>("sfc_flux_dif_nir_cpl_accum", scalar2d, W/m2, grid_name, "ACCUMULATED");
+  add_field<Computed>("sfc_flux_dif_vis_cpl_accum", scalar2d, W/m2, grid_name, "ACCUMULATED");
+  add_field<Computed>("sfc_flux_sw_net_cpl_accum" , scalar2d, W/m2, grid_name, "ACCUMULATED");
+  add_field<Computed>("sfc_flux_lw_dn_cpl_accum"  , scalar2d, W/m2, grid_name, "ACCUMULATED");
+  add_field<Computed>("sfc_flux_cpl_accum_count"  , scalar2d, none, grid_name, "ACCUMULATED");
+
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
     add_field<Computed>("vapor_flux", scalar2d, kg/m2/s, grid_name);
@@ -1213,6 +1226,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
     });
   }
 
+  // Accumulate the surface fluxes over the coupling interval. This is done every
+  // step (not only when update_rad is true), since on non-radiation steps the
+  // fluxes from the last radiation call are still the ones applied.
+  for (const std::string fname : {"sfc_flux_dir_nir","sfc_flux_dir_vis","sfc_flux_dif_nir",
+                                  "sfc_flux_dif_vis","sfc_flux_sw_net","sfc_flux_lw_dn"}) {
+    get_field_out(fname+"_cpl_accum").update(get_field_out(fname),1,1);
+  }
+  get_field_out("sfc_flux_cpl_accum_count").add_scalar(1);
 }
 // =========================================================================================
 

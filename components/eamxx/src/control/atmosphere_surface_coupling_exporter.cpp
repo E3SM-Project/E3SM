@@ -56,6 +56,15 @@ void SurfaceCouplingExporter::create_requests()
   add_field<Required>("sfc_flux_dif_vis",     scalar2d_layout,      W/m2,   grid_name);
   add_field<Required>("sfc_flux_sw_net" ,     scalar2d_layout,      W/m2,   grid_name);
   add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      W/m2,   grid_name);
+  // Coupling-interval sums of the surface radiative fluxes (see RRTMGP), used to
+  // export the interval mean when radiation is subcycled within the coupling step
+  add_field<Required>("sfc_flux_dir_nir_cpl_accum", scalar2d_layout, W/m2, grid_name, "ACCUMULATED");
+  add_field<Required>("sfc_flux_dir_vis_cpl_accum", scalar2d_layout, W/m2, grid_name, "ACCUMULATED");
+  add_field<Required>("sfc_flux_dif_nir_cpl_accum", scalar2d_layout, W/m2, grid_name, "ACCUMULATED");
+  add_field<Required>("sfc_flux_dif_vis_cpl_accum", scalar2d_layout, W/m2, grid_name, "ACCUMULATED");
+  add_field<Required>("sfc_flux_sw_net_cpl_accum" , scalar2d_layout, W/m2, grid_name, "ACCUMULATED");
+  add_field<Required>("sfc_flux_lw_dn_cpl_accum"  , scalar2d_layout, W/m2, grid_name, "ACCUMULATED");
+  add_field<Required>("sfc_flux_cpl_accum_count"  , scalar2d_layout, none, grid_name, "ACCUMULATED");
   add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   // Required for implicit flux coupling
@@ -394,6 +403,14 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const auto& sfc_flux_sw_net      = get_field_in("sfc_flux_sw_net" ).get_view<const Real*>();
   const auto& sfc_flux_lw_dn       = get_field_in("sfc_flux_lw_dn"  ).get_view<const Real*>();
 
+  const auto& sfc_flux_dir_nir_accum = get_field_in("sfc_flux_dir_nir_cpl_accum").get_view<const Real*>();
+  const auto& sfc_flux_dir_vis_accum = get_field_in("sfc_flux_dir_vis_cpl_accum").get_view<const Real*>();
+  const auto& sfc_flux_dif_nir_accum = get_field_in("sfc_flux_dif_nir_cpl_accum").get_view<const Real*>();
+  const auto& sfc_flux_dif_vis_accum = get_field_in("sfc_flux_dif_vis_cpl_accum").get_view<const Real*>();
+  const auto& sfc_flux_sw_net_accum  = get_field_in("sfc_flux_sw_net_cpl_accum" ).get_view<const Real*>();
+  const auto& sfc_flux_lw_dn_accum   = get_field_in("sfc_flux_lw_dn_cpl_accum"  ).get_view<const Real*>();
+  const auto& sfc_flux_accum_count   = get_field_in("sfc_flux_cpl_accum_count"  ).get_view<const Real*>();
+
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
@@ -581,13 +598,23 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       Sa_wsresp(i) = ekat::impl::min(Sa_wsresp(i), sp(dt) * PC::gravit.value / s_pseudo_density_i(num_levs-1));
     }
   });
+  // Surface radiative fluxes are exported as their mean over the coupling interval.
+  // If radiation is not subcycled within the coupling step, there is a single
+  // sample and the mean is exactly the instantaneous flux. If no samples were
+  // accumulated (during initialization, or when no process provides the sums),
+  // fall back to the instantaneous flux.
+  const bool use_accum = not called_during_initialization;
+  Kokkos::parallel_for(Kokkos::RangePolicy<KT::ExeSpace>(0,num_cols), KOKKOS_LAMBDA(const int i) {
+    const Real count = sfc_flux_accum_count(i);
+    const bool use_mean = use_accum && count>0;
+    if (export_source(idx_Faxa_swndr)==FROM_MODEL) { Faxa_swndr(i) = use_mean ? sfc_flux_dir_nir_accum(i)/count : sfc_flux_dir_nir(i); }
+    if (export_source(idx_Faxa_swvdr)==FROM_MODEL) { Faxa_swvdr(i) = use_mean ? sfc_flux_dir_vis_accum(i)/count : sfc_flux_dir_vis(i); }
+    if (export_source(idx_Faxa_swndf)==FROM_MODEL) { Faxa_swndf(i) = use_mean ? sfc_flux_dif_nir_accum(i)/count : sfc_flux_dif_nir(i); }
+    if (export_source(idx_Faxa_swvdf)==FROM_MODEL) { Faxa_swvdf(i) = use_mean ? sfc_flux_dif_vis_accum(i)/count : sfc_flux_dif_vis(i); }
+    if (export_source(idx_Faxa_swnet)==FROM_MODEL) { Faxa_swnet(i) = use_mean ? sfc_flux_sw_net_accum(i) /count : sfc_flux_sw_net(i);  }
+    if (export_source(idx_Faxa_lwdn )==FROM_MODEL) { Faxa_lwdn(i)  = use_mean ? sfc_flux_lw_dn_accum(i)  /count : sfc_flux_lw_dn(i);   }
+  });
   // Variables that are already surface vars in the ATM can just be copied directly.
-  if (m_export_source_h(idx_Faxa_swndr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndr, sfc_flux_dir_nir); }
-  if (m_export_source_h(idx_Faxa_swvdr)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdr, sfc_flux_dir_vis); }
-  if (m_export_source_h(idx_Faxa_swndf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swndf, sfc_flux_dif_nir); }
-  if (m_export_source_h(idx_Faxa_swvdf)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swvdf, sfc_flux_dif_vis); }
-  if (m_export_source_h(idx_Faxa_swnet)==FROM_MODEL) { Kokkos::deep_copy(Faxa_swnet, sfc_flux_sw_net); }
-  if (m_export_source_h(idx_Faxa_lwdn )==FROM_MODEL) { Kokkos::deep_copy(Faxa_lwdn,  sfc_flux_lw_dn); }
   if (m_export_source_h(idx_Sa_tau_est)==FROM_MODEL) { Kokkos::deep_copy(Sa_tau_est, tau_est); }
 
 }
