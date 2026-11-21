@@ -223,6 +223,39 @@ void HommeInstance::copy_dyn_states_to_all_timelevels ()
 }
 
 void HommeInstance::
+init_pseudo_density (const Field& ps, const Field& dp)
+{
+  using KT  = KokkosTypes<DefaultDevice>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const auto& hvcoord = Homme::Context::singleton().get<Homme::HybridVCoord>();
+
+  // NOTE: get the extents from the layout, since the view extents may include padding
+  const auto dp_ref = dp.get_view<Real**>();
+  const auto& dp_layout = dp.get_header().get_identifier().get_layout();
+  const int ncols = dp_layout.dim(0);
+  const int nlevs = dp_layout.dim(1);
+
+  // NOTE: HybridVCoord already stores hyai and hybi deltas as packed views,
+  //       but it used KokkosKernels packs, which are incompatible with ekat::Pack.
+  //       If Homme switched to ekat::Pack, you could do the loop below with packs.
+  const auto ps0 = hvcoord.ps0;
+  const auto ps_ref = ps.get_view<const Real*>();
+  const auto hyai = hvcoord.hybrid_ai;
+  const auto hybi = hvcoord.hybrid_bi;
+  const auto policy_dp = TPF::get_default_team_policy(ncols, nlevs);
+  Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
+                        [&](const int ilev) {
+       dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
+                         + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
+    });
+    team.team_barrier();
+  });
+}
+
+void HommeInstance::
 init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
                             const Field& horiz_winds_gll,
                             const Field& T_mid_gll,
@@ -247,11 +280,8 @@ init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
   const auto& tl = c.get<Homme::TimeLevel>();
 
   // Some extents
-  // NOTE: get the extents from the layout, since the view extents may include padding
-  const auto dp_ref = pseudo_density_gll.get_view<Real**>();
-  const auto& dp_layout = pseudo_density_gll.get_header().get_identifier().get_layout();
-  const int ncols = dp_layout.dim(0);
-  const int nlevs = dp_layout.dim(1);
+  // NOTE: get the extent from the layout, since the view extents may include padding
+  const int nlevs = pseudo_density_gll.get_header().get_identifier().get_layout().dim(1);
   constexpr int NGP = HOMMEXX_NP;
   const int nelem = get_dyn_field("dp3d_dyn").get_header().get_identifier().get_layout().dim(0);
   const int qsize = params.qsize;
@@ -259,23 +289,7 @@ init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
   const int npacks_int = ekat::npack<Pack>(nlevs+1);
 
   // Bootstrap dp on phys grid, and let the ic remapper transfer dp on dyn grid
-  // NOTE: HybridVCoord already stores hyai and hybi deltas as packed views,
-  //       but it used KokkosKernels packs, which are incompatible with ekat::Pack.
-  //       If Homme switched to ekat::Pack, you could do the loop below with packs.
-  const auto ps0 = hvcoord.ps0;
-  const auto ps_ref = ps_gll.get_view<const Real*>();
-  const auto hyai = hvcoord.hybrid_ai;
-  const auto hybi = hvcoord.hybrid_bi;
-  const auto policy_dp = TPF::get_default_team_policy(ncols, nlevs);
-  Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
-                        [&](const int ilev) {
-       dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
-                         + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
-    });
-    team.team_barrier();
-  });
+  init_pseudo_density (ps_gll,pseudo_density_gll);
 
   // Import IC from the GLL grid to the dyn grid
   // NOTE: the remapper supports (dynamic) subfields, so we remap directly into
