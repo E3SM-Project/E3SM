@@ -591,6 +591,10 @@ void insert (const Data::Ptr& d, const Int ie, const Int ptridx, Real* array,
 namespace compose {
 namespace test {
 
+void set_cedr_urand_seed (unsigned int seed) {
+  cedr::util::set_urand_seed(seed);
+}
+
 int cedr_unittest () {
   int nerr = 0, ne;
   ne = cedr::local::unittest();

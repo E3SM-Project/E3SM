@@ -252,7 +252,10 @@ Int test_1eq_nonneg () {
       solve_1eq_bc_qp(n, w, a, b, xlo, xhi, y, x_ls);
       const Real rd_caas = reldif(x_caas, x1_caas, 2);
       const Real rd_ls = reldif(x_ls, x1_ls, 2);
-      if (rd_ls > 5e1*std::numeric_limits<Real>::epsilon() ||
+      // The two methods give the same solution up to roundoff, but the difference can be
+      // a few times larger than 5e1*eps for some (random) inputs, so use the same 1e3*eps
+      // tolerance as the other checks in this file.
+      if (rd_ls > 1e3*std::numeric_limits<Real>::epsilon() ||
           rd_caas > 1e1*std::numeric_limits<Real>::epsilon()) {
         pr(puf(rd_ls) pu(rd_caas));
         if (verbose) {

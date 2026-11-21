@@ -50,7 +50,7 @@ void TestRandomized::init_tracers_vector () {
     }
 }
 
-static Real urand () { return rand() / ((Real) RAND_MAX + 1.0); }
+using util::urand;
 
 void TestRandomized::generate_rho (Values& v) {
   auto r = v.rhom();
