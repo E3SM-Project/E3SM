@@ -178,6 +178,14 @@ void RRTMGPRadiation::create_requests() {
   m_extra_clnclrsky_diag = m_params.get<bool>("extra_clnclrsky_diag", false);
   m_extra_clnsky_diag    = m_params.get<bool>("extra_clnsky_diag", false);
 
+  // Partitioning of the SW band that straddles the visible/near-IR transition
+  // (0.7 micron) between the VIS and NIR surface albedos/fluxes. By default,
+  // use the asymmetric 55.5/44.5 VIS/NIR split from Tolento et al. (2025,
+  // doi:10.1029/2025JD043796), consistent with EAM's rad_asym_splt option.
+  // Setting do_asym_vis_nir_split=false recovers the legacy 50/50 split.
+  const bool do_asym_vis_nir_split = m_params.get<bool>("do_asym_vis_nir_split", true);
+  m_sw_split_band_vis_frac = do_asym_vis_nir_split ? 0.555 : 0.5;
+
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_mid, K  , grid_name);
   add_field<Computed>("SW_flux_dn", scalar3d_int, W/m2, grid_name);
@@ -1004,7 +1012,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
         ncol, nswbands,
         sfc_alb_dir_vis_k, sfc_alb_dir_nir_k,
         sfc_alb_dif_vis_k, sfc_alb_dif_nir_k,
-        sfc_alb_dir_k, sfc_alb_dif_k);
+        sfc_alb_dir_k, sfc_alb_dif_k,
+        m_sw_split_band_vis_frac);
                    );
       // Compute cloud optical properties here?
 
@@ -1073,7 +1082,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
           ncol, kbot_k, nswbands,
           sw_bnd_flux_dir_k, sw_bnd_flux_dif_k,
           sfc_flux_dir_vis_k, sfc_flux_dir_nir_k,
-          sfc_flux_dif_vis_k, sfc_flux_dif_nir_k
+          sfc_flux_dif_vis_k, sfc_flux_dif_nir_k,
+          m_sw_split_band_vis_frac
       );
                    );
 
