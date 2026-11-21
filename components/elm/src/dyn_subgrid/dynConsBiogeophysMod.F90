@@ -101,7 +101,7 @@ contains
        num_nolakec, filter_nolakec, &
        num_lakec, filter_lakec, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars &
-       , energyflux_vars, dtime)
+       , energyflux_vars, dtime, weights_updated)
     !
     ! Should be called AFTER all subgrid weight updates this time step
     !
@@ -120,6 +120,7 @@ contains
     type(lakestate_type)     , intent(in)    :: lakestate_vars
     type(energyflux_type)    , intent(inout) :: energyflux_vars
     real(r8)                 , intent(in)    :: dtime ! land model time step (sec)
+    logical                  , intent(in)    :: weights_updated ! subgrid weights may have changed since dyn_hwcontent_init
 
     !
     ! !LOCAL VARIABLES:
@@ -134,6 +135,7 @@ contains
              liq1 => grc_ws%liq1 ,&
              ice1 => grc_ws%ice1 ,&
              heat1 => grc_es%heat1 ,&
+             liquid_water_temp1 => grc_es%liquid_water_temp1 ,&
              liq2 => grc_ws%liq2 ,&
              ice2 => grc_ws%ice2 ,&
              heat2 => grc_es%heat2 ,&
@@ -142,19 +144,31 @@ contains
     begg = bounds%begg
     endg = bounds%endg
 
-    call dyn_water_content(bounds, &
-         num_nolakec, filter_nolakec, &
-         num_lakec, filter_lakec, &
-         soilhydrology_vars, lakestate_vars, &
-         liquid_mass = liq2(bounds%begg:bounds%endg), &
-         ice_mass    = ice2(bounds%begg:bounds%endg))
+    if (weights_updated) then
+       call dyn_water_content(bounds, &
+            num_nolakec, filter_nolakec, &
+            num_lakec, filter_lakec, &
+            soilhydrology_vars, lakestate_vars, &
+            liquid_mass = liq2(bounds%begg:bounds%endg), &
+            ice_mass    = ice2(bounds%begg:bounds%endg))
 
-    call dyn_heat_content( bounds,                                &
-         num_nolakec, filter_nolakec, &
-         num_lakec, filter_lakec, &
-         urbanparams_vars, soilstate_vars, soilhydrology_vars, &
-         heat_grc = heat2(bounds%begg:bounds%endg), &
-         liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg))
+       call dyn_heat_content( bounds,                                &
+            num_nolakec, filter_nolakec, &
+            num_lakec, filter_lakec, &
+            urbanparams_vars, soilstate_vars, soilhydrology_vars, &
+            heat_grc = heat2(bounds%begg:bounds%endg), &
+            liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg))
+    else
+       ! No subgrid weight, filter or water and heat state changed since
+       ! dyn_hwcontent_init in this step, so recomputing the contents would
+       ! give the values from before land cover change bit for bit
+       do g = begg, endg
+          liq2(g)  = liq1(g)
+          ice2(g)  = ice1(g)
+          heat2(g) = heat1(g)
+          liquid_water_temp2(g) = liquid_water_temp1(g)
+       end do
+    end if
 
     if (get_for_testing_zero_dynbal_fluxes()) then
        do g = begg, endg

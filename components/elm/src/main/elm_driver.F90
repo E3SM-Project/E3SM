@@ -72,12 +72,12 @@ module elm_driver
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
-  use VerticalProfileMod   , only : decomp_vertprofiles
+  use VerticalProfileMod   , only : decomp_vertprofiles, decomp_vertprofiles_static
   use FireMod              , only : FireInterp
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
   use pdepStreamMod          , only : pdep_interp
-  use ActiveLayerMod         , only : alt_calc
+  use ActiveLayerMod         , only : alt_calc, alt_annual_update_step
   use CH4Mod                 , only : CH4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
@@ -158,6 +158,7 @@ module elm_driver
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
   use FanStreamMod           , only : fanstream_interp
+  use dynSubgridControlMod   , only : get_subgrid_weights_updated, get_do_harvest
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -197,6 +198,14 @@ module elm_driver
   private :: elm_drv_patch2col
   private :: elm_drv_init      ! Initialization of variables needed from previous timestep
   private :: write_diagnostic  ! Write diagnostic information to log file
+  !
+  ! !PRIVATE DATA:
+  ! Whether the vegetation and column C, N and P state summaries computed at the
+  ! end of EcosystemDynLeaching in the previous time step still match the C, N
+  ! and P state. Set after the main physics loop, cleared after a restart write,
+  ! and .false. at the start of every run. Any code added after
+  ! EcosystemDynLeaching that changes C, N or P state must clear it.
+  logical, private, save :: cnp_end_summaries_valid = .false.
   !-----------------------------------------------------------------------
 
 contains
@@ -245,6 +254,9 @@ contains
     character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump
     type(bounds_type)    :: bounds_proc
+    logical              :: cnp_summaries_current   ! veg and column C, N and P summaries match the current state
+    logical              :: cnpinit_summaries_current ! the end-of-step summaries of the previous step are still current
+    logical              :: decomp_vert_all         ! compute the decomposition profiles of inactive points too
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
@@ -328,6 +340,13 @@ contains
     ! the associated filter updates, too (otherwise we get a carbon balance error)
     ! ==================================================================================
 
+    ! The profiles of inactive points depend only on inputs that cannot change while
+    ! decomp_vertprofiles_static() is .true., except in the steps in which alt_calc
+    ! updates altmax_lastyear_indx. In the other steps they still hold the values
+    ! computed in the last step that included them, so only the active points are
+    ! computed. Here get_subgrid_weights_updated() still refers to the previous step.
+    decomp_vert_all = (.not. decomp_vertprofiles_static()) .or. alt_annual_update_step()
+
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -346,12 +365,19 @@ contains
 
        if(use_fates .or. use_cn) then
 
-          call decomp_vertprofiles(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, &
-               filter_inactive_and_active(nc)%soilc, &
-               filter_inactive_and_active(nc)%num_soilp, &
-               filter_inactive_and_active(nc)%soilp, &
-               soilstate_vars, canopystate_vars, cnstate_vars)
+          if (decomp_vert_all) then
+             call decomp_vertprofiles(bounds_clump, &
+                  filter_inactive_and_active(nc)%num_soilc, &
+                  filter_inactive_and_active(nc)%soilc, &
+                  filter_inactive_and_active(nc)%num_soilp, &
+                  filter_inactive_and_active(nc)%soilp, &
+                  soilstate_vars, canopystate_vars, cnstate_vars)
+          else
+             call decomp_vertprofiles(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, &
+                  soilstate_vars, canopystate_vars, cnstate_vars)
+          end if
        end if
        call t_stopf("decomp_vert")
     end do
@@ -360,6 +386,18 @@ contains
     ! ============================================================================
     ! Zero fluxes for transient land cover
     ! ============================================================================
+
+    ! The state summaries in cnpinit repeat those at the end of
+    ! EcosystemDynLeaching in the previous step: nothing after them changes the
+    ! C, N or P state, and the soil filters change only in dynSubgrid_driver.
+    ! The veg ZeroDWT calls zero dispveg*, storveg*, totveg* and totpft* at all
+    ! patches before the summaries rewrite the filter patches; outside the
+    ! filters these are already zero unless the filters changed in the previous
+    ! step. get_subgrid_weights_updated() still refers to the previous step here
+    ! (it is .true. on the first step of a run or restart).
+    cnpinit_summaries_current = cnp_end_summaries_valid .and. use_cn .and. .not. use_fates &
+         .and. .not. get_subgrid_weights_updated() .and. .not. use_elm_interface &
+         .and. .not. use_fan .and. .not. iac_present
 
     !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
     do nc = 1,nclumps
@@ -382,7 +420,9 @@ contains
        if (use_cn) then
           call t_startf('cnpvegzero')
 
-          call veg_cs%ZeroDwt(bounds_clump)
+          if (.not. cnpinit_summaries_current) then
+             call veg_cs%ZeroDwt(bounds_clump)
+          end if
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
              call c13_col_cf%ZeroDWT(bounds_clump)
@@ -391,33 +431,45 @@ contains
              call c14_grc_cf%ZeroDWT(bounds_clump)
              call c14_col_cf%ZeroDWT(bounds_clump)
           end if
-          call veg_ns%ZeroDWT(bounds_clump)
-          call veg_ps%ZeroDWT(bounds_clump)
+          if (.not. cnpinit_summaries_current) then
+             call veg_ns%ZeroDWT(bounds_clump)
+             call veg_ps%ZeroDWT(bounds_clump)
+          end if
           call t_stopf('cnpvegzero')
        end if
 
        if (use_cn .or. use_fates) then
           call t_startf('cnpzero')
-          call grc_cf%ZeroDWT(bounds_clump)
-          call col_cf%ZeroDWT(bounds_clump)
-          call grc_nf%ZeroDWT(bounds_clump)
-          call col_nf%ZeroDWT(bounds_clump)
-          call grc_pf%ZeroDWT(bounds_clump)
-          call col_pf%ZeroDWT(bounds_clump)
+          ! The column and gridcell dwt fluxes are written only by the
+          ! dynSubgrid_driver conservation updates, in steps where weights may
+          ! have changed, and the gridcell wood harvest fluxes only with harvest.
+          ! So they need zeroing only after such a step. Here
+          ! get_subgrid_weights_updated() still refers to the previous step (it
+          ! is .true. on the first step of a run or restart).
+          if (get_subgrid_weights_updated() .or. get_do_harvest() .or. iac_present .or. use_fates) then
+             call grc_cf%ZeroDWT(bounds_clump)
+             call col_cf%ZeroDWT(bounds_clump)
+             call grc_nf%ZeroDWT(bounds_clump)
+             call col_nf%ZeroDWT(bounds_clump)
+             call grc_pf%ZeroDWT(bounds_clump)
+             call col_pf%ZeroDWT(bounds_clump)
+          end if
           call t_stopf('cnpzero')
        end if
 
        call t_startf('cnpvegsumm')
        if(use_cn) then
-          call veg_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call veg_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call veg_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          if (.not. cnpinit_summaries_current) then
+             call veg_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+             call veg_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+             call veg_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          end if
 
        elseif(use_fates)then
           ! In this scenario, we simply zero all of the
@@ -431,14 +483,16 @@ contains
 
        if(use_cn .or. use_fates)then
 
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+          if (.not. cnpinit_summaries_current) then
+             call col_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+          end if
 
           call BeginGridCBalance(bounds_clump, col_cs, grc_cs)
           call BeginGridNBalance(bounds_clump, col_ns, grc_ns)
@@ -467,6 +521,7 @@ contains
        grc_cs, grc_cf , glc2lnd_vars,  crop_vars, iac2lnd_vars)
     call t_stopf('dyn_subgrid')
 
+    cnp_summaries_current = .false.
     if (use_cn  .or. use_fates) then
        nstep = get_nstep()
 
@@ -477,40 +532,46 @@ contains
        else
           call t_startf('cnbalchk_at_grid')
 
+          ! If dynSubgrid_driver changed no weights, it changed no C, N or P
+          ! state, so the summaries from cnpinit are still current
+          cnp_summaries_current = use_cn .and. .not. use_fates .and. .not. get_subgrid_weights_updated()
+
           !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
           do nc = 1,nclumps
              call get_clump_bounds(nc, bounds_clump)
 
-             if(use_cn) then
-                call veg_cs%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+             if (.not. cnp_summaries_current) then
+                if(use_cn) then
+                   call veg_cs%Summary(bounds_clump, &
+                        filter(nc)%num_soilc, filter(nc)%soilc, &
+                        filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
 
-                call veg_ns%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+                   call veg_ns%Summary(bounds_clump, &
+                        filter(nc)%num_soilc, filter(nc)%soilc, &
+                        filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
 
-                call veg_ps%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+                   call veg_ps%Summary(bounds_clump, &
+                        filter(nc)%num_soilc, filter(nc)%soilc, &
+                        filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
 
-             elseif(use_fates)then
-                ! In this scenario, we simply zero all of the
-                ! column level variables that would had been upscaled
-                ! in the veg summary with p2c
-                call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-                call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
-                call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                elseif(use_fates)then
+                   ! In this scenario, we simply zero all of the
+                   ! column level variables that would had been upscaled
+                   ! in the veg summary with p2c
+                   call col_cs%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                   call col_ns%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                   call col_ps%ZeroForFates(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                end if
+
+                call col_cs%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
+
+                call col_ns%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
+
+                call col_ps%Summary(bounds_clump, &
+                     filter(nc)%num_soilc, filter(nc)%soilc)
              end if
-
-             call col_cs%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc)
-
-             call col_ns%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc)
-
-             call col_ps%Summary(bounds_clump, &
-                  filter(nc)%num_soilc, filter(nc)%soilc)
 
              call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
@@ -527,6 +588,10 @@ contains
           end do
           !$OMP END PARALLEL DO
           call t_stopf('cnbalchk_at_grid')
+
+          ! The summaries are now current; nothing below changes C, N or P
+          ! state before the beginning balances
+          cnp_summaries_current = use_cn .and. .not. use_fates
 
        end if
     end if
@@ -563,15 +628,17 @@ contains
        call t_startf('begcnpbal')
        ! call veg summary before col summary, for p2c
        if (use_cn) then
-          call veg_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call veg_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call veg_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          if (.not. cnp_summaries_current) then
+             call veg_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+             call veg_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+             call veg_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          end if
        elseif(use_fates)then
           ! In this scenario, we simply zero all of the
           ! column level variables that would had been upscaled
@@ -585,12 +652,14 @@ contains
 
        if (use_cn  .or. use_fates) then
           call t_startf('begcnpbalwf')
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-          call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+          if (.not. cnp_summaries_current) then
+             call col_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             call col_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+          end if
           call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_cs)
@@ -914,10 +983,12 @@ contains
        !  NEEDS TO BE AFTER SnowFiler is rebuilt, otherwise there
        !  can be zero snow layers but an active column in filter)
 
+       call t_startf('hnd_aerosolmasses')
        call AerosolMasses( bounds_clump,                                   &
             num_on=filter(nc)%num_snowc, filter_on=filter(nc)%snowc,       &
             num_off=filter(nc)%num_nosnowc, filter_off=filter(nc)%nosnowc, &
             aerosol_vars=aerosol_vars)
+       call t_stopf('hnd_aerosolmasses')
 
        call t_stopf('hydro without drainage')
 
@@ -1331,6 +1402,10 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    ! EcosystemDynLeaching computed the C, N and P state summaries of the
+    ! current state and soil filters in the loop above
+    cnp_end_summaries_valid = use_cn .and. .not. use_fates
+
     ! Pass fates seed dispersal information to all nodes
     if (use_fates) then
        if (fates_seeddisp_cadence /= fates_dispersal_cadence_none) call alm_fates%WrapGlobalSeedDispersal()
@@ -1497,6 +1572,8 @@ contains
 
 
           call t_stopf('elm_drv_io_wrest')
+          ! Recompute the summaries in cnpinit after a restart write
+          cnp_end_summaries_valid = .false.
        end if
        call t_stopf('elm_drv_io')
 

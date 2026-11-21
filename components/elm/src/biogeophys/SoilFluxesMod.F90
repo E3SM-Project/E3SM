@@ -10,7 +10,7 @@ module SoilFluxesMod
   use abortutils	, only : endrun
   use elm_varctl	, only : iulog, use_firn_percolation_and_compaction, use_finetop_rad
   use perf_mod, only: t_startf, t_stopf
-  use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_patch_per_col
+  use elm_varpar	, only : nlevsno, nlevgrnd, nlevurb, max_col_npfts
   use atm2lndType	, only : atm2lnd_type
   use CanopyStateType   , only : canopystate_type
   use EnergyFluxType    , only : energyflux_type
@@ -233,7 +233,7 @@ contains
          sumwt(c) = 0._r8
       end do
 
-      do pi = 1,max_patch_per_col
+      do pi = 1,max_col_npfts
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             if ( pi <= col_pp%npfts(c) ) then

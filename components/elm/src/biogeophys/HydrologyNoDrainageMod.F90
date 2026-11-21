@@ -23,6 +23,7 @@ Module HydrologyNoDrainageMod
   use VegetationType    , only : veg_pp
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use elm_instMod       , only : alm_fates
+  use perf_mod          , only : t_startf, t_stopf
 
 
   use timeinfoMod
@@ -174,6 +175,7 @@ contains
       ! Determine initial snow/no-snow filters (will be modified possibly by
       ! routines CombineSnowLayers and DivideSnowLayers below
 
+      call t_startf('hnd_snowwater')
       call BuildSnowFilter(bounds, num_nolakec, filter_nolakec, &
            num_snowc, filter_snowc, num_nosnowc, filter_nosnowc)
 
@@ -182,6 +184,9 @@ contains
 
       call SnowWater(bounds, num_snowc, filter_snowc, num_nosnowc, filter_nosnowc, &
            atm2lnd_vars, aerosol_vars)
+      call t_stopf('hnd_snowwater')
+
+      call t_startf('hnd_surfinfl')
 
       ! mapping soilmoist from CLM to VIC layers for runoff calculations
       if (use_vichydro) then
@@ -210,10 +215,13 @@ contains
       end if
       !------------------------------------------------------------------------------------
 
+      call t_stopf('hnd_surfinfl')
+
       !!TODO:  need to fix the waterstate_vars dependence here.
 #ifndef _OPENACC
 #endif
 
+      call t_startf('hnd_rootfrac')
       call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
            filter_hydrologyc, soilstate_vars, canopystate_vars, energyflux_vars)
 
@@ -227,6 +235,9 @@ contains
       if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
                                                       soilstate_vars)
 #endif
+      call t_stopf('hnd_rootfrac')
+
+      call t_startf('hnd_soilwater')
       !------------------------------------------------------------------------------------
       if (use_pflotran .and. pf_hmode) then
 
@@ -248,6 +259,7 @@ contains
          ! use the saved value to calculate the tendency
          call eval_tsl_moist_tend(filter_hydrologyc, num_hydrologyc)
       end if
+      call t_stopf('hnd_soilwater')
  
 #ifndef _OPENACC
 #endif
@@ -258,6 +270,7 @@ contains
               soilhydrology_vars)
       end if
 
+      call t_startf('hnd_watertable')
       !------------------------------------------------------------------------------------
       if (use_pflotran .and. pf_hmode) then
 
@@ -274,11 +287,13 @@ contains
       !------------------------------------------------------------------------------------
       end if
       !------------------------------------------------------------------------------------
+      call t_stopf('hnd_watertable')
 
 
 #ifndef _OPENACC
 #endif
       
+      call t_startf('hnd_snowlayers')
       if (use_firn_percolation_and_compaction) then
          call SnowCapping(bounds, num_nolakec, filter_nolakec, num_snowc, filter_snowc, &
                           aerosol_vars)
@@ -319,6 +334,9 @@ contains
 
       call BuildSnowFilter(bounds, num_nolakec, filter_nolakec, &
            num_snowc, filter_snowc, num_nosnowc, filter_nosnowc)
+      call t_stopf('hnd_snowlayers')
+
+      call t_startf('hnd_diag')
 
       ! For columns where snow exists, accumulate 'time-covered-by-snow' counters.
       ! Otherwise, re-zero counter, since it is bareland
@@ -558,6 +576,7 @@ contains
          snw_rds_top(c)     = spval
          sno_liq_top(c)     = spval
       end do
+      call t_stopf('hnd_diag')
 
     end associate
 

@@ -17,6 +17,8 @@ module NitrogenStateUpdate2Mod
   use pftvarcon           , only : iscft
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode
+  use elm_varctl          , only : iac_present
+  use dynSubgridControlMod, only : get_do_harvest
   !
   implicit none
   save
@@ -133,64 +135,83 @@ contains
          ivt => veg_pp%itype        & ! Input:  [integer  (:) ]  pft vegetation type
          )
 
-      if (.not.(use_pflotran .and. pf_cmode)) then
-         ! column-level nitrogen fluxes from harvest mortality
+      if (.not. (get_do_harvest() .or. iac_present)) then
+         ! Without CNHarvest every harvest flux below keeps the +0 set by CNZero
+         ! (veg_nf_setvalues zero_harvest block, col_nf_setvalues), and
+         ! x - (+0)*dt is x. The litter and CWD pools are not -0 here, since
+         ! NitrogenStateUpdate2 just added gap mortality fluxes that start at +0
+         ! and are only added to, so x + (+0)*dt is x too. Only the crop harvest
+         ! to the product pool, set by crop phenology, changes state.
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+            if (iscft(ivt(p))) then ! skip 2 generic crops
+               veg_ns%livestemn(p)= veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_prod1n(p)  * dt
+               veg_ns%leafn(p)    = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_prod1n(p)      * dt
+               veg_ns%grainn(p)   = veg_ns%grainn(p)     - veg_nf%hrv_grainn_to_prod1n(p)     * dt
+            end if
+         end do
+      else
 
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               col_ns%decomp_npools_vr(c,j,i_met_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%harvest_n_to_litr_met_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%harvest_n_to_litr_cel_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%harvest_n_to_litr_lig_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cwd)     = &
-                    col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%harvest_n_to_cwdn(c,j)       * dt
+         if (.not.(use_pflotran .and. pf_cmode)) then
+            ! column-level nitrogen fluxes from harvest mortality
+
+            do j = 1,nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  col_ns%decomp_npools_vr(c,j,i_met_lit) = &
+                       col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%harvest_n_to_litr_met_n(c,j) * dt
+                  col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
+                       col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%harvest_n_to_litr_cel_n(c,j) * dt
+                  col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
+                       col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%harvest_n_to_litr_lig_n(c,j) * dt
+                  col_ns%decomp_npools_vr(c,j,i_cwd)     = &
+                       col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%harvest_n_to_cwdn(c,j)       * dt
+               end do
             end do
+
+         endif
+
+         ! patch-level nitrogen fluxes from harvest mortality
+
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+
+            ! displayed pools
+            veg_ns%leafn(p)      = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_litter(p)      * dt
+            veg_ns%frootn(p)     = veg_ns%frootn(p)     - veg_nf%hrv_frootn_to_litter(p)     * dt
+            veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_litter(p)  * dt
+            veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod10n(p) * dt
+            veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod100n(p)* dt
+            veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%hrv_livecrootn_to_litter(p) * dt
+            veg_ns%deadcrootn(p) = veg_ns%deadcrootn(p) - veg_nf%hrv_deadcrootn_to_litter(p) * dt
+            veg_ns%retransn(p)   = veg_ns%retransn(p)   - veg_nf%hrv_retransn_to_litter(p)   * dt
+            veg_ns%npool(p)      = veg_ns%npool(p)      - veg_nf%hrv_npool_to_litter(p)     * dt
+
+          if (iscft(ivt(p))) then ! skip 2 generic crops
+              veg_ns%livestemn(p)= veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_prod1n(p)  * dt
+              veg_ns%leafn(p)    = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_prod1n(p)      * dt
+              veg_ns%grainn(p)   = veg_ns%grainn(p)     - veg_nf%hrv_grainn_to_prod1n(p)     * dt
+          end if
+
+            ! storage pools
+            veg_ns%leafn_storage(p)      = veg_ns%leafn_storage(p)      - veg_nf%hrv_leafn_storage_to_litter(p)      * dt
+            veg_ns%frootn_storage(p)     = veg_ns%frootn_storage(p)     - veg_nf%hrv_frootn_storage_to_litter(p)     * dt
+            veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%hrv_livestemn_storage_to_litter(p)  * dt
+            veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%hrv_deadstemn_storage_to_litter(p)  * dt
+            veg_ns%livecrootn_storage(p) = veg_ns%livecrootn_storage(p) - veg_nf%hrv_livecrootn_storage_to_litter(p) * dt
+            veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) - veg_nf%hrv_deadcrootn_storage_to_litter(p) * dt
+
+            ! transfer pools
+            veg_ns%leafn_xfer(p)      = veg_ns%leafn_xfer(p)      - veg_nf%hrv_leafn_xfer_to_litter(p)      *dt
+            veg_ns%frootn_xfer(p)     = veg_ns%frootn_xfer(p)     - veg_nf%hrv_frootn_xfer_to_litter(p)     *dt
+            veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%hrv_livestemn_xfer_to_litter(p)  *dt
+            veg_ns%deadstemn_xfer(p)  = veg_ns%deadstemn_xfer(p)  - veg_nf%hrv_deadstemn_xfer_to_litter(p)  *dt
+            veg_ns%livecrootn_xfer(p) = veg_ns%livecrootn_xfer(p) - veg_nf%hrv_livecrootn_xfer_to_litter(p) *dt
+            veg_ns%deadcrootn_xfer(p) = veg_ns%deadcrootn_xfer(p) - veg_nf%hrv_deadcrootn_xfer_to_litter(p) *dt
+
          end do
 
-      endif
-
-      ! patch-level nitrogen fluxes from harvest mortality
-
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-
-         ! displayed pools
-         veg_ns%leafn(p)      = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_litter(p)      * dt
-         veg_ns%frootn(p)     = veg_ns%frootn(p)     - veg_nf%hrv_frootn_to_litter(p)     * dt
-         veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_litter(p)  * dt
-         veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod10n(p) * dt
-         veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  - veg_nf%hrv_deadstemn_to_prod100n(p)* dt
-         veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%hrv_livecrootn_to_litter(p) * dt
-         veg_ns%deadcrootn(p) = veg_ns%deadcrootn(p) - veg_nf%hrv_deadcrootn_to_litter(p) * dt
-         veg_ns%retransn(p)   = veg_ns%retransn(p)   - veg_nf%hrv_retransn_to_litter(p)   * dt
-         veg_ns%npool(p)      = veg_ns%npool(p)      - veg_nf%hrv_npool_to_litter(p)     * dt
-
-       if (iscft(ivt(p))) then ! skip 2 generic crops
-           veg_ns%livestemn(p)= veg_ns%livestemn(p)  - veg_nf%hrv_livestemn_to_prod1n(p)  * dt
-           veg_ns%leafn(p)    = veg_ns%leafn(p)      - veg_nf%hrv_leafn_to_prod1n(p)      * dt
-           veg_ns%grainn(p)   = veg_ns%grainn(p)     - veg_nf%hrv_grainn_to_prod1n(p)     * dt
-       end if
-
-         ! storage pools
-         veg_ns%leafn_storage(p)      = veg_ns%leafn_storage(p)      - veg_nf%hrv_leafn_storage_to_litter(p)      * dt
-         veg_ns%frootn_storage(p)     = veg_ns%frootn_storage(p)     - veg_nf%hrv_frootn_storage_to_litter(p)     * dt
-         veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%hrv_livestemn_storage_to_litter(p)  * dt
-         veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%hrv_deadstemn_storage_to_litter(p)  * dt
-         veg_ns%livecrootn_storage(p) = veg_ns%livecrootn_storage(p) - veg_nf%hrv_livecrootn_storage_to_litter(p) * dt
-         veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) - veg_nf%hrv_deadcrootn_storage_to_litter(p) * dt
-
-         ! transfer pools
-         veg_ns%leafn_xfer(p)      = veg_ns%leafn_xfer(p)      - veg_nf%hrv_leafn_xfer_to_litter(p)      *dt
-         veg_ns%frootn_xfer(p)     = veg_ns%frootn_xfer(p)     - veg_nf%hrv_frootn_xfer_to_litter(p)     *dt
-         veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%hrv_livestemn_xfer_to_litter(p)  *dt
-         veg_ns%deadstemn_xfer(p)  = veg_ns%deadstemn_xfer(p)  - veg_nf%hrv_deadstemn_xfer_to_litter(p)  *dt
-         veg_ns%livecrootn_xfer(p) = veg_ns%livecrootn_xfer(p) - veg_nf%hrv_livecrootn_xfer_to_litter(p) *dt
-         veg_ns%deadcrootn_xfer(p) = veg_ns%deadcrootn_xfer(p) - veg_nf%hrv_deadcrootn_xfer_to_litter(p) *dt
-
-      end do
+      end if
 
     end associate
 

@@ -54,6 +54,8 @@ module ColumnDataType
   implicit none
   save
   public
+  ! Number of filtered entries processed together by flux setvalues routines.
+  integer, parameter, private :: flux_setvalues_block_size = 32
   !
   ! NOTE(bandre, 2013-10) according to Charlie Koven, nfix_timeconst
   ! is currently used as a flag and rate constant. Rate constant: time
@@ -3074,59 +3076,64 @@ contains
     integer  :: fp,fc           ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     integer  :: nlev
+    logical  :: do_1m           ! level j counts in the 1 meter integrals
+    real(r8) :: dz_1m           ! thickness of level j counted in the 1 meter integrals
     !-----------------------------------------------------------------------
 
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
-    ! vertically integrate each of the decomposing C pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%decomp_cpools(c,l) = 0._r8
-       end do
-    end do
-
-    do l = 1, ndecomp_pools
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_cpools(c,l) = &
-                  this%decomp_cpools(c,l) + &
-                  this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
+    ! vertically integrate each of the decomposing C pools, and for vertically
+    ! resolved soil BGC also to 1 meter in the same pass, so that each level of
+    ! decomp_cpools_vr is read once. Each sum keeps its terms and order over j.
+    maxdepth = 1._r8
     if ( nlevdecomp > 1) then
-       ! vertically integrate each of the decomposing C pools to 1 meter
-       maxdepth = 1._r8
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_cpools_1m(c,l) = 0._r8
           end do
        end do
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_cpools_1m(c,l) = &
-                        this%decomp_cpools_1m(c,l) + &
-                        this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_cpools_1m(c,l) = &
-                        this%decomp_cpools_1m(c,l) + &
-                        this%decomp_cpools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
+    end if
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_cpools(c,l) = 0._r8
        end do
+       do j = 1, nlev
+          ! thickness of level j counted in the 1 meter integral, if any
+          do_1m = .false.
+          if ( nlevdecomp > 1 .and. j <= nlevdecomp ) then
+             if ( zisoi(j) <= maxdepth ) then
+                do_1m = .true.
+                dz_1m = dzsoi_decomp(j)
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do_1m = .true.
+                dz_1m = maxdepth - zisoi(j-1)
+             endif
+          end if
+          if (do_1m) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools(c,l) = &
+                     this%decomp_cpools(c,l) + &
+                     this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+                this%decomp_cpools_1m(c,l) = &
+                     this%decomp_cpools_1m(c,l) + &
+                     this%decomp_cpools_vr(c,j,l) * dz_1m
+             end do
+          else
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools(c,l) = &
+                     this%decomp_cpools(c,l) + &
+                     this%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
+             end do
+          end if
+       end do
+    end do
 
+    if ( nlevdecomp > 1) then
        ! total litter carbon in the top meter (TOTLITC_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
@@ -4293,6 +4300,8 @@ contains
     integer  :: fp,fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
     integer  :: nlev
+    logical  :: do_1m       ! level j counts in the 1 meter integrals
+    real(r8) :: dz_1m       ! thickness of level j counted in the 1 meter integrals
     !-----------------------------------------------------------------------
 
     ! vertically integrate NO3 NH4 N2O pools
@@ -4325,53 +4334,58 @@ contains
        end do
     end do
 
-    ! vertically integrate each of the decomposing N pools
-    do l = 1, ndecomp_pools
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%decomp_npools(c,l) = 0._r8
-       end do
-       do j = 1, nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_npools(c,l) = &
-                  this%decomp_npools(c,l) + &
-                  this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
-
-    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+    ! vertically integrate each of the decomposing N pools, and for vertically
+    ! resolved soil BGC also to 1 meter in the same pass, so that each level of
+    ! decomp_npools_vr is read once. Each sum keeps its terms and order over j.
+    maxdepth = 1._r8
     if ( nlevdecomp > 1) then
-
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_npools_1m(c,l) = 0._r8
           end do
        end do
-
-       ! vertically integrate each of the decomposing n pools to 1 meter
-       maxdepth = 1._r8
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp
-             if ( zisoi(j) <= maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_npools_1m(c,l) = &
-                        this%decomp_npools_1m(c,l) + &
-                        this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             elseif ( zisoi(j-1) < maxdepth ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_npools_1m(c,l) = &
-                        this%decomp_npools_1m(c,l) + &
-                        this%decomp_npools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-                end do
-             endif
-          end do
+    end if
+    do l = 1, ndecomp_pools
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_npools(c,l) = 0._r8
        end do
+       do j = 1, nlev
+          ! thickness of level j counted in the 1 meter integral, if any
+          do_1m = .false.
+          if ( nlevdecomp > 1 .and. j <= nlevdecomp ) then
+             if ( zisoi(j) <= maxdepth ) then
+                do_1m = .true.
+                dz_1m = dzsoi_decomp(j)
+             elseif ( zisoi(j-1) < maxdepth ) then
+                do_1m = .true.
+                dz_1m = maxdepth - zisoi(j-1)
+             endif
+          end if
+          if (do_1m) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_npools(c,l) = &
+                     this%decomp_npools(c,l) + &
+                     this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+                this%decomp_npools_1m(c,l) = &
+                     this%decomp_npools_1m(c,l) + &
+                     this%decomp_npools_vr(c,j,l) * dz_1m
+             end do
+          else
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_npools(c,l) = &
+                     this%decomp_npools(c,l) + &
+                     this%decomp_npools_vr(c,j,l) * dzsoi_decomp(j)
+             end do
+          end if
+       end do
+    end do
+
+    ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+    if ( nlevdecomp > 1) then
 
        ! total litter nitrogen to 1 meter (TOTLITN_1m)
        do fc = 1,num_soilc
@@ -5336,7 +5350,11 @@ contains
     integer  :: c,j,k,l   ! indices
     integer  :: fc       ! lake filter indices
     real(r8) :: maxdepth    ! depth to integrate soil variables
+    logical  :: do_1m       ! level j counts in the 1 meter integrals
+    real(r8) :: dz_1m       ! thickness of level j counted in the 1 meter integrals
     !-----------------------------------------------------------------------
+   ! The inorganic P pools, sminp_vr, sminp and ptrunc are integrated in one
+   ! pass over the levels (each sum keeps its order over j)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%solutionp(c) =0._r8
@@ -5344,6 +5362,8 @@ contains
       this%secondp(c)   =0._r8
       this%occlp(c)     =0._r8
       this%primp(c)     =0._r8
+      this%sminp(c)     =0._r8
+      this%ptrunc(c)    =0._r8
    end do
 
    do j = 1, nlevdecomp
@@ -5364,26 +5384,25 @@ contains
          this%primp(c) = &
               this%primp(c) + &
               this%primp_vr(c,j) * dzsoi_decomp(j)
+
+         ! total sminp
+         this%sminp_vr(c,j) = this%solutionp_vr(c,j) + &
+                                  this%labilep_vr(c,j) + &
+                                  this%secondp_vr(c,j)
+         this%sminp(c) =  this%sminp(c) + &
+         this%sminp_vr(c,j) * dzsoi_decomp(j)
+
+         ! total col_ptrunc
+         this%ptrunc(c) = &
+              this%ptrunc(c) + &
+              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
       end do
    end do
 
-   ! vertically integrate each of the decomposing P pools
-   do l = 1, ndecomp_pools
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%decomp_ppools(c,l) = 0._r8
-      end do
-      do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%decomp_ppools(c,l) = &
-                 this%decomp_ppools(c,l) + &
-                 this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
-         end do
-      end do
-   end do
-
-   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+   ! vertically integrate each of the decomposing P pools, and for vertically
+   ! resolved soil BGC also to 1 meter in the same pass, so that each level of
+   ! decomp_ppools_vr is read once. Each sum keeps its terms and order over j.
+   maxdepth = 1._r8
    if ( nlevdecomp > 1) then
       do l = 1, ndecomp_pools
          do fc = 1,num_soilc
@@ -5391,28 +5410,47 @@ contains
             this%decomp_ppools_1m(c,l) = 0._r8
          end do
       end do
-
-      ! vertically integrate each of the decomposing n pools to 1 meter
-      maxdepth = 1._r8
-      do l = 1, ndecomp_pools
-         do j = 1, nlevdecomp
-            if ( zisoi(j) <= maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%decomp_ppools_1m(c,l) = &
-                       this%decomp_ppools_1m(c,l) + &
-                       this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
-               end do
-            elseif ( zisoi(j-1) < maxdepth ) then
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  this%decomp_ppools_1m(c,l) = &
-                       this%decomp_ppools_1m(c,l) + &
-                       this%decomp_ppools_vr(c,j,l) * (maxdepth - zisoi(j-1))
-               end do
-            endif
-         end do
+   end if
+   do l = 1, ndecomp_pools
+      do fc = 1,num_soilc
+         c = filter_soilc(fc)
+         this%decomp_ppools(c,l) = 0._r8
       end do
+      do j = 1, nlevdecomp
+         ! thickness of level j counted in the 1 meter integral, if any
+         do_1m = .false.
+         if ( nlevdecomp > 1 ) then
+            if ( zisoi(j) <= maxdepth ) then
+               do_1m = .true.
+               dz_1m = dzsoi_decomp(j)
+            elseif ( zisoi(j-1) < maxdepth ) then
+               do_1m = .true.
+               dz_1m = maxdepth - zisoi(j-1)
+            endif
+         end if
+         if (do_1m) then
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               this%decomp_ppools(c,l) = &
+                    this%decomp_ppools(c,l) + &
+                    this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+               this%decomp_ppools_1m(c,l) = &
+                    this%decomp_ppools_1m(c,l) + &
+                    this%decomp_ppools_vr(c,j,l) * dz_1m
+            end do
+         else
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               this%decomp_ppools(c,l) = &
+                    this%decomp_ppools(c,l) + &
+                    this%decomp_ppools_vr(c,j,l) * dzsoi_decomp(j)
+            end do
+         end if
+      end do
+   end do
+
+   ! for vertically-resolved soil biogeochemistry, calculate some diagnostics of carbon pools to a given depth
+   if ( nlevdecomp > 1) then
 
       ! total litter phosphorus to 1 meter (TOTLITN_1m)
       do fc = 1,num_soilc
@@ -5496,40 +5534,7 @@ contains
       end if
    end do
 
-   ! total sminp
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%sminp(c)      = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%sminp_vr(c,j) = this%solutionp_vr(c,j) + &
-                                  this%labilep_vr(c,j) + &
-                                  this%secondp_vr(c,j)
-      end do
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%sminp(c) =  this%sminp(c) + &
-         this%sminp_vr(c,j) * dzsoi_decomp(j)
-      end do
-   end do
-
-   ! total col_ntrunc
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      this%ptrunc(c) = 0._r8
-   end do
-   do j = 1, nlevdecomp
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%ptrunc(c) = &
-              this%ptrunc(c) + &
-              this%ptrunc_vr(c,j) * dzsoi_decomp(j)
-      end do
-   end do
+   ! (sminp_vr, sminp and ptrunc are computed with the inorganic P pools above)
 
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -7340,7 +7345,7 @@ contains
   end subroutine col_cf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope)
+  subroutine col_cf_summary(this, bounds, num_soilc, filter_soilc, isotope, hr_current)
     !
     ! !DESCRIPTION:
     ! column-level carbon flux summary calculations
@@ -7352,6 +7357,8 @@ contains
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     character(len=*)       , intent(in)    :: isotope
+    logical, optional      , intent(in)    :: hr_current ! true => somhr, lithr, decomp_cascade_hr and hr_vr
+                                                         ! are already set by col_cf_summary_for_ch4
     !
     ! !LOCAL VARIABLES:
     real(r8) :: nfixlags, dtime ! temp variables for making lagged npp
@@ -7359,6 +7366,7 @@ contains
     integer  :: fc              ! lake filter indices
     real(r8) :: maxdepth        ! depth to integrate soil variables
     integer  :: nlev
+    logical  :: skip_hr         ! skip recomputing the HR fluxes
     !-----------------------------------------------------------------------
     associate(&
          is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
@@ -7427,6 +7435,13 @@ contains
 
     endif
 
+    ! Without PFLOTRAN, the block below repeats col_cf_summary_for_ch4 exactly.
+    ! With hr_current, that routine already ran on unchanged decomp_cascade_hr_vr
+    ! (end of EcosystemDynNoLeaching2), so recomputing would give the same bits.
+    skip_hr = .false.
+    if (present(hr_current)) skip_hr = hr_current .and. .not. (use_pflotran .and. pf_cmode)
+
+    if (.not. skip_hr) then
     ! some zeroing
     do fc = 1,num_soilc
        c = filter_soilc(fc)
@@ -7491,6 +7506,7 @@ contains
           end do
        end do
     end do
+    end if ! .not. skip_hr
 
     !----------------------------------------------------------------
     ! bgc interface & pflotran:
@@ -7710,28 +7726,9 @@ contains
     end if
 
 
-    do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%plant_to_litter_cflux(c) = 0._r8
-        this%plant_to_cwd_cflux(c) = 0._r8
-        do j = 1, nlev
-            this%plant_to_litter_cflux(c) = &
-                this%plant_to_litter_cflux(c)  + &
-                this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_cflux(c) = &
-                this%plant_to_cwd_cflux(c) + &
-                this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
-        end do
-    end do
+    ! plant_to_litter_cflux and plant_to_cwd_cflux are not integrated here:
+    ! no history field, restart variable or balance check reads them (the
+    ! arrays stay allocated). Restore the integration if a reader is added.
 
     end associate
 
@@ -7773,7 +7770,9 @@ contains
     enddo
 
     if ((.not. (use_pflotran .and. pf_cmode))) then
-      ! vertically integrate HR and decomposition cascade fluxes
+      ! vertically integrate HR and decomposition cascade fluxes, and sum the
+      ! vertically resolved HR in the same pass. Each sum keeps its original
+      ! order (over j for decomp_cascade_hr, over k for hr_vr).
       do k = 1, ndecomp_cascade_transitions
 
        do j = 1,nlevdecomp
@@ -7783,6 +7782,11 @@ contains
              this%decomp_cascade_hr(c,k) = &
                 this%decomp_cascade_hr(c,k) + &
                 this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+
+             ! total heterotrophic respiration, vertically resolved (HR)
+             this%hr_vr(c,j) = &
+                this%hr_vr(c,j) + &
+                this%decomp_cascade_hr_vr(c,j,k)
 
           end do
        end do
@@ -7812,18 +7816,6 @@ contains
         end if
       end do
 
-      ! total heterotrophic respiration, vertically resolved (HR)
-
-      do k = 1, ndecomp_cascade_transitions
-        do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%hr_vr(c,j) = &
-                this%hr_vr(c,j) + &
-                this%decomp_cascade_hr_vr(c,j,k)
-          end do
-        end do
-      end do
     endif
 
     end associate
@@ -7831,7 +7823,8 @@ contains
   end subroutine col_cf_summary_for_ch4
 
   !-----------------------------------------------------------------------
-  subroutine col_cf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_cf_setvalues ( this, num_column, filter_column, value_column, &
+       zero_harvest, zero_erosion, zero_transport, zero_deep, zero_rewritten)
     ! !DESCRIPTION:
     ! Set column-level carbon fluxes
     !
@@ -7840,34 +7833,57 @@ contains
     integer , intent(in) :: num_column
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
+    logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
+    logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
+    logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before use or never written (default .true.)
     !
+    ! Process a short block of filtered entries one field at a time. This
+    ! keeps stores to each array together instead of interleaving dozens of
+    ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
+    logical :: do_zero_harvest
+    logical :: do_zero_erosion
+    logical :: do_zero_transport
+    logical :: do_zero_deep
+    logical :: do_zero_rewritten
+    integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
-    do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+    do_zero_harvest = .true.
+    if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_erosion = .true.
+    if (present(zero_erosion)) do_zero_erosion = zero_erosion
+    do_zero_transport = .true.
+    if (present(zero_transport)) do_zero_transport = zero_transport
+    ! Levels below nlevdecomp of the vertically resolved fluxes are written only
+    ! here (with zero), so they need zeroing only when the caller asks.
+    do_zero_deep = .true.
+    if (present(zero_deep)) do_zero_deep = zero_deep
+    nlevz = nlevdecomp_full
+    if (.not. do_zero_deep) nlevz = nlevdecomp
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
+    do j = 1, nlevz
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-          this%phenology_c_to_litr_met_c(i,j)     = value_column
-          this%phenology_c_to_litr_cel_c(i,j)     = value_column
-          this%phenology_c_to_litr_lig_c(i,j)     = value_column
+          this%phenology_c_to_litr_met_c(idx,j)     = value_column
+          this%phenology_c_to_litr_cel_c(idx,j)     = value_column
+          this%phenology_c_to_litr_lig_c(idx,j)     = value_column
 
-          this%gap_mortality_c_to_litr_met_c(i,j) = value_column
-          this%gap_mortality_c_to_litr_cel_c(i,j) = value_column
-          this%gap_mortality_c_to_litr_lig_c(i,j) = value_column
-          this%gap_mortality_c_to_cwdc(i,j)       = value_column
+          this%gap_mortality_c_to_litr_met_c(idx,j) = value_column
+          this%gap_mortality_c_to_litr_cel_c(idx,j) = value_column
+          this%gap_mortality_c_to_litr_lig_c(idx,j) = value_column
+          this%gap_mortality_c_to_cwdc(idx,j)       = value_column
 
-          this%fire_mortality_c_to_cwdc(i,j)      = value_column
-          this%m_c_to_litr_met_fire(i,j)          = value_column
-          this%m_c_to_litr_cel_fire(i,j)          = value_column
-          this%m_c_to_litr_lig_fire(i,j)          = value_column
+          this%fire_mortality_c_to_cwdc(idx,j)      = value_column
+          this%m_c_to_litr_met_fire(idx,j)          = value_column
+          this%m_c_to_litr_cel_fire(idx,j)          = value_column
+          this%m_c_to_litr_lig_fire(idx,j)          = value_column
 
-          this%harvest_c_to_litr_met_c(i,j)       = value_column
-          this%harvest_c_to_litr_cel_c(i,j)       = value_column
-          this%harvest_c_to_litr_lig_c(i,j)       = value_column
-          this%harvest_c_to_cwdc(i,j)             = value_column
-
-          this%hr_vr(i,j)                         = value_column
+          end associate
        end do
     end do
     do l = 1, ndecomp_cascade_transitions
@@ -7876,19 +7892,33 @@ contains
           this%decomp_cascade_ctransfer(i,l) = value_column
        end do
     end do
-    do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
-          this%f_co2_soil_vr(i,j) = value_column
-       end do
-    end do
-    
-    do k = 1, ndecomp_pools
+    ! f_co2_soil_vr is written only through the ELM interface (PFLOTRAN);
+    ! otherwise it keeps this zero. hr_vr is set to zero and summed for every
+    ! filter column and level 1:nlevdecomp by col_cf_summary_for_ch4 at the end
+    ! of EcosystemDynNoLeaching2, and only the PFLOTRAN path reads it earlier.
+    if (do_zero_rewritten) then
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
              i = filter_column(fi)
+             this%f_co2_soil_vr(i,j) = value_column
+             this%hr_vr(i,j)         = value_column
+          end do
+       end do
+    end if
+    
+    ! The litter pools of the source-sink term are assigned (not accumulated)
+    ! for every filter column and level 1:nlevdecomp by Carbon/Nitrogen/
+    ! PhosphorusStateUpdate1 outside FATES and PFLOTRAN, and nothing reads them
+    ! earlier in the step, so they are zeroed only on zero_rewritten steps. Pass
+    ! zero_rewritten=.false. only with the filter those updates use, and force
+    ! it on for any new writer that accumulates into these pools.
+    do k = 1, ndecomp_pools
+       if (.not. do_zero_rewritten .and. &
+            (k == i_met_lit .or. k == i_cel_lit .or. k == i_lig_lit)) cycle
+       do j = 1, nlevz
+          do fi = 1,num_column
+             i = filter_column(fi)
              this%decomp_cpools_sourcesink(i,j,k) = value_column
-             this%decomp_cpools_transport_tendency(i,j,k) = value_column
           end do
        end do
     end do
@@ -7913,73 +7943,115 @@ contains
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_cpools_yield(i,k) = value_column !if ero_ccycle
           this%m_decomp_cpools_to_fire(i,k) = value_column
        end do
     end do 
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    do fi = 1,num_column,flux_setvalues_block_size
+       associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-       this%hrv_deadstemc_to_prod10c(i)  = value_column
-       this%hrv_deadstemc_to_prod100c(i) = value_column
-       this%hrv_cropc_to_prod1c(i)       = value_column
-       this%prod1c_loss(i)               = value_column
-       this%prod10c_loss(i)              = value_column
-       this%prod100c_loss(i)             = value_column
-       this%er(i)                        = value_column
-       this%som_c_leached(i)             = value_column
-       this%somc_yield(i)                = value_column
-       this%somhr(i)                     = value_column 
-       this%lithr(i)                     = value_column 
-       this%hr(i)                        = value_column
-       this%cinputs(i)                   = value_column
-       this%coutputs(i)                  = value_column
-       this%cwdc_hr(i)                   = value_column
-       this%litterc_loss(i)              = value_column
+       this%hrv_cropc_to_prod1c(idx)       = value_column
+       this%prod1c_loss(idx)               = value_column
+       this%prod10c_loss(idx)              = value_column
+       this%prod100c_loss(idx)             = value_column
+       this%er(idx)                        = value_column
+       this%som_c_leached(idx)             = value_column
+       this%somc_yield(idx)                = value_column
+       this%somhr(idx)                     = value_column
+       this%lithr(idx)                     = value_column
+       this%hr(idx)                        = value_column
+       this%cinputs(idx)                   = value_column
+       this%coutputs(idx)                  = value_column
+       this%cwdc_hr(idx)                   = value_column
+       this%litterc_loss(idx)              = value_column
        
-       this%nee(i)                       = value_column
-       this%er(i)                        = value_column  
-       this%som_c_leached(i)             = value_column  
+       this%nee(idx)                       = value_column
 
        ! Zero p2c column fluxes
-       this%rr(i)                    = value_column
-       this%ar(i)                    = value_column
-       this%gpp(i)                   = value_column
-       this%npp(i)                   = value_column
-       this%fire_closs(i)            = value_column
-       this%litfall(i)               = value_column
-       this%vegfire(i)               = value_column
-       this%wood_harvestc(i)         = value_column
-       this%hrv_xsmrpool_to_atm(i)   = value_column
+       this%rr(idx)                    = value_column
+       this%ar(idx)                    = value_column
+       this%gpp(idx)                   = value_column
+       this%npp(idx)                   = value_column
+       this%fire_closs(idx)            = value_column
+       this%litfall(idx)               = value_column
+       this%vegfire(idx)               = value_column
+       this%wood_harvestc(idx)         = value_column
+
+       end associate
     end do
   
     if(use_crop) then 
-      do fi = 1,num_column
-         i = filter_column(fi)
-         this%somc_fire(i)                 = value_column
-         this%product_closs(i)             = value_column
-         this%sr(i)                        = value_column
-         this%litfire(i)                   = value_column
-         this%somfire(i)                   = value_column
-         this%totfire(i)                   = value_column
-         this%nep(i)                       = value_column
-         this%nbp(i)                       = value_column
-         this%cwdc_loss(i)                 = value_column
-         this%somc_erode(i)                = value_column
-         this%somc_deposit(i)              = value_column
-         this%somc_yield(i)                = value_column
-      enddo 
+      do fi = 1,num_column,flux_setvalues_block_size
+         associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+         this%somc_fire(idx)                 = value_column
+         this%product_closs(idx)             = value_column
+         this%sr(idx)                        = value_column
+         this%litfire(idx)                   = value_column
+         this%somfire(idx)                   = value_column
+         this%totfire(idx)                   = value_column
+         this%nep(idx)                       = value_column
+         this%nbp(idx)                       = value_column
+         this%cwdc_loss(idx)                 = value_column
+         this%somc_erode(idx)                = value_column
+         this%somc_deposit(idx)              = value_column
+         this%somc_yield(idx)                = value_column
+
+         end associate
+      end do
     end if 
     
     do k = 1, ndecomp_pools
       do fi = 1,num_column
         i = filter_column(fi)
         this%decomp_cpools_leached(i,k) = value_column
-        this%decomp_cpools_erode(i,k) = value_column
-        this%decomp_cpools_deposit(i,k) = value_column
       end do 
-    end do 
+    end do
+
+    ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
+    if (do_zero_harvest) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%hrv_deadstemc_to_prod10c(idx)  = value_column
+          this%hrv_deadstemc_to_prod100c(idx) = value_column
+          this%hrv_xsmrpool_to_atm(idx)       = value_column
+          end associate
+       end do
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%harvest_c_to_litr_met_c(idx,j) = value_column
+             this%harvest_c_to_litr_cel_c(idx,j) = value_column
+             this%harvest_c_to_litr_lig_c(idx,j) = value_column
+             this%harvest_c_to_cwdc(idx,j)       = value_column
+             end associate
+          end do
+       end do
+    end if
+
+    ! Erosion fluxes, written only with ero_ccycle.
+    if (do_zero_erosion) then
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%decomp_cpools_yield(idx,k)   = value_column
+             this%decomp_cpools_erode(idx,k)   = value_column
+             this%decomp_cpools_deposit(idx,k) = value_column
+             end associate
+          end do
+       end do
+    end if
+
+    ! Vertical transport tendencies, rewritten every step by SoilLittVertTransp.
+    if (do_zero_transport) then
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_cpools_transport_tendency(i,j,k) = value_column
+             end do
+          end do
+       end do
+    end if
 
   end subroutine col_cf_setvalues
 
@@ -9449,7 +9521,8 @@ contains
   end subroutine col_nf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_nf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_nf_setvalues ( this, num_column, filter_column, value_column, &
+       zero_harvest, zero_fan, zero_erosion, zero_deep, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set column-level nitrogen fluxes
@@ -9459,149 +9532,159 @@ contains
     integer , intent(in)         :: num_column
     integer , intent(in)         :: filter_column(:)
     real(r8), intent(in)         :: value_column
+    logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_fan       ! zero the FAN fluxes (default .true.)
+    logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
+    logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before use or never written (default .true.)
     !
+    ! Process a short block of filtered entries one field at a time. This
+    ! keeps stores to each array together instead of interleaving dozens of
+    ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
+    logical :: do_zero_harvest
+    logical :: do_zero_fan
+    logical :: do_zero_erosion
+    logical :: do_zero_deep
+    logical :: do_zero_rewritten
+    integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
-    do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+    do_zero_harvest = .true.
+    if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_fan = .true.
+    if (present(zero_fan)) do_zero_fan = zero_fan
+    do_zero_erosion = .true.
+    if (present(zero_erosion)) do_zero_erosion = zero_erosion
+    ! Levels below nlevdecomp of the vertically resolved fluxes are written only
+    ! here (with zero), so they need zeroing only when the caller asks.
+    do_zero_deep = .true.
+    if (present(zero_deep)) do_zero_deep = zero_deep
+    nlevz = nlevdecomp_full
+    if (.not. do_zero_deep) nlevz = nlevdecomp
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
+    do j = 1, nlevz
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
           ! phenology: litterfall and crop fluxes associated wit
-          this%phenology_n_to_litr_met_n(i,j)        = value_column
-          this%phenology_n_to_litr_cel_n(i,j)        = value_column
-          this%phenology_n_to_litr_lig_n(i,j)        = value_column
+          this%phenology_n_to_litr_met_n(idx,j)        = value_column
+          this%phenology_n_to_litr_cel_n(idx,j)        = value_column
+          this%phenology_n_to_litr_lig_n(idx,j)        = value_column
 
           ! gap mortality
-          this%gap_mortality_n_to_litr_met_n(i,j)    = value_column
-          this%gap_mortality_n_to_litr_cel_n(i,j)    = value_column
-          this%gap_mortality_n_to_litr_lig_n(i,j)    = value_column
-          this%gap_mortality_n_to_cwdn(i,j)          = value_column
+          this%gap_mortality_n_to_litr_met_n(idx,j)    = value_column
+          this%gap_mortality_n_to_litr_cel_n(idx,j)    = value_column
+          this%gap_mortality_n_to_litr_lig_n(idx,j)    = value_column
+          this%gap_mortality_n_to_cwdn(idx,j)          = value_column
 
           ! fire
-          this%fire_mortality_n_to_cwdn(i,j)         = value_column
-          this%m_n_to_litr_met_fire(i,j)             = value_column
-          this%m_n_to_litr_cel_fire(i,j)             = value_column
-          this%m_n_to_litr_lig_fire(i,j)             = value_column
+          this%fire_mortality_n_to_cwdn(idx,j)         = value_column
+          this%m_n_to_litr_met_fire(idx,j)             = value_column
+          this%m_n_to_litr_cel_fire(idx,j)             = value_column
+          this%m_n_to_litr_lig_fire(idx,j)             = value_column
 
-          ! harvest
-          this%harvest_n_to_litr_met_n(i,j)          = value_column
-          this%harvest_n_to_litr_cel_n(i,j)          = value_column
-          this%harvest_n_to_litr_lig_n(i,j)          = value_column
-          this%harvest_n_to_cwdn(i,j)                = value_column
-
-          this%net_nmin_vr(i,j)                      = value_column
-          this%sminn_nh4_input_vr(i,j)               = value_column !not used anywhere?
-          this%sminn_no3_input_vr(i,j)               = value_column !not used anywhere?
+          end associate
        end do
     end do
+
+    ! sminn_nh4/no3_input_vr are never written outside this routine, so they
+    ! keep the zero set here. net_nmin_vr is assigned for every filter column
+    ! and level 1:nlevdecomp by SoilLittDecompAlloc, which outside the ELM
+    ! interface starts its sum from +0 instead of reading it.
+    if (do_zero_rewritten) then
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%sminn_nh4_input_vr(idx,j) = value_column
+             this%sminn_no3_input_vr(idx,j) = value_column
+             this%net_nmin_vr(idx,j)        = value_column
+             end associate
+          end do
+       end do
+    end if
 
     if( use_pflotran .and. pf_cmode) then 
 
       do j = 1, nlevdecomp_full
-         do fi = 1,num_column
-            i = filter_column(fi)
+         do fi = 1,num_column,flux_setvalues_block_size
+            associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
             ! pflotran
-            this%plant_ndemand_vr(i,j)              = value_column !use_elm_interface.and.use_pflotran .and. pf_cmode
-            this%f_ngas_decomp_vr(i,j)              = value_column ! ""
-            this%f_ngas_nitri_vr(i,j)               = value_column ! "" 
-            this%f_ngas_denit_vr(i,j)               = value_column
-            this%f_n2o_soil_vr(i,j)                 = value_column
-            this%f_n2_soil_vr(i,j)                  = value_column
-         end do 
+            this%plant_ndemand_vr(idx,j)              = value_column !use_elm_interface.and.use_pflotran .and. pf_cmode
+            this%f_ngas_decomp_vr(idx,j)              = value_column ! ""
+            this%f_ngas_nitri_vr(idx,j)               = value_column ! ""
+            this%f_ngas_denit_vr(idx,j)               = value_column
+            this%f_n2o_soil_vr(idx,j)                 = value_column
+            this%f_n2_soil_vr(idx,j)                  = value_column
+
+            end associate
+         end do
        end do 
      end if 
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    do fi = 1,num_column,flux_setvalues_block_size
+       associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-       this%ndep_to_sminn(i)             = value_column
-       this%nfix_to_sminn(i)             = value_column
-       this%nfix_to_ecosysn(i)           = value_column
-       this%fert_to_sminn(i)             = value_column
-       this%soyfixn_to_sminn(i)          = value_column
-       this%supplement_to_sminn(i)       = value_column
-       this%denit(i)                     = value_column
-       this%smin_nh4_to_plant(i)      = value_column
-       this%smin_no3_to_plant(i)      = value_column
-       this%fire_nloss(i)                = value_column
-       this%som_n_leached(i)             = value_column
+       this%ndep_to_sminn(idx)             = value_column
+       this%nfix_to_sminn(idx)             = value_column
+       this%nfix_to_ecosysn(idx)           = value_column
+       this%fert_to_sminn(idx)             = value_column
+       this%soyfixn_to_sminn(idx)          = value_column
+       this%supplement_to_sminn(idx)       = value_column
+       this%denit(idx)                     = value_column
+       this%smin_nh4_to_plant(idx)      = value_column
+       this%smin_no3_to_plant(idx)      = value_column
+       this%fire_nloss(idx)                = value_column
+       this%som_n_leached(idx)             = value_column
        
-       this%hrv_deadstemn_to_prod10n(i)  = value_column
-       this%hrv_deadstemn_to_prod100n(i) = value_column
-       this%hrv_cropn_to_prod1n(i)       = value_column
-       this%prod10n_loss(i)              = value_column
-       this%prod100n_loss(i)             = value_column
-       this%prod1n_loss(i)               = value_column
-       this%product_nloss(i)             = value_column
-       this%potential_immob(i)           = value_column
-       this%actual_immob(i)              = value_column
-       this%sminn_to_plant(i)            = value_column
-       this%gross_nmin(i)                = value_column
-       this%net_nmin(i)                  = value_column
+       this%hrv_cropn_to_prod1n(idx)       = value_column
+       this%prod10n_loss(idx)              = value_column
+       this%prod100n_loss(idx)             = value_column
+       this%prod1n_loss(idx)               = value_column
+       this%product_nloss(idx)             = value_column
+       this%potential_immob(idx)           = value_column
+       this%actual_immob(idx)              = value_column
+       this%sminn_to_plant(idx)            = value_column
+       this%gross_nmin(idx)                = value_column
+       this%net_nmin(idx)                  = value_column
 
-       this%f_nit(i)                  = value_column
-       this%pot_f_nit(i)              = value_column
-       this%f_denit(i)                = value_column
-       this%pot_f_denit(i)            = value_column
-       this%f_n2o_denit(i)            = value_column
-       this%f_n2o_nit(i)              = value_column
-       this%smin_no3_leached(i)       = value_column
-       this%smin_no3_runoff(i)        = value_column
+       this%f_nit(idx)                  = value_column
+       this%pot_f_nit(idx)              = value_column
+       this%f_denit(idx)                = value_column
+       this%pot_f_denit(idx)            = value_column
+       this%f_n2o_denit(idx)            = value_column
+       this%f_n2o_nit(idx)              = value_column
+       this%smin_no3_leached(idx)       = value_column
+       this%smin_no3_runoff(idx)        = value_column
 
-       this%f_ngas_decomp(i)         = value_column
-       this%f_ngas_nitri(i)          = value_column
-       this%f_ngas_denit(i)          = value_column
-       this%f_n2o_soil(i)            = value_column
-       this%f_n2_soil(i)             = value_column
+       this%f_ngas_decomp(idx)         = value_column
+       this%f_ngas_nitri(idx)          = value_column
+       this%f_ngas_denit(idx)          = value_column
+       this%f_n2o_soil(idx)            = value_column
+       this%f_n2_soil(idx)             = value_column
 
 
-       this%ninputs(i)                   = value_column
-       this%noutputs(i)                  = value_column
-       this%sminn_input(i)               = value_column
-       this%sminn_nh4_input(i)           = value_column
-       this%sminn_no3_input(i)           = value_column
+       this%ninputs(idx)                   = value_column
+       this%noutputs(idx)                  = value_column
+       this%sminn_input(idx)               = value_column
+       this%sminn_nh4_input(idx)           = value_column
+       this%sminn_no3_input(idx)           = value_column
        ! Zero p2c column fluxes
-       this%fire_nloss(i) = value_column
-       this%wood_harvestn(i) = value_column
+       this%wood_harvestn(idx) = value_column
 
        ! bgc-interface
-       this%plant_ndemand(i) = value_column
+       this%plant_ndemand(idx) = value_column
 
        ! FAN
-       this%manure_tan_appl(i)    = value_column
-       this%manure_n_appl(i)      = value_column
-       this%manure_n_grz(i)       = value_column
-       this%manure_n_mix(i)       = value_column
-       this%manure_n_barns(i)     = value_column
-       this%fert_n_appl(i)        = value_column
-       this%otherfert_n_appl(i)   = value_column
-       this%manure_n_transf(i)    = value_column
-       this%nh3_barns(i)          = value_column
-       this%nh3_stores(i)         = value_column
-       this%nh3_grz(i)            = value_column
-       this%nh3_manure_app(i)     = value_column
-       this%nh3_fert(i)           = value_column
-       this%nh3_otherfert(i)      = value_column
-       this%nh3_total(i)          = value_column
-       this%manure_no3_to_soil(i) = value_column
-       this%fert_no3_to_soil(i)   = value_column
-       this%manure_nh4_to_soil(i) = value_column
-       this%fert_nh4_to_soil(i)   = value_column
-       this%fert_nh4_to_soil(i)   = value_column
-       this%manure_nh4_runoff(i)  = value_column
-       this%fert_nh4_runoff(i)    = value_column
-       this%manure_n_to_sminn(i)  = value_column
-       this%manure_n_total(i)     = value_column
-       this%synthfert_n_to_sminn(i) = value_column
-       this%fan_totnin(i)         = value_column
-       this%fan_totnout(i)        = value_column
+       this%fert_nh4_runoff(idx)    = value_column
 
+
+       end associate
     end do
     do k = 1, ndecomp_pools
        do fi = 1,num_column
           i = filter_column(fi)
-          this%decomp_npools_yield(i,k) = value_column !ero_ccyle
           this%m_decomp_npools_to_fire(i,k) = value_column
           !NOTE: when are these used?
           !this%bgc_npool_ext_inputs_vr(i,:,k) = value_column
@@ -9619,8 +9702,11 @@ contains
           end do
        end do
 
+    ! Litter pools are assigned by NitrogenStateUpdate1 (see col_cf_setvalues).
     do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
+       if (.not. do_zero_rewritten .and. &
+            (k == i_met_lit .or. k == i_cel_lit .or. k == i_lig_lit)) cycle
+       do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
              this%decomp_npools_sourcesink(i,j,k) = value_column
@@ -9666,7 +9752,9 @@ contains
       end do
    end if
 
-   if(use_crop) then 
+   ! Assigned for every filter column and level 1:nlevdecomp by NAllocationRD or
+   ! NAllocationECAMIC (Allocation2) before any read.
+   if(use_crop .and. do_zero_rewritten) then 
      do j = 1, nlevdecomp_full
        do fi = 1,num_column
          i = filter_column(fi)
@@ -9674,7 +9762,72 @@ contains
          this%f_denit_vr(i,j)    = value_column
        end do
       end do 
-    end if  
+    end if
+
+    ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
+    if (do_zero_harvest) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%hrv_deadstemn_to_prod10n(idx)  = value_column
+          this%hrv_deadstemn_to_prod100n(idx) = value_column
+          end associate
+       end do
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%harvest_n_to_litr_met_n(idx,j) = value_column
+             this%harvest_n_to_litr_cel_n(idx,j) = value_column
+             this%harvest_n_to_litr_lig_n(idx,j) = value_column
+             this%harvest_n_to_cwdn(idx,j)       = value_column
+             end associate
+          end do
+       end do
+    end if
+
+    ! FAN fluxes, written only with use_fan or fan_to_bgc_veg/crop.
+    if (do_zero_fan) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%manure_tan_appl(idx)      = value_column
+          this%manure_n_appl(idx)        = value_column
+          this%manure_n_grz(idx)         = value_column
+          this%manure_n_mix(idx)         = value_column
+          this%manure_n_barns(idx)       = value_column
+          this%fert_n_appl(idx)          = value_column
+          this%otherfert_n_appl(idx)     = value_column
+          this%manure_n_transf(idx)      = value_column
+          this%nh3_barns(idx)            = value_column
+          this%nh3_stores(idx)           = value_column
+          this%nh3_grz(idx)              = value_column
+          this%nh3_manure_app(idx)       = value_column
+          this%nh3_fert(idx)             = value_column
+          this%nh3_otherfert(idx)        = value_column
+          this%nh3_total(idx)            = value_column
+          this%manure_no3_to_soil(idx)   = value_column
+          this%fert_no3_to_soil(idx)     = value_column
+          this%manure_nh4_to_soil(idx)   = value_column
+          this%fert_nh4_to_soil(idx)     = value_column
+          this%manure_nh4_runoff(idx)    = value_column
+          this%manure_n_to_sminn(idx)    = value_column
+          this%manure_n_total(idx)       = value_column
+          this%synthfert_n_to_sminn(idx) = value_column
+          this%fan_totnin(idx)           = value_column
+          this%fan_totnout(idx)          = value_column
+          end associate
+       end do
+    end if
+
+    ! Erosion fluxes, written only with ero_ccycle.
+    if (do_zero_erosion) then
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%decomp_npools_yield(idx,k) = value_column
+             end associate
+          end do
+       end do
+    end if
+
   end subroutine col_nf_setvalues
 
   !-----------------------------------------------------------------------
@@ -9894,24 +10047,14 @@ contains
     end if
 
     ! supplementary N supplement_to_sminn
+    ! (sminn_input, sminn_nh4_input and sminn_no3_input are not integrated:
+    ! nothing reads them; restore the integration if a reader is added)
     do j = 1, nlev
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%supplement_to_sminn(c) = &
                this%supplement_to_sminn(c) + &
                this%supplement_to_sminn_vr(c,j) * dzsoi_decomp(j)
-
-          this%sminn_input(c) = &
-               this%sminn_input(c) + &
-               (this%sminn_nh4_input_vr(c,j)+this%sminn_no3_input_vr(c,j))*dzsoi_decomp(j)
-
-          this%sminn_nh4_input(c) = &
-               this%sminn_nh4_input(c) + &
-               this%sminn_nh4_input_vr(c,j)*dzsoi_decomp(j)
-
-          this%sminn_no3_input(c) = &
-               this%sminn_no3_input(c) + &
-               this%sminn_no3_input_vr(c,j)*dzsoi_decomp(j)
        end do
     end do
 
@@ -9934,15 +10077,15 @@ contains
           this%decomp_npools_leached(c,l) = 0._r8
        end do
        if(l /= i_cwd)then
+         ! bgc_npool_inputs is not accumulated: nothing reads it, and its
+         ! inputs bgc_npool_ext_inputs_vr and bgc_npool_ext_loss_vr are never
+         ! written after initialization (spval - spval only added +0 to spval).
          do j = 1, nlev
            do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%decomp_npools_leached(c,l) = &
                   this%decomp_npools_leached(c,l) + &
                   this%decomp_npools_transport_tendency(c,j,l) * dzsoi_decomp(j)
-
-             this%bgc_npool_inputs(c,l) = this%bgc_npool_inputs(c,l) + &
-                (this%bgc_npool_ext_inputs_vr(c,j,l)-this%bgc_npool_ext_loss_vr(c,j,l))*dzsoi_decomp(j)
            end do
          end do
        endif
@@ -9955,13 +10098,17 @@ contains
     end do
 
     ! FATES uses the plant_to_litter_nflux variable for mass accounting, so bypass here
+    ! The vertical integrations below run with the column loop innermost
+    ! (memory order); each column's sum keeps its order over j and over the
+    ! terms. plant_to_cwd_nflux is not integrated, since nothing reads it.
     if(.not.use_fates)then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-
           this%plant_to_litter_nflux(c) = 0._r8
-          this%plant_to_cwd_nflux(c) = 0._r8
-          do j = 1, nlev
+       end do
+       do j = 1, nlev
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
              this%plant_to_litter_nflux(c) = &
                   this%plant_to_litter_nflux(c)  + &
                   this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
@@ -9973,10 +10120,6 @@ contains
                   this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-             this%plant_to_cwd_nflux(c) = &
-                  this%plant_to_cwd_nflux(c) + &
-                  this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
-                  this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
           end do
        end do
     end if
@@ -9985,7 +10128,10 @@ contains
        c = filter_soilc(fc)
        this%smin_no3_to_plant(c) = 0._r8
        this%smin_nh4_to_plant(c) = 0._r8
-       do j = 1, nlev
+    enddo
+    do j = 1, nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
           this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + &
                this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
           this%smin_nh4_to_plant(c)= this%smin_nh4_to_plant(c) + &
@@ -11005,142 +11151,145 @@ contains
   end subroutine col_pf_restart
 
   !-----------------------------------------------------------------------
-  subroutine col_pf_setvalues ( this, num_column, filter_column, value_column)
+  subroutine col_pf_setvalues ( this, num_column, filter_column, value_column, &
+       zero_harvest, zero_erosion, zero_transport, zero_deep, zero_rewritten)
     !
     ! !DESCRIPTION:
     ! Set phosphorus flux variables
+    ! !USES:
+    use elm_varctl, only : carbon_only, carbonnitrogen_only
     ! !ARGUMENTS:
     class (column_phosphorus_flux) :: this
     integer , intent(in) :: num_column
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
+    logical , intent(in), optional :: zero_harvest   ! zero the harvest fluxes (default .true.)
+    logical , intent(in), optional :: zero_erosion   ! zero the erosion fluxes (default .true.)
+    logical , intent(in), optional :: zero_transport ! zero the vertical transport tendencies (default .true.)
+    logical , intent(in), optional :: zero_deep      ! zero levels nlevdecomp+1:nlevdecomp_full (default .true.)
+    logical , intent(in), optional :: zero_rewritten ! zero fluxes rewritten before use or never written (default .true.)
     !
+    ! Process a short block of filtered entries one field at a time. This
+    ! keeps stores to each array together instead of interleaving dozens of
+    ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
+    logical :: do_zero_harvest
+    logical :: do_zero_erosion
+    logical :: do_zero_transport
+    logical :: do_zero_deep
+    logical :: do_zero_rewritten
+    integer :: nlevz          ! last level zeroed in the vertically resolved loops
     !------------------------------------------------------------------------
-    do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+    do_zero_harvest = .true.
+    if (present(zero_harvest)) do_zero_harvest = zero_harvest
+    do_zero_erosion = .true.
+    if (present(zero_erosion)) do_zero_erosion = zero_erosion
+    do_zero_transport = .true.
+    if (present(zero_transport)) do_zero_transport = zero_transport
+    ! Levels below nlevdecomp of the vertically resolved fluxes are written only
+    ! here (with zero), so they need zeroing only when the caller asks.
+    do_zero_deep = .true.
+    if (present(zero_deep)) do_zero_deep = zero_deep
+    nlevz = nlevdecomp_full
+    if (.not. do_zero_deep) nlevz = nlevdecomp
+    do_zero_rewritten = .true.
+    if (present(zero_rewritten)) do_zero_rewritten = zero_rewritten
+    do j = 1, nlevz
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
           ! phenology: litterfall and crop fluxes associated wit
-          this%phenology_p_to_litr_met_p(i,j)        = value_column
-          this%phenology_p_to_litr_cel_p(i,j)        = value_column
-          this%phenology_p_to_litr_lig_p(i,j)        = value_column
+          this%phenology_p_to_litr_met_p(idx,j)        = value_column
+          this%phenology_p_to_litr_cel_p(idx,j)        = value_column
+          this%phenology_p_to_litr_lig_p(idx,j)        = value_column
 
           ! gap mortality
-          this%gap_mortality_p_to_litr_met_p(i,j)    = value_column
-          this%gap_mortality_p_to_litr_cel_p(i,j)    = value_column
-          this%gap_mortality_p_to_litr_lig_p(i,j)    = value_column
-          this%gap_mortality_p_to_cwdp(i,j)          = value_column
+          this%gap_mortality_p_to_litr_met_p(idx,j)    = value_column
+          this%gap_mortality_p_to_litr_cel_p(idx,j)    = value_column
+          this%gap_mortality_p_to_litr_lig_p(idx,j)    = value_column
+          this%gap_mortality_p_to_cwdp(idx,j)          = value_column
 
           ! fire
-          this%fire_mortality_p_to_cwdp(i,j)         = value_column
-          this%m_p_to_litr_met_fire(i,j)             = value_column
-          this%m_p_to_litr_cel_fire(i,j)             = value_column
-          this%m_p_to_litr_lig_fire(i,j)             = value_column
+          this%fire_mortality_p_to_cwdp(idx,j)         = value_column
+          this%m_p_to_litr_met_fire(idx,j)             = value_column
+          this%m_p_to_litr_cel_fire(idx,j)             = value_column
+          this%m_p_to_litr_lig_fire(idx,j)             = value_column
 
-          ! harvest
-          this%harvest_p_to_litr_met_p(i,j)          = value_column
-          this%harvest_p_to_litr_cel_p(i,j)          = value_column
-          this%harvest_p_to_litr_lig_p(i,j)          = value_column
-          this%harvest_p_to_cwdp(i,j)                = value_column
-
-          this%primp_to_labilep_vr(i,j)              = value_column
-          this%labilep_to_secondp_vr(i,j)            = value_column
-          this%secondp_to_labilep_vr(i,j)            = value_column
-          this%secondp_to_occlp_vr(i,j)              = value_column
-
-          this%sminp_leached_vr(i,j)                 = value_column
-
-          this%labilep_yield_vr(i,j)                 = value_column
-          this%secondp_yield_vr(i,j)                 = value_column
-          this%occlp_yield_vr(i,j)                   = value_column
-          this%primp_yield_vr(i,j)                   = value_column
-
-          this%potential_immob_p_vr(i,j)             = value_column
-          this%actual_immob_p_vr(i,j)                = value_column
-          this%sminp_to_plant_vr(i,j)                = value_column
-          this%supplement_to_sminp_vr(i,j)           = value_column
-          this%gross_pmin_vr(i,j)                    = value_column
-          this%net_pmin_vr(i,j)                      = value_column
-          this%biochem_pmin_vr(i,j)                  = value_column
-          this%biochem_pmin_to_ecosysp_vr(i,j)       = value_column
-
-          ! bgc interface & pflotran
-          this%plant_pdemand_vr(i,j)                 = value_column
-          this%adsorb_to_labilep_vr(i,j)             = value_column
-          this%desorb_to_solutionp_vr(i,j)           = value_column
-          
+          end associate
        end do
     end do
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    ! Written only in the carbon_only or carbonnitrogen_only branches of the P
+    ! allocation (phase 2); otherwise it keeps the zero set here. The flags change
+    ! only after CNZero in a step, so CNZero still sees a flag on in the step
+    ! after one that wrote it.
+    if (do_zero_rewritten .or. carbon_only .or. carbonnitrogen_only) then
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%supplement_to_sminp_vr(idx,j) = value_column
+             end associate
+          end do
+       end do
+    end if
 
-       this%pdep_to_sminp(i)             = value_column
-       this%fert_p_to_sminp(i)           = value_column
-       this%hrv_deadstemp_to_prod10p(i)  = value_column
-       this%hrv_deadstemp_to_prod100p(i) = value_column
-       this%hrv_cropp_to_prod1p(i)       = value_column
-       this%prod10p_loss(i)              = value_column
-       this%prod100p_loss(i)             = value_column
-       this%product_ploss(i)             = value_column
-       this%prod1p_loss(i)               = value_column
-       this%potential_immob_p(i)         = value_column
-       this%actual_immob_p(i)            = value_column
-       this%sminp_to_plant(i)            = value_column
-       this%supplement_to_sminp(i)       = value_column
-       this%gross_pmin(i)                = value_column
-       this%net_pmin(i)                  = value_column
-       this%biochem_pmin(i)              = value_column
-       this%biochem_pmin_to_plant(i)     = value_column
-       this%primp_to_labilep(i)          = value_column
-       this%labilep_to_secondp(i)        = value_column
-       this%secondp_to_labilep(i)        = value_column
-       this%secondp_to_occlp(i)          = value_column
-       this%sminp_leached(i)             = value_column
-       this%fire_ploss(i)                = value_column
-       this%pinputs(i)                   = value_column
-       this%poutputs(i)                  = value_column
-       this%som_p_leached(i)             = value_column
-       this%somp_erode(i)                = value_column
-       this%somp_deposit(i)              = value_column
-       this%somp_yield(i)                = value_column
-       this%labilep_erode(i)             = value_column
-       this%labilep_deposit(i)           = value_column
-       this%labilep_yield(i)             = value_column
-       this%secondp_erode(i)             = value_column
-       this%secondp_deposit(i)           = value_column
-       this%secondp_yield(i)             = value_column
-       this%occlp_erode(i)               = value_column
-       this%occlp_deposit(i)             = value_column
-       this%occlp_yield(i)               = value_column
-       this%primp_erode(i)               = value_column
-       this%primp_deposit(i)             = value_column
-       this%primp_yield(i)               = value_column
+    do fi = 1,num_column,flux_setvalues_block_size
+       associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+
+       this%pdep_to_sminp(idx)             = value_column
+       this%fert_p_to_sminp(idx)           = value_column
+       this%hrv_cropp_to_prod1p(idx)       = value_column
+       this%prod10p_loss(idx)              = value_column
+       this%prod100p_loss(idx)             = value_column
+       this%product_ploss(idx)             = value_column
+       this%prod1p_loss(idx)               = value_column
+       this%potential_immob_p(idx)         = value_column
+       this%actual_immob_p(idx)            = value_column
+       this%sminp_to_plant(idx)            = value_column
+       this%supplement_to_sminp(idx)       = value_column
+       this%gross_pmin(idx)                = value_column
+       this%net_pmin(idx)                  = value_column
+       this%biochem_pmin(idx)              = value_column
+       this%biochem_pmin_to_plant(idx)     = value_column
+       this%primp_to_labilep(idx)          = value_column
+       this%labilep_to_secondp(idx)        = value_column
+       this%secondp_to_labilep(idx)        = value_column
+       this%secondp_to_occlp(idx)          = value_column
+       this%sminp_leached(idx)             = value_column
+       this%fire_ploss(idx)                = value_column
+       this%pinputs(idx)                   = value_column
+       this%poutputs(idx)                  = value_column
+       this%som_p_leached(idx)             = value_column
+       this%somp_erode(idx)                = value_column
+       this%somp_deposit(idx)              = value_column
+       this%somp_yield(idx)                = value_column
+       this%labilep_yield(idx)             = value_column
+       this%secondp_yield(idx)             = value_column
+       this%occlp_yield(idx)               = value_column
+       this%primp_yield(idx)               = value_column
 
        ! Zero p2c column fluxes
-       this%fire_ploss(i)                = value_column
-       this%wood_harvestp(i)             = value_column
+       this%wood_harvestp(idx)             = value_column
 
        ! bgc-interface
-       this%plant_pdemand(i)             = value_column
+       this%plant_pdemand(idx)             = value_column
 
-       this%wood_harvestp(i)             = value_column
 
-       this%adsorb_to_labilep(i)         = value_column
-       this%desorb_to_solutionp(i)       = value_column
+       this%adsorb_to_labilep(idx)         = value_column
+       this%desorb_to_solutionp(idx)       = value_column
 
+
+       end associate
     end do
 
     do k = 1, ndecomp_pools
-       do fi = 1,num_column
-          i = filter_column(fi)
-          this%decomp_ppools_leached(i,k) = value_column
-          this%decomp_ppools_erode(i,k) = value_column
-          this%decomp_ppools_deposit(i,k) = value_column
-          this%decomp_ppools_yield(i,k) = value_column
-          this%m_decomp_ppools_to_fire(i,k) = value_column
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%decomp_ppools_leached(idx,k) = value_column
+          this%m_decomp_ppools_to_fire(idx,k) = value_column
+
+          end associate
        end do
     end do
 
@@ -11152,26 +11301,40 @@ contains
        end do
     end do
 
+    ! biochem_pmin_ppools_vr is written only where the P pool is positive, so
+    ! it is zeroed on every step.
     do k = 1, ndecomp_pools
-       do j = 1, nlevdecomp_full
+       do j = 1, nlevz
           do fi = 1,num_column
              i = filter_column(fi)
-             this%decomp_ppools_sourcesink(i,j,k) = value_column
              this%biochem_pmin_ppools_vr(i,j,k) = value_column
           end do
        end do
     end do
+    ! Litter pools are assigned by PhosphorusStateUpdate1 (see col_cf_setvalues).
+    do k = 1, ndecomp_pools
+       if (.not. do_zero_rewritten .and. &
+            (k == i_met_lit .or. k == i_cel_lit .or. k == i_lig_lit)) cycle
+       do j = 1, nlevz
+          do fi = 1,num_column
+             i = filter_column(fi)
+             this%decomp_ppools_sourcesink(i,j,k) = value_column
+          end do
+       end do
+    end do
       
-   do k = 1, ndecomp_pools
-      do j = 1, nlevdecomp_full
-         do fi = 1,num_column
-            i = filter_column(fi)
-            this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
-            this%decomp_ppools_transport_tendency(i,j,k) = value_column
-            this%decomp_ppools_yield_vr(i,j,k) = value_column
+   ! Rewritten by FireFluxes for every filter column, level 1:nlevdecomp and pool
+   ! before any read (as m_decomp_npools_to_fire_vr); deeper levels stay zero.
+   if (do_zero_rewritten) then
+      do k = 1, ndecomp_pools
+         do j = 1, nlevdecomp_full
+            do fi = 1,num_column
+               i = filter_column(fi)
+               this%m_decomp_ppools_to_fire_vr(i,j,k) = value_column
+            end do
          end do
       end do
-   end do
+   end if
 
     ! pflotran
     if(nstep_mod == 0 .or. is_first_restart_step() ) then 
@@ -11196,7 +11359,120 @@ contains
        this%externalp_to_decomp_delta(i) = value_column
        this%sminp_net_transport_delta(i)   = value_column
      end do
-  end if 
+  end if
+
+    ! Rewritten for every filter column on levels 1:nlevdecomp by PhosphorusWeathering,
+    ! PhosphorusAdsportion/Desoprtion/Occlusion, PhosphorusLeaching and PhosphorusBiochemMin
+    ! (or _balance) before any read; with RD and nu_com_phosphatase biochem_pmin_vr
+    ! is never written and keeps this zero. Deeper levels are never written.
+    if (do_zero_rewritten) then
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%primp_to_labilep_vr(idx,j)   = value_column
+             this%labilep_to_secondp_vr(idx,j) = value_column
+             this%secondp_to_labilep_vr(idx,j) = value_column
+             this%secondp_to_occlp_vr(idx,j)   = value_column
+             this%sminp_leached_vr(idx,j)      = value_column
+             this%biochem_pmin_vr(idx,j)       = value_column
+             ! Assigned for every filter column and level 1:nlevdecomp before
+             ! any read: potential_immob_p_vr and gross_pmin_vr in
+             ! SoilLittDecompAlloc, actual_immob_p_vr and sminp_to_plant_vr in
+             ! Allocation2, adsorb_to_labilep_vr and desorb_to_solutionp_vr in
+             ! Allocation2 (ECA/MIC) or PhosphorusStateUpdate3 (RD).
+             ! biochem_pmin_to_ecosysp_vr is set and read only inside
+             ! PhosphorusBiochemMin_balance; plant_pdemand_vr is written only
+             ! through the ELM interface.
+             this%potential_immob_p_vr(idx,j)       = value_column
+             this%actual_immob_p_vr(idx,j)          = value_column
+             this%sminp_to_plant_vr(idx,j)          = value_column
+             this%gross_pmin_vr(idx,j)              = value_column
+             this%biochem_pmin_to_ecosysp_vr(idx,j) = value_column
+             this%plant_pdemand_vr(idx,j)           = value_column
+             this%adsorb_to_labilep_vr(idx,j)       = value_column
+             this%desorb_to_solutionp_vr(idx,j)     = value_column
+             ! Assigned for every filter column and level 1:nlevdecomp by
+             ! SoilLittDecompAlloc (see net_nmin_vr in col_nf_setvalues).
+             this%net_pmin_vr(idx,j)                = value_column
+             end associate
+          end do
+       end do
+    end if
+
+    ! Harvest fluxes, written only by CNHarvest (do_harvest or IAC) or FATES.
+    if (do_zero_harvest) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%hrv_deadstemp_to_prod10p(idx)  = value_column
+          this%hrv_deadstemp_to_prod100p(idx) = value_column
+          end associate
+       end do
+       do j = 1, nlevz
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%harvest_p_to_litr_met_p(idx,j) = value_column
+             this%harvest_p_to_litr_cel_p(idx,j) = value_column
+             this%harvest_p_to_litr_lig_p(idx,j) = value_column
+             this%harvest_p_to_cwdp(idx,j)       = value_column
+             end associate
+          end do
+       end do
+    end if
+
+    ! Erosion fluxes, written only with ero_ccycle.
+    if (do_zero_erosion) then
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%labilep_erode(idx)   = value_column
+          this%labilep_deposit(idx) = value_column
+          this%secondp_erode(idx)   = value_column
+          this%secondp_deposit(idx) = value_column
+          this%occlp_erode(idx)     = value_column
+          this%occlp_deposit(idx)   = value_column
+          this%primp_erode(idx)     = value_column
+          this%primp_deposit(idx)   = value_column
+          end associate
+       end do
+       do j = 1, nlevdecomp_full
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%labilep_yield_vr(idx,j) = value_column
+             this%secondp_yield_vr(idx,j) = value_column
+             this%occlp_yield_vr(idx,j)   = value_column
+             this%primp_yield_vr(idx,j)   = value_column
+             end associate
+          end do
+       end do
+       do k = 1, ndecomp_pools
+          do fi = 1,num_column,flux_setvalues_block_size
+             associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+             this%decomp_ppools_erode(idx,k)   = value_column
+             this%decomp_ppools_deposit(idx,k) = value_column
+             this%decomp_ppools_yield(idx,k)   = value_column
+             end associate
+          end do
+       end do
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_ppools_yield_vr(i,j,k) = value_column
+             end do
+          end do
+       end do
+    end if
+
+    ! Vertical transport tendencies, rewritten every step by SoilLittVertTransp.
+    if (do_zero_transport) then
+       do k = 1, ndecomp_pools
+          do j = 1, nlevdecomp_full
+             do fi = 1,num_column
+                i = filter_column(fi)
+                this%decomp_ppools_transport_tendency(i,j,k) = value_column
+             end do
+          end do
+       end do
+    end if
 
   end subroutine col_pf_setvalues
 
@@ -11512,16 +11788,19 @@ contains
        end do
     end do
 
+    ! The vertical integrations below run with the column loop innermost
+    ! (memory order); each column's sum keeps its order over j and over the
+    ! terms. smin_p_to_plant and plant_to_cwd_pflux are not integrated, since
+    ! nothing reads them (restore the integration if a reader is added).
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%actual_immob_p(c) = 0._r8
-       this%smin_p_to_plant(c) = 0._r8
-
-       do j = 1, nlevdecomp
+    end do
+    do j = 1, nlevdecomp
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
           this%actual_immob_p(c)= this%actual_immob_p(c) + &
                this%actual_immob_p_vr(c,j) * dzsoi_decomp(j)
-          this%smin_p_to_plant(c)= this%smin_p_to_plant(c) + &
-               this%sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -11530,8 +11809,10 @@ contains
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%plant_to_litter_pflux(c) = 0._r8
-          this%plant_to_cwd_pflux(c) = 0._r8
-          do j = 1, nlevdecomp
+       end do
+       do j = 1, nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
              this%plant_to_litter_pflux(c) = &
                   this%plant_to_litter_pflux(c)  + &
                   this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
@@ -11543,10 +11824,6 @@ contains
                   this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
                   this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-             this%plant_to_cwd_pflux(c) = &
-                  this%plant_to_cwd_pflux(c) + &
-                  this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
-                  this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
           end do
        end do
     end if

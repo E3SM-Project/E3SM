@@ -41,7 +41,7 @@ contains
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use elm_varctl  , only : create_crop_landunit, use_polygonal_tundra
-    use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use elm_varsur  , only : wt_lunit, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
     use topounit_varcon  , only : max_topounits, has_topounit !, ntpu_per_grd, tpu_glo_ind, tpu_lnd
@@ -170,15 +170,14 @@ contains
        ! Set urban landunits
        ! -------------------------------------------------------------------------
 
-       ! To support dynamic landunits, we have all urban landunits in every grid cell that
-       ! has valid urban parameters, because they might need to come into existence even if
-       ! their weight is 0 at the start of the run. And for simplicity, we always allocate
-       ! space for ALL columns on the urban landunits.
+       ! Whether zero-weight urban landunits are allocated depends on run_zero_weight_urban;
+       ! see urban_landunit_exists for details. For simplicity, we always allocate space
+       ! for ALL columns on any allocated urban landunit.
 
        ! Set urban tall building district landunit
 
        npfts_per_lunit = 0
-       if (urban_valid(gi,t)) then
+       if (urban_landunit_exists(gi, t, isturb_tbd)) then
           npfts_per_lunit = maxpatch_urb
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
@@ -189,7 +188,7 @@ contains
        ! Set urban high density landunit
 
        npfts_per_lunit = 0
-       if (urban_valid(gi,t)) then
+       if (urban_landunit_exists(gi, t, isturb_hd)) then
           npfts_per_lunit = maxpatch_urb
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
@@ -200,7 +199,7 @@ contains
        ! Set urban medium density landunit
 
        npfts_per_lunit = 0
-       if (urban_valid(gi,t)) then
+       if (urban_landunit_exists(gi, t, isturb_md)) then
           npfts_per_lunit = maxpatch_urb
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
@@ -342,7 +341,7 @@ contains
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
     use elm_varctl  , only : create_crop_landunit, use_polygonal_tundra
-    use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
+    use elm_varsur  , only : wt_lunit, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
     use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
@@ -445,15 +444,14 @@ contains
     ! Set urban landunits
     ! -------------------------------------------------------------------------
 
-    ! To support dynamic landunits, we have all urban landunits in every grid cell that
-    ! has valid urban parameters, because they might need to come into existence even if
-    ! their weight is 0 at the start of the run. And for simplicity, we always allocate
-    ! space for ALL columns on the urban landunits.
+    ! Whether zero-weight urban landunits are allocated depends on run_zero_weight_urban;
+    ! see urban_landunit_exists for details. For simplicity, we always allocate space
+    ! for ALL columns on any allocated urban landunit.
 
     ! Set urban tall building district landunit
 
     npfts_per_lunit = 0
-    if (urban_valid(gi,tgi)) then
+    if (urban_landunit_exists(gi, tgi, isturb_tbd)) then
        npfts_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
@@ -464,7 +462,7 @@ contains
     ! Set urban high density landunit
 
     npfts_per_lunit = 0
-    if (urban_valid(gi,tgi)) then
+    if (urban_landunit_exists(gi, tgi, isturb_hd)) then
        npfts_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
@@ -475,7 +473,7 @@ contains
     ! Set urban medium density landunit
 
     npfts_per_lunit = 0
-    if (urban_valid(gi,tgi)) then
+    if (urban_landunit_exists(gi, tgi, isturb_md)) then
        npfts_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
@@ -596,4 +594,38 @@ contains
 
   end subroutine subgrid_get_topounitinfo
   
+  !-----------------------------------------------------------------------
+  logical function urban_landunit_exists(gi, ti, ltype)
+    !
+    ! !DESCRIPTION:
+    ! Determine whether memory should be allocated for the given urban landunit
+    !
+    ! If run_zero_weight_urban is .true. (the default), allocate memory for all urban
+    ! landunits in every topounit that has valid urban parameters. This keeps the
+    ! subgrid structure compatible with existing initial conditions files, and is also
+    ! useful for examining urban behavior in all potential urban areas.
+    !
+    ! If run_zero_weight_urban is .false., only allocate memory for urban landunits that
+    ! have non-zero weight; urban areas are time-invariant, so zero-weight urban
+    ! landunits can never become active.
+    !
+    ! !USES
+    use elm_varctl  , only : run_zero_weight_urban
+    use elm_varsur  , only : wt_lunit, urban_valid
+    !
+    ! !ARGUMENTS
+    implicit none
+    integer , intent(in) :: gi     ! gridcell index
+    integer , intent(in) :: ti     ! topounit index within the gridcell
+    integer , intent(in) :: ltype  ! landunit type (isturb_tbd, etc.)
+    !------------------------------------------------------------------------------
+
+    if (run_zero_weight_urban) then
+       urban_landunit_exists = urban_valid(gi,ti)
+    else
+       urban_landunit_exists = (wt_lunit(gi,ti,ltype) > 0.0_r8)
+    end if
+
+  end function urban_landunit_exists
+
 end module subgridMod

@@ -577,8 +577,15 @@ contains
     real(r8) :: slp_crc(bounds%begp:bounds%endp,ndst) ! [frc] Slip correction factor
     real(r8) :: vlc_grv(bounds%begp:bounds%endp,ndst) ! [m s-1] Settling velocity
     real(r8) :: rss_lmn(bounds%begp:bounds%endp,ndst) ! [s m-1] Quasi-laminar layer resistance
+    real(r8) :: shm_pow(bounds%begp:bounds%endp,ndst) ! [frc] shm_nbr**shm_nbr_xpn
     real(r8) :: tmp                                   ! temporary
     real(r8), parameter::shm_nbr_xpn_lnd=-2._r8/3._r8 ![frc] shm_nbr_xpn over land
+    integer  :: t_last                                ! topounit of the values below
+    real(r8) :: vsc_dyn_atm_t                         ! [kg m-1 s-1] vsc_dyn_atm of topounit t_last
+    real(r8) :: vsc_knm_atm_t                         ! [m2 s-1] vsc_knm_atm of topounit t_last
+    real(r8) :: slp_crc_t(ndst)                       ! [frc] slp_crc of topounit t_last
+    real(r8) :: vlc_grv_t(ndst)                       ! [m s-1] vlc_grv of topounit t_last
+    real(r8) :: shm_pow_t(ndst)                       ! [frc] shm_pow of topounit t_last
     !------------------------------------------------------------------------
 
     associate(                                                   &
@@ -596,57 +603,77 @@ contains
          vlc_trb_4 =>    dust_vars%vlc_trb_4_patch               & ! Output:  [real(r8) (:)   ]  Turbulent deposition velocity 4
          )
 
+      ! vsc_dyn_atm, vsc_knm_atm, slp_crc, vlc_grv and the Schmidt number term
+      ! shm_pow depend only on the topounit forcing, so they are computed once
+      ! for consecutive active patches of the same topounit (t_last) and then
+      ! copied to each patch, with the same expressions as per patch
+      ! (scalar loops, so that exp and pow stay the scalar library calls of the
+      ! original per-patch loops)
+      t_last = -1
+      !DIR$ NOVECTOR
       do p = bounds%begp,bounds%endp
          if (veg_pp%active(p)) then
             g = veg_pp%gridcell(p)
             t = veg_pp%topounit(p)
             c = veg_pp%column(p)
 
-            ! from subroutine dst_dps_dry (consider adding sanity checks from line 212)
-            ! when code asks to use midlayer density, pressure, temperature,
-            ! I use the data coming in from the atmosphere, ie forc_t, forc_pbot, forc_rho
+            if (t /= t_last) then
+               t_last = t
 
-            ! Quasi-laminar layer resistance: call rss_lmn_get
-            ! Size-independent thermokinetic properties
+               ! from subroutine dst_dps_dry (consider adding sanity checks from line 212)
+               ! when code asks to use midlayer density, pressure, temperature,
+               ! I use the data coming in from the atmosphere, ie forc_t, forc_pbot, forc_rho
 
-            vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(t)/273.0_r8)**1.5_r8) * 393.0_r8 / &
-                 (forc_t(t)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
-            mfp_atm = 2.0_r8 * vsc_dyn_atm(p) / &   ![m] SeP97 p. 455
-                 (forc_pbot(t)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
-            vsc_knm_atm(p) = vsc_dyn_atm(p) / forc_rho(t) ![m2 s-1] Kinematic viscosity of air
+               ! Quasi-laminar layer resistance: call rss_lmn_get
+               ! Size-independent thermokinetic properties
 
+               vsc_dyn_atm_t = 1.72e-5_r8 * ((forc_t(t)/273.0_r8)**1.5_r8) * 393.0_r8 / &
+                    (forc_t(t)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
+               mfp_atm = 2.0_r8 * vsc_dyn_atm_t / &   ![m] SeP97 p. 455
+                    (forc_pbot(t)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
+               vsc_knm_atm_t = vsc_dyn_atm_t / forc_rho(t) ![m2 s-1] Kinematic viscosity of air
+
+               do m = 1, ndst
+                  slp_crc_t(m) = 1.0_r8 + 2.0_r8 * mfp_atm * &
+                       (1.257_r8+0.4_r8*exp(-1.1_r8*dmt_vwr(m)/(2.0_r8*mfp_atm))) / &
+                       dmt_vwr(m)   ![frc] Slip correction factor SeP97 p. 464
+                  vlc_grv_t(m) = (1.0_r8/18.0_r8) * dmt_vwr(m) * dmt_vwr(m) * dns_aer * &
+                       grav * slp_crc_t(m) / vsc_dyn_atm_t   ![m s-1] Stokes' settling velocity SeP97 p. 466
+                  vlc_grv_t(m) = vlc_grv_t(m) * stk_crc(m)    ![m s-1] Correction to Stokes settling velocity
+
+                  dff_aer = SHR_CONST_BOLTZ * forc_t(t) * slp_crc_t(m) / &          ![m2 s-1]
+                       (3.0_r8*SHR_CONST_PI * vsc_dyn_atm_t * dmt_vwr(m))          !SeP97 p.474
+                  shm_nbr = vsc_knm_atm_t / dff_aer                                ![frc] SeP97 p.972
+                  shm_nbr_xpn = shm_nbr_xpn_lnd                                    ![frc]
+
+                  ! fxm: Turning this on dramatically reduces
+                  ! deposition velocity in low wind regimes
+                  ! Schmidt number exponent is -2/3 over solid surfaces and
+                  ! -1/2 over liquid surfaces SlS80 p. 1014
+                  ! if (oro(i)==0.0) shm_nbr_xpn=shm_nbr_xpn_ocn else shm_nbr_xpn=shm_nbr_xpn_lnd
+                  ! [frc] Surface-dependent exponent for aerosol-diffusion dependence on Schmidt #
+
+                  shm_pow_t(m) = shm_nbr**shm_nbr_xpn
+               end do
+            end if
+
+            vsc_dyn_atm(p) = vsc_dyn_atm_t
+            vsc_knm_atm(p) = vsc_knm_atm_t
             do m = 1, ndst
-               slp_crc(p,m) = 1.0_r8 + 2.0_r8 * mfp_atm * &
-                    (1.257_r8+0.4_r8*exp(-1.1_r8*dmt_vwr(m)/(2.0_r8*mfp_atm))) / &
-                    dmt_vwr(m)   ![frc] Slip correction factor SeP97 p. 464
-               vlc_grv(p,m) = (1.0_r8/18.0_r8) * dmt_vwr(m) * dmt_vwr(m) * dns_aer * &
-                    grav * slp_crc(p,m) / vsc_dyn_atm(p)   ![m s-1] Stokes' settling velocity SeP97 p. 466
-               vlc_grv(p,m) = vlc_grv(p,m) * stk_crc(m)    ![m s-1] Correction to Stokes settling velocity
+               slp_crc(p,m) = slp_crc_t(m)
+               vlc_grv(p,m) = vlc_grv_t(m)
+               shm_pow(p,m) = shm_pow_t(m)
             end do
          end if
       end do
 
       do m = 1, ndst
+         !DIR$ NOVECTOR
          do p = bounds%begp,bounds%endp
             if (veg_pp%active(p)) then
-               g = veg_pp%gridcell(p)
-               t = veg_pp%topounit(p)
-               c = veg_pp%column(p)
-
                stk_nbr = vlc_grv(p,m) * fv(p) * fv(p) / (grav * vsc_knm_atm(p))  ![frc] SeP97 p.965
-               dff_aer = SHR_CONST_BOLTZ * forc_t(t) * slp_crc(p,m) / &          ![m2 s-1]
-                    (3.0_r8*SHR_CONST_PI * vsc_dyn_atm(p) * dmt_vwr(m))          !SeP97 p.474
-               shm_nbr = vsc_knm_atm(p) / dff_aer                                ![frc] SeP97 p.972
-               shm_nbr_xpn = shm_nbr_xpn_lnd                                     ![frc]
 
-               ! fxm: Turning this on dramatically reduces
-               ! deposition velocity in low wind regimes
-               ! Schmidt number exponent is -2/3 over solid surfaces and
-               ! -1/2 over liquid surfaces SlS80 p. 1014
-               ! if (oro(i)==0.0) shm_nbr_xpn=shm_nbr_xpn_ocn else shm_nbr_xpn=shm_nbr_xpn_lnd
-               ! [frc] Surface-dependent exponent for aerosol-diffusion dependence on Schmidt #
-
-               tmp = shm_nbr**shm_nbr_xpn + 10.0_r8**(-3.0_r8/stk_nbr)
+               tmp = shm_pow(p,m) + 10.0_r8**(-3.0_r8/stk_nbr)
                rss_lmn(p,m) = 1.0_r8 / (tmp * fv(p)) ![s m-1] SeP97 p.972,965
             end if
          end do
