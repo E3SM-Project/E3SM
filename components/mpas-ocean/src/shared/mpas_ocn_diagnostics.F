@@ -365,7 +365,7 @@ contains
                                          nCells, 0, 'relative', density, err, &
                                          thermExpCoeff, salineContractCoeff, &
                                          timeLevelIn=timeLevel)
-      ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
+      ! compute potentialDensity, the density displaced adiabatically to sea level.
       call ocn_equation_of_state_density(statePool, meshPool, activeTracers, tracersSurfaceValue, &
                                          nCells, 1, 'absolute', potentialDensity, &
                                          err, timeLevelIn=timeLevel)

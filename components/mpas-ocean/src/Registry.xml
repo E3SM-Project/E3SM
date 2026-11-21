@@ -3265,7 +3265,7 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^-3"
-			 description="potential density: density displaced adiabatically to the mid-depth of top layer"
+			 description="potential density: density displaced adiabatically to sea level"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>

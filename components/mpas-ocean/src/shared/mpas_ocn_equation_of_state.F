@@ -460,7 +460,6 @@ contains
       case ('jm','JM')
 
          ocnEqStateChoice  = ocnEqStateTypeJM
-         call ocn_equation_of_state_jm_init(domain, err)
 
       case ('wright', 'Wright', 'WRIGHT')
 

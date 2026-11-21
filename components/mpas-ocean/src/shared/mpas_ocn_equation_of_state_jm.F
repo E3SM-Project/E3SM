@@ -42,8 +42,7 @@ module ocn_equation_of_state_jm
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_equation_of_state_jm_density, &
-             ocn_equation_of_state_jm_init
+   public :: ocn_equation_of_state_jm_density
 
    !*** generic interface for case of density only or density and
    !*** expansion coeffs
@@ -57,11 +56,6 @@ module ocn_equation_of_state_jm
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
-   !*** depth-based reference pressure for pressure term in eq state
-
-   real (kind=RKIND), dimension(:), allocatable :: &
-      ocnEqStatePRef   ! reference pressure at each layer
 
    !*** valid range of T,S for Jackett and McDougall
 
@@ -156,7 +150,7 @@ contains
 !>  Density can be computed in-situ using kDisplaced=0 and
 !>      displacementType = 'relative'.
 !>
-!>  Potential density (referenced to top layer) can be computed
+!>  Potential density (referenced to sea level) can be computed
 !>      using kDisplaced=1 and displacementType = 'absolute'.
 !>
 !>  The density of SST/SSS after adiabatic displacement to each layer
@@ -406,7 +400,7 @@ contains
 !>  Density can be computed in-situ using kDisplaced=0 and
 !>      displacementType = 'relative'.
 !>
-!>  Potential density (referenced to top layer) can be computed
+!>  Potential density (referenced to sea level) can be computed
 !>      using kDisplaced=1 and displacementType = 'absolute'.
 !>
 !>  The density of SST/SSS after adiabatic displacement to each layer
@@ -714,13 +708,11 @@ contains
 !>  If kDisplaced = 0 or displacementType = 'relative', each layer k is
 !>  evaluated at the pressure of layer k + kDisplaced, so in-situ
 !>  density has kDisplaced = 0.  Otherwise (displacementType =
-!>  'absolute'), every layer is evaluated at the reference pressure of
-!>  layer kDisplaced, giving potential density.
+!>  'absolute'), every layer is evaluated at sea level (zero pressure),
+!>  giving potential density.
 !>
 !>  The pressure of a displaced layer is that of its actual depth,
 !>  -zMid, with the layer limited to the column's active layers.
-!>  Potential density uses ocnEqStatePRef, the pressure at the
-!>  reference depth of layer kDisplaced.
 !
 !-----------------------------------------------------------------------
 
@@ -771,18 +763,16 @@ contains
 
       if (kDisplaced /= 0 .and. displacementType /= 'relative') then
 
-         ! potential density, referenced to layer kDisplaced
-         kRef = max(min(kDisplaced, nVertLevels), 1)
+         ! potential density, referenced to sea level
 #ifdef MPAS_OPENACC
-         !$acc parallel loop gang vector collapse(2) &
-         !$acc    present(p, ocnEqStatePRef)
+         !$acc parallel loop gang vector collapse(2) present(p)
 #else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
 #endif
          do iCell=1,nCells
          do k=1,nVertLevels
-            p(k,iCell) = ocnEqStatePRef(kRef)
+            p(k,iCell) = 0.0_RKIND
          end do
          end do
 #ifndef MPAS_OPENACC
@@ -792,8 +782,10 @@ contains
 
       else
 
-         ! the pressure at the actual depth of the displaced layer, from
-         ! the same formula as ocnEqStatePRef
+         ! the pressure (bars) at the actual depth (m) of the displaced
+         ! layer, using a mean density derived from depth-dependent
+         ! global average temperatures and salinities from Levitus 1994,
+         ! and integrating using hydrostatic balance
 #ifdef MPAS_OPENACC
          !$acc parallel loop gang vector collapse(2) &
          !$acc    present(p, zMid, minLevelCell, maxLevelCell)
@@ -822,109 +814,6 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine compute_jm_pressure!}}}
-
-!***********************************************************************
-!
-!  routine ocn_equation_of_state_jm_init
-!
-!> \brief   Initializes ocean momentum horizontal mixing quantities
-!> \author  Mark Petersen
-!> \date    September 2011
-!> \details
-!>  This routine initializes a variety of quantities related to
-!>  horizontal velocity mixing in the ocean. Since a variety of
-!>  parameterizations are available, this routine primarily calls the
-!>  individual init routines for each parameterization.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_equation_of_state_jm_init(domain, err)!{{{
-
-   !--------------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      ! Input variables
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(in) :: &
-         domain        ! domain containing all state, mesh info
-
-      !-----------------------------------------------------------------
-      ! Output variables
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err  ! error flag
-
-      !-----------------------------------------------------------------
-      ! Local variables
-      !-----------------------------------------------------------------
-
-      integer ::            &
-         k,                 &! depth loop index
-         nVertLevels         ! max number of vertical levels
-
-      real (RKIND) :: depth  ! depth of layer midpoint
-
-      integer, pointer ::   &
-         nVertLevelsPtr      ! pointer for extracting max vert levels
-
-      real (kind=RKIND), dimension(:), pointer :: &
-         refBottomDepth      ! depth at bottom of each layer for
-                             !  a reference depth profile
-
-      type (block_type), pointer :: block ! pool info for each block
-
-      type (mpas_pool_type), pointer :: meshPool
-
-      !-----------------------------------------------------------------
-
-      !*** initialize error flag
-
-      err = 0
-
-      !*** extract vertical mesh info for computing ref pressure
-      !*** since vertical mesh info same for all blocks, only need first
-
-      block => domain % blocklist
-      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-
-      call mpas_pool_get_array(meshPool,     'refBottomDepth', &
-                                              refBottomDepth)
-
-      call mpas_pool_get_dimension(meshPool, 'nVertLevels', &
-                                              nVertLevelsPtr)
-      nVertLevels = nVertLevelsPtr
-
-      !*** compute reference pressure in bars from depth in meters
-      !***  using a mean density derived from depth-dependent global
-      !***  average temperatures and salinities from Levitus 1994, and
-      !***  integrating using hydrostatic balance.
-      !*** Note this calculation uses refBottomDepth, so pressure on
-      !***  top level does not include SSH contribution.
-      !*** In-situ and relative-displaced density use each layer's
-      !***  actual depth instead (see compute_jm_pressure)
-
-      allocate(ocnEqStatePRef(nVertLevels))
-
-      depth = 0.5_RKIND*refBottomDepth(1)
-      ocnEqStatePRef(1) = &
-           0.059808_RKIND  *(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
-         + 0.100766_RKIND  *depth &
-         + 2.28405e-7_RKIND*depth**2
-      do k = 2,nVertLevels
-         depth = 0.5_RKIND*(refBottomDepth(k) + refBottomDepth(k-1))
-         ocnEqStatePRef(k) = &
-              0.059808_RKIND  *(exp(-0.025_RKIND*depth) - 1.0_RKIND) &
-            + 0.100766_RKIND  *depth                                 &
-            + 2.28405e-7_RKIND*depth**2
-      enddo
-#ifdef MPAS_OPENACC
-      !$acc enter data copyin(ocnEqStatePRef)
-#endif
-
-   !--------------------------------------------------------------------
-
-   end subroutine ocn_equation_of_state_jm_init!}}}
 
 !***********************************************************************
 
