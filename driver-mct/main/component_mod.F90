@@ -427,8 +427,8 @@ contains
 
   !===============================================================================
 
-  subroutine component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-       samegrid_ro, samegrid_lg, samegrid_az)
+  subroutine component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn, samegrid_ao, samegrid_al, &
+       samegrid_ro, samegrid_lg, samegrid_og, samegrid_az)
 
     !---------------------------------------------------------------
     ! Description
@@ -445,10 +445,13 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     logical                  , intent(in)    :: rof_c2_ocn
+    logical                  , intent(in)    :: glc_c2_ocn
+    logical                  , intent(in)    :: glcshelf_c2_ocn
     logical                  , intent(in)    :: samegrid_ao
     logical                  , intent(in)    :: samegrid_al
     logical                  , intent(in)    :: samegrid_ro
     logical                  , intent(in)    :: samegrid_lg  ! lnd & glc on same grid
+    logical                  , intent(in)    :: samegrid_og  ! ocn & glc on same grid
     logical                  , intent(in)    :: samegrid_az  ! iac & atm on same grid
 
     !
@@ -512,6 +515,20 @@ contains
           call t_stopf('CPL:seq_map_readdata-ocn2atm')
 
        endif
+    end if
+
+    if (ocn_present .and. .not. atm_present .and. (glc_c2_ocn .or. glcshelf_c2_ocn) &
+        .and. .not. samegrid_og) then
+       ! Without an atm, read the ocn's aream from the glc->ocn map, as glc's is
+       ! read below, so that glc<->ocn fluxes are conservative on the map's areas
+       gsmap_d => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
+       dom_d   => component_get_dom_cx(ocn(1))   ! dom_ox
+
+       call t_startf('CPL:seq_map_readdata-glc2ocn_ocn')
+       call seq_map_readdata('seq_maps.rc','glc2ocn_fmapname:',mpicom_CPLID, CPLID, &
+            gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
+            string='glc2ocn ocn aream initialization')
+       call t_stopf('CPL:seq_map_readdata-glc2ocn_ocn')
     end if
 
     if (ice_present .and. ocn_present) then
@@ -580,6 +597,18 @@ contains
           call t_stopf('CPL:seq_map_readdata-lnd2glc')
 
        endif
+    else if ((glc_c2_ocn .or. glcshelf_c2_ocn) .and. .not. samegrid_og) then
+       ! Without lnd, read glc aream from the glc->ocn map so the area
+       ! corrections make glc<->ocn fluxes conservative even when glc's model
+       ! areas differ from the mapping areas (e.g., a planar ice-sheet mesh)
+       gsmap_s => component_get_gsmap_cx(glc(1)) ! gsmap_gx
+       dom_s   => component_get_dom_cx(glc(1))   ! dom_gx
+
+       call t_startf('CPL:seq_map_readdata-glc2ocn')
+       call seq_map_readdata('seq_maps.rc','glc2ocn_fmapname:',mpicom_CPLID, CPLID, &
+            gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
+            string='glc2ocn aream initialization')
+       call t_stopf('CPL:seq_map_readdata-glc2ocn')
     endif
 
     ! currently lnd and atm must be present if iac is present

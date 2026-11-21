@@ -633,7 +633,6 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_EAM.*_ELM.*MPASO">8</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
@@ -932,6 +931,36 @@
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
       compsets.</desc>
+  </entry>
+
+  <entry id="GLC_RUNOFF_TO_OCN">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Whether glc's runoff (e.g. calving and face melt) goes to the ocean.
+      If FALSE, glc's runoff reaches no component and the glc-to-ocean runoff
+      maps are not needed, while ice-shelf coupling is unchanged.</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SHELF_MASK">
+    <type>char</type>
+    <valid_values>below_sea_level,ungrounded</valid_values>
+    <default_value>below_sea_level</default_value>
+    <values match="last">
+      <value grid="oi%SOwISC12to30E3r4.+g%mpas.ais4to20km">ungrounded</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>The mask glc applies to the ice-shelf geometry it sends the ocean:
+      'below_sea_level' (default) includes grounded ice below sea level, as
+      when grounded cells are part of the ocean (e.g. with a subglacial thin
+      film); 'ungrounded' excludes grounded ice, to match initial conditions
+      made that way (e.g. compass's ocean_includes_grounded = False).  Only
+      the geometry is affected; ice-shelf fluxes are unchanged.  Grids whose
+      ocean initial condition was built from glc's geometry without grounded
+      ice default to 'ungrounded'.</desc>
   </entry>
 
   <entry id="OCN_GLC_ISMF_COUPLING">

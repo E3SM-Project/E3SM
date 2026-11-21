@@ -137,6 +137,8 @@ add_default($nl, 'config_TF_iceberg_depth');
 add_default($nl, 'config_ocean_data_extrap_ncells_extra');
 add_default($nl, 'config_invalid_value_TF');
 add_default($nl, 'config_weight_value_cell');
+add_default($nl, 'config_invalid_value_ocn_intr_temp');
+add_default($nl, 'config_min_floating_frac');
 
 #######################################
 # Namelist group: physical_parameters #

@@ -409,6 +409,7 @@ module cime_comp_mod
   logical  :: glclnd_present         ! .true.  => glc is computing land coupling
   logical  :: glcocn_present         ! .true.  => glc is computing ocean runoff
   logical  :: glcice_present         ! .true.  => glc is computing icebergs
+  logical  :: glc_runoff_to_ocn      ! .true.  => glc's runoff goes to the ocn
   logical  :: rofice_present         ! .true.  => rof is computing icebergs
   logical  :: rof_present            ! .true.  => rof is present
   logical  :: flood_present          ! .true.  => rof is computing flood
@@ -1703,6 +1704,7 @@ contains
          glclnd_present=glclnd_present,         &
          glcocn_present=glcocn_present,         &
          glcice_present=glcice_present,         &
+         glc_runoff_to_ocn=glc_runoff_to_ocn,   &
          rof_present=rof_present,               &
          rofice_present=rofice_present,         &
          wav_present=wav_present,               &
@@ -1844,7 +1846,8 @@ contains
     endif
     if (glc_present) then
        if (glclnd_present .and. lnd_prognostic) glc_c2_lnd = .true.
-       if (glcocn_present .and. ocn_prognostic) glc_c2_ocn = .true.
+       ! glc's runoff can be kept out of the ocn while ice-shelf coupling continues
+       if (glcocn_present .and. ocn_prognostic .and. glc_runoff_to_ocn) glc_c2_ocn = .true.
        ! For now, glcshelf->ocn only activated if the ocean has activated ocn->glcshelf
        if (ocn_c2_glcshelf .and. glcocn_present .and. ocn_prognostic) glcshelf_c2_ocn = .true.
        ! For now, glacshelf->ice also controlled by ocean's ocn_c2_glcshelf flag
@@ -2022,7 +2025,7 @@ contains
     if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
        ! Current logic will not allow this to be true, but future changes could make it so, which may be nonsensical
        call shr_sys_abort(subname//' ERROR: if glcshelf_c2_ocn must also have ocn_c2_glcshelf and vice versa. '//&
-            'Boundary layer fluxes calculated in coupler require input from both components.')
+            'Ice-shelf coupling exchanges fields in both directions.')
     endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
@@ -2118,8 +2121,8 @@ contains
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-            samegrid_ro, samegrid_lg, samegrid_az)
+       call component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn, samegrid_ao, samegrid_al, &
+            samegrid_ro, samegrid_lg, samegrid_og, samegrid_az)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
@@ -4318,21 +4321,11 @@ contains
           call prep_glc_calc_o2x_gx(ocn_c2_glctf, ocn_c2_glcshelf, timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
        endif
 
-       ! if ice-shelf coupling is on, now proceed to handle those calculations here in the coupler
+       ! if ice-shelf coupling is on, accumulate the ocean's ice-shelf fields
+       ! over the glc coupling interval
        if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
-          ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
-          ! so they will only be valid if both OCN->GLC and GLC->OCN
-
-          call prep_glc_calculate_subshelf_boundary_fluxes ! this is actual boundary layer flux calculation
-                                        !this outputs
-                                        !x2g_g/g2x_g, where latter is going
-                                        !to ocean, so should get remapped to
-                                        !ocean grid in prep_ocn_shelf_calc_g2x_ox
-          call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
-                                        !Map g2x_gx shelf fields that were updated above, to g2x_ox.
-                                        !Do this at intrinsic coupling
-                                        !frequency
-          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
+          call prep_glc_mrg_ocn_shelf(timer_mrg='CPL:glcprep_mrgocnshelf') !copy o2x_gx shelf fields into x2g_gx
+          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g shelf fields here into x2g_gacc
        endif
 
        if (glcshelf_c2_ice) then
@@ -4556,6 +4549,7 @@ contains
 
        if (glc_c2_lnd) call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
        if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
+       if (glcshelf_c2_ocn) call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
        if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)

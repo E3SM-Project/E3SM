@@ -43,6 +43,7 @@ def buildnml(case, caseroot, compname):
     run_reftod        = case.get_value("RUN_REFTOD")
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
     mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
+    mali_ic_file      = case.get_value("MALI_IC_FILE")
     glc_nzoc          = case.get_value("GLC_NZOC")
     ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
     glc_two_way_coupling = case.get_value("GLC_TWO_WAY_COUPLING")
@@ -121,7 +122,10 @@ def buildnml(case, caseroot, compname):
     # Note: this is not setup for multiple instances
     #--------------------------------------------------------------------
 
-    input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
+    if mali_ic_file:
+        input_file = "{}/glc/mpasli/{}/{}".format(din_loc_root, glc_grid, mali_ic_file)
+    else:
+        input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
     if run_type == 'hybrid' or run_type == 'branch':
         input_file = "{}/{}.mali.rst.{}_{}.nc".format(rundir, run_refcase, run_refdate, run_reftod)
         expect(os.path.exists(input_file), " ERROR mali buildnml: missing specified restart file for branch or hybrid run: " + input_file)

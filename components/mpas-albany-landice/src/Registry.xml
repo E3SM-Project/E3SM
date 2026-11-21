@@ -519,6 +519,14 @@
 			    description="weight used to smooth horizontal extrapolation of ocean data field. Value close to 1 implies more weight of the current cell value versus the averaged value of the neighbouring cells around the cell"
 			    possible_values="any real value between 0 and 1"
 		/>
+		<nml_option name="config_invalid_value_ocn_intr_temp" type="real" default_value="1.0e36" units="K"
+			    description="value assigned to iceOceanInterfaceTemperature where the ocean does not provide a valid ice-ocean interface temperature"
+			    possible_values="Any real value"
+		/>
+		<nml_option name="config_min_floating_frac" type="real" default_value="0.01" units="unitless"
+			    description="minimum floating-ice fraction from the ocean, remapped to MALI cells, for the ice-ocean interface temperature from the ocean to be used.  At or below this value, iceOceanInterfaceTemperature is set to config_invalid_value_ocn_intr_temp and floating ice uses a depth-based freezing temperature at its base."
+			    possible_values="Any real value between 0 and 1"
+		/>
 	</nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
@@ -1792,6 +1800,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="C s^-1"
                      description="interior heat dissipation rate, divided by rhoi*cp_ice"
+                />
+                <var name="iceOceanInterfaceTemperature" type="real" dimensions="nCells Time" units="K"
+                     description="ice-ocean interface temperature under floating ice from the ocean, set to config_invalid_value_ocn_intr_temp where the ocean does not provide it"
                 />
         </var_struct>
 

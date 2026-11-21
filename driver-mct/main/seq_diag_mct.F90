@@ -34,7 +34,8 @@ module seq_diag_mct
   use shr_sys_mod, only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod, only : shr_mpi_max, shr_mpi_sum
   use shr_const_mod, only: shr_const_rearth, shr_const_pi, shr_const_latice, &
-       shr_const_ice_ref_sal, shr_const_ocn_ref_sal, shr_const_isspval
+       shr_const_ice_ref_sal, shr_const_ocn_ref_sal, shr_const_isspval, &
+       shr_const_cpice, shr_const_cpsw, shr_const_tkfrz
   use mct_mod, only: mct_ggrid, mct_avect, mct_avect_lsize, mct_string, &
        mct_string_tochar, mct_gsmap, mct_aVect_indexRA, MCT_AVECT_NRATTR, &
        mct_string_clean, mct_avect_getrlist
@@ -48,7 +49,7 @@ module seq_diag_mct
   use shr_reprosum_mod, only : shr_reprosum_calc
   use seq_diagBGC_mct,  only : seq_diagBGC_preprint_mct, seq_diagBGC_print_mct
 
-  use prep_glc_mod,  only : prep_glc_get_l2gacc_lx_cnt_avg
+  use prep_glc_mod,  only : prep_glc_get_l2gacc_lx_cnt_avg, prep_glc_get_x2gacc_gx_cnt_avg
   use glc_elevclass_mod, only: glc_get_num_elevation_classes 
 
   implicit none
@@ -366,6 +367,12 @@ module seq_diag_mct
 
   integer :: index_x2g_Flgl_qice 
   integer :: index_g2x_Sg_icemask
+  integer :: index_x2g_Foxo_ismf
+  integer :: index_x2g_Foxo_ismf_frazil
+  integer :: index_x2g_So_tfrz_isf
+  integer :: index_x2g_So_liflfrac
+  integer :: index_g2x_Sg_icemask_floating
+  integer :: index_g2x_Fogg_hcond
 
   integer :: index_x2o_Foxx_rofl_16O
   integer :: index_x2o_Foxx_rofi_16O
@@ -465,6 +472,7 @@ module seq_diag_mct
 
   integer :: glc_nec
   integer :: l2gacc_lx_cnt_avg
+  integer :: x2gacc_gx_cnt_avg
 
   !===============================================================================
 contains
@@ -1353,6 +1361,11 @@ contains
     integer(in)              :: kArea           ! index of area field in aVect
     integer(in)              :: lSize           ! size of aVect
     real(r8)                 :: ca_g            ! area of a grid cell
+    real(r8)                 :: wpolar_g        ! ice-shelf mass flux into a grid cell
+    real(r8)                 :: winterface_g    ! the part of wpolar_g not from frazil
+    real(r8)                 :: tInterface      ! ice-ocean interface temperature (C)
+    real(r8)                 :: cp              ! heat capacity of the exchanged water
+    real(r8)                 :: hEnthalpy       ! enthalpy carried by the exchanged water
     logical,save             :: first_time = .true.
 
     !----- formats -----
@@ -1387,6 +1400,14 @@ contains
        index_x2g_Flgl_qice  = mct_aVect_indexRA(x2g_g,'Flgl_qice')
        index_g2x_Sg_icemask = mct_avect_indexRA(g2x_g,'Sg_icemask')
 
+       ! indices needed for ice-shelf coupling with the ocean
+       index_x2g_Foxo_ismf = mct_aVect_indexRA(x2g_g,'Foxo_ismf',perrWith='quiet')
+       index_x2g_Foxo_ismf_frazil = mct_aVect_indexRA(x2g_g,'Foxo_ismf_frazil',perrWith='quiet')
+       index_x2g_So_tfrz_isf = mct_aVect_indexRA(x2g_g,'So_tfrz_isf',perrWith='quiet')
+       index_x2g_So_liflfrac = mct_aVect_indexRA(x2g_g,'So_liflfrac',perrWith='quiet')
+       index_g2x_Sg_icemask_floating = mct_aVect_indexRA(g2x_g,'Sg_icemask_floating',perrWith='quiet')
+       index_g2x_Fogg_hcond = mct_aVect_indexRA(g2x_g,'Fogg_hcond',perrWith='quiet')
+
     end if
 
     if( present(do_g2x))then  ! do fields from glc to coupler (g2x_)
@@ -1400,6 +1421,10 @@ contains
            nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofl,n)
            nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_rofi,n) &
                    - ca_g*g2x_g%rAttr(index_g2x_Figg_rofi,n)
+           if (index_g2x_Fogg_hcond /= 0) then
+              ! conductive heat from glc into the ocean under floating ice
+              nf = f_hpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*g2x_g%rAttr(index_g2x_Fogg_hcond,n)
+           end if
        end do
 
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
@@ -1418,9 +1443,48 @@ contains
           nf = f_wgsmb; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*x2g_g%rAttr(index_x2g_Flgl_qice,n)
        end do
 
-       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * l2gacc_lx_cnt_avg
+       budg_dataL(f_wgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip) * l2gacc_lx_cnt_avg
 
        budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice 
+
+       if (index_x2g_Foxo_ismf /= 0 .and. index_g2x_Sg_icemask_floating /= 0) then
+          ! The net ice-shelf mass flux from the ocean (positive for melt), which glc
+          ! applies to its floating ice.  It balances the ocean's AIS terms.
+          x2gacc_gx_cnt_avg = prep_glc_get_x2gacc_gx_cnt_avg()
+          hEnthalpy = 0.0_r8
+          do n=1,lSize
+             ca_g = dom_g%data%rAttr(kArea,n)*g2x_g%rAttr(index_g2x_Sg_icemask_floating,n)
+             wpolar_g = -ca_g*x2g_g%rAttr(index_x2g_Foxo_ismf,n)
+             nf = f_wpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + wpolar_g
+             ! The ocean values the water it melts or freezes at the ice-ocean
+             ! interface at the interface temperature, as ice where it melts and
+             ! as seawater where it freezes, relative to 0 C.  Frazil leaves the
+             ! ocean at 0 C, so it carries latent heat alone.
+             winterface_g = wpolar_g
+             if (index_x2g_Foxo_ismf_frazil /= 0) then
+                winterface_g = wpolar_g - ca_g*x2g_g%rAttr(index_x2g_Foxo_ismf_frazil,n)
+             end if
+             if (index_x2g_So_tfrz_isf /= 0 .and. index_x2g_So_liflfrac /= 0) then
+                if (x2g_g%rAttr(index_x2g_So_liflfrac,n) > 0.0_r8) then
+                   tInterface = x2g_g%rAttr(index_x2g_So_tfrz_isf,n) &
+                              / x2g_g%rAttr(index_x2g_So_liflfrac,n) - shr_const_tkfrz
+                   if (winterface_g < 0.0_r8) then
+                      cp = shr_const_cpice
+                   else
+                      cp = shr_const_cpsw
+                   end if
+                   hEnthalpy = hEnthalpy + winterface_g*cp*tInterface
+                end if
+             end if
+          end do
+          ! x2g holds the average of the ocean samples since glc last ran and is zero
+          ! otherwise, so count it once for each of those samples
+          budg_dataL(f_wpolar,ic,ip) = budg_dataL(f_wpolar,ic,ip) * x2gacc_gx_cnt_avg
+          ! the ice gained or lost by glc carries latent heat, and the part melted
+          ! or frozen at the interface also its enthalpy at the interface temperature
+          budg_dataL(f_hpolar,ic,ip) = -budg_dataL(f_wpolar,ic,ip)*shr_const_latice &
+                                     + hEnthalpy*x2gacc_gx_cnt_avg
+       end if
 
     end if ! end do fields from coupler to glc (x2g_)
 

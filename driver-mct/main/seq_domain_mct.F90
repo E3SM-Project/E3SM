@@ -931,6 +931,11 @@ contains
                 call shr_sys_flush(logunit)
                 call shr_sys_abort()
              endif
+          elseif (rarea * raream /= 0.0_R8) then
+             ! a masked cell can still exchange fluxes with some components (e.g.
+             ! ocean cells under ice shelves with glc), so correct it too
+             mdl2drv(n) = rarea/raream
+             drv2mdl(n) = 1.0_R8/mdl2drv(n)
           endif
        enddo
     end if
