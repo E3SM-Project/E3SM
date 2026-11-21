@@ -454,6 +454,7 @@ add_default($nl, 'config_calc_surface_temperature');
 add_default($nl, 'config_use_form_drag');
 add_default($nl, 'config_use_high_frequency_coupling');
 add_default($nl, 'config_boundary_layer_iteration_number');
+add_default($nl, 'config_boundary_layer_iteration_tolerance');
 
 #########################
 # Namelist group: ocean #

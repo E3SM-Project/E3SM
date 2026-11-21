@@ -877,6 +877,44 @@
     </values>
   </entry>
 
+  <entry id="use_ocn_atm_flux_reg">
+    <type>logical</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      if true, use regularization in ocean-atmosphere surface flux calculations
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="ocn_atm_flux_eps">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      epsilon used for regularization of ocean-atmosphere flux RHN.
+      Must be positive when regularization is enabled.
+    </desc>
+    <values>
+      <value>0.1</value>
+    </values>
+  </entry>
+
+  <entry id="ocn_atm_flux_damping">
+    <type>real</type>
+    <category>control</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      damping factor for ocean-atmosphere flux fixed point iteration.
+      Must be greater than 0 and at most 1 when regularization is enabled.
+    </desc>
+    <values>
+      <value>0.016</value>
+    </values>
+  </entry>
+
   <entry id="flux_diurnal">
      <type>logical</type>
      <category>control</category>
@@ -910,13 +948,12 @@
     <category>control</category>
     <group>seq_infodata_inparm</group>
     <desc>
-      Iterate atmocn flux calculation to this % difference
-      Setting this to zero will always do flux_max_iteration
+      Iterate atmocn flux calculation to this relative difference.
+      Set to -1 to choose 0.0 without ocean-atmosphere flux regularization
+      or 3.0e-3 with regularization. An explicit value must be nonnegative.
     </desc>
     <values>
-      <!-- the value for f09 grids is maintained as 0.0 for compatibility with cmip6 experiments
-           the 1% convergence criteria improves performance of the atm ocn flux calculation in shr_flux_mod.F90 -->
-      <value>0.0</value>
+      <value>-1.0</value>
     </values>
   </entry>
 
@@ -926,8 +963,9 @@
     <group>seq_infodata_inparm</group>
     <desc>
       Maximum number of iterations in atmosphere-ocean flux calculation.
-      Setting this value to -1 will cause the model to use a default that
-      depends on the setting of atm_flux_method.
+      Set to -1 to choose 20000000 with ocean-atmosphere flux regularization,
+      30 with implicit_stress (without regularization), or 2 otherwise.
+      An explicit value must be positive.
     </desc>
     <values>
       <value>-1</value>

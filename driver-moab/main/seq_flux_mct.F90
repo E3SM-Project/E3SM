@@ -2,6 +2,7 @@ module seq_flux_mct
 
   use shr_kind_mod,      only: r8 => shr_kind_r8, in=>shr_kind_in
   use shr_sys_mod,       only: shr_sys_abort
+  use shr_infnan_mod,    only: shr_infnan_isnan, shr_infnan_isinf
   use shr_flux_mod,      only: shr_flux_atmocn, shr_flux_atmocn_ua, shr_flux_atmocn_diurnal, shr_flux_adjust_constants
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
@@ -1550,6 +1551,9 @@ contains
     real(r8)    :: flux_convergence ! convergence criteria for imlicit flux computation
     integer(in) :: flux_max_iteration ! maximum number of iterations for convergence
     logical :: coldair_outbreak_mod !  cold air outbreak adjustment  (Mahrt & Sun 1995,MWR)
+    logical :: use_ocn_atm_flux_reg
+    real(r8) :: ocn_atm_flux_eps
+    real(r8) :: ocn_atm_flux_damping
 
 #ifdef MOABDEBUG
     character*100 outfile, wopts, lnum
@@ -1573,18 +1577,55 @@ contains
     if (first_call) then
        call seq_infodata_getData(infodata , &
          coldair_outbreak_mod=coldair_outbreak_mod,  &
+         use_ocn_atm_flux_reg=use_ocn_atm_flux_reg, &
+         ocn_atm_flux_eps=ocn_atm_flux_eps, &
+         ocn_atm_flux_damping=ocn_atm_flux_damping, &
          flux_convergence=flux_convergence, &
          flux_max_iteration=flux_max_iteration)
 
-       ! If flux_max_iteration is not set, choose a value based on
-       ! atm_flux_method.
+       ! Resolve automatic flux iteration settings. If not set via namelist,
+       ! set default values based on whether regularization and/or implicit
+       ! stress method are active.
+       if (flux_convergence == -1.0_r8) then
+          flux_convergence = 0.0_r8
+          if (use_ocn_atm_flux_reg) flux_convergence = 3.0e-3_r8
+       end if
+
        if (flux_max_iteration == -1) then
-          select case(atm_flux_method)
-          case('implicit_stress')
-             flux_max_iteration = 30
-          case default
-             flux_max_iteration = 2
-          end select
+         if (use_ocn_atm_flux_reg) then
+            flux_max_iteration = 20000000
+         else
+            select case (atm_flux_method)
+            case ('implicit_stress')
+               flux_max_iteration = 30
+            case default
+               flux_max_iteration = 2
+            end select
+         end if
+       end if
+
+       if (shr_infnan_isnan(flux_convergence) .or. shr_infnan_isinf(flux_convergence)) then
+          call shr_sys_abort(subname//' flux_convergence must be finite')
+       end if
+       if (flux_convergence < 0.0_r8) then
+          call shr_sys_abort(subname//' flux_convergence must be nonnegative')
+       end if
+       if (flux_max_iteration <= 0) then
+          call shr_sys_abort(subname//' flux_max_iteration must be positive')
+       end if
+       if (use_ocn_atm_flux_reg) then
+          if (shr_infnan_isnan(ocn_atm_flux_eps) .or. shr_infnan_isinf(ocn_atm_flux_eps)) then
+             call shr_sys_abort(subname//' ocn_atm_flux_eps must be finite')
+          end if
+          if (ocn_atm_flux_eps <= 0.0_r8) then
+             call shr_sys_abort(subname//' ocn_atm_flux_eps must be positive')
+          end if
+          if (shr_infnan_isnan(ocn_atm_flux_damping) .or. shr_infnan_isinf(ocn_atm_flux_damping)) then
+             call shr_sys_abort(subname//' ocn_atm_flux_damping must be finite')
+          end if
+          if (ocn_atm_flux_damping <= 0.0_r8 .or. ocn_atm_flux_damping > 1.0_r8) then
+             call shr_sys_abort(subname//' ocn_atm_flux_damping must be greater than 0 and at most 1')
+          end if
        end if
 
        if (.not.read_restart) cold_start = .true.
@@ -1663,7 +1704,10 @@ contains
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
        call shr_flux_adjust_constants(flux_convergence_tolerance=flux_convergence, &
             flux_convergence_max_iteration=flux_max_iteration, &
-            coldair_outbreak_mod=coldair_outbreak_mod)
+            coldair_outbreak_mod=coldair_outbreak_mod, &
+            use_ocean_atmosphere_flux_regularization=use_ocn_atm_flux_reg, &
+            ocean_atmosphere_flux_epsilon=ocn_atm_flux_eps, &
+            ocean_atmosphere_flux_damping=ocn_atm_flux_damping)
        first_call = .false.
     end if
 
