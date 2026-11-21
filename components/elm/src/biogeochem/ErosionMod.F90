@@ -37,7 +37,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

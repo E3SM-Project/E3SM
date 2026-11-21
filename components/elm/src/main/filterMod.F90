@@ -13,6 +13,7 @@ module filterMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use elm_varctl     , only : iulog
+  use elm_varctl     , only : elm_device_ready  ! setExposedvegpFilters' kernels (host until the device copy)
   use decompMod      , only : bounds_type  
   use GridcellType   , only : grc_pp
   use LandunitType   , only : lun_pp                
@@ -83,6 +84,10 @@ module filterMod
 
      integer, pointer :: nolakeurbanp(:) ! non-lake, non-urban filter (pfts)
      integer :: num_nolakeurbanp         ! number of pfts in non-lake, non-urban filter
+     integer, pointer :: nolakeurban_barep(:) ! non-lake, non-urban, bare-ground filter (pfts)
+     integer :: num_nolakeurban_barep         ! number of pfts in non-lake, non-urban, bare-ground filter
+     integer, pointer :: nolakeurban_vegp(:)  ! non-lake, non-urban, vegetated filter (pfts)
+     integer :: num_nolakeurban_vegp          ! number of pfts in non-lake, non-urban, vegetated filter
 
      integer, pointer :: icemecc(:)      ! glacier mec filter (cols)
      integer :: num_icemecc              ! number of columns in glacier mec filter
@@ -115,6 +120,7 @@ module filterMod
   !
   public allocFilters   ! allocate memory for filters
   public setFilters     ! set filters
+  public setExposedvegpFilters   ! set the dynamic, snow-dependent bare-ground/vegetated sub-filters
 
   private allocFiltersOneGroup  ! allocate memory for one group of filters
   private setFiltersOneGroup    ! set one group of filters
@@ -185,6 +191,8 @@ contains
        allocate(this_filter(nc)%lakep(bounds%endp-bounds%begp+1))
        allocate(this_filter(nc)%nolakep(bounds%endp-bounds%begp+1))
        allocate(this_filter(nc)%nolakeurbanp(bounds%endp-bounds%begp+1))
+       allocate(this_filter(nc)%nolakeurban_barep(bounds%endp-bounds%begp+1))
+       allocate(this_filter(nc)%nolakeurban_vegp(bounds%endp-bounds%begp+1))
 
        allocate(this_filter(nc)%lakec(bounds%endc-bounds%begc+1))
        allocate(this_filter(nc)%nolakec(bounds%endc-bounds%begc+1))
@@ -543,5 +551,113 @@ contains
     ! LakeHydrology and SnowHydrology
 
   end subroutine setFiltersOneGroup
+
+
+  !------------------------------------------------------------------------
+  subroutine setExposedvegpFilters(bounds, this_filter, frac_veg_nosno)
+    !
+    ! !DESCRIPTION:
+    ! Split the non-lake, non-urban pft filter (nolakeurbanp) into a
+    ! bare-ground sub-filter (nolakeurban_barep) and a vegetated
+    ! sub-filter (nolakeurban_vegp), based on the current, snow-dependent
+    ! frac_veg_nosno flag (0 => bare ground, 1 => vegetated). Unlike the
+    ! rest of the filters set up in setFiltersOneGroup, this must be
+    ! recomputed every time step, since frac_veg_nosno changes with snow
+    ! cover - similar to how the snow filters are reconstructed each time
+    ! step in LakeHydrology and SnowHydrology.
+    !
+    ! !USES:
+    use decompMod , only : BOUNDS_LEVEL_CLUMP
+    !
+    ! !ARGUMENTS:
+    type(bounds_type) , intent(in)    :: bounds
+    type(clumpfilter)  , intent(inout) :: this_filter(:)             ! the group of filters to set
+    integer            , intent(in)    :: frac_veg_nosno( bounds%begp: ) ! 0 => bare ground, 1 => vegetated [patch]
+    !
+    ! LOCAL VARIABLES:
+    integer :: nc          ! clump index
+    integer :: f, p        ! filter index, patch index
+    integer :: fbare, fveg ! bare-ground / vegetated filter indices
+    integer :: n           ! patches in nolakeurbanp
+    integer :: k, nblk     ! block index, number of blocks
+    integer :: f0, f1      ! first/last filter index of a block
+    integer :: nb, nv      ! bare-ground / vegetated patches of a block (counts, then fill positions)
+    integer, parameter :: blk = 128  ! patches per block of the ordered compaction
+    integer, allocatable :: blk_bare(:), blk_veg(:)  ! per block: counts, then offsets
+    !------------------------------------------------------------------------
+
+    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(frac_veg_nosno) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+
+    nc = bounds%clump_index
+    n = this_filter(nc)%num_nolakeurbanp
+
+    ! Ordered stream compaction, in parallel: the sub-filters keep the ascending order of
+    ! nolakeurbanp (as the serial loops of upstream ELM; atomics gave a thread-dependent order).
+    ! 1) per block of blk filter entries, count its bare-ground and vegetated patches;
+    ! 2) exclusive prefix sums of the counts give each block's first position (few hundred
+    !    blocks: one thread) and the filter sizes;
+    ! 3) per block, fill its positions in order.
+    nblk = max((n + blk - 1) / blk, 1)
+    allocate(blk_bare(nblk), blk_veg(nblk))
+    !$acc enter data create(blk_bare, blk_veg) if(elm_device_ready)
+
+    !$acc parallel loop gang vector default(present) private(f0, f1, nb, nv, f, p) if(elm_device_ready)
+    do k = 1, nblk
+       f0 = (k - 1) * blk + 1
+       f1 = min(k * blk, n)
+       nb = 0
+       nv = 0
+       !$acc loop seq
+       do f = f0, f1
+          p = this_filter(nc)%nolakeurbanp(f)
+          if (frac_veg_nosno(p) == 0) then
+             nb = nb + 1
+          else
+             nv = nv + 1
+          end if
+       end do
+       blk_bare(k) = nb
+       blk_veg(k)  = nv
+    end do
+
+    fbare = 0
+    fveg  = 0
+    !$acc serial default(present) copy(fbare, fveg) if(elm_device_ready)
+    do k = 1, nblk
+       nb = blk_bare(k)
+       nv = blk_veg(k)
+       blk_bare(k) = fbare
+       blk_veg(k)  = fveg
+       fbare = fbare + nb
+       fveg  = fveg + nv
+    end do
+    !$acc end serial
+    this_filter(nc)%num_nolakeurban_barep = fbare
+    this_filter(nc)%num_nolakeurban_vegp  = fveg
+
+    !$acc parallel loop gang vector default(present) private(f0, f1, nb, nv, f, p) if(elm_device_ready)
+    do k = 1, nblk
+       f0 = (k - 1) * blk + 1
+       f1 = min(k * blk, n)
+       nb = blk_bare(k)
+       nv = blk_veg(k)
+       !$acc loop seq
+       do f = f0, f1
+          p = this_filter(nc)%nolakeurbanp(f)
+          if (frac_veg_nosno(p) == 0) then
+             nb = nb + 1
+             this_filter(nc)%nolakeurban_barep(nb) = p
+          else
+             nv = nv + 1
+             this_filter(nc)%nolakeurban_vegp(nv) = p
+          end if
+       end do
+    end do
+
+    !$acc exit data delete(blk_bare, blk_veg) if(elm_device_ready)
+    deallocate(blk_bare, blk_veg)
+
+  end subroutine setExposedvegpFilters
 
 end module filterMod

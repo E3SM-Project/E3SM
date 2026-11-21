@@ -110,7 +110,6 @@ contains
     !   results in a tridiagonal system equation.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar               , only : nlevsno, nlevgrnd, nlevurb
     use elm_varctl               , only : iulog
     use elm_varcon               , only : cnfac, cpice, cpliq, denh2o
@@ -514,7 +513,6 @@ contains
     !  Assembles and solves the banded penta-diagonal system of equations
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar       , only : nlevsno, nlevgrnd, nlevurb
     use elm_varctl       , only : iulog
     use elm_varcon       , only : cnfac, cpice, cpliq, denh2o
@@ -622,7 +620,6 @@ contains
     ! flux from the interface to the node j+1.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
@@ -883,7 +880,6 @@ contains
     ! Only freezing is considered.  When water freezes, move ice to bottom snow layer.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : tfrz, hfus, grav, denice, cnfac, cpice, cpliq
     use elm_varpar       , only : nlevsno, nlevgrnd
     use elm_varctl       , only : iulog
@@ -1103,7 +1099,6 @@ contains
     ! (3) Re-adjust the ice and liquid mass, and the layer temperature
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar       , only : nlevsno, nlevgrnd,nlevurb
     use elm_varctl       , only : iulog
     use elm_varcon       , only : tfrz, hfus, grav
@@ -1504,7 +1499,6 @@ contains
     ! Additionally, derivative of ground heat flux w.r.t to temeprature
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : sb, hvap
     use column_varcon  , only : icol_road_perv, icol_road_imperv
     use elm_varpar     , only : nlevsno, max_patch_per_col
@@ -1761,7 +1755,6 @@ contains
     ! (2) Factor used in computing tridiagonal matrix
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : capr, cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -1863,7 +1856,6 @@ contains
     !           !===========|
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -1968,7 +1960,6 @@ contains
     ! Sets up RHS vector corresponding to snow layers for all columns.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno
@@ -2039,7 +2030,6 @@ contains
     ! Sets up RHS vector corresponding to standing surface water
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use elm_varpar     , only : nlevsno
     !
@@ -2092,7 +2082,6 @@ contains
     ! including the contribution from standing surface water.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon  , only : icol_road_perv, icol_road_imperv
@@ -2224,7 +2213,6 @@ contains
     !
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2352,7 +2340,6 @@ contains
     !
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2419,7 +2406,6 @@ contains
     ! snow-soil interaction for all columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use elm_varpar     , only : nlevsno
     !
@@ -2490,7 +2476,6 @@ contains
     ! correction for the presence of standing surface water
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon  , only : icol_road_perv, icol_road_imperv
@@ -2646,7 +2631,6 @@ contains
     ! water interaction
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use elm_varpar     , only : nlevsno
     !

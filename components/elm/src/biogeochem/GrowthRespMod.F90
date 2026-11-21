@@ -39,7 +39,6 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer, intent(in) :: num_soilp       ! number of soil patches in filter
     integer, intent(in) :: filter_soilp(:) ! filter for soil patches
     !

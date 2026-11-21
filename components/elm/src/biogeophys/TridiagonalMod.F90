@@ -325,7 +325,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_sr_with_var_bottom (bounds, lbj, ubj, jtop, jbot, numf, filter, a, b, c, r, u, is_col_active)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Tridiagonal matrix solution
     ! A x = r

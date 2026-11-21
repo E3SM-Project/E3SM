@@ -8,7 +8,7 @@ module BareGroundFluxesMod
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
   use decompMod            , only : bounds_type
-  use CH4Mod               , only : ch4_type
+  use Ch4TypeMod               , only : ch4_type
   use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
@@ -41,7 +41,6 @@ contains
     ! to ground temperature using ground temperatures from previous time step.
     !
     ! !USES:
-      !$acc routine seq
     use shr_const_mod        , only : SHR_CONST_RGAS
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varpar           , only : nlevgrnd

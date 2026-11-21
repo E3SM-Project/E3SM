@@ -139,7 +139,6 @@ CONTAINS
     ! computes the dry deposition velocity of tracers
     !
     ! !USES:
-      !$acc routine seq
     use shr_const_mod  , only : tmelt => shr_const_tkfrz
     use seq_drydep_mod , only : seq_drydep_setHCoeff, mapping, drat, foxd
     use seq_drydep_mod , only : rcls, h2_a, h2_b, h2_c, ri, rac, rclo, rlu, rgss, rgso
@@ -217,6 +216,7 @@ CONTAINS
                                 0.005_r8, 0.000_r8, 0.000_r8, 0.000_r8, 0.075_r8, 0.002_r8 /)
     !-----------------------------------------------------------------------
 
+    integer :: spel_dc_1, spel_dc_2  ! spel defer-checks: elements recorded by deferred checks
     if ( n_drydep == 0 .or. drydep_method /= DD_XLND ) return
 
     associate(                                                    &
@@ -248,6 +248,8 @@ CONTAINS
       !_________________________________________________________________
       ! Begin loop through patches
 
+      spel_dc_1 = 0  ! spel defer-checks
+      spel_dc_2 = 0  ! spel defer-checks
       pft_loop: do pi = bounds%begp,bounds%endp
          l = veg_pp%landunit(pi)
 
@@ -296,12 +298,7 @@ CONTAINS
             !if (elmveg >= npcropmin .and. elmveg <= npcropmax ) wesveg = 2
             if (crop(elmveg) == 1.0_r8 .or. iscft(elmveg)) wesveg = 2
 #ifndef _OPENACC
-            if (wesveg == wveg_unset )then
-               write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)
-               call endrun(decomp_index=pi, elmlevel=namep, &
-                    msg='ERROR: Not able to determine Wesley vegetation type'//&
-                    errMsg(__FILE__, __LINE__))
-            end if
+            if (wesveg == wveg_unset) spel_dc_1 = max(spel_dc_1, pi - (bounds%begp) + 1)  ! spel defer-checks
 #endif
             ! creat seasonality index used to index wesely data tables from LAI,  Bascially
             !if elai is between max lai from input data and half that max the index_season=1
@@ -363,9 +360,7 @@ CONTAINS
                endif
             endif
 
-            if (index_season<0) then
-               call endrun('ERROR: not able to determine season'//errmsg(__FILE__, __LINE__))
-            endif
+            if (index_season<0) spel_dc_2 = max(spel_dc_2, pi - (bounds%begp) + 1)  ! spel defer-checks
 
             ! saturation specific humidity
             !
@@ -610,6 +605,21 @@ CONTAINS
          endif active
 
       end do pft_loop
+      if (spel_dc_1 > 0) then  ! spel defer-checks: the last element where the check held
+         pi = bounds%begp + spel_dc_1 - 1
+         l = veg_pp%landunit(pi)
+         elmveg     = veg_pp%itype(pi)
+         wesveg = wveg_unset
+               write(iulog,*) 'elmveg = ', elmveg, 'lun_pp%itype = ', lun_pp%itype(l)
+               call endrun(decomp_index=pi, elmlevel=namep, &
+                    msg='ERROR: Not able to determine Wesley vegetation type'//&
+                    errMsg(__FILE__, __LINE__))
+      end if
+      if (spel_dc_2 > 0) then  ! spel defer-checks: the last element where the check held
+         pi = bounds%begp + spel_dc_2 - 1
+         index_season = -1
+               call endrun('ERROR: not able to determine season'//errmsg(__FILE__, __LINE__))
+      end if
 
     end associate
 

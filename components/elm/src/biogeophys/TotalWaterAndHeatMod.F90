@@ -171,7 +171,6 @@ contains
     ! to ComputeHeatNonLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_nolakec                 ! number of column non-lake points in column filter
     integer                  , intent(in)    :: filter_nolakec(:)           ! column filter for non-lake points
@@ -309,7 +308,6 @@ contains
     ! to ComputeHeatLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)     , intent(in)    :: bounds
     integer               , intent(in)    :: num_lakec                   ! number of column lake points in column filter
     integer               , intent(in)    :: filter_lakec(:)             ! column filter for lake points
@@ -393,7 +391,6 @@ contains
     ! generally be accompanied by similar changes to ComputeLiqIceMassNonLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)  :: bounds
     integer                  , intent(in)  :: num_nolakec
     integer                  , intent(in)  :: filter_nolakec(:)
@@ -633,7 +630,6 @@ contains
     ! generally be accompanied by similar changes to ComputeLiqIceMassLake
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     type(bounds_type)        , intent(in)  :: bounds
     integer                  , intent(in)  :: num_lakec
     integer                  , intent(in)  :: filter_lakec(:)
@@ -865,7 +861,6 @@ contains
     ! count for liquid water, for a single column
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     real(r8), intent(in) :: temp  ! temperature [K]
     real(r8), intent(in) :: h2o   ! water mass [kg/m^2]
 
@@ -892,7 +887,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Convert temperature to heat content
-    !$acc routine seq
     ! !ARGUMENTS:
     real(r8) :: heat  ! function result: heat in J/m^2
     real(r8), intent(in) :: temp  ! temperature [K]

@@ -470,7 +470,6 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine photosyns_vars_TimeStepInit (photosyns_vars, bounds)
-    !$acc routine seq
     ! Time step initialization
     !
     ! !USES:

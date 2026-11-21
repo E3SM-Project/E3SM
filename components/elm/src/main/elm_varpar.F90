@@ -37,6 +37,7 @@ module elm_varpar
                                               ! (includes lower layers that are biogeochemically inactive)
   
   integer            :: nlevsno               ! maximum number of snow layers
+  integer, parameter :: nlevsno_max = 16     ! largest nlevsno (firn model): fixed-size per-thread snow-layer arrays
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
   integer, parameter :: nvegwcs     =   4     ! number of vegetation water conductance segments

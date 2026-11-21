@@ -39,6 +39,8 @@ MODULE shr_orb_mod
   real   (SHR_KIND_R8) :: constant_zenith_angle_deg = -1  ! constant, uniform zneith angle [degrees]
 
   !===============================================================================
+  ! spel acc-apply: module data read in device code (updated by the device data layer)
+  !$acc declare create(constant_zenith_angle_deg)
 CONTAINS
   !===============================================================================
 
@@ -67,6 +69,7 @@ CONTAINS
     real(SHR_KIND_R8) :: hour_angle
     !----------------------------------------------------------------------------
  
+    !$acc routine seq  ! spel acc-apply
     hour_angle = 2.0_SHR_KIND_R8*pi*((jday-floor(jday)) - 0.5_SHR_KIND_R8) + lon
 
     ! constrain hour_angle to [-pi,pi] to determine east/west below
@@ -112,6 +115,7 @@ CONTAINS
 
     !----------------------------------------------------------------------------
 
+    !$acc routine seq  ! spel acc-apply
     if ( constant_zenith_angle_deg >= 0 ) then
       shr_orb_cosz = cos( constant_zenith_angle_deg * SHR_CONST_PI/180. )
       return
@@ -176,6 +180,7 @@ CONTAINS
     ! Compute Half-day Length
 
     ! adjust latitude so that its tangent will be defined
+    !$acc routine seq  ! spel acc-apply
     if (lat ==  piover2) then
        del = lat - 1.0e-05_SHR_KIND_R8
     else if (lat ==  -piover2) then

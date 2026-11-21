@@ -410,7 +410,6 @@ contains
   end subroutine Restart
 
   subroutine Reset(this, column)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Intitialize SNICAR variables for fresh snow column
     !

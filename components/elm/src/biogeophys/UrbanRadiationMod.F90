@@ -55,7 +55,6 @@ contains
     ! Also net and upward longwave fluxes.
 
     ! !USES:
-      !$acc routine seq
     use elm_varcon          , only : spval, sb, tfrz
     use column_varcon       , only : icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall, icol_shadewall
@@ -336,7 +335,6 @@ contains
     ! multiple reflection. Also net longwave radiation for urban roof.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon , only : sb
     !
     ! !ARGUMENTS:

@@ -70,7 +70,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Set prior weights to current weights
-    !$acc routine seq
     ! !ARGUMENTS:
     type(prior_weights_type) , intent(inout) :: this   ! this object
     type(bounds_type)         , intent(in)    :: bounds

@@ -20,7 +20,7 @@ module DecompCascadeCNMod
   use CNStateType            , only : cnstate_type
   use SoilStateType          , only : soilstate_type
   use CanopyStateType        , only : canopystate_type
-  use ch4Mod                 , only : ch4_type
+  use Ch4TypeMod                 , only : ch4_type
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es, col_cf
 
@@ -633,7 +633,6 @@ contains
      ! written by C. Koven based on original CLM4 decomposition cascade by P. Thornton
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon      , only : secspday
      use elm_varpar      , only : i_cwd
      !

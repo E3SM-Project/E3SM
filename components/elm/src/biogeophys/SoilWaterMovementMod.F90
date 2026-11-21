@@ -83,7 +83,6 @@ contains
     ! select one subroutine to do the soil and root water coupling
     !
     !USES
-      !$acc routine seq
     use shr_kind_mod               , only : r8 => shr_kind_r8
     use decompMod                  , only : bounds_type
     use SoilHydrologyType          , only : soilhydrology_type
@@ -189,7 +188,6 @@ contains
     ! r_j = a_j [d wat_j-1] + b_j [d wat_j] + c_j [d wat_j+1]
     !
     ! !USES:
-      !$acc routine seq
     use elm_varctl           , only : use_var_soil_thick
     use shr_kind_mod         , only : r8 => shr_kind_r8
     use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
@@ -981,7 +979,6 @@ contains
       !
       ! ---------------------------------------------------------------------------------
 
-      !$acc routine seq
       use SoilStateType       , only : soilstate_type
       use CanopyStateType     , only : canopystate_type
       use EnergyFluxType      , only : energyflux_type
@@ -1063,7 +1060,6 @@ contains
     ! hydraulics.
     !
     !USES:
-      !$acc routine seq
     use decompMod        , only : bounds_type
     use shr_kind_mod     , only : r8 => shr_kind_r8
     use elm_varpar       , only : nlevsoi, max_patch_per_col
@@ -1180,7 +1176,6 @@ contains
            canopystate_vars, energyflux_vars)
         !
         !USES:
-      !$acc routine seq
         use decompMod        , only : bounds_type
         use elm_varpar       , only : nlevsoi
         use elm_varpar       , only : max_patch_per_col

@@ -130,7 +130,6 @@ contains
     ! to being called.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon        , only : denh2o, denice, wimp, ssi
     use landunit_varcon   , only : istsoil
     use AerosolMod        , only : AerosolFluxes
@@ -549,7 +548,6 @@ contains
      ! fraction after the melting versus before the melting.
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon      , only : denice, denh2o, tfrz, rpi, grav, rgas
      use landunit_varcon , only : istice_mec, istdlak, istsoil, istcrop
      use elm_varctl      , only : subgridflag
@@ -779,7 +777,6 @@ contains
      ! clm\_combo.f90 then executes the combination of mass and energy.
      !
      ! !USES:
-      !$acc routine seq
      use landunit_varcon  , only : istsoil, istdlak, istsoil, istwet, istice, istice_mec, istcrop
      use LakeCon          , only : lsadz
      use elm_varcon       , only : denh2o
@@ -1152,7 +1149,6 @@ contains
      ! Subdivides snow layers if they exceed their prescribed maximum thickness.
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon,  only : tfrz
      use LakeCon   ,  only : lsadz
      !
@@ -2500,7 +2496,6 @@ contains
      ! that of the combined element.
      !
      ! !USES:
-      !$acc routine seq
      use elm_varcon,  only : cpice, cpliq, tfrz, hfus
      !
      ! !ARGUMENTS:
@@ -2576,7 +2571,6 @@ contains
      ! !USES:
      !
      ! !ARGUMENTS:
-      !$acc routine seq
      type(bounds_type) , intent(in)  :: bounds
      integer           , intent(in)  :: num_nolakec       ! number of column non-lake points in column filter
      integer           , intent(in)  :: filter_nolakec(:) ! column filter for non-lake points

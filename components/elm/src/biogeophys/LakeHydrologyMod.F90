@@ -71,7 +71,6 @@ contains
     !    Cleanup and do water balance.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
     use elm_varctl      , only : iulog, use_extrasnowlayers, use_lake_wat_storage, use_firn_percolation_and_compaction

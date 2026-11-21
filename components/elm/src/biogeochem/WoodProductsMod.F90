@@ -35,7 +35,6 @@ contains
     ! with changes in landcover, and in CNHarvest(), for gains associated with wood harvest.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
     real(r8)   :: dt       ! time step (seconds)

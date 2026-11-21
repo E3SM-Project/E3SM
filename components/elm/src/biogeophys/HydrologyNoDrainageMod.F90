@@ -63,7 +63,6 @@ contains
     !    -> DivideExtraSnowLayers: subdivide up to 16 snow layers that are thicker than maximum
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon           , only : denh2o, denice, hfus, grav, tfrz
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall

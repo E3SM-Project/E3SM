@@ -214,7 +214,6 @@ contains
     ! New emission scheme from Kok et al. (2014), doi:10.5194/acp-14-13023-2014, implemented by Y. Feng in Feb, 2023
     !
     ! !USES
-      !$acc routine seq
     use shr_const_mod, only : SHR_CONST_RHOFW
     !
     ! !ARGUMENTS:
@@ -555,7 +554,6 @@ contains
     ! Source: C. Zender's dry deposition code
     !
     ! !USES
-      !$acc routine seq
     use shr_const_mod, only : SHR_CONST_PI, SHR_CONST_RDAIR, SHR_CONST_BOLTZ
     !
     ! !ARGUMENTS:

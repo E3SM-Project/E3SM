@@ -36,7 +36,6 @@ contains
     ! they get too small.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varctl , only : iulog, use_c13, use_c14, use_fates
     use elm_varpar , only : nlevdecomp_full, crop_prog
     use pftvarcon  , only : iscft

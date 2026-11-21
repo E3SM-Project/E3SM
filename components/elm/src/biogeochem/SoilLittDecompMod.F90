@@ -25,7 +25,7 @@ module SoilLittDecompMod
   use PhotosynthesisType     , only : photosyns_type
   use CanopyStateType        , only : canopystate_type
   use SoilStateType          , only : soilstate_type
-  use CH4Mod                 , only : ch4_type
+  use Ch4TypeMod                 , only : ch4_type
   use cropType               , only : crop_type
   use ColumnDataType         , only : col_cs, col_cf
   use ColumnDataType         , only : col_ns, col_nf
@@ -107,7 +107,6 @@ contains
 
     ! !USES:
 !    use AllocationMod , only: CNAllocation
-      !$acc routine seq
     use AllocationMod , only: Allocation2_ResolveNPLimit ! Phase-2 of CNAllocation
     !
     ! !ARGUMENT:

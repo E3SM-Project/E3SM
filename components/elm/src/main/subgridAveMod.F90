@@ -246,7 +246,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine p2c_2d_gpu (bounds, num2d, parr, carr, p2c_scale_type)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from landunits to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -573,7 +572,6 @@ contains
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from pfts to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     real(r8), intent(in)  :: parr( bounds%begp: )  ! input pft array
@@ -753,7 +751,6 @@ contains
   !-----------------------------------------------------------------------
   subroutine p2g_2d_gpu(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
     ! !DESCRIPTION:
-    !$acc routine seq
     ! Perfrom subgrid-average from pfts to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
     !
@@ -1039,7 +1036,6 @@ contains
   end subroutine c2g_1d
   !-----------------------------------------------------------------------
   subroutine c2g_1d_gpu(bounds, carr, garr, c2l_scale_type, l2g_scale_type)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from columns to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -1155,7 +1151,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine c2g_2d_gpu(bounds, num2d, carr, garr, c2l_scale_type, l2g_scale_type)
-    !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from columns to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -2007,7 +2002,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine create_scale_l2g_lookup_gpu(l2g_scale_type, scale_lookup)
-    !$acc routine seq
     ! DESCRIPTION:
     ! Create a lookup array, scale_lookup(1..max_lunit), which gives the scale factor for
     ! each landunit type depending on l2g_scale_type
@@ -2342,7 +2336,6 @@ contains
       ! Fill the scale_c2l(bounds%begc:bounds%endc) array with appropriate values for the given c2l_scale_type.
       ! This array can later be used to scale each column in forming higher level averages.
       !
-      !$acc routine seq
       type(bounds_type), intent(in) :: bounds
       integer , intent(in) :: c2l_scale_type
       real(r8), intent(inout) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor

@@ -33,7 +33,6 @@ contains
     ! associated with crop harvest.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     real(r8)                 , intent(in)     :: dt        ! time step (seconds)

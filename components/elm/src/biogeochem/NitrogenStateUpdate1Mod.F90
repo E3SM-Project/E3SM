@@ -46,7 +46,6 @@ contains
     !
     ! !DESCRIPTION:
     ! Update nitrogen states based on fluxes from dyn_cnbal_patch
-    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
@@ -104,7 +103,6 @@ contains
     ! On the radiation time step, update all the prognostic nitrogen state
     ! variables (except for gap-phase mortality and fire fluxes)
     !
-      !$acc routine seq
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns

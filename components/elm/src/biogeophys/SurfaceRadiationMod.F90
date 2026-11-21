@@ -324,7 +324,6 @@ contains
      ! Output variables are parsun,parsha,sabv,sabg,fsa,fsr,ndvi
      !
      ! !USES:
-      !$acc routine seq
      use elm_varpar       , only : numrad, nlevsno
      use elm_varcon       , only : spval, degpsec, isecspday
      use landunit_varcon  , only : istsoil, istcrop
@@ -873,7 +872,6 @@ contains
       ! variables also needs to be augmented in that routine as well.
       ! ------------------------------------------------------------------------------------
 
-      !$acc routine seq
       implicit none
 
       ! Arguments (in)

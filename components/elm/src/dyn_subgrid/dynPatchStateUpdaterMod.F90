@@ -181,7 +181,6 @@ contains
     ! Set subgrid weights after dyn subgrid updates
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     class(patch_state_updater_type), intent(inout) :: this
     type(bounds_type), intent(in) :: bounds
@@ -226,7 +225,6 @@ contains
     ! inactive.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: this
     integer , value  , intent(in) :: p, c
@@ -301,7 +299,6 @@ contains
     ! based on pft type.
     !
     ! !USES:
-    !$acc routine seq
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: this
     integer   , value, intent(in) :: p,c
