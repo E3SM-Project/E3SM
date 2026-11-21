@@ -918,10 +918,11 @@ VER=$(shell git describe --dirty 2> /dev/null)
 #override CPPFLAGS += -DMPAS_GIT_VERSION=$(VER)
 
 ifeq "$(findstring v, $(VER))" "v"
-	override CPPFLAGS += -DMPAS_GIT_VERSION=$(VER)
+	GIT_VERSION=$(VER)
 else
-	override CPPFLAGS += -DMPAS_GIT_VERSION="unknown"
+	GIT_VERSION=unknown
 endif # END OF GIT DESCRIBE VERSION
+override CPPFLAGS += -DMPAS_GIT_VERSION=$(GIT_VERSION)
 
 ####################################################
 # Section for adding external libraries and includes
@@ -1013,7 +1014,7 @@ endif
 dycore: $(AUTOCLEAN_DEPS) framework
 	@echo "Auto-detected core from path: " $(CORE)
 	@echo "START DYCORE: $(PWD)"
-	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(FWPATH)/tools/registry/parse" gen_includes )
+	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(FWPATH)/tools/registry/parse" NAMELIST_SUFFIX="$(NAMELIST_SUFFIX)" EXE_NAME="$(EXE_NAME)" GIT_VERSION="$(GIT_VERSION)" gen_includes )
 	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(FWPATH)/tools/input_gen/namelist_gen" ST_GEN="$(FWPATH)/tools/input_gen/streams_gen" core_input_gen )
 	( cd src; $(MAKE) \
 	         FC="$(FC)" \

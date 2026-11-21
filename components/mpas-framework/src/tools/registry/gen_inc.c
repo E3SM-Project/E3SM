@@ -16,14 +16,7 @@
 #include "fortprintf.h"
 #include "utility.h"
 
-#define STR(s) #s
-#define MACRO_TO_STR(s) STR(s)
-
-void write_model_variables(ezxml_t registry){/*{{{*/
-	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
-	const char * exe_name = MACRO_TO_STR(MPAS_EXE_NAME);
-	const char * git_ver = MACRO_TO_STR(MPAS_GIT_VERSION);
-
+void write_model_variables(ezxml_t registry, const char *suffix, const char *exe_name, const char *git_ver){/*{{{*/
 	const char *modelname, *corename, *version;
 	FILE *fd;
 

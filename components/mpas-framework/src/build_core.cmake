@@ -24,6 +24,13 @@ function(build_core CORE)
     file(MAKE_DIRECTORY ${CORE_INPUT_DIR})
   endif()
 
+  # The registry parser writes the core's .inc files here
+  set(INC_DIR ${CORE_BLDDIR}/inc)
+  if (NOT EXISTS ${INC_DIR})
+    file(MAKE_DIRECTORY ${INC_DIR})
+  endif()
+  list(APPEND INCLUDES ${INC_DIR})
+
   # Provides us RAW_SOURCES, CPPDEFS, and INCLUDES
   include(${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/${CORE}.cmake)
 
@@ -33,22 +40,51 @@ function(build_core CORE)
   target_link_libraries(${COMPONENT} PUBLIC ${LIBRARIES} common)
 
   # Make .inc files
-  add_custom_command (
-    OUTPUT ${CORE_BLDDIR}/Registry_processed.xml
-    COMMAND cpp -P -traditional ${CPPDEFS} -Uvector
-    ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml > Registry_processed.xml
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
-    WORKING_DIRECTORY ${CORE_BLDDIR}
-    )
-
-  set(INC_DIR ${CORE_BLDDIR}/inc)
-  if (NOT EXISTS ${INC_DIR})
-    file(MAKE_DIRECTORY ${INC_DIR})
+  if (MPAS_USE_DEPFILE)
+    # The depfile makes the processed registry depend on every registry file it includes
+    add_custom_command (
+      OUTPUT ${CORE_BLDDIR}/Registry_processed.xml
+      COMMAND cpp -P -traditional ${CPPDEFS} -Uvector
+      -MD -MF ${CORE_BLDDIR}/Registry_processed.xml.d -MT ${CORE_BLDDIR}/Registry_processed.xml
+      ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml -o ${CORE_BLDDIR}/Registry_processed.xml
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
+      DEPFILE ${CORE_BLDDIR}/Registry_processed.xml.d
+      WORKING_DIRECTORY ${CORE_BLDDIR}
+      )
+  else()
+    add_custom_command (
+      OUTPUT ${CORE_BLDDIR}/Registry_processed.xml
+      COMMAND cpp -P -traditional ${CPPDEFS} -Uvector
+      ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml > Registry_processed.xml
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core_${CORE}/Registry.xml
+      WORKING_DIRECTORY ${CORE_BLDDIR}
+      )
   endif()
 
+  if (MPAS_BUILD_MODE STREQUAL "E3SM")
+    # These reproduce what coupled builds have always generated: the namelist
+    # suffix and executable name are empty, and the git version is the name of
+    # the undefined macro. The MCT drivers set the namelist and streams names.
+    set(PARSE_ARGS "--namelist-suffix=" "--exe-name=" "--git-version=MPAS_GIT_VERSION")
+  endif()
+
+  set(PARSE_OUTPUTS
+    block_dimension_routines.inc
+    config_declare.inc
+    config_get.inc
+    core_variables.inc
+    define_packages.inc
+    domain_variables.inc
+    namelist_call.inc
+    namelist_defines.inc
+    setup_immutable_streams.inc
+    structs_and_variables.inc
+  )
+  list(TRANSFORM PARSE_OUTPUTS PREPEND ${INC_DIR}/)
+
   add_custom_command(
-    OUTPUT ${INC_DIR}/core_variables.inc
-    COMMAND ${CMAKE_BINARY_DIR}/mpas-framework/src/tools/parse < ${CORE_BLDDIR}/Registry_processed.xml
+    OUTPUT ${PARSE_OUTPUTS}
+    COMMAND ${MPAS_PARSE} ${PARSE_ARGS} < ${CORE_BLDDIR}/Registry_processed.xml
     DEPENDS parse ${CORE_BLDDIR}/Registry_processed.xml
     WORKING_DIRECTORY ${INC_DIR}
   )

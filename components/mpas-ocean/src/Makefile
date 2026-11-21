@@ -53,7 +53,7 @@ endif
 gen_includes:
 	$(CPP) $(CPPFLAGS) $(CPPLOCALFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 	(if [ ! -d inc ]; then mkdir -p inc; fi) # To generate *.inc files
-	(cd inc; $(REG_PARSE) < ../Registry_processed.xml )
+	(cd inc; $(REG_PARSE) --namelist-suffix=$(NAMELIST_SUFFIX) --exe-name=$(EXE_NAME) --git-version=$(GIT_VERSION) < ../Registry_processed.xml )
 
 post_build:
 	if [ ! -e $(ROOT_DIR)/default_inputs ]; then mkdir $(ROOT_DIR)/default_inputs; fi
