@@ -264,8 +264,9 @@ MAMMicrophysics::create_requests()
 
     // Diagnostic: implicit solver outcome for gas phase chemistry
     // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
-    //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
-    // Values 0-1 indicate success; 2-5 indicate failure modes.
+    //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted,
+    //         6=NonfiniteResult, 7=UnsafeDenominator, 8=NegativeResult
+    // Values 0-1 indicate success; 2-8 indicate failure modes.
     add_field<Computed>("mam4_imp_sol_outcome", scalar3d_mid, none, grid_name);
     add_field<Computed>("mam4_imp_sol_failed_attempts", scalar3d_mid, none, grid_name);
     add_field<Computed>("mam4_imp_sol_cut_count", scalar3d_mid, none, grid_name);
@@ -723,10 +724,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
 
       {"mam4_imp_sol_outcome",
-      "Implicit solver outcome for gas phase chemistry: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput, 3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted"},
+      "Implicit solver outcome for gas phase chemistry: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput, 3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted, 6=NonfiniteResult, 7=UnsafeDenominator, 8=NegativeResult"},
 
       {"mam4_imp_sol_failed_attempts",
-      "Implicit solver failed convergence attempts for gas phase chemistry"},
+      "Implicit solver failed attempts for gas phase chemistry"},
 
       {"mam4_imp_sol_cut_count",
       "Implicit solver timestep cut count for gas phase chemistry"},
