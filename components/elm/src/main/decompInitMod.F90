@@ -780,7 +780,11 @@ contains
     ng = 0
     cur_cid = 1
     numg_for_cur_clump = 0
-    max_numg_for_cur_clump = numg_per_clumps + numg_per_clumps_mod
+    if (cur_cid <= numg_per_clumps_mod) then
+       max_numg_for_cur_clump = numg_per_clumps + 1
+    else
+       max_numg_for_cur_clump = numg_per_clumps
+    end if
 
     do ln = 1,lns
        if (amask(ln) == 1) then
@@ -804,7 +808,7 @@ contains
              end if
 
              ! reset the number of land grid cells for the current clump
-             numg_for_cur_clump = 0
+             numg_for_cur_clump = 1
           end if
           cid = cur_cid
           lcid(ln) = cid
