@@ -5285,6 +5285,10 @@ is an honest analogue.</p>
 <td>vertical mean weighted by <code>dp</code></td>
 </tr>
 <tr>
+<td><code>X.sum('lev', weights=W)</code></td>
+<td>vertical sum weighted by the field <code>W</code></td>
+</tr>
+<tr>
 <td><code>X.where(qv&gt;0.01)</code></td>
 <td><code>X</code> where <code>qv&gt;0.01</code>, missing elsewhere</td>
 </tr>
@@ -5327,6 +5331,22 @@ is an honest analogue.</p>
 <tr>
 <td><code>height_mid.searchsorted(100)</code></td>
 <td>index of the first level below 100 m above the surface</td>
+</tr>
+<tr>
+<td><code>cldfrac_tot.aerocom_weights('top')</code></td>
+<td>per level, the probability that it is the cloud top (<code>'bot'</code>: bottom)</td>
+</tr>
+<tr>
+<td><code>X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))</code></td>
+<td><code>X</code> at cloud top</td>
+</tr>
+<tr>
+<td><code>X.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))</code></td>
+<td><code>X</code> at liquid cloud top (<code>'ice'</code>: at ice cloud top)</td>
+</tr>
+<tr>
+<td><code>cldfrac_tot.aerocom_weights('top').sum('lev')</code></td>
+<td>the cloud fraction seen from above</td>
 </tr>
 </tbody>
 </table>
@@ -5374,7 +5394,8 @@ is an honest analogue.</p>
   <code>(qv*T_mid).tend()</code>; use an averaged stream. The shift of a model field
   (<code>T_mid.shift(time=1)</code>) is one model step in any stream.</li>
 <li><code>mean('col')</code> is always area weighted, so <code>weights</code> does not apply to it.
-  <code>weights</code> for <code>'lev'</code> is <code>'dp'</code> or <code>'dz'</code>.</li>
+  <code>weights</code> for <code>'lev'</code> is <code>'dp'</code>, <code>'dz'</code>, or a field or expression <code>W</code>, such
+  as <code>cldfrac_tot</code>. <code>W</code> must not be masked.</li>
 <li><code>broadcast_like</code> repeats <code>X</code> along the dimensions of <code>Y</code> that <code>X</code> lacks, so that
   <code>X</code> can be combined with <code>Y</code>. E.g., <code>dp.broadcast_like(horiz_winds)</code> would produce
   a version of <code>dp</code> (call it <code>dp_bcast</code>) with layout <code>(ncol,2,lev)</code>, where
@@ -5388,7 +5409,8 @@ is an honest analogue.</p>
   levels are skipped, and a column with none left has no sum; it is written as
   missing rather than as 0. <code>mean('lev')</code> behaves the same way. This is
   xarray's <code>sum('lev', min_count=1)</code>, not its default <code>sum('lev')</code>, which
-  would give 0.</li>
+  would give 0. A sum weighted by a field, <code>X.sum('lev', weights=W)</code>, gives 0,
+  as xarray's weighted sum does.</li>
 <li><strong>A scalar threshold is in the field's own units, as the model stores them.</strong>
   <code>T_mid.where(T_mid&lt;273.15)</code> is in kelvin, and <code>p_mid.where(p_mid&gt;85000)</code> in
   pascals, not hectopascals. A comparison between two <em>fields</em> is checked when
@@ -5438,7 +5460,30 @@ is an honest analogue.</p>
   they may be negative, and may be written with an exponent
   (<code>bins=[-1,0,1e-5,1e-4]</code>). The counts are over every entry of <code>X</code> on every
   rank, as with xhistogram's default <code>dim=None</code>.</li>
+<li><code>aerocom_weights</code> gives, per level, the AeroCom cloud-top (<code>'top'</code>) or
+  cloud-bottom (<code>'bot'</code>) weights: the probability that the level is the first
+  cloudy level seen from above (or below), under the maximum-random overlap
+  assumption, times, with <code>phase='liq'</code> (<code>'ice'</code>), the share of liquid (ice) in
+  its condensate. Its receiver must be <code>cldfrac_tot</code>. A field at cloud top is
+  the sum weighted by them, <code>X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))</code>
+  (a sum, not a mean), and their sum, <code>cldfrac_tot.aerocom_weights('top').sum('lev')</code>,
+  is the cloud fraction seen from above. <code>X</code> must be finite at every level,
+  including those with zero weight, since 0 times NaN is NaN. The in-cloud
+  droplet number per volume at liquid cloud top is
+  <code>(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))</code>,
+  where the <code>where(..)</code> masks the levels with no cloud, which the sum skips.
+  Fields sampled at the same position and phase share one computation of the
+  weights. See <a href="../../../technical/aerocom_cldtop/">the AeroCom algorithm</a>.
+  In an output yaml, the <code>aliases:</code> section saves typing the weights in full
+  for every field:</li>
 </ul>
+<div class="highlight"><pre><span></span><code><span class="nt">aliases</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">icetop := cldfrac_tot.aerocom_weights('top', phase='ice')</span>
+<span class="nt">field_names</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rel_liqtop := eff_radius_qc.sum('lev', weights=liqtop)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rei_icetop := eff_radius_qi.sum('lev', weights=icetop)</span>
+</code></pre></div>
 <p>Named quantities are not operations, and stay plain names in an expression:
 <code>LiqWaterPath</code>, <code>RelativeHumidity</code>, <code>z_mid</code>, <code>dz</code>, <code>precip_liq_surf_mass_flux</code>,
 and so on.</p>
@@ -5471,16 +5516,20 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 </tr>
 <tr>
 <td><code>mean('lev', weights=..)</code></td>
-<td>xarray would be <code>weighted(dp).mean('lev')</code>, again a chain</td>
+<td>xarray would be <code>weighted(W).mean('lev')</code>, again a chain</td>
 </tr>
 <tr>
 <td><code>searchsorted</code></td>
 <td>named after numpy's (<code>side='right'</code>), but takes <code>units</code>, and for heights, which decrease with the level index, it looks for the first level below the target</td>
 </tr>
+<tr>
+<td><code>aerocom_weights</code></td>
+<td>not in xarray; named after the AeroCom recommendation it follows</td>
+</tr>
 </tbody>
 </table>
-<p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, expressed as
-one diagnostic rather than as a graph of three.</p>
+<p><code>X.mean('lev', weights=W)</code> is <code>(X*W).sum('lev')/W.sum('lev')</code> over the valid
+entries of <code>X</code>, computed as one diagnostic rather than as a graph of three.</p>
 <p>Two operand names have no xarray analogue at all, because they are not fields:
 <code>mask</code> and <code>lev</code>, both legal only inside <code>where(..)</code>. See the note above for what they mean and where they may
 appear.</p>
