@@ -26,7 +26,7 @@ contains
 
     interface
        subroutine qsort(base, nmemb, size, cmp) bind(c)
-         use iso_c_binding, only: c_ptr, c_size_t, c_int
+         use iso_c_binding, only: c_ptr, c_size_t
          type (c_ptr), value, intent(in) :: base
          integer (kind=c_size_t), value, intent(in) :: nmemb, size
          interface
@@ -39,8 +39,8 @@ contains
        end subroutine qsort
     end interface
 
-    integer (kind=c_int), target, intent(inout) :: a(nrow,ncol)
     integer, intent(in) :: nrow, ncol
+    integer (kind=c_int), target, intent(inout) :: a(nrow,ncol)
     type (c_ptr) :: a_ptr
     integer (kind=c_size_t) :: r_s, c_s
 
@@ -50,7 +50,7 @@ contains
     call qsort(a_ptr, c_s, r_s*c_sizeof(c_int), cmp_ints)
   end subroutine sortints_impl
 
-  function cmp_ints(a, b) result(o) bind(c)
+  function cmp_ints(a, b) result(o) bind(c, name='')
     use iso_c_binding, only: c_int
 
     integer (kind=c_int), intent(in) :: a, b
