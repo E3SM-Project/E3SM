@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc>Historical FATES simulation; prescribed land-use change disabled by default</use_case_desc>
+
+<sim_year>1850</sim_year>
+<sim_year_range>1850-2015</sim_year_range>
+<clm_start_type>arb_ic</clm_start_type>
+
+<clm_demand>flanduse_timeseries</clm_demand>
+
+</namelist_defaults>
