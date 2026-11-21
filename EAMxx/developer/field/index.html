@@ -5162,9 +5162,8 @@ number of indices with <code>if constexpr (sizeof...(i)==2)</code>.</p>
   ETI files (<code>share/field/eti/</code>), so that this cost is paid once, rather than in every file
   that includes the header.</li>
 </ul>
-<p>For examples, see the update kernels in <code>share/field/field_update_impl.hpp</code> (<code>UpdateKernel</code>),
-<code>field_update_masked.hpp</code>, and <code>field_update_fill_aware.hpp</code>, and the unit test
-<code>share/field/tests/field_pfor_tests.cpp</code>.</p>
+<p>For examples, see the update kernels in <code>share/field/field_update_impl.hpp</code> (<code>UpdateKernel</code>)
+and <code>field_update_masked.hpp</code>, and the unit test <code>share/field/tests/field_pfor_tests.cpp</code>.</p>
 <h3 id="under-the-hood">Under the hood</h3>
 <p>Kokkos calls the functor of a <code>parallel_for</code> with the indices only, so the views cannot be
 passed directly to the kernel. <code>field_pfor</code> uses a few generic utilities (in <code>share/util</code>,
