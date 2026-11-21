@@ -2544,4 +2544,64 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne256.*">
+    <mach name="aurora">
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*OMEGA.*" pesize="S">
+        <comment>aurora ne256 fully coupled with EAMxx+Omega offloaded--72 nodes: atm64n, ocn8n</comment>
+        <MAX_MPITASKS_PER_NODE>96</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>768</ntasks_atm>
+          <ntasks_cpl>-64</ntasks_cpl>
+          <ntasks_lnd>-64</ntasks_lnd>
+          <ntasks_rof>-64</ntasks_rof>
+          <ntasks_ice>-32</ntasks_ice>
+          <ntasks_ocn>96</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>6144</rootpe_ocn>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>8</pstrid_atm>
+          <pstrid_ocn>8</pstrid_ocn>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>8</excl_stride_atm>
+          <excl_stride_ocn>8</excl_stride_ocn>
+        </excl_stride>
+      </pes>
+      <pes compset=".*SCREAM.*ELM.*MPASSI.*OMEGA.*" pesize="M">
+        <comment>aurora ne256 fully coupled with EAMxx+Omega offloaded--256 nodes: atm240n, ocn16n</comment>
+        <MAX_MPITASKS_PER_NODE>96</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>2880</ntasks_atm>
+          <ntasks_cpl>-256</ntasks_cpl>
+          <ntasks_lnd>-92</ntasks_lnd>
+          <ntasks_rof>-92</ntasks_rof>
+          <ntasks_ice>-148</ntasks_ice>
+          <ntasks_ocn>192</ntasks_ocn>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>23040</rootpe_ocn>
+          <rootpe_lnd>14208</rootpe_lnd>
+          <rootpe_rof>14208</rootpe_rof>
+          <rootpe_glc>1</rootpe_glc>
+          <rootpe_wav>1</rootpe_wav>
+          <rootpe_esp>1</rootpe_esp>
+          <rootpe_iac>1</rootpe_iac>
+        </rootpe>
+        <pstrid>
+          <pstrid_atm>8</pstrid_atm>
+          <pstrid_ocn>8</pstrid_ocn>
+        </pstrid>
+        <excl_stride>
+          <excl_stride_atm>8</excl_stride_atm>
+          <excl_stride_ocn>8</excl_stride_ocn>
+        </excl_stride>
+      </pes>
+    </mach>
+  </grid>
 </config_pes>
