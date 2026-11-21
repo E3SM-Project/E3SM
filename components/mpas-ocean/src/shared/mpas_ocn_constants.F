@@ -23,10 +23,7 @@ module ocn_constants
    use mpas_pool_routines
    use mpas_kind_types
 
-#ifdef MPAS_ESM_SHR_CONST
-   use shr_kind_mod, only: SHR_KIND_R8
    use shr_const_mod
-#endif
 
    implicit none
    private
@@ -40,49 +37,33 @@ module ocn_constants
    character (len=*), public, parameter :: statsAlarmID = 'stats'
    character (len=*), public, parameter :: coupleAlarmID = 'coupling'
 
+   ! physical constants, all from E3SM's shared constants (shr_const_mod),
+   ! which take them from the PhysicalConstantsDictionary (PCD)
+
    real (kind=RKIND), public ::      &
-      rho_air               ,&! ambient air density (kg/m^3)
       rho_fw                ,&! density of fresh water (kg/m^3)
       rho_sw                ,&! density of salt water (kg/m^3)
-      rho_ice               ,&! density of sea ice (kg/m^3)
       cp_sw                 ,&! specific heat salt water (J/kg/K)
-      cp_air                ,&! heat capacity of air (J/kg/K)
-      sound                 ,&! speed of sound (m/s)
+      cp_ice                ,&! specific heat fresh ice (J/kg/K)
       vonkar                ,&! von Karman constant
-      emissivity            ,&!
-      stefan_boltzmann      ,&! W/m^2/K^4
-      latent_heat_vapor     ,&! lat heat of vaporization (erg/g)
-      latent_heat_vapor_mks ,&! lat heat of vaporization (J/kg)
-      latent_heat_fusion    ,&! lat heat of fusion (erg/g)
       latent_heat_fusion_mks,&! lat heat of fusion (J/kg)
-      sea_ice_salinity      ,&! salinity of sea ice formed (psu)
       ocn_ref_salinity      ,&! ocean reference salinity (psu)
+      ice_ref_salinity      ,&! sea ice reference salinity (psu)
       atm_ref_pressure      ,&! standard sea level pressure (Pa)
       molecular_weight_C    ,&! molecular weight carbon
-      molecular_weight_O2   ,&! molecular weight oxygen
-      molecular_weight_Fe     ! molecular weight iron
+      molecular_weight_Fe   ,&! molecular weight iron
+      T0_Kelvin             ,&! zero point for Celsius
+      pi                      ! pi
 
    !  conversion factors
 
    real (kind=RKIND), public :: &
-      T0_Kelvin        ,&! zero point for Celsius
-      pi               ,&! pi
-      mpercm           ,&! meters per m
-      cmperm           ,&! m per meter
+      seconds_per_day  ,&! seconds per day
       days_per_second  ,&! days per second
-      salt_to_ppt      ,&! salt (kg/kg) to ppt
       ppt_to_salt      ,&! salt ppt to kg/kg
-      mass_to_Sv       ,&! mass flux to Sverdrups
-      heat_to_PW       ,&! heat flux to Petawatts
-      salt_to_Svppt    ,&! salt flux to Sv*ppt
-      salt_to_mmday    ,&! salt to water (mm/day)
       hflux_factor     ,&! heat flux (W/m^2) to temp flux (C*m/s)
-      fwflux_factor    ,&! fw flux (kg/m^2/s) to salt((msu/psu)*m/s)
-      salinity_factor  ,&! fw flux (kg/m^2/s) to salt flux (msu*m/s)
-      sflux_factor     ,&! salt flux (kg/m^2/s) to salt flux (msu*m/s)
-      fwmass_to_fwflux ,&! fw flux (kg/m^2/s) to fw flux (m/s)
-      mmol_to_kg_C     ,&! mmol-C to kg-C
-      mmol_to_kg_O2      ! mmol-O2 to kg-O2
+      sflux_factor     ,&! salt flux (kg/m^2/s) to salt flux (psu*m/s)
+      mmol_to_kg_C       ! mmol-C to kg-C
 
 !***********************************************************************
 
@@ -103,43 +84,28 @@ contains
        type (mpas_pool_type), pointer :: configPool
        type (mpas_pool_type), pointer :: packagePool
 
-       real (kind=RKIND), pointer :: config_density0
-
        ocnConfigs => configPool
        ocnPackages => packagePool
-
-       call mpas_pool_get_config(configPool, 'config_density0', config_density0)
 
        !-----------------------------------------------------------------------
        !
        !  physical constants
-       !  some of these constants may be over-ridden by CSM-defined
-       !  constants if the CSM shared constants are available
        !
        !-----------------------------------------------------------------------
 
-       T0_Kelvin = 273.16_RKIND               ! zero point for Celsius
-       pi        = 3.14159265358979323846_RKIND ! pi
-       rho_air   = 1.2_RKIND                  ! ambient air density (kg/m^3)
-       rho_sw    = config_density0            ! density of salt water (kg/m^3)
-       rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
-       rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
-       cp_sw     = 3.996e3_RKIND              ! specific heat salt water
-       cp_air    = 1005.0_RKIND               ! heat capacity of air (J/kg/K)
-       sound     = 1.5e2_RKIND                ! speed of sound (m/s)
-       vonkar    = 0.4_RKIND                  ! von Karman constant
-       emissivity         = 1.0_RKIND         !
-       stefan_boltzmann   = 5.670374419e-8_RKIND   !  W/m^2/K^4
-       latent_heat_vapor_mks  = 2.5e6_RKIND   ! lat heat of vaporization (J/kg)
-       latent_heat_fusion = 3.34e6_RKIND      ! lat heat of fusion (erg/kg)
-       latent_heat_fusion_mks = 3.337e5_RKIND ! lat heat of fusion (J/kg)
-       sea_ice_salinity   =  4.0_RKIND        ! (psu)
-       ocn_ref_salinity   = 34.7_RKIND        ! (psu)
-       atm_ref_pressure   = 101325.0_RKIND    ! (Pa)
-       molecular_weight_C = 12.0107_RKIND     ! molecular weight carbon
-       molecular_weight_O2 = 15.9994_RKIND    ! molecular weight oxygen
-       molecular_weight_Fe = 55.845_RKIND     ! molecular weight iron
-
+       T0_Kelvin = real(SHR_CONST_TKFRZ, RKIND)   ! zero point for Celsius
+       pi        = real(SHR_CONST_PI, RKIND)      ! pi
+       rho_sw    = real(SHR_CONST_RHOSW, RKIND)   ! density of salt water (kg/m^3)
+       rho_fw    = real(SHR_CONST_RHOFW, RKIND)   ! density of fresh water (kg/m^3)
+       cp_sw     = real(SHR_CONST_CPSW, RKIND)    ! specific heat salt water (J/kg/K)
+       cp_ice    = real(SHR_CONST_CPICE, RKIND)   ! specific heat fresh ice (J/kg/K)
+       vonkar    = real(SHR_CONST_KARMAN, RKIND)  ! von Karman constant
+       latent_heat_fusion_mks = real(SHR_CONST_LATICE, RKIND)    ! lat heat of fusion (J/kg)
+       ocn_ref_salinity       = real(SHR_CONST_OCN_REF_SAL, RKIND) ! (psu)
+       ice_ref_salinity       = real(SHR_CONST_ICE_REF_SAL, RKIND) ! (psu)
+       atm_ref_pressure       = real(SHR_CONST_PSTD, RKIND)      ! (Pa)
+       molecular_weight_C     = real(SHR_CONST_MWC, RKIND)       ! molecular weight carbon
+       molecular_weight_Fe    = real(SHR_CONST_MWFE, RKIND)      ! molecular weight iron
 
        !-----------------------------------------------------------------------
        !
@@ -147,137 +113,18 @@ contains
        !
        !-----------------------------------------------------------------------
 
-       days_per_second = 1._RKIND/86400._RKIND     ! days per second
-       salt_to_ppt   = 1000._RKIND        ! salt (kg/kg) to ppt
+       seconds_per_day = real(SHR_CONST_CDAY, RKIND) ! seconds per day
+       days_per_second = 1._RKIND/seconds_per_day    ! days per second
        ppt_to_salt   = 1.e-3_RKIND        ! salt ppt to kg/kg
-       mass_to_Sv    = 1.0e-12_RKIND      ! mass flux to Sverdrups
-       heat_to_PW    = 4.186e-15_RKIND    ! heat flux to Petawatts
-       salt_to_Svppt = 1.0e-9_RKIND       ! salt flux to Sv*ppt
-       salt_to_mmday = 3.1536e+5_RKIND    ! salt to water (mm/day)
 
-       !-----------------------------------------------------------------------
-       !
-       !  physical constants -- E3SM override
-       !
-       !-----------------------------------------------------------------------
-
-#ifdef MPAS_ESM_SHR_CONST
-       T0_Kelvin              = SHR_CONST_TKFRZ         ! zero point for Celsius
-       pi                     = SHR_CONST_PI            ! zero point for Celsius
-       cp_sw                  = SHR_CONST_CPSW          ! erg/g/K
-       cp_air                 = SHR_CONST_CPDAIR        ! J/kg/K
-       rho_air                = SHR_CONST_RHODAIR       ! kg/m^3
-       rho_sw                 = SHR_CONST_RHOSW         ! kg/m^3
-       rho_fw                 = SHR_CONST_RHOFW         ! kg/m^3
-       rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
-       vonkar                 = SHR_CONST_KARMAN
-       stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
-       latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg
-       latent_heat_fusion_mks = SHR_CONST_LATICE        ! J/kg
-       ocn_ref_salinity       = SHR_CONST_OCN_REF_SAL   ! psu
-       sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
-       molecular_weight_C     = SHR_CONST_MWC           ! molecular weight carbon
-       molecular_weight_O2    = SHR_CONST_MWO           ! molecular weight oxygen
-       molecular_weight_Fe    = SHR_CONST_MWFE          ! molecular weight iron
-#endif
-
-!#ifdef ZERO_SEA_ICE_REF_SAL
-!      sea_ice_salinity       = c0
-!#endif
-
-       !-----------------------------------------------------------------------
-       !
-       !  convert heat, solar flux (W/m^2) to temperature flux (C*cm/s):
-       !  --------------------------------------------------------------
-       !    heat_flux in (W/m^2) = (J/s/m^2) = 1(kg/s^3)
-       !    density of seawater rho_sw in (kg/m^3)
-       !    specific heat of seawater cp_sw in (erg/kg/C) = (m^2/s^2/C)
-       !
-       !    temp_flux          = heat_flux / (rho_sw*cp_sw)
-       !    temp_flux (C*cm/s) = heat_flux (W/m^2)
-       !                         * 1 (kg/s^3)/(W/m^2)
-       !                         / [(rho_sw*cp_sw) (kg/m/s^2/C)]
-       !
-       !                       = heat_flux (W/m^2)
-       !                         * hflux_factor (C*m/s)/(W/m^2)
-       !
-       !    ==>  hflux_factor = 1/(rho_sw*cp_sw)
-       !
-       !-----------------------------------------------------------------------
-
+       ! convert heat flux (W/m^2) to temperature flux (C*m/s):
+       !    temp_flux = heat_flux / (rho_sw*cp_sw)
        hflux_factor = 1.0_RKIND/(rho_sw*cp_sw)
 
-       !-----------------------------------------------------------------------
-       !
-       !  convert fresh water flux (kg/m^2/s) to virtual salt flux (msu*cm/s):
-       !  --------------------------------------------------------------------
-       !    ocean reference salinity in (o/oo=psu)
-       !    density of freshwater rho_fw = 1.0e3 (kg/m^3)
-       !    h2o_flux in (kg/m^2/s) = 1.0e2 (kg/m^2/s)
-       !
-       !    salt_flux            = - h2o_flux * ocn_ref_salinity / rho_fw
-       !    salt_flux (msu*cm/s) = - h2o_flux (kg/m^2/s)
-       !                           * ocn_ref_salinity (psu)
-       !                           * 1.e-3 (msu/psu)
-       !                           * 1.0e2 (kg/m^2/s)/(kg/m^2/s)
-       !                           / 1.0e3 (kg/m^3)
-       !                         = - h2o_flux (kg/m^2/s)
-       !                           * ocn_ref_salinity (psu)
-       !                           * fwflux_factor (m/s)(msu/psu)/(kg/m^2/s)
-       !
-       !    ==>  fwflux_factor = 1.e-6
-       !
-       !    salt_flux(msu*cm/s) = h2oflux(kg/m^2/s) * salinity_factor
-       !
-       !    ==> salinity_factor = - ocn_ref_salinity(psu) * fwflux_factor
-       !
-       !-----------------------------------------------------------------------
-
-       fwflux_factor   = 1.e-6_RKIND
-       salinity_factor = -ocn_ref_salinity*fwflux_factor
-
-       !-----------------------------------------------------------------------
-       !
-       !  convert salt flux (kg/m^2/s) to salt flux (psu*m/s):
-       !  -----------------------------------------------------
-       !    density of freshwater rho_fw = 1.0e3 (kg/m^3)
-       !    salt_flux_kg in (kg/m^2/s) = 1.0e2 (kg/m^2/s)
-       !
-       !    salt_flux            = - h2o_flux * ocn_ref_salinity / rho_fw
-       !    salt_flux (msu*cm/s) = salt_flux_kg (kg/m^2/s)
-       !                           * 1.0e2 (kg/m^2/s)/(kg/m^2/s)
-       !                           / 1.0e3 (kg/m^3)
-       !                         = salt_flux_kg (kg/m^2/s)
-       !                           * sflux_factor (psu*m/s)/(kg/m^2/s)
-       !
-       !    ==>  sflux_factor = 1.0
-       !
-       !-----------------------------------------------------------------------
-
+       ! convert salt flux (kg/m^2/s) to salt flux (psu*m/s)
        sflux_factor = 1.0_RKIND
 
-       !-----------------------------------------------------------------------
-       !
-       !  convert fresh water mass flux (kg/m^2/s) to fresh water flux (m/s):
-       !  --------------------------------------------------------------------
-       !    density of freshwater rho_fw = 1.0e3 (kg/m^3)
-       !    h2o_flux in (kg/m^2/s) = 1.0e2 (kg/m^2/s)
-       !
-       !    fw_flux  = h2o_flux / rho_fw
-       !    fw_flux (cm/s) = h2o_flux (kg/m^2/s)
-       !                     * 1.0e2 (kg/m^2/s)
-       !                     / 1.0e3 (kg/m^3)
-       !                   = h2o_flux (kg/m^2/s)
-       !                     * fwmass_to_fwflux (m/s)/(kg/m^2/s)
-       !
-       !    ==>  fwmass_to_fwflux = 0.1
-       !
-       !-----------------------------------------------------------------------
-
-       fwmass_to_fwflux = 0.1_RKIND
-
        mmol_to_kg_C  = molecular_weight_C  * 1.e-6_RKIND
-       mmol_to_kg_O2 = molecular_weight_O2 * 1.e-6_RKIND
 
    end subroutine ocn_constants_init!}}}
 

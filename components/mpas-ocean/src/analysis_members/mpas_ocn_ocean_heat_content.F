@@ -213,7 +213,7 @@ contains
             oceanHeatContent2000mToBot(iCell) = 0.0_RKIND
             do while (zMid(k, iCell) .ge. -700.0_RKIND .and. k .le. maxLevelCell(iCell))
                heatLayer = layerThickness(k, iCell)*areaCell(iCell)*cp_sw*rho_sw* &
-                           (tracers(index_temperature, k, iCell) + 273.15_RKIND)
+                           (tracers(index_temperature, k, iCell) + T0_Kelvin)
                oceanHeatContentSfcTo700m(iCell) = oceanHeatContentSfcTo700m(iCell) + heatLayer
                oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
                k = k + 1
@@ -221,7 +221,7 @@ contains
 
             do while (zMid(k, iCell) .ge. -2000.0_RKIND .and. k .le. maxLevelCell(iCell))
                heatLayer = layerThickness(k, iCell)*areaCell(iCell)*cp_sw*rho_sw* &
-                           (tracers(index_temperature, k, iCell) + 273.15_RKIND)
+                           (tracers(index_temperature, k, iCell) + T0_Kelvin)
                oceanHeatContent700mTo2000m(iCell) = oceanHeatContent700mTo2000m(iCell) + heatLayer
                oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
                k = k + 1
@@ -229,7 +229,7 @@ contains
 
             do while (k .le. maxLevelCell(iCell))
                heatLayer = layerThickness(k, iCell)*areaCell(iCell)*cp_sw*rho_sw* &
-                           (tracers(index_temperature, k, iCell) + 273.15_RKIND)
+                           (tracers(index_temperature, k, iCell) + T0_Kelvin)
                oceanHeatContent2000mToBot(iCell) = oceanHeatContent2000mToBot(iCell) + heatLayer
                oceanHeatContentSfcToBot(iCell) = oceanHeatContentSfcToBot(iCell) + heatLayer
                k = k + 1

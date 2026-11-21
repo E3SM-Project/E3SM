@@ -33,6 +33,7 @@ module ocn_transport_tests
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_constants
+  use shr_const_mod, only: SHR_CONST_CDAY
   use mpas_stream_manager
   use mpas_dmpar
 
@@ -63,9 +64,9 @@ module ocn_transport_tests
   ! Private module variables
   !
   !--------------------------------------------------------------------
-  real(kind=RKIND), parameter :: pi = 3.141592653589793d0, &
+  real(kind=RKIND), parameter :: pi = pii, &
                                  two_pi = 2.0_RKIND*pi, &
-                                 one_day = 86400.0_RKIND, &
+                                 one_day = real(SHR_CONST_CDAY, RKIND), &
                                  twelve_days = 12.0_RKIND*one_day
 
   character(len=32), parameter :: tc1str = "rotation"

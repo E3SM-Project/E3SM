@@ -18,6 +18,8 @@ module ocn_gm
    use ocn_diagnostics_variables
    use ocn_submesoscale_eddies
 
+   use shr_const_mod, only: SHR_CONST_OMEGA
+
    implicit none
    private
    save
@@ -1592,7 +1594,7 @@ contains
          !$omp parallel
          !$omp do schedule(runtime)
          do iEdge=1,nEdges
-            betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
+            betaEdge(iEdge) = 2.0_RKIND*real(SHR_CONST_OMEGA, RKIND)*cos(latEdge(iEdge)) / sphere_radius
          end do
          !$omp end do
          !$omp end parallel
@@ -1697,7 +1699,7 @@ contains
 
             ! Eddy energy dissipation rate
             dissipationRate = 1.0_RKIND / &
-                             (config_GM_geometric_dissipation*86400.0_RKIND)
+                             (config_GM_geometric_dissipation*seconds_per_day)
          else
             call mpas_log_write('Invalid choice of config_GM_closure.', MPAS_LOG_CRIT)
             err = 1

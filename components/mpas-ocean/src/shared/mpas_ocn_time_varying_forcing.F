@@ -381,7 +381,7 @@ contains
     windStressCoefficientLimit = 0.0035_RKIND
 
     if (daysSinceStartOfSim >= config_time_varying_atmospheric_forcing_ramp_delay) then
-      t = (daysSinceStartOfSim*86400_RKIND + forcingTimeIncrement)/86400.0_RKIND
+      t = (daysSinceStartOfSim*seconds_per_day + forcingTimeIncrement)/seconds_per_day
       ramp = tanh((2.0_RKIND*(t-config_time_varying_atmospheric_forcing_ramp_delay)) &
                               /config_time_varying_atmospheric_forcing_ramp)
     else

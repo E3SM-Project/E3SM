@@ -355,7 +355,7 @@ contains
          call mpas_pool_get_array(harmonicAnalysisAMPool, 'decomposedConstituentPhase', decomposedConstituentPhase)
 
          ! get relevant time information
-         time = daysSinceStartOfSim*86400_RKIND
+         time = daysSinceStartOfSim*seconds_per_day
          harmonicAnalysisEnd = config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration
          
          ! exit if harmonic analysis period has not begun yet

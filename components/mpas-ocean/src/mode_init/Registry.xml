@@ -47,11 +47,11 @@
 					possible_values="Any configuration name"
 		/>
 		<nml_option name="config_expand_sphere" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not."
+					description="Logical flag that controls if a spherical mesh is expanded to an earth sized sphere or not. The radius is SHR_CONST_REARTH from the E3SM shared constants (Physical Constants Dictionary), which forward mode requires on spherical meshes."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_realistic_coriolis_parameter" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not."
+					description="Logical flag that controls if a spherical mesh will get realistic coriolis parameters or not, computed from SHR_CONST_OMEGA in the E3SM shared constants. Note that forward mode always recomputes the Coriolis parameter this way on spherical meshes."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_write_cull_cell_mask" type="logical" default_value=".true." units="unitless"

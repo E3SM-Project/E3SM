@@ -496,7 +496,7 @@ contains
    integer :: iCell
    real(kind=RKIND) :: dtr
 
-   dtr = 4.0_RKIND*atan(1.0_RKIND) / 180.0_RKIND
+   dtr = pi / 180.0_RKIND
    workMask(:) = 0.0_RKIND
    do iCell=1,nCellsSolve
       workMask(iCell) = 1.0_RKIND
