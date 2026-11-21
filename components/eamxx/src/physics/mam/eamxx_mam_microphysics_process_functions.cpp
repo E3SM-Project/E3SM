@@ -475,8 +475,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         }
 
         // Preserve legacy continuation and debug warnings. Direct failures
-        // abort inside MAM4xx in debug builds; release builds return unchanged
-        // state, retain the failure diagnostics above, and report a warning.
+        // return unchanged chemistry state and warn inside MAM4xx in every
+        // build; retain the diagnostics above and existing caller warnings.
         if (!result.success()) {
 #if !defined(NDEBUG) || defined(MAM4XX_GAS_CHEMISTRY_SOLVER_DIRECT)
           Kokkos::printf(
