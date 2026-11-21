@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional
 
 from ._types import YamlMapping
@@ -60,6 +61,15 @@ BLOCKED_OPTIONS = frozenset(
         "IO.IORearranger",
         "IO.IODefaultFormat",
     }
+)
+
+#: IOStreams whose input file a user may replace in ``user_nl_omega``. The
+#: mesh (``HorzMeshIn``) always comes from ``input_files.yaml``.
+USER_INPUT_STREAMS = ("InitialState", "InitialVertCoord")
+
+#: Options below a blocked section that a user may still set
+USER_SETTABLE_OPTIONS = frozenset(
+    f"IOStreams.{stream}.Filename" for stream in USER_INPUT_STREAMS
 )
 
 
@@ -257,10 +267,73 @@ def validate_user_overrides(
 
     errors = validate_overrides(user_overrides, defaults, "user overrides")
     errors.extend(validate_blocked_options(user_overrides, "user overrides"))
+    errors.extend(_validate_user_input_filenames(user_overrides))
 
     _raise(errors, "user_nl_omega")
 
     return user_overrides
+
+
+def _validate_user_input_filenames(user_overrides: YamlMapping) -> list[str]:
+    """
+    Validate the input filenames a user may set in ``user_nl_omega``.
+
+    Only the form of the path is checked here. File existence is checked in
+    buildnml for runs that use these files.
+
+    Parameters:
+    -----------
+    user_overrides : dict[str, Any]
+        Parsed content of the case's ``user_nl_omega``.
+
+    Returns:
+    --------
+    list[str]
+        Error messages describing any problems found.
+    """
+    io_streams = user_overrides.get("IOStreams")
+    if not isinstance(io_streams, dict):
+        return []
+
+    errors: list[str] = []
+
+    for stream in USER_INPUT_STREAMS:
+        config = io_streams.get(stream)
+        if not isinstance(config, dict) or "Filename" not in config:
+            continue
+
+        filename = config["Filename"]
+        option = f"IOStreams.{stream}.Filename"
+
+        if not isinstance(filename, str) or not filename.strip():
+            errors.append(f"{option} must be a non-empty string.")
+        elif not filename.startswith("/"):
+            errors.append(
+                f"{option} must be an absolute path, got '{filename}'."
+            )
+
+    return errors
+
+
+def get_user_input_files(user_overrides: YamlMapping) -> dict[str, str]:
+    """Find the initial condition filenames set in validated user overrides."""
+    io_streams = user_overrides.get("IOStreams") or {}
+    return {
+        stream: io_streams[stream]["Filename"]
+        for stream in USER_INPUT_STREAMS
+        if isinstance(io_streams.get(stream), dict)
+        and "Filename" in io_streams[stream]
+    }
+
+
+def check_user_input_files(user_files: dict[str, str]) -> None:
+    """Check that user-specified initial condition files exist."""
+    errors = [
+        f"IOStreams.{stream}.Filename '{path}' does not exist or is not a file."
+        for stream, path in user_files.items()
+        if not Path(path).is_file()
+    ]
+    _raise(errors, "user_nl_omega")
 
 
 def _raise(errors: list[str], config_path: str) -> None:
@@ -603,7 +676,20 @@ def _blocked_override_options(
         option = f"{prefix}{key}"
 
         if option in BLOCKED_OPTIONS:
-            blocked_options.append(option)
+            settable = {
+                settable_option
+                for settable_option in USER_SETTABLE_OPTIONS
+                if settable_option.startswith(f"{option}.")
+            }
+            if settable and isinstance(value, dict):
+                # only the options listed in USER_SETTABLE_OPTIONS may be set
+                blocked_options.extend(
+                    f"{option}.{sub_key}"
+                    for sub_key in value
+                    if f"{option}.{sub_key}" not in settable
+                )
+            else:
+                blocked_options.append(option)
         elif isinstance(value, dict):
             blocked_options.extend(
                 _blocked_override_options(value, f"{option}.")

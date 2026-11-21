@@ -139,11 +139,14 @@ Omega:
 
   IOStreams:
     HorzMeshIn: {}       # blocked: mesh file, resolved from OCN_GRID
-    InitialVertCoord: {} # blocked: mesh file, resolved from OCN_GRID
-    InitialState: {}     # blocked: initial condition, resolved from OCN_GRID
+    InitialVertCoord: {} # only Filename may be overridden
+    InitialState: {}     # only Filename may be overridden
     RestartRead: {}       # blocked: managed by the coupler
     RestartWrite: {}       # blocked: managed by the coupler
     Forcing: {}             # blocked: provided by the coupler
 ```
 
-Attempting to set one of these is a `case.setup` error.
+Attempting to set a blocked option is a `case.setup` error. For
+`InitialVertCoord` and `InitialState`, `Filename` must be an absolute path to
+an existing file for runs that use it. The file contents are not checked;
+ensure they match the case mesh and have compatible vertical layers.

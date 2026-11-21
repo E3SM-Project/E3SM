@@ -13,6 +13,8 @@ from CIME.utils import SharedArea, expect, safe_copy
 from omega_buildnml import (
     build_omega_config,
     build_runtime_overrides,
+    check_user_input_files,
+    get_user_input_files,
     read_config_overrides,
     read_default_config,
     read_input_files_config,
@@ -76,6 +78,11 @@ def buildnml(case, caseroot, compname):
     # read user_nl_omega for any user-specified overrides
     user_overrides = read_user_overrides(case_root / "user_nl_omega")
 
+    # Initial condition files are not read or checked on a continue run.
+    user_input_files = get_user_input_files(user_overrides)
+    if not continue_run:
+        check_user_input_files(user_input_files)
+
     # Using the defaults and overrides, build the final Omega config dictionary
     config = build_omega_config(
         defaults=defaults,
@@ -97,8 +104,14 @@ def buildnml(case, caseroot, compname):
         if case_docs.exists():
             safe_copy(output_file, case_docs / "omega.yml")
 
-        # needs to be called within buildnml
-        write_input_data_list(streams_files, case_build)
+        # needs to be called within buildnml. Files set in user_nl_omega are
+        # not on the inputdata servers, so CIME should not try to fetch them.
+        staged_files = {
+            stream: filename
+            for stream, filename in streams_files.items()
+            if stream not in user_input_files
+        }
+        write_input_data_list(staged_files, case_build)
 
 
 def _main_func():
