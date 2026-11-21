@@ -1086,7 +1086,7 @@ end function bfb_expm1
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim,            &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange,                                                                        &
       ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi, rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc,  & 
-      diag_ze_rain,diag_ze_ice,mincdnc)
+      diag_ze_rain,diag_ze_ice,mincdnc, inv_dt)
 
    implicit none
 
@@ -1096,6 +1096,7 @@ end function bfb_expm1
 
    real(rtype), intent(in) :: p3_max_mean_rain_size
    real(rtype), intent(in) :: mincdnc 
+   real(rtype), intent(in) :: inv_dt
    real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
    real(rtype), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
@@ -1140,7 +1141,7 @@ end function bfb_expm1
          diag_eff_radius_qc(k) = 0.0_rtype
          qv(k) = qv(k)+qc(k)
          th_atm(k) = th_atm(k)-exner(k)*qc(k)*latent_heat_vapor(k)*inv_cp
-         vap_liq_exchange(k) = vap_liq_exchange(k) - qc(k)
+         vap_liq_exchange(k) = vap_liq_exchange(k) - qc(k)*inv_dt
          qc(k) = 0._rtype
          nc(k) = 0._rtype
       endif
@@ -1162,7 +1163,7 @@ end function bfb_expm1
       else
          qv(k) = qv(k)+qr(k)
          th_atm(k) = th_atm(k)-exner(k)*qr(k)*latent_heat_vapor(k)*inv_cp
-         vap_liq_exchange(k) = vap_liq_exchange(k) - qr(k)
+         vap_liq_exchange(k) = vap_liq_exchange(k) - qr(k)*inv_dt
          qr(k) = 0._rtype
          nr(k) = 0._rtype
       endif
@@ -1647,7 +1648,7 @@ end function bfb_expm1
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:),                                                &
             mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:),                                       &
             ze_rain(i,:), ze_ice(i,:), diag_vm_qi(i,:), diag_eff_radius_qi(i,:), diag_diam_qi(i,:), rho_qi(i,:), diag_equiv_reflectivity(i,:), diag_eff_radius_qc(i,:), &
-            diag_ze_rain(i,:),diag_ze_ice(i,:),mincdnc)
+            diag_ze_rain(i,:),diag_ze_ice(i,:),mincdnc,inv_dt)
 
        !   if (debug_ON) call check_values(qv,Ti,it,debug_ABORT,800,col_location)
 
