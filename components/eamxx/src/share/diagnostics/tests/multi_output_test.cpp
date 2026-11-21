@@ -30,7 +30,6 @@ public:
     m_col    = Field(FieldIdentifier("MOT_col",   m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked = Field(FieldIdentifier("MOT_masked",m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked.create_valid_mask();
-    m_masked.get_header().set_may_be_filled(true);
 
     add_output(m_prof);
     add_output(m_col);
@@ -62,7 +61,8 @@ protected:
         col_h(icol) += a_h(icol,ilev);
       }
       mask_h(icol) = b_h(icol)>0 ? 1 : 0;
-      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : constants::fill_value<Real>;
+      // Where the mask is 0, the data is unspecified (IO fills it, diags don't have to)
+      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : Real(-12345);
     }
     m_prof.sync_to_dev();
     m_col.sync_to_dev();
@@ -222,7 +222,6 @@ TEST_CASE ("multi_output") {
     msk.sync_to_host();
     msk.get_valid_mask().sync_to_host();
     REQUIRE (msk.get_valid_mask().name()=="MOT_masked_valid_mask");
-    REQUIRE (msk.get_header().may_be_filled());
     auto a_h    = a.get_view<const Real**,Host>();
     auto prof_h = prof.get_view<const Real**,Host>();
     auto col_h  = col.get_view<const Real*,Host>();
@@ -242,7 +241,6 @@ TEST_CASE ("multi_output") {
         ++nvalid;
       } else {
         REQUIRE (mask_h(icol)==0);
-        REQUIRE (msk_h(icol)==constants::fill_value<Real>);
       }
     }
     // Both branches were exercised

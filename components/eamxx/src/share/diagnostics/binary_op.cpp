@@ -300,7 +300,6 @@ void BinaryOp::initialize_impl()
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
     if (m_arg1_has_mask or m_arg2_has_mask) {
       get().create_valid_mask();
-      get().get_header().set_may_be_filled(true);
     }
   }
 }
@@ -328,12 +327,6 @@ void BinaryOp::compute_impl()
     // We can do scale/scale_inv for * and /, but for + and - we must deep copy arg2 first
     const auto& f2 = m_fields_in.at(m_arg2_name);
     apply_binary_op(get(), m_arg1_value, f2, m_binary_op_code);
-  }
-
-  // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid
-  if (get().has_valid_mask()) {
-    constexpr auto fv = constants::fill_value<Real>;
-    get().deep_copy(fv,get().get_valid_mask(),true);
   }
 }
 
