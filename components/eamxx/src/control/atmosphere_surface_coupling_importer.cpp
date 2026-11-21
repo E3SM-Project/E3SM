@@ -61,6 +61,12 @@ void SurfaceCouplingImporter::create_requests()
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
   // the correction term for air sea surface water thermo fixer
   add_field<Computed>("h2otemp",          scalar2d, W/m2,    grid_name);
+  // Ocean surface saturation specific humidity [kg/kg]
+  add_field<Computed>("ocn_ssq",          scalar2d, kg/kg,   grid_name);
+  // Ocean exchange coefficient for water vapor [-]
+  add_field<Computed>("ocn_re",           scalar2d, none,    grid_name);
+  // Ocean surface friction velocity [m/s]
+  add_field<Computed>("ocn_ustar",        scalar2d, m/s,     grid_name);
 
 }
 // =========================================================================================
