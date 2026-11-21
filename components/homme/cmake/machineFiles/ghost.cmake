@@ -14,6 +14,5 @@ SET (ZLIB_DIR $ENV{SEMS_ZLIB_ROOT} CACHE FILEPATH "")
 # machine 'ghost' can use sems cmake machine file if we get /sems-data/store mounted on ghost
 #SET (CPRNC_DIR /sems-data-store/ACME/cprnc/build CACHE FILEPATH "")
 
-SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 

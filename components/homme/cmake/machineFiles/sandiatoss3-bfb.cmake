@@ -46,12 +46,12 @@ SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 # Set kokkos arch, to get correct avx flags
 SET (Kokkos_ARCH_SNB ON CACHE BOOL "")
 
-SET (USE_MPIEXEC "mpiexec" CACHE STRING "")
+SET (MPIEXEC_EXECUTABLE "mpiexec" CACHE FILEPATH "")
 # Openmpi 1.8 only
-SET (USE_MPI_OPTIONS " --map-by node:SPAN " CACHE FILEPATH "")
+SET (MPIEXEC_PREFLAGS " --map-by node:SPAN " CACHE STRING "")
 
 # Openmpi 1.6
-#SET (USE_MPI_OPTIONS "-loadbalance" CACHE FILEPATH "")
+#SET (MPIEXEC_PREFLAGS "-loadbalance" CACHE STRING "")
 
 #turn on preqxx target and thus strict fpmodel for F vs CXX comparison
 SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -qopenmp -O0" CACHE STRING "")
@@ -67,7 +67,6 @@ SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
 SET (NETCDF_DIR $ENV{SEMS_NETCDF_ROOT} CACHE FILEPATH "")
 
 
-SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
 SET (CPRNC_DIR /projects/ccsm/cprnc/build.toss3 CACHE FILEPATH "")
