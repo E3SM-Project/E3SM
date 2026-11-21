@@ -8,6 +8,9 @@
 #include <ekat_math_utils.hpp>
 #include <ekat_units.hpp>
 
+// Numerical values come from the Physical Constants Dictionary
+#include "pcd_const.h"
+
 namespace scream {
 namespace physics {
 
@@ -46,39 +49,39 @@ struct Constants
   static constexpr Scalar ONE     = 1;
   static constexpr Scalar THIRD   = 1.0/3.0;
   static constexpr Scalar SXTH    = 1.0/6.0;
-  static constexpr Scalar Pi      = 3.14159265358979323;
+  static constexpr Scalar Pi      = pcd::pi;
   static constexpr Scalar PIOV3   = Pi*THIRD;
   static constexpr Scalar PIOV6   = Pi*SXTH;
   static constexpr Scalar macheps = std::numeric_limits<Real>::epsilon();
 
   // Physical constants
-  static constexpr auto Cpair           = quantity_t(1004.64, J/kg/K);
+  static constexpr auto Cpair           = quantity_t(pcd::dry_air_specific_heat_capacity_reference, J/kg/K);
   static constexpr auto CP              = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr auto INV_CP          = ONE/CP;
-  static constexpr auto Rair            = quantity_t(287.042, J/kg/K); // gas constant for dry air
+  static constexpr auto Rair            = quantity_t(pcd::dry_air_specific_gas_constant_reference, J/kg/K); // gas constant for dry air
   static constexpr auto RD              = Rair;
-  static constexpr auto RH2O            = quantity_t(461.505, J/kg/K); // Water vapor gas constant
+  static constexpr auto RH2O            = quantity_t(pcd::water_vapor_specific_gas_constant_reference, J/kg/K); // Water vapor gas constant
   static constexpr auto RV              = RH2O;
 
-  static constexpr auto RHO_H2O         = quantity_t(1000.0,kg/m3);
+  static constexpr auto RHO_H2O         = quantity_t(pcd::pure_water_density_reference,kg/m3);
   static constexpr auto INV_RHO_H2O     = 1/RHO_H2O;
   static constexpr auto RHOW            = RHO_H2O;
   static constexpr auto INV_RHOW        = 1/RHOW;
-  static constexpr auto RhoIce          = quantity_t(917.0,kg/m3);     // Ice density at 0 C from Wallace+Hobbes 1977
+  static constexpr auto RhoIce          = quantity_t(pcd::sea_ice_density_reference,kg/m3);     // Ice density at 0 C from Wallace+Hobbes 1977
 
-  static constexpr auto MWH2O           = quantity_t(18.016, g/mol);   // water molar mass
+  static constexpr auto MWH2O           = quantity_t(1000*pcd::water_vapor_molar_mass_reference, g/mol);   // water molar mass
   static constexpr auto MWWV            = MWH2O;
-  static constexpr auto MWdry           = quantity_t(28.966, g/mol);   // dry air molar mass
+  static constexpr auto MWdry           = quantity_t(1000*pcd::dry_air_molar_mass_reference, g/mol);   // dry air molar mass
   static constexpr auto ep_2            = MWH2O / MWdry;               // dimensionless (MWH2O/MWdry)
   static constexpr auto o2mmr           = quantity_t(0.23143,ekat::units::none);  // o2 mass mixing ratio (dimensionless)
 
-  static constexpr auto gravit          = quantity_t(9.80616, m/s2);
+  static constexpr auto gravit          = quantity_t(pcd::standard_acceleration_of_gravity, m/s2);
 
-  static constexpr auto LatVap          = quantity_t(2501000.0, J/kg);
-  static constexpr auto LatIce          = quantity_t(333700.0, J/kg);
-  static constexpr auto CpLiq           = quantity_t(4188.0, J/kg/K);
+  static constexpr auto LatVap          = quantity_t(pcd::latent_heat_of_vaporization_reference, J/kg);
+  static constexpr auto LatIce          = quantity_t(pcd::latent_heat_of_fusion_reference, J/kg);
+  static constexpr auto CpLiq           = quantity_t(pcd::pure_water_specific_heat_capacity_reference, J/kg/K);
 
-  static constexpr auto Tmelt           = quantity_t(273.15, K);
+  static constexpr auto Tmelt           = quantity_t(pcd::pure_water_freezing_temperature_reference, K);
   static constexpr auto T_zerodegc      = Tmelt;
   static constexpr auto T_homogfrz      = quantity_t(Tmelt.value - 40,K);
   static constexpr auto T_rainfrz       = quantity_t(Tmelt.value - 4,K);
@@ -110,18 +113,18 @@ struct Constants
   static constexpr Scalar incloud_limit = 5.1e-3;
   static constexpr Scalar precip_limit  = 1.0e-2;
   static constexpr Scalar Karman        = 0.4;
-  static constexpr auto Avogad          = quantity_t (6.02214e26,1/mol);
-  static constexpr auto Boltz           = quantity_t (1.38065e-23,J/K);
-  static constexpr auto Rgas            = Avogad * Boltz;
-  static constexpr auto RWV             = Rgas / MWWV;
+  static constexpr auto Avogad          = quantity_t (pcd::avogadro_constant,1/mol);
+  static constexpr auto Boltz           = quantity_t (pcd::boltzmann_constant,J/K);
+  static constexpr auto Rgas            = Avogad * Boltz; // universal gas constant, J/mol/K
+  static constexpr auto RWV             = quantity_t (pcd::water_vapor_specific_gas_constant_reference, J/kg/K);
   static constexpr Scalar ZVIR          = (RWV.value / Rair.value) - 1.0;
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
   static constexpr Scalar nmltratio     = 1.0; // ratio of rain number produced to ice number loss from melting
   static constexpr Scalar basetemp      = 300.0;
-  static constexpr auto r_earth         = quantity_t(6.376e6,m); // Radius of the earth in m
-  static constexpr auto stebol          = quantity_t(5.670374419e-8,W/m2/pow(K,4)); // Stefan-Boltzmann's constant (W/m^2/K^4)
-  static constexpr auto omega           = quantity_t(7.292e-5,ekat::units::rad/s); // Earth's rotation (rad/sec)
+  static constexpr auto r_earth         = quantity_t(pcd::mean_radius,m); // Radius of the earth in m
+  static constexpr auto stebol          = quantity_t(pcd::stefan_boltzmann_constant,W/m2/pow(K,4)); // Stefan-Boltzmann's constant (W/m^2/K^4)
+  static constexpr auto omega           = quantity_t(pcd::angular_velocity,ekat::units::rad/s); // Earth's rotation (rad/sec)
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
