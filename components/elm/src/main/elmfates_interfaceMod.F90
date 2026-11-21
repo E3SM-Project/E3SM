@@ -180,7 +180,6 @@ module ELMFatesInterfaceMod
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
    use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
-   use FatesSoilBGCFluxMod   , only : FluxIntoLitterPools
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
@@ -1464,10 +1463,6 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
-         call FluxIntoLitterPools(this%fates(nc)%sites(s), &
-                                  this%fates(nc)%bc_in(s), &
-                                  this%fates(nc)%bc_out(s))
-         
          col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
               col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
               this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
@@ -1891,7 +1886,8 @@ contains
             if (this%fates(nc)%nsites>0) then
                call this%fates_restart%set_restart_vectors(nc,this%fates(nc)%nsites, &
                     this%fates(nc)%sites, &
-                    this%fates(nc)%bc_in)
+                    this%fates(nc)%bc_in, &
+                    this%fates(nc)%bc_out)
             end if
          end do
          !$OMP END PARALLEL DO
@@ -1982,7 +1978,7 @@ contains
                     this%fates(nc)%bc_out)
 
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
-                    this%fates(nc)%sites, this%fates(nc)%bc_in )
+                    this%fates(nc)%sites, this%fates(nc)%bc_in, this%fates(nc)%bc_out )
 
 
 
