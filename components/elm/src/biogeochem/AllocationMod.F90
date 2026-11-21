@@ -8,7 +8,7 @@ module AllocationMod
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use elm_varcon          , only : dzsoi_decomp
+  use elm_varcon          , only : dzsoi_decomp, catomw
   use elm_varctl          , only : use_c13, use_c14, spinup_state
   use elm_varctl          , only : nyears_ad_carbon_only
   use elm_varctl          , only : use_fates
@@ -656,17 +656,17 @@ contains
          ! since they are not always allocated AND nag compiler will complain if you try to
          ! to have an associate statement with unallocated memory
 
-         psnsun_to_cpool(p)   = psnsun(p) * laisun(p) * 12.011e-6_r8
-         psnshade_to_cpool(p) = psnsha(p) * laisha(p) * 12.011e-6_r8
+         psnsun_to_cpool(p)   = psnsun(p) * laisun(p) * (catomw * 1.e-6_r8)
+         psnshade_to_cpool(p) = psnsha(p) * laisha(p) * (catomw * 1.e-6_r8)
 
          if ( use_c13 ) then
-            c13_veg_cf%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c13_veg_cf%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c13_veg_cf%psnsun_to_cpool(p)   = c13_psnsun(p) * laisun(p) * (catomw * 1.e-6_r8)
+            c13_veg_cf%psnshade_to_cpool(p) = c13_psnsha(p) * laisha(p) * (catomw * 1.e-6_r8)
          endif
 
          if ( use_c14 ) then
-            c14_veg_cf%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * 12.011e-6_r8
-            c14_veg_cf%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * 12.011e-6_r8
+            c14_veg_cf%psnsun_to_cpool(p)   = c14_psnsun(p) * laisun(p) * (catomw * 1.e-6_r8)
+            c14_veg_cf%psnshade_to_cpool(p) = c14_psnsha(p) * laisha(p) * (catomw * 1.e-6_r8)
          endif
 
          gpp(p) = psnsun_to_cpool(p) + psnshade_to_cpool(p)

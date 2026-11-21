@@ -12,7 +12,9 @@ module elm_varcon
   use shr_const_mod , only: SHR_CONST_LATSUB,SHR_CONST_LATICE,SHR_CONST_RHOFW
   use shr_const_mod , only: SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH
   use shr_const_mod , only: SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY
-  use shr_const_mod , only: SHR_CONST_RGAS
+  use shr_const_mod , only: SHR_CONST_RGAS, SHR_CONST_PSTD, SHR_CONST_MWC
+  use shr_const_mod , only: SHR_CONST_MWWV, SHR_CONST_MWDAIR, SHR_CONST_MWCO2
+  use shr_const_mod , only: SHR_CONST_BOLTZ, SHR_CONST_AVOGAD
   use elm_varpar    , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
   use elm_varpar    , only: ngases
   use elm_varpar    , only: nlayer
@@ -33,8 +35,11 @@ module elm_varcon
   !------------------------------------------------------------------
   ! Initialize mathmatical constants
   !------------------------------------------------------------------
+  !
+  ! NOTE: elm_varcon is the only ELM module that should use shr_const_mod.
+  ! All other ELM modules should get physical constants from here.
 
-  real(r8) :: rpi    = SHR_CONST_PI
+  real(r8), parameter :: rpi    = SHR_CONST_PI
 
   !------------------------------------------------------------------
   ! Initialize physical constants
@@ -43,28 +48,33 @@ module elm_varcon
   real(r8), parameter :: n_melt=0.7                         ! fsca shape parameter
   real(r8), parameter :: e_ice=6.0                          ! soil ice impedance factor
   real(r8), parameter :: mu = 0.13889                       ! connectivity exponent 
-  real(r8) :: grav   = SHR_CONST_G                          ! gravity constant [m/s2]
-  real(r8) :: sb     = SHR_CONST_STEBOL                     ! stefan-boltzmann constant  [W/m2/K4]
-  real(r8) :: vkc    = SHR_CONST_KARMAN                     ! von Karman constant [-]
-  real(r8) :: rwat   = SHR_CONST_RWV                        ! gas constant for water vapor [J/(kg K)]
-  real(r8) :: rair   = SHR_CONST_RDAIR                      ! gas constant for dry air [J/kg/K]
-  real(r8) :: roverg = SHR_CONST_RWV/SHR_CONST_G*1000._r8   ! Rw/g constant = (8.3144/0.018)/(9.80616)*1000. mm/K
-  real(r8) :: cpliq  = SHR_CONST_CPFW                       ! Specific heat of water [J/kg-K]
-  real(r8) :: cpice  = SHR_CONST_CPICE                      ! Specific heat of ice [J/kg-K]
-  real(r8) :: cpair  = SHR_CONST_CPDAIR                     ! specific heat of dry air [J/kg/K]
-  real(r8) :: hvap   = SHR_CONST_LATVAP                     ! Latent heat of evap for water [J/kg]
-  real(r8) :: hsub   = SHR_CONST_LATSUB                     ! Latent heat of sublimation    [J/kg]
-  real(r8) :: hfus   = SHR_CONST_LATICE                     ! Latent heat of fusion for ice [J/kg]
-  real(r8) :: denh2o = SHR_CONST_RHOFW                      ! density of liquid water [kg/m3]
-  real(r8) :: denice = SHR_CONST_RHOICE                     ! density of ice [kg/m3]
-  real(r8) :: rgas   = SHR_CONST_RGAS                       ! universal gas constant [J/K/kmole]
+  real(r8), parameter :: grav   = SHR_CONST_G                          ! gravity constant [m/s2]
+  real(r8), parameter :: sb     = SHR_CONST_STEBOL                     ! stefan-boltzmann constant  [W/m2/K4]
+  real(r8), parameter :: vkc    = SHR_CONST_KARMAN                     ! von Karman constant [-]
+  real(r8), parameter :: rwat   = SHR_CONST_RWV                        ! gas constant for water vapor [J/(kg K)]
+  real(r8), parameter :: rair   = SHR_CONST_RDAIR                      ! gas constant for dry air [J/kg/K]
+  real(r8), parameter :: roverg = SHR_CONST_RWV/SHR_CONST_G*1000._r8   ! Rw/g constant = (8.3144/0.018)/(9.80616)*1000. mm/K
+  real(r8), parameter :: cpliq  = SHR_CONST_CPFW                       ! Specific heat of water [J/kg-K]
+  real(r8), parameter :: cpice  = SHR_CONST_CPICE                      ! Specific heat of ice [J/kg-K]
+  real(r8), parameter :: cpair  = SHR_CONST_CPDAIR                     ! specific heat of dry air [J/kg/K]
+  real(r8), parameter :: hvap   = SHR_CONST_LATVAP                     ! Latent heat of evap for water [J/kg]
+  real(r8), parameter :: hsub   = SHR_CONST_LATSUB                     ! Latent heat of sublimation    [J/kg]
+  real(r8), parameter :: hfus   = SHR_CONST_LATICE                     ! Latent heat of fusion for ice [J/kg]
+  real(r8), parameter :: denh2o = SHR_CONST_RHOFW                      ! density of liquid water [kg/m3]
+  real(r8), parameter :: denice = SHR_CONST_RHOICE                     ! density of ice [kg/m3]
+  real(r8), parameter :: rgas   = SHR_CONST_RGAS                       ! universal gas constant [J/K/kmole]
   real(r8) :: tkair  = 0.023_r8                             ! thermal conductivity of air   [W/m/K]
   real(r8) :: tkice  = 2.290_r8                             ! thermal conductivity of ice   [W/m/K]
   real(r8) :: tkwat  = 0.57_r8                              ! thermal conductivity of water [W/m/K]
   real(r8), parameter :: tfrz   = SHR_CONST_TKFRZ                      ! freezing temperature [K]
   real(r8), parameter :: tcrit  = 2.5_r8                    ! critical temperature to determine rain or snow
   real(r8) :: o2_molar_const = 0.209_r8                     ! constant atmospheric O2 molar ratio (mol/mol)
-  real(r8) :: oneatm = 1.01325e5_r8                         ! one standard atmospheric pressure [Pa]
+  real(r8), parameter :: oneatm = SHR_CONST_PSTD            ! one standard atmospheric pressure [Pa]
+  real(r8), parameter :: boltz  = SHR_CONST_BOLTZ           ! Boltzmann's constant [J/K/molecule]
+  real(r8), parameter :: avogad = SHR_CONST_AVOGAD          ! Avogadro's number [molecules/kmole]
+  real(r8), parameter :: mwdair = SHR_CONST_MWDAIR          ! molecular weight of dry air [kg/kmole]
+  real(r8), parameter :: mwwv   = SHR_CONST_MWWV            ! molecular weight of water vapor [kg/kmole]
+  real(r8), parameter :: mwco2  = SHR_CONST_MWCO2           ! molecular weight of CO2 [kg/kmole]
 
   real(r8) :: bdsno = 250._r8                               ! bulk density snow (kg/m**3)
   real(r8) :: bdfirn = 730._r8                              ! bulk density of deep firn (kg/m**3)
@@ -72,11 +82,10 @@ module elm_varcon
   real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
   real(r8) :: watmin = 0.01_r8                              ! minimum soil moisture (mm)
 
-  real(r8), parameter :: mm_epsilon = 0.622_r8              ! Molar mass ratio (water:dry air)
-                                                            !   This is set to 0.622 for bit-for-bit compatibility, but
-                                                            !   this should be defined as SHR_CONST_MWWV/SHR_CONST_MWDAIR
+  real(r8), parameter :: mm_epsilon = mwwv/mwdair          ! Molar mass ratio (water:dry air)
 
-  real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
+  real(r8), parameter :: rearth = SHR_CONST_REARTH          ! radius of earth (m)
+  real(r8), parameter :: re = rearth*0.001_r8               ! radius of earth (km)
 
   real(r8), public, parameter :: degpsec = 15._r8/3600.0_r8 ! Degree's earth rotates per second
   real(r8), public, parameter ::  secspday= SHR_CONST_CDAY  ! Seconds per day
@@ -91,6 +100,8 @@ module elm_varcon
   !------------------------------------------------------------------
 
   real(r8), parameter :: pa_to_kpa = 0.001_r8               ! Conversion factor (Pa to kPa) [kPa/Pa]
+  real(r8), parameter :: mm_h2o_to_mpa = &                  ! Conversion factor (mm H2O head to MPa) [MPa/mm]
+       denh2o * grav * 1.e-9_r8
 
   ! These are tunable constants from clm2_3
 
@@ -110,6 +121,7 @@ module elm_varcon
   real(r8), parameter :: aquifer_water_baseline = 5000._r8 ! baseline value for water in the unconfined aquifer [mm]
 
   !!! C13
+  real(r8), parameter :: pdb = SHR_CONST_PDB  ! 13C/12C ratio in Pee Dee Belemnite (C isotope standard)
   real(r8), parameter :: preind_atm_del13c = -6.0   ! preindustrial value for atmospheric del13C
   real(r8), parameter :: preind_atm_ratio = SHR_CONST_PDB + (preind_atm_del13c * SHR_CONST_PDB)/1000.0  ! 13C/12C
   real(r8) :: c13ratio = preind_atm_ratio/(1.0+preind_atm_ratio) ! 13C/(12+13)C preind atmosphere
@@ -200,7 +212,7 @@ module elm_varcon
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 
-  real(r8), parameter :: catomw = 12.011_r8     ! molar mass of C atoms (g/mol)
+  real(r8), parameter :: catomw = SHR_CONST_MWC ! molar mass of C atoms (g/mol)
   real(r8), parameter :: natomw = 14.007_r8     ! molar mass of N atoms (g/mol)
   
   real(r8) :: s_con(ngases,4)    ! Schmidt # calculation constants (spp, #)

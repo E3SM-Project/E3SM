@@ -93,14 +93,14 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use shr_const_mod      , only : SHR_CONST_TKFRZ, SHR_CONST_RGAS
+    use elm_varcon         , only : tfrz, rgas
     use shr_flux_mod       , only : shr_flux_update_stress
     use elm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use elm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
     use elm_varcon         , only : isecspday, degpsec
     use pftvarcon          , only : irrigated
     use elm_varcon         , only : c14ratio
-    use shr_const_mod      , only : SHR_CONST_PI
+    use elm_varcon         , only : rpi
 
     !NEW
     use elm_varsur         , only : firrig
@@ -483,7 +483,7 @@ contains
          if (frac_veg_nosno(p) == 0) then
             btran(p) = 0._r8
             t_veg(p) = forc_t(t)
-            cf_bare  = forc_pbot(t)/(SHR_CONST_RGAS*0.001_r8*thm(p))*1.e06_r8
+            cf_bare  = forc_pbot(t)/(rgas*0.001_r8*thm(p))*1.e06_r8
             rssun(p) = 1._r8/1.e15_r8 * cf_bare
             rssha(p) = 1._r8/1.e15_r8 * cf_bare
             lbl_rsc_h2o(p)=0._r8
@@ -517,7 +517,7 @@ contains
       end if
 #endif
 
-      deg2rad = SHR_CONST_PI/180._r8
+      deg2rad = rpi/180._r8
       ! Initialize
       do f = 1, fn
          p = filterp(f)
@@ -653,7 +653,7 @@ contains
             g = veg_pp%gridcell(p)
             if (check_for_irrig(p) .and. .not. frozen_soil(p)) then
                ! if level L was frozen, then we don't look at any levels below L
-               if (t_soisno(c,j) <= SHR_CONST_TKFRZ) then
+               if (t_soisno(c,j) <= tfrz) then
                   frozen_soil(p) = .true.
                else if (rootfr(p,j) > 0._r8) then
                   ! determine soil water deficit in this layer:

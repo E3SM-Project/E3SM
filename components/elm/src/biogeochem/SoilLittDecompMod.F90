@@ -7,7 +7,7 @@ module SoilLittDecompMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use shr_const_mod          , only : SHR_CONST_TKFRZ
+  use elm_varcon             , only : tfrz
   use decompMod              , only : bounds_type
   use perf_mod               , only : t_startf, t_stopf
   use elm_varctl             , only : iulog, use_lch4, use_century_decomp

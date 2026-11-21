@@ -7,12 +7,12 @@ module DecompCascadeCNMod
   !
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8
-  use shr_const_mod          , only : SHR_CONST_TKFRZ
+  use elm_varcon             , only : tfrz
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use elm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc
-  use elm_varcon             , only : zsoi, spval
+  use elm_varcon             , only : zsoi, spval, mm_h2o_to_mpa
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use SharedParamsMod        , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard
@@ -829,13 +829,13 @@ contains
                 c = filter_soilc(fc)
                 if (j==1) t_scalar(c,:) = 0._r8
                 !! use separate (possibly equal) t funcs above and below freezing point
-                !! t_scalar(c,1)=t_scalar(c,1) + (1.5**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))*fr(c,j)
-                if (t_soisno(c,j) >= SHR_CONST_TKFRZ) then
+                !! t_scalar(c,1)=t_scalar(c,1) + (1.5**((t_soisno(c,j)-(tfrz+25._r8))/10._r8))*fr(c,j)
+                if (t_soisno(c,j) >= tfrz) then
                    t_scalar(c,1)=t_scalar(c,1) + &
-                        (Q10**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))*fr(c,j)
+                        (Q10**((t_soisno(c,j)-(tfrz+25._r8))/10._r8))*fr(c,j)
                 else
                    t_scalar(c,1)=t_scalar(c,1) + &
-                        (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))*fr(c,j)
+                        (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-tfrz)/10._r8))*fr(c,j)
                 endif
              end do
           end do
@@ -852,7 +852,7 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 if (j==1) w_scalar(c,:) = 0._r8
-                maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+                maxpsi = sucsat(c,j) * (-mm_h2o_to_mpa)
                 psi = min(soilpsi(c,j),maxpsi)
                 ! decomp only if soilpsi is higher than minpsi
                 if (psi > minpsi) then
@@ -865,7 +865,7 @@ contains
              if (anoxia_wtsat) then ! Adjust for saturated fraction if unfrozen.
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   if (alt_indx(c) >= nlev_soildecomp_standard .and. t_soisno(c,1) > SHR_CONST_TKFRZ) then
+                   if (alt_indx(c) >= nlev_soildecomp_standard .and. t_soisno(c,1) > tfrz) then
                       w_scalar(c,1) = w_scalar(c,1)*(1._r8 - finundated(c)) + finundated(c)
                    end if
                 end do
@@ -916,11 +916,11 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 !! use separate (possibly equal) t funcs above and below freezing point
-                !! t_scalar(c,j)= (1.5**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))
-                if (t_soisno(c,j) >= SHR_CONST_TKFRZ) then
-                   t_scalar(c,j)= (Q10**((t_soisno(c,j)-(SHR_CONST_TKFRZ+25._r8))/10._r8))
+                !! t_scalar(c,j)= (1.5**((t_soisno(c,j)-(tfrz+25._r8))/10._r8))
+                if (t_soisno(c,j) >= tfrz) then
+                   t_scalar(c,j)= (Q10**((t_soisno(c,j)-(tfrz+25._r8))/10._r8))
                 else
-                   t_scalar(c,j)= (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-SHR_CONST_TKFRZ)/10._r8))
+                   t_scalar(c,j)= (Q10**(-25._r8/10._r8))*(froz_q10**((t_soisno(c,j)-tfrz)/10._r8))
                 endif
              end do
           end do
@@ -937,7 +937,7 @@ contains
           do j = 1,nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+                maxpsi = sucsat(c,j) * (-mm_h2o_to_mpa)
                 psi = min(soilpsi(c,j),maxpsi)
                 ! decomp only if soilpsi is higher than minpsi
                 if (psi > minpsi) then
@@ -946,7 +946,7 @@ contains
                    w_scalar(c,j) = 0._r8
                 end if
                 if (use_lch4) then
-                   if (anoxia_wtsat .and. t_soisno(c,j) > SHR_CONST_TKFRZ) then ! wet area will have w_scalar of 1 if unfrozen
+                   if (anoxia_wtsat .and. t_soisno(c,j) > tfrz) then ! wet area will have w_scalar of 1 if unfrozen
                       w_scalar(c,j) = w_scalar(c,j)*(1._r8 - finundated(c)) + finundated(c)
                    end if
                 end if
@@ -998,7 +998,7 @@ contains
            else if (year < 40 .and. spinup_state == 1) then
                cnstate_vars%scalaravg_col(c,:) = cnstate_vars%scalaravg_col(c,:) + &
                      (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) * depth_scalar(c,4) ) &
-                     * dt / (86400._r8 * 365._r8 * 20._r8)
+                     * dt / (secspday * 365._r8 * 20._r8)
            else
                if (cnstate_vars%scalaravg_col(c,4) < 1.0e-3) then
                     cnstate_vars%scalaravg_col(c,:) = 1.0_r8
