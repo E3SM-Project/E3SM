@@ -82,7 +82,9 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
 #define fdipb(name)                                                     \
   fields_.push_back({#name,                                             \
         2,                                                              \
-        {d_->name.extent_int(0), d_->name.extent_int(1), d_->name.extent_int(2)}, \
+        {d_->name.extent_int(0),                                        \
+         d_->name.rank > 1 ? d_->name.extent_int(1) : 1,               \
+         d_->name.rank > 2 ? d_->name.extent_int(2) : 1},              \
         d_->name.data(),                                                \
         d_->name.size()})
   fdipb(host_dx); fdipb(host_dy);
