@@ -64,6 +64,25 @@ More information about grids may be found on this [Confluence Page](https://acme
 - `FIOP-SCREAMv1-DP`: V1 with `dpxx`[^dpxx]
 - `F2010-SCREAMv1-noAero`: V1 without aerosol forcing
 
+#### Physics-package compsets (experimental)
+
+These compsets pick the physics configuration through a `SCREAM%<pkg>`
+modifier, so it does not depend on the grid. Grid-dependent numerics
+(dycore timesteps, hyperviscosity, physics subcycling, radiation frequency)
+still come from the grid. This means you can test a production physics
+configuration on a cheap grid, for example
+`SMS.ne4pg2_ne4pg2.F2010-MES`.
+
+- `F2010-SYN`: synoptic scales are the finest resolved (e.g., ne30)
+- `F2010-MES`: mesoscale-resolving (e.g., ne120, ne256)
+- `F2010-CGZ`: convective grey zone (e.g., ne1024)
+- `F2010-LES`: large-eddy scales (e.g., CONUS200); provisional
+
+The package modifier can be combined with others, e.g.
+`2010_SCREAM%MAM4xx-MES_...`; by convention it goes last. In
+`namelist_defaults_eamxx.xml`, use the `phys` selector
+(e.g., `phys="MES"`) for settings that belong to a package.
+
 Full info on supported compsets may be found by taking a look at the EAMxx
 [`config_compsets.xml`](https://github.com/E3SM-Project/E3SM/blob/master/components/eamxx/cime_config/config_compsets.xml)
 source file.
