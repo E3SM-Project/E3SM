@@ -331,8 +331,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,
-      orho_qi, odiag_equiv_refl, odiag_eff_radius_qc, odiag_eff_radius_qr, runtime_options);
-
+      orho_qi, odiag_equiv_refl, odiag_eff_radius_qc, odiag_eff_radius_qr, inv_dt, runtime_options); //inv_dt
     //
     // merge ice categories with similar properties
 
