@@ -1737,7 +1737,8 @@ subroutine lnfm_init( bounds )
         fillalgo='none',                              &
         mapalgo=lightngmapalgo,                       &
         calendar=get_calendar(),                      &
-        taxmode='cycle'                            )
+        taxmode='cycle' , &
+        readmode='full_file')
 
    if (masterproc) then
       call shr_strdata_print(sdat_lnfm,'Lightning data')

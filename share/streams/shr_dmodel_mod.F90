@@ -710,7 +710,6 @@ CONTAINS
           avLB%rAttr(:,:) = avUB%rAttr(:,:)
           call t_stopf(trim(lstr)//'_LB_copy')
        else
-
           select case(readMode)
           case ('single')
              call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc_r8, pio_iodesc_r4, &
@@ -718,6 +717,7 @@ CONTAINS
                   path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
           case ('full_file')
              call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
+                  pio_iodesc_r8, pio_iodesc_r4, pio_iodesc_int, &
                   gsMap, avLB, avFile, mpicom, &
                   path, fn_lb, n_lb,istr=trim(lstr)//'_LB', boundstr = 'lb')
           case default
@@ -737,6 +737,7 @@ CONTAINS
                path, fn_ub, n_ub,istr=trim(lstr)//'_UB', boundstr = 'ub')
        case ('full_file')
           call shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
+               pio_iodesc_r8, pio_iodesc_r4, pio_iodesc_int, &
                gsMap, avUB, avFile, mpicom, &
                path, fn_ub, n_ub,istr=trim(lstr)//'_UB', boundstr = 'ub')
        case default
@@ -1001,6 +1002,7 @@ CONTAINS
   !===============================================================================
 
   subroutine shr_dmodel_readstrm_fullfile(stream, pio_subsystem, pio_iotype, &
+      pio_iodesc_r8, pio_iodesc_r4, pio_iodesc_int, &
        gsMap, av, avFile, mpicom, &
        path, fn, nt, istr, boundstr)
 
@@ -1013,6 +1015,7 @@ CONTAINS
     type      (shr_stream_streamType) ,intent(inout)         :: stream
     type      (iosystem_desc_t)       ,intent(inout), target :: pio_subsystem
     integer   (IN)                    ,intent(in)            :: pio_iotype
+    type(io_desc_t)      ,intent(inout)  :: pio_iodesc_r8, pio_iodesc_r4, pio_iodesc_int
     type      (mct_gsMap)             ,intent(in)            :: gsMap
     type      (mct_aVect)             ,intent(inout)         :: av
     type      (mct_aVect)             ,intent(inout)         :: avFile
@@ -1044,17 +1047,19 @@ CONTAINS
     type(file_desc_t)             :: pioid
     type(var_desc_t)              :: varid
     integer(kind=pio_offset_kind) :: frame
-    type(io_desc_t)               :: pio_iodesc_r8_local
-    type(io_desc_t)               :: pio_iodesc_r4_local
-    type(io_desc_t)               :: pio_iodesc_int_local
+    ! type(io_desc_t)               :: pio_iodesc_r8_local
+    ! type(io_desc_t)               :: pio_iodesc_r4_local
+    ! type(io_desc_t)               :: pio_iodesc_int_local
     integer(IN)                   :: avFile_beg, avFile_end
 
+    real(r8) , allocatable        :: temp(:)
     real(r4), allocatable         :: rdata(:)
     integer, allocatable          :: idata(:)
-    integer                       :: lsize, cnt,m,n
-    integer, allocatable          :: count(:), compDOF(:)
+    integer                       :: lsize, cnt,m,n,did
     integer, pointer,dimension(:) :: gsmOP   ! gsmap ordered points
-    integer                       :: vtype ! variable type on stream file
+    integer                       :: vtype, ntime, step ! variable type on stream file
+    integer :: dims(3), total_size, lb, ub
+    character(len=256) :: dimname
     character(*), parameter :: subname = ' (shr_dmodel_readstrm_fullfile) '
     character(*), parameter :: F00   = "(' (shr_dmodel_readstrm_fullfile) ',8a)"
     character(*), parameter :: F01   = "(' (shr_dmodel_readstrm_fullfile) ',a,5i8)"
@@ -1116,6 +1121,7 @@ CONTAINS
 
        if (fileopen .and. currfile==filename) then
           ! don't reopen file, all good
+          print *, "File ",trim(filename),"already open/read -- no need to re-read"
        else
           ! otherwise close the old file if open, open the new file,
           ! and read all time slices of a temporal dataset within the new file.
@@ -1141,16 +1147,26 @@ CONTAINS
 
           rcode = pio_inq_vardimid(pioid, varid, dimid(1:ndims))
 
-          nx = 1
-          ny = 1
-          nz = 1
-          if (ndims >= 1) rcode = pio_inq_dimlen(pioid, dimid(1), nx)
-          if (ndims >= 2) rcode = pio_inq_dimlen(pioid, dimid(2), ny)
-          if (ndims >= 3) rcode = pio_inq_dimlen(pioid, dimid(3), nz)
+          dims(:) = 1
+          ntime = 1
+          rcode = pio_inq_dimname(pioid, dimid(ndims), dimname)
+          if (trim(dimname) /= "time") then
+            write(logunit, F01) "ERROR - time is expected to be outermost dimension"
+            call shr_sys_abort(subname//"ERROR - time is expected to be outermost dimension")
+          end if
+          rcode = pio_inq_dimlen(pioid, dimid(ndims), ntime)
+
+          do did = 1, ndims-1
+            rcode = pio_inq_dimlen(pioid, dimid(did), dims(did))
+          enddo
+          nx = dims(1); ny = dims(2); nz = dims(3);
+          total_size = PRODUCT(dims)
           deallocate(dimid)
 
-          if (gsize /= nx*ny) then
-             write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize
+          print *, "full_file: fldName, dims", trim(sfldname), nx,ny,nz
+          print *, "NT: ",ntime, "space dims: ",total_size
+          if (gsize /= nx*ny .or. total_size .ne. gsize) then
+             write(logunit,F01) "ERROR in data sizes ",nx,ny,nz,gsize,total_size
              call shr_sys_abort(subname//"ERROR in data sizes")
           endif
 
@@ -1160,39 +1176,24 @@ CONTAINS
           call shr_mpi_bcast(fldList,mpicom)
 
           call mct_avect_clean(avFile)
-          call mct_aVect_init(avFile,rlist=fldList,lsize=nx*ny*nz)
+          call mct_aVect_init(avFile,rlist=fldList,lsize=total_size*ntime)
 
-          call mct_gsmap_orderedPoints(gsMap,my_task,gsmOP)
+          ! call mct_gsmap_orderedPoints(gsMap,my_task,gsmOP)
 
-          allocate(count(3))
-          allocate(compDOF(lsize*nz),stat=rcode)
           if (rcode /= 0) call shr_sys_abort(subname//"ERROR insufficient memory")
-
-          count(1) = nx
-          count(2) = ny
-          count(3) = nz
 
           if (my_task == master_task) then
              write(logunit,F02) 'file ' // trim(bstr) //': ',trim(filename),1,nz
+             write(logunit, *) 'nx,ny,nz:',nx,ny,nz
              call shr_sys_flush(logunit)
           endif
 
-          ! Create a 3D MCT component DOF corresponding to "2D(=gsmOP) x nz"
-          cnt = 0
-          do n = 1,nz
-             do m = 1,lsize
-                cnt = cnt + 1
-                compDOF(cnt) = (n-1)*gsize + gsmOP(m)
-             enddo
-          enddo
-
-          ! Initialize the decomposition
-          call pio_initdecomp(pio_subsystem, pio_double, count, compDOF, pio_iodesc_r8_local)
-          call pio_initdecomp(pio_subsystem, pio_real, count, compDOF, pio_iodesc_r4_local)
-          call pio_initdecomp(pio_subsystem, pio_int, count, compDOF, pio_iodesc_int_local)
+          ! Temporary array that holds 1 timeslice
+          allocate(temp(lsize))
+          allocate(rdata(lsize))
+          allocate(idata(lsize))
 
           ! For each attribute, read all frames in one go
-          frame = 1
           do k = 1, mct_aVect_nRAttr(avFile)
              if (my_task == master_task) then
                 call shr_stream_getFileFieldName(stream,k,sfldName)
@@ -1200,32 +1201,33 @@ CONTAINS
              call shr_mpi_bcast(sfldName,mpicom,'sfldName')
              rcode = pio_inq_varid(pioid,trim(sfldName),varid)
              rcode = pio_inq_vartype(pioid, varid, vtype)
-             call pio_setframe(pioid,varid,frame)
-             if(vtype == PIO_DOUBLE) then
-                call pio_read_darray(pioid, varid, pio_iodesc_r8_local, avFile%rattr(k,:), rcode)
-             else if(vtype == PIO_REAL) then
-                allocate(rdata(size(avFile%rattr(k,:))))
-                call pio_read_darray(pioid, varid, pio_iodesc_r4_local, rdata, rcode)
-                avFile%rattr(k,:) = real(rdata, kind=r8)
-                deallocate(rdata)
-             else if(vtype == PIO_INT) then
-                allocate(idata(size(avFile%rattr(k,:))))
-                call pio_read_darray(pioid, varid, pio_iodesc_int_local, idata, rcode)
-                avFile%rattr(k,:) = real(idata, kind=r8)
-                deallocate(idata)
-             endif
+            do step = 1, ntime
+                frame = int(step,kind=PIO_OFFSET_KIND)
+                call pio_setframe(pioid,varid,frame)
+                ! start and stop of region for current time slice
+                lb = (nt - 1) * lsize + 1
+                ub   = nt * lsize
+                if(vtype == PIO_DOUBLE) then
+                   call pio_read_darray(pioid, varid, pio_iodesc_r8, temp, rcode)
+                else if(vtype == PIO_REAL) then
+                   call pio_read_darray(pioid, varid, pio_iodesc_r4, rdata, rcode)
+                   temp(:) = real(rdata, kind=r8)
+                else if(vtype == PIO_INT) then
+                   call pio_read_darray(pioid, varid, pio_iodesc_int, idata, rcode)
+                   temp(:) = real(idata, kind=r8)
+                endif
+               avFile%rattr(k,lb:ub) = temp(:)
+            end do 
           enddo
 
-          call pio_freedecomp(pio_subsystem, pio_iodesc_r8_local)
-          call pio_freedecomp(pio_subsystem, pio_iodesc_r4_local)
-          call pio_freedecomp(pio_subsystem, pio_iodesc_int_local)
-
-          deallocate(count)
-          deallocate(compDOF)
+          deallocate(temp)
+          deallocate(rdata)
+          deallocate(idata)
 
        endif
 
        ! Copy the `nt` time slice data from avFile into av
+      print *, "Copying time slice ",nt, "to rattr"
        avFile_beg = lsize*(nt-1) + 1
        avFile_end = lsize*nt
        do k = 1, mct_aVect_nRAttr(avFile)
