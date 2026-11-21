@@ -133,8 +133,8 @@ void write (const std::string& avg_type, const std::string& freq_units,
 
   // Create output params
   ekat::ParameterList om_pl;
-  std::string prefix = transpose ? "io_transpose_T" : "io_transpose_N";
-  om_pl.set("filename_prefix", prefix);
+  std::string stream_name = transpose ? "io_transpose_T" : "io_transpose_N";
+  om_pl.set("stream_name", stream_name);
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   if (transpose) {
@@ -183,12 +183,13 @@ void write (const std::string& avg_type, const std::string& freq_units,
 // Verify transposed data matches non-transposed data
 void verify_transpose(const std::string& avg_type, const ekat::Comm& comm) {
   using namespace scorpio;
-  
-  std::string prefix_N = "io_transpose_N";
-  std::string prefix_T = "io_transpose_T";
+ 
+  std::string casename = "EAMxxUnitTest"; 
+  std::string prefix_N = "eamxx.h.io_transpose_N";
+  std::string prefix_T = "eamxx.h.io_transpose_T";
   std::string suffix = avg_type + ".nsteps_x3.np" + std::to_string(comm.size()) + ".2023-02-17-00000.nc";
-  std::string file_N = prefix_N + "." + suffix;
-  std::string file_T = prefix_T + "." + suffix;
+  std::string file_N = casename + "." + prefix_N + "." + suffix;
+  std::string file_T = casename + "." + prefix_T + "." + suffix;
   
   // Verify the dimensions match between normal and transposed files
   register_file(file_N, Read);

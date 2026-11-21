@@ -29,7 +29,7 @@ fi
 
 # Create an output file on the fly
 cat <<EOF >> monthly_average.yaml
-filename_prefix: ${case_name}.scream.h
+stream_name: ${case_name}.scream.h
 iotype: pnetcdf
 averaging_type: average
 max_snapshots_per_file: 1

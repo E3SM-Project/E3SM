@@ -26,7 +26,7 @@ $YAML_EDIT_SCRIPT -g \
  --avg-type INSTANT               \
  --freq HIST_N                    \
  --freq-units HIST_OPTION         \
- --prefix ${CASE}.scream.phys.h   \
+ --stream_name phys   \
  --grid "physics_${PGTYPE}"       \
  --fields ${FIELDS}
 

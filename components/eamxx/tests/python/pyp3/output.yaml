@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: p3_standalone_${EXEC_TYPE}
+stream_name: p3_standalone_${EXEC_TYPE}
 averaging_type: instant
 field_names:
   - qi

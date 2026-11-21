@@ -26,7 +26,7 @@ $YAML_EDIT_SCRIPT -g \
  --avg-type INSTANT                   \
  --freq HIST_N                        \
  --freq-units HIST_OPTION             \
- --prefix ${CASE}.scream.phys_dyn.h   \
+ --stream_name phys_dyn   \
  --grid dynamics                      \
  --output-data-layout unique          \
  --fields ${FIELDS}
