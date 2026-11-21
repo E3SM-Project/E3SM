@@ -344,11 +344,22 @@ subroutine interplevs( inputdata,   dplevs,   nlev, &
 !     fill in the missing end values 
 !           (usually  done if this is global model dataset)
 !
+!        Note of change from 2025-12-03:
+!        do end-fill only on model levels that are strictly outside the IOP data domain.
+!        The earlier code used "do i=1, mstart_lev" and "do i= mend_lev, plev",
+!        meaning that the model's boundary levels just inside the IOP data domain, i.e.,
+!        mstart_lev and mend_lev, were also overwritten with the IOP data's end values,
+!        i.e., inputdata(1) and inputdata(nlev).
+!          - This was probably fine when the model domain exceeded the IOP data domain;
+!          - When the model domain was smaller than (i.e., nested inside) the IOP data domain,
+!            the model's inside boundaries got overwritten by the IOP end-values
+!            which might come from far away and therefore cause big jumps at model top and/or bottom.
+
    if ( fill_ends ) then 
-      do i=1, mstart_lev
+      do i=1, mstart_lev-1
          outdata(i) = inputdata(1)
       end do
-      do i= mend_lev, plev
+      do i= mend_lev+1, plev
          outdata(i) = inputdata(nlev)
       end do
    end if
