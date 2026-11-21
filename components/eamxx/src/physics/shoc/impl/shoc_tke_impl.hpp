@@ -104,7 +104,7 @@ void Functions<S,D>::shoc_tke(
   }
 
   // Advance sgs TKE
-  adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,do_3d_turb,shoc_mix,wthv_sec,sterm_zt,tk,brunt,shear_strain3d,tke,a_diss);
+  adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,do_3d_turb,shoc_mix,wthv_sec,sterm_zt,tkh,tk,brunt,shear_strain3d,tke,a_diss);
 
   // Compute isotropic time scale [s]
   isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy);

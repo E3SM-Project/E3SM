@@ -23,6 +23,7 @@ void Functions<S,D>
   const uview_1d<const Pack>& shoc_mix,
   const uview_1d<const Pack>& wthv_sec,
   const uview_1d<const Pack>& sterm_zt,
+  const uview_1d<const Pack>& tkh,
   const uview_1d<const Pack>& tk,
   const uview_1d<const Pack>& brunt,
   const uview_1d<const Pack>& shear_strain3d,
@@ -53,7 +54,7 @@ void Functions<S,D>
     if (shoc_1p5tke){
        // If there is no SGS variability the buoyant production term is closed
        //   as a function of the local moist brunt vaisalla frequency.
-       a_prod_bu = -tke(k)*brunt(k);
+       a_prod_bu = -tkh(k)*brunt(k);
     }
     else{
        a_prod_bu = (ggr/basetemp)*wthv_sec(k);
