@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional
 
 from ._types import YamlMapping
@@ -63,8 +64,7 @@ BLOCKED_OPTIONS = frozenset(
 )
 
 #: IOStreams whose input file a user may replace in ``user_nl_omega``. The
-#: mesh (``HorzMeshIn``) always comes from ``input_files.yaml``, and a
-#: replacement file is checked against it by ``omega_buildnml.input_check``.
+#: mesh (``HorzMeshIn``) always comes from ``input_files.yaml``.
 USER_INPUT_STREAMS = ("InitialState", "InitialVertCoord")
 
 #: Options below a blocked section that a user may still set
@@ -278,8 +278,8 @@ def _validate_user_input_filenames(user_overrides: YamlMapping) -> list[str]:
     """
     Validate the input filenames a user may set in ``user_nl_omega``.
 
-    Only the form of the path is checked here. Whether the file matches the
-    case's mesh is checked by ``omega_buildnml.input_check`` in buildnml.
+    Only the form of the path is checked here. File existence is checked in
+    buildnml for runs that use these files.
 
     Parameters:
     -----------
@@ -313,6 +313,27 @@ def _validate_user_input_filenames(user_overrides: YamlMapping) -> list[str]:
             )
 
     return errors
+
+
+def get_user_input_files(user_overrides: YamlMapping) -> dict[str, str]:
+    """Find the initial condition filenames set in validated user overrides."""
+    io_streams = user_overrides.get("IOStreams") or {}
+    return {
+        stream: io_streams[stream]["Filename"]
+        for stream in USER_INPUT_STREAMS
+        if isinstance(io_streams.get(stream), dict)
+        and "Filename" in io_streams[stream]
+    }
+
+
+def check_user_input_files(user_files: dict[str, str]) -> None:
+    """Check that user-specified initial condition files exist."""
+    errors = [
+        f"IOStreams.{stream}.Filename '{path}' does not exist or is not a file."
+        for stream, path in user_files.items()
+        if not Path(path).is_file()
+    ]
+    _raise(errors, "user_nl_omega")
 
 
 def _raise(errors: list[str], config_path: str) -> None:

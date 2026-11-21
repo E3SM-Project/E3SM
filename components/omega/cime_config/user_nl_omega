@@ -22,10 +22,9 @@
 #      The History and Highfreq streams may be changed, as may any new
 #      stream you define.
 #
-# Initial-condition filenames must be absolute paths. If netCDF4 and the
-# default mesh file are available, the files are checked against the mesh.
-# Different vertical layer counts produce warnings; use compatible files
-# for InitialState and InitialVertCoord.
+# Initial-condition filenames must be absolute paths to files that exist when
+# used. Their contents are not checked; ensure they match the case mesh and
+# have compatible vertical layers for InitialState and InitialVertCoord.
 #
 # To preview the configuration, invoke $CASEROOT/preview_namelists and look
 # at $CASEROOT/CaseDocs/omega.yml

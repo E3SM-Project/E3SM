@@ -78,11 +78,10 @@ def buildnml(case, caseroot, compname):
     # read user_nl_omega for any user-specified overrides
     user_overrides = read_user_overrides(case_root / "user_nl_omega")
 
-    # check any input files set in user_nl_omega against the mesh. They are
-    # not read on a continue run, so are not checked then either.
+    # Initial condition files are not read or checked on a continue run.
     user_input_files = get_user_input_files(user_overrides)
     if not continue_run:
-        check_user_input_files(user_input_files, streams_files, mesh_name)
+        check_user_input_files(user_input_files)
 
     # Using the defaults and overrides, build the final Omega config dictionary
     config = build_omega_config(
