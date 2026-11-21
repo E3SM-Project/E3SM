@@ -1,6 +1,6 @@
 name: homme
 
-# Standalone testing of Homme (components/homme), via components/homme/utils/test_homme.py, on the
+# Standalone testing of Homme (components/homme), via components/homme/test/test_homme.py, on the
 # self-hosted ghci runners. It runs when files in components/homme (or the few things it builds against) change,
 # and every night on master.
 #
@@ -200,7 +200,7 @@ jobs:
           # users running builds), so some tests take twice as long as usual. Use Homme's own limit
           # (HOMME_TESTING_TIMELIMIT in ghci.cmake). NOTE: the value must be separated by a space, since
           # ctest silently ignores '--timeout=1800'.
-          cmd=(./utils/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
+          cmd=(./test/test_homme.py -m ghci --compiler "$HOMME_COMPILER" --machine-file "ghci-${{ matrix.runner }}"
                -b master --run-parallel-level "$HOMME_PARALLEL" --cmake-opt "USE_NUM_PROCS=$HOMME_RANKS"
                --ctest-arg="--timeout 1800" "${bfb_flag[@]}" "${cuda_flags[@]}")
           if [ "${{ env.generate }}" = "true" ]; then

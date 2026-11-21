@@ -7,7 +7,7 @@
 !   * topo_convert
 !   * topo_pgn_to_smoothed
 !
-! See also homme/test/tool/README
+! See also homme/test/cases/tool/README
 !
 program tool_main
   use prim_driver_mod,  only: prim_init1, prim_init2, prim_finalize, deriv1, smooth_topo_datasets
@@ -153,7 +153,7 @@ contains
     !
     ! Namelist example:
     ! NOTE:  smooth_phis_numcycle, smooth_phis_nudt and hypervis_order settings
-    ! are grid dependent.  See test/tool/toposmooth_gll.nl for recommended settings
+    ! are grid dependent.  See test/cases/tool/toposmooth_gll.nl for recommended settings
     ! for other grids   
     !
     ! &ctl_nl
@@ -202,7 +202,7 @@ contains
     ! % ncks -O -v geos,lat,lon phis_smoothed1.nc phis_smoothed2.nc
     ! % ncrename -v geos,PHIS  phis_smoothed2.nc
     !
-    ! Namelist example: see test/tool/toposmooth_gll.nl
+    ! Namelist example: see test/cases/tool/toposmooth_gll.nl
     !
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
@@ -240,7 +240,7 @@ contains
     !   infilesnames(1) = name of E3SM history file to interpolate
     !   output will use the sane name but with an interp1.nc extension
     !
-    ! Namelist example: see test/tool/interpolate.nl
+    ! Namelist example: see test/cases/tool/interpolate.nl
 
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
@@ -262,7 +262,7 @@ contains
     !   The SE coordinates and areas are written to "coords1.nc" and need
     !   to be converted to radians and the copied into xc_a, yc_a, and area_a
     !
-    ! Namelist example: see test/tool/mappingfiles.nl
+    ! Namelist example: see test/cases/tool/mappingfiles.nl
 
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
@@ -292,7 +292,7 @@ contains
     ! % ncks -O -v geos,lat,lon phis_smoothed1.nc phis_smoothed2.nc
     ! % ncrename -v geos,PHIS  phis_smoothed2.nc
     !
-    ! Namelist example: see test/tool/toposmooth_gll.nl
+    ! Namelist example: see test/cases/tool/toposmooth_gll.nl
     !
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
