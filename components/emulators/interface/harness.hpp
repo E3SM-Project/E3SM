@@ -8,7 +8,7 @@
  *
  * Design:
  *  ____________          ___________         ___________
- * |            |        |           |       |          |
+ * |            | hooks  |           |       |          |
  * |  External  |<-----> |  Harness  |<----->|  Coupler |
  * |  Processes |        |___________|       |  Driver  |
  * |____________|                            |__________|
@@ -35,11 +35,15 @@
 #include <grid_types.hpp>
 #include <process.hpp>
 
+#include <map>
+
 #include <optional>
 
 namespace e3sm::emulator {
 
 using namespace coupler;
+
+using ExternalRegistry = std::map<std::string, FieldView>;
 
 class Harness {
 
@@ -80,6 +84,8 @@ public:
   void import_to_external();
   void export_from_external();
 
+  void register_field(std::string name, FieldView view);
+
   /// Diagnostic: writes every value of every external binding to os.
   void print_bindings(std::ostream& os) const;
   RouteBufferMap create_route_buffers() const;
@@ -93,6 +99,7 @@ private:
   CouplerDriver driver_;
   ExternalProcess* external_component_ = nullptr;
   bool initialized_ = false;
+  ExternalRegistry external_registry_;
 };
 
 } // namespace e3sm::emulator

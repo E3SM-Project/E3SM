@@ -59,7 +59,7 @@ TEST_CASE("Parse sample emulator config") {
   }
 
   SECTION("input fields") {
-    REQUIRE(config.inputs.size() == 2);
+    REQUIRE(config.inputs.size() == 3);
 
     const auto temperature = std::ranges::find(
         config.inputs, "temperature", &e3sm::emulator::FieldConfig::name);

@@ -18,11 +18,13 @@ import yaml
 class Field:
     name: str
     dimensions: Sequence[str]
+    dtype: str = "float64"
 
     def to_dict(self) -> dict:
         return {
             "name": self.name,
             "dimensions": list(self.dimensions),
+            "dtype": self.dtype,
         }
 
 
@@ -46,11 +48,14 @@ class Model:
             for k, v in self.options.items()
         ):
             raise TypeError("Backend option keys and values must be strings")
+
         if backend == "python" and not self.options.get("python_module", "").strip():
             raise ValueError("Python backend requires options.python_module")
+
         path = str(self.path)
         if backend == "libtorch" and not path.strip():
             raise ValueError("LibTorch backend requires a model path")
+
         return {
             "path": path,
             "input_layout": self.input_layout,
@@ -72,11 +77,14 @@ class EmulatorConfig:
     def to_dict(self) -> dict:
         if not self.name.strip():
             raise ValueError("Emulator name must not be empty")
+
         if isinstance(self.dimensions, str):
             raise TypeError("dimensions must be a sequence of dimension names")
+
         known = set(self.dimensions)
         if len(known) != len(self.dimensions):
             raise ValueError("Duplicate sample-space dimensions")
+
         if any(not isinstance(d, str) or not d.strip() for d in known):
             raise ValueError("Dimension names must be nonempty strings")
 

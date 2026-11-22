@@ -1,4 +1,3 @@
-# forcing_emulator.py
 import numpy as np
 
 

@@ -11,18 +11,10 @@ from emulator_config_api import (
     prognostic_fields,
 )
 
-temperature = Field(
-    name="temperature",
-    dimensions=["column"],
-)
-soil_moisture = Field(
-    name="soil_moisture",
-    dimensions=["column", "soil_levels"],
-)
-surface_flux = Field(
-    name="surface_flux",
-    dimensions=["column"],
-)
+filter_columns = Field(name="filter_columns", dimensions=["column"], dtype="int32")
+temperature = Field(name="temperature", dimensions=["column"])
+soil_moisture = Field(name="soil_moisture", dimensions=["column", "soil_levels"])
+surface_flux = Field(name="surface_flux", dimensions=["column"])
 
 # Output directory; the build passes its fixture dir. Defaults to the cwd.
 fixture_dir = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
@@ -44,7 +36,7 @@ def test_emulator_coupling():
             backend="libtorch", path="land_emulator.pt", options={"dtype": "float64"}
         ),
         dimensions=["column", "soil_levels"],
-        inputs=[temperature, soil_moisture],
+        inputs=[temperature, soil_moisture, filter_columns],
         outputs=[surface_flux],
     )
 
@@ -77,7 +69,7 @@ def test_harness():
             backend="libtorch", path="land_emulator.pt", options={"dtype": "float64"}
         ),
         dimensions=["column", "soil_levels"],
-        inputs=[temperature, soil_moisture],
+        inputs=[temperature, soil_moisture, filter_columns],
         outputs=[surface_flux],
     )
     no_model = Model(backend="", path="")

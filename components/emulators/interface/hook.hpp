@@ -6,9 +6,10 @@
 #define E3SM_EMULATOR_HOOK_HPP
 
 #include "external_process.hpp"
-#include "field_registry.hpp"
+#include <field_registry.hpp>
 
 #include <emulator_config.hpp>
+#include <field_types.hpp>
 #include <grid_types.hpp>
 #include <process.hpp>
 
@@ -22,9 +23,6 @@
 
 namespace e3sm::emulator {
 using namespace coupler;
-
-using RealField = std::span<double>;
-using IntField = std::span<int>;
 
 /**
   // ProcessRunOpts run_opts
@@ -51,8 +49,7 @@ using CallbackType = std::function<void(MaskType)>;
 struct HookedField {
 
   HookedFieldDesc desc;
-
-  std::span<double> data;
+  FieldView data;
 
   // mask is vector instead of span to allow temporary masks
   // but then there needs to be a way to update them via the api.
@@ -78,11 +75,11 @@ struct Hook {
   ProcessDescriptor process_desc;
   std::vector<HookedField> fields;
 
-  void add_field(HookedFieldDesc desc, std::span<double> data, MaskType mask,
+  void add_field(HookedFieldDesc desc, FieldView data, MaskType mask,
                  CallbackType pack, CallbackType unpack);
 
   // Convenient overloads:
-  void add_field(HookedFieldDesc desc, std::span<double> data) {
+  void add_field(HookedFieldDesc desc, FieldView data) {
     add_field(
         std::move(desc), data, {}, [](MaskType mask) {}, [](MaskType mask) {});
   }

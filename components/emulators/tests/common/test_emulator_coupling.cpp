@@ -1,20 +1,26 @@
 #ifndef EMULATOR_TEST_MPI
 #define CATCH_CONFIG_MAIN
+#include "field_types.hpp"
 #endif
 #include <catch2/catch.hpp>
 
 #include "emulator_config.hpp"
 #include "inference_backend.hpp"
 #include "mpi.h"
+#include <algorithm>
 #include <coupler.hpp>
 #include <coupler_driver.hpp>
 #include <emulator.hpp>
 #include <filesystem>
 #include <memory>
 #include <process.hpp>
+#include <ranges>
 
 namespace e3sm::emulator::tests {
 using namespace coupler;
+using Integer = std::int32_t;
+static constexpr double MASK_VAL = -9.99;
+
 // An embedded interpreter does not see a virtual environment's packages,
 //
 // so the build passes the location of the ones it found
@@ -86,6 +92,36 @@ inline EmulatorConfig make_test_config(std::string_view config_path,
   return cfg;
 }
 
+// Returns expected result vector that is MASK_VAL for inactive columns
+std::vector<double> flux_expected(std::span<Integer> filter,
+                                  ConstFieldView temperature,
+                                  ConstFieldView moisture) {
+  const auto nlevels = moisture.size() / temperature.size();
+  REQUIRE(nlevels > 0);
+  auto is_active = [](Integer c) { return c != -1; };
+  auto flux_fn = [&](Integer c, double mean) {
+    return 2.0 * temperature.as<double>()[c] + 100.0 * mean;
+  };
+  std::size_t num_active = std::ranges::count_if(filter, is_active);
+  std::vector<double> result;
+  result.resize(temperature.size(), MASK_VAL);
+
+  for (Integer fc : filter | std::views::filter(is_active)) {
+    double mean = 0.0;
+    for (std::size_t level = 0; level < nlevels; ++level) {
+      mean += moisture.as<double>()[fc * nlevels + level];
+    }
+    mean /= static_cast<double>(nlevels);
+    result[fc] = flux_fn(fc, mean);
+  }
+
+  REQUIRE(std::ranges::count_if(result, [](double val) {
+            return val != MASK_VAL;
+          }) == num_active);
+
+  return result;
+}
+
 TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
 
   int mpi_initialized = 0;
@@ -97,8 +133,6 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 
   MPI_Comm emu_comm = MPI_COMM_SELF;
-
-  // MPI_Comm_split(emu_comm, (rank < 2) ? 0 : 1, rank, &emu_comm);
 
   const auto forcing_backend = GENERATE(EMULATOR_TEST_BACKENDS);
   const auto land_backend = GENERATE(EMULATOR_TEST_BACKENDS);
@@ -122,8 +156,8 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
 
   // Illustrative API: construct using the already-parsed configuration.
 
-  auto coupled_fields =
-    coupler::read_coupling_fields_from_yaml(TEST_DATA_DIR "/test_coupling_plan.yaml");
+  auto coupled_fields = coupler::read_coupling_fields_from_yaml(
+      TEST_DATA_DIR "/test_coupling_plan.yaml");
 
   CouplerDriver driver;
   driver.add_component(std::make_unique<Emulator>(grid, forcing_config));
@@ -132,35 +166,64 @@ TEST_CASE("Emulator coupling across inference backends", "[coupling][mpi]") {
   Emulator& forcing_emulator = driver.get_component_as<Emulator>(forcing_name);
   Emulator& land_emulator = driver.get_component_as<Emulator>(lnd_name);
 
+  ConstFieldView temp_forcing =
+      forcing_emulator.get_field("temperature", ModelFieldRole::Output);
+  ConstFieldView moisture_forcing =
+      forcing_emulator.get_field("soil_moisture", ModelFieldRole::Output);
+
+  const auto temperature_lnd =
+      land_emulator.get_field("temperature", ModelFieldRole::Input);
+  const auto moisture_lnd =
+      land_emulator.get_field("soil_moisture", ModelFieldRole::Input);
+  const auto flux =
+      land_emulator.get_field("surface_flux", ModelFieldRole::Output);
+
+  std::span<Integer> filter_column =
+      land_emulator.get_field("filter_columns", ModelFieldRole::Input)
+          .as<Integer>();
+
+  constexpr auto cols = [] {
+    std::array<Integer, GLOBAL_COLS> values{};
+    std::iota(values.begin(), values.end(), 0);
+    return values;
+  }();
+
   const ProcessRunOpts opts{3600.0};
-  driver.run_component(forcing_emulator.name(), opts);
-  driver.run_component(land_emulator.name(), opts);
+  // Filter columns in this case is NOT a coupled field. There we must supply it
+  // explicitly in this test with each time step
+  //
+  for (int step = 0; step < GLOBAL_COLS; ++step) {
 
-  REQUIRE(std::ranges::equal(forcing_emulator.get_field<double>("temperature"),
-                             land_emulator.get_field<double>("temperature")));
+    // Arbitrary manner to change the filter each step. Example for cols =
+    // {0,1,2,3}
+    //   step N = filter
+    //        0 = {0,-1,-1,-1}
+    //        1 = {0, -1, -1, 3}
+    //        2 = {0, -1, 2, -1}
+    //        3 = {0, 1, 2, 3}
+    std::ranges::transform(cols, filter_column.begin(), [step](Integer c) {
+      return (c % (GLOBAL_COLS - step) == 0) ? c : -1;
+    });
 
-  REQUIRE(std::ranges::equal(forcing_emulator.get_field<double>("soil_moisture"),
-                             land_emulator.get_field<double>("soil_moisture")));
+    driver.run_component(forcing_emulator.name(), opts);
+    driver.run_component(land_emulator.name(), opts);
 
-  const auto temperature = land_emulator.get_field("temperature");
-  const auto moisture = land_emulator.get_field("soil_moisture");
-  const auto flux = land_emulator.field_view("surface_flux");
+    REQUIRE(std::ranges::equal(temp_forcing.as<double>(),
+                               temperature_lnd.as<double>()));
 
-  REQUIRE(!temperature.empty());
-  REQUIRE(moisture.size() % temperature.size() == 0);
-  REQUIRE(flux.size() == temperature.size());
+    REQUIRE(std::ranges::equal(moisture_forcing.as<double>(),
+                               moisture_forcing.as<double>()));
 
-  const auto nlevels = moisture.size() / temperature.size();
-  REQUIRE(nlevels > 0);
+    REQUIRE(!temperature_lnd.empty());
+    REQUIRE(moisture_lnd.size() % temperature_lnd.size() == 0);
+    REQUIRE(flux.size() == temperature_lnd.size());
 
-  for (std::size_t column = 0; column < temperature.size(); ++column) {
-    double mean = 0.0;
-    for (std::size_t level = 0; level < nlevels; ++level) {
-      mean += moisture.as<double>()[column * nlevels + level];
+    std::vector<double> expected_flux =
+        flux_expected(filter_column, temperature_lnd, moisture_lnd);
+    for (Integer col : cols) {
+      REQUIRE(flux.as<double>()[col] == expected_flux[col]);
     }
-    mean /= static_cast<double>(nlevels);
-
-    REQUIRE(flux.as<double>()[column] == Approx(2.0 * temperature.as<double>()[column] + 100.0 * mean));
   }
 }
+
 } // namespace e3sm::emulator::tests

@@ -62,22 +62,20 @@ torch::ScalarType parse_dtype(const std::string& spec) {
 }
 
 /// A torch tensor of the module's dtype, on the module's device.
-at::Tensor to_torch(const Tensor& tensor, const torch::Device& device,
-                    torch::ScalarType dtype) {
+at::Tensor to_torch(const Tensor& tensor, const torch::Device& device) {
 
   return tensor.view().visit([&](auto values) -> at::Tensor {
     using T = typename decltype(values)::value_type;
 
     constexpr auto source_dtype = torch::CppTypeToScalarType<T>::value;
+
     // Note: opts device is torch::kCPU by default
     const auto opts = torch::TensorOptions().dtype(source_dtype);
-    const auto target_dtype =
-        std::is_floating_point_v<T> ? dtype : source_dtype;
     if (values.size() == 0) {
       return torch::empty(tensor.dims(), opts).to(device, source_dtype);
     }
     return torch::from_blob(const_cast<T*>(values.data()), tensor.dims(), opts)
-        .to(device, target_dtype);
+        .to(device, source_dtype);
   });
 }
 
@@ -180,7 +178,7 @@ bool LibTorchBackend::infer(const TensorMap& inputs, TensorMap& outputs) {
   std::vector<torch::jit::IValue> args;
   args.reserve(inputs.size());
   for (const auto& tensor : inputs) {
-    args.emplace_back(to_torch(tensor, impl_->device, impl_->dtype));
+    args.emplace_back(to_torch(tensor, impl_->device));
   }
 
   torch::jit::IValue result;

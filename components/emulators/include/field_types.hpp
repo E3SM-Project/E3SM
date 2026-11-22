@@ -2,6 +2,7 @@
 #define E3SM_EMULATOR_FIELD_TYPES_HPP
 
 #include <algorithm>
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -10,6 +11,7 @@
 #include <span>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -17,18 +19,45 @@
 
 namespace e3sm::emulator {
 
-using Integer = std::int32_t;
+inline constexpr std::string_view FLOAT64 = "float64";
+inline constexpr std::string_view INT32 = "int32";
 
-/**
- *Variadic template used to construct the
- variant from a sinlge list of types inorderto
- minimize the number of edits required to support a new type.
-
- */
-enum class ScalarType {
+enum class ScalarType : int {
   Real64,
   Int32,
 };
+
+struct TypeEntry {
+  std::string_view name;
+  ScalarType type;
+};
+
+inline constexpr std::array dtype_table{TypeEntry{FLOAT64, ScalarType::Real64},
+                                        TypeEntry{INT32, ScalarType::Int32}};
+
+inline ScalarType dtype_string_to_enum(std::string_view dtype) {
+  for (const TypeEntry& entry : dtype_table) {
+    if (entry.name == dtype) {
+      return entry.type;
+    }
+  }
+  throw std::runtime_error("Unsupport type: " + std::string(dtype));
+}
+
+inline std::string_view dtype_enum_to_string(ScalarType type) {
+  for (const TypeEntry& entry : dtype_table) {
+    if (entry.type == type) {
+      return entry.name;
+    }
+  }
+  // Is this even possible? I suppose enums decay to ints
+  throw std::runtime_error("Invalid ENUM value");
+}
+
+/**
+ *Variadic template used to construct the variant from a sinlge list of types
+ inorderto minimize the number of edits required to support a new type.
+ */
 template <typename... Ts> struct FieldTypes {
 
   // compare each of the supported types `Ts` with `T`
@@ -57,21 +86,44 @@ template <> struct ScalarTypeOf<double> {
   static constexpr auto value = ScalarType::Real64;
 };
 
-template <> struct ScalarTypeOf<Integer> {
+template <> struct ScalarTypeOf<std::int32_t> {
   static constexpr auto value = ScalarType::Int32;
 };
-// This is a helper to
+// This is a helper to get ScalarType from T
 template <typename T>
 inline constexpr ScalarType scalar_type_of =
     ScalarTypeOf<std::remove_cv_t<T>>::value;
 
 template <typename T>
-concept FieldScalar = std::same_as<std::remove_cv_t<T>, double> ||
-                      std::same_as<std::remove_cv_t<T>, Integer>;
+concept FieldScalar = SupportedTypes::contains<T>;
 
 template <typename T, bool IsConst>
 concept CompatibleElement = FieldScalar<T> && (IsConst || !std::is_const_v<T>);
 
+inline SupportedTypes::Storage make_storage_vector(ScalarType type,
+                                                   std::size_t size) {
+  switch (type) {
+  case ScalarType::Real64:
+    return std::vector<double>(size);
+  case ScalarType::Int32:
+    return std::vector<std::int32_t>(size);
+  }
+  throw std::invalid_argument("Unsupported field scalar type");
+}
+
+inline SupportedTypes::Views<false>
+make_field_view(ScalarType type, std::size_t size, void* ptr) {
+  if (ptr == nullptr || size == 0) {
+    throw std::runtime_error("Can't make span with nullptr or 0 extent");
+  }
+  switch (type) {
+  case ScalarType::Real64:
+    return std::span{static_cast<double*>(ptr), size};
+  case ScalarType::Int32:
+    return std::span{static_cast<std::int32_t*>(ptr), size};
+  }
+  throw std::invalid_argument("Unsupported field scalar type");
+}
 /**
  * BasicFieldView
  *  This class acts as a wrapper around a std::variant that contains
@@ -95,6 +147,8 @@ public:
     requires CompatibleElement<T, IsConst>
   BasicFieldView(std::span<T, Extent> data)
       : data_(std::span<Element<std::remove_const_t<T>>>{data}) {}
+
+  explicit BasicFieldView(Storage data) : data_(std::move(data)) {}
 
   BasicFieldView() = default;
 
@@ -243,7 +297,7 @@ class FieldStorage {
 public:
   FieldStorage() = default;
   explicit FieldStorage(ScalarType type, std::size_t size = 0)
-      : data_(make_storage(type, size)) {}
+      : data_(make_storage_vector(type, size)) {}
 
   // Create views from storage:
   FieldView view() {
@@ -285,15 +339,6 @@ public:
   }
 
 private:
-  static Storage make_storage(ScalarType type, std::size_t size) {
-    switch (type) {
-    case ScalarType::Real64:
-      return std::vector<double>(size);
-    case ScalarType::Int32:
-      return std::vector<Integer>(size);
-    }
-    throw std::invalid_argument("Unsupported field scalar type");
-  }
   Storage data_;
 };
 

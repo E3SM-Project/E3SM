@@ -163,6 +163,165 @@ private:
   CouplingAdapter coupling_;
 };
 
+// One input and one output, each a single value. `model` computes the output
+// from the input and how many times the component has run, from 1.
+class RateComponent {
+public:
+  RateComponent(std::string name, std::string input, std::string output,
+                std::function<double(double, int)> model)
+      : name_(std::move(name)), input_name_(std::move(input)),
+        output_name_(std::move(output)), model_(std::move(model)) {}
+
+  std::string_view name() const { return name_; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Import,
+                                      .component = name_,
+                                      .name = input_name_,
+                                      .size = 1},
+                                     input_);
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Export,
+                                      .component = name_,
+                                      .name = output_name_,
+                                      .size = 1},
+                                     output_);
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) { output_[0] = model_(input_[0], ++runs_); }
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+  double input() const { return input_[0]; }
+
+private:
+  std::string name_;
+  std::string input_name_;
+  std::string output_name_;
+  std::function<double(double, int)> model_;
+  std::vector<double> input_{0.0};
+  std::vector<double> output_{0.0};
+  int runs_ = 0;
+  CouplingAdapter coupling_;
+};
+
+
+// Binds one caller-owned span as `state` in both directions
+class ExternalComponent {
+public:
+  explicit ExternalComponent(std::span<double> state) : state_(state) {}
+
+  static constexpr std::string_view name() { return "external"; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Import,
+                                      .component = "external",
+                                      .name = "state",
+                                      .size = state_.size()},
+                                     FieldView{state_});
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Export,
+                                      .component = "external",
+                                      .name = "state",
+                                      .size = state_.size()},
+                                     FieldView{state_});
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) {}
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+
+private:
+  std::span<double> state_;
+  CouplingAdapter coupling_;
+};
+
+// Has `state` as both an input and an output, and advances it by one each run
+class StatefulComponent {
+public:
+  explicit StatefulComponent(std::size_t ncols)
+      : input_(ncols, 0.0), output_(ncols, 0.0) {}
+
+  static constexpr std::string_view name() { return "stateful"; }
+  void populate_registry(FieldRegistry& registry) {
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Import,
+                                      .component = "stateful",
+                                      .name = "state",
+                                      .size = input_.size()},
+                                     input_);
+    coupling_.register_coupled_field(registry,
+                                     {.role = FieldRole::Export,
+                                      .component = "stateful",
+                                      .name = "state",
+                                      .size = output_.size()},
+                                     output_);
+  }
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) {
+    for (std::size_t i = 0; i < input_.size(); ++i) {
+      output_[i] = input_[i] + 1.0;
+    }
+  }
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+
+private:
+  std::vector<double> input_;
+  std::vector<double> output_;
+  CouplingAdapter coupling_;
+};
+
+
+// Registers nothing, so it can be added to a driver without being in the plan
+class UnplannedComponent {
+public:
+  static constexpr std::string_view name() { return "unplanned"; }
+  void populate_registry(FieldRegistry&) {}
+  void configure_coupling(const ActiveCouplingFields& plan) {
+    coupling_.configure(plan);
+  }
+  void run(const ProcessRunOpts) {}
+  void export_fields(std::span<ExportBuffer> buffers) const {
+    coupling_.export_fields(buffers);
+  }
+  void import_fields(std::span<const ImportBuffer> buffers) {
+    coupling_.import_fields(buffers);
+  }
+  std::span<const int> get_local_gids() const {
+    return coupling_.get_local_gids();
+  }
+
+private:
+  CouplingAdapter coupling_;
+};
+
 } // namespace e3sm::emulator::coupler::test
 
 #endif

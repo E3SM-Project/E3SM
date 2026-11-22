@@ -1,3 +1,4 @@
+#include "field_types.hpp"
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
@@ -10,7 +11,9 @@
 #include <process.hpp>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
+#include <numeric>
 #include <sstream>
 #include <string_view>
 
@@ -25,6 +28,12 @@ static constexpr std::size_t ncols = 2;
 static constexpr std::size_t nlevels = 3;
 static constexpr std::size_t nfields = 3;
 static constexpr int nsteps = 3;
+
+constexpr auto col_ids = [] {
+  std::array<std::int32_t, ncols> ids{};
+  std::iota(ids.begin(), ids.end(), 0);
+  return ids;
+}();
 
 inline GridDesc make_test_grid() {
   return GridDesc{
@@ -44,10 +53,10 @@ inline GridDesc make_test_grid() {
                   .global_extent = nlevels,
               },
           },
-      .col_gids = {0, 1, 2, 3},
-      .lat = {10.0, 20.0, 30.0, 40.0},
-      .lon = {-100.0, -99.0, -98.0, -97.0},
-      .area = {1.0, 1.0, 1.0, 1.0},
+      .col_gids = {col_ids.begin(), col_ids.end()},
+      .lat = {10.0, 20.0},
+      .lon = {-100.0, -99.0},
+      .area = {1.0, 1.0},
   };
 }
 
@@ -175,23 +184,21 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
 
   auto& emulator = harness.get_process<Emulator>(std::string_view(config.name));
 
-  REQUIRE_THROWS_WITH(emulator.get_field("state"),
-                      Contains("'state'") && Contains("ModelFieldRole"));
-
   const auto step = [&] {
     harness.export_from_external();
     harness.run_process(config.name);
     harness.import_to_external();
   };
-  const auto values = [](std::span<const double> span) {
-    return std::vector<double>(span.begin(), span.end());
+  const auto values = [](ConstFieldView view) {
+    std::span<const double> vals = view.as<double>();
+    return std::vector<double>(vals.begin(), vals.end());
   };
   using Doubles = std::vector<double>;
 
-  // The stub backend leaves outputs unchanged, so set what the model would
-  // write
-  std::ranges::copy(Doubles{11.0, 21.0},
-                    emulator.output_fields().as<double>().begin());
+  // The stub backend leaves outputs unchanged,
+  // so set what the model would write
+  FieldView output_state = emulator.get_field("state", ModelFieldRole::Output);
+  std::ranges::copy(Doubles{11.0, 21.0}, output_state.as<double>().begin());
 
   step();
 
@@ -204,8 +211,7 @@ TEST_CASE("Harness carries a prognostic field through shared storage",
   REQUIRE(state == Doubles{11.0, 21.0});
 
   // The next step reads back the previous output
-  std::ranges::copy(Doubles{12.0, 22.0},
-                    emulator.output_fields().as<double>().begin());
+  std::ranges::copy(Doubles{12.0, 22.0}, output_state.as<double>().begin());
   step();
   REQUIRE(values(emulator.get_field<double>("state", ModelFieldRole::Input)) ==
           Doubles{11.0, 21.0});
@@ -335,6 +341,11 @@ TEST_CASE("Harness preserves results across external buffer layouts",
   Emulator& land_emu =
       direct.harness.get_process<Emulator>(std::string_view(p_name));
 
+  std::span<std::int32_t> active_cols =
+      land_emu.get_field<std::int32_t>("filter_columns", ModelFieldRole::Input);
+
+  std::ranges::copy(col_ids, active_cols.begin());
+
   std::vector<double> eflux;
   eflux.resize(ncols);
 
@@ -350,7 +361,9 @@ TEST_CASE("Harness preserves results across external buffer layouts",
 
     REQUIRE(direct_flux.size() == ncols);
 
-    auto land_flux = land_emu.get_field<double>("surface_flux");
+    auto land_flux =
+        land_emu.get_field<double>("surface_flux", ModelFieldRole::Output);
+
     // NOTE: This should relfect what the libtorch model actually calculates!!
     //      return 2.0 * temperature + 100.0 * soil_moisture.mean(dim=1)
     for (std::size_t column = 0; column < ncols; ++column) {

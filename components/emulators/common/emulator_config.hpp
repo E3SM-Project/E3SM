@@ -2,8 +2,8 @@
 #define E3SM_EMULATOR_CONFIG_HPP
 
 #include <field_registry.hpp>
-#include <inference_backend.hpp>
 #include <field_types.hpp>
+#include <inference_backend.hpp>
 
 #include <filesystem>
 #include <string>
@@ -49,11 +49,12 @@ struct ModelConfig {
  *
  * @fields:
    - name
+   - scalar type
    - dimensions
  */
 struct FieldConfig {
-  // NOTE: maybe we will want some scaling or packing information
   std::string name;
+  std::string type;
   std::vector<std::string> dimensions;
 };
 
@@ -61,7 +62,6 @@ struct FieldConfig {
  * @brief Struct to hold emulator configuration parsed from yaml file
  * @fields:
  *  - name
- *  - type
  *  - model
  *  - dimensions
  *  - inputs
@@ -69,7 +69,6 @@ struct FieldConfig {
  **/
 struct EmulatorConfig {
   std::string name;
-  // std::string type;
 
   ModelConfig model;
   std::vector<std::string> dimensions;
@@ -99,13 +98,14 @@ inline std::ostream& operator<<(std::ostream& os, const EmulatorConfig& cfg) {
     - FieldConfig config;
     - std::size_t offset;
     - std::size_t size;
+    - ScalarType type = ScalarType::Real64;
  */
 struct EmulatorFieldDesc {
   ModelFieldRole role;
   FieldConfig config;
   std::size_t offset;
   std::size_t size;
-  ScalarType type = ScalarType::Real64;
+  ScalarType dtype = ScalarType::Real64;
 };
 
 std::string to_string(const EmulatorFieldDesc& desc);

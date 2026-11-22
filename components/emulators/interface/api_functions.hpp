@@ -19,5 +19,10 @@ struct ExternalField_Ctype {
   int extent;
 };
 
+void* harness_create();
+void harness_destroy(void* handle);
+void harness_register_field(void* handle, const char* name, int extent,
+                            int dtype, void* data);
+
 }
 #endif

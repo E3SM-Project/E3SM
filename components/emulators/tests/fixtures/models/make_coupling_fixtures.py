@@ -1,10 +1,10 @@
-# make_coupling_fixtures.py
-
 import os
 import sys
-import torch
 from pathlib import Path
+
+import torch
 from torch import Tensor, nn
+
 
 class ForcingModel(nn.Module):
     def __init__(self, nlevels: int):
@@ -26,8 +26,26 @@ class ForcingModel(nn.Module):
 
 
 class LandModel(nn.Module):
-    def forward(self, temperature: Tensor, soil_moisture: Tensor) -> Tensor:
-        return 2.0 * temperature + 100.0 * soil_moisture.mean(dim=1)
+    def __init__(self, mask_val: float):
+        super().__init__()
+        self.mask_val = mask_val
+
+    def forward(
+        self,
+        temperature: Tensor,
+        soil_moisture: Tensor,
+        filter_column: Tensor,
+    ) -> Tensor:
+
+        flux: Tensor = torch.full_like(temperature, self.mask_val)
+
+        columns = filter_column[filter_column >= 0]
+
+        flux[columns] = 2.0 * temperature[columns] + 100.0 * soil_moisture[
+            columns
+        ].mean(dim=1)
+
+        return flux
 
 
 def main():
@@ -38,7 +56,7 @@ def main():
 
     for filename, model in (
         ("forcing_emulator.pt", ForcingModel(nlevels=3)),
-        ("land_emulator.pt", LandModel()),
+        ("land_emulator.pt", LandModel(mask_val=-9.99)),
     ):
         scripted = torch.jit.script(model.eval())
         scripted.save(str(destination / filename))

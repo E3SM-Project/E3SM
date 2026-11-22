@@ -39,6 +39,9 @@ using namespace coupler;
  */
 class Emulator {
 
+  using TypedStorage = std::map<ScalarType, FieldStorage>;
+  using TypedViews = std::map<ScalarType, ConstFieldView>;
+
 public:
   Emulator(const GridDesc grid, const EmulatorConfig emu_config);
   /// The backend and MOAB adapter clean up after themselves. Call finalize()
@@ -64,7 +67,7 @@ public:
   EmulatorType type() const { return type_; }
   int id() const { return component_id_; }
   int moab_app_id() const { return moab_app_id_; }
-  bool is_initialized() const { return m_initialized; }
+  bool is_initialized() const { return initialized_; }
   int step_count() const { return step_count_; }
   void print_info(std::ostream& os) const;
 
@@ -104,20 +107,26 @@ public:
   const EmulatorFieldDesc& get_field_descriptor(std::string_view name,
                                                 ModelFieldRole role) const;
 
-  ConstFieldView get_field(std::string_view name);
-  ConstFieldView get_field(std::string_view name, ModelFieldRole role);
+  // Returns a view to part of the flat buffer that holds the field's data
+  FieldView field_view(const EmulatorFieldDesc& field);
+  ConstFieldView field_view(const EmulatorFieldDesc& field) const;
+
+  ConstFieldView get_field(std::string_view name, ModelFieldRole role) const;
+  FieldView get_field(std::string_view name, ModelFieldRole role);
 
   // Helpers to avoid get_field.as<double>()
-  template <FieldScalar T> std::span<const T> get_field(std::string_view name) {
-    return get_field(name).as<T>();
+  template <FieldScalar T>
+  std::span<const T> get_field(std::string_view name,
+                               ModelFieldRole role) const {
+    return get_field(name, role).as<T>();
   }
   template <FieldScalar T>
-  std::span<const T> get_field(std::string_view name, ModelFieldRole role) {
-    return get_field(name,role).as<T>();
+  std::span<T> get_field(std::string_view name, ModelFieldRole role) {
+    return get_field(name, role).as<T>();
   }
 
-  FieldView input_fields() { return input_fields_.view(); };
-  FieldView output_fields() { return output_fields_.view(); };
+  TypedViews input_fields() const;
+  TypedViews output_fields() const;
 
   template <typename Container>
   void register_import_field(FieldRegistry& registry, RegisteredField field,
@@ -142,10 +151,6 @@ public:
     coupling_.register_coupled_field(registry, std::move(field), data);
   }
 
-  // Returns a view to part of the flat buffer that holds the field's data
-  FieldView field_view(const EmulatorFieldDesc& field);
-  FieldView field_view(std::string_view name);
-
   // Call this to register the emulator as an application with MOAB
   void register_with_moab();
 
@@ -160,7 +165,7 @@ private:
   int moab_app_id_;
   std::optional<MoabAdapter> moab_;
 
-  bool m_initialized = false;
+  bool initialized_ = false;
   bool m_finalized = false;
   int step_count_ = 0;
 
@@ -173,13 +178,16 @@ private:
   std::vector<EmulatorFieldDesc> field_descriptors_;
   std::size_t local_field_size(const FieldConfig& field) const;
   RegisteredField make_registered_field(const EmulatorFieldDesc& field);
-  std::size_t append_fields(std::span<const std::string> order,
-                            std::span<const FieldConfig>, ModelFieldRole kind);
+
+  std::map<ScalarType, std::size_t>
+  append_fields(std::span<const std::string> order,
+                std::span<const FieldConfig>, ModelFieldRole kind);
 
   MoabTagDescriptor make_moab_tag(const EmulatorFieldDesc& desc) const;
-  // Flat Buffers for inputs and outputs
-  FieldStorage input_fields_;
-  FieldStorage output_fields_;
+
+  // Flat Buffers for inputs and outputs per dtype
+  TypedStorage input_fields_;
+  TypedStorage output_fields_;
 
   std::unique_ptr<inference::InferenceBackend> backend_;
 };

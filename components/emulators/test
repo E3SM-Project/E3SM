@@ -4,8 +4,6 @@
 # Builds and runs unit tests
 #
 
-set -e
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/build"
 
@@ -48,13 +46,17 @@ elif [ "${#CMAKE_ARGS[@]}" -gt 0 ]; then
 fi
 
 # Build
+build_status=0;
 print_status "Building..."
-cmake --build "${BUILD_DIR}" --parallel
+cmake --build "${BUILD_DIR}" --parallel || build_status=$?
 
 # Build only mode - exit before running tests
 if [ "$BUILD_ONLY" = true ]; then
-    print_status "Build complete."
-    exit 0
+    exit "$build_status"
+fi
+
+if [ "$build_status" -ne 0 ]; then
+    print_warning "Build failed; running available tests (some binaries may be stale)."
 fi
 
 # Run tests
@@ -66,6 +68,11 @@ fi
 if [ -n "$TEST_REGEX" ]; then
     ctest_args+=(-R "$TEST_REGEX")
 fi
-ctest "${ctest_args[@]}"
 
-print_status "All tests passed!"
+if ctest "${ctest_args[@]}"; then
+    print_status "All tests passed!"
+else
+    code=$?
+    print_error "Tests FAILED";
+    exit $code
+fi

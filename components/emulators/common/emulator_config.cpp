@@ -1,7 +1,8 @@
 #include "emulator_config.hpp"
 
-#include <inference_backend.hpp>
 #include <field_registry.hpp>
+#include <field_types.hpp>
+#include <inference_backend.hpp>
 
 #include <ekat_yaml.hpp>
 
@@ -63,8 +64,15 @@ std::vector<FieldConfig> read_fields(const ekat::ParameterList& params,
     const auto& field_list = input_list.sublist(field_name);
     auto dimensions = field_list.get<std::vector<std::string>>("dimensions");
 
+    std::string dtype;
+    if (field_list.isParameter("dtype")) {
+      dtype = field_list.get<std::string>("dtype");
+    } else {
+      dtype = FLOAT64;
+    }
+
     fields.emplace_back(
-        FieldConfig{.name = field_name, .dimensions = std::move(dimensions)});
+        FieldConfig{.name = field_name,.type = dtype,.dimensions = std::move(dimensions)});
   }
 
   return fields;

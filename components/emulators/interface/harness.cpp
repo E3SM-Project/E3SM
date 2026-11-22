@@ -31,6 +31,10 @@ ExternalBindings make_bindings_from_hook(Hook& hook) {
 }
 
 } // namespace
+//
+void Harness::register_field(std::string name, FieldView view) {
+  external_registry_[name] = view;
+}
 
 void Harness::add_bindings(ExternalBindings bindings) {
   if (initialized_) {

@@ -38,7 +38,7 @@ Emulator::make_registered_field(const EmulatorFieldDesc& field) {
       .role = role,
       .component = name_,
       .name = field.config.name,
-      .type = field.type,
+      .type = field.dtype,
       .size = field.size,
   };
 }
@@ -110,12 +110,12 @@ std::span<const EmulatorFieldDesc> Emulator::field_descriptors() const {
   return field_descriptors_;
 }
 
-ConstFieldView Emulator::get_field(std::string_view name) {
-  const auto& desc = get_field_descriptor(name);
+ConstFieldView Emulator::get_field(std::string_view name,
+                                   ModelFieldRole role) const {
+  const auto& desc = get_field_descriptor(name, role);
   return field_view(desc);
 }
-
-ConstFieldView Emulator::get_field(std::string_view name, ModelFieldRole role) {
+FieldView Emulator::get_field(std::string_view name, ModelFieldRole role) {
   const auto& desc = get_field_descriptor(name, role);
   return field_view(desc);
 }
@@ -144,11 +144,18 @@ std::size_t Emulator::local_field_size(const FieldConfig& field) const {
   return size;
 }
 
-std::size_t Emulator::append_fields(std::span<const std::string> order,
-                                    std::span<const FieldConfig> fields,
-                                    ModelFieldRole role) {
+/** append_fields
+ @brief: Function that goes through the requested inputs and output fields
+ and determines their the total buffer memory required and the offset
+ of each field into their respective buffers
+ @return map: ScalarType -> size of FieldStorage
+*/
+std::map<ScalarType, std::size_t>
+Emulator::append_fields(std::span<const std::string> order,
+                        std::span<const FieldConfig> fields,
+                        ModelFieldRole role) {
 
-  std::size_t next_offset = 0;
+  std::map<ScalarType, std::size_t> sizes;
 
   for (const std::string& field_name : order) {
     auto field = std::ranges::find(fields, field_name, &FieldConfig::name);
@@ -159,41 +166,64 @@ std::size_t Emulator::append_fields(std::span<const std::string> order,
                                field_name + "' is listed in " + order_key +
                                "_order but not defined in " + order_key + "s");
     }
+    ScalarType dtype = dtype_string_to_enum(field->type);
+    std::size_t& next_offset = sizes[dtype];
+
     const auto field_size = local_field_size(*field);
 
     if (next_offset > std::numeric_limits<std::size_t>::max() - field_size) {
       throw std::overflow_error("Emulator field-buffer size overflow");
     }
 
-    field_descriptors_.push_back(EmulatorFieldDesc{
-        .role = role,
-        .config = *field,
-        .offset = next_offset,
-        .size = field_size,
-    });
+    field_descriptors_.push_back(EmulatorFieldDesc{.role = role,
+                                                   .config = *field,
+                                                   .offset = next_offset,
+                                                   .size = field_size,
+                                                   .dtype = dtype});
 
     next_offset += field_size;
   }
-
-  // this should be total size needed for the flat buffer
-  return next_offset;
+  return sizes;
 }
 
+Emulator::TypedViews Emulator::input_fields() const {
+  TypedViews res;
+  for (const auto& [dtype, storage] : input_fields_) {
+    res.emplace(dtype, storage.view());
+  }
+  return res;
+}
+
+Emulator::TypedViews Emulator::output_fields() const {
+  TypedViews res;
+  for (const auto& [dtype, storage] : output_fields_) {
+    res.emplace(dtype, storage.view());
+  }
+  return res;
+}
+
+// @brief: get the section corresponding to the emulator field as a FieldView
+// use `.as<field.dtype>()` to obtain underlying span
 FieldView Emulator::field_view(const EmulatorFieldDesc& field) {
-  auto& buffer =
-      field.role == ModelFieldRole::Input ? input_fields_ : output_fields_;
+
+  auto& buffer = field.role == ModelFieldRole::Input
+                     ? input_fields_.at(field.dtype)
+                     : output_fields_.at(field.dtype);
+
+  return buffer.view().subspan(field.offset, field.size);
+}
+ConstFieldView Emulator::field_view(const EmulatorFieldDesc& field) const {
+
+  auto& buffer = field.role == ModelFieldRole::Input
+                     ? input_fields_.at(field.dtype)
+                     : output_fields_.at(field.dtype);
 
   return buffer.view().subspan(field.offset, field.size);
 }
 
-FieldView Emulator::field_view(std::string_view name) {
-  const auto& desc = get_field_descriptor(name);
-  return field_view(desc);
-}
-
 Emulator::Emulator(const GridDesc grid, const EmulatorConfig emu_cfg)
     : config_path_("temp"), grid_(grid), emulator_config_(emu_cfg),
-      component_id_(grid.id), moab_app_id_(-1), m_initialized(false),
+      component_id_(grid.id), moab_app_id_(-1), initialized_(false),
       step_count_(0) {
 
   if (grid.use_moab) {
@@ -211,13 +241,20 @@ Emulator::Emulator(const GridDesc grid, const EmulatorConfig emu_cfg)
 void Emulator::apply_config(const EmulatorConfig& config) {
   name_ = config.name;
 
-  const auto input_size =
+  using SizeMap = std::map<ScalarType, std::size_t>;
+  SizeMap input_size =
       append_fields(config.input_order, config.inputs, ModelFieldRole::Input);
+
+  for (const auto& [dtype, size] : input_size) {
+    input_fields_[dtype] = FieldStorage{dtype, size};
+  }
+
   const auto output_size = append_fields(config.output_order, config.outputs,
                                          ModelFieldRole::Output);
 
-  input_fields_.resize(input_size);
-  output_fields_.resize(output_size);
+  for (const auto& [dtype, size] : output_size) {
+    output_fields_[dtype] = FieldStorage{dtype, size};
+  }
 
   inference::InferenceConfig infer_config;
   infer_config.model_path = config.model.path;
@@ -240,7 +277,7 @@ void Emulator::initialize() {
     throw std::runtime_error("Emulator '" + name_ +
                              "': cannot initialize after finalize()");
   }
-  if (m_initialized) {
+  if (initialized_) {
     throw std::runtime_error("Emulator '" + name_ + "': already initialized");
   }
   apply_config(emulator_config_);
@@ -248,12 +285,12 @@ void Emulator::initialize() {
   if (moab_) {
     register_with_moab();
   }
-  m_initialized = true;
+  initialized_ = true;
 }
 
 void Emulator::populate_registry(FieldRegistry& registry) {
 
-  if (!m_initialized) {
+  if (!initialized_) {
     throw std::logic_error("Emulator '" + name_ +
                            "': cannot populate the registry after finalize()");
   }
@@ -265,7 +302,7 @@ void Emulator::populate_registry(FieldRegistry& registry) {
 }
 
 void Emulator::run(const ProcessRunOpts opts) {
-  if (!m_initialized) {
+  if (!initialized_) {
     throw std::runtime_error("Emulator '" + name_ +
                              "': run() called after finalize()");
   }
@@ -298,10 +335,10 @@ void Emulator::run(const ProcessRunOpts opts) {
 }
 
 void Emulator::finalize() {
-  if (!m_initialized) {
+  if (!initialized_) {
     return; // Already finalized
   }
-  m_initialized = false;
+  initialized_ = false;
   m_finalized = true;
   backend_->finalize();
 
@@ -330,7 +367,7 @@ MoabTagDescriptor Emulator::make_moab_tag(const EmulatorFieldDesc& desc) const {
 void Emulator::print_info(std::ostream& os) const {
   os << "Emulator '" << name_ << "'\n";
   os << "  id            : " << component_id_ << "\n";
-  os << "  initialized   : " << std::boolalpha << m_initialized << "\n";
+  os << "  initialized   : " << std::boolalpha << initialized_ << "\n";
   os << "  step_count    : " << step_count_ << "\n";
 
   // Grid summary

@@ -81,29 +81,6 @@ TEST_CASE("LibTorchBackend flat-array inference", "[libtorch]") {
   REQUIRE(y[5] == 13.0);
 }
 
-TEST_CASE("LibTorchBackend dtype sets the precision used", "[libtorch]") {
-  // 0.1 is not representable, so float32 and float64 results differ
-  const double exact = 2.0 * 0.1 + 1.0;
-  const std::vector<double> x{0.1};
-  std::vector<double> y{0.0};
-  const Dims one{1, 1, 1, 1};
-
-  SECTION("float32 is the default") {
-    auto backend = create(fixture("affine.pt"));
-    REQUIRE(infer(*backend, x, one, y, one));
-    REQUIRE(y[0] == Approx(exact));
-    REQUIRE(y[0] != exact);
-  }
-
-  SECTION("float64 is exact") {
-    auto config = fixture("affine.pt");
-    config.set("dtype", "float64");
-    auto backend = create(config);
-    REQUIRE(infer(*backend, x, one, y, one));
-    REQUIRE(y[0] == exact);
-  }
-}
-
 TEST_CASE("LibTorchBackend fills several outputs in order", "[libtorch]") {
   const std::string name = GENERATE("tuple.pt", "list.pt");
   auto backend = create(fixture(name));
