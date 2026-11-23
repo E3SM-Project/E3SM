@@ -151,8 +151,6 @@ def buildlib(bldroot, installpath, case):
             cmake_opts += "-DADIOS_USE_COMPRESSION:BOOL=ON "
             adiosc_found = True
 
-    if debug:
-        cmake_opts += "-DPIO_ENABLE_LOGGING=ON "
     # Case changes for NetCDF/NETCDF forces us to do this. For other packages
     # what's already in the env should work
     if "NETCDF_PATH" in os.environ:
