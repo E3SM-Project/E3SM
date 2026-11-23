@@ -416,10 +416,10 @@ TEST_CASE ("io_with_expressions")
   scorpio::finalize_subsystem();
 }
 
-TEST_CASE ("io_aliases_are_per_stream")
+TEST_CASE ("io_aliases_in_streams")
 {
-  // An alias is local to its stream. Two streams may request the same expression with an alias
-  // of the same name bound differently, and each must get its own.
+  // An alias is local to its stream. Streams may use the same name for different things,
+  // and each must get its own. If they bind it the same way, they should share the diags.
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
@@ -434,44 +434,52 @@ TEST_CASE ("io_aliases_are_per_stream")
   util::TimeStamp t0({2023,1,1},{0,0,0});
   auto fm = create_test_fm(gm,grid,t0);
 
-  // x reads 'diff' directly, y through the nested (qv*diff). 'z' reads no alias: it is shared.
-  auto p1 = output_params("alias_s1",gname,{"x := qv*diff","y := (qv*diff).mean('lev')","z := qv*T_mid"},{"diff := T_mid*qv"});
-  auto p2 = output_params("alias_s2",gname,{"x := qv*diff","y := (qv*diff).mean('lev')","z := qv*T_mid"},{"diff := T_mid/qv"});
+  // x reads 'diff' directly, y through the nested (qv*diff). 'z' reads no alias.
+  auto params = [&](const std::string& prefix, const std::string& diff) {
+    return output_params(prefix,gname,{"x := qv*diff","y := (qv*diff).mean('lev')","z := qv*T_mid"},{"diff := " + diff});
+  };
+  const std::vector<std::string> prefixes = {"alias_s1","alias_s2","alias_s3"};
+  const auto p1 = params(prefixes[0],"T_mid*qv");
+  const auto p2 = params(prefixes[1],"T_mid/qv");  // another 'diff'
+  const auto p3 = params(prefixes[2],"T_mid*qv");  // the same 'diff' as stream 1
 
   auto t = t0;
   {
-    OutputManager om1, om2;
+    OutputManager om1, om2, om3;
     om1.initialize(comm,p1,t0,false);
     om2.initialize(comm,p2,t0,false);
+    om3.initialize(comm,p3,t0,false);
     om1.setup(fm,gm->get_grid_names());
+    const auto n1 = DiagRepo::names().size();
+    // Same aliases as stream 1: all its diags are shared, so none is added
+    om3.setup(fm,gm->get_grid_names());
+    REQUIRE (DiagRepo::names().size()==n1);
+    // Another 'diff': the diags that read it are not shared, but the others (z) are
     om2.setup(fm,gm->get_grid_names());
+    REQUIRE (DiagRepo::names().size()>n1);
 
-    // Only what does not read an alias is shared
-    const auto repo = DiagRepo::names();
-    REQUIRE (repo.count("qv*T_mid")==1);
-    REQUIRE (repo.count("qv*diff")==0);
-    REQUIRE (repo.count("(qv*diff)")==0);
-    REQUIRE (repo.count("(qv*diff).mean('lev')")==0);
-
-    om1.init_timestep(t,1);
-    om2.init_timestep(t,1);
+    for (auto* om : {&om1,&om2,&om3}) {
+      om->init_timestep(t,1);
+    }
     t += 1;
     auto qv    = fm->get_field("qv");
     auto T_mid = fm->get_field("T_mid");
     calc_fields(qv,T_mid,1);
     qv.get_header().get_tracking().update_time_stamp(t);
     T_mid.get_header().get_tracking().update_time_stamp(t);
-    om1.run(t);
-    om2.run(t);
-    om1.finalize();
-    om2.finalize();
+    for (auto* om : {&om1,&om2,&om3}) {
+      om->run(t);
+    }
+    for (auto* om : {&om1,&om2,&om3}) {
+      om->finalize();
+    }
   }
 
   const auto layout3d = grid->get_3d_scalar_layout(LEV);
   const auto layout2d = grid->get_2d_scalar_layout();
   const int nlocal = grid->get_num_local_dofs();
-  for (const std::string prefix : {"alias_s1","alias_s2"}) {
-    const bool first = prefix=="alias_s1";
+  for (const auto& prefix : prefixes) {
+    const bool times = prefix!="alias_s2";
     const auto filename = prefix + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." +
                           (t0+1).to_string() + ".nc";
     Field x (FieldIdentifier("x",layout3d,K,gname));
@@ -497,7 +505,7 @@ TEST_CASE ("io_aliases_are_per_stream")
       for (int k=0; k<nlevs; ++k) {
         const Real qv_v = 1 + i*(k+1);
         const Real T_v  = 1 - i*(k+1);
-        const Real diff = first ? T_v*qv_v : T_v/qv_v;
+        const Real diff = times ? T_v*qv_v : T_v/qv_v;
         REQUIRE (x_h(i,k)==Approx(qv_v*diff));
         REQUIRE (z_h(i,k)==Approx(qv_v*T_v));
         y_sum += qv_v*diff;

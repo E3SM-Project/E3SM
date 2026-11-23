@@ -5,6 +5,7 @@
 #include <ekat_std_utils.hpp>
 
 #include <algorithm>
+#include <sstream>
 
 namespace scream
 {
@@ -103,6 +104,47 @@ Field& AbstractDiagnostic::add_output (const std::string& name, const FieldLayou
                                        const ekat::units::Units& units, const DataType dt)
 {
   return add_output(FieldIdentifier(name,layout,units,m_grid->name(),dt));
+}
+
+namespace {
+
+// Identifies the storage of a field: an alias has that of the field it aliases, and a
+// subfield is a slice of its parent's (e.g., U and V, the components of horiz_winds)
+std::string storage_id (const FieldHeader& h)
+{
+  std::stringstream ss;
+  if (const auto parent = h.get_parent()) {
+    const auto& si = h.get_alloc_properties().get_subview_info();
+    ss << storage_id(*parent) << "[" << si.dim_idx << "," << si.slice_idx << ","
+       << si.slice_idx_end << "," << si.dynamic << "]";
+  } else {
+    ss << static_cast<const void*>(&h.get_alloc_properties());
+  }
+  return ss.str();
+}
+
+} // anonymous namespace
+
+std::string AbstractDiagnostic::hash () const
+{
+  std::stringstream ss;
+  ss << name() << "\n";
+
+  // The first line printed is the name of the list
+  std::stringstream params;
+  m_params.print(params);
+  const auto str = params.str();
+  ss << str.substr(str.find('\n')+1);
+
+  for (const auto& n : m_field_in_names) {
+    const auto it = m_fields_in.find(n);
+    EKAT_REQUIRE_MSG (it!=m_fields_in.end(),
+        "Error! Cannot hash a diagnostic before all its input fields are set.\n"
+        " - diag: " + name() + "\n"
+        " - missing input: " + n + "\n");
+    ss << n << "=" << storage_id(it->second.get_header()) << "\n";
+  }
+  return ss.str();
 }
 
 void AbstractDiagnostic::set_input_field (const Field& f)

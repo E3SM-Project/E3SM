@@ -93,6 +93,13 @@ public:
   // Store input field in the map
   void set_input_field (const Field& f);
 
+  // Identifies what this diag computes: two diags with the same hash compute the same thing,
+  // so one can stand for the other (e.g., in two output streams). It has the class, the params
+  // (but not the name of the list, which is the request), and, for each input, the storage of
+  // the field rather than its name: an alias may have the same name in two streams, and be
+  // bound to different fields. Only meaningful in this process, and once all inputs are set.
+  std::string hash () const;
+
   // Allows the diagnostic to save some start-of-step quantity (e.g., in case
   // we need to compute tendencies, or accumulated stuff)
   virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
