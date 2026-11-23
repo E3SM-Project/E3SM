@@ -23,3 +23,9 @@ set(SCREAM_TEST_MAX_RANKS 2 CACHE STRING "Upper limit on ranks for mpi tests")
 
 # Enable python tests
 option (EAMXX_ENABLE_PYTHON "Whether to enable python interface from eamxx" ON)
+
+# Cap the Hommexx team size to 8 warps. With the default (16 warps), some homme kernels
+# need too many registers, and abort at runtime with "Requested too large team size.
+# Requested: 16, Maximum: 8". Same cap as in ghci-hip.cmake.
+SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM 8 CACHE STRING "")
+
