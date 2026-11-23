@@ -166,6 +166,9 @@ clean:
 	if [ -e FFTW/.git ]; then \
 		(cd FFTW; make clean; rm -f $(SHTNS_DIR)/lib/libfftw3*) \
 	fi
+	if [ -e ppr/.git ]; then \
+		(cd ppr/src; $(RM) ppr_1d.F ppr_1d.o *.mod) \
+	fi
 	(cd mode_forward; $(MAKE) clean)
 	(cd mode_analysis; $(MAKE) clean)
 	(cd mode_init; $(MAKE) clean)
