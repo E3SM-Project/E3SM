@@ -108,8 +108,10 @@ Field& AbstractDiagnostic::add_output (const std::string& name, const FieldLayou
 
 namespace {
 
-// Identifies the storage of a field: an alias has that of the field it aliases, and a
-// subfield is a slice of its parent's (e.g., U and V, the components of horiz_winds)
+// An id for a field that is stable across aliases (an alias has the id of the field it aliases,
+// whatever its name), and does not confuse relatives: a parent, its subfields and their siblings
+// all differ (e.g., horiz_winds, and its components U and V). A subfield's is its parent's plus
+// its slice. It is not the field identifier, which two different fields may share.
 std::string storage_id (const FieldHeader& h)
 {
   std::stringstream ss;
