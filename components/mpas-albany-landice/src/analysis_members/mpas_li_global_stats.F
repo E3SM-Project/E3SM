@@ -178,6 +178,7 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
+      real (kind=RKIND), dimension(:), pointer ::  calvingThicknessGrounded
       real (kind=RKIND), dimension(:), pointer ::  faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
@@ -222,6 +223,7 @@ contains
       real (kind=RKIND), pointer ::  avgGroundedBasalMelt
       real (kind=RKIND), pointer ::  avgSubshelfMelt
       real (kind=RKIND), pointer ::  totalCalvingFlux
+      real (kind=RKIND), pointer ::  totalCalvingFluxGrounded
       real (kind=RKIND), pointer ::  groundingLineFlux
       real (kind=RKIND), pointer ::  groundingLineMigrationFlux
       real (kind=RKIND), pointer ::  surfaceSpeedMax
@@ -248,6 +250,7 @@ contains
       real (kind=RKIND) ::  blockSumGroundedSfcMassBal, blockSumFloatingSfcMassBal
       real (kind=RKIND) ::  blockSumGroundedBasalMassBal, blockSumFloatingBasalMassBal
       real (kind=RKIND) ::  blockSumCalvingFlux
+      real (kind=RKIND) ::  blockSumCalvingFluxGrounded
       real (kind=RKIND) ::  blockSumFaceMeltingFlux
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
       real (kind=RKIND) ::  blockMaxBasalSpeed
@@ -292,6 +295,7 @@ contains
       blockSumGroundedBasalMassBal = 0.0_RKIND
       blockSumFloatingBasalMassBal = 0.0_RKIND
       blockSumCalvingFlux = 0.0_RKIND
+      blockSumCalvingFluxGrounded = 0.0_RKIND
       blockSumFaceMeltingFlux = 0.0_RKIND
       blockGLflux = 0.0_RKIND
       blockGLMigrationFlux = 0.0_RKIND
@@ -347,6 +351,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'calvingThicknessGrounded', calvingThicknessGrounded)
          call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
          call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
@@ -376,17 +381,24 @@ contains
             blockSumVAF = blockSumVAF + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * &
                 ( thickness(iCell) + (rhow / rhoi) * min(0.0_RKIND, (bedTopography(iCell) - config_sea_level)) )
 
-            blockSumGroundedIceArea = blockSumGroundedIceArea + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-                 * areaCell(iCell)
+              blockSumGroundedIceArea = blockSumGroundedIceArea + &
+                 (real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) + &
+                  real(li_mask_is_grounded_floating_fringe_int(cellMask(iCell)),RKIND)) * areaCell(iCell)
 
-            blockSumGroundedIceVolume = blockSumGroundedIceVolume + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
+            blockSumGroundedIceVolume = blockSumGroundedIceVolume + &
+                (real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) + &
+                ! For the purposes of grounded MB, consider the grounded-floating fringe as part of the grounded ice volume
+                 real(li_mask_is_grounded_floating_fringe_int(cellMask(iCell)),RKIND)) &
                 * areaCell(iCell) * thickness(iCell)
 
-            blockSumFloatingIceArea = blockSumFloatingIceArea + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell)
+            blockSumFloatingIceArea = blockSumFloatingIceArea + &
+               (real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) - &
+                real(li_mask_is_grounded_floating_fringe_int(cellMask(iCell)),RKIND)) * areaCell(iCell)
 
-            blockSumFloatingIceVolume = blockSumFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * thickness(iCell)
+            blockSumFloatingIceVolume = blockSumFloatingIceVolume + &
+               (real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) - &
+                real(li_mask_is_grounded_floating_fringe_int(cellMask(iCell)),RKIND)) &
+               * areaCell(iCell) * thickness(iCell)
 
             ! max, min thickness values (m)
             if( thickness(iCell) > blockThickMax)then
@@ -409,6 +421,10 @@ contains
 
             ! mass loss due do calving (kg yr^{-1})
             blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * &
+               areaCell(iCell) * rhoi / ( deltat / scyr )
+
+            ! mass loss due to calving from grounded ice (kg yr^{-1})
+            blockSumCalvingFluxGrounded = blockSumCalvingFluxGrounded + calvingThicknessGrounded(iCell) * &
                areaCell(iCell) * rhoi / ( deltat / scyr )
 
             ! mass loss due to face-melting (kg yr^{-1})
@@ -535,21 +551,22 @@ contains
       sums(15) = blockSumVAF
       sums(16) = blockGLflux
       sums(17) = blockGLMigrationflux
+      sums(18) = blockSumCalvingFluxGrounded
       if (config_SGH) then
-         sums(18) = blockSumSubglacialWaterVolume
-         sums(19) = blockSumBasalMeltInput
-         sums(20) = blockSumExternalWaterInput
-         sums(21) = blockSumChannelMelt
-         sums(22) = blockSumLakeVolume
-         sums(23) = blockSumLakeArea
-         sums(24) = blockSumGLMeltFlux
-         sums(25) = blockSumTerrestrialMeltFlux
-         sums(26) = blockSumChannelGLMeltFlux
-         sums(27) = blockSumChannelTerrestrialMeltFlux
-         sums(28) = blockSumFlotationFraction
-         nVars = 28
+         sums(19) = blockSumSubglacialWaterVolume
+         sums(20) = blockSumBasalMeltInput
+         sums(21) = blockSumExternalWaterInput
+         sums(22) = blockSumChannelMelt
+         sums(23) = blockSumLakeVolume
+         sums(24) = blockSumLakeArea
+         sums(25) = blockSumGLMeltFlux
+         sums(26) = blockSumTerrestrialMeltFlux
+         sums(27) = blockSumChannelGLMeltFlux
+         sums(28) = blockSumChannelTerrestrialMeltFlux
+         sums(29) = blockSumFlotationFraction
+         nVars = 29
       else
-        nVars = 17
+         nVars = 18
       endif
 
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
@@ -576,6 +593,7 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'totalFloatingBasalMassBal', totalFloatingBasalMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'avgSubshelfMelt', avgSubshelfMelt)
          call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFluxGrounded', totalCalvingFluxGrounded)
          call mpas_pool_get_array(globalStatsAMPool, 'totalFaceMeltingFlux', totalFaceMeltingFlux)
          call mpas_pool_get_array(globalStatsAMPool, 'groundingLineFlux', groundingLineFlux)
          call mpas_pool_get_array(globalStatsAMPool, 'groundingLineMigrationFlux', groundingLineMigrationFlux)
@@ -610,18 +628,19 @@ contains
          volumeAboveFloatation = reductions(15)
          groundingLineFlux = reductions(16)
          groundingLineMigrationFlux = reductions(17)
+         totalCalvingFluxGrounded = reductions(18)
          if (config_SGH) then
-            totalSubglacialWaterVolume = reductions(18)
-            totalBasalMeltInput = reductions(19)
-            totalExternalWaterInput = reductions(20)
-            totalChannelMelt = reductions(21)
-            totalSubglacialLakeVolume = reductions(22)
-            totalSubglacialLakeArea = reductions(23)
-            totalDistWaterFluxMarineMargin = reductions(24)
-            totalDistWaterFluxTerrestrialMargin = reductions(25)
-            totalChnlWaterFluxMarineMargin = reductions(26)
-            totalChnlWaterFluxTerrestrialMargin = reductions(27)
-            totalFlotationFraction = reductions(28)
+            totalSubglacialWaterVolume = reductions(19)
+            totalBasalMeltInput = reductions(20)
+            totalExternalWaterInput = reductions(21)
+            totalChannelMelt = reductions(22)
+            totalSubglacialLakeVolume = reductions(23)
+            totalSubglacialLakeArea = reductions(24)
+            totalDistWaterFluxMarineMargin = reductions(25)
+            totalDistWaterFluxTerrestrialMargin = reductions(26)
+            totalChnlWaterFluxMarineMargin = reductions(27)
+            totalChnlWaterFluxTerrestrialMargin = reductions(28)
+            totalFlotationFraction = reductions(29)
          endif
 
          if (totalIceArea > 0.0_RKIND) then

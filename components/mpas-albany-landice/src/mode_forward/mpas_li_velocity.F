@@ -59,6 +59,11 @@ module li_velocity
    !
    !--------------------------------------------------------------------
 
+   ! Masks that the external dycore's FEM grid was last generated from.  These hold a single
+   ! block's masks: external dycores support one block per task, which
+   ! li_velocity_external_init enforces by requiring config_number_of_blocks = 0.
+   integer, dimension(:), allocatable :: femVertexDynamicMask, femCellDynamicMask
+   integer, dimension(:,:), allocatable :: femDirichletMask
 
 !***********************************************************************
 
@@ -266,13 +271,14 @@ contains
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_print_velocity_cleanup_details
       real (kind=RKIND), pointer :: config_dynamic_thickness
+      logical, pointer :: config_always_compute_fem_grid
       logical, pointer :: config_adaptive_timestep_include_DCFL
       integer, pointer :: nEdgesSolve
       integer, pointer :: nEdges
       integer, pointer :: nVertInterfaces
       integer, pointer :: nCells
-      integer, dimension(:), pointer :: edgeMask, cellMask, vertexMask, vertexMaskOld
-      integer, dimension(:,:), pointer :: dirichletVelocityMaskOld, dirichletVelocityMaskNew
+      integer, dimension(:), pointer :: edgeMask, cellMask, vertexMask
+      integer, dimension(:,:), pointer :: dirichletVelocityMask
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityInitial
       real (kind=RKIND), dimension(:,:), pointer :: uReconstructX, uReconstructY, uReconstructZ, &
          uReconstructZonal, uReconstructMeridional
@@ -314,6 +320,7 @@ contains
          config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+      call mpas_pool_get_config(liConfigs, 'config_always_compute_fem_grid', config_always_compute_fem_grid)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       uphillMarginEdgesFixed = 0
@@ -403,28 +410,33 @@ contains
             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
 
-            ! Determine if the vertex mask changed during this time step for this block (needed for external dycores)
-            ! TODO:  There may be some aspects of the mask that are ok change for external dycores,
-            !        but for now just check the whole thing.
-            call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMaskOld, timeLevel=2)
-            if ( sum(li_mask_is_dynamic_ice_int(vertexMask) - li_mask_is_dynamic_ice_int(vertexMaskOld)) /= 0 ) then
+            ! Determine if the masks the external dycore's FEM grid depends on have changed since
+            ! the grid was last generated.  The grid uses the dynamic-ice bit of both vertices
+            ! (FEM triangles) and cells (ice-margin edges), so both count as a vertex mask change.
+            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel=1)
+            if (config_always_compute_fem_grid) then
+                ! The FEM grid is generated for every solve, so no masks are kept to compare with
                 blockDynamicVertexMaskChanged = 1
-            else
-                blockDynamicVertexMaskChanged = 0
-            endif
-            !print *, 'blockVertexMaskChanged ', blockVertexMaskChanged
-            ! Determine if any blocks on this processor had a change to the vertex mask
-            procDynamicVertexMaskChanged = max(procDynamicVertexMaskChanged, blockDynamicVertexMaskChanged)
-            !print *,'procVertexMaskChanged', procVertexMaskChanged
-
-            ! Also check to see if the Dirichlet b.c. mask has changed
-            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMaskOld, timeLevel=2)
-            call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMaskNew, timeLevel=1)
-            if ( sum(dirichletVelocityMaskNew - dirichletVelocityMaskOld) /= 0 ) then
+                blockDirichletMaskChanged = 1
+            elseif (.not. allocated(femVertexDynamicMask)) then
+                blockDynamicVertexMaskChanged = 1
                 blockDirichletMaskChanged = 1
             else
-                blockDirichletMaskChanged = 0
+                if ( any(li_mask_is_dynamic_ice_int(vertexMask) /= femVertexDynamicMask) .or. &
+                     any(li_mask_is_dynamic_ice_int(cellMask) /= femCellDynamicMask) ) then
+                    blockDynamicVertexMaskChanged = 1
+                else
+                    blockDynamicVertexMaskChanged = 0
+                endif
+                if ( any(dirichletVelocityMask /= femDirichletMask) ) then
+                    blockDirichletMaskChanged = 1
+                else
+                    blockDirichletMaskChanged = 0
+                endif
             endif
+            ! Determine if any blocks on this processor had a change to the vertex mask
+            procDynamicVertexMaskChanged = max(procDynamicVertexMaskChanged, blockDynamicVertexMaskChanged)
             ! Determine if any blocks on this processor had a change to the vertex mask
             procDirichletMaskChanged = max(procDirichletMaskChanged, blockDirichletMaskChanged)
 
@@ -450,6 +462,14 @@ contains
          call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
          call mpas_dmpar_max_int(domain % dminfo, procDirichletMaskChanged, dirichletMaskChanged)
          !print *,'dirichletMaskChanged', dirichletMaskChanged
+
+         ! A new FEM grid will be generated from the current masks, so remember them.  No grid is
+         ! generated when there is too little ice to solve for velocity, so keep the old copies then.
+         if ((.not. config_always_compute_fem_grid) .and. &
+             (maxThicknessAllProcs >= config_dynamic_thickness) .and. &
+             ((anyDynamicVertexMaskChanged == 1) .or. (dirichletMaskChanged == 1))) then
+            call save_fem_grid_masks(vertexMask, cellMask, dirichletVelocityMask)
+         endif
 
       endif
 
@@ -757,6 +777,10 @@ contains
           err = 1
           return
       end select
+
+      if (allocated(femVertexDynamicMask)) then
+         deallocate(femVertexDynamicMask, femCellDynamicMask, femDirichletMask)
+      endif
 
       ! === error check
       if (err > 0) then
@@ -1142,6 +1166,44 @@ contains
 
    !--------------------------------------------------------------------
    end subroutine limit_fast_ice
+
+!***********************************************************************
+!
+!  routine save_fem_grid_masks
+!
+!> \brief  Saves the masks an external dycore's FEM grid is generated from
+!> \author Xylar Asay-Davis
+!> \date   October 2026
+!> \details
+!>  li_velocity_solve compares the current masks with these copies to decide
+!>  whether the FEM grid needs to be generated again.
+!
+!-----------------------------------------------------------------------
+
+   subroutine save_fem_grid_masks(vertexMask, cellMask, dirichletVelocityMask)
+
+      use li_mask
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      integer, dimension(:), intent(in) :: vertexMask
+      integer, dimension(:), intent(in) :: cellMask
+      integer, dimension(:,:), intent(in) :: dirichletVelocityMask
+
+      if (allocated(femVertexDynamicMask)) then
+         deallocate(femVertexDynamicMask, femCellDynamicMask, femDirichletMask)
+      endif
+      allocate(femVertexDynamicMask(size(vertexMask)))
+      allocate(femCellDynamicMask(size(cellMask)))
+      allocate(femDirichletMask(size(dirichletVelocityMask, 1), size(dirichletVelocityMask, 2)))
+
+      femVertexDynamicMask(:) = li_mask_is_dynamic_ice_int(vertexMask)
+      femCellDynamicMask(:) = li_mask_is_dynamic_ice_int(cellMask)
+      femDirichletMask(:,:) = dirichletVelocityMask(:,:)
+
+   !--------------------------------------------------------------------
+   end subroutine save_fem_grid_masks
 
 !***********************************************************************
 

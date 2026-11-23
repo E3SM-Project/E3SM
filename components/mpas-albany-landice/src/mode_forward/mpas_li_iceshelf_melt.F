@@ -394,6 +394,9 @@ module li_iceshelf_melt
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
          call iceshelf_melt_ismip6(domain, err_tmp)
          err = ior(err, err_tmp)
+      elseif (trim(config_basal_mass_bal_float) == 'ismip7') then
+         call iceshelf_melt_ismip7(domain, err_tmp)
+         err = ior(err, err_tmp)
       else
          ! block loop
          block => domain % blocklist
@@ -1382,6 +1385,312 @@ module li_iceshelf_melt
 
     end subroutine iceshelf_melt_ismip6
 !-----------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine iceshelf_melt_ismip7
+!
+!> \brief Calculate ice shelf melt rate with the ISMIP7 local quadratic method
+!> \author Xylar Asay-Davis
+!> \date   September 2026
+!> \details
+!> The "quadratic, local" melt parameterization recommended for ISMIP7,
+!> revised by Burgard et al. (2022) from the ISMIP6 form of Jourdain et al.
+!> (2020), following the velocity scale of Jenkins et al. (2018):
+!>
+!>   m = K sin(theta) (rho_o/rho_i) (c_o/L_i)^2 beta_S S_loc
+!>       (g / (2 |f|)) |TF_loc| TF_loc
+!>
+!> where m is the melt rate in m of ice per second, TF_loc is the thermal
+!> forcing at the ice draft, S_loc the salinity there, theta the ice-draft
+!> slope, and K the calibration parameter.
+!>
+!> The algorithm is taken from the ISMIP7 protocol, but the physical constants
+!> are MALI's own -- cp_seawater, latent_heat_ice, gravity and the ice and
+!> ocean densities come from li_constants and the namelist, not from the
+!> protocol's reference implementation.  Those differ slightly (that
+!> implementation uses L_i = 334 kJ/kg against MALI's 335, and g = 9.81
+!> against 9.80616), so melt here differs from it by a few tenths of a percent
+!> at the same K.  That is well inside the parametric spread the calibration
+!> explores, and K absorbs any constant offset in any case; agreement with the
+!> reference implementation is a sanity check, not a requirement.
+!>
+!> Only the *local* form, Eq. (1), is provided: the salinity and the |TF|
+!> amplitude are local values, so no global reduction is needed.
+!>
+!> The protocol also permits the semi-local form of Eq. (2), which replaces
+!> both with shelf- or basin-wide averages.  That is deliberately not
+!> implemented, and should not be added without reading this.  With the
+!> salinity held constant it is *algebraically identical* to the ISMIP6
+!> non-local method already in this module: both are
+!> C * (TF_loc + dT) * |<TF> + dT|, differing only in how the constant C is
+!> decomposed, so every K has an exactly equivalent gamma0.  With a basin-mean
+!> salinity the two differ by under 1% per basin, which the per-basin dT
+!> absorbs.  Implementing it would add a second code path, and a global
+!> reduction, to compute what iceshelf_melt_ismip6 already computes; use
+!> config_basal_mass_bal_float = 'ismip6' for that behaviour.
+!>
+!> The local form is the one that genuinely differs: replacing |<TF>| with
+!> |TF_loc| changes the spatial pattern of melt in a way no per-basin constant
+!> can reproduce.
+!>
+!> The basin-wide temperature correction ismip6shelfMelt_deltaT is applied
+!> wherever the thermal forcing appears, as protocol Sect. 4.2.1 prescribes,
+!> exactly as in iceshelf_melt_ismip6.  It defaults to zero, which is what the
+!> calibration uses -- fitting dT_b before K leaves the parameter bounds
+!> unconstrained -- but production runs are expected to use non-zero values.
+!>
+!> Melt is exactly linear in K, since dT_b does not depend on it.  That is what
+!> lets dT_b be fitted after K rather than jointly with it.
+!>
+!> The slope and the Coriolis parameter are taken as constants, matching the
+!> reference implementation the ISMIP7 protocol calibrated against.  With a
+!> constant slope, sin(theta) is simply a dimensionless coefficient
+!> multiplying K -- only the product affects the melt -- and it is kept
+!> separate only so that K stays comparable with published values.  A
+!> *locally varying* slope, which Eq. (1) also permits, is deliberately not
+!> implemented: MALI-Dev/E3SM PR #48 tried that on the ISMIP6 method and found
+!> a feedback between basal slope and melt rate that melted holes in ice
+!> shelves as thermal forcing rose.  K also absorbs the slope and the Coriolis
+!> parameter, so a K calibrated with one convention must be used with that
+!> same convention.
+!>
+!> Melt is exactly linear in K for a fixed geometry, which is what allows a
+!> calibration ensemble to use one model run per ocean state rather than one
+!> per parameter value.
+!
+!-----------------------------------------------------------------------
+
+    subroutine iceshelf_melt_ismip7(domain, err)
+
+      use li_constants, only: oceanFreezingTempDepthDependence
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell, ksup, kinf, kk
+      integer, pointer :: nOceanLayers, nCellsSolve
+      real (kind=RKIND), pointer :: rhoi, rhosw
+      real (kind=RKIND), pointer :: sinSlope, coriolis
+      real (kind=RKIND), pointer :: meltK
+      real (kind=RKIND), pointer :: constSalinity
+      character (len=StrKIND), pointer :: salinitySource
+      logical :: useDataSalinity
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      real (kind=RKIND), dimension(:,:), pointer :: TFocean3d, Socean3d
+      real (kind=RKIND), dimension(:), pointer :: zOcean
+      real (kind=RKIND), dimension(:), pointer :: TFdraft, Sdraft
+      real (kind=RKIND), dimension(:), pointer :: deltaT
+      real (kind=RKIND), dimension(:), pointer :: lowerSurface
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
+      real (kind=RKIND), dimension(:), pointer :: areaCell
+      integer, dimension(:), pointer :: cellMask, indexToCellID
+      integer, dimension(:), pointer :: connectedOceanMask
+      real (kind=RKIND) :: coef, wDeep, wShallow, TF_local
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhosw)
+      call mpas_pool_get_config(liConfigs, 'config_ismip7_melt_sin_slope', sinSlope)
+      call mpas_pool_get_config(liConfigs, 'config_ismip7_melt_coriolis', coriolis)
+      call mpas_pool_get_config(liConfigs, 'config_ismip7_melt_salinity', constSalinity)
+      call mpas_pool_get_config(liConfigs, 'config_ismip7_melt_salinity_source', salinitySource)
+
+      if (coriolis <= 0.0_RKIND) then
+         call mpas_log_write("iceshelf_melt_ismip7: config_ismip7_melt_coriolis must be positive", MPAS_LOG_ERR)
+         err = ior(err, 1)
+         return
+      endif
+
+      if (trim(salinitySource) == 'data') then
+         useDataSalinity = .true.
+      elseif (trim(salinitySource) == 'constant') then
+         useDataSalinity = .false.
+         if (constSalinity <= 0.0_RKIND) then
+            call mpas_log_write("iceshelf_melt_ismip7: config_ismip7_melt_salinity must be positive", MPAS_LOG_ERR)
+            err = ior(err, 1)
+            return
+         endif
+      else
+         call mpas_log_write("iceshelf_melt_ismip7: config_ismip7_melt_salinity_source must be " // &
+            "'constant' or 'data', but is '" // trim(salinitySource) // "'", MPAS_LOG_ERR)
+         err = ior(err, 1)
+         return
+      endif
+
+      call mpas_log_write("iceshelf_melt_ismip7: local form, Eq. (1)")
+      if (useDataSalinity) then
+         call mpas_log_write("iceshelf_melt_ismip7: salinity from ismip7shelfMelt_3dSalinity, " // &
+            "interpolated to the ice draft")
+      else
+         call mpas_log_write("iceshelf_melt_ismip7: constant salinity S=$r PSU", realArgs=(/constSalinity/))
+      endif
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+
+         ! K is read from the parameter input stream, like gamma0 for the
+         ! ISMIP6 method, so that one parameter file carries a complete
+         ! calibration.  Its Registry default is zero, which would silently
+         ! zero the melt field, so a missing value is an error here.
+         call mpas_pool_get_array(geometryPool, 'ismip7shelfMelt_K', meltK)
+         if (meltK <= 0.0_RKIND) then
+            call mpas_log_write("iceshelf_melt_ismip7: ismip7shelfMelt_K=$r is not positive.  It must be " // &
+               "supplied through an input stream, as ismip6shelfMelt_gamma0 is for the ISMIP6 method.", &
+               MPAS_LOG_ERR, realArgs=(/meltK/))
+            err = ior(err, 1)
+            return
+         endif
+
+         ! coef collects every factor in the melt expression except the
+         ! salinity and the two thermal-forcing factors, grouped as in
+         ! protocol Eq. (1):
+         !   K sin(theta) (rho_o/rho_i) (c_o/L_i)^2 beta_S (g / (2 |f|))
+         ! Multiplying coef by S * |TF| * TF gives the melt rate in m of ice
+         ! per second; the trailing factor of rho_i then converts that to the
+         ! kg m^-2 s^-1 that MALI uses.
+         !
+         ! The two rho_i therefore cancel and the melt is independent of the
+         ! ice density.  Both are kept explicit so the expression can be read
+         ! against Eq. (1); do not "simplify" by dropping one of them.  (The
+         ! protocol's own worked example takes 917 in the formula and 918 in
+         ! the conversion, so they do not quite cancel there.)
+         coef = meltK * sinSlope * (rhosw / rhoi) &
+              * (cp_seawater / latent_heat_ice)**2 &
+              * haline_contraction_coeff &
+              * gravity / (2.0_RKIND * abs(coriolis)) &
+              * rhoi
+
+         call mpas_log_write("iceshelf_melt_ismip7: K=$r, sin(slope)=$r, |f|=$r", &
+            realArgs=(/meltK, sinSlope, coriolis/))
+
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean3d)
+         call mpas_pool_get_array(geometryPool, 'ismip7shelfMelt_3dSalinity', Socean3d)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
+         call mpas_pool_get_array(geometryPool, 'ismip7shelfMelt_Sdraft', Sdraft)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'connectedOceanMask', connectedOceanMask)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', deltaT)
+
+         floatingBasalMassBal(:) = 0.0_RKIND
+
+         ! Check zOcean for valid values
+         if (minval(zOcean) >= 0.0_RKIND) then
+            call mpas_log_write("iceshelf_melt_ismip7: Invalid zOcean.  It should have negative values " // &
+               "but min value >= 0.0 was found", MPAS_LOG_ERR)
+            err = ior(err, 1)
+         endif
+
+         do iCell = 1, nCellsSolve
+
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (connectedOceanMask(iCell) == 1)) then
+
+               ! Locate the ocean layer centres bracketing the ice draft.  The
+               ! scheme matches iceshelf_melt_ismip6 so that the two methods
+               ! sample the same forcing at the same depths.
+               ksup = 0
+               do kk = 1, nOceanLayers
+                  if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
+               enddo
+               kinf = ksup + 1
+
+               if (ksup >= 1) then
+                  if (li_is_tf_invalid(TFocean3d(ksup, iCell))) then
+                     call mpas_log_write("iceshelf_melt_ismip7: Invalid value for TFocean3d. " // &
+                        "ksup=$i TFocean3d(ksup, iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
+                        intArgs=(/ksup, indexToCellID(iCell)/), &
+                        realArgs=(/TFocean3d(ksup, iCell)/) )
+                     err = ior(err, 1)
+                  endif
+               endif
+
+               if (ksup == 0) then
+                  ! Above the shallowest layer centre, use the shallowest layer
+                  TFdraft(iCell) = TFocean3d(1, iCell)
+                  Sdraft(iCell) = Socean3d(1, iCell)
+               elseif (ksup == nOceanLayers) then
+                  ! Below the deepest layer centre, use the deepest layer with
+                  ! the freezing point corrected for depth.  Salinity is taken
+                  ! as the deepest value, with no depth correction.
+                  TFdraft(iCell) = TFocean3d(nOceanLayers, iCell) - &
+                     (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+                  Sdraft(iCell) = Socean3d(nOceanLayers, iCell)
+               else
+                  if (zOcean(kinf) < bedTopography(iCell)) then
+                     ! The layer below the draft is beneath the bed, so use the
+                     ! deepest ocean layer corrected for the freezing point
+                     TFdraft(iCell) = TFocean3d(ksup, iCell) - &
+                        (zOcean(ksup) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+                     Sdraft(iCell) = Socean3d(ksup, iCell)
+                  else
+                     ! Between layer centres, interpolate linearly in depth.
+                     ! The further the draft is below the shallower centre, the
+                     ! more weight the deeper layer gets.
+                     wDeep = (zOcean(ksup) - lowerSurface(iCell)) / (zOcean(ksup) - zOcean(kinf))
+                     wShallow = (lowerSurface(iCell) - zOcean(kinf)) / (zOcean(ksup) - zOcean(kinf))
+                     TFdraft(iCell) = wDeep * TFocean3d(kinf, iCell) + wShallow * TFocean3d(ksup, iCell)
+                     Sdraft(iCell) = wDeep * Socean3d(kinf, iCell) + wShallow * Socean3d(ksup, iCell)
+                  endif
+               endif
+
+               ! With a constant salinity the interpolated value is discarded.
+               ! The interpolation above is deliberately left alone rather
+               ! than made conditional, so that its four code paths stay
+               ! exactly as they were verified against the protocol's
+               ! reference implementation.
+               if (.not. useDataSalinity) then
+                  Sdraft(iCell) = constSalinity
+               endif
+
+               ! The basin-wide temperature correction is applied wherever the
+               ! thermal forcing appears, as protocol Sect. 4.2.1 prescribes:
+               ! melt rates are calculated using TF_loc + dT_b instead of
+               ! TF_loc.  This matches iceshelf_melt_ismip6.
+               TF_local = TFdraft(iCell) + deltaT(iCell)
+
+               ! Protocol Eq. (1).  Negative floatingBasalMassBal is melting,
+               ! so the sign is flipped relative to the melt rate m.  Melting
+               ! where TF > 0 and refreezing where TF < 0 follows from the
+               ! |TF| TF factor keeping the sign of the local TF.
+               floatingBasalMassBal(iCell) = -1.0_RKIND * coef * Sdraft(iCell) &
+                  * abs(TF_local) * TF_local
+
+            else
+               TFdraft(iCell) = 0.0_RKIND
+               Sdraft(iCell) = 0.0_RKIND
+            endif
+         enddo
+
+         block => block % next
+      enddo   ! associated(block)
+
+    end subroutine iceshelf_melt_ismip7
+!-----------------------------------------------------------------------
+
 
 !-----------------------------------------------------------------------
 
