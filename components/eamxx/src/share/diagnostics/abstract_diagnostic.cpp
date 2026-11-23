@@ -106,27 +106,6 @@ Field& AbstractDiagnostic::add_output (const std::string& name, const FieldLayou
   return add_output(FieldIdentifier(name,layout,units,m_grid->name(),dt));
 }
 
-namespace {
-
-// An id for a field that is stable across aliases (an alias has the id of the field it aliases,
-// whatever its name), and does not confuse relatives: a parent, its subfields and their siblings
-// all differ (e.g., horiz_winds, and its components U and V). A subfield's is its parent's plus
-// its slice. It is not the field identifier, which two different fields may share.
-std::string storage_id (const FieldHeader& h)
-{
-  std::stringstream ss;
-  if (const auto parent = h.get_parent()) {
-    const auto& si = h.get_alloc_properties().get_subview_info();
-    ss << storage_id(*parent) << "[" << si.dim_idx << "," << si.slice_idx << ","
-       << si.slice_idx_end << "," << si.dynamic << "]";
-  } else {
-    ss << static_cast<const void*>(&h.get_alloc_properties());
-  }
-  return ss.str();
-}
-
-} // anonymous namespace
-
 std::string AbstractDiagnostic::hash () const
 {
   std::stringstream ss;
@@ -144,7 +123,11 @@ std::string AbstractDiagnostic::hash () const
         "Error! Cannot hash a diagnostic before all its input fields are set.\n"
         " - diag: " + name() + "\n"
         " - missing input: " + n + "\n");
-    ss << n << "=" << storage_id(it->second.get_header()) << "\n";
+    // Not the field identifier (name, layout, ...), which two different fields may share (e.g., an
+    // alias with the same name in two streams, bound to different fields). The address of the
+    // alloc props is the same for aliases, whatever their names, and different for relatives:
+    // a subfield has its own (e.g., horiz_winds, and its components U and V).
+    ss << n << "=" << static_cast<const void*>(&it->second.get_header().get_alloc_properties()) << "\n";
   }
   return ss.str();
 }

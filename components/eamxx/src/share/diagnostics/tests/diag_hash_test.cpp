@@ -54,10 +54,11 @@ TEST_CASE("diag_hash")
   REQUIRE (hash_of(A2,"times",B)!=h);
 
   // The components of a field (e.g., U and V of horiz_winds) are different fields...
-  REQUIRE (hash_of(uv.get_component(0),"times",B)!=hash_of(uv.get_component(1),"times",B));
-  // ...and the same one is the same, however it was obtained
-  REQUIRE (hash_of(uv.get_component(0),"times",B)==hash_of(uv.get_component(0),"times",B));
-  REQUIRE (hash_of(uv.get_component(0),"times",B)==hash_of(uv.alias("uv2").get_component(0),"times",B));
+  const auto u = uv.get_component(0);
+  REQUIRE (hash_of(u,"times",B)!=hash_of(uv.get_component(1),"times",B));
+  REQUIRE (hash_of(u,"times",B)!=hash_of(uv,"times",B));
+  // ...and an alias of one is the same as it
+  REQUIRE (hash_of(u.alias("another_name"),"times",B)==hash_of(u,"times",B));
 
   // All the inputs must be there
   auto incomplete = make("times");
