@@ -241,6 +241,8 @@ protected:
   std::list<diag_ptr_type> m_diagnostics;
 
   static strmap_t<diag_ptr_type> m_diag_repo;
+  // Diags that read one of this stream's aliases, which other streams may bind differently
+  strmap_t<diag_ptr_type> m_local_diags;
 
   // Field aliasing support
   strmap_t<std::string> m_alias_to_orig; // Map from alias names to original names (used to set io attribute)

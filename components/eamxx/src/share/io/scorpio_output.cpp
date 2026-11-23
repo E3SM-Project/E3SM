@@ -1272,6 +1272,26 @@ process_requested_fields()
     ~RepoGuard () { if (armed) for (const auto& n : added) repo.erase(n); }
   } repo_guard{m_diag_repo,{}};
 
+  // A diag that reads one of this stream's aliases, or such a diag, is local to the stream:
+  // another stream may bind the same alias differently. So it is not shared through m_diag_repo.
+  std::set<std::string> local_diag_names;
+  auto reads_local = [&](const diag_ptr_type& d) {
+    for (const auto& dep : d->get_input_fields_names()) {
+      if (m_alias_to_orig.count(dep)==1 or local_diag_names.count(dep)==1) {
+        return true;
+      }
+    }
+    return false;
+  };
+  auto find_diag = [&](const std::string& n) -> diag_ptr_type {
+    auto local = m_local_diags.find(n);
+    if (local!=m_local_diags.end()) {
+      return local->second;
+    }
+    auto shared = m_diag_repo.find(n);
+    return shared==m_diag_repo.end() ? nullptr : shared->second;
+  };
+
   // The loop below adds aliases and diags to fm_model, so keep the names of the
   // model fields: only those can be shadowed by the output of a diag
   std::set<ekat::CaseInsensitiveString> model_fields;
@@ -1311,12 +1331,27 @@ process_requested_fields()
           remove_these.insert(name);
         }
       } else {
-        // Reuse the diag if another stream built it, else create it.
+        // Reuse the diag if this or another stream built it, else create it.
         // NOTE: cache it only after the checks below
-        auto it = m_diag_repo.find(name);
-        auto diag = it==m_diag_repo.end()
-                  ? create_diagnostic(name,fm_model->get_grid())
-                  : it->second;
+        auto diag = find_diag(name);
+        if (diag!=nullptr and m_local_diags.count(name)==0 and reads_local(diag)) {
+          // Built for other aliases (by another stream), or by this stream, before knowing that it
+          // reads a local diag. Not ours to share: forget the latter, and build one for this stream.
+          for (auto k=repo_guard.added.begin(); k!=repo_guard.added.end();) {
+            if (m_diag_repo.at(*k)==diag) {
+              m_diag_repo.erase(*k);
+              k = repo_guard.added.erase(k);
+            } else {
+              ++k;
+            }
+          }
+          diag = nullptr;
+        }
+        const bool is_new = diag==nullptr;
+        if (is_new) {
+          diag = create_diagnostic(name,fm_model->get_grid());
+        }
+        const bool is_local = m_local_diags.count(name)==1 or reads_local(diag);
 
         // Field names go into the nc file verbatim, and '(qc+qv)*p_mid' is
         // not a usable variable name, so an expression we must WRITE needs one.
@@ -1342,7 +1377,7 @@ process_requested_fields()
           while (m_alias_to_orig.count(src)==1) {
             src = m_alias_to_orig.at(src);
           }
-          EKAT_REQUIRE_MSG (fm_model->has_field(src) and m_diag_repo.count(src)==0,
+          EKAT_REQUIRE_MSG (fm_model->has_field(src) and find_diag(src)==nullptr,
               "Error! shift(time=1) of a diagnostic is not available in an instant stream\n"
               "       that does not write every step.\n"
               " - stream name: " + m_stream_name + "\n"
@@ -1357,7 +1392,7 @@ process_requested_fields()
         // a request of any of them, in any stream, finds the same instance
         const auto& outputs = diag->get_outputs();
         std::vector<std::string> keys;
-        if (it==m_diag_repo.end() and outputs.size()>1) {
+        if (is_new and outputs.size()>1) {
           // Just created: store it under all its outputs
           for (const auto& [key,f] : outputs) {
             const auto& n = f.name();
@@ -1377,13 +1412,18 @@ process_requested_fields()
                 describe(*other->second));
             keys.push_back(n);
           }
-        } else if (it==m_diag_repo.end()) {
+        } else if (is_new) {
           keys = {name};
         }
-        // Only a diag we just created goes in the repo
+        // Only a diag we just created is cached: for this stream if it is local, else for all
         for (const auto& k : keys) {
-          repo_guard.added.push_back(k);
-          m_diag_repo[k] = diag;
+          if (is_local) {
+            m_local_diags[k] = diag;
+            local_diag_names.insert(k);
+          } else {
+            repo_guard.added.push_back(k);
+            m_diag_repo[k] = diag;
+          }
         }
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
@@ -1447,8 +1487,8 @@ process_requested_fields()
     while (m_alias_to_orig.count(src)==1) {
       src = m_alias_to_orig.at(src);
     }
-    auto it = m_diag_repo.find(src);
-    EKAT_REQUIRE_MSG (it==m_diag_repo.end() or it->second->name()!="FieldPrev",
+    auto src_diag = find_diag(src);
+    EKAT_REQUIRE_MSG (src_diag==nullptr or src_diag->name()!="FieldPrev",
         "Error! shift(time=1) of a shift(time=1) is not available.\n"
         " - stream name: " + m_stream_name + "\n"
         " - request: " + diag->get().name() + "\n"

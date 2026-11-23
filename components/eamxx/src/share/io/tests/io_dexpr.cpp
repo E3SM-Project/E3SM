@@ -416,4 +416,98 @@ TEST_CASE ("io_with_expressions")
   scorpio::finalize_subsystem();
 }
 
+TEST_CASE ("io_aliases_are_per_stream")
+{
+  // An alias is local to its stream. Two streams may request the same expression with an alias
+  // of the same name bound differently, and each must get its own.
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  register_diagnostics();
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ncols);
+  gm->build_grids();
+  auto grid = gm->get_grid("point_grid");
+  const auto gname = grid->name();
+  util::TimeStamp t0({2023,1,1},{0,0,0});
+  auto fm = create_test_fm(gm,grid,t0);
+
+  // x reads 'diff' directly, y through the nested (qv*diff). 'z' reads no alias: it is shared.
+  auto p1 = output_params("alias_s1",gname,{"x := qv*diff","y := (qv*diff).mean('lev')","z := qv*T_mid"},{"diff := T_mid*qv"});
+  auto p2 = output_params("alias_s2",gname,{"x := qv*diff","y := (qv*diff).mean('lev')","z := qv*T_mid"},{"diff := T_mid/qv"});
+
+  auto t = t0;
+  {
+    OutputManager om1, om2;
+    om1.initialize(comm,p1,t0,false);
+    om2.initialize(comm,p2,t0,false);
+    om1.setup(fm,gm->get_grid_names());
+    om2.setup(fm,gm->get_grid_names());
+
+    // Only what does not read an alias is shared
+    const auto repo = DiagRepo::names();
+    REQUIRE (repo.count("qv*T_mid")==1);
+    REQUIRE (repo.count("qv*diff")==0);
+    REQUIRE (repo.count("(qv*diff)")==0);
+    REQUIRE (repo.count("(qv*diff).mean('lev')")==0);
+
+    om1.init_timestep(t,1);
+    om2.init_timestep(t,1);
+    t += 1;
+    auto qv    = fm->get_field("qv");
+    auto T_mid = fm->get_field("T_mid");
+    calc_fields(qv,T_mid,1);
+    qv.get_header().get_tracking().update_time_stamp(t);
+    T_mid.get_header().get_tracking().update_time_stamp(t);
+    om1.run(t);
+    om2.run(t);
+    om1.finalize();
+    om2.finalize();
+  }
+
+  const auto layout3d = grid->get_3d_scalar_layout(LEV);
+  const auto layout2d = grid->get_2d_scalar_layout();
+  const int nlocal = grid->get_num_local_dofs();
+  for (const std::string prefix : {"alias_s1","alias_s2"}) {
+    const bool first = prefix=="alias_s1";
+    const auto filename = prefix + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." +
+                          (t0+1).to_string() + ".nc";
+    Field x (FieldIdentifier("x",layout3d,K,gname));
+    Field y (FieldIdentifier("y",layout2d,K,gname));
+    Field z (FieldIdentifier("z",layout3d,K,gname));
+    for (auto* f : {&x,&y,&z}) {
+      f->allocate_view();
+      f->get_header().get_tracking().update_time_stamp(t0);
+    }
+    FieldReader reader;
+    reader.set_file_specs(filename);
+    reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
+    reader.set_fields({x,y,z});
+    reader.read(0);
+    for (auto* f : {&x,&y,&z}) {
+      f->sync_to_host();
+    }
+    auto x_h = x.get_view<const Real**,Host>();
+    auto y_h = y.get_view<const Real*,Host>();
+    auto z_h = z.get_view<const Real**,Host>();
+    for (int i=0; i<nlocal; ++i) {
+      Real y_sum = 0;
+      for (int k=0; k<nlevs; ++k) {
+        const Real qv_v = 1 + i*(k+1);
+        const Real T_v  = 1 - i*(k+1);
+        const Real diff = first ? T_v*qv_v : T_v/qv_v;
+        REQUIRE (x_h(i,k)==Approx(qv_v*diff));
+        REQUIRE (z_h(i,k)==Approx(qv_v*T_v));
+        y_sum += qv_v*diff;
+      }
+      REQUIRE (y_h(i)==Approx(y_sum/nlevs));
+    }
+    reader.clean_up();
+  }
+
+  scorpio::finalize_subsystem();
+}
+
 } // namespace scream
