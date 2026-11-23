@@ -60,6 +60,18 @@ TEST_CASE("diag_hash")
   // ...and an alias of one is the same as it
   REQUIRE (hash_of(u.alias("another_name"),"times",B)==hash_of(u,"times",B));
 
+  // The same field in both operands is one input, listed twice
+  {
+    ekat::ParameterList params("diag");
+    params.set("grid_name", grid->name());
+    params.set<std::string>("arg1","p");
+    params.set<std::string>("arg2","p");
+    params.set<std::string>("binary_op","times");
+    auto sq = factory.create("BinaryOp",comm,params,grid);
+    sq->set_input_field(A.alias("p"));
+    REQUIRE_NOTHROW (sq->hash());
+  }
+
   // All the inputs must be there
   auto incomplete = make("times");
   incomplete->set_input_field(A.alias("p"));
