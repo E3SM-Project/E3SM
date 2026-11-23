@@ -72,6 +72,19 @@ TEST_CASE("diag_hash")
     REQUIRE_NOTHROW (sq->hash());
   }
 
+  // Floating point params that differ in a late digit are different
+  {
+    auto d1 = make("times");
+    auto d2 = make("times");
+    d1->get_params().set<double>("x",1.0000001);
+    d2->get_params().set<double>("x",1.0000002);
+    for (auto d : {d1,d2}) {
+      d->set_input_field(A.alias("p"));
+      d->set_input_field(B.alias("q"));
+    }
+    REQUIRE (d1->hash()!=d2->hash());
+  }
+
   // A param that cannot be printed could hide a difference: refuse it
   {
     auto odd = make("times");

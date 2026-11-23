@@ -5,6 +5,7 @@
 #include <ekat_std_utils.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <sstream>
 
 namespace scream
@@ -112,10 +113,12 @@ std::string AbstractDiagnostic::hash () const
 
   // The first line printed is the name of the list
   std::stringstream params;
+  // The default precision cannot tell apart two floating point params that are close
+  params.precision(std::numeric_limits<double>::max_digits10);
   m_params.print(params);
   const auto str = params.str();
-  // NOTE: print shows only some types, and floating point with a few digits. Equal prints must
-  //       not hide different params, so refuse a diag with a param that print cannot show
+  // NOTE: print shows only some types. Equal prints must not hide different params,
+  //       so refuse a diag with a param that print cannot show
   EKAT_REQUIRE_MSG (str.find("Cannot print type")==std::string::npos,
       "Error! Cannot hash a diagnostic with a parameter that cannot be printed.\n"
       " - diag: " + name() + "\n" + str);
