@@ -27,9 +27,8 @@ void AbstractDiagnostic::initialize ()
       "Error! Diagnostic was already initialized.\n"
       " - diag class: " + name() + "\n");
 
-  // A diag with several outputs declares them all in its constructor, since output
-  // streams store it under all its output names before initializing it (see the
-  // class documentation in the header)
+  // A diag with several outputs declares them all in its constructor, so that
+  // its outputs are known right after construction (see the class documentation)
   const auto num_ctor_outputs = m_outputs.size();
 
   initialize_impl();
@@ -115,6 +114,11 @@ std::string AbstractDiagnostic::hash () const
   std::stringstream params;
   m_params.print(params);
   const auto str = params.str();
+  // NOTE: print shows only some types, and floating point with a few digits. Equal prints must
+  //       not hide different params, so refuse a diag with a param that print cannot show
+  EKAT_REQUIRE_MSG (str.find("Cannot print type")==std::string::npos,
+      "Error! Cannot hash a diagnostic with a parameter that cannot be printed.\n"
+      " - diag: " + name() + "\n" + str);
   ss << str.substr(str.find('\n')+1);
 
   for (const auto& n : m_field_in_names) {

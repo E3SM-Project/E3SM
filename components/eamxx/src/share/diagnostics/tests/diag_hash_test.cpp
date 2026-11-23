@@ -72,6 +72,15 @@ TEST_CASE("diag_hash")
     REQUIRE_NOTHROW (sq->hash());
   }
 
+  // A param that cannot be printed could hide a difference: refuse it
+  {
+    auto odd = make("times");
+    odd->get_params().set<std::size_t>("odd",3);
+    odd->set_input_field(A.alias("p"));
+    odd->set_input_field(B.alias("q"));
+    REQUIRE_THROWS_WITH (odd->hash(), Catch::Contains("cannot be printed"));
+  }
+
   // All the inputs must be there
   auto incomplete = make("times");
   incomplete->set_input_field(A.alias("p"));

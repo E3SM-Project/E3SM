@@ -1304,11 +1304,11 @@ process_requested_fields()
         // Create the diag, unless we did already (and were waiting for its deps).
         // NOTE: we can only tell if another stream built an equivalent one once its
         //       inputs are known: that is below, when all deps are in the FM.
-        auto& pending_diag = pending[name];
-        if (pending_diag==nullptr) {
-          pending_diag = create_diagnostic(name,fm_model->get_grid());
+        auto diag = pending[name];
+        if (diag==nullptr) {
+          diag = create_diagnostic(name,fm_model->get_grid());
+          pending[name] = diag;
         }
-        auto diag = pending_diag;
 
         // Field names go into the nc file verbatim, and '(qc+qv)*p_mid' is
         // not a usable variable name, so an expression we must WRITE needs one.
