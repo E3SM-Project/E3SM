@@ -1909,7 +1909,8 @@ void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* s
       const auto a_diss_s   = ekat::subview(a_diss_d ,i);
       const bool do_3d_turb = false;
 
-      SHF::adv_sgs_tke(team, nlev, dtime, shoc_1p5tke, do_3d_turb,
+      constexpr Real Ck_sh = 0.1;
+      SHF::adv_sgs_tke(team, nlev, dtime, Ck_sh, shoc_1p5tke, do_3d_turb,
                        shoc_mix_s, wthv_sec_s, sterm_zt_s, tk_s, brunt_s,
                        shear_strain3d_s, tke_s, a_diss_s);
     });
@@ -2058,7 +2059,8 @@ void compute_shr_prod_host(Int nlevi, Int nlev, Int shcol, Real* dz_zi, Real* u_
       //output
       const auto sterm_s  = ekat::subview(sterm_d ,i);
 
-      SHF::compute_shr_prod(team, nlevi, nlev, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
+      constexpr Real Ck_sh = 0.1;
+      SHF::compute_shr_prod(team, nlevi, nlev, Ck_sh, dz_zi_s, u_wind_s, v_wind_s, sterm_s);
     });
 
   // Sync back to host
@@ -3185,10 +3187,11 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
     const Real lambda_thresh = 0.02;
     const Real Ckh           = 0.1;
     const Real Ckm           = 0.1;
+    const Real Ck_sh         = 0.1;
     const bool do_3d_turb    = false;
     
     SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
-                  Ckh, Ckm, shoc_1p5tke, do_3d_turb,
+                  Ckh, Ckm, Ck_sh, shoc_1p5tke, do_3d_turb,
 		  wthv_sec_s,shear_strain3d_components_s,shear_strain3d_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,w_field_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,

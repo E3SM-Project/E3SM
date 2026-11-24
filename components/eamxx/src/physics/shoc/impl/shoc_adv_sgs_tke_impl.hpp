@@ -18,6 +18,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Real&                  dtime,
+  const Scalar&                Ck_sh,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const uview_1d<const Pack>& shoc_mix,
@@ -63,7 +64,7 @@ void Functions<S,D>
 
     // Shear production term, use diffusivity from previous timestep
     if (do_3d_turb){
-      a_prod_sh = Ck*tk(k)*shear_strain3d(k);
+      a_prod_sh = Ck_sh*tk(k)*shear_strain3d(k);
     }
     else{
       a_prod_sh = tk(k)*sterm_zt(k);

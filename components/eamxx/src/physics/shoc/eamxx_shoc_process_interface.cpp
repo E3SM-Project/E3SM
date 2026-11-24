@@ -285,6 +285,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
+  runtime_options.Ck_sh         = m_params.get<double>("coeff_k_sh", 0.1);
   runtime_options.Ckh_horiz     = m_params.get<double>("coeff_kh_horiz",0.1);
   runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz",0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
