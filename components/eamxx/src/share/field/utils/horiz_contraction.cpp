@@ -1,5 +1,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_visit.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_team_policy_utils.hpp>
@@ -8,93 +9,101 @@ namespace scream {
 
 namespace impl {
 
-template <typename ST>
-void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weight)
+// The mask is read with a LayoutRight view if it allows it (LRMask=true), and with a strided one otherwise
+// (e.g., if it is a broadcast of a smaller mask)
+
+// Rank-1 input: contract into a scalar
+template <typename ST, bool LRMask>
+void horiz_contraction_rank1(const Field &f_out, const Field &f_in, const Field &weight)
+{
+  const int ncols = f_in.get_header().get_identifier().get_layout().dim(0);
+
+  auto v_w   = weight.get_view<const ST *>();
+  auto v_in  = f_in.get_view<const ST *>();
+  auto v_out = f_out.get_view<ST>();
+
+  const bool is_masked = f_in.has_valid_mask();
+  auto mask = is_masked ? details::get_valid_mask_view<1,LRMask>(f_in)
+                        : details::valid_mask_view_t<1,LRMask>{};
+
+  ST n = 0;
+  auto policy = Kokkos::RangePolicy<Field::device_t::execution_space>(0,ncols);
+  auto reducer = Kokkos::Sum<ST>(n);
+  auto accum = KOKKOS_LAMBDA(const int i, ST &acc) {
+    if (not is_masked or mask(i))
+      acc += v_w(i) * v_in(i);
+  };
+  Kokkos::parallel_reduce(f_out.name(), policy, accum, reducer);
+  Kokkos::deep_copy(v_out, n);
+}
+
+// Rank-N input (N>=2): one team per entry of the output, reducing over the columns
+template <typename ST, int N, bool LRMask>
+void horiz_contraction_nd(const Field &f_out, const Field &f_in, const Field &weight)
 {
   using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember  = typename TeamPolicy::member_type;
   using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
-  auto l_in  = f_in.get_header().get_identifier().get_layout();
-
-  auto v_w = weight.get_view<const ST *>();
-
+  const auto& l_in = f_in.get_header().get_identifier().get_layout();
   const int ncols = l_in.dim(0);
 
-  bool is_masked = f_in.has_valid_mask();
-
-  switch(l_in.rank()) {
-    case 1: {
-      using mask_t = Field::strided_view_dev_t<const int*>;
-
-      auto v_in  = f_in.get_view<const ST *>();
-      auto v_out = f_out.get_view<ST>();
-      auto mask  = is_masked ? f_in.get_valid_mask().get_strided_view<const int*>() : mask_t{};
-
-      ST n = 0;
-      auto policy = Kokkos::RangePolicy<Field::device_t::execution_space>(0,ncols);
-      auto reducer = Kokkos::Sum<ST>(n);
-      auto accum = KOKKOS_LAMBDA(const int i, ST &acc) {
-        if (not is_masked or mask(i))
-          acc += v_w(i) * v_in(i);
-      };
-      Kokkos::parallel_reduce(f_out.name(), policy, accum, reducer);
-      Kokkos::deep_copy(v_out, n);
-    } break;
-    case 2: {
-      using mask_t = Field::strided_view_dev_t<const int**>;
-
-      auto v_in   = f_in.get_view<const ST **>();
-      auto v_out  = f_out.get_view<ST *>();
-      auto d1     = l_in.dim(1);
-
-      auto mask  = is_masked ? f_in.get_valid_mask().get_strided_view<const int**>() : mask_t{};
-      auto policy = TPF::get_default_team_policy(d1, ncols);
-      auto outer =  KOKKOS_LAMBDA(const TeamMember &tm) {
-        const int j = tm.league_rank();
-        ST n = 0;
-        auto inner = [&](int i, ST &acc) {
-          if (not is_masked or mask(i,j)) {
-            acc += v_w(i) * v_in(i, j);
-          }
-        };
-        auto tvr = Kokkos::TeamVectorRange(tm, ncols);
-
-        Kokkos::parallel_reduce(tvr, inner, Kokkos::Sum<ST>(n));
-        v_out(j) = n;
-      };
-      Kokkos::parallel_for(f_out.name(), policy, outer);
-    } break;
-    case 3: {
-      using mask_t = Field::strided_view_dev_t<const int***>;
-
-      auto v_in   = f_in.get_view<const ST ***>();
-      auto v_out  = f_out.get_view<ST **>();
-      auto d1     = l_in.dim(1);
-      auto d2     = l_in.dim(2);
-
-      auto mask  = is_masked ? f_in.get_valid_mask().get_strided_view<const int***>() : mask_t{};
-      auto policy = TPF::get_default_team_policy(d1*d2, ncols);
-      auto outer =  KOKKOS_LAMBDA(const TeamMember &tm) {
-        const int idx = tm.league_rank();
-        const int j   = idx / d2;
-        const int k   = idx % d2;
-        ST n = 0;
-        auto inner = [&](int i, ST &acc) {
-          if (not is_masked or mask(i,j,k)) {
-            acc += v_w(i) * v_in(i, j, k);
-          }
-        };
-        auto tvr = Kokkos::TeamVectorRange(tm, ncols);
-
-        Kokkos::parallel_reduce(tvr, inner, Kokkos::Sum<ST>(n));
-        v_out(j,k) = n;
-      };
-      Kokkos::parallel_for(f_out.name(), policy, outer);
-    } break;
-    default:
-      EKAT_ERROR_MSG("Error! Unsupported field rank in horiz_contraction.\n");
+  // The extents of the output, and its size
+  Kokkos::Array<int,N-1> out_dims;
+  int out_size = 1;
+  for (int k=0; k<N-1; ++k) {
+    out_dims[k] = l_in.dim(k+1);
+    out_size *= out_dims[k];
   }
+
+  auto v_w   = weight.get_view<const ST *>();
+  auto v_in  = f_in.get_view<Field::data_nd_t<const ST,N>>();
+  auto v_out = f_out.get_view<Field::data_nd_t<ST,N-1>>();
+
+  const bool is_masked = f_in.has_valid_mask();
+  auto mask = is_masked ? details::get_valid_mask_view<N,LRMask>(f_in)
+                        : details::valid_mask_view_t<N,LRMask>{};
+
+  auto policy = TPF::get_default_team_policy(out_size, ncols);
+  auto outer =  KOKKOS_LAMBDA(const TeamMember &tm) {
+    const auto j = details::unravel<N-1>(tm.league_rank(), out_dims);
+    ST n = 0;
+    auto inner = [&](int i, ST &acc) {
+      // The index (i,j...) in the input
+      Kokkos::Array<int,N> idx;
+      idx[0] = i;
+      for (int k=0; k<N-1; ++k)
+        idx[k+1] = j[k];
+      if (not is_masked or details::at(mask,idx)) {
+        acc += v_w(i) * details::at(v_in,idx);
+      }
+    };
+    auto tvr = Kokkos::TeamVectorRange(tm, ncols);
+
+    Kokkos::parallel_reduce(tvr, inner, Kokkos::Sum<ST>(n));
+    details::at(v_out,j) = n;
+  };
+  Kokkos::parallel_for(f_out.name(), policy, outer);
+}
+
+template <typename ST>
+void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weight)
+{
+  const bool lr_mask = details::valid_mask_is_contiguous(f_in);
+
+  details::dispatch_on_rank(f_in.get_header().get_identifier().get_layout().rank(),
+    [&](auto rank_c) {
+      constexpr int N = decltype(rank_c)::value;
+      if constexpr (N==1) {
+        lr_mask ? horiz_contraction_rank1<ST,true> (f_out,f_in,weight)
+                : horiz_contraction_rank1<ST,false>(f_out,f_in,weight);
+      } else if constexpr (N>=2 and N<=3) {
+        lr_mask ? horiz_contraction_nd<ST,N,true> (f_out,f_in,weight)
+                : horiz_contraction_nd<ST,N,false>(f_out,f_in,weight);
+      } else {
+        EKAT_ERROR_MSG("Error! Unsupported field rank in horiz_contraction.\n");
+      }
+    });
 }
 
 } // namespace impl

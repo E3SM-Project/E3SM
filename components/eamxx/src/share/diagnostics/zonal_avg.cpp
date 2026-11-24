@@ -1,11 +1,81 @@
 #include "zonal_avg.hpp"
 
 #include "share/field/field_utils.hpp"
+#include "share/field/field_visit.hpp"
 
 #include <ekat_math_utils.hpp>
 #include <ekat_team_policy_utils.hpp>
 
 namespace scream {
+
+namespace {
+
+// The kernel, for a field and a result of rank N (N>=1). The mask is read with a LayoutRight view
+// if it allows it (LRMask=true), and with a strided one otherwise (e.g., if it is a broadcast of a smaller mask)
+template<int N, bool LRMask>
+void compute_zonal_sum_impl (const Field &result, const Field &field, const Field &weight,
+                             const Field &bin_to_cols)
+{
+  using KT         = ekat::KokkosTypes<DefaultDevice>;
+  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
+  using TeamMember = typename TeamPolicy::member_type;
+  using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
+
+  const auto& result_layout = result.get_header().get_identifier().get_layout();
+  const auto& bin_to_cols_layout = bin_to_cols.get_header().get_identifier().get_layout();
+  const int num_zonal_bins = bin_to_cols_layout.dim(0);
+  const int max_ncols_per_bin = bin_to_cols_layout.dim(1);
+
+  auto weight_view       = weight.get_view<const Real *>();
+  auto bin_to_cols_view  = bin_to_cols.get_view<const Int **>();
+  auto field_view        = field.get_view<Field::data_nd_t<const Real,N>>();
+  auto result_view       = result.get_view<Field::data_nd_t<Real,N>>();
+
+  const bool masked = field.has_valid_mask();
+  auto mask_view = masked ? details::get_valid_mask_view<N,LRMask>(field)
+                          : details::valid_mask_view_t<N,LRMask>{};
+
+  // One team per entry of the result. The team index is unraveled in (d1,...,d_{N-1},bin),
+  // with the bin as the fastest index
+  Kokkos::Array<int,N> team_dims;
+  int num_teams = 1;
+  for (int k=1; k<N; ++k) {
+    team_dims[k-1] = result_layout.dim(k);
+    num_teams *= team_dims[k-1];
+  }
+  team_dims[N-1] = num_zonal_bins;
+  num_teams *= num_zonal_bins;
+
+  TeamPolicy team_policy = TPF::get_default_team_policy(num_teams, max_ncols_per_bin);
+  Kokkos::parallel_for(
+      "compute_zonal_sum_" + field.name(), team_policy,
+      KOKKOS_LAMBDA(const TeamMember &tm) {
+        const auto team_idx = details::unravel<N>(tm.league_rank(), team_dims);
+        const int bin_i = team_idx[N-1];
+
+        // The index in the result (bin,d1,...,d_{N-1})
+        Kokkos::Array<int,N> res_idx;
+        res_idx[0] = bin_i;
+        for (int k=1; k<N; ++k)
+          res_idx[k] = team_idx[k-1];
+
+        Kokkos::parallel_reduce(
+            Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
+            [&](int lcol_j, Real &val) {
+              const int col_i = bin_to_cols_view(bin_i, lcol_j);
+              // The index in the field (col,d1,...,d_{N-1})
+              Kokkos::Array<int,N> idx;
+              idx[0] = col_i;
+              for (int k=1; k<N; ++k)
+                idx[k] = team_idx[k-1];
+              if (not masked or details::at(mask_view,idx)!=0)
+                val += weight_view(col_i) * details::at(field_view,idx);
+            },
+            details::at(result_view,res_idx));
+      });
+}
+
+} // anonymous namespace
 
 // Utility to compute the contraction of a field along its column dimension.
 // This is equivalent to f_out = einsum('i,i...k->...k', weight, f_in).
@@ -19,90 +89,17 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
                        const Field &bin_to_cols, const ekat::Comm *comm)
 {
   auto result_layout = result.get_header().get_identifier().get_layout();
-  auto bin_to_cols_layout = bin_to_cols.get_header().get_identifier().get_layout();
-  const int num_zonal_bins = bin_to_cols_layout.dim(0);
-  const int max_ncols_per_bin = bin_to_cols_layout.dim(1);
 
-  auto weight_view = weight.get_view<const Real *>();
-  auto bin_to_cols_view = bin_to_cols.get_view<const Int **>();
-  using KT         = ekat::KokkosTypes<DefaultDevice>;
-  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
-  using TeamMember = typename TeamPolicy::member_type;
-  using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
-  using cmask1d_t = Field::strided_view_dev_t<const int*>;
-  using cmask2d_t = Field::strided_view_dev_t<const int**>;
-  using cmask3d_t = Field::strided_view_dev_t<const int***>;
-
-  bool masked = field.has_valid_mask();
-  switch (result_layout.rank()) {
-  case 1: {
-    auto field_view        = field.get_view<const Real *>();
-    auto result_view       = result.get_view<Real *>();
-    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins, max_ncols_per_bin);
-    auto mask_view = masked ? field.get_valid_mask().get_strided_view<const int*>() : cmask1d_t{};
-    Kokkos::parallel_for(
-        "compute_zonal_sum_" + field.name(), team_policy,
-        KOKKOS_LAMBDA(const TeamMember &tm) {
-          const int bin_i = tm.league_rank();
-          Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
-              [&](int lcol_j, Real &val) {
-                const int col_i = bin_to_cols_view(bin_i, lcol_j);
-                if (not masked or mask_view(col_i)!=0)
-                  val += weight_view(col_i) * field_view(col_i);
-              },
-              result_view(bin_i));
-        });
-  } break;
-  case 2: {
-    const int d1           = result_layout.dim(1);
-    auto field_view        = field.get_view<const Real **>();
-    auto result_view       = result.get_view<Real **>();
-    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1, max_ncols_per_bin);
-    auto mask_view = masked ? field.get_valid_mask().get_strided_view<const int**>() : cmask2d_t{};
-    Kokkos::parallel_for(
-        "compute_zonal_sum_" + field.name(), team_policy,
-        KOKKOS_LAMBDA(const TeamMember &tm) {
-          const int idx        = tm.league_rank();
-          const int d1_i       = idx / num_zonal_bins;
-          const int bin_i      = idx % num_zonal_bins;
-          Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
-              [&](int lcol_j, Real &val) {
-                const int col_i = bin_to_cols_view(bin_i, lcol_j);
-                if (not masked or mask_view(col_i,d1_i)!=0)
-                  val += weight_view(col_i) * field_view(col_i, d1_i);
-              },
-              result_view(bin_i, d1_i));
-        });
-  } break;
-  case 3: {
-    const int d1           = result_layout.dim(1);
-    const int d2           = result_layout.dim(2);
-    auto field_view        = field.get_view<const Real ***>();
-    auto result_view       = result.get_view<Real ***>();
-    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1 * d2, max_ncols_per_bin);
-    auto mask_view = masked ? field.get_valid_mask().get_strided_view<const int***>() : cmask3d_t{};
-    Kokkos::parallel_for(
-        "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
-          const int idx        = tm.league_rank();
-          const int d1_i       = idx / (num_zonal_bins * d2);
-          const int idx2       = idx % (num_zonal_bins * d2);
-          const int d2_i       = idx2 / num_zonal_bins;
-          const int bin_i      = idx2 % num_zonal_bins;
-          Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
-              [&](int lcol_j, Real &val) {
-                const int col_i = bin_to_cols_view(bin_i, lcol_j);
-                if (not masked or mask_view(col_i,d1_i, d2_i)!=0)
-                  val += weight_view(col_i) * field_view(col_i, d1_i, d2_i);
-              },
-              result_view(bin_i, d1_i, d2_i));
-        });
-  } break;
-  default:
-    EKAT_ERROR_MSG("Error! Unsupported field rank for zonal averages.\n");
-  }
+  const bool lr_mask = details::valid_mask_is_contiguous(field);
+  details::dispatch_on_rank(result_layout.rank(), [&](auto rank_c) {
+    constexpr int N = decltype(rank_c)::value;
+    if constexpr (N>=1 and N<=3) {
+      lr_mask ? compute_zonal_sum_impl<N,true> (result,field,weight,bin_to_cols)
+              : compute_zonal_sum_impl<N,false>(result,field,weight,bin_to_cols);
+    } else {
+      EKAT_ERROR_MSG("Error! Unsupported field rank for zonal averages.\n");
+    }
+  });
 
   if (comm) {
     // TODO: use device-side MPI calls
