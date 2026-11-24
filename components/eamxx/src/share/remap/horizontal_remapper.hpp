@@ -1,7 +1,7 @@
 #ifndef SCREAM_HORIZONTAL_REMAPPER_HPP
 #define SCREAM_HORIZONTAL_REMAPPER_HPP
 
-#include "share/remap/abstract_remapper.hpp"
+#include "share/remap/mpi_remapper.hpp"
 #include "share/remap/horiz_interp_remapper_data.hpp"
 
 #include <mpi.h>
@@ -44,7 +44,7 @@ class GridImportExport;
  * for these fields, so to not increase memory pressure.
  */
 
-class HorizontalRemapper : public AbstractRemapper
+class HorizontalRemapper : public MpiRemapper
 {
 public:
 
@@ -116,42 +116,14 @@ protected:
 
   // ------- MPI-related data structures -------- //
 
-  // Offset of each field when we splice together one col of each.
-  std::vector<int> m_field_offset;
-
-  static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
-
-  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
-  using KT = KokkosTypes<DefaultDevice>;
-
-  template<typename T>
-  using view_1d = typename KT::template view_1d<T>;
-  template<typename T>
-  using hview_1d = typename view_1d<T>::host_mirror_type;
-
   template<typename T>
   using view_2d = typename KT::template view_2d<T>;
-
-  template<typename T>
-  using mpi_view_1d = std::conditional_t<MpiOnDev,view_1d<T>,hview_1d<T>>;
-
-  // The send/recv buffers for pack/unpack operations
-  view_1d<Real> m_send_buffer;
-  view_1d<Real> m_recv_buffer;
-
-  // The send/recv buf to feed to MPI (alis the above two if MpiOnDev=true)
-  mpi_view_1d<Real> m_mpi_send_buffer;
-  mpi_view_1d<Real> m_mpi_recv_buffer;
 
   // For coarsening, the MPI operation is a reduction, so we cannot let
   // different threads accummulate onto the same col. Hence, we group all
   // our imports by tgt col lid, and ensure 2 threads act on different cols.
   view_1d<int> m_export_idxs_sorted_by_lid;
   view_1d<int> m_export_lids_offsets;
-
-  // Send/recv persistent requests
-  std::vector<MPI_Request>  m_send_req;
-  std::vector<MPI_Request>  m_recv_req;
 
   // Keep track of all src/tgt int/real mask fields (only if m_track_mask=true)
   std::map<std::string,Field> m_name_to_src_int_mask;
