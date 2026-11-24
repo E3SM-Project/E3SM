@@ -170,6 +170,22 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
       }
     }
 
+    // Regression test for the 1.5-TKE buoyancy-production closure. Its
+    // magnitude must be controlled by heat diffusivity, not by TKE itself.
+    Real tkh_1p5tke[shcol] = {1.0, 2.0};
+    for (Int s = 0; s < shcol; ++s) {
+      const auto offset = s * nlev;
+      SDS.shoc_mix[offset] = 1.e6;
+      SDS.wthv_sec[offset] = 0;
+      SDS.sterm_zt[offset] = 0;
+      SDS.brunt[offset] = -1.e-3;
+      SDS.tke[offset] = 0.1;
+      SDS.tk[offset] = 1.0;
+    }
+    SDS.shoc_1p5tke = true;
+    adv_sgs_tke(SDS, tkh_1p5tke);
+    REQUIRE(SDS.tke[0] < SDS.tke[1]);
+
     // SECOND TEST
     // TKE Dissipation test.  Given input values that are identical
     //  in two columns, verify that the dissipation rate is higher

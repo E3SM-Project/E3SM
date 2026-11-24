@@ -548,7 +548,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   static void adv_sgs_tke(const MemberType &team, const Int &nlev, const Real &dtime,
                           const bool &shoc_1p5tke, const bool &do_3d_turb,
                           const uview_1d<const Pack> &shoc_mix, const uview_1d<const Pack> &wthv_sec,
-                          const uview_1d<const Pack> &sterm_zt, const uview_1d<const Pack> &tk,
+                          const uview_1d<const Pack> &sterm_zt, const uview_1d<const Pack> &tkh,
+                          const uview_1d<const Pack> &tk,
                           const uview_1d<const Pack> &brunt, const uview_1d<const Pack> &shear_strain3d,
                           const uview_1d<Pack> &tke, const uview_1d<Pack> &a_diss);
 
