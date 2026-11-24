@@ -1,5 +1,6 @@
 add_library(eamxx_remap
   abstract_remapper.cpp
+  mpi_remapper.cpp
   horiz_interp_remapper_data.cpp
   horizontal_remapper.cpp
   iop_remapper.cpp

@@ -276,16 +276,9 @@ void HorizontalRemapper::create_ov_fields ()
 
 void HorizontalRemapper::remap_fwd_impl ()
 {
-  const auto& comm = m_src_grid->get_comm();
-
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
-  if (not m_recv_req.empty()) {
-    int ierr = MPI_Startall(m_recv_req.size(),m_recv_req.data());
-    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
-        "Error! Something went wrong while starting persistent recv requests.\n"
-        "  - recv rank: " + std::to_string(comm.rank()) + "\n");
-  }
+  start_recvs();
 
   // TODO: Add check that if there are mask values they are either 1's or 0's for unmasked/masked.
 
@@ -347,12 +340,7 @@ void HorizontalRemapper::remap_fwd_impl ()
   }
 
   // Wait for all sends to be completed
-  if (not m_send_req.empty()) {
-    int ierr = MPI_Waitall(m_send_req.size(),m_send_req.data(), MPI_STATUSES_IGNORE);
-    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
-        "Error! Something went wrong while waiting on persistent send requests.\n"
-        "  - send rank: " + std::to_string(comm.rank()) + "\n");
-  }
+  wait_sends();
 
   // Rescale any fields that had the mask applied, and compute tgt field mask by comparing tgt_mask_real against threshold
   if (m_track_mask) {
@@ -781,13 +769,12 @@ void HorizontalRemapper::pack_and_send ()
 
   bool coarsen = m_remap_data->m_coarsening;
 
-  auto imp_exp = m_remap_data->m_imp_exp;
-  auto pids = coarsen ? imp_exp->import_pids() : imp_exp->export_pids();
-  auto lids = coarsen ? imp_exp->import_lids() : imp_exp->export_lids();
-  auto pids_send_offsets = coarsen ? imp_exp->import_pid_offsets() : imp_exp->export_pid_offsets();
+  auto pids = send_pids();
+  auto lids = send_lids();
+  auto pids_send_offsets = send_offsets();
   auto send_buf = m_send_buffer;
   const int num_iters = pids.size();
-  const int total_col_size = m_field_offset.back();
+  const int total_col_size = this->total_col_size();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll simply deep copy src->tgt
@@ -795,7 +782,7 @@ void HorizontalRemapper::pack_and_send ()
 
     const auto& f = coarsen ? m_ov_fields[ifield] : m_src_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto field_offset = m_field_offset[ifield];
+    const auto field_offset = field_col_offset(ifield);
     switch (fl.rank()) {
       case 1: 
       { 
@@ -907,36 +894,22 @@ void HorizontalRemapper::pack_and_send ()
   // Ensure all threads are done packing before firing off the sends
   Kokkos::fence();
 
-  // If MPI does not use dev pointers, we need to deep copy from dev to host
-  if (not MpiOnDev) {
-    Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
-  }
+  copy_send_to_mpi();
 
   if (m_timers_enabled)
     stop_timer(name()+" pack");
 
-  if (not m_send_req.empty()) {
-    int ierr = MPI_Startall(m_send_req.size(),m_send_req.data());
-    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
-        "Error! Something went wrong while starting persistent send requests.\n"
-        "  - send rank: " + std::to_string(m_src_grid->get_comm().rank()) + "\n");
-  }
+  start_sends();
 }
 
 void HorizontalRemapper::recv_and_unpack ()
 {
-  if (not m_recv_req.empty()) {
-    check_mpi_call(MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE),
-                   "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
-  }
+  wait_recvs();
 
   if (m_timers_enabled)
     start_timer(name()+" unpack");
 
-  // If MPI does not use dev pointers, we need to deep copy from host to dev
-  if (not MpiOnDev) {
-    Kokkos::deep_copy (m_recv_buffer,m_mpi_recv_buffer);
-  }
+  copy_recv_from_mpi();
 
   if (m_remap_data->m_coarsening) {
     recv_and_unpack_coarsen();
@@ -951,15 +924,13 @@ void HorizontalRemapper::recv_and_unpack_coarsen ()
   using TeamMember  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  auto imp_exp = m_remap_data->m_imp_exp;
-
   auto export_idxs = m_export_idxs_sorted_by_lid;
   auto lids_offsets = m_export_lids_offsets;
-  auto pids = imp_exp->export_pids();
-  auto pids_offsets = imp_exp->export_pid_offsets();
+  auto pids = recv_pids();
+  auto pids_offsets = recv_offsets();
   auto recv_buf = m_recv_buffer;
   const int num_tgt_cols = m_tgt_grid->get_num_local_dofs();
-  const int total_col_size = m_field_offset.back();
+  const int total_col_size = this->total_col_size();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll simply deep copy src->tgt
@@ -967,7 +938,7 @@ void HorizontalRemapper::recv_and_unpack_coarsen ()
 
           auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto field_offset = m_field_offset[ifield];
+    const auto field_offset = field_col_offset(ifield);
 
     // We accummulate contributions, so init to 0
     f.deep_copy(0);
@@ -1106,14 +1077,12 @@ void HorizontalRemapper::recv_and_unpack_refine ()
   using TeamMember  = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  auto imp_exp = m_remap_data->m_imp_exp;
-
-  auto pids = imp_exp->import_pids();
-  auto lids = imp_exp->import_lids();
-  auto pids_offsets = imp_exp->import_pid_offsets();
+  auto pids = recv_pids();
+  auto lids = recv_lids();
+  auto pids_offsets = recv_offsets();
   auto recv_buf = m_recv_buffer;
   const int num_iters = pids.size();
-  const int total_col_size = m_field_offset.back();
+  const int total_col_size = this->total_col_size();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll simply deep copy src->tgt
@@ -1121,7 +1090,7 @@ void HorizontalRemapper::recv_and_unpack_refine ()
 
           auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto field_offset = m_field_offset[ifield];
+    const auto field_offset = field_col_offset(ifield);
 
     switch (fl.rank()) {
       case 1:
@@ -1239,77 +1208,14 @@ void HorizontalRemapper::setup_mpi_data_structures ()
   if (m_timers_enabled)
     start_timer(name()+" setup MPI");
 
-  using namespace ShortFieldTagsNames;
-
-  const int nranks = m_src_grid->get_comm().size();
   const bool coarsen = m_remap_data->m_coarsening;
 
-  // Compute offset of each field when we splice together a col for each
-  m_field_offset.resize(m_num_fields+1,0);
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f = m_src_fields[i];
-    const auto& fl = f.get_header().get_identifier().get_layout();
-
-    // Fields without COL tag are nor remapped, so consider their col size as 0
-    auto col_size = m_needs_remap[i] ? fl.clone().strip_dim(COL).size() : 0;
-    m_field_offset[i+1] = m_field_offset[i] + col_size;
-  }
-  auto total_col_size = m_field_offset.back();
-
-  if (total_col_size==0) {
-    // None of the registered fields actually needs remapping
-    return;
-  }
-
-  auto ov_grid = m_remap_data->m_overlap_grid;
-  const int ncols_ov = ov_grid->get_num_local_dofs();
+  // Create the buffers and the persistent requests. For coarsening, we send the overlap
+  // grid cols to the owners. For refining, the owners send the cols to whoever needs them.
   auto imp_exp = m_remap_data->m_imp_exp;
+  setup_mpi(imp_exp,coarsen ? CommDirection::OverlapToUnique : CommDirection::UniqueToOverlap);
 
-  // ----------- Create send/recv buffers -------------- //
-
-  // Create the recv buffer(s)
-  auto recv_buf_size = coarsen ? imp_exp->num_exports()*total_col_size
-                               : ncols_ov*total_col_size;
-  m_recv_buffer = decltype(m_recv_buffer)("HorizontalRemapper::recv_buf",recv_buf_size);
-  m_mpi_recv_buffer = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
-  
-  // Create the send buffer(s)
-  auto send_buf_size = coarsen ? ncols_ov*total_col_size
-                               : imp_exp->num_exports()*total_col_size;
-  m_send_buffer = decltype(m_send_buffer)("HorizontalRemapper::send_buf",send_buf_size);
-  m_mpi_send_buffer = Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(),m_send_buffer);
-
-  // ----------- Create Requests ------------ //
-
-  auto pids_recv_offsets_h = coarsen ? imp_exp->export_pid_offsets_h()
-                                     : imp_exp->import_pid_offsets_h();
-  auto pids_send_offsets_h = coarsen ? imp_exp->import_pid_offsets_h()
-                                     : imp_exp->export_pid_offsets_h();
-  
-  const auto mpi_comm = m_src_grid->get_comm().mpi_comm();
-  const auto mpi_real  = ekat::get_mpi_type<Real>();
-  for (int pid=0; pid<nranks; ++pid) {
-    // Send request
-    int ncols_send = pids_send_offsets_h(pid+1)-pids_send_offsets_h(pid);
-    if (ncols_send>0) {
-      auto send_ptr = m_mpi_send_buffer.data() + pids_send_offsets_h(pid)*total_col_size;
-      auto send_count = ncols_send*total_col_size;
-      auto& req = m_send_req.emplace_back();
-      MPI_Send_init (send_ptr, send_count, mpi_real, pid,
-                     0, mpi_comm, &req);
-    }
-    // Recv request
-    int ncols_recv = pids_recv_offsets_h(pid+1)-pids_recv_offsets_h(pid);
-    if (ncols_recv>0) {
-      auto recv_ptr = m_mpi_recv_buffer.data() + pids_recv_offsets_h(pid)*total_col_size;
-      auto recv_count = ncols_recv*total_col_size;
-      auto& req = m_recv_req.emplace_back();
-      MPI_Recv_init (recv_ptr, recv_count, mpi_real, pid,
-                     0, mpi_comm, &req);
-    }
-  }
-
-  if (m_remap_data->m_coarsening) {
+  if (coarsen and total_col_size()>0) {
     // Setup additional views needed for "reduce" unpack operations
     int num_tgt_lids = m_tgt_grid->get_num_local_dofs();
     m_export_idxs_sorted_by_lid = view_1d<int>("export_idxs_sorted_by_lid",imp_exp->num_exports());
@@ -1339,19 +1245,8 @@ void HorizontalRemapper::setup_mpi_data_structures ()
 
 void HorizontalRemapper::clean_up ()
 {
-  // Free MPI requests
-  for (auto& req : m_send_req)
-    MPI_Request_free(&req);
-  for (auto& req : m_recv_req)
-    MPI_Request_free(&req);
-
-  // Clear all MPI related structures
-  m_send_buffer     = view_1d<Real>();
-  m_recv_buffer     = view_1d<Real>();
-  m_mpi_send_buffer = mpi_view_1d<Real>();
-  m_mpi_recv_buffer = mpi_view_1d<Real>();
-  m_send_req.clear();
-  m_recv_req.clear();
+  // Free MPI requests and buffers
+  clean_mpi();
 
   // Clear all fields
   m_src_fields.clear();
