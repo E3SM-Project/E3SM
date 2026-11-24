@@ -29,9 +29,9 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
   using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
-  using cmask1d_t = Field::view_dev_t<const int*>;
-  using cmask2d_t = Field::view_dev_t<const int**>;
-  using cmask3d_t = Field::view_dev_t<const int***>;
+  using cmask1d_t = Field::strided_view_dev_t<const int*>;
+  using cmask2d_t = Field::strided_view_dev_t<const int**>;
+  using cmask3d_t = Field::strided_view_dev_t<const int***>;
 
   bool masked = field.has_valid_mask();
   switch (result_layout.rank()) {
@@ -39,7 +39,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     auto field_view        = field.get_view<const Real *>();
     auto result_view       = result.get_view<Real *>();
     TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins, max_ncols_per_bin);
-    auto mask_view = masked ? field.get_valid_mask().get_view<const int*>() : cmask1d_t{};
+    auto mask_view = masked ? field.get_valid_mask().get_strided_view<const int*>() : cmask1d_t{};
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember &tm) {
@@ -59,7 +59,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     auto field_view        = field.get_view<const Real **>();
     auto result_view       = result.get_view<Real **>();
     TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1, max_ncols_per_bin);
-    auto mask_view = masked ? field.get_valid_mask().get_view<const int**>() : cmask2d_t{};
+    auto mask_view = masked ? field.get_valid_mask().get_strided_view<const int**>() : cmask2d_t{};
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember &tm) {
@@ -82,7 +82,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     auto field_view        = field.get_view<const Real ***>();
     auto result_view       = result.get_view<Real ***>();
     TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1 * d2, max_ncols_per_bin);
-    auto mask_view = masked ? field.get_valid_mask().get_view<const int***>() : cmask3d_t{};
+    auto mask_view = masked ? field.get_valid_mask().get_strided_view<const int***>() : cmask3d_t{};
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
           const int idx        = tm.league_rank();
