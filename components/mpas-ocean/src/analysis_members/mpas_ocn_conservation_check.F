@@ -2145,8 +2145,8 @@ end if
 
                salt = salt + &
                     areaCell(iCell) * layerThickness(k,iCell) * & ! cell volume
-                    activeTracers(indexSalinity,k,iCell)! * ! cell temperature
-                    !?? ! salt capacity??
+                    activeTracers(indexSalinity,k,iCell) * & ! salinity in g/kg
+                    rho_sw * ppt_to_salt                     ! convert g/kg to kg/kg
 
             enddo ! k
 

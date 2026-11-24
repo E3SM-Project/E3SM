@@ -656,7 +656,7 @@ contains
             if (config_include_sensible_heat_frazil) then
                newFrazilEnergy = newFrazilIceThickness * config_frazil_ice_density * &
                   config_frazil_heat_of_fusion - rho_sw * config_specific_heat_sea_water * &
-                  oceanFreezingTemperature * newFrazilIceThickness * config_frazil_ice_density/density(k,iCell)
+                  oceanFreezingTemperature * newFrazilIceThickness * config_frazil_ice_density/rho_sw
             else
                newFrazilEnergy = newFrazilIceThickness * config_frazil_ice_density * config_frazil_heat_of_fusion
             end if
