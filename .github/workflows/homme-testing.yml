@@ -9,7 +9,8 @@ name: homme
 #    (all of them include ghci.cmake). The CIME compiler for the cuda runner is gnu-cuda,
 #    and for the hip runner is gnu-hip.
 #  - bfb jobs set HOMMEXX_BFB_TESTING=ON (with strict fp flags), to compare the cxx and f90 builds
-#    against each other within the same build. They do not compare against baselines (--no-baseline).
+#    against each other within the same build. They do not compare against baselines (--no-baseline),
+#    and only run the cxx_vs_f90 tests (with the runs they need) and the unit tests (--labels).
 #  - Only the submodules that Homme needs (cime, ekat, scorpio) are checked out.
 #
 # Resources: Homme tests do not reserve cpus/gpus, so the 'Set test resources' step splits the node:
@@ -179,10 +180,12 @@ jobs:
           GPU_CMAKE_CONFIGS: ${{ steps.gpu.outputs.cmake-configs }}
         run: |
           # BFB jobs use the machine file ghci-<runner>-bfb.cmake (via --bfb), and only care about cxx vs f90
-          # comparisons within the same build, so they do not compare against baselines.
+          # comparisons within the same build, so they do not compare against baselines. They only run the
+          # cxx_vs_f90 tests (ctest also runs the F90/C++ runs they compare) and the unit tests: the other
+          # tests are already run (and compared against baselines) by the non-bfb jobs.
           bfb_flag=()
           if [ "${{ matrix.bfb }}" = "true" ]; then
-            bfb_flag=(--bfb --no-baseline)
+            bfb_flag=(--bfb --no-baseline --labels "cxx_vs_f90|unit")
           fi
 
           # GPU_CMAKE_CONFIGS (from the gpu-arch step outputs) is a semicolon-separated list of key=val
