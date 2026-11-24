@@ -1131,7 +1131,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_expel_excess_frazil_salt" type="logical" default_value=".true."
-					description="If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling."
+					description="If true, release frazil salt in the upper ocean layer in excess of the fixed salinity coupling assumption. False if using variable sea ice salinity coupling. Under land ice, frazil salt is always released, regardless of this setting."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^-1 C^-1"
@@ -2305,7 +2305,6 @@
 			<var name="accumulatedFrazilIceMass"/>
 			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedFrazilIceSalinity"/>
-			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedLandIceMass"/>
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>

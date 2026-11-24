@@ -117,9 +117,8 @@ Some things to keep in mind:
   ETI files (`share/field/eti/`), so that this cost is paid once, rather than in every file
   that includes the header.
 
-For examples, see the update kernels in `share/field/field_update_impl.hpp` (`UpdateKernel`),
-`field_update_masked.hpp`, and `field_update_fill_aware.hpp`, and the unit test
-`share/field/tests/field_pfor_tests.cpp`.
+For examples, see the update kernels in `share/field/field_update_impl.hpp` (`UpdateKernel`)
+and `field_update_masked.hpp`, and the unit test `share/field/tests/field_pfor_tests.cpp`.
 
 ### Under the hood
 

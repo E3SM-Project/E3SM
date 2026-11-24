@@ -53,12 +53,19 @@ field_names:
   - p_ratio    := p_mid / P0
 ```
 
-A numeric literal has no units. Multiplying or dividing by one keeps the
-units of the field, so `p_mid/100` holds the pressure in hPa, but is written
-with the units of `p_mid`, which are Pa; nothing converts units for you.
-Adding a number to, or subtracting it from, a field with units is rejected when
-the stream is set up, since `+` and `-` need operands with the same units:
-`T_mid - 273.15` is an error.
+A numeric literal has no units of its own. Added to or subtracted from a
+field, it takes the field's units, so `T_mid - 273.15` is in K (and holds the
+temperature in degrees Celsius). Multiplying or dividing by one keeps the units
+of the field, so `p_mid/100` holds the pressure in hPa, but is written with the
+units of `p_mid`, which are Pa; nothing converts units for you. A named
+constant keeps its units: `T_mid - Tmelt` is in K, while `qv + Tmelt` is
+rejected when the stream is set up, since `+` and `-` need operands with the
+same units.
+
+An operation on constants alone is a constant too: `T_mid*(Rair/Cpair)` works, and
+so does `T_mid*kappa` with `kappa := Rair/Cpair` in `aliases:`. Literals alone stay
+literals, so `T_mid+(2+3)` is in K. Other rank-0 fields, like `ps.mean('col')`, are
+not scalars: use `ps - ps.mean('col').broadcast_like(ps)`.
 
 Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. When in
 doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
@@ -86,9 +93,10 @@ saying how to write them.
 | `X.mean('lev')` | vertical mean |
 | `X.sum('lev')` | vertical sum |
 | `X.mean('lev', weights='dp')` | vertical mean weighted by `dp` |
+| `X.sum('lev', weights=W)` | vertical sum weighted by the field `W` |
 | `X.where(qv>0.01)` | `X` where `qv>0.01`, missing elsewhere |
 | `X.derivative('p_mid')` | vertical derivative with respect to `p_mid` |
-| `X.histogram(bins=[0,1,2])` | histogram of `X` over the given bin edges |
+| `X.histogram(bins=[0,1,2])` | counts of `X` in the bins `[0,1)` and `[1,2]` |
 | `X.zonal_mean(bins=20)` | zonal mean in 20 latitude bins |
 | `X.shift(time=1)` | `X` at the previous step |
 | `X.over_dt()` | `X` divided by the timestep |
@@ -97,6 +105,10 @@ saying how to write them.
 | `p_mid.searchsorted(500, units='hPa')` | index of the first level with pressure above 500 hPa |
 | `z_mid.searchsorted(1000)` | index of the first level below 1000 m above sea level |
 | `height_mid.searchsorted(100)` | index of the first level below 100 m above the surface |
+| `cldfrac_tot.aerocom_weights('top')` | per level, the probability that it is the cloud top (`'bot'`: bottom) |
+| `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))` | `X` at cloud top |
+| `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))` | `X` at liquid cloud top (`'ice'`: at ice cloud top) |
+| `cldfrac_tot.aerocom_weights('top').sum('lev')` | the cloud fraction seen from above |
 
 Notes:
 
@@ -142,7 +154,8 @@ Notes:
   `(qv*T_mid).tend()`; use an averaged stream. The shift of a model field
   (`T_mid.shift(time=1)`) is one model step in any stream.
 - `mean('col')` is always area weighted, so `weights` does not apply to it.
-  `weights` for `'lev'` is `'dp'` or `'dz'`.
+  `weights` for `'lev'` is `'dp'`, `'dz'`, or a field or expression `W`, such
+  as `cldfrac_tot`. `W` must not be masked.
 - `broadcast_like` repeats `X` along the dimensions of `Y` that `X` lacks, so that
   `X` can be combined with `Y`. E.g., `dp.broadcast_like(horiz_winds)` would produce
   a version of `dp` (call it `dp_bcast`) with layout `(ncol,2,lev)`, where
@@ -156,7 +169,8 @@ Notes:
   levels are skipped, and a column with none left has no sum; it is written as
   missing rather than as 0. `mean('lev')` behaves the same way. This is
   xarray's `sum('lev', min_count=1)`, not its default `sum('lev')`, which
-  would give 0.
+  would give 0. A sum weighted by a field, `X.sum('lev', weights=W)`, gives 0,
+  as xarray's weighted sum does.
 - **A scalar threshold is in the field's own units, as the model stores them.**
   `T_mid.where(T_mid<273.15)` is in kelvin, and `p_mid.where(p_mid>85000)` in
   pascals, not hectopascals. A comparison between two *fields* is checked when
@@ -198,8 +212,39 @@ Notes:
   height above the surface (`units` defaults to `m`). `interp(..)` is built on it, so
   fields interpolated to the same target share one search. Its output has `int` data
   type, so like `mask.where(..)` it cannot be written as is.
-- Histogram bin edges are numbers in increasing order. They may be negative,
-  and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
+- `histogram` bins the way numpy's `histogram` and xhistogram do: n edges make
+  n-1 bins, each bin includes its lower edge, the last bin also includes its
+  upper edge, and values outside the edges are not counted. To count the tails,
+  add edges beyond any value the field takes, e.g.
+  `bins=[-1e30,0,1e-5,1e-4,1e30]`. Bin edges are numbers in increasing order;
+  they may be negative, and may be written with an exponent
+  (`bins=[-1,0,1e-5,1e-4]`). The counts are over every entry of `X` on every
+  rank, as with xhistogram's default `dim=None`.
+- `aerocom_weights` gives, per level, the AeroCom cloud-top (`'top'`) or
+  cloud-bottom (`'bot'`) weights: the probability that the level is the first
+  cloudy level seen from above (or below), under the maximum-random overlap
+  assumption, times, with `phase='liq'` (`'ice'`), the share of liquid (ice) in
+  its condensate. Its receiver must be `cldfrac_tot`. A field at cloud top is
+  the sum weighted by them, `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))`
+  (a sum, not a mean), and their sum, `cldfrac_tot.aerocom_weights('top').sum('lev')`,
+  is the cloud fraction seen from above. `X` must be finite at every level,
+  including those with zero weight, since 0 times NaN is NaN. The in-cloud
+  droplet number per volume at liquid cloud top is
+  `(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))`,
+  where the `where(..)` masks the levels with no cloud, which the sum skips.
+  Fields sampled at the same position and phase share one computation of the
+  weights. See [the AeroCom algorithm](../../technical/aerocom_cldtop.md).
+  In an output yaml, the `aliases:` section saves typing the weights in full
+  for every field:
+
+  ```yaml
+  aliases:
+    - liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')
+    - icetop := cldfrac_tot.aerocom_weights('top', phase='ice')
+  field_names:
+    - rel_liqtop := eff_radius_qc.sum('lev', weights=liqtop)
+    - rei_icetop := eff_radius_qi.sum('lev', weights=icetop)
+  ```
 
 ### Math functions
 
@@ -247,14 +292,16 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 
 | | |
 | --- | --- |
-| `histogram` | not in xarray; the keyword follows [xhistogram](https://xhistogram.readthedocs.io) |
+| `histogram` | not in xarray; it is [xhistogram](https://xhistogram.readthedocs.io)'s `histogram(X, bins=..)`, with the same binning, and always reduces over every dimension |
+| `derivative` | deliberately not xarray's `differentiate` (numpy's `gradient`): it is a finite-volume layer mean, built on the model's own layer thicknesses (see [Vertical derivative](vert_derivative.md)), so that, weighted by the layer thickness (`dp` or `dz`), the levels sum to the difference between the bottom and top values |
 | `zonal_mean` | xarray would be `groupby_bins('lat', 20).mean()`, a call chain we cannot represent |
 | `over_dt`, `tend` | no xarray equivalent |
-| `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
+| `mean('lev', weights=..)` | xarray would be `weighted(W).mean('lev')`, again a chain |
 | `searchsorted` | named after numpy's (`side='right'`), but takes `units`, and for heights, which decrease with the level index, it looks for the first level below the target |
+| `aerocom_weights` | not in xarray; named after the AeroCom recommendation it follows |
 
-`X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, expressed as
-one diagnostic rather than as a graph of three.
+`X.mean('lev', weights=W)` is `(X*W).sum('lev')/W.sum('lev')` over the valid
+entries of `X`, computed as one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
 `mask` and `lev`, both legal only inside `where(..)`. See the note above for what they mean and where they may

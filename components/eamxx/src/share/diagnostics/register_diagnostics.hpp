@@ -24,7 +24,7 @@
 #include "wind_speed.hpp"
 #include "aodvis.hpp"
 #include "number_path.hpp"
-#include "aerocom_cld.hpp"
+#include "aerocom_weights.hpp"
 #include "field_prev.hpp"
 #include "field_broadcast.hpp"
 #include "field_over_dt.hpp"
@@ -63,7 +63,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("wind_speed",&create_diagnostic<WindSpeed>);
   diag_factory.register_product("AerosolOpticalDepth550nm",&create_diagnostic<AODVis>);
   diag_factory.register_product("NumberPath",&create_diagnostic<NumberPath>);
-  diag_factory.register_product("AeroComCld",&create_diagnostic<AeroComCld>);
+  diag_factory.register_product("AeroComWeights",&create_diagnostic<AeroComWeights>);
   diag_factory.register_product("FieldPrev",&create_diagnostic<FieldPrev>);
   diag_factory.register_product("FieldBroadcast",&create_diagnostic<FieldBroadcast>);
   diag_factory.register_product("FieldOverDt",&create_diagnostic<FieldOverDt>);

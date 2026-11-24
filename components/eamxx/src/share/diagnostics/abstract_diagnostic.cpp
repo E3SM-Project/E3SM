@@ -5,6 +5,8 @@
 #include <ekat_std_utils.hpp>
 
 #include <algorithm>
+#include <limits>
+#include <sstream>
 
 namespace scream
 {
@@ -26,9 +28,8 @@ void AbstractDiagnostic::initialize ()
       "Error! Diagnostic was already initialized.\n"
       " - diag class: " + name() + "\n");
 
-  // A diag with several outputs declares them all in its constructor, since output
-  // streams store it under all its output names before initializing it (see the
-  // class documentation in the header)
+  // A diag with several outputs declares them all in its constructor, so that
+  // its outputs are known right after construction (see the class documentation)
   const auto num_ctor_outputs = m_outputs.size();
 
   initialize_impl();
@@ -103,6 +104,39 @@ Field& AbstractDiagnostic::add_output (const std::string& name, const FieldLayou
                                        const ekat::units::Units& units, const DataType dt)
 {
   return add_output(FieldIdentifier(name,layout,units,m_grid->name(),dt));
+}
+
+std::string AbstractDiagnostic::hash () const
+{
+  std::stringstream ss;
+  ss << name() << "\n";
+
+  // The first line printed is the name of the list
+  std::stringstream params;
+  // The default precision cannot tell apart two floating point params that are close
+  params.precision(std::numeric_limits<double>::max_digits10);
+  m_params.print(params);
+  const auto str = params.str();
+  // NOTE: print shows only some types. Equal prints must not hide different params,
+  //       so refuse a diag with a param that print cannot show
+  EKAT_REQUIRE_MSG (str.find("Cannot print type")==std::string::npos,
+      "Error! Cannot hash a diagnostic with a parameter that cannot be printed.\n"
+      " - diag: " + name() + "\n" + str);
+  ss << str.substr(str.find('\n')+1);
+
+  for (const auto& n : m_field_in_names) {
+    const auto it = m_fields_in.find(n);
+    EKAT_REQUIRE_MSG (it!=m_fields_in.end(),
+        "Error! Cannot hash a diagnostic before all its input fields are set.\n"
+        " - diag: " + name() + "\n"
+        " - missing input: " + n + "\n");
+    // Not the field identifier (name, layout, ...), which two different fields may share (e.g., an
+    // alias with the same name in two streams, bound to different fields). The address of the
+    // alloc props is the same for aliases, whatever their names, and different for relatives:
+    // a subfield has its own (e.g., horiz_winds, and its components U and V).
+    ss << n << "=" << static_cast<const void*>(&it->second.get_header().get_alloc_properties()) << "\n";
+  }
+  return ss.str();
 }
 
 void AbstractDiagnostic::set_input_field (const Field& f)

@@ -27,7 +27,7 @@
  *    which is evaluated once per step
  *  - only the requested outputs reach the stream (and its valid counts)
  *  - outputs that share a mask share a valid count, whatever the request order
- *  - destroying the streams clears all its output names from the diag repo
+ *  - destroying the streams clears the diag from the repo
  */
 
 namespace scream {
@@ -39,6 +39,9 @@ constexpr int nlevs = 3;
 constexpr int nsteps = 4;
 
 constexpr Real FILL = constants::fill_value<Real>;
+// Value of the data of the invalid entries of the test diags: it is NOT fill_value, since diags
+// don't have to set it (IO fills the entries that the valid mask says are invalid)
+constexpr Real GARBAGE = -12345;
 
 // On step n, at column g (global id) and level k:
 //  - a = n+g+k
@@ -76,7 +79,6 @@ public:
     m_col    = Field(FieldIdentifier("MOT_col",   m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked = Field(FieldIdentifier("MOT_masked",m_grid->get_2d_scalar_layout(),K,gn),true);
     m_masked.create_valid_mask();
-    m_masked.get_header().set_may_be_filled(true);
 
     add_output(m_prof);
     add_output(m_col);
@@ -110,7 +112,7 @@ protected:
         col_h(icol) += a_h(icol,ilev);
       }
       mask_h(icol) = b_h(icol)>0 ? 1 : 0;
-      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : FILL;
+      msk_h(icol)  = b_h(icol)>0 ? a_h(icol,0) : GARBAGE;
     }
     m_prof.sync_to_dev();
     m_col.sync_to_dev();
@@ -143,7 +145,6 @@ public:
     m_a.create_valid_mask("mo_region_mask");
     m_z.set_valid_mask(m_a.get_valid_mask());
     for (auto* f : {&m_a,&m_z}) {
-      f->get_header().set_may_be_filled(true);
       add_output(*f);
     }
   }
@@ -163,8 +164,8 @@ protected:
     auto mask_h = m_a.get_valid_mask().get_view<int*,Host>();
     for (int icol=0; icol<m_grid->get_num_local_dofs(); ++icol) {
       mask_h(icol) = b_h(icol)>0 ? 1 : 0;
-      fa_h(icol) = b_h(icol)>0 ? a_h(icol,0) : FILL;
-      fz_h(icol) = b_h(icol)>0 ? a_h(icol,nlevs-1) : FILL;
+      fa_h(icol) = b_h(icol)>0 ? a_h(icol,0) : GARBAGE;
+      fz_h(icol) = b_h(icol)>0 ? a_h(icol,nlevs-1) : GARBAGE;
     }
     m_a.sync_to_dev();
     m_z.sync_to_dev();
@@ -361,13 +362,10 @@ TEST_CASE ("multi_output_instant")
   const auto filename = run_stream(params,gm,comm);
 
   // One instance, evaluated once per output step (t0 included)
-  REQUIRE (MOTest::num_instances==1);
   REQUIRE (MOTest::num_evaluations==nsteps+1);
 
-  // The stream was destroyed: none of the outputs is left in the repo
-  for (const std::string n : {"MOT_prof","MOT_col","MOT_masked"}) {
-    REQUIRE (OutputTester::get_repo().count(n)==0);
-  }
+  // The stream was destroyed: its diag is not left in the repo
+  REQUIRE (OutputTester::get_repo().empty());
 
   const auto l2d = grid->get_2d_scalar_layout();
   const auto l3d = grid->get_3d_scalar_layout(LEV);
@@ -557,10 +555,10 @@ TEST_CASE ("multi_output_sharing")
     return params;
   };
   const auto& repo = OutputTester::get_repo();
-  auto in_repo = [&](const std::string& n) { return repo.count(n)==1; };
 
   SECTION ("across_streams") {
     MOTest::num_instances = MOTest::num_evaluations = 0;
+    std::weak_ptr<AbstractDiagnostic> first;
     {
       // Different outputs in different streams: one instance, evaluated once
       OutputTester out1(comm,params_for({"MOT_col","MOT_prof"}),fm,gname);
@@ -571,7 +569,8 @@ TEST_CASE ("multi_output_sharing")
       REQUIRE (diags1.size()==1);
       REQUIRE (diags2.size()==1);
       REQUIRE (diags1.front()==diags2.front());
-      REQUIRE (MOTest::num_instances==1);
+      REQUIRE (repo.size()==1);
+      first = diags1.front();
 
       out1.init_timestep(time);
       out2.init_timestep(time);
@@ -582,33 +581,28 @@ TEST_CASE ("multi_output_sharing")
       out2.run("UNUSED", time, false, false, 0, false);
       REQUIRE (MOTest::num_evaluations==1);
 
-      // All outputs are stored under their name, also the one no stream requested
-      for (const std::string n : {"MOT_prof","MOT_col","MOT_masked"}) {
-        REQUIRE (in_repo(n));
-        REQUIRE (repo.at(n)==diags1.front());
-      }
+      // The one instance computes all its outputs, also the one no stream requested
+      REQUIRE (diags1.front()->get_outputs().size()==3);
     }
-    // The streams are gone, and so are all the names of their diags
-    for (const std::string n : {"MOT_prof","MOT_col","MOT_masked"}) {
-      REQUIRE_FALSE (in_repo(n));
-    }
+    // The streams are gone, and so is their diag
+    REQUIRE (first.expired());
+    REQUIRE (repo.empty());
 
     // A new stream builds a new instance
     OutputTester out3(comm,params_for({"MOT_masked"}),fm,gname);
-    REQUIRE (MOTest::num_instances==2);
-    REQUIRE (in_repo("MOT_prof"));
+    REQUIRE (repo.size()==1);
+    REQUIRE (out3.get_diags().size()==1);
   }
 
-  SECTION ("unrequested_output_in_repo") {
-    // One stream requests one output: the others are stored too, but not in its FM
-    MOTest::num_instances = 0;
+  SECTION ("other_outputs_reuse_the_instance") {
+    // One stream requests one output: the other outputs are computed, but not in its FM
     OutputTester out1(comm,params_for({"MOT_col"}),fm,gname);
     REQUIRE (out1.get_diags().size()==1);
-    REQUIRE (in_repo("MOT_masked"));
+    REQUIRE (repo.size()==1);
 
-    // ...so another stream requesting another output reuses the instance
+    // ...and another stream requesting other outputs reuses the instance
     OutputTester out2(comm,params_for({"MOT_masked","MOT_prof"}),fm,gname);
-    REQUIRE (MOTest::num_instances==1);
+    REQUIRE (repo.size()==1);
     REQUIRE (out2.get_diags().size()==1);
     REQUIRE (out1.get_diags().front()==out2.get_diags().front());
   }
@@ -631,33 +625,27 @@ TEST_CASE ("multi_output_sharing")
     // A name that resolves to MOTest, but is not one of its outputs
     REQUIRE_THROWS_WITH (OutputTester(comm,params_for({"MOT_other"}),fm,gname),
         Catch::Contains("no output with the requested name") and Catch::Contains("MOT_masked"));
-    REQUIRE_FALSE (in_repo("MOT_other"));
-    REQUIRE_FALSE (in_repo("MOT_prof"));
+    REQUIRE (repo.empty());
 
     // An output with the name of a model field would shadow it
     auto fm_clash = create_test_fm(gm,time,{"MOT_col"});
     REQUIRE_THROWS_WITH (OutputTester(comm,params_for({"MOT_prof"}),fm_clash,gname),
         Catch::Contains("has the name of a model field") and Catch::Contains("field name: MOT_col"));
-    REQUIRE_FALSE (in_repo("MOT_prof"));
-    REQUIRE_FALSE (in_repo("MOT_masked"));
+    REQUIRE (repo.empty());
 
     // Two diags with an output of the same name. MOT_col comes first, so
-    // MOTest is stored under MOT_masked before MOClash is created
+    // MOTest is resolved before MOClash
     REQUIRE_THROWS_WITH (OutputTester(comm,params_for({"MOT_col","MOX_a"}),fm,gname),
         Catch::Contains("Two diagnostics produce a field with the same name") and
         Catch::Contains("field name: MOT_masked") and
         Catch::Contains("MOTest") and Catch::Contains("MOClash"));
-    for (const std::string n : {"MOT_prof","MOT_col","MOT_masked","MOX_a"}) {
-      REQUIRE_FALSE (in_repo(n));
-    }
+    REQUIRE (repo.empty());
 
-    // A stream that fails after storing the outputs (an expression to write
+    // A stream that fails after building a diag (an expression to write
     // needs a name) leaves none of them in the repo
     REQUIRE_THROWS_WITH (OutputTester(comm,params_for({"MOT_prof","b*2.0"}),fm,gname),
         Catch::Contains("An expression must be given an output name"));
-    for (const std::string n : {"MOT_prof","MOT_col","MOT_masked"}) {
-      REQUIRE_FALSE (in_repo(n));
-    }
+    REQUIRE (repo.empty());
   }
 }
 
@@ -692,7 +680,9 @@ TEST_CASE ("number_paths")
   auto diags = out.get_diags();
   REQUIRE (diags.size()==1);
   REQUIRE (diags.front()->name()=="NumberPath");
-  REQUIRE (OutputTester::get_repo().at("IceNumberPath")==diags.front());
+  // One NumberPath, which computes all three paths, also the one nobody asked for
+  REQUIRE (OutputTester::get_repo().size()==1);
+  REQUIRE (diags.front()->get_outputs().size()==3);
 }
 
 } // namespace scream

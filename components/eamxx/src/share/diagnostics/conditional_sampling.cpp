@@ -162,8 +162,6 @@ void ConditionalSampling::initialize_impl()
   } else {
     add_output(m_fields_in.at(m_input_f).clone(m_diag_name));
     get().create_valid_mask();
-    // Entries failing the condition hold the fill value, so averaging must skip them
-    get().get_header().set_may_be_filled(true);
   }
 
   // Comparing two fields requires same units, unless either never declared them
@@ -217,8 +215,6 @@ void ConditionalSampling::compute_impl()
       mask.scale(f.get_valid_mask());
     }
     get().deep_copy(f,mask);
-    constexpr auto fv = constants::fill_value<Real>;
-    get().deep_copy(fv,mask,true);
   }
 }
 

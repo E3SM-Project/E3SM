@@ -45,7 +45,6 @@ void FieldBroadcast::initialize_impl ()
   add_output(d_fid);
   if (f.has_valid_mask()) {
     get().create_valid_mask();
-    get().get_header().set_may_be_filled(true);
   }
 }
 
@@ -56,12 +55,6 @@ void FieldBroadcast::compute_impl ()
     const auto& mask = m_broadcasted.get_valid_mask();
     get().get_valid_mask().deep_copy(mask);
     get().deep_copy(m_broadcasted,mask);
-    // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-    if (get().data_type()==DataType::IntType) {
-      get().deep_copy(constants::fill_value<int>,mask,true);
-    } else {
-      get().deep_copy(constants::fill_value<Real>,mask,true);
-    }
   } else {
     get().deep_copy(m_broadcasted);
   }
