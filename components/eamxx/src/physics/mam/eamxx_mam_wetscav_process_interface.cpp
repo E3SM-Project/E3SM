@@ -110,23 +110,25 @@ MAMWetscav::create_requests()
   // Total cloud fraction [fraction]
   add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
+  // Common ZM fields needed for both convection processing and tracer transport
+  if(do_convproc_ || zm_tracer_transport_) {
+    // Cloud top and base indices from ZM deep convection
+    add_field<Required>("zm_cldtop_klev", scalar2d, none, grid_name);   // Cloud top level index
+    add_field<Required>("zm_msemax_klev", scalar2d, none, grid_name);   // Cloud base level index
+    add_field<Required>("zm_activity", scalar2d, none, grid_name);      // Deep convection activity flag (1/0)
+    
+    // Convective mass fluxes and entrainment/detrainment rates
+    add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);  // Updraft entrainment rate
+    add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);  // Updraft detrainment rate
+    add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);  // Downdraft entrainment rate
+  }
+
   // Convection processing fields - only add if enabled
   if(do_convproc_) {
     //----------- Variables from ZM deep convection scheme -------------
     // Deep convection cloud water detrainment [kg/kg/s]
     add_field<Required>("zm_detr_qc", scalar3d_mid, kg / kg / s, grid_name);
     add_field<Required>("zm_detr_qi", scalar3d_mid, kg / kg / s, grid_name);
-
-    // Cloud top and base indices from ZM deep convection
-    add_field<Required>("zm_cldtop_klev", scalar2d, none, grid_name);   // Cloud top level index
-    add_field<Required>("zm_msemax_klev", scalar2d, none, grid_name);   // Cloud base level index
-    add_field<Required>("zm_activity", scalar2d, none, grid_name);      // Deep convection activity flag (1/0)
-
-    //----------- Variables from ZM convection scheme -------------
-    // Convective mass fluxes and entrainment/detrainment rates
-    add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft entrainment rate
-    add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft detrainment rate
-    add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);         // Downdraft entrainment rate
 
     // Fields for deep convective precipitation coupling with MAM wetscav
     // Rain production rate from deep convection [kg/kg/s]
@@ -141,16 +143,6 @@ MAMWetscav::create_requests()
 
   // ZM convective tracer transport fields - only add if enabled
   if(zm_tracer_transport_) {
-    // Fields shared with convective processing (already requested above
-    // when do_convproc_ is true)
-    if(!do_convproc_) {
-      add_field<Required>("zm_cldtop_klev", scalar2d, none, grid_name);
-      add_field<Required>("zm_msemax_klev", scalar2d, none, grid_name);
-      add_field<Required>("zm_activity", scalar2d, none, grid_name);
-      add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);
-      add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);
-      add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);
-    }
     // Updraft and downdraft mass fluxes [kg/m2/s]
     add_field<Required>("zm_mflx_up", scalar3d_mid, kg / m2 / s, grid_name);
     add_field<Required>("zm_mflx_dn", scalar3d_mid, kg / m2 / s, grid_name);
