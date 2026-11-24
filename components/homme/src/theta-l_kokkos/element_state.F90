@@ -14,11 +14,7 @@ module element_state
   public :: deallocate_element_arrays
   public :: setup_element_pointers_ie
 
-#ifdef ARKODE
-  integer, public, parameter :: timelevels = 50
-#else
   integer, public, parameter :: timelevels = 3
-#endif
   integer, public, parameter :: diagtimes = 6
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step

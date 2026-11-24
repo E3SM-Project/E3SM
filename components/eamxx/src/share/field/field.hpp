@@ -239,7 +239,7 @@ public:
   // perform masked manipulations.
   // The default mask name, <field name>_valid_mask, says the mask is this field's
   // own. Any other name says where a condition holds, and masks with the same
-  // name must hold the same values: e.g., IO gives one avg count to the diags
+  // name must hold the same values: e.g., IO gives one valid count to the diags
   // whose masks share a name, and the horizontal remapper remaps such masks once.
 
   enum class MaskInit { Valid, Invalid, None };
@@ -256,8 +256,15 @@ public:
   // NOTE: these methods are const (shallow-const, like Kokkos::View): the
   //       Field handle is const, but the underlying data is not. A runtime
   //       check via EKAT_REQUIRE_MSG enforces that the field is not read-only.
+  // NOTE: the update methods (update, scale, scale_inv, max, min, add_scalar) without a mask field use the
+  //       valid mask of this field (if any): entries where it is 0 are untouched.
+  //       If x is masked, this field must be masked too (else we throw), and it is valid only where x is
+  //       valid too. Hence, its valid mask is first intersected with the one of x (y_mask = y_mask & x_mask),
+  //       unless the two fields share the same mask. Since the mask of this field may change, any other field
+  //       sharing it is affected too. The mask of x is never modified.
   // NOTE: the versions with a mask field only perform the manip where mask!=0, except
   //       for deep_copy(value,mask,true), which performs the deep copy where mask==0.
+  //       They use ONLY the given mask: the valid masks of this field and of x are not read, checked or modified.
   //       The mask field MUST have data type IntType
 
   // Set the field to a constant value (on device view ONLY)
@@ -265,6 +272,11 @@ public:
   void deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask = false) const;
 
   // Copy the data from one field to this field (on device ONLY)
+  // If this field has a valid mask, it is also set: it is copied from src
+  // if src has one, or it is set to all valid otherwise. If src has a valid mask
+  // but this field does not, we throw, since validity info would be silently lost.
+  // NOTE: if src and this field share the same valid mask, the mask is left as is.
+  // NOTE: clone(CloneFlags::CopyData) only copies the data, since the clone has no mask
   void deep_copy (const Field& src) const;
   void deep_copy (const Field& src, const Field& mask) const;
 
@@ -396,19 +408,20 @@ protected:
   template<bool negate_mask, typename ST>
   void deep_copy_masked (const ST value, const Field& mask) const;
 
+  // Updates this field, using this field's valid mask (if present) to select what entries to update
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
+  // Updates all the entries of this field, ignoring any valid mask
+  template<CombineMode CM>
+  void update_nomask (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const;
   template<CombineMode CM>
   void update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
+  template<typename ST, typename STX>
+  void update_impl (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma) const;
 
-  template<CombineMode CM, typename ST, typename STX>
-  void update_fill_aware (const Field& x, const ST alpha, const ST beta, const ST gamma) const;
-
-  template<CombineMode CM, typename ST, typename STX>
-  void update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
+  template<typename ST, typename STX>
+  void update_masked (const CombineMode cm, const Field& x, const ST alpha, const ST beta, const ST gamma, const Field& mask) const;
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&

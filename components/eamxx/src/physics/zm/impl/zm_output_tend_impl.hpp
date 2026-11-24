@@ -6,6 +6,24 @@
 namespace scream {
 namespace zm {
 
+template<typename S, typename D>
+void Functions<S,D>::ZmOutputTend::init_out(int ncol, int nlev_mid)
+{
+  // zm_conv_evap only writes these for active columns (early-return guard),
+  // so inactive columns would otherwise retain stale values from a previous
+  // timestep when convection was active.  init_tmp cannot be used because it
+  // is also called before zm_transport_momentum, which would wipe the values
+  // that zm_conv_evap just wrote.
+  Real init_fill_value = 0;
+  auto loc_evap_ds_out = evap_ds_out;
+  auto loc_evap_dq_out = evap_dq_out;
+  Kokkos::parallel_for("zm_output_init_out", KT::RangePolicy(0, ncol*nlev_mid), KOKKOS_LAMBDA (const int i) {
+    const int icol = i/nlev_mid;
+    const int klev = i%nlev_mid;
+    loc_evap_ds_out(icol,klev) = init_fill_value;
+    loc_evap_dq_out(icol,klev) = init_fill_value;
+  });
+}
 // -------------------------------------------------------------------------
 // transpose method for fortran bridging
 template<typename S, typename D>

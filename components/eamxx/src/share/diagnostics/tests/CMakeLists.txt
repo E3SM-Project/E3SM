@@ -177,9 +177,19 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES binary_ops_test.cpp
   )
 
+  # Test the hash that identifies equivalent diags
+  CreateDiagTest(diag_hash
+    SOURCES diag_hash_test.cpp
+  )
+
   # Test histogram
   CreateDiagTest(histogram
     SOURCES histogram_test.cpp
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
+  # Test a diag with several outputs, and the base class rules for it
+  CreateDiagTest(multi_output
+    SOURCES multi_output_test.cpp
   )
 endif()

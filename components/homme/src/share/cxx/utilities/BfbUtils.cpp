@@ -6,6 +6,14 @@
 #include "ExecSpaceDefs.hpp"
 #include "scream_tridiag.hpp"
 
+#ifdef HOMMEXX_ENABLE_GPU
+namespace {
+Kokkos::View<double*, Homme::ExecSpace> g_cxx_log_dev;
+Kokkos::View<double*, Homme::ExecSpace>::host_mirror_type g_cxx_log_host;
+bool g_cxx_log_hook_registered = false;
+} // namespace
+#endif
+
 extern "C" {
 // These can be used by fortran targets to initialize/finalize kokkos
 // when running bfb end-to-end runs.
@@ -69,6 +77,42 @@ double cxx_log(double input)
   return result;
 #else
   return log(input);
+#endif
+}
+
+void cxx_log_array(int n, const double* input, double* output)
+{
+#ifdef HOMMEXX_ENABLE_GPU
+  if (!g_cxx_log_hook_registered) {
+    Kokkos::push_finalize_hook([]() {
+      g_cxx_log_dev = Kokkos::View<double*, Homme::ExecSpace>();
+      g_cxx_log_host = Kokkos::View<double*, Homme::ExecSpace>::host_mirror_type();
+    });
+    g_cxx_log_hook_registered = true;
+  }
+  if (static_cast<int>(g_cxx_log_dev.extent(0)) < n) {
+    g_cxx_log_dev = Kokkos::View<double*, Homme::ExecSpace>(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "cxx_log_dev"), n);
+    g_cxx_log_host = Kokkos::create_mirror_view(g_cxx_log_dev);
+  }
+  auto d = Kokkos::subview(g_cxx_log_dev, std::make_pair(0, n));
+  auto h = Kokkos::subview(g_cxx_log_host, std::make_pair(0, n));
+  for (int i = 0; i < n; ++i) {
+    h(i) = input[i];
+  }
+  Kokkos::deep_copy(d, h);
+  Kokkos::RangePolicy<Homme::ExecSpace> policy(0, n);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const int& i) {
+    d(i) = log(d(i));
+  });
+  Kokkos::deep_copy(h, d);
+  for (int i = 0; i < n; ++i) {
+    output[i] = h(i);
+  }
+#else
+  for (int i = 0; i < n; ++i) {
+    output[i] = log(input[i]);
+  }
 #endif
 }
 } // extern C

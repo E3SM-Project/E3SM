@@ -39,6 +39,13 @@ module bfb_mod
       ! return
       real(kind=c_double)            :: cxx_log
     end function cxx_log
+
+    subroutine cxx_log_array(n, input, output) bind(C)
+      use iso_c_binding, only: c_int, c_double
+      integer(kind=c_int), value, intent(in) :: n
+      real(kind=c_double), intent(in) :: input(n)
+      real(kind=c_double), intent(out) :: output(n)
+    end subroutine cxx_log_array
   end interface
 
   interface bfb_pow
@@ -199,10 +206,13 @@ contains
 
     real (kind=real_kind), dimension(lbound(arr,dim=1):ubound(arr,dim=1),&
                                      lbound(arr,dim=2):ubound(arr,dim=2)) :: res
-    integer :: n
+    integer :: i, j
 
-    n = PRODUCT(SHAPE(arr))
-    res = RESHAPE(bfb_pow_1d(RESHAPE(arr,[n]),e),SHAPE(arr))
+    do j = lbound(arr,dim=2), ubound(arr,dim=2)
+      do i = lbound(arr,dim=1), ubound(arr,dim=1)
+        res(i,j) = bfb_pow_0d(arr(i,j), e)
+      enddo
+    enddo
   end function bfb_pow_2d
 
   function bfb_pow_3d (arr, e) result(res)
@@ -212,9 +222,14 @@ contains
     real (kind=real_kind), dimension(lbound(arr,dim=1):ubound(arr,dim=1),&
                                      lbound(arr,dim=2):ubound(arr,dim=2),&
                                      lbound(arr,dim=3):ubound(arr,dim=3)) :: res
-    integer :: n
+    integer :: i, j, k
 
-    n = PRODUCT(SHAPE(arr))
-    res = RESHAPE(bfb_pow_1d(RESHAPE(arr,[n]),e),SHAPE(arr))
+    do k = lbound(arr,dim=3), ubound(arr,dim=3)
+      do j = lbound(arr,dim=2), ubound(arr,dim=2)
+        do i = lbound(arr,dim=1), ubound(arr,dim=1)
+          res(i,j,k) = bfb_pow_0d(arr(i,j,k), e)
+        enddo
+      enddo
+    enddo
   end function bfb_pow_3d
 end module bfb_mod

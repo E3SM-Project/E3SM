@@ -402,6 +402,12 @@ def buildnml(case, caseroot, component):
     if component != "drv":
         raise AttributeError
 
+    # The mpi-serial lib must be built first, if MPILIB is mpi-serial
+    libs = case.get_values("CASE_SUPPORT_LIBRARIES")
+    expect(libs, "CASE_SUPPORT_LIBRARIES is not set for this case. Cases created before it was introduced must be re-created.")
+    if case.get_value("MPILIB") == "mpi-serial" and "mpi-serial" not in libs:
+        case.set_value("CASE_SUPPORT_LIBRARIES", ",".join(["mpi-serial"] + libs))
+
     confdir = os.path.join(case.get_value("CASEBUILD"), "cplconf")
     if not os.path.isdir(confdir):
         os.makedirs(confdir)

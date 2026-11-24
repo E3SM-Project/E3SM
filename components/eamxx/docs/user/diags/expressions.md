@@ -1,7 +1,6 @@
 # Diagnostic expressions
 
-As the underscore-based system is being deprecated, EAMxx can now
-build diagnostics from **expressions**:
+EAMxx builds derived diagnostics from **expressions**:
 
 ```yaml
 field_names:
@@ -10,15 +9,7 @@ field_names:
 ```
 
 Expressions are parsed by [`dexpr`](https://github.com/E3SM-Project/E3SM/tree/master/share/dexpr),
-the expression parser shared across E3SM components. They exist because the
-underscore syntax cannot express grouping: `qc_plus_qv_times_p_mid` is grouped
-by regex greediness, not by operator precedence (see
-[Binary arithmetics](binary_ops.md) and [Parsing precedence](parsing_precedence.md)).
-Written as an expression, it means what it looks like.
-
-Both syntaxes work, and they are resolved independently: a name is matched
-against the underscore patterns first, and only names that match none of them
-are read as an expression. Nothing you write today changes meaning.
+the expression parser shared across E3SM components.
 
 ## Expressions must be given a name
 
@@ -62,18 +53,24 @@ field_names:
   - p_ratio    := p_mid / P0
 ```
 
-A numeric literal has no units. Multiplying or dividing by one keeps the
-units of the field, so `p_mid/100` holds the pressure in hPa, but is written
-with the units of `p_mid`, which are Pa; nothing converts units for you.
-Adding a number to, or subtracting it from, a field with units is rejected when
-the stream is set up, since `+` and `-` need operands with the same units:
-`T_mid - 273.15` is an error.
+A numeric literal has no units of its own. Added to or subtracted from a
+field, it takes the field's units, so `T_mid - 273.15` is in K (and holds the
+temperature in degrees Celsius). Multiplying or dividing by one keeps the units
+of the field, so `p_mid/100` holds the pressure in hPa, but is written with the
+units of `p_mid`, which are Pa; nothing converts units for you. A named
+constant keeps its units: `T_mid - Tmelt` is in K, while `qv + Tmelt` is
+rejected when the stream is set up, since `+` and `-` need operands with the
+same units.
 
-Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. Note this
-differs from the underscore spelling `qc_plus_qv_times_p_mid`, which means
-`(qc+qv)*p_mid`. When in doubt, parenthesize. (That pair only illustrates
-grouping: `qc+(qv*p_mid)` adds a mixing ratio to a pressure, and is rejected at
-run time for incompatible units, while `(qc+qv)*p_mid` is fine.)
+An operation on constants alone is a constant too: `T_mid*(Rair/Cpair)` works, and
+so does `T_mid*kappa` with `kappa := Rair/Cpair` in `aliases:`. Literals alone stay
+literals, so `T_mid+(2+3)` is in K. Other rank-0 fields, like `ps.mean('col')`, are
+not scalars: use `ps - ps.mean('col').broadcast_like(ps)`.
+
+Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. When in
+doubt, parenthesize. (That example only illustrates grouping: `qc+(qv*p_mid)`
+adds a mixing ratio to a pressure, and is rejected at run time for incompatible
+units, while `(qc+qv)*p_mid` is fine.)
 
 ## Functions
 
@@ -81,26 +78,34 @@ Functions are written as methods on the field they act on, `X.f(..)`, and are
 named after their [xarray](https://docs.xarray.dev) counterparts wherever there
 is an honest analogue.
 
-| Expression | Equivalent underscore name |
-| ---------- | -------------------------- |
-| `X.isel(lev=10)` | `X_at_lev_10` |
-| `X.isel(lev=0)` | `X_at_model_top` |
-| `X.isel(lev=-1)` | `X_at_model_bot` |
-| `X.interp(p_mid=500, units='hPa')` | `X_at_500hPa` |
-| `X.interp(z_mid=10, reference='surface')` | `X_at_10m_above_surface` |
-| `X.interp(z_mid=1000, reference='sealevel')` | `X_at_1000m_above_sealevel` |
-| `X.mean('col')` | `X_horiz_avg` |
-| `X.mean('lev')` | `X_vert_avg` |
-| `X.sum('lev')` | `X_vert_sum` |
-| `X.mean('lev', weights='dp')` | `X_vert_avg_dp_weighted` |
-| `X.where(qv>0.01)` | `X_where_qv_gt_0.01` |
-| `X.derivative('p_mid')` | `X_pvert_derivative` |
-| `X.histogram(bins=[0,1,2])` | `X_histogram_0_1_2` |
-| `X.zonal_mean(bins=20)` | `X_zonal_avg_20_bins` |
-| `X.shift(time=1)` | `X_prev` |
-| `X.over_dt()` | `X_over_dt` |
-| `X.tend()` | `X_atm_backtend` |
-| `X.broadcast_like(Y)` | (none) |
+| Expression | Meaning |
+| ---------- | ------- |
+| `X.isel(lev=10)` | `X` at level 10 |
+| `X.isel(lev=0)` | `X` at the model top |
+| `X.isel(lev=-1)` | `X` at the lowest level |
+| `X.interp(p_mid=500, units='hPa')` | `X` interpolated to 500 hPa |
+| `X.interp(z_mid=10, reference='surface')` | `X` interpolated to 10 m above the surface |
+| `X.interp(z_mid=1000, reference='sealevel')` | `X` interpolated to 1000 m above sea level |
+| `X.mean('col')` | horizontal (area-weighted) mean |
+| `X.mean('lev')` | vertical mean |
+| `X.sum('lev')` | vertical sum |
+| `X.mean('lev', weights='dp')` | vertical mean weighted by `dp` |
+| `X.sum('lev', weights=W)` | vertical sum weighted by the field `W` |
+| `X.where(qv>0.01)` | `X` where `qv>0.01`, missing elsewhere |
+| `X.derivative('p_mid')` | vertical derivative with respect to `p_mid` |
+| `X.histogram(bins=[0,1,2])` | counts of `X` in the bins `[0,1)` and `[1,2]` |
+| `X.zonal_mean(bins=20)` | zonal mean in 20 latitude bins |
+| `X.shift(time=1)` | `X` at the previous step |
+| `X.over_dt()` | `X` divided by the timestep |
+| `X.tend()` | tendency of `X` over the last step |
+| `X.broadcast_like(Y)` | `X` broadcast to the layout of `Y` |
+| `p_mid.searchsorted(500, units='hPa')` | index of the first level with pressure above 500 hPa |
+| `z_mid.searchsorted(1000)` | index of the first level below 1000 m above sea level |
+| `height_mid.searchsorted(100)` | index of the first level below 100 m above the surface |
+| `cldfrac_tot.aerocom_weights('top')` | per level, the probability that it is the cloud top (`'bot'`: bottom) |
+| `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))` | `X` at cloud top |
+| `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))` | `X` at liquid cloud top (`'ice'`: at ice cloud top) |
+| `cldfrac_tot.aerocom_weights('top').sum('lev')` | the cloud fraction seen from above |
 
 Notes:
 
@@ -117,7 +122,7 @@ Notes:
   does the same at both ends, since a target elevation can legitimately sit
   below a mountain's surface, where the quantity is not defined. But
   `interp(z_mid=.., reference='surface')` is expected to always be well formed
-  close to the ground -- `wind_speed_at_2m_above_surface` should mean something
+  close to the ground -- `wind_speed.interp(z_mid=2,reference='surface')` should mean something
   even when the lowest model level sits well above 2m -- so it *extrapolates*
   using the nearest level instead of filling when the target is below the
   bottom entry. That exception is for the near-surface end only: above the
@@ -132,21 +137,22 @@ Notes:
   one step back, not two: a shift copies its operand at the start of each step,
   and an operand that is itself a shift has already been updated by then. So it
   is rejected at setup, and so are the same through an alias
-  (`l1 := X.shift(time=1)`, then `l1.shift(time=1)`), `X.shift(time=1).tend()`,
-  and the underscore `X_prev_prev`. For two steps back, put an operation between
-  the shifts: `(X.shift(time=1)*1.0).shift(time=1)`. The shift of any other
+  (`l1 := X.shift(time=1)`, then `l1.shift(time=1)`) and
+  `X.shift(time=1).tend()`. For two steps back, put an operation between
+  the shifts: `(X.shift(time=1)*1.0).shift(time=1)` (on the first step of a
+  run, see [the first step](field_prev.md#the-first-step)). The shift of any other
   expression is one step back, e.g. `bt1.shift(time=1)` with
   `bt1 := X - X.shift(time=1)`.
 - **`shift(time=1)` of a diagnostic needs a stream that evaluates every step.**
   An instant stream evaluates diagnostics on output steps only, so the value
   one *model step* back does not exist there unless the stream writes every
   step (`frequency_units: nsteps` with `frequency: 1`). In any other instant
-  stream, `(qv*T_mid).shift(time=1)` is rejected at setup, and so are
-  `(qv*T_mid).tend()` and the underscore `X_prev` and `X_atm_backtend` of a
-  diagnostic `X`; use an averaged stream. The shift of a model field
+  stream, `(qv*T_mid).shift(time=1)` is rejected at setup, and so is
+  `(qv*T_mid).tend()`; use an averaged stream. The shift of a model field
   (`T_mid.shift(time=1)`) is one model step in any stream.
 - `mean('col')` is always area weighted, so `weights` does not apply to it.
-  `weights` for `'lev'` is `'dp'` or `'dz'`.
+  `weights` for `'lev'` is `'dp'`, `'dz'`, or a field or expression `W`, such
+  as `cldfrac_tot`. `W` must not be masked.
 - `broadcast_like` repeats `X` along the dimensions of `Y` that `X` lacks, so that
   `X` can be combined with `Y`. E.g., `dp.broadcast_like(horiz_winds)` would produce
   a version of `dp` (call it `dp_bcast`) with layout `(ncol,2,lev)`, where
@@ -160,7 +166,8 @@ Notes:
   levels are skipped, and a column with none left has no sum; it is written as
   missing rather than as 0. `mean('lev')` behaves the same way. This is
   xarray's `sum('lev', min_count=1)`, not its default `sum('lev')`, which
-  would give 0.
+  would give 0. A sum weighted by a field, `X.sum('lev', weights=W)`, gives 0,
+  as xarray's weighted sum does.
 - **A scalar threshold is in the field's own units, as the model stores them.**
   `T_mid.where(T_mid<273.15)` is in kelvin, and `p_mid.where(p_mid>85000)` in
   pascals, not hectopascals. A comparison between two *fields* is checked when
@@ -175,8 +182,7 @@ Notes:
   `mask.mean('lev')` and `lev>5` are not: each of those leaves `mask` or `lev`
   as an operand to be resolved on its own, and the run aborts with
   `The key 'mask' is not associated to any registered product`, since it is
-  neither a field nor a diagnostic. Both names are inherited from the underscore
-  syntax (`mask_where_lev_gt_5`), not from xarray.
+  neither a field nor a diagnostic. Neither name comes from xarray.
 - A negative number is written as it reads, as a threshold or as a factor:
   `omega.where(omega<=-0.1)`, `-2*T_mid`, `T_mid*(-2)`. In a `where`
   condition, the field goes on the left of the comparison.
@@ -184,19 +190,58 @@ Notes:
   takes a snapshot at `t0`, before any step has run, and `dt` is zero there, so
   the diagnostic aborts with "dt must be positive". Write them to an averaged
   stream (`averaging_type: average`, `max`, `min`) instead. This is a property
-  of the diagnostic, not of the syntax: the underscore spellings `X_over_dt` and
-  `X_atm_backtend` behave the same way.
+  of the diagnostic, not of the syntax.
 - **A `mask.where(..)` result cannot be written to file as is.** Its output
   has `int` data type and every variable is written as a real, so listing
-  `mask.where(..)` (or the underscore `mask_where_..`) in `field_names` is
-  rejected when the stream is set up. Multiplying by 1 promotes it to `Real`,
-  and `mask.where(ps>100000)*1.0` writes fine. Note the `*1.0` applies to the
-  field that `where` produced, which is a perfectly ordinary field; it is not an
-  operation on `mask`, which per the bullet above cannot be multiplied.
+  `mask.where(..)` in `field_names` is rejected when the stream is set up.
+  Multiplying by 1 promotes it to `Real`, and `mask.where(ps>100000)*1.0`
+  writes fine. Note the `*1.0` applies to the field that `where` produced,
+  which is a perfectly ordinary field; it is not an operation on `mask`, which
+  per the bullet above cannot be multiplied.
 - `X.tend()` is shorthand for `(X - X.shift(time=1)).over_dt()`, and inherits
   the `over_dt` restriction above.
-- Histogram bin edges are numbers in increasing order. They may be negative,
-  and may be written with an exponent (`bins=[-1,0,1e-5,1e-4]`).
+- `searchsorted` gives, per column, the index of the first level whose pressure is
+  above the target pressure (for a height, which decreases with the level index,
+  the first level below the target); the index is `nlevs` if there is none. That is
+  numpy's `searchsorted(side='right')` along the level dimension. Its receiver picks
+  the coordinate: `p_mid`/`p_int` for a pressure (`units` defaults to `Pa`),
+  `z_mid`/`z_int` for a height above sea level, and `height_mid`/`height_int` for a
+  height above the surface (`units` defaults to `m`). `interp(..)` is built on it, so
+  fields interpolated to the same target share one search. Its output has `int` data
+  type, so like `mask.where(..)` it cannot be written as is.
+- `histogram` bins the way numpy's `histogram` and xhistogram do: n edges make
+  n-1 bins, each bin includes its lower edge, the last bin also includes its
+  upper edge, and values outside the edges are not counted. To count the tails,
+  add edges beyond any value the field takes, e.g.
+  `bins=[-1e30,0,1e-5,1e-4,1e30]`. Bin edges are numbers in increasing order;
+  they may be negative, and may be written with an exponent
+  (`bins=[-1,0,1e-5,1e-4]`). The counts are over every entry of `X` on every
+  rank, as with xhistogram's default `dim=None`.
+- `aerocom_weights` gives, per level, the AeroCom cloud-top (`'top'`) or
+  cloud-bottom (`'bot'`) weights: the probability that the level is the first
+  cloudy level seen from above (or below), under the maximum-random overlap
+  assumption, times, with `phase='liq'` (`'ice'`), the share of liquid (ice) in
+  its condensate. Its receiver must be `cldfrac_tot`. A field at cloud top is
+  the sum weighted by them, `X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))`
+  (a sum, not a mean), and their sum, `cldfrac_tot.aerocom_weights('top').sum('lev')`,
+  is the cloud fraction seen from above. `X` must be finite at every level,
+  including those with zero weight, since 0 times NaN is NaN. The in-cloud
+  droplet number per volume at liquid cloud top is
+  `(nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))`,
+  where the `where(..)` masks the levels with no cloud, which the sum skips.
+  Fields sampled at the same position and phase share one computation of the
+  weights. See [the AeroCom algorithm](../../technical/aerocom_cldtop.md).
+  In an output yaml, the `aliases:` section saves typing the weights in full
+  for every field:
+
+  ```yaml
+  aliases:
+    - liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')
+    - icetop := cldfrac_tot.aerocom_weights('top', phase='ice')
+  field_names:
+    - rel_liqtop := eff_radius_qc.sum('lev', weights=liqtop)
+    - rei_icetop := eff_radius_qi.sum('lev', weights=icetop)
+  ```
 
 Named quantities are not operations, and stay plain names in an expression:
 `LiqWaterPath`, `RelativeHumidity`, `z_mid`, `dz`, `precip_liq_surf_mass_flux`,
@@ -209,17 +254,19 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 
 | | |
 | --- | --- |
-| `histogram` | not in xarray; the keyword follows [xhistogram](https://xhistogram.readthedocs.io) |
+| `histogram` | not in xarray; it is [xhistogram](https://xhistogram.readthedocs.io)'s `histogram(X, bins=..)`, with the same binning, and always reduces over every dimension |
+| `derivative` | deliberately not xarray's `differentiate` (numpy's `gradient`): it is a finite-volume layer mean, built on the model's own layer thicknesses (see [Vertical derivative](vert_derivative.md)), so that, weighted by the layer thickness (`dp` or `dz`), the levels sum to the difference between the bottom and top values |
 | `zonal_mean` | xarray would be `groupby_bins('lat', 20).mean()`, a call chain we cannot represent |
 | `over_dt`, `tend` | no xarray equivalent |
-| `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
+| `mean('lev', weights=..)` | xarray would be `weighted(W).mean('lev')`, again a chain |
+| `searchsorted` | named after numpy's (`side='right'`), but takes `units`, and for heights, which decrease with the level index, it looks for the first level below the target |
+| `aerocom_weights` | not in xarray; named after the AeroCom recommendation it follows |
 
-`X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, expressed as
-one diagnostic rather than as a graph of three.
+`X.mean('lev', weights=W)` is `(X*W).sum('lev')/W.sum('lev')` over the valid
+entries of `X`, computed as one diagnostic rather than as a graph of three.
 
 Two operand names have no xarray analogue at all, because they are not fields:
-`mask` and `lev`, both inherited from the underscore syntax and both legal only
-inside `where(..)`. See the note above for what they mean and where they may
+`mask` and `lev`, both legal only inside `where(..)`. See the note above for what they mean and where they may
 appear.
 
 ## Errors

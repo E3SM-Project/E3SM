@@ -121,6 +121,7 @@ void compute_subgrid_scale_velocities(
 
 void compute_nucleate_ice_tendencies(
     const mam4::NucleateIce &nucleate_ice, mam4::ThreadTeamPolicy team_policy,
+    const mam_coupling::WetAtmosphere &wet_atmosphere,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
     const mam_coupling::AerosolState &dry_aero, const MAMAci::view_2d wsubice,
     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
@@ -152,7 +153,7 @@ void compute_nucleate_ice_tendencies(
 
         // Store atmopsheric vars (Tmid, Pmid, cloud fraction, qv, wsubmin)
         mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+            atmosphere_for_column(wet_atmosphere, dry_atmosphere, icol);
 
         // Update the updraft velocity needed by nucleation to be "wsubice"
         // in the atm object
@@ -220,6 +221,7 @@ void store_liquid_cloud_fraction(
 
 void call_function_dropmixnuc(
     mam4::ThreadTeamPolicy team_policy, const Real dt,
+    mam_coupling::WetAtmosphere &wet_atmosphere,
     mam_coupling::DryAtmosphere &dry_atmosphere, const MAMAci::view_2d rpdel,
     const MAMAci::const_view_2d kvh_mid, const MAMAci::view_2d kvh_int,
     const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
@@ -262,11 +264,11 @@ void call_function_dropmixnuc(
   // Extract atmosphere variables
   MAMAci::const_view_2d T_mid  = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid  = dry_atmosphere.p_mid;
-  MAMAci::const_view_2d zm     = dry_atmosphere.z_mid;
+  MAMAci::const_view_2d zm     = wet_atmosphere.z_mid;
   MAMAci::const_view_2d pdel   = dry_atmosphere.p_del;
   MAMAci::const_view_2d p_int  = dry_atmosphere.p_int;
   MAMAci::const_view_2d nc     = dry_atmosphere.nc;
-  MAMAci::const_view_2d atm_dz = dry_atmosphere.dz;
+  MAMAci::const_view_2d atm_dz = wet_atmosphere.dz;
 
   //----------------------------------------------------------------------
   // ## Declare local variables for class variables
@@ -333,7 +335,7 @@ void call_function_dropmixnuc(
 
         // get atmospheric quantities
         mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+            atmosphere_for_column(wet_atmosphere, dry_atmosphere, icol);
 
         // Compute kvh at interfaces
         const auto kvh_mid_col = ekat::subview(kvh_mid, icol);
@@ -489,6 +491,7 @@ void update_interstitial_aerosols(
 
 void call_hetfrz_compute_tendencies(
     mam4::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
+    mam_coupling::WetAtmosphere &wet_atm_,
     mam_coupling::DryAtmosphere &dry_atm_,
     mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
     const double dt, const int nlev,
@@ -499,6 +502,7 @@ void call_hetfrz_compute_tendencies(
     MAMAci::view_3d diagnostic_scratch) {
   mam4::Hetfrz hetfrz                        = hetfrz_;
   mam_coupling::AerosolState dry_aero        = dry_aero_;
+  mam_coupling::WetAtmosphere wet_atmosphere = wet_atm_;
   mam_coupling::DryAtmosphere dry_atmosphere = dry_atm_;
 
   Kokkos::parallel_for(
@@ -509,7 +513,7 @@ void call_hetfrz_compute_tendencies(
         //   tendencies class.
 
         mam4::Atmosphere atm =
-            atmosphere_for_column(dry_atmosphere, icol);
+            atmosphere_for_column(wet_atmosphere, dry_atmosphere, icol);
         mam4::Surface surf{};
         set_min_background_mmr(team, dry_aero, icol);
         mam4::Prognostics progs =

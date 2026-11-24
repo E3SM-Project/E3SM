@@ -1,7 +1,7 @@
 # CMake initial cache file for our GitHub CI (ghci) self-hosted runners
 #
 # Common settings for all ghci images. Compiler-specific settings
-# are in ghci-gnu.cmake, ghci-intel.cmake, and ghci-cuda.cmake
+# are in ghci-gnu.cmake, ghci-intel.cmake, ghci-cuda.cmake, and ghci-hip.cmake
 # (the latter are picked up by test_homme.py via the --machine-file flag)
 SET (CMAKE_Fortran_COMPILER mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER       mpicc  CACHE FILEPATH "")
@@ -24,7 +24,6 @@ SET (HOMME_TESTING_PROFILE    "short" CACHE STRING "")
 SET (HOMME_TESTING_TIMELIMIT  1800    CACHE STRING "")
 
 SET (BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
-SET (USE_TRILINOS OFF CACHE BOOL "")
 
 # Let's catch usage of code deprecated in Kokkos 4
 SET (Kokkos_ENABLE_DEPRECATED_CODE_4 OFF CACHE BOOL "")

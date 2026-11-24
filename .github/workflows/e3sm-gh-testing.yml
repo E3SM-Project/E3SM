@@ -28,6 +28,16 @@ on:
       - '!components/*/docs/**'
       - '!components/*/mkdocs.yml'
       - '!.github/**'
+      # Skip homme changes that only affect its standalone build/testing (e.g., machine files or tests)
+      # NOTE: keep this homme list in sync with eamxx-sa-testing.yml and eamxx-v1-testing.yml
+      - '!components/homme/**'
+      - 'components/homme/CMakeLists.txt'
+      - 'components/homme/src/**'
+      - 'components/homme/cmake/HommeMacros.cmake'
+      - 'components/homme/cmake/SetHostPaths.cmake'
+      - 'components/homme/cmake/homme_git_sha.h.in'
+      - 'components/homme/cmake/FindExtrae.cmake'
+      - 'components/homme/cmake/FindZoltan.cmake'
       - '.github/workflows/e3sm-gh-testing.yml'
 
   # Manual run on master is used to bless
@@ -71,7 +81,8 @@ jobs:
           - {env: intel2024-openmpi4, arch: x86_64, compiler: intel}
         test:
           - SMS_Vmoab_Ln5.ne4pg2_oQU480.WCYCL2010NS
-          - ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+          - ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod
+          - SMS_Ld1.ne4pg2_oQU240.WCYCLXX1850NS-OMEGA
     name: ${{ matrix.test }} (${{ matrix.image.env }}, ${{ matrix.image.arch }})
     env:
       IMAGE: ghcr.io/e3sm-project/e3sm-image:${{ matrix.image.env }}
@@ -102,7 +113,7 @@ jobs:
           show-progress: false
           submodules: recursive
       - name: Show action trigger
-        uses: ./E3SM/.github/actions/show-workflow-trigger
+        uses: e3sm-project/automation/show-trigger@v1
       - name: Restore inputdata
         id: inputdata
         uses: actions/cache/restore@v6

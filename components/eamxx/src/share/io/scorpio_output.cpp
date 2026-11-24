@@ -5,6 +5,8 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/physics/physics_constants.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/remap/identity_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -12,6 +14,7 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_units.hpp>
 
+#include <algorithm>
 #include <numeric>
 
 namespace
@@ -37,6 +40,20 @@ std::string
 get_transposed_helper_name(const scream::FieldLayout& layout, const scream::DataType data_type)
 {
   return "transposed_" + layout.transpose().to_string() + "_" + e2str(data_type);
+}
+
+// Helper function to describe a diag in error messages: its class does not say which
+// field it computes (e.g., two BinaryOp diags may have the same deps)
+std::string
+describe(const scream::AbstractDiagnostic& diag)
+{
+  std::vector<std::string> names;
+  for (const auto& [n,f] : diag.get_outputs()) {
+    names.push_back(f.name());
+  }
+  return " - diag class: " + diag.name() + "\n"
+         " - diag field(s): " + (names.empty() ? std::string("(not initialized)")
+                                               : ekat::join(names,", ")) + "\n";
 }
 
 // Note: this is also declared in eamxx_scorpio_interface.cpp. Move it somewhere else?
@@ -107,8 +124,6 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     m_transpose = params.get<bool>("transpose");
   }
 
-  auto gm = field_mgr->get_grids_manager();
-
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type    = str2avg(avg_type);
@@ -129,14 +144,14 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
 
-  std::string output_data_layout = "default";
+  auto output_layout = OutputDataLayout::Unique;
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
     m_fields_names = params.get<vos_t>("field_names");
     if (params.isParameter("output_data_layout"))
-      output_data_layout = params.get<std::string>("output_data_layout");
+      output_layout = str2output_layout(params.get<std::string>("output_data_layout"));
   } else if (params.isSublist("fields")){
     const auto& f_pl = params.sublist("fields");
     bool grid_found = false;
@@ -145,7 +160,7 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
         if (pl.isParameter("output_data_layout"))
-          output_data_layout = pl.get<std::string>("output_data_layout");
+          output_layout = str2output_layout(pl.get<std::string>("output_data_layout"));
         if (pl.isType<vos_t>("field_names")) {
           m_fields_names = pl.get<vos_t>("field_names");
         } else if (pl.isType<std::string>("field_names")) {
@@ -167,21 +182,15 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
 
-  bool change_data_layout = false;
-  if (not fm_grid->get_aux_grid(output_data_layout)) {
-    EKAT_REQUIRE_MSG (output_data_layout=="native" or output_data_layout=="default",
-        "Error! Grid for requested output_data_layout not found among this grid's aux grids.\n"
-        " - grid name: " + fm_grid->name() + "\n"
-        " - output_data_layout: " + output_data_layout + "\n");
-  } else {
-    change_data_layout = true;
-  }
+  // Unless the native layout is requested, fields are written on the unique grid of the fm grid
+  // (which is the same as the fm grid if it is already unique)
+  const bool change_data_layout = output_layout==OutputDataLayout::Unique and fm_grid->get_unique_grid()!=fm_grid;
 
   // Check if remapping and if so create the appropriate remapper
   // Note: We currently support three remappers
   //   - vertical remapping from file
   //   - horizontal remapping from file
-  //   - online remapping which is setup using the create_remapper function
+  //   - online remapping to the unique grid of the fm grid (e.g., Dyn->PhysGLL)
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
   if (change_data_layout) {
@@ -206,24 +215,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   process_requested_fields ();
   stop_timer("EAMxx::IO::setup_fields");
 
-  // Avg count only makes sense if we have
-  //  - non-instant output
-  //  - we have one between:
-  //    - vertically remapped output
-  //    - field_at_XhPa diagnostic
-  //    - fields that can contain invalid values (not yet supported, but RAD may want this at some point)
-  // We already set m_track_avg_cnt to true if field_at_XhPa is found in process_requested_fields.
-  // Hence, here we only check if vert remap is active
-
+  // Avg counts only make sense for non-instant output, and only for fields that have a valid
+  // mask (e.g., fields with a mask in the model, vertically remapped fields, or field_at_XhPa
+  // diagnostics). Unmasked fields have no invalid entries, so they need no count.
   if (m_avg_type!=OutputAvgType::Instant) {
-    if (params.isParameter("track_avg_cnt")) {
-      // This is to be used for unit testing only, so that we can test avg cnt even
-      // if there is no vert remap and no field_at_XhPa diagnostic in the stream
-      m_track_avg_cnt = params.get<bool>("track_avg_cnt");
-    }
-    if (use_vertical_remap_from_file) {
-      m_track_avg_cnt = true;
-    }
     if (params.isParameter("fill_threshold")) {
       m_avg_coeff_threshold = params.get<Real>("fill_threshold");
       EKAT_REQUIRE_MSG (m_avg_coeff_threshold>=0 and m_avg_coeff_threshold<1,
@@ -279,9 +274,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       }
       m_horiz_remapper = hr;
     } else {
-      // Construct a generic remapper (likely, Dyn->PhysicsGLL)
-      grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
-      m_horiz_remapper = gm->create_remapper(grid_after_vr,grid_after_hr);
+      // Construct a remapper to the unique grid (likely, Dyn->PhysicsGLL)
+      m_horiz_remapper = std::make_shared<UniqueGridRemapper>(grid_after_vr);
     }
     m_horiz_remapper->set_name(m_stream_name + " HorizRemap");
     if (params.isParameter("enable_fine_grain_timers")) {
@@ -316,8 +310,7 @@ AtmosphereOutput::
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
   for (auto d : m_diagnostics) {
-    const auto& name = d->get().name();
-    m_diag_repo.erase(name);
+    m_diag_repo.erase(d->hash());
   }
 }
 
@@ -336,7 +329,7 @@ void AtmosphereOutput::restart (const std::string& filename)
   for (const auto& [name,f_ptr] : fm->get_repo()) {
     fields.push_back(*f_ptr);
   }
-  for (const auto& f : m_avg_counts) {
+  for (const auto& f : m_valid_counts) {
     fields.push_back(f.alias(f.name(),fm->get_grid()->name()));
   }
 
@@ -347,8 +340,19 @@ void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   m_io_grid  = fm_after_hr->get_grid();
-  m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
+  // Structured grids (lat-lon or curvilinear) have their COL dim replaced by 2 dims in the file, (lat,lon),
+  // of length ny and nx. The remapper stores [ny,nx] in the geo data structured_dims.
+  m_structured_output = m_io_grid->has_geometry_data("structured_dims");
 
+  int ny = 0;
+  int nx = 0;
+  if (m_structured_output) {
+    auto dims_h = m_io_grid->get_geometry_data("structured_dims").get_view<const int*,Host>();
+    ny = dims_h(0);
+    nx = dims_h(1);
+  }
+
+  // NOTE: we can't rely on the grids manager to have validated the gids (PointGrid does not).
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
       "       map dof_gid->proc_id is well defined.\n");
@@ -413,14 +417,10 @@ void AtmosphereOutput::init()
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
     for (int j=0; j<layout.rank(); ++j) {
-      if (tags[j]==FieldTag::Column and m_latlon_output) {
-        // We need to make sure we are registering lat and lon as dimensions
-        auto lat = m_io_grid->get_geometry_data("lat");
-        auto lon = m_io_grid->get_geometry_data("lon");
-
-        m_dims_len.emplace("lat",lat.get_header().get_identifier().get_layout().size());
-        m_dims_len.emplace("lon",lon.get_header().get_identifier().get_layout().size());
-
+      if (tags[j]==FieldTag::Column and m_structured_output) {
+        // We need to make sure we are registering the dims replacing COL (lat/lon)
+        m_dims_len.emplace("lat",ny);
+        m_dims_len.emplace("lon",nx);
         continue;
       }
       // check tag against m_dims_len map.  If not in there, then add it.
@@ -454,9 +454,11 @@ void AtmosphereOutput::init()
       }
     }
 
-    if (m_track_avg_cnt) {
-      // Create and store a Field to track the averaging count for this layout
-      set_avg_cnt_tracking(fid);
+    // Fields with a valid mask need a count, to tell where the output is valid. Unmasked fields do not.
+    // NOTE: f is the field after the remap, so it also covers masks created by the vertical remapper
+    if (m_avg_type!=OutputAvgType::Instant and f.has_valid_mask()) {
+      // Create and store a Field to track the valid count for this layout
+      set_valid_count_tracking(f);
     }
   }
 
@@ -529,17 +531,17 @@ run (const std::string& filename, const util::TimeStamp& ts,
   auto fm_scorpio = m_field_mgrs[Scorpio];
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
-  // If tracking avg count, update the count at each field location separately.
-  // We do count++ only where the field is valid (or everywhere, if the field has no valid mask).
+  // Update the count at each field location separately (only masked fields have a count).
+  // We do count++ only where the field is valid.
   // Note, we assume that all fields that share a count are also masked in the same way.
-  if (m_track_avg_cnt) {
+  if (not m_field_to_valid_count.empty()) {
     start_timer("EAMxx::IO::avg_cnt");
-    // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
-    for (auto& [fname, count] : m_field_to_avg_count) {
+    // Since 2+ fields may have same valid count, make sure we update the counts only ONCE.
+    for (auto& [fname, count] : m_field_to_valid_count) {
       count.get_header().set_extra_data("updated",false);
     }
 
-    for (auto& [fname, count] : m_field_to_avg_count) {
+    for (auto& [fname, count] : m_field_to_valid_count) {
       if (count.get_header().get_extra_data<bool>("updated")) {
         continue;
       }
@@ -565,13 +567,10 @@ run (const std::string& filename, const util::TimeStamp& ts,
       //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
 
-      if (field.has_valid_mask()) {
-        count.update(field.get_valid_mask(),1,1);
-      } else {
-        count.add_scalar(1);
-      }
+      // Only masked fields have a count
+      count.update(field.get_valid_mask(),1,1);
 
-      // Handle writing the average count variables to file
+      // Handle writing the valid count variables to file
       if (is_write_step) {
         // NOTE: nested inside EAMxx::IO::avg_cnt
         start_timer("EAMxx::IO::sync_and_write");
@@ -596,11 +595,15 @@ run (const std::string& filename, const util::TimeStamp& ts,
         duration_write += duration_loc.count();
         stop_timer("EAMxx::IO::sync_and_write");
 
-        // If it's an output step, for Avg we need to ensure count>threshold. Where it is not,
-        // the average is invalid: this mask tells us where, so that later we only divide
-        // fields by count where it is valid (and fill the rest with fill_value)
-        if (output_step and m_avg_type==OutputAvgType::Average) {
-          int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
+        // If it's an output step, we need to ensure count>threshold. Where it is not, the output
+        // is invalid: this mask tells us where, so that later we only divide fields by count where
+        // it is valid (and fill the rest with fill_value). Average needs more than fill_threshold*nsteps
+        // valid samples, while for Max/Min one valid sample is enough.
+        // NOTE: fields sharing a count are masked the same way, so they share this mask too.
+        if (output_step and m_avg_type!=OutputAvgType::Instant) {
+          const int min_count = m_avg_type==OutputAvgType::Average
+                              ? static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output))
+                              : 0;
           compute_mask(count,min_count,Comparison::GT,count.get_header().get_extra_data<Field>("sufficient_count_mask"));
         }
       }
@@ -618,12 +621,12 @@ run (const std::string& filename, const util::TimeStamp& ts,
           auto& f_out = fm_scorpio->get_field(field_name);
 
     // Safety check: if a field is masked and we are not doing Instant output, we must have
-    // created an avg-count tracking field; otherwise we could not tell where the output is valid
+    // created an valid-count tracking field; otherwise we could not tell where the output is valid
     // (and for Average, the division by the raw number of steps would bias the result
     // wherever the field was invalid).
     if (m_avg_type!=OutputAvgType::Instant && f_in.has_valid_mask()) {
-      EKAT_REQUIRE_MSG(m_field_to_avg_count.count(field_name),
-        "[AtmosphereOutput::run] Error! Accumulating a masked field without avg-count tracking.\n"
+      EKAT_REQUIRE_MSG(m_field_to_valid_count.count(field_name),
+        "[AtmosphereOutput::run] Error! Accumulating a masked field without valid-count tracking.\n"
         " - field name : " + field_name + "\n"
         "This indicates the field got a valid mask after output initialization or tracking logic missed it." );
     }
@@ -638,11 +641,7 @@ run (const std::string& filename, const util::TimeStamp& ts,
     start_timer("EAMxx::IO::accumulate");
     switch (m_avg_type) {
       case OutputAvgType::Instant:
-        f_out.deep_copy(f_in);  // Note: if f_in aliases f_out, this is a no-op
-        if (masked) {
-          f_out.get_valid_mask().deep_copy(f_in.get_valid_mask());
-        }
-        break;
+        f_out.deep_copy(f_in);  break; // Note: if f_in aliases f_out, this is a no-op. Otherwise, it also copies the mask
       case OutputAvgType::Max:
         masked ? f_out.max(f_in,f_in.get_valid_mask())
                : f_out.max(f_in);
@@ -674,25 +673,16 @@ run (const std::string& filename, const util::TimeStamp& ts,
         // This field may not need a count (the map is empty if we don't track counts).
         // Note: a missing entry is safe ONLY for fields that cannot be invalid
         // anywhere; the has_valid_mask check above guarantees that.
-        const auto cnt_it = m_field_to_avg_count.find(field_name);
-        if (cnt_it!=m_field_to_avg_count.end()) {
-          auto count = cnt_it->second;
-          auto& mask = count.get_header().get_extra_data<Field>("sufficient_count_mask");
+        const auto count_it = m_field_to_valid_count.find(field_name);
+        if (count_it!=m_field_to_valid_count.end()) {
+          const auto& count = count_it->second;
 
+          // The output is valid where the count is sufficient (see the count update above)
+          fill_mask = &count.get_header().get_extra_data<Field>("sufficient_count_mask");
+
+          // Divide by the count only where the average is valid
           if (m_avg_type==OutputAvgType::Average) {
-            // The average is valid where the count is above the threshold (see the count update above).
-            // Divide by the count only there
-            fill_mask = &mask;
-            f_out.scale_inv(count,mask);
-          } else {
-            // Max/Min: entries that were never valid still hold the initial -/+inf, and are invalid.
-            // NOTE: we must look at f_out itself, since the count may be shared with a field that
-            //       is masked differently (e.g., after a vertical remap). Hence we cannot use the count,
-            //       and use its mask as scratch, since it is not needed for Max/Min.
-            const Real init_val = m_avg_type==OutputAvgType::Max ? -std::numeric_limits<Real>::infinity()
-                                                                 :  std::numeric_limits<Real>::infinity();
-            compute_mask(f_out,init_val,Comparison::NE,mask);
-            fill_mask = &mask;
+            f_out.scale_inv(count,*fill_mask);
           }
         } else if (m_avg_type==OutputAvgType::Average) {
           // Divide by steps count only when the summation is complete
@@ -773,51 +763,64 @@ res_dep_memory_footprint () const
   return rdmf;
 }
 
-void AtmosphereOutput::set_avg_cnt_tracking(const FieldIdentifier& fid)
+void AtmosphereOutput::set_valid_count_tracking(const Field& f)
 {
-  // Now create a Field to track the averaging count for this layout
+  // The count tells how many valid samples went into a masked field, so fields that share
+  // a mask share the count, which is named after the mask.
+  // NOTE: masks with the same name MUST hold the same values, hence have the same layout.
+  const auto& fid = f.get_header().get_identifier();
   const std::string& name = fid.name();
   const auto& layout = fid.get_layout();
-  const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
-  const auto tags = layout.tags();
-  std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
-  for (int i=0; i<layout.rank(); ++i) {
-    const auto t = layout.tag(i);
-    std::string tag_name = m_io_grid->has_special_tag_name(t)
-                         ? m_io_grid->get_special_tag_name(t)
-                         : layout.names()[i];
+  const auto& mask_name = f.get_valid_mask().name();
 
-    // If t==CMP, and the name stored in the layout is "dim" (the default) or "bin",
-    // we append also the extent, to allow different vector dims in the file
-    // TODO: generalize this to all tags, for now hardcoding to dim and bin only
-    tag_name += (tag_name=="dim" or tag_name=="bin") ? std::to_string(layout.dim(i)) : "";
-
-    avg_cnt_name += "_" + tag_name;
+  const auto it = m_mask_to_count.find(mask_name);
+  if (it!=m_mask_to_count.end()) {
+    const auto& count_layout = it->second.get_header().get_identifier().get_layout();
+    EKAT_REQUIRE_MSG (layout==count_layout,
+        "[AtmosphereOutput::set_valid_count_tracking] Error! Fields with the same valid mask name have different layouts.\n"
+        " - mask name   : " + mask_name + "\n"
+        " - field name  : " + name + "\n"
+        " - field layout: " + layout.to_string() + "\n"
+        " - other layout: " + count_layout.to_string() + "\n"
+        "Masks with the same name must hold the same values, so the name must tell them apart.\n");
+    m_field_to_valid_count[name] = it->second;
+    return;
   }
 
-  // Look for an avg count field with the right name
-  for (const auto& f : m_avg_counts) {
-    if (f.name()==avg_cnt_name) {
-      // We already created this avg count field
-      m_field_to_avg_count[name] = f;
-      return;
+  // First field with this mask: create the count, named after the mask (minus a trailing
+  // _valid_mask or _mask, just for readability, unless that name is already taken)
+  std::string stem = mask_name;
+  for (const std::string end : {"_valid_mask","_mask"}) {
+    if (stem.size()>end.size() and stem.compare(stem.size()-end.size(),end.size(),end)==0) {
+      stem.erase(stem.size()-end.size());
+      break;
     }
   }
+  std::string valid_count_name = "nvalid_" + stem;
+  for (const auto& c : m_valid_counts) {
+    if (c.name()==valid_count_name) {
+      valid_count_name = "nvalid_" + mask_name;
+      break;
+    }
+  }
+  m_vars_dims[valid_count_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
 
-  // We have not created this avg count field yet.
-  m_vars_dims[avg_cnt_name] = get_var_dimnames(m_transpose ? layout.transpose() : layout);
-
-  auto count_id = fid.clone(avg_cnt_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
+  auto count_id = fid.clone(valid_count_name).reset_units(ekat::units::none).reset_dtype(DataType::IntType);
   Field count(count_id);
   count.allocate_view();
 
-  // Mask telling where the count is sufficient, i.e., where cnt>threshold, so that the average is valid there.
-  // It is computed (once per count) only at output steps. For Max/Min it is just scratch space.
+  // Mask telling where the count is sufficient, i.e., where count>threshold (threshold=0 for Max/Min),
+  // so that the output is valid there.
+  // It is computed (once per count) only at output steps.
   // NOTE: this is NOT a valid mask of the count: the count is valid everywhere, and its updates must not be gated.
-  count.get_header().set_extra_data("sufficient_count_mask",count.clone(avg_cnt_name + "_sufficient"));
+  count.get_header().set_extra_data("sufficient_count_mask",count.clone(valid_count_name + "_sufficient"));
 
-  m_avg_counts.push_back(count);
-  m_field_to_avg_count[name] = count;
+  // The mask the count is for, to write it in the metadata of the count
+  count.get_header().set_extra_data("mask_name",mask_name);
+
+  m_valid_counts.push_back(count);
+  m_field_to_valid_count[name] = count;
+  m_mask_to_count[mask_name] = count;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
@@ -840,7 +843,7 @@ reset_scorpio_fields()
   for (const auto& name : m_fields_names) {
     fm->get_field(name).deep_copy(value);
   }
-  for (auto& count : m_avg_counts) {
+  for (auto& count : m_valid_counts) {
     count.deep_copy(0);
   }
 }
@@ -933,9 +936,9 @@ register_variables(const std::string& filename,
         scorpio::set_attribute(filename,field_name,"sub_fields",children_list);
       }
 
-      // If tracking average count variables then add the name of the tracking variable for this variable
-      if (m_field_to_avg_count.count(field_name)) {
-        const auto& count = m_field_to_avg_count.at(field_name);
+      // If tracking valid count variables then add the name of the tracking variable for this variable
+      if (m_field_to_valid_count.count(field_name)) {
+        const auto& count = m_field_to_valid_count.at(field_name);
         scorpio::set_attribute(filename,field_name,"averaging_count_tracker",count.name());
       }
 
@@ -994,8 +997,8 @@ register_variables(const std::string& filename,
     }
   }
 
-  // Now register the average count variables (if any)
-  for (const auto& f : m_avg_counts) {
+  // Now register the valid count variables (if any)
+  for (const auto& f : m_valid_counts) {
     const auto& name = f.name();
     const auto& dimnames = m_vars_dims.at(name);
     if (mode==scorpio::FileMode::Append) {
@@ -1018,40 +1021,42 @@ register_variables(const std::string& filename,
           "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
     } else {
-      // Note, unlike with regular output variables, for the average counting
-      // variables we don't need to add all of the extra metadata.  So we simply
-      // define the variable.
-      scorpio::define_var(filename, name, dimnames, "int", m_add_time_dim);
+      // Unlike regular output variables, the counts do not need all of the extra metadata
+      // (e.g., standard_name or coordinates). We only set units, long_name and cell_methods:
+      // a count is the sum, over the snapshots of the current output window, of the valid mask
+      scorpio::define_var(filename, name, "1", dimnames, "int", "int", m_add_time_dim);
+
+      const auto& mask_name = f.get_header().get_extra_data<std::string>("mask_name");
+      scorpio::set_attribute(filename, name, "long_name",
+          "number of snapshots, in the current output window, for which the valid mask " + mask_name + " is on");
+
+      // CF compliance: Only add cell_methods to variables with time dimension.
+      if (m_add_time_dim) {
+        scorpio::set_attribute(filename, name, "cell_methods", "time: sum");
+      }
     }
   }
 } // register_variables
 
 void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
-  if (m_latlon_output) {
-    // We need to find out which (lat,lon) offsets we own
-    auto lat_idx_h = m_io_grid->get_geometry_data("lat_idx").get_view<const int*,Host>();
-    auto lon_idx_h = m_io_grid->get_geometry_data("lon_idx").get_view<const int*,Host>();
-    int ncols = m_io_grid->get_num_local_dofs();
-    int nlon = m_io_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size();
-    std::vector<scorpio::offset_t> offsets(ncols);
-    for (int i=0; i<ncols; ++i) {
-      offsets[i] = lat_idx_h(i)*nlon + lon_idx_h(i);
-    }
+  if (m_decomp_dimname=="" and not m_structured_output)
+    return;
+
+  // Set the decomposition for the partitioned dimension
+  const int local_dim = m_io_grid->get_partitioned_dim_local_size();
+  auto gids_f = m_io_grid->get_partitioned_dim_gids();
+  auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
+  auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
+  std::vector<scorpio::offset_t> offsets(local_dim);
+  for (int idof=0; idof<local_dim; ++idof) {
+    offsets[idof] = gids_h[idof] - min_gid;
+  }
+  if (m_structured_output) {
+    // The COL dim is replaced by (y,x), with x the fastest varying. The offset in the flattened
+    // (y,x) array is gid-min_gid=iy*nx+ix, so we can use the same offsets we would use for COL
     scorpio::set_dims_decomp(filename,{"lat","lon"},offsets);
   } else {
-    if (m_decomp_dimname=="")
-      return;
-
-    // Set the decomposition for the partitioned dimension
-    const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-    auto gids_f = m_io_grid->get_partitioned_dim_gids();
-    auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
-    auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
-    std::vector<scorpio::offset_t> offsets(local_dim);
-    for (int idof=0; idof<local_dim; ++idof) {
-      offsets[idof] = gids_h[idof] - min_gid;
-    }
     scorpio::set_dim_decomp(filename,m_decomp_dimname,offsets);
   }
 }
@@ -1100,31 +1105,34 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
 
       EKAT_REQUIRE_MSG (computable or allow_invalid_fields,
         "Error! Cannot compute a diagnostic. One dependency has an invalid timestamp.\n"
-        " - stream name: " + m_stream_name + "\n"
-        " - diag name: " + diag->get().name() + "\n"
+        " - stream name: " + m_stream_name + "\n" +
+        describe(*diag) +
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get();
     if (computable) {
       diag->compute(ts);
     }
 
-    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+    for (auto& [n,d] : diag->get_outputs()) {
+      bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
-    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
-      "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get().name() + "\n");
+      EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - stream name: " + m_stream_name + "\n" +
+        describe(*diag) +
+        " - output: " + d.name() + "\n");
 
-    if (not computed) {
-      // The diag was either not computable or it may have failed to compute
-      // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=fill_value
-      // (of the right type, since the diag may be an int mask)
-      if (d.data_type()==DataType::IntType) {
-        d.deep_copy(constants::fill_value<int>);
-      } else {
-        d.deep_copy(constants::fill_value<float>);
+      if (not computed) {
+        // The diag was either not computable or it may have failed to compute
+        // (e.g., t=0 output with a flux-like diag).
+        // If we're allowing invalid fields, then we should simply set diag=fill_value
+        // (of the right type, since the diag may be an int mask)
+        if (d.data_type()==DataType::IntType) {
+          d.deep_copy(constants::fill_value<int>);
+        } else {
+          d.deep_copy(constants::fill_value<float>);
+        }
       }
     }
   }
@@ -1213,77 +1221,10 @@ process_requested_fields()
       " - stream name:  " + m_stream_name + "\n"
       " - fields names: " + ekat::join(m_fields_names,",") + "\n");
 
-  // Helper lambda to check if this fm_model field should trigger avg count
-  auto check_for_avg_cnt = [&](const Field& f, const bool count_by_mask = false) {
-    // We need avg-count tracking for any averaged (non-instant) field that has a valid mask.
-    // Without this, masked updates skip invalid entries during accumulation (good)
-    // but we would still divide by the raw nsteps, biasing the result low.
-    // A count is named after its field, unless the field is a diag whose mask has
-    // a name other than the default <name>_valid_mask (see Field::create_valid_mask).
-    // Such a name says where a condition holds (e.g., FieldAtPressureLevel names its
-    // mask after the level), and all diags with a mask of that name share a count.
-    // NOTE: model fields get a count of their own: they may be refreshed at different
-    //       times, even if they share a mask.
-    if (m_avg_type!=OutputAvgType::Instant) {
-      if (f.has_valid_mask()) {
-        m_track_avg_cnt = true;
-        std::string suffix = "_" + f.name();
-        if (count_by_mask and f.has_valid_mask()) {
-          auto ends_with = [](const std::string& s, const std::string& end) {
-            return s.size()>end.size() and s.compare(s.size()-end.size(),end.size(),end)==0;
-          };
-          const auto& mask_name = f.get_valid_mask().name();
-          if (not ends_with(mask_name,"_valid_mask")) {
-            // E.g., 500hPa_mask gives avg_count_500hPa_<layout>
-            const std::string end = "_mask";
-            suffix = "_" + (ends_with(mask_name,end) ? mask_name.substr(0,mask_name.size()-end.size())
-                                                     : mask_name);
-            // The name may carry the non-column dims of the layout, to tell apart masks of
-            // different layouts (e.g., 500hPa_dim2_mask). The count name adds them anyway.
-            const auto& lt = f.get_header().get_identifier().get_layout();
-            std::string dims;
-            for (int i=1; i<lt.rank(); ++i) {
-              dims += "_" + lt.names()[i] + std::to_string(lt.dim(i));
-            }
-            if (dims!="" and ends_with(suffix,dims)) {
-              suffix.erase(suffix.size()-dims.size());
-            }
-          }
-        }
-        // Avoid duplicate insertion if already present
-        if (m_field_to_avg_cnt_suffix.count(f.name())==0) {
-          m_field_to_avg_cnt_suffix.emplace(f.name(), suffix);
-        }
-      }
-    }
-  };
-
-  // Helper lambda that initializes a diagnostic
-  auto init_diag = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
-    // Set inputs in the diag
-    for (const auto& dep_name : diag->get_input_fields_names()) {
-      auto dep = fm_model->get_field(dep_name);
-      diag->set_input_field(dep);
-    }
-
-    // Initialize the diag
-    diag->initialize();
-  };
-
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
-    // Set the diag field in the FM
-    auto diag_field = diag->get();
-
+  // Only the requested output of a diag goes in the group (see where it is called)
+  auto add_to_diag_group = [&](Field& diag_field) {
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
-
-    // A diag gets an avg count like any field: by its mask, if it has one
-    check_for_avg_cnt(diag_field,true);
-
-    // If specified, set avg_cnt tracking for this diagnostic.
-    if (m_track_avg_cnt) {
-      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),"");
-    }
   };
 
   // Now process each requested field, if possible. We can process a field if either:
@@ -1293,9 +1234,9 @@ process_requested_fields()
   // We keep scanning the fields names and process a field, removing it from the list.
   // There MUST be at least ONE field we can process at every iteration, but
   // some field MAY have to wait until another is processed. E.g., if we have
-  // 'foo_at_900hPa' and 'foo:=horiz_winds', the latter (an alias) must be
+  // 'foo.interp(p_mid=900,units="hPa")' and 'foo:=horiz_winds', the latter (an alias) must be
   // processed first, as it adds the 'foo' alias field to the fm, which the
-  // diag 'foo_at_900hPa' needs to be correctly initialized.
+  // diag needs to be correctly initialized.
   // Notice that, thanks to how we create and add diags to m_diagnostics,
   // the order in which diags appear in m_diagnostics follows the evaluation
   // order, meaning that if diag A depends on diag B, then B appears *before* A.
@@ -1310,6 +1251,18 @@ process_requested_fields()
     bool armed = true;
     ~RepoGuard () { if (armed) for (const auto& n : added) repo.erase(n); }
   } repo_guard{m_diag_repo,{}};
+
+  // Diags this stream created, until their deps are in the FM, and then, by the name of
+  // each of their outputs. A diag may come from another stream, but only if it is equivalent
+  // to the one we created (same hash), so these are the diags of THIS stream.
+  strmap_t<diag_ptr_type> pending, stream_diags;
+
+  // The loop below adds aliases and diags to fm_model, so keep the names of the
+  // model fields: only those can be shadowed by the output of a diag
+  std::set<ekat::CaseInsensitiveString> model_fields;
+  for (const auto& [n,f] : fm_model->get_repo()) {
+    model_fields.insert(n);
+  }
 
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   // m_fields_names now holds exactly the variables that reach the nc file:
@@ -1332,9 +1285,6 @@ process_requested_fields()
     for (const auto& name : remaining) {
       if (fm_model->has_field(name)) {
         // This is a regular field, not a diagnostic nor an alias.
-        // Still, we might need to do some extra setup, like for avg_count.
-        const auto& f = m_field_mgrs[FromModel]->get_field(name);
-        check_for_avg_cnt(f);
         remove_these.insert(name);
       } else if (m_alias_to_orig.count(name)==1) {
         // An alias. If the aliased field was already processed, we can
@@ -1343,24 +1293,17 @@ process_requested_fields()
           const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
           auto alias = orig.alias(name);
           fm_model->add_field(alias);
-          // An alias is masked like its target: use the same avg count, or one
-          // named after the alias if the target has a count of its own
-          // NOTE: the target may be a model field that this loop has yet to visit
-          check_for_avg_cnt(orig);
-          auto cnt_it = m_field_to_avg_cnt_suffix.find(orig.name());
-          if (cnt_it!=m_field_to_avg_cnt_suffix.end()) {
-            const bool own_cnt = cnt_it->second=="_"+orig.name();
-            m_field_to_avg_cnt_suffix.emplace(name, own_cnt ? "_"+name : cnt_it->second);
-          }
           remove_these.insert(name);
         }
       } else {
-        // Reuse the diag if another stream built it, else create it.
-        // NOTE: cache it only after the checks below
-        auto it = m_diag_repo.find(name);
-        auto diag = it==m_diag_repo.end()
-                  ? create_diagnostic(name,fm_model->get_grid())
-                  : it->second;
+        // Create the diag, unless we did already (and were waiting for its deps).
+        // NOTE: we can only tell if another stream built an equivalent one once its
+        //       inputs are known: that is below, when all deps are in the FM.
+        auto diag = pending[name];
+        if (diag==nullptr) {
+          diag = create_diagnostic(name,fm_model->get_grid());
+          pending[name] = diag;
+        }
 
         // Field names go into the nc file verbatim, and '(qc+qv)*p_mid' is
         // not a usable variable name, so an expression we must WRITE needs one.
@@ -1386,7 +1329,7 @@ process_requested_fields()
           while (m_alias_to_orig.count(src)==1) {
             src = m_alias_to_orig.at(src);
           }
-          EKAT_REQUIRE_MSG (fm_model->has_field(src) and m_diag_repo.count(src)==0,
+          EKAT_REQUIRE_MSG (fm_model->has_field(src) and stream_diags.count(src)==0,
               "Error! shift(time=1) of a diagnostic is not available in an instant stream\n"
               "       that does not write every step.\n"
               " - stream name: " + m_stream_name + "\n"
@@ -1397,10 +1340,6 @@ process_requested_fields()
               "Use an averaged stream, which evaluates every step, or write every step.\n");
         }
 
-        if (m_diag_repo.count(name)==0) {
-          repo_guard.added.push_back(name);
-        }
-        m_diag_repo[name] = diag;
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
         for (const auto& dep_name : diag->get_input_fields_names()) {
@@ -1413,14 +1352,51 @@ process_requested_fields()
         // If we are missing any dep, we DELAY adding this diag to m_diagnostics, so that
         // the order in which diags appear is compatible with the evaluation order
         if (deps_met) {
-          // Check if already inited (perhaps by another stream)
-          if (not diag->is_initialized()) {
-            init_diag(diag);
+          // Another stream may have built an equivalent diag (same class, params and input fields,
+          // whatever the names): if so, use it, so it is evaluated once. Else, ours is the one.
+          for (const auto& dep_name : diag->get_input_fields_names()) {
+            diag->set_input_field(fm_model->get_field(dep_name));
           }
-          check_diag_avg_cnt (diag);
+          const auto hash = diag->hash();
+          if (auto it = m_diag_repo.find(hash); it!=m_diag_repo.end()) {
+            diag = it->second;
+          } else {
+            diag->initialize();
+            repo_guard.added.push_back(hash);
+            m_diag_repo[hash] = diag;
+          }
+          pending.erase(name);
+
+          // A diag with several outputs can be requested by any of them
+          const auto& outputs = diag->get_outputs();
+          for (const auto& [key,f] : outputs) {
+            const auto& n = f.name();
+            // NOTE: an alias of this stream may have the name of an output it does
+            //       not request: the alias is local to the stream, and wins in it
+            EKAT_REQUIRE_MSG (outputs.size()==1 or model_fields.count(n)==0,
+                "Error! An output of a diagnostic has the name of a model field.\n"
+                " - stream name: " + m_stream_name + "\n"
+                " - field name: " + n + "\n" +
+                describe(*diag));
+            auto other = stream_diags.find(n);
+            EKAT_REQUIRE_MSG (other==stream_diags.end() or other->second==diag,
+                "Error! Two diagnostics produce a field with the same name.\n"
+                " - stream name: " + m_stream_name + "\n"
+                " - field name: " + n + "\n" +
+                describe(*diag) +
+                describe(*other->second));
+            stream_diags[n] = diag;
+          }
+          // Only the requested output goes in the FM: an unrequested output
+          // must not affect the stream (e.g., trigger valid count tracking)
+          auto diag_field = diag->get(name);
+          add_to_diag_group (diag_field);
           remove_these.insert(name);
-          fm_model->add_field(diag->get());
-          m_diagnostics.push_back(diag);
+          fm_model->add_field(diag_field);
+          // Requests of other outputs of this diag reuse it: evaluate it once
+          if (not ekat::contains(m_diagnostics,diag)) {
+            m_diagnostics.push_back(diag);
+          }
         }
       }
     }
@@ -1457,8 +1433,8 @@ process_requested_fields()
     while (m_alias_to_orig.count(src)==1) {
       src = m_alias_to_orig.at(src);
     }
-    auto it = m_diag_repo.find(src);
-    EKAT_REQUIRE_MSG (it==m_diag_repo.end() or it->second->name()!="FieldPrev",
+    auto it = stream_diags.find(src);
+    EKAT_REQUIRE_MSG (it==stream_diags.end() or it->second->name()!="FieldPrev",
         "Error! shift(time=1) of a shift(time=1) is not available.\n"
         " - stream name: " + m_stream_name + "\n"
         " - request: " + diag->get().name() + "\n"
@@ -1466,8 +1442,7 @@ process_requested_fields()
         (src!=operand ? " (an alias of " + src + ")" : "") + "\n"
         "A shift copies its operand at the start of the step, and a shifted operand has\n"
         "already been updated by then, so the result would lag one step, not two.\n"
-        "This includes X.shift(time=1).tend(), which contains a shift of X.shift(time=1),\n"
-        "and the underscore X_prev_prev.\n"
+        "This includes X.shift(time=1).tend(), which contains a shift of X.shift(time=1).\n"
         "For a two-step lag, put an operation between the shifts:\n"
         "  (X.shift(time=1)*1.0).shift(time=1)\n");
   }
@@ -1515,9 +1490,9 @@ get_var_dimnames (const FieldLayout& layout) const
   strvec_t dims;
   for (int i=0; i<layout.rank(); ++i) {
     const auto t = layout.tag(i);
-    if (t==COL and m_latlon_output) {
-      // Lat-Lon remapping uses a PointGrid target grid, so we replace the
-      // single column dimension with separate latitude and longitude dimensions.
+    if (t==COL and m_structured_output) {
+      // Structured grids (e.g., from remap to lat-lon/curvilinear grids) are PointGrids, so we replace
+      // the single column dimension with 2 separate dimensions (lat/lon).
       dims.push_back("lat");
       dims.push_back("lon");
     } else {

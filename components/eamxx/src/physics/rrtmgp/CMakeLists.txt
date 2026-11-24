@@ -81,7 +81,7 @@ set (RRTMGP_TABLES
 )
 
 foreach (file IN ITEMS ${RRTMGP_TABLES})
-  GetInputFile(${file})
+  GetInputFile(${file} TARGETS scream_rrtmgp)
 endforeach()
 
 # Build tests

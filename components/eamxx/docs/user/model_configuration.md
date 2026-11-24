@@ -544,23 +544,25 @@ I/O interface of EAMxx. There are two types of diagnostic outputs:
         - `surface_upward_latent_heat_flux`
         - `wind_speed`
         - `AerosolOpticalDepth550nm`
-        - `NumberPath`
-        - `AeroComCld`
+        - `LiqNumberPath`
+        - `IceNumberPath`
+        - `RainNumberPath`
 
 - **Lower-dimensional slices of a field**
       - These are hyperslices of an existing field or of another diagnostic output.
-      - As of August 2023, given a field `X`, the available options are:
-          - `X_at_lev_N`: slice the field `X` at the `N`-th vertical level index.
-              - Recall that in EAMxx `N = 0` corresponds to the model top.
-          - `X_at_model_bot`, `X_at_model_top`:
-          special case for top and bottom of the model.
-          - `X_at_Ymb`, `X_at_YPa`, `X_at_YhPa`:
+      - These are requested as [expressions](diags/expressions.md), which must be
+      named with `:=` when written, e.g. `T_500 := T_mid.interp(p_mid=500,units='hPa')`.
+      Given a field `X`, the available options are:
+          - `X.isel(lev=N)`: slice the field `X` at the `N`-th vertical level index.
+              - Recall that in EAMxx `N = 0` corresponds to the model top,
+              and `N = -1` to the model bottom.
+          - `X.interp(p_mid=Y,units='U')`:
           interpolates the field `X` at a vertical position specified by the
           given pressure `Y`.
-              - Available units are `mb` (millibar), `Pa`, and `hPa`.
-          - `X_at_Ym_above_Z`:
+              - Available units are `mb` (millibar), `Pa` (default), and `hPa`.
+          - `X.interp(z_mid=Y,reference='Z')`:
           interpolates the field `X` at a vertical height of `Y` meters above
-          `Z`, with `Z = surface` or `Z = sealevel`.
+          `Z`, with `Z = surface` or `Z = sealevel` (default).
 
 ## Remapped output
 
@@ -573,6 +575,20 @@ the grid where the fields are defined and a coarser grid.
       the size of the output file.
           - **Note:** with this feature, the user can only specify fields
           from a single grid.
+- **Structured target grids**: if the target grid of `horiz_remap_file` is a 2d structured grid
+(i.e., the map file has `dst_grid_rank=2`, with the grid sizes in `dst_grid_dims=[nx,ny]`),
+EAMxx figures out on its own how to write the output. No option is needed.
+      - The target points in the map file must be ordered with `x` as the fastest varying
+      index (i.e., the point `(ix,iy)` is the column number `iy*nx+ix`), and `nx*ny` must
+      match the number of columns of the target grid in the map file.
+      - If the latitude (longitude) of all the points with the same `y` (`x`) index is the same
+      (up to a small tolerance), the grid is a lat-lon grid. The output file will have
+      dimensions `(lat,lon)`, with `lat` and `lon` being 1d coordinate variables.
+      - Otherwise (e.g., a HRRR grid), the grid is a curvilinear grid: `nx` need not be the number
+      of longitudes, nor `ny` the number of latitudes. The output file will have dimensions `(lat,lon)`
+      (as for lat-lon grids, so the names are misleading: they have length `ny` and `nx`),
+      with `lat` and `lon` being 2d variables over `(lat,lon)`, which the output variables
+      reference through the `coordinates` attribute.
 - `horiz_remap_fill_threshold`: fraction (in `[0,1)`) of a target column that must
 come from valid (i.e., not fill-valued) source columns for the remapped value to be
 written out.

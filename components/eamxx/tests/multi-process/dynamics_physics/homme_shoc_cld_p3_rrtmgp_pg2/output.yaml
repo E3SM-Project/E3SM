@@ -73,12 +73,12 @@ fields:
       - eff_radius_qc_at_cldtop
       - eff_radius_qi_at_cldtop
       # Diagnostics
-      - T_mid_at_lev_2
-      - T_mid_at_model_top
-      - T_mid_at_model_bot
-      - T_mid_at_500mb
-      - T_mid_at_500hPa
-      - T_mid_at_50000Pa
+      - T_mid_at_lev_2 := T_mid.isel(lev=2)
+      - T_mid_at_model_top := T_mid.isel(lev=0)
+      - T_mid_at_model_bot := T_mid.isel(lev=-1)
+      - T_mid_at_500mb := T_mid.interp(p_mid=500,units='mb')
+      - T_mid_at_500hPa := T_mid.interp(p_mid=500,units='hPa')
+      - T_mid_at_50000Pa := T_mid.interp(p_mid=50000)
       - PotentialTemperature
       - AtmosphereDensity
       - Exner
@@ -98,8 +98,8 @@ fields:
       - RelativeHumidity
       - ZonalVapFlux
       - MeridionalVapFlux
-      - PotentialTemperature_at_model_top
-      - PotentialTemperature_at_500mb
+      - PotentialTemperature_at_model_top := PotentialTemperature.isel(lev=0)
+      - PotentialTemperature_at_500mb := PotentialTemperature.interp(p_mid=500,units='mb')
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.

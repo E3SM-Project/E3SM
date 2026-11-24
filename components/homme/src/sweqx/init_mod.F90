@@ -67,8 +67,6 @@ contains
     ! --------------------------------
     use parallel_mod, only : iam, parallel_t, haltmp, mpiinteger_t, abortmp,global_shared_buf, nrepro_vars
     ! --------------------------------
-    use metis_mod, only : genmetispart
-    ! --------------------------------
     use checksum_mod, only : testchecksum
     ! --------------------------------
     use spacecurve_mod, only : genspacepart
@@ -230,7 +228,7 @@ contains
     if(partmethod .eq. SFCURVE) then 
        call genspacepart(GridEdge,GridVertex)
     else
-       call genmetispart(GridEdge,GridVertex)
+       call abortmp('init: unsupported partmethod (sweqx only supports 4, space filling curve)')
     endif
 
     if(par%masterproc) write(6,*)"...done."

@@ -43,6 +43,7 @@ module controlMod
   use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: use_lake_wat_storage, lake_evap_cap_method
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
+  use elm_varctl              , only: onset_gdd_extension
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
   use elm_varpar              , only: elmfates_carbon_only
   use elm_varpar              , only: elmfates_cnp
@@ -72,6 +73,10 @@ module controlMod
                         use_IM2_hillslope_hydrology, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
+                        do_import_export_stats, import_export_stats_inst, &
+                        import_export_stats_daily, import_export_stats_month, &
+                        import_export_stats_ann, import_export_stats_ltann, &
+                        import_export_stats_ltend, &
                         use_lnd_rof_two_way, use_ocn_lnd_one_way, &
                         use_modified_infil, use_polygonal_tundra, use_arctic_init, &
                         iundef, nsrest, rundef, scmlat, scmlon, single_column, &
@@ -354,6 +359,9 @@ contains
     ! bgc & pflotran interface
     namelist /elm_inparm/ use_elm_interface, use_elm_bgc, use_pflotran
 
+    ! onset_gdd_extension in plant phenology
+    namelist /elm_inparm/ onset_gdd_extension
+
     namelist /elm_inparm/ use_dynroot
 
     namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage, lake_evap_cap_method
@@ -368,6 +376,12 @@ contains
     namelist /elm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+
+    namelist /elm_inparm/ &
+         do_import_export_stats, import_export_stats_inst, &
+         import_export_stats_daily, import_export_stats_month, &
+         import_export_stats_ann, import_export_stats_ltann, &
+         import_export_stats_ltend
  
     namelist /elm_inparm/ & 
          use_atm_downscaling_to_topunit, precip_downscaling_method
@@ -979,6 +993,9 @@ contains
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    ! phenology
+    call mpi_bcast (onset_gdd_extension, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     !cpl_bypass
      call mpi_bcast (metdata_type,   len(metdata_type),   MPI_CHARACTER, 0, mpicom, ier)
      call mpi_bcast (metdata_bypass, len(metdata_bypass), MPI_CHARACTER, 0, mpicom, ier)
@@ -1005,6 +1022,15 @@ contains
     call mpi_bcast (budget_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (budget_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (budget_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
+
+    ! Statistics of fields imported from / exported to the coupler
+    call mpi_bcast (do_import_export_stats    , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_inst  , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_daily , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_month , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
 
     ! land river two way coupling
     call mpi_bcast (use_lnd_rof_two_way   , 1, MPI_LOGICAL, 0, mpicom, ier)

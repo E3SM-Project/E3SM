@@ -1,0 +1,26 @@
+emulator:
+  name: bad-backend
+  type: component
+  model:
+    path: ''
+    input_layout: FeatureMajor
+    output_layout: FeatureMajor
+    backend: not_a_backend
+    options: {}
+sample_space:
+  dimensions:
+  - column
+input_order:
+- x
+output_order:
+- y
+inputs:
+  x:
+    name: x
+    dimensions:
+    - column
+outputs:
+  y:
+    name: y
+    dimensions:
+    - column

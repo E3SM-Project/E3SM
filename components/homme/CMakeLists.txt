@@ -90,8 +90,6 @@ add_definitions(-DHOMMEXX_CONFIG_IS_CMAKE)
 
 SET (PERFORMANCE_PROFILE "" CACHE STRING "Whether to build and link with various profiler libraries")
 
-# Set up some directories to facilitate finding netcdf and pnetcdf
-INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
 # Debug statement, please leave here
@@ -128,10 +126,6 @@ OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpi
 SET(HOMME_USE_CXX FALSE)
 SET(HOMME_USE_KOKKOS FALSE)
 
-#if trilinos is needed, we need cxx
-IF (HOMME_USE_TRILINOS)
-  SET (HOMME_USE_CXX TRUE)
-ENDIF()
 #if kokkos is needed, then so is cxx
 SET (HOMME_USE_KOKKOS FALSE)
 SET (HOMME_BUILD_KOKKOS_DYCORE FALSE)
@@ -182,13 +176,6 @@ IF (HOMME_USE_CXX)
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
-# Option to use ARKode package from SUNDIALS
-OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
-IF (${HOMME_USE_ARKODE})
-  MESSAGE(STATUS "Using ARKode, adding -DARKODE")
-  ADD_DEFINITIONS(-DARKODE)
-ENDIF ()
-
 IF (HOMME_USE_KOKKOS)
   ############################################
   # Selection of Kokkos execution space
@@ -226,10 +213,10 @@ IF (HOMME_USE_KOKKOS)
   # An option to allow workspace sharing on GPU
   OPTION (HOMMEXX_CUDA_SHARE_BUFFER "Whether we want to allow for buffer sharing on GPU. This feature incurs some computational overhead but can allow running of larger problems (relevant only for GPU builds)" OFF)
 
-  # For now, hommexx view usage is only compatible with Kokkos' lecacy view impl.
-  # FIXME: View usage in Hommexx will need to allow for Kokkos' MDSpan view implementation as the legacy
-  #        implementation will go away in the future, unannounced (it's an "impl" option => no deprecation).
-  OPTION (Kokkos_ENABLE_IMPL_VIEW_LEGACY "Currently, HOMME is only compatible with Kokkos' legacy view implementation." ON)
+  # Skip the (device) printf calls when the dp3d/vtheta limiters are applied. Device printf can be
+  # very expensive (e.g., on HIP), and some tests hit the limiters on purpose. Off by default,
+  # except in BFB testing builds, where unit tests use (semi-)random inputs that hit the limiters.
+  OPTION (HOMMEXX_DISABLE_LIMITER_WARNINGS "Whether to skip printing a warning when the dp3d/vtheta limiters are applied" ${HOMMEXX_BFB_TESTING})
 ENDIF()
 
 ##############################################################################
@@ -288,23 +275,6 @@ ELSE()
   ENDIF()
 ENDIF()
 
-IF (${HOMME_USE_TRILINOS})
-  MESSAGE(STATUS "This configuration of requires Trilinos")
-  FIND_PACKAGE(Trilinos REQUIRED)
-  SET(HAVE_TRILINOS TRUE)
-  IF("${Trilinos_PACKAGE_LIST}"  MATCHES ".*Zoltan2*.")
-    MESSAGE(STATUS "Trilinos is compiled with Zoltan2 Trilinos_PACKAGE_LIST:${Trilinos_PACKAGE_LIST}")
-    MESSAGE(STATUS "ENABLING ZOLTAN2")
-    SET(TRILINOS_HAVE_ZOLTAN2 TRUE)
-  ENDIF ()
-
-  add_definitions(${Trilinos_CXX_COMPILER_FLAGS})
-  include_directories(${Trilinos_TPL_INCLUDE_DIRS})
-  include_directories(${Trilinos_INCLUDE_DIRS})
-  link_directories(${Trilinos_LIBRARY_DIRS})
-  link_directories(${Trilinos_TPL_LIBRARY_DIRS})
-ENDIF ()
-
 MESSAGE(STATUS "Fortran Flags = ${CMAKE_Fortran_FLAGS}")
 MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
@@ -342,24 +312,10 @@ CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/cmake/homme_git_sha.h.in ${HOMME_BIN
 
 
 ##############################################################################
-# Zoltan partitioning library
-IF (DEFINED ZOLTAN_DIR)
-  MESSAGE(STATUS "Building with Zoltan")
-  FIND_PACKAGE(Zoltan REQUIRED)
-  SET(HAVE_ZOLTAN TRUE)
-ENDIF ()
-
 IF (DEFINED EXTRAE_DIR)
   MESSAGE(STATUS "Building with Extrae")
   FIND_PACKAGE(Extrae REQUIRED)
   SET(HAVE_EXTRAE TRUE)
-ENDIF ()
-
-# this section is for linking to SUNDIALS/ARKODE as an external library
-IF (DEFINED SUNDIALS_DIR)
-  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib64)
-  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
-  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
 if (HOMME_STANDALONE OR NOT TARGET gptl)
@@ -547,19 +503,12 @@ IF(${BUILD_HOMME_THETA})
   ADD_SUBDIRECTORY(src/theta-l)
 ENDIF()
 
-IF(${BUILD_HOMME_PREQX_ACC})
-  ADD_SUBDIRECTORY(src/preqx_acc)
-ENDIF()
-
 IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
 ENDIF()
 
 IF(${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(src/theta-l_kokkos)
-ENDIF()
-IF(${BUILD_HOMME_SWIM})
-  ADD_SUBDIRECTORY(src/swim)
 ENDIF()
 
 IF(${BUILD_HOMME_TOOL})
@@ -576,8 +525,10 @@ IF (${HOMME_BUILD_EXECS})
   ADD_SUBDIRECTORY(dcmip_tests)
 ENDIF()
 
-# Create a "make clean-all" target to delete CMake cache and the cprnc build
-ADD_CUSTOM_TARGET(clean-all
-   COMMAND ${CMAKE_BUILD_TOOL} clean
-   COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
-)
+# Create a "make clean-all" target to delete CMake cache and the cprnc build.
+IF (HOMME_STANDALONE)
+  ADD_CUSTOM_TARGET(clean-all
+     COMMAND ${CMAKE_BUILD_TOOL} clean
+     COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
+  )
+ENDIF()

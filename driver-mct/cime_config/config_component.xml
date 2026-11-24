@@ -615,6 +615,18 @@
     </desc>
   </entry>
 
+  <entry id="CASE_SUPPORT_LIBRARIES">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>gptl,mct,spio,csm_share</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>Comma-separated list of the support (shared) libraries that must be built for the case, in
+    the order they are built (a lib must come after the libs it depends on). The value here is the
+    list that all cases need. Components can add the libs they need (e.g., 'ekat') from their
+    buildnml. The 'mpi-serial' lib is added by the driver if MPILIB is mpi-serial.</desc>
+  </entry>
+
   <entry id="EXEROOT">
     <type>char</type>
     <valid_values></valid_values>

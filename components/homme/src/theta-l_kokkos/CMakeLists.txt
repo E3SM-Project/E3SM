@@ -9,7 +9,6 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
   SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
-  SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
@@ -53,6 +52,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/coordinate_systems_mod.F90
     ${SRC_SHARE_DIR}/control_mod.F90
     ${SRC_SHARE_DIR}/cube_mod.F90
+    ${SRC_SHARE_DIR}/metric_mod.F90
     ${SRC_SHARE_DIR}/derivative_mod.F90
     ${SRC_SHARE_DIR}/dimensions_mod.F90
     ${SRC_SHARE_DIR}/dof_mod.F90
@@ -71,7 +71,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/ll_mod.F90
     ${SRC_SHARE_DIR}/mass_matrix_mod.F90
     ${SRC_SHARE_DIR}/mesh_mod.F90
-    ${SRC_SHARE_DIR}/metis_mod.F90
     ${SRC_SHARE_DIR}/metagraph_mod.F90
     ${SRC_SHARE_DIR}/namelist_mod.F90
     ${SRC_SHARE_DIR}/parallel_mod.F90
@@ -93,7 +92,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/time_mod.F90
     ${SRC_SHARE_DIR}/vertremap_base.F90
     ${SRC_SHARE_DIR}/viscosity_base.F90
-    ${SRC_SHARE_DIR}/zoltan_mod.F90
     ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
     ${SRC_SHARE_DIR}/planar_mod.F90
     ${SRC_SHARE_DIR}/geometry_mod.F90
@@ -188,22 +186,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     LIST(APPEND THETAL_DEPS_CXX ${TARGET_DIR}/cxx/CaarFunctorImpl.cpp)
   ENDIF ()
 
-  IF (HOMME_USE_ARKODE)
-    SET(THETAL_DEPS_F90
-      ${THETAL_DEPS_F90}
-      ${ARKODE_DIR}/theta-l/arkode_interface.F90
-      ${ARKODE_DIR}/theta-l/arkode_mod.F90
-      ${ARKODE_DIR}/theta-l/homme_nvector.F90
-    )
-
-    SET(THETAL_DEPS_C
-      ${ARKODE_DIR}/nvector_external.h
-      ${ARKODE_DIR}/nvector_external.c
-      ${ARKODE_DIR}/column_linsol.h
-      ${ARKODE_DIR}/column_linsol.c
-    )
-  ENDIF ()
-
   # If the user specified a file for custom compiler options use those
   IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
     setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)
@@ -214,7 +196,6 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(THETAL_DEPS
     ${TARGET_F90}
     ${THETAL_DEPS_F90}
-    ${THETAL_DEPS_C}
     ${THETAL_DEPS_CXX}
   )
 
@@ -259,7 +240,5 @@ MACRO(THETAL_KOKKOS_SETUP)
   IF (PREQX_QSIZE_D)      
     SET (QSIZE_D ${PREQX_QSIZE_D})
   ENDIF ()
-
-  SET(USE_OPENACC FALSE)
 
 ENDMACRO(THETAL_KOKKOS_SETUP)

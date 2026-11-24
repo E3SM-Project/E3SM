@@ -187,15 +187,6 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_LINK_LIBRARIES(${execName} ${Extrae_LIBRARY})
   ENDIF ()
 
-  IF (HOMME_USE_TRILINOS)
-    TARGET_LINK_LIBRARIES(${execName} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-  ENDIF()
-
-
-  IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${execName} sundials_farkode_mod)
-    TARGET_LINK_LIBRARIES(${execName} sundials_arkode)
-  ENDIF ()
 
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
@@ -288,17 +279,6 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_LINK_LIBRARIES(${libName} PUBLIC ${Extrae_LIBRARY})
   ENDIF ()
 
-  IF (HOMME_USE_TRILINOS)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-  ENDIF()
-
-  IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_farkode)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_arkode)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_nvecserial)
-    TARGET_LINK_LIBRARIES(${libName} PUBLIC sundials_fnvecserial)
-  ENDIF ()
-
 endmacro(createExecLib)
 
 macro (copyDirFiles testDir)
@@ -320,9 +300,6 @@ macro (copyDirFiles testDir)
     FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH ()
   FOREACH (singleFile ${MESH_FILES})
-    FILE(COPY ${singleFile} DESTINATION ${testDir})
-  ENDFOREACH ()
-  FOREACH (singleFile ${TRILINOS_XML_FILE})
     FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH ()
 
@@ -477,24 +454,6 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "EXEC=${EXEC_NAME}\n")
 
-  #not making it more general due to jsrun, p9/gpu, loading modules...
-  if (HOMME_MACHINE MATCHES "summit-gpu")
-    #cmake 3.17
-    #foreach(varn varv IN ZIP_LISTS ${varnames} ${varvals})
-    #  file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
-    #  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    #endforeach()
-
-    list(LENGTH varnames len1)
-    math(EXPR len2 "${len1} - 1")
-
-    foreach(val RANGE ${len2})
-      list(GET varnames ${val} varn)
-      list(GET varvals ${val} varv)
-      file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
-      FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    endforeach()
-  endif()
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
 
@@ -601,7 +560,6 @@ macro(resetTestVariables)
   SET(MAX_NUM_CPUS)
   SET(OMP_NAMELIST_FILES)
   SET(OMP_NUM_THREADS)
-  SET(TRILINOS_XML_FILE)
 endmacro(resetTestVariables)
 
 macro(printTestSummary)
@@ -668,12 +626,6 @@ macro(printTestSummary)
   IF (NOT "${OMP_NC_OUTPUT_FILES}" STREQUAL "")
     MESSAGE(STATUS "  omp_nc_output_files=")
     FOREACH (singleFile ${OMP_NC_OUTPUT_FILES})
-      MESSAGE(STATUS "    ${singleFile}")
-    ENDFOREACH ()
-  ENDIF ()
-  IF (NOT "${TRILINOS_XML_FILE}" STREQUAL "")
-    MESSAGE(STATUS "  trilinos_xml_file=")
-    FOREACH (singleFile ${TRILINOS_XML_FILE})
       MESSAGE(STATUS "    ${singleFile}")
     ENDFOREACH ()
   ENDIF ()
@@ -756,7 +708,6 @@ macro(createTest testFile)
   FILE(GLOB NCL_FILES ${NCL_FILES})
   FILE(GLOB MESH_FILES ${MESH_FILES})
   FILE(GLOB OMP_NAMELIST_FILES ${OMP_NAMELIST_FILES})
-  FILE(GLOB TRILINOS_XML_FILE ${TRILINOS_XML_FILE})
 
   # Determine if the executable this tests depeds upon is built
   LIST(FIND EXEC_LIST ${EXEC_NAME} FIND_INDEX)
@@ -928,6 +879,12 @@ function(check_transport_error_norms
   # available with some of these tests. This function encapsulates the setup
   # steps to add a check after a tracer transport test runs. See
   # TransportCheckErrorNorms.cmake.in for details.
+  # This is called from the test file, before the test is created (see createTest). If the
+  # executable of the test is not built, the test is not created, so don't create the check either.
+  list(FIND EXEC_LIST "${EXEC_NAME}" TCEN_EXEC_INDEX)
+  if (TCEN_EXEC_INDEX LESS 0)
+    return()
+  endif()
   configure_file(
     ${HOMME_SOURCE_DIR}/cmake/TransportCheckErrorNorms.cmake.in
     ${HOMME_BINARY_DIR}/tests/${TEST_NAME}/check.cmake

@@ -5,6 +5,7 @@
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_reader.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
@@ -25,7 +26,7 @@
  * create_diag.cpp covers the translation. Only here can we check that the field
  * survives an output stream, which looks fields up by the REQUESTED name while
  * a diag derives its own from its params -- not the same thing for an
- * expression, nor for the _atm_backtend alias.
+ * expression.
  */
 
 namespace scream {
@@ -148,8 +149,7 @@ TEST_CASE ("io_with_expressions")
         // An expression must be given a name, since field names go into the
         // nc file verbatim
         "prod := qv*T_mid",
-        // Grouping is explicit, unlike in the underscore spelling, where it
-        // falls out of regex greediness
+        // Grouping is explicit
         "shifted := (qv+qv)*T_mid",
         // Built on the intermediate below, by name
         "half := qvT/2",
@@ -157,19 +157,22 @@ TEST_CASE ("io_with_expressions")
         "col_qv := qv.mean('lev')",
         // A method call on a method call, bringing the column mean back to a 3d layout
         "col_qv_3d := qv.mean('lev').broadcast_like(qv)",
-        // Regression: expands to T_mid_minus_T_mid_prev_over_dt, so the diag
-        // names its field after the expansion. Without an explicit output
-        // name the stream throws during setup.
-        "T_mid_atm_backtend",
+        // A shorthand that expands to (T_mid-T_mid.shift(time=1)).over_dt()
+        "T_mid_atm_backtend := T_mid.tend()",
         // A negative literal is a number, on either side of the operator
         "neg_l := -2*T_mid",
         "neg_r := T_mid*(-2)",
         // ...and a legal threshold
         "T_pos := T_mid.where(T_mid>-1)",
+        // Constants alone make a constant, usable as a scalar (also as an alias)
+        "kap := T_mid*(Rair/Cpair)",
+        "kap_alias := T_mid*kappa",
+        "T_plus5 := T_mid+(2+3)",
       },
       {
         // An intermediate: resolved and usable by name, but not written
         "qvT := qv*T_mid",
+        "kappa := Rair/Cpair",
       });
 
   // NOTE: scoped, so the stream (and the diags it owns) are gone before Kokkos
@@ -209,11 +212,13 @@ TEST_CASE ("io_with_expressions")
   REQUIRE (scorpio::has_var(filename,"half"));
   REQUIRE (scorpio::has_var(filename,"col_qv"));
   REQUIRE (scorpio::has_var(filename,"col_qv_3d"));
-  // The one that used to throw during setup
   REQUIRE (scorpio::has_var(filename,"T_mid_atm_backtend"));
   REQUIRE (scorpio::has_var(filename,"neg_l"));
   REQUIRE (scorpio::has_var(filename,"neg_r"));
   REQUIRE (scorpio::has_var(filename,"T_pos"));
+  REQUIRE (scorpio::has_var(filename,"kap"));
+  REQUIRE (scorpio::has_var(filename,"kap_alias"));
+  REQUIRE (scorpio::has_var(filename,"T_plus5"));
   // An 'aliases' entry is an intermediate: resolved, used, but not written
   REQUIRE_FALSE (scorpio::has_var(filename,"qvT"));
   // The file records where the numbers came from
@@ -235,7 +240,10 @@ TEST_CASE ("io_with_expressions")
   Field neg_l   (FieldIdentifier("neg_l",  layout3d, K, gname));
   Field neg_r   (FieldIdentifier("neg_r",  layout3d, K, gname));
   Field T_pos   (FieldIdentifier("T_pos",  layout3d, K, gname));
-  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos}) {
+  Field kap     (FieldIdentifier("kap",    layout3d, K, gname));
+  Field kap_alias (FieldIdentifier("kap_alias", layout3d, K, gname));
+  Field T_plus5 (FieldIdentifier("T_plus5",layout3d, K, gname));
+  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos,&kap,&kap_alias,&T_plus5}) {
     f->allocate_view();
     f->get_header().get_tracking().update_time_stamp(t0);
   }
@@ -243,7 +251,7 @@ TEST_CASE ("io_with_expressions")
   FieldReader reader;
   reader.set_file_specs(filename);
   reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos});
+  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos,kap,kap_alias,T_plus5});
 
   const int nlocal = grid->get_num_local_dofs();
   for (int n=1; n<=nsteps; ++n) {
@@ -257,9 +265,15 @@ TEST_CASE ("io_with_expressions")
     neg_l.sync_to_host();
     neg_r.sync_to_host();
     T_pos.sync_to_host();
+    kap.sync_to_host();
+    kap_alias.sync_to_host();
+    T_plus5.sync_to_host();
     auto neg_l_h    = neg_l.get_view<const Real**,Host>();
     auto neg_r_h    = neg_r.get_view<const Real**,Host>();
     auto T_pos_h    = T_pos.get_view<const Real**,Host>();
+    auto kap_h      = kap.get_view<const Real**,Host>();
+    auto kap_alias_h = kap_alias.get_view<const Real**,Host>();
+    auto T_plus5_h  = T_plus5.get_view<const Real**,Host>();
     auto prod_h     = prod.get_view<const Real**,Host>();
     auto shifted_h  = shifted.get_view<const Real**,Host>();
     auto half_h     = half.get_view<const Real**,Host>();
@@ -288,6 +302,11 @@ TEST_CASE ("io_with_expressions")
         } else {
           REQUIRE (T_pos_h(i,k)==constants::fill_value<Real>);
         }
+        using C = physics::Constants<Real>;
+        const Real kappa_v = C::Rair.value / C::Cpair.value;
+        REQUIRE (kap_h(i,k)==Approx(T_v*kappa_v));
+        REQUIRE (kap_alias_h(i,k)==Approx(T_v*kappa_v));
+        REQUIRE (T_plus5_h(i,k)==T_v+5);
       }
       REQUIRE (col_qv_h(i)==qv_col_sum/nlevs);
       for (int k=0; k<nlevs; ++k) {
@@ -307,16 +326,6 @@ TEST_CASE ("io_with_expressions")
     REQUIRE_THROWS (om_bad.setup(fm,gm->get_grid_names()));
   }
 
-  // ...so a legacy name with a '.' is still fine unaliased, which a
-  // character-based rule would have broken.
-  {
-    auto legacy = output_params("io_dexpr_legacy",gname,{"T_mid_where_qv_gt_0.01"});
-    OutputManager om_legacy;
-    om_legacy.initialize(comm,legacy,t0,false);
-    REQUIRE_NOTHROW (om_legacy.setup(fm,gm->get_grid_names()));
-    om_legacy.finalize();
-  }
-
   // A stream whose setup throws must say why, and must not leave its diags
   // in the repo shared by all streams
   auto require_setup_throws = [&](const ekat::ParameterList& params, const std::string& msg) {
@@ -332,12 +341,12 @@ TEST_CASE ("io_with_expressions")
     const std::string lag_msg = "shift(time=1) of a diagnostic is not available";
     const std::vector<std::string> lagged = {"d := (T_mid*1.0)-(T_mid*1.0).shift(time=1)"};
     require_setup_throws(output_params("io_dexpr_lag_sparse",gname,lagged,{},3),lag_msg);
-    // ...also for the shift of an alias of a diag, for tend(), and for the underscore names
+    // ...also for the shift of an alias of a diag, for tend(), and for a named diag
     for (const auto& names : std::vector<std::vector<std::string>>{
             {"a := T_mid*1.0", "d := a.shift(time=1)"},
             {"bt := (T_mid*1.0).tend()"},
-            {"VirtualTemperature_prev"},
-            {"VirtualTemperature_atm_backtend"}}) {
+            {"vp := VirtualTemperature.shift(time=1)"},
+            {"vbt := VirtualTemperature.tend()"}}) {
       require_setup_throws(output_params("io_dexpr_lag_sparse",gname,names,{},3),lag_msg);
     }
 
@@ -425,6 +434,108 @@ TEST_CASE ("io_with_expressions")
     om_cst.initialize(comm,cst,t0,false);
     REQUIRE_NOTHROW (om_cst.setup(fm,gm->get_grid_names()));
     om_cst.finalize();
+  }
+
+  scorpio::finalize_subsystem();
+}
+
+TEST_CASE ("io_aliases_in_streams")
+{
+  // An alias is local to its stream. Streams may use the same name for different things,
+  // and each must get its own. If they bind it the same way, they should share the diags.
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  register_diagnostics();
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,ncols);
+  gm->build_grids();
+  auto grid = gm->get_grid("point_grid");
+  const auto gname = grid->name();
+  util::TimeStamp t0({2023,1,1},{0,0,0});
+  auto fm = create_test_fm(gm,grid,t0);
+
+  // x reads 'diff' directly, y through the nested (qv*diff). 'z' reads no alias.
+  auto params = [&](const std::string& prefix, const std::string& diff) {
+    return output_params(prefix,gname,{"x := qv*diff","y := (qv*diff).mean('lev')","z := qv*T_mid"},{"diff := " + diff});
+  };
+  const std::vector<std::string> prefixes = {"alias_s1","alias_s2","alias_s3"};
+  const auto p1 = params(prefixes[0],"T_mid*qv");
+  const auto p2 = params(prefixes[1],"T_mid/qv");  // another 'diff'
+  const auto p3 = params(prefixes[2],"T_mid*qv");  // the same 'diff' as stream 1
+
+  auto t = t0;
+  {
+    OutputManager om1, om2, om3;
+    om1.initialize(comm,p1,t0,false);
+    om2.initialize(comm,p2,t0,false);
+    om3.initialize(comm,p3,t0,false);
+    om1.setup(fm,gm->get_grid_names());
+    const auto n1 = DiagRepo::names().size();
+    // Same aliases as stream 1: all its diags are shared, so none is added
+    om3.setup(fm,gm->get_grid_names());
+    REQUIRE (DiagRepo::names().size()==n1);
+    // Another 'diff': the diags that read it are not shared, but the others (z) are
+    om2.setup(fm,gm->get_grid_names());
+    REQUIRE (DiagRepo::names().size()>n1);
+
+    for (auto* om : {&om1,&om2,&om3}) {
+      om->init_timestep(t,1);
+    }
+    t += 1;
+    auto qv    = fm->get_field("qv");
+    auto T_mid = fm->get_field("T_mid");
+    calc_fields(qv,T_mid,1);
+    qv.get_header().get_tracking().update_time_stamp(t);
+    T_mid.get_header().get_tracking().update_time_stamp(t);
+    for (auto* om : {&om1,&om2,&om3}) {
+      om->run(t);
+    }
+    for (auto* om : {&om1,&om2,&om3}) {
+      om->finalize();
+    }
+  }
+
+  const auto layout3d = grid->get_3d_scalar_layout(LEV);
+  const auto layout2d = grid->get_2d_scalar_layout();
+  const int nlocal = grid->get_num_local_dofs();
+  for (const auto& prefix : prefixes) {
+    const bool times = prefix!="alias_s2";
+    const auto filename = prefix + ".INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." +
+                          (t0+1).to_string() + ".nc";
+    Field x (FieldIdentifier("x",layout3d,K,gname));
+    Field y (FieldIdentifier("y",layout2d,K,gname));
+    Field z (FieldIdentifier("z",layout3d,K,gname));
+    for (auto* f : {&x,&y,&z}) {
+      f->allocate_view();
+      f->get_header().get_tracking().update_time_stamp(t0);
+    }
+    FieldReader reader;
+    reader.set_file_specs(filename);
+    reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
+    reader.set_fields({x,y,z});
+    reader.read(0);
+    for (auto* f : {&x,&y,&z}) {
+      f->sync_to_host();
+    }
+    auto x_h = x.get_view<const Real**,Host>();
+    auto y_h = y.get_view<const Real*,Host>();
+    auto z_h = z.get_view<const Real**,Host>();
+    for (int i=0; i<nlocal; ++i) {
+      Real y_sum = 0;
+      for (int k=0; k<nlevs; ++k) {
+        const Real qv_v = 1 + i*(k+1);
+        const Real T_v  = 1 - i*(k+1);
+        const Real diff = times ? T_v*qv_v : T_v/qv_v;
+        REQUIRE (x_h(i,k)==Approx(qv_v*diff));
+        REQUIRE (z_h(i,k)==Approx(qv_v*T_v));
+        y_sum += qv_v*diff;
+      }
+      REQUIRE (y_h(i)==Approx(y_sum/nlevs));
+    }
+    reader.clean_up();
   }
 
   scorpio::finalize_subsystem();

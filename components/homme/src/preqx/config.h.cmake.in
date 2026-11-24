@@ -36,9 +36,6 @@
 /* Whether to use CUDA Fortran */
 #cmakedefine01 USE_CUDA_FORTRAN
 
-/* Whether to use OPENACC */
-#cmakedefine01 USE_OPENACC
-
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
@@ -50,15 +47,6 @@
 
 /* Nested OpenMP (both horizontal and vertical) */
 #cmakedefine NESTED_OPENMP
-
-/* Zoltan partitioning library */
-#cmakedefine01 HAVE_ZOLTAN
-
-/* TRILINOS  library */
-#cmakedefine01 HAVE_TRILINOS
-
-/* ZOLTAN2 SUBPACKAGE OF TRILINOS  library */
-#cmakedefine01 TRILINOS_HAVE_ZOLTAN2
 
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4

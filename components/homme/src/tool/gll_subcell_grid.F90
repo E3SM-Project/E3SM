@@ -26,7 +26,7 @@ contains
     integer, parameter :: npm12 = (np-1)*(np-1)
     integer :: subelement_corners(npm12*nelemd,4)
     integer :: dof(npm12*nelemd*4)
-    character(len=12) :: nestr,npstr
+    character(len=80) :: nestr,npstr
     character(len=240) :: mappingfile
 
     ! Create a CS grid mapping file for postprocessing tools

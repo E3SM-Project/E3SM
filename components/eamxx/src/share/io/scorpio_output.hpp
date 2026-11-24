@@ -3,7 +3,8 @@
 
 #include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
-#include "share/data_managers/grids_manager.hpp"
+#include "share/grid/grids_manager.hpp"
+#include "share/remap/abstract_remapper.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -37,7 +38,7 @@
  *        field_names:                  ARRAY OF STRINGS
  *     GRID_NAME_2:
  *        field_names:                  ARRAY OF STRINGS
- *        output_data_layout:           STRING                (default: 'default')
+ *        output_data_layout:           STRING                (default: 'unique')
  *     ...
  *     GRID_NAME_N:
  *        field_names:                  ARRAY OF STRINGS
@@ -65,15 +66,13 @@
  *     - GRID_NAME: parameters specifying fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
  *        - output_data_layout: attempt to 'remap' fields to this data layout first.
- *          This option is mostly used to enable dyn->phys_gll remap (to save storage),
- *          but can be expanded to support other online layout changes (e.g., transpose
- *          (ncol,[...,]nlev) layouts). The default value 'default' will use the default
- *          for this grid. Usually, 'default' does the same thing as 'native' (which does
- *          no layout change, and outputs the fields as they appear on this grid), but for
- *          the dynamics grid the default behavior is to remap to phys_gll layout.
- *          Other values are available on a per grid basis. E.g., the dynamics grid
- *          supports 'dg' (same as 'native') and 'cg' (which implements the dyn->phys_gll
- *          remap, which is the same behavior as 'default').
+ *          This option is mostly used to enable dyn->phys_gll remap (to save storage).
+ *          Valid values are 'native', which does no layout change, and outputs the
+ *          fields as they appear on this grid, and 'unique' (the default), which outputs
+ *          the fields on the unique grid of this grid (see AbstractGrid::get_unique_grid).
+ *          For grids that are already unique, the two choices are equivalent. For the
+ *          dynamics grid, the unique grid is phys_gll, so 'unique' implements the
+ *          dyn->phys_gll remap.
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
@@ -123,7 +122,6 @@ class AtmosphereOutput
 public:
   using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
-  using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
   using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
@@ -178,7 +176,7 @@ protected:
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const FieldIdentifier& fid);
+  void set_valid_count_tracking(const Field& f);
 
   // --- Internal variables --- //
   ekat::Comm m_comm;
@@ -235,13 +233,14 @@ protected:
   // registered in the field manager so that other diagnostics can depend on
   // them, but they are NOT written to the NC output file.
   strvec_t m_intermediate_aliases;
-  strmap_t<Field> m_field_to_avg_count;
-  std::vector<Field> m_avg_counts;
-  strmap_t<std::string> m_field_to_avg_cnt_suffix;
+  strmap_t<Field> m_field_to_valid_count;
+  strmap_t<Field> m_mask_to_count;
+  std::vector<Field> m_valid_counts;
   strmap_t<strvec_t> m_vars_dims;
   strmap_t<int> m_dims_len;
   std::list<diag_ptr_type> m_diagnostics;
 
+  // The diags of all streams, by hash (see AbstractDiagnostic::hash), so that streams share equivalent ones
   static strmap_t<diag_ptr_type> m_diag_repo;
 
   // Field aliasing support
@@ -250,8 +249,10 @@ protected:
   DefaultMetadata m_default_metadata;
 
   bool m_add_time_dim;
-  bool m_track_avg_cnt         = false;
-  bool m_latlon_output = false;
+  // If true, the io grid is structured (it has the geo data structured_dims=[ny,nx]), and the COL dim
+  // is replaced by 2 dims in the file, (lat,lon), of length ny and nx. For lat-lon grids, lat/lon
+  // are 1d coordinate variables, while for curvilinear grids they are 2d variables over (lat,lon).
+  bool m_structured_output = false;
   std::string m_decomp_dimname = "";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =

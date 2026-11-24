@@ -22,13 +22,15 @@
  * Fields interpolated to the same pressure level share a valid-sample count,
  * also when aliased, except for a field whose input is masked.
  * Midpoint and interface fields do not share, since their ranges differ.
- * An alias of a masked model field uses the count of that field.
- * Model fields have a count of their own. The data of an invalid entry is garbage:
+ * Fields that share a mask share the count (an alias shares the mask of its target, hence the count).
+ * Model fields have a count of their own, unless they share a mask. The data of an invalid entry is garbage:
  * IO must never use it, and write fill_value there.
  * A vector field at a level shares the level's count name; the count adds the
  * vector dim to the name, as for any count.
+ * A level that is not an integer, or is rendered with an exponent, finds the
+ * level-index diag it depends on, whose name repeats the level as rendered.
  * In MAX/MIN streams, an entry that is never valid is fill_value, also when
- * its count is shared with a field that is valid there.
+ * another field is valid there (fields with different masks have different counts).
  */
 
 namespace scream {
@@ -208,17 +210,19 @@ void run_and_check (const std::string& avg_type,
       "Xmasked := X.where(C>0)",
   });
   f_pl.set<std::vector<std::string>>("field_names",{
-      "X_at_500hPa",
-      "C500 := C_at_500hPa",
-      "Xmasked_at_500hPa",
+      "X_at_500hPa := X.interp(p_mid=500,units='hPa')",
+      "C500 := C.interp(p_mid=500,units='hPa')",
+      "Xmasked_at_500hPa := Xmasked.interp(p_mid=500,units='hPa')",
       // NOTE: the alias sorts before its target, and is processed first
       "AM := m2d",
-      "X_at_850hPa",
-      "Xi_at_850hPa",
-      "F_at_500hPa",
+      "X_at_850hPa := X.interp(p_mid=850,units='hPa')",
+      "Xi_at_850hPa := Xi.interp(p_mid=850,units='hPa')",
+      "F_at_500hPa := F.interp(p_mid=500,units='hPa')",
+      "X_at_500p5 := X.interp(p_mid=500.5,units='hPa')",
+      "X_at_tiny := X.interp(p_mid=0.00001,units='hPa')",
       "S1",
       "S2",
-      "W_at_500hPa",
+      "W_at_500hPa := W.interp(p_mid=500,units='hPa')",
   });
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
@@ -265,25 +269,30 @@ void run_and_check (const std::string& avg_type,
   REQUIRE (scorpio::has_var(filename,"Xmasked_at_500hPa"));
   // The unmasked fields share the count keyed on the level, alias included.
   // CHECK, so a failure still reports the values below
-  CHECK (scorpio::has_var(filename,"avg_count_500hPa_ncol"));
-  CHECK_FALSE (scorpio::has_var(filename,"avg_count_X_at_500hPa_ncol"));
-  CHECK_FALSE (scorpio::has_var(filename,"avg_count_C500_ncol"));
-  CHECK_FALSE (scorpio::has_var(filename,"avg_count_ncol"));
+  CHECK (scorpio::has_var(filename,"nvalid_500hPa"));
+  // The count has its own metadata
+  CHECK (scorpio::get_attribute<std::string>(filename,"nvalid_500hPa","units")=="1");
+  CHECK (scorpio::get_attribute<std::string>(filename,"nvalid_500hPa","cell_methods")=="time: sum");
+  CHECK (scorpio::has_attribute(filename,"nvalid_500hPa","long_name"));
+  CHECK_FALSE (scorpio::has_var(filename,"nvalid_X_at_500hPa"));
+  CHECK_FALSE (scorpio::has_var(filename,"nvalid_C500"));
+  CHECK_FALSE (scorpio::has_var(filename,"nvalid_ncol"));
   // ... while the field with a masked input has its own
-  CHECK (scorpio::has_var(filename,"avg_count_Xmasked_at_500hPa_ncol"));
-  // ... and so does the alias of the masked model field
-  CHECK (scorpio::has_var(filename,"avg_count_AM_ncol"));
+  CHECK (scorpio::has_var(filename,"nvalid_Xmasked_at_500hPa"));
+  // ... while the alias of the masked model field shares the count of its target (named after the mask)
+  CHECK (scorpio::has_var(filename,"nvalid_m2d"));
   // Midpoint and interface fields at the same level do not share
-  CHECK (scorpio::has_var(filename,"avg_count_850hPa_ncol"));
-  CHECK (scorpio::has_var(filename,"avg_count_850hPa_int_ncol"));
+  CHECK (scorpio::has_var(filename,"nvalid_850hPa"));
+  CHECK (scorpio::has_var(filename,"nvalid_850hPa_int"));
   // A field whose input is masked has its own count
-  CHECK (scorpio::has_var(filename,"avg_count_F_at_500hPa_ncol"));
+  CHECK (scorpio::has_var(filename,"nvalid_F_at_500hPa"));
   // Model fields have a count of their own
-  CHECK (scorpio::has_var(filename,"avg_count_S1_ncol"));
-  CHECK (scorpio::has_var(filename,"avg_count_S2_ncol"));
-  // The vector field at 500 hPa: the count is named after the level and the layout
-  CHECK (scorpio::has_var(filename,"avg_count_500hPa_ncol_dim2"));
-  CHECK_FALSE (scorpio::has_var(filename,"avg_count_500hPa_dim2_ncol_dim2"));
+  CHECK (scorpio::has_var(filename,"nvalid_S1"));
+  CHECK (scorpio::has_var(filename,"nvalid_S2"));
+  // The vector field at 500 hPa has its own mask (the name carries the vector dim), hence its own count
+  CHECK (scorpio::has_var(filename,"nvalid_500hPa_dim2"));
+  REQUIRE (scorpio::has_var(filename,"X_at_500p5"));
+  REQUIRE (scorpio::has_var(filename,"X_at_tiny"));
   scorpio::release_file(filename);
 
   {
@@ -297,7 +306,9 @@ void run_and_check (const std::string& avg_type,
     Field f5(FieldIdentifier("F_at_500hPa",layout2d,K,gname));
     Field s1(FieldIdentifier("S1",layout2d,K,gname));
     Field s2(FieldIdentifier("S2",layout2d,K,gname));
-    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2}) {
+    Field x55(FieldIdentifier("X_at_500p5",layout2d,K,gname));
+    Field xt(FieldIdentifier("X_at_tiny",layout2d,K,gname));
+    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2,&x55,&xt}) {
       f->allocate_view();
       f->get_header().get_tracking().update_time_stamp(t0);
     }
@@ -305,9 +316,9 @@ void run_and_check (const std::string& avg_type,
     FieldReader reader;
     reader.set_file_specs(filename);
     reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-    reader.set_fields({xu,xm,c5,am,x8,xi8,f5,s1,s2});
+    reader.set_fields({xu,xm,c5,am,x8,xi8,f5,s1,s2,x55,xt});
     reader.read(0);
-    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2}) {
+    for (auto* f : {&xu,&xm,&c5,&am,&x8,&xi8,&f5,&s1,&s2,&x55,&xt}) {
       f->sync_to_host();
     }
     auto xu_h = xu.get_view<const Real*,Host>();
@@ -319,6 +330,8 @@ void run_and_check (const std::string& avg_type,
     auto f5_h = f5.get_view<const Real*,Host>();
     auto s1_h = s1.get_view<const Real*,Host>();
     auto s2_h = s2.get_view<const Real*,Host>();
+    auto x55_h = x55.get_view<const Real*,Host>();
+    auto xt_h  = xt.get_view<const Real*,Host>();
 
     const Real expected = expected_value(avg_type);
 
@@ -347,6 +360,10 @@ void run_and_check (const std::string& avg_type,
       // S2 is never valid
       REQUIRE (s1_h(i)==Approx(3.0));
       REQUIRE (s2_h(i)==FILL);
+
+      // 500.5 hPa is in range, 0.00001 hPa is above the model top
+      REQUIRE (x55_h(i)==Approx(expected));
+      REQUIRE (xt_h(i)==FILL);
     }
   }
 }
@@ -371,8 +388,8 @@ void run_vremap_and_check (const std::shared_ptr<const GridsManager>& gm,
   scorpio::write_var(remap_file,"p_levs",p_tgt.data());
   scorpio::release_file(remap_file);
 
-  // After the remap X and Xi have the same layout, hence the same count, which
-  // is 0 at 850 hPa, where X is masked and Xi is not
+  // After the remap X and Xi have the same layout, but different masks (X is a midpoint field,
+  // Xi an interface field), hence different counts: at 850 hPa, X is masked and Xi is not
   for (const std::string avg_type : {"MAX","MIN"}) {
     util::TimeStamp t0({2023,1,1},{0,0,0});
     auto fm = create_test_fm(gm,grid,t0);
@@ -417,7 +434,9 @@ void run_vremap_and_check (const std::shared_ptr<const GridsManager>& gm,
                           ".np" + std::to_string(comm.size()) + "." +
                           t0.to_string() + ".nc";
     scorpio::register_file(filename,scorpio::Read);
-    REQUIRE (scorpio::has_var(filename,"avg_count_ncol_lev"));
+    // The masks of a midpoint and of an interface field differ, hence the counts
+    REQUIRE (scorpio::has_var(filename,"nvalid_vremap_ncol_lev"));
+    REQUIRE (scorpio::has_var(filename,"nvalid_vremap_ncol_ilev"));
     scorpio::release_file(filename);
 
     // Read back on a grid with the target levels

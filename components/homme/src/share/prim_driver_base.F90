@@ -15,7 +15,7 @@ module prim_driver_base
 
   use derivative_mod,   only: derivative_t, derivinit
   use dimensions_mod,   only: np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, qsize
-  use element_mod,      only: element_t, allocate_element_desc, setup_element_pointers
+  use element_mod,      only: element_t, allocate_element_desc
   use element_ops,      only: copy_state
   use gridgraph_mod,    only: GridVertex_t, GridEdge_t
   use hybrid_mod,       only: hybrid_t
@@ -108,15 +108,6 @@ contains
     ! Initialize and partition the geometry
     ! ==================================
     call prim_init1_geometry(elem,par,dom_mt)
-
-    ! ==================================
-    ! Initialize element pointers (if any)
-    ! ==================================
-    ! TODO: this is for OPENACC only. preqx_acc should define its own prim_init1,
-    !       which should do the same things as in this prim_init1, including
-    !       the call to setup_element_pointers, which should be removed from
-    !       the base version of prim_init1
-    call setup_element_pointers(elem)
 
     ! ==================================
     ! Initialize element arrays (fluxes and state)
@@ -227,7 +218,7 @@ contains
     ! --------------------------------
     use thread_mod, only : nthreads, hthreads, vthreads
     ! --------------------------------
-    use control_mod, only : topology, geometry, partmethod, z2_map_method, cubed_sphere_map
+    use control_mod, only : topology, geometry, partmethod, cubed_sphere_map
     ! --------------------------------
     use prim_state_mod, only : prim_printstate_init
     ! --------------------------------
@@ -239,12 +230,12 @@ contains
     use geometry_mod, only: set_area_correction_map0, set_area_correction_map2
     ! --------------------------------
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
-                         MeshCubeElemCount, MeshCubeEdgeCount, MeshCubeTopologyCoords
+                         MeshCubeElemCount, MeshCubeEdgeCount
     ! --------------------------------
     use planar_mod,  only : PlaneEdgeCount , PlaneElemCount, PlaneTopology
     ! --------------------------------
     use planar_mesh_mod, only :   PlaneMeshSetCoordinates,      &
-                          MeshPlaneTopology, MeshPlaneTopologyCoords
+                          MeshPlaneTopology
     ! --------------------------------
     use planar_mod, only : plane_init_atomic, plane_set_corner_coordinates
     ! --------------------------------
@@ -261,8 +252,6 @@ contains
     use parallel_mod, only : mpiinteger_t, mpi_max, mpi_sum, haltmp
 #endif
     ! --------------------------------
-    use metis_mod, only : genmetispart
-    ! --------------------------------
     use spacecurve_mod, only : genspacepart
     ! --------------------------------
     use scalable_grid_init_mod, only : sgi_init_grid
@@ -270,8 +259,6 @@ contains
     use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
     ! --------------------------------
     use params_mod, only : SFCURVE
-    ! --------------------------------
-    use zoltan_mod, only: genzoltanpart, getfixmeshcoordinates, printMetrics, is_zoltan_partition, is_zoltan_task_mapping
     ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
@@ -295,11 +282,6 @@ contains
     type (quadrature_t)   :: gp                     ! element GLL points
 
 
-    real (kind=real_kind) ,  allocatable :: coord_dim1(:)
-    real (kind=real_kind) ,  allocatable :: coord_dim2(:)
-    real (kind=real_kind) ,  allocatable :: coord_dim3(:)
-    integer :: coord_dimension = 3
-
     ! ===============================================================
     ! Allocate and initialize the graph (array of GridVertex_t types)
     ! ===============================================================
@@ -322,8 +304,7 @@ contains
     can_scalably_init_grid = &
          topology == "cube" .and. &
          .not. MeshUseMeshFile .and. &
-         partmethod .eq. SFCURVE .and. &
-         .not. (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method))
+         partmethod .eq. SFCURVE
 
     if (can_scalably_init_grid) then
        call sgi_init_grid(par, GridVertex, GridEdge, MetaVertex)
@@ -347,18 +328,14 @@ contains
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
            if (topology=="cube") then
-           call MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           !MD:TODO: still need to do the coordinate transformation for this case.
+           call MeshCubeTopology(GridEdge, GridVertex)
          else if  (topology=="plane") then
-           call MeshPlaneTopologyCoords(GridEdge,GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
+           call MeshPlaneTopology(GridEdge,GridVertex)
          end if
 
        else
          if (topology=="cube") then
            call CubeTopology(GridEdge,GridVertex)
-           if (is_zoltan_partition(partmethod) .or. is_zoltan_task_mapping(z2_map_method)) then
-              call getfixmeshcoordinates(GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-           endif
         else if (topology=="plane") then
          call PlaneTopology(GridEdge,GridVertex)
        end if
@@ -377,26 +354,12 @@ contains
           if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
           !if the partitioning method is space filling curves
           call genspacepart(GridEdge,GridVertex)
-          if (is_zoltan_task_mapping(z2_map_method)) then
-             if(par%masterproc) write(iulog,*)"mapping graph using zoltan2 task mapping on the result of SF Curve..."
-             call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
-          endif
-          !if zoltan2 partitioning method is asked to run.
-       elseif ( is_zoltan_partition(partmethod)) then
-          if(par%masterproc) write(iulog,*)"partitioning graph using zoltan2 partitioning/task mapping..."
-          call genzoltanpart(GridEdge,GridVertex, par%comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
        else
-          if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
-          call genmetispart(GridEdge,GridVertex)
+          call abortmp('prim_init1: unsupported partmethod (use 4, space filling curve, or a Zoltan2 method)')
        endif
     endif ! .not. can_scalably_init_grid
 
     call t_stopf('PartitioningTime')
-
-    !call t_startf('PrintMetricTime')
-    !print partitioning and mapping metrics
-    !call printMetrics(GridEdge,GridVertex, par%comm)
-    !call t_stopf('PrintMetricTime')
 
     ! ===========================================================
     ! given partition, count number of local element descriptors
@@ -681,9 +644,6 @@ contains
     use parallel_mod,       only : parallel_t
     use prim_advance_mod,   only : prim_advance_init1
     use prim_advection_mod, only : prim_advec_init1
-#ifdef TRILINOS
-    use prim_implicit_mod,  only : prim_implicit_init
-#endif
 #ifdef HOMME_ENABLE_COMPOSE
     use dimensions_mod,     only : max_corner_elem
     use compose_mod,        only : compose_query_bufsz, compose_set_bufs
@@ -697,9 +657,6 @@ contains
     integer :: edgesz, sendsz, recvsz, n, den
 
     call prim_advance_init1(par,elem,integration)
-#ifdef TRILINOS
-    call prim_implicit_init(par, elem)
-#endif
     call Prim_Advec_Init1(par, elem)
 
     ! single global edge buffer for all models:
@@ -744,10 +701,6 @@ contains
     use time_mod,             only: nsplit, tstep
 #endif
 
-#ifdef TRILINOS
-    use prim_derived_type_mod ,only : derived_type, initialize, tstep
-    use, intrinsic :: iso_c_binding
-#endif
 
     type (element_t),   intent(inout) :: elem(:)
     type (hybrid_t),    intent(in)    :: hybrid
@@ -766,79 +719,12 @@ contains
     integer :: ie,q
     integer :: n0_qdp
 
-#ifdef TRILINOS
-     integer :: lenx
-    real (c_double) ,allocatable, dimension(:) :: xstate(:)
-    ! state_object is a derived data type passed thru noxinit as a pointer
-    type(derived_type) ,target         :: state_object
-    type(derived_type) ,pointer        :: fptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_object
-
-    type(derived_type) ,target         :: pre_object
-    type(derived_type) ,pointer        :: pptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_pre
-
-    type(derived_type) ,target         :: jac_object
-    type(derived_type) ,pointer        :: jptr=>NULL()
-    type(c_ptr)                        :: c_ptr_to_jac
-
-!    type(element_t)                    :: pc_elem(size(elem))
-!    type(element_t)                    :: jac_elem(size(elem))
-
-    logical :: compute_diagnostics
-    integer :: qn0
-    real (kind=real_kind) :: eta_ave_w
-
-  interface
-    subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
-        bind(C,name='noxinit')
-    use ,intrinsic :: iso_c_binding
-      integer(c_int)                :: vectorSize,comm
-      real(c_double)  ,dimension(*) :: vector
-      type(c_ptr)                   :: v_container
-      type(c_ptr)                   :: p_container  !precon ptr
-      type(c_ptr)                   :: j_container  !analytic jacobian ptr
-    end subroutine noxinit
-
-  end interface
-#endif
 
     if (topology == "cube" .OR. topology=='plane') then
        call print_mesh_stats(elem, hybrid,nets,nete)
     end if
 
 
-#ifdef TRILINOS
-
-      lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
-      allocate(xstate(lenx))
-      xstate(:) = 0d0
-      compute_diagnostics = .false.
-      qn0 = -1 ! dry case for testing right now
-      eta_ave_w = 1d0 ! divide by qsplit for mean flux interpolation
-
-      call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv1, tstep, tl, nets, nete)
-
-      call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv1, tstep, tl, nets, nete)
-
-      call initialize(jac_object, lenx, elem, hvcoord, .false., &
-        qn0, eta_ave_w, hybrid, deriv1, tstep, tl, nets, nete)
-
-!      pc_elem = elem
-!      jac_elem = elem
-
-      fptr => state_object
-      c_ptr_to_object =  c_loc(fptr)
-      pptr => state_object
-      c_ptr_to_pre =  c_loc(pptr)
-      jptr => state_object
-      c_ptr_to_jac =  c_loc(jptr)
-
-      call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac)
-
-#endif
 
 
 #if (defined HORIZ_OPENMP)
@@ -1004,9 +890,6 @@ contains
     use vertremap_mod,      only: vertical_remap
     use reduction_mod,      only: parallelmax
     use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
-#if USE_OPENACC
-    use openacc_utils_mod,  only: copy_qdp_h2d, copy_qdp_d2h
-#endif
 
     implicit none
 
@@ -1061,13 +944,6 @@ contains
        ! E(1) Energy after CAM forcing
        if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
 
-#if (USE_OPENACC)
-       !    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-       call t_startf("copy_qdp_h2d")
-       call copy_qdp_h2d( elem , n0_qdp )
-       call t_stopf("copy_qdp_h2d")
-#endif
-
       if (.not. single_column) then 
 
         ! Loop over rsplit vertically lagrangian timesiteps
@@ -1093,12 +969,6 @@ contains
       ! defer final timelevel update until after remap and diagnostics
       !compute timelevels for tracers (no longer the same as dynamics)
       call TimeLevel_Qdp( tl, dt_tracer_factor, n0_qdp, np1_qdp)
-
-#if (USE_OPENACC)
-      call t_startf("copy_qdp_h2d")
-      call copy_qdp_d2h( elem , np1_qdp )
-      call t_stopf("copy_qdp_h2d")
-#endif
 
       if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,4,.false.,nets,nete)
 
@@ -1804,13 +1674,6 @@ contains
 !=======================================================================================================!
 
   subroutine prim_finalize()
-#ifdef TRILINOS
-  interface
-    subroutine noxfinish() bind(C,name='noxfinish')
-    use ,intrinsic :: iso_c_binding
-    end subroutine noxfinish
-  end interface
-#endif
 
 #ifdef HOMME_ENABLE_COMPOSE
     use compose_mod, only: compose_finalize
@@ -1818,9 +1681,6 @@ contains
 #endif
     implicit none
 
-#ifdef TRILINOS
-    call noxfinish()
-#endif
 
 #ifdef HOMME_ENABLE_COMPOSE
     if (transport_alg > 0) call compose_finalize()

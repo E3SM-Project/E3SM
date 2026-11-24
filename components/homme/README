@@ -14,7 +14,6 @@ homme/src/<model_name>
 The 2D models:  
 
 src/sweqx   spectral element shallow water equations
-src/swim    fully implicit version of sweqx
 
 The 2D model can run a veriaty of shallow water test cases and prescribed
 velocity tracer transport test cases. The shallow water test can be run
@@ -26,8 +25,6 @@ a different test tracer.
 The 3D models:
 
 src/preqx        original hydrostatic primitive equation model
-src/preqx_acc    preqx with openACC acceleration
-src/prim         Fully implicit version of preqx
 src/theta-l      nonhydrostatic model with SB81 vertical discretization
 
 For instructions on building and configuring, see README.cmake
@@ -69,18 +66,16 @@ in these classes through these wrapper modules.
 
 Current list of base classses:
 
-These are base classes only so src/preqx_acc can provide openACC versions
-  src/share/viscosity_base.F90          biharmonic and other global derivatives
+src/share/viscosity_base.F90          biharmonic and other global derivatives
 
 src/share/prim_driver_base.F90        All SB81 models use this unchanged
 
 src/share/prim_advection_base.F90     Eulerian 3D advection code
-                                      src/preqx_acc has openACC version
                                       src/prex has a experimental semi-lagrange version
 
 src/share/vertremap_base.F90          Vertical remap low level routines
                                       Each model inherits this and adds a routine
                                       to remap all its state variables
 
-src/preqx/share/viscosity_preqx_base.F90  hyper-viscosity shared by preqx, preqx_acc
+src/preqx/share/viscosity_preqx_base.F90  hyper-viscosity used by preqx
 

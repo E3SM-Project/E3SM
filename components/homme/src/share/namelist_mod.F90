@@ -8,15 +8,12 @@
 module namelist_mod
 
   use kinds,      only: real_kind, iulog
-  use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
+  use params_mod, only: sfcurve
   use cube_mod,   only: rotate_grid
 #if defined(CAM) && !defined(MODEL_CESM)
   use dyn_grid,   only: fv_nphys
 #endif
   use physical_constants, only: rearth, rrearth, omega
-#if (defined MODEL_THETA_L && defined ARKODE)
-  use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
-#endif
 use physical_constants, only : rearth, rrearth, DD_PI
 
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
@@ -25,9 +22,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
   use control_mod, only : &
     MAX_STRING_LEN,&
     MAX_FILE_LEN,  &
-    partmethod,    &       ! Mesh partitioning method (METIS)
-    coord_transform_method,    &       !how to represent the coordinates.
-    z2_map_method,    &       !zoltan2 how to perform mapping (network-topology aware)
+    partmethod,    &       ! Mesh partitioning method
     topology,      &       ! Mesh topology
     geometry,      &       ! Mesh geometry
     test_case,     &       ! test case
@@ -216,6 +211,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     use mesh_mod, only : MeshOpen
 #endif
     use mpi
+    use iso_fortran_env, only: input_unit
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -228,6 +224,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: j
 #endif
     integer :: interp_type
+    character(len=MAX_FILE_LEN) :: nl_file, log_file
+    integer :: nl_unit, log_unit
 #endif
     integer  :: ierr
     real(kind=real_kind) :: dt_max, se_tstep
@@ -238,15 +236,13 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer :: se_ne_x, se_ne_y
     real(kind=real_kind) :: se_lx, se_ly
     integer :: unitn
-    character(len=*), parameter ::  subname = "homme:namelist_mod"
 #endif
+    character(len=*), parameter ::  subname = "homme:namelist_mod"
     ! ============================================
     ! Namelists
     ! ============================================
 
     namelist /ctl_nl/ PARTMETHOD,                &         ! mesh partitioning method
-                      COORD_TRANSFORM_METHOD,    &         ! Zoltan2 coordinate transformation method.
-                      Z2_MAP_METHOD,             &         ! Zoltan2 processor mapping (network-topology aware) method.
                       TOPOLOGY,                  &         ! mesh topology
                       GEOMETRY,                  &         ! mesh geometry
 #if defined(CAM) || defined(SCREAM)
@@ -268,8 +264,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       omega,                   &   ! scaled rotation rate
       rearth,                  &   ! scaled earth radius
 #endif
-      COORD_TRANSFORM_METHOD, &
-      Z2_MAP_METHOD,  &
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
       numnodes,      &
@@ -423,21 +417,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       tol,           &
       debug_level
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-    namelist /arkode_nl/ &
-      rel_tol, &
-      abs_tol, &
-      calc_nonlinear_stats, &
-      use_column_solver
-#endif
 
 
     ! ==========================
     ! Set the default partmethod
     ! ==========================
     PARTMETHOD    = SFCURVE
-    COORD_TRANSFORM_METHOD = SPHERE_COORDS
-    Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
     se_tstep=-1
 #if !defined(CAM) && !defined(SCREAM)
@@ -486,6 +471,36 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 !   write(iulog,*) "masterproc=",par%masterproc
 
     if (par%masterproc) then
+#if !defined(CAM) && !defined(SCREAM)
+       ! Standalone Homme: the 1st command line argument (if any) is the namelist file,
+       ! and the 2nd (if any) is the file where iulog writes to (from here on).
+       ! Without arguments, the namelists are read from standard input.
+       ! NOTE: open the namelist file first, so that we can check that the log file is not the same file
+       nl_unit = input_unit
+       if (command_argument_count() >= 1) then
+          call get_command_argument(1, nl_file, status=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not read the namelist file name (1st command line argument)')
+          open(newunit=nl_unit, file=trim(nl_file), status='old', action='read', iostat=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not open the namelist file '//trim(nl_file))
+          write(iulog,*) 'Reading the namelists from ',trim(nl_file)
+       else
+          write(iulog,*) 'Reading the namelists from standard input'
+       end if
+       if (command_argument_count() >= 2) then
+          call get_command_argument(2, log_file, status=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not read the log file name (2nd command line argument)')
+          ! Opening the log file would erase it, so make sure it is not the namelist file
+          ! (if it is, it is already connected to nl_unit)
+          inquire(file=trim(log_file), number=log_unit)
+          if (nl_unit /= input_unit .and. log_unit == nl_unit) then
+             call abortmp(subname//':: the log file and the namelist file are the same file: '//trim(log_file))
+          end if
+          open(newunit=log_unit, file=trim(log_file), status='replace', action='write', iostat=ierr)
+          if (ierr /= 0) call abortmp(subname//':: could not open the log file '//trim(log_file))
+          write(iulog,*) 'Writing the log to ',trim(log_file)
+          iulog = log_unit
+       end if
+#endif
        write(iulog,*)"reading ctl namelist..."
 #if defined(CAM) || defined(SCREAM)
        unitn=getunit()
@@ -501,17 +516,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        end do
        close( unitn )
        call freeunit( unitn )
-#elif defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       open(unit=7,file="input.nl",status="OLD")
-       read(unit=7,nml=ctl_nl)
 #else
-      print *, 'Reading namelist ctl_nl from standard input'
-      read(*,nml=ctl_nl)
+      read(nl_unit,nml=ctl_nl)
 #endif
-#ifndef _USEMETIS
-      ! override METIS options to SFCURVE
+      ! partmethod 0-3 were METIS partitioning methods, which are no longer supported: use SFCURVE
       if (partmethod>=0 .and. partmethod<=3) partmethod=SFCURVE
-#endif
        ! ========================
        ! if this is a restart run
        ! ========================
@@ -539,18 +548,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        nEndStep = nmax
 #endif
 
-       if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
-                    (integration .ne. "full_imp")) then
-          call abortmp('integration must be explicit, full_imp, or runge_kutta')
+       if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
+          call abortmp('integration must be explicit or runge_kutta')
        end if
-
-       if (integration == "full_imp") then
-          if (tstep_type<10) then
-             ! namelist did not set a valid tstep_type. pick one:
-             tstep_type=11   ! backward euler
-             !tstep_type=12  ! BDF2 with BE bootstrap
-          endif
-       endif
 
 #if !defined(CAM) && !defined(SCREAM)
 
@@ -585,11 +585,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
            test_case(1:4) == "asp_")  then
          write(iulog,*) "reading vertical namelist..."
 
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-         read(unit=7,nml=vert_nl)
-#else
-         read(*,nml=vert_nl)
-#endif
+         if (nl_unit /= input_unit) rewind(nl_unit)
+         read(nl_unit,nml=vert_nl)
          vfile_mid  = trim(adjustl(vfile_mid))
          vfile_int  = trim(adjustl(vfile_int))
 
@@ -643,11 +640,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"reading analysis namelist..."
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=analysis_nl)
-#else
-       read(*,nml=analysis_nl)
-#endif
+       if (nl_unit /= input_unit) rewind(nl_unit)
+       read(nl_unit,nml=analysis_nl)
 
       if (io_stride .eq.0 .and. num_io_procs .eq.0) then
          ! user did not set anything
@@ -695,20 +689,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        end do
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-       write(iulog,*)"reading arkode namelist..."
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=arkode_nl)
-#else
-       read(*,nml=arkode_nl)
-#endif
-#endif
 
 !=======================================================================================================!
 
-#if defined(OSF1) || defined(_NAMELIST_FROM_FILE)
-       close(unit=7)
-#endif
+       if (nl_unit /= input_unit) close(nl_unit)
 #endif
 ! ^ if !defined(CAM) && !defined(SCREAM)
        ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
@@ -745,8 +729,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
     ! Broadcast namelist variables to all MPI processes
 
-    call MPI_bcast(Z2_MAP_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(COORD_TRANSFORM_METHOD ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(PARTMETHOD ,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(geometry,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
@@ -889,12 +871,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
 
-    if (integration == "full_imp") then
-       call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
-       call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
-       call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
-    end if
-
     call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
@@ -921,12 +897,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(tool,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-    call MPI_bcast(rel_tol, 1, MPIreal_t, par%root, par%comm, ierr)
-    call MPI_bcast(abs_tol, 1, MPIreal_t, par%root, par%comm, ierr)
-    call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
-    call MPI_bcast(use_column_solver, 1, MPIlogical_t, par%root, par%comm, ierr)
-#endif
 
     ! should we assume Q(:,:,:,1) has water vapor:
     use_moisture = ( moisture /= "dry") 
@@ -1169,8 +1139,6 @@ else if (topology == "plane") then
   write(iulog,*)"readnl: ne_x,ne_y,np         = ",ne_x,ne_y,np
 end if
        write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
-       write(iulog,*)"readnl: COORD_TRANSFORM_METHOD    = ",COORD_TRANSFORM_METHOD
-       write(iulog,*)"readnl: Z2_MAP_METHOD    = ",Z2_MAP_METHOD
 
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
        write(iulog,*)"readnl: vthreads      = ",vthreads
@@ -1291,13 +1259,6 @@ end if
        end do
 #endif
 
-#if (defined MODEL_THETA_L && defined ARKODE)
-       write(iulog,*)""
-       write(iulog,*)"arkode: rel_tol = ",rel_tol
-       write(iulog,*)"arkode: abs_tol = ",abs_tol
-       write(iulog,*)"arkode: calc_nonlinear_stats = ",calc_nonlinear_stats
-       write(iulog,*)"arkode: use_column_solver = ",use_column_solver
-#endif
 
        ! display physical constants for HOMME stand alone simulations
        write(iulog,*)""
