@@ -1,5 +1,6 @@
 # NOTE: for now, we assume an atmosphere emulator. Let's find a better place for this.
-set(COMPONENT atm)
+set(COMPONENT     atm)
+set(C             a)    # single-character component identifier
 set(EMULATOR_NAME ace2)
 
 configure_file(
