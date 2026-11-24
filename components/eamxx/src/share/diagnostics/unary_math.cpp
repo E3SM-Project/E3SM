@@ -177,9 +177,6 @@ void UnaryMath::initialize_impl()
     // The output is invalid exactly where the input is
     diag.set_valid_mask(f.get_valid_mask());
   }
-  if (m_out_masked) {
-    diag.get_header().set_may_be_filled(true);
-  }
 }
 
 void UnaryMath::compute_impl()
