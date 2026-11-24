@@ -101,6 +101,7 @@ module li_core_interface
       ! Local variables
       character (len=StrKIND), pointer :: config_velocity_solver
       character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_damage_calving_method
       character (len=StrKIND), pointer :: config_basal_mass_bal_float
       character (len=StrKIND), pointer :: config_front_mass_bal_grounded
       character (len=StrKIND), pointer :: config_thermal_solver
@@ -109,36 +110,45 @@ module li_core_interface
       logical, pointer :: config_adaptive_timestep_include_DCFL
       logical, pointer :: config_write_albany_ascii_mesh
       logical, pointer :: config_ocean_data_extrapolation
+      logical, pointer :: config_apply_smb_sat_lapse_rate
 
       logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
       logical, pointer :: hydroActive
       logical, pointer :: observationsActive
       logical, pointer :: ismip6ShelfMeltActive
+      logical, pointer :: ismip7ShelfMeltActive
       logical, pointer :: ismip6GroundedFaceMeltActive
       logical, pointer :: thermalActive
       logical, pointer :: extrapOceanDataActive
+      logical, pointer :: smbSatLapseRateActive
+      logical, pointer :: damageCalvingActive
 
       ierr = 0
 
       call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(configPool, 'config_SGH', config_SGH)
       call mpas_pool_get_config(configPool, 'config_calving', config_calving)
+      call mpas_pool_get_config(configPool, 'config_damage_calving_method', config_damage_calving_method)
       call mpas_pool_get_config(configPool, 'config_write_albany_ascii_mesh', config_write_albany_ascii_mesh)
       call mpas_pool_get_config(configPool, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
       call mpas_pool_get_config(configPool, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(configPool, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
       call mpas_pool_get_config(configPool, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
       call mpas_pool_get_config(configPool, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(configPool, 'config_apply_smb_sat_lapse_rate', config_apply_smb_sat_lapse_rate)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
       call mpas_pool_get_package(packagePool, 'hydroActive', hydroActive)
       call mpas_pool_get_package(packagePool, 'observationsActive', observationsActive)
       call mpas_pool_get_package(packagePool, 'ismip6ShelfMeltActive', ismip6ShelfMeltActive)
+      call mpas_pool_get_package(packagePool, 'ismip7ShelfMeltActive', ismip7ShelfMeltActive)
       call mpas_pool_get_package(packagePool, 'ismip6GroundedFaceMeltActive', ismip6GroundedFaceMeltActive)
       call mpas_pool_get_package(packagePool, 'thermalActive', thermalActive)
       call mpas_pool_get_package(packagePool, 'extrapOceanDataActive', extrapOceanDataActive)
+      call mpas_pool_get_package(packagePool, 'smbSatLapseRateActive', smbSatLapseRateActive)
+      call mpas_pool_get_package(packagePool, 'damageCalvingActive', damageCalvingActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -167,15 +177,30 @@ module li_core_interface
               "'config_ocean_data_extrapolation' is set to .true.")
       endif
 
+      if (config_apply_smb_sat_lapse_rate) then
+         smbSatLapseRateActive = .true.
+         call mpas_log_write("The 'smbSatLapseRate' package and associated variables have been enabled because " // &
+              "'config_apply_smb_sat_lapse_rate' is set to .true.")
+      endif
+
       if ( (trim(config_basal_mass_bal_float) == 'ismip6') .or. &
+           (trim(config_basal_mass_bal_float) == 'ismip7') .or. &
            ((trim(config_front_mass_bal_grounded) == 'ismip6') .and. &
             (config_use_3d_thermal_forcing_for_face_melt)) .or. &
             (config_ocean_data_extrapolation) ) then
          ismip6ShelfMeltActive = .true.
-         call mpas_log_write("The 'ismip6Melt' package and assocated variables have been enabled because " // &
-              "'config_basal_mass_bal_float' is set to 'ismip6' or 'config_front_mass_bal_grounded' is set to 'ismip6' // &
-              and 'config_use_3d_thermal_forcing_for_face_melt' is set to .true. " // &
-              "or 'config_ocean_data_extrapolation' is set to .true.")
+         call mpas_log_write("The 'ismip6ShelfMelt' package and associated variables have been enabled " // &
+              "because the configuration needs 3-D ocean thermal forcing: 'config_basal_mass_bal_float' " // &
+              "is 'ismip6' or 'ismip7', 'config_front_mass_bal_grounded' is 'ismip6' with " // &
+              "'config_use_3d_thermal_forcing_for_face_melt' = .true., or " // &
+              "'config_ocean_data_extrapolation' = .true.")
+      endif
+
+      if (trim(config_basal_mass_bal_float) == 'ismip7') then
+         ismip7ShelfMeltActive = .true.
+         call mpas_log_write("The 'ismip7ShelfMelt' package and associated variables have been enabled because " // &
+              "'config_basal_mass_bal_float' is set to 'ismip7'.  The ISMIP7 local quadratic melt " // &
+              "parameterization needs ocean salinity in addition to the thermal forcing used by 'ismip6'.")
       endif
 
       if ((trim(config_front_mass_bal_grounded) == 'ismip6') .or. (trim(config_calving) == 'ismip6_retreat')) then
@@ -190,6 +215,15 @@ module li_core_interface
               "'config_thermal_solver' is set to either 'temperature' or 'enthalpy'.")
       endif
 
+      if ((trim(config_calving) == 'damagecalving') .or. (trim(config_calving) == 'crevasse_depth') &
+          .or. (trim(config_damage_calving_method) /= 'none')) then
+         damageCalvingActive = .true.
+         call mpas_log_write("The 'damageCalving' package and associated variables have been enabled because " // &
+              "'config_calving' is set to '" // trim(config_calving) // "' or 'config_damage_calving_method' is set to '" // &
+              trim(config_damage_calving_method))
+      else
+         damageCalvingActive = .false.
+      endif
 
 
       ! call setup packages in analysis driver

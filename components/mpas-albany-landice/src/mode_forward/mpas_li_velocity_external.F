@@ -65,17 +65,22 @@ module li_velocity_external
          config_default_flowParamA, &
          config_flowLawExponent, config_dynamic_thickness, iceMeltingPointPressureDependence, &
          config_thermal_thickness, &
-         li_mask_ValueDynamicIce, li_mask_ValueIce, config_use_glp) &
+         li_mask_ValueDynamicIce, li_mask_ValueIce, config_use_glp, use_ismip7_fem_extension, &
+         melting_temperature, seconds_per_year, gas_constant) &
          bind(C, name="velocity_solver_set_parameters")
 
-         use iso_c_binding, only: C_INT, C_DOUBLE, C_BOOL
+         use iso_c_binding, only: C_INT, C_DOUBLE
 
-         INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce
+         ! config_use_glp and use_ismip7_fem_extension are passed as 0 or 1,
+         ! not as LOGICAL(C_BOOL): some compilers (e.g. Intel's ifx) give
+         ! .true. the value -1, which is not a valid C++ bool
+         INTEGER(C_INT) :: li_mask_ValueDynamicIce, li_mask_ValueIce, &
+                           config_use_glp, use_ismip7_fem_extension
          REAL(C_DOUBLE) :: config_ice_density, config_ocean_density, config_sea_level, config_default_flowParamA, &
                            config_flowLawExponent, config_dynamic_thickness, gravity, &
                            iceMeltingPointPressureDependence, &
-                           config_thermal_thickness
-         LOGICAL(C_BOOL) :: config_use_glp
+                           config_thermal_thickness, &
+                           melting_temperature, seconds_per_year, gas_constant
       end subroutine velocity_solver_set_parameters
 
    end interface
@@ -225,6 +230,7 @@ contains
 
    subroutine li_velocity_external_block_init(block, err)
 
+      use iso_c_binding, only: C_INT
       use li_mask
 
       !-----------------------------------------------------------------
@@ -265,6 +271,8 @@ contains
       real (kind=RKIND), pointer :: config_ice_density, config_ocean_density,  config_sea_level, config_default_flowParamA, &
                                     config_thermal_thickness, config_flowLawExponent, config_dynamic_thickness
       logical, pointer :: config_use_glp
+      character (len=StrKIND), pointer :: femExtensionMethod
+      logical :: use_ismip7_fem_extension
 
       ! halo exchange arrays
       integer, dimension(:), pointer :: sendCellsArray, &
@@ -357,6 +365,15 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
+      ! femExtensionMethod is resolved (never 'auto') by li_core_init before this routine
+      ! runs, and stored per-block in meshPool rather than read from configs directly.
+      call mpas_pool_get_array(meshPool, 'femExtensionMethod', femExtensionMethod)
+      if (trim(femExtensionMethod) /= 'ismip6-era' .and. trim(femExtensionMethod) /= 'ismip7-era') then
+         call mpas_log_write(trim(femExtensionMethod) // ' is not a valid land ice fem extension method option.', &
+            MPAS_LOG_ERR)
+         err = 1
+      end if
+      use_ismip7_fem_extension = (trim(femExtensionMethod) == 'ismip7-era')
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
       call velocity_solver_set_parameters(gravity, config_ice_density, config_ocean_density, config_sea_level, &
          config_default_flowParamA, &
@@ -364,7 +381,9 @@ contains
          iceMeltingPointPressureDependence, &
          config_thermal_thickness, &
          li_mask_ValueAlbanyActive, li_mask_ValueIce, &
-         logical(config_use_glp, KIND=1) )
+         merge(1_C_INT, 0_C_INT, config_use_glp), &
+         merge(1_C_INT, 0_C_INT, use_ismip7_fem_extension), &
+         kelvin_to_celsius, scyr, idealGasConstant )
 
       call interface_reset_stdout()
 #endif
@@ -452,6 +471,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressureLimited
       real (kind=RKIND), dimension(:), pointer :: muFriction
+      real (kind=RKIND), dimension(:), pointer :: bedRoughnessRC
+      real (kind=RKIND), dimension(:), pointer :: bulkFriction
+      real (kind=RKIND), dimension(:), pointer :: basalDebrisFactor
       real (kind=RKIND), pointer :: deltat
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask
       integer, dimension(:,:), pointer :: dirichletVelocityMask
@@ -472,7 +494,7 @@ contains
       integer :: iEdge
       integer :: iCell
       integer :: albanyVelocityErrorTmp
-      real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
+      real(kind=RKIND), parameter :: secondsInYear = scyr
          !< The value of seconds in a year assumed by external dycores
       integer, pointer :: albanyVelocityError
 
@@ -517,6 +539,9 @@ contains
       call mpas_pool_get_array(velocityPool, 'drivingStressVert', drivingStressVert)
       call mpas_pool_get_array(velocityPool, 'drivingStress', drivingStress)
       call mpas_pool_get_array(velocityPool, 'muFriction', muFriction)
+      call mpas_pool_get_array(velocityPool, 'bedRoughnessRC', bedRoughnessRC)
+      call mpas_pool_get_array(velocityPool, 'bulkFriction', bulkFriction)
+      call mpas_pool_get_array(velocityPool, 'basalDebrisFactor', basalDebrisFactor)
       call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
@@ -599,6 +624,7 @@ contains
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, stiffnessFactor, &
                 effectivePressureLimited, muFriction, &
+                bedRoughnessRC, bulkFriction, basalDebrisFactor, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, drivingStressVert, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
                 deltat, albanyVelocityErrorTmp)  ! return values
@@ -648,7 +674,7 @@ contains
           call velocity_solver_solve_stokes(lowerSurface, thickness, betaSolve, temperature, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, uReconstructX, uReconstructY, uReconstructZ)  ! return values
-          uReconstructZ = uReconstructZ / (365.0_RKIND * 24.0_RKIND * 3600.0_RKIND)  ! convert from m/yr to m/s
+          uReconstructZ = uReconstructZ / secondsInYear  ! convert from m/yr to m/s
           call mpas_timer_stop("velocity_solver_solve_stokes")
 #else
           call mpas_log_write("External Stokes library needed to run stokes dycore.", MPAS_LOG_ERR)
@@ -792,6 +818,9 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: muFriction
+      real (kind=RKIND), dimension(:), pointer :: bedRoughnessRC
+      real (kind=RKIND), dimension(:), pointer :: bulkFriction
+      real (kind=RKIND), dimension(:), pointer :: basalDebrisFactor
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       type (mpas_pool_type), pointer :: meshPool, geometryPool, thermalPool, observationsPool, velocityPool, scratchPool, hydroPool
       real (kind=RKIND), pointer :: config_sea_level, config_ice_density, config_ocean_density
@@ -853,6 +882,9 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       ! Velocity variables
       call mpas_pool_get_array(velocityPool, 'beta', beta)
       call mpas_pool_get_array(velocityPool, 'muFriction', muFriction)
+      call mpas_pool_get_array(velocityPool, 'bedRoughnessRC', bedRoughnessRC)
+      call mpas_pool_get_array(velocityPool, 'bulkFriction', bulkFriction)
+      call mpas_pool_get_array(velocityPool, 'basalDebrisFactor', basalDebrisFactor)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
@@ -906,6 +938,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
               surfaceAirTemperature, basalHeatFlux, &
               stiffnessFactor, &
               effectivePressure, muFriction, &
+              bedRoughnessRC, bulkFriction, basalDebrisFactor, &
               thickness, thicknessUncertainty, &
               sfcMassBal, sfcMassBalUncertainty, &
               floatingBasalMassBal, floatingBasalMassBalUncertainty, &

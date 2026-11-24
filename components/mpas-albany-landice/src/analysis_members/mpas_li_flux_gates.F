@@ -121,6 +121,8 @@ contains
       real (kind=RKIND), dimension(nFluxGates) :: localIceFluxThroughGates
       integer :: iGate
 
+      err = 0
+
       dminfo = domain % dminfo
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
@@ -142,9 +144,9 @@ contains
       iceFluxThroughGates(:) = 0.0_RKIND
 
       do iGate = 1, nFluxGates
-         localIceFluxThroughGates(iGate) = sum( sum(layerNormalVelocity(:,1:nEdgesSolve) * layerThicknessEdge(:,1:nEdgesSolve), 1) * &
-                                                dvEdge(1:nEdgesSolve) * rhoi * scyr * fluxGateEdgeMasks(iGate, 1:nEdgesSolve) * &
-                                                fluxGateEdgeMasksSigns(iGate, 1:nEdgesSolve) )
+         localIceFluxThroughGates(iGate) = abs(sum( sum(layerNormalVelocity(:,1:nEdgesSolve) * layerThicknessEdge(:,1:nEdgesSolve), 1) * &
+                                                    dvEdge(1:nEdgesSolve) * rhoi * scyr * fluxGateEdgeMasks(iGate, 1:nEdgesSolve) * &
+                                                    fluxGateEdgeMasksSigns(iGate, 1:nEdgesSolve) ))
       enddo
 
       call mpas_dmpar_sum_real_array(dminfo, nFluxGates, localIceFluxThroughGates, iceFluxThroughGates)
