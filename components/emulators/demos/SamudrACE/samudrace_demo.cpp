@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <mpi.h>
 
+#include <coupler.hpp>
 #include <emulator.hpp>
 #include <harness.hpp>
 
@@ -24,6 +25,7 @@
 
 namespace fs = std::filesystem;
 using namespace e3sm::emulator;
+using namespace e3sm::emulator::coupler;
 
 namespace {
 
@@ -46,10 +48,10 @@ void read_field(const fs::path& path, std::vector<double>& values) {
   }
 }
 
-void write_field(const fs::path& path, const std::vector<double>& values) {
+void write_field(const fs::path& path, const BasicFieldView<true>& values) {
   fs::create_directories(path.parent_path());
   std::ofstream file(path, std::ios::binary);
-  file.write(reinterpret_cast<const char*>(values.data()),
+  file.write(reinterpret_cast<const char*>(values.addr()),
              static_cast<std::streamsize>(values.size() * sizeof(double)));
   if (!file) {
     throw std::runtime_error("Could not write " + path.string());
@@ -92,8 +94,7 @@ void write_outputs(const fs::path& directory, Emulator& emulator,
                    const EmulatorConfig& config) {
   for (const auto& name : config.output_order) {
     const auto values = emulator.get_field(name, ModelFieldRole::Output);
-    write_field(directory / (name + ".bin"),
-                std::vector<double>(values.begin(), values.end()));
+    write_field(directory / (name + ".bin"), values);
   }
 }
 
@@ -149,7 +150,7 @@ void run(const fs::path& run_dir) {
   }
 
   Harness harness;
-  harness.transfer_bindings(std::move(bindings));
+  harness.add_bindings(std::move(bindings));
   harness.add_process(ProcessDescriptor{
       .run_opts = ProcessRunOpts{.dt = atmosphere_dt, .coupling_interval = 1},
       .grid = make_grid(MPI_COMM_WORLD),
@@ -161,7 +162,9 @@ void run(const fs::path& run_dir) {
       .grid = make_grid(MPI_COMM_WORLD),
       .emulator_config = ocean,
   });
-  harness.initialize(run_dir / "coupling_plan.yaml", route_buffers);
+
+  auto coupling_fields = read_coupling_fields_from_yaml(run_dir / "coupling_plan.yaml");
+  harness.initialize(coupling_fields);
 
   auto& atmosphere_emulator =
       harness.get_process<Emulator>(std::string_view(atmosphere.name));
@@ -183,7 +186,7 @@ void run(const fs::path& run_dir) {
     }
     std::ranges::fill(buffers.at(CO2_FIELD_NAME),co2(step));
 
-    harness.export_from_external("cpl7");
+    harness.export_from_external();
     if (harness.run_process(atmosphere.name)) {
       write_outputs(run_dir / "outputs" / "atmosphere" / step_name,
                     atmosphere_emulator, atmosphere);
@@ -195,7 +198,7 @@ void run(const fs::path& run_dir) {
       std::cout << "Finished coupled step " << ocean_step << std::endl;
       ++ocean_step;
     }
-    harness.import_to_external("cpl7");
+    harness.import_to_external();
   }
 }
 
