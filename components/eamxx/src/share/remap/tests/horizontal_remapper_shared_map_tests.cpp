@@ -139,6 +139,44 @@ TEST_CASE("horiz_remap_shared_map_file")
 
   auto src_grid = build_src_grid(comm, ngdofs_src);
 
+  SECTION ("geometry metadata") {
+    using namespace ShortFieldTagsNames;
+    using stratts_t = std::map<std::string,std::string>;
+    auto lev = src_grid->create_geometry_data("lev",src_grid->get_vertical_layout(LEV),ekat::units::none);
+    auto ilev = src_grid->create_geometry_data("ilev",src_grid->get_vertical_layout(ILEV),ekat::units::none);
+    auto col = src_grid->create_geometry_data("test_col",src_grid->get_2d_scalar_layout(),ekat::units::none);
+    auto empty = src_grid->create_geometry_data("test_empty",src_grid->get_vertical_layout(LEV),ekat::units::none);
+    auto& lev_atts = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& ilev_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& col_atts = col.get_header().get_extra_data<stratts_t>("io: string attributes");
+    lev_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps";
+    ilev_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps";
+    lev_atts["positive"] = ilev_atts["positive"] = "down";
+    col_atts["description"] = "column geometry";
+    lev.deep_copy(1.0);
+    ilev.deep_copy(2.0);
+    col.deep_copy(3.0);
+    empty.deep_copy(4.0);
+
+    auto remap = std::make_shared<HorizontalRemapper>(src_grid,filename);
+    auto tgt_grid = remap->get_tgt_grid();
+    for (const auto& name : {"lev", "ilev", "test_col", "test_empty"}) {
+      auto src = src_grid->get_geometry_data(name);
+      auto tgt = tgt_grid->get_geometry_data(name);
+      REQUIRE (tgt.get_header().get_extra_data<stratts_t>("io: string attributes") ==
+               src.get_header().get_extra_data<stratts_t>("io: string attributes"));
+      tgt.sync_to_host();
+      auto values = tgt.get_view<const Real*,Host>();
+      const Real expected = std::string(name)=="lev" ? 1.0 :
+                            std::string(name)=="ilev" ? 2.0 :
+                            std::string(name)=="test_col" ? 3.0 : 4.0;
+      for (int i=0; i<values.extent_int(0); ++i) {
+        REQUIRE (values(i)==expected);
+      }
+    }
+    check_remap(remap);
+  }
+
   SECTION ("plain first, clone second") {
     auto remap_plain = std::make_shared<HorizontalRemapper>(src_grid,filename);
     REQUIRE (remap_plain->get_tgt_grid()->get_num_global_dofs()==ngdofs_tgt);
