@@ -110,10 +110,9 @@ NumberPath (const ekat::Comm& comm, const ekat::ParameterList& params,
 
 The rules for such a diagnostic are:
 
-- all outputs must be declared in the constructor: an output stream stores a
-  new diagnostic under all its output names right after construction, before
-  it can initialize it (initialization waits until the inputs exist), so that
-  a request of another output finds the same instance (see below);
+- all outputs must be declared in the constructor, so that `get_outputs()` is
+  complete right after construction. Requests of different outputs share one
+  instance (see below);
 - each output must be on the diagnostic grid, have a name that no other output
   has (case insensitive), and be allocated by the end of `initialize_impl`;
 - `get()` errors out: keep a handle to each output for `compute_impl`, as
@@ -138,12 +137,23 @@ returns the class for any of the names, and the stream picks the output by name.
 ## How output streams use diagnostics
 
 An output stream keeps the diagnostics it creates in a static repo, keyed by
-name, so that two streams requesting the same field share one instance, which
-is computed at most once per step (an instant stream evaluates its diagnostics
-on output steps only). A diagnostic with several outputs is stored under each
-output name, when the first of them is requested. Hence, requesting
-`LiqNumberPath` in one stream and `IceNumberPath` in another gives one
-`NumberPath`, which computes all three paths in one evaluation.
+`AbstractDiagnostic::hash()`, so that streams that need the same thing share one
+instance, which is computed at most once per step (an instant stream evaluates
+its diagnostics on output steps only). Two diagnostics are the same if they have
+the same class, the same parameters, and the same input *fields*. The inputs are
+compared by storage, not by name, since an alias is local to its stream: two
+streams may have an alias with the same name, bound to different fields, and
+they must not share a diagnostic that reads it.
+
+For each request, a stream creates the diagnostic. Once its inputs are in the
+stream's field manager, it sets them and computes the hash. If the repo has that
+hash, the stream uses that diagnostic and drops the new one. Else, it initializes
+the new one and adds it to the repo. So building a diagnostic should be cheap,
+other than allocating its outputs.
+
+A request of any output of a diagnostic with several outputs gives the same hash.
+Hence, requesting `LiqNumberPath` in one stream and `IceNumberPath` in another
+gives one `NumberPath`, which computes all three paths in one evaluation.
 
 Each request adds only its own output to the stream. An output that is not
 requested is computed, but is not written, and does not affect the stream.
@@ -171,8 +181,7 @@ m_z.set_valid_mask(m_a.get_valid_mask());
 
 Masks with the same name must hold the same values, since the stream updates
 the count once, and the horizontal remapper remaps such masks once; sharing
-the mask, as above, is the way to ensure it. An output that may contain fill values must
-also call `set_may_be_filled(true)` on its header.
+the mask, as above, is the way to ensure it.
 
 ## Testing
 

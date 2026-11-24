@@ -202,7 +202,10 @@ void FieldPow::initialize_impl()
       " - field name: " + fid.name() + "\n"
       " - field data type: " + e2str(f.data_type()) + "\n");
 
-  const auto units = m_params.get<std::string>("units","check");
+  // NOTE: do not use get(name,default): it would store the default in the params, which would
+  //       change the diag hash (computed to share the diag among streams) after the fact
+  const auto units = m_params.isParameter("units") ? m_params.get<std::string>("units")
+                                                   : std::string("check");
   EKAT_REQUIRE_MSG (units=="check" or units=="ignore",
       "Error! Invalid value for FieldPow's 'units'.\n"
       " - input: '" + units + "'\n"

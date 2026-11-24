@@ -14,6 +14,8 @@ fields:
     aliases:
       # An intermediate: usable as an operand below, but never written.
       - qt := qc+qv
+      # The AeroCom weights, used by name as weights= below.
+      - liqtop := cldfrac_tot.aerocom_weights('top', phase='liq')
     field_names:
       # --- Operators -------------------------------------------------------
       # Grouping is explicit.
@@ -44,6 +46,9 @@ fields:
       - T_vavg    := T_mid.mean('lev')
       - T_vsum    := T_mid.sum('lev')
       - T_dpavg   := T_mid.mean('lev', weights='dp')
+      - T_dzsum   := T_mid.sum('lev', weights='dz')
+      - T_cldavg  := T_mid.mean('lev', weights=cldfrac_tot)
+      - T_mass    := T_mid.sum('lev', weights=pseudo_density/gravit)
       - T_wet     := T_mid.where(qv>0.01)
       - T_dpdz    := T_mid.derivative('p_mid')
       - T_hist    := T_mid.histogram(bins=[200,250,300])
@@ -52,6 +57,17 @@ fields:
       - T_bcast   := T_mid.mean('lev').broadcast_like(T_mid)
       # The int index pair is promoted to Real, since IO writes only Real fields.
       - p500_idx  := p_mid.searchsorted(500, units='hPa')*1.0
+      # AeroCom cloud top/bottom: sums weighted by the AeroCom weights
+      - T_cldtop    := T_mid.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))
+      - T_cldbot    := T_mid.sum('lev', weights=cldfrac_tot.aerocom_weights('bot'))
+      - rel_cldtop  := eff_radius_qc.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))
+      - rei_cldtop  := eff_radius_qi.sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='ice'))
+      - cld_cldtop  := cldfrac_tot.aerocom_weights('top').sum('lev')
+      - liq_cldtop  := cldfrac_tot.aerocom_weights('top', phase='liq').sum('lev')
+      - ice_cldtop  := cldfrac_tot.aerocom_weights('top', phase='ice').sum('lev')
+      - w_cldtop    := cldfrac_tot.aerocom_weights('top')
+      # An 'aliases' entry as the weights.
+      - rel_liqtop  := eff_radius_qc.sum('lev', weights=liqtop)
 
       # --- Math functions ---------------------------------------------------
       # qv may be 0 (or slightly negative), so mask log/sqrt where invalid: with
@@ -73,6 +89,8 @@ fields:
       # A negative threshold, and bin edges that are negative or have an exponent.
       - w_up      := omega.where(omega<=-0.1)
       - qv_hist   := qv.histogram(bins=[-1,0,1e-5,1e-4])
+      # Divided by the cloud fraction only where there is cloud.
+      - cdnc_cldtop := (nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot>0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))
 
       # NOTE: 'over_dt' and 'tend' are NOT here on purpose. They divide by the
       #       time elapsed since the start of the step, and an INSTANT stream

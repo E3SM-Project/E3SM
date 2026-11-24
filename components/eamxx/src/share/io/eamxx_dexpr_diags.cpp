@@ -339,15 +339,15 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .keywords = {{"p_mid",false},{"z_mid",false},{"units",false},{"reference",false}},
            .example = "T_mid.interp(p_mid=500,units='hPa')"});
     r.add({.name = "mean",
-           .desc = "average over a dimension ('col' or 'lev')",
+           .desc = "average over 'col' (area weighted) or 'lev'; over 'lev', optionally weighted by a field",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
-           .example = "T_mid.mean('lev',weights='dp')"});
+           .example = "T_mid.mean('lev',weights=pseudo_density)"});
     r.add({.name = "sum",
-           .desc = "sum over a dimension ('lev')",
+           .desc = "sum over 'lev', optionally weighted by a field",
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
-           .example = "T_mid.sum('lev',weights='dz')"});
+           .example = "T_mid.sum('lev',weights=dz)"});
     r.add({.name = "broadcast_like",
            .desc = "value repeated along the dims of another field that it lacks",
            .min_positional = 1, .max_positional = 1,
@@ -383,6 +383,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"units",false}},
            .example = "p_mid.searchsorted(500,units='hPa')"});
+    r.add({.name = "aerocom_weights",
+           .desc = "per level, the AeroCom cloud-top ('top') or cloud-bottom ('bot') weights, for a 'phase' if given",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {{"phase",false}},
+           .example = "cldfrac_tot.aerocom_weights('top')"});
     r.add({.name = "over_dt",
            .desc = "value divided by the time step",
            .min_positional = 0, .max_positional = 0,
@@ -547,7 +552,16 @@ void translate_method (const Call& call, const ast::Expression& self,
     diag_name = "VertContract";
     params.set<std::string>("contract_method",call.name=="mean" ? "avg" : "sum");
     if (weights!=nullptr) {
-      params.set<std::string>("weighting_method",string_arg(*weights,"'weights'"));
+      if (as<ast::StringLiteral>(*weights)!=nullptr) {
+        // 'dp' or 'dz': the layer's mass (dp/g) or thickness
+        params.set<std::string>("weighting_method",string_arg(*weights,"'weights'"));
+      } else {
+        // A field or expression. Like the receiver, it goes down by name.
+        EKAT_REQUIRE_MSG (not is_number(*weights),
+            "Error! 'weights' takes 'dp', 'dz', or a field, not a number.\n"
+            " - expression: " + ast::to_string(self) + "\n");
+        params.set<std::string>("weight_name",name_of(*weights));
+      }
     }
     return;
   }
@@ -599,6 +613,7 @@ void translate_method (const Call& call, const ast::Expression& self,
     EKAT_REQUIRE_MSG (bins!=nullptr and bins->elements.size()>=2,
         "Error! histogram() takes 'bins', an array of at least two edges.\n"
         " - expression: " + ast::to_string(self) + "\n");
+    // As in numpy and xhistogram, n edges make n-1 bins, the last one closed.
     // The diag splits the edges on '_' and reads each one as a number, so
     // signs and exponents are fine as dexpr renders them (e.g., -2, 1e-05)
     std::string config;
@@ -676,6 +691,21 @@ void translate_method (const Call& call, const ast::Expression& self,
           units==nullptr ? std::string("m") : string_arg(*units,"'units'"));
       params.set<std::string>("surface_reference",coord=="z" ? "sealevel" : "surface");
     }
+    return;
+  }
+
+  if (call.name=="aerocom_weights") {
+    // AeroCom cloud-top/bottom weights. A field is sampled at cloud top as
+    // X.sum('lev',weights=cldfrac_tot.aerocom_weights('top')), so all fields
+    // sampled at the same position and phase share one weights diag.
+    const auto* phase = keyword(call,"phase");
+    params.set<std::string>("position",string_arg(*call.positional[0],"the position"));
+    params.set<std::string>("phase",
+        phase==nullptr ? std::string("none") : string_arg(*phase,"'phase'"));
+    EKAT_REQUIRE_MSG (operand=="cldfrac_tot",
+        "Error! aerocom_weights() needs cldfrac_tot as receiver.\n"
+        " - expression: " + ast::to_string(self) + "\n");
+    diag_name = "AeroComWeights";
     return;
   }
 
