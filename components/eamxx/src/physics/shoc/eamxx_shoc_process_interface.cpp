@@ -24,8 +24,8 @@ namespace {
 constexpr int num_moment_inputs = 15;
 constexpr int num_moment_outputs = 2;
 const std::array<const char*, num_moment_inputs> moment_input_names = {
-  "theta_liq", "qt", "rho", "pressure", "u_wind", "v_wind", "shf", "lhf",
-  "height_m", "height_norm", "dtheta_liq_dz", "dqt_dz", "du_wind_dz", "dv_wind_dz", "cf_binary"};
+  "theta_liq", "qt", "rho", "pressure", "u_wind", "v_wind", "qc", "shf", "lhf",
+  "height_m", "height_norm", "dtheta_liq_dz", "dqt_dz", "du_wind_dz", "dv_wind_dz"};
 const std::array<const char*, num_moment_outputs> moment_output_names = {"w_prime_2", "w_prime_3"};
 }
 
@@ -774,7 +774,7 @@ void SHOCMacrophysics::run_moments_emulator()
   const auto zi = m_buffer.zi_grid;
   const auto p_int = get_field_in("p_int").get_view<const Pack**>();
   const auto winds = get_field_out("horiz_winds").get_view<const Pack***>();
-  const auto cldfrac = get_field_out("cldfrac_liq").get_view<const Pack**>();
+  const auto qc = get_field_out("qc").get_view<const Pack**>();
   const auto wthl_sfc = m_buffer.wpthlp_sfc;
   const auto wqw_sfc = m_buffer.wprtp_sfc;
   const auto in = emu.in;
@@ -794,11 +794,11 @@ void SHOCMacrophysics::run_moments_emulator()
     in(3,i,k) = p_int(i,pi)[si];
     in(4,i,k) = winds(i,0,p)[s];
     in(5,i,k) = winds(i,1,p)[s];
-    in(6,i,k) = wthl_sfc(i);
-    in(7,i,k) = wqw_sfc(i);
-    in(8,i,k) = zi(i,pi)[si];
-    in(9,i,k) = zi(i,pi)[si] / 8000.0;
-    in(14,i,k) = cldfrac(i,p)[s] > 0;
+    in(6,i,k) = qc(i,p)[s];
+    in(7,i,k) = wthl_sfc(i);
+    in(8,i,k) = wqw_sfc(i);
+    in(9,i,k) = zi(i,pi)[si];
+    in(10,i,k) = zi(i,pi)[si] / 8000.0;
   });
   Kokkos::fence();
 
@@ -812,10 +812,10 @@ void SHOCMacrophysics::run_moments_emulator()
     const int kp = k + 1 < nlevi ? k + 1 : k;
     const double dz = in(8,i,km) - in(8,i,kp);
     const double inv_dz = dz != 0 ? 1.0 / dz : 0.0;
-    in(10,i,k) = (in(0,i,km) - in(0,i,kp)) * inv_dz;
-    in(11,i,k) = (in(1,i,km) - in(1,i,kp)) * inv_dz;
-    in(12,i,k) = (in(4,i,km) - in(4,i,kp)) * inv_dz;
-    in(13,i,k) = (in(5,i,km) - in(5,i,kp)) * inv_dz;
+    in(11,i,k) = (in(0,i,km) - in(0,i,kp)) * inv_dz;
+    in(12,i,k) = (in(1,i,km) - in(1,i,kp)) * inv_dz;
+    in(13,i,k) = (in(4,i,km) - in(4,i,kp)) * inv_dz;
+    in(14,i,k) = (in(5,i,km) - in(5,i,kp)) * inv_dz;
   });
   Kokkos::fence();
 

@@ -243,5 +243,4 @@ class PythonBackendEmulator:
 
 
 def create_emulator(config: dict[str, Any]) -> PythonBackendEmulator:
-    model_path = config.get("model_path") or None
-    return PythonBackendEmulator(model_path)
+    return PythonBackendEmulator(config.get("model_path"))
