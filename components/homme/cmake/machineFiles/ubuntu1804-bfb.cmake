@@ -10,7 +10,7 @@ SET (CMAKE_CXX_COMPILER mpicxx CACHE FILEPATH "")
 # Set kokkos arch, to get correct avx flags
 SET (Kokkos_ARCH_SNB ON CACHE BOOL "")
 
-SET (USE_MPIEXEC "mpiexec.mpich" CACHE STRING "")
+SET (MPIEXEC_EXECUTABLE "mpiexec.mpich" CACHE FILEPATH "")
 
 #turn on preqxx target and thus strict fpmodel for F vs CXX comparison
 SET (ADD_Fortran_FLAGS "-O0" CACHE STRING "")
@@ -32,5 +32,4 @@ SET (NetCDF_Fortran_LIBRARY /home/celdred/netcdf-gnu/netcdf-f/lib/libnetcdff.a C
 
 
 
-SET (USE_QUEUING FALSE CACHE BOOL "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")

@@ -16,8 +16,8 @@ ELSE()
   SET (CMAKE_CXX_COMPILER     mpicxx   CACHE FILEPATH "")
 ENDIF()
 
-SET (USE_MPIEXEC "srun" CACHE STRING "")
-SET (USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
+SET (MPIEXEC_EXECUTABLE "srun" CACHE FILEPATH "")
+SET (MPIEXEC_PREFLAGS "-K --cpu_bind=cores" CACHE STRING "")
 
 # Set kokkos arch, to get correct avx flags
 SET (Kokkos_ARCH_ZEN2 ON CACHE BOOL "")
@@ -46,7 +46,6 @@ EXECUTE_PROCESS(COMMAND nc-config --prefix
 )
 SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
 
-SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
 SET (CPRNC_DIR /lcrc/group/e3sm/tools/cprnc CACHE FILEPATH "")
 

@@ -26,7 +26,6 @@ EXECUTE_PROCESS(COMMAND nc-config --prefix
 )
 SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
 
-SET (USE_QUEUING FALSE CACHE BOOL "")
 
 # for standalone HOMME builds:
 # SET(CPRNC_DIR /global/cfs/cdirs/e3sm/tools/cprnc CACHE FILEPATH "")
@@ -40,5 +39,5 @@ IF(DEFINED ENV{MKLROOT})
   SET (ADD_CXX_FLAGS     "-traceback" CACHE STRING "")
 ENDIF()
 
-SET(USE_MPIEXEC "srun" CACHE STRING "")
-SET(USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
+SET(MPIEXEC_EXECUTABLE "srun" CACHE FILEPATH "")
+SET(MPIEXEC_PREFLAGS "-K --cpu_bind=cores" CACHE STRING "")
