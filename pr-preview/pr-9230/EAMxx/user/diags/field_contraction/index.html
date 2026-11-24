@@ -5148,7 +5148,8 @@ C_{\dots} = \sum_{k} w_{k} \cdot F_{\dots k}
 <p>where <span class="arithmatex">\(F_{\dots k}\)</span> is the field at level <span class="arithmatex">\(k\)</span>,
 and <span class="arithmatex">\(w_{k}\)</span> is the weight at level <span class="arithmatex">\(k\)</span>.</p>
 <p>To select the vertical reduction, request <code>X.mean('lev')</code> or <code>X.sum('lev')</code>,
-optionally with <code>weights='dp'</code> or <code>weights='dz'</code>.</p>
+optionally with <code>weights='dp'</code>, <code>weights='dz'</code>, or <code>weights=W</code>, where <code>W</code> is
+any field or expression on the same levels.</p>
 <table>
 <thead>
 <tr>
@@ -5179,6 +5180,16 @@ optionally with <code>weights='dp'</code> or <code>weights='dz'</code>.</p>
 <td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta z_{k}\)</span></td>
 </tr>
 <tr>
+<td><code>X.mean('lev',weights=W)</code></td>
+<td><span class="arithmatex">\(W_{k}\)</span></td>
+<td>Average across all levels, weighted by any field <code>W</code></td>
+</tr>
+<tr>
+<td><code>X.sum('lev',weights=W)</code></td>
+<td><span class="arithmatex">\(W_{k}\)</span></td>
+<td>Sum across all levels, weighted by any field <code>W</code></td>
+</tr>
+<tr>
 <td><code>X.mean('lev')</code></td>
 <td>1</td>
 <td>Average across all levels</td>
@@ -5194,6 +5205,8 @@ optionally with <code>weights='dp'</code> or <code>weights='dz'</code>.</p>
 <ul>
 <li><code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>, in units of Pa;</li>
 <li><code>dz</code> field in EAMxx, <span class="arithmatex">\(\Delta z_{k}\)</span>, in units of m;</li>
+<li>any field or expression <code>W</code>, e.g. <code>cldfrac_tot</code>, with layout <code>(lev)</code> or
+  that of <code>X</code> without its components; <code>W</code> must not be masked;</li>
 <li>and no weighting, which is equivalent to using a weight of 1.</li>
 </ul>
 <p>In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
@@ -5201,6 +5214,10 @@ where g is the gravitational acceleration, in units of m/s<span class="arithmate
 <p>It is important to note that in the case of dp- and dz-weighted
 reductions, the field provided to the reduction utility must be
 at least 2 in rank, e.g., (ncol, nlev).</p>
+<p>With a field <code>W</code> as weights, the reduction follows xarray's weighted
+reductions when <code>X</code> is masked: the sum skips invalid levels, so a column with
+none gives 0, and the mean divides by the sum of <code>W</code> over the valid levels
+only, and is missing where that is 0.</p>
 <h2 id="zonal-reduction">Zonal reduction</h2>
 <p>We currently have a utility to calculate zonal averages online.
 To select the zonal average with <code>Y</code> latitude bins, request
@@ -5230,9 +5247,13 @@ And so on...</p>
 <h2 id="histograms">Histograms</h2>
 <p>We currently have a utility to calculate histograms online.
 To select the histogram, request <code>X.histogram(bins=[..])</code> with the edges
-of the bins. For example, the histogram specified by
-<code>T_mid.histogram(bins=[250,270,290,310])</code> has 5 bins effectively defined by
-[<span class="arithmatex">\(-\infty\)</span>, 250), [250, 270), [270, 290), [290, 310), and [310, <span class="arithmatex">\(\infty\)</span>).</p>
+of the bins. The binning is that of numpy's <code>histogram</code> and of
+<a href="https://xhistogram.readthedocs.io">xhistogram</a>: n edges make n-1 bins, and
+values outside the edges are not counted. For example, the histogram specified
+by <code>T_mid.histogram(bins=[250,270,290,310])</code> has 3 bins, [250, 270),
+[270, 290) and [290, 310]; the last bin includes its upper edge. To count the
+tails as well, add edges beyond any value the field takes, e.g.
+<code>T_mid.histogram(bins=[0,250,270,290,310,1000])</code>.</p>
 <table>
 <thead>
 <tr>

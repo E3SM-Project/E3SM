@@ -5266,10 +5266,9 @@ constructor:</p>
 </code></pre></div>
 <p>The rules for such a diagnostic are:</p>
 <ul>
-<li>all outputs must be declared in the constructor: an output stream stores a
-  new diagnostic under all its output names right after construction, before
-  it can initialize it (initialization waits until the inputs exist), so that
-  a request of another output finds the same instance (see below);</li>
+<li>all outputs must be declared in the constructor, so that <code>get_outputs()</code> is
+  complete right after construction. Requests of different outputs share one
+  instance (see below);</li>
 <li>each output must be on the diagnostic grid, have a name that no other output
   has (case insensitive), and be allocated by the end of <code>initialize_impl</code>;</li>
 <li><code>get()</code> errors out: keep a handle to each output for <code>compute_impl</code>, as
@@ -5290,12 +5289,21 @@ several outputs. For a diagnostic with one output, it may be empty until
 returns the class for any of the names, and the stream picks the output by name.</p>
 <h2 id="how-output-streams-use-diagnostics">How output streams use diagnostics</h2>
 <p>An output stream keeps the diagnostics it creates in a static repo, keyed by
-name, so that two streams requesting the same field share one instance, which
-is computed at most once per step (an instant stream evaluates its diagnostics
-on output steps only). A diagnostic with several outputs is stored under each
-output name, when the first of them is requested. Hence, requesting
-<code>LiqNumberPath</code> in one stream and <code>IceNumberPath</code> in another gives one
-<code>NumberPath</code>, which computes all three paths in one evaluation.</p>
+<code>AbstractDiagnostic::hash()</code>, so that streams that need the same thing share one
+instance, which is computed at most once per step (an instant stream evaluates
+its diagnostics on output steps only). Two diagnostics are the same if they have
+the same class, the same parameters, and the same input <em>fields</em>. The inputs are
+compared by storage, not by name, since an alias is local to its stream: two
+streams may have an alias with the same name, bound to different fields, and
+they must not share a diagnostic that reads it.</p>
+<p>For each request, a stream creates the diagnostic. Once its inputs are in the
+stream's field manager, it sets them and computes the hash. If the repo has that
+hash, the stream uses that diagnostic and drops the new one. Else, it initializes
+the new one and adds it to the repo. So building a diagnostic should be cheap,
+other than allocating its outputs.</p>
+<p>A request of any output of a diagnostic with several outputs gives the same hash.
+Hence, requesting <code>LiqNumberPath</code> in one stream and <code>IceNumberPath</code> in another
+gives one <code>NumberPath</code>, which computes all three paths in one evaluation.</p>
 <p>Each request adds only its own output to the stream. An output that is not
 requested is computed, but is not written, and does not affect the stream.</p>
 <h2 id="masks-and-valid-counts">Masks and valid counts</h2>
@@ -5317,8 +5325,7 @@ fields whose masks share a name share the count:</p>
 </code></pre></div>
 <p>Masks with the same name must hold the same values, since the stream updates
 the count once, and the horizontal remapper remaps such masks once; sharing
-the mask, as above, is the way to ensure it. An output that may contain fill values must
-also call <code>set_may_be_filled(true)</code> on its header.</p>
+the mask, as above, is the way to ensure it.</p>
 <h2 id="testing">Testing</h2>
 <ul>
 <li><code>src/share/diagnostics/tests/multi_output_test.cpp</code> shows how to test a
