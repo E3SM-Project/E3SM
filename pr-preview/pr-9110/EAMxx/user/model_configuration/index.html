@@ -5804,6 +5804,22 @@ the grid where the fields are defined and a coarser grid.<ul>
 </li>
 </ul>
 </li>
+<li><strong>Structured target grids</strong>: if the target grid of <code>horiz_remap_file</code> is a 2d structured grid
+(i.e., the map file has <code>dst_grid_rank=2</code>, with the grid sizes in <code>dst_grid_dims=[nx,ny]</code>),
+EAMxx figures out on its own how to write the output. No option is needed.<ul>
+<li>The target points in the map file must be ordered with <code>x</code> as the fastest varying
+  index (i.e., the point <code>(ix,iy)</code> is the column number <code>iy*nx+ix</code>), and <code>nx*ny</code> must
+  match the number of columns of the target grid in the map file.</li>
+<li>If the latitude (longitude) of all the points with the same <code>y</code> (<code>x</code>) index is the same
+  (up to a small tolerance), the grid is a lat-lon grid. The output file will have
+  dimensions <code>(lat,lon)</code>, with <code>lat</code> and <code>lon</code> being 1d coordinate variables.</li>
+<li>Otherwise (e.g., a HRRR grid), the grid is a curvilinear grid: <code>nx</code> need not be the number
+  of longitudes, nor <code>ny</code> the number of latitudes. The output file will have dimensions <code>(lat,lon)</code>
+  (as for lat-lon grids, so the names are misleading: they have length <code>ny</code> and <code>nx</code>),
+  with <code>lat</code> and <code>lon</code> being 2d variables over <code>(lat,lon)</code>, which the output variables
+  reference through the <code>coordinates</code> attribute.</li>
+</ul>
+</li>
 <li><code>horiz_remap_fill_threshold</code>: fraction (in <code>[0,1)</code>) of a target column that must
 come from valid (i.e., not fill-valued) source columns for the remapped value to be
 written out.<ul>
