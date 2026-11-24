@@ -7,7 +7,13 @@
 // For declaring wetscav class derived from atm process class
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
+// For ZM convective tracer transport (only available when ZM is built)
+#ifdef EAMXX_HAS_ZM
+#include <physics/zm/zm_functions.hpp>
+#endif
+
 // For component name
+#include <memory>
 #include <string>
 
 namespace scream
@@ -165,6 +171,77 @@ private:
   // Device views for species classification and resuspension mapping (for GPU kernels)
   int_view_1d species_class_device_;
   int_view_1d mmtoo_prevap_resusp_device_;
+
+  // ---------------------------------------------------------------------------
+  // ZM convective tracer transport (EAM: zm_conv_tend_2 -> zm_transport_tracer)
+  // ---------------------------------------------------------------------------
+  // zm_tracer_transport: transport gases (and aerosols when convproc_do_aer is
+  // false) through the ZM plume after aero_model_wetdep.
+  bool zm_tracer_transport_ = false;
+
+  // Per-column scratch for the transport call, carved from the MAM buffer:
+  //   [ q (nlev*pcnst) | dqdt (nlev*pcnst) | mu (nlev) | md (nlev) | dp (nlev) ]
+  view_2d zm_transport_work_;
+  // Length (in Reals) of the per-column scratch above; 0 without ZM
+  int get_zm_transport_work_len() const;
+
+#ifdef EAMXX_HAS_ZM
+public:
+  // NOTE: the ZM helpers below are public because CUDA does not allow
+  // extended (KOKKOS_LAMBDA) lambdas inside private member functions.
+  using ZMF = zm::Functions<Real, DefaultDevice>;
+
+  // Everything the column kernel needs for ZM tracer transport, gathered on
+  // the host by get_zm_transport_inputs() and captured by value in the kernel.
+  struct ZmTransportInputs {
+    bool enabled = false;               // zm_tracer_transport_
+    const_view_1d cldtop_klev;          // ZM cloud top level index
+    const_view_1d msemax_klev;          // ZM cloud base level index
+    const_view_1d activity;             // ZM activity flag (1/0)
+    const_view_2d mflx_up, mflx_dn;     // up/downdraft mass flux [kg/m2/s]
+    const_view_2d entr_up, detr_up;     // updraft entrainment/detrainment [1/s]
+    const_view_2d entr_dn;              // downdraft entrainment [1/s]
+    Kokkos::View<const bool *> doconvtran;  // transport mask (pcnst)
+    const_view_2d fracis;               // insoluble fraction (nlev, pcnst)
+    view_2d work;                       // per-column scratch
+    ZMF::WorkspaceManager wsm;          // workspace for zm_transport_tracer
+    ZMF::ZmRuntimeOpt runtime_opt;      // ZM options (zm_microp)
+    int ktm = 0;                        // min cloud top over active columns
+    int kbm = 0;                        // min cloud base over active columns
+  };
+
+  // Host: retrieve ZM fields and compute ktm/kbm (enabled=false if off)
+  ZmTransportInputs get_zm_transport_inputs() const;
+
+  // Host: domain-wide cloud top/base bounds over active columns
+  static void zm_cloud_level_bounds(const int ncol, const int nlev,
+                                    const const_view_1d &cldtop_klev,
+                                    const const_view_1d &msemax_klev,
+                                    const const_view_1d &activity,
+                                    int &ktm, int &kbm);
+
+  // Per-column scratch length needed by zm_tracer_transport_column
+  static int zm_tracer_transport_work_len(const int nlev);
+
+  // Device (whole team): ZM tracer transport for column icol, applied in
+  // place to the MAM dry state in progs
+  KOKKOS_INLINE_FUNCTION
+  static void zm_tracer_transport_column(const ThreadTeam &team,
+                                         const ZmTransportInputs &zm,
+                                         const int icol, const int nlev,
+                                         const Real dt,
+                                         const mam4::Atmosphere &atm,
+                                         const mam4::Prognostics &progs,
+                                         const const_view_2d &p_del);
+
+private:
+  // doconvtran(m): true if constituent m is transported by ZM
+  Kokkos::View<bool *> zm_doconvtran_;
+  // fraction of each tracer that is insoluble (nlev, pcnst); set to 1
+  view_2d zm_fracis_;
+  // workspace for the 10 internal (pcnst x nlev) arrays of zm_transport_tracer
+  std::shared_ptr<ZMF::WorkspaceManager> zm_wsm_;
+#endif
 
 }; // class MAMWetscav
 

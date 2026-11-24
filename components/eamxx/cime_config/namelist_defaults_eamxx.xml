@@ -467,6 +467,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- Convective transport -->
       <convproc_do_aer type="logical" doc="Flag to enable convective transport of aerosols">false</convproc_do_aer>
       <convproc_do_gas type="logical" doc="Flag to enable convective transport of gases">false</convproc_do_gas>
+      <zm_tracer_transport type="logical" doc="Flag to transport gases (and aerosols when convproc_do_aer is false) with the ZM deep convection plume (zm_transport_tracer) after wet deposition. Requires the ZM process.">false</zm_tracer_transport>
     </mam4_wetscav>
 
     <!-- MAM4xx-Surface-Emissions -->
