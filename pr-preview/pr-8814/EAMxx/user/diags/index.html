@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -3108,6 +3108,8 @@
       
         
       
+        
+      
     
     
     
@@ -3277,6 +3279,34 @@
     
   
     Input/Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
   
 
     
@@ -4808,6 +4838,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#diagnostics-with-several-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics with several outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4945,6 +4986,16 @@ are designed generically and composably, and are requestable by users.</p>
 </ul>
 <p>Derived diagnostics are requested as <a href="expressions/">expressions</a>, e.g.
 <code>T_500 := T_mid.interp(p_mid=500,units='hPa')</code>.</p>
+<h2 id="diagnostics-with-several-outputs">Diagnostics with several outputs</h2>
+<p>Some diagnostics compute several fields at once. E.g., <code>LiqNumberPath</code>,
+<code>IceNumberPath</code> and <code>RainNumberPath</code> are computed together. Each field is
+requested by its own name, and requesting any of them, in one or more output
+streams, computes them all together, at most once per step (an instant stream
+evaluates its diagnostics on output steps only). Only the requested ones are
+written. A request of any of them needs the inputs of all of them (e.g.,
+<code>LiqNumberPath</code> needs the ice and rain tracers too).
+To write one under another name, use <code>&lt;name&gt; := &lt;field&gt;</code>, e.g.
+<code>lnp := LiqNumberPath</code>.</p>
 <p>More details to follow.</p>
 
 
