@@ -114,7 +114,6 @@ initialize_impl ()
     }
     get().set_valid_mask(index_mask.broadcast_to(d_layout));
   }
-  get().get_header().set_may_be_filled(true);
 
   using stratts_t = std::map<std::string,std::string>;
 
@@ -226,10 +225,6 @@ void FieldAtHeight::compute_impl()
         }
     });
   }
-
-  // TODO: remove when IO stops relying on mask=0 entries being already set to FillValue
-  auto mask = get().get_valid_mask();
-  get().deep_copy(constants::fill_value<Real>,mask,true);
 }
 
 } //namespace scream

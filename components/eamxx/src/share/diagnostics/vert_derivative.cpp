@@ -64,7 +64,6 @@ void VertDerivative::initialize_impl()
 
   if (f.has_valid_mask()) {
     get().create_valid_mask();
-    get().get_header().set_may_be_filled(true);
   }
 }
 
@@ -96,7 +95,6 @@ void VertDerivative::compute_impl()
   auto d_mask = masked ? get().get_valid_mask().get_view<int**>() : mview_t{};
   auto f_mask = masked ? f.get_valid_mask().get_view<const int**>() : cmview_t{};
   int last_lev = nlevs-1;
-  constexpr auto fv = constants::fill_value<Real>;
   auto lambda = KOKKOS_LAMBDA(const MT &team) {
     const int icol = team.league_rank();
     auto f_icol    = ekat::subview(f2d, icol); // field at midpoint
@@ -130,9 +128,6 @@ void VertDerivative::compute_impl()
                 : f_icol(0);
 
         o_icol(ilev) = (f_int_kp1 - f_int_kp0) / d_icol(ilev);
-      } else {
-        // Remove this when IO solely relies on mask fields
-        o_icol(ilev) = fv;
       }
     });
   };

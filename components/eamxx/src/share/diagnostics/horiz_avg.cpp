@@ -46,7 +46,6 @@ void HorizAvg::initialize_impl()
   if (f.has_valid_mask()) {
     // Output valid_mask: 1 where den > 0 (i.e., at least one valid column)
     get().create_valid_mask(Field::MaskInit::None);
-    get().get_header().set_may_be_filled(true);
 
     // To use at runtime to compute sum(1*w) via horiz_avg (with f_in=1)
     m_ones = f.clone();
@@ -91,8 +90,6 @@ void HorizAvg::compute_impl()
     compute_mask(m_denom,0,Comparison::NE,nonzero_denom);
 
     get().scale_inv(m_denom,nonzero_denom);
-    // IO relies on fill_value for masked-out entries
-    get().deep_copy(constants::fill_value<Real>,nonzero_denom,true);
   }
 }
 
