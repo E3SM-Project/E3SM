@@ -147,11 +147,10 @@ protected:
   // Share (some of) the dynamics-grid helper fields with the HommeInstance
   void share_dyn_fields_with_instance (const std::vector<std::string>& names);
 
-  // Remapper for inputs and outputs, plus a special one for initial
-  // conditions. These are used when the physics grid is the continuous GLL
-  // point grid.
-  std::shared_ptr<AbstractRemapper>   m_p2d_remapper;
-  std::shared_ptr<AbstractRemapper>   m_d2p_remapper;
+  // Remappers for forcing (phys->dyn), states (dyn->phys), and initial conditions. Used if the physics
+  // grid is GLL. They are UniqueGridRemappers on the dyn grid, so dyn->phys is fwd, and phys->dyn is bwd.
+  std::shared_ptr<AbstractRemapper>   m_forcing_remapper;
+  std::shared_ptr<AbstractRemapper>   m_state_remapper;
   std::shared_ptr<AbstractRemapper>   m_ic_remapper;
 
   // The dynamics and reference grids

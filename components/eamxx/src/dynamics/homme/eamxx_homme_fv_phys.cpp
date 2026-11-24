@@ -12,7 +12,7 @@
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
-#include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "share/remap/unique_grid_remapper.hpp"
 
 // Ekat includes
 #include <ekat_assert.hpp>
@@ -220,7 +220,7 @@ void HommeDynamics
     // restart file.
     add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), mol/mol, pgn, ps);
   }
-  trace_gases_workaround.set_remapper(std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid, m_dyn_grid));
+  trace_gases_workaround.set_remapper(std::make_shared<UniqueGridRemapper>(m_dyn_grid));
 }
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
@@ -245,10 +245,11 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap (const RunType run_type) {
       for (const auto& e : trace_gases_workaround.get_active_gases())
         create_helper_field(e, {EL,GP,GP,LEV}, {nelem,NGP,NGP,nlev}, dgn);
       auto r = trace_gases_workaround.get_remapper();
+      // NOTE: CGLL->DGLL is the remapper's bwd direction, so the dyn fields are the source.
       for (const auto& e : trace_gases_workaround.get_active_gases())
-        r->register_field(get_field_in(e, rgn), m_helper_fields.at(e));
+        r->register_field(m_helper_fields.at(e), get_field_in(e, rgn));
       r->registration_ends();
-      r->remap_fwd();
+      r->remap_bwd();
       trace_gases_workaround.erase_remapper();
     }
     { // DGLL -> PGN
