@@ -211,7 +211,7 @@ void HommeInstance::copy_dyn_states_to_all_timelevels ()
 }
 
 void HommeInstance::
-init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
+init_dyn_state_from_gll_ic (AbstractRemapper& ic_remapper,
                             const Field& horiz_winds_gll,
                             const Field& T_mid_gll,
                             const Field& ps_gll,
@@ -268,14 +268,15 @@ init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
   // Import IC from the GLL grid to the dyn grid
   // NOTE: the remapper supports (dynamic) subfields, so we remap directly into
   //       the n0 time slice of the states.
-  gll2dyn.register_field(horiz_winds_gll,get_dyn_field("v_dyn").subfield(1,tl.n0,true));
-  gll2dyn.register_field(pseudo_density_gll,get_dyn_field("dp3d_dyn").subfield(1,tl.n0,true));
-  gll2dyn.register_field(ps_gll,get_dyn_field("ps_dyn").subfield(1,tl.n0,true));
-  gll2dyn.register_field(phis_gll,get_dyn_field("phis_dyn"));
-  gll2dyn.register_field(T_mid_gll,get_dyn_field("vtheta_dp_dyn").subfield(1,tl.n0,true));
-  gll2dyn.register_field(tracers_gll,get_dyn_field("Q_dyn"));
-  gll2dyn.registration_ends();
-  gll2dyn.remap_fwd();
+  // NOTE: gll->dyn is the remapper's bwd direction, so the dyn fields are the source.
+  ic_remapper.register_field(get_dyn_field("v_dyn").subfield(1,tl.n0,true),horiz_winds_gll);
+  ic_remapper.register_field(get_dyn_field("dp3d_dyn").subfield(1,tl.n0,true),pseudo_density_gll);
+  ic_remapper.register_field(get_dyn_field("ps_dyn").subfield(1,tl.n0,true),ps_gll);
+  ic_remapper.register_field(get_dyn_field("phis_dyn"),phis_gll);
+  ic_remapper.register_field(get_dyn_field("vtheta_dp_dyn").subfield(1,tl.n0,true),T_mid_gll);
+  ic_remapper.register_field(get_dyn_field("Q_dyn"),tracers_gll);
+  ic_remapper.registration_ends();
+  ic_remapper.remap_bwd();
 
   // Wheter w_int is computed or not, Homme still does some global reduction on w_int when
   // printing the state, so we need to make sure it doesn't contain NaNs

@@ -56,10 +56,11 @@ protected:
   enum class CommDirection { UniqueToOverlap, OverlapToUnique };
 
   // Allocate the buffers, and create the persistent requests.
+  // If skip_self=true, no requests are created for this rank (the derived class must copy the data).
   // NOTE: this is a collective operation only in the sense that pairs of ranks must agree on the sizes.
   // This must be called after the fields are registered.
   void setup_mpi (const std::shared_ptr<const GridImportExport>& imp_exp,
-                  const CommDirection dir);
+                  const CommDirection dir, const bool skip_self = false);
 
   // The size of a column of each field (0 if the field has no COL dim), and of all fields spliced together.
   // The columns of the fields are one after the other, so the offset of a field is the sum of the sizes
@@ -94,6 +95,8 @@ protected:
   // No-ops if MpiOnDev=true
   void copy_send_to_mpi ();
   void copy_recv_from_mpi ();
+  // Only the range [beg,end) of the recv buffer
+  void copy_recv_from_mpi (const size_t beg, const size_t end);
 
   // The send/recv buffers for pack/unpack operations
   view_1d<Real> m_send_buffer;

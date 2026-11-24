@@ -6,9 +6,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   #                 HOMME_TARGET   NP PLEV QSIZE_D
   CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
-  # Test dynamics-physics fields remapping
-  CreateUnitTest(homme_pd_remap
-    SOURCES homme_pd_remap_tests.cpp test_helper_mod.F90
+  # Test that the dynamics grid and the physics GLL grid are related correctly (unique grid)
+  CreateUnitTest(homme_unique_grid
+    SOURCES homme_unique_grid_tests.cpp test_helper_mod.F90
     LIBS ${dynLibName}
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     LABELS dynamics

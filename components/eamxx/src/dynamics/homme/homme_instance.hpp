@@ -51,11 +51,11 @@ public:
   // (horiz_winds, T_mid, ps, phis, tracers). The pseudo density is first computed,
   // hydrostatically, on the GLL grid (so pseudo_density_gll is an output of this
   // function), and then everything is remapped to the dyn grid with the input remapper
-  // (which must be a GLL->dyn remapper, with no field registered). Then, the other state
+  // (a UniqueGridRemapper on the dyn grid, with no field registered, used backward). Then, the other state
   // variables (vtheta_dp, phi_int, Qdp) are computed, and the n0 timelevel is copied to all
   // the others.
   // NOTE: this method does NOT update any time stamp.
-  void init_dyn_state_from_gll_ic (AbstractRemapper& gll2dyn,
+  void init_dyn_state_from_gll_ic (AbstractRemapper& ic_remapper,
                                    const Field& horiz_winds_gll,
                                    const Field& T_mid_gll,
                                    const Field& ps_gll,

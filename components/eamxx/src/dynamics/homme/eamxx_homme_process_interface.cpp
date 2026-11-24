@@ -24,7 +24,6 @@
 #include "Types.hpp"
 
 // Scream includes
-#include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "share/remap/unique_grid_remapper.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
@@ -266,11 +265,17 @@ void HommeDynamics::create_requests ()
   if (not fv_phys_active()) {
     // Dynamics backs out tendencies from the states, and passes those to Homme.
     // After Homme completes, we remap the updated state to the ref grid.  Thus,
-    // is more convenient to use two different remappers: the pd remapper will
-    // remap into Homme's forcing views, while the dp remapper will remap from
+    // is more convenient to use two different remappers: the forcing remapper will
+    // remap into Homme's forcing views, while the state remapper will remap from
     // Homme's states.
-    m_p2d_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_phys_grid,m_dyn_grid);
-    m_d2p_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+    {
+      const auto unique_grid = m_dyn_grid->get_unique_grid();
+      EKAT_REQUIRE_MSG (m_phys_grid->get_num_local_dofs()==unique_grid->get_num_local_dofs() and
+                        m_phys_grid->get_num_global_dofs()==unique_grid->get_num_global_dofs(),
+          "Error! The physics grid must be the unique grid of the dynamics grid.\n");
+    }
+    m_forcing_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
+    m_state_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
   }
 
   // Layout for 2D (1d horiz X 1d vertical) variable
@@ -452,7 +457,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (fv_phys_active()) {
     fv_phys_initialize_impl();
   } else {
-    // Setup the p2d and d2p remappers
+    // Setup the forcing and state remappers
 
     // ftype==FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
@@ -460,35 +465,35 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // ftype!=FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
     // Remap Q directly into FQ, tendency computed in pre_process step
-    m_p2d_remapper->register_field(get_group_out("Q",pgn).monolithic_field(),m_helper_fields.at("FQ_dyn"));
-    m_p2d_remapper->register_field(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
+    m_forcing_remapper->register_field(m_helper_fields.at("FQ_dyn"),get_group_out("Q",pgn).monolithic_field());
+    m_forcing_remapper->register_field(m_helper_fields.at("FT_dyn"),m_helper_fields.at("FT_phys"));
 
     // FM has 3 components on dyn grid, but only 2 on phys grid
     auto& FM_phys = m_helper_fields.at("FM_phys");
     auto& FM_dyn  = m_helper_fields.at("FM_dyn");
-    m_p2d_remapper->register_field(FM_phys.get_component(0),FM_dyn.get_component(0));
-    m_p2d_remapper->register_field(FM_phys.get_component(1),FM_dyn.get_component(1));
+    m_forcing_remapper->register_field(FM_dyn.get_component(0),FM_phys.get_component(0));
+    m_forcing_remapper->register_field(FM_dyn.get_component(1),FM_phys.get_component(1));
 
     // NOTE: for states, if/when we can remap subfields, we can remap the corresponding internal fields,
     //       which are subviews of the corresponding helper field at time slice np1
-    m_d2p_remapper->register_field(get_internal_field("vtheta_dp_dyn"),get_field_out("T_mid"));
-    m_d2p_remapper->register_field(get_internal_field("v_dyn"),get_field_out("horiz_winds"));
-    m_d2p_remapper->register_field(get_internal_field("dp3d_dyn"), get_field_out("pseudo_density"));
-    m_d2p_remapper->register_field(get_internal_field("ps_dyn"), get_field_out("ps"));
-    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),get_group_out("Q",pgn).monolithic_field());
-    m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
+    m_state_remapper->register_field(get_internal_field("vtheta_dp_dyn"),get_field_out("T_mid"));
+    m_state_remapper->register_field(get_internal_field("v_dyn"),get_field_out("horiz_winds"));
+    m_state_remapper->register_field(get_internal_field("dp3d_dyn"), get_field_out("pseudo_density"));
+    m_state_remapper->register_field(get_internal_field("ps_dyn"), get_field_out("ps"));
+    m_state_remapper->register_field(m_helper_fields.at("Q_dyn"),get_group_out("Q",pgn).monolithic_field());
+    m_state_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
     if (params.do_3d_turbulence) {
       // Remap SHOC eddy diffusivities from physics grid to dynamics grid.
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom_horiz",pgn),m_helper_fields.at("Km_dyn"));
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat_horiz",pgn),m_helper_fields.at("Kh_dyn"));
+      m_forcing_remapper->register_field(m_helper_fields.at("Km_dyn"),get_field_in("eddy_diff_mom_horiz",pgn));
+      m_forcing_remapper->register_field(m_helper_fields.at("Kh_dyn"),get_field_in("eddy_diff_heat_horiz",pgn));
 
       // Remap horizontal/local strain tensor components from dynamics to physics grid.
-      m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
+      m_state_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
     }
 
-    m_p2d_remapper->registration_ends();
-    m_d2p_remapper->registration_ends();
+    m_forcing_remapper->registration_ends();
+    m_state_remapper->registration_ends();
   }
 
   // Sets the scream views into the hommexx internal data structures
@@ -681,8 +686,8 @@ void HommeDynamics::homme_pre_process (const double dt) {
   if (fv_phys_active()) {
     fv_phys_pre_process();
   } else {
-    // Remap FT, FM, and Q->FQ
-    m_p2d_remapper->remap_fwd();
+    // Remap FT, FM, and Q->FQ (bwd)
+    m_forcing_remapper->remap_bwd();
   }
 
   auto& tl = c.get<TimeLevel>();
@@ -754,8 +759,8 @@ void HommeDynamics::homme_post_process (const double dt) {
     return;
   }
 
-  // Remap outputs to ref grid
-  m_d2p_remapper->remap_fwd();
+  // Remap outputs to ref grid (fwd)
+  m_state_remapper->remap_fwd();
 
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
@@ -1098,7 +1103,7 @@ void HommeDynamics::initialize_homme_state () {
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
-  m_ic_remapper = std::make_shared<PhysicsDynamicsRemapper>(m_cgll_grid,m_dyn_grid);
+  m_ic_remapper = std::make_shared<UniqueGridRemapper>(m_dyn_grid);
   m_instance->init_dyn_state_from_gll_ic(
       *m_ic_remapper,
       get_field_in("horiz_winds",rgn),

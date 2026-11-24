@@ -1,12 +1,16 @@
 #include "share/remap/unique_grid_remapper.hpp"
 
+#include "share/grid/point_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/util/eamxx_bound_functor.hpp"
-#include "share/util/eamxx_parallel_for_nd.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/field/field_visit.hpp"
 
 #include <ekat_pack_utils.hpp>
 #include <ekat_assert.hpp>
+
+#include <algorithm>
+#include <limits>
+#include <map>
 
 namespace scream
 {
@@ -45,7 +49,7 @@ compute_unique_grid_dof_map (const AbstractGrid& grid,
 
 UniqueGridRemapper::
 UniqueGridRemapper (const grid_ptr_type& grid)
- : AbstractRemapper(grid,grid->get_unique_grid())
+ : MpiRemapper(grid,grid->get_unique_grid())
 {
   const auto unique_grid = m_tgt_grid;
 
@@ -71,8 +75,6 @@ UniqueGridRemapper (const grid_ptr_type& grid)
       "Error! The target grid must have dofs addressed with a single index.\n"
       " - grid name: " + unique_grid->name() + "\n"
       " - number of indices per dof: " + std::to_string(get_num_idx(*unique_grid)) + "\n");
-
-  m_bwd_allowed = false;
 
   m_num_unique_cols = unique_grid->get_num_local_dofs();
   m_src_lid2idx     = grid->get_lid_to_idx_map().get_view<const int**>();
@@ -100,10 +102,7 @@ registration_ends_impl ()
   // (so the source grid is addressed with the dof indices, followed by [lev]).
   // NOTE: if a vector field is itself a (dynamic) subfield, nothing special is needed: the views
   //       of a subfield are extracted by recursively subviewing the parent, at every call.
-  m_is_vec.clear();
-  m_ncomp.clear();
-  m_src_scalar.clear();
-  m_tgt_scalar.clear();
+  // We also have one entry for each (field,component). All the kernels process all entries at once.
   for (int i=0; i<m_num_fields; ++i) {
     const auto& tl = m_tgt_fields[i].get_header().get_identifier().get_layout();
     const bool is_vec = tl.is_vector_layout();
@@ -111,6 +110,19 @@ registration_ends_impl ()
     m_ncomp.push_back(is_vec ? tl.get_vector_dim() : 1);
     m_src_scalar.push_back(is_vec ? m_src_fields[i].get_component(0,true) : m_src_fields[i]);
     m_tgt_scalar.push_back(is_vec ? m_tgt_fields[i].get_component(0,true) : m_tgt_fields[i]);
+    for (int c=0; c<m_ncomp[i]; ++c) {
+      m_entry_field.push_back(i);
+      m_entry_comp.push_back(c);
+    }
+  }
+  m_num_entries = m_entry_field.size();
+
+  m_entries   = KT::view_ND<UniqueGridEntryDesc,1>("entries",m_num_entries);
+  m_entries_h = Kokkos::create_mirror_view(m_entries);
+  for (int e=0; e<m_num_entries; ++e) {
+    const auto& sl = m_tgt_scalar[m_entry_field[e]].get_header().get_identifier().get_layout();
+    m_entries_h(e) = UniqueGridEntryDesc();
+    m_entries_h(e).nlev = sl.rank()==2 ? sl.dim(1) : 1;
   }
 }
 
@@ -125,77 +137,370 @@ set_component (const int i, const int c)
 
 namespace {
 
-// Copy kernel: tgt(icol[,ilev]) = src(<indices of the source dof>[,ilev])
-//
-// The source field is addressed with the dof itself (if K==1), or with the three indices
-// (e,g1,g2) in the lid->idx map (if K==3). The latter are in the same order as the horizontal
-// tags in the grid's 2d scalar layout.
-//
-// NOTE: kernels going through parallel_for_nd must be functors with a templated operator()
-template<int K>
-struct UniqueGridCopyKernel {
-  template<typename TgtView, typename SrcView, typename... Idx>
-  KOKKOS_INLINE_FUNCTION
-  void operator() (const TgtView& tgt, const SrcView& src, const int icol, const Idx... rest) const {
-    const int dof = unique2src(icol);
-    if constexpr (K==1) {
-      tgt(icol,rest...) = src(dof,rest...);
-    } else {
-      tgt(icol,rest...) = src(lid2idx(dof,0),lid2idx(dof,1),lid2idx(dof,2),rest...);
-    }
-  }
+using ExeSpace   = Field::device_t::execution_space;
+using TeamPolicy = Kokkos::TeamPolicy<ExeSpace>;
+using Member     = typename TeamPolicy::member_type;
 
-  UniqueGridRemapper::KT::view_ND<int,1>  unique2src;
-  Field::view_dev_t<const int**>          lid2idx;
-};
+template<typename T>
+using kview_1d = UniqueGridRemapper::KT::view_ND<T,1>;
 
-// Launch the copy kernel for the scalar fields. N is the rank of the target field
-template<int K, int N>
-void remap_scalar_fwd (const Field& src, const Field& tgt,
-                       const UniqueGridCopyKernel<K>& kernel)
+// Get the data pointer and the strides of the (rank<=4) view of a field. The views are extracted
+// at every call, so that any (dynamic) subview info is up to date.
+// NOTE: we always ask for a view with const value type, which any field can provide.
+//       Writing through the pointer is the responsibility of the caller.
+template<int N>
+void get_ptr_and_strides (const Field& f, Real*& ptr, long long* strides)
 {
-  using details::get_view_variant;
-  constexpr int NS = K==1 ? N : N+2;
-
-  const auto& dims = tgt.get_header().get_identifier().get_layout().dims();
-  std::visit([&](const auto& t, const auto& s) {
-    using exec_space = typename std::decay_t<decltype(t)>::traits::execution_space;
-    parallel_for_nd<N,exec_space>(dims,bind_functor(kernel,t,s));
-  }, get_view_variant<N,Real>(tgt), get_view_variant<NS,const Real>(src));
+  std::visit([&](const auto& v) {
+    ptr = const_cast<Real*>(v.data());
+    for (int i=0; i<N; ++i) {
+      strides[i] = v.stride(i);
+    }
+  }, details::get_view_variant<N,const Real>(f));
 }
 
-template<int K>
-void remap_scalar_fwd (const Field& src, const Field& tgt,
-                       const UniqueGridCopyKernel<K>& kernel)
+void get_ptr_and_strides (const Field& f, Real*& ptr, long long* strides)
 {
-  switch (tgt.rank()) {
-    case 1: remap_scalar_fwd<K,1>(src,tgt,kernel); break;
-    case 2: remap_scalar_fwd<K,2>(src,tgt,kernel); break;
+  switch (f.rank()) {
+    case 1: get_ptr_and_strides<1>(f,ptr,strides); break;
+    case 2: get_ptr_and_strides<2>(f,ptr,strides); break;
+    case 3: get_ptr_and_strides<3>(f,ptr,strides); break;
+    case 4: get_ptr_and_strides<4>(f,ptr,strides); break;
     default:
       EKAT_ERROR_MSG ("Error! Unsupported field rank in UniqueGridRemapper.\n"
-          " - field: " + tgt.name() + "\n"
-          " - rank : " + std::to_string(tgt.rank()) + "\n");
+          " - field: " + f.name() + "\n"
+          " - rank : " + std::to_string(f.rank()) + "\n");
   }
 }
+
+// The offset of the source grid dof 'dof' in the field of entry d. The dof is addressed with
+// the K indices in the lid->idx map (e.g., 1 for (col), or 3 for (elem,gp,gp)).
+KOKKOS_INLINE_FUNCTION
+long long src_dof_offset (const UniqueGridEntryDesc& d,
+                          const Field::view_dev_t<const int**>& lid2idx,
+                          const int K, const int dof)
+{
+  long long offset = 0;
+  for (int j=0; j<K; ++j) {
+    offset += static_cast<long long>(lid2idx(dof,j))*d.src_s[j];
+  }
+  return offset;
+}
+
+// Forward kernel: for each entry, copy the unique grid column icol from one of its replicas on the source grid
+struct UniqueGridFwdKernel {
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const Member& team) const {
+    const int rank = team.league_rank();
+    const int e    = rank % num_entries;
+    const int icol = rank / num_entries;
+
+    const auto& d = entries(e);
+    const int dof = unique2src(icol);
+
+    Real* t = d.tgt_ptr + icol*d.tgt_s[0];
+    const Real* s = d.src_ptr + src_dof_offset(d,lid2idx,src_K,dof);
+    const long long ts = d.tgt_s[1];
+    const long long ss = d.src_s[3];
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,d.nlev),
+                         [&](const int k) {
+      t[k*ts] = s[k*ss];
+    });
+  }
+
+  int                            num_entries;
+  int                            src_K;
+  kview_1d<UniqueGridEntryDesc>  entries;
+  kview_1d<int>                  unique2src;
+  Field::view_dev_t<const int**> lid2idx;
+};
+
+// Pack kernel: copy a column of the unique grid fields (one team for each (entry,export)) into the send buffer.
+// All fields on the same column are spliced together, and all columns for the same pid are contiguous.
+// Within a pid segment, the data is grouped by field, and within a field, by column and component.
+struct UniqueGridPackKernel {
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const Member& team) const {
+    const int rank = team.league_rank();
+    const int e    = rank % num_entries;
+    const int idx  = rank / num_entries;
+
+    const auto& d = entries(e);
+    const int pid        = exp_pids(idx);
+    const int pid_offset = exp_offsets(pid);
+    const int ncols_pid  = exp_offsets(pid+1) - pid_offset;
+    const int icol       = exp_lids(idx);
+    const long long offset = d.buf_offset(idx,pid_offset,ncols_pid,total_col_size);
+
+    const Real* t = d.tgt_ptr + icol*d.tgt_s[0];
+    const long long ts = d.tgt_s[1];
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,d.nlev),
+                         [&](const int k) {
+      buf(offset+k) = t[k*ts];
+    });
+  }
+
+  int                            num_entries;
+  int                            total_col_size;
+  kview_1d<UniqueGridEntryDesc>  entries;
+  kview_1d<int>                  exp_pids, exp_lids, exp_offsets;
+  kview_1d<Real>                 buf;
+};
+
+// Unpack kernel: copy a column from the recv buffer (one team for each (entry,import)) to all the
+// source dofs with such gid. The imports processed are
+//    idx = first + j,   with j in [0,count),  and then idx += skip_cnt if idx>=skip_beg
+// (this allows to process the imports from this rank, and the other ones, separately)
+struct UniqueGridUnpackKernel {
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const Member& team) const {
+    const int rank = team.league_rank();
+    const int e    = rank % num_entries;
+    int idx = first + rank / num_entries;
+    if (idx>=skip_beg) {
+      idx += skip_cnt;
+    }
+
+    const auto& d = entries(e);
+    const int pid        = imp_pids(idx);
+    const int pid_offset = imp_offsets(pid);
+    const int ncols_pid  = imp_offsets(pid+1) - pid_offset;
+    const int u          = imp_lids(idx);
+    const long long offset = d.buf_offset(idx,pid_offset,ncols_pid,total_col_size);
+
+    // The same unique column may correspond to multiple source dofs
+    const int beg = u2src_offsets(u);
+    const int end = u2src_offsets(u+1);
+    const long long ss = d.src_s[3];
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,d.nlev),
+                         [&](const int k) {
+      const Real val = buf(offset+k);
+      for (int dd=beg; dd<end; ++dd) {
+        Real* s = d.src_ptr + src_dof_offset(d,lid2idx,src_K,u2src_dofs(dd));
+        s[k*ss] = val;
+      }
+    });
+  }
+
+  int                            num_entries;
+  int                            total_col_size;
+  int                            first, skip_beg, skip_cnt;
+  int                            src_K;
+  kview_1d<UniqueGridEntryDesc>  entries;
+  kview_1d<int>                  imp_pids, imp_lids, imp_offsets;
+  kview_1d<int>                  u2src_offsets, u2src_dofs;
+  Field::view_dev_t<const int**> lid2idx;
+  kview_1d<Real>                 buf;
+};
 
 } // anonymous namespace
 
 void UniqueGridRemapper::
+update_entries ()
+{
+  for (int e=0; e<m_num_entries; ++e) {
+    const int i = m_entry_field[e];
+    const int c = m_entry_comp[e];
+    set_component(i,c);
+
+    auto& d = m_entries_h(e);
+    long long s[4] = {0,0,0,0};
+
+    // Unique grid field: (col[,lev])
+    get_ptr_and_strides(m_tgt_scalar[i],d.tgt_ptr,s);
+    d.tgt_s[0] = s[0];
+    d.tgt_s[1] = m_tgt_scalar[i].rank()==2 ? s[1] : 0;
+
+    // Source field: (dof[,lev]) or (e,g1,g2[,lev])
+    const int rank = m_src_scalar[i].rank();
+    get_ptr_and_strides(m_src_scalar[i],d.src_ptr,s);
+    for (int j=0; j<m_src_K; ++j) {
+      d.src_s[j] = s[j];
+    }
+    d.src_s[3] = rank==m_src_K+1 ? s[m_src_K] : 0;
+  }
+  Kokkos::deep_copy(m_entries,m_entries_h);
+}
+
+void UniqueGridRemapper::
 remap_fwd_impl ()
 {
-  for (int i=0; i<m_num_fields; ++i) {
-    for (int c=0; c<m_ncomp[i]; ++c) {
-      set_component(i,c);
-      if (m_src_K==1) {
-        remap_scalar_fwd<1>(m_src_scalar[i],m_tgt_scalar[i],UniqueGridCopyKernel<1>{m_unique2src,m_src_lid2idx});
-      } else {
-        remap_scalar_fwd<3>(m_src_scalar[i],m_tgt_scalar[i],UniqueGridCopyKernel<3>{m_unique2src,m_src_lid2idx});
-      }
-    }
+  if (m_num_entries==0) {
+    return;
   }
 
-  // The kernels are async, but remap is blocking
-  Kokkos::fence();
+  update_entries();
+
+  UniqueGridFwdKernel kernel {m_num_entries,m_src_K,m_entries,m_unique2src,m_src_lid2idx};
+  const TeamPolicy policy(m_num_entries*m_num_unique_cols,Kokkos::AUTO);
+  Kokkos::parallel_for("UniqueGridRemapper::fwd",policy,kernel);
+
+  // The kernel is async, but remap is blocking
+  ExeSpace().fence();
+}
+
+void UniqueGridRemapper::
+remap_bwd_impl ()
+{
+  if (m_num_fields==0) {
+    return;
+  }
+
+  if (not m_bwd_setup_done) {
+    setup_bwd();
+  }
+
+  update_entries();
+
+  // Post the recvs first, so that they are ready when sends are fired
+  start_recvs();
+
+  pack_and_send();
+  recv_and_unpack();
+
+  // Wait for all sends to be completed
+  wait_sends();
+}
+
+void UniqueGridRemapper::
+setup_bwd ()
+{
+  using gid_type = AbstractGrid::gid_type;
+
+  const auto& comm = m_src_grid->get_comm();
+  const int myrank = comm.rank();
+
+  // Group the local source dofs by unique gid. Each unique gid is a "column" of the overlap grid
+  auto unique_gids_f = m_src_grid->get_unique_grid_gids();
+  unique_gids_f.sync_to_host();
+  auto src_gids_h = unique_gids_f.get_view<const gid_type*,Host>();
+
+  const int num_src_dofs = m_src_grid->get_num_local_dofs();
+  std::map<gid_type,std::vector<int>> gid2dofs;
+  for (int i=0; i<num_src_dofs; ++i) {
+    gid2dofs[src_gids_h(i)].push_back(i);
+  }
+  const int num_ov_cols = gid2dofs.size();
+
+  auto ov_grid = std::make_shared<PointGrid>("unique_grid_overlap",num_ov_cols,m_tgt_grid->get_num_vertical_levels(),comm);
+  auto ov_gids = ov_grid->get_dofs_gids();
+  auto ov_gids_h = ov_gids.get_view<gid_type*,Host>();
+
+  m_u2src_offsets = view_1d<int>("u2src_offsets",num_ov_cols+1);
+  m_u2src_dofs    = view_1d<int>("u2src_dofs",num_src_dofs);
+  auto offsets_h = Kokkos::create_mirror_view(m_u2src_offsets);
+  auto dofs_h    = Kokkos::create_mirror_view(m_u2src_dofs);
+  int u = 0;
+  int pos = 0;
+  offsets_h(0) = 0;
+  for (const auto& [gid,dofs] : gid2dofs) {
+    ov_gids_h(u) = gid;
+    for (auto dof : dofs) {
+      dofs_h(pos++) = dof;
+    }
+    offsets_h(++u) = pos;
+  }
+  ov_gids.sync_to_dev();
+  Kokkos::deep_copy(m_u2src_offsets,offsets_h);
+  Kokkos::deep_copy(m_u2src_dofs,dofs_h);
+
+  // Figure out who owns the unique grid columns we need. Every source gid must be found among the unique grid gids.
+  auto imp_exp = std::make_shared<GridImportExport>(m_tgt_grid,ov_grid);
+
+  // Create the buffers and the persistent requests (none for this rank)
+  setup_mpi(imp_exp,CommDirection::UniqueToOverlap,true);
+
+  // Where each entry sits in a column's chunk of the buffers
+  for (int e=0; e<m_num_entries; ++e) {
+    const int i = m_entry_field[e];
+    const int c = m_entry_comp[e];
+    auto& d = m_entries_h(e);
+    d.field_off = field_col_offset(i);
+    d.col_size  = field_col_size(i);
+    d.comp_off  = c*d.nlev;
+  }
+
+  // The columns owned by this rank (that we also need) are not sent through MPI
+  const auto imp_offsets_h = recv_offsets_h();
+  const auto exp_offsets_h = send_offsets_h();
+  m_self_imp_beg = imp_offsets_h(myrank);
+  m_self_exp_beg = exp_offsets_h(myrank);
+  m_self_cnt     = imp_offsets_h(myrank+1) - imp_offsets_h(myrank);
+  EKAT_REQUIRE_MSG (m_self_cnt==exp_offsets_h(myrank+1)-exp_offsets_h(myrank),
+      "Error! The number of columns this rank imports from itself does not match the number it exports to itself.\n");
+
+  Kokkos::deep_copy(m_entries,m_entries_h);
+  m_bwd_setup_done = true;
+}
+
+void UniqueGridRemapper::
+pack_and_send ()
+{
+  if (m_timers_enabled)
+    start_timer(name()+" pack");
+
+  const int num_exports = num_send_cols();
+  if (num_exports>0 and m_num_entries>0) {
+    UniqueGridPackKernel kernel {m_num_entries,total_col_size(),m_entries,send_pids(),
+                                 send_lids(),send_offsets(),m_send_buffer};
+    const TeamPolicy policy(m_num_entries*num_exports,Kokkos::AUTO);
+    Kokkos::parallel_for("UniqueGridRemapper::pack",policy,kernel);
+  }
+  ExeSpace().fence();
+
+  // The columns that this rank owns and also needs don't go through MPI: copy them to the recv buffer.
+  if (m_self_cnt>0) {
+    const size_t n   = static_cast<size_t>(m_self_cnt)*total_col_size();
+    const size_t sb  = static_cast<size_t>(m_self_exp_beg)*total_col_size();
+    const size_t rb  = static_cast<size_t>(m_self_imp_beg)*total_col_size();
+    Kokkos::deep_copy(Kokkos::subview(m_recv_buffer,Kokkos::make_pair(rb,rb+n)),
+                      Kokkos::subview(m_send_buffer,Kokkos::make_pair(sb,sb+n)));
+  }
+
+  copy_send_to_mpi();
+
+  if (m_timers_enabled)
+    stop_timer(name()+" pack");
+
+  start_sends();
+}
+
+void UniqueGridRemapper::
+recv_and_unpack ()
+{
+  if (m_timers_enabled)
+    start_timer(name()+" unpack");
+
+  const int num_imports = num_recv_cols();
+
+  // Unpack 'count' imports starting at 'first', skipping 'skip_cnt' imports from 'skip_beg' on
+  auto unpack = [&](const int first, const int count, const int skip_beg, const int skip_cnt) {
+    if (count<=0 or m_num_entries==0) {
+      return;
+    }
+    UniqueGridUnpackKernel kernel {m_num_entries,total_col_size(),first,skip_beg,skip_cnt,m_src_K,m_entries,
+                                   recv_pids(),recv_lids(),recv_offsets(),m_u2src_offsets,m_u2src_dofs,
+                                   m_src_lid2idx,m_recv_buffer};
+    const TeamPolicy policy(m_num_entries*count,Kokkos::AUTO);
+    Kokkos::parallel_for("UniqueGridRemapper::unpack",policy,kernel);
+  };
+
+  // While the messages are in flight, unpack the columns that did not need to be sent
+  unpack(m_self_imp_beg,m_self_cnt,std::numeric_limits<int>::max(),0);
+
+  wait_recvs();
+
+  // Copy from MPI everything but the columns of this rank (they did not go through MPI)
+  const size_t self_b = static_cast<size_t>(m_self_imp_beg)*total_col_size();
+  const size_t self_e = self_b + static_cast<size_t>(m_self_cnt)*total_col_size();
+  copy_recv_from_mpi(0,self_b);
+  copy_recv_from_mpi(self_e,static_cast<size_t>(num_imports)*total_col_size());
+
+  unpack(0,num_imports-m_self_cnt,m_self_imp_beg,m_self_cnt);
+  ExeSpace().fence();
+
+  if (m_timers_enabled)
+    stop_timer(name()+" unpack");
 }
 
 } // namespace scream
