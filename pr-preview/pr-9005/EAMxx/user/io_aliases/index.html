@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -3247,6 +3247,8 @@
       
         
       
+        
+      
     
     
     
@@ -3416,6 +3418,34 @@
     
   
     Input/Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
   
 
     
@@ -5187,6 +5217,10 @@ alias of the former.</p>
 <p><strong>Metadata</strong>: Variable attributes (units, long_name, etc.)
 are preserved from the original fields, and <code>alias_of</code>
 is added to the netcdf files to document aliasing</p>
+</li>
+<li>
+<p><strong>Diagnostics with several outputs</strong>: each output is aliased
+like any other field, e.g. <code>lnp := LiqNumberPath</code>.</p>
 </li>
 </ol>
 <h2 id="intermediate-only-fields-aliases-section">Intermediate-only fields (<code>aliases</code> section)</h2>

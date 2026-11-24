@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -3104,6 +3104,8 @@
       
         
       
+        
+      
     
     
     
@@ -3273,6 +3275,34 @@
     
   
     Input/Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
   
 
     
@@ -3805,6 +3835,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AeroCom cloud top
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -3821,6 +3869,47 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-cloud-top-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the cloud top is
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#weighting-a-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weighting a field
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -4799,6 +4888,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-cloud-top-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the cloud top is
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#weighting-a-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weighting a field
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4901,37 +5020,87 @@
 
 
 <h1 id="the-aerocom-algorithm">The AeroCom algorithm</h1>
-<p>The goal of the AeroCom algorithm is to calculate properties at cloud top based on the AeroCom recommendation. There are two main parts of the algorithm: probabilistically determining "cloud top" and then "calculating properties" at said cloud top.</p>
-<p>We treat model columns independently, so we loop over all columns in parallel. We then loop over all layers in serial (due to needing an accumulative product), starting at 2 (second highest) layer because the highest is assumed to have no clouds. Let's take a photonic approach from above the model top. Let's say that <span class="arithmatex">\(p_{k}\)</span> is the probability of a photon passing through the layer <span class="arithmatex">\(k\)</span>. We follow the maximum-random overlap assumption. In all cases, we assume the cloudiness (or cloudy fraction) is completely opaque.</p>
-<p>We assume the highest layer has no clouds, thus the <span class="arithmatex">\(p_{k} = 1\)</span> for the highest layer. Note that <span class="arithmatex">\(p_{k}\)</span> is initialized as 1 for all layers. We also clip the cloudy fraction <span class="arithmatex">\(C_{i,k}\)</span> to ensure that <span class="arithmatex">\(C_{i,k} \in [0+\epsilon, 1-\epsilon]\)</span>, where <span class="arithmatex">\(\epsilon = 0.001\)</span>. Starting at the second highest layer, <span class="arithmatex">\(k+1\)</span>, we check if some "cloudy" conditions are met. These conditions are now arbitrarily defined by a cloudiness threshold of <span class="arithmatex">\(\epsilon\)</span> (i.e., <span class="arithmatex">\(C_{i,k}&gt;\epsilon\)</span>) and a non-zero threshold on the total (both liquid and ice) droplet number concentration (i.e., <span class="arithmatex">\(cQ_{i,k} + iQ_{i,k} &gt; 0\)</span>). If the conditions are met, we estimate the cloud-top cloud fraction using an accumulative product following the maximum-random overlap assumption.</p>
-<div class="arithmatex">\[c_{i} = 1 - \prod_{k=2}^{K} p_{k} = 1 - \prod_{k=2}^{K} \frac{1 - \max(C_{i,k}, C_{i,k-1})}{1-C_{i,k-1}}\]</div>
-<p>In order to estimate cloud-top properties, we weight by the probability of "remaining cloudiness" or <span class="arithmatex">\(p_{k-1} - p_{k}\)</span>.</p>
+<p>The AeroCom recommendation is to compare cloud properties where a satellite
+sees them: at cloud top. In EAMxx, the <a href="../../user/diags/expressions/">expression</a>
+<code>cldfrac_tot.aerocom_weights('top')</code> gives, per column and layer, the
+probability that the layer is the cloud top, and
+<code>X.sum('lev', weights=cldfrac_tot.aerocom_weights('top'))</code> a field <code>X</code> sampled
+at cloud top (<code>'bot'</code>: at cloud bottom). There are two parts to it: determining
+probabilistically where the cloud top is, and then weighting <code>X</code> by that
+probability.</p>
+<h2 id="where-the-cloud-top-is">Where the cloud top is</h2>
+<p>Columns are independent. Within a column, take a photon coming down from
+above the model top, and let <span class="arithmatex">\(p_{k}\)</span> be the probability that it passes through
+layers <span class="arithmatex">\(0,\ldots,k\)</span>, where layer <span class="arithmatex">\(0\)</span> is the highest. Cloudiness is completely
+opaque, and cloudy layers overlap following the maximum-random assumption.</p>
+<p>The highest layer is assumed clear, so <span class="arithmatex">\(p_{0} = 1\)</span>. A layer <span class="arithmatex">\(k\)</span> is cloudy if its
+cloud fraction <span class="arithmatex">\(C_{k} &gt; \epsilon\)</span>, with <span class="arithmatex">\(\epsilon = 0.001\)</span>, and it holds some
+condensate, <span class="arithmatex">\(qc_{k} + qi_{k} &gt; 0\)</span>. A layer that is not cloudy lets the photon
+through, <span class="arithmatex">\(p_{k} = p_{k-1}\)</span>. Otherwise</p>
+<div class="arithmatex">\[p_{k} = p_{k-1} \frac{1 - \max(C_{k}, C_{k-1})}{1 - \min(C_{k-1}, 1 - \epsilon)}\]</div>
+<p>so that contiguous cloudy layers overlap maximally, and layers apart overlap
+randomly. The probability that layer <span class="arithmatex">\(k\)</span> is the cloud top is the weight</p>
+<div class="arithmatex">\[w_{k} = p_{k-1} - p_{k},\]</div>
+<p>which is <span class="arithmatex">\(0\)</span> at every layer that is not cloudy. The weights add up to the cloud
+fraction seen from above, <span class="arithmatex">\(1 - p_{K-1}\)</span>, where <span class="arithmatex">\(K\)</span> is the number of layers.</p>
+<p>The cloud bottom is the same seen from below: the lowest layer is assumed
+clear, and each layer overlaps with the one <em>below</em> it, from the second-lowest
+up.</p>
+<h2 id="weighting-a-field">Weighting a field</h2>
+<p>A field <span class="arithmatex">\(X\)</span> at cloud top is</p>
+<div class="arithmatex">\[x = \sum_{k} X_{k} \Phi_{k} w_{k},\]</div>
+<p>where <span class="arithmatex">\(\Phi_{k}\)</span> is <span class="arithmatex">\(1\)</span>, or the share of the condensate in one phase:</p>
+<div class="arithmatex">\[\Phi^{liq}_{k} = \frac{qc_{k}}{qc_{k} + qi_{k}}, \qquad \Phi^{ice}_{k} = 1 - \Phi^{liq}_{k}.\]</div>
+<p>The weights <span class="arithmatex">\(\Phi_{k} w_{k}\)</span> are <code>cldfrac_tot.aerocom_weights('top', phase=..)</code>,
+where the phase is the <code>phase</code> argument, and <span class="arithmatex">\(x\)</span> is the weighted sum of <span class="arithmatex">\(X\)</span>
+against them, as in xarray. With <span class="arithmatex">\(X = 1\)</span>, <span class="arithmatex">\(x\)</span> is the cloud fraction seen from
+above, which is the sum of the weights. Writing <code>W('top', ..)</code> for
+<code>cldfrac_tot.aerocom_weights('top', ..)</code>, that makes a three by two matrix:</p>
 <table>
 <thead>
 <tr>
-<th>Type</th>
-<th>Equation</th>
+<th><code>phase</code></th>
+<th>a field <code>X</code></th>
+<th><code>X = 1</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>cloud property</td>
-<td><span class="arithmatex">\(x_{i} = \sum_{k=2}^{K} X_{i,k} \Phi_{i,k} (p_{k-1} - p_{k})\)</span></td>
+<td>none</td>
+<td><code>T_mid.sum('lev', weights=W('top'))</code>: temperature at cloud top</td>
+<td><code>W('top').sum('lev')</code>: cloud fraction seen from above</td>
 </tr>
 <tr>
-<td>cloud content</td>
-<td><span class="arithmatex">\(x_{i} = \sum_{k=2}^{K} \Phi_{i,k} (p_{k-1} - p_{k})\)</span></td>
+<td><code>'liq'</code></td>
+<td><code>eff_radius_qc.sum('lev', weights=W('top', phase='liq'))</code>: droplet radius at liquid cloud top</td>
+<td><code>W('top', phase='liq').sum('lev')</code>: liquid cloud fraction seen from above</td>
 </tr>
 <tr>
-<td>other property</td>
-<td><span class="arithmatex">\(x_{i} = \sum_{k=2}^{K} X_{i,k} (p_{k-1} - p_{k})\)</span></td>
+<td><code>'ice'</code></td>
+<td><code>eff_radius_qi.sum('lev', weights=W('top', phase='ice'))</code>: crystal radius at ice cloud top</td>
+<td><code>W('top', phase='ice').sum('lev')</code>: ice cloud fraction seen from above</td>
 </tr>
 </tbody>
 </table>
-<p>In the above, <span class="arithmatex">\(\Phi_{i,k}\)</span> is the thermodynamic phase defined by the cloud droplet number concentration ratios.</p>
-<div class="arithmatex">\[i\Phi_{i,k} = \frac{iQ_{i,k}}{iQ_{i,k} + cQ_{i,k}}\]</div>
-<div class="arithmatex">\[c\Phi_{i,k} = \frac{cQ_{i,k}}{iQ_{i,k} + cQ_{i,k}}\]</div>
-<p>The thermodynamic phase is used only for cloud properties (e.g., cloud-top cloud droplet number concentration) or cloud content (e.g., cloud liquid content). Further, <span class="arithmatex">\(X_{i,k}\)</span> is the three-dimensional cloud property of interest which is needed if we are converting a property from three-dimensional (<span class="arithmatex">\(X\)</span>) to its two-dimensional counterpart (<span class="arithmatex">\(x\)</span>). "Other" properties here include temperature and pressure which are not dependent on the thermodynamic phase.</p>
+<p>Use <code>phase</code> for a property of one phase of the cloud (e.g., <code>nc</code> or
+<code>eff_radius_qc</code> with <code>'liq'</code>, <code>ni</code> or <code>eff_radius_qi</code> with <code>'ice'</code>), and no
+phase for a property of the air (e.g., <code>T_mid</code>, <code>p_mid</code>). Note that <span class="arithmatex">\(x\)</span> is a
+weighted <em>sum</em>, not a mean: it is not divided by the cloud fraction.</p>
+<p><span class="arithmatex">\(X\)</span> can be any expression. The in-cloud droplet number concentration at
+liquid cloud top, per volume of air, is</p>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cdnc_top := (nc*pseudo_density/dz/gravit/cldfrac_tot.where(cldfrac_tot&gt;0)).sum('lev', weights=cldfrac_tot.aerocom_weights('top', phase='liq'))</span>
+</code></pre></div>
+<p>where <code>pseudo_density/dz/gravit</code> is the air density, which turns <code>nc</code> (per
+mass of air) into a number per volume, and dividing by <code>cldfrac_tot</code> turns a
+grid mean into an in-cloud value. The <code>where(..)</code> keeps that division away
+from layers with no cloud, where <code>cldfrac_tot</code> is zero and the division would
+be by zero.</p>
+<p>Every layer is summed, including those with zero weight, so <code>X</code> must be
+finite everywhere: 0 times NaN is NaN. If <code>X</code> is masked (e.g., it is the
+result of <code>where(..)</code>), its invalid layers are skipped, and a column with no
+valid layer gives 0, as xarray's weighted sum does.</p>
+<p>The weights are a diagnostic of their own, so all fields sampled at the same
+position and with the same phase share one computation of them.</p>
 <p>Most studies in this topic refer a technical report by Tiedtke et al. (1979)<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>. Another more recent general reference that may be of interest is that of Räisänen et al. (2004)<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>.</p>
 <div class="footnote">
 <hr />
