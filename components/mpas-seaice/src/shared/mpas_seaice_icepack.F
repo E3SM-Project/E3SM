@@ -2422,6 +2422,7 @@ subroutine init_column_waves(domain)
          frazilSaltFlux, &
          frazilHeatFlux, &
          frazilFormation, &
+         frazilSalt, &
          rainfallRate, &
          pondFreshWaterFlux, &
          oceanFreshWaterFlux, &
@@ -2569,6 +2570,7 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
+       call MPAS_pool_get_array(melt_growth_rates, "frazilSalt", frazilSalt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilGrowthDiagnostic", frazilGrowthDiagnostic)
 
        call MPAS_pool_get_array(ponds, "pondFreshWaterFlux", pondFreshWaterFlux)
@@ -2670,7 +2672,8 @@ subroutine init_column_waves(domain)
                d_afsd_weld=dFloeSizeWeld(:,iCell), &
                frazilm=frazilMassFlux(iCell), &
                frazils=frazilSaltFlux(iCell), &
-               frazilh=frazilHeatFlux(iCell))
+               frazilh=frazilHeatFlux(iCell), &
+               frazilSalt=frazilSalt(iCell))
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)
@@ -10189,6 +10192,16 @@ subroutine init_column_waves(domain)
               messageType=MPAS_LOG_CRIT)
          endif
 
+         ! omega-fluxes frazil coupling is only supported with mushy thermodynamics,
+         ! since Icepack only sets the new ice volume and salinity from the
+         ! frazil fluxes for mushy thermodynamics
+         if (trim(config_frazil_coupling_type) == "omega-fluxes" .and. &
+          trim(config_thermodynamics_type) /= "mushy") then
+            call mpas_log_write(&
+              'check_column_package_configs: config_frazil_coupling_type=''omega-fluxes'' requires config_thermodynamics_type=''mushy''', &
+              messageType=MPAS_LOG_CRIT)
+         endif
+
     ! check for itd remapping with only one category
     if (nCategories == 1 .and. trim(config_itd_conversion_type) == "linear remap") then
        call mpas_log_write(&
@@ -10782,6 +10795,7 @@ subroutine init_column_waves(domain)
          config_use_snicar_ad, &
          config_calc_surface_temperature, &
          config_update_ocean_fluxes, &
+         config_use_mushy_zero_salinity, &
          config_use_form_drag, &
          config_use_high_frequency_coupling, &
          config_use_ocean_mixed_layer, &
@@ -10991,6 +11005,7 @@ subroutine init_column_waves(domain)
     call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
     call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
     call MPAS_pool_get_config(domain % configs, "config_congelation_freezing_method", config_congelation_freezing_method)
+    call MPAS_pool_get_config(domain % configs, "config_use_mushy_zero_salinity", config_use_mushy_zero_salinity)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
     call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
     call MPAS_pool_get_config(domain % configs, "config_snow_thermal_conductivity", config_snow_thermal_conductivity)
@@ -11199,6 +11214,26 @@ subroutine init_column_waves(domain)
     call MPAS_pool_get_array(snow, "snowPropertyRate", snowPropertyRate)
 
     config_thermodynamics_type_int = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
+
+    ! the zero-salinity mushy closure is only defined for mushy thermodynamics (ktherm=2)
+    if (config_use_mushy_zero_salinity .and. trim(config_thermodynamics_type) /= "mushy") then
+       call mpas_log_write(&
+            "init_icepack_package_configs: config_use_mushy_zero_salinity requires config_thermodynamics_type = 'mushy'", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
+    ! omega-fluxes takes the new ice salinity from the ocean frazil salt and mass
+    ! fluxes without a min_salin floor, so the frazil can be fresh. Require the
+    ! zero-salinity mushy closure so that fresh ice has a consistent phase state
+    ! and the mushy salinity floors do not add salt.
+    if (trim(config_frazil_coupling_type) == "omega-fluxes" .and. &
+        .not. config_use_mushy_zero_salinity) then
+       call mpas_log_write(&
+            "init_icepack_package_configs: config_frazil_coupling_type = 'omega-fluxes' "// &
+            "requires config_use_mushy_zero_salinity = true", &
+            messageType=MPAS_LOG_CRIT)
+    endif
+
     config_ice_strength_formulation_int = config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation)
     config_ridging_participation_function_int = config_cice_int("config_ridging_participation_function", config_ridging_participation_function)
     config_ridging_redistribution_function_int = config_cice_int("config_ridging_redistribution_function", config_ridging_redistribution_function)
@@ -11435,6 +11470,7 @@ subroutine init_column_waves(domain)
          cpl_frazil_in           = config_frazil_coupling_type, &
          congel_freeze_in        = config_congelation_freezing_method, &
          update_ocn_f_in         = config_update_ocean_fluxes, &
+         mushy_zero_salinity_in  = config_use_mushy_zero_salinity, &
          ustar_min_in            = config_min_friction_velocity, &
          a_rapid_mode_in         = config_rapid_mode_channel_radius, &
          Rac_rapid_mode_in       = config_rapid_model_critical_Ra, &
@@ -15159,7 +15195,8 @@ subroutine init_column_waves(domain)
          surfaceIceMelt, &
          snowMelt, &
          basalIceMelt, &
-         lateralIceMelt
+         lateralIceMelt, &
+         frazilSalt
 
     ! snow model
     real(kind=RKIND), dimension(:), pointer :: &
@@ -15257,6 +15294,7 @@ subroutine init_column_waves(domain)
           call MPAS_pool_get_array(meltGrowthRatesPool, "snowMelt", snowMelt)
           call MPAS_pool_get_array(meltGrowthRatesPool, "basalIceMelt", basalIceMelt)
           call MPAS_pool_get_array(meltGrowthRatesPool, "lateralIceMelt", lateralIceMelt)
+          call MPAS_pool_get_array(meltGrowthRatesPool, "frazilSalt", frazilSalt)
 
           congelation         = 0.0_RKIND
           frazilFormation     = 0.0_RKIND
@@ -15266,6 +15304,7 @@ subroutine init_column_waves(domain)
           snowMelt            = 0.0_RKIND
           basalIceMelt        = 0.0_RKIND
           lateralIceMelt      = 0.0_RKIND
+          frazilSalt          = 0.0_RKIND
 
           ! tendancies
           call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)

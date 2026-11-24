@@ -450,6 +450,7 @@
 
 <!-- thermodynamics -->
 <config_thermodynamics_type>'mushy'</config_thermodynamics_type>
+<config_use_mushy_zero_salinity>true</config_use_mushy_zero_salinity>
 <config_heat_conductivity_type>'bubbly'</config_heat_conductivity_type>
 <config_rapid_mode_channel_radius>0.5e-3</config_rapid_mode_channel_radius>
 <config_rapid_model_critical_Ra>10.0</config_rapid_model_critical_Ra>
