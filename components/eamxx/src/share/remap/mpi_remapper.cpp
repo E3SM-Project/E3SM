@@ -26,7 +26,7 @@ MpiRemapper::MpiRequests::
 
 void MpiRemapper::
 setup_mpi (const std::shared_ptr<const GridImportExport>& imp_exp,
-           const CommDirection dir)
+           const CommDirection dir, const bool skip_self)
 {
   using namespace ShortFieldTagsNames;
 
@@ -58,6 +58,9 @@ setup_mpi (const std::shared_ptr<const GridImportExport>& imp_exp,
   const auto mpi_comm = comm.mpi_comm();
   const auto mpi_real = ekat::get_mpi_type<Real>();
   for (int pid=0; pid<comm.size(); ++pid) {
+    if (skip_self and pid==comm.rank()) {
+      continue;
+    }
     for (const bool send : {true,false}) {
       const auto& offsets = send ? send_offsets : recv_offsets;
       const int ncols = offsets(pid+1)-offsets(pid);
@@ -131,6 +134,16 @@ copy_recv_from_mpi ()
 {
   if (not MpiOnDev) {
     Kokkos::deep_copy(m_recv_buffer,m_mpi_recv_buffer);
+  }
+}
+
+void MpiRemapper::
+copy_recv_from_mpi (const size_t beg, const size_t end)
+{
+  if (not MpiOnDev and end>beg) {
+    const auto range = Kokkos::make_pair(beg,end);
+    Kokkos::deep_copy(Kokkos::subview(m_recv_buffer,range),
+                      Kokkos::subview(m_mpi_recv_buffer,range));
   }
 }
 
