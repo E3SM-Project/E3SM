@@ -87,8 +87,11 @@ void Field::sync_views_impl () const {
   }
 
   const bool is_contiguous = get_header().get_alloc_properties().contiguous();
-  if (is_contiguous) {
-    // For contiguous fields, simply use Kokkos::deep_copy().
+  const bool allows_layout_right = get_header().get_alloc_properties().allows_layout_right();
+
+  // For contiguous fields, simply use Kokkos::deep_copy()
+  if (is_contiguous && allows_layout_right) {
+    // If layout right is allowed, use get_view
     switch (rank()) {
       case 1:
         Kokkos::deep_copy(DeviceExecSpace(), get_view<ST*, To>(), get_view<const ST*, From>());
@@ -111,7 +114,32 @@ void Field::sync_views_impl () const {
       default:
         EKAT_ERROR_MSG ("Error! Unsupported field rank in Field::sync_to_host.\n");
     }
+  } else if (is_contiguous and not allows_layout_right) {
+    // If layout right is not allowed, still use get_strided_view
+    switch (rank()) {
+      case 1:
+        Kokkos::deep_copy(DeviceExecSpace(), get_strided_view<ST*, To>(), get_strided_view<const ST*, From>());
+        break;
+      case 2:
+        Kokkos::deep_copy(DeviceExecSpace(), get_strided_view<ST**, To>(), get_strided_view<const ST**, From>());
+        break;
+      case 3:
+        Kokkos::deep_copy(DeviceExecSpace(), get_strided_view<ST***, To>(), get_strided_view<const ST***, From>());
+        break;
+      case 4:
+        Kokkos::deep_copy(DeviceExecSpace(), get_strided_view<ST****, To>(), get_strided_view<const ST****, From>());
+        break;
+      case 5:
+        Kokkos::deep_copy(DeviceExecSpace(), get_strided_view<ST*****, To>(), get_strided_view<const ST*****, From>());
+        break;
+      case 6:
+        Kokkos::deep_copy(DeviceExecSpace(), get_strided_view<ST******, To>(), get_strided_view<const ST******, From>());
+        break;
+      default:
+        EKAT_ERROR_MSG ("Error! Unsupported field rank in Field::sync_to_host.\n");
+    }
   } else {
+    // Nor non-contiguous views, use the contiguous field as an intermediate buffer
     auto sync_helper = [this] () {
       if constexpr (To==Host) m_contiguous_field->sync_to_host();
       else                    m_contiguous_field->sync_to_dev();

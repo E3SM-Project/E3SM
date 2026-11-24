@@ -15,7 +15,7 @@ using ExeSpace = KokkosTypes<DefaultDevice>::ExeSpace;
 using bfbhash::HashType;
 
 template<typename T>
-void hash (const Field::view_dev_t<const T>& v,
+void hash (const Field::strided_view_dev_t<const T>& v,
            HashType& accum_out) {
   HashType accum = 0;
   Kokkos::parallel_reduce(
@@ -28,7 +28,7 @@ void hash (const Field::view_dev_t<const T>& v,
 }
 
 template<typename T>
-void hash (const Field::view_dev_t<const T*>& v,
+void hash (const Field::strided_view_dev_t<const T*>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   Kokkos::parallel_reduce(
@@ -41,7 +41,7 @@ void hash (const Field::view_dev_t<const T*>& v,
 }
 
 template<typename T>
-void hash (const Field::view_dev_t<const T**>& v,
+void hash (const Field::strided_view_dev_t<const T**>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -57,7 +57,7 @@ void hash (const Field::view_dev_t<const T**>& v,
 }
 
 template<typename T>
-void hash (const Field::view_dev_t<const T***>& v,
+void hash (const Field::strided_view_dev_t<const T***>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -73,7 +73,7 @@ void hash (const Field::view_dev_t<const T***>& v,
 }
 
 template<typename T>
-void hash (const Field::view_dev_t<const T****>& v,
+void hash (const Field::strided_view_dev_t<const T****>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -89,7 +89,7 @@ void hash (const Field::view_dev_t<const T****>& v,
 }
 
 template<typename T>
-void hash (const Field::view_dev_t<const T*****>& v,
+void hash (const Field::strided_view_dev_t<const T*****>& v,
            const FieldLayout& lo, HashType& accum_out) {
   HashType accum = 0;
   const auto& dims = lo.extents();
@@ -109,24 +109,27 @@ void hash (const Field& f, HashType& accum) {
   const auto& id = hd.get_identifier();
   const auto& lo = id.get_layout();
   const auto rank = lo.rank();
+
+  // Fields could required strided access. For simplicity,
+  // always pass strided views to the hash functions.
   if (f.data_type()==DataType::RealType) {
     switch (rank) {
-      case 0: hash(f.get_view<const Real     >(),     accum); break;
-      case 1: hash(f.get_view<const Real*    >(), lo, accum); break;
-      case 2: hash(f.get_view<const Real**   >(), lo, accum); break;
-      case 3: hash(f.get_view<const Real***  >(), lo, accum); break;
-      case 4: hash(f.get_view<const Real**** >(), lo, accum); break;
-      case 5: hash(f.get_view<const Real*****>(), lo, accum); break;
+      case 0: hash(f.get_strided_view<const Real     >(),     accum); break;
+      case 1: hash(f.get_strided_view<const Real*    >(), lo, accum); break;
+      case 2: hash(f.get_strided_view<const Real**   >(), lo, accum); break;
+      case 3: hash(f.get_strided_view<const Real***  >(), lo, accum); break;
+      case 4: hash(f.get_strided_view<const Real**** >(), lo, accum); break;
+      case 5: hash(f.get_strided_view<const Real*****>(), lo, accum); break;
       default: break;
     }
   } else if (f.data_type()==DataType::IntType) {
     switch (rank) {
-      case 0: hash(f.get_view<const int     >(),     accum); break;
-      case 1: hash(f.get_view<const int*    >(), lo, accum); break;
-      case 2: hash(f.get_view<const int**   >(), lo, accum); break;
-      case 3: hash(f.get_view<const int***  >(), lo, accum); break;
-      case 4: hash(f.get_view<const int**** >(), lo, accum); break;
-      case 5: hash(f.get_view<const int*****>(), lo, accum); break;
+      case 0: hash(f.get_strided_view<const int     >(),     accum); break;
+      case 1: hash(f.get_strided_view<const int*    >(), lo, accum); break;
+      case 2: hash(f.get_strided_view<const int**   >(), lo, accum); break;
+      case 3: hash(f.get_strided_view<const int***  >(), lo, accum); break;
+      case 4: hash(f.get_strided_view<const int**** >(), lo, accum); break;
+      case 5: hash(f.get_strided_view<const int*****>(), lo, accum); break;
       default: break;
     }
   } else {
