@@ -1,10 +1,6 @@
 #_______________________________________________________________________
 # create executable needed by DCMIP2016_test3 (interpolated output)
-
-thetal_setup()
-#              name                 target NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(theta-nlev72         theta-l  4  4  72   FALSE   FALSE       10)
-
+homme_add_model_exec (theta-nlev72 MODEL theta-l NP 4 NC 4 PLEV 72 QSIZE_D 10)
 # Setting HOMME_TESTS_* variables, so the namelist.nl file in the exec 
 # directory is usable. Since that namelist should be used for development
 # and/or debugging purposes only, we make the test 'small'
@@ -41,7 +37,4 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/test/vcoord/${HOMME_TEST_VCOORD_INT_FILE}
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/test/vcoord/${HOMME_TEST_VCOORD_MID_FILE}
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
-
-
 

@@ -1,7 +1,2 @@
-thetal_setup()
-
-ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
-
-# Set the variables for this test executable
-#                           NP  NC PLEV USE_PIO  WITH_ENERGY  QSIZE_D
-createTestExec(stt theta-l 4   4   3   FALSE        TRUE     5)
+# Special test for -DHOMME_WITHOUT_PIOLIBRARY (build only)
+homme_add_model_exec (stt MODEL theta-l NP 4 NC 4 PLEV 3 QSIZE_D 5 ENERGY COMPILE_DEFINITIONS HOMME_WITHOUT_PIOLIBRARY)

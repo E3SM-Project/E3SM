@@ -1,7 +1,3 @@
 #_______________________________________________________________________
 # create executable needed by DCMIP2012_test2.x (interpolated output)
-
-preqx_setup()
-#              name                 target NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(preqx-nlev60-interp  preqx  4  4  60   FALSE   FALSE       4)
-
+homme_add_model_exec (preqx-nlev60-interp MODEL preqx NP 4 NC 4 PLEV 60 QSIZE_D 4)
