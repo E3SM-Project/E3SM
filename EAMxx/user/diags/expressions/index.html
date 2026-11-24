@@ -5228,6 +5228,10 @@ units of <code>p_mid</code>, which are Pa; nothing converts units for you. A nam
 constant keeps its units: <code>T_mid - Tmelt</code> is in K, while <code>qv + Tmelt</code> is
 rejected when the stream is set up, since <code>+</code> and <code>-</code> need operands with the
 same units.</p>
+<p>An operation on constants alone is a constant too: <code>T_mid*(Rair/Cpair)</code> works, and
+so does <code>T_mid*kappa</code> with <code>kappa := Rair/Cpair</code> in <code>aliases:</code>. Literals alone stay
+literals, so <code>T_mid+(2+3)</code> is in K. Other rank-0 fields, like <code>ps.mean('col')</code>, are
+not scalars: use <code>ps - ps.mean('col').broadcast_like(ps)</code>.</p>
 <p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. When in
 doubt, parenthesize. (That example only illustrates grouping: <code>qc+(qv*p_mid)</code>
 adds a mixing ratio to a pressure, and is rejected at run time for incompatible
