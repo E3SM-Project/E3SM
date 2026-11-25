@@ -468,6 +468,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <convproc_do_aer type="logical" doc="Flag to enable convective transport of aerosols">false</convproc_do_aer>
       <convproc_do_gas type="logical" doc="Flag to enable convective transport of gases">false</convproc_do_gas>
       <disable_convective_transport type="logical" doc="Flag to turn off convective transport in convproc (activation and in-cloud wet removal are still applied)">false</disable_convective_transport>
+      <disable_convective_incloud_wetdep type="logical" doc="Flag to turn off in-updraft (in-cloud) wet removal of aerosols in convproc">false</disable_convective_incloud_wetdep>
+      <disable_convective_belowcloud_scav type="logical" doc="Flag to turn off aerosol scavenging by convective rain and the corresponding resuspension in wetdep">false</disable_convective_belowcloud_scav>
     </mam4_wetscav>
 
     <!-- MAM4xx-Surface-Emissions -->
