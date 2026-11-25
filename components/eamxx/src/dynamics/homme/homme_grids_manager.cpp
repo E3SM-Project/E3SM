@@ -1,6 +1,7 @@
 #include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
+#include "dynamics/homme/homme_model_init.hpp"
 
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
@@ -55,6 +56,16 @@ HommeGridsManager::~HommeGridsManager()
 
   // This class is done with Homme. Remove from its users list
   HommeContextUser::singleton().remove_user();
+}
+
+HommeGridsManager::model_init_ptr_type
+HommeGridsManager::do_create_model_init (const ekat::ParameterList& params) const
+{
+  // NOTE: runs with the pg2 physics grid are not supported by HommeModelInit yet
+  if (fvphyshack) {
+    return GridsManager::do_create_model_init(params);
+  }
+  return std::make_shared<HommeModelInit>(params);
 }
 
 void HommeGridsManager::

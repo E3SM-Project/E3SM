@@ -33,6 +33,9 @@ protected:
 
 protected:
 
+  model_init_ptr_type
+  do_create_model_init (const ekat::ParameterList& params) const;
+
   void build_pg_codes ();
 
   // Read vertical coordinates and set them in hommexx's structures
