@@ -182,6 +182,10 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/utilities/Hash.cpp
   )
 
+  IF (HOMMEXX_ENABLE_CAAR_OPT)
+    LIST(APPEND THETAL_DEPS_CXX ${TARGET_DIR}/cxx/CaarFunctorImpl.cpp)
+  ENDIF ()
+
   # If the user specified a file for custom compiler options use those
   IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
     setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)
