@@ -68,6 +68,10 @@
 		            description="Selection of the method for solving ice velocity. 'L1L2', 'FO', and 'Stokes' require compiling with external dycores. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file.  'simple' gives a simple prescribed velocity field computed at initialization."
 		            possible_values="'sia', 'L1L2', 'FO', 'Stokes', 'simple', 'none'"
 		/>
+		<nml_option name="config_fem_extension_method" type="character" default_value="ismip6-era" units="unitless"
+		            description="Selection of the method used to extend thickness and elevation fields from dynamic FE vertices onto adjacent ice-free/inactive marine and terrestrial margin vertices for FEM velocity solvers (e.g. 'FO').  'ismip6-era' is the extension scheme used prior to the ismip7-era margin-extension revisions.  'ismip7-era' is the revised scheme, which avoids smearing ice up terrestrial cliffs and ramps thickness to zero at extended marine margins that are in contact with both grounded and floating ice.  'auto' resolves to whichever of 'ismip6-era'/'ismip7-era' was used to produce this run's initial condition, read from the 'fem_extension_method' global attribute of the input (or restart, if this is a restart run) file; if that attribute is absent, 'auto' falls back to 'ismip6-era'.  The method name is stored in the femExtensionMethod registry variable and is recorded in the 'fem_extension_method' global attribute of all restart and output files written by this run."
+		            possible_values="'ismip6-era', 'ismip7-era', 'auto'"
+		/>
 		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
 'from_vertex_barycentric' interpolates upperSurface values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
@@ -76,8 +80,8 @@
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
 		<nml_option name="config_flowParamA_calculation" type="character" default_value="constant" units="unitless"
-			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file."
-			possible_values="'constant', 'PB1982', 'CP2010'"
+			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  'PB1982' and 'CP2010' are for n=3; 'Fan2025' is for n=4 using parameters from Fan et al. (2025) low-strain recalibration as reported in Lilien et al. (2026) Table 1.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file."
+			possible_values="'constant', 'PB1982', 'CP2010', 'Fan2025'"
 		/>
 		<nml_option name="config_do_velocity_reconstruction_for_external_dycore" type="logical" default_value=".false." units="unitless"
 		            description="By default, external, higher-order dycores return the uReconstructX and uReconstructY fields (which are the native locations of their FEM solution).  If this option is set to .true., uReconstructX and uReconstructY will be calculated by MPAS using framework's vector reconstruction routines based on the values of normalVelocity supplied by the external dycore.  This provides a way to test the calculation of normalVelocity in the interface."
@@ -139,6 +143,10 @@
                     description="Mask to zero out sfcMassBalApplied in regions where there is no ice at the timestep."
                     possible_values=".true. or .false."
         />
+		<nml_option name="config_apply_smb_sat_lapse_rate" type="logical" default_value=".false." units="unitless"
+			    description="If true, apply SMB and SAT elevation-change (lapse-rate) corrections in MALI using ISMIP6 atmospheric forcing guidance (Atmospheric forcing section): https://theghub.org/groups/ismip6/wiki/MainPage/ISMIP6ProjectionsGreenland?version=3"
+			    possible_values=".true. or .false."
+		/>
 <!-- This option to be implemented in the future.
 		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
 		            description="Determines whether ice can advance beyond its initial extent"
@@ -150,7 +158,7 @@
 	<nml_record name="solidearth" in_defaults="true">
 		<nml_option name="config_uplift_method" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for bedrock uplift calculation."
-		            possible_values="'none', 'data', 'sealevelmodel'"
+		            possible_values="'none', 'data', 'sealevelmodel', 'fastisostasy'"
         />
         <nml_option name="config_slm_coupling_interval" type="integer" default_value="2" units="years"
             description="Time interval at which the sea-level model is called by MALI. Only integer years are currently supported. The user must set 'dt1' in namelist.sealevel to match this value.  Note that the user needs to set config_adaptive_timestep_force_interval to divide evenly into config_slm_coupling_interval.  Also, restart file output_interval needs to be a multiple of config_slm_coupling_interval."
@@ -164,6 +172,34 @@
             description="File containing the interpolation weights for regridding from the Gaussian grid used by the Sea Level Model to the MPAS mesh."
             possible_values="Any file name string"
         />
+		<nml_option name="config_fastisostasy_coupling_interval" type="integer" default_value="2" units="years"
+			description="Time interval at which FastIsostasy is called by MALI. Only integer years are currently supported. The user needs to set config_adaptive_timestep_force_interval to divide evenly into config_fastisostasy_coupling_interval."
+			possible_values="Any positive integer"
+		/>
+		<nml_option name="config_MALI_to_FASTISOSTASY_weights_file" type="character" default_value="mpas_to_fastisostasy.nc" units="unitless"
+			description="File containing interpolation weights for regridding from MPAS mesh to the regular Cartesian grid used by FastIsostasy."
+			possible_values="Any file name string"
+		/>
+		<nml_option name="config_FASTISOSTASY_to_MALI_weights_file" type="character" default_value="fastisostasy_to_mpas.nc" units="unitless"
+			description="File containing interpolation weights for regridding from the regular Cartesian grid used by FastIsostasy to the MPAS mesh."
+			possible_values="Any file name string"
+		/>
+		<nml_option name="config_fastisostasy_grid_resolution" type="real" default_value="0.0" units="m"
+			description="Physical grid spacing (dx=dy; FastIsostasy requires a square grid) of the regular Cartesian target grid that config_MALI_to_FASTISOSTASY_weights_file/config_FASTISOSTASY_to_MALI_weights_file remap between. The mapping files only define connectivity and interpolation weights between grids, not the destination grid's physical spacing, but FastIsostasy needs a physical spacing (not just a cell count) to convert its own 'pad' namelist option (given in km) into a number of grid cells to pad its computational domain with. There is currently no way to derive this automatically from the mapping files, so it must be set here to match whatever resolution was used to generate them. The default of 0.0 is a deliberate invalid sentinel: MALI aborts with an error if this is left unset rather than silently falling back to some assumed spacing, since an incorrect value here does not necessarily fail loudly (a too-small value inflates the padded grid to a size that typically exhausts memory during allocation, as a too-large value would silently under-pad the domain instead)."
+			possible_values="Any positive real number matching the resolution used to build the FastIsostasy mapping files"
+		/>
+		<nml_option name="config_fastisostasy_parameter_file" type="character" default_value="fastisostasy.nml" units="unitless"
+			description="Path to the FastIsostasy parameter namelist file containing the isostasy and barysealevel records."
+			possible_values="Any file name string"
+		/>
+		<nml_option name="config_fastisostasy_restart_file" type="character" default_value="fastisostasy_restart" units="unitless"
+			description="Base filename for FastIsostasy isostasy state restart files. On write, the current model time is automatically appended to create a timestamped filename matching MALI's restart stream pattern (e.g., 'fastisostasy_restart.2026-09-25_00.00.00.nc'). On read during a restart, the same timestamping logic constructs the filename to match the current restart time, ensuring FastIsostasy restart files automatically align with MALI restart files at the same model time. Specify only the base name here (without .nc extension or timestamp). For branching from an older restart, ensure the matching timestamped FastIsostasy restart files from that time are available."
+			possible_values="Any base filename string (without .nc extension)"
+		/>
+		<nml_option name="config_fastisostasy_bsl_restart_file" type="character" default_value="fastisostasy_bsl_restart" units="unitless"
+			description="Base filename for FastIsostasy barystatic sea level restart files. Naming behavior matches config_fastisostasy_restart_file - automatic timestamping on both write and read ensures alignment with MALI restart files. Specify only the base name (without .nc extension or timestamp)."
+			possible_values="Any base filename string (without .nc extension)"
+		/>
 	</nml_record>
 
 	<nml_record name="calving" in_defaults="true">
@@ -174,6 +210,14 @@
                 <nml_option name="config_apply_calving_mask" type="logical" default_value=".false." units="unitless"
 			    description="Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected."
 			    possible_values=".true. or .false."
+		/>
+                <nml_option name="config_require_extensional_stresses_for_mask_calving" type="logical" default_value=".false." units="unitless"
+			    description="If true, then mask calving (config_apply_calving_mask) only removes floating ice at cells that are also vulnerable to hydrofracture based on the fracture-toughness stress criterion of Lai et al. (2020) and Reynolds and Nowicki (2026).  A cell is vulnerable where the resistive stress R_xx = 2*tauMax + tauMin exceeds a threshold that depends on config_calving_fracture_toughness.  If false, all masked floating cells calve regardless of stress state."
+			    possible_values=".true. or .false."
+		/>
+                <nml_option name="config_calving_fracture_toughness" type="real" default_value="2.0e5" units="Pa m^0.5"
+			    description="Ice fracture toughness (K_IC) used as the free parameter in the hydrofracture vulnerability criterion applied when config_require_extensional_stresses_for_mask_calving is true.  Plausible range is 1.0e5 to 4.0e5 Pa m^0.5 (van der Veen, 1998)."
+			    possible_values="Any positive real value"
 		/>
                 <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
 			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
@@ -279,6 +323,10 @@
                         description="When config_damage_calving_method==threshold, this is the value of damage above which the cell would be calved away.  When config_damage_calving_method==calving_rate, this is the value above which calving becomes proportional to damage."
 	                possible_values="real value between 0 and 1"
 		/>
+                <nml_option name="config_damage_calving_threshold_source" type="character" default_value="scalar" units="unitless"
+                        description="Source of the threshold used by damage-threshold-based calving logic. 'scalar' uses config_damage_calving_threshold uniformly over the domain. 'data' uses the cell-centered damageCalvingThreshold field read from input."
+	                possible_values="'scalar', 'data'"
+		/>
                 <nml_option name="config_damage_stiffness_min" type="real" default_value="0.1" units="unitless"
                         description="The minimum value the 'stiffnessFactor' can take due to evolving damage when 'stiffnessFactor' is calculated from damage (i.e., when 'config_damage_rheology_coupling'=.true.). This is used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then 'stiffnessFactor' becomes 1 - damage = 0.1 (a small value that could be challenging for the solver). But if we set 'config_damage_stiffness_min' = 0.5, then 'stiffnessFactor' can only fall as low as 0.5."
 	                possible_values="real value between 0 and 1"
@@ -347,17 +395,13 @@
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
-		            description="Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate."
-		            possible_values="'constant', 'file', 'lapse'"
+		            description="Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler."
+		            possible_values="'constant', 'file'"
 		/>
 		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
 		            description="Constant value of the surface air temperature."
 		            possible_values="Any positive real value"
                 />
-                <nml_option name="config_surface_air_temperature_lapse_rate" type="real" default_value="0.01" units="K m^-1"
-		            description="Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations."
-		            possible_values="Any real value"
-		/>
 		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the basal heat flux."
 		            possible_values="'constant', 'file'  'constant' uses the value set by config_basal_heat_flux_value.  'file' reads the field from an input or forcing file or ESM coupler."
@@ -379,8 +423,24 @@
 
         <nml_record name="iceshelf_melt" in_defaults="true">
                 <nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
-                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth. ISMIP6 is the method prescribed by ISMIP6."
-                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile', 'ismip6'"
+                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth. 'ismip6' is the non-local quadratic method prescribed by ISMIP6 (Jourdain et al. 2020). 'ismip7' is the local quadratic method recommended for ISMIP7, revised by Burgard et al. (2022) following Jenkins et al. (2018).  It applies the basin-wide temperature correction ismip6shelfMelt_deltaT, as 'ismip6' does."
+                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile', 'ismip6', 'ismip7'"
+                />
+                <nml_option name="config_ismip7_melt_sin_slope" type="real" default_value="0.0051117" units="unitless"
+                            description="The sin(theta) factor of the ISMIP7 quadratic melt parameterization, where theta is the ice-draft slope angle.  Held constant here, so despite the name it is simply a dimensionless coefficient: it multiplies K, and only the product K*sin(theta) affects the melt.  It is kept as a separate option purely so that K remains comparable with published values, which were calibrated against a stated slope.  PROVISIONAL DEFAULT: the Antarctic-mean value from Bedmap3 on the ISMIP 8 km grid, matching the published calibration.  The mean slope is resolution dependent, so a value computed on the mesh being run should be preferred, and K recalibrated with it.  (Protocol Eq. 1 also permits a locally varying slope; that variant is deliberately not implemented here -- see MALI-Dev/E3SM PR #48, which found a slope-melt feedback that melted holes in ice shelves.)"
+                            possible_values="Any positive real value"
+                />
+                <nml_option name="config_ismip7_melt_salinity_source" type="character" default_value="constant" units="unitless"
+                            description="Where the ISMIP7 local quadratic melt parameterization gets the ocean salinity at the ice draft.  'constant' uses config_ismip7_melt_salinity everywhere and does not read the 3-D salinity field; 'data' interpolates ismip7shelfMelt_3dSalinity to the draft, exactly as the thermal forcing is interpolated.  The default is 'constant' because the ISMIP7 ocean forcing distributed for the MALI projections carries thermal forcing only, so a projection has no salinity field to read; calibrating with a spatially varying salinity would tune K for physics the projections cannot run.  Use 'data' when a 3-D salinity field is genuinely available and the calibration was done with one."
+                            possible_values="'constant', 'data'"
+                />
+                <nml_option name="config_ismip7_melt_salinity" type="real" default_value="34.5" units="PSU"
+                            description="Practical salinity at the ice draft used by the ISMIP7 local quadratic melt parameterization when config_ismip7_melt_salinity_source='constant'.  Melt is linear in salinity, so like config_ismip7_melt_sin_slope this is a coefficient multiplying K and only the product affects the melt; it is a separate option so that K stays comparable with published values.  The default is close to the Antarctic ice-shelf mean, whose per-basin spread is about 0.8 percent.  Note that the published K was calibrated against a locally varying salinity, so with a constant value the comparison is approximate at about the 1 percent level."
+                            possible_values="Any positive real value"
+                />
+                <nml_option name="config_ismip7_melt_coriolis" type="real" default_value="1.4e-4" units="s^-1"
+                            description="Magnitude of the Coriolis parameter used by the ISMIP7 local quadratic melt parameterization.  The protocol writes g/(2|f|) but its reference implementation uses a single constant, whose default here corresponds to about 74 degrees S, near the middle of the range spanned by Antarctic ice shelves.  |f| varies by only about 12 percent across those latitudes."
+                            possible_values="Any positive real value"
                 />
                 <nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^-2"
 		            description="Value of the constant heat flux applied to the base of floating ice (positive upward)."
@@ -607,6 +667,10 @@
 		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval."
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
+		<nml_option name="config_timeaveraging_interval" type="character" default_value="0000-00-00_00:00:00" units="unitless"
+		            description="Interval at which time-averaging accumulators are reset.  If set to a zero interval, then time-averaging accumulators are never reset.  When running in E3SM, the zero interval should be used, because the GLC driver resets the accumulators every coupling interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
 	</nml_record>
 
 
@@ -723,8 +787,8 @@
 		            description="Prints additional information about thermal calculations (if enabled)."
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".true." units="unitless"
-		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.  As of June 2019 (and earlier) there is a bug which requires this to be set to true if there are ice shelves in the model domain."
+		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".false." units="unitless"
+		            description="Always compute finite-element grid information for external dycores rather than only doing so when the masks it is computed from change."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
@@ -749,12 +813,17 @@
                 <package name="observations" description="This package includes variables required for observations in Albany."/>
 
                 <package name="ismip6ShelfMelt" description="This package includes variables required for the ISMIP6 ice-shelf melt parameterization developed for Antarctica."/>
+                <package name="ismip7ShelfMelt" description="This package includes the additional variables required for the ISMIP7 local quadratic ice-shelf melt parameterization, which needs ocean salinity as well as thermal forcing."/>
 
 		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization developed for Greenland." />
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
                 <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
+
+                <package name="smbSatLapseRate" description="This package includes variables needed when config_apply_smb_sat_lapse_rate is true."/>
+
+                <package name="damageCalving" description="This package includes variables needed when damage-based calving is active (config_damage_calving_method is 'threshold' or 'calving_rate')."/>
 	</packages>
 
 
@@ -805,7 +874,39 @@
 			<var name="kiteAreasOnVertex"/>
 			<var name="layerThicknessFractions"/>
 			<var name="meshDensity"/>
-		</stream>
+                </stream>
+
+		<!-- minmesh contains the minimal set of fields needed for Paraview and plot_maps.py to work - attach this to other streams as needed -->
+		<stream name="minmesh"
+				type="none"
+				immutable="true"
+				filename_template="not-to-be-used.nc">
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="cellsOnVertex"/>
+			<var name="dcEdge"/>
+                </stream>
+
+		<!-- mosaicmesh contains the minimal set of fields needed for the mosaic package to work - attach this to other streams as needed -->
+		<stream name="mosaicmesh"
+				type="none"
+				immutable="true"
+				filename_template="not-to-be-used.nc">
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="cellsOnEdge"/>
+			<var name="cellsOnVertex"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+                        <var name="dcEdge"/> <!-- only used by plots_maps.py, not mosaic -->
+                        <var name="zCell"/> <!-- only used by paraview, not mosaic -->
+                </stream>
 
 <!-- WHL: When using the enthalpy heat-balance solver, will need to add waterFrac to the streams with temperature. -->
 		<stream name="input"
@@ -829,6 +930,7 @@
                         <var name="floatingVonMisesThresholdStress"/>
                         <var name="calvingStrainRateScaling"/>
 						<var name="crevasseWaterDepth"/>
+						<var name="damageCalvingThreshold" packages="damageCalving"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
                         <var name="upliftRate"/>
@@ -836,6 +938,9 @@
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
 			<var name="muFriction" packages="higherOrderVelocity"/>
+                        <var name="bedRoughnessRC" packages="higherOrderVelocity"/>
+                        <var name="bulkFriction" packages="higherOrderVelocity"/>
+                        <var name="basalDebrisFactor" packages="higherOrderVelocity"/>
 			<var name="effectivePressure" packages="higherOrderVelocity"/>
 			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
@@ -867,6 +972,9 @@
                         <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_zBndsOcean" packages="ismip6ShelfMelt;extrapOceanData"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+                        <!-- these variables just for ISMIP7 ice shelf forcing -->
+                        <var name="ismip7shelfMelt_K" packages="ismip7ShelfMelt"/>
+                        <var name="ismip7shelfMelt_3dSalinity" packages="ismip7ShelfMelt"/>
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
@@ -920,6 +1028,7 @@
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
+			<var name="surfaceElevationRef" packages="smbSatLapseRate"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
                         <var name="regionEdgeMasks"/>
@@ -931,6 +1040,7 @@
                         <var name="floatingVonMisesThresholdStress"/>
                         <var name="calvingStrainRateScaling"/>
 						<var name="crevasseWaterDepth"/>
+						<var name="damageCalvingThreshold" packages="damageCalving"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
                         <!-- calvingCFLdt only needed if calving CFL is being applied, but it is a scalar value so no harm in including it always -->
@@ -971,6 +1081,9 @@
                         <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_zBndsOcean" packages="ismip6ShelfMelt"/>
+                        <!-- these variables just for ISMIP7 ice shelf forcing -->
+                        <var name="ismip7shelfMelt_K" packages="ismip7ShelfMelt"/>
+                        <var name="ismip7shelfMelt_3dSalinity" packages="ismip7ShelfMelt"/>
                         <!-- these variables just for ISMIP6 grounded glacier forcing -->
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
@@ -984,6 +1097,8 @@
                         <var name="icebergFjordMask" packages="extrapOceanData"/>
                         <var name="oceanTemperature" packages="extrapOceanData"/>
                         <var name="oceanSalinity" packages="extrapOceanData"/>
+                        <!-- time averaging fields for restart -->
+                        <var_struct name="timeAveraging"/>
 		</stream>
 
 
@@ -998,7 +1113,7 @@
 				clobber_mode="replace_files">
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
-	        <stream name="basicmesh"/>
+	        <stream name="mosaicmesh"/>
 			<var name="layerCenterSigma"/>
 			<var name="layerInterfaceSigma"/>
                         <var name="xtime"/>
@@ -1012,6 +1127,7 @@
 			<var name="upperSurface"/>
 			<var name="temperature"/>
 			<var name="cellMask"/>
+			<var name="hydrofractureVulnerabilityMask"/>
 			<var name="edgeMask"/>
 			<var name="normalVelocity"/>
 			<var name="uReconstructX"/>
@@ -1253,6 +1369,9 @@ is the value of that variable from the *previous* time level!
                 <var name="simulationStartTime" type="text" dimensions="" default_value="'no_date_available'"
                      description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
                 />
+                <var name="femExtensionMethod" type="text" dimensions="" default_value="'ismip6-era'"
+                     description="The fem extension method actually in use for this run ('ismip6-era' or 'ismip7-era').  Set from config_fem_extension_method at init, resolving 'auto' using the 'fem_extension_method' global attribute of the input/restart file if needed.  Written back out as the 'fem_extension_method' global attribute of restart and output files."
+                />
                 <var name="daysSinceStart" type="real" dimensions="Time" units="days"
                      description="Time since simulationStartTime in days, for plotting"
                 />
@@ -1309,8 +1428,17 @@ is the value of that variable from the *previous* time level!
                 <var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="potential surface mass balance"
                 />
+                <var name="sfcMassBalLapseRate" type="real" dimensions="nCells Time" units="kg m^-2 s^-1 m^-1" default_value="0.0"
+                     description="vertical gradient dSMBdz used for SMB elevation-change correction"
+                />
+                <var name="surfaceElevationRef" type="real" dimensions="nCells Time" units="m" default_value="0.0"
+                     description="reference surface elevation h_ref used for SMB and SAT elevation-change corrections"
+                />
                 <var name="sfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance"
+                />
+                <var name="sfcMassBalGradientCorrection" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+                     description="correction to surface mass balance based on lapse rate and surface elevation"
                 />
                 <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance on grounded ice"
@@ -1342,6 +1470,9 @@ is the value of that variable from the *previous* time level!
                 <var name="calvingMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
                 />
+                <var name="hydrofractureVulnerabilityMask" type="integer" dimensions="nCells Time" time_levs="1" default_value="0"
+                        description="mask of floating cells vulnerable to hydrofracture based on the fracture-toughness stress criterion (Lai et al., 2020; Reynolds and Nowicki, 2026).  1=vulnerable (resistive stress R_xx = 2*tauMax + tauMin exceeds the threshold set by config_calving_fracture_toughness), 0=not vulnerable.  Computed in the mask calving routine when config_apply_calving_mask is true."
+                />
                 <var name="openOceanMask" type="integer" dimensions="nCells Time" time_levs="1"
                         description="mask of open ocean cells, including floating non-dynamic cells.  Used to eliminate holes in ice shelf from calving"
                 />
@@ -1350,6 +1481,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                         description="thickness of ice that calves on a given timestep (less than or equal to ice thickness)"
+                />
+				<var name="calvingThicknessGrounded" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                        description="calving thickness originating from grounded ice.  This is approximately equal to calving from grounded marine margins."
                 />
                 <var name="calvingThicknessFromThreshold" type="real" dimensions="nCells Time" units="m" time_levs="1"
                         description="thickness of ice that calves on a given timestep for only processes that generate calving based on a threshold.  This includes mask calving, damage calving, iceberg and small island detection, and velocity speed limit."
@@ -1448,6 +1582,10 @@ is the value of that variable from the *previous* time level!
                 <var name="basalCrevasseDepth" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="depth of basal crevasses based on Nye zero-stress model"
                 />
+                <var name="damageCalvingThreshold" type="real" dimensions="nCells Time" units="unitless" time_levs="1"
+                     description="spatially varying damage calving threshold used when config_damage_calving_threshold_source='data'. Same physical meaning and valid range as config_damage_calving_threshold."
+                     packages="damageCalving"
+                />
                 <var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="thickness of basal water"
                 />
@@ -1502,6 +1640,18 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^-2 s^-1" packages="ismip6ShelfMelt" default_value="0.0"
                      description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
                 />
+                <!-- Variables only needed by the ISMIP7 local quadratic ice-shelf melt method -->
+                <var name="ismip7shelfMelt_K" type="real" dimensions="" units="unitless" default_value="0.0"
+                     packages="ismip7ShelfMelt"
+                     description="calibration parameter K for the ISMIP7 local quadratic ice-shelf melting method, input to model.  Read from the same input stream as ismip6shelfMelt_basin and ismip6shelfMelt_deltaT, like ismip6shelfMelt_gamma0 for the ISMIP6 method.  Must be positive; the model stops otherwise, since the zero default would silently zero the melt.  Calibrate it with MALI on the mesh being run."
+                />
+                <var name="ismip7shelfMelt_3dSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="PSU"
+                     default_value="34.5" packages="ismip7ShelfMelt"
+                     description="practical salinity for the ISMIP7 local quadratic ice-shelf melting method, input to model.  Shares the vertical coordinate ismip6shelfMelt_zOcean with the thermal forcing."
+                />
+                <var name="ismip7shelfMelt_Sdraft" type="real" dimensions="nCells Time" units="PSU" packages="ismip7ShelfMelt"
+                     description="practical salinity at the ice shelf draft used for the ISMIP7 local quadratic ice-shelf melting method, calculated by param."
+                />
                 <!-- Variables needed for ISMIP6 grounded face melt parameterization -->
                 <var name="frontAblationMask" type="integer" dimensions="nCells Time" time_levs="1"
                      description="mask of grid cells at which front ablation will be applied. Determined by settings of applyToGrounded, applyToFloating, and applyToGroundingLine in routines that call li_apply_front_ablation_velocity."
@@ -1548,6 +1698,9 @@ is the value of that variable from the *previous* time level!
                 <var name="bedTopographyChange" type="real" dimensions="nCells Time"
                      units="m"  description="amount of change in bedTopography.  This field is calculated by the sea-level model over its time step. Positive values indicate bed uplift relative to sea level."
                 />
+                <var name="geoidChange" type="real" dimensions="nCells Time"
+                     units="m"  description="amount of change in geoid relative to its value at the start of the simulation."
+                />
                <!-- Scratch variables related to geometry -->
 	       <var name="cellMaskTemporary" type="integer" dimensions="nCells"
 	       description="temporary copy of cellMask"
@@ -1585,6 +1738,19 @@ is the value of that variable from the *previous* time level!
                 <var name="avgBareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1" 
                      description="time averaged negative surface mass balance applied to melting of bare ice (using appliedBareIceAblation from 'geometry' pool)"
                 />
+				<!-- fields for ISMIP reporting not included in the above -->
+				<var name="avgSMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied surface mass balance"
+				/>
+				<var name="avgGroundedBMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied grounded basal mass balance"
+				/>
+				<var name="avgGroundingLineFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied flux across the grounding line"
+				/>
+				<var name="avgDhdt" type="real" dimensions="nCells Time" units="m s^-1"
+					 description="time averaged rate of change of ice thickness"
+				/>
         </var_struct>
 
 <!-- ================ -->
@@ -1653,6 +1819,15 @@ is the value of that variable from the *previous* time level!
 		<var name="stiffnessFactor" type="real" dimensions="nCells Time" default_value="1.0"
 		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
 		/>
+                <var name="bedRoughnessRC" type="real" dimensions="nCells Time" units="m" default_value="1.0"
+                     description="input value of bed roughness parameter for regularized Coulomb basal friction.  This corresponds to lambda_max / m_max."
+                />
+                <var name="bulkFriction" type="real" dimensions="nCells Time" default_value="0.0"
+                     description="input value of bulk friction coefficient in debris-bed friction sliding law."
+                />
+                <var name="basalDebrisFactor" type="real" dimensions="nCells Time" units="kPa yr m^-1" default_value="0.0"
+                     description="input value of basal debris factor in debris-bed friction sliding law."
+                />
                 <var name="exx" type="real" dimensions="nCells Time" units="s^-1"
                      description="x-component of depth-integrated strain rate"
                 />
@@ -1765,6 +1940,12 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
                      description="air temperature at the ice sheet surface"
+                />
+                <var name="surfaceAirTemperatureLapseRate" type="real" dimensions="nCells Time" units="K m^-1" default_value="0.0"
+                     description="vertical gradient dTdz used for SAT elevation-change correction"
+                />
+                <var name="surfaceAirTemperatureApplied" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="air temperature at the ice sheet surface after model-side lapse-rate adjustment"
                 />
                 <var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
                      description="temperature at upper ice service"

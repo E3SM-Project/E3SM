@@ -55,6 +55,10 @@ double rho_ocean;
 //unsigned char ice_present_bit_value;
 int dynamic_ice_bit_value;
 int ice_present_bit_value;
+// Selects the version of the margin (thickness/elevation) extension logic used in
+// importFields(): false => 'ismip6-era' (pre-ismip7-era scheme), true => 'ismip7-era'.
+// Set from the namelist option config_fem_extension_method via velocity_solver_set_parameters().
+bool useISMIP7Extension = false;
 
 // global variables used for handling logging
 char albany_log_filename[128];
@@ -69,7 +73,7 @@ std::vector<int> indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     fVertexToTriangleID, fCellToVertex, iceMarginEdgesLIds, dirichletNodesIDs;
 std::vector<double> dissipationHeatOnPrisms, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, muFrictionData, temperatureDataOnPrisms, smbData, thicknessOnCells, bodyForceOnBasalCell;
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, muFrictionData, bedRoughnessData, bulkFrictionData, basalDebrisData, temperatureDataOnPrisms, smbData, thicknessOnCells, bodyForceOnBasalCell;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -117,15 +121,16 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
                          double const* clausius_clapeyron_coeff,
                          double const* thermal_thickness_limit_F,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
-                         bool const* use_GLP_F) {
+                         int const* use_GLP_F, int const* use_ISMIP7_extension_F) {
   // This function sets parameter values used by MPAS on the C/C++ side
   rho_ice = *ice_density_F;
   rho_ocean = *ocean_density_F;
   thermal_thickness_limit = *thermal_thickness_limit_F / unit_length; // Import with Albany scaling
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
+  useISMIP7Extension = (*use_ISMIP7_extension_F != 0);
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
-                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
+                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, (*use_GLP_F != 0), *clausius_clapeyron_coeff);
 }
 
 
@@ -240,7 +245,8 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double * beta_F,
     double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
-    double const* effecPress_F, double const* muFriction_F,
+    double* effecPress_F, double const* muFriction_F,
+    double const* bedRoughnessRC_F, double const* bulkFriction_F, double const* basalDebris_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* bodyForce_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
@@ -269,7 +275,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   if (!isDomainEmpty) {
 
     std::vector<std::pair<int, int> > marineBdyExtensionMap;
-    importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
+    importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, bedRoughnessRC_F, bulkFriction_F, basalDebris_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -286,7 +292,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
-        stiffnessFactorData, effecPressData, muFrictionData,
+        stiffnessFactorData, effecPressData, muFrictionData, bedRoughnessData, bulkFrictionData, basalDebrisData,
         temperatureDataOnPrisms, bodyForceOnBasalCell, dissipationHeatOnPrisms, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
@@ -298,6 +304,8 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     exportBodyForce(bodyForce_F);
   }
   exportBeta(beta_F);
+
+  exportEffectivePressure(effecPress_F);
 
   mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
       Ordering);
@@ -1115,8 +1123,10 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
+    double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F, double const* muFriction_F,
+    double const* bedRoughnessRC_F, double const* bulkFriction_F, double const* basalDebris_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
   int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
@@ -1131,6 +1141,12 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
     effecPressData.assign(nVertices, 1e10);
   if (muFriction_F!= 0)
     muFrictionData.assign(nVertices, 1e10);
+  if (bedRoughnessRC_F!= 0)
+    bedRoughnessData.assign(nVertices, 1e10);
+  if (bulkFriction_F != 0)
+    bulkFrictionData.assign(nVertices, 1e10);
+  if (basalDebris_F != 0)
+    basalDebrisData.assign(nVertices, 1e10);
   if(temperature_F != 0)
     temperatureDataOnPrisms.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
@@ -1153,6 +1169,12 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
       effecPressData[index] = effecPress_F[iCell] / unit_length;  
     if (muFriction_F != 0)
       muFrictionData[index] = muFriction_F[iCell];
+    if (bedRoughnessRC_F != 0)
+      bedRoughnessData[index] = bedRoughnessRC_F[iCell] / unit_length;
+    if (bulkFriction_F != 0)
+      bulkFrictionData[index] = bulkFriction_F[iCell];
+    if (basalDebris_F != 0)
+      basalDebrisData[index] = basalDebris_F[iCell];
   }
 
   int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
@@ -1237,12 +1259,63 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
           elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
         }
       } else {
-        // -- nonmarine margin -- (extend to zero thickness)
+        // -- nonmarine (terrestrial) margin -- (extend to zero thickness)
 
+        // First assign standard values for terrestrial margin extension.
+        // Under 'ismip6-era' these are the final values; under 'ismip7-era' they may be
+        // adjusted below if necessary.
         thicknessData[iV] = eps;
         elevationData[iV] = bedTopographyData[iV]+eps;
-      }
-    } // is on margin
+
+        if (useISMIP7Extension) {
+          // 'ismip7-era' extension: we want to avoid smearing ice up a cliff if the ice-free
+          // neighbor has a higher elevation than the last cell with ice.  But we still need
+          // the thickness to ramp to zero to avoid an erroneous ice cliff.
+          // Instead, if necessary, adjust so the surface elevation cannot be higher than the
+          // last cell with ice, i.e., for the FEM mesh, remove the mountainside and have the
+          // topography not exceed the neighbor (because surface = topography where thickness
+          // goes to zero).
+          // In 2d, this first ice-free cell may have multiple neighbors with ice that have different
+          // surface elevations.  To avoid surface slope directing flow out of the glacier
+          // (which would really be uphill on the true topography), make sure the modified surface slope
+          // is zero for the *highest* of the neighbors with ice
+
+          // Check if all dynamic ice neighbors have lower surface elevation
+          double highestNeighboringElev = -1e10;
+          int nEdg = nEdgesOnCells_F[fCell];
+          int neighbor_cell = -1;
+          for (int j = 0; j < nEdg; j++) {
+            int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+            //skip if edge is not valid
+            if(fEdge >= nEdges_F)
+              continue;
+
+            int c0 = cellsOnEdge_F[2 * fEdge] - 1;
+            int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+
+            // Skip boundary sentinels and out-of-range neighboring cells.
+            if ((c0 < 0) || (c1 < 0) || (c0 >= nCells_F) || (c1 >= nCells_F))
+              continue;
+
+            int c = (fCellToVertex[c0] == iV) ? c1 : c0;
+            if((cellsMask_F[c] & dynamic_ice_bit_value)) {
+              double elev = (thickness_F[c] + lowerSurface_F[c]) / unit_length;
+              if (elev > highestNeighboringElev) {
+                highestNeighboringElev = elev;
+                neighbor_cell = c;
+              }
+            }
+          }
+          if (neighbor_cell > -1) {
+            if (highestNeighboringElev < elevationData[iV]) {
+               bedTopographyData[iV] = highestNeighboringElev - thicknessData[iV];;
+               elevationData[iV] = bedTopographyData[iV] + thicknessData[iV];
+            }
+          }
+        } // useISMIP7Extension
+
+      } // else (nonmarine)
+    } // is on margin (not dynamic vertex check)
   }  // vertex loop
 
   // Apply extension on marine margin
@@ -1251,13 +1324,37 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
     int iv = it->first;
     int ic = it->second;
 
-    double bed = bedTopographyData[iv];
-    double elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length;
-    double thick = thickness_F[ic] / unit_length;
+    double bed = bedTopographyData[iv]; // bed here
+    double elev = -1e10;
+    double thick = eps;
 
-    //assume elevation as given and adjust thickness to avoid unphysical situations
-    thick = std::min(thick, elev - bed);
-    thick = std::min(thick, rho_ocean/(rho_ocean-rho_ice)*elev);
+    if (useISMIP7Extension) {
+      // check if loan cell bed is above sea level or not
+      // Note: ic is a raw MPAS cell index (not an FE vertex index), so use bedTopography_F here.
+      if (bedTopography_F[ic] / unit_length > 0.0) {
+         // loan cell bed above sea level: assume the extension terminates at a thin ice shelf;
+         //    this extension location would be where the glacier terminates at the ocean
+         thick = eps;
+         elev = std::max(bed+thick, (1.0 - rho_ice/rho_ocean)*thick);
+      } else {
+         // loan cell bed below sea level: assume this extension has the same elevation,
+         // like a flat ice shelf or tidewater glacier
+         elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length; // elev from dynamic neighbor
+         // assume elevation as given and adjust thickness if bed is too shallow here
+         thick = std::min(rho_ocean/(rho_ocean-rho_ice)*elev, elev - bed);
+         // but don't let be thicker than the loan cell!
+         thick = std::min(thick, thickness_F[ic] / unit_length);
+         // recalculate elev in case we adjusted it
+         elev = std::max((1.0 - rho_ice / rho_ocean) * thick, bed + thick);
+      }
+    } else {
+      // 'ismip6-era' extension: assume elevation as given and adjust thickness to avoid
+      // unphysical situations
+      elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length;
+      thick = thickness_F[ic] / unit_length;
+      thick = std::min(thick, elev - bed);
+      thick = std::min(thick, rho_ocean/(rho_ocean-rho_ice)*elev);
+    }
 
     if(thick < eps) { //thickness needs to be greater than eps
       thicknessData[iv] = eps;
@@ -1266,9 +1363,59 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
       thicknessData[iv] = thick;
       elevationData[iv] = elev;
     }
+  } // map vector loop
 
-  }
+  if (useISMIP7Extension) {
+    // 'ismip7-era' extension only: do another pass.  For any extended marine margin
+    // locations that are connected to any grounded neighbors but have at least one
+    // floating neighbor, create a ramp down to zero thickness instead of whatever they
+    // are currently doing.
+    // This is to eliminate steep slopes on thick ice adjacent to floating ice which is
+    // defenseless to protect itself from the longitudinal stress barrelling down at it.
+    std::vector<int> marineRevisionList;
+    marineRevisionList.clear();
+    marineRevisionList.reserve(nVertices);
+
+    for (std::vector<std::pair<int, int> >::iterator it = marineBdyExtensionMap.begin();
+        it != marineBdyExtensionMap.end(); ++it) {
+      int iv = it->first; // the extended cell
+      int fCell = vertexToFCell[iv]; // fortran index for extended cell of interest
+
+      // Check if this extended cell has any grounded neighbors and if it has any floating neighbors
+      bool hasGroundNeigh = false;
+      bool hasFloatNeigh = false;
+      int nEdg = nEdgesOnCells_F[fCell];
+      int neighbor_cell = -1;
+      for (int j = 0; j < nEdg; j++) {
+        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+        //skip if edge is not valid
+        if(fEdge >= nEdges_F)
+          continue;
+        int c0 = cellsOnEdge_F[2 * fEdge] - 1;
+        int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+        //skip if either of neighboring cells is zero
+        if ((c0 < 0) || (c1 < 0) || (c0 >= nCells_F) || (c1 >= nCells_F))
+          continue;
+        int c = (fCellToVertex[c0] == iv) ? c1 : c0; // index to neighbor
+        int cVertex = fCellToVertex[c];
+        if (cVertex == NotAnId)
+          continue;
+        hasGroundNeigh = hasGroundNeigh || ((thicknessData[cVertex] >= eps) && (rho_ice * thicknessData[cVertex] >= -rho_ocean * bedTopographyData[cVertex]));
+        hasFloatNeigh =  hasFloatNeigh  || ((thicknessData[cVertex] >= eps) && (rho_ice * thicknessData[cVertex] <  -rho_ocean * bedTopographyData[cVertex]));
+      } // loop over neighboring edges
+      if (hasGroundNeigh && hasFloatNeigh) {
+        marineRevisionList.push_back(iv);
+      }
+    } // map vector loop ("do another pass")
+    // Now loop through locations identified and apply the zero ramp
+    for (const int iv : marineRevisionList) {
+        // modify existing thk,elev to create ramp to 0
+        thicknessData[iv] = eps;
+        elevationData[iv] = std::max(bedTopographyData[iv] + eps, (1.0 - rho_ice/rho_ocean)*eps);
+    }
+  } // useISMIP7Extension
 }
+
 
 void import2DFieldsObservations(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
             double const * thicknessUncertainty_F,
@@ -1361,6 +1508,18 @@ void exportBeta(double * beta_F) {
   allToAll (beta_F,  sendCellsList_F, recvCellsList_F, 1);
 }
 
+void exportEffectivePressure(double * effecPress_F) {
+  std::fill(effecPress_F, effecPress_F + nCells_F, 0.);
+  for (int index = 0; index < nVertices; index++) {
+    int fCell = vertexToFCell[index];
+    effecPress_F[fCell] = effecPressData[index] * unit_length;
+  }
+#ifdef  changeTrianglesOwnership
+  allToAll (effecPress_F,  &sendCellsListReversed, &recvCellsListReversed, 1);
+#endif
+  allToAll (effecPress_F,  sendCellsList_F, recvCellsList_F, 1);
+}
+
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   int numProcs, me;
   if (reduced_comm_id != MPI_COMM_NULL)
@@ -1381,8 +1540,10 @@ void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   }
 
   MPI_Comm_group(comm, &world_group_id);
-  MPI_Group_incl(world_group_id, ranks.size(), &ranks[0], &reduced_group_id);
+  MPI_Group_incl(world_group_id, ranks.size(), ranks.data(), &reduced_group_id);
   MPI_Comm_create(comm, reduced_group_id, &reduced_comm_id);
+  MPI_Group_free(&reduced_group_id);
+  MPI_Group_free(&world_group_id);
 }
 
 void getProcIds(std::vector<int>& field, int const * recvArray) {
@@ -1630,6 +1791,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
     double const* stiffnessFactor_F,
     double const* effecPress_F, double const* muFriction_F,
+    double const* bedRoughnessRC_F, double const* bulkFriction_F, double const* basalDebris_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -1715,7 +1877,8 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     std::vector<std::pair<int, int> > marineBdyExtensionMap;  // local map to be created by importFields
     importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
-                   stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F, minThickness);
+                   stiffnessFactor_F, effecPress_F, muFriction_F, bedRoughnessRC_F, bulkFriction_F, basalDebris_F,
+                   temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(marineBdyExtensionMap,
                     thicknessUncertainty_F,
@@ -1760,6 +1923,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     write_ascii_mesh_field(betaData, "beta");
     write_ascii_mesh_field(muFrictionData, "mu");
     write_ascii_mesh_field(muLogData, "mu_log");
+    write_ascii_mesh_field(bedRoughnessData, "bed_roughness");
     
     write_ascii_mesh_field(stiffnessFactorData, "stiffening_factor");
     write_ascii_mesh_field(stiffnessLogData, "stiffening_factor_log");
@@ -1779,6 +1943,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
 
     write_ascii_mesh_field(effecPressData, "effective_pressure");
+
 
     // These two fields are more complicated than the others so cannot use the function to write out
 

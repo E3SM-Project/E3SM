@@ -418,7 +418,8 @@ contains
       character (len=StrKIND), pointer :: config_flowParamA_calculation
       real (kind=RKIND), pointer :: config_default_flowParamA, &
                                     config_dynamic_thickness,  &
-                                    config_ice_density
+                                    config_ice_density, &
+                                    config_flowLawExponent
       integer :: iCell, iLevel, err_tmp
       real (kind=RKIND), dimension(:), pointer :: layerCenterSigma
       real (kind=RKIND) :: A0, Q, pressureMeltPointSlope
@@ -436,6 +437,32 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
+
+      ! Validate that flowLawExponent is compatible with flowParamA_calculation
+      ! Note: Exact floating-point comparison is appropriate here because config_flowLawExponent
+      ! is read from the namelist (not computed), and typical values (3.0, 4.0) are exactly
+      ! representable in IEEE 754 floating-point arithmetic.
+      if (config_flowLawExponent /= 3.0_RKIND) then
+         if (trim(config_flowParamA_calculation) == 'constant' .or. &
+             trim(config_flowParamA_calculation) == 'PB1982' .or. &
+             trim(config_flowParamA_calculation) == 'CP2010') then
+            call mpas_log_write("config_flowParamA_calculation options 'constant', 'PB1982', and 'CP2010' " // &
+                                "are only valid for config_flowLawExponent = 3.0", MPAS_LOG_ERR)
+            err = 1
+            return
+         endif
+      endif
+
+      ! Validate that n=4 uses the correct parameterization
+      if (config_flowLawExponent == 4.0_RKIND) then
+         if (trim(config_flowParamA_calculation) /= 'Fan2025') then
+            call mpas_log_write("For config_flowLawExponent = 4.0, " // &
+                                "config_flowParamA_calculation must be set to 'Fan2025'", MPAS_LOG_ERR)
+            err = 1
+            return
+         endif
+      endif
 
 
       select case(config_flowParamA_calculation)
@@ -488,6 +515,37 @@ contains
                 endif
                 flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / idealGasConstant * &
                    (1.0_RKIND/temperatureCorrected - 1.0_RKIND/transitionTemperatureCorrected))
+              enddo ! levels
+            else
+              flowParamA(:,iCell) = 0.0_RKIND  ! non-ice cells get 0
+            endif ! if dynamic ice
+          enddo ! cells
+      !-----------------------------------------------------------------
+      case('Fan2025')
+          ! Parameters for n=4 from Fan et al. (2025) low-strain recalibration
+          ! of Goldsby and Kohlstedt (2001), as reported in Lilien et al. (2026) Table 1
+          ! Unit conversion: MPa^-n m^n yr^-1 to Pa^-n m^n s^-1
+          ! 1 MPa^-4 = 10^-24 Pa^-4; 1 yr^-1 = 3.16888e-8 s^-1
+          pressureMeltPointSlope = 9.7456e-8_RKIND
+          do iCell = 1, nCells
+            if (thickness(iCell) > 0.0_RKIND) then
+              do iLevel = 1, nVertLevels
+                ! Calculate the pressure-corrected temperature
+                temperatureCorrected = min(273.15_RKIND, temperature(iLevel,iCell) + pressureMeltPointSlope * &
+                         thickness(iCell) * config_ice_density * gravity * layerCenterSigma(iLevel) )
+                temperatureCorrected = max(223.15_RKIND, temperatureCorrected)
+                ! Calculate flow A for n=4
+                ! Transition temperature is 262 K (not 263.15 K as in n=3 parameterizations)
+                if (temperatureCorrected > 262.0_RKIND) then
+                  ! A+ = 1.89e36 MPa^-4 m^4 yr^-1 = 1.89e36 * 1e-24 * 3.16888e-8 = 5.989e4 Pa^-4 m^4 s^-1
+                  A0 = 5.989e4_RKIND
+                  Q  = 181.0e3_RKIND
+                else
+                  ! A- = 1.26e13 MPa^-4 m^4 yr^-1 = 1.26e13 * 1e-24 * 3.16888e-8 = 3.993e-19 Pa^-4 m^4 s^-1
+                  A0 = 3.993e-19_RKIND
+                  Q  = 60.0e3_RKIND
+                endif
+                flowParamA(iLevel,iCell) = A0 * exp(-1.0_RKIND * Q / (idealGasConstant * temperatureCorrected))
               enddo ! levels
             else
               flowParamA(:,iCell) = 0.0_RKIND  ! non-ice cells get 0
