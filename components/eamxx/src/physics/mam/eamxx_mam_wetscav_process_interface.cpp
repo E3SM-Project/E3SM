@@ -38,6 +38,13 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params
                    "Error! mam4_wetscav: zm_tracer_transport=true requires the ZM "
                    "deep convection library (EAMXX_HAS_ZM), which is not built.\n");
 #endif
+  // Error if both convproc_do_gas and zm_tracer_transport are enabled
+  EKAT_REQUIRE_MSG(!(convproc_do_gas_ && zm_tracer_transport_),
+                   "Error! mam4_wetscav: convproc_do_gas and zm_tracer_transport cannot "
+                   "both be true. These are mutually exclusive methods for processing gases "
+                   "in deep convection. Choose one:\n"
+                   "  - convproc_do_gas=true (zm_tracer_transport=false): Use convproc for gas scavenging\n"
+                   "  - zm_tracer_transport=true (convproc_do_gas=false): Use ZM tracer transport\n");
 }
 
 // ================================================================
