@@ -8,6 +8,8 @@
 #     TimeIntegration:
 #       TimeStep: "0000_00:10:00"
 #     IOStreams:
+#       InitialState:
+#         Filename: /absolute/path/to/initial_state.nc
 #       History:
 #         Freq: 1
 #         FreqUnits: months
@@ -15,9 +17,14 @@
 # *** THE FOLLOWING CANNOT BE CHANGED ***
 # They are set from the case configuration, or by the coupler at runtime:
 #   1. TimeIntegration: StartTime, StopTime, RunDuration, CalendarType
-#   2. IOStreams: HorzMeshIn, InitialVertCoord, InitialState, Forcing,
-#      RestartRead, and RestartWrite. The History and Highfreq streams may
-#      be changed, as may any new stream you define.
+#   2. IOStreams: HorzMeshIn, Forcing, RestartRead, and RestartWrite.
+#      Only Filename may be changed for InitialVertCoord and InitialState.
+#      The History and Highfreq streams may be changed, as may any new
+#      stream you define.
+#
+# Initial-condition filenames must be absolute paths to files that exist when
+# used. Their contents are not checked; ensure they match the case mesh and
+# have compatible vertical layers for InitialState and InitialVertCoord.
 #
 # To preview the configuration, invoke $CASEROOT/preview_namelists and look
 # at $CASEROOT/CaseDocs/omega.yml

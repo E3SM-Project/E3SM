@@ -11,10 +11,13 @@ from .read_write import (
     write_input_data_list,
     write_yaml_mapping,
 )
+from .validate import check_user_input_files, get_user_input_files
 
 __all__ = [
     "build_omega_config",
     "build_runtime_overrides",
+    "check_user_input_files",
+    "get_user_input_files",
     "read_config_overrides",
     "read_default_config",
     "read_input_files_config",

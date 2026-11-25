@@ -12,9 +12,8 @@ entry in the packaged configuration files. See render documentation for
 more details.
 
 > [!CAUTION]
-> **No external dependencies are allowed in this package**
+> **Required dependencies are limited to the standard library and PyYAML**
 >
-> Dependencies **must** be limited to the python (3.9+) standard library and `PyYAML`.
 > CIME does not provide its own environment, it just assumes the case's python
 > environment it is being called from already has PyYAML available. In practice
 > this is often handled by loading a python module on an HPC system that
@@ -38,13 +37,21 @@ omega_buildnml
 For now, we use the same `conda` [environment](../../dev-conda.txt) used for
 linting Omega source code. The development environment primarily provides
 `pytest` needed for running the unit tests. The actual code defined in this
-package is limited to the python standard library and PyYAML.
+package requires the python standard library and PyYAML.
 
 ```bash
 conda create -n omega_dev --file ../../dev-conda.txt
 conda activate omega_dev
 pre-commit install
 ```
+
+## User input files
+
+Users may set `IOStreams.InitialState.Filename` and
+`IOStreams.InitialVertCoord.Filename` in `user_nl_omega` to absolute file
+paths. Other settings in these streams remain controlled by CIME. For runs
+that use them, the files are checked for existence, but their contents are not
+validated. Ensure they match the case mesh and use compatible vertical layers.
 
 ## Testing
 
