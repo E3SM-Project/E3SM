@@ -80,6 +80,9 @@ public:
   void set_required_field (const Field& field);
   void set_required_group (const FieldGroup& group);
 
+  // The recipes to init fields of all the processes in the group
+  strmap_t<std::shared_ptr<FieldInit>> get_field_inits () const override;
+
   // Gather internal fields from all processes in the group
   // NOTE: this method *must* be called before any attempt to query this atm proc group
   //       for its internal fields, otherwise it will appear as if this atm proc group
