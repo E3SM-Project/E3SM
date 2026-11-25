@@ -40,6 +40,38 @@ For changes to Icepack, please consult the [CICE Consortium's recommendations fo
 
 To access the column physics in Icepack, MPAS-seaice uses methods defined in ``icepack_intfc.F90``. The 'init' and 'query' methods are used to set and retrieve Icepack values. A 'write' method is also available for documenting these values. MPAS-seaice follows the 'icepack_warnings' methodology where ``icepack_warnings_aborted`` is checked and ``icepack_warnings_flush`` is called after every call to an Icepack method. It does not directly “use” Icepack data, accessing Icepack data only through these interfaces.
 
+### Physical constants
+
+MPAS-Seaice centralizes its constants in ``src/shared/mpas_seaice_constants.F``. In coupled configurations, shared physical references are taken from ``shr_const_mod``, which sources them from E3SM's PhysicalConstantsDictionary (PCD). Coupled SeaIce also uses ``SHR_CONST_OMEGA``, ``SHR_CONST_CONDICE``, and ``SHR_CONST_MWC`` for Earth rotation, ice conductivity, and carbon molar mass. Standalone SeaIce retains its existing local constants. SeaIce-specific parameters, such as snow density, remain defined locally.
+
+These mappings update MPAS-Seaice and the values it supplies to Icepack only;
+they do not update MPAS-Ocean, the coupler, or ``shr_const_mod``. Coupled
+SeaIce retains ``SHR_CONST_G`` for gravity to preserve agreement with ocean
+and coupler gravity. Standalone SeaIce retains its existing gravity value.
+The CIME namelist default for ``config_earth_radius`` is -1, which coupled
+SeaIce replaces with ``SHR_CONST_REARTH`` at initialization. A positive
+namelist value overrides this default, and standalone SeaIce retains its
+existing default. Restart meshes must have the configured radius; adopting a
+shared Earth-radius convention across components requires coordinated
+input-data preparation.
+
+The coupled rotation rate and ice conductivity now use shared values rather
+than the previous SeaIce-specific literals. This change does not claim
+bit-for-bit equivalence; coupled heat and mass conservation still requires
+supported-machine testing.
+
+The SeaIce constants module passes the applicable values into Icepack through ``icepack_init_parameters`` in ``mpas_seaice_icepack.F``. Icepack does not depend directly on PCD: it receives values through its public initialization interface, and callers that omit optional inputs continue to use Icepack's defaults. For example, coupled MPAS-Seaice passes the shared latent heat of fusion explicitly; otherwise Icepack derives it as the latent heat of sublimation minus the latent heat of vaporization. ``shr_const_mod`` converts carbon and iron molar masses from PCD's kg/mol to kg/kmol, numerically equivalent to g/mol for SeaIce.
+
+The iron molar-mass entry is based on NIST's standard atomic weight for naturally occurring iron, 55.845(2), and is recorded in PCD as 0.055845 kg/mol with an absolute uncertainty of 0.000002 kg/mol.
+
+PCD's ``seconds_per_day`` defines the fixed day unit as exactly 86400 SI seconds, following [NIST SP 330 (2019), Section 4, Table 8](https://doi.org/10.6028/NIST.SP.330-2019). Coupled SeaIce takes this from ``SHR_CONST_CDAY`` and passes it to Icepack through the existing optional ``secday_in`` argument. Icepack retains its 86400-second default for callers that omit this input. This conversion is not a sidereal day; historical UTC days containing leap seconds differ from this duration. [CGPM Resolution 5 (2026)](https://doi.org/10.59161/CGPM2026RES5E) specifies that continuous UTC takes effect on 20 May 2027, ending future leap-second adjustments without changing the exact day-unit conversion or erasing historical leap seconds. The reciprocal remains derived from it, and ``seaiceSecondsPerYear`` retains its existing fixed 365-day convention; calendar handling is unchanged.
+
+Other sea-ice quantities remain at their existing model values rather than being added to PCD. Snow density and thermal properties are parameterized model choices, seawater freezing temperature depends on state (including salinity and pressure), and brine viscosity is state- and formulation-dependent. The von Kármán constant is empirical and can depend on the turbulence formulation. These quantities therefore do not have a single generally applicable reference value to standardize here; this work leaves their existing SeaIce and Icepack values unchanged.
+
+The CIME build compiles PCD through E3SM's shared ``share/util`` sources.
+The optional fusion-heat input requires
+[Icepack PR #53](https://github.com/E3SM-Project/Icepack/pull/53).
+
 Basic Icepack development can be done in standalone mode using Icepack's testing scripts, directly in the submodule branch in MPAS-seaice. **We recommend that Icepack developments be thoroughly tested within E3SM's coupled framework throughout the development process, including fully coupled simulations.**
 
 ## E3SM-Polar-Developer Script

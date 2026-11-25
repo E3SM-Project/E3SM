@@ -67,6 +67,9 @@ contains
     use seaice_special_boundaries, only: &
          seaice_init_special_boundaries, &
          seaice_set_special_boundaries_tracers
+#ifdef CCSMCOUPLED
+    use shr_const_mod, only: SHR_CONST_REARTH
+#endif
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -83,7 +86,21 @@ contains
     character(len=strKIND), pointer :: &
          config_column_physics_type
 
+    real(kind=RKIND), pointer :: &
+         config_earth_radius
+
     call mpas_log_write("seaice_init: Initialize sea-ice model")
+
+    call mpas_pool_get_config(domain % configs, "config_earth_radius", config_earth_radius)
+#ifdef CCSMCOUPLED
+    if (config_earth_radius == -1.0_RKIND) then
+       config_earth_radius = SHR_CONST_REARTH
+       call mpas_log_write("Using shared Earth radius: $r", realArgs=(/config_earth_radius/))
+    endif
+#endif
+    if (.not. (config_earth_radius > 0.0_RKIND)) then
+       call mpas_log_write("config_earth_radius must be positive", messageType=MPAS_LOG_CRIT)
+    endif
 
     ! check configs
     call seaice_check_configs_coupled(domain)
