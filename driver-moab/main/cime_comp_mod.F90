@@ -2079,7 +2079,11 @@ contains
     if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
        ! Current logic will not allow this to be true, but future changes could make it so, which may be nonsensical
        call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
-            'Boundary layer fluxes calculated in coupler require input from both components.')
+            'Ice-shelf coupling exchanges fields in both directions.')
+    endif
+    if (ocn_c2_glcshelf) then
+       call shr_sys_abort(subname//' ERROR: ice-shelf coupling between ocn and glc '//&
+            'is only supported with driver-mct.')
     endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
@@ -4497,16 +4501,8 @@ contains
 
        ! if ice-shelf coupling is on, now proceed to handle those calculations here in the coupler
        if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
-          ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
-          ! so they will only be valid if both OCN->GLC and GLC->OCN
-
-          call prep_glc_calculate_subshelf_boundary_fluxes ! this is actual boundary layer flux calculation
-                                        !this outputs
-                                        !x2g_g/g2x_g, where latter is going
-                                        !to ocean, so should get remapped to
-                                        !ocean grid in prep_ocn_shelf_calc_g2x_ox
           call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
-                                        !Map g2x_gx shelf fields that were updated above, to g2x_ox.
+                                        !Map g2x_gx shelf fields to g2x_ox.
                                         !Do this at intrinsic coupling
                                         !frequency
           call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
