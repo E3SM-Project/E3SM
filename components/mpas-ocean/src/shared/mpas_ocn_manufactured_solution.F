@@ -114,7 +114,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement) 
 
-      time = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement 
+      time = daysSinceStartOfSim*seconds_per_day + forcingTimeIncrement 
 
       do iCell = 1,nCellsOwned
 
@@ -184,7 +184,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'forcingTimeIncrement', forcingTimeIncrement) 
 
-      time = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement 
+      time = daysSinceStartOfSim*seconds_per_day + forcingTimeIncrement 
 
       do iEdge = 1, nEdgesOwned
 

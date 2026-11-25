@@ -31,6 +31,8 @@ module ocn_init_mode
    use mpas_constants
    use mpas_decomp
 
+   use shr_const_mod, only: SHR_CONST_REARTH
+
    use ocn_init_routines
 
    use ocn_equation_of_state
@@ -173,8 +175,9 @@ module ocn_init_mode
          block => block % next
       end do
 
-      ! Expand sphere if it needs to be expanded
-      call ocn_init_expand_sphere(domain, domain % streamManager, a, ierr)
+      ! Expand sphere to the E3SM Earth radius if it needs to be expanded
+      call ocn_init_expand_sphere(domain, domain % streamManager, &
+                                  real(SHR_CONST_REARTH, RKIND), ierr)
 
       ! Set the Coriolis parameter is a realist value is requested
       call ocn_init_realistic_coriolis_parameter(domain, ierr)

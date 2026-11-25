@@ -3779,7 +3779,6 @@ contains
          Pr = 13.8_RKIND, &             ! the Prandtl number
          Sc = 2432.0_RKIND, &           ! the Schmidt number
          nuSaltWater = 1.95e-6_RKIND, & ! molecular viscosity of sea water (m^2/s)
-         kVonKarman = 0.4_RKIND, &      ! the von Karman constant
          xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
 
       integer :: indexBLTval, indexBLSval, indexHeatTransval, indexSaltTransval
@@ -3981,9 +3980,9 @@ contains
             ! Holland and Jenkins 1999, (14)-(16) with eta_* = 1
             h_nu = 5.0_RKIND*nuSaltWater/landIceFrictionVelocity(iCell) ! uStar should never be zero because of tidal term
 
-            Gamma_turb = 1.0_RKIND/(2.0_RKIND*xiN) - 1.0_RKIND/kVonKarman
+            Gamma_turb = 1.0_RKIND/(2.0_RKIND*xiN) - 1.0_RKIND/vonkar
             if(abs(fCell(iCell)) > 0.0_RKIND) then
-              Gamma_turb = Gamma_turb + 1.0_RKIND/kVonKarman*log(landIceFrictionVelocity(iCell) &
+              Gamma_turb = Gamma_turb + 1.0_RKIND/vonkar*log(landIceFrictionVelocity(iCell) &
                 *xiN/(abs(fCell(iCell))*h_nu))
             end if
 

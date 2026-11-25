@@ -19,9 +19,6 @@
 
 module ocn_init_spherical_utils
 
-   use shr_kind_mod, only: SHR_KIND_R8
-   use shr_const_mod
-
    use mpas_kind_types
    use mpas_io_units
    use mpas_derived_types
@@ -29,6 +26,7 @@ module ocn_init_spherical_utils
    use mpas_stream_manager
 
    use ocn_config
+   use ocn_mesh, only: ocn_meshComputeCoriolis
 
    implicit none
    private
@@ -265,12 +263,6 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool
 
-      integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve
-
-      real (kind=RKIND), dimension(:), pointer :: fCell, fEdge, fVertex
-      real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, latVertex
-      integer :: iCell, iEdge, iVertex
-
       err = 0
 
       if ( .not. config_realistic_coriolis_parameter ) return
@@ -278,33 +270,10 @@ contains
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
 
-        ! Expand cell quantities
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
-        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-        call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
-
-        call mpas_pool_get_array(meshPool, 'latCell', latCell)
-        call mpas_pool_get_array(meshPool, 'fCell', fCell)
-
-        call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-
-        call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
-        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
-
-        do iCell = 1, nCellsSolve
-           fCell(iCell) = 2.0_RKIND * SHR_CONST_OMEGA * sin(latCell(iCell))
-        end do
-
-        do iVertex = 1, nVerticesSolve
-           fVertex(iVertex) = 2.0_RKIND * SHR_CONST_OMEGA * sin( latVertex(iVertex) )
-        end do
-
-        do iEdge = 1, nEdgesSolve
-           fEdge(iEdge) = 2.0_RKIND * SHR_CONST_OMEGA * sin( latEdge(iEdge) )
-        end do
+        ! the same computation used in forward mode on spherical meshes
+        call ocn_meshComputeCoriolis(meshPool)
 
         block_ptr => block_ptr % next
 

@@ -2062,7 +2062,6 @@ contains
 
    real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
 
-   real (kind=RKIND), pointer :: config_density0
 
    type (block_type), pointer :: block_ptr
 
@@ -2234,7 +2233,6 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
-   call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
                                                 config_use_ecosysTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers_sea_ice_coupling',  &
@@ -2554,7 +2552,7 @@ contains
         end if
         if ( seaIcePressureField % isActive ) then
            ! Set seaIcePressure to be limited to 5m of pressure
-           seaIcePressure(i) =  min( x2o_o(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
+           seaIcePressure(i) =  min( x2o_o(index_x2o_Si_bpress, n), rho_sw * gravity * 5.0_RKIND )
         end if
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o(index_x2o_Si_ifrac, n)
@@ -2697,7 +2695,7 @@ contains
              riverFluxSiO3(i) = riverFluxSiO3(i)*riverFactor/28.085_RKIND
              riverFluxDOC(i)  = riverFluxDOC(i)*riverFactor/12.001_RKIND
              riverFluxDIC(i)  = riverFluxDIC(i)*riverFactor/12.001_RKIND
-             riverFluxFe(i)   = riverFluxFe(i)*riverFactor/55.845_RKIND
+             riverFluxFe(i)   = riverFluxFe(i)*riverFactor/molecular_weight_Fe
 
              riverFluxALK(i)  = riverFluxDIC(i)
            endif
