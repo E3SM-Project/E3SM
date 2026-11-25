@@ -8,8 +8,13 @@ case_name=$(./xmlquery --value CASE)
 # Turn on coupler budget diagnostics
 ./xmlchange BUDGETS=TRUE
 
-# Turn on cosp and set frequency
-$atmchange -b physics::atm_procs_list+="cosp"
+# Turn on cosp and set frequency. SCREAM%BETA already has cosp in its physics
+# atm_procs_list (see namelist_defaults_eamxx.xml), and adding it twice makes
+# the physics::cosp::* changes below ambiguous.
+compset=$(./xmlquery --value COMPSET)
+if [[ "${compset}" != *"SCREAM%BETA"* ]]; then
+    $atmchange -b physics::atm_procs_list+="cosp"
+fi
 $atmchange -b physics::cosp::cosp_frequency_units="hours"
 $atmchange -b physics::cosp::cosp_frequency=1
 
