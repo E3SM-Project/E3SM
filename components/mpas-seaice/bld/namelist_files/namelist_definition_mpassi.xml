@@ -2718,11 +2718,43 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ice_atm_flux_reg" type="logical"
+	category="atmosphere" group="atmosphere">
+If true use regularized ice-atmosphere flux parameterization.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ice_atm_flux_eps" type="real"
+	category="atmosphere" group="atmosphere">
+Regularization parameter for ice-atmosphere flux.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_ice_atm_flux_damping" type="real"
+	category="atmosphere" group="atmosphere">
+Damping parameter for ice-atmosphere flux.
+
+Valid values: Any positive real number less than or equal to 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_boundary_layer_iteration_number" type="integer"
 	category="atmosphere" group="atmosphere">
-Number of iterations for boundary layer calculations
+Maximum number of iterations for atmosphere boundary layer calculations.
 
-Valid values: Any positive integer.
+Valid values: -1 to select a default based on regularization, or any positive integer.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_boundary_layer_iteration_tolerance" type="real"
+	category="atmosphere" group="atmosphere">
+Convergence tolerance for atmosphere boundary layer calculations.
+
+Valid values: -1 to select a default based on regularization, or any nonnegative real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
