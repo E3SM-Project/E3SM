@@ -2,7 +2,8 @@
 
 OBJS = mpas_ocn_init_mode.o
 
-UTILS = shr_kind_mod.o \
+UTILS = pcd_const.o \
+        shr_kind_mod.o \
         shr_const_mod.o \
         mpas_ocn_init_spherical_utils.o \
         mpas_ocn_init_vertical_grids.o \
@@ -121,3 +122,5 @@ ifeq "$(GEN_F90)" "true"
 else
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES)
 endif
+
+shr_const_mod.o: pcd_const.o shr_kind_mod.o

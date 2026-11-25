@@ -2,7 +2,8 @@
 
 OBJS = mpas_ocn_analysis_driver.o
 
-UTILS = shr_kind_mod.o \
+UTILS = pcd_const.o \
+        shr_kind_mod.o \
         shr_const_mod.o
 
 MEMBERS = mpas_ocn_global_stats.o \
@@ -62,3 +63,5 @@ endif
 
 .c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(CINCLUDES) -c $<
+
+shr_const_mod.o: pcd_const.o shr_kind_mod.o
