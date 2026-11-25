@@ -28,6 +28,12 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params
       m_params.get<Real>("activation_fraction_in_cloud_conv", 0.40);
   convproc_do_aer_ = m_params.get<bool>("convproc_do_aer", false);
   convproc_do_gas_ = m_params.get<bool>("convproc_do_gas", false);
+  disable_convective_transport_ =
+      m_params.get<bool>("disable_convective_transport", false);
+  disable_convective_incloud_wetdep_ =
+      m_params.get<bool>("disable_convective_incloud_wetdep", false);
+  disable_convective_belowcloud_scav_ =
+      m_params.get<bool>("disable_convective_belowcloud_scav", false);
   do_convproc_ = convproc_do_aer_ || convproc_do_gas_;
 }
 
@@ -580,6 +586,9 @@ void MAMWetscav::run_impl(const double dt) {
   // Check if convection processing is enabled
   const bool convproc_do_aer = convproc_do_aer_;
   const bool convproc_do_gas = convproc_do_gas_;
+  const bool disable_convective_transport = disable_convective_transport_;
+  const bool disable_convective_incloud_wetdep = disable_convective_incloud_wetdep_;
+  const bool disable_convective_belowcloud_scav = disable_convective_belowcloud_scav_;
   const bool do_convproc = do_convproc_;
   
   // Convection processing variables - only retrieve if enabled
@@ -717,6 +726,9 @@ void MAMWetscav::run_impl(const double dt) {
            dp_icol, p_del_dry_icol,
            ktop, kbot,
            convproc_do_aer, convproc_do_gas,
+           disable_convective_transport,
+           disable_convective_incloud_wetdep,
+           disable_convective_belowcloud_scav,
            zm_activity_icol,
            species_class.data(), mmtoo_prevap_resusp.data(),
            aero_config);
