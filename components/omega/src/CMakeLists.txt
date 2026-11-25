@@ -3,6 +3,19 @@
 # create library flag target for LibOmega
 add_library(OmegaLibFlags INTERFACE)
 
+# Machine flags from omega_collect_machine_flags(), for Omega's targets only.
+# SHELL: keeps each set whole through CMake's de-duplication (e.g. the pair
+# -Xsycl-target-backend "-device pvc"); the guards keep them off Fortran.
+if(OMEGA_MACHINE_CXX_FLAGS)
+  target_compile_options(OmegaLibFlags INTERFACE
+                         "$<$<COMPILE_LANGUAGE:CXX>:SHELL:${OMEGA_MACHINE_CXX_FLAGS}>")
+endif()
+
+if(OMEGA_MACHINE_LINK_FLAGS)
+  target_link_options(OmegaLibFlags INTERFACE
+                      "$<$<LINK_LANGUAGE:CXX>:SHELL:${OMEGA_MACHINE_LINK_FLAGS}>")
+endif()
+
 target_include_directories(
     OmegaLibFlags
     INTERFACE
