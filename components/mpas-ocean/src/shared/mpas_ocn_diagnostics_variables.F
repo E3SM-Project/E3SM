@@ -365,9 +365,14 @@ contains
       end if
 
       ! Retrieve pointers for configurations where land_ice_flux_mode is enabled
+      ! landIceDraftForSsh is needed whenever land-ice pressure is on, even
+      ! when land-ice fluxes are off
+      if ( config_use_land_ice_pressure ) then
+         call mpas_pool_get_array(diagnosticsPool, 'landIceDraftForSsh', landIceDraftForSsh)
+      end if
+
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
-         call mpas_pool_get_array(diagnosticsPool, 'landIceDraftForSsh', landIceDraftForSsh)
          call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
          call mpas_pool_get_dimension(diagnosticsPool, &
                    'index_landIceBoundaryLayerTemperature', indexBLTPtr)
@@ -764,8 +769,10 @@ contains
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity,         &
-         !$acc                   landIceDraftForSsh,              &
          !$acc                   velocityTidalRMS)
+      end if
+      if ( config_use_land_ice_pressure ) then
+         !$acc enter data create(landIceDraftForSsh)
       end if
       if (config_use_topographic_wave_drag) then
          !$acc enter data create(topo_rinv)
@@ -1027,9 +1034,11 @@ contains
          !$acc                   topDragMag,                      &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
-         !$acc                   landIceDraftForSsh,              &
          !$acc                   landIceFrictionVelocity,         &
          !$acc                   velocityTidalRMS)
+      end if
+      if ( config_use_land_ice_pressure ) then
+         !$acc exit data delete(landIceDraftForSsh)
       end if
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topo_rinv)
@@ -1260,8 +1269,10 @@ contains
                  landIceBoundaryLayerTracers,     &
                  landIceTracerTransferVelocities, &
                  landIceFrictionVelocity,         &
-                 landIceDraftForSsh,              &
                  velocityTidalRMS)
+      end if
+      if ( config_use_land_ice_pressure ) then
+         nullify(landIceDraftForSsh)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          nullify(rx1Edge,                  &
