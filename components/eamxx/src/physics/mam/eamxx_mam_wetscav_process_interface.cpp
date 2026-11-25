@@ -445,13 +445,14 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(mmtoo_prevap_resusp_device_, mmtoo_prevap_resusp_host);
 
 #ifdef EAMXX_HAS_ZM
-  if(zm_tracer_transport_) {
+  if(do_convproc_ || zm_tracer_transport_) {
     constexpr int pcnst = mam4::aero_model::pcnst;
     // Build the doconvtran mask, mirroring EAM zm_conv_tend_2:
     //   lq = .not. cnst_is_convtran1, then species handled by convective
     //   processing (ma_convproc_intr inside aero_model_wetdep) are removed.
     // Only gases and interstitial aerosols live in the MAM state here;
     // undefined-class slots (qv, qc, qi, nc, ni, ...) are never transported.
+    // This mask is needed whenever convproc is enabled, regardless of zm_tracer_transport.
     zm_doconvtran_ = Kokkos::View<bool *>("zm_doconvtran", pcnst);
     auto doconvtran_host = Kokkos::create_mirror_view(zm_doconvtran_);
     for(int m = 0; m < pcnst; ++m) {
@@ -469,10 +470,12 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
     zm_fracis_ = view_2d("zm_fracis", nlev_, pcnst);
     Kokkos::deep_copy(zm_fracis_, 1.0);
 
-    // Workspace for the 10 internal (pcnst x nlev) arrays of zm_transport_tracer
-    using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
-    const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
-    zm_wsm_ = std::make_shared<ZMF::WorkspaceManager>(pcnst * nlev_, 10, policy);
+    if(zm_tracer_transport_) {
+      // Workspace for the 10 internal (pcnst x nlev) arrays of zm_transport_tracer
+      using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+      const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
+      zm_wsm_ = std::make_shared<ZMF::WorkspaceManager>(pcnst * nlev_, 10, policy);
+    }
   }
 #endif
 }
@@ -632,6 +635,13 @@ void MAMWetscav::run_impl(const double dt) {
       Kokkos::deep_copy(dry_aero_tends_.int_aero_mmr[m][a], 0);
     }
   }
+  // Zero out gas species tendencies
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    Kokkos::deep_copy(dry_aero_tends_.gas_mmr[g], 0);
+  }
+
+  // Note: Gas species tendencies are initialized here and computed by convproc
+  // when convproc_do_gas=true. They are applied to the state later in run_impl().
 
   const auto &calsize_data  = calcsize_data_;
   const auto &scavimptblnum = scavimptblnum_;
@@ -807,6 +817,16 @@ void MAMWetscav::run_impl(const double dt) {
             }
           }
         });  // parallel_for for update interstitial aerosol state
+
+        // update gas species from convproc tendencies
+        // Gas species tendencies are computed when convproc_do_gas=true
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+          for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+            const auto gas_mmr_col = dry_aero.gas_mmr[g];
+            const auto gas_mmr_tend_col = dry_aero_tends.gas_mmr[g];
+            gas_mmr_col(icol, kk) += gas_mmr_tend_col(icol, kk) * dt;
+          }
+        });  // parallel_for for update gas mixing ratios
 
 #ifdef EAMXX_HAS_ZM
         // -------------------------------------------------------------------

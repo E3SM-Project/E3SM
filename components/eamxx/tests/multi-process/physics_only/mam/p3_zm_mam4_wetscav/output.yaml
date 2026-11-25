@@ -6,6 +6,14 @@ field_names:
   # Cloud fraction
   - cldfrac_liq
   
+  # Gas species
+  - O3
+  - H2O2
+  - H2SO4
+  - SO2
+  - DMS
+  - SOAG
+  
   # Aerosol species - interstitial (a) modes
   - bc_a1
   - bc_a3
