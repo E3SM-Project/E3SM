@@ -91,6 +91,36 @@
   </compset>
 
   <!-- ========================================================================================= -->
+  <!-- Physics-package F compsets w/ EAMxx (see E3SM issue #8875)                                -->
+  <!-- The SCREAM%<pkg> modifier selects the physics configuration independently of the grid.   -->
+  <!-- Grid-dependent numerics (dycore timesteps, hyperviscosity, subcycling, rad frequency)    -->
+  <!-- still come from the grid.                                                                -->
+
+  <compset>
+    <alias>F2010-SYN</alias> <!-- EAMxx, synoptic-scale physics (e.g. ne30), 2010 conditions -->
+    <lname>2010_SCREAM%SYN_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+    <alias>F2010-MES</alias> <!-- EAMxx, mesoscale-resolving physics (e.g. ne120, ne256), 2010 conditions -->
+    <lname>2010_SCREAM%MES_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+    <alias>F2010-CGZ</alias> <!-- EAMxx, convective-grey-zone physics (e.g. ne1024), 2010 conditions -->
+    <lname>2010_SCREAM%CGZ_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+    <alias>F2010-LES</alias> <!-- EAMxx, LES physics (e.g. CONUS200 RRM), 2010 conditions; provisional -->
+    <lname>2010_SCREAM%LES_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <!-- ========================================================================================= -->
   <!-- v4 candidate configuration -->
   <compset>
     <alias>F20TRxx-BETA</alias>
