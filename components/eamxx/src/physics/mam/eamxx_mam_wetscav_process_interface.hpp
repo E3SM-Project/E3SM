@@ -156,6 +156,11 @@ private:
   // convproc_do_gas: Enable gas processing in convection
   bool convproc_do_gas_ = false;
 
+  // disable_convective_transport: if true, turn off convective transport
+  // (vertical redistribution by up/downdrafts and environmental subsidence)
+  // in convproc. Activation and in-cloud wet removal are still applied.
+  bool disable_convective_transport_ = false;
+
   // do_convproc: Combined flag for any convection processing
   bool do_convproc_ = false;
 
