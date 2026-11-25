@@ -327,7 +327,39 @@ Default: Defined in namelist_defaults.xml
 	category="initialize" group="initialize">
 Initial condition type for sea ice state.
 
-Valid values: 'restart', 'uniform', 'circle', 'square', 'uniform_interior' or 'uniform_1D'
+Valid values: 'restart', 'uniform', 'circle', 'square', 'uniform_interior', 'uniform_1D' or 'iceArea_from_file'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_iceArea_from_file_thickness_north" type="real"
+	category="initialize" group="initialize">
+Area-weighted mean sea ice thickness for northern hemisphere ice placed by the iceArea_from_file initial condition.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_iceArea_from_file_thickness_south" type="real"
+	category="initialize" group="initialize">
+Area-weighted mean sea ice thickness for southern hemisphere ice placed by the iceArea_from_file initial condition.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_iceArea_from_file_add_snow" type="logical"
+	category="initialize" group="initialize">
+If true, cover ice placed by the iceArea_from_file initial condition with config_iceArea_from_file_snow_thickness of snow.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_iceArea_from_file_snow_thickness" type="real"
+	category="initialize" group="initialize">
+Snow thickness added on top of ice placed by the iceArea_from_file initial condition, used only if config_iceArea_from_file_add_snow is true.
+
+Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 

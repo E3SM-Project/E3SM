@@ -462,7 +462,23 @@
 		/>
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
 			description="Initial condition type for sea ice state."
-			possible_values="'restart', 'uniform', 'circle', 'square', 'uniform_interior' or 'uniform_1D'"
+			possible_values="'restart', 'uniform', 'circle', 'square', 'uniform_interior', 'uniform_1D' or 'iceArea_from_file'"
+		/>
+		<nml_option name="config_iceArea_from_file_thickness_north" type="real" default_value="1.5" units="m"
+			description="Area-weighted mean sea ice thickness for northern hemisphere ice placed by the iceArea_from_file initial condition."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_iceArea_from_file_thickness_south" type="real" default_value="1.5" units="m"
+			description="Area-weighted mean sea ice thickness for southern hemisphere ice placed by the iceArea_from_file initial condition."
+			possible_values="Any positive real number."
+		/>
+		<nml_option name="config_iceArea_from_file_add_snow" type="logical" default_value="false" units="unitless"
+			description="If true, cover ice placed by the iceArea_from_file initial condition with config_iceArea_from_file_snow_thickness of snow."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_iceArea_from_file_snow_thickness" type="real" default_value="0.1" units="m"
+			description="Snow thickness added on top of ice placed by the iceArea_from_file initial condition, used only if config_iceArea_from_file_add_snow is true."
+			possible_values="Any positive real number."
 		/>
 		<nml_option name="config_initial_ice_area" type="real" default_value="1.0" units="unitless"
 			description="Sea ice fraction at initialization."
@@ -2070,6 +2086,7 @@
 				immutable="true">
 			<stream name="mesh"/>
 			<var name="fVertex"/>
+			<var name="iceAreaFromFile"/>
 		</stream>
 
 		<stream name="regions"
@@ -6481,6 +6498,13 @@
 
 	<!-- initial profiles -->
 	<var_struct name="initial" time_levs="1" packages="pkgColumnPackage">
+		<var name="iceAreaFromFile"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="1"
+		     default_value="0.0"
+		     description="Sea ice concentration used by the iceArea_from_file initial condition, read from the input stream."
+		/>
 		<var name="initialSalinityProfile"
 		     type="real"
 		     dimensions="nIceLayersP1 nCells"

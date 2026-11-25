@@ -348,6 +348,12 @@ contains
                   block, &
                   domain % configs)
 
+          else if (trim(config_initial_condition_type) == "iceArea_from_file") then
+
+             call init_ice_state_iceArea_from_file(&
+                  block, &
+                  domain % configs)
+
           else if (trim(config_initial_condition_type) == "uniform_1D") then
 
              call init_ice_state_uniform_1D(&
@@ -604,6 +610,281 @@ contains
     enddo ! iCell
 
   end subroutine init_ice_state_uniform_ice!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ice_state_iceArea_from_file
+!
+!> \brief
+!> \author
+!> \date 2026
+!> \details
+!> Places sea ice according to a per-cell concentration field
+!> (iceAreaFromFile) read from the input stream. The concentration in
+!> each cell is distributed across thickness categories using the same
+!> parabolic ITD as initial_category_areas_and_volumes, with the
+!> category thicknesses rescaled so the area-weighted mean ice thickness
+!> matches config_iceArea_from_file_thickness_north/south. Unlike the
+!> other initial condition types, no latitude or sea-surface-temperature
+!> mask is applied: iceAreaFromFile alone determines where ice is
+!> placed.
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ice_state_iceArea_from_file(&
+       block, &
+       configs)!{{{
+
+    use seaice_constants, only: &
+         seaicePuny
+
+    use icepack_intfc, only: &
+         icepack_init_enthalpy, &
+         icepack_enthalpy_snow, &
+         icepack_warnings_aborted
+
+    use seaice_icepack, only: &
+         seaice_icepack_write_warnings
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output:
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs !< Input:
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate, &
+         initial, &
+         atmos_coupling, &
+         ocean_coupling
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCategories, &
+         nSnowLayers
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell, &
+         iceAreaFromFile, &
+         airTemperature, &
+         seaFreezingTemperature
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         initialSalinityProfile, &
+         initialMeltingTemperatureProfile
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature, &
+         iceEnthalpy, &
+         snowEnthalpy
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell
+
+    real(kind=RKIND), pointer :: &
+         config_iceArea_from_file_thickness_north, &
+         config_iceArea_from_file_thickness_south, &
+         config_iceArea_from_file_snow_thickness
+
+    logical, pointer :: &
+         config_iceArea_from_file_add_snow
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         initialCategoryIceArea, &
+         initialCategoryIceThickness
+
+    real(kind=RKIND) :: &
+         meanThickness, &
+         scaleNorth, &
+         scaleSouth, &
+         snowThickness, &
+         iceAreaFromFileMin, &
+         iceAreaFromFileMax, &
+         iceAreaCellMin, &
+         iceAreaCellMax, &
+         iceVolumeCellMin, &
+         iceVolumeCellMax, &
+         iceEnthalpyMin, &
+         iceEnthalpyMax
+
+    integer :: &
+         iCell, &
+         iCategory, &
+         iSnowLayer, &
+         nIceCells
+
+    call MPAS_pool_get_config(configs, "config_iceArea_from_file_thickness_north", config_iceArea_from_file_thickness_north)
+    call MPAS_pool_get_config(configs, "config_iceArea_from_file_thickness_south", config_iceArea_from_file_thickness_south)
+    call MPAS_pool_get_config(configs, "config_iceArea_from_file_add_snow", config_iceArea_from_file_add_snow)
+    call MPAS_pool_get_config(configs, "config_iceArea_from_file_snow_thickness", config_iceArea_from_file_snow_thickness)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+    call MPAS_pool_get_subpool(block % structs, "initial", initial)
+     call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+     call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
+
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(initial, "iceAreaFromFile", iceAreaFromFile)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+     call MPAS_pool_get_array(tracers, "iceEnthalpy", iceEnthalpy, 1)
+     call MPAS_pool_get_array(tracers, "snowEnthalpy", snowEnthalpy, 1)
+
+     call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
+
+     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+     call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+     call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
+
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+
+    ! parabolic ITD area fractions (sum to 1) and their nominal thicknesses,
+    ! independent of iceAreaFromFile or hemisphere
+    allocate(initialCategoryIceArea(nCategories))
+    allocate(initialCategoryIceThickness(nCategories))
+
+    call initial_category_areas_and_volumes(&
+         block, &
+         initialCategoryIceArea, &
+         initialCategoryIceThickness)
+
+    ! rescale the nominal ITD thicknesses so their area-weighted mean
+    ! matches the configured thickness for each hemisphere; since
+    ! initialCategoryIceArea already sums to 1, this sum is the
+    ! area-weighted mean thickness of the unscaled ITD
+    meanThickness = sum(initialCategoryIceArea(:) * initialCategoryIceThickness(:))
+    scaleNorth = config_iceArea_from_file_thickness_north / meanThickness
+    scaleSouth = config_iceArea_from_file_thickness_south / meanThickness
+
+    snowThickness = 0.0_RKIND
+    if (config_iceArea_from_file_add_snow) then
+       snowThickness = config_iceArea_from_file_snow_thickness
+    endif
+
+    do iCell = 1, nCellsSolve
+
+           iceEnthalpy(:,:,iCell) = 0.0_RKIND
+           do iSnowLayer = 1, nSnowLayers
+                snowEnthalpy(iSnowLayer,:,iCell) = icepack_enthalpy_snow(0.0_RKIND)
+           enddo ! iSnowLayer
+
+       if (iceAreaFromFile(iCell) > seaicePuny) then
+
+          ! has ice; no latitude or SST mask is applied here, unlike the
+          ! other initial condition types - iceAreaFromFile alone decides
+          do iCategory = 1, nCategories
+
+             iceAreaCategory(1,iCategory,iCell) = &
+                  iceAreaFromFile(iCell) * initialCategoryIceArea(iCategory)
+
+             if (latCell(iCell) > 0.0_RKIND) then
+                iceVolumeCategory(1,iCategory,iCell) = &
+                     iceAreaCategory(1,iCategory,iCell) * &
+                     initialCategoryIceThickness(iCategory) * scaleNorth
+             else
+                iceVolumeCategory(1,iCategory,iCell) = &
+                     iceAreaCategory(1,iCategory,iCell) * &
+                     initialCategoryIceThickness(iCategory) * scaleSouth
+             endif
+
+             snowVolumeCategory(1,iCategory,iCell) = &
+                  iceAreaCategory(1,iCategory,iCell) * snowThickness
+
+             surfaceTemperature(1,iCategory,iCell) = -1.8_RKIND
+
+             call icepack_init_enthalpy(&
+                  airTemperature(iCell), &
+                  seaFreezingTemperature(iCell), &
+                  initialSalinityProfile(:,iCell), &
+                  initialMeltingTemperatureProfile(:,iCell), &
+                  surfaceTemperature(1,iCategory,iCell), &
+                  iceEnthalpy(:,iCategory,iCell), &
+                  snowEnthalpy(:,iCategory,iCell))
+             call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
+          enddo ! iCategory
+
+       else
+
+          ! no ice
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+          surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
+
+       endif
+
+    enddo ! iCell
+
+    deallocate(initialCategoryIceArea)
+    deallocate(initialCategoryIceThickness)
+
+    ! integrated quantities
+    do iCell = 1, nCellsSolve
+
+       iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
+
+    enddo ! iCell
+
+    nIceCells = count(iceAreaFromFile(:) > seaicePuny)
+    if (nIceCells > 0) then
+       iceAreaFromFileMin = minval(iceAreaFromFile(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+       iceAreaFromFileMax = maxval(iceAreaFromFile(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+       iceAreaCellMin = minval(iceAreaCell(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+       iceAreaCellMax = maxval(iceAreaCell(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+
+       iceVolumeCellMin = huge(iceVolumeCellMin)
+       iceVolumeCellMax = -huge(iceVolumeCellMax)
+       iceEnthalpyMin = huge(iceEnthalpyMin)
+       iceEnthalpyMax = -huge(iceEnthalpyMax)
+       do iCell = 1, nCellsSolve
+          if (iceAreaFromFile(iCell) > seaicePuny) then
+             iceVolumeCellMin = min(iceVolumeCellMin, &
+                  sum(iceVolumeCategory(1,:,iCell)))
+             iceVolumeCellMax = max(iceVolumeCellMax, &
+                  sum(iceVolumeCategory(1,:,iCell)))
+             iceEnthalpyMin = min(iceEnthalpyMin, &
+                  minval(iceEnthalpy(:,:,iCell)))
+             iceEnthalpyMax = max(iceEnthalpyMax, &
+                  maxval(iceEnthalpy(:,:,iCell)))
+          endif
+       enddo ! iCell
+
+       call mpas_log_write(&
+            "iceArea_from_file: input/applied area min/max: $r $r $r $r", &
+            realArgs=(/iceAreaFromFileMin, iceAreaFromFileMax, &
+            iceAreaCellMin, iceAreaCellMax/))
+       call mpas_log_write(&
+            "iceArea_from_file: ice cells and volume min/max: $i $r $r", &
+            intArgs=(/nIceCells/), realArgs=(/iceVolumeCellMin, &
+            iceVolumeCellMax/))
+       call mpas_log_write(&
+            "iceArea_from_file: enthalpy min/max after initialization: $r $r", &
+            realArgs=(/iceEnthalpyMin, iceEnthalpyMax/))
+    else
+       call mpas_log_write("iceArea_from_file: input contains no ice cells")
+    endif
+
+  end subroutine init_ice_state_iceArea_from_file!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

@@ -83,6 +83,10 @@
 <config_initial_ice_area>1.0</config_initial_ice_area>
 <config_initial_ice_volume>1.0</config_initial_ice_volume>
 <config_initial_snow_volume>0.0</config_initial_snow_volume>
+<config_iceArea_from_file_thickness_north>1.5</config_iceArea_from_file_thickness_north>
+<config_iceArea_from_file_thickness_south>1.5</config_iceArea_from_file_thickness_south>
+<config_iceArea_from_file_add_snow>false</config_iceArea_from_file_add_snow>
+<config_iceArea_from_file_snow_thickness>0.1</config_iceArea_from_file_snow_thickness>
 <config_initial_latitude_north>70.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ECwISC30to60E1r2">75.0</config_initial_latitude_north>
