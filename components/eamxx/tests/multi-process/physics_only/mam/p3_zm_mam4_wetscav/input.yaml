@@ -27,6 +27,7 @@ eamxx:
     # Enable convective processing to use ZM outputs
     convproc_do_aer: true
     convproc_do_gas: false
+    zm_tracer_transport: true
 
 grids_manager:
   type: mesh_free

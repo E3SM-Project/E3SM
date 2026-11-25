@@ -144,6 +144,13 @@ fields:
       - soa_c1
       - soa_c2
       - soa_c3
+      # Gas species
+      - O3
+      - H2O2
+      - H2SO4
+      - SO2
+      - DMS
+      - SOAG
 
 output_control:
   frequency: ${NUM_STEPS}

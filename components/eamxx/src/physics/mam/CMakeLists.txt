@@ -37,6 +37,13 @@ add_library(mam
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
 target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx)
 
+# ZM convective tracer transport in mam4_wetscav (zm_transport_tracer).
+# The zm target is only built in double precision; linking it also
+# propagates the EAMXX_HAS_ZM compile definition used to guard that code.
+if (TARGET zm)
+  target_link_libraries(mam PUBLIC zm)
+endif()
+
 if (TARGET eamxx_physics)
   # Add this library to eamxx_physics
   target_link_libraries(eamxx_physics INTERFACE mam)

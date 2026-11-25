@@ -1,5 +1,8 @@
 #include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
 
+// ZM convective tracer transport helpers (empty unless EAMXX_HAS_ZM)
+#include "physics/mam/eamxx_mam_wetscav_functions.hpp"
+
 #include <ekat_team_policy_utils.hpp>
 
 /*
@@ -29,6 +32,19 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params
   convproc_do_aer_ = m_params.get<bool>("convproc_do_aer", false);
   convproc_do_gas_ = m_params.get<bool>("convproc_do_gas", false);
   do_convproc_ = convproc_do_aer_ || convproc_do_gas_;
+  zm_tracer_transport_ = m_params.get<bool>("zm_tracer_transport", false);
+#ifndef EAMXX_HAS_ZM
+  EKAT_REQUIRE_MSG(!zm_tracer_transport_,
+                   "Error! mam4_wetscav: zm_tracer_transport=true requires the ZM "
+                   "deep convection library (EAMXX_HAS_ZM), which is not built.\n");
+#endif
+  // Error if both convproc_do_gas and zm_tracer_transport are enabled
+  EKAT_REQUIRE_MSG(!(convproc_do_gas_ && zm_tracer_transport_),
+                   "Error! mam4_wetscav: convproc_do_gas and zm_tracer_transport cannot "
+                   "both be true. These are mutually exclusive methods for processing gases "
+                   "in deep convection. Choose one:\n"
+                   "  - convproc_do_gas=true (zm_tracer_transport=false): Use convproc for gas scavenging\n"
+                   "  - zm_tracer_transport=true (convproc_do_gas=false): Use ZM tracer transport\n");
 }
 
 // ================================================================
@@ -101,23 +117,25 @@ MAMWetscav::create_requests()
   // Total cloud fraction [fraction]
   add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
 
+  // Common ZM fields needed for both convection processing and tracer transport
+  if(do_convproc_ || zm_tracer_transport_) {
+    // Cloud top and base indices from ZM deep convection
+    add_field<Required>("zm_cldtop_klev", scalar2d, none, grid_name);   // Cloud top level index
+    add_field<Required>("zm_msemax_klev", scalar2d, none, grid_name);   // Cloud base level index
+    add_field<Required>("zm_activity", scalar2d, none, grid_name);      // Deep convection activity flag (1/0)
+    
+    // Convective mass fluxes and entrainment/detrainment rates
+    add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);  // Updraft entrainment rate
+    add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);  // Updraft detrainment rate
+    add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);  // Downdraft entrainment rate
+  }
+
   // Convection processing fields - only add if enabled
   if(do_convproc_) {
     //----------- Variables from ZM deep convection scheme -------------
     // Deep convection cloud water detrainment [kg/kg/s]
     add_field<Required>("zm_detr_qc", scalar3d_mid, kg / kg / s, grid_name);
     add_field<Required>("zm_detr_qi", scalar3d_mid, kg / kg / s, grid_name);
-
-    // Cloud top and base indices from ZM deep convection
-    add_field<Required>("zm_cldtop_klev", scalar2d, none, grid_name);   // Cloud top level index
-    add_field<Required>("zm_msemax_klev", scalar2d, none, grid_name);   // Cloud base level index
-    add_field<Required>("zm_activity", scalar2d, none, grid_name);      // Deep convection activity flag (1/0)
-
-    //----------- Variables from ZM convection scheme -------------
-    // Convective mass fluxes and entrainment/detrainment rates
-    add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft entrainment rate
-    add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft detrainment rate
-    add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);         // Downdraft entrainment rate
 
     // Fields for deep convective precipitation coupling with MAM wetscav
     // Rain production rate from deep convection [kg/kg/s]
@@ -128,6 +146,13 @@ MAMWetscav::create_requests()
     add_field<Required>("zm_mass_flux_int", scalar3d_int, kg / m2 / s, grid_name);
     // Evaporation tendency from deep convective precipitation [kg/kg/s]
     add_field<Required>("evap_dq_out", scalar3d_mid, kg / kg / s, grid_name);
+  }
+
+  // ZM convective tracer transport fields - only add if enabled
+  if(zm_tracer_transport_) {
+    // Updraft and downdraft mass fluxes [kg/m2/s]
+    add_field<Required>("zm_mflx_up", scalar3d_mid, kg / m2 / s, grid_name);
+    add_field<Required>("zm_mflx_dn", scalar3d_mid, kg / m2 / s, grid_name);
   }
 
   // ---------------------------------------------------------------------
@@ -228,7 +253,17 @@ int MAMWetscav::get_len_temporary_views() {
   // Calculate work length for convection processing scratch arrays
   // Only allocate if convection processing is enabled
   const int work_convproc_len = do_convproc_ ? mam4::convproc::get_scratch1d_work_len(nlev_) * ncol_ : 0;
-  return work_len + work_convproc_len;
+  // Work length for ZM convective tracer transport (only if enabled)
+  const int work_zm_transport_len = zm_tracer_transport_ ? get_zm_transport_work_len() * ncol_ : 0;
+  return work_len + work_convproc_len + work_zm_transport_len;
+}
+
+int MAMWetscav::get_zm_transport_work_len() const {
+#ifdef EAMXX_HAS_ZM
+  return zm_tracer_transport_work_len(nlev_);
+#else
+  return 0;
+#endif
 }
 
 void MAMWetscav::init_temporary_views() {
@@ -244,6 +279,13 @@ void MAMWetscav::init_temporary_views() {
     const int work_convproc_len = mam4::convproc::get_scratch1d_work_len(nlev_);
     work_convproc_ = view_2d(work_ptr, ncol_, work_convproc_len);
     work_ptr += ncol_ * work_convproc_len;
+  }
+
+  // Allocate work array for ZM convective tracer transport
+  if(zm_tracer_transport_) {
+    const int work_zm_transport_len = get_zm_transport_work_len();
+    zm_transport_work_ = view_2d(work_ptr, ncol_, work_zm_transport_len);
+    work_ptr += ncol_ * work_zm_transport_len;
   }
 
   /// error check
@@ -408,6 +450,41 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   
   Kokkos::deep_copy(species_class_device_, species_class_host);
   Kokkos::deep_copy(mmtoo_prevap_resusp_device_, mmtoo_prevap_resusp_host);
+
+#ifdef EAMXX_HAS_ZM
+  if(do_convproc_ || zm_tracer_transport_) {
+    constexpr int pcnst = mam4::aero_model::pcnst;
+    // Build the doconvtran mask, mirroring EAM zm_conv_tend_2:
+    //   lq = .not. cnst_is_convtran1, then species handled by convective
+    //   processing (ma_convproc_intr inside aero_model_wetdep) are removed.
+    // Only gases and interstitial aerosols live in the MAM state here;
+    // undefined-class slots (qv, qc, qi, nc, ni, ...) are never transported.
+    // This mask is needed whenever convproc is enabled, regardless of zm_tracer_transport.
+    zm_doconvtran_ = Kokkos::View<bool *>("zm_doconvtran", pcnst);
+    auto doconvtran_host = Kokkos::create_mirror_view(zm_doconvtran_);
+    for(int m = 0; m < pcnst; ++m) {
+      const int sc = convproc_config_.species_class[m];
+      doconvtran_host(m) =
+          (sc == mam4::ConvProc::species_class::gas && !convproc_do_gas_) ||
+          (sc == mam4::ConvProc::species_class::aerosol && !convproc_do_aer_);
+    }
+    Kokkos::deep_copy(zm_doconvtran_, doconvtran_host);
+
+    // Insoluble fraction of each tracer. EAM resets FRACIS to 1 every step and
+    // only wetdepa_v2 overwrites it for aerosols; mam4xx does not return a
+    // per-species fracis, so all transported tracers use 1 (no convective
+    // scavenging during transport).
+    zm_fracis_ = view_2d("zm_fracis", nlev_, pcnst);
+    Kokkos::deep_copy(zm_fracis_, 1.0);
+
+    if(zm_tracer_transport_) {
+      // Workspace for the 10 internal (pcnst x nlev) arrays of zm_transport_tracer
+      using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+      const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
+      zm_wsm_ = std::make_shared<ZMF::WorkspaceManager>(pcnst * nlev_, 10, policy);
+    }
+  }
+#endif
 }
 
 // ================================================================
@@ -565,6 +642,13 @@ void MAMWetscav::run_impl(const double dt) {
       Kokkos::deep_copy(dry_aero_tends_.int_aero_mmr[m][a], 0);
     }
   }
+  // Zero out gas species tendencies
+  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+    Kokkos::deep_copy(dry_aero_tends_.gas_mmr[g], 0);
+  }
+
+  // Note: Gas species tendencies are initialized here and computed by convproc
+  // when convproc_do_gas=true. They are applied to the state later in run_impl().
 
   const auto &calsize_data  = calcsize_data_;
   const auto &scavimptblnum = scavimptblnum_;
@@ -608,7 +692,12 @@ void MAMWetscav::run_impl(const double dt) {
     species_class = species_class_device_;
     mmtoo_prevap_resusp = mmtoo_prevap_resusp_device_;
   }
-  
+
+  // ZM convective tracer transport inputs (enabled=false if turned off)
+#ifdef EAMXX_HAS_ZM
+  const ZmTransportInputs zm_tr = get_zm_transport_inputs();
+#endif
+
   // Loop over atmosphere columns
   Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -735,6 +824,29 @@ void MAMWetscav::run_impl(const double dt) {
             }
           }
         });  // parallel_for for update interstitial aerosol state
+
+        // update gas species from convproc tendencies
+        // Gas species tendencies are computed when convproc_do_gas=true
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+          for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+            const auto gas_mmr_col = dry_aero.gas_mmr[g];
+            const auto gas_mmr_tend_col = dry_aero_tends.gas_mmr[g];
+            gas_mmr_col(icol, kk) += gas_mmr_tend_col(icol, kk) * dt;
+          }
+        });  // parallel_for for update gas mixing ratios
+
+#ifdef EAMXX_HAS_ZM
+        // -------------------------------------------------------------------
+        // ZM convective tracer transport (EAM: convect_deep_tend_2 ->
+        // zm_conv_tend_2 -> zm_transport_tracer), applied after wet
+        // deposition so the transport sees the scavenged state.
+        // -------------------------------------------------------------------
+        if(zm_tr.enabled && Kokkos::round(zm_tr.activity(icol)) > 0) {
+          team.team_barrier();
+          MAMWetscav::zm_tracer_transport_column(team, zm_tr, icol, nlev, dt,
+                                                 atm, progs, dry_atm.p_del);
+        }
+#endif
       });    // icol parallel_for loop
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
