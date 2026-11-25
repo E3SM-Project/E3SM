@@ -2622,6 +2622,7 @@ contains
     ! Read/Write column carbon state information to/from restart file.
     !
     use elm_varctl, only : do_budgets
+    use elm_time_manager, only : get_rest_date
     !
     ! !ARGUMENTS:
     class(column_carbon_state)       :: this
@@ -2646,6 +2647,7 @@ contains
     real(r8)           :: c4_r2      ! isotope ratio (13c/[12c+13c]) for C4 photosynthesis
     real(r8)           :: m          ! multiplier for the exit_spinup code
     integer            :: idata
+    integer            :: restart_year
     logical            :: exit_spinup  = .false.
     logical            :: enter_spinup = .false.
     ! spinup state as read from restart file, for determining whether to enter or exit spinup mode.
@@ -3037,6 +3039,18 @@ contains
               call endrun(msg=' col_cs_restart: error in entering/exiting spinup - should occur only when nstep = 1'//&
                    errMsg(__FILE__, __LINE__))
            endif
+           if (exit_spinup) then
+              call get_rest_date(ncid, restart_year)
+              do c = bounds%begc, bounds%endc
+                 do j = 1, nlevdecomp
+                    if (restart_year <= 40 .or. &
+                        .not. (cnstate_vars%scalaravg_col(c,j) >= 0.01_r8 .and. &
+                               cnstate_vars%scalaravg_col(c,j) <= 1._r8)) then
+                       cnstate_vars%scalaravg_col(c,j) = 1._r8
+                    end if
+                 end do
+              end do
+           end if
            do k = 1, ndecomp_pools
               do c = bounds%begc, bounds%endc
                  do j = 1, nlevdecomp
