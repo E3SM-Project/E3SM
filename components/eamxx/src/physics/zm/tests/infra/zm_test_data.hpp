@@ -664,6 +664,11 @@ struct ZmDowndraftPropertiesData : public PhysicsTestData {
 struct ZmCloudPropertiesData : public PhysicsTestData {
   // Inputs
   Int pcols, ncol, pver, pverp, msg, limcnv;
+  // Test-control knob for the turbulent entrainment/detrainment offset.
+  // Not part of PTD_STD_DEF (so it is neither serialized to baselines nor
+  // copied by the assignment operator) - it defaults to 0 to keep the BFB
+  // baseline case bit-for-bit, and is set explicitly by property tests.
+  Real frac_turb_mix = 0;
   Int *jb, *lel;
   Real *p_mid, *z_mid, *z_int, *t_mid, *s_mid, *s_int, *q_mid, *landfrac, *tpert_g;
 

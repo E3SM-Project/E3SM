@@ -21,6 +21,7 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.alfa                = ZMC::alfa;
   s_zm_opts.ke                  = ZMC::ke;
   s_zm_opts.dmpdz               = ZMC::dmpdz;
+  s_zm_opts.frac_turb_mix       = 0;
   s_zm_opts.tpert_fix           = true;
   s_zm_opts.tpert_fac           = 2;
   s_zm_opts.tiedke_add          = ZMC::tiedke_add;
