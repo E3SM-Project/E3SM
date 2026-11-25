@@ -33,13 +33,13 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
     //CHECK THAT UNREASONABLY LARGE VAPOR DEPOSITION DOESN'T LEAVE QV SUBSATURATED WRT QI
     Pack epsi_tmp=1e6; //make 1/(sat removal timescale) huge so vapdep rate removes all supersat in 1 dt.
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i,
-	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
+	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, p3::Functions<Real,DefaultDevice>::P3Runtime());
     REQUIRE( (qv2qi_vapdep_tend[0]==0 || std::abs( qv2qi_vapdep_tend[0] - (qv[0] - qv_sat_i[0])*inv_dt) <1e-8) );
 
     //CHECK THAT HUGE SUBLIMATION DOESN'T LEAVE QV SUPERSATURATED WRT QI
     Pack qv_sat_i_tmp=1e-2;
     Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i_tmp,
-	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
+	        epsi_tmp, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, p3::Functions<Real,DefaultDevice>::P3Runtime());
     REQUIRE( (qi2qv_sublim_tend[0]==0 || std::abs( qi2qv_sublim_tend[0] - (qv_sat_i_tmp[0] - qv[0])*inv_dt) <1e-8) );
 
     //CHECK BEHAVIOR AS DT->0?
@@ -109,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestIceDepositionSublimation : public UnitWrap::Un
       // Init outputs
       Pack ni_sublim_tend(0), qi2qv_sublim_tend(0), qc2qi_berg_tend(0), qv2qi_vapdep_tend(0);
 
-      Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
+      Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, p3::Functions<Real,DefaultDevice>::P3Runtime());
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Pack::n; ++s, ++vs) {

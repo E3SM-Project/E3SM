@@ -32,7 +32,8 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Pack>& rhofaci, const uview_2d<Pack>& acn, const uview_2d<Pack>& qv_sat_l, const uview_2d<Pack>& qv_sat_i, const uview_2d<Pack>& sup,
   const uview_2d<Pack>& qv_supersat_i, const uview_2d<Pack>& qtend_ignore, const uview_2d<Pack>& ntend_ignore, const uview_2d<Pack>& mu_c,
   const uview_2d<Pack>& lamc, const uview_2d<Pack>& rho_qi, const uview_2d<Pack>& qv2qi_depos_tend, const uview_2d<Pack>& precip_total_tend,
-  const uview_2d<Pack>& nevapr, const uview_2d<Pack>& precip_liq_flux, const uview_2d<Pack>& precip_ice_flux)
+  const uview_2d<Pack>& nevapr, const uview_2d<Pack>& precip_liq_flux, const uview_2d<Pack>& precip_ice_flux,
+  const uview_2d<Pack>& qv2qc_aeroact, const uview_2d<Pack>& qv2qc_condevap)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -100,6 +101,8 @@ void Functions<Real,DefaultDevice>
   Kokkos::deep_copy(space, nevapr, Pack(0));
   Kokkos::deep_copy(space, precip_liq_flux, Pack(0));
   Kokkos::deep_copy(space, precip_ice_flux, Pack(0));
+  Kokkos::deep_copy(space, qv2qc_aeroact, Pack(0));
+  Kokkos::deep_copy(space, qv2qc_condevap, Pack(0));
   Kokkos::fence();
 }
 
@@ -163,6 +166,8 @@ Int Functions<Real,DefaultDevice>
   auto diag_eff_radius_qc      = diagnostic_outputs.diag_eff_radius_qc;
   auto diag_eff_radius_qi      = diagnostic_outputs.diag_eff_radius_qi;
   auto diag_eff_radius_qr      = diagnostic_outputs.diag_eff_radius_qr;
+  auto omega_mp                = diagnostic_inputs.omega_mp;
+  auto tke_mp                  = diagnostic_inputs.tke_mp;
   auto qv2qi_depos_tend        = diagnostic_outputs.qv2qi_depos_tend;
   auto rho_qi                  = diagnostic_outputs.rho_qi;
   auto precip_liq_flux         = diagnostic_outputs.precip_liq_flux;
@@ -172,6 +177,8 @@ Int Functions<Real,DefaultDevice>
   auto diag_equiv_reflectivity = diagnostic_outputs.diag_equiv_reflectivity;
   auto qv_prev                 = diagnostic_inputs.qv_prev;
   auto t_prev                  = diagnostic_inputs.t_prev;
+  auto oqv2qc_aeroact          = history_only.qv2qc_aeroact;
+  auto oqv2qc_condevap         = history_only.qv2qc_condevap;
   // Inputs for the heteogeneous freezing
   auto hetfrz_immersion_nucleation_tend  = diagnostic_inputs.hetfrz_immersion_nucleation_tend;
   auto hetfrz_contact_nucleation_tend    = diagnostic_inputs.hetfrz_contact_nucleation_tend;
@@ -264,7 +271,7 @@ Int Functions<Real,DefaultDevice>
     qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
     inv_rho, prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
     qtend_ignore, ntend_ignore, mu_c, lamc, rho_qi, qv2qi_depos_tend, precip_total_tend,
-    nevapr, precip_liq_flux, precip_ice_flux);
+    nevapr, precip_liq_flux, precip_ice_flux, oqv2qc_aeroact, oqv2qc_condevap);
 
   p3_main_part1_disp(
     nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
@@ -273,7 +280,7 @@ Int Functions<Real,DefaultDevice>
     T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
     rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
     bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-    ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
+    ni_incld, bm_incld, oqv2qc_aeroact, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
@@ -284,7 +291,7 @@ Int Functions<Real,DefaultDevice>
     lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
     lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
     exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
-    cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+    cld_frac_l, cld_frac_r, qv_prev, t_prev, omega_mp, tke_mp, oqv2qc_condevap, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
     qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
     nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
     mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,

@@ -393,9 +393,9 @@ public:
     static constexpr int num_1d_scalar = 2; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
 #ifdef SCREAM_P3_SMALL_KERNELS
-    static constexpr int num_2d_vector = 63;
+    static constexpr int num_2d_vector = 64;
 #else
-    static constexpr int num_2d_vector = 8;
+    static constexpr int num_2d_vector = 9;
 #endif
     static constexpr int num_2dp1_vector = 2;
 
@@ -408,6 +408,7 @@ public:
     uview_2d dz;
     uview_2d qv2qi_depos_tend;
     uview_2d rho_qi;
+    uview_2d qv2qc_condevap;
     uview_2d precip_liq_flux; //nlev+1
     uview_2d precip_ice_flux; //nlev+1
     uview_2d unused;

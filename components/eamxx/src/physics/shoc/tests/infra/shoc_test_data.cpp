@@ -2005,6 +2005,7 @@ void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
     const auto shoc_evap_s = shoc_cldfrac_s;
 
     SHF::shoc_assumed_pdf(team, nlev, nlevi, thetal_s, qw_s, w_field_s, thl_sec_s, qw_sec_s, dtime, extra_diags,
+                          /*use_shoc_condensation=*/true,
                           wthl_sec_s, w_sec_s,
                           wqw_sec_s, qwthl_sec_s, w3_s, pres_s, zt_grid_s, zi_grid_s,
                           workspace,

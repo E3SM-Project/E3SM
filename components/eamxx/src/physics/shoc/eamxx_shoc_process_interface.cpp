@@ -288,6 +288,15 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh_horiz     = m_params.get<double>("coeff_kh_horiz",0.1);
   runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz",0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+  const auto condensation_scheme =
+      m_params.get<std::string>("condensation_scheme", "shoc");
+  EKAT_REQUIRE_MSG(condensation_scheme == "shoc" || condensation_scheme == "p3",
+                   "Invalid condensation_scheme '" + condensation_scheme +
+                   "'. Valid options are 'shoc' and 'p3'.\n");
+  EKAT_REQUIRE_MSG(condensation_scheme != "p3" || runtime_options.shoc_1p5tke,
+                   "Invalid condensation configuration: condensation_scheme='p3' "
+                   "requires shoc_1p5tke=true.\n");
+  runtime_options.use_shoc_condensation = condensation_scheme == "shoc";
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
@@ -464,8 +473,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis,
                                  surf_mom_flux, tau_est, um_pert, vm_pert,
-                                 um_pert_diff, vm_pert_diff);
-
+                                 um_pert_diff, vm_pert_diff, runtime_options);
   if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
     const auto& water_flux = get_field_out("water_flux").get_view<Real*>();

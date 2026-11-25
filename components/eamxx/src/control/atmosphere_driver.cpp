@@ -43,6 +43,39 @@ namespace scream {
 
 namespace control {
 
+namespace {
+
+void propagate_condensation_scheme (ekat::ParameterList& params)
+{
+  if (params.isParameter("condensation_scheme")) {
+    const auto& scheme = params.get<std::string>("condensation_scheme");
+    EKAT_REQUIRE_MSG(scheme == "shoc" || scheme == "p3",
+                     "Invalid condensation_scheme '" + scheme +
+                     "'. Valid options are 'shoc' and 'p3'.\n");
+
+    if (params.isSublist("shoc")) {
+      auto& shoc_params = params.sublist("shoc");
+      shoc_params.set<std::string>("condensation_scheme", scheme);
+      if (scheme == "p3") {
+        shoc_params.set<bool>("shoc_1p5tke", true);
+      }
+    }
+    if (params.isSublist("p3")) {
+      auto& p3_params = params.sublist("p3");
+      p3_params.set<std::string>("condensation_scheme", scheme);
+      if (scheme == "p3") {
+        p3_params.set<bool>("p3_WBF_process", false);
+      }
+    }
+  }
+
+  for (const auto& name : params.sublist_names()) {
+    propagate_condensation_scheme(params.sublist(name));
+  }
+}
+
+} // anonymous namespace
+
 /*
  * IMPORTANT: read carefully this banner before attempting any change to the initialize method!
  *
@@ -254,6 +287,7 @@ void AtmosphereDriver::create_atm_processes()
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
   auto& atm_proc_params = m_atm_params.sublist("eamxx");
+  propagate_condensation_scheme(atm_proc_params);
   atm_proc_params.rename("EAMxx");
   atm_proc_params.set("logger",m_atm_logger);
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);

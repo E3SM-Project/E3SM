@@ -28,7 +28,7 @@ void P3Microphysics::create_requests()
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto micron = micro*m;
   auto m2 = pow(m,2);
-
+  auto s2 = pow(s,2);
   m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
@@ -141,8 +141,11 @@ void P3Microphysics::create_requests()
     add_field<Computed>("qr_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qi_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qv2qc_aeroact",       scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qv2qc_condevap",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
   }
-
+    add_field<Required>("omega", scalar3d_layout_mid, Pa/s, grid_name, ps);
+    add_tracer<Updated>("tke", m_grid, m2/s2, ps);
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
   // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
   //       yet to reset these values at the beginning of the atmosphere timestep.  When this
@@ -223,7 +226,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   using spack_2d_view_t = decltype(m_buffer.inv_exner);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector] = {
     &m_buffer.inv_exner, &m_buffer.th_atm, &m_buffer.cld_frac_l, &m_buffer.cld_frac_i,
-    &m_buffer.dz, &m_buffer.qv2qi_depos_tend, &m_buffer.rho_qi, &m_buffer.unused
+    &m_buffer.dz, &m_buffer.qv2qi_depos_tend, &m_buffer.rho_qi,
+    &m_buffer.qv2qc_condevap, &m_buffer.unused
 #ifdef SCREAM_P3_SMALL_KERNELS
     , &m_buffer.mu_r, &m_buffer.T_atm, &m_buffer.lamr, &m_buffer.logn0r, &m_buffer.nu,
     &m_buffer.cdist, &m_buffer.cdist1, &m_buffer.cdistr, &m_buffer.inv_cld_frac_i,
@@ -404,6 +408,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.diag_eff_radius_qc      = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi      = get_field_out("eff_radius_qi").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qr      = get_field_out("eff_radius_qr").get_view<Pack**>();
+  diag_inputs.omega_mp                 = get_field_in("omega").get_view<const Pack**>();
+  diag_inputs.tke_mp                   = get_field_in("tke").get_view<const Pack**>();
   diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack**>();
   diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack**>();
   diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack**>();
@@ -437,6 +443,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.qr_sed = get_field_out("qr_sed").get_view<Pack**>();
     history_only.qc_sed = get_field_out("qc_sed").get_view<Pack**>();
     history_only.qi_sed = get_field_out("qi_sed").get_view<Pack**>();
+    history_only.qv2qc_aeroact = get_field_out("qv2qc_aeroact").get_view<Pack**>();
+    history_only.qv2qc_condevap = get_field_out("qv2qc_condevap").get_view<Pack**>();
   } else {
     // if not, let's use the unused buffer
     history_only.qr2qv_evap = m_buffer.unused;
@@ -454,6 +462,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.qr_sed = m_buffer.unused;
     history_only.qc_sed = m_buffer.unused;
     history_only.qi_sed = m_buffer.unused;
+    history_only.qv2qc_aeroact = m_buffer.unused;
+    history_only.qv2qc_condevap = m_buffer.qv2qc_condevap;
   }
 #ifdef SCREAM_P3_SMALL_KERNELS
   // Temporaries
