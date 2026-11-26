@@ -133,13 +133,23 @@ static void rrtmgp_initialize(
 
 /*
  * Compute band-by-band surface albedos from broadband albedos.
+ *
+ * vis_frac is the fraction of the shortwave band that straddles the
+ * visible/near-infrared transition (0.7 micron) that is attributed to the
+ * visible. The albedo for that band is computed as a vis_frac-weighted
+ * average of the visible and near-infrared broadband albedos. A value of 0.5
+ * gives a simple average; Tolento et al. (2025, doi:10.1029/2025JD043796)
+ * show 0.555 is a more realistic partition.
  */
 static void compute_band_by_band_surface_albedos(
   const int ncol, const int nswbands,
   const creal1dk &sfc_alb_dir_vis, const creal1dk &sfc_alb_dir_nir,
   const creal1dk &sfc_alb_dif_vis, const creal1dk &sfc_alb_dif_nir,
-  const real2dk &sfc_alb_dir,     const real2dk &sfc_alb_dif)
+  const real2dk &sfc_alb_dir,     const real2dk &sfc_alb_dif,
+  const RealT vis_frac = 0.5)
 {
+  EKAT_REQUIRE_MSG(vis_frac >= 0 && vis_frac <= 1,
+                   "Error! vis_frac must be in [0,1]. Got " << vis_frac);
   EKAT_ASSERT_MSG(initialized_k, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
   auto wavenumber_limits = k_dist_sw_k->get_band_lims_wavenumber();
 
@@ -171,23 +181,31 @@ static void compute_band_by_band_surface_albedos(
     }
     else {
       // Band straddles the visible to near-infrared transition, so we take
-      // the albedo to be the average of the visible and near-infrared
-      // broadband albedos
-      sfc_alb_dir(icol,ibnd) = 0.5*(sfc_alb_dir_vis(icol) + sfc_alb_dir_nir(icol));
-      sfc_alb_dif(icol,ibnd) = 0.5*(sfc_alb_dif_vis(icol) + sfc_alb_dif_nir(icol));
+      // the albedo to be the vis_frac-weighted average of the visible and
+      // near-infrared broadband albedos
+      sfc_alb_dir(icol,ibnd) = vis_frac*sfc_alb_dir_vis(icol) + (1-vis_frac)*sfc_alb_dir_nir(icol);
+      sfc_alb_dif(icol,ibnd) = vis_frac*sfc_alb_dif_vis(icol) + (1-vis_frac)*sfc_alb_dif_nir(icol);
     }
   ));
 }
 
 /*
  * Compute broadband visible/UV and near-infrared surface fluxes.
+ *
+ * vis_frac is the fraction of the flux in the shortwave band that straddles
+ * the visible/near-infrared transition (0.7 micron) that is attributed to the
+ * visible; the remainder (1 - vis_frac) goes to the near-infrared. See
+ * compute_band_by_band_surface_albedos for details.
  */
 static void compute_broadband_surface_fluxes(
   const int ncol, const int ktop, const int nswbands,
   const real3dk &sw_bnd_flux_dir , const real3dk &sw_bnd_flux_dif ,
   const real1dk &sfc_flux_dir_vis, const real1dk &sfc_flux_dir_nir,
-  const real1dk &sfc_flux_dif_vis, const real1dk &sfc_flux_dif_nir)
+  const real1dk &sfc_flux_dif_vis, const real1dk &sfc_flux_dif_nir,
+  const RealT vis_frac = 0.5)
 {
+  EKAT_REQUIRE_MSG(vis_frac >= 0 && vis_frac <= 1,
+                   "Error! vis_frac must be in [0,1]. Got " << vis_frac);
   // Band 10 straddles the near-IR and visible, so divide contributions from band 10 between both broadband sums
   // TODO: Hard-coding these band indices is really bad practice. If the bands ever were to change (like when
   // the RRTMG bands were re-ordered for RRTMGP), we would be using the wrong bands for the IR and UV/VIS. This
@@ -224,12 +242,12 @@ static void compute_broadband_surface_fluxes(
         sfc_flux_dif_nir(icol) += sw_bnd_flux_dif(icol,ktop,ibnd);
       }
       else {
-        // Band straddles the visible to near-infrared transition, so put half
-        // the flux in visible and half in near-infrared fluxes
-        sfc_flux_dir_vis(icol) += 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd);
-        sfc_flux_dif_vis(icol) += 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd);
-        sfc_flux_dir_nir(icol) += 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd);
-        sfc_flux_dif_nir(icol) += 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd);
+        // Band straddles the visible to near-infrared transition, so put a
+        // fraction vis_frac of the flux in visible and the rest in near-infrared
+        sfc_flux_dir_vis(icol) += vis_frac       * sw_bnd_flux_dir(icol,ktop,ibnd);
+        sfc_flux_dif_vis(icol) += vis_frac       * sw_bnd_flux_dif(icol,ktop,ibnd);
+        sfc_flux_dir_nir(icol) += (1 - vis_frac) * sw_bnd_flux_dir(icol,ktop,ibnd);
+        sfc_flux_dif_nir(icol) += (1 - vis_frac) * sw_bnd_flux_dif(icol,ktop,ibnd);
       }
     }
   }));

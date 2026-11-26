@@ -5,6 +5,8 @@
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "mo_load_coefficients.h"
 
+#include <limits>
+
 namespace {
 
 template <typename View>
@@ -400,6 +402,75 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - 21.5) < tol);
   REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - 20.0) < tol);
   REQUIRE(std::abs(chc(sfc_flux_dif_vis)(0) - 26.0) < tol);
+  // ---------------------------------
+
+  // ---------------------------------
+  // Test case, same as above but with an asymmetric split of the transition
+  // band between VIS and NIR (Tolento et al. 2025)
+  logger->info("Compute broadband surface fluxes with asymmetric VIS/NIR split...\n");
+  const double vis_frac = 0.555;
+  // vis_frac is not exactly representable, so use a precision-aware tolerance
+  const double tol_frac = 1000*std::numeric_limits<scream::Real>::epsilon();
+  interface_t::compute_broadband_surface_fluxes(
+    ncol, kbot, nbnd,
+    sw_bnd_flux_dir, sw_bnd_flux_dif,
+    sfc_flux_dir_vis, sfc_flux_dir_nir,
+    sfc_flux_dif_vis, sfc_flux_dif_nir,
+    vis_frac
+  );
+  // Check computed surface fluxes
+  logger->info("Check computed fluxes...\n");
+  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - ( 9.0 + (1-vis_frac)*3.0)) < tol_frac);
+  REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - (20.0 +    vis_frac *3.0)) < tol_frac);
+  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - (18.0 + (1-vis_frac)*4.0)) < tol_frac);
+  REQUIRE(std::abs(chc(sfc_flux_dif_vis)(0) - (24.0 +    vis_frac *4.0)) < tol_frac);
+  // Total flux should be conserved regardless of the split
+  REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) + chc(sfc_flux_dir_vis)(0) - 32.0) < tol_frac);
+  REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) + chc(sfc_flux_dif_vis)(0) - 46.0) < tol_frac);
+  // ---------------------------------
+
+  // ---------------------------------
+  // Test band-by-band surface albedos, with both symmetric and asymmetric
+  // splits of the transition band
+  logger->info("Compute band-by-band surface albedos...\n");
+  auto sfc_alb_dir_vis = real1dk("sfc_alb_dir_vis", ncol);
+  auto sfc_alb_dir_nir = real1dk("sfc_alb_dir_nir", ncol);
+  auto sfc_alb_dif_vis = real1dk("sfc_alb_dif_vis", ncol);
+  auto sfc_alb_dif_nir = real1dk("sfc_alb_dif_nir", ncol);
+  auto sfc_alb_dir = real2dk("sfc_alb_dir", ncol, nbnd);
+  auto sfc_alb_dif = real2dk("sfc_alb_dif", ncol, nbnd);
+  const double alb_dir_vis = 0.8, alb_dir_nir = 0.4;
+  const double alb_dif_vis = 0.7, alb_dif_nir = 0.3;
+  Kokkos::deep_copy(sfc_alb_dir_vis, alb_dir_vis);
+  Kokkos::deep_copy(sfc_alb_dir_nir, alb_dir_nir);
+  Kokkos::deep_copy(sfc_alb_dif_vis, alb_dif_vis);
+  Kokkos::deep_copy(sfc_alb_dif_nir, alb_dif_nir);
+  for (const double frac : {0.5, vis_frac}) {
+    interface_t::compute_band_by_band_surface_albedos(
+      ncol, nbnd,
+      sfc_alb_dir_vis, sfc_alb_dir_nir,
+      sfc_alb_dif_vis, sfc_alb_dif_nir,
+      sfc_alb_dir, sfc_alb_dif,
+      frac
+    );
+    auto sfc_alb_dir_h = chc(sfc_alb_dir);
+    auto sfc_alb_dif_h = chc(sfc_alb_dif);
+    for (int ibnd = 0; ibnd < nbnd; ++ibnd) {
+      double dir_ref, dif_ref;
+      if (ibnd < 9) {
+        dir_ref = alb_dir_nir;
+        dif_ref = alb_dif_nir;
+      } else if (ibnd == 9) {
+        dir_ref = frac*alb_dir_vis + (1-frac)*alb_dir_nir;
+        dif_ref = frac*alb_dif_vis + (1-frac)*alb_dif_nir;
+      } else {
+        dir_ref = alb_dir_vis;
+        dif_ref = alb_dif_vis;
+      }
+      REQUIRE(std::abs(sfc_alb_dir_h(0,ibnd) - dir_ref) < tol_frac);
+      REQUIRE(std::abs(sfc_alb_dif_h(0,ibnd) - dif_ref) < tol_frac);
+    }
+  }
   // ---------------------------------
 
   // Finalize Kokkos
