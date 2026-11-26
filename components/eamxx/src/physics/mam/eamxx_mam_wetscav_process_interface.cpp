@@ -713,6 +713,8 @@ void MAMWetscav::run_impl(const double dt) {
            aerdepwetis_convproc_icol,
            // Convection parameters
            scratch1Dviews,
+           // Required but unused by the pinned MAM4xx interface; empty views suffice.
+           mu_icol, md_icol,
            du_icol, eu_icol, ed_icol,
            dp_icol, p_del_dry_icol,
            ktop, kbot,
