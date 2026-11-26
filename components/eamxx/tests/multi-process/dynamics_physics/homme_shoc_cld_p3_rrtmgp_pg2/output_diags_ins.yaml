@@ -69,8 +69,18 @@ fields:
       # An 'aliases' entry as the weights.
       - rel_liqtop  := eff_radius_qc.sum('lev', weights=liqtop)
 
+      # --- Math functions ---------------------------------------------------
+      # qv may be 0 (or slightly negative), so mask log/sqrt where invalid: with
+      # FPEs enabled, the default invalid='nan' would stop the run there.
+      - log_qv    := log(qv, invalid='mask')
+      - exp_qv    := exp(-qv)
+      - sqrt_qv   := sqrt(qv, invalid='mask')
+      - abs_w     := abs(omega)
+      - log_T     := log(T_mid, units='ignore')
+
       # --- Composition ------------------------------------------------------
       - cold_T    := T_mid.where(T_mid<273.15).mean('lev')
+      - log_qv_vavg := log(qv, invalid='mask').mean('lev')
 
       # --- Notes -------------------------------------------------------------
       # A negative threshold, and bin edges that are negative or have an exponent.

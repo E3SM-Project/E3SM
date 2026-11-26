@@ -15,8 +15,17 @@
  */
 namespace dexpr {
 
+std::string to_string(CallForm form) {
+  switch (form) {
+    case CallForm::Method:   return "method";
+    case CallForm::Function: return "function";
+  }
+  return "unknown";
+}
+
 std::string FunctionSpec::to_string() const {
-  std::string str_{name};
+  std::string str_ = form == CallForm::Method ? "x." : "";
+  str_ += name;
   str_ += "(";
 
   bool first = true;
@@ -263,6 +272,19 @@ private:
         }
       }
       errors_.push_back(std::move(msg));
+      return;
+    }
+
+    // One spelling per function: `x.f()` and `f(x)` are not interchangeable.
+    const bool is_method = callee.receiver != nullptr;
+    if (is_method && spec->form == CallForm::Function) {
+      errors_.push_back("'" + name + "' is a function, not a method: write " +
+                        name + "(x, ..), not x." + name + "(..)");
+      return;
+    }
+    if (!is_method && spec->form == CallForm::Method) {
+      errors_.push_back("'" + name + "' is a method, not a function: write x." +
+                        name + "(..), not " + name + "(x, ..)");
       return;
     }
 

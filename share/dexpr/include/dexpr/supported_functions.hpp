@@ -28,6 +28,15 @@ struct ParamSpec {
   bool required = false;
 };
 
+// How a call is written. Each function takes exactly one form, so that one
+// operation has one spelling (and one canonical string).
+enum class CallForm {
+  Method,   // `x.f(..)`: the receiver is the operand, and not a positional arg
+  Function, // `f(..)`:   every operand is a positional arg
+};
+
+std::string to_string(CallForm form);
+
 struct FunctionSpec {
   std::string name;
   std::string desc;
@@ -43,7 +52,11 @@ struct FunctionSpec {
   // validate_registry() checks the spec against.
   std::string example;
 
+  // Last, so that a spec written with designated initializers can omit it.
+  CallForm form = CallForm::Method;
+
   // "name(arg, kw=..)\n--- desc\n--- e.g. example", the `dexpr` tool listing.
+  // A method is shown with a receiver, as "x.name(..)".
   std::string to_string() const;
 };
 
@@ -82,7 +95,8 @@ public:
 };
 
 // Checks every call in the tree: callee is a plain name, name is registered,
-// positional arity fits, keywords are declared and present as required.
+// the call is written in the function's form (`x.f()` or `f(x)`), positional
+// arity fits, keywords are declared and present as required.
 // Collects every problem and throws once.
 void validate_calls(const ast::Expression& root, const FunctionRegistry& reg);
 

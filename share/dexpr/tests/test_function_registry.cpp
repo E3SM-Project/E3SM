@@ -31,7 +31,8 @@ FunctionRegistry test_registry() {
            .min_positional = 1,
            .max_positional = 2,
            .keywords = {{"fill", true}},
-           .example = "clamp(T_mid, fill=0)"});
+           .example = "clamp(T_mid, fill=0)",
+           .form = CallForm::Function});
   return reg;
 }
 
@@ -65,9 +66,10 @@ std::string registry_error(const FunctionRegistry& reg) {
 
 // Every field spelled out: -Wmissing-field-initializers requires it.
 FunctionSpec spec(std::string name, int min_pos, int max_pos,
-                  std::vector<ParamSpec> kws, std::string example) {
+                  std::vector<ParamSpec> kws, std::string example,
+                  CallForm form = CallForm::Method) {
   return FunctionSpec{std::move(name), "a description", min_pos, max_pos,
-                      std::move(kws),  std::move(example)};
+                      std::move(kws),  std::move(example), form};
 }
 
 } // anonymous namespace
@@ -126,9 +128,9 @@ TEST_CASE("validate_accepts_well_formed_calls") {
   CHECK(validation_error("T_mid.prev()", reg) == "");
   CHECK(validation_error("clamp(T_mid, fill=0)", reg) == "");
   CHECK(validation_error("clamp(T_mid, 1, fill=0)", reg) == "");
-  // `f(x)` and `x.f()` both validate: the receiver is not positional. A
-  // component that implements only one spelling rejects the other itself.
-  CHECK(validation_error("T_mid.clamp(1, fill=0)", reg) == "");
+  // Calls nest in either form, and in each other's operands.
+  CHECK(validation_error("clamp(T_mid.mean('lev'), fill=0)", reg) == "");
+  CHECK(validation_error("clamp(T_mid, fill=0).mean('lev')", reg) == "");
 
   // Expressions with no calls at all are trivially valid.
   CHECK(validation_error("(qc+qv)*p_mid", reg) == "");
@@ -161,6 +163,31 @@ TEST_CASE("validate_rejects_bad_arity") {
 
   // Keyword arguments do not count towards positional arity.
   CHECK(validation_error("T_mid.mean('lev', weights='dp')", reg) == "");
+}
+
+TEST_CASE("validate_rejects_the_wrong_form") {
+  const auto reg = test_registry();
+
+  // A function written as a method, even with an arity that would fit
+  auto msg = validation_error("T_mid.clamp(1, fill=0)", reg);
+  CHECK(contains(msg, "'clamp' is a function, not a method"));
+  CHECK(contains(msg, "write clamp(x, ..)"));
+
+  // A method written as a function
+  msg = validation_error("mean(T_mid, 'lev')", reg);
+  CHECK(contains(msg, "'mean' is a method, not a function"));
+  CHECK(contains(msg, "write x.mean(..)"));
+  msg = validation_error("prev()", reg);
+  CHECK(contains(msg, "'prev' is a method, not a function"));
+
+  // The wrong form is the only error reported for that call: its arity is
+  // meaningless in the other form.
+  CHECK(!contains(validation_error("mean(T_mid, 'lev')", reg), "positional"));
+
+  // Operands are still checked.
+  msg = validation_error("mean(T_mid.meen('lev'), 'lev')", reg);
+  CHECK(contains(msg, "'mean' is a method"));
+  CHECK(contains(msg, "unknown function 'meen'"));
 }
 
 TEST_CASE("validate_rejects_bad_keywords") {
@@ -268,6 +295,17 @@ TEST_CASE("validate_registry_catches_a_spec_its_example_contradicts") {
   CHECK(contains(registry_error(no_example), "no example"));
 }
 
+TEST_CASE("validate_registry_catches_an_example_in_the_wrong_form") {
+  FunctionRegistry reg;
+  reg.add(spec("f", 1, 1, {}, "x.f(1)", CallForm::Function));
+  reg.add(spec("m", 0, 0, {}, "m(x)", CallForm::Method));
+  reg.add(spec("g", 1, 1, {}, "g(x)", CallForm::Function));
+  const auto msg = registry_error(reg);
+  CHECK(contains(msg, "'f' is a function, not a method"));
+  CHECK(contains(msg, "'m' is a method, not a function"));
+  CHECK(!contains(msg, "'g'"));
+}
+
 TEST_CASE("validate_registry_reports_every_bad_spec_at_once") {
   FunctionRegistry reg;
   reg.add(spec("a", 0, 0, {}, "x.a("));
@@ -294,6 +332,17 @@ TEST_CASE("function_spec_to_string") {
 
   // `dexpr functions` shows how to write the call, not just its shape.
   CHECK(contains(str, "e.g. T_mid.mean('lev', dim='x')"));
+
+  // A method is shown with a receiver, a function without one.
+  CHECK(str.rfind("x.mean(", 0) == 0);
+  FunctionSpec f{.name = "log",
+                 .desc = "natural log",
+                 .min_positional = 1,
+                 .max_positional = 1,
+                 .keywords = {},
+                 .example = "log(qv)",
+                 .form = CallForm::Function};
+  CHECK(f.to_string().rfind("log(<arg>)", 0) == 0);
 }
 
 } // namespace dexpr
