@@ -177,6 +177,11 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES binary_ops_test.cpp
   )
 
+  # Test elementwise math functions (log, exp, sqrt, abs)
+  CreateDiagTest(unary_math
+    SOURCES unary_math_test.cpp
+  )
+
   # Test the hash that identifies equivalent diags
   CreateDiagTest(diag_hash
     SOURCES diag_hash_test.cpp

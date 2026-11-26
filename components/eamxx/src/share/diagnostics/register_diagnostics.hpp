@@ -35,6 +35,7 @@
 #include "conditional_sampling.hpp"
 #include "binary_op.hpp"
 #include "histogram.hpp"
+#include "unary_math.hpp"
 
 namespace scream {
 
@@ -73,6 +74,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ConditionalSampling",&create_diagnostic<ConditionalSampling>);
   diag_factory.register_product("BinaryOp", &create_diagnostic<BinaryOp>);
   diag_factory.register_product("Histogram",&create_diagnostic<Histogram>);
+  diag_factory.register_product("UnaryMath",&create_diagnostic<UnaryMath>);
 }
 
 } // namespace scream
